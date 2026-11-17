@@ -21,7 +21,10 @@ export async function exportReviewScene(observation,scenery){
    while(owner&&!Object.hasOwn(observation.entities,owner.userData.holodeckEntity))owner=owner.parent;
    const entity=owner?.userData.holodeckEntity??'scenery',ordinal=(counts.get(entity)||0)+1;
    counts.set(entity,ordinal);
-   const id=`${entity}--part-${ordinal}`,geometry=object.geometry,position=geometry.getAttribute('position');
+   const id=owner&&object.name.startsWith(entity+'-')&&/^[a-z0-9-]+$/.test(object.name)
+    ?object.name:`${entity}--part-${ordinal}`;
+   if(parts.some(part=>part.id===id))throw Error('Review part identities must be unique');
+   const geometry=object.geometry,position=geometry.getAttribute('position');
    if(!position||position.count>65535||Array.isArray(object.material))throw Error('Unsupported review mesh');
    const vertices=[],faces=[],point=new Vector3();
    for(let index=0;index<position.count;index++){

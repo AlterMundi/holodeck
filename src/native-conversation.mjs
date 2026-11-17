@@ -180,7 +180,7 @@ export async function createNativeConversation({room,stateDir,transport,fileSyst
           if(!request.view||typeof request.view!=='object'||Buffer.byteLength(encode(request.view))>4096)
             throw new NativeConversationError('view','Provide a bounded client-reported view',{retained:false,knownNotSubmitted:true,retryable:true});
           observation.clientReportedView={evidence:'client-reported-at-interaction-capture',value:structuredClone(request.view),
-            uncertainty:'Not authoritative location, line of sight, attention or understanding.'};
+            uncertainty:'Client-reported scene-graph/DOM evidence only, including any appliedGeometry field. Not presented pixels, authoritative location, line of sight, attention or understanding. A not-in-document entity reference proves DOM absence only.'};
         }
         if(Buffer.byteLength(encode(observation))>MAX_OBSERVATION_BYTES)
           throw new NativeConversationError('context-capacity','The captured situation exceeds the native context bound',{retained:false,knownNotSubmitted:true,retryable:true});

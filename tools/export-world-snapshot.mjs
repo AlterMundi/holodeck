@@ -64,7 +64,7 @@ export function exportWorldSnapshot(observation,scenery){
   else if(tag==='m-cylinder')geometry=new CylinderGeometry(number('radius',1),number('radius',1),number('height',1),16);
   else if(tag==='m-sphere')geometry=new SphereGeometry(number('radius',1),16,12);
   else throw Error('Unsupported snapshot primitive');
-  mesh(geometry,attrs.color||'#ffffff',world,current.node,`${tag.slice(2)}-${++count}`);
+  mesh(geometry,attrs.color||'#ffffff',world,current.node,attrs.id||`${tag.slice(2)}-${++count}`);
  }
  document.buffers=[{byteLength:offset}];
  let json=Buffer.from(JSON.stringify(document));json=Buffer.concat([json,Buffer.alloc((4-json.length%4)%4,0x20)]);

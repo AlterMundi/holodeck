@@ -15,7 +15,7 @@ test('review meshes preserve metre anchors, valid triangles, stable entity parts
  command(room,'garden.place','garden-first',{x:-2,z:1,color:'mint'},null);
  command(room,'garden.place','garden-second',{x:2,z:1,color:'rose'},null);
  const captured=room.observe(actor),before=await exportReviewScene(captured,scenery);
- const parts=before.scene.parts.filter(p=>p.id.startsWith('garden-second--'));
+ const parts=before.scene.parts.filter(p=>p.id.startsWith('garden-second-'));
  assert.ok(parts.length>0);assert.equal(before.scene.units,'mm');assert.equal(before.source.scale,1000);
  const xs=parts.flatMap(p=>p.vertices.map(v=>v[0])),ys=parts.flatMap(p=>p.vertices.map(v=>v[1])),zs=parts.flatMap(p=>p.vertices.map(v=>v[2]));
  assert.ok(Math.abs((Math.min(...xs)+Math.max(...xs))/2-2000)<.01);
@@ -28,9 +28,14 @@ test('review meshes preserve metre anchors, valid triangles, stable entity parts
  command(room,'garden.remove','garden-first',{},1);
  const after=await exportReviewScene(room.observe(actor),scenery);
  assert.ok(!after.source.parts.some(p=>p.entity==='garden-first'));
- assert.deepEqual(after.scene.parts.filter(p=>p.id.startsWith('garden-second--')),parts);
+ assert.deepEqual(after.scene.parts.filter(p=>p.id.startsWith('garden-second-')),parts);
  assert.equal(before.source.parts.some(p=>p.entity==='garden-first'),true);
  assert.deepEqual(await exportReviewScene(captured,scenery),before);
+ const deck=before.scene.parts.find(p=>p.id==='bridge-deck-1');assert.ok(deck);
+ command(room,'bridge.set','bridge',{raised:true},0);
+ const raised=await exportReviewScene(room.observe(actor),scenery);
+ assert.ok(raised.scene.parts.some(p=>p.id===deck.id));
+ assert.equal(raised.source.parts.find(p=>p.part===deck.id).revision,1);
 });
 test('generated review scene is accepted by the real installed gallery builder',{skip:!process.env.HOLODECK_REVIEW_BUILDER},async()=>{
  const {scene,source}=await exportReviewScene(new Room().observe(actor),scenery);
