@@ -117,19 +117,24 @@ canonical resource may need a future adapter extension; it is not an MVP blocker
    preserving earlier editions, but this is a new publication selection, not a
    separately reviewable draft promoted without affecting a published pointer.
 
-This limited manual cycle supports local drafts, explicit publication and exact
-historical review. It does not yet satisfy independent shared candidate/release
-selections under one remembered published entrance.
+This manual cycle supports local drafts, explicit publication and exact
+historical review. The qualified link entrance below can select a pinned edition
+while review content advances under the same compatible resource audience. It
+does not supply the broader private-candidate/public-release lifecycle.
 
 ## Stable entrance source follow-up
 
 Current upstream Cluster03b6a7d was inspected after the initial audit; its
-`artifact_context` also rejected link resources. Cluster PR518 now implements
-the authorized stable-link entrance described below, with242 current-source Home
-tests passing. Source review and receiving deployment are separate; the initial
-audit's absence finding describes the pre-change route, not this candidate.
-Conditional portable guidance is published in Skills PR356 (merge d00e6788),
-without claiming installed receiving support.
+`artifact_context` also rejected link resources. Cluster PR518, merged asc591769,
+implements the authorized stable-link entrance with242 current-source Home tests
+and full CI passing. Its additive receiving overlay preserves existing gateway
+features and passed81focused tests. Live owner-only qualification confirmed303
+for current, updated and pinned-history targets; anonymous requests revealed no
+target; only the task-created own reader session was revoked. The temporary link
+was removed through the supported writer. No real creation or human acceptance
+was substituted by that qualification. The initial absence finding is history.
+Conditional portable guidance from Skills PR356 (merge d00e6788) is installed as
+version2.4.13 in the seven existing receivers; model uptake remains unobserved.
 
 The link permits a separately selected entrance while **the model resource's
 audience remains compatible**. It cannot expose an old public edition while the
@@ -139,7 +144,7 @@ denies public readers of the old pinned edition. A public link grants no target
 access. Keep private drafts in owning storage rather than relax this rule; the
 link route does not complete the proposed generic Nexus delivery lifecycle.
 
-## Exact missing capabilities
+## Remaining creation-cycle work
 
 - Holodeck has no integrated prepare/publish/review operation yet. The scene
   conversion now passes the actual installed shared gallery builder and retains
@@ -148,21 +153,12 @@ link route does not complete the proposed generic Nexus delivery lifecycle.
 - The current Home publisher has no draft/promote command or independent selected
   published pointer. Nexus's `deliverable-lifecycle-proposal.md` remains a proposal;
   its illustrative project routes are not implementation evidence.
-- An existing Home `link` cannot supply a moving stable published entrance:
-  `entry_url(link)` returns its target URL, `audience_view(link)` has no preview
-  URL, and `preview()` rejects every non-artifact. `/view/LINK_RESOURCE` is not a
-  supported redirect. Updating a catalog link does not update an already shared
-  destination bookmark.
-
-One small owning extension to investigate is an authorized stable Home
-link entrance resolving a selected pinned artifact-view URL. One evolving model
-artifact could then hold review editions, while one existing link resource selects
-the published edition. Destination authorization must remain independent; changing
-the link must never grant access or expose private destination metadata. Inspect
-shared-view authentication and receiving delivery before selecting this approach;
-qualify the route in Homes before relying on it. This would reuse resource/version
-and link writers; no Holodeck release registry, per-draft resource IDs or new Apps
-entries are necessary. Nexus continues to own exact-edition discussion.
+- The supported published entrance is now `/view/LINK_RESOURCE`, targeting a
+  selected immutable artifact-view URL. `entry_url(link)` still returns the direct
+  target for compatibility, so use the stable entrance explicitly when sharing
+  a movable published selection. One evolving model artifact and one existing
+  link resource reuse the original version/link writers; destination permission
+  remains independent. No parallel registry, per-draft IDs or Apps entry is used.
 
 ## Sources inspected
 
@@ -176,6 +172,6 @@ entries are necessary. Nexus continues to own exact-edition discussion.
   `models.py`, `store.py`, `app.py`, frontend `App.tsx`, and
   [collaborative review contract](https://github.com/compaii/daimon-nexus/blob/main/docs/collaborative-review-contract.md).
 
-These are source and maintained receiving-record findings. This audit performed
-no service/source deployment, publication, identity grant, input/model call or
-live participant/device acceptance check.
+The initial audit was read-only. Its later receiving follow-up qualified only the
+bounded task-owned link mechanism, not a creation publication, model interaction
+or live participant/device acceptance. Those remaining effects must be observed.
