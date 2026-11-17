@@ -164,15 +164,22 @@ export class Room extends EventEmitter {
       if (command.expectedRevision !== entity.revision) return finish('rejected', 'The bridge changed while you were deciding');
       entity.raised = command.args.raised;
       entity.revision++;
-    } else if (command.type === 'garden.place') {
-      if (Object.keys(this.entities).length >= LIMITS.elements) return finish('rejected', 'This garden is full');
-      if (typeof command.target !== 'string' || !/^garden-[a-z0-9-]{1,40}$/.test(command.target) || entity || command.expectedRevision !== null)
-        return finish('rejected', 'Choose a new garden element');
+    } else if (command.type === 'garden.place' || command.type === 'garden.update') {
+      const updating=command.type==='garden.update';
+      if(updating){
+        if(typeof command.target!=='string'||!command.target.startsWith('garden-')||!entity||entity.deleted||command.expectedRevision!==entity.revision)
+          return finish('rejected','The garden element changed; inspect it before editing');
+      }else{
+        if (Object.keys(this.entities).length >= LIMITS.elements) return finish('rejected', 'This garden is full');
+        if (typeof command.target !== 'string' || !/^garden-[a-z0-9-]{1,40}$/.test(command.target) || entity || command.expectedRevision !== null)
+          return finish('rejected', 'Choose a new garden element');
+      }
       const a = command.args;
       if (!a || Object.keys(a).sort().join(',') !== 'color,x,z' || !Number.isFinite(a.x) || !Number.isFinite(a.z)
         || Math.abs(a.x) > 7 || a.z < -6 || a.z > 6 || !['mint','amber','rose'].includes(a.color))
         return finish('rejected', 'Choose a valid garden placement');
-      this.entities[command.target] = { id: command.target, revision: 1, ...clone(a) };
+      if(updating)Object.assign(entity,clone(a),{revision:entity.revision+1});
+      else this.entities[command.target] = { id: command.target, revision: 1, ...clone(a) };
     } else if(command.type==='garden.remove') {
       if(!entity || !command.target.startsWith('garden-') || entity.deleted
         || command.expectedRevision!==entity.revision || !command.args || Object.keys(command.args).length)

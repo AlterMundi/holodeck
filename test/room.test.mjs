@@ -62,3 +62,26 @@ test('a genuine new garden element is shared, not a fixed mechanism toggle', () 
   assert.equal(room.command(human,a).status,'completed');
   assert.equal(room.observe(other).entities['garden-first'].color,'mint');
 });
+
+test('a companion edits the same light at full capacity without replacing its identity or replaying work',()=>{
+ const room=new Room();
+ for(let index=0;index<LIMITS.elements-1;index++){
+  const placement=command(room,human,{type:'garden.place',target:`garden-edit-${index}`,expectedRevision:null,args:{x:0,z:0,color:'mint'}});
+  assert.equal(room.command(human,placement).status,'completed');
+ }
+ const edit=command(room,daimon,{type:'garden.update',target:'garden-edit-0',expectedRevision:1,
+  nativeRequest:'controlled-edit-fixture',args:{x:2,z:-1,color:'rose'}});
+ const stale=command(room,other,{type:'garden.update',target:edit.target,expectedRevision:1,args:edit.args});
+ const result=room.command(daimon,edit);assert.equal(result.status,'completed');
+ assert.deepEqual(room.command(daimon,edit),result);
+ assert.equal(Object.keys(room.entities).length,LIMITS.elements);
+ assert.deepEqual(room.observe(other).entities['garden-edit-0'],{id:'garden-edit-0',revision:2,x:2,z:-1,color:'rose'});
+ assert.equal(room.events.at(-1).detail.nativeRequest,'controlled-edit-fixture');
+ assert.equal(room.command(other,stale).status,'rejected');
+ const invalid=command(room,human,{type:'garden.update',target:'garden-edit-0',expectedRevision:2,args:{x:100,z:0,color:'mint'}});
+ assert.equal(room.command(human,invalid).status,'rejected');assert.equal(room.entities['garden-edit-0'].revision,2);
+ const remove=command(room,human,{type:'garden.remove',target:'garden-edit-0',expectedRevision:2,args:{}});
+ assert.equal(room.command(human,remove).status,'completed');
+ const deleted=command(room,daimon,{type:'garden.update',target:edit.target,expectedRevision:3,nativeRequest:'controlled-edit-fixture',args:edit.args});
+ assert.equal(room.command(daimon,deleted).status,'rejected');assert.equal(room.entities['garden-edit-0'].deleted,true);
+});

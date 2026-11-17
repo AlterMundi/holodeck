@@ -65,6 +65,13 @@ then checks current room audience/rights before constructing a daimon actor.
 Actions bind `nativeRequest` to that original ID and retain command IDs/outcomes.
 No daemon or model attention is started by installing a CLI or describing it.
 
+The workshop advertises `bridge.set`, `garden.place`, `garden.update` and
+`garden.remove`. Updating an existing live light takes its current entity revision
+and `{x,z,color}`; it preserves the same ID and advances that revision. A stale
+revision or deleted target is rejected. An update remains possible at the32entity
+creation ceiling, without recycling IDs or replacing an object merely to edit it.
+Actual native uptake/action remains separate from the controlled contract tests.
+
 Configuration is supplied through `receiving.nativeSocket` and the private
 operator-selected `holodeck.native-bridge/v1` contract; a public template lives in
 integrations/native-bridge.example.json. Resolve source/config/UIDs from actual

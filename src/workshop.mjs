@@ -10,7 +10,7 @@ export const WORKSHOP = Object.freeze({
     'far-island':{x:0,y:.1,z:-17}
   },
   creationArea:{minX:-7,maxX:7,minZ:-6,maxZ:6},
-  operations:['bridge.set','garden.place','garden.remove'],
+  operations:['bridge.set','garden.place','garden.update','garden.remove'],
   perception:'structured-authored-world-overview',
   evidence:'selected-virtual-workshop-definition'
 });
