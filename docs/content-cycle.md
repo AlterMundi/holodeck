@@ -90,6 +90,24 @@ This limited manual cycle supports local drafts, explicit publication and exact
 historical review. It does not yet satisfy independent shared candidate/release
 selections under one remembered published entrance.
 
+## Stable entrance source follow-up
+
+Current upstream Cluster03b6a7d was inspected after the initial audit; its
+`artifact_context` also rejected link resources. Cluster PR518 now implements
+the authorized stable-link entrance described below, with242 current-source Home
+tests passing. Source review and receiving deployment are separate; the initial
+audit's absence finding describes the pre-change route, not this candidate.
+Conditional portable guidance is published in Skills PR356 (merge d00e6788),
+without claiming installed receiving support.
+
+The link permits a separately selected entrance while **the model resource's
+audience remains compatible**. It cannot expose an old public edition while the
+same resource's current successor is private: historical reads require current
+AND original audience permission. Narrowing current to a private draft also
+denies public readers of the old pinned edition. A public link grants no target
+access. Keep private drafts in owning storage rather than relax this rule; the
+link route does not complete the proposed generic Nexus delivery lifecycle.
+
 ## Exact missing capabilities
 
 - Holodeck has no integrated prepare/publish/review operation yet. The scene
