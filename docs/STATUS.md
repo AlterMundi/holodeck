@@ -33,15 +33,22 @@ list; technical fixtures are not substituted for that evidence.
   pair/binding. No new login or provider. The protected App release is selected; actual human/native uptake remains
   separate from this deployment.
 
-Current composed checks:40Node tests and14Python tests pass; browser bundle builds.
+Native-route release checks:40Node tests and14Python tests pass; browser bundle
+builds. One additional composed two-native-lane regression passes against the
+same runtime source, proving shared entity updates and cross-lane refusal with
+explicitly simulated native admission, not real model acceptance.
 A protected-prefix fixture checks actor binding, revocation and origin refusal.
 Owner metadata readback is real; native write/model/world-uptake checks remain open.
 
-The multi-pair source now routes each authenticated human exclusively to its
+The selected multi-pair release now routes each authenticated human exclusively to its
 selected signed pair and pins each native return socket to that being. Tests
 cover cross-pair refusal before native lookup or world mutation and recovery of
-preexisting originals without replay. Actual passive transport qualification is
-in progress; this source is not yet the selected protected App release.
+preexisting originals without replay. All six additional owner bridges passed
+real read-only pairing/binding inspection. Each actual native owner's fixed
+return route refused an unknown interaction without world mutation or model
+submission. Source072f7f1 is deployed at the same entrance and audience; the prior
+release remains available for rollback. Those transport checks prove neither
+model uptake nor an authorized world action.
 
 ## Immediate remaining evidence
 
@@ -54,9 +61,12 @@ process, fixture or screenshot alone cannot complete those requirements.
 
 Rendered sequence is still unknown: semantic delivery does not prove a particular
 frame was visible. Project content editions/review/publication remain distinct
-from service-code deployment and room saves. Native participation currently uses
-the configured continuing owner pair; other admitted participants can play, but
-another pair's native lane requires its actual receiving adapter.
+from service-code deployment and room saves. The seven selected continuing-pair
+routes are installed; actual participation and interaction results remain
+unobserved. The owning [content-cycle audit](content-cycle.md) identifies existing
+immutable model/gallery/review contracts and the remaining gallery conversion,
+independent published selection and stable published-entrance gaps. No extra
+viewer, publication registry or public audience is substituted for those gaps.
 
 QR domination, physical mapping/augmentation, sensory integration, VR and eventual
 Avatar-default use retain their documented direction. They do not replace the

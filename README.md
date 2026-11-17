@@ -12,8 +12,9 @@ acceptance remain separately tracked. See the [roadmap](docs/ROADMAP.md) and
 [current evidence](docs/STATUS.md). No full MVP completion is claimed.
 
 [Open the protected Holodeck trial](https://compaii.dmn.homes/holodeck/) using
-the existing shared sign-in. Native interaction currently uses the hosting pair;
-other admitted pairs' native routes are being connected.
+the existing shared sign-in. The protected release selects seven existing paired
+native routes with separate identity-pinned return ports. Read-only receiving
+checks passed; actual human-triggered native participation remains to be observed.
 
 ## Local development
 
