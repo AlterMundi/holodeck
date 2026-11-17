@@ -71,6 +71,16 @@ Model/source permission remains separate. Existing review retrieval is
 `GET /api/tables/TABLE/artifact-review`; the frontend supports `/tables/TABLE`
 under its configured base path (also `?table=TABLE`).
 
+Data-gallery discovery is not by itself a Nexus renderer handshake. The current
+Homes `review_source` selects the pinned artifact's own HTML entrypoint as its
+isolated frame, while a data-only gallery's link-only entrypoint contains no
+adapter. Its gallery filenames alone do not establish a usable review source.
+Use the existing owning renderer contract and qualify that exact source/frame
+combination before importing it as review-ready; do not pass the landing page's
+hash as if it were renderer evidence. Reusing the canonical viewer for a separate
+pinned data resource may need a focused owning adapter extension. No duplicate
+App or new rendering implementation is selected by this audit.
+
 ## Smallest honest cycle for a selected creation
 
 1. Retain one bounded editable save independently of deployment. Select a
