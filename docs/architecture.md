@@ -19,6 +19,7 @@ performance, headset suitability and gateway WebSockets remain unqualified.
 | Shared admission/audience | Existing Home/Matrix authority | Not implemented in loopback prototype |
 | Durable editions/releases | Existing Homes/Nexus writers | Not replaced by prototype package metadata |
 | Saves | Future bounded Room checkpoint | Distinct from package edition and presence |
+| Physical device observation/control | Existing Daimon Integrators / receiving device owner | Holodeck sensory/anchor projection; see sensory-integration.md |
 
 Room/run, immutable edition, semantic cursor and entity revisions are independent.
 Unrelated movement never invalidates a command. A reset creates a new run.
@@ -52,3 +53,7 @@ perception scope is explicit; no browser puppeteering or simulated human viewpoi
 All projections derive from one semantic authority. Client delivery and actual
 rendering need separate cursors; until an acknowledgment exists, rendered cursor
 is unknown. A readable HUD must use actual native turn states.
+
+For physical perception and augmentation, reuse the human-selected
+[Daimon Integrators boundary](sensory-integration.md). Device-use status, sensor
+samples, derived world facts and model perception are distinct observations.

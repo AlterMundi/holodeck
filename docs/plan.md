@@ -39,6 +39,9 @@ definition of shared situated experience. No prewritten model success lines.
 Later: collective map, physical sensors/materialization, arbitrary games, deeper
 simulation, VR and making Avatar default. These remain product direction; this
 slice does not silently switch any existing conversation or surface.
+Physical sensor/device integration must reuse
+[Daimon Integrators](sensory-integration.md), selected by the human, and its
+actual receiving contracts rather than introduce another device manager.
 
 ## Human refinements during implementation
 

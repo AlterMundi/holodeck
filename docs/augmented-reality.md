@@ -53,3 +53,7 @@ objects and invented augmentations distinguishable, with source/time/uncertainty
 No sensors, camera recording, physical mapping, background attention or game server
 is activated by this proposal. Initial software work remains the Holodeck situated
 world foundation and its native conversation integration.
+
+Physical sensing reuses the selected [Daimon Integrators](sensory-integration.md)
+boundary. Its discovery report is device-use evidence, not a camera frame, QR
+recognition, spatial map or proof of actual model perception.
