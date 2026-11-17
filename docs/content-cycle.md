@@ -56,6 +56,17 @@ same review family; existing discussion is never relabeled as the new edition.
 The import grants no room/model access and starts no native model turn.
 The current `grant-table` CLI targets an already-verified Telegram participant;
 do not infer that every admitted child already has that receiving grant route.
+There is also an existing generic owner route: `invite TABLE AUTHOR_REF NAME
+--output PRIVATE_FILE --days N` creates a1–90day invitation, and the maintained
+`nexus.home-grants/v1` owner configuration selects its hash for an exact verified
+Home human actor. `HomeAuth.participant` supports such existing local/application
+humans without requiring Telegram; it checks the selected invitation's table,
+expiry/revocation and the current Home session on every request. Preserve the
+actual author reference, selected audience and existing mappings; never derive
+an identity from a name or silently grant room admission. This route is documented
+in Nexus `docs/backend-operations.md`, and was rechecked against upstream
+`5c8db5e` after fetching main. Its source support does not establish any child's
+actual Nexus grant or successful browser participation.
 Model/source permission remains separate. Existing review retrieval is
 `GET /api/tables/TABLE/artifact-review`; the frontend supports `/tables/TABLE`
 under its configured base path (also `?table=TABLE`).
