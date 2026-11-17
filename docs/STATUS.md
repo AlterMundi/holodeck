@@ -4,6 +4,13 @@ Updated 2026-11-17. The human requested an active goal through the MVP and usefu
 parallel implementation. [Roadmap](ROADMAP.md) and issues1–4 retain acceptance;
 **the MVP is not yet complete**.
 
+The native goal is blocked awaiting the already requested shared human/device
+trial and selection of a creation. This acceptance dependency has remained open
+across successive goal turns; independent implementation, deployment, operator
+records and cleanup are now finished. The service remains available. Actual
+situated uptake/action and creation publication/review must be observed before
+the full objective can be completed.
+
 The first protected trial is live at https://compaii.dmn.homes/holodeck/.
 The original deployment request finalized without replacing the running app or
 preexisting workshop. Browser navigation reaches shared SSO; anonymous API and
