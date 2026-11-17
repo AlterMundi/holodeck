@@ -88,3 +88,30 @@ Keep current, previous and at most one pending package within the existing
 96 MiB artifact-history bound. Runtime code independently retains current/
 predecessor/candidate. Qualification copies are disposable after exact receiving
 readback; preserve source, unfinished work, current state and the actual rollback.
+
+## Selected shared release
+
+On 2026-11-17 the supported publisher completed the first shared release at
+https://compaii.dmn.homes/holodeck/. Its immutable package SHA256 is
+`0831248fbbb9970ce125552217f8c643ab9dc0dd651eceec73fe3a6e414e02b5`
+(17,285,120 bytes, runtime source `7c11967`). The App resource remains
+`a51218c647644a8fbbd42ed706d70b61`; releases preserve that identity and entrance.
+
+Actual browser navigation redirects to the existing shared SSO and returns to
+this entrance. Anonymous API and WebSocket upgrades return 401. Native bridge
+inspection from the application identity confirmed the actual paired human and
+continuing Conversation; the native owner can reach the separate world socket,
+which rejects an unknown interaction without an action. These are technical
+checks, not human participation or a model's situated turn. The preexisting
+workshop and new application's running invocations were preserved through route
+publication. Actual multi-human/device use and the first situated native model
+interaction remain to be observed.
+
+The finite route executor must accommodate its existing guarded receiver set
+and the Caddy control process together. This receiving set required a 96-task
+bound; a 32-task bound caused a kernel-confirmed fork rejection. Recovery kept
+the original request and reload intent, checked the exact candidate/preimage and
+observed unchanged live configuration, reacquired all existing guards, then
+finished the selected reload. Never reset a journal or repeat an uncertain
+reload merely because the control reply was lost. Exact operation evidence and
+local selectors remain in the protected receiving record.

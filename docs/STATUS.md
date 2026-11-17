@@ -4,12 +4,13 @@ Updated 2026-11-17. The human requested an active goal through the MVP and usefu
 parallel implementation. [Roadmap](ROADMAP.md) and issues1–4 retain acceptance;
 **the MVP is not yet complete**.
 
-The focused code review corrections now pass their regressions: uncertain
-checkpoint replacement is fenced, routed work waits for all relevant results,
-established sockets are reauthorized and explicit exact-original recovery handles
-never-arrived writes. Completed native metadata has bounded retirement backed by
-canonical lookup. Final protected deployment/readback is the next step; the
-prepared service is not yet a ready shared trial.
+The first protected trial is live at https://compaii.dmn.homes/holodeck/.
+The original deployment request finalized without replacing the running app or
+preexisting workshop. Browser navigation reaches shared SSO; anonymous API and
+WebSocket access is denied. Actual authenticated multiplayer, first situated
+native/model action and physical human/device play are still unobserved.
+The required fresh-human trial is published in the owning conversation's pending
+list; technical fixtures are not substituted for that evidence.
 
 ## Implemented and checked
 
@@ -29,8 +30,8 @@ prepared service is not yet a ready shared trial.
   companion or model-authored original was used for acceptance.
 - Existing Home identity/service-audience adapters and independent deployment
   package/slot. Owner bridge metadata inspection confirms the real continuing
-  pair/binding. No new login or provider. Prepared infrastructure and package
-  qualification are not a finalized shared App deployment.
+  pair/binding. No new login or provider. The protected App release is selected; actual human/native uptake remains
+  separate from this deployment.
 
 Current composed checks:32Node tests and12Python tests pass; browser bundle builds.
 A protected-prefix fixture checks actor binding, revocation and origin refusal.
@@ -38,9 +39,9 @@ Owner metadata readback is real; native write/model/world-uptake checks remain o
 
 ## Immediate remaining evidence
 
-Finalize the protected HTTPS release with current signed participants and actual
-paired humans; qualify its HTTP/WebSockets, access refusal, native availability
-and persistence. Then a fresh real human situated interaction must demonstrate
+The protected HTTPS release admits the current signed participants and actual
+paired humans. Read-only access refusal, native binding and direct world-socket
+checks passed. A fresh real human situated interaction must demonstrate
 actual native uptake and an observed world action/result. Complete shared human/
 physical-device play and correct encountered problems. Acknowledgment, deployed
 process, fixture or screenshot alone cannot complete those requirements.
