@@ -33,9 +33,15 @@ list; technical fixtures are not substituted for that evidence.
   pair/binding. No new login or provider. The protected App release is selected; actual human/native uptake remains
   separate from this deployment.
 
-Current composed checks:32Node tests and12Python tests pass; browser bundle builds.
+Current composed checks:40Node tests and14Python tests pass; browser bundle builds.
 A protected-prefix fixture checks actor binding, revocation and origin refusal.
 Owner metadata readback is real; native write/model/world-uptake checks remain open.
+
+The multi-pair source now routes each authenticated human exclusively to its
+selected signed pair and pins each native return socket to that being. Tests
+cover cross-pair refusal before native lookup or world mutation and recovery of
+preexisting originals without replay. Actual passive transport qualification is
+in progress; this source is not yet the selected protected App release.
 
 ## Immediate remaining evidence
 

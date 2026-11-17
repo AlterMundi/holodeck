@@ -29,3 +29,30 @@ test('native Unix world operations derive identity from retained source and rech
   assert.equal(room.sequence,1);
  }finally{await port.close();rmSync(directory,{recursive:true,force:true});}
 });
+
+test('fixed return lane rejects another being before room rights or mutation',async()=>{
+ const directory=mkdtempSync(join(tmpdir(),'holodeck-pinned-port-')),socketPath=join(directory,'world.sock');
+ const room=new Room(),expectedBeingRef='dm:being:v1:'+'a'.repeat(43);let rightsCalls=0;
+ const port=await createWorldPort({socketPath,room,expectedBeingRef,
+  native:{async authorizeWorldRequest(id,pin){assert.equal(pin,expectedBeingRef);return {actor:{id:'foreign',ref:'foreign',kind:'daimon'},nativeRequest:id};}},
+  resolveRights:async()=>{rightsCalls++;return ['observe','edit'];}});
+ try{
+  const response=await new Promise((resolve,reject)=>{
+   const socket=net.createConnection(socketPath);let bytes='';socket.on('error',reject);
+   socket.on('connect',()=>socket.write(JSON.stringify({interactionId:crypto.randomUUID(),operation:'observe',args:{}})+'\n'));
+   socket.on('data',data=>{bytes+=data;if(bytes.includes('\n'))resolve(JSON.parse(bytes));});
+  });
+  assert.equal(response.ok,false);assert.equal(rightsCalls,0);assert.equal(room.sequence,0);
+ }finally{await port.close();rmSync(directory,{recursive:true,force:true});}
+});
+
+test('multi-pair receiving requires a fixed identity on every unique return path',async()=>{
+ const {validateWorldPorts}=await import('../src/server.mjs');
+ const beingRef='dm:being:v1:'+'a'.repeat(43),other='dm:being:v1:'+'b'.repeat(43);
+ assert.deepEqual(validateWorldPorts({worldSocket:'/tmp/legacy.sock'}),[{socket:'/tmp/legacy.sock',beingRef:null}]);
+ assert.throws(()=>validateWorldPorts({worldSocket:'/tmp/legacy.sock',nativeRoutes:[{beingRef}]}));
+ assert.throws(()=>validateWorldPorts({worldPorts:[{socket:'/tmp/a.sock',beingRef:other}],nativeRoutes:[{beingRef}]}));
+ assert.throws(()=>validateWorldPorts({worldPorts:[{socket:'/tmp/a.sock',beingRef},{socket:'/tmp/a.sock',beingRef}]}));
+ assert.equal(validateWorldPorts({worldSocket:'/tmp/legacy.sock',worldSocketBeingRef:beingRef,
+  worldPorts:[{socket:'/tmp/b.sock',beingRef:other}],nativeRoutes:[{beingRef},{beingRef:other}]}).length,2);
+});

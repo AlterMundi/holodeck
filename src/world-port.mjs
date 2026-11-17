@@ -4,7 +4,7 @@ import { DaimonPort } from './daimon-port.mjs';
 
 // The receiving operator owns the directory/socket filesystem capability.
 // Native identity and current room rights are independently rechecked per request.
-export async function createWorldPort({socketPath,room,native,resolveRights}){
+export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null}){
   if(!socketPath?.startsWith('/')||!native?.authorizeWorldRequest||typeof resolveRights!=='function')
     throw Error('Select the installed native world port and authority resolver');
   let active=0;
@@ -24,7 +24,8 @@ export async function createWorldPort({socketPath,room,native,resolveRights}){
         if(!request||Object.keys(request).sort().join(',')!=='args,interactionId,operation'
           ||!['observe','project','act','result'].includes(request.operation)
           ||!request.args||typeof request.args!=='object'||Array.isArray(request.args))throw Error('Invalid world operation');
-        const verified=await native.authorizeWorldRequest(request.interactionId);
+        const verified=await native.authorizeWorldRequest(request.interactionId,expectedBeingRef);
+        if(expectedBeingRef!==null&&verified.actor?.ref!==expectedBeingRef)throw Error('Native return lane identity changed');
         const rights=await resolveRights(verified);
         if(!rights?.includes('observe'))throw Error('Room admission expired');
         const actor={...verified.actor,rights};

@@ -73,6 +73,22 @@ socket directory and grant only the selected app UID. The native world socket's
 filesystem grant is separate from the browser identity and still requires the
 retained interaction and current room authorization.
 
+Multi-pair receivers select explicit `receiving.nativeRoutes` entries containing
+`actorRef`, `beingRef`, `homeRef` and a fixed owner-bridge `socket`. Each request
+selects only its authenticated human's route; an unknown actor has no fallback to
+the hosting companion. Current signed pairing and native metadata must match the
+selected route. Registered application/local humans use their existing validated
+Home human reference rather than a synthetic Telegram-derived identity.
+
+Each return transport has its own fixed `receiving.worldPorts` entry containing
+`socket` and `beingRef`. The legacy `worldSocket` additionally requires
+`worldSocketBeingRef` when native routes are enabled. At most eight unique return
+paths are selected, each pinned to a configured native being. The authorizer
+rejects another being's retained interaction before querying that other lane;
+the world port also checks the returned actor before resolving room rights.
+Knowing another interaction UUID never grants its identity. Passive transport
+installation and metadata checks are not evidence of model uptake or world acts.
+
 Controlled qualification: ten Node adapter tests and twelve Python bridge tests
 pass, covering exact original/context capture, unknown-write restart/status,
 foreign actors/binding changes, direct native authority and request-specific
@@ -112,9 +128,11 @@ projection and actions are direct APIs, independent of human UI or Avatar mode.
 
 `DaimonPort` exposes observe/project/act/result and requires a receiving authority
 resolver on each call. Room does not issue identities or infer a paired being.
-This port is implemented and tested with fixtures. It is **not installed as a
-native tool or connected to a live conversation**. Its tests establish contract
-behavior, not real daimon participation. Navigation goals and richer perceptual
+This port is implemented and tested with fixtures. The protected trial has an
+installed owner CLI/bridge and direct world socket; additional paired routes are
+being qualified. A fresh human-triggered native round trip remains unobserved.
+Its tests establish contract behavior, not real daimon participation.
+Navigation goals and richer perceptual
 queries remain to be implemented against the selected runtime.
 
 Inspected current owning app implementation (2026-11-17):

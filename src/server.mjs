@@ -15,7 +15,7 @@ import { createWorldPort } from './world-port.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
-export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null}={}){
+export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[]}={}){
   if(!/^\/(?:[a-z0-9-]+\/)*$/.test(basePath))throw Error('Select a bounded absolute base path');
   if(production&&(!identityResolver||!publicOrigin||!stateDir))throw Error('Shared identity, audience and state are required in production');
   const route=path=>basePath+path;
@@ -40,7 +40,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   };
   await project();room.on('change',project);
   const native=nativeFactory?await nativeFactory({room,stateDir}):null;
-  let worldPort=null;
+  const installedWorldPorts=[];
   async function currentActor(req,session){
     if(!session||Date.now()-session.created>1800000)return null;
     if(!identityResolver)return session.actor;
@@ -78,12 +78,14 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       handler(socket,req);
     }).catch(()=>socket.close(1008)).finally(()=>pendingSockets--);
   });
-  if(worldSocket&&native)worldPort=await createWorldPort({socketPath:worldSocket,room,native,resolveRights:async verified=>{
+  const selectedWorldPorts=validateWorldPorts({worldSocket,worldSocketBeingRef,worldPorts});
+  if(selectedWorldPorts.length&&!native)throw Error('Native authority is required for world return ports');
+  for(const selected of selectedWorldPorts)installedWorldPorts.push(await createWorldPort({socketPath:selected.socket,expectedBeingRef:selected.beingRef,room,native,resolveRights:async verified=>{
     const session=[...sessions.values()].find(s=>s.actor.id===verified.humanRef&&Date.now()-s.created<1800000);
     if(!session)return [];
     const actor=await currentActor({method:'POST',headers:{cookie:session.sourceCookie,origin:publicOrigin}},session);
     return actor?.rights||[];
-  }});
+  }}));
   const auth={
     async generateAuthorizedSessionToken(req){
       const actor=identityResolver?await identityResolver(req):{id:`local-${localBoot}-${nextId+1}`,kind:'human',name:`Explorador ${nextId+1}`,rights:['observe','edit','project']};
@@ -178,7 +180,23 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const known=error instanceof RoomError;
     res.status(known?409:error.type==='entity.too.large'?413:503).json({message:known?'El mundo cambió o esa acción no está disponible. Revisá el lugar antes de intentarlo de nuevo.':'No pude completar esa acción. Conservé los cambios que ya estaban confirmados.'});
   });
-  return {app,room,native,close(){if(authorizationTimer)clearInterval(authorizationTimer);for(const socket of sockets.keys())socket.close(1001);worldPort?.close();network.dispose();document.dispose();}};
+  return {app,room,native,close(){if(authorizationTimer)clearInterval(authorizationTimer);for(const socket of sockets.keys())socket.close(1001);for(const port of installedWorldPorts)port.close();network.dispose();document.dispose();}};
+}
+
+export function validateWorldPorts({worldSocket=null,worldSocketBeingRef=null,worldPorts=[],nativeRoutes=null}={}){
+  if(!Array.isArray(worldPorts)||worldPorts.length>8)throw Error('Select bounded native world return ports');
+  const selected=[...(worldSocket?[{socket:worldSocket,beingRef:worldSocketBeingRef}]:[]),...worldPorts];
+  if(selected.length>8)throw Error('Select at most eight native world return ports');
+  const paths=new Set();
+  for(const port of selected){
+    if(!port||Object.keys(port).some(key=>!['socket','beingRef'].includes(key))
+      ||typeof port.socket!=='string'||!port.socket.startsWith('/')||port.socket.includes('\0')||paths.has(port.socket)
+      ||(port.beingRef!==null&&!/^dm:being:v1:[A-Za-z0-9_-]{43}$/.test(port.beingRef)))throw Error('Select unique fixed native world return ports');
+    if((worldPorts.length||nativeRoutes?.length)&&!port.beingRef)throw Error('Every multi-pair return port needs its receiving being identity');
+    if(nativeRoutes?.length&&!nativeRoutes.some(route=>route.beingRef===port.beingRef))throw Error('World return port has no selected native lane');
+    paths.add(port.socket);
+  }
+  return selected;
 }
 
 export async function main(){
@@ -188,11 +206,14 @@ export async function main(){
   if(production&&receiving.schema!=='holodeck.receiving/v1')throw Error('Select the existing Holodeck receiving configuration');
   const resolver=production?homeIdentityResolver({publicOrigin:receiving.origin,authHost:receiving.authHost,identityEndpoint:receiving.authEndpoint,authorizeEndpoint:receiving.authorizeEndpoint}):null;
   let nativeFactory=null;
-  if(receiving?.nativeSocket){
+  if(receiving?.nativeRoutes!==undefined&&(!Array.isArray(receiving.nativeRoutes)||receiving.nativeRoutes.length>8))
+    throw Error('Select at most eight registered native routes');
+  if(receiving?.nativeSocket||receiving?.nativeRoutes?.length){
     const integration=await import('./native-conversation.mjs');
     nativeFactory=options=>integration.nativeFactory({...options,receiving});
   }
-  const runtime=await createHolodeck({production,stateDir,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket});
+  validateWorldPorts({...receiving});
+  const runtime=await createHolodeck({production,stateDir,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts});
   const port=Number(process.env.PORT||18940);
   if(!Number.isInteger(port)||port<1024||port>65535)throw Error('Select a valid loopback port');
   if(process.env.HOST&&process.env.HOST!=='127.0.0.1')throw Error('Use the existing loopback gateway');
