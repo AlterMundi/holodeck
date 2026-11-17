@@ -7,7 +7,7 @@ being's own Conversation owner, provider account and original journal.
 
 ## Receiving table
 
-`receiving.nativeRoutes` is an operator-selected array of at most32 entries:
+`receiving.nativeRoutes` is an operator-selected array of at most8 entries:
 
 ```text
 {actorRef: existing registered human reference,

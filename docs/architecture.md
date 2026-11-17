@@ -6,8 +6,10 @@ Packages pinned to 0.28.0, Networked DOM 0.26.1. MIT implementation.
 The upstream server provides an authenticator seam, custom messages, independent
 Networked DOM documents and DeltaNet avatar presence. Client provides collision,
 locomotion, animation, joystick and reconnect. No concrete mismatch justifies
-rewriting these systems. Start with MML and test the actual integration. Browser
-performance, headset suitability and gateway WebSockets remain unqualified.
+rewriting these systems. The protected trial reuses MML. Software-browser
+movement and editing have passed controlled checks; physical-device performance,
+headset suitability and authenticated shared play remain unqualified. Gateway
+HTTP/WebSocket access refusal is verified separately from positive shared use.
 
 | Domain | Authority | Projection/consumer |
 | --- | --- | --- |
@@ -16,9 +18,9 @@ performance, headset suitability and gateway WebSockets remain unqualified.
 | Cooperative activity and edits | Holodeck Room | Read-only MML geometry generated from Room |
 | Semantic events | Room bounded ordered journal | Situation observations, activity view |
 | Native dialogue/identity | Existing native/Avatar owner | Holodeck integration, not a second chat agent |
-| Shared admission/audience | Existing Home/Matrix authority | Not implemented in loopback prototype |
+| Shared admission/audience | Existing Home/Matrix authority | Production Home identity/service audience; anonymous actors only in loopback development |
 | Durable editions/releases | Existing Homes/Nexus writers | Not replaced by prototype package metadata |
-| Saves | Future bounded Room checkpoint | Distinct from package edition and presence |
+| Saves | Bounded atomic Room checkpoint | Distinct from package edition and presence; uncertain post-commit writes fence further mutation |
 | Physical device observation/control | Existing Daimon Integrators / receiving device owner | Holodeck sensory/anchor projection; see sensory-integration.md |
 
 Room/run, immutable edition, semantic cursor and entity revisions are independent.
@@ -37,7 +39,9 @@ Native integration must preserve exact human originals and source provenance,
 busy/queued turn behavior, authority and outcome receipts. The current Avatar
 native context source is transcript-specific; adding arbitrary room JSON to that
 sealed source would misrepresent its provenance. An explicit situated-context
-adapter is the immediate next dependency, not a fabricated NPC response.
+adapter now retains an immutable application-authored attachment through the
+existing native original/file writer. A fresh human-triggered model round trip
+remains required evidence; no fabricated NPC response substitutes for it.
 
 Preserve meters, anchors, semantic targets and input actions for future XR. No
 promise of Oculus compatibility follows from using Three.js. Scenario assets are
