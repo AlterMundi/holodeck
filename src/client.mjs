@@ -3,6 +3,7 @@ import { ThreeJSWorldRenderer } from '@mml-io/3d-web-threejs';
 import { DirectionalLight } from 'three';
 import { WORKSHOP } from './workshop.mjs';
 import { saveIntent, loadIntent, archiveIntent, sameActor, nativeRetryRoute } from './client-intents.mjs';
+import { AppliedGeometryProbe } from './applied-geometry.mjs';
 const base=new URL('./',document.baseURI);
 const url=path=>new URL(path,base);
 const socket=path=>{const target=url(path);target.protocol=location.protocol==='https:'?'wss:':'ws:';return target.href;};
@@ -23,6 +24,7 @@ const touchControls={
   },
   dispose(){this.delegate?.dispose();this.holder?.remove();}
 };
+let geometryProbe=null;
 const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
   sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket('network'),waitForWorldConfig:true,
   enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
@@ -36,6 +38,11 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
     Object.assign(light.shadow.camera,{left:-26,right:26,top:26,bottom:-26,near:.1,far:75});
     light.shadow.normalBias=.035;
     renderer.mmlCompositionScene.group.add(light,light.target);
+    geometryProbe=new AppliedGeometryProbe({document,scene:renderer.mmlCompositionScene.group,
+      canvas:options.targetElement.querySelector(':scope > canvas'),expectedDocumentURL:socket('world')});
+    const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
+    renderer.render=state=>{render(state);geometryProbe.afterRender();};
+    renderer.dispose=()=>{geometryProbe.dispose();dispose();};
     queueMicrotask(options.onInitialized);
     return renderer;
   },
@@ -45,7 +52,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
 });
 client.update();
 // Development inspection surface only. It reports actual client state.
-window.holodeckDevelopment={client};
+window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()||null};
 const $=selector=>document.querySelector(selector);
 const notice=$('#notice');
 let state=null,pending=null,pendingMetadata=null,preview=null,lastChange=null,nativeTurn=null,closed=false;
@@ -289,6 +296,8 @@ $('#conversation-form').onsubmit=async event=>{
   const local=client.getLocalCharacterState();
   const view={capturedAt:Date.now(),run:state.run,edition:state.edition,local:local?{userId:local.userId,connectionId:local.connectionId,position:local.position}:null,
     others:[...client.getCharacterStates().values()].filter(person=>!person.isLocal).slice(0,8).map(person=>({userId:person.userId,connectionId:person.connectionId,position:person.position}))};
+  const appliedGeometry=geometryProbe?.snapshot();
+  if(appliedGeometry){view.appliedGeometry=appliedGeometry;if(new TextEncoder().encode(JSON.stringify(view)).length>4096)delete view.appliedGeometry;}
   const body={id:crypto.randomUUID(),text,displayedSequence:null,view};
   nativeTurn={id:body.id,body,actorRef:state.actorRef,run:state.run,createdAt:Date.now()};$('#send').disabled=true;
   try{nativeTurn=saveIntent(sessionStorage,turnKey,nativeTurn);}catch{nativeTurn=null;updateNativeAvailability();say('No pude conservar este mensaje para comprobarlo después. No se envió.');return;}

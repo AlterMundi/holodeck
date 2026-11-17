@@ -30,7 +30,8 @@ attempt timed out; this is not a general mobile FPS benchmark.
   and exact target revision still match. It refuses to overwrite later changes.
 - Conversation: explicit submit captures exact text and a bounded client-reported
   MML view. The backend attributes that view; displayed/rendered sequence stays
-  unknown. Actual native progress/answer updates supply the HUD and discussion.
+  unknown. Optional [applied geometry evidence](applied-geometry.md) separately
+  reports checked workshop meshes, without claiming a presented frame. Actual native progress/answer updates supply the HUD and discussion.
   Native turn availability comes from the receiving adapter; no timer simulates it.
 
 A frozen command recovery copy (4 KiB maximum) is retained in sessionStorage
