@@ -56,3 +56,10 @@ QR domination, physical mapping/augmentation, sensory integration, VR and eventu
 Avatar-default use retain their documented direction. They do not replace the
 walkable3D MVP or authorize sensor/model background attention. Existing services,
 identities, paused goals and explicit Stop/host holds are preserved.
+
+
+The public-source implementation follow-up is also available through the
+collective-research corpus at coherent generation49 (580documents), with its
+original evidence cutoff and remaining acceptance gaps preserved. Source/map
+checksums and targeted retrieval matched; publication does not prove adoption
+by other participants.
