@@ -9,7 +9,7 @@ import {worldDocument} from '../src/world.mjs';
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 export function exportWorldSnapshot(observation,scenery){
  if(observation?.schema!=='holodeck.situation/v1'||observation.place?.id!=='island-workshop'
-  ||typeof observation.run!=='string'||typeof observation.edition!=='string'
+  ||typeof observation.run!=='string'||observation.edition!=='island-workshop@draft-1'
   ||!Number.isSafeInteger(observation.source?.through)||observation.source.through<0||typeof observation.entities?.bridge?.raised!=='boolean'
   ||!Number.isSafeInteger(observation.entities.bridge.revision)||observation.entities.bridge.revision<0
   ||Object.keys(observation.entities).length>32)throw Error('Select a bounded workshop situation');
@@ -23,12 +23,14 @@ export function exportWorldSnapshot(observation,scenery){
  const binaryStart=20+jsonLength;
  if(scenery.readUInt32LE(binaryStart+4)!==0x004e4942||document.images?.length||document.buffers.length!==1)throw Error('Unsupported scenery resource graph');
  const initial=scenery.subarray(binaryStart+8,binaryStart+8+scenery.readUInt32LE(binaryStart));
+ const room={run:observation.run,edition:observation.edition,sequence:observation.source.through,entities:observation.entities,projections:new Map()};
+ const markup=worldDocument(room);
  const chunks=[initial],staticRoots=[...document.scenes[document.scene||0].nodes];let offset=initial.length;
  document.scenes=[{nodes:[]}];document.scene=0;document.asset.generator='Holodeck content snapshot exporter';
  document.asset.copyright='2026 Holodeck contributors; original workshop art under MIT';
  document.extras={holodeck:{schema:'holodeck.content-snapshot/v1',run:observation.run,edition:observation.edition,
   semanticSequence:observation.source.through,observation:observation.id,normalizedObservationSha256:digest(JSON.stringify(observation)),
-  scenerySha256:digest(scenery),meaning:'Creation geometry from the selected authored source and captured semantic state; not running-world replay or a human-view capture',participantsExported:false}};
+  scenerySha256:digest(scenery),authoredProjectionSha256:digest(markup),meaning:'Creation geometry from the selected authored source and captured semantic state; not running-world replay or a human-view capture',participantsExported:false}};
  function node(value,parent){const id=document.nodes.length;document.nodes.push(value);if(parent===null)document.scenes[0].nodes.push(id);else(document.nodes[parent].children??=[]).push(id);return id;}
  function data(array){const bytes=Buffer.from(array.buffer,array.byteOffset,array.byteLength);const id=document.bufferViews.length;document.bufferViews.push({buffer:0,byteOffset:offset,byteLength:bytes.length});chunks.push(bytes);offset+=bytes.length;return id;}
  function mesh(geometry,color,world,parent,name){
@@ -40,9 +42,8 @@ export function exportWorldSnapshot(observation,scenery){
   const c=new Color(color),material=document.materials.length;document.materials.push({pbrMetallicRoughness:{baseColorFactor:[c.r,c.g,c.b,1],metallicFactor:0,roughnessFactor:.85}});
   const index=document.meshes.length;document.meshes.push({primitives:[{attributes:{POSITION:p,NORMAL:n},material}]});node({name,mesh:index},parent);g.dispose();
  }
- const room={run:observation.run,edition:observation.edition,sequence:observation.source.through,entities:observation.entities,projections:new Map()};
  const stack=[{node:null,world:new Matrix4()}];let count=0;
- for(const match of worldDocument(room).matchAll(/<(\/?)(m-[a-z-]+)\b([^>]*)>/g)){
+ for(const match of markup.matchAll(/<(\/?)(m-[a-z-]+)\b([^>]*)>/g)){
   const [,closing,tag,raw]=match;if(closing){if(tag==='m-group')stack.pop();continue;}
   const attrs=Object.fromEntries([...raw.matchAll(/([\w-]+)="([^"]*)"/g)].map(row=>[row[1],row[2]]));
   const number=(key,fallback=0)=>attrs[key]===undefined?fallback:Number(attrs[key]);

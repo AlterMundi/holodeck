@@ -67,9 +67,11 @@ under its configured base path (also `?table=TABLE`).
    Preserve source/run/edition/entity correspondence, not participants' private
    conversation. The current GLB export is useful source material, not proof of
    shared-viewer compatibility.
-2. Add a deterministic display-scene conversion using those same authored meshes:
+2. Use the deterministic `tools/export-review-scene.mjs` conversion from those
+   same authored meshes:
    meters to millimeters explicitly, stable semantic entity/part IDs, positions,
-   material colors and checked triangles. Build the existing viewer's data-gallery
+   material colors and checked triangles. World Y-up maps to display Z-up by
+   `(x,y,z)m -> (x,-z,y)mm`, with a retained source matrix. Build the existing viewer's data-gallery
    format. Retain the source snapshot/GLB alongside selected display content where
    useful; never pretend the static gallery reconstructs a running game.
 3. After explicit result/audience selection, publish that data gallery under one
@@ -90,9 +92,10 @@ selections under one remembered published entrance.
 
 ## Exact missing capabilities
 
-- Holodeck has no integrated prepare/publish/review operation or shared-viewer
-  scene conversion yet. Exported GLB alone does not satisfy the gallery/ModelPin
-  contract. No real Holodeck creation has been published/reviewed in this audit.
+- Holodeck has no integrated prepare/publish/review operation yet. The scene
+  conversion now passes the actual installed shared gallery builder and retains
+  stable part/source references; exported GLB alone still does not satisfy the
+  gallery/ModelPin contract. No real Holodeck creation has been published/reviewed.
 - The current Home publisher has no draft/promote command or independent selected
   published pointer. Nexus's `deliverable-lifecycle-proposal.md` remains a proposal;
   its illustrative project routes are not implementation evidence.

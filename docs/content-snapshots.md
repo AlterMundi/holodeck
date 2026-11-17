@@ -37,3 +37,34 @@ grants and later promotion remain independent of deploying new Holodeck code.
 Controlled checks verify source/entity correspondence, deletion, binary bounds,
 and loading by the real Three.js GLTFLoader. Actual Home publication, receiving
 review and human acceptance of a world snapshot remain unobserved.
+
+## Existing shared-viewer gallery input
+
+`tools/export-review-scene.mjs` converts those same frozen meshes into the existing
+shared review builder's scene JSON. It preserves stable per-entity part IDs,
+triangles, colors and source revisions. The display renderer is Z-up, so the
+explicit proper rotation is `(x,y,z) m -> (x,-z,y) mm`; triangle winding is
+preserved. `holodeckSource` retains that matrix, world run/edition/cursor, part
+references and snapshot/scenery/authored-MML hashes. This is display geometry,
+with no manufacturing validation or participants' private conversation.
+
+```sh
+node tools/export-review-scene.mjs situation.json scene.json
+python3 /path/to/shared/3d-design-and-fabrication/scripts/review_viewer.py \
+  --scene scene.json --out selected-stage/index.html --live
+```
+
+The second command qualifies the existing builder; it does not publish a new
+renderer/App. Ordinary delivery should use the maintained shared viewer's
+data-gallery route, with selected source metadata alongside its generated gallery.
+No publication occurs in either exporter. Scene/source output is at most8MiB,
+256parts and50000triangles; existing output is never overwritten. Keep one selected
+input and one disposable conversion stage, clear after verified publication.
+
+The exporters currently support only authored edition `island-workshop@draft-1`.
+Another edition is refused instead of silently projecting it through the current
+workshop definition. An authored geometry change needs the corresponding edition
+and converter support. Controlled checks verify axes/units, stable IDs after
+deletion, determinism and actual acceptance by the installed shared gallery builder.
+Set `HOLODECK_REVIEW_BUILDER` to that builder for the integration test; generic CI
+explicitly skips that installed-tool check when no builder is selected.
