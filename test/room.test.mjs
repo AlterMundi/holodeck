@@ -32,6 +32,7 @@ test('rights and speaker-owned observations cannot be supplied in the command', 
   assert.equal(room.command(other,a).status,'rejected');
   assert.throws(() => room.command({ ...human, rights:[] },a), /Editing access/);
   assert.throws(() => room.command(human,{ ...a, actor:human }), /Invalid command/);
+  assert.throws(() => room.command(human,{ ...a, nativeRequest:'forged-source-reference' }), /receiving world port/);
 });
 test('run reset invalidates new actions from historical situation', () => {
   const room = new Room(); const a = command(room,human); room.reset();

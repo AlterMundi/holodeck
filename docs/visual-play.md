@@ -33,13 +33,28 @@ attempt timed out; this is not a general mobile FPS benchmark.
   unknown. Actual native progress/answer updates supply the HUD and discussion.
   Native turn availability comes from the receiving adapter; no timer simulates it.
 
-One small pending command record is retained in sessionStorage before a mutation
-is sent. After a reload the client retrieves that exact result before allowing a
-new mutation; it never automatically resends the command. The record has a 4096-
-character read bound and is removed on a known terminal outcome. Unresolved state
-remains held instead of guessing that an old action did not happen. There is no
-private conversation archive in browser storage. Native active-turn recovery uses
-the server's existing actor-bound active interaction, not a fresh input.
+A frozen command recovery copy (4 KiB maximum) is retained in sessionStorage
+before a mutation is sent. A current native original, including exact text and its
+client-reported view/capture time, has a separate 16 KiB limit. The canonical
+native journal remains the owning source once it receives that original. These
+browser copies last for the tab session and are removed on confirmed completion.
+
+After a failed/missing response or a reload, **Comprobar** reads the existing ID;
+it never submits. A generic 404 never automatically resends anything. Explicit
+**Reintentar** uses the same frozen command/ID within the server retry window, or
+the retained native retry route. Only a confirmed not-retained/known-not-submitted
+native classification permits explicit resubmission of that exact frozen original.
+The original text, view and capturedAt do not change during recovery. A different
+current actor cannot resend the preserved original. Server time/run/window evidence
+classifies expired commands; expiry never claims an old action did not happen.
+
+**Dejar seguimiento** requires an explicit confirmation explaining that it neither
+cancels nor undoes the possible action. It preserves the uncertain original in a
+closed-tracking archive before allowing another input. This archive has at most
+eight entries and 128 KiB per tab session; it does not silently evict unresolved
+sources. Deliberately closed native IDs are not automatically reattached as active
+turns. Backend work and native history continue independently. No credential or
+capability is stored, and preserved original text is hidden after an actor change.
 
 ## Receiving evidence, 2026-11-17
 
@@ -57,3 +72,22 @@ contract tests and browser build passed. The native composer was unavailable in
 this local check; it did not submit an artificial human original or claim actual
 model participation. Production reload recovery, protected HTTPS, physical
 phone/headset use and human play acceptance require their own receiving evidence.
+
+## Recovery regression evidence
+
+A separate finite real-browser regression used a clearly labeled local stable-
+identity/native fixture, not an actual native provider. CDP failed each initial
+command/native POST before it reached that fixture. Both missing-write cases
+survived a page reload without an automatic POST. Explicit retry sent the same
+command or exact original text, ID and view/capturedAt; the command then changed
+actual Room state and the fixture accepted the native original once. Explicitly
+closing a subsequent uncertain command retained its original, did not change the
+world and allowed a new deliberate action. No JavaScript errors were observed.
+These are client recovery proofs, not native model participation or human acceptance.
+
+The regression is reusable as `node tools/browser-recovery-check.mjs` after a
+normal client build and starting an explicitly selected isolated software-WebGL
+Chromium with CDP on 127.0.0.1:18943. It serves its own test-only fixture on
+127.0.0.1:18944, opens/closes its own target, retains no private originals and
+contacts no actual native provider. Three lightweight client-intent tests run
+with the normal Node suite.

@@ -51,6 +51,7 @@ export class Room extends EventEmitter {
   }
 
   atomic(operation) {
+    if(this.commitUncertain)throw new RoomError('recovery-required','The last checkpoint needs reconciliation before continuing');
     if(this.pendingChanges)return operation();
     const before=this.snapshot();this.pendingChanges=[];
     let result,changes;
@@ -58,7 +59,11 @@ export class Room extends EventEmitter {
       result=operation();
       this.persist?.(this.snapshot());
       changes=this.pendingChanges;
-    } catch(error) {this.restore(before);throw error;}
+    } catch(error) {
+      if(error.commitUncertain)this.commitUncertain=true;
+      else this.restore(before);
+      throw error;
+    }
     finally {this.pendingChanges=null;}
     // Persistent state/outcomes precede every projected update and acknowledgment.
     for(const event of changes)this.emit('change',event);
@@ -95,7 +100,7 @@ export class Room extends EventEmitter {
       place:clone(WORKSHOP),
       source: { after, through: this.sequence, displayedSequence,
         gap: after < (this.events[0]?.sequence ?? 1) - 1 },
-      activity: { title: 'Connect the workshop islands', intention: null },
+      activity: { title: 'Connect the workshop islands', intention: null, evidence:'authored-scenario; participants intentions are not inferred' },
       entities: clone(this.entities), participants: clone([...this.presence(),...this.projections.values()]),
       events: clone(this.events.filter(event => event.sequence > after)),
       uncertainty: ['Displayed state does not establish attention or understanding.'] };
@@ -126,6 +131,8 @@ export class Room extends EventEmitter {
       || typeof command.id !== 'string' || !/^[\w-]{8,80}$/.test(command.id)
       || !Number.isSafeInteger(command.issuedAt) || command.issuedAt > this.clock() + 1000)
       throw new RoomError('command', 'Invalid command envelope');
+    if(actor.kind!=='daimon'&&command.nativeRequest!==undefined)
+      throw new RoomError('command','Native source references come from the receiving world port');
     const key = actor.id + ':' + command.id;
     const fingerprint = hash(command);
     const old = this.outcomes.get(key);
@@ -177,6 +184,7 @@ export class Room extends EventEmitter {
   }
 
   result(actor, id) {
+    if(this.commitUncertain)throw new RoomError('recovery-required','The last checkpoint needs reconciliation before continuing');
     if (!actor?.rights?.includes('observe')) throw new RoomError('forbidden', 'Room access required');
     return clone(this.outcomes.get(actor.id + ':' + id)?.result ?? null);
   }

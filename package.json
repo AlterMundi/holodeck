@@ -19,5 +19,5 @@
     "express-ws": "5.0.2",
     "three": "0.182.0"
   },
-  "devDependencies": { "esbuild": "0.24.2" }
+  "devDependencies": { "esbuild": "0.24.2", "ws": "8.23.0" }
 }

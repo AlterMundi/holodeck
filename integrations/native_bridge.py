@@ -27,9 +27,10 @@ MAX_WIRE=131072
 
 
 class BridgeError(Exception):
-    def __init__(self, code, message):
+    def __init__(self, code, message, known_not_submitted=False):
         super().__init__(message)
         self.code=code
+        self.known_not_submitted=known_not_submitted
 
 
 def bounded_json(value):
@@ -112,16 +113,28 @@ class NativeBridge:
         return data,ref
 
     def submit(self,actor,frozen,input_,observation):
-        self.authorize(actor,frozen,current=True)
-        if not isinstance(input_,dict) or set(input_)!={'id','text'}:
-            raise BridgeError('input','Provide one exact original interaction')
-        input_id=ident(input_['id']);text=input_['text']
-        if not isinstance(text,str) or not text.strip() or '\0' in text or len(text.encode())>32768:
-            raise BridgeError('input','Provide one bounded original interaction')
-        data,ref=self.observation_file(input_id,actor,observation)
-        self.provider.conversation_file_upload(data,ref)
-        # Recheck the actual grant/binding after retention and before native work.
-        self.authorize(actor,frozen,current=True)
+        original_absent=False
+        try:
+            self.authorize(actor,frozen,current=True)
+            if not isinstance(input_,dict) or set(input_)!={'id','text'}:
+                raise BridgeError('input','Provide one exact original interaction')
+            input_id=ident(input_['id']);text=input_['text']
+            if not isinstance(text,str) or not text.strip() or '\0' in text or len(text.encode())>32768:
+                raise BridgeError('input','Provide one bounded original interaction')
+            existing=self.lookup(actor,input_id,hashlib.sha256(text.encode()).hexdigest())
+            if existing['state']=='retained':return existing['native']
+            original_absent=True
+            data,ref=self.observation_file(input_id,actor,observation)
+            self.provider.conversation_file_upload(data,ref)
+            # Recheck the actual grant/binding after retention and before native work.
+            self.authorize(actor,frozen,current=True)
+        except BridgeError as error:
+            error.known_not_submitted=original_absent
+            raise
+        except Exception as error:
+            raise BridgeError('preflight-unavailable',
+                'Native work was not submitted; retained source preparation needs recovery' if original_absent else
+                'The original native outcome is unconfirmed; preparation submitted no new input',original_absent) from error
         value=self.provider.conversation_input_submit({'binding':frozen['binding'],
             'id':input_id,'text':text,'files':[ref]})
         return self.project_status(value,frozen)
@@ -131,18 +144,64 @@ class NativeBridge:
             raise BridgeError('binding','Native result belongs to a different conversation')
         phase=value.get('phase')
         result={'phase':'queued','nativeAcceptance':value.get('native_acceptance','unconfirmed'),
-                'message':None,'updates':[]}
+                'message':None,'updates':[],'retainedOriginal':True,'retryable':False,
+                'tracking':True,'knownNotSubmitted':False}
         if value.get('retired') is True or phase in ('failed','rejected','cancelled','retired','known_unsent'):
             result['phase']='problem'
+            result['tracking']=False
         elif phase in ('uncertain','unknown','submitting'):
             result['phase']='unknown'
         return result
 
-    def status(self,actor,frozen,input_id):
+    def lookup(self,actor,input_id,text_sha256=None):
+        """Exact-ID canonical dedup/recovery, never work or a history scan."""
+        frozen=self.inspect(actor)
+        input_id=ident(input_id)
+        if text_sha256 is not None and (not isinstance(text_sha256,str) or not re.fullmatch('[a-f0-9]{64}',text_sha256)):
+            raise BridgeError('input','Select the exact original text checksum')
+        with closing(sqlite3.connect('file:'+str(self.provider.receiver['db_path'])+'?mode=ro',uri=True)) as db:
+            row=db.execute('SELECT human_id FROM conversation_inputs WHERE id=?',(input_id,)).fetchone()
+        self.authorize(actor,frozen)
+        if row is None:return {'state':'absent','frozen':frozen}
+        if row[0]!=self.provider.human:raise BridgeError('id-reuse','This interaction identity is already in use')
+        value=self.provider.conversation_input_status(input_id)
+        text=value.get('text')
+        if not isinstance(text,str):raise BridgeError('source','The retained original text is unavailable')
+        checksum=hashlib.sha256(text.encode()).hexdigest()
+        if text_sha256 is not None and checksum!=text_sha256:
+            raise BridgeError('id-reuse','Interaction ID already contains another original')
+        selected=self.retained_observation(actor,input_id,value)
+        entry=value.get('entry_binding')
+        if not isinstance(entry,list) or len(entry)!=4 or entry[0]!=self.provider.human:
+            raise BridgeError('binding','The retained original belongs to another owner')
+        # Historical status may remain readable after native rebinding. Its old
+        # entry cannot pass the current world-action authorizer or be resubmitted.
+        frozen={**frozen,'entry':entry}
+        native=self.status(actor,frozen,input_id)
+        return {'state':'retained','frozen':frozen,'textSha256':checksum,
+                'observation':selected,'native':native}
+
+    def retained_observation(self,actor,input_id,value):
+        for index,ref in enumerate(value.get('files',[])[:8]):
+            if ref.get('name')!='holodeck-situation.json' or ref.get('mime')!='application/json' or ref.get('size',MAX_WIRE)>24576:continue
+            _,data=self.provider.conversation_file_read(input_id,index)
+            source=json.loads(data)
+            if (source.get('schema')=='holodeck.native-situation-source/v1' and source.get('human_input_id')==input_id
+                and source.get('speaker')==actor and isinstance(source.get('observation'),dict)
+                and len(bounded_json(source['observation']))<=16384):
+                return source['observation']
+        raise BridgeError('id-reuse','This original has no retained Holodeck situation source')
+
+    def status(self,actor,frozen,input_id,text_sha256=None,observation_id=None):
         self.authorize(actor,frozen)
         value=self.provider.conversation_input_status(ident(input_id))
         if value.get('id')!=input_id:
             raise BridgeError('source','Native input identity changed')
+        if text_sha256 is not None and (not isinstance(value.get('text'),str)
+            or hashlib.sha256(value['text'].encode()).hexdigest()!=text_sha256):
+            raise BridgeError('id-reuse','Native original text does not match the retained app intent')
+        if observation_id is not None and self.retained_observation(actor,input_id,value).get('id')!=observation_id:
+            raise BridgeError('id-reuse','Native situation source does not match the retained app intent')
         result=self.project_status(value,frozen)
         trace=self.provider.conversation_input_trace(input_id)
         if trace.get('id')!=input_id or trace.get('entry_binding')!=frozen['entry']:
@@ -153,9 +212,12 @@ class NativeBridge:
         if routes:
             # A general-entry acknowledgment is not a routed work result. Read
             # only the owning trace's current, original-associated results.
-            result['phase']='queued'
+            original_phase=result['phase'];states=[]
             for route in routes:
-                if route.get('target_available') is not True:continue
+                state={'instruction':route.get('instruction'),'phase':'queued'}
+                if (route.get('target_available') is not True or route.get('transport_phase') in
+                    ('failed','rejected','cancelled','retired','unavailable','known_unsent')):
+                    state['phase']='problem';states.append(state);continue
                 if route.get('native_acceptance') is True:result['nativeAcceptance']='observed'
                 for row in route.get('results',[])[:8]:
                     if (row.get('instruction_covered') is not True or row.get('current') is not True
@@ -167,7 +229,14 @@ class NativeBridge:
                         'sha256':hashlib.sha256(text.encode()).hexdigest(),
                         'instruction':route.get('instruction'),'observedAt':None})
                     if result['message'] is None:
-                        result['message']=text;result['phase']='completed'
+                        result['message']=text
+                    state['phase']='completed'
+                    break
+                states.append(state)
+            result['routes']=states
+            result['tracking']=any(state['phase']=='queued' for state in states)
+            if original_phase not in ('problem','unknown'):
+                result['phase']='problem' if any(state['phase']=='problem' for state in states) else 'queued' if result['tracking'] else 'completed'
             self.authorize(actor,frozen)
             return result
         local=value.get('local_turn')
@@ -190,7 +259,7 @@ class NativeBridge:
                 ORDER BY m.rowid DESC LIMIT 8''',(local,input_id,self.provider.human,self.provider.human,
                     frozen['entry'][2],frozen['entry'][3])).fetchall()
         self.authorize(actor,frozen)
-        if turn and turn['status']=='running' and turn['completed_at'] is None:
+        if result['phase'] not in ('problem','unknown') and turn and turn['status']=='running' and turn['completed_at'] is None:
             result['phase']='working'
         for row in reversed(rows):
             text=row['text'];kind='answer' if row['phase'] in (None,'final_answer') else 'progress'
@@ -200,19 +269,22 @@ class NativeBridge:
                 'nativeTurn':row['native_turn'],'nativeItem':row['item_id'],'observedAt':row['observed_at']})
             if kind=='answer':
                 result['message']=shown
-                if turn and turn['completed_at'] is not None:
+                if result['phase'] not in ('problem','unknown') and turn and turn['completed_at'] is not None:
                     result['phase']='completed'
+                    result['tracking']=False
         return result
 
     def dispatch(self,request):
         if not isinstance(request,dict):raise BridgeError('input','Provide a native bridge request')
         op=request.get('operation');actor=request.get('actorRef')
         fields={'inspect':{'operation','actorRef'},'submit':{'operation','actorRef','frozen','input','observation'},
-                'status':{'operation','actorRef','frozen','id'}}
-        if op not in fields or set(request)!=fields[op]:raise BridgeError('operation','Unsupported native bridge operation')
+                'status':{'operation','actorRef','frozen','id','textSha256','observationId'},'lookup':{'operation','actorRef','id','textSha256'}}
+        legacy_status=op=='status' and set(request)=={'operation','actorRef','frozen','id'}
+        if op not in fields or set(request)!=fields[op] and not legacy_status:raise BridgeError('operation','Unsupported native bridge operation')
         if op=='inspect':return self.inspect(actor)
+        if op=='lookup':return self.lookup(actor,request['id'],request['textSha256'])
         if op=='submit':return self.submit(actor,request['frozen'],request['input'],request['observation'])
-        return self.status(actor,request['frozen'],request['id'])
+        return self.status(actor,request['frozen'],request['id'],request.get('textSha256'),request.get('observationId'))
 
 
 def configuration(path):
@@ -256,7 +328,7 @@ def serve(path):
                 raw=self.rfile.readline(MAX_WIRE+1)
                 if len(raw)>MAX_WIRE or not raw.endswith(b'\n'):return
                 try:reply={'ok':True,'result':bridge.dispatch(json.loads(raw))}
-                except BridgeError as error:reply={'ok':False,'code':error.code,'message':str(error)}
+                except BridgeError as error:reply={'ok':False,'code':error.code,'message':str(error),'knownNotSubmitted':error.known_not_submitted}
                 except Exception:reply={'ok':False,'code':'unavailable','message':'Native operation unconfirmed; inspect its retained status before retrying'}
                 self.wfile.write(bounded_json(reply)+b'\n')
             finally:slots.release()

@@ -2,12 +2,17 @@ import { mkdirSync,readFileSync,writeFileSync,renameSync,existsSync,statSync,ope
 import { join } from 'node:path';
 
 export const MAX_SAVE_BYTES=5*1024*1024;
+export class RoomCommitUncertain extends Error {
+  constructor(cause){super('Room checkpoint replacement needs reconciliation',{cause});this.commitUncertain=true;}
+}
+const syncDirectory=directory=>{const fd=openSync(directory,'r');try{fsyncSync(fd);}finally{closeSync(fd);}};
 // One current, one previous and one bounded staging file: maximum15MiB.
 export class RoomStore {
-  constructor(directory){
+  constructor(directory,{synchronizeDirectory=syncDirectory}={}){
     mkdirSync(directory,{recursive:true,mode:0o700});
     this.directory=directory;this.current=join(directory,'room.json');
     this.previous=join(directory,'room.previous.json');this.stage=join(directory,'room.stage.json');
+    this.synchronizeDirectory=synchronizeDirectory;
   }
   load(){
     if(!existsSync(this.current))return null;
@@ -33,7 +38,7 @@ export class RoomStore {
         const old=openSync(this.previous,'r');try{fsyncSync(old);}finally{closeSync(old);}
       }
       renameSync(this.stage,this.current);
-      const dir=openSync(this.directory,'r');try{fsyncSync(dir);}finally{closeSync(dir);}
+      try{this.synchronizeDirectory(this.directory);}catch(cause){throw new RoomCommitUncertain(cause);}
     }finally{
       if(descriptor!==undefined&&descriptor!==null)closeSync(descriptor);
       if(existsSync(this.stage))unlinkSync(this.stage);

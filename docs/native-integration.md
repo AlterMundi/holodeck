@@ -10,18 +10,36 @@ The adapter freezes the original text and server situation before any native
 write. A compact optional MML client view is retained as client-reported evidence,
 not authoritative position, eyesight, rendering or understanding.
 
-The owner-private intent journal has at most32records and1.8MiB of live JSON,
+The owner-private intent journal has at most32full records,128compact terminal
+tombstones and1.8MiB of live JSON,
 plus at most1.8MiB atomic staging. Each observation is at most16KiB, selected from
 the current snapshot and last16 semantic events; original text is at most32KiB.
 Restart and duplicate submission use the same retained identity/context. Status
-does not resubmit. Unknown outcomes remain retained. At capacity new admission
-stops; operators must reconcile/archive confirmed native-owner sources before
-retiring app intents. No uncertain record is automatically evicted or replayed.
+does not resubmit. Before record-count or byte capacity is exhausted, confirmed
+terminal metadata may retire to a bounded tombstone only after its original and
+situation are retained by the canonical native owner. Unknown, preparing and
+known-unsent originals are never evicted. Every new or locally retired ID is
+checked against that canonical journal before any new capture/work: an old ID
+recovers its SHA-verified original situation and status, never a new snapshot or
+submission. This remains true beyond the128local tombstones. Canonical originals
+and attachments keep their existing owner retention; app retirement deletes none.
+If all full intents remain unresolved, new admission is rejected before capture
+or native work with explicit retained/knownNotSubmitted/retryable fields.
+
+An initial request missing from both app and canonical journals returns the
+specific `not-retained` proof; a generic404 or unavailable lookup is not that
+proof. Resubmission needs an explicit human retry of the same frozen original.
+Interrupted preparation exposes an explicit retry using its retained text and
+situation. Client-reported original capture time/view and the server's actual
+admission-time snapshot stay distinct. No later snapshot is presented as an
+earlier rendered view. After atomic replacement, a directory-sync failure keeps
+the new bytes and in-memory intent and fences further journal writes/submits
+until receiving restart/reconciliation; it never rolls the intent back silently.
 
 `integrations/native_bridge.py` is a narrow owner-local Unix bridge to the existing
 DaimonApp Provider. SO_PEERCRED restricts it to the selected dedicated Holodeck
 service UID. It runs as the existing native owner, not root or the web app, and
-supports inspect/submit/status only. The actual shared-authority `daimon-home
+supports inspect/submit/status and exact-ID read-only lookup only. The actual shared-authority `daimon-home
 human` reader supplies the current paired human and being. The existing native
 metadata operation supplies its frozen continuing Conversation binding without
 reading conversation text or activating voice. No new identity/account/provider
@@ -55,10 +73,12 @@ socket directory and grant only the selected app UID. The native world socket's
 filesystem grant is separate from the browser identity and still requires the
 retained interaction and current room authorization.
 
-Controlled qualification: four Node adapter tests and six Python bridge tests
+Controlled qualification: ten Node adapter tests and twelve Python bridge tests
 pass, covering exact original/context capture, unknown-write restart/status,
 foreign actors/binding changes, direct native authority and request-specific
-result isolation. A real read-only receiving inspection also verified current
+result isolation; multi-route completion; the33rd turn and byte-limit retirement;
+canonical dedup beyond local tombstones; missing initial receipts; preparation
+crashes and a post-replacement directory-sync fault. A real read-only receiving inspection also verified current
 pairing and established native binding. These are **not** proof of a real human
 situated turn, model uptake or a performed world action; those require the actual
 hosted round trip. Do not invent a human test prompt or replay an old human
@@ -67,12 +87,20 @@ original to manufacture that evidence.
 Routed work is read through its exact original-scoped trace. The general entry's
 acknowledgment does not complete a turn delegated to a work conversation. Only a
 current associated worker result is shown as that routed answer; excerpts retain
-their source/revision and partial flag. The fifth Python bridge test qualifies
-this distinction. Native reply completion is not proof of a game effect or MVP
+their source/revision and partial flag. With several routes, partial answers remain
+available while `tracking=true`; the first finished branch does not complete the
+others. A prior native problem remains a problem, including while another branch
+is pending. Consumers keep polling when tracking is true even if phase is problem.
+Native reply completion is not proof of a game effect or MVP
 acceptance. A failed status read shows unavailable/unknown current status rather
 than presenting old running evidence as fresh activity.
 Direct native updates are capped at4096UTF8bytes each, including multibyte text,
 so eight source excerpts and the selected answer fit the128KiB wire envelope.
+
+The source-scoped status/world authorizer pins original text SHA256 and observation
+ID, so a colliding native ID cannot stand in for a different app original. Exact
+retries read an already retained canonical original before re-encoding a source;
+changing an installed CLI descriptor cannot silently alter that original's file.
 
 Run `node --test test/native-conversation.test.mjs` and
 `python3 -B -m unittest discover -s test -p '*_test.py'` for these focused contracts.

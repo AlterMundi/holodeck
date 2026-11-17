@@ -48,12 +48,11 @@ python3 deployment/archive.py .state/deploy-stage .state/holodeck-package.tar
 The stage is replaceable and has no credentials/state/history. Its USTAR contains
 only inventory-pinned regular files, no directories, symlinks, install hooks or
 runtime downloads. The builder preserves JSDOM's stylesheet and synchronous-XHR
-worker as shared bundle resources. The exact upstream Canvas native dependency
-is vendored as a compressed asset, verified and expanded at startup into the
-receiver's private, kernel-bounded temporary filesystem before loading through
-Canvas's supported `NAPI_RS_NATIVE_LIBRARY_PATH` interface. The selected binary
-size/hash and compressed hash are pinned in package metadata. No dependency or
-model is downloaded at runtime.
+worker as shared bundle resources, plus dependency notices. Server-side HTML
+Canvas is omitted: upstream JSDOM explicitly supports the optional dependency's
+absence, and this MVP's server-authored MML does not use HTML Canvas. Browser
+WebGL/Three rendering is independent and remains available. Qualify a real server
+Canvas dependency only when a later creation needs that capability.
 
 The archive remains below the existing 32 MiB limit and its declared unpacked
 inventory below 128 MiB. Validate the exact archive using the maintained receiving
@@ -70,14 +69,12 @@ at most 5 MiB per current/previous/stage file. Native intent/result retention ha
 its separate small bound; original source attachments stay with the existing
 bounded native attachment writer rather than being copied into app history.
 
-The application has an explicit 32 MiB private temporary filesystem. A receiving
-qualification found that combining `PrivateTmp=true` with `TemporaryFileSystem`
-overmounted the size-limited filesystem on this system. The Holodeck-specific
-operator drop-in instead uses `PrivateTmp=false` with an explicitly private
-`TemporaryFileSystem=/tmp:rw,size=32M,mode=1777,nosuid,nodev,exec`. Actual namespace
-readback proved the 33,554,432-byte limit and successful selected native loading.
-This does not change other applications' units. The general generator issue
-remains separate owning maintenance work.
+No native library is expanded or downloaded at startup, and the application
+produces no temporary media payload. The existing receiver's private temporary
+namespace is inherited; do not claim its declarative 32 MiB option is enforced
+when PrivateTmp overmounts it on this host. Actual current/previous/stage state
+budgets and process limits remain enforced. If a later capability introduces a
+temporary producer, qualify its real bound before enabling it.
 
 The application world-socket runtime directory is managed by systemd. Its fixed
 operator metadata grants the native Conversation owner traversal; application

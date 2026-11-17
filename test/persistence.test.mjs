@@ -42,3 +42,17 @@ test('a corrupt current checkpoint is preserved instead of silently using an old
  assert.throws(()=>store.load());assert.equal(readFileSync(store.current,'utf8'),'corrupt');
  }finally{rmSync(dir,{recursive:true,force:true});}
 });
+test('a failure after checkpoint replacement fences writes instead of reverting memory and erasing the commit',()=>{
+ const dir=mkdtempSync(join(tmpdir(),'holodeck-save-'));let fail=false;
+ try{
+  const store=new RoomStore(dir,{synchronizeDirectory:()=>{if(fail)throw Error('directory sync fixture');}});
+  const room=new Room({persist:s=>store.save(s)});const command=proposal(room);fail=true;
+  assert.throws(()=>room.command(actor,command),/reconciliation/);
+  assert.equal(room.commitUncertain,true);assert.equal(room.entities.bridge.raised,true);
+  const bytes=readFileSync(store.current,'utf8');
+  assert.throws(()=>room.observe(actor),/reconciliation/);assert.throws(()=>room.result(actor,command.id),/reconciliation/);
+  assert.equal(readFileSync(store.current,'utf8'),bytes);
+  const recovered=new Room({state:store.load()});
+  assert.equal(recovered.command(actor,command).status,'completed');assert.equal(recovered.sequence,1);
+ }finally{rmSync(dir,{recursive:true,force:true});}
+});

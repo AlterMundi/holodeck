@@ -17,7 +17,7 @@ ENTRY=[1,{'chat_id':1,'thread_id':2},3,'fixture-native']
 
 class Provider:
     human=1
-    def __init__(self,path):self.receiver={'db_path':path};self.allowed=True;self.uploads=[];self.inputs=[];self.input_id=None;self.routes=[]
+    def __init__(self,path):self.receiver={'db_path':path};self.allowed=True;self.uploads=[];self.inputs=[];self.input_id=None;self.routes=[];self.originals={};self.phase='accepted';self.entry=copy.deepcopy(ENTRY)
     def authorized(self,human):return self.allowed and human==1
     def presentation(self,command):
         assert command=='input voice native capabilities'
@@ -25,9 +25,15 @@ class Provider:
     def conversation_file_upload(self,data,ref):
         assert hashlib.sha256(data).hexdigest()==ref['sha256'];self.uploads.append((data,ref))
     def conversation_input_submit(self,value):
-        self.inputs.append(value);self.input_id=value['id'];return self.conversation_input_status(value['id'])
-    def conversation_input_status(self,ident):return {'id':ident,'phase':'accepted','native_acceptance':'observed','entry_binding':copy.deepcopy(ENTRY),'local_turn':4}
+        self.inputs.append(value);self.input_id=value['id'];self.originals[value['id']]=copy.deepcopy(value)
+        with sqlite3.connect(self.receiver['db_path']) as db:db.execute('INSERT OR IGNORE INTO conversation_inputs VALUES(?,?)',(value['id'],1))
+        return self.conversation_input_status(value['id'])
+    def conversation_input_status(self,ident):return {'id':ident,'phase':self.phase,'native_acceptance':'observed','entry_binding':copy.deepcopy(self.entry),'local_turn':4,
+        'text':self.originals.get(ident,{}).get('text','fixture'),'files':self.originals.get(ident,{}).get('files',[])}
     def conversation_input_trace(self,ident):return {'id':ident,'entry_binding':copy.deepcopy(ENTRY),'routes':self.routes}
+    def conversation_file_read(self,ident,index):
+        ref=self.originals[ident]['files'][index]
+        return ref,next(data for data,stored in self.uploads if stored['sha256']==ref['sha256'])
 
 class BridgeContracts(unittest.TestCase):
     def setUp(self):
@@ -35,6 +41,7 @@ class BridgeContracts(unittest.TestCase):
         self.provider=Provider(str(Path(self.temp.name)/'fixture.sqlite'))
         db=sqlite3.connect(self.provider.receiver['db_path'])
         db.executescript('''CREATE TABLE sessions(id INTEGER,creator_user_id INTEGER,codex_thread_id TEXT,force_fresh_thread INTEGER);
+          CREATE TABLE conversation_inputs(id TEXT PRIMARY KEY,human_id INTEGER);
           CREATE TABLE turns(id INTEGER,status TEXT,completed_at TEXT,session_id INTEGER,from_user_id INTEGER,native_thread_id TEXT);
           CREATE TABLE interaction_native_messages(text TEXT,native_thread TEXT,native_turn TEXT,item_id TEXT,phase TEXT,observed_at TEXT,local_turn INTEGER,presentation_input TEXT);
           INSERT INTO sessions VALUES(3,1,'fixture-native',0);
@@ -81,5 +88,56 @@ class BridgeContracts(unittest.TestCase):
         result=self.bridge.status(self.actor,self.frozen,ident)
         self.assertLess(len(module.bounded_json({'ok':True,'result':result})),module.MAX_WIRE)
         self.assertTrue(all(update['partial'] for update in result['updates']))
+    def test_partial_multi_route_results_keep_tracking_until_every_route_is_terminal(self):
+        ident=str(uuid.uuid4())
+        answer={'source':'delivery:fixture','revision':'b'*64,'instruction_covered':True,'current':True,
+                'correction_pending':False,'text_excerpt':'Route A completed fixture','text_bounded':False}
+        self.provider.routes=[{'instruction':'a','target_available':True,'native_acceptance':True,'results':[answer]},
+            {'instruction':'b','target_available':True,'native_acceptance':True,'results':[]}]
+        result=self.bridge.status(self.actor,self.frozen,ident)
+        self.assertEqual(result['phase'],'queued');self.assertTrue(result['tracking'])
+        self.assertEqual(result['message'],'Route A completed fixture');self.assertEqual(len(result['updates']),1)
+        self.provider.routes[1]['results']=[{**answer,'source':'delivery:fixture-b','text_excerpt':'Route B completed fixture'}]
+        result=self.bridge.status(self.actor,self.frozen,ident)
+        self.assertEqual(result['phase'],'completed');self.assertFalse(result['tracking']);self.assertEqual(len(result['updates']),2)
+    def test_native_problem_is_not_overwritten_by_partial_or_completed_route(self):
+        ident=str(uuid.uuid4());self.provider.phase='failed'
+        self.provider.routes=[{'instruction':'a','target_available':True,'native_acceptance':True,'results':[]}]
+        result=self.bridge.status(self.actor,self.frozen,ident)
+        self.assertEqual(result['phase'],'problem');self.assertTrue(result['tracking'])
+        self.provider.routes[0]['results']=[{'source':'delivery:fixture','revision':'b'*64,'instruction_covered':True,
+            'current':True,'correction_pending':False,'text_excerpt':'Actual fixture result','text_bounded':False}]
+        result=self.bridge.status(self.actor,self.frozen,ident)
+        self.assertEqual(result['phase'],'problem');self.assertFalse(result['tracking'])
+    def test_exact_canonical_lookup_restores_original_observation_without_new_submission(self):
+        ident=str(uuid.uuid4());checksum=hashlib.sha256(b'  exact fixture  ').hexdigest()
+        self.assertEqual(self.bridge.lookup(self.actor,ident,checksum)['state'],'absent')
+        self.bridge.submit(self.actor,self.frozen,{'id':ident,'text':'  exact fixture  '},self.observation)
+        restored=self.bridge.lookup(self.actor,ident,checksum)
+        self.assertEqual(restored['state'],'retained');self.assertEqual(restored['observation'],self.observation)
+        self.assertEqual(len(self.provider.inputs),1)
+        with self.assertRaises(module.BridgeError):self.bridge.lookup(self.actor,ident,'c'*64)
+    def test_binding_error_after_native_write_is_not_claimed_known_unsent(self):
+        submit=self.provider.conversation_input_submit
+        def changed(value):
+            result=submit(value);result['entry_binding']=[*ENTRY[:3],'changed-after-write'];return result
+        self.provider.conversation_input_submit=changed
+        with self.assertRaises(module.BridgeError) as caught:
+            self.bridge.submit(self.actor,self.frozen,{'id':str(uuid.uuid4()),'text':'fixture'},self.observation)
+        self.assertFalse(caught.exception.known_not_submitted);self.assertEqual(len(self.provider.inputs),1)
+    def test_exact_retry_recovers_native_original_after_installed_tool_descriptor_changes(self):
+        ident=str(uuid.uuid4());original={'id':ident,'text':'  original fixture  '}
+        self.bridge.submit(self.actor,self.frozen,original,self.observation)
+        self.bridge.world_port={'cli':'/new/installed/tool','socket':'/run/new/world.sock'}
+        result=self.bridge.submit(self.actor,self.frozen,original,self.observation)
+        self.assertEqual(result['phase'],'working');self.assertEqual(len(self.provider.inputs),1)
+        self.assertEqual(len(self.provider.uploads),1)
+    def test_status_requires_the_original_text_and_observation_pins(self):
+        ident=str(uuid.uuid4());text='exact fixture original'
+        self.bridge.submit(self.actor,self.frozen,{'id':ident,'text':text},self.observation)
+        checksum=hashlib.sha256(text.encode()).hexdigest()
+        self.assertEqual(self.bridge.status(self.actor,self.frozen,ident,checksum,self.observation['id'])['phase'],'working')
+        with self.assertRaises(module.BridgeError):self.bridge.status(self.actor,self.frozen,ident,'c'*64,self.observation['id'])
+        with self.assertRaises(module.BridgeError):self.bridge.status(self.actor,self.frozen,ident,checksum,str(uuid.uuid4()))
 
 if __name__=='__main__':unittest.main()

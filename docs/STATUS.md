@@ -4,6 +4,13 @@ Updated 2026-11-17. The human requested an active goal through the MVP and usefu
 parallel implementation. [Roadmap](ROADMAP.md) and issues1–4 retain acceptance;
 **the MVP is not yet complete**.
 
+The focused code review corrections now pass their regressions: uncertain
+checkpoint replacement is fenced, routed work waits for all relevant results,
+established sockets are reauthorized and explicit exact-original recovery handles
+never-arrived writes. Completed native metadata has bounded retirement backed by
+canonical lookup. Final protected deployment/readback is the next step; the
+prepared service is not yet a ready shared trial.
+
 ## Implemented and checked
 
 - Shared walkable MML world, authored island scenery, bounded1024px lighting,
@@ -25,7 +32,7 @@ parallel implementation. [Roadmap](ROADMAP.md) and issues1–4 retain acceptance
   pair/binding. No new login or provider. Prepared infrastructure and package
   qualification are not a finalized shared App deployment.
 
-Current composed checks:21Node tests and6Python tests pass; browser bundle builds.
+Current composed checks:32Node tests and12Python tests pass; browser bundle builds.
 A protected-prefix fixture checks actor binding, revocation and origin refusal.
 Owner metadata readback is real; native write/model/world-uptake checks remain open.
 

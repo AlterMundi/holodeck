@@ -4,6 +4,7 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createHolodeck} from '../src/server.mjs';
+import WebSocket from 'ws';
 
 test('protected prefixed runtime binds sessions to current actors and rejects forged or revoked authority',async()=>{
  const directory=mkdtempSync(join(tmpdir(),'holodeck-server-'));
@@ -29,4 +30,29 @@ test('protected prefixed runtime binds sessions to current actors and rejects fo
   assert.equal((await fetch(base+'api/commands',{method:'POST',headers:{...headers,Origin:'https://world.test','Content-Type':'application/json'},body:JSON.stringify(command)})).status,401);
   assert.equal(runtime.room.entities.bridge.raised,false);
  }finally{await new Promise(resolve=>listener.close(resolve));runtime.close();rmSync(directory,{recursive:true,force:true});}
+});
+
+test('established geometry and presence sockets close on access revocation; foreign-origin upgrades are refused',async()=>{
+ const directory=mkdtempSync(join(tmpdir(),'holodeck-socket-'));let allowed=true;
+ const runtime=await createHolodeck({production:true,basePath:'/holodeck/',publicOrigin:'https://world.test',stateDir:directory,
+  identityResolver:async req=>allowed&&req.headers.cookie?.includes('home=fixture')?{id:'human:fixture',ref:'human:fixture',kind:'human',rights:['observe','edit','project']}:null});
+ const listener=runtime.app.listen(0,'127.0.0.1');await new Promise(resolve=>listener.once('listening',resolve));
+ const base=`http://127.0.0.1:${listener.address().port}/holodeck/`,clients=[];
+ const waitClose=socket=>new Promise((resolve,reject)=>{
+  const deadline=setTimeout(()=>reject(Error('Socket remained authorized after revocation')),3500);
+  socket.once('close',code=>{clearTimeout(deadline);resolve(code);});socket.on('error',()=>{});
+ });
+ try{
+  const root=await fetch(base,{headers:{Cookie:'home=fixture'}}),cookie='home=fixture; '+root.headers.get('set-cookie').split(';')[0];
+  const open=(path,protocol,origin)=>{const socket=new WebSocket(base.replace('http:','ws:')+path,protocol,{headers:{Cookie:cookie,Origin:origin}});clients.push(socket);return socket;};
+  const denied=open('world','networked-dom-v0.2.1','https://foreign.test');
+  assert.equal(await waitClose(denied),1008);
+  const geometry=open('world','networked-dom-v0.2.1','https://world.test');
+  const presence=open('network','3d-web-experience-v0.1','https://world.test');
+  await Promise.all([geometry,presence].map(socket=>new Promise((resolve,reject)=>{socket.once('open',resolve);socket.once('error',reject);})));
+  // Wait for guards to complete before changing the current authority.
+  await new Promise(resolve=>setTimeout(resolve,100));
+  const closed=[waitClose(geometry),waitClose(presence)];allowed=false;
+  assert.deepEqual(await Promise.all(closed),[1008,1008]);
+ }finally{for(const socket of clients)socket.terminate();runtime.close();await new Promise(resolve=>listener.close(resolve));rmSync(directory,{recursive:true,force:true});}
 });

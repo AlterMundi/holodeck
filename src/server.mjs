@@ -22,16 +22,23 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const app=express();
   enableWs(app,undefined,{wsOptions:{handleProtocols:(protocols,req)=>req.url?.split('?')[0]===route('world')
     ?NetworkedDOM.handleWebsocketSubprotocol(protocols):handleExperienceWebsocketSubprotocol(protocols)}});
-  const sessions=new Map();let nextId=0;
+  const sessions=new Map();const sockets=new Map();let nextId=0,authorizationTimer=null,pendingSockets=0;
   const localBoot=randomBytes(4).toString('hex');
   const store=stateDir?new RoomStore(stateDir):null;
   const room=new Room({state:store?.load(),persist:store?s=>store.save(s):null,
     presence:()=>[...sessions.values()].filter(s=>s.connection!==null&&Date.now()-s.created<1800000)
       .map(s=>({actor:s.actor.id,kind:'human',name:s.actor.name||'Explorador',scope:'authenticated-room-presence',position:null}))});
   const document=new EditableNetworkedDOM('http://localhost'+route('world'),LocalObservableDOMFactory);
-  let projectionHealthy=true;
-  const project=()=>{try{document.load(worldDocument(room,{basePath}));projectionHealthy=true;}catch{projectionHealthy=false;}};
-  project();room.on('change',project);
+  let projectionHealthy=true,projectionQueued=false,projectionRunning=false;
+  const project=async()=>{
+    projectionQueued=true;if(projectionRunning)return;projectionRunning=true;
+    try{while(projectionQueued){projectionQueued=false;
+      await Promise.all([...sockets].map(([socket,record])=>checkSocket(socket,record)));
+      if(room.commitUncertain){projectionHealthy=false;return;}
+      document.load(worldDocument(room,{basePath}));projectionHealthy=true;
+    }}catch{projectionHealthy=false;}finally{projectionRunning=false;}
+  };
+  await project();room.on('change',project);
   const native=nativeFactory?await nativeFactory({room,stateDir}):null;
   let worldPort=null;
   async function currentActor(req,session){
@@ -39,8 +46,38 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(!identityResolver)return session.actor;
     const actor=await identityResolver(req);
     if(!actor||actor.id!==session.actor.id)return null;
-    session.actor=actor;return actor;
+    session.actor=actor;session.sourceCookie=req.headers.cookie;return actor;
   }
+  async function checkSocket(socket,record){
+    if(record.checking)return record.checking;
+    record.checking=(async()=>{
+      try{
+        const actor=await currentActor({method:'GET',headers:{cookie:record.session.sourceCookie}},record.session);
+        if(!actor||room.commitUncertain)socket.close(1008);
+      }catch{socket.close(1008);}
+    })();
+    try{await record.checking;}finally{record.checking=null;}
+  }
+  // Existing HTTP forward-auth does not reauthorize an established WebSocket.
+  // Keep one bounded timer only while this room has connections, with no model
+  // attention; semantic updates additionally recheck before publishing geometry.
+  const registerSocket=app.ws.bind(app);
+  app.ws=(path,handler)=>registerSocket(path,(socket,req)=>{
+    if(sockets.size+pendingSockets>=LIMITS.sessions*2){socket.close(1013);return;}
+    const expected=publicOrigin||`http://${req.headers.host}`;
+    if((production||req.headers.origin)&&req.headers.origin!==expected){socket.close(1008);return;}
+    const session=sessions.get(cookieToken(req));
+    pendingSockets++;
+    currentActor(req,session).then(actor=>{
+      if(!actor||socket.readyState!==1){socket.close(1008);return;}
+      const record={session,checking:null};sockets.set(socket,record);
+      socket.once('close',()=>{sockets.delete(socket);if(!sockets.size&&authorizationTimer){clearInterval(authorizationTimer);authorizationTimer=null;}});
+      if(!authorizationTimer){authorizationTimer=setInterval(()=>{
+        for(const [current,state]of sockets)checkSocket(current,state);
+      },2000);authorizationTimer.unref();}
+      handler(socket,req);
+    }).catch(()=>socket.close(1008)).finally(()=>pendingSockets--);
+  });
   if(worldSocket&&native)worldPort=await createWorldPort({socketPath:worldSocket,room,native,resolveRights:async verified=>{
     const session=[...sessions.values()].find(s=>s.actor.id===verified.humanRef&&Date.now()-s.created<1800000);
     if(!session)return [];
@@ -68,7 +105,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       room.atomic(()=>room.event(actor,'participant.joined',{name:actor.name||'Explorador'}));
       return {userId:actor.id,username:actor.name||`Explorador ${s.id}`,characterDescription:{meshFileUrl:route('assets/avatar-1-bodyA-skin01.glb')},colors:null};
     },
-    onClientDisconnect(connection){for(const s of sessions.values())if(s.connection===connection){s.connection=null;room.atomic(()=>room.event(s.actor,'participant.left',{}));}},
+    onClientDisconnect(connection){for(const s of sessions.values())if(s.connection===connection){s.connection=null;if(!room.commitUncertain)room.atomic(()=>room.event(s.actor,'participant.left',{}));}},
     onClientUserIdentityUpdate(){return false;}
   };
   const index=readFileSync(new URL('../public/index.html',import.meta.url),'utf8').replace('<head>','<head><base href="'+basePath+'">');
@@ -85,11 +122,11 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   app.use(express.json({limit:'48kb',strict:true}));
   network.registerExpressRoutes(app);
   if(basePath!=='/')app.get(basePath.slice(0,-1),(_req,res)=>res.redirect(308,basePath));
-  app.get(route('health'),(_req,res)=>res.status(projectionHealthy?200:503).json({ok:projectionHealthy}));
+  app.get(route('health'),(_req,res)=>res.status(projectionHealthy&&!room.commitUncertain?200:503).json({ok:projectionHealthy&&!room.commitUncertain}));
   app.ws(route('world'),(ws,req)=>{
     currentActor(req,sessions.get(cookieToken(req))).then(actor=>{
       if(!actor){ws.close(1008);return;}
-      document.addWebSocket(ws);ws.on('close',()=>document.removeWebSocket(ws));
+      document.addWebSocket(ws);ws.on('close',()=>{if(document.hasWebSocket(ws))document.removeWebSocket(ws);});
     }).catch(()=>ws.close(1008));
   });
   app.use(route('api'),asyncRoute(async(req,res,next)=>{
@@ -106,13 +143,17 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     }
     req.actor=actor;next();
   }));
-  app.get(route('api/state'),asyncRoute(async(req,res)=>res.json({run:room.run,edition:room.edition,sequence:room.sequence,entities:room.entities,
-    native:native?await native.availability(req.actor):{available:false}})));
+  app.get(route('api/state'),asyncRoute(async(req,res)=>{
+    if(room.commitUncertain)return res.status(503).json({message:'El taller necesita recuperar su último cambio antes de continuar.'});
+    res.json({run:room.run,edition:room.edition,sequence:room.sequence,actorRef:req.actor.id,entities:room.entities,
+      native:native?await native.availability(req.actor):{available:false}});
+  }));
   app.post(route('api/observe'),(req,res)=>res.json(room.observe(req.actor,req.body)));
   app.post(route('api/commands'),(req,res)=>res.json(room.command(req.actor,req.body)));
   app.get(route('api/commands/:id'),(req,res)=>{
     const result=room.result(req.actor,req.params.id);
-    if(!result)return res.status(404).json({message:'Todavía no hay un resultado confirmado.'});res.json(result);
+    if(!result)return res.status(404).json({code:'not-recorded',serverTime:Date.now(),run:room.run,retryWindowMs:LIMITS.retryMs,
+      message:'Todavía no hay un resultado confirmado. No repetí la acción.'});res.json(result);
   });
   app.post(route('api/projection'),(req,res)=>res.json(room.project(req.actor,req.body)));
   app.post(route('api/interactions'),asyncRoute(async(req,res)=>{
@@ -123,11 +164,21 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(!native)return res.status(503).json({message:'La conversación todavía no está conectada a este mundo.'});
     res.json(await native.status(req.actor,req.params.id));
   }));
+  app.post(route('api/interactions/:id/retry'),asyncRoute(async(req,res)=>{
+    if(!native)return res.status(503).json({message:'La conversación todavía no está conectada a este mundo.'});
+    res.json(await native.retry(req.actor,req.params.id));
+  }));
   app.use((error,_req,res,_next)=>{
+    if(room.commitUncertain)for(const socket of sockets.keys())socket.close(1011);
+    if(error.code==='not-found'||error.code==='not-retained')return res.status(404).json({code:error.code==='not-retained'?'not-retained':'not-found',retained:error.retained??false,knownNotSubmitted:error.knownNotSubmitted===true,retryable:error.retryable===true,
+      message:'No encontré un envío guardado para este turno. No lo reenvié.'});
+    if(error.knownNotSubmitted)return res.status(error.code==='capacity'?409:400).json({code:error.code,knownNotSubmitted:true,
+      retained:error.retained??false,retryable:error.retryable===true,
+      message:error.code==='capacity'?'El taller necesita cerrar turnos anteriores antes de iniciar otro.':'Este mensaje no se envió. Revisalo antes de intentar de nuevo.'});
     const known=error instanceof RoomError;
     res.status(known?409:error.type==='entity.too.large'?413:503).json({message:known?'El mundo cambió o esa acción no está disponible. Revisá el lugar antes de intentarlo de nuevo.':'No pude completar esa acción. Conservé los cambios que ya estaban confirmados.'});
   });
-  return {app,room,native,close(){worldPort?.close();network.dispose();document.dispose();}};
+  return {app,room,native,close(){if(authorizationTimer)clearInterval(authorizationTimer);for(const socket of sockets.keys())socket.close(1001);worldPort?.close();network.dispose();document.dispose();}};
 }
 
 export async function main(){
