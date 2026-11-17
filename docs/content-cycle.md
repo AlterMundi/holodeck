@@ -108,6 +108,10 @@ canonical resource may need a future adapter extension; it is not an MVP blocker
 4. Import the exact pinned Nexus review manifest into a separately authorized
    table. Revisit that edition and its discussion after another draft is tried.
    A pinned old URL remains usable only while its content and permissions remain.
+   Preserve published targets and Nexus-pinned editions in the project's protected
+   version set. The Home `retire-version` writer protects current/previous and
+   explicit `--protect-version` selections; it does not discover inbound links.
+   No retirement is needed or selected for this first bounded cycle.
 5. Keep subsequent unselected drafts in the bounded owning workspace. Repeating
    an explicit Home publication can advance the stable current entrance while
    preserving earlier editions, but this is a new publication selection, not a
