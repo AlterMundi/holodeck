@@ -51,12 +51,16 @@ with no manufacturing validation or participants' private conversation.
 ```sh
 node tools/export-review-scene.mjs situation.json scene.json
 python3 /path/to/shared/3d-design-and-fabrication/scripts/review_viewer.py \
-  --scene scene.json --out selected-stage/index.html --live
+  --scene scene.json --out selected-stage/index.html --live --defer-gallery --bootstrap-gallery
 ```
 
-The second command qualifies the existing builder; it does not publish a new
-renderer/App. Ordinary delivery should use the maintained shared viewer's
-data-gallery route, with selected source metadata alongside its generated gallery.
+The second command uses the existing builder's geometry-free renderer bootstrap;
+it does not create another rendering implementation or Apps entry. The same data
+gallery is discoverable by the maintained shared viewer, while the bundled
+bootstrap meets the existing Nexus pinned-frame contract after hydration.
+Keep selected source metadata alongside the generated gallery. A link-only
+landing page also supports canonical viewer discovery, but cannot itself provide
+the Nexus renderer handshake.
 No publication occurs in either exporter. Scene/source output is at most8MiB,
 256parts and50000triangles; existing output is never overwritten. Keep one selected
 input and one disposable conversion stage, clear after verified publication.

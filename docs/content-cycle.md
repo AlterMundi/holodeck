@@ -75,11 +75,15 @@ Data-gallery discovery is not by itself a Nexus renderer handshake. The current
 Homes `review_source` selects the pinned artifact's own HTML entrypoint as its
 isolated frame, while a data-only gallery's link-only entrypoint contains no
 adapter. Its gallery filenames alone do not establish a usable review source.
-Use the existing owning renderer contract and qualify that exact source/frame
-combination before importing it as review-ready; do not pass the landing page's
-hash as if it were renderer evidence. Reusing the canonical viewer for a separate
-pinned data resource may need a focused owning adapter extension. No duplicate
-App or new rendering implementation is selected by this audit.
+The existing builder's `--live --defer-gallery --bootstrap-gallery` route supplies
+its maintained, geometry-free renderer beside the gallery in that project
+resource. Use this existing renderer contract for the MVP: no new renderer
+implementation or Apps entry, and no landing-page hash masquerading as renderer
+evidence. The current Nexus `ArtifactExperience` already waits finitely for the
+expected model after hydration. Source checks and actual builder output confirm
+the bootstrap is geometry-free; the published frame/adapter round trip still
+requires actual receiving qualification. Separating the renderer into a different
+canonical resource may need a future adapter extension; it is not an MVP blocker.
 
 ## Smallest honest cycle for a selected creation
 
@@ -93,7 +97,9 @@ App or new rendering implementation is selected by this audit.
    meters to millimeters explicitly, stable semantic entity/part IDs, positions,
    material colors and checked triangles. World Y-up maps to display Z-up by
    `(x,y,z)m -> (x,-z,y)mm`, with a retained source matrix. Build the existing viewer's data-gallery
-   format. Retain the source snapshot/GLB alongside selected display content where
+   format with `--live --defer-gallery --bootstrap-gallery` when that artifact
+   must itself serve the existing pinned Nexus frame. Ordinary canonical viewer
+   discovery remains available; no new Apps entry is added. Retain the source snapshot/GLB alongside selected display content where
    useful; never pretend the static gallery reconstructs a running game.
 3. After explicit result/audience selection, publish that data gallery under one
    stable artifact ID using the Home writer. Preflight project history plus one

@@ -48,10 +48,13 @@ test('generated review scene is accepted by the real installed gallery builder',
   const script=process.env.HOLODECK_REVIEW_BUILDER;
   // Qualification explicitly selects an installed owning builder; generic CI
   // retains the geometric test without assuming another project's installation.
-  const result=spawnSync('python3',[script,'--scene',input,'--out',join(dir,'index.html'),'--live'],{encoding:'utf8',timeout:20000,maxBuffer:16384});
+  const result=spawnSync('python3',[script,'--scene',input,'--out',join(dir,'index.html'),'--live','--defer-gallery','--bootstrap-gallery'],{encoding:'utf8',timeout:20000,maxBuffer:16384});
   assert.equal(result.status,0,result.stderr);
   const gallery=JSON.parse(readFileSync(join(dir,'gallery.json'),'utf8'));
   assert.ok(JSON.stringify(gallery).includes('scenery--part-1'));
+  const html=readFileSync(join(dir,'index.html'),'utf8');
+  const embedded=JSON.parse(html.match(/const SCENES=(.*?);\n/)[1]);
+  assert.equal(embedded[0].bootstrap,true);assert.deepEqual(embedded[0].parts,[]);
   assert.ok(readFileSync(join(dir,'review-live.json'),'utf8').includes('dm.review-live/v1'));
  }finally{rmSync(dir,{recursive:true,force:true});}
 });
