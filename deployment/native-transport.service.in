@@ -1,0 +1,29 @@
+[Unit]
+Description=Holodeck fixed two-way native Unix transport @PAIR_LABEL@
+After=network-online.target
+StartLimitIntervalSec=120
+StartLimitBurst=3
+[Service]
+Type=simple
+# The existing operator route needs its held SSH/Incus authority. The app only
+# receives access to the selected Unix socket, never that authority or key.
+User=root
+Group=@APP_SOCKET_GROUP@
+RuntimeDirectory=@LOCAL_SOCKET_RUNTIME_NAME@
+RuntimeDirectoryMode=0750
+ExecStart=@FIXED_RECEIVING_SSH_ARGV@
+Restart=on-failure
+RestartSec=10
+MemoryMax=96M
+TasksMax=24
+CPUQuota=25%
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=@LOCAL_SOCKET_RUNTIME_PATH@
+UMask=0077
+LogRateLimitIntervalSec=60
+LogRateLimitBurst=10
+[Install]
+WantedBy=multi-user.target

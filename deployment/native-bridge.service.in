@@ -1,0 +1,31 @@
+[Unit]
+Description=Holodeck fixed native owner bridge
+After=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
+[Service]
+Type=simple
+User=@NATIVE_OWNER@
+Group=@NATIVE_GROUP@
+RuntimeDirectory=@BRIDGE_RUNTIME_NAME@
+RuntimeDirectoryMode=0750
+WorkingDirectory=@IMMUTABLE_CODE@
+ExecStart=@QUALIFIED_PYTHON@ -B @IMMUTABLE_CODE@/native_bridge.py serve --config @PRIVATE_CONFIG@
+# Add only the actual receiving provider's qualified PYTHONPATH when needed.
+Restart=on-failure
+RestartSec=5
+UMask=0077
+MemoryMax=192M
+TasksMax=16
+CPUQuota=50%
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=@BRIDGE_RUNTIME_PATH@ @EXISTING_NATIVE_ATTACHMENT_STORE@
+CapabilityBoundingSet=
+RestrictSUIDSGID=yes
+LogRateLimitIntervalSec=60
+LogRateLimitBurst=10
+[Install]
+WantedBy=multi-user.target

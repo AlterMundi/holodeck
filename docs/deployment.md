@@ -91,27 +91,36 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
-On 2026-11-17 the supported publisher completed the first shared release at
-https://compaii.dmn.homes/holodeck/. Its immutable package SHA256 is
-`0831248fbbb9970ce125552217f8c643ab9dc0dd651eceec73fe3a6e414e02b5`
-(17,285,120 bytes, runtime source `7c11967`). The App resource remains
-`a51218c647644a8fbbd42ed706d70b61`; releases preserve that identity and entrance.
+On 2026-11-17 the supported publisher selected source `072f7f1` at
+https://compaii.dmn.homes/holodeck/. The immutable package SHA256 is
+`265fcb017155adabc3790e76f91effe35d7fd643691e8ece6e938950dd459ce5`
+(17,326,080 bytes). The App resource remains
+`a51218c647644a8fbbd42ed706d70b61`; its entrance/audience stayed unchanged.
+The previous package `0831248fbbb9970ce125552217f8c643ab9dc0dd651eceec73fe3a6e414e02b5`
+and receiving configuration remain the actual compatible rollback.
 
-Actual browser navigation redirects to the existing shared SSO and returns to
-this entrance. Anonymous API and WebSocket upgrades return 401. Native bridge
-inspection from the application identity confirmed the actual paired human and
-continuing Conversation; the native owner can reach the separate world socket,
-which rejects an unknown interaction without an action. These are technical
-checks, not human participation or a model's situated turn. The preexisting
-workshop and new application's running invocations were preserved through route
-publication. Actual multi-human/device use and the first situated native model
-interaction remain to be observed.
+Seven explicit existing human/being/home routes now select their own native
+owner; there is no fallback to another companion. Each return socket is pinned
+to that route's being before native bridge access. Real application-UID ingress
+inspected all seven actual pairings/current native bindings and refused wrong
+actors. All six remote native owners reached their own fixed return and received
+an unknown-interaction refusal without a world action. The existing local bridge
+and six native Conversation services were preserved. See the maintained
+[transport templates and operations](../deployment/native-transports.md).
 
-The finite route executor must accommodate its existing guarded receiver set
-and the Caddy control process together. This receiving set required a 96-task
-bound; a 32-task bound caused a kernel-confirmed fork rejection. Recovery kept
-the original request and reload intent, checked the exact candidate/preimage and
-observed unchanged live configuration, reacquired all existing guards, then
-finished the selected reload. Never reset a journal or repeat an uncertain
-reload merely because the control reply was lost. Exact operation evidence and
-local selectors remain in the protected receiving record.
+Before app replacement the receiving intent/stage inspection found no retained
+native intent. The exact standalone pinned Node24 package passed actual MML
+presence and Networked DOM protocol clients, shared geometry change and exact
+retry. Browser navigation redirects to existing shared SSO with its exact return;
+anonymous API and WebSocket upgrades return401. These are technical checks,
+not human participation, a situated model turn or observed model world action.
+Actual multi-human/device use and native model uptake remain to be observed.
+The preexisting workshop was preserved.
+
+The finite route executor must accommodate its guarded receiver set and Caddy
+control process together. This receiving set required a96-task bound;32 caused
+a kernel-confirmed fork rejection. Recovery retained the original request and
+reload intent, checked the exact candidate/preimage and unchanged live
+configuration, reacquired all existing guards, then finished the selected
+reload. Never reset a journal or repeat an uncertain reload because its reply
+was lost. Exact operation evidence/local selectors stay in the protected record.
