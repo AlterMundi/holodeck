@@ -73,6 +73,11 @@ socket directory and grant only the selected app UID. The native world socket's
 filesystem grant is separate from the browser identity and still requires the
 retained interaction and current room authorization.
 
+For multiple existing pairs, use the [native receiving mux](native-pairs.md):
+operator-selected actor/being/Home/socket routes, actual generic Home human
+references and distinct being-pinned native world-return endpoints. The legacy
+single-owner socket and frozen intent schema remain compatible.
+
 Multi-pair receivers select explicit `receiving.nativeRoutes` entries containing
 `actorRef`, `beingRef`, `homeRef` and a fixed owner-bridge `socket`. Each request
 selects only its authenticated human's route; an unknown actor has no fallback to
@@ -89,7 +94,7 @@ the world port also checks the returned actor before resolving room rights.
 Knowing another interaction UUID never grants its identity. Passive transport
 installation and metadata checks are not evidence of model uptake or world acts.
 
-Controlled qualification: ten Node adapter tests and twelve Python bridge tests
+Controlled qualification: ten Node adapter tests, four mux tests and fourteen Python bridge tests
 pass, covering exact original/context capture, unknown-write restart/status,
 foreign actors/binding changes, direct native authority and request-specific
 result isolation; multi-route completion; the33rd turn and byte-limit retirement;

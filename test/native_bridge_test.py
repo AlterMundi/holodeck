@@ -8,6 +8,7 @@ import sqlite3
 import tempfile
 import unittest
 import uuid
+from types import SimpleNamespace
 
 spec=importlib.util.spec_from_file_location('holodeck_native_bridge',Path(__file__).parents[1]/'integrations/native_bridge.py')
 module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
@@ -139,5 +140,21 @@ class BridgeContracts(unittest.TestCase):
         self.assertEqual(self.bridge.status(self.actor,self.frozen,ident,checksum,self.observation['id'])['phase'],'working')
         with self.assertRaises(module.BridgeError):self.bridge.status(self.actor,self.frozen,ident,'c'*64,self.observation['id'])
         with self.assertRaises(module.BridgeError):self.bridge.status(self.actor,self.frozen,ident,checksum,str(uuid.uuid4()))
+    def test_registered_local_human_uses_the_existing_generic_home_scope_not_native_integer_guessing(self):
+        ref='human:local:10000000-0000-4000-8000-000000000002'
+        self.provider.config={'application_id':'10000000-0000-4000-8000-000000000003'}
+        pair=copy.deepcopy(PAIR);pair['human']['ref']=ref
+        pair['applications']=[{'capability':'interaction','url':'https://fixture.dmn.homes/interaction/'}]
+        auth=SimpleNamespace(enabled=True,human_ref=ref,origin='https://fixture.dmn.homes',entry='/interaction/')
+        bridge=module.NativeBridge(self.provider,lambda:pair,home_auth=auth)
+        value=bridge.inspect(ref)
+        self.assertEqual(value['actorRef'],ref);self.assertEqual(value['entry'][0],1)
+        with self.assertRaises(module.BridgeError):bridge.inspect('human:telegram:1')
+        pair['applications'][0]['url']='https://another.dmn.homes/interaction/'
+        with self.assertRaises(module.BridgeError):bridge.inspect(ref)
+    def test_generic_receiver_without_registered_human_projection_is_not_guessed(self):
+        self.provider.config={'application_id':'10000000-0000-4000-8000-000000000003'}
+        auth=SimpleNamespace(enabled=True,origin='https://fixture.dmn.homes',entry='/interaction/')
+        with self.assertRaises(ValueError):module.NativeBridge(self.provider,lambda:PAIR,home_auth=auth)
 
 if __name__=='__main__':unittest.main()

@@ -2,6 +2,7 @@ import { constants, promises as fs } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import net from 'node:net';
+import { createNativeTransportMux } from './native-mux.mjs';
 
 const JOURNAL_BYTES=1800*1024, MAX_RECORDS=32, MAX_TOMBSTONES=128, MAX_OBSERVATION_BYTES=16384;
 const encode=value=>JSON.stringify(value);
@@ -231,11 +232,13 @@ export async function createNativeConversation({room,stateDir,transport,fileSyst
         if(!fenced)await transaction(async()=>{update(record,result);await persist();});return view(record,result);
       }catch{return {...view(record),phase:'unknown',tracking:true,error:'No puedo actualizar este turno. Tu mensaje no se reenviará solo.'};}
     },
-    async authorizeWorldRequest(interactionId){
+    async authorizeWorldRequest(interactionId,expectedBeingRef=null){
       if(fenced)throw new NativeConversationError('journal-recovery','Native journal needs receiving reconciliation');
       const record=records[interactionId];
       if(!record?.frozen||record.observation.run!==room.run)
         throw new NativeConversationError('native-scope','The retained interaction does not belong to this room run');
+      if(expectedBeingRef!==null&&record.frozen.beingRef!==expectedBeingRef)
+        throw new NativeConversationError('native-scope','This native return lane belongs to another being');
       const current=await transport.inspect(record.actorRef);
       if(encode(current)!==encode(record.frozen))
         throw new NativeConversationError('binding','The human/daimon pairing or continuing Conversation changed');
@@ -265,7 +268,10 @@ export async function createNativeConversation({room,stateDir,transport,fileSyst
 }
 
 export async function nativeFactory({room,stateDir,receiving}){
-  if(!receiving?.nativeSocket)return null;
+  if(!receiving?.nativeSocket&&!receiving?.nativeRoutes)return null;
+  const transport=receiving.nativeRoutes
+    ?createNativeTransportMux({routes:receiving.nativeRoutes,createTransport:createUnixNativeTransport})
+    :createUnixNativeTransport(receiving.nativeSocket);
   return createNativeConversation({room,stateDir:join(stateDir,'native'),
-    transport:createUnixNativeTransport(receiving.nativeSocket)});
+    transport});
 }

@@ -47,21 +47,42 @@ def ident(value):
 
 
 class NativeBridge:
-    def __init__(self,provider,pair_reader,world_port=None):
+    def __init__(self,provider,pair_reader,world_port=None,home_auth=None):
         self.provider=provider
         self.pair_reader=pair_reader
         self.world_port=world_port
+        self.human_ref='human:telegram:'+str(provider.human)
+        self.home_origin=None
+        self.home_entry=None
+        if home_auth is not None:
+            if home_auth.enabled is not True:
+                raise ValueError('Select the existing registered shared Conversation authority')
+            # The maintained generic adapter owns human_ref/application_id;
+            # allocated native integers are NOT Telegram or Home identities.
+            configured=getattr(home_auth,'human_ref',None)
+            if configured is None and 'application_id' in provider.config:
+                raise ValueError('The installed generic Home adapter must expose its registered human reference')
+            if configured is not None:self.human_ref=configured
+            self.home_origin=home_auth.origin
+            self.home_entry=home_auth.entry
+        if not isinstance(self.human_ref,str) or not re.fullmatch(r'human:[A-Za-z0-9:._/-]{1,240}',self.human_ref):
+            raise ValueError('Select the registered receiving human reference')
 
     def pair(self,actor):
         pair=self.pair_reader()
         human=pair.get('human',{})
         if (pair.get('schema')!='dm.human-endpoint/v1'
             or not isinstance(actor,str) or actor!=human.get('ref')
-            or actor!='human:telegram:'+str(self.provider.human)
+            or actor!=self.human_ref
             or human.get('kind')!='human' or not self.provider.authorized(self.provider.human)
             or not isinstance(pair.get('owner_being_ref'),str)
             or not pair['owner_being_ref'].startswith('dm:being:v1:')):
             raise BridgeError('identity','This native lane belongs to another pair')
+        if self.home_origin is not None:
+            expected=self.home_origin+self.home_entry
+            if not any(app.get('capability')=='interaction' and app.get('url')==expected
+                for app in pair.get('applications',[]) if isinstance(app,dict)):
+                raise BridgeError('identity','The registered Home route does not match this Conversation receiver')
         return pair
 
     def inspect(self,actor):
@@ -311,12 +332,15 @@ def serve(path):
     config=configuration(path)
     sys.path.insert(0,config['provider_source'])
     from dashboard.provider import Provider
-    provider=Provider(tomllib.loads(Path(config['dashboard_config']).read_text()))
+    from dashboard.home_auth import HomeAuth
+    dashboard_config=tomllib.loads(Path(config['dashboard_config']).read_text())
+    provider=Provider(dashboard_config)
+    home_auth=HomeAuth(dashboard_config,provider)
     def pair_reader():
         result=subprocess.run(config['home_command'],check=True,capture_output=True,timeout=15)
         if len(result.stdout)>16384:raise ValueError('Pairing reader exceeded its bound')
         return json.loads(result.stdout)
-    bridge=NativeBridge(provider,pair_reader,config.get('world_port'))
+    bridge=NativeBridge(provider,pair_reader,config.get('world_port'),home_auth=home_auth)
     slots=threading.BoundedSemaphore(4)
     class Handler(socketserver.StreamRequestHandler):
         def handle(self):
