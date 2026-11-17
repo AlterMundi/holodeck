@@ -24,6 +24,9 @@ test('review meshes preserve metre anchors, valid triangles, stable entity parts
  assert.equal(before.source.sourceUp,'Y');assert.equal(before.source.displayUp,'Z');
  assert.equal(before.source.run,captured.run);assert.equal(before.source.snapshotSha256.length,64);
  assert.ok(before.source.parts.some(p=>p.entity==='garden-second'&&p.revision===1));
+ assert.equal(before.source.parts.find(p=>p.part==='bridge-control-orb').entity,'bridge');
+ assert.equal(before.scene.parts.find(p=>p.id==='bridge-control-orb').label,'Puente · Mando · esfera');
+ assert.ok(parts.every(p=>p.label.startsWith('Luz rosada')));
  for(const part of before.scene.parts)for(const face of part.faces)assert.ok(face.every(i=>Number.isInteger(i)&&i>=0&&i<part.vertices.length));
  command(room,'garden.remove','garden-first',{},1);
  const after=await exportReviewScene(room.observe(actor),scenery);

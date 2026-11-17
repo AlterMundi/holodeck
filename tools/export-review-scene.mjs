@@ -19,9 +19,10 @@ export async function exportReviewScene(observation,scenery){
    if(!object.isMesh)return;
    let owner=object;
    while(owner&&!Object.hasOwn(observation.entities,owner.userData.holodeckEntity))owner=owner.parent;
-   const entity=owner?.userData.holodeckEntity??'scenery',ordinal=(counts.get(entity)||0)+1;
+   const entity=owner?.userData.holodeckEntity??(/^bridge-control-(base|ring|orb)$/.test(object.name)?'bridge':'scenery');
+   const ordinal=(counts.get(entity)||0)+1;
    counts.set(entity,ordinal);
-   const id=owner&&object.name.startsWith(entity+'-')&&/^[a-z0-9-]+$/.test(object.name)
+   const id=entity!=='scenery'&&object.name.startsWith(entity+'-')&&/^[a-z0-9-]+$/.test(object.name)
     ?object.name:`${entity}--part-${ordinal}`;
    if(parts.some(part=>part.id===id))throw Error('Review part identities must be unique');
    const geometry=object.geometry,position=geometry.getAttribute('position');
@@ -43,16 +44,27 @@ export async function exportReviewScene(observation,scenery){
    }
    triangles+=faces.length;
    if(triangles>50000||parts.length>=256)throw Error('Review scene exceeds its display budget');
-   parts.push({id,label:`${entity} · ${ordinal}`,color:'#'+object.material.color.getHexString(),vertices,faces});
-   references.push({part:id,entity,revision:owner?observation.entities[entity].revision:null});
+   let label=`Paisaje · pieza ${ordinal}`;
+   if(entity==='bridge'){
+    const deck=/^bridge-deck-(\d+)$/.exec(id),post=/^bridge-post-(\d+)-(left|right)$/.exec(id);
+    const named={'bridge-control-base':'Mando · base','bridge-control-ring':'Mando · aro','bridge-control-orb':'Mando · esfera',
+     'bridge-rail-left':'Baranda izquierda','bridge-rail-right':'Baranda derecha'};
+    label='Puente · '+(named[id]||(deck?`Tablón ${Number(deck[1])+1}`:post?`Poste ${Number(post[1])+1} ${post[2]==='left'?'izquierdo':'derecho'}`:`pieza ${ordinal}`));
+   }else if(entity!=='scenery'){
+    const color={mint:'verde',amber:'ámbar',rose:'rosada'}[observation.entities[entity].color];
+    const component=id.endsWith('-base')?'base':id.endsWith('-stem')?'tallo':id.endsWith('-light')?'esfera':`pieza ${ordinal}`;
+    label=`Luz ${color} · ${component}`;
+   }
+   parts.push({id,label,color:'#'+object.material.color.getHexString(),vertices,faces});
+   references.push({part:id,entity,revision:entity==='scenery'?null:observation.entities[entity].revision});
   });
   const scene={id:'holodeck-workshop',title:'Holodeck · creación compartida',units:'mm',
-   note:'Static creation geometry; world metres/Y-up are converted to millimetres/Z-up. Not a running simulation or a human camera capture.',
-   scope:'Selected workshop scenery and creation entities; no participants or private conversation.',
-   status:'Display snapshot; no fabrication or physical validation claimed.',parts};
+   note:'Esta captura conserva la forma de la creación en el momento seleccionado.',
+   scope:'Islas, puente y luces creadas.',status:'Edición para revisión.',parts};
   const source={schema:'holodeck.review-source/v1',run:observation.run,edition:observation.edition,
    semanticSequence:observation.source.through,sourceUnits:'m',displayUnits:'mm',scale:1000,sourceUp:'Y',displayUp:'Z',
    displayFromWorld:[[1000,0,0,0],[0,0,-1000,0],[0,1000,0,0],[0,0,0,1]],
+   evidence:'Captured semantic state projected through the selected authored source; not a running simulation or human-view capture.',
    snapshotSha256:sha(glb),scenerySha256:sha(scenery),authoredProjectionSha256:snapshotSource.authoredProjectionSha256,parts:references};
   if(!parts.length||Buffer.byteLength(JSON.stringify(scene))>8*1024*1024)throw Error('Review scene exceeds its eight-MiB bound');
   return {scene,source};
