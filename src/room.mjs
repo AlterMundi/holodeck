@@ -1,5 +1,6 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { EventEmitter } from 'node:events';
+import { WORKSHOP } from './workshop.mjs';
 
 export const LIMITS = Object.freeze({ events: 256, commands: 256, observations: 128,
   sessions: 8, elements: 32, retryMs: 300000 });
@@ -12,7 +13,7 @@ export class RoomError extends Error {
 // Semantic activity authority. Presence ticks never advance entity revisions.
 // Actors and rights come from a receiving adapter, never from command arguments.
 export class Room extends EventEmitter {
-  constructor({ clock = Date.now, edition = 'island-workshop@draft-1' } = {}) {
+  constructor({ clock = Date.now, edition = 'island-workshop@draft-1', persist = null, state = null, presence = ()=>[] } = {}) {
     super();
     this.clock = clock;
     this.edition = edition;
@@ -23,17 +24,63 @@ export class Room extends EventEmitter {
     this.observations = new Map();
     this.entities = { bridge: { id: 'bridge', revision: 0, raised: false } };
     this.projections = new Map();
+    this.persist = persist;
+    this.presence = presence;
+    if(state)this.restore(state);
+  }
+
+  snapshot() {
+    return clone({schema:'holodeck.room-save/v1',edition:this.edition,run:this.run,
+      sequence:this.sequence,events:this.events,entities:this.entities,
+      outcomes:[...this.outcomes],observations:[...this.observations],projections:[...this.projections]});
+  }
+
+  restore(state) {
+    if(state?.schema!=='holodeck.room-save/v1'||typeof state.run!=='string'||typeof state.edition!=='string'
+      || !Number.isSafeInteger(state.sequence)||state.sequence<0
+      || !Array.isArray(state.events)||state.events.length>LIMITS.events
+      || !Array.isArray(state.outcomes)||state.outcomes.length>LIMITS.commands
+      || !Array.isArray(state.observations)||state.observations.length>LIMITS.observations
+      || !Array.isArray(state.projections)||state.projections.length>LIMITS.sessions
+      || !state.entities?.bridge || Object.keys(state.entities).length>LIMITS.elements)
+      throw new RoomError('save','Room checkpoint is invalid; preserve it for recovery');
+    const copy=clone(state);
+    this.edition=copy.edition;this.run=copy.run;this.sequence=copy.sequence;
+    this.events=copy.events;this.entities=copy.entities;
+    this.outcomes=new Map(copy.outcomes);this.observations=new Map(copy.observations);this.projections=new Map(copy.projections);
+  }
+
+  atomic(operation) {
+    if(this.pendingChanges)return operation();
+    const before=this.snapshot();this.pendingChanges=[];
+    let result,changes;
+    try {
+      result=operation();
+      this.persist?.(this.snapshot());
+      changes=this.pendingChanges;
+    } catch(error) {this.restore(before);throw error;}
+    finally {this.pendingChanges=null;}
+    // Persistent state/outcomes precede every projected update and acknowledgment.
+    for(const event of changes)this.emit('change',event);
+    return result;
+  }
+
+  changed(event) {
+    if(this.pendingChanges)this.pendingChanges.push(clone(event));
+    else this.emit('change',clone(event));
   }
 
   event(actor, type, detail) {
     const event = { sequence: ++this.sequence, time: this.clock(), actor: actor.id, type, detail: clone(detail) };
     this.events.push(event);
     if (this.events.length > LIMITS.events) this.events.shift();
-    this.emit('change', clone(event));
+    this.changed(event);
     return event;
   }
 
-  observe(actor, { after = 0, displayedSequence = null } = {}) {
+  observe(actor, query = {}) { return this.atomic(()=>this.capture(actor,query)); }
+
+  capture(actor, { after = 0, displayedSequence = null } = {}) {
     if (!actor?.rights?.includes('observe')) throw new RoomError('forbidden', 'Room access required');
     if (!Number.isSafeInteger(after) || after < 0 || after > this.sequence)
       throw new RoomError('cursor', 'Invalid semantic cursor');
@@ -45,10 +92,11 @@ export class Room extends EventEmitter {
     const observation = { schema: 'holodeck.situation/v1', id: randomUUID(),
       run: this.run, edition: this.edition, capturedAt: now,
       observer: actor.id, scope: 'structured-room-overview',
+      place:clone(WORKSHOP),
       source: { after, through: this.sequence, displayedSequence,
         gap: after < (this.events[0]?.sequence ?? 1) - 1 },
       activity: { title: 'Connect the workshop islands', intention: null },
-      entities: clone(this.entities), participants: clone([...this.projections.values()]),
+      entities: clone(this.entities), participants: clone([...this.presence(),...this.projections.values()]),
       events: clone(this.events.filter(event => event.sequence > after)),
       uncertainty: ['Displayed state does not establish attention or understanding.'] };
     this.observations.set(observation.id, observation);
@@ -57,7 +105,9 @@ export class Room extends EventEmitter {
 
   // First-class daimon projection; no emulated human input or assumed eyesight.
   // These explicit primitives are public expression, not evidence of model thought.
-  project(actor, { position, form }) {
+  project(actor, projection) { return this.atomic(()=>this.projectNow(actor,projection)); }
+
+  projectNow(actor, { position, form }) {
     if (!actor?.rights?.includes('project')) throw new RoomError('forbidden', 'Projection access required');
     if (!position || !['x','y','z'].every(key => Number.isFinite(position[key]) && Math.abs(position[key]) <= 30)
       || !['orb', 'beacon'].includes(form)) throw new RoomError('projection', 'Choose a supported bounded projection');
@@ -68,7 +118,9 @@ export class Room extends EventEmitter {
     return this.event(actor, 'projection.changed', projection);
   }
 
-  command(actor, command) {
+  command(actor, command) { return this.atomic(()=>this.execute(actor,command)); }
+
+  execute(actor, command) {
     if (!actor?.rights?.includes('edit')) throw new RoomError('forbidden', 'Editing access required');
     if (!command || Object.keys(command).some(key => !['id','issuedAt','run','edition','observation','nativeRequest','type','target','expectedRevision','args'].includes(key))
       || typeof command.id !== 'string' || !/^[\w-]{8,80}$/.test(command.id)
@@ -114,6 +166,11 @@ export class Room extends EventEmitter {
         || Math.abs(a.x) > 7 || a.z < -6 || a.z > 6 || !['mint','amber','rose'].includes(a.color))
         return finish('rejected', 'Choose a valid garden placement');
       this.entities[command.target] = { id: command.target, revision: 1, ...clone(a) };
+    } else if(command.type==='garden.remove') {
+      if(!entity || !command.target.startsWith('garden-') || entity.deleted
+        || command.expectedRevision!==entity.revision || !command.args || Object.keys(command.args).length)
+        return finish('rejected','The garden element changed; inspect it before undoing');
+      entity.deleted=true;entity.revision++;
     } else return finish('rejected', 'Unsupported activity operation');
     const event = this.event(actor, command.type, { target: command.target, entity: this.entities[command.target], nativeRequest: command.nativeRequest ?? null });
     return finish('completed', 'World updated', event);
@@ -125,9 +182,13 @@ export class Room extends EventEmitter {
   }
 
   reset() {
+    return this.atomic(()=>this.resetNow());
+  }
+
+  resetNow() {
     this.run = randomUUID(); this.sequence = 0; this.events = []; this.observations.clear();
     this.entities = { bridge: { id: 'bridge', revision: 0, raised: false } };
     this.projections.clear(); // Retain outcomes: old IDs must not mutate a new run.
-    this.emit('change', { type:'run.reset', run:this.run });
+    this.changed({ type:'run.reset', run:this.run });
   }
 }

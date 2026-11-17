@@ -2,3 +2,5 @@ node_modules/
 build/
 .state/
 *.log
+__pycache__/
+*.py[cod]

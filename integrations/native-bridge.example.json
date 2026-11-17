@@ -1,0 +1,12 @@
+{
+  "schema": "holodeck.native-bridge/v1",
+  "provider_source": "/operator-selected/current-conversation-source",
+  "dashboard_config": "/operator-selected/private-dashboard.toml",
+  "home_command": ["/operator-selected/bin/daimon-home", "human"],
+  "socket_path": "/run/holodeck-native/bridge.sock",
+  "allowed_uids": [12345],
+  "world_port": {
+    "cli": "/operator-selected/bin/holodeck-world",
+    "socket": "/run/holodeck-world/port.sock"
+  }
+}

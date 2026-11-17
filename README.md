@@ -5,9 +5,11 @@ create together. The intended future Avatar entrance is a situated experience:
 shared activity, events, participants, place and time, with different perspectives
 on one world. Holodeck is not a new being or an independent conversational NPC.
 
-**Current status: local engineering foundation, not the situated MVP.** MML is the
-first reuse candidate. No native companion round trip, public deployment, headset
-qualification or human acceptance is claimed. See [status](docs/STATUS.md).
+**Current status: MVP implementation under an active goal.** The walkable room,
+shared creation and native integration contracts are implemented with controlled
+checks; real situated native participation, protected deployment and human/device
+acceptance remain separately tracked. See the [roadmap](docs/ROADMAP.md) and
+[current evidence](docs/STATUS.md). No full MVP completion is claimed.
 
 ## Local development
 
@@ -21,7 +23,8 @@ npm start
 ```
 
 Open http://127.0.0.1:18940 in two independent browser tabs. This development
-entrance is anonymous and loopback-only; it is not tribal identity or shared auth.
+entrance is anonymous and loopback-only; production uses the existing Home
+identity and service audience, with no alternate login.
 WASD/arrow keys move, mouse drag looks, Space jumps; mobile controls come from MML.
 The prototype cooperative activity and its visual theme are design proposals.
 

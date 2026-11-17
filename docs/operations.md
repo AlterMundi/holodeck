@@ -1,18 +1,48 @@
-# Local trial operations
+# Runtime operations and bounds
 
-`npm start` binds only 127.0.0.1:18940. Stop with Ctrl-C; no daemon, timer, model
-poller or automatic publication is installed. Process exit discards transient
-room state. This is not a persistent shared service.
+## Development
 
-Initial bounds: one room/run, 8 development sessions, 256 semantic events,
-256 retained command outcomes, 128 observations, 32 editable elements,
-8 KiB request bodies, 4 actions/second/session. Retry horizon is five minutes;
-expired IDs are rejected, not silently executed again. Presence uses MML's own
-transport and is not stored in the semantic journal. No private dialogue stored.
-Build/dependencies budget 350 MiB; build is replaceable, keep package lock and
-source. No generated media or external model calls. No room logs grow on disk.
+`npm start` binds 127.0.0.1:18940; optional PORT selects another loopback port.
+Stop with Ctrl-C. No native model turn or background polling service starts merely
+from loading the room. Local actors are development-only, not tribal identities.
+Without STATE_DIR the development room is transient. With STATE_DIR, its run,
+entities, captured observations and exact command outcomes survive process loss.
 
-Before shared trial: independent protected Home service slot; verify shared auth,
-room rights and WebSockets through its actual HTTPS gateway. Existing Home web
-slot belongs to Harmonic Lab and must be preserved. No alternative account/login
-scheme or weakening of audience is authorized by this local prototype.
+## Shared receiving runtime
+
+Production requires NODE_ENV=production, STATE_DIR and its operator-selected
+`receiving.json` (schema holodeck.receiving/v1). This selects prefix, HTTPS origin,
+the existing Home identity and service-audience routes, and optional installed
+native/world Unix sockets. Missing auth fails startup; no anonymous fallback.
+The runtime remains loopback-only behind the existing gateway. Every API action
+rechecks current admission; native world actions recheck the retained native
+source, pairing and current room rights. Perceptual scope is explicit.
+
+See deployment.md for package, selected receiver, health, upgrade and rollback.
+The independent Holodeck slot preserves the existing Harmonic Lab service.
+Ordinary service deployment is not project-content publication or native uptake.
+
+## Bounds and retention
+
+- One room/run; eight simultaneous development/network sessions; 32 authored
+  elements including deletion tombstones. No recycled entity identity.
+- 256 semantic events; 256 exact command outcomes; 128 captured observations.
+  Retry validity five minutes. An expired request is rejected, never re-authored.
+  Missing event windows report gaps. Movement uses MML's separate presence path.
+- API body48KiB, with stricter per-operation validation; four writes/second/session.
+  Native world port16KiB request/128KiB response, four concurrent requests.
+- Room checkpoint5MiB maximum per file: current, previous and stage <=15MiB.
+  Atomic durable state/outcome precedes projected updates. Failed writes roll back
+  semantic changes; corrupt current state is preserved for explicit recovery.
+- Native intent journal32 records; live + stage <=3.6MiB. Unknown writes are kept
+  and inspected, never silently retried. Canonical human originals/attachments
+  belong to the existing native owner's separate bounded storage. Capacity stops
+  new work explicitly; there is no unbounded local conversation archive.
+- Build/dependencies budget350MiB; reuse one build and selected package stage.
+  Deployment's exact archive/native-asset/tmpfs bounds live in deployment.md.
+  No growing room log files, autonomous sensor feeds or model attention per event.
+
+The service's operational stop does not cancel retained native work or authorize
+coordinated Stop. Preserve published pins and source; state checkpoints are not
+an archive of past published creations. Device/media and 3D project-publication
+history retain their existing independent owners and limits.

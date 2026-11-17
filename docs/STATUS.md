@@ -1,47 +1,50 @@
-# Work record
+# Current MVP work
 
-2026-11-17: Research accepted and reader-verified in the collective corpus,
-generation 48. Astra critique received and incorporated in architecture/plan.
-Repository: https://github.com/AlterMundi/holodeck ; issues 1–4 track the four
-outcomes in docs/plan.md. Research, Astra review and subsequent human refinements
-are retained in maintained project documentation.
+Updated 2026-11-17. The human requested an active goal through the MVP and useful
+parallel implementation. [Roadmap](ROADMAP.md) and issues1–4 retain acceptance;
+**the MVP is not yet complete**.
 
-Implemented: bounded Room semantic authority; run/edition/entity references;
-speaker-owned snapshots and event gaps; preconditioned commands and retained
-outcomes; direct DaimonPort with receiving-authority injection; MML client/server
-candidate, one-way Networked DOM projection, keyboard/touch controls inherited
-from MML, shared bridge state and runtime garden placement. The visual scene is
-a blockout, not representative finished quality. Preview/undo, saves and a general
-package loader are not implemented.
+## Implemented and checked
 
-Validation: nine contract tests pass and the browser bundle builds. An isolated
-Chromium software-WebGL run loaded the client without JavaScript errors, acquired
-its character, established two-client presence and passed the check of a shared
-bridge mutation through both clients' semantic reads. A desktop frame was captured
-and inspected. Render acknowledgment is not implemented; semantic agreement does
-not prove that the same frame was visible on both clients.
+- Shared walkable MML world, authored island scenery, bounded1024px lighting,
+  keyboard and emulated-touch navigation. Real browser checks cover ground,
+  movement, preview/accept/undo and composer typing. These are not physical-phone
+  or human play acceptance. Details in visual-play.md.
+- One semantic authority with run/edition/entity references, public event windows,
+  captured speaker-owned observations, narrow preconditions and exact command
+  outcomes. Checkpoints survive restart; failed persistence rolls back changes
+  before projecting them. Human roster and native projections appear in the
+  declared structured perception; client-reported view remains distinct evidence.
+- Direct native observe/project/act/result interface, source-bound to a retained
+  interaction and current pair/room access. Exact human text plus application-
+  authored immutable situation uses the existing Conversation writer. Busy/routed
+  work, actual progress/results and unknown delivery remain separate. No canned
+  companion or model-authored original was used for acceptance.
+- Existing Home identity/service-audience adapters and independent deployment
+  package/slot. Owner bridge metadata inspection confirms the real continuing
+  pair/binding. No new login or provider. Prepared infrastructure and package
+  qualification are not a finalized shared App deployment.
 
-The ordinary managed test browser cannot create WebGL on this receiver. The
-separate finite software-rendering check succeeded on desktop but its mobile
-viewport emulation timed out; it is not mobile qualification or a product runtime
-diagnosis. The checked scene needs camera/composition work before a human trial.
+Current composed checks:21Node tests and6Python tests pass; browser bundle builds.
+A protected-prefix fixture checks actor binding, revocation and origin refusal.
+Owner metadata readback is real; native write/model/world-uptake checks remain open.
 
-Immediate remaining dependency: install the real native situated-turn adapter
-through the existing Conversation input/source/grant path, then verify actual
-model uptake and an observed world action. DaimonPort fixture tests do not prove
-this. Situation participants currently include explicit Room projections; the
-MML human presence stream is not yet joined into native observations. Shared
-auth/admission and an independent HTTPS service slot are also open;
-the existing Home web slot belongs to Harmonic Lab. No native participation,
-shared deployment, physical device, headset or human acceptance is claimed.
+## Immediate remaining evidence
 
-The physical-map/augmentation and QR domination game are retained as candidate
-creations in docs/augmented-reality.md, not implemented or activated services.
-The human reaffirmed that the MVP must have a walkable 3D world. QR/card/map
-interfaces supplement it; they do not redefine the MVP as a 2D scanning game.
+Finalize the protected HTTPS release with current signed participants and actual
+paired humans; qualify its HTTP/WebSockets, access refusal, native availability
+and persistence. Then a fresh real human situated interaction must demonstrate
+actual native uptake and an observed world action/result. Complete shared human/
+physical-device play and correct encountered problems. Acknowledgment, deployed
+process, fixture or screenshot alone cannot complete those requirements.
 
-Final server verification after wiring semantic events to the MML projection:
-independent session admission, one shared mutation, exact repeat outcome and a
-healthy projection all passed over HTTP. Nine contract tests and build pass.
-Task-owned server and isolated software browser were stopped after the finite
-checks; no model invocation, daemon or background attention was installed.
+Rendered sequence is still unknown: semantic delivery does not prove a particular
+frame was visible. Project content editions/review/publication remain distinct
+from service-code deployment and room saves. Native participation currently uses
+the configured continuing owner pair; other admitted participants can play, but
+another pair's native lane requires its actual receiving adapter.
+
+QR domination, physical mapping/augmentation, sensory integration, VR and eventual
+Avatar-default use retain their documented direction. They do not replace the
+walkable3D MVP or authorize sensor/model background attention. Existing services,
+identities, paused goals and explicit Stop/host holds are preserved.
