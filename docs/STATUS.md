@@ -23,6 +23,9 @@ list; technical fixtures are not substituted for that evidence.
   outcomes. Checkpoints survive restart; failed persistence rolls back changes
   before projecting them. Human roster and native projections appear in the
   declared structured perception; client-reported view remains distinct evidence.
+- Revision-bound `garden.update` moves/recolors an existing light without
+  replacing its identity, including at the bounded creation ceiling. Stale and
+  deleted targets refuse edits; exact retries retain the original outcome.
 - Direct native observe/project/act/result interface, source-bound to a retained
   interaction and current pair/room access. Exact human text plus application-
   authored immutable situation uses the existing Conversation writer. Busy/routed
@@ -41,10 +44,15 @@ list; technical fixtures are not substituted for that evidence.
   preserves stable primitive/entity references and records explicit axes/units.
   The actual installed builder accepts it. No world creation has been published
   or reviewed as a result of those controlled fixture checks.
+- Optional authored sound starts only from a user gesture, suspends when hidden
+  and closes on disposal. Actual browser tests cover lifecycle and non-replayed
+  change cues. Late HTTP/native/command responses cannot replace a newer local
+  state or another retained request; network-reordering regression passed.
 
-Selected source5a4b518 release checks:50Node tests and14Python tests pass; browser
-bundle builds. This includes the composed two-native-lane regression, actual
-installed gallery builder and applied-geometry tests. Native admission in those
+Selected source5ab446d release checks:65Node tests pass with0skips; browser bundle
+builds. The unchanged native bridge retains its14passing Python checks. This
+includes the composed two-native-lane regression, actual installed gallery builder,
+applied-geometry, audio and late-response tests. Native admission in those
 fixtures is explicitly simulated, not real model acceptance.
 A protected-prefix fixture checks actor binding, revocation and origin refusal.
 Owner metadata readback is real; native write/model/world-uptake checks remain open.
@@ -55,7 +63,7 @@ cover cross-pair refusal before native lookup or world mutation and recovery of
 preexisting originals without replay. All six additional owner bridges passed
 real read-only pairing/binding inspection. Each actual native owner's fixed
 return route refused an unknown interaction without world mutation or model
-submission. Source5a4b518 is deployed at the same entrance and audience; the prior
+submission. Source5ab446d is deployed at the same entrance and audience; the prior
 release remains available for rollback. Those transport checks prove neither
 model uptake nor an authorized world action.
 
@@ -75,9 +83,12 @@ routes are installed; actual participation and interaction results remain
 unobserved. The owning [content-cycle audit](content-cycle.md) identifies existing
 immutable model/gallery/review contracts. Scene conversion is implemented;
 publication/review of a selected creation and a stable published entrance still
-need qualification. The owning Homes link-entrance extension is source-tested
-under PR518, not yet receiving-ready. It does not replace the broader independent
-draft/published lifecycle. No extra
+need qualification. The owning Homes link-entrance extension from merged PR518 is
+deployed and qualified with an owner-only private link: current/updated/history
+targets, anonymous refusal and task-owned reader-session revocation. The task
+link was removed. Neutral guidance2.4.13 is installed in the seven existing
+receivers; installation does not prove model uptake. This extension does not
+replace the broader independent draft/published lifecycle. No extra
 viewer, publication registry or public audience is substituted for those gaps.
 
 QR domination, physical mapping/augmentation, sensory integration, VR and eventual
