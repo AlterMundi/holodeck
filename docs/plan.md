@@ -4,6 +4,14 @@ Human direction: beautiful efficient shared co-creation, playful like Minecraft
 and Roblox, eventually the default Avatar surface. Research and Astra review
 precede implementation. Keep the existing Avatar entrance while qualifying this.
 
+The MVP must include a shared walkable 3D world. This is an explicit human
+requirement, reaffirmed on 2026-11-17 after the QR game proposal. Test movement,
+looking, collision and situated interaction with WASD on PC and standard touch
+controls on phone/tablet. Humans can keep exploring during a native daimon turn.
+QR stations may connect physical locations to this same world; a station-card,
+scoreboard or 2D-map-only application does not meet the MVP requirement. A full
+3D reconstruction of the physical environment is not required for the first world.
+
 1. **Native situated round trip and runtime choice.** Inspect real native/auth
    interfaces; reuse MML in a small room. Capture a real utterance and its room
    situation; actual continuing model chooses an authorized operation; report the

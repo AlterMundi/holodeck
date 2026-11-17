@@ -37,6 +37,8 @@ shared deployment, physical device, headset or human acceptance is claimed.
 
 The physical-map/augmentation and QR domination game are retained as candidate
 creations in docs/augmented-reality.md, not implemented or activated services.
+The human reaffirmed that the MVP must have a walkable 3D world. QR/card/map
+interfaces supplement it; they do not redefine the MVP as a 2D scanning game.
 
 Final server verification after wiring semantic events to the MML projection:
 independent session admission, one shared mutation, exact repeat outcome and a

@@ -11,6 +11,10 @@ walls. Domination is the simpler initial exemplar: a few named stations, teams,
 explicit captures and server-owned control/score time. A QR identifies a station;
 it does not require a complete reconstructed mesh, headset or precise AR tracking.
 
+Human clarification: the MVP still includes a walkable shared 3D representation,
+with PC and touch navigation. QR stations connect into that same world. A phone
+station card or map may supplement exploration; they cannot replace the 3D world.
+
 ## Shared state and experience
 
 - Each physical marker names a stable station ID. Marker identity, physical anchor,
@@ -37,7 +41,8 @@ proof that someone physically visited the wall.
 
 ## Progression
 
-1. Confirm one named physical marker against its shared virtual station.
+1. Explore a walkable 3D space and confirm one named physical marker against its
+   shared virtual station in that space.
 2. Play one bounded short domination round with two teams, live control changes
    and a real native daimon turn grounded in those events.
 3. Add consistent spatial augmentation and a small physical map.
