@@ -23,6 +23,8 @@ attempt timed out; this is not a general mobile FPS benchmark.
 - PC: WASD, drag to look, Space to jump. MML owns locomotion/collision.
 - Touch: MML virtual joystick and localized Saltar button. The action dock leaves
   these controls unobstructed. Physical phone qualification remains separate.
+- Sound: [opt-in workshop ambience and real-state cues](world-audio.md), off by
+  default; hidden pages pause and require explicit resume. No synthetic voice.
 - Create light: a private local MML preview, color selection, move-here, accept or
   cancel. Accept sends a typed operation to Room; cancellation creates no shared
   entity. A preview is deliberately not part of native shared situation state.

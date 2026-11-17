@@ -4,6 +4,8 @@ import { DirectionalLight } from 'three';
 import { WORKSHOP } from './workshop.mjs';
 import { saveIntent, loadIntent, archiveIntent, sameActor, nativeRetryRoute } from './client-intents.mjs';
 import { AppliedGeometryProbe } from './applied-geometry.mjs';
+import { WorldAudio } from './world-audio.mjs';
+import { snapshotMayApply, sameRequest } from './client-order.mjs';
 const base=new URL('./',document.baseURI);
 const url=path=>new URL(path,base);
 const socket=path=>{const target=url(path);target.protocol=location.protocol==='https:'?'wss:':'ws:';return target.href;};
@@ -51,11 +53,34 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
   loadingScreen:{title:'Holodeck',subtitle:'Abriendo el taller de las islas',background:'#20464c',color:'#f4e8cd'},
 });
 client.update();
+const worldAudio=new WorldAudio({onChange:()=>updateSoundButton()});
+let soundBusy=false;
 // Development inspection surface only. It reports actual client state.
-window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()||null};
+window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()||null,audioState:()=>worldAudio.status()};
 const $=selector=>document.querySelector(selector);
 const notice=$('#notice');
-let state=null,pending=null,pendingMetadata=null,preview=null,lastChange=null,nativeTurn=null,closed=false;
+function updateSoundButton(){
+  const status=worldAudio.status(),button=$('#sound');
+  button.textContent=status.active?'Silenciar':status.selected?'Reanudar':'Sonido';
+  button.setAttribute('aria-pressed',String(status.active));
+  button.setAttribute('aria-label',status.active?'Silenciar sonido del mundo':status.selected?'Reanudar sonido del mundo':'Activar sonido del mundo');
+  button.title=status.supported?'Ambiente suave y sonidos de los cambios del mundo':'El sonido no está disponible en este navegador';
+  button.disabled=soundBusy||!status.supported||status.disposed;
+}
+$('#sound').onclick=async event=>{
+  if(!event.isTrusted||soundBusy)return;
+  soundBusy=true;updateSoundButton();
+  const enable=!worldAudio.status().active;
+  try{const result=enable?await worldAudio.enableFromGesture():await worldAudio.disable();
+    if(enable&&result.active)refresh().catch(()=>{});
+    if(enable&&!result.active)say('No pude activar el sonido. Podés intentarlo de nuevo.');
+  }finally{soundBusy=false;updateSoundButton();}
+};
+worldAudio.setVisibility(!document.hidden);
+document.addEventListener('visibilitychange',()=>{worldAudio.setVisibility(!document.hidden);if(!document.hidden)refresh().catch(()=>{});});
+window.addEventListener('offline',()=>worldAudio.breakContinuity());
+window.addEventListener('online',()=>worldAudio.breakContinuity());
+let state=null,pending=null,pendingMetadata=null,preview=null,lastChange=null,nativeTurn=null,closed=false,stateRequest=0,preparingAction=false;
 const recovery={command:null,native:null};
 let closingRecovery=null,recoveryBusy=false;
 const pendingKey=`holodeck.pending:${base.pathname}`;
@@ -136,13 +161,16 @@ function closeTracking(kind){
 }
 async function recoveryAction(kind,action){
   if(recoveryBusy)return;recoveryBusy=true;renderRecovery();
+  const id=(kind==='command'?pending:nativeTurn)?.id;
+  const current=()=>sameRequest(kind==='command'?pending:nativeTurn,id);
   try{
     if(action==='check'){if(kind==='command')await recoverCommand();else await readTurn();return;}
     if(kind==='command'){
       if(!pending||!sameActor(pendingMetadata,state?.actorRef))return;
       // Read first. Only this explicit click may resend the exact frozen ID/body.
-      try{if(settleCommand(await api(`commands/${pending.id}`)))return;}catch(error){noteRecovery('command',error);if(recovery.command?.expired)return;}
-      settleCommand(await api('commands',pending));
+      const command=pending;
+      try{const result=await api(`commands/${id}`);if(!current()||settleCommand(result))return;}catch(error){if(!current())return;noteRecovery('command',error);if(recovery.command?.expired)return;}
+      const result=await api('commands',command);if(current())settleCommand(result);
     }else{
       if(!nativeTurn)return;
       const info=recovery.native,record=nativeTurn;
@@ -151,10 +179,11 @@ async function recoveryAction(kind,action){
       if(initial&&!sameActor(record,state?.actorRef))return;
       const path=nativeRetryRoute(record,initial?'not-retained':null);
       const result=await api(path,initial?record.body:{});
+      if(!current())return;
       if(result.retained===true){nativeTurn.retained=true;saveIntent(sessionStorage,turnKey,nativeTurn);}
       clearRecovery('native');await readTurn();
     }
-  }catch(error){noteRecovery(kind,error);}
+  }catch(error){if(current())noteRecovery(kind,error);}
   finally{recoveryBusy=false;renderRecovery();await refresh().catch(()=>{});}
 }
 function updateNativeAvailability(){
@@ -166,7 +195,11 @@ function updateNativeAvailability(){
   }
 }
 async function refresh(){
-  state=await api('state');
+  const request=++stateRequest,continuityVersion=worldAudio.continuityVersion;
+  let incoming;
+  try{incoming=await api('state');}catch(error){if(request!==stateRequest)return;worldAudio.breakContinuity();throw error;}
+  if(!snapshotMayApply(state,incoming,request,stateRequest))return;
+  state=incoming;worldAudio.observe(state,{continuityVersion});
   const count=client.getCharacterStates().size;
   $('#people').textContent=count>1?`${count} exploradores en el taller`:'Un lugar para crear juntos';
   const compact=window.matchMedia('(max-width:740px)').matches;
@@ -180,7 +213,7 @@ async function refresh(){
   renderRecovery();
 }
 function settleCommand(result){
-  if(!pending||!['completed','rejected','failed'].includes(result.status))return false;
+  if(!pending||result.command!==pending.id||!['completed','rejected','failed'].includes(result.status))return false;
   if(result.status==='completed'){
     const undo=pendingMetadata?.undo;
     lastChange=undo?null:{type:pending.type,target:pending.target,previous:pendingMetadata?.previous,
@@ -191,11 +224,13 @@ function settleCommand(result){
 }
 async function recoverCommand(){
   if(!pending)return;
-  try{settleCommand(await api(`commands/${pending.id}`));}
-  catch(error){noteRecovery('command',error);}
+  const id=pending.id;
+  try{const result=await api(`commands/${id}`);if(sameRequest(pending,id))settleCommand(result);}
+  catch(error){if(sameRequest(pending,id))noteRecovery('command',error);}
 }
 async function action(type,target,args,expectedRevision,{undo=false}={}){
-  if(pending){say('Primero tengo que confirmar el cambio anterior.');return null;}
+  if(pending||preparingAction){say('Primero tengo que confirmar el cambio anterior.');return null;}
+  preparingAction=true;let submittedId=null;
   try{
     const observation=await api('observe',{displayedSequence:null});
     const previous=observation.entities[target];
@@ -203,16 +238,20 @@ async function action(type,target,args,expectedRevision,{undo=false}={}){
     pendingMetadata={command:pending,previous,undo,actorRef:state?.actorRef,createdAt:Date.now()};
     try{pendingMetadata=saveIntent(sessionStorage,pendingKey,pendingMetadata,4096);pending=pendingMetadata.command;}
     catch{pending=null;pendingMetadata=null;say('El navegador no pudo guardar la confirmación pendiente. El cambio no se envió.');return null;}
+    submittedId=pending.id;preparingAction=false;
     const result=await api('commands',pending);
+    if(!sameRequest(pending,submittedId))return result;
     settleCommand(result);await refresh();return result;
   }catch(error){
+    if(submittedId&&!sameRequest(pending,submittedId))return null;
     if(pending){
       say('Estoy comprobando si el cambio llegó. No voy a repetirlo.');
-      try{const result=await api(`commands/${pending.id}`);settleCommand(result);await refresh();return result;}
-      catch(checkError){noteRecovery('command',checkError);}
+      const id=pending.id;
+      try{const result=await api(`commands/${id}`);if(sameRequest(pending,id)){settleCommand(result);await refresh();}return result;}
+      catch(checkError){if(sameRequest(pending,id))noteRecovery('command',checkError);}
     }else say('No pude conectar con el taller. Probá de nuevo cuando vuelva la conexión.');
     return null;
-  }
+  }finally{if(!submittedId)preparingAction=false;}
 }
 function previewDocument(){
   if(!preview)return;
@@ -268,9 +307,11 @@ const phases={preparing:'Estoy preparando mi turno.',submitting:'Tu mensaje est�
 const nativeLines=new Map();
 async function readTurn(){
   if(!nativeTurn)return;
+  const id=nativeTurn.id;
   let result;
-  try{result=await api(`interactions/${nativeTurn.id}`);}
-  catch(error){noteRecovery('native',error);$('#companion-status').textContent=phases.unknown;return;}
+  try{result=await api(`interactions/${id}`);}
+  catch(error){if(sameRequest(nativeTurn,id)){noteRecovery('native',error);$('#companion-status').textContent=phases.unknown;}return;}
+  if(!sameRequest(nativeTurn,id))return;
   if(result.retained===true&&!nativeTurn.retained){nativeTurn.retained=true;nativeTurn.actorRef||=state?.actorRef;try{saveIntent(sessionStorage,turnKey,nativeTurn);}catch{}}
   const phase=result.phase||'unknown';
   $('#companion-status').textContent=phases[phase]||phases.unknown;
@@ -302,10 +343,11 @@ $('#conversation-form').onsubmit=async event=>{
   nativeTurn={id:body.id,body,actorRef:state.actorRef,run:state.run,createdAt:Date.now()};$('#send').disabled=true;
   try{nativeTurn=saveIntent(sessionStorage,turnKey,nativeTurn);}catch{nativeTurn=null;updateNativeAvailability();say('No pude conservar este mensaje para comprobarlo después. No se envió.');return;}
   appendMessage(text,'human');$('#message').value='';$('#message').blur();
-  try{const result=await api('interactions',nativeTurn.body);
+  try{const result=await api('interactions',body);
+    if(!sameRequest(nativeTurn,body.id))return;
     $('#companion-status').textContent=phases[result.phase]||phases.unknown;
     await readTurn();
-  }catch(error){$('#companion-status').textContent=phases.unknown;noteRecovery('native',error);}
+  }catch(error){if(sameRequest(nativeTurn,body.id)){$('#companion-status').textContent=phases.unknown;noteRecovery('native',error);}}
 };
 // Escape closes panels; it does not interrupt a native turn or stop the world.
 window.addEventListener('keydown',event=>{if(event.key==='Escape'){openConversation(false);if(preview)closePreview();}});
@@ -315,5 +357,5 @@ const interval=setInterval(async()=>{
   try{await refresh();}catch{say('La conexión con el taller se interrumpió. Los cambios no se repetirán solos.');}
   finally{refreshing=false;}
 },1500);
-window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);if(preview?.blob)URL.revokeObjectURL(preview.blob);client.dispose();});
+window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);if(preview?.blob)URL.revokeObjectURL(preview.blob);worldAudio.dispose();client.dispose();});
 refresh().catch(()=>say('No pude conectar con el taller.'));
