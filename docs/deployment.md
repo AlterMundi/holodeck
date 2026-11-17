@@ -91,12 +91,12 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
-On 2026-11-17 the supported publisher selected source `5a4b518` at
+On 2026-11-17 the supported publisher selected source `5ab446d` at
 https://compaii.dmn.homes/holodeck/. The immutable package SHA256 is
-`139c4f4c0133e68de48bc3f85ed66641c7bc578c39985e34406ec411bbf0fdfe`
+`4d9d69aff78580a6d3a46c045ee459bfac36451e78ca127453100ed16db76102`
 (17,305,600 bytes). The App resource remains
 `a51218c647644a8fbbd42ed706d70b61`; its entrance/audience stayed unchanged.
-The previous package `265fcb017155adabc3790e76f91effe35d7fd643691e8ece6e938950dd459ce5`
+The previous package `139c4f4c0133e68de48bc3f85ed66641c7bc578c39985e34406ec411bbf0fdfe`
 and receiving configuration remain the actual compatible rollback.
 
 Seven explicit existing human/being/home routes now select their own native
