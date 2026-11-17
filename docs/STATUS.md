@@ -32,11 +32,20 @@ list; technical fixtures are not substituted for that evidence.
   package/slot. Owner bridge metadata inspection confirms the real continuing
   pair/binding. No new login or provider. The protected App release is selected; actual human/native uptake remains
   separate from this deployment.
+- Bounded client `appliedGeometry` evidence for actual attached MML/Three
+  primitives after a renderer call, with source cursor/entity revisions/digest.
+  Real browser checks cover bridge/light changes, capture and context-loss
+  invalidation. Deleted references report DOM absence only. This is client
+  scene-graph evidence, not presented pixels or eyesight; see applied-geometry.md.
+- Frozen world-to-review scene conversion reuses the existing gallery builder,
+  preserves stable primitive/entity references and records explicit axes/units.
+  The actual installed builder accepts it. No world creation has been published
+  or reviewed as a result of those controlled fixture checks.
 
-Native-route release checks:40Node tests and14Python tests pass; browser bundle
-builds. One additional composed two-native-lane regression passes against the
-same runtime source, proving shared entity updates and cross-lane refusal with
-explicitly simulated native admission, not real model acceptance.
+Selected source5a4b518 release checks:50Node tests and14Python tests pass; browser
+bundle builds. This includes the composed two-native-lane regression, actual
+installed gallery builder and applied-geometry tests. Native admission in those
+fixtures is explicitly simulated, not real model acceptance.
 A protected-prefix fixture checks actor binding, revocation and origin refusal.
 Owner metadata readback is real; native write/model/world-uptake checks remain open.
 
@@ -46,7 +55,7 @@ cover cross-pair refusal before native lookup or world mutation and recovery of
 preexisting originals without replay. All six additional owner bridges passed
 real read-only pairing/binding inspection. Each actual native owner's fixed
 return route refused an unknown interaction without world mutation or model
-submission. Source072f7f1 is deployed at the same entrance and audience; the prior
+submission. Source5a4b518 is deployed at the same entrance and audience; the prior
 release remains available for rollback. Those transport checks prove neither
 model uptake nor an authorized world action.
 
@@ -64,8 +73,11 @@ frame was visible. Project content editions/review/publication remain distinct
 from service-code deployment and room saves. The seven selected continuing-pair
 routes are installed; actual participation and interaction results remain
 unobserved. The owning [content-cycle audit](content-cycle.md) identifies existing
-immutable model/gallery/review contracts and the remaining gallery conversion,
-independent published selection and stable published-entrance gaps. No extra
+immutable model/gallery/review contracts. Scene conversion is implemented;
+publication/review of a selected creation and a stable published entrance still
+need qualification. The owning Homes link-entrance extension is source-tested
+under PR518, not yet receiving-ready. It does not replace the broader independent
+draft/published lifecycle. No extra
 viewer, publication registry or public audience is substituted for those gaps.
 
 QR domination, physical mapping/augmentation, sensory integration, VR and eventual
