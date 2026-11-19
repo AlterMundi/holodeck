@@ -132,7 +132,10 @@ Timeouts/unknown/malformed authority deny without a human-cookie fallback.
 The qualified Home dispatcher overlay changes only14lines in service.py
 (SHA256aad74810b792f349424850a691e1aaf1fd7f7a941fed8eb22981b4b7e34e9548),
 retaining513other file contents, mobile/link/launcher features and existing stores.
-The central bridge is SHA256aa2155b8bb20a8cca1390109fa5c5dd5f57d455de3be4e0c826e8ceb1f04744d.
+All seven existing bridges now select SHA2562afd732a72ad6ebc354c50745b8060d8ef0b31839b3b5553dffe3bf9b511b66d,
+with32KiB observation/48KiB source support. Each scoped restart observed no
+in-flight RPC sockets and preserved config hashes/native core invocations. This
+compatibility preparation does not mean the new focus/v2 consumer app is selected.
 Actual appUID992 queries allowed all seven current beings and denied an unknown
 being, minting no session or grant. Native reply completion separately follows the
 exact situated instruction, without falsely requiring umbrella research completion.
@@ -140,7 +143,7 @@ exact situated instruction, without falsely requiring umbrella research completi
 The original conversation services stay running across scoped web/bridge updates.
 App replacement clears its in-memory human room sessions: reload obtains a fresh
 Home-validated session; MML reconnect alone reuses the old token. Native authority
-does not depend on this reload. daimon-home2.4.16 and report-conversation0.1.12
+does not depend on this reload. daimon-home2.4.16 and report-conversation0.1.13
 are installed/status verified on all seven selected bodies; the receiving surface
 check passed. Installation does not prove existing model contexts reloaded them.
 
@@ -154,9 +157,9 @@ readers were revoked; no human identity was minted or borrowed.
 One private receiving-selected report/revision entrance appears in the reading
 room. Its same-origin Nexus entry preserves saved progress rather than forcing
 chapter01. Discovery is not access: the existing descriptor checks current report
-and participant authorization. Nexus minimally composes delta2a0fd86 onto its
+and participant authorization. Nexus minimally composes report-v1 and artifact-v2 deltas2a0fd86/95f4ef8 onto its
 actual backend and selectedd657f1c frontend; health,14served assets and unchanged
-43canonical DB table hashes/counts were verified after one web-only restart.
+43canonical DB table hashes/counts were verified at the v2 web selection.
 The existing player, notes, capture and native review are reused. Private pins,
 actors and selector preimages remain in the operator record.
 
@@ -173,6 +176,30 @@ The initial real upstream DOM snapshot is awaited before startup completes;
 subsequent projections use its bounded queue. A representation failure fences
 new writes/projections while preserving committed room state and readable
 observations/results. An applied snapshot is not proof of human-visible pixels.
+
+## Review membership and remaining native association
+
+The supported merged owner renew-membership writer renewed only the same expired,
+non-revoked verified participant memberships for the existing report/artifact
+rooms. It rotated bounded invitation hashes while preserving old invitations,
+sessions, HBC binding bytes and the exact queued/undetermined original. The
+artifact room's existing same-actor Home mapping selects its fresh hash; all other
+mapping bytes are unchanged. Actual held-owner model policy and current room
+selections permit the intended existing viewers, without claiming a human HTTP200.
+
+The legacy current-edition queued report exchange keeps processing=true and
+prevents prepareClose/content replacement. It does not globally prevent unrelated
+new contributions/reflections; walking keeps the viewer mounted and is blocked
+only while recording. The legacy uncertainty remains: no false dispatch, receipt,
+configure, withdrawal or replay was used to clear it, and no human pending task
+was created for this operator issue.
+
+The artifact viewer v2 transport is deployed, but its new native reflection
+association is not. A prepared binding reuses the verified existing target and
+negotiated modes; registration must use the maintained receiver writer rather
+than editing live native SQLite or manufacturing a human /nexus command. Keep
+that gap explicit. Current connected human trials take precedence over an
+optional app restart; retain its prepared release until a safe selection boundary.
 
 ## Recovery
 
