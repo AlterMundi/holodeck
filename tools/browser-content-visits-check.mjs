@@ -9,7 +9,8 @@ async function connection(target){
  function cdp(method,params={}){return new Promise((r,j)=>{const id=++next,t=setTimeout(()=>{pending.delete(id);j(Error('Timed out: '+method))},20000);pending.set(id,{r:v=>{clearTimeout(t);r(v)},j:e=>{clearTimeout(t);j(e)}});ws.send(JSON.stringify({id,method,params}))})}
  async function evaluate(expression){const r=await cdp('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||'Evaluation error');return r.result.value}
  async function until(expression,ms=10000){const begin=Date.now();while(Date.now()-begin<ms){if(await evaluate(expression))return;await wait(100)}throw Error('Condition failed: '+expression)}
- async function click(selector){const box=await evaluate(`(()=>{const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}})()`);await cdp('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...box});await cdp('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...box});}
+ // Match the focus qualifier: m-label texture canvases have zero layout, not the MML viewport.
+ async function click(selector){const box=await evaluate(`(()=>{const e=${JSON.stringify(selector)}==='canvas'?[...document.querySelectorAll('canvas')].find(c=>{const r=c.getBoundingClientRect();return r.width>100&&r.height>100&&r.left>=0&&r.top>=0}):document.querySelector(${JSON.stringify(selector)});if(!e)throw Error('Visible interaction target unavailable');const r=e.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}})()`);await cdp('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...box});await cdp('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...box});}
  return {target,cdp,evaluate,until,click,async close(){ws.close();await fetch(origin+'/json/close/'+target.id)}};
 }
 // Controlled loopback Nexus/native fixtures only. Requires an explicitly started
@@ -64,8 +65,19 @@ try{
  }
  await page.evaluate('retainedFrame.contentWindow.fixture.state={recording:false,processing:false,playing:true,dirty:false}');await page.click('#visit-close');await page.until('document.querySelector("#content-visit").classList.contains("is-walking")');
  if(!await page.evaluate('retainedFrame===document.querySelector("#visit-stage iframe")&&!retainedFrame.contentWindow.fixture.state.playing'))throw Error('Safe pause did not retain context');await moveAfterReturn('safe pause and return');
- await page.click('#talk');await page.evaluate('document.querySelector("#message").value="Fixture: este contenido";document.querySelector("#conversation-form").requestSubmit()');
+ await page.click('#talk');
+ const original='  Fixture: este contenido\ncon espacios.  ',nextDraft='Mi siguiente pregunta mientras se prepara el contexto.';
+ await page.evaluate(`retainedFrame.contentWindow.fixture.hold=true;document.querySelector('#message').value=${JSON.stringify(original)};document.querySelector('#conversation-form').requestSubmit()`);
+ await page.until('retainedFrame.contentWindow.fixture.held.length===1');
+ await page.evaluate(`document.querySelector('#message').focus();document.querySelector('#message').setSelectionRange(0,document.querySelector('#message').value.length)`);
+ await page.cdp('Input.insertText',{text:nextDraft});
+ if(await page.evaluate('document.querySelector("#message").value')!==nextDraft)throw Error('Controlled browser could not type the next draft');
+ await page.evaluate('retainedFrame.contentWindow.fixture.hold=false;retainedFrame.contentWindow.fixture.reply(retainedFrame.contentWindow.fixture.held.shift())');
  const started=Date.now();while(!accepted.length&&Date.now()-started<5000)await wait(100);if(!accepted.length)throw Error('Fixture context was not captured');
+ if(accepted.length!==1||accepted[0].text!==original)throw Error('Delayed viewer changed/duplicated the original input');
+ if(await page.evaluate('document.querySelector("#message").value')!==nextDraft)throw Error('Delayed viewer erased the next draft');
+ if(!await page.evaluate('document.activeElement===document.querySelector("#message")'))throw Error('Delayed viewer blurred a changed draft');
+ evidence.delayedDraft={originalExact:true,submissions:accepted.length,nextDraftPreserved:true,focusPreserved:true};
  evidence.captured=accepted[0].view.contentVisit;if(evidence.captured.context.source_time_ms!==1234||evidence.captured.pin.revision!==pin.revision||evidence.captured.context.state.playing||evidence.captured.context.stageWidth<=0)throw Error('Frozen pinned viewer context mismatched');
  await page.evaluate('document.querySelector("#conversation-close").click()');await page.click('#visit-near');
  if(directory){await mkdir(directory,{recursive:true});for(const [name,width,height,mobile]of [['desktop',1000,760,false],['mobile',390,844,true]]){await page.cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile});await wait(150);const bounds=await page.evaluate(`(()=>{const p=document.querySelector('#content-visit').getBoundingClientRect(),f=retainedFrame.getBoundingClientRect();return {left:p.left,right:p.right,top:p.top,bottom:p.bottom,width:innerWidth,height:innerHeight,frameHeight:f.height}})()`);if(bounds.left<0||bounds.right>width||bounds.top<0||bounds.bottom>height||bounds.frameHeight<200)throw Error('Visit layout overflow '+name);evidence[name]=bounds;const shot=await page.cdp('Page.captureScreenshot',{format:'png'});await writeFile(directory+'/'+name+'.png',Buffer.from(shot.data,'base64'));}}

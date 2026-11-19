@@ -14,7 +14,8 @@ test('selected visit discovery is separate from media access and excludes other 
  for(const path of ['https://foreign.test/nexus/','//foreign.test/nexus/','/nexus/../private','/nexus/%2e%2e/private','/nexus/\\evil','/nexus/?token=x#fragment']){
   assert.throws(()=>validateContentVisits([{...entry,entry:path}]));
  }
- assert.throws(()=>validateContentVisits([entry,{...entry,id:'second'}]));
+ assert.equal(validateContentVisits([entry,{...entry,id:'second'}]).length,2);
+ assert.throws(()=>validateContentVisits(Array.from({length:9},(_,i)=>({...entry,id:'entry'+i}))));
  assert.throws(()=>validateContentVisits([entry,{...entry}]));
  assert.equal(knownVisitState({dirty:false,recording:false,processing:false,playing:false}),true);
  for(const value of [null,{}, {dirty:false,recording:false,playing:true},{dirty:false,recording:'false',processing:false,playing:true}])assert.equal(knownVisitState(value),false);
@@ -34,4 +35,16 @@ test('spatial content entrance is shared authored context but never leaks a priv
  assert.equal('pin' in observation.place.contents[0],false);
  assert.match(worldDocument(room),/data-content-node="reading-room"/);
  assert.doesNotMatch(worldDocument(room,{includeVisits:false}),/data-content-node/);
+});
+
+test('artifact visits use exact discriminated pins without inventing report identity',()=>{
+ const pin={kind:'artifact_review',tableId:'fixture-table',reviewId:'model-review',revision:'model-v1',adapter:'interactive_3d'};
+ const model={...entry,id:'model',entry:'/nexus/?table=fixture-table&entry=web',pin};
+ assert.equal(validateContentVisits([entry,model]).length,2);
+ for(const change of [{reportId:'invented'},{kind:'report'},{adapter:'unknown'},{reviewId:undefined}])assert.throws(()=>validateContentVisits([{...model,pin:{...pin,...change}}]));
+ const source={},origin='https://world.test',id='request',visitId='visit';
+ const event={source,origin,data:{schema:'dm.holodeck-visit/response-v2',id,visitId,pin,ok:true,result:{}}};
+ const bound={source,origin,id,visitId,pin};assert.equal(visitResponseMatches(event,bound),true);
+ assert.equal(visitResponseMatches({...event,data:{...event.data,schema:'dm.holodeck-visit/response-v1'}},bound),false);
+ assert.equal(visitResponseMatches({...event,data:{...event.data,pin:{...pin,revision:'later'}}},bound),false);
 });

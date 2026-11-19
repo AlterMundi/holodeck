@@ -8,14 +8,14 @@ or a second contribution store.
 The authored `reading-room` entrance has a shared position in `WORKSHOP.contents`.
 Its geometry and generic label reveal no selected report or participant history.
 Selected source references live in the receiving private `contentVisits` array,
-not public source. One selected entry supplies `id`, `node`, a same-origin Nexus
-`entry`, its authenticated `descriptor`, `pin: {tableId,reportId,revision}` and
+not public source. At most eight selected entries supply `id`, `node`, a same-origin Nexus
+`entry`, its authenticated `descriptor`, a discriminated edition `pin` and
 `discoverActors`. The last list narrows discovery only; it cannot grant source
 access. Existing current Holodeck identity checks guard the catalog. Nexus's
 descriptor and iframe independently check the actual visitor's current room and
 source permission. A world visit never creates or widens those grants.
 
-The entry must include its selected `table` and `report_revision`; a changed or
+A v1 report entry includes its selected `table` and `report_revision`; a changed or
 missing pinned edition is refused rather than silently visiting today's current
 report. The descriptor must return that same pin before the frame is mounted.
 The existing player exposes its own chapter navigation and contributions.
@@ -63,3 +63,36 @@ message correlation, frame retention and failure handling. A fixture is not a
 real shared presentation trial. Deployment, actual protected descriptor access,
 participant visit, contribution save/transcription, native response and revisiting
 the retained edition remain distinct observations in the owning trial record.
+
+## Artifact visits and changing content
+
+The same entrance accepts v2 artifact pins with `kind:artifact_review`, table,
+review ID, revision and `interactive_3d`/`video` adapter. Exact field names and
+receiver readiness/capture semantics belong to the
+[Nexus visit contract](https://github.com/compaii/daimon-nexus/blob/main/docs/holodeck-visits.md).
+Artifacts never invent a report ID. The authenticated descriptor must match the
+entire selected pin; model/source access remains independently checked by Nexus.
+Only deliberately selected real content enters receiving configuration. Test
+video/renderer fixtures are not selectable production publications.
+
+When several entries are selected, the header offers a content selector. Labels
+start with the media type; a private title appears only after its protected
+descriptor succeeds. Before switching, the current viewer must acknowledge
+`prepareClose` with no dirty/recording/processing/playing state. Otherwise the
+same frame and selection remain. The frame is replaced only by this deliberate,
+safe content change. Walking and ordinary pause/return retain that frame.
+
+The outer schema version follows the pin. Artifact loading signals do not imply
+readiness: the parent waits up to40seconds for the exact child's actual ready
+transition, then verifies capabilities. Report v1 retains its existing15second
+bound. Individual operations remain bounded at8seconds, allowing the existing
+inner5second acknowledgment; stale sources, editions or windows are refused.
+
+An artifact `getContext` returns playback-only source/clock state, never an
+acknowledged camera or video frame. The world labels this evidence explicitly;
+only deliberate freeze/close uses actual renderer acknowledgment. Static clocks
+remain null. The client-reported conversation view retains at most2200bytes of
+visit context within the existing4KiB view budget. Oversized or missing context
+is explicitly unavailable; camera, selection, source offsets and acknowledgment
+fields are never silently truncated or replaced with a fabricated timestamp.
+The Nexus iframe remains the owning full-context review/native route.
