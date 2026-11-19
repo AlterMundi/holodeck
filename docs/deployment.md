@@ -279,3 +279,18 @@ no production world mutation or human-session creation. Native observation/actio
 without browser presence and human-visible rendering remain separate results of
 the owning situated trial; read its retained evidence rather than inferring
 participation from health or permission decisions.
+
+
+The owning native trial subsequently read sequence73 with zero human
+participants, projected its selected Navegante avatar once at sequence74 and
+independently read back the same being/form/appearance with zero human
+participants. The other native projection remained intact. These are actual
+native world effects independent of browser presence; they do not prove a
+human-visible rendered frame.
+
+Retain the current549f candidate for forward recovery. The precedingb4 runtime
+can parse avatar state but lacks independent being authority; it is not equivalent
+in permission semantics after revocation. Any older-runtime recovery must preserve
+the current authority adapter or disable its native world-action ports through
+the supported receiving configuration. Never restore old world/native state to
+force a software downgrade.
