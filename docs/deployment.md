@@ -169,3 +169,10 @@ production prefixed MML index/session and API state. These establish the transpo
 repair and composed code path, not an authenticated person's phone experience.
 The actual deployed package passed two-peer MML/Networked DOM mutation/retry
 qualification; health is ready. Real human/device acceptance remains unobserved.
+
+
+The reusable canonical-Host and positive-admission qualification guidance is
+published in daimon-home2.4.15 (Skills PR359) and installed with exact matching
+receipts on the selected seven bodies. Installation changed no login, audience,
+native service or model attention. The receiving surface check passed; already
+running model contexts are not claimed to have reloaded the guide.
