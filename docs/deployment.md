@@ -219,3 +219,30 @@ Current/previous operator archives total34,928,640bytes. Once an avatar-form
 entity enters saved state, keep the current compatible candidate for forward
 recovery; the previous colour-only binary lacks that form. Preserve actual
 creations rather than editing saved state to force an older binary.
+
+
+## First protected presentation visit
+
+Runtime `8adb430` is selected as package
+`b4ca7f604580b0c089e89d09c91f889e598389b5c09421e958a8146f969119ea`
+(17,592,320bytes), with one private receiving-configured report entrance in the
+shared reading room. The selected same-origin Nexus entry retains its exact
+report/revision pin and discovery actors, without forcing chapter01 over saved
+progress. Private table/report references stay in receiving configuration.
+Discovery grants no Nexus access; the existing descriptor checks current report
+and participant authorization.
+
+Nexus source delta2a0fd86 is separately selected through its maintained web
+selector, minimally composed onto its actual backend/frontend. Health, exact
+served frontend assets and unchanged canonical pending/recording state were
+qualified. Actual anonymous descriptor access is401; the deployment did not mint,
+copy or extract any human session. Protected human descriptor200, embedded report
+use and situated playback/recording acceptance remain actual participant checks.
+
+The supported Holodeck replacement preserved the real room run, every existing
+native intent ID, avatar/world entities, seven native routes and audience. The
+only receiving-config addition is one selected visit. Both participants reload
+to obtain fresh room sessions after replacement. The standalone pinned Node24
+package passed actual MML/Networked DOM peers and shared mutation/retry checks.
+Current/previous operator archives total35,205,120bytes; superseded generated
+archives were retired without changing creations, recordings or native originals.
