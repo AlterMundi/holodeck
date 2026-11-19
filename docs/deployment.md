@@ -197,3 +197,25 @@ that state. Never remove or rewrite actual creations to force an older binary.
 Two retained operator archives total34,631,680bytes; no creation history was
 retired. Deployment qualification is separate from the requested live edit and
 its observed native result.
+
+
+## Selected native appearance
+
+Runtime source `fdb9476` is deployed as package
+`81b5eaa98751ebf048fc681fba764f8fff938a88ed7f6842651ab085af451470`
+(17,612,800bytes). Its immutable build came from the exact frozen Git tree while
+portal work continued separately; no concurrent uncommitted source was included.
+The same actual world/native intent IDs, receiving configuration, seven owner
+routes and corrected native bridges were retained. The app replacement required
+human reload for fresh room sessions; the deployment did not project an avatar
+or submit a native input.
+
+Actual authenticated own-being HTTPS reads returned the canonical153,394-byte
+Navegante design and99,284-byte maintained renderer with exact source hashes;
+the task reader session was revoked. This establishes served bytes, separately
+from the browser fixture's spatial sprite behaviour and real human acceptance.
+The projection remains a faithful layered2.5D form rather than a rigged GLB.
+Current/previous operator archives total34,928,640bytes. Once an avatar-form
+entity enters saved state, keep the current compatible candidate for forward
+recovery; the previous colour-only binary lacks that form. Preserve actual
+creations rather than editing saved state to force an older binary.
