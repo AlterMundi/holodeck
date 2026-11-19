@@ -1,3 +1,4 @@
+import {CONTENT_NODE} from './content-visits.mjs';
 // Shared semantic anchors for the selected authored workshop, in world meters.
 // These describe the authored virtual place; they are not real-world sensor data.
 export const WORKSHOP = Object.freeze({
@@ -9,6 +10,7 @@ export const WORKSHOP = Object.freeze({
     bridge:{x:0,y:.2,z:-12.1},
     'far-island':{x:0,y:.1,z:-17}
   },
+  contents:[CONTENT_NODE],
   creationArea:{minX:-7,maxX:7,minZ:-6,maxZ:6},
   operations:['bridge.set','garden.place','garden.update','garden.remove'],
   perception:'structured-authored-world-overview',

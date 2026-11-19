@@ -12,12 +12,14 @@ import { RoomStore } from './room-store.mjs';
 import { homeIdentityResolver } from './home-identity.mjs';
 import { worldDocument } from './world.mjs';
 import { createWorldPort } from './world-port.mjs';
+import {validateContentVisits,visitsForActor} from './content-visits.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
-export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[]}={}){
+export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[]}={}){
   if(!/^\/(?:[a-z0-9-]+\/)*$/.test(basePath))throw Error('Select a bounded absolute base path');
   if(production&&(!identityResolver||!publicOrigin||!stateDir))throw Error('Shared identity, audience and state are required in production');
+  const selectedContentVisits=validateContentVisits(contentVisits);
   const route=path=>basePath+path;
   const app=express();
   enableWs(app,undefined,{wsOptions:{handleProtocols:(protocols,req)=>req.url?.split('?')[0]===route('world')
@@ -150,6 +152,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     res.json({run:room.run,edition:room.edition,sequence:room.sequence,actorRef:req.actor.id,entities:room.entities,
       native:native?await native.availability(req.actor):{available:false}});
   }));
+  app.get(route('api/content-visits'),(req,res)=>res.json({visits:visitsForActor(selectedContentVisits,req.actor)}));
   app.post(route('api/observe'),(req,res)=>res.json(room.observe(req.actor,req.body)));
   app.post(route('api/commands'),(req,res)=>res.json(room.command(req.actor,req.body)));
   app.get(route('api/commands/:id'),(req,res)=>{
@@ -213,7 +216,7 @@ export async function main(){
     nativeFactory=options=>integration.nativeFactory({...options,receiving});
   }
   validateWorldPorts({...receiving});
-  const runtime=await createHolodeck({production,stateDir,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts});
+  const runtime=await createHolodeck({production,stateDir,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,contentVisits:receiving?.contentVisits});
   const port=Number(process.env.PORT||18940);
   if(!Number.isInteger(port)||port<1024||port>65535)throw Error('Select a valid loopback port');
   if(process.env.HOST&&process.env.HOST!=='127.0.0.1')throw Error('Use the existing loopback gateway');

@@ -147,8 +147,9 @@ projection and actions are direct APIs, independent of human UI or Avatar mode.
 resolver on each call. Room does not issue identities or infer a paired being.
 This port is implemented and tested with fixtures. The protected trial has an
 installed owner CLI/bridge and direct world socket; additional paired routes are
-being qualified. A fresh human-triggered native round trip remains unobserved.
-Its tests establish contract behavior, not real daimon participation.
+being qualified. A real human-triggered round trip and native world actions have now begun; see
+STATUS.md for their exact trial evidence and the remaining conversational return
+loop. Contract fixtures alone do not establish that participation.
 Navigation goals and richer perceptual
 queries remain to be implemented against the selected runtime.
 

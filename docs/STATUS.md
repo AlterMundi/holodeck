@@ -2,8 +2,8 @@
 
 Updated 2026-11-19. The human requested work through the MVP and useful
 parallel implementation. [Roadmap](ROADMAP.md) and issues1–4 retain acceptance;
-**the MVP is not yet complete**. The native goal remains blocked; explicit
-human-directed trial and repairs continue without treating a substage as closure.
+**the MVP is not yet complete**. The existing native goal was resumed on the human request after these real
+trial results. Repairs and remaining acceptance continue under the same objective.
 
 The protected trial is live at https://compaii.dmn.homes/holodeck/. Two independently
 signed-in humans now report seeing each other's movement and the same shared
@@ -112,20 +112,29 @@ by other participants.
 
 ## Human trial progress —2026-11-19
 
-A real hosted situated input now arrived with application-authored context. Its
-retained observation records human-created content and bridge changes. The
-continuing daimon consumed that context, successfully queried the direct native
-world API, placed its own beacon projection, and confirmed it by a subsequent
-world read. This supersedes the earlier zero-input/native-perception gap for
-this pair. Human visual confirmation of that projection, a requested content
-edit, a second participant/device and selected publication/review remain open.
-A server readback is not a human-visible-frame receipt or full MVP acceptance.
+A real hosted situated input arrived with application-authored context. The
+continuing companion consumed it, queried the direct native world API, placed
+its beacon projection and confirmed it by readback. Two independently signed-in
+humans report seeing one another's movement, the same human-created violet light
+and that beacon. The companion then recolored the original human-created light
+in place; the human explicitly confirmed seeing that same light change. These
+observations supersede the earlier zero-input/native-action/multiplayer gaps.
 
-Human-reported shared trial update —2026-11-19: two independently signed-in
-participants report seeing one another's movement and the same newly placed
-violet light. The native companion also updated the original light in place to
-violet and verified its preserved identity/position and advanced revision through
-the direct world API. This distinguishes the human-confirmed shared light from
-the separately machine-confirmed native edit. Native conversation sending is
-currently under repair after a report that Send remains disabled. No complete
-conversation-loop, device matrix or full MVP acceptance is claimed.
+Send stayed disabled because the bridge confused umbrella project completion
+with an answer to one situated instruction. The repaired original-scoped bridge
+is installed in all seven receiving lanes. Actual retained status now returns
+the original answer with tracking finished while parent project completion stays
+false. No input was replayed and the world was not restarted for that repair.
+Client uptake and a subsequent complete conversation loop remain to be observed.
+
+The existing authored animated appearance is implemented, browser-qualified and
+deployed. It is a layered spatial sprite, not a newly invented articulated3D
+model. Actual native avatar selection and human visibility remain distinct from
+those controlled renderer checks and the already observed beacon.
+
+The human selected integration of a real existing presentation with its retained
+pause/discussion/transcription/reflection workflow. The new spatial visit reuses
+Nexus and pins the selected report edition; see [content visits](content-visits.md).
+Controlled frame/context/lifecycle checks are separate from protected human access
+and a real contribution/response/revisit. Full device/reconnect coverage and the
+remaining content cycle still prevent a full MVP completion claim.

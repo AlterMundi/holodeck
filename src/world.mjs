@@ -1,10 +1,11 @@
 // One-way projection of Room semantics. Static original art is a merged GLB;
 // only traversable surfaces and changing activity elements remain MML primitives.
+import {CONTENT_NODE} from './content-visits.mjs';
 import {avatarForActor} from './avatar-registry.mjs';
 import {workshopProjection,projectionNodeHTML,attribute} from './workshop-projection.mjs';
 const sphere=(x,y,z,r,color)=>`<m-sphere x="${x}" y="${y}" z="${z}" radius="${r}" color="${color}" collide="false"></m-sphere>`;
 const cylinder=(x,y,z,r,h,color,extra='')=>`<m-cylinder x="${x}" y="${y}" z="${z}" radius="${r}" height="${h}" color="${color}" ${extra}></m-cylinder>`;
-export function worldDocument(room,{basePath='/'}={}){
+export function worldDocument(room,{basePath='/',includeVisits=true}={}){
   const prefix=basePath.endsWith('/')?basePath:basePath+'/';
   const projection=workshopProjection(room.entities),manifest=JSON.stringify(room.entities);
   if(manifest.length>16384)throw Error('Geometry manifest exceeds bound');
@@ -17,6 +18,18 @@ export function worldDocument(room,{basePath='/'}={}){
     if(entity.deleted)continue;
     out+=`<m-group id="${attribute(entity.id)}" data-entity-revision="${entity.revision}">${entity.nodes.map(projectionNodeHTML).join('')}</m-group>`;
     if(entity.controls)out+=`<m-group id="bridge-control">${entity.controls.map(projectionNodeHTML).join('')}</m-group>`;
+  }
+  if(includeVisits){
+    const {x,y,z}=CONTENT_NODE.position;
+    out+=`<m-group id="content-reading-room" x="${x}" y="${y}" z="${z}" data-content-node="reading-room">
+      <m-cylinder radius="1.05" height=".15" y=".08" color="#536c70"></m-cylinder>
+      <m-cylinder radius=".8" height=".06" y=".18" color="#eed19b"></m-cylinder>
+      <m-cube x="-.66" y="1.05" width=".15" height="1.7" depth=".22" color="#bc8355"></m-cube>
+      <m-cube x=".66" y="1.05" width=".15" height="1.7" depth=".22" color="#bc8355"></m-cube>
+      <m-cube y="1.85" width="1.48" height=".15" depth=".22" color="#eed19b"></m-cube>
+      <m-cube y="1.03" width="1.1" height="1.24" depth=".08" color="#8ce4c2" collide="false"></m-cube>
+      <m-label y="2.2" content="Sala de presentaciones" font-size="24" width="3" height=".5" collide="false"></m-label>
+    </m-group>`;
   }
   for(const p of room.projections.values()){
     const{x,y,z}=p.position;

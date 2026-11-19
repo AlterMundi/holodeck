@@ -12,12 +12,21 @@
 @media(max-width:740px){#creator{top:160px;bottom:auto}#conversation-panel{bottom:285px}#notice{bottom:280px}}
 @media(max-width:500px){#hud{max-width:calc(100vw - 24px);gap:12px}#hud .brand-mark{display:none}}
 @media(min-width:741px) and (max-width:1040px){#help{display:none}}
+
+#visit-near{position:fixed;z-index:22;right:22px;top:90px;max-width:calc(100vw - 44px)}
+#content-visit{position:fixed;inset:5vh 4vw;z-index:45;display:flex;flex-direction:column;border-radius:20px;padding:12px;gap:10px;background:#163b3f}
+#content-visit header{display:flex;gap:12px;align-items:center;flex-wrap:wrap}#visit-title{flex:1;min-width:180px;font-size:22px;margin:0}#content-visit button{font-size:14px}
+#visit-stage{flex:1;min-height:0;border-radius:12px;overflow:hidden;background:#102d31}#visit-stage iframe{width:100%;height:100%;border:0;display:block}
+#content-visit.is-walking{inset:auto;left:-200vw;top:0;width:92vw;height:90vh;visibility:hidden;pointer-events:none}
+@media(max-width:740px){#visit-near{top:148px;right:12px;max-width:calc(100vw - 24px);font-size:14px}#content-visit{inset:max(8px,env(safe-area-inset-top)) 8px max(8px,env(safe-area-inset-bottom));padding:8px;border-radius:14px}#visit-title{font-size:19px;flex-basis:100%}#content-visit header{gap:6px}#content-visit button{padding:8px 12px}}
 </style></head><body>
 <header id="hud" class="glass"><span class="brand-mark" aria-hidden="true"></span><div><small>Holodeck</small><h1>El taller de las islas</h1><div id="people">Entrando al taller…</div></div><button id="sound" type="button" aria-pressed="false" aria-label="Activar sonido del mundo">Sonido</button></header>
 <aside id="help"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> moverte · arrastrá para mirar · espacio para saltar</aside>
 <div id="companion-status" class="glass" role="status">Exploración compartida</div>
 <div id="notice" class="glass" role="status"></div>
 <nav id="dock" class="glass" aria-label="Acciones del taller"><button id="bridge" class="primary">Conectar islas</button><button id="plant">Crear luz</button><button id="talk" aria-expanded="false" aria-controls="conversation-panel">Conversar</button><button id="undo" class="icon" title="Deshacer mi último cambio" aria-label="Deshacer mi último cambio" disabled>↶</button></nav>
+<button id="visit-near" type="button" class="primary" hidden>Visitar la presentación</button>
+<section id="content-visit" aria-label="Contenido visitado" class="glass" hidden><header><h2 id="visit-title">Presentación</h2><button id="visit-walk" type="button">Seguir recorriendo</button><button id="visit-close" type="button">Pausar y volver</button></header><div id="visit-stage"></div></section>
 <section id="creator" class="glass" aria-label="Crear una luz" hidden><h2>Una luz para este lugar</h2><p id="preview-hint">La vista previa es tuya. Al plantar, aparece para todos.</p><div class="row colors" role="group" aria-label="Color de la luz"><button class="swatch" data-color="mint" style="--color:#8ce4c2" aria-label="Menta" aria-pressed="true"></button><button class="swatch" data-color="amber" style="--color:#efc87a" aria-label="Ámbar" aria-pressed="false"></button><button class="swatch" data-color="rose" style="--color:#e8a2b9" aria-label="Rosa" aria-pressed="false"></button><button class="swatch" data-color="violet" style="--color:#a77bea" aria-label="Violeta" aria-pressed="false"></button></div><div class="row"><button id="preview-move">Mover acá</button><button id="preview-accept" class="primary">Plantar</button><button id="preview-cancel">Cancelar</button></div></section>
 <section id="conversation-panel" class="glass" aria-label="Conversación situada" hidden><header><h2>Desde acá</h2><button id="conversation-close" class="icon" aria-label="Cerrar conversación">×</button></header><p id="conversation-hint">Podés seguir recorriendo el mundo mientras transcurre mi turno.</p><div id="conversation-log" aria-live="polite"></div><form id="conversation-form"><label for="message">Hablemos de este lugar</label><textarea id="message" maxlength="2000" rows="2" placeholder="¿Qué hacemos acá juntos?"></textarea><button id="send" class="primary" type="submit" disabled>Enviar</button></form></section>
 <section id="recovery-panel" class="glass" aria-label="Envíos por confirmar" hidden><h2>Hay un envío por confirmar</h2><div id="recovery-items"></div></section>

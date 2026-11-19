@@ -4,6 +4,7 @@ import { DirectionalLight } from 'three';
 import { WORKSHOP, workshopColour } from './workshop.mjs';
 import { saveIntent, loadIntent, archiveIntent, sameActor, nativeRetryRoute } from './client-intents.mjs';
 import { NativeAvatarLayer } from './native-avatar.mjs';
+import { ContentVisitor } from './content-visitor.mjs';
 import { AppliedGeometryProbe } from './applied-geometry.mjs';
 import { WorldAudio } from './world-audio.mjs';
 import { snapshotMayApply, sameRequest } from './client-order.mjs';
@@ -27,7 +28,7 @@ const touchControls={
   },
   dispose(){this.delegate?.dispose();this.holder?.remove();}
 };
-let geometryProbe=null,nativeAvatarLayer=null;
+let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,preparingConversation=false;
 const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
   sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket('network'),waitForWorldConfig:true,
   enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
@@ -45,7 +46,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       canvas:options.targetElement.querySelector(':scope > canvas'),expectedDocumentURL:socket('world')});
     nativeAvatarLayer=new NativeAvatarLayer({document,base,onFailure:message=>say(message)});
     const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
-    renderer.render=state=>{nativeAvatarLayer.update();render(state);geometryProbe.afterRender();};
+    renderer.render=state=>{nativeAvatarLayer.update();contentVisitor?.update(client.getLocalCharacterState()?.position);render(state);geometryProbe.afterRender();};
     renderer.dispose=()=>{nativeAvatarLayer.dispose();geometryProbe.dispose();dispose();};
     queueMicrotask(options.onInitialized);
     return renderer;
@@ -61,6 +62,7 @@ let soundBusy=false;
 window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()||null,audioState:()=>worldAudio.status(),avatarState:()=>nativeAvatarLayer?.status()};
 const $=selector=>document.querySelector(selector);
 const notice=$('#notice');
+contentVisitor=new ContentVisitor({document,window,base,say});
 function updateSoundButton(){
   const status=worldAudio.status(),button=$('#sound');
   button.textContent=status.active?'Silenciar':status.selected?'Reanudar':'Sonido';
@@ -190,7 +192,8 @@ async function recoveryAction(kind,action){
 }
 function updateNativeAvailability(){
   const available=state?.native?.available===true;
-  $('#send').disabled=!available||!!nativeTurn;
+  $('#send').disabled=!available||!!nativeTurn||preparingConversation;
+  if(preparingConversation){$('#companion-status').textContent='Conservando el punto que estamos mirando…';return;}
   if(!nativeTurn){
     $('#companion-status').textContent=available?'Podemos conversar desde este lugar':'Exploración compartida';
     $('#conversation-hint').textContent=available?'Podés seguir recorriendo el mundo mientras transcurre mi turno.':'La conversación todavía no está conectada a este mundo.';
@@ -334,13 +337,20 @@ async function readTurn(){
   else clearRecovery('native');
 }
 $('#conversation-form').onsubmit=async event=>{
-  event.preventDefault();if(nativeTurn||state?.native?.available!==true)return;
+  event.preventDefault();if(nativeTurn||preparingConversation||state?.native?.available!==true)return;
   const text=$('#message').value;if(!text.trim())return;
+  const capturedActor=state.actorRef,capturedRun=state.run;
+  preparingConversation=true;updateNativeAvailability();
+  let visitContext;
+  try{visitContext=await contentVisitor.context();}finally{preparingConversation=false;}
+  if(state.actorRef!==capturedActor||state.run!==capturedRun){updateNativeAvailability();say('El lugar o tu acceso cambió. Conservé tu mensaje para que lo revises.');return;}
   const local=client.getLocalCharacterState();
   const view={capturedAt:Date.now(),run:state.run,edition:state.edition,local:local?{userId:local.userId,connectionId:local.connectionId,position:local.position}:null,
     others:[...client.getCharacterStates().values()].filter(person=>!person.isLocal).slice(0,8).map(person=>({userId:person.userId,connectionId:person.connectionId,position:person.position}))};
+  if(visitContext)view.contentVisit=visitContext;
   const appliedGeometry=geometryProbe?.snapshot();
   if(appliedGeometry){view.appliedGeometry=appliedGeometry;if(new TextEncoder().encode(JSON.stringify(view)).length>4096)delete view.appliedGeometry;}
+  if(new TextEncoder().encode(JSON.stringify(view)).length>4096){updateNativeAvailability();say('No pude conservar este contexto completo. Tu mensaje sigue escrito; acercate al contenido antes de intentar de nuevo.');return;}
   const body={id:crypto.randomUUID(),text,displayedSequence:null,view};
   nativeTurn={id:body.id,body,actorRef:state.actorRef,run:state.run,createdAt:Date.now()};$('#send').disabled=true;
   try{nativeTurn=saveIntent(sessionStorage,turnKey,nativeTurn);}catch{nativeTurn=null;updateNativeAvailability();say('No pude conservar este mensaje para comprobarlo después. No se envió.');return;}
@@ -359,5 +369,5 @@ const interval=setInterval(async()=>{
   try{await refresh();}catch{say('La conexión con el taller se interrumpió. Los cambios no se repetirán solos.');}
   finally{refreshing=false;}
 },1500);
-window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);if(preview?.blob)URL.revokeObjectURL(preview.blob);worldAudio.dispose();client.dispose();});
+window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);contentVisitor.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);worldAudio.dispose();client.dispose();});
 refresh().catch(()=>say('No pude conectar con el taller.'));

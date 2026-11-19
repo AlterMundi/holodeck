@@ -49,3 +49,12 @@ The service's operational stop does not cancel retained native work or authorize
 coordinated Stop. Preserve published pins and source; state checkpoints are not
 an archive of past published creations. Device/media and 3D project-publication
 history retain their existing independent owners and limits.
+
+## Existing content entrances
+
+Configure selected existing sources through the receiving private `contentVisits`
+array described in [content-visits.md](content-visits.md). Do not commit its real
+private table/report references or participant mappings. Discovery is not a grant.
+Keep one mounted viewer and preserve its dirty/capture/processing state when
+returning to the world. Changing source selection does not rewrite saved notes,
+a report edition, or the world's published result.
