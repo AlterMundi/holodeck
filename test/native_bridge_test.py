@@ -37,6 +37,21 @@ class Provider:
         return ref,next(data for data,stored in self.uploads if stored['sha256']==ref['sha256'])
 
 class BridgeContracts(unittest.TestCase):
+    def test_world_authority_query_uses_only_the_configured_current_being_reader(self):
+        being='dm:being:v1:'+'a'*43
+        request={'operation':'world-access','beingRef':being}
+        with self.assertRaises(module.BridgeError):self.bridge.dispatch(request)
+        seen=[]
+        self.bridge.world_access_reader=lambda actor:seen.append(actor) or True
+        self.assertEqual(self.bridge.dispatch(request),{'schema':'holodeck.world-access/v1','beingRef':being,'allowed':True})
+        self.assertEqual(seen,[being]);self.assertEqual(self.provider.inputs,[])
+        self.bridge.world_access_reader=lambda _:False
+        self.assertFalse(self.bridge.dispatch(request)['allowed'])
+        self.bridge.world_access_reader=lambda _:'true'
+        with self.assertRaises(module.BridgeError):self.bridge.dispatch(request)
+        for actor in ('human:telegram:1','unknown','dm:being:v1:a'):
+            with self.assertRaises(module.BridgeError):self.bridge.dispatch({**request,'beingRef':actor})
+
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.provider=Provider(str(Path(self.temp.name)/'fixture.sqlite'))

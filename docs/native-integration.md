@@ -6,6 +6,18 @@
 It exposes availability, submit, status, explicit exact-original retry and
 authorizeWorldRequest. The HTTP server supplies authenticated human actors;
 browsers cannot select a paired being, provider configuration or native binding.
+
+Current native room permission is independent of a human browser session. The
+existing central owner bridge accepts a UID-guarded `world-access` query for the
+being already verified by the original/input authorizer and fixed return port.
+Only that central bridge configures `world_service_key`; other bodies receive no
+CompAII custody. Its installed `daimon-home service-access` client uses the held
+Home owner's read-only `check-service-access` operation, which reuses the live
+service capability, exact selected App version and current actor audience checks.
+The being's own grant determines its game rights; a human's grant is not inherited.
+Fresh pair/input/run/room checks remain required independently. No reader/browser
+session or new grant is created. Unknown, unavailable or scope-mismatched authority
+must deny rather than fall back to a human cookie or unconditional rights.
 The adapter freezes the original text and server situation before any native
 write. A compact optional MML client view is retained as client-reported evidence,
 not authoritative position, eyesight, rendering or understanding.

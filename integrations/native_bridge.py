@@ -47,10 +47,11 @@ def ident(value):
 
 
 class NativeBridge:
-    def __init__(self,provider,pair_reader,world_port=None,home_auth=None):
+    def __init__(self,provider,pair_reader,world_port=None,home_auth=None,world_access_reader=None):
         self.provider=provider
         self.pair_reader=pair_reader
         self.world_port=world_port
+        self.world_access_reader=world_access_reader
         self.human_ref='human:telegram:'+str(provider.human)
         self.home_origin=None
         self.home_entry=None
@@ -303,6 +304,13 @@ class NativeBridge:
 
     def dispatch(self,request):
         if not isinstance(request,dict):raise BridgeError('input','Provide a native bridge request')
+        if request.get('operation')=='world-access':
+            if set(request)!={'operation','beingRef'} or not isinstance(request['beingRef'],str) or not re.fullmatch(r'dm:being:v1:[A-Za-z0-9_-]{43}',request['beingRef']):
+                raise BridgeError('identity','Select the verified native being')
+            if self.world_access_reader is None:raise BridgeError('authority-unavailable','Current world authority is unavailable')
+            allowed=self.world_access_reader(request['beingRef'])
+            if type(allowed) is not bool:raise BridgeError('authority-unavailable','Current world authority is unconfirmed')
+            return {'schema':'holodeck.world-access/v1','beingRef':request['beingRef'],'allowed':allowed}
         op=request.get('operation');actor=request.get('actorRef')
         fields={'inspect':{'operation','actorRef'},'submit':{'operation','actorRef','frozen','input','observation'},
                 'status':{'operation','actorRef','frozen','id','textSha256','observationId'},'lookup':{'operation','actorRef','id','textSha256'}}
@@ -321,7 +329,7 @@ def configuration(path):
     value=json.loads(file.read_text())
     required={'schema','provider_source','dashboard_config','home_command','socket_path','allowed_uids'}
     world=value.get('world_port')
-    if (not required<=set(value) or set(value)-required-{'world_port'} or value['schema']!='holodeck.native-bridge/v1'
+    if (not required<=set(value) or set(value)-required-{'world_port','world_service_key'} or value['schema']!='holodeck.native-bridge/v1'
         or not isinstance(value['allowed_uids'],list) or not 1<=len(value['allowed_uids'])<=8
         or any(type(uid) is not int or uid<0 for uid in value['allowed_uids'])
         or not isinstance(value['home_command'],list) or len(value['home_command'])!=2
@@ -331,6 +339,9 @@ def configuration(path):
     if world is not None and (not isinstance(world,dict) or set(world)!={'cli','socket'}
         or any(not isinstance(world[k],str) or not world[k].startswith('/') for k in ('cli','socket'))):
         raise ValueError('Select the installed direct native world port')
+    if 'world_service_key' in value and (not isinstance(value['world_service_key'],str)
+            or not re.fullmatch('s-[a-f0-9]{24}',value['world_service_key'])):
+        raise ValueError('Select the fixed owned world service')
     return value
 
 
@@ -346,7 +357,17 @@ def serve(path):
         result=subprocess.run(config['home_command'],check=True,capture_output=True,timeout=15)
         if len(result.stdout)>16384:raise ValueError('Pairing reader exceeded its bound')
         return json.loads(result.stdout)
-    bridge=NativeBridge(provider,pair_reader,config.get('world_port'),home_auth=home_auth)
+    def world_access_reader(being):
+        observed=subprocess.run(config['home_command'][:1]+['service-access','--actor',being,
+            '--service-key',config['world_service_key']],check=True,capture_output=True,timeout=15)
+        if len(observed.stdout)>4096:raise ValueError('Service decision exceeded its bound')
+        result=json.loads(observed.stdout)
+        if (not isinstance(result,dict) or result.get('schema')!='dm.home-service-access/v1'
+            or result.get('actor_ref')!=being or result.get('service_key')!=config['world_service_key']
+            or type(result.get('allowed')) is not bool):raise ValueError('Service decision scope changed')
+        return result['allowed']
+    bridge=NativeBridge(provider,pair_reader,config.get('world_port'),home_auth=home_auth,
+        world_access_reader=world_access_reader if 'world_service_key' in config else None)
     slots=threading.BoundedSemaphore(4)
     class Handler(socketserver.StreamRequestHandler):
         def handle(self):
