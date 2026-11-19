@@ -14,3 +14,12 @@ export const WORKSHOP = Object.freeze({
   perception:'structured-authored-world-overview',
   evidence:'selected-virtual-workshop-definition'
 });
+
+// The semantic palette stays backward compatible; custom colours are literal
+// RGB bytes only, never CSS expressions or markup. Null means unsupported.
+const COLOURS=Object.freeze({mint:'#8ce4c2',amber:'#efc87a',rose:'#e8a2b9',violet:'#a77bea'});
+export function workshopColour(value){
+  if(typeof value!=='string')return null;
+  if(Object.hasOwn(COLOURS,value))return COLOURS[value];
+  return /^#[0-9a-fA-F]{6}$/.test(value)?value.toLowerCase():null;
+}

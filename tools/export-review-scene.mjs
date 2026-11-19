@@ -51,7 +51,7 @@ export async function exportReviewScene(observation,scenery){
      'bridge-rail-left':'Baranda izquierda','bridge-rail-right':'Baranda derecha'};
     label='Puente · '+(named[id]||(deck?`Tablón ${Number(deck[1])+1}`:post?`Poste ${Number(post[1])+1} ${post[2]==='left'?'izquierdo':'derecho'}`:`pieza ${ordinal}`));
    }else if(entity!=='scenery'){
-    const color={mint:'verde',amber:'ámbar',rose:'rosada'}[observation.entities[entity].color];
+    const color=({mint:'verde',amber:'ámbar',rose:'rosada',violet:'violeta'}[observation.entities[entity].color]||'de color personalizado');
     const component=id.endsWith('-base')?'base':id.endsWith('-stem')?'tallo':id.endsWith('-light')?'esfera':`pieza ${ordinal}`;
     label=`Luz ${color} · ${component}`;
    }

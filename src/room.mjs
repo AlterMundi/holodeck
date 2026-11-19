@@ -1,6 +1,6 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { EventEmitter } from 'node:events';
-import { WORKSHOP } from './workshop.mjs';
+import { WORKSHOP, workshopColour } from './workshop.mjs';
 
 export const LIMITS = Object.freeze({ events: 256, commands: 256, observations: 128,
   sessions: 8, elements: 32, retryMs: 300000 });
@@ -176,7 +176,7 @@ export class Room extends EventEmitter {
       }
       const a = command.args;
       if (!a || Object.keys(a).sort().join(',') !== 'color,x,z' || !Number.isFinite(a.x) || !Number.isFinite(a.z)
-        || Math.abs(a.x) > 7 || a.z < -6 || a.z > 6 || !['mint','amber','rose'].includes(a.color))
+        || Math.abs(a.x) > 7 || a.z < -6 || a.z > 6 || !workshopColour(a.color))
         return finish('rejected', 'Choose a valid garden placement');
       if(updating)Object.assign(entity,clone(a),{revision:entity.revision+1});
       else this.entities[command.target] = { id: command.target, revision: 1, ...clone(a) };

@@ -1,7 +1,7 @@
 import { Networked3dWebExperienceClient, DefaultVirtualJoystickPlugin } from '@mml-io/3d-web-experience-client';
 import { ThreeJSWorldRenderer } from '@mml-io/3d-web-threejs';
 import { DirectionalLight } from 'three';
-import { WORKSHOP } from './workshop.mjs';
+import { WORKSHOP, workshopColour } from './workshop.mjs';
 import { saveIntent, loadIntent, archiveIntent, sameActor, nativeRetryRoute } from './client-intents.mjs';
 import { AppliedGeometryProbe } from './applied-geometry.mjs';
 import { WorldAudio } from './world-audio.mjs';
@@ -255,7 +255,7 @@ async function action(type,target,args,expectedRevision,{undo=false}={}){
 }
 function previewDocument(){
   if(!preview)return;
-  const color={mint:'#8ce4c2',amber:'#efc87a',rose:'#e8a2b9'}[preview.color];
+  const color=workshopColour(preview.color);
   const markup=`<m-group id="local-preview"><m-cylinder x="${preview.x}" y="0.22" z="${preview.z}" radius="0.38" height="0.12" opacity="0.55" color="${color}" collide="false"></m-cylinder><m-sphere x="${preview.x}" y="0.9" z="${preview.z}" radius="0.35" opacity="0.55" color="${color}" collide="false"></m-sphere></m-group>`;
   const old=preview.blob;preview.blob=URL.createObjectURL(new Blob([markup],{type:'text/html'}));
   client.updateConfig({mmlDocuments:{...worldDocuments,preview:{url:preview.blob}}});

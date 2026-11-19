@@ -1,7 +1,7 @@
 // Geometry recipe for this selected workshop, not a universal scene language.
 // Server serialization and client application checks share the same authored
 // mapping, while the client verifies the actual MML/Three objects independently.
-import { WORKSHOP } from './workshop.mjs';
+import { WORKSHOP, workshopColour } from './workshop.mjs';
 const node=(id,kind,position,size,color)=>({id,kind,position,size,color});
 export function workshopProjection(entities){
   const bridge=entities?.bridge;
@@ -22,7 +22,7 @@ export function workshopProjection(entities){
     if(id==='bridge')continue;
     if(!/^garden-[a-z0-9-]{1,40}$/.test(id)||!Number.isSafeInteger(e.revision)||e.revision<1)throw Error('Unsupported workshop entity');
     if(e.deleted===true){result.push({id,revision:e.revision,deleted:true,nodes:[]});continue;}
-    const color={mint:'#8ce4c2',amber:'#efc87a',rose:'#e8a2b9'}[e.color];
+    const color=workshopColour(e.color);
     if(!color||!Number.isFinite(e.x)||!Number.isFinite(e.z))throw Error('Invalid garden state');
     result.push({id,revision:e.revision,deleted:false,nodes:[node(`${id}-base`,'cylinder',[e.x,.24,e.z],[.32,.28],'#d3c19b'),
       node(`${id}-stem`,'cylinder',[e.x,.51,e.z],[.065,.3],'#bc8355'),node(`${id}-light`,'sphere',[e.x,.9,e.z],[.34],color)]});

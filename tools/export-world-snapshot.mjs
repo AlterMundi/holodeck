@@ -1,3 +1,4 @@
+import {workshopColour} from '../src/workshop.mjs';
 /** Freeze creation geometry for the existing GLB viewer/Nexus static3D adapter.
  * This is content export, not world replay or evidence of a rendered human view.
  */
@@ -15,7 +16,7 @@ export function exportWorldSnapshot(observation,scenery){
   ||Object.keys(observation.entities).length>32)throw Error('Select a bounded workshop situation');
  for(const [id,entity]of Object.entries(observation.entities))if(id!=='bridge'){
   if(!/^garden-[a-z0-9-]{1,40}$/.test(id)||!Number.isFinite(entity.x)||!Number.isFinite(entity.z)
-   ||Math.abs(entity.x)>7||Math.abs(entity.z)>6||!['mint','amber','rose'].includes(entity.color)
+   ||Math.abs(entity.x)>7||Math.abs(entity.z)>6||!workshopColour(entity.color)
    ||!Number.isSafeInteger(entity.revision)||entity.revision<0||(entity.deleted!==undefined&&typeof entity.deleted!=='boolean'))throw Error('Unsupported creation element');
  }
  if(scenery.length>600000||scenery.readUInt32LE(0)!==0x46546c67||scenery.readUInt32LE(4)!==2||scenery.readUInt32LE(8)!==scenery.length)throw Error('Select the bounded authored scenery GLB');
