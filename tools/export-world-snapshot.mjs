@@ -25,7 +25,7 @@ export function exportWorldSnapshot(observation,scenery){
  if(scenery.readUInt32LE(binaryStart+4)!==0x004e4942||document.images?.length||document.buffers.length!==1)throw Error('Unsupported scenery resource graph');
  const initial=scenery.subarray(binaryStart+8,binaryStart+8+scenery.readUInt32LE(binaryStart));
  const room={run:observation.run,edition:observation.edition,sequence:observation.source.through,entities:observation.entities,projections:new Map()};
- const markup=worldDocument(room,{includeVisits:false});
+ const markup=worldDocument(room,{includeVisits:false,includeCues:false});
  const chunks=[initial],staticRoots=[...document.scenes[document.scene||0].nodes];let offset=initial.length;
  document.scenes=[{nodes:[]}];document.scene=0;document.asset.generator='Holodeck content snapshot exporter';
  document.asset.copyright='2026 Holodeck contributors; original workshop art under MIT';

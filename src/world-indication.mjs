@@ -1,0 +1,65 @@
+import {PerspectiveCamera,Raycaster,Vector2,BoxHelper} from 'three';
+import {entityLabel} from './focus.mjs';
+const visible=object=>{for(let p=object;p;p=p.parent)if(!p.visible)return false;return true;};
+export class PublicWorldPicker{
+ constructor({document,canvas,scene,cameraState,proof,onPick,onUnavailable=()=>{}}){
+  Object.assign(this,{document,canvas,scene,cameraState,proof,onPick,onUnavailable});this.ray=new Raycaster();this.camera=new PerspectiveCamera();this.gesture=null;
+  this.down=e=>{this.gesture=e.isPrimary!==false&&e.button===0?{id:e.pointerId,x:e.clientX,y:e.clientY,time:performance.now()}:null;};
+  this.move=e=>{if(this.gesture&&Math.hypot(e.clientX-this.gesture.x,e.clientY-this.gesture.y)>6)this.gesture=null;};
+  this.cancel=()=>{this.gesture=null;};
+  this.up=e=>{
+   const g=this.gesture;this.gesture=null;
+   if(!g||g.id!==e.pointerId||performance.now()-g.time>800||Math.hypot(e.clientX-g.x,e.clientY-g.y)>6)return;
+   const picked=this.pick(e.clientX,e.clientY);if(picked)this.onPick(picked);
+  };
+  for(const[type,listener]of [['pointerdown',this.down],['pointermove',this.move],['pointerup',this.up],['pointercancel',this.cancel]])canvas.addEventListener(type,listener);
+ }
+ pick(x,y){
+  const root=this.document.querySelector('m-group#workshop'),proof=this.proof();
+  if(!root||!proof||proof.run!==root.getAttribute('data-run')||proof.edition!==root.getAttribute('data-edition')||String(proof.sequence)!==root.getAttribute('data-semantic-sequence')){this.onUnavailable();return null;}
+  const state=this.cameraState(),rect=this.canvas.getBoundingClientRect();if(!state||!rect.width||!rect.height)return null;
+  Object.assign(this.camera,{fov:state.fov,aspect:state.aspect,near:.01,far:200});this.camera.position.set(state.position.x,state.position.y,state.position.z);
+  this.camera.quaternion.set(state.rotation.x,state.rotation.y,state.rotation.z,state.rotation.w);this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld(true);this.scene.updateMatrixWorld(true);
+  this.ray.setFromCamera(new Vector2((x-rect.left)/rect.width*2-1,-(y-rect.top)/rect.height*2+1),this.camera);
+  const owners=new Map();
+  for(const entity of root.querySelectorAll('m-group[data-entity-revision]')){
+   if(!(entity.id==='bridge'||/^garden-[a-z0-9-]{1,40}$/.test(entity.id)))continue;
+   const record={target:entity.id,revision:Number(entity.getAttribute('data-entity-revision')),container:entity.getContainer(),element:entity};owners.set(entity.getContainer(),record);
+   if(entity.id==='bridge'){const control=root.querySelector('m-group#bridge-control');if(control)owners.set(control.getContainer(),{...record,container:control.getContainer(),element:control});}
+  }
+  const cues=new Set([...root.querySelectorAll('m-group[data-focus-target]')].map(element=>element.getContainer()));
+  const communication=object=>{for(let p=object;p;p=p.parent)if(cues.has(p))return true;return false;};
+  const hit=this.ray.intersectObjects(this.scene.children,true).find(hit=>(hit.object.isMesh||hit.object.isSprite)&&!communication(hit.object)&&visible(hit.object)&&[...(Array.isArray(hit.object.material)?hit.object.material:[hit.object.material])].some(material=>material?.visible&&material.opacity>0));
+  if(!hit)return null;
+  for(let object=hit.object;object;object=object.parent){const owner=owners.get(object);if(owner)return {...owner,run:proof.run,edition:proof.edition};}
+  return null; // Visible scenery/private preview occludes objects behind it.
+ }
+ dispose(){for(const[type,listener]of [['pointerdown',this.down],['pointermove',this.move],['pointerup',this.up],['pointercancel',this.cancel]])this.canvas.removeEventListener(type,listener);this.cancel();}
+}
+export class WorldIndication{
+ constructor({document,scene,getState,set,clear}){
+  Object.assign(this,{document,scene,getState,set,clear});this.selected=null;this.panel=document.querySelector('#pointing');this.send=document.querySelector('#point-send');this.cancel=document.querySelector('#point-clear');
+  this.send.onclick=async()=>{if(this.selected)await set(this.selected);};
+  this.cancel.onclick=async()=>{this.selected=null;this.removeOutline();const own=this.own();if(own)await clear(own);this.update();};
+ }
+ own(){const state=this.getState();return state?.focus?.find(signal=>signal.actor===state.actorRef);}
+ select(record){this.selected=record;this.removeOutline();this.outline=new BoxHelper(record.container,0xc7ecff);this.scene.add(this.outline);this.update();}
+ removeOutline(){if(!this.outline)return;this.outline.removeFromParent();this.outline.geometry.dispose();this.outline.material.dispose();this.outline=null;}
+ current(){
+  const s=this.selected,root=this.document.querySelector('m-group#workshop');if(!s||!root)return false;
+  return !!s.element?.isConnected&&root.contains(s.element)&&s.element.getContainer()===s.container&&root.getAttribute('data-run')===s.run&&root.getAttribute('data-edition')===s.edition&&root.querySelector(`[id="${s.target}"]`)?.getAttribute('data-entity-revision')===String(s.revision);
+ }
+ update(){
+  const state=this.getState(),own=this.own(),selected=this.selected,current=this.current();
+  const shared=current&&own?.target===selected.target&&own.revision===selected.revision&&own.status==='current';
+  if(this.outline){this.outline.visible=current&&!shared;if(this.outline.visible)this.outline.update();}
+  const busyPanel=!this.document.querySelector('#conversation-panel').hidden||!this.document.querySelector('#creator').hidden;
+  this.panel.hidden=(!selected&&!own)||busyPanel;
+  const message=selected&&!shared?(current?`Elegiste ${entityLabel(selected.target)}.`:'El objeto cambió. Volvé a elegirlo.'):
+   own?(own.status==='current'?`Compartiste ${entityLabel(own.target)} como referencia.`:own.status==='deleted'?'El objeto que señalaste fue retirado.':'El objeto que señalaste cambió.'):'';
+  this.document.querySelector('#point-label').textContent=message;this.send.hidden=!selected||!current||shared;this.cancel.textContent=own?'Dejar de señalar':'Cancelar';
+  const active=this.document.activeElement;if((this.panel.hidden&&this.panel.contains(active))||(this.send.hidden&&active===this.send))active?.blur();
+  if(state&&selected&&state.run!==selected.run){this.selected=null;this.removeOutline();}
+ }
+ dispose(){this.removeOutline();}
+}

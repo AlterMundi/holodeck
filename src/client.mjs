@@ -4,6 +4,7 @@ import { DirectionalLight } from 'three';
 import { WORKSHOP, workshopColour } from './workshop.mjs';
 import { saveIntent, loadIntent, archiveIntent, sameActor, nativeRetryRoute } from './client-intents.mjs';
 import { NativeAvatarLayer } from './native-avatar.mjs';
+import {PublicWorldPicker,WorldIndication} from './world-indication.mjs';
 import { ContentVisitor } from './content-visitor.mjs';
 import { AppliedGeometryProbe } from './applied-geometry.mjs';
 import { WorldAudio } from './world-audio.mjs';
@@ -28,7 +29,7 @@ const touchControls={
   },
   dispose(){this.delegate?.dispose();this.holder?.remove();}
 };
-let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,preparingConversation=false;
+let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null;
 const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
   sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket('network'),waitForWorldConfig:true,
   enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
@@ -45,9 +46,15 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
     geometryProbe=new AppliedGeometryProbe({document,scene:renderer.mmlCompositionScene.group,
       canvas:options.targetElement.querySelector(':scope > canvas'),expectedDocumentURL:socket('world')});
     nativeAvatarLayer=new NativeAvatarLayer({document,base,onFailure:message=>say(message)});
+    worldPicker=new PublicWorldPicker({document,canvas:options.targetElement.querySelector(':scope > canvas'),scene:renderer.mmlCompositionScene.group,
+      cameraState:()=>options.coreCameraManager.getCameraState(),proof:()=>geometryProbe?.snapshot(),onPick:record=>worldIndication?.select(record),
+      onUnavailable:()=>say('No pude identificar ese objeto todavía. Probá de nuevo.')});
+    worldIndication=new WorldIndication({document,scene:renderer.mmlCompositionScene.group,getState:()=>state,
+      set:record=>action('focus.set',record.target,{},record.revision,{selection:record}),
+      clear:record=>action('focus.clear',null,{},record.sequence)});
     const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
-    renderer.render=state=>{nativeAvatarLayer.update();contentVisitor?.update(client.getLocalCharacterState()?.position);render(state);geometryProbe.afterRender();};
-    renderer.dispose=()=>{nativeAvatarLayer.dispose();geometryProbe.dispose();dispose();};
+    renderer.render=state=>{nativeAvatarLayer.update();worldIndication?.update();contentVisitor?.update(client.getLocalCharacterState()?.position);render(state);geometryProbe.afterRender();};
+    renderer.dispose=()=>{worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();dispose();};
     queueMicrotask(options.onInitialized);
     return renderer;
   },
@@ -84,7 +91,7 @@ worldAudio.setVisibility(!document.hidden);
 document.addEventListener('visibilitychange',()=>{worldAudio.setVisibility(!document.hidden);if(!document.hidden)refresh().catch(()=>{});});
 window.addEventListener('offline',()=>worldAudio.breakContinuity());
 window.addEventListener('online',()=>worldAudio.breakContinuity());
-let state=null,pending=null,pendingMetadata=null,preview=null,lastChange=null,nativeTurn=null,closed=false,stateRequest=0,preparingAction=false;
+let pending=null,pendingMetadata=null,preview=null,lastChange=null,nativeTurn=null,closed=false,stateRequest=0,preparingAction=false;
 const recovery={command:null,native:null};
 let closingRecovery=null,recoveryBusy=false;
 const pendingKey=`holodeck.pending:${base.pathname}`;
@@ -219,7 +226,9 @@ async function refresh(){
 }
 function settleCommand(result){
   if(!pending||result.command!==pending.id||!['completed','rejected','failed'].includes(result.status))return false;
-  if(result.status==='completed'){
+  if(result.status==='completed'&&pending.type.startsWith('focus.')){
+    say(pending.type==='focus.set'?'La indicación ya es compartida.':'Dejaste de señalar ese objeto.');
+  }else if(result.status==='completed'){
     const undo=pendingMetadata?.undo;
     lastChange=undo?null:{type:pending.type,target:pending.target,previous:pendingMetadata?.previous,
       appliedRevision:pending.type==='garden.place'?1:pending.expectedRevision+1,run:pending.run};
@@ -233,11 +242,12 @@ async function recoverCommand(){
   try{const result=await api(`commands/${id}`);if(sameRequest(pending,id))settleCommand(result);}
   catch(error){if(sameRequest(pending,id))noteRecovery('command',error);}
 }
-async function action(type,target,args,expectedRevision,{undo=false}={}){
+async function action(type,target,args,expectedRevision,{undo=false,selection=null}={}){
   if(pending||preparingAction){say('Primero tengo que confirmar el cambio anterior.');return null;}
   preparingAction=true;let submittedId=null;
   try{
-    const observation=await api('observe',{displayedSequence:null});
+    const observation=await api('observe',{after:Math.max(0,(state?.sequence??0)-16),displayedSequence:null,maxBytes:12288});
+    if(selection&&(observation.run!==selection.run||observation.edition!==selection.edition)){say('El lugar cambió. Elegí el objeto de nuevo.');return null;}
     const previous=observation.entities[target];
     pending={id:crypto.randomUUID(),issuedAt:Date.now(),run:observation.run,edition:observation.edition,observation:observation.id,type,target,args,expectedRevision};
     pendingMetadata={command:pending,previous,undo,actorRef:state?.actorRef,createdAt:Date.now()};
@@ -300,7 +310,7 @@ $('#undo').onclick=async()=>{
   if(change.type==='bridge.set')await action('bridge.set','bridge',{raised:change.previous.raised},entity.revision,{undo:true});
   else if(change.type==='garden.place')await action('garden.remove',change.target,{},entity.revision,{undo:true});
 };
-function openConversation(open){$('#conversation-panel').hidden=!open;$('#talk').setAttribute('aria-expanded',String(open));if(open)$('#message').focus();}
+function openConversation(open){const panel=$('#conversation-panel');panel.hidden=!open;$('#talk').setAttribute('aria-expanded',String(open));if(open)$('#message').focus();else if(panel.contains(document.activeElement))document.activeElement.blur();}
 $('#talk').onclick=()=>openConversation($('#conversation-panel').hidden);
 $('#conversation-close').onclick=()=>openConversation(false);
 function boundConversation(){
@@ -354,7 +364,8 @@ $('#conversation-form').onsubmit=async event=>{
   const body={id:crypto.randomUUID(),text,displayedSequence:null,view};
   nativeTurn={id:body.id,body,actorRef:state.actorRef,run:state.run,createdAt:Date.now()};$('#send').disabled=true;
   try{nativeTurn=saveIntent(sessionStorage,turnKey,nativeTurn);}catch{nativeTurn=null;updateNativeAvailability();say('No pude conservar este mensaje para comprobarlo después. No se envió.');return;}
-  appendMessage(text,'human');$('#message').value='';$('#message').blur();
+  appendMessage(text,'human');
+  if($('#message').value===text){$('#message').value='';$('#message').blur();}
   try{const result=await api('interactions',body);
     if(!sameRequest(nativeTurn,body.id))return;
     $('#companion-status').textContent=phases[result.phase]||phases.unknown;

@@ -1,0 +1,72 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import {mkdtemp,rm} from 'node:fs/promises';import {readFileSync} from 'node:fs';import {tmpdir} from 'node:os';import {join} from 'node:path';
+import {fitSituation} from '../src/situation-budget.mjs';
+import {Room} from '../src/room.mjs';import {worldDocument} from '../src/world.mjs';import {createNativeConversation} from '../src/native-conversation.mjs';
+import {exportWorldSnapshot} from '../tools/export-world-snapshot.mjs';import {exportReviewScene} from '../tools/export-review-scene.mjs';
+const human={id:'human:focus-fixture',ref:'human:focus-fixture',kind:'human',name:'Fixture',rights:['observe','edit','project']};
+const native={id:'daimon:focus-fixture',kind:'daimon',rights:['observe','edit','project']};
+function proposal(room,actor,type,target,args,expectedRevision){const observation=room.observe(actor);return{id:crypto.randomUUID(),issuedAt:Date.now(),run:room.run,edition:room.edition,observation:observation.id,type,target,args,expectedRevision,...(actor.kind==='daimon'?{nativeRequest:'controlled-native-fixture'}:{})};}
+function command(room,actor,...args){return room.command(actor,proposal(room,actor,...args));}
+test('human and native use the same canonical entity/revision; indication does not alter creation identity or grant rights',()=>{
+ const room=new Room();command(room,human,'garden.place','garden-first',{x:1,z:1,color:'mint'},null);
+ const a=proposal(room,human,'focus.set','garden-first',{},1);assert.equal(room.command(human,a).status,'completed');assert.deepEqual(room.command(human,a),room.command(human,a));
+ assert.equal(command(room,native,'focus.set','garden-first',{},1).status,'completed');
+ assert.equal(room.entities['garden-first'].revision,1);assert.equal(room.focusState().length,2);assert.ok(room.focusState().every(s=>s.target==='garden-first'&&s.revision===1&&s.status==='current'));
+ assert.throws(()=>room.command({...native,rights:['observe']},proposal(room,native,'focus.set','bridge',{},0)),/Editing access/);
+ for(const [target,args]of [['bridge-control',{}],['garden-first',{actor:human.id}],['garden-first',[]]])assert.equal(command(room,human,'focus.set',target,args,1).status,'rejected');
+ const forged=proposal(room,native,'focus.set','bridge',{},0);delete forged.nativeRequest;assert.equal(room.command(native,forged).status,'rejected');
+ const state=room.snapshot(),recovered=new Room({state});assert.deepEqual(recovered.focusState(),room.focusState());delete state.focuses;assert.equal(new Room({state}).focusState().length,0);
+});
+test('stale/forged revision and another actor cannot clear or retarget a prior statement',()=>{
+ const room=new Room(),other={...human,id:'human:other'};command(room,human,'garden.place','garden-first',{x:1,z:1,color:'mint'},null);
+ command(room,human,'focus.set','garden-first',{},1);const original=room.focusState()[0],captured=room.observe(human),stale=proposal(room,human,'focus.set','garden-first',{},1);
+ command(room,other,'garden.update','garden-first',{x:2,z:1,color:'violet'},1);
+ assert.deepEqual({...room.focusState()[0],status:'revised'}, {...original,currentRevision:2,status:'revised'});
+ assert.equal(room.command(human,{...stale,expectedRevision:2}).status,'rejected','old observation cannot claim a version it never contained');
+ assert.equal(captured.focus[0].status,'current');assert.equal(captured.focus[0].currentRevision,1);
+ assert.doesNotMatch(worldDocument(room),/data-focus-target/);
+ assert.equal(command(room,other,'focus.clear',null,{},original.sequence).status,'rejected');
+ const oldClear=proposal(room,human,'focus.clear',null,{},original.sequence);
+ command(room,human,'focus.set','garden-first',{},2);assert.equal(room.command(human,oldClear).status,'rejected');
+ const current=room.focusState()[0];assert.equal(room.command(human,{...oldClear,id:crypto.randomUUID(),expectedRevision:current.sequence}).status,'rejected','an old observation cannot forge a newer clear sequence');assert.equal(command(room,human,'focus.clear',other.id,{},current.sequence).status,'rejected');
+ command(room,other,'garden.remove','garden-first',{},2);assert.equal(room.focusState()[0].status,'deleted');assert.equal(room.focusState()[0].revision,2);assert.equal(captured.focus[0].status,'current');
+ assert.equal(command(room,human,'focus.clear',null,{},current.sequence).status,'completed');assert.equal(room.focusState().length,0);
+});
+test('shared indication glyphs never enter GLB/review creation geometry',async()=>{
+ const room=new Room();command(room,human,'focus.set','bridge',{},0);
+ assert.match(worldDocument(room),/data-focus-target="bridge"/);assert.doesNotMatch(worldDocument(room,{includeCues:false}),/data-focus-target/);
+ const scenery=readFileSync(new URL('../public/assets/island-scenery.glb',import.meta.url)),observation=room.observe(human);
+ const bytes=exportWorldSnapshot(observation,scenery),document=JSON.parse(bytes.subarray(20,20+bytes.readUInt32LE(12)).toString());
+ assert.ok(document.nodes.every(node=>!node.name?.startsWith('indication-')));
+ const review=await exportReviewScene(observation,scenery);assert.ok(review.scene.parts.every(part=>!part.id.startsWith('indication-')));
+});
+test('full room conversation fits32KiB after client view/association while retaining all entities and exact speaker/own indication',async t=>{
+ const speaker={...human,id:'human:'+'s'.repeat(194),ref:'human:'+'s'.repeat(194),name:'N'.repeat(80)};
+ const humans=[speaker,...Array.from({length:7},(_,i)=>({...human,id:'human:'+i+'h'.repeat(193),name:'H'.repeat(80)}))];
+ const pairedBeing='dm:being:v1:'+'p'.repeat(43);
+ const daimons=Array.from({length:8},(_,i)=>({...native,id:i===0?pairedBeing:'dm:being:v1:'+String(i).repeat(43),name:'D'.repeat(80)}));
+ const room=new Room({presence:()=>humans.map(actor=>({actor:actor.id,kind:'human',name:actor.name,scope:'authenticated-network-presence'}))});
+ for(let i=0;i<31;i++)command(room,speaker,'garden.place',`garden-${i.toString().padStart(40,'0')}`,{x:6.123456789012345,z:5.123456789012345,color:'#a77bea'},null);
+ for(const [i,actor]of [...humans,...daimons].entries())command(room,actor,'focus.set',`garden-${i.toString().padStart(40,'0')}`,{},1);
+ for(const actor of daimons)room.project(actor,{position:{x:1.123456789012345,y:1.123456789012345,z:1.123456789012345},form:'beacon'});
+ for(let i=0;i<16;i++)command(room,speaker,'garden.update',`garden-${'30'.padStart(40,'0')}`,{x:6.123456789012345,z:5.123456789012345,color:'#a77bea'},i+1);
+ const dir=await mkdtemp(join(tmpdir(),'holodeck-focus-budget-'));t.after(()=>rm(dir,{recursive:true,force:true}));const calls=[];
+ const frozen={actorRef:speaker.ref,beingRef:pairedBeing,homeRef:'home:test-fixture',pairingRevision:'fixture-revision',binding:'a'.repeat(64),entry:[1,{chat_id:1,thread_id:1},1,'fixture-native']};
+ const transport={inspect:async()=>frozen,lookup:async()=>({state:'absent',frozen}),submit:async value=>{calls.push(value);return{phase:'queued',tracking:true,retainedOriginal:true,nativeAcceptance:'observed'};}};
+ const service=await createNativeConversation({room,stateDir:dir,transport}),id=crypto.randomUUID();
+ const view={capturedAt:123,padding:''};view.padding='x'.repeat(4096-Buffer.byteLength(JSON.stringify(view)));
+ await service.submit(speaker,{id,text:'  Este objeto, en este lugar.  ',view});
+ assert.equal(calls.length,1);const observation=calls[0].observation;
+ t.diagnostic(JSON.stringify({nativeCaptureBytes:Buffer.byteLength(JSON.stringify(observation)),omissions:observation.source.omissions}));
+ assert.ok(Buffer.byteLength(JSON.stringify(observation))<=32768);assert.deepEqual(observation.entities,room.entities);assert.equal(Object.keys(observation.entities).length,32);
+ assert.equal(observation.source.pairFocusBinding,'known-from-canonical-lookup');assert.ok(observation.focus.some(signal=>signal.actor===pairedBeing));
+ assert.equal(observation.observer,speaker.id);assert.ok(observation.participants.some(p=>p.actor===speaker.id));assert.deepEqual(observation.focus.find(s=>s.actor===speaker.id),room.focusState().find(s=>s.actor===speaker.id));
+ assert.equal(observation.inputAssociation.humanInputId,id);assert.equal(observation.inputAssociation.clientReportedCaptureTime,123);assert.equal(observation.clientReportedView.value.capturedAt,123);assert.ok(observation.capturedAt>123);
+ assert.notEqual(observation.source.partial,true);assert.equal(observation.source.gap,false);assert.equal(observation.source.omissions,undefined);assert.equal(observation.events.length,16);assert.equal(observation.focus.length,16);assert.equal(observation.participants.length,16);
+ const pressure=structuredClone(observation);assert.equal(fitSituation(pressure,16384,{preserveActors:[pairedBeing]}),true);assert.ok(pressure.focus.some(signal=>signal.actor===speaker.id));assert.ok(pressure.focus.some(signal=>signal.actor===pairedBeing));assert.ok(pressure.source.omissions.events>0);assert.deepEqual(pressure.entities,observation.entities);
+ assert.ok(observation.place.frame&&observation.activity&&observation.source.through===room.sequence);assert.equal(calls[0].input.text,'  Este objeto, en este lugar.  ');
+ for(let i=0;i<16;i++)room.event(speaker,'controlled-oversized-history',{text:'x'.repeat(600)});
+ transport.lookup=async()=>({state:'absent'});
+ await service.submit(speaker,{id:crypto.randomUUID(),text:'Second controlled original',view:{...view,capturedAt:124}});
+ const unknown=calls[1].observation;assert.equal(unknown.source.pairFocusBinding,'unavailable-at-capture');assert.ok(unknown.source.omissions.events>0);assert.equal(unknown.focus.length,16);assert.equal(unknown.participants.length,16);assert.ok(unknown.focus.some(signal=>signal.actor===speaker.id));assert.deepEqual(unknown.entities,room.entities);assert.ok(Buffer.byteLength(JSON.stringify(unknown))<=32768);
+});

@@ -1,10 +1,11 @@
+import {fitSituation} from './situation-budget.mjs';
 import { constants, promises as fs } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import net from 'node:net';
 import { createNativeTransportMux } from './native-mux.mjs';
 
-const JOURNAL_BYTES=1800*1024, MAX_RECORDS=32, MAX_TOMBSTONES=128, MAX_OBSERVATION_BYTES=16384;
+const JOURNAL_BYTES=1800*1024, MAX_RECORDS=32, MAX_TOMBSTONES=128, MAX_OBSERVATION_BYTES=32768;
 const encode=value=>JSON.stringify(value);
 const textHash=value=>createHash('sha256').update(value).digest('hex');
 const uuid=value=>typeof value==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(value);
@@ -175,17 +176,20 @@ export async function createNativeConversation({room,stateDir,transport,fileSyst
       }
       const record=await transaction(async()=>{
         if(Object.keys(records).length>=MAX_RECORDS)throw new NativeConversationError('capacity','Native intent storage is full',{retained:false,knownNotSubmitted:true,retryable:true});
-        const observation=room.observe(actor,{after:Math.max(0,room.sequence-16),displayedSequence:request.displayedSequence??null});
+        const pairedBeing=found.frozen?.actorRef===ref&&typeof found.frozen.beingRef==='string'&&found.frozen.beingRef.length<=200?found.frozen.beingRef:null;
+        const preserveActors=pairedBeing?[pairedBeing]:[];
+        const extra={inputAssociation:{humanInputId:request.id,serverCapture:'at-original-retention',clientReportedCaptureTime:request.view?.capturedAt??null}};
         if(request.view!==undefined){
           if(!request.view||typeof request.view!=='object'||Buffer.byteLength(encode(request.view))>4096)
             throw new NativeConversationError('view','Provide a bounded client-reported view',{retained:false,knownNotSubmitted:true,retryable:true});
-          observation.clientReportedView={evidence:'client-reported-at-interaction-capture',value:structuredClone(request.view),
+          extra.clientReportedView={evidence:'client-reported-at-interaction-capture',value:structuredClone(request.view),
             uncertainty:'Client-reported scene-graph/DOM evidence only, including any appliedGeometry field. Not presented pixels, authoritative location, line of sight, attention or understanding. A not-in-document entity reference proves DOM absence only.'};
         }
-        if(Buffer.byteLength(encode(observation))>MAX_OBSERVATION_BYTES)
-          throw new NativeConversationError('context-capacity','The captured situation exceeds the native context bound',{retained:false,knownNotSubmitted:true,retryable:true});
-        observation.inputAssociation={humanInputId:request.id,serverCapture:'at-original-retention',
-          clientReportedCaptureTime:request.view?.capturedAt??null};
+        const observation=room.observe(actor,{after:Math.max(0,room.sequence-16),displayedSequence:request.displayedSequence??null,
+          maxBytes:MAX_OBSERVATION_BYTES-Buffer.byteLength(encode(extra))-256,preserveActors});
+        Object.assign(observation,extra);observation.source.pairFocusBinding=pairedBeing?'known-from-canonical-lookup':'unavailable-at-capture';
+        if(!fitSituation(observation,MAX_OBSERVATION_BYTES,{preserveActors}))
+          throw new NativeConversationError('context-capacity','The canonical captured situation exceeds the native context bound',{retained:false,knownNotSubmitted:true,retryable:true});
         const value={id:request.id,actorRef:ref,text:request.text,observation,phase:'preparing',frozen:null,writeStarted:false,knownNotSubmitted:true};
         records[value.id]=value;
         if(Buffer.byteLength(encode({schema:'holodeck.native-intents/v1',records,tombstones}))>JOURNAL_BYTES-8192){

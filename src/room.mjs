@@ -2,6 +2,8 @@ import { randomUUID, createHash } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { WORKSHOP, workshopColour } from './workshop.mjs';
 import { avatarForActor } from './avatar-registry.mjs';
+import {fitSituation} from './situation-budget.mjs';
+import {MAX_FOCUS,focusState,validFocusEntry} from './focus.mjs';
 
 export const LIMITS = Object.freeze({ events: 256, commands: 256, observations: 128,
   sessions: 8, elements: 32, retryMs: 300000 });
@@ -24,7 +26,7 @@ export class Room extends EventEmitter {
     this.outcomes = new Map();
     this.observations = new Map();
     this.entities = { bridge: { id: 'bridge', revision: 0, raised: false } };
-    this.projections = new Map();
+    this.projections = new Map();this.focuses=new Map();
     this.persist = persist;
     this.presence = presence;
     if(state)this.restore(state);
@@ -33,7 +35,7 @@ export class Room extends EventEmitter {
   snapshot() {
     return clone({schema:'holodeck.room-save/v1',edition:this.edition,run:this.run,
       sequence:this.sequence,events:this.events,entities:this.entities,
-      outcomes:[...this.outcomes],observations:[...this.observations],projections:[...this.projections]});
+      outcomes:[...this.outcomes],observations:[...this.observations],projections:[...this.projections],focuses:[...this.focuses]});
   }
 
   restore(state) {
@@ -43,12 +45,13 @@ export class Room extends EventEmitter {
       || !Array.isArray(state.outcomes)||state.outcomes.length>LIMITS.commands
       || !Array.isArray(state.observations)||state.observations.length>LIMITS.observations
       || !Array.isArray(state.projections)||state.projections.length>LIMITS.sessions
+      || (state.focuses!==undefined&&(!Array.isArray(state.focuses)||state.focuses.length>MAX_FOCUS||state.focuses.some(entry=>!Array.isArray(entry)||entry.length!==2||!validFocusEntry(entry)||entry[1].sequence>state.sequence)))
       || !state.entities?.bridge || Object.keys(state.entities).length>LIMITS.elements)
       throw new RoomError('save','Room checkpoint is invalid; preserve it for recovery');
     const copy=clone(state);
     this.edition=copy.edition;this.run=copy.run;this.sequence=copy.sequence;
     this.events=copy.events;this.entities=copy.entities;
-    this.outcomes=new Map(copy.outcomes);this.observations=new Map(copy.observations);this.projections=new Map(copy.projections);
+    this.outcomes=new Map(copy.outcomes);this.observations=new Map(copy.observations);this.projections=new Map(copy.projections);this.focuses=new Map(copy.focuses||[]);
   }
 
   atomic(operation) {
@@ -86,7 +89,7 @@ export class Room extends EventEmitter {
 
   observe(actor, query = {}) { return this.atomic(()=>this.capture(actor,query)); }
 
-  capture(actor, { after = 0, displayedSequence = null } = {}) {
+  capture(actor, { after = 0, displayedSequence = null, maxBytes = null, preserveActors = [] } = {}) {
     if (!actor?.rights?.includes('observe')) throw new RoomError('forbidden', 'Room access required');
     if (!Number.isSafeInteger(after) || after < 0 || after > this.sequence)
       throw new RoomError('cursor', 'Invalid semantic cursor');
@@ -102,9 +105,12 @@ export class Room extends EventEmitter {
       source: { after, through: this.sequence, displayedSequence,
         gap: after < (this.events[0]?.sequence ?? 1) - 1 },
       activity: { title: 'Connect the workshop islands', intention: null, evidence:'authored-scenario; participants intentions are not inferred' },
+      focus:this.focusState(),
       entities: clone(this.entities), participants: clone([...this.presence(),...this.projections.values()]),
       events: clone(this.events.filter(event => event.sequence > after)),
       uncertainty: ['Displayed state does not establish attention or understanding.'] };
+    if(!Array.isArray(preserveActors)||preserveActors.length>1||preserveActors.some(ref=>typeof ref!=='string'||ref.length>200))throw new RoomError('cursor','Invalid capture preservation');
+    if(maxBytes!==null&&!fitSituation(observation,maxBytes,{preserveActors}))throw new RoomError('capacity','The canonical situation exceeds this capture bound');
     this.observations.set(observation.id, observation);
     return clone(observation);
   }
@@ -125,6 +131,8 @@ export class Room extends EventEmitter {
     this.projections.set(actor.id, projection);
     return this.event(actor, 'projection.changed', projection);
   }
+
+  focusState(){return focusState(this.focuses,this.entities);}
 
   command(actor, command) { return this.atomic(()=>this.execute(actor,command)); }
 
@@ -160,6 +168,26 @@ export class Room extends EventEmitter {
       return finish('rejected', 'Capture a current situation before acting');
     if (actor.kind === 'daimon' && (typeof command.nativeRequest !== 'string' || command.nativeRequest.length > 128))
       return finish('rejected', 'Retain the originating native request');
+    if(command.type==='focus.set'||command.type==='focus.clear'){
+      if(typeof actor.id!=='string'||actor.id.length>200||!['human','daimon'].includes(actor.kind)
+        ||!command.args||typeof command.args!=='object'||Array.isArray(command.args)||Object.keys(command.args).length)return finish('rejected','Choose an explicit indication');
+      if(command.type==='focus.clear'){
+        const previous=this.focuses.get(actor.id),seen=observation.focus?.find(signal=>signal.actor===actor.id);
+        if(command.target!==null||!previous||command.expectedRevision!==previous.sequence||seen?.sequence!==command.expectedRevision)
+          return finish('rejected','Your indication changed; inspect it before clearing');
+        this.focuses.delete(actor.id);
+        return finish('completed','Indication cleared',this.event(actor,'focus.clear',{target:previous.target,revision:previous.revision,clearedSequence:previous.sequence,nativeRequest:command.nativeRequest??null}));
+      }
+      const entity=this.entities[command.target],seen=observation.entities[command.target];
+      if(typeof command.target!=='string'||!(command.target==='bridge'||/^garden-[a-z0-9-]{1,40}$/.test(command.target))
+        ||!entity||entity.deleted||!seen||seen.deleted||command.expectedRevision!==entity.revision||seen.revision!==command.expectedRevision)
+        return finish('rejected','This object changed; choose its current version');
+      if(!this.focuses.has(actor.id)&&this.focuses.size>=MAX_FOCUS)return finish('rejected','Indication capacity reached');
+      const signal={actor:actor.id,kind:actor.kind,name:typeof actor.name==='string'?actor.name.slice(0,40):null,
+        target:command.target,revision:entity.revision,sequence:this.sequence+1,time:this.clock()};
+      this.focuses.set(actor.id,signal);
+      return finish('completed','Object indicated',this.event(actor,'focus.set',{target:signal.target,revision:signal.revision,nativeRequest:command.nativeRequest??null}));
+    }
     const entity = this.entities[command.target];
     if (command.type === 'bridge.set') {
       if (command.target !== 'bridge' || !command.args || Object.keys(command.args).length !== 1 || typeof command.args.raised !== 'boolean')
@@ -206,7 +234,7 @@ export class Room extends EventEmitter {
   resetNow() {
     this.run = randomUUID(); this.sequence = 0; this.events = []; this.observations.clear();
     this.entities = { bridge: { id: 'bridge', revision: 0, raised: false } };
-    this.projections.clear(); // Retain outcomes: old IDs must not mutate a new run.
+    this.focuses.clear();this.projections.clear(); // Retain outcomes: old IDs must not mutate a new run.
     this.changed({ type:'run.reset', run:this.run });
   }
 }

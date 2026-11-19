@@ -12,7 +12,9 @@ export const WORKSHOP = Object.freeze({
   },
   contents:[CONTENT_NODE],
   creationArea:{minX:-7,maxX:7,minZ:-6,maxZ:6},
-  operations:['bridge.set','garden.place','garden.update','garden.remove'],
+  operations:['bridge.set','garden.place','garden.update','garden.remove','focus.set','focus.clear'],
+  indication:{set:{operation:'focus.set',target:'Canonical public entity ID',expectedRevision:'Observed entity revision',args:{}},
+    clear:{operation:'focus.clear',target:null,expectedRevision:'Your latest focus statement sequence',args:{}},meaning:'Explicit shared reference, not gaze or attention'},
   perception:'structured-authored-world-overview',
   evidence:'selected-virtual-workshop-definition'
 });

@@ -1,11 +1,12 @@
 // One-way projection of Room semantics. Static original art is a merged GLB;
 // only traversable surfaces and changing activity elements remain MML primitives.
+import {focusAnchor} from './focus.mjs';
 import {CONTENT_NODE} from './content-visits.mjs';
 import {avatarForActor} from './avatar-registry.mjs';
 import {workshopProjection,projectionNodeHTML,attribute} from './workshop-projection.mjs';
 const sphere=(x,y,z,r,color)=>`<m-sphere x="${x}" y="${y}" z="${z}" radius="${r}" color="${color}" collide="false"></m-sphere>`;
 const cylinder=(x,y,z,r,h,color,extra='')=>`<m-cylinder x="${x}" y="${y}" z="${z}" radius="${r}" height="${h}" color="${color}" ${extra}></m-cylinder>`;
-export function worldDocument(room,{basePath='/',includeVisits=true}={}){
+export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=true}={}){
   const prefix=basePath.endsWith('/')?basePath:basePath+'/';
   const projection=workshopProjection(room.entities),manifest=JSON.stringify(room.entities);
   if(manifest.length>16384)throw Error('Geometry manifest exceeds bound');
@@ -30,6 +31,21 @@ export function worldDocument(room,{basePath='/',includeVisits=true}={}){
       <m-cube y="1.03" width="1.1" height="1.24" depth=".08" color="#8ce4c2" collide="false"></m-cube>
       <m-label y="2.2" content="Sala de presentaciones" font-size="24" width="3" height=".5" collide="false"></m-label>
     </m-group>`;
+  }
+  if(includeCues&&room.focusState){
+    const groups=new Map();
+    for(const signal of room.focusState())if(signal.status==='current'){
+      const list=groups.get(signal.target)||[];list.push(signal);groups.set(signal.target,list);
+    }
+    for(const[target,signals]of groups){
+      const {x,y,z}=focusAnchor(target,room.entities[target]);
+      const rawName=signals[0].name,name=rawName?.length>18?rawName.slice(0,17)+'…':rawName;
+      const label=signals.length>1?`${signals.length} indicaciones`:`${name||(signals[0].kind==='daimon'?'Un daimon':'Una persona')} señaló`;
+      out+=`<m-group id="indication-${attribute(target)}" data-focus-target="${attribute(target)}" data-focus-revision="${signals[0].revision}" x="${x}" y="${y}" z="${z}">
+        <m-cylinder radius=".48" height=".035" color="#ffe0a0" opacity=".8" collide="false"></m-cylinder>
+        <m-sphere y=".15" radius=".09" color="#fff2c9" collide="false"></m-sphere>
+        <m-label y=".5" content="${attribute(label)}" font-size="18" width="1.8" height=".24" color="#163b3f" font-color="#f6edda" collide="false"></m-label></m-group>`;
+    }
   }
   for(const p of room.projections.values()){
     const{x,y,z}=p.position;
