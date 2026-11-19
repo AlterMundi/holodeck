@@ -40,6 +40,20 @@ test('review meshes preserve metre anchors, valid triangles, stable entity parts
  assert.ok(raised.scene.parts.some(p=>p.id===deck.id));
  assert.equal(raised.source.parts.find(p=>p.part===deck.id).revision,1);
 });
+test('creation review excludes only the named ambient horizon while retaining all source geometry in its full snapshot',async()=>{
+ const room=new Room();command(room,'garden.place','garden-detail',{x:2,z:1,color:'violet'},null);
+ const observation=room.observe(actor),full=await exportReviewScene(observation,scenery,{includeAmbientEnvironment:true});
+ const review=await exportReviewScene(observation,scenery);
+ assert.deepEqual(full.source.excludedEnvironment,[]);assert.equal(review.source.excludedEnvironment.length,1);
+ assert.equal(review.source.excludedEnvironment[0].material,'water');
+ const excluded=new Set(review.source.excludedEnvironment.map(part=>part.part));
+ assert.deepEqual(review.scene.parts,full.scene.parts.filter(part=>!excluded.has(part.id)));
+ assert.deepEqual(review.source.parts,full.source.parts.filter(part=>!excluded.has(part.part)));
+ assert.equal(review.source.snapshotSha256,full.source.snapshotSha256);
+ assert.ok(review.source.parts.some(part=>part.entity==='garden-detail'));
+ const extent=scene=>{const min=[Infinity,Infinity],max=[-Infinity,-Infinity];for(const part of scene.parts)for(const v of part.vertices)for(let i=0;i<2;i++){min[i]=Math.min(min[i],v[i]);max[i]=Math.max(max[i],v[i]);}return Math.max(...max.map((value,i)=>value-min[i]));};
+ assert.equal(extent(full.scene),220000);assert.ok(extent(review.scene)<70000);
+});
 test('generated review scene is accepted by the real installed gallery builder',{skip:!process.env.HOLODECK_REVIEW_BUILDER},async()=>{
  const {scene,source}=await exportReviewScene(new Room().observe(actor),scenery);
  const dir=mkdtempSync(join(tmpdir(),'holodeck-review-scene-'));

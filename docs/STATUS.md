@@ -161,3 +161,29 @@ qualification:86 Node tests with0skips,16 Python bridge tests and browser build
 pass. Actual deployed native observe→project→observe independently selected the
 existing authored avatar while no human browser participant was connected. This
 adds real machine/action evidence, not human-view or full MVP acceptance.
+
+## Actual creation review and independent trial entrance —2026-11-19
+
+A real frozen shared room state now has a protected Home draft resource, its
+editable creation-only parameters, full GLB and maintained viewer gallery. It
+uses the same fourteen world readers and the existing project selector. Separate
+immutable Nexus review editions retain the original107-part presentation, the
+corrected106-part display and its UI-only successor. The full source GLB remains
+unchanged; only the ambient horizon backdrop is excluded from review framing.
+
+Actual own-being HTTPS/browser checks prove exact served bytes, current model
+pin/GPU hydration, visible controls, catalog marker, part toggle, and historical
+revisit after the draft advanced without automatic current/catalog lookup. Task
+reader sessions were revoked and isolated contexts closed. All seven existing
+human review grants and fourteen independent model permissions are current;
+this is not their browser use or a model reply. No synthetic contributions or
+native inputs were created. A separate existing Home link selects this reviewed
+trial edition while later drafts remain independent;303/anonymous404 checks pass.
+
+Source checks include94Node tests with the installed gallery builder (zero skips),
+22Python checks and the browser bundle build. Explicit shared indications and
+video/3D visit support have their own qualified source; their next Holodeck
+runtime selection is separate from the already delivered Nexus/viewer content.
+The situated conversational return, human/device/reconnect acceptance and the
+new creation review's native association remain open. No full MVP completion is
+claimed. See [content cycle](content-cycle.md) and [snapshot producer](content-snapshots.md).

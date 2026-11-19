@@ -1,7 +1,8 @@
 # Durable creation cycle: supported route and remaining seams
 
-Read-only source inspection, 2026-11-17. This qualifies plan step4; it does not
-publish a creation, grant access, resume Nexus work or establish human acceptance.
+Initial read-only source inspection, 2026-11-17, followed by the bounded real
+creation delivery below on2026-11-19. The initial audit qualified plan step4;
+receiving publication/review and human acceptance remain distinct.
 The existing [snapshot exporter](content-snapshots.md) freezes creation geometry;
 a save, a static snapshot, a review edition and a published selection are distinct.
 
@@ -146,10 +147,11 @@ link route does not complete the proposed generic Nexus delivery lifecycle.
 
 ## Remaining creation-cycle work
 
-- Holodeck has no integrated prepare/publish/review operation yet. The scene
-  conversion now passes the actual installed shared gallery builder and retains
-  stable part/source references; exported GLB alone still does not satisfy the
-  gallery/ModelPin contract. No real Holodeck creation has been published/reviewed.
+- The exporters, maintained gallery builder and bounded draft publisher now
+  deliver a real shared creation through the existing gallery/ModelPin contract.
+  Actual native source, pinned HTTPS bytes, own-being browser rendering and
+  immutable Nexus imports are retained. Human comment/response/revisit remains open; a separately selected protected
+  trial entrance now pins the reviewed edition. No model attendance is inferred.
 - The current Home publisher has no draft/promote command or independent selected
   published pointer. Nexus's `deliverable-lifecycle-proposal.md` remains a proposal;
   its illustrative project routes are not implementation evidence.
@@ -159,6 +161,49 @@ link route does not complete the proposed generic Nexus delivery lifecycle.
   a movable published selection. One evolving model artifact and one existing
   link resource reuse the original version/link writers; destination permission
   remains independent. No parallel registry, per-draft IDs or Apps entry is used.
+
+## First real shared creation draft —2026-11-19
+
+One actual native observation of the shared room froze 29 entities: the bridge and
+28 lights, including the human-created violet light and another being's retained
+changes. The full source GLB and source-bound display conversion use that same
+frozen state. No human text, participant roster, private conversation or media
+visit was published as creation content. The new draft resource has exactly the
+existing fourteen world readers and appears in the existing permission-filtered
+3D project catalog; no new App or viewer service was created.
+
+An actual hosted own-being browser exposed a framing problem: the220m ambient
+water disk dominated ordinary model fit. The corrected review omits only the
+authored scenery's named `water` material, declares that omission in source metadata
+and retains the full originalGLB unchanged. All semantic entities and other
+scenery parts keep identical IDs, vertices and source revisions. Explicit
+`--include-environment` retains the full display when needed.
+
+The corrected 106-part model hydrates with its actual publication/model pin and
+GPU backend; part visibility toggles and restores through the real controls. The
+actual reader catalog advertises the project. All five pinned HTTPS files match
+their selected hashes. A historical read after the draft advanced returns the
+unchanged 107-part predecessor. Exact publisher retry leaves the canonical Home
+entry and its retained editions unchanged. Source/renderer UI corrections
+remain separate from the captured creation state.
+
+Nexus retains separate immutable review tables in one family, with all seven
+existing human identities and independent model permission for all fourteen
+readers. No sessions, synthetic notes, results, native inputs or human acceptance
+were created for that qualification. The current Nexus artifact HTTP identity
+contract remains human-only; beings' own Home model readership is not a human
+session. The missing native reflection association remains explicit.
+
+`tools/publish-review-draft.py` is the maintained bounded producer: 200 MiB unique
+retained project history, one 16 MiB task stage, exact current/audience/source checks,
+retained write intent and no unknown-outcome replay. It creates no published
+release pointer. A separate existing Home link now pins the technically reviewed
+trial edition, selected by the companion under the human-directed MVP goal, with
+the same fourteen readers. This is an operator trial selection, not human design
+approval or acceptance. Subsequent drafts do not advance that link. The actual
+owner read returns 303 to the exact pinned viewer; anonymous access returns 404
+without exposing its target. Receiving pins, actual grant checks and cleanup receipts stay
+in the owning private operation record.
 
 ## Sources inspected
 

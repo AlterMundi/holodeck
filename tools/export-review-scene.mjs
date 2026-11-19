@@ -8,12 +8,12 @@ import {Vector3} from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {exportWorldSnapshot} from './export-world-snapshot.mjs';
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
-export async function exportReviewScene(observation,scenery){
+export async function exportReviewScene(observation,scenery,{includeAmbientEnvironment=false}={}){
  const glb=exportWorldSnapshot(observation,scenery);
  const snapshotSource=JSON.parse(glb.subarray(20,20+glb.readUInt32LE(12))).extras.holodeck;
  const loaded=await new GLTFLoader().parseAsync(glb.buffer.slice(glb.byteOffset,glb.byteOffset+glb.byteLength),'');
  loaded.scene.updateMatrixWorld(true);
- const parts=[],references=[],counts=new Map();let triangles=0;
+ const parts=[],references=[],excludedEnvironment=[],counts=new Map();let triangles=0;
  try{
   loaded.scene.traverse(object=>{
    if(!object.isMesh)return;
@@ -24,6 +24,13 @@ export async function exportReviewScene(observation,scenery){
    counts.set(entity,ordinal);
    const id=entity!=='scenery'&&object.name.startsWith(entity+'-')&&/^[a-z0-9-]+$/.test(object.name)
     ?object.name:`${entity}--part-${ordinal}`;
+   // The authored horizon disk spans220m; including it in CAD-style autofit
+   // makes the actual islands/creation unreadably small. Keep it in the full
+   // GLB snapshot, and explicitly omit only this named ambient material from
+   // the creation review. Never filter semantic entities or guess by size.
+   if(!includeAmbientEnvironment&&entity==='scenery'&&object.material.name==='water'){
+    excludedEnvironment.push({part:id,material:'water',reason:'Ambient horizon backdrop; retained in the full GLB snapshot.'});return;
+   }
    if(parts.some(part=>part.id===id))throw Error('Review part identities must be unique');
    const geometry=object.geometry,position=geometry.getAttribute('position');
    if(!position||position.count>65535||Array.isArray(object.material))throw Error('Unsupported review mesh');
@@ -65,7 +72,7 @@ export async function exportReviewScene(observation,scenery){
    semanticSequence:observation.source.through,sourceUnits:'m',displayUnits:'mm',scale:1000,sourceUp:'Y',displayUp:'Z',
    displayFromWorld:[[1000,0,0,0],[0,0,-1000,0],[0,1000,0,0],[0,0,0,1]],
    evidence:'Captured semantic state projected through the selected authored source; not a running simulation or human-view capture.',
-   snapshotSha256:sha(glb),scenerySha256:sha(scenery),authoredProjectionSha256:snapshotSource.authoredProjectionSha256,parts:references};
+   snapshotSha256:sha(glb),scenerySha256:sha(scenery),authoredProjectionSha256:snapshotSource.authoredProjectionSha256,parts:references,excludedEnvironment};
   if(!parts.length||Buffer.byteLength(JSON.stringify(scene))>8*1024*1024)throw Error('Review scene exceeds its eight-MiB bound');
   return {scene,source};
  }finally{
@@ -73,11 +80,11 @@ export async function exportReviewScene(observation,scenery){
  }
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
- const [input,output]=process.argv.slice(2);
- if(!input||!output)throw Error('Usage: node tools/export-review-scene.mjs SITUATION.json SCENE.json');
+ const [input,output,option]=process.argv.slice(2);
+ if(!input||!output||process.argv.length>5||(option&&option!=='--include-environment'))throw Error('Usage: node tools/export-review-scene.mjs SITUATION.json SCENE.json [--include-environment]');
  const bytes=readFileSync(input);if(bytes.length>256*1024)throw Error('Situation input exceeds256KiB');
  const value=JSON.parse(bytes);if(value.ok===false)throw Error('Select a confirmed world observation');
- const result=await exportReviewScene(value.result||value.observation||value,readFileSync(new URL('../public/assets/island-scenery.glb',import.meta.url)));
+ const result=await exportReviewScene(value.result||value.observation||value,readFileSync(new URL('../public/assets/island-scenery.glb',import.meta.url)),{includeAmbientEnvironment:option==='--include-environment'});
  // One bounded self-contained source document. The shared builder accepts its
  // scene fields; source metadata also survives in this editable handoff.
  const document=JSON.stringify({...result.scene,holodeckSource:result.source});

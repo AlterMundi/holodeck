@@ -61,6 +61,14 @@ bootstrap meets the existing Nexus pinned-frame contract after hydration.
 Keep selected source metadata alongside the generated gallery. A link-only
 landing page also supports canonical viewer discovery, but cannot itself provide
 the Nexus renderer handshake.
+For creation review, the default display excludes only the authored scenery's
+named `water` material: its220m ambient horizon disk otherwise dominates model
+autofit. The full GLB keeps that mesh. `holodeckSource.excludedEnvironment`
+explicitly records the omission; semantic entities and other scenery retain
+identical IDs/vertices. Add `--include-environment` to the scene exporter for the
+complete original display. This is a review framing choice, not deletion from
+the world or its source snapshot.
+
 No publication occurs in either exporter. Scene/source output is at most8MiB,
 256parts and50000triangles; existing output is never overwritten. Keep one selected
 input and one disposable conversion stage, clear after verified publication.
@@ -72,3 +80,44 @@ and converter support. Controlled checks verify axes/units, stable IDs after
 deletion, determinism and actual acceptance by the installed shared gallery builder.
 Set `HOLODECK_REVIEW_BUILDER` to that builder for the integration test; generic CI
 explicitly skips that installed-tool check when no builder is selected.
+
+## Publish a bounded review draft
+
+After the two exporters and the existing gallery builder above, place the selected
+`snapshot.glb` beside `index.html`, `gallery.json` and `review-live.json` in the one
+prepared gallery directory. The owning publisher reuses Home's writer and version
+history:
+
+```sh
+python3 tools/publish-review-draft.py SELECTED_STAGE/gallery \
+  --binding RECEIVING_HOME_BINDING \
+  --observation SELECTED_STAGE/situation.json --scene SELECTED_STAGE/scene.json \
+  --decision 'Selected shared Holodeck MVP creation for draft review with the existing world readers.'
+```
+
+The stable draft artifact ID defaults to `holodeck-workshop-review`. The publisher
+copies the existing `holodeck` resource's exact individual audience only when those
+readers already reach the existing shared renderer. A successor cannot silently
+change the artifact audience, replace an App/renderer or overwrite an unexpectedly
+changed publication. It uses Home's expected-current check, fixed gallery marker
+and immutable history, not a second release registry.
+
+The generated `creation.json` retains editable entity parameters, source/part
+correspondence, axes/units and original checksums. Participants, indications,
+conversation and private visit context are excluded. The200MiB retained project
+history ceiling counts unique immutable files across all retained Home versions;
+no version is deleted. The complete single task stage is bounded at16MiB with
+receipt headroom. A capacity refusal preserves the source and history.
+
+The publisher retains an intent before the write and a receipt after exact local
+readback. An uncertain result requires inspecting the actual Home state and
+supported authority sync; it never automatically resends. An exact completed
+retry reuses the receipt. A new draft preserves one previous local receipt while
+Home keeps canonical immutable versions. Verify all selected files through their
+pinned HTTPS routes, retain their hashes and retire only exact task-owned duplicate
+readback/staging copies after recovery no longer needs them. Keep one selected
+input and the bounded current/pending preparation, not an export per world tick.
+
+A draft is content in the existing3D Viewer. This operation creates no App,
+published-release pointer, review-room grant, native input or new model attention.
+Nexus import/access and a deliberately selected published entrance remain separate.
