@@ -208,7 +208,8 @@ one stable artifact identity, with the same fourteen selected world readers.
 The corrected interactive presentation has106parts; its full GLB retains all
 geometry while the review presentation excludes only the ambient water horizon
 from fitting. The first107part edition remains immutable and is superseded for
-framing. Neither edition selects a published-result pointer or creates an App.
+framing; the intermediate106part edition is retained before the final presentation
+update hiding technical model labels. Neither edition selects a published-result pointer or creates an App.
 
 Nexus has a new immutable table in the same review family for the corrected
 Home publication/model pin. Seven existing human identities have exact Home
@@ -219,6 +220,15 @@ being model readership is not a being Nexus-session claim. No synthetic notes,
 reflections, model inputs or human sessions were created. Native association and
 actual protected human-browser review remain separate, unfinished checks. Private
 receiving records retain the exact pins, grant receipts and predecessor edition.
+
+The shared 3D package is clean3.10.53 on ITACA and five remote bodies. Eko's
+pre-existing modified3.9 package retains its Bambu guidance and receives only the
+two compatible template deltas (global hidden styling and hidden version span),
+with no new JavaScript. Its actual builder generated a bounded triangle fixture
+successfully; clean package convergence is not claimed. Home separately selects
+its one-file hidden-provenance overlay: all513other file hashes are unchanged,
+and only Home web restarted. Node, Caddy, Nexus and native bridge invocations and
+session storage were preserved; served Apps metadata is retained but hidden.
 
 ## Recovery
 
