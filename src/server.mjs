@@ -1,6 +1,6 @@
 import express from 'express';
 import { Networked3dWebExperienceServer } from '@mml-io/3d-web-experience-server';
-import { EditableNetworkedDOM, LocalObservableDOMFactory, NetworkedDOM } from '@mml-io/networked-dom-server';
+import { NetworkedDOM } from '@mml-io/networked-dom-server';
 import { handleExperienceWebsocketSubprotocol } from '@mml-io/3d-web-experience-protocol';
 import enableWs from 'express-ws';
 import { readFileSync } from 'node:fs';
@@ -13,13 +13,16 @@ import { homeIdentityResolver } from './home-identity.mjs';
 import { worldDocument } from './world.mjs';
 import { createWorldPort } from './world-port.mjs';
 import {validateContentVisits,visitsForActor} from './content-visits.mjs';
+import {createNativeRoomAuthority} from './native-authority.mjs';
+import {WorldDocument} from './world-document.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
-export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[]}={}){
+export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],nativeRoomAuthority=null}={}){
   if(!/^\/(?:[a-z0-9-]+\/)*$/.test(basePath))throw Error('Select a bounded absolute base path');
   if(production&&(!identityResolver||!publicOrigin||!stateDir))throw Error('Shared identity, audience and state are required in production');
   const selectedContentVisits=validateContentVisits(contentVisits);
+  if(nativeRoomAuthority!==null&&typeof nativeRoomAuthority!=='function')throw Error('Select the installed native service authority reader');
   const route=path=>basePath+path;
   const app=express();
   enableWs(app,undefined,{wsOptions:{handleProtocols:(protocols,req)=>req.url?.split('?')[0]===route('world')
@@ -30,17 +33,17 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const room=new Room({state:store?.load(),persist:store?s=>store.save(s):null,
     presence:()=>[...sessions.values()].filter(s=>s.connection!==null&&Date.now()-s.created<1800000)
       .map(s=>({actor:s.actor.id,kind:'human',name:s.actor.name||'Explorador',scope:'authenticated-room-presence',position:null}))});
-  const document=new EditableNetworkedDOM('http://localhost'+route('world'),LocalObservableDOMFactory);
+  const document=new WorldDocument('http://localhost'+route('world'));
   let projectionHealthy=true,projectionQueued=false,projectionRunning=false;
   const project=async()=>{
     projectionQueued=true;if(projectionRunning)return;projectionRunning=true;
     try{while(projectionQueued){projectionQueued=false;
       await Promise.all([...sockets].map(([socket,record])=>checkSocket(socket,record)));
       if(room.commitUncertain){projectionHealthy=false;return;}
-      document.load(worldDocument(room,{basePath}));projectionHealthy=true;
+      await document.load(worldDocument(room,{basePath}));projectionHealthy=true;
     }}catch{projectionHealthy=false;}finally{projectionRunning=false;}
   };
-  await project();room.on('change',project);
+  await project();if(!projectionHealthy){document.dispose();throw Error('The initial world representation could not load');}room.on('change',project);
   const native=nativeFactory?await nativeFactory({room,stateDir}):null;
   const installedWorldPorts=[];
   async function currentActor(req,session){
@@ -83,10 +86,13 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const selectedWorldPorts=validateWorldPorts({worldSocket,worldSocketBeingRef,worldPorts});
   if(selectedWorldPorts.length&&!native)throw Error('Native authority is required for world return ports');
   for(const selected of selectedWorldPorts)installedWorldPorts.push(await createWorldPort({socketPath:selected.socket,expectedBeingRef:selected.beingRef,room,native,resolveRights:async verified=>{
+    if(nativeRoomAuthority){const rights=await nativeRoomAuthority(verified);return projectionHealthy?rights:rights.filter(right=>right==='observe');}
+    // Compatibility for older receivers only. New native authority selection
+    // is explicit and never falls back here after a failed policy query.
     const session=[...sessions.values()].find(s=>s.actor.id===verified.humanRef&&Date.now()-s.created<1800000);
     if(!session)return [];
     const actor=await currentActor({method:'POST',headers:{cookie:session.sourceCookie,origin:publicOrigin}},session);
-    return actor?.rights||[];
+    const rights=actor?.rights||[];return projectionHealthy?rights:rights.filter(right=>right==='observe');
   }}));
   const auth={
     async generateAuthorizedSessionToken(req){
@@ -154,13 +160,13 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }));
   app.get(route('api/content-visits'),(req,res)=>res.json({visits:visitsForActor(selectedContentVisits,req.actor)}));
   app.post(route('api/observe'),(req,res)=>res.json(room.observe(req.actor,req.body)));
-  app.post(route('api/commands'),(req,res)=>res.json(room.command(req.actor,req.body)));
+  app.post(route('api/commands'),(req,res)=>projectionHealthy?res.json(room.command(req.actor,req.body)):res.status(503).json({message:'La vista del taller necesita recuperarse antes de agregar cambios.'}));
   app.get(route('api/commands/:id'),(req,res)=>{
     const result=room.result(req.actor,req.params.id);
     if(!result)return res.status(404).json({code:'not-recorded',serverTime:Date.now(),run:room.run,retryWindowMs:LIMITS.retryMs,
       message:'Todavía no hay un resultado confirmado. No repetí la acción.'});res.json(result);
   });
-  app.post(route('api/projection'),(req,res)=>res.json(room.project(req.actor,req.body)));
+  app.post(route('api/projection'),(req,res)=>projectionHealthy?res.json(room.project(req.actor,req.body)):res.status(503).json({message:'La vista del taller necesita recuperarse antes de agregar cambios.'}));
   app.post(route('api/interactions'),asyncRoute(async(req,res)=>{
     if(!native)return res.status(503).json({message:'La conversación todavía no está conectada a este mundo.'});
     res.json(await native.submit(req.actor,req.body));
@@ -216,7 +222,8 @@ export async function main(){
     nativeFactory=options=>integration.nativeFactory({...options,receiving});
   }
   validateWorldPorts({...receiving});
-  const runtime=await createHolodeck({production,stateDir,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,contentVisits:receiving?.contentVisits});
+  const nativeRoomAuthority=receiving&&Object.hasOwn(receiving,'authoritySocket')?createNativeRoomAuthority(receiving.authoritySocket):null;
+  const runtime=await createHolodeck({production,stateDir,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,contentVisits:receiving?.contentVisits,nativeRoomAuthority});
   const port=Number(process.env.PORT||18940);
   if(!Number.isInteger(port)||port<1024||port>65535)throw Error('Select a valid loopback port');
   if(process.env.HOST&&process.env.HOST!=='127.0.0.1')throw Error('Use the existing loopback gateway');

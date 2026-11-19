@@ -58,3 +58,21 @@ private table/report references or participant mappings. Discovery is not a gran
 Keep one mounted viewer and preserve its dirty/capture/processing state when
 returning to the world. Changing source selection does not rewrite saved notes,
 a report edition, or the world's published result.
+
+## Native room authority and initial projection
+
+Select `receiving.authoritySocket` as the existing central Home owner bridge.
+Only that bridge receives its fixed `world_service_key`; remote paired native
+bridges retain their existing custody. After original/input/pair and return-port
+verification, the service queries the current being's own service permission.
+The owner operation checks the real runtime capability, selected App version
+and audience. It creates no session or grant. A selected authority's denial,
+timeout or malformed result never falls back to a human cookie. Older receivers
+without this selection retain only their documented compatibility behavior.
+The query admits at most8KiB of response and has an eight-second deadline.
+
+The initial server startup and subsequent projection queue await the real
+upstream DOM snapshot; see [world-document.md](world-document.md). Initial failure
+does not start a ready service. A later fenced representation rejects new game
+edits/projections while preserving the Room's committed state and readable native
+observations/results. Acknowledged upstream state is not human-visible pixels.
