@@ -94,3 +94,28 @@ as one actual rollback. Change the app through the supported Home publisher;
 a transport configuration edit alone is not a deployed application revision.
 The current selected receipt and resource-access map identify the exact runtime,
 configured lanes and remaining human/device/model acceptance.
+
+
+## Original-scoped situated completion
+
+The bridge source from `26475dc` is selected on all seven existing owner lanes
+(SHA256 `ca2e531e4e3720cf1cf5baebe17f4530b922b0c0b84f3c3ecffec322cd1be1f4`).
+A declared result covering the exact situated instruction, with no pending
+correction, can complete that reply even while its umbrella research request is
+unfinished. Parent current/completed metadata remains distinct. The initial
+implementation incorrectly required umbrella completion and left a real answered
+situated turn queued.
+
+Adopt a qualified bridge-only fix with an immutable code directory and a scoped
+service drop-in selecting its WorkingDirectory/ExecStart. Explicitly set public
+code directories0755 and files0644; restrictive operator umask otherwise prevents
+the service owner from entering a new directory. Preserve the configured Python,
+PYTHONPATH, private config, CLI target, native core and fixed transport/socket.
+Restart only the selected bridge; keep bounded restart controls and actual prior
+source for rollback. Qualify via actual app-UID read-only status of the retained
+original and normal client polling, never submit the original again.
+
+This rollout preserved the running Holodeck app and every native Conversation
+service. Actual app-UID status returned the previously retained reply completed,
+tracking false; journal/client adoption is a separate observation. New inputs
+already working for another participant must retain their actual phase.
