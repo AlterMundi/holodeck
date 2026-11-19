@@ -246,3 +246,36 @@ to obtain fresh room sessions after replacement. The standalone pinned Node24
 package passed actual MML/Networked DOM peers and shared mutation/retry checks.
 Current/previous operator archives total35,205,120bytes; superseded generated
 archives were retired without changing creations, recordings or native originals.
+
+
+## Native authority independent of browser presence
+
+Source `63de97c` is selected as package
+`549f9de45d1ca1905fd714aee7a3e33d5c013a04c5ba8599b0cb93895c010a33`
+(17,602,560bytes). The receiving configuration adds only the fixed existing
+central authority socket; the seven pair routes/return pins and selected content
+visit remain intact. The app replacement retained the actual room run, sequence73,
+entities and all11existing native intent IDs. The real upstream initial DOM is
+ready before startup completes; subsequent projections use its bounded queue.
+
+The Home gateway received only the14-line read-only owner-dispatch addition from
+Cluster9343b2e, retaining513other file contents and all mobile/link/launcher
+features. One scoped gateway restart preserved the app, native bridges, Nexus and
+Caddy invocations. Actual owner reads allowed the existing seven beings' current
+Holodeck service grants and denied an unknown being, minting no session or grant.
+The current being's own grant is authoritative; it is not inherited from a human
+or conditioned on a human browser session.
+
+Only the central native bridge selects the fixed service key and qualified
+bridge `aa2155b8`; six remote bridge configurations remain unchanged. Actual
+applicationUID992 world-access calls returned seven current allows and an
+unknown-being denial. daimon-home2.4.16/source2cc674a is installed and verified on
+all seven selected bodies. Three generated Python caches were preserved privately
+after verifying all managed source bytes; no authored files were overwritten.
+The receiving surface check passed. Installation is not model-context adoption.
+
+Current/previous operator archives total35,194,880bytes. The operator performed
+no production world mutation or human-session creation. Native observation/action
+without browser presence and human-visible rendering remain separate results of
+the owning situated trial; read its retained evidence rather than inferring
+participation from health or permission decisions.
