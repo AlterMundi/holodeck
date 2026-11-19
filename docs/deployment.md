@@ -141,3 +141,31 @@ operator record. An actual own-being reader verified exactly one authorized
 Holodeck card and its existing launch alias. Anonymous Apps exposes the sign-in
 control without publishing private Holodeck metadata. Phone sign-in and use
 remain human acceptance, distinct from these HTTP/fixture checks.
+
+
+## Home authorization transport on Node24
+
+The selected19 November runtime is source `90b2f9f`, package
+`6cc0f94de6225bef50bd390ff119332acb13451d236b3ed1b5d41aad9451dc0a`
+(17,315,840bytes). The compatible rollback is the preceding `4d9d69af` package.
+The supported own-service writer completed the replacement, preserving the
+existing App identity, audience, seven native routes and receiving configuration.
+Current/previous operator archives total34,621,440bytes; superseded packages were
+retired through the existing bounded publisher.
+
+The real Node24 fetch implementation discarded the explicit Host override on
+loopback Home requests. The default identity resolver now uses bounded
+`node:http` GETs, preserving canonical Host and Cookie, with no redirects,
+a shared four-second deadline and an8192-byte response limit. Both audience and
+identity remain authoritative for each application operation.
+
+A finite application-UID probe forwarded the unmodified request headers to the
+actual Home service. The same ephemeral own-being credential produced404 with
+old Node24 fetch and204 service authorization with the new default transport.
+Home correctly refused that being at its human-only identity endpoint with401;
+no human session was minted. The task session was revoked. Separately, a pinned
+Node24 real-HTTP human-shaped fixture exercised the default resolver through the
+production prefixed MML index/session and API state. These establish the transport
+repair and composed code path, not an authenticated person's phone experience.
+The actual deployed package passed two-peer MML/Networked DOM mutation/retry
+qualification; health is ready. Real human/device acceptance remains unobserved.
