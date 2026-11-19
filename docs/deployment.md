@@ -124,3 +124,20 @@ reload intent, checked the exact candidate/preimage and unchanged live
 configuration, reacquired all existing guards, then finished the selected
 reload. Never reset a journal or repeat an uncertain reload because its reply
 was lost. Exact operation evidence/local selectors stay in the protected record.
+
+## Finding and opening the private App
+
+The common Apps entry is a public navigation projection. Use **Entrar** to
+return through existing shared Home sign-in to the authorized Apps catalog;
+Holodeck keeps the same existing card and its selected individual audience.
+A19November receiving gateway repair added that navigation control and made
+ordinary root-page navigation reach existing SSO even when a phone omits
+Sec-Fetch headers. JSON/API and WebSocket requests still require authentication.
+
+The repair changes only the gateway's service/launcher modules, preserving the
+App/native/Caddy invocations, canonical stores and private grants. Its source is
+tracked in Cluster PR520; actual receiving hashes and rollback are in the local
+operator record. An actual own-being reader verified exactly one authorized
+Holodeck card and its existing launch alias. Anonymous Apps exposes the sign-in
+control without publishing private Holodeck metadata. Phone sign-in and use
+remain human acceptance, distinct from these HTTP/fixture checks.
