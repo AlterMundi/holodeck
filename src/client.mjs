@@ -3,6 +3,7 @@ import { ThreeJSWorldRenderer } from '@mml-io/3d-web-threejs';
 import { DirectionalLight } from 'three';
 import { WORKSHOP, workshopColour } from './workshop.mjs';
 import { saveIntent, loadIntent, archiveIntent, sameActor, nativeRetryRoute } from './client-intents.mjs';
+import { NativeAvatarLayer } from './native-avatar.mjs';
 import { AppliedGeometryProbe } from './applied-geometry.mjs';
 import { WorldAudio } from './world-audio.mjs';
 import { snapshotMayApply, sameRequest } from './client-order.mjs';
@@ -26,7 +27,7 @@ const touchControls={
   },
   dispose(){this.delegate?.dispose();this.holder?.remove();}
 };
-let geometryProbe=null;
+let geometryProbe=null,nativeAvatarLayer=null;
 const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
   sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket('network'),waitForWorldConfig:true,
   enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
@@ -42,9 +43,10 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
     renderer.mmlCompositionScene.group.add(light,light.target);
     geometryProbe=new AppliedGeometryProbe({document,scene:renderer.mmlCompositionScene.group,
       canvas:options.targetElement.querySelector(':scope > canvas'),expectedDocumentURL:socket('world')});
+    nativeAvatarLayer=new NativeAvatarLayer({document,base,onFailure:message=>say(message)});
     const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
-    renderer.render=state=>{render(state);geometryProbe.afterRender();};
-    renderer.dispose=()=>{geometryProbe.dispose();dispose();};
+    renderer.render=state=>{nativeAvatarLayer.update();render(state);geometryProbe.afterRender();};
+    renderer.dispose=()=>{nativeAvatarLayer.dispose();geometryProbe.dispose();dispose();};
     queueMicrotask(options.onInitialized);
     return renderer;
   },
@@ -56,7 +58,7 @@ client.update();
 const worldAudio=new WorldAudio({onChange:()=>updateSoundButton()});
 let soundBusy=false;
 // Development inspection surface only. It reports actual client state.
-window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()||null,audioState:()=>worldAudio.status()};
+window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()||null,audioState:()=>worldAudio.status(),avatarState:()=>nativeAvatarLayer?.status()};
 const $=selector=>document.querySelector(selector);
 const notice=$('#notice');
 function updateSoundButton(){

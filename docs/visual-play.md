@@ -94,3 +94,10 @@ Chromium with CDP on 127.0.0.1:18943. It serves its own test-only fixture on
 127.0.0.1:18944, opens/closes its own target, retains no private originals and
 contacts no actual native provider. Three lightweight client-intent tests run
 with the normal Node suite.
+
+## Native spatial appearance
+
+The [selected native appearance contract](native-appearance.md) reuses CompAII's
+actual Navegante blanco layered model and maintained renderer as a transparent
+spatial sprite. It is a native projection, separate from human locomotion, with
+bounded authored idle, hidden/reduced-motion pause and a beacon load fallback.

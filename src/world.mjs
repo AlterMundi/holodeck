@@ -1,5 +1,6 @@
 // One-way projection of Room semantics. Static original art is a merged GLB;
 // only traversable surfaces and changing activity elements remain MML primitives.
+import {avatarForActor} from './avatar-registry.mjs';
 import {workshopProjection,projectionNodeHTML,attribute} from './workshop-projection.mjs';
 const sphere=(x,y,z,r,color)=>`<m-sphere x="${x}" y="${y}" z="${z}" radius="${r}" color="${color}" collide="false"></m-sphere>`;
 const cylinder=(x,y,z,r,h,color,extra='')=>`<m-cylinder x="${x}" y="${y}" z="${z}" radius="${r}" height="${h}" color="${color}" ${extra}></m-cylinder>`;
@@ -19,7 +20,8 @@ export function worldDocument(room,{basePath='/'}={}){
   }
   for(const p of room.projections.values()){
     const{x,y,z}=p.position;
-    out+=`<m-group id="projection-${p.actor.replace(/[^\w-]/g,'')}">${sphere(x,y,z,.28,'#9de6e5')}${p.form==='beacon'?cylinder(x,y-.5,z,.07,.7,'#e9dcaf'):''}</m-group>`;
+    const id=`projection-${p.actor.replace(/[^\w-]/g,'')}`,appearance=p.form==='avatar'?avatarForActor({id:p.actor,kind:p.kind}):null;
+    out+=`<m-group id="${id}" x="${x}" y="${y}" z="${z}"${appearance?` data-holodeck-avatar="${appearance}" data-avatar-being="${attribute(p.actor)}"`:''}><m-group id="${id}-fallback">${sphere(0,0,0,.28,'#9de6e5')}${p.form==='beacon'||appearance?cylinder(0,-.5,0,.07,.7,'#e9dcaf'):''}</m-group></m-group>`;
   }
   return out+'</m-group>';
 }

@@ -1,0 +1,109 @@
+{
+  "schema": "holodeck.avatar-assets/v1",
+  "appearance": "compaii-navegante-white-v1",
+  "designSha256": "17fdad0610f6971a8b37c9df4f5aef0f294ee8f36c62058fe6955757404f6daa",
+  "designBytes": 153394,
+  "rendererSha256": "9866f14ea2dca9aaa5ab6da439cacfa375368c841352c55631511328f7a4d541",
+  "rendererBytes": 99284,
+  "source": "DaimonApp installed maintained renderer; ASCII-Interfaces MIT source lineage",
+  "sourceInventory": [
+    {
+      "file": "skills/ascii-avatar-author/scripts/model-runtime.mjs",
+      "sha256": "e2d7f1c930f4d4ad2452774f121820558481337148d10b96a6454433c0dab88c"
+    },
+    {
+      "file": "experiments/school-avatar-quest/performances.mjs",
+      "sha256": "c9becc068fa5409d5057d77050d88fa3c4662838153ec81c1eeebb0355a26a60"
+    },
+    {
+      "file": "experiments/school-avatar-quest/pillow.mjs",
+      "sha256": "363a5d745893983ee8046da8d810f0bf4bfd9021cb22d11b13c35eddd7aec16a"
+    },
+    {
+      "file": "experiments/school-avatar-quest/headwear.mjs",
+      "sha256": "52303582f9b9d47a1bcd926c50af86841cdbdffc63f658de085b9c1f3a074c0c"
+    },
+    {
+      "file": "experiments/school-avatar-quest/props.mjs",
+      "sha256": "c34c685a00d84fbafc2ceb3a1ac47b70e890264654cb3474afb36a2a40db5799"
+    },
+    {
+      "file": "experiments/school-avatar-quest/body-colors.mjs",
+      "sha256": "a09d9fa11f9e3222d2f2bb4326600b17cb8c289282cfbcc78219d0d765d88f29"
+    },
+    {
+      "file": "experiments/avatar-studio/geometry.mjs",
+      "sha256": "e37586c691e4a028d48738fb9d7b9adff01d6ae0c032c44d22e1334dc201e03a"
+    },
+    {
+      "file": "experiments/school-avatar-quest/precision-renderer.mjs",
+      "sha256": "8ea8f42c6eedf08bb08d1b8fb7782fd886f432a028d880a27d401384ee8cc9be"
+    },
+    {
+      "file": "experiments/school-avatar-quest/image-avatar.mjs",
+      "sha256": "e4bbba0b606f4fd1d483467fee1608d13f95399a23155afe82b0d4e502a6e8d8"
+    },
+    {
+      "file": "experiments/avatar-studio/rig.mjs",
+      "sha256": "d0b0dc08f5bf7356b6bc1a6a24e52bdedc54846f7ebabebcfdeba74034b99ccd"
+    },
+    {
+      "file": "experiments/avatar-studio/characters.mjs",
+      "sha256": "aad43a83e27bd64f6874438e732d089e9375740b4c29a259ba634e693978eea9"
+    },
+    {
+      "file": "experiments/avatar-studio/motion.mjs",
+      "sha256": "0541a3643aa8a0d6fef62b5a50dd05ea8fc1fb035e566c312fc134a0a429e79f"
+    },
+    {
+      "file": "experiments/avatar-studio/abstract.mjs",
+      "sha256": "ebf4e5ca24a3a3c1ecdb51682f8e90f328e584fc7c51345ebecc53763d2cdbcd"
+    },
+    {
+      "file": "experiments/avatar-studio/engine.mjs",
+      "sha256": "3629d3ea944d61a8c7acf5ea8862bf76bad1de788bbe83fdf6c758f50fa6dfb8"
+    },
+    {
+      "file": "experiments/avatar-studio/scenes.mjs",
+      "sha256": "01af916bd28ed6cbbcbb0c1bc2fdf876a3b68d51ef92ab02f614c6d1c99e6155"
+    },
+    {
+      "file": "experiments/school-avatar-quest/model.mjs",
+      "sha256": "1cecfb24db1478b46c289acfe85e4f8a6b5e45ca55e3e6986e6f6ed46c2452fb"
+    },
+    {
+      "file": "experiments/school-avatar-quest/interaction-geometry.mjs",
+      "sha256": "1c3a08c83fbc7a712df45f68c023761d400e6a56495faee0f996c00025e2b958"
+    },
+    {
+      "file": "experiments/school-avatar-quest/performance-stories.mjs",
+      "sha256": "ea8d8c4e792e449118d9fbe751537649977fed378630854757fa0fbee081e094"
+    },
+    {
+      "file": "experiments/school-avatar-quest/performance-illustration.mjs",
+      "sha256": "58df84396d13b940b49275cc213b13faa756eda0bc195d81cdc9dd938cc7e1c7"
+    },
+    {
+      "file": "experiments/school-avatar-quest/surface-classic-masters.mjs",
+      "sha256": "8fcfb47ce8ef5b2a090671e8097a90dd16b649c8a8d6a9f40da0ed5203b46b51"
+    },
+    {
+      "file": "experiments/school-avatar-quest/surface-organic-masters.mjs",
+      "sha256": "33cab8d27fc01cf83784a0210901934c1bc2f77004b9909167253ad96d1881c5"
+    },
+    {
+      "file": "experiments/school-avatar-quest/surface-renderer.mjs",
+      "sha256": "89f3a7f131d7d82aae83e8dc08d908b0e5b7f6b56d61b13537890a6c8bfe381a"
+    },
+    {
+      "file": "experiments/school-avatar-quest/color.mjs",
+      "sha256": "507c5f5c7984f3c48f242df9494073e96dbea2e5aeff6bbd4db00372599a50fb"
+    },
+    {
+      "file": "renderer.mjs",
+      "sha256": "4a8fcd782c9ac3346022f0b575d5a8bd000b500ba93776b5e7e8fadafe6ba814"
+    }
+  ],
+  "upstream": "AnnieScigliano/ASCII-Interfaces",
+  "selection": "Only selected inert canonical appearance and renderer closure; no actor records, voice, history, credentials or account pointers."
+}

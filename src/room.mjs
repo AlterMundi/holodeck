@@ -1,6 +1,7 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { WORKSHOP, workshopColour } from './workshop.mjs';
+import { avatarForActor } from './avatar-registry.mjs';
 
 export const LIMITS = Object.freeze({ events: 256, commands: 256, observations: 128,
   sessions: 8, elements: 32, retryMs: 300000 });
@@ -115,10 +116,12 @@ export class Room extends EventEmitter {
   projectNow(actor, { position, form }) {
     if (!actor?.rights?.includes('project')) throw new RoomError('forbidden', 'Projection access required');
     if (!position || !['x','y','z'].every(key => Number.isFinite(position[key]) && Math.abs(position[key]) <= 30)
-      || !['orb', 'beacon'].includes(form)) throw new RoomError('projection', 'Choose a supported bounded projection');
+      || !['orb', 'beacon','avatar'].includes(form)) throw new RoomError('projection', 'Choose a supported bounded projection');
+    if(form==='avatar'&&!avatarForActor(actor))throw new RoomError('projection','No selected appearance is available for this being');
     if (!this.projections.has(actor.id) && this.projections.size >= LIMITS.sessions)
       throw new RoomError('capacity', 'Room projection capacity reached');
     const projection = { actor: actor.id, kind: actor.kind, position: clone(position), form };
+    if(form==='avatar')projection.appearance=avatarForActor(actor);
     this.projections.set(actor.id, projection);
     return this.event(actor, 'projection.changed', projection);
   }
