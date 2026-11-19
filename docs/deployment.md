@@ -130,7 +130,7 @@ was lost. Exact operation evidence/local selectors stay in the protected record.
 The common Apps entry is a public navigation projection. Use **Entrar** to
 return through existing shared Home sign-in to the authorized Apps catalog;
 Holodeck keeps the same existing card and its selected individual audience.
-A19November receiving gateway repair added that navigation control and made
+On 19 November a receiving gateway repair added that navigation control and made
 ordinary root-page navigation reach existing SSO even when a phone omits
 Sec-Fetch headers. JSON/API and WebSocket requests still require authentication.
 
