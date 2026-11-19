@@ -176,3 +176,24 @@ published in daimon-home2.4.15 (Skills PR359) and installed with exact matching
 receipts on the selected seven bodies. Installation changed no login, audience,
 native service or model attention. The receiving surface check passed; already
 running model contexts are not claimed to have reloaded the guide.
+
+
+## Live colour extension
+
+Source `a9dc02c` is selected by the supported service update, package
+`2cef9425234c0f0c21b0b1c612391268ee8c66fe9623fa21210b90c02363e4e7`.
+It adds violet and strict hexadecimal literal colours while preserving existing
+semantic colours, object IDs and revisions. The actual live world and all three
+native intent records were retained byte-for-byte at the journal level; the
+restart recorded only the normal participant departure. No accepted input was
+cancelled or replayed by deployment. Home configuration, shared audience and
+seven native routes are unchanged. Reloading the world obtains a fresh
+Home-validated room session; MML reconnect alone retains its old in-memory token.
+
+The previous `6cc0f94d` runtime is a compatible rollback only until a new colour
+is written. Once violet/hex enters saved state, retain the selected candidate
+for forward recovery: the previous three-colour binary cannot render/export
+that state. Never remove or rewrite actual creations to force an older binary.
+Two retained operator archives total34,631,680bytes; no creation history was
+retired. Deployment qualification is separate from the requested live edit and
+its observed native result.
