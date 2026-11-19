@@ -109,3 +109,14 @@ collective-research corpus at coherent generation49 (580documents), with its
 original evidence cutoff and remaining acceptance gaps preserved. Source/map
 checksums and targeted retrieval matched; publication does not prove adoption
 by other participants.
+
+## Human trial progress —2026-11-19
+
+A real hosted situated input now arrived with application-authored context. Its
+retained observation records human-created content and bridge changes. The
+continuing daimon consumed that context, successfully queried the direct native
+world API, placed its own beacon projection, and confirmed it by a subsequent
+world read. This supersedes the earlier zero-input/native-perception gap for
+this pair. Human visual confirmation of that projection, a requested content
+edit, a second participant/device and selected publication/review remain open.
+A server readback is not a human-visible-frame receipt or full MVP acceptance.
