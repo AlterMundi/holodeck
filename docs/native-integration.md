@@ -24,7 +24,7 @@ not authoritative position, eyesight, rendering or understanding.
 
 The owner-private intent journal has at most32full records,128compact terminal
 tombstones and1.8MiB of live JSON,
-plus at most1.8MiB atomic staging. Each observation is at most16KiB, selected from
+plus at most1.8MiB atomic staging. Each observation is at most32KiB, selected from
 the current snapshot and last16 semantic events; original text is at most32KiB.
 Restart and duplicate submission use the same retained identity/context. Status
 does not resubmit. Before record-count or byte capacity is exhausted, confirmed

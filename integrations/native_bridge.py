@@ -24,6 +24,10 @@ import tomllib
 import uuid
 
 MAX_WIRE=131072
+# A full bounded room (entities, participants, explicit indications and client
+# view) fits 32KiB. Keep source-envelope headroom without widening the wire cap.
+MAX_OBSERVATION=32768
+MAX_SITUATION_SOURCE=49152
 
 
 class BridgeError(Exception):
@@ -112,7 +116,7 @@ class NativeBridge:
     def observation_file(self,ident_,actor,observation):
         if (not isinstance(observation,dict) or observation.get('schema')!='holodeck.situation/v1'
             or not isinstance(observation.get('id'),str) or not isinstance(observation.get('run'),str)
-            or observation.get('observer')!=actor or len(bounded_json(observation))>16384):
+            or observation.get('observer')!=actor or len(bounded_json(observation))>MAX_OBSERVATION):
             raise BridgeError('context','Select the captured world situation for this speaker')
         value={'schema':'holodeck.native-situation-source/v1',
             'authorship':'Holodeck application-generated world observation, not human speech',
@@ -205,12 +209,12 @@ class NativeBridge:
 
     def retained_observation(self,actor,input_id,value):
         for index,ref in enumerate(value.get('files',[])[:8]):
-            if ref.get('name')!='holodeck-situation.json' or ref.get('mime')!='application/json' or ref.get('size',MAX_WIRE)>24576:continue
+            if ref.get('name')!='holodeck-situation.json' or ref.get('mime')!='application/json' or ref.get('size',MAX_WIRE)>MAX_SITUATION_SOURCE:continue
             _,data=self.provider.conversation_file_read(input_id,index)
             source=json.loads(data)
             if (source.get('schema')=='holodeck.native-situation-source/v1' and source.get('human_input_id')==input_id
                 and source.get('speaker')==actor and isinstance(source.get('observation'),dict)
-                and len(bounded_json(source['observation']))<=16384):
+                and len(bounded_json(source['observation']))<=MAX_OBSERVATION):
                 return source['observation']
         raise BridgeError('id-reuse','This original has no retained Holodeck situation source')
 

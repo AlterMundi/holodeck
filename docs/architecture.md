@@ -7,8 +7,9 @@ The upstream server provides an authenticator seam, custom messages, independent
 Networked DOM documents and DeltaNet avatar presence. Client provides collision,
 locomotion, animation, joystick and reconnect. No concrete mismatch justifies
 rewriting these systems. The protected trial reuses MML. Software-browser
-movement and editing have passed controlled checks; physical-device performance,
-headset suitability and authenticated shared play remain unqualified. Gateway
+movement and editing have passed controlled checks; two independently signed-in
+humans report shared movement and the same edited light. Physical-device performance
+and headset suitability remain unqualified. Gateway
 HTTP/WebSocket access refusal is verified separately from positive shared use.
 
 | Domain | Authority | Projection/consumer |
@@ -40,8 +41,10 @@ busy/queued turn behavior, authority and outcome receipts. The current Avatar
 native context source is transcript-specific; adding arbitrary room JSON to that
 sealed source would misrepresent its provenance. An explicit situated-context
 adapter now retains an immutable application-authored attachment through the
-existing native original/file writer. A fresh human-triggered model round trip
-remains required evidence; no fabricated NPC response substitutes for it.
+existing native original/file writer. An actual human-triggered situated input
+and direct native observation/projection/edit have retained evidence. The next
+complete conversational return and device/revisit acceptance remain open; no
+fabricated NPC response substitutes for those observations.
 
 Preserve meters, anchors, semantic targets and input actions for future XR. No
 promise of Oculus compatibility follows from using Three.js. Scenario assets are

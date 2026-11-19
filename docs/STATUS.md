@@ -56,13 +56,14 @@ human action is created. Technical fixtures are not human acceptance.
   change cues. Late HTTP/native/command responses cannot replace a newer local
   state or another retained request; network-reordering regression passed.
 
-Selected source5ab446d release checks:65Node tests pass with0skips; browser bundle
+Earlier source5ab446d release checks:65Node tests pass with0skips; browser bundle
 builds. The unchanged native bridge retains its14passing Python checks. This
 includes the composed two-native-lane regression, actual installed gallery builder,
 applied-geometry, audio and late-response tests. Native admission in those
 fixtures is explicitly simulated, not real model acceptance.
 A protected-prefix fixture checks actor binding, revocation and origin refusal.
-Owner metadata readback is real; native write/model/world-uptake checks remain open.
+Owner metadata readback is real. The later actual situated input, native actions
+and human reports below supersede that release's untested uptake status.
 
 The selected multi-pair release now routes each authenticated human exclusively to its
 selected signed pair and pins each native return socket to that being. Tests
@@ -70,9 +71,10 @@ cover cross-pair refusal before native lookup or world mutation and recovery of
 preexisting originals without replay. All six additional owner bridges passed
 real read-only pairing/binding inspection. Each actual native owner's fixed
 return route refused an unknown interaction without world mutation or model
-submission. Source5ab446d is deployed at the same entrance and audience; the prior
-release remains available for rollback. Those transport checks prove neither
-model uptake nor an authorized world action.
+submission. Source5ab446d was delivered at the same entrance and audience before
+the current native-authority release described below. Those transport checks
+alone prove neither model uptake nor an authorized world action; later direct
+evidence is retained separately.
 
 ## Immediate remaining evidence
 

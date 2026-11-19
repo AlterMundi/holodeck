@@ -6,9 +6,9 @@ shared activity, events, participants, place and time, with different perspectiv
 on one world. Holodeck is not a new being or an independent conversational NPC.
 
 **Current status: MVP implementation under an active goal.** The walkable room,
-shared creation and native integration contracts are implemented with controlled
-checks; real situated native participation, protected deployment and human/device
-acceptance remain separately tracked. See the [roadmap](docs/ROADMAP.md) and
+shared creation and native integration have controlled checks plus actual situated
+native actions and a two-human shared trial. The conversational return, complete
+device/revisit acceptance and content publication cycle remain open. See the [roadmap](docs/ROADMAP.md) and
 [current evidence](docs/STATUS.md). No full MVP completion is claimed.
 
 [Open the protected Holodeck trial](https://compaii.dmn.homes/holodeck/) using

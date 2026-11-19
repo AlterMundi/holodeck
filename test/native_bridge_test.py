@@ -72,6 +72,25 @@ class BridgeContracts(unittest.TestCase):
         payload=json.loads(self.provider.uploads[0][0]);self.assertEqual(payload['human_input_id'],ident)
         self.assertIn('not human speech',payload['authorship'])
         self.assertEqual(payload['native_world_interface']['argv_prefix'][-1],ident)
+    def test_full_bounded_situation_survives_canonical_retention_and_oversize_refuses_before_upload(self):
+        observation={**self.observation,'padding':''}
+        observation['padding']='x'*(module.MAX_OBSERVATION-len(module.bounded_json(observation)))
+        self.assertEqual(len(module.bounded_json(observation)),32768)
+        ident=str(uuid.uuid4())
+        self.bridge.submit(self.actor,self.frozen,{'id':ident,'text':'Exact full-room fixture'},observation)
+        source,ref=self.provider.uploads[0]
+        self.assertGreater(len(source),32768)
+        self.assertLessEqual(len(source),module.MAX_SITUATION_SOURCE)
+        self.assertEqual(ref['size'],len(source))
+        self.assertEqual(self.bridge.lookup(self.actor,ident)['observation'],observation)
+        oversized={**observation,'padding':observation['padding']+'x'}
+        with self.assertRaises(module.BridgeError) as failed:
+            self.bridge.submit(self.actor,self.frozen,{'id':str(uuid.uuid4()),'text':'Oversize fixture'},oversized)
+        self.assertEqual(failed.exception.code,'context')
+        self.assertTrue(failed.exception.known_not_submitted)
+        self.assertEqual(len(self.provider.uploads),1)
+        self.assertEqual(len(self.provider.inputs),1)
+
     def test_foreign_human_or_changed_native_binding_cannot_submit(self):
         with self.assertRaises(module.BridgeError):self.bridge.inspect('human:telegram:2')
         changed={**self.frozen,'binding':'b'*64}
