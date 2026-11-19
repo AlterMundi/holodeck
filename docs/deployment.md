@@ -31,8 +31,9 @@ background watcher is introduced.
 
 The application runs under a dedicated nologin service identity. It cannot read
 the Conversation owner's private configuration. A bounded Unix bridge, running
-as the existing Conversation owner, exposes only the selected inspect/submit/
-status operations to that exact application UID. Its fixed provider/source,
+as the existing Conversation owner, exposes only selected inspect/submit/
+status/lookup operations (plus central read-only world-access) to that exact
+application UID. Its fixed provider/source,
 configuration and CLI routes are operator-selected. Native world actions use a
 separate application-owned world port, matched to the actual retained interaction
 and current room permission. Neither socket is a generic command executor.
