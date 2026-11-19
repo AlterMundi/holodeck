@@ -13,7 +13,9 @@ package and `dm.home-service-deploy/v1` request. Runtime is pinned Node24 HTTP;
 `HOST`, `PORT`, `STATE_DIR` and `NODE_ENV=production` come from the protected
 receiver. `STATE_DIR/receiving.json` selects the existing same-origin shared
 identity endpoint, service-audience endpoint, public origin/base path and optional
-native/world Unix sockets. It carries route metadata, not credentials.
+native/world Unix sockets. `authoritySocket` selects the existing central native
+permission bridge; `contentVisits` selects at most one protected report entrance.
+It carries route metadata and private content references, not credentials.
 
 Caddy's maintained service writer preserves `/holodeck/` on both HTTP and
 WebSocket requests. Its forward-auth checks the selected current service audience
@@ -91,206 +93,99 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
-On 2026-11-17 the supported publisher selected source `5ab446d` at
-https://compaii.dmn.homes/holodeck/. The immutable package SHA256 is
-`4d9d69aff78580a6d3a46c045ee459bfac36451e78ca127453100ed16db76102`
-(17,305,600 bytes). The App resource remains
-`a51218c647644a8fbbd42ed706d70b61`; its entrance/audience stayed unchanged.
-The previous package `139c4f4c0133e68de48bc3f85ed66641c7bc578c39985e34406ec411bbf0fdfe`
-and receiving configuration remain the actual compatible rollback.
+The19November selected runtime is source `63de97c`, at
+https://compaii.dmn.homes/holodeck/. Its17,602,560-byte package is
+`549f9de45d1ca1905fd714aee7a3e33d5c013a04c5ba8599b0cb93895c010a33`.
+The existing App resource `a51218c647644a8fbbd42ed706d70b61`, audience and URL
+remain unchanged. Current/previous operator archives total35,194,880bytes.
+The most recent replacement retained the actual room run, sequence73, world
+entities and all11existing native intent IDs; it cancelled or replayed none.
 
-Seven explicit existing human/being/home routes now select their own native
-owner; there is no fallback to another companion. Each return socket is pinned
-to that route's being before native bridge access. Real application-UID ingress
-inspected all seven actual pairings/current native bindings and refused wrong
-actors. All six remote native owners reached their own fixed return and received
-an unknown-interaction refusal without a world action. The existing local bridge
-and six native Conversation services were preserved. See the maintained
-[transport templates and operations](../deployment/native-transports.md).
+Seven explicit existing human/being/home routes select their own native owner.
+Every return socket is pinned to that being before native bridge access, with no
+fallback to another companion. Actual application-UID pairing/binding and
+wrong-actor checks passed all seven lanes; six remote native owners reached their
+fixed return and received unknown-interaction refusals. The current standalone
+Node24 package passed actual MML/Networked DOM peers, shared mutation and exact
+retry. See [transport operations](../deployment/native-transports.md).
 
-Before app replacement the receiving intent/stage inspection found no retained
-native intent. The exact standalone pinned Node24 package passed actual MML
-presence and Networked DOM protocol clients, shared geometry change and exact
-retry. Browser navigation redirects to existing shared SSO with its exact return;
-anonymous API and WebSocket upgrades return401. These are technical checks,
-not human participation, a situated model turn or observed model world action.
-Actual multi-human/device use and native model uptake remain to be observed.
-The preexisting workshop was preserved.
+## Current browser and native authority
 
-The finite route executor must accommodate its guarded receiver set and Caddy
-control process together. This receiving set required a96-task bound;32 caused
-a kernel-confirmed fork rejection. Recovery retained the original request and
-reload intent, checked the exact candidate/preimage and unchanged live
-configuration, reacquired all existing guards, then finished the selected
-reload. Never reset a journal or repeat an uncertain reload because its reply
-was lost. Exact operation evidence/local selectors stay in the protected record.
+The public Apps projection offers **Entrar** through existing Home SSO, returning
+to authorized Apps without exposing private cards. Ordinary `/holodeck/` page
+navigation reaches that same SSO even if a phone omits Sec-Fetch headers;
+JSON/API/WebSocket requests retain authentication. Loopback browser-identity calls
+use bounded node:http with explicit canonical Host/Cookie: actual Node24 fetch
+discarded the Host override. The composed real-HTTP fixture verifies positive
+human mapping through production MML/session/API routes; an own-being technical
+reader must still be refused by Home's human-only identity endpoint.
 
-## Finding and opening the private App
+Native world rights use the current being's own Home service grant, independently
+of a human browser session. After source/input/run/pair and return-port checks,
+the app queries the existing UID-guarded central bridge. Only that bridge selects
+the fixed `world_service_key`; six remote configurations receive no owner custody.
+The installed owner CLI calls read-only `check-service-access`, reusing existing
+service capability, current actor, audience and exact selected App checks.
+Timeouts/unknown/malformed authority deny without a human-cookie fallback.
 
-The common Apps entry is a public navigation projection. Use **Entrar** to
-return through existing shared Home sign-in to the authorized Apps catalog;
-Holodeck keeps the same existing card and its selected individual audience.
-On 19 November a receiving gateway repair added that navigation control and made
-ordinary root-page navigation reach existing SSO even when a phone omits
-Sec-Fetch headers. JSON/API and WebSocket requests still require authentication.
+The qualified Home dispatcher overlay changes only14lines in service.py
+(SHA256aad74810b792f349424850a691e1aaf1fd7f7a941fed8eb22981b4b7e34e9548),
+retaining513other file contents, mobile/link/launcher features and existing stores.
+The central bridge is SHA256aa2155b8bb20a8cca1390109fa5c5dd5f57d455de3be4e0c826e8ceb1f04744d.
+Actual appUID992 queries allowed all seven current beings and denied an unknown
+being, minting no session or grant. Native reply completion separately follows the
+exact situated instruction, without falsely requiring umbrella research completion.
 
-The repair changes only the gateway's service/launcher modules, preserving the
-App/native/Caddy invocations, canonical stores and private grants. Its source is
-tracked in Cluster PR520; actual receiving hashes and rollback are in the local
-operator record. An actual own-being reader verified exactly one authorized
-Holodeck card and its existing launch alias. Anonymous Apps exposes the sign-in
-control without publishing private Holodeck metadata. Phone sign-in and use
-remain human acceptance, distinct from these HTTP/fixture checks.
+The original conversation services stay running across scoped web/bridge updates.
+App replacement clears its in-memory human room sessions: reload obtains a fresh
+Home-validated session; MML reconnect alone reuses the old token. Native authority
+does not depend on this reload. daimon-home2.4.16 and report-conversation0.1.12
+are installed/status verified on all seven selected bodies; the receiving surface
+check passed. Installation does not prove existing model contexts reloaded them.
 
+## Appearance, presentation and observed effects
 
-## Home authorization transport on Node24
+The fixed native appearance registry serves the actual Navegante layered design
+and maintained renderer as a2.5D spatial sprite, not a rigged GLB. Actual authorized
+HTTPS reads matched the153,394-byte design and99,284-byte renderer. Qualification
+readers were revoked; no human identity was minted or borrowed.
 
-The selected19 November runtime is source `90b2f9f`, package
-`6cc0f94de6225bef50bd390ff119332acb13451d236b3ed1b5d41aad9451dc0a`
-(17,315,840bytes). The compatible rollback is the preceding `4d9d69af` package.
-The supported own-service writer completed the replacement, preserving the
-existing App identity, audience, seven native routes and receiving configuration.
-Current/previous operator archives total34,621,440bytes; superseded packages were
-retired through the existing bounded publisher.
+One private receiving-selected report/revision entrance appears in the reading
+room. Its same-origin Nexus entry preserves saved progress rather than forcing
+chapter01. Discovery is not access: the existing descriptor checks current report
+and participant authorization. Nexus minimally composes delta2a0fd86 onto its
+actual backend and selectedd657f1c frontend; health,14served assets and unchanged
+43canonical DB table hashes/counts were verified after one web-only restart.
+The existing player, notes, capture and native review are reused. Private pins,
+actors and selector preimages remain in the operator record.
 
-The real Node24 fetch implementation discarded the explicit Host override on
-loopback Home requests. The default identity resolver now uses bounded
-`node:http` GETs, preserving canonical Host and Cookie, with no redirects,
-a shared four-second deadline and an8192-byte response limit. Both audience and
-identity remain authoritative for each application operation.
+The human confirmed two participants walking and seeing the same violet light.
+The owning native trial later observed sequence73 with zero human participants,
+projected its Navegante avatar once at sequence74, and independently read the
+same being/form/appearance back with zero human participants. Another native
+projection remained intact. These are real native effects independent of browser
+presence; human-visible avatar pixels and actual protected report/iframe use are
+separate observations. Anonymous selected descriptor access is401. No operator
+human cookie, browser lease or model-input replay was used.
 
-A finite application-UID probe forwarded the unmodified request headers to the
-actual Home service. The same ephemeral own-being credential produced404 with
-old Node24 fetch and204 service authorization with the new default transport.
-Home correctly refused that being at its human-only identity endpoint with401;
-no human session was minted. The task session was revoked. Separately, a pinned
-Node24 real-HTTP human-shaped fixture exercised the default resolver through the
-production prefixed MML index/session and API state. These establish the transport
-repair and composed code path, not an authenticated person's phone experience.
-The actual deployed package passed two-peer MML/Networked DOM mutation/retry
-qualification; health is ready. Real human/device acceptance remains unobserved.
+The initial real upstream DOM snapshot is awaited before startup completes;
+subsequent projections use its bounded queue. A representation failure fences
+new writes/projections while preserving committed room state and readable
+observations/results. An applied snapshot is not proof of human-visible pixels.
 
+## Recovery
 
-The reusable canonical-Host and positive-admission qualification guidance is
-published in daimon-home2.4.15 (Skills PR359) and installed with exact matching
-receipts on the selected seven bodies. Installation changed no login, audience,
-native service or model attention. The receiving surface check passed; already
-running model contexts are not claimed to have reloaded the guide.
+Retain the current549f candidate for forward recovery. Previousb4 can parse avatar
+state but lacks independent being authority: it is not equivalent in permission
+semantics after revocation. Any older-runtime recovery must retain the authority
+adapter or disable native world-action ports through supported receiving
+configuration. Never restore old world/native state to force a software downgrade.
+Home/Nexus selector preimages remain software-only rollback inputs; preserve live
+grants, media, original messages, pending work and canonical databases.
 
-
-## Live colour extension
-
-Source `a9dc02c` is selected by the supported service update, package
-`2cef9425234c0f0c21b0b1c612391268ee8c66fe9623fa21210b90c02363e4e7`.
-It adds violet and strict hexadecimal literal colours while preserving existing
-semantic colours, object IDs and revisions. The actual live world and all three
-native intent records were retained byte-for-byte at the journal level; the
-restart recorded only the normal participant departure. No accepted input was
-cancelled or replayed by deployment. Home configuration, shared audience and
-seven native routes are unchanged. Reloading the world obtains a fresh
-Home-validated room session; MML reconnect alone retains its old in-memory token.
-
-The previous `6cc0f94d` runtime is a compatible rollback only until a new colour
-is written. Once violet/hex enters saved state, retain the selected candidate
-for forward recovery: the previous three-colour binary cannot render/export
-that state. Never remove or rewrite actual creations to force an older binary.
-Two retained operator archives total34,631,680bytes; no creation history was
-retired. Deployment qualification is separate from the requested live edit and
-its observed native result.
-
-
-## Selected native appearance
-
-Runtime source `fdb9476` is deployed as package
-`81b5eaa98751ebf048fc681fba764f8fff938a88ed7f6842651ab085af451470`
-(17,612,800bytes). Its immutable build came from the exact frozen Git tree while
-portal work continued separately; no concurrent uncommitted source was included.
-The same actual world/native intent IDs, receiving configuration, seven owner
-routes and corrected native bridges were retained. The app replacement required
-human reload for fresh room sessions; the deployment did not project an avatar
-or submit a native input.
-
-Actual authenticated own-being HTTPS reads returned the canonical153,394-byte
-Navegante design and99,284-byte maintained renderer with exact source hashes;
-the task reader session was revoked. This establishes served bytes, separately
-from the browser fixture's spatial sprite behaviour and real human acceptance.
-The projection remains a faithful layered2.5D form rather than a rigged GLB.
-Current/previous operator archives total34,928,640bytes. Once an avatar-form
-entity enters saved state, keep the current compatible candidate for forward
-recovery; the previous colour-only binary lacks that form. Preserve actual
-creations rather than editing saved state to force an older binary.
-
-
-## First protected presentation visit
-
-Runtime `8adb430` is selected as package
-`b4ca7f604580b0c089e89d09c91f889e598389b5c09421e958a8146f969119ea`
-(17,592,320bytes), with one private receiving-configured report entrance in the
-shared reading room. The selected same-origin Nexus entry retains its exact
-report/revision pin and discovery actors, without forcing chapter01 over saved
-progress. Private table/report references stay in receiving configuration.
-Discovery grants no Nexus access; the existing descriptor checks current report
-and participant authorization.
-
-Nexus source delta2a0fd86 is separately selected through its maintained web
-selector, minimally composed onto its actual backend/frontend. Health, exact
-served frontend assets and unchanged canonical pending/recording state were
-qualified. Actual anonymous descriptor access is401; the deployment did not mint,
-copy or extract any human session. Protected human descriptor200, embedded report
-use and situated playback/recording acceptance remain actual participant checks.
-
-The supported Holodeck replacement preserved the real room run, every existing
-native intent ID, avatar/world entities, seven native routes and audience. The
-only receiving-config addition is one selected visit. Both participants reload
-to obtain fresh room sessions after replacement. The standalone pinned Node24
-package passed actual MML/Networked DOM peers and shared mutation/retry checks.
-Current/previous operator archives total35,205,120bytes; superseded generated
-archives were retired without changing creations, recordings or native originals.
-
-
-## Native authority independent of browser presence
-
-Source `63de97c` is selected as package
-`549f9de45d1ca1905fd714aee7a3e33d5c013a04c5ba8599b0cb93895c010a33`
-(17,602,560bytes). The receiving configuration adds only the fixed existing
-central authority socket; the seven pair routes/return pins and selected content
-visit remain intact. The app replacement retained the actual room run, sequence73,
-entities and all11existing native intent IDs. The real upstream initial DOM is
-ready before startup completes; subsequent projections use its bounded queue.
-
-The Home gateway received only the14-line read-only owner-dispatch addition from
-Cluster9343b2e, retaining513other file contents and all mobile/link/launcher
-features. One scoped gateway restart preserved the app, native bridges, Nexus and
-Caddy invocations. Actual owner reads allowed the existing seven beings' current
-Holodeck service grants and denied an unknown being, minting no session or grant.
-The current being's own grant is authoritative; it is not inherited from a human
-or conditioned on a human browser session.
-
-Only the central native bridge selects the fixed service key and qualified
-bridge `aa2155b8`; six remote bridge configurations remain unchanged. Actual
-applicationUID992 world-access calls returned seven current allows and an
-unknown-being denial. daimon-home2.4.16/source2cc674a is installed and verified on
-all seven selected bodies. Three generated Python caches were preserved privately
-after verifying all managed source bytes; no authored files were overwritten.
-The receiving surface check passed. Installation is not model-context adoption.
-
-Current/previous operator archives total35,194,880bytes. The operator performed
-no production world mutation or human-session creation. Native observation/action
-without browser presence and human-visible rendering remain separate results of
-the owning situated trial; read its retained evidence rather than inferring
-participation from health or permission decisions.
-
-
-The owning native trial subsequently read sequence73 with zero human
-participants, projected its selected Navegante avatar once at sequence74 and
-independently read back the same being/form/appearance with zero human
-participants. The other native projection remained intact. These are actual
-native world effects independent of browser presence; they do not prove a
-human-visible rendered frame.
-
-Retain the current549f candidate for forward recovery. The precedingb4 runtime
-can parse avatar state but lacks independent being authority; it is not equivalent
-in permission semantics after revocation. Any older-runtime recovery must preserve
-the current authority adapter or disable its native world-action ports through
-the supported receiving configuration. Never restore old world/native state to
-force a software downgrade.
+The finite route executor uses its existing96-task receiving bound;32 previously
+caused a kernel-confirmed fork refusal. After a lost reply, inspect and continue
+the same retained request/predecessor instead of minting another request or
+repeating an uncertain route reload. Exact current selection, source hashes and
+effect receipts live in the protected receiving record. Git retains prior dated
+compositions; those old selections do not override this current contract.
