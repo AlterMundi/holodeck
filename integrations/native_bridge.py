@@ -241,14 +241,20 @@ class NativeBridge:
                     state['phase']='problem';states.append(state);continue
                 if route.get('native_acceptance') is True:result['nativeAcceptance']='observed'
                 for row in route.get('results',[])[:8]:
-                    if (row.get('instruction_covered') is not True or row.get('current') is not True
+                    # `current` covers every instruction of the umbrella
+                    # request, not just this situated conversation turn. A
+                    # declared reply covering this exact instruction remains
+                    # its reply when other context work is still unfinished.
+                    if (row.get('instruction_covered') is not True or row.get('declared') is not True
                         or row.get('correction_pending') is not False or not isinstance(row.get('text_excerpt'),str)):
                         continue
                     text=row['text_excerpt']
                     result['updates'].append({'source':row.get('source'),'revision':row.get('revision'),
                         'kind':'answer','text':text,'partial':row.get('text_bounded') is True,
                         'sha256':hashlib.sha256(text.encode()).hexdigest(),
-                        'instruction':route.get('instruction'),'observedAt':None})
+                        'instruction':route.get('instruction'),'observedAt':None,
+                        'scope':'situated-instruction','parentRequestCurrent':row.get('current'),
+                        'parentRequestCompleted':row.get('completed')})
                     if result['message'] is None:
                         result['message']=text
                     state['phase']='completed'

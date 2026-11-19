@@ -78,9 +78,32 @@ class BridgeContracts(unittest.TestCase):
         result=self.bridge.status(self.actor,self.frozen,ident)
         self.assertEqual(result['phase'],'queued');self.assertIsNone(result['message'])
         self.provider.routes[0]['results']=[{'source':'delivery:fixture','revision':'b'*64,'instruction_covered':True,
-            'current':True,'correction_pending':False,'text_excerpt':'Actual routed fixture result','text_bounded':False}]
+            'declared':True,'current':True,'correction_pending':False,'text_excerpt':'Actual routed fixture result','text_bounded':False}]
         result=self.bridge.status(self.actor,self.frozen,ident)
         self.assertEqual(result['phase'],'completed');self.assertEqual(result['message'],'Actual routed fixture result')
+    def test_situated_reply_settles_without_completing_umbrella_context_work(self):
+        ident=str(uuid.uuid4())
+        answer={'source':'delivery:covered-fixture','revision':'b'*64,'instruction_covered':True,
+            'declared':True,'current':False,'correction_pending':False,'completed':False,
+            'text_excerpt':'Reply to this situated instruction; broader work continues.','text_bounded':False}
+        sibling={**answer,'source':'delivery:sibling-fixture','instruction_covered':False,
+            'completed':True,'text_excerpt':'Later sibling instruction result.'}
+        self.provider.routes=[{'instruction':'context-fixture','target_available':True,
+            'native_acceptance':True,'results':[sibling,answer]}]
+        result=self.bridge.status(self.actor,self.frozen,ident)
+        self.assertEqual(result['phase'],'completed');self.assertFalse(result['tracking'])
+        self.assertEqual(result['message'],answer['text_excerpt']);self.assertEqual(len(result['updates']),1)
+        self.assertIs(result['updates'][0]['parentRequestCurrent'],False)
+        self.assertIs(result['updates'][0]['parentRequestCompleted'],False)
+        self.assertEqual(result['updates'][0]['scope'],'situated-instruction')
+        self.assertEqual(self.provider.inputs,[])
+        for change in ({'declared':False},{'declared':False,'current':True},{'instruction_covered':False},{'correction_pending':True}):
+            with self.subTest(change=change):
+                self.provider.routes[0]['results']=[{**answer,**change}]
+                pending=self.bridge.status(self.actor,self.frozen,ident)
+                self.assertEqual(pending['phase'],'queued');self.assertTrue(pending['tracking'])
+                self.assertEqual(pending['updates'],[])
+
     def test_multibyte_native_updates_fit_the_wire_bound(self):
         ident=str(uuid.uuid4());db=sqlite3.connect(self.provider.receiver['db_path'])
         for index in range(8):
@@ -91,7 +114,7 @@ class BridgeContracts(unittest.TestCase):
         self.assertTrue(all(update['partial'] for update in result['updates']))
     def test_partial_multi_route_results_keep_tracking_until_every_route_is_terminal(self):
         ident=str(uuid.uuid4())
-        answer={'source':'delivery:fixture','revision':'b'*64,'instruction_covered':True,'current':True,
+        answer={'source':'delivery:fixture','revision':'b'*64,'instruction_covered':True,'declared':True,'current':True,
                 'correction_pending':False,'text_excerpt':'Route A completed fixture','text_bounded':False}
         self.provider.routes=[{'instruction':'a','target_available':True,'native_acceptance':True,'results':[answer]},
             {'instruction':'b','target_available':True,'native_acceptance':True,'results':[]}]
@@ -107,7 +130,7 @@ class BridgeContracts(unittest.TestCase):
         result=self.bridge.status(self.actor,self.frozen,ident)
         self.assertEqual(result['phase'],'problem');self.assertTrue(result['tracking'])
         self.provider.routes[0]['results']=[{'source':'delivery:fixture','revision':'b'*64,'instruction_covered':True,
-            'current':True,'correction_pending':False,'text_excerpt':'Actual fixture result','text_bounded':False}]
+            'declared':True,'current':True,'correction_pending':False,'text_excerpt':'Actual fixture result','text_bounded':False}]
         result=self.bridge.status(self.actor,self.frozen,ident)
         self.assertEqual(result['phase'],'problem');self.assertFalse(result['tracking'])
     def test_exact_canonical_lookup_restores_original_observation_without_new_submission(self):

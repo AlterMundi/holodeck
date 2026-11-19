@@ -114,8 +114,13 @@ original to manufacture that evidence.
 
 Routed work is read through its exact original-scoped trace. The general entry's
 acknowledgment does not complete a turn delegated to a work conversation. Only a
-current associated worker result is shown as that routed answer; excerpts retain
-their source/revision and partial flag. With several routes, partial answers remain
+declared result covering that exact routed instruction, with no pending correction,
+settles its situated reply. Telecodex `current` covers every instruction linked to
+the umbrella request; another context turn can make it false without withdrawing
+this reply. Keep that flag and umbrella `completed` as `parentRequestCurrent` and
+`parentRequestCompleted` metadata, separate from the situated turn's completion.
+An uncovered sibling result, undeclared result or pending correction cannot settle
+the turn. Excerpts retain source/revision and partial flag. With several routes, partial answers remain
 available while `tracking=true`; the first finished branch does not complete the
 others. A prior native problem remains a problem, including while another branch
 is pending. Consumers keep polling when tracking is true even if phase is problem.

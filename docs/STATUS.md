@@ -1,23 +1,23 @@
 # Current MVP work
 
-Updated 2026-11-17. The human requested an active goal through the MVP and useful
+Updated 2026-11-19. The human requested work through the MVP and useful
 parallel implementation. [Roadmap](ROADMAP.md) and issues1–4 retain acceptance;
-**the MVP is not yet complete**.
+**the MVP is not yet complete**. The native goal remains blocked; explicit
+human-directed trial and repairs continue without treating a substage as closure.
 
-The native goal is blocked awaiting the already requested shared human/device
-trial and selection of a creation. This acceptance dependency has remained open
-across successive goal turns; independent implementation, deployment, operator
-records and cleanup are now finished. The service remains available. Actual
-situated uptake/action and creation publication/review must be observed before
-the full objective can be completed.
+The protected trial is live at https://compaii.dmn.homes/holodeck/. Two independently
+signed-in humans now report seeing each other's movement and the same shared
+creation. A real situated input reached the continuing companion with immutable
+application context; direct native observation, own beacon projection and an
+in-place requested light edit have actual server receipts. Both humans report
+seeing the beacon. These observations supersede the earlier zero-input and
+zero-multiplayer gaps.
 
-The first protected trial is live at https://compaii.dmn.homes/holodeck/.
-The original deployment request finalized without replacing the running app or
-preexisting workshop. Browser navigation reaches shared SSO; anonymous API and
-WebSocket access is denied. Actual authenticated multiplayer, first situated
-native/model action and physical human/device play are still unobserved.
-The required fresh-human trial is published in the owning conversation's pending
-list; technical fixtures are not substituted for that evidence.
+The situated conversation loop still needs repair and acceptance: Send was
+reported disabled after an earlier routed turn. Full device/reconnect coverage
+and a selected creation's publication, pinned review and revisit remain open.
+The existing pending trial retains those remaining requirements; no duplicate
+human action is created. Technical fixtures are not human acceptance.
 
 ## Implemented and checked
 
@@ -78,16 +78,16 @@ model uptake nor an authorized world action.
 
 The protected HTTPS release admits the current signed participants and actual
 paired humans. Read-only access refusal, native binding and direct world-socket
-checks passed. A fresh real human situated interaction must demonstrate
-actual native uptake and an observed world action/result. Complete shared human/
-physical-device play and correct encountered problems. Acknowledgment, deployed
+checks passed. Real situated uptake and world actions now have retained evidence as described
+above. Complete the conversational return loop and shared human/physical-device
+play, correcting encountered problems. Acknowledgment, deployed
 process, fixture or screenshot alone cannot complete those requirements.
 
 Rendered sequence is still unknown: semantic delivery does not prove a particular
 frame was visible. Project content editions/review/publication remain distinct
 from service-code deployment and room saves. The seven selected continuing-pair
-routes are installed; actual participation and interaction results remain
-unobserved. The owning [content-cycle audit](content-cycle.md) identifies existing
+routes are installed; only the specifically reported participants and actual
+receipts above establish real participation so far. The owning [content-cycle audit](content-cycle.md) identifies existing
 immutable model/gallery/review contracts. Scene conversion is implemented;
 publication/review of a selected creation and a stable published entrance still
 need qualification. The owning Homes link-entrance extension from merged PR518 is
@@ -120,3 +120,12 @@ world read. This supersedes the earlier zero-input/native-perception gap for
 this pair. Human visual confirmation of that projection, a requested content
 edit, a second participant/device and selected publication/review remain open.
 A server readback is not a human-visible-frame receipt or full MVP acceptance.
+
+Human-reported shared trial update —2026-11-19: two independently signed-in
+participants report seeing one another's movement and the same newly placed
+violet light. The native companion also updated the original light in place to
+violet and verified its preserved identity/position and advanced revision through
+the direct world API. This distinguishes the human-confirmed shared light from
+the separately machine-confirmed native edit. Native conversation sending is
+currently under repair after a report that Send remains disabled. No complete
+conversation-loop, device matrix or full MVP acceptance is claimed.
