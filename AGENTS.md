@@ -13,3 +13,8 @@ existing Home identity and service-audience endpoints; never fall back to local
 anonymous actors or browser-supplied identities. Review docs/deployment.md for the
 selected package/receiver and retain actual source/package/runtime receipts.
 Do not overwrite another Home service. No background native model invocations.
+
+For Home authentication changes, qualify positive authenticated HTML bootstrap
+and API access through real HTTP with the deployed Node runtime. Injected
+identity mocks or anonymous login redirects alone do not prove that path.
+Use the existing production-runtime regression in home-runtime-http.test.mjs.
