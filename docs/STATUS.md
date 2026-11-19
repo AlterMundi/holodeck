@@ -13,8 +13,8 @@ in-place requested light edit have actual server receipts. Both humans report
 seeing the beacon. These observations supersede the earlier zero-input and
 zero-multiplayer gaps.
 
-The situated conversation loop still needs repair and acceptance: Send was
-reported disabled after an earlier routed turn. Full device/reconnect coverage
+The situated conversation repair is installed; its next full human return loop
+still needs acceptance after Send was reported disabled on an earlier routed turn. Full device/reconnect coverage
 and a selected creation's publication, pinned review and revisit remain open.
 The existing pending trial retains those remaining requirements; no duplicate
 human action is created. Technical fixtures are not human acceptance.
@@ -129,8 +129,11 @@ Client uptake and a subsequent complete conversation loop remain to be observed.
 
 The existing authored animated appearance is implemented, browser-qualified and
 deployed. It is a layered spatial sprite, not a newly invented articulated3D
-model. Actual native avatar selection and human visibility remain distinct from
-those controlled renderer checks and the already observed beacon.
+model. Actual native selection is now confirmed independently of any human browser
+session: direct observation, one avatar projection and its readback succeeded
+with zero human room participants. The existing other native projection and
+world creations were preserved. Human visual acceptance of this figure remains
+separate from those server receipts and the already observed beacon.
 
 The human selected integration of a real existing presentation with its retained
 pause/discussion/transcription/reflection workflow. The new spatial visit reuses
@@ -138,3 +141,21 @@ Nexus and pins the selected report edition; see [content visits](content-visits.
 Controlled frame/context/lifecycle checks are separate from protected human access
 and a real contribution/response/revisit. Full device/reconnect coverage and the
 remaining content cycle still prevent a full MVP completion claim.
+
+## Native authority and initial-world follow-up —2026-11-19
+
+The current native interface uses the being's own live Home service permission,
+through the existing central owner bridge, after original/input/pair and fixed
+return-port verification. It no longer borrows a human browser cookie. The same
+Home service capability, selected App edition and current audience checks apply;
+unknown, revoked, stale or unavailable authority denies. No human session,
+reader lease, permission grant or synthetic model input was created for the
+real native qualification.
+
+Server startup and its projection queue now await the real upstream DOM snapshot,
+so immediate native activity cannot race the unfinished initial document. The
+controlled real DOM/WebSocket regression retains ordered geometry. Full source
+qualification:86 Node tests with0skips,16 Python bridge tests and browser build
+pass. Actual deployed native observe→project→observe independently selected the
+existing authored avatar while no human browser participant was connected. This
+adds real machine/action evidence, not human-view or full MVP acceptance.
