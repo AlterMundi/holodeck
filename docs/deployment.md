@@ -209,7 +209,7 @@ The corrected interactive presentation has106parts; its full GLB retains all
 geometry while the review presentation excludes only the ambient water horizon
 from fitting. The first107part edition remains immutable and is superseded for
 framing; the intermediate106part edition is retained before the final presentation
-update hiding technical model labels. Neither edition selects a published-result pointer or creates an App.
+update hiding technical model labels. No new App or human approval is implied by an edition.
 
 Nexus has a new immutable table in the same review family for the corrected
 Home publication/model pin. Seven existing human identities have exact Home
@@ -220,6 +220,16 @@ being model readership is not a being Nexus-session claim. No synthetic notes,
 reflections, model inputs or human sessions were created. Native association and
 actual protected human-browser review remain separate, unfinished checks. Private
 receiving records retain the exact pins, grant receipts and predecessor edition.
+
+A stable authorized Home link now selects the final pinned edition for the shared
+MVP trial. CompAII made this technical selection under the retained human trial
+delegation; it is not a new human approval or acceptance. The same fourteen world
+readers are selected. A later model draft does not move this link automatically;
+changing the trial edition requires another explicit selection. Actual own-reader
+303 target match and anonymous404/no target disclosure were qualified, then the
+own reader was revoked. Historical first-edition browser loading retained its old
+pin/model/GPU result without silently selecting current content. The generic
+Nexus deliverable-lifecycle proposal remains unimplemented.
 
 The shared 3D package is clean3.10.53 on ITACA and five remote bodies. Eko's
 pre-existing modified3.9 package retains its Bambu guidance and receives only the
