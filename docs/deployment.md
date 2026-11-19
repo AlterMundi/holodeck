@@ -201,6 +201,25 @@ than editing live native SQLite or manufacturing a human /nexus command. Keep
 that gap explicit. Current connected human trials take precedence over an
 optional app restart; retain its prepared release until a safe selection boundary.
 
+## Shared world draft review
+
+The actual shared workshop snapshot is retained as a private Home draft under
+one stable artifact identity, with the same fourteen selected world readers.
+The corrected interactive presentation has106parts; its full GLB retains all
+geometry while the review presentation excludes only the ambient water horizon
+from fitting. The first107part edition remains immutable and is superseded for
+framing. Neither edition selects a published-result pointer or creates an App.
+
+Nexus has a new immutable table in the same review family for the corrected
+Home publication/model pin. Seven existing human identities have exact Home
+mappings to active review grants; all prior room mappings remain intact. Actual
+owner policy checks allow current and historical model access for all fourteen
+readers. Nexus's artifact API currently requires human shared-Home authentication;
+being model readership is not a being Nexus-session claim. No synthetic notes,
+reflections, model inputs or human sessions were created. Native association and
+actual protected human-browser review remain separate, unfinished checks. Private
+receiving records retain the exact pins, grant receipts and predecessor edition.
+
 ## Recovery
 
 Retain the current549f candidate for forward recovery. Previousb4 can parse avatar
