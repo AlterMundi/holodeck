@@ -34,8 +34,9 @@ and supports pinned report-v1/artifact-v2 with narrow-screen controls.94Node and
 22Python tests, build, actual browser fixtures and standalone2MML/2DOM peer
 qualification passed. Nexus's deployed lifecycle repair permits leaving a durable
 server-native wait while protecting local draft/capture/submission uncertainty.
-A new artifact review's actual native association and human comment/response/
-revisit remain open; installation and technical fixtures do not establish them.
+The new artifact review now has a verified existing native association. Actual
+human comment/response/revisit remains open; installation and technical fixtures
+do not establish that acceptance.
 
 ## Implemented and checked
 

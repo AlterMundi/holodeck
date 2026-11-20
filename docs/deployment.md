@@ -199,12 +199,15 @@ recording, upload and transcription still prevent unsafe replacement. Returning
 retrieves the retained discussion; walking keeps the same viewer mounted. The
 actual legacy request and bindings were unchanged across this correction.
 
-The artifact viewer v2 transport is deployed, but its new native reflection
-association is not. A prepared binding reuses the verified existing target and
-negotiated modes; registration must use the maintained receiver writer rather
-than editing live native SQLite or manufacturing a human /nexus command. Keep
-that gap explicit. Current connected human trials take precedence over an
-optional app restart; retain its prepared release until a safe selection boundary.
+The artifact viewer v2 transport and the final workshop review's native reflection
+association are deployed. The maintained owner writer associated the existing
+verified target once; local/canonical binding revision1 and negotiated interactive3D
+artifact reflection match. The new table uses its HTTPS Home entrance only,
+without inheriting another table's Telegram launch selector. Four prior routes,
+HBC original/binding, native physical turns, goals and accounting were preserved
+across a listener-only replacement; existing collectors reattached without input
+replay or goal Resume. Actual human-authored contribution/native return remains
+separate, unfinished acceptance.
 
 ## Shared world draft review
 
@@ -222,8 +225,8 @@ mappings to active review grants; all prior room mappings remain intact. Actual
 owner policy checks allow current and historical model access for all fourteen
 readers. Nexus's artifact API currently requires human shared-Home authentication;
 being model readership is not a being Nexus-session claim. No synthetic notes,
-reflections, model inputs or human sessions were created. Native association and
-actual protected human-browser review remain separate, unfinished checks. Private
+reflections, model inputs or human sessions were created. The native association is now installed; actual protected human-browser review
+and matched model return remain separate, unfinished checks. Private
 receiving records retain the exact pins, grant receipts and predecessor edition.
 
 A stable authorized Home link now selects the final pinned edition for the shared
