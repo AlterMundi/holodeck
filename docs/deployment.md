@@ -132,6 +132,12 @@ retry. See [transport operations](../deployment/native-transports.md).
 
 ## Current browser and native authority
 
+Source d2ee331 includes the restart-recovery behavior below; its b1d017c2 operator
+package is qualified but not yet selected. The current34c runtime still requires
+reload after replacement. Apply the frozen successor through the existing Home
+writer at the ordinary no-participant boundary and record actual readback before
+claiming live recovery.
+
 The public Apps projection offers **Entrar** through existing Home SSO, returning
 to authorized Apps without exposing private cards. Ordinary `/holodeck/` page
 navigation reaches that same SSO even if a phone omits Sec-Fetch headers;

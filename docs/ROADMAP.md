@@ -37,3 +37,9 @@ The return-lifetime repair is installed on all seven native receivers and bridge
 with the corresponding world tracking release deployed. The original is retained
 without replay, borrowed final text or a fabricated semantic completion. Technical
 checks passed; human conversational acceptance remains open.
+
+The20November d2ee331 successor has controlled actual two-browser process-restart
+recovery, preserving world, drafts and retained requests without POST replay.
+The qualified b1d017c2 package is not yet selected: a current authenticated human
+visit is retained. Apply at the ordinary no-participant boundary, then continue
+actual device/conversation/review acceptance; source tests do not close that work.

@@ -38,6 +38,25 @@ The presentation, artifact-v2 and Nexus lifecycle/native review association are
 installed. Actual human comment/response/revisit remains open; technical checks
 do not establish that acceptance.
 
+## Prepared restart-recovery successor
+
+Source d2ee331/package b1d017c2 is published as an operator candidate and has
+not replaced the selected34c release. Actual world sockets and native observation
+confirm an authenticated visitor in the room; retain that trial and apply the
+frozen supported deployment at the ordinary no-participant boundary.
+
+The candidate retains at most8private token-hash/actor/time bindings with the
+original30minute lifetime. Fresh shared Home identity/audience is mandatory on
+recovery. No Home cookies or rights are persisted. The pinned MML server callback
+adaptation binds handshake ownership to the actual authorized socket.
+99Node checks pass with1unchanged optional installed-gallery skip; earlier real
+gallery evidence remains valid. Build and exact receiving archive verifier pass.
+The exact vendored package passed actual Node replacement with two independent
+original browser pages: MML presence and DOM geometry, actor/run/shared revision,
+draft, command/native references and subsequent WASD recovered without POST
+replay or JS/server errors. Controlled fixtures are not human/device acceptance.
+The first deployment still requires one reload for preexisting unrecorded sessions.
+
 ## Implemented and checked
 
 - Shared walkable MML world, authored island scenery, bounded1024px lighting,
