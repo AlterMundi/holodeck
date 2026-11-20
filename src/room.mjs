@@ -25,6 +25,7 @@ export class Room extends EventEmitter {
     this.observations = new Map();
     this.entities = { bridge: { id: 'bridge', revision: 0, raised: false } };
     this.projections = new Map();
+    this.retainedFocuses = null; // Opaque successor metadata; this predecessor cannot author indications.
     this.persist = persist;
     this.presence = presence;
     if(state)this.restore(state);
@@ -33,7 +34,8 @@ export class Room extends EventEmitter {
   snapshot() {
     return clone({schema:'holodeck.room-save/v1',edition:this.edition,run:this.run,
       sequence:this.sequence,events:this.events,entities:this.entities,
-      outcomes:[...this.outcomes],observations:[...this.observations],projections:[...this.projections]});
+      outcomes:[...this.outcomes],observations:[...this.observations],projections:[...this.projections],
+      ...(this.retainedFocuses===null?{}:{focuses:this.retainedFocuses})});
   }
 
   restore(state) {
@@ -43,12 +45,14 @@ export class Room extends EventEmitter {
       || !Array.isArray(state.outcomes)||state.outcomes.length>LIMITS.commands
       || !Array.isArray(state.observations)||state.observations.length>LIMITS.observations
       || !Array.isArray(state.projections)||state.projections.length>LIMITS.sessions
+      || (state.focuses!==undefined&&(!Array.isArray(state.focuses)||state.focuses.length>16))
       || !state.entities?.bridge || Object.keys(state.entities).length>LIMITS.elements)
       throw new RoomError('save','Room checkpoint is invalid; preserve it for recovery');
     const copy=clone(state);
     this.edition=copy.edition;this.run=copy.run;this.sequence=copy.sequence;
     this.events=copy.events;this.entities=copy.entities;
     this.outcomes=new Map(copy.outcomes);this.observations=new Map(copy.observations);this.projections=new Map(copy.projections);
+    this.retainedFocuses=copy.focuses??null;
   }
 
   atomic(operation) {
@@ -206,7 +210,7 @@ export class Room extends EventEmitter {
   resetNow() {
     this.run = randomUUID(); this.sequence = 0; this.events = []; this.observations.clear();
     this.entities = { bridge: { id: 'bridge', revision: 0, raised: false } };
-    this.projections.clear(); // Retain outcomes: old IDs must not mutate a new run.
+    this.retainedFocuses=null;this.projections.clear(); // Retain outcomes: old IDs must not mutate a new run.
     this.changed({ type:'run.reset', run:this.run });
   }
 }
