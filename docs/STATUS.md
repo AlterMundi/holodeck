@@ -1,7 +1,9 @@
 # Current MVP work
 
-Updated 2026-11-20. The existing human-authorized goal remains active with its
-full objective. The MVP is **not complete**. The [roadmap](ROADMAP.md),
+Updated 2026-11-20. The existing human-authorized goal is blocked pending the
+required real shared trial, with its full objective unchanged. Three consecutive
+audits found the same missing participant/device/conversation/review acceptance.
+The deployed service remains available. The MVP is **not complete**. The [roadmap](ROADMAP.md),
 [plan](plan.md) and issues1–4 retain the required shared human/device acceptance.
 This current checkpoint supersedes older receiving selections retained in Git.
 
