@@ -14,7 +14,7 @@ package and `dm.home-service-deploy/v1` request. Runtime is pinned Node24 HTTP;
 receiver. `STATE_DIR/receiving.json` selects the existing same-origin shared
 identity endpoint, service-audience endpoint, public origin/base path and optional
 native/world Unix sockets. `authoritySocket` selects the existing central native
-permission bridge; `contentVisits` selects at most one protected report entrance.
+permission bridge; `contentVisits` selects at most eight protected report or artifact entrances.
 It carries route metadata and private content references, not credentials.
 
 Caddy's maintained service writer preserves `/holodeck/` on both HTTP and
@@ -94,13 +94,17 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
-The19November selected runtime is source `63de97c`, at
-https://compaii.dmn.homes/holodeck/. Its17,602,560-byte package is
-`549f9de45d1ca1905fd714aee7a3e33d5c013a04c5ba8599b0cb93895c010a33`.
+The20November selected runtime is source `8f1698a`, at
+https://compaii.dmn.homes/holodeck/. Its17,623,040-byte package is
+`9d0c94ddb35fb6d36c70df8b0c97355d70e9d0cbd1320b1e53809d61c78f9e30`.
 The existing App resource `a51218c647644a8fbbd42ed706d70b61`, audience and URL
-remain unchanged. Current/previous operator archives total35,194,880bytes.
-The most recent replacement retained the actual room run, sequence73, world
-entities and all11existing native intent IDs; it cancelled or replayed none.
+remain unchanged. Current and compatible predecessor archives total35,256,320bytes.
+Exact receiving readback matched all27inventoried files, health, the live room
+run/sequence81 and unchanged current/previous room and native-intent hashes.
+The reading-room catalog now selects the existing narrated report and the final
+immutable workshop3D review; discovery preserves each content's actual grants.
+The replacement observed zero established world connections. No human/model
+input was replayed and no participant session or grant was fabricated.
 
 Seven explicit existing human/being/home routes select their own native owner.
 Every return socket is pinned to that being before native bridge access, with no
@@ -143,7 +147,7 @@ exact situated instruction, without falsely requiring umbrella research completi
 The original conversation services stay running across scoped web/bridge updates.
 App replacement clears its in-memory human room sessions: reload obtains a fresh
 Home-validated session; MML reconnect alone reuses the old token. Native authority
-does not depend on this reload. daimon-home2.4.16 and report-conversation0.1.13
+does not depend on this reload. daimon-home2.4.16 and report-conversation0.1.14
 are installed/status verified on all seven selected bodies; the receiving surface
 check passed. Installation does not prove existing model contexts reloaded them.
 
@@ -157,9 +161,10 @@ readers were revoked; no human identity was minted or borrowed.
 One private receiving-selected report/revision entrance appears in the reading
 room. Its same-origin Nexus entry preserves saved progress rather than forcing
 chapter01. Discovery is not access: the existing descriptor checks current report
-and participant authorization. Nexus minimally composes report-v1 and artifact-v2 deltas2a0fd86/95f4ef8 onto its
-actual backend and selectedd657f1c frontend; health,14served assets and unchanged
-43canonical DB table hashes/counts were verified at the v2 web selection.
+and participant authorization. Nexus composes report-v1/artifact-v2 and the PR122 visit-lifecycle repair onto its
+actual receiving backend/seed-bank selection. The selected release is
+`holodeck-visits-close-efdf449-composed`:15served files match and43canonical DB
+tables, HBC original/bindings and native/Telegram/bridge processes are unchanged.
 The existing player, notes, capture and native review are reused. Private pins,
 actors and selector preimages remain in the operator record.
 
@@ -187,12 +192,12 @@ artifact room's existing same-actor Home mapping selects its fresh hash; all oth
 mapping bytes are unchanged. Actual held-owner model policy and current room
 selections permit the intended existing viewers, without claiming a human HTTP200.
 
-The legacy current-edition queued report exchange keeps processing=true and
-prevents prepareClose/content replacement. It does not globally prevent unrelated
-new contributions/reflections; walking keeps the viewer mounted and is blocked
-only while recording. The legacy uncertainty remains: no false dispatch, receipt,
-configure, withdrawal or replay was used to clear it, and no human pending task
-was created for this operator issue.
+The retained queued report exchange keeps its exact pending/unknown state.
+A server-retained native wait alone now permits safe close/content replacement,
+without cancelling or replaying the request. Local drafts, uncertain submissions,
+recording, upload and transcription still prevent unsafe replacement. Returning
+retrieves the retained discussion; walking keeps the same viewer mounted. The
+actual legacy request and bindings were unchanged across this correction.
 
 The artifact viewer v2 transport is deployed, but its new native reflection
 association is not. A prepared binding reuses the verified existing target and
@@ -242,11 +247,17 @@ session storage were preserved; served Apps metadata is retained but hidden.
 
 ## Recovery
 
-Retain the current549f candidate for forward recovery. Previousb4 can parse avatar
-state but lacks independent being authority: it is not equivalent in permission
-semantics after revocation. Any older-runtime recovery must retain the authority
-adapter or disable native world-action ports through supported receiving
-configuration. Never restore old world/native state to force a software downgrade.
+Retain the selected9d0c release for forward recovery. The actual predecessor
+`9fcac97a552ad79e58dcd3ce5d5da888e2b11e01fcc859ae138dd3d073effa49`
+(source46a9455, branchfix/predecessor-focus-retention) preserves optional shared
+indications through old-code load/save, unlike the earlier549f. Its real HTTP
+mutation followed by successor Room readback retained the exact indication.
+It also retains independent native authority. A downgrade must pair that code
+with the retained pre-workshop receiving metadata: that predecessor accepts only
+one report entrance, whereas the current configuration selects two entries.
+Restore that configuration selection only; preserve the latest world/native
+files, all indications and request identities. Never restore old world state.
+
 Home/Nexus selector preimages remain software-only rollback inputs; preserve live
 grants, media, original messages, pending work and canonical databases.
 

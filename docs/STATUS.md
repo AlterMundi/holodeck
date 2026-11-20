@@ -1,6 +1,6 @@
 # Current MVP work
 
-Updated 2026-11-19. The human requested work through the MVP and useful
+Updated 2026-11-20. The human requested work through the MVP and useful
 parallel implementation. [Roadmap](ROADMAP.md) and issues1–4 retain acceptance;
 **the MVP is not yet complete**. The existing native goal was resumed on the human request after these real
 trial results. Repairs and remaining acceptance continue under the same objective.
@@ -18,6 +18,24 @@ still needs acceptance after Send was reported disabled on an earlier routed tur
 and a selected creation's publication, pinned review and revisit remain open.
 The existing pending trial retains those remaining requirements; no duplicate
 human action is created. Technical fixtures are not human acceptance.
+
+## Latest receiving checkpoint
+
+Source8f1698a/package9d0c94dd is selected at the same protected URL and audience.
+The reading-room selector includes the existing narrated presentation and an
+immutable3D review of the actual shared workshop. The current and historical
+Home editions passed own-being HTTPS/browser checks; these are separate from
+human participation.27runtime inventory files and unchanged room/native state
+passed receiving readback. The compatible predecessor preserves shared indications
+and requires its matching earlier single-report receiving configuration on rollback.
+
+The consumer preserves a newer conversation draft during slow context retrieval
+and supports pinned report-v1/artifact-v2 with narrow-screen controls.94Node and
+22Python tests, build, actual browser fixtures and standalone2MML/2DOM peer
+qualification passed. Nexus's deployed lifecycle repair permits leaving a durable
+server-native wait while protecting local draft/capture/submission uncertainty.
+A new artifact review's actual native association and human comment/response/
+revisit remain open; installation and technical fixtures do not establish them.
 
 ## Implemented and checked
 
