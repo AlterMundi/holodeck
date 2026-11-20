@@ -139,7 +139,7 @@ retaining513other file contents, mobile/link/launcher features and existing stor
 All seven existing bridges now select SHA2562afd732a72ad6ebc354c50745b8060d8ef0b31839b3b5553dffe3bf9b511b66d,
 with32KiB observation/48KiB source support. Each scoped restart observed no
 in-flight RPC sockets and preserved config hashes/native core invocations. This
-compatibility preparation does not mean the new focus/v2 consumer app is selected.
+compatibility preparation preceded the separately verified focus/v2 app selection.
 Actual appUID992 queries allowed all seven current beings and denied an unknown
 being, minting no session or grant. Native reply completion separately follows the
 exact situated instruction, without falsely requiring umbrella research completion.
@@ -182,7 +182,7 @@ subsequent projections use its bounded queue. A representation failure fences
 new writes/projections while preserving committed room state and readable
 observations/results. An applied snapshot is not proof of human-visible pixels.
 
-## Review membership and remaining native association
+## Review membership and native association
 
 The supported merged owner renew-membership writer renewed only the same expired,
 non-revoked verified participant memberships for the existing report/artifact

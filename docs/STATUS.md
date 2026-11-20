@@ -201,8 +201,8 @@ trial edition while later drafts remain independent;303/anonymous404 checks pass
 
 Source checks include94Node tests with the installed gallery builder (zero skips),
 22Python checks and the browser bundle build. Explicit shared indications and
-video/3D visit support have their own qualified source; their next Holodeck
-runtime selection is separate from the already delivered Nexus/viewer content.
-The situated conversational return, human/device/reconnect acceptance and the
-new creation review's native association remain open. No full MVP completion is
+video/3D visit support are now selected in the Holodeck runtime. The new creation
+review has its verified native association. The situated conversational return,
+actual human review/comment/response/revisit and device/reconnect acceptance
+remain open. No full MVP completion is
 claimed. See [content cycle](content-cycle.md) and [snapshot producer](content-snapshots.md).
