@@ -94,17 +94,16 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
-The20November selected runtime is source `8f1698a`, at
+The20November selected runtime is source `9ea3608`, at
 https://compaii.dmn.homes/holodeck/. Its17,623,040-byte package is
-`9d0c94ddb35fb6d36c70df8b0c97355d70e9d0cbd1320b1e53809d61c78f9e30`.
+`34c66509bde78fa253d6b00827c8d93b3c2fec815d08771e1d0319e9ea0c6699`.
 The existing App resource `a51218c647644a8fbbd42ed706d70b61`, audience and URL
-remain unchanged. Current and compatible predecessor archives total35,256,320bytes.
-Exact receiving readback matched all27inventoried files, health, the live room
-run/sequence81 and unchanged current/previous room and native-intent hashes.
-The reading-room catalog now selects the existing narrated report and the final
-immutable workshop3D review; discovery preserves each content's actual grants.
-The replacement observed zero established world connections. No human/model
-input was replayed and no participant session or grant was fabricated.
+remain unchanged. Current and predecessor archives total35,246,080bytes.
+Exact receiving readback matched all27inventoried files, health and unchanged
+current/previous room, native-intent and receiving-configuration hashes at
+sequence82. The replacement observed zero established world connections.
+Both the narrated presentation and the immutable workshop3D review remain selected.
+No human/model input was replayed or participant session/grant fabricated.
 
 Seven explicit existing human/being/home routes select their own native owner.
 Every return socket is pinned to that being before native bridge access, with no
@@ -136,7 +135,7 @@ Timeouts/unknown/malformed authority deny without a human-cookie fallback.
 The qualified Home dispatcher overlay changes only14lines in service.py
 (SHA256aad74810b792f349424850a691e1aaf1fd7f7a941fed8eb22981b4b7e34e9548),
 retaining513other file contents, mobile/link/launcher features and existing stores.
-All seven existing bridges now select SHA2562afd732a72ad6ebc354c50745b8060d8ef0b31839b3b5553dffe3bf9b511b66d,
+All seven existing bridges now select SHA2569ae435c6b97dd9f738847ec19ba72409e029412f586326e63c9b0966ce9a2b39,
 with32KiB observation/48KiB source support. Each scoped restart observed no
 in-flight RPC sockets and preserved config hashes/native core invocations. This
 compatibility preparation preceded the separately verified focus/v2 app selection.
@@ -150,6 +149,31 @@ Home-validated session; MML reconnect alone reuses the old token. Native authori
 does not depend on this reload. daimon-home2.4.16 and report-conversation0.1.14
 are installed/status verified on all seven selected bodies; the receiving surface
 check passed. Installation does not prove existing model contexts reloaded them.
+
+## Ended native execution and honest return recovery
+
+The owning native source now keeps a human return lifetime after downstream
+Matrix selection and retains native acknowledgment separately from that selection.
+Only the actual internal acknowledgment callback can record native acceptance;
+old records are not backfilled. The read-only owner `input terminal UUID` operation
+can identify a uniquely scoped, ended physical turn without returning unrelated
+text. Ambiguous/rebound/retired/unavailable evidence stays held.
+
+All seven native listeners and bridges adopted this correction. Root preserves its
+Nexus-owner composition; the six other receivers preserve their existing common
+profile. Actual configs, Core processes, goals, accounting and originals remain
+unchanged. One retained original now reads as observed completed execution with
+its answer association unavailable: no old final was relabeled or borrowed.
+The world releases only that verified ended tracking and displays a plain notice,
+retaining the original, next draft and progress. Semantic downstream work is not
+cancelled. No result is cached across a changed input boundary.
+
+96Node/25Python checks, build and a real isolated browser qualified disabled Send,
+unknown-state waiting, observed-end release, retained draft/progress, subsequent
+typing and movement. The staged standalone package passed two MML/two DOM peers,
+shared mutation and exact retry. Root native source passed723tests with4explicit
+package ignores; the compatible six-receiver composition passed688text tests with
+1ignore. These are technical checks, not human conversation acceptance.
 
 ## Appearance, presentation and observed effects
 
@@ -250,16 +274,13 @@ session storage were preserved; served Apps metadata is retained but hidden.
 
 ## Recovery
 
-Retain the selected9d0c release for forward recovery. The actual predecessor
-`9fcac97a552ad79e58dcd3ce5d5da888e2b11e01fcc859ae138dd3d073effa49`
-(source46a9455, branchfix/predecessor-focus-retention) preserves optional shared
-indications through old-code load/save, unlike the earlier549f. Its real HTTP
-mutation followed by successor Room readback retained the exact indication.
-It also retains independent native authority. A downgrade must pair that code
-with the retained pre-workshop receiving metadata: that predecessor accepts only
-one report entrance, whereas the current configuration selects two entries.
-Restore that configuration selection only; preserve the latest world/native
-files, all indications and request identities. Never restore old world state.
+Retain the selected34c66509 release for forward recovery. The actual predecessor
+`9d0c94ddb35fb6d36c70df8b0c97355d70e9d0cbd1320b1e53809d61c78f9e30`
+(source8f1698a) supports both current content entrances, independent native authority
+and retained shared indications. It uses the same receiving configuration.
+Rollback changes code only; preserve latest room/native files and request identities.
+The superseded single-report compatibility archive was retired through the bounded
+Home version writer after exact new receiving readback.
 
 Home/Nexus selector preimages remain software-only rollback inputs; preserve live
 grants, media, original messages, pending work and canonical databases.

@@ -21,21 +21,21 @@ human action is created. Technical fixtures are not human acceptance.
 
 ## Latest receiving checkpoint
 
-Source8f1698a/package9d0c94dd is selected at the same protected URL and audience.
-The reading-room selector includes the existing narrated presentation and an
-immutable3D review of the actual shared workshop. The current and historical
-Home editions passed own-being HTTPS/browser checks; these are separate from
-human participation.27runtime inventory files and unchanged room/native state
-passed receiving readback. The compatible predecessor preserves shared indications
-and requires its matching earlier single-report receiving configuration on rollback.
+Source9ea3608/package34c66509 is selected at the same protected URL and audience.
+The reading room includes the existing narrated presentation and an immutable3D
+review of the actual shared workshop.27runtime files, exact health and unchanged
+room/native/configuration hashes atseq82 passed receiving readback. Actual9d0c
+predecessor supports the same two-content configuration; rollback preserves state.
 
-The consumer preserves a newer conversation draft during slow context retrieval
-and supports pinned report-v1/artifact-v2 with narrow-screen controls.94Node and
-22Python tests, build, actual browser fixtures and standalone2MML/2DOM peer
-qualification passed. Nexus's deployed lifecycle repair permits leaving a durable
-server-native wait while protecting local draft/capture/submission uncertainty.
-The new artifact review now has a verified existing native association. Actual
-human comment/response/revisit remains open; installation and technical fixtures
+96Node/25Python tests, build, isolated real-browser ended-tracking/draft/movement
+checks and standalone2MML/2DOM peer qualification passed. All seven existing native
+listeners and bridges now preserve human return lifetime after Matrix selection
+and actual acknowledgment independently. A read-only terminal observation releases
+an ended turn's wait without inventing its missing reply or cancelling downstream
+work. The retained original is unchanged. Human Send/return acceptance is open.
+
+The presentation, artifact-v2 and Nexus lifecycle/native review association are
+installed. Actual human comment/response/revisit remains open; technical checks
 do not establish that acceptance.
 
 ## Implemented and checked

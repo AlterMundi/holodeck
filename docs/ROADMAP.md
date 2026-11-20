@@ -33,5 +33,7 @@ and the durable room save retain that exact entity/revision. This is an explicit
 shared indication, not inferred gaze or human-visible pixel acceptance.
 A later original still waiting in the world was traced to a completed physical
 turn whose final lost the human return marker after a downstream Matrix selection.
-The owning return-lifetime repair is under qualification; the original is retained
-without replay or a fabricated completion. Conversational acceptance remains open.
+The return-lifetime repair is installed on all seven native receivers and bridges,
+with the corresponding world tracking release deployed. The original is retained
+without replay, borrowed final text or a fabricated semantic completion. Technical
+checks passed; human conversational acceptance remains open.
