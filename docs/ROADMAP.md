@@ -38,8 +38,12 @@ with the corresponding world tracking release deployed. The original is retained
 without replay, borrowed final text or a fabricated semantic completion. Technical
 checks passed; human conversational acceptance remains open.
 
-The20November d2ee331 successor has controlled actual two-browser process-restart
-recovery, preserving world, drafts and retained requests without POST replay.
-The qualified b1d017c2 package is not yet selected: a current authenticated human
-visit is retained. Apply at the ordinary no-participant boundary, then continue
-actual device/conversation/review acceptance; source tests do not close that work.
+The20November d2ee331 recovery and7f68101 utterance-capture correction are now
+selected through the existing Home writer, packagebc713b77. Exact27file/health and
+unchanged room/native/configuration readback atseq84 passed after the world became
+unoccupied. Two original browsers retained world, drafts and requests through an
+actual bundled process restart without POST replay. A separate real-browser
+regression froze the utterance's initial position while movement continued during
+a delayed viewer response; changed visits retain the original pin as unavailable.
+These technical checks do not close physical-device, conversation or review
+acceptance. Continue the same required shared trial.

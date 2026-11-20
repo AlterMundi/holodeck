@@ -111,16 +111,17 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
-The20November selected runtime is source `9ea3608`, at
+The20November selected runtime is source `7f68101`, at
 https://compaii.dmn.homes/holodeck/. Its17,623,040-byte package is
-`34c66509bde78fa253d6b00827c8d93b3c2fec815d08771e1d0319e9ea0c6699`.
-The existing App resource `a51218c647644a8fbbd42ed706d70b61`, audience and URL
-remain unchanged. Current and predecessor archives total35,246,080bytes.
-Exact receiving readback matched all27inventoried files, health and unchanged
-current/previous room, native-intent and receiving-configuration hashes at
-sequence82. The replacement observed zero established world connections.
-Both the narrated presentation and the immutable workshop3D review remain selected.
-No human/model input was replayed or participant session/grant fabricated.
+`bc713b77c1e8dd136df6fd0ae7b29b3b01ed1ab3e0b56ed2ae1261a80e4c5d00`.
+The same App resource `a51218c647644a8fbbd42ed706d70b61`, audience and URL remain.
+All27inventoried files and exact health match. Current/previous room, native
+intent and receiving-configuration hashes were unchanged at sequence84. The two
+updates observed zero established world connections; neither restarted native
+work, replayed input nor fabricated a participant session or grant. The narrated
+presentation and immutable workshop3D review remain selected.
+Current and actual predecessor archives total35,246,080B. Superseded operator
+archives and exact verified stages were retired through the supported writers.
 
 Seven explicit existing human/being/home routes select their own native owner.
 Every return socket is pinned to that being before native bridge access, with no
@@ -132,11 +133,10 @@ retry. See [transport operations](../deployment/native-transports.md).
 
 ## Current browser and native authority
 
-Source d2ee331 includes the restart-recovery behavior below; its b1d017c2 operator
-package is qualified but not yet selected. The current34c runtime still requires
-reload after replacement. Apply the frozen successor through the existing Home
-writer at the ordinary no-participant boundary and record actual readback before
-claiming live recovery.
+The selected release includes the qualified restart-recovery and utterance-capture
+corrections. Its actual b1d017c2 predecessor retains recovery but not the later
+asynchronous utterance-view correction. Already open clients adopt changed client
+bytes on ordinary reload; no forced reload is installed.
 
 The public Apps projection offers **Entrar** through existing Home SSO, returning
 to authorized Apps without exposing private cards. Ordinary `/holodeck/` page
@@ -309,13 +309,13 @@ session storage were preserved; served Apps metadata is retained but hidden.
 
 ## Recovery
 
-Retain the selected34c66509 release for forward recovery. The actual predecessor
-`9d0c94ddb35fb6d36c70df8b0c97355d70e9d0cbd1320b1e53809d61c78f9e30`
-(source8f1698a) supports both current content entrances, independent native authority
-and retained shared indications. It uses the same receiving configuration.
-Rollback changes code only; preserve latest room/native files and request identities.
-The superseded single-report compatibility archive was retired through the bounded
-Home version writer after exact new receiving readback.
+Retain the selectedbc713b77 release for forward recovery. The actual predecessor
+`b1d017c2e8fb5ded6c301e42487f7f9a852ea962fae0469273c3814426369376`
+(source d2ee331) supports the same configuration, two content entrances, protected
+session recovery and shared indications. Its older client lacks the subsequent
+utterance-view correction. Rollback changes code only; preserve latest room/native
+files, binding state and request identities. Superseded9d0/34c archives were retired
+only after exact receiving readbacks with actual rollback versions protected.
 
 Home/Nexus selector preimages remain software-only rollback inputs; preserve live
 grants, media, original messages, pending work and canonical databases.
