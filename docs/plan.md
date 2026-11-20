@@ -76,3 +76,17 @@ unknown fallback are not unique entity identity and can collide. Holodeck retain
 exact shared identifiers regardless of spatial representation. Inspect/reuse its
 appropriate parts only when a voxel field actually exists; do not fabricate voxels
 from coarse room anchors and call them sensed geometry.
+
+## Direct Conversation reuse — human correction20November
+
+Holodeck must depend directly on canonical Conversation for text, audio capture,
+transcription, original files, submission, progress and recovery. Its presentation
+may differ from standalone Conversation. Do not port or fork those features into
+a second chat; recording improvements such as10/5/3/2/1second cues must arrive
+through the same component. Holodeck contributes immutable situated context and
+native world access, without becoming another conversation owner or exposing
+other pairs' private content to the shared world. Beacon is explicitly out of scope.
+
+See [shared Conversation integration](shared-conversation.md). The original full
+MVP remains blocked on its prior real acceptance; this new foreground integration
+is human-authorized work, not an automatic goal Resume or completion.

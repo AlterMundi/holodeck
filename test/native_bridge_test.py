@@ -25,6 +25,7 @@ class Provider:
         return {'binding':'a'*64,'entry_binding':copy.deepcopy(ENTRY)}
     def conversation_file_upload(self,data,ref):
         assert hashlib.sha256(data).hexdigest()==ref['sha256'];self.uploads.append((data,ref))
+        return {**ref,'media':'retained','work_admitted':False}
     def conversation_input_submit(self,value):
         self.inputs.append(value);self.input_id=value['id'];self.originals[value['id']]=copy.deepcopy(value)
         with sqlite3.connect(self.receiver['db_path']) as db:db.execute('INSERT OR IGNORE INTO conversation_inputs VALUES(?,?)',(value['id'],1))
@@ -37,6 +38,83 @@ class Provider:
         return ref,next(data for data,stored in self.uploads if stored['sha256']==ref['sha256'])
 
 class BridgeContracts(unittest.TestCase):
+    def test_shared_surface_uses_only_the_registered_paired_home_entrance(self):
+        with self.assertRaises(module.BridgeError):self.bridge.surface(self.actor)
+        pair=copy.deepcopy(PAIR);pair['applications']=[{'capability':'interaction','url':'https://fixture.test/interaction/'}]
+        home=SimpleNamespace(enabled=True,human_ref=self.actor,origin='https://fixture.test',entry='/interaction/')
+        bridge=module.NativeBridge(self.provider,lambda:pair,home_auth=home)
+        result=bridge.dispatch({'operation':'surface','actorRef':self.actor})
+        self.assertEqual(result['url'],'https://fixture.test/interaction/');self.assertEqual(result['binding'],self.frozen['binding'])
+        self.assertNotIn('entry',result);self.assertNotIn('dashboard_config',result)
+        pair['applications'][0]['url']='https://other.test/interaction/'
+        with self.assertRaises(module.BridgeError):bridge.surface(self.actor)
+
+    def test_shared_context_authority_checks_the_exact_prepared_file_after_canonical_submit(self):
+        ident=str(uuid.uuid4());prepared=self.bridge.prepare_context(self.actor,self.frozen,ident,self.observation)
+        self.assertEqual(self.provider.inputs,[])
+        # This controlled fixture explicitly models Conversation's separate sole
+        # original writer. prepare_context itself never submits it.
+        self.provider.conversation_input_submit({'id':ident,'text':'Synthetic canonical transcript','files':[prepared['file']]})
+        selected=self.bridge.status(self.actor,self.frozen,ident,None,self.observation['id'],prepared['file'])
+        self.assertEqual(selected['nativeAcceptance'],'observed')
+        for change in ({'sha256':'f'*64},{'size':0},{'mime':'text/plain'},{'file_id':str(uuid.uuid4())}):
+            with self.assertRaises(module.BridgeError):self.bridge.status(self.actor,self.frozen,ident,None,self.observation['id'],{**prepared['file'],**change})
+        self.assertEqual(len(self.provider.inputs),1)
+
+    def test_context_selected_status_revalidates_binding_after_observation_but_legacy_reads_survive(self):
+        ident=str(uuid.uuid4());prepared=self.bridge.prepare_context(self.actor,self.frozen,ident,self.observation)
+        self.provider.conversation_input_submit({'id':ident,'text':'Synthetic canonical fixture','files':[prepared['file']]})
+        trace=self.provider.conversation_input_trace;presentation=self.provider.presentation
+        def rebind(value):
+            result=trace(value)
+            self.provider.presentation=lambda _:{'binding':'b'*64,'entry_binding':copy.deepcopy(ENTRY)}
+            return result
+        self.provider.conversation_input_trace=rebind
+        with self.assertRaises(module.BridgeError):self.bridge.status(self.actor,self.frozen,ident,None,self.observation['id'],prepared['file'])
+        self.provider.presentation=presentation
+        # Historical reads keep their preexisting contract: they do not grant
+        # current-world authority after a change to the continuing binding.
+        self.bridge.status(self.actor,self.frozen,ident,None,self.observation['id'])
+
+    def test_shared_conversation_context_preparation_retains_only_machine_source(self):
+        ident=str(uuid.uuid4())
+        request={'operation':'prepare-context','actorRef':self.actor,'frozen':self.frozen,
+                 'id':ident,'observation':self.observation}
+        prepared=self.bridge.dispatch(request)
+        self.assertEqual(prepared['schema'],'holodeck.prepared-conversation-context/v1')
+        self.assertEqual(prepared['id'],ident);self.assertEqual(prepared['binding'],self.frozen['binding'])
+        self.assertFalse(prepared['work_admitted']);self.assertEqual(self.provider.inputs,[])
+        source=json.loads(self.provider.uploads[0][0]);self.assertEqual(source['human_input_id'],ident)
+        self.assertEqual(source['observation'],self.observation)
+        self.assertEqual(source['native_world_interface']['argv_prefix'][-1],ident)
+        self.assertNotIn('native_world_interface',prepared,'private native descriptor belongs only in the canonical file')
+        repeated=self.bridge.dispatch(request);self.assertEqual(repeated,prepared);self.assertEqual(self.provider.inputs,[])
+
+    def test_shared_context_does_not_relabel_a_preexisting_original(self):
+        ident=str(uuid.uuid4());self.bridge.submit(self.actor,self.frozen,{'id':ident,'text':'Exact existing fixture'},self.observation)
+        before=copy.deepcopy(self.provider.originals[ident]);writes=len(self.provider.uploads)
+        self.bridge.prepare_context(self.actor,self.frozen,ident,self.observation)
+        self.assertEqual(len(self.provider.uploads),writes)
+        changed={**self.observation,'id':str(uuid.uuid4())}
+        with self.assertRaises(module.BridgeError):self.bridge.prepare_context(self.actor,self.frozen,ident,changed)
+        self.assertEqual(self.provider.originals[ident],before);self.assertEqual(len(self.provider.inputs),1)
+
+    def test_shared_context_refuses_foreign_pair_binding_size_and_changed_ack(self):
+        ident=str(uuid.uuid4())
+        for actor,frozen,observation in [
+            ('human:telegram:other',self.frozen,self.observation),
+            (self.actor,{**self.frozen,'binding':'b'*64},self.observation),
+            (self.actor,self.frozen,{**self.observation,'observer':'human:telegram:other'}),
+            (self.actor,self.frozen,{**self.observation,'oversized':'x'*(module.MAX_OBSERVATION+1)}),
+        ]:
+            with self.assertRaises(module.BridgeError):self.bridge.prepare_context(actor,frozen,ident,observation)
+        self.assertEqual(self.provider.uploads,[]);self.assertEqual(self.provider.inputs,[])
+        upload=self.provider.conversation_file_upload
+        def changed(data,ref):return {**upload(data,ref),'sha256':'f'*64}
+        self.provider.conversation_file_upload=changed
+        with self.assertRaises(module.BridgeError):self.bridge.prepare_context(self.actor,self.frozen,ident,self.observation)
+        self.assertEqual(self.provider.inputs,[])
+
     def test_world_authority_query_uses_only_the_configured_current_being_reader(self):
         being='dm:being:v1:'+'a'*43
         request={'operation':'world-access','beingRef':being}

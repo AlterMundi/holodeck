@@ -113,6 +113,14 @@ class NativeBridge:
         if current and self.inspect(actor)!=frozen:
             raise BridgeError('binding','The continuing Conversation changed; preserve the original interaction')
 
+    def surface(self,actor):
+        frozen=self.inspect(actor)
+        if self.home_origin is None or self.home_entry is None:
+            raise BridgeError('surface-unavailable','No registered shared Conversation entrance is selected')
+        return {'schema':'holodeck.conversation-surface/v1','actorRef':actor,
+                'beingRef':frozen['beingRef'],'homeRef':frozen['homeRef'],
+                'binding':frozen['binding'],'url':self.home_origin+self.home_entry}
+
     def observation_file(self,ident_,actor,observation):
         if (not isinstance(observation,dict) or observation.get('schema')!='holodeck.situation/v1'
             or not isinstance(observation.get('id'),str) or not isinstance(observation.get('run'),str)
@@ -164,6 +172,37 @@ class NativeBridge:
         value=self.provider.conversation_input_submit({'binding':frozen['binding'],
             'id':input_id,'text':text,'files':[ref]})
         return self.project_status(value,frozen)
+
+    def prepare_context(self,actor,frozen,input_id,observation):
+        """Retain only machine context; Conversation owns the original writer.
+
+        The world service must freeze and retain its situation before calling.
+        This operation never submits text, audio or an original, nor grants world
+        access. A later real canonical input must retain this exact file/source.
+        """
+        self.authorize(actor,frozen,current=True)
+        input_id=ident(input_id)
+        data,ref=self.observation_file(input_id,actor,observation)
+        with closing(sqlite3.connect('file:'+str(self.provider.receiver['db_path'])+'?mode=ro',uri=True)) as db:
+            row=db.execute('SELECT human_id FROM conversation_inputs WHERE id=?',(input_id,)).fetchone()
+        if row is not None:
+            if row[0]!=self.provider.human:
+                raise BridgeError('id-reuse','This original belongs to another human')
+            original=self.provider.conversation_input_status(input_id)
+            if (original.get('entry_binding')!=frozen['entry']
+                or not any(all(candidate.get(key)==value for key,value in ref.items())
+                    for candidate in original.get('files',[]) if isinstance(candidate,dict))
+                or self.retained_observation(actor,input_id,original)!=observation):
+                raise BridgeError('id-reuse','The retained original has another situation; preserve it')
+        else:
+            result=self.provider.conversation_file_upload(data,ref)
+            if (not isinstance(result,dict) or any(result.get(key)!=value for key,value in ref.items())
+                or result.get('media')!='retained' or result.get('work_admitted') is not False):
+                raise BridgeError('source','The context file acknowledgment is unconfirmed')
+        self.authorize(actor,frozen,current=True)
+        return {'schema':'holodeck.prepared-conversation-context/v1','id':input_id,
+                'binding':frozen['binding'],'entry_binding':frozen['entry'],
+                'observation_id':observation['id'],'file':ref,'work_admitted':False}
 
     def project_status(self,value,frozen):
         if value.get('entry_binding')!=frozen['entry']:
@@ -218,11 +257,21 @@ class NativeBridge:
                 return source['observation']
         raise BridgeError('id-reuse','This original has no retained Holodeck situation source')
 
-    def status(self,actor,frozen,input_id,text_sha256=None,observation_id=None):
-        self.authorize(actor,frozen)
+    def status(self,actor,frozen,input_id,text_sha256=None,observation_id=None,context_file=None):
+        self.authorize(actor,frozen,current=context_file is not None)
         value=self.provider.conversation_input_status(ident(input_id))
         if value.get('id')!=input_id:
             raise BridgeError('source','Native input identity changed')
+        if context_file is not None:
+            if (not isinstance(context_file,dict)
+                or set(context_file)!={'file_id','sha256','name','mime','size'}
+                or not isinstance(context_file.get('file_id'),str)
+                or not isinstance(context_file.get('sha256'),str) or not re.fullmatch('[a-f0-9]{64}',context_file['sha256'])
+                or context_file.get('name')!='holodeck-situation.json' or context_file.get('mime')!='application/json'
+                or type(context_file.get('size')) is not int or not 0<context_file['size']<=MAX_SITUATION_SOURCE
+                or not any(isinstance(candidate,dict) and all(candidate.get(key)==expected
+                    for key,expected in context_file.items()) for candidate in value.get('files',[]))):
+                raise BridgeError('source','The native original does not retain the prepared context file')
         if text_sha256 is not None and (not isinstance(value.get('text'),str)
             or hashlib.sha256(value['text'].encode()).hexdigest()!=text_sha256):
             raise BridgeError('id-reuse','Native original text does not match the retained app intent')
@@ -269,10 +318,11 @@ class NativeBridge:
             result['tracking']=any(state['phase']=='queued' for state in states)
             if original_phase not in ('problem','unknown'):
                 result['phase']='problem' if any(state['phase']=='problem' for state in states) else 'queued' if result['tracking'] else 'completed'
-            self.authorize(actor,frozen)
+            self.authorize(actor,frozen,current=context_file is not None)
             return result
         local=value.get('local_turn')
         if type(local) is not int or local<=0:
+            if context_file is not None:self.authorize(actor,frozen,current=True)
             return result
         # Narrow lookup only for this retained input's local turn. Never scan a
         # conversation history or read unrelated text. The provider's own input
@@ -290,7 +340,7 @@ class NativeBridge:
                 AND (m.phase IN ('commentary','final_answer') OR m.phase IS NULL)
                 ORDER BY m.rowid DESC LIMIT 8''',(local,input_id,self.provider.human,self.provider.human,
                     frozen['entry'][2],frozen['entry'][3])).fetchall()
-        self.authorize(actor,frozen)
+        self.authorize(actor,frozen,current=context_file is not None)
         if result['phase'] not in ('problem','unknown') and turn and turn['status']=='running' and turn['completed_at'] is None:
             result['phase']='working'
         for row in reversed(rows):
@@ -312,6 +362,7 @@ class NativeBridge:
                 # attribution remain unresolved. Never borrow the unscoped text.
                 result.update(phase='problem',tracking=False,execution=ended,
                     message='El turno terminó, pero no pude recuperar aquí su respuesta. Tu mensaje se conserva.')
+        if context_file is not None:self.authorize(actor,frozen,current=True)
         return result
 
     def ended_execution(self,actor,frozen,input_id,local):
@@ -342,14 +393,18 @@ class NativeBridge:
             if type(allowed) is not bool:raise BridgeError('authority-unavailable','Current world authority is unconfirmed')
             return {'schema':'holodeck.world-access/v1','beingRef':request['beingRef'],'allowed':allowed}
         op=request.get('operation');actor=request.get('actorRef')
-        fields={'inspect':{'operation','actorRef'},'submit':{'operation','actorRef','frozen','input','observation'},
+        fields={'inspect':{'operation','actorRef'},'surface':{'operation','actorRef'},'submit':{'operation','actorRef','frozen','input','observation'},
+                'prepare-context':{'operation','actorRef','frozen','id','observation'},
                 'status':{'operation','actorRef','frozen','id','textSha256','observationId'},'lookup':{'operation','actorRef','id','textSha256'}}
         legacy_status=op=='status' and set(request)=={'operation','actorRef','frozen','id'}
-        if op not in fields or set(request)!=fields[op] and not legacy_status:raise BridgeError('operation','Unsupported native bridge operation')
+        context_status=op=='status' and set(request)==fields['status']|{'contextFile'}
+        if op not in fields or set(request)!=fields[op] and not legacy_status and not context_status:raise BridgeError('operation','Unsupported native bridge operation')
         if op=='inspect':return self.inspect(actor)
+        if op=='surface':return self.surface(actor)
         if op=='lookup':return self.lookup(actor,request['id'],request['textSha256'])
         if op=='submit':return self.submit(actor,request['frozen'],request['input'],request['observation'])
-        return self.status(actor,request['frozen'],request['id'],request.get('textSha256'),request.get('observationId'))
+        if op=='prepare-context':return self.prepare_context(actor,request['frozen'],request['id'],request['observation'])
+        return self.status(actor,request['frozen'],request['id'],request.get('textSha256'),request.get('observationId'),request.get('contextFile'))
 
 
 def configuration(path):

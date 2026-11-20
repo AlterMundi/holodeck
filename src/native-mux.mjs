@@ -29,12 +29,14 @@ export function createNativeTransportMux({routes,createTransport}){
   }
   return {
     async inspect(actorRef){const value=lane(actorRef);return verify(value,await value.transport.inspect(actorRef));},
+    async surface(actorRef){const value=lane(actorRef);return verify(value,await value.transport.surface(actorRef));},
     async lookup(request){
       const value=lane(request.actorRef),result=await value.transport.lookup(request);
       verify(value,result.frozen);
       return result;
     },
     async submit(request){const value=lane(request.actorRef);verify(value,request.frozen);return value.transport.submit(request);},
+    async prepareContext(request){const value=lane(request.actorRef);verify(value,request.frozen);return value.transport.prepareContext(request);},
     async status(request){const value=lane(request.actorRef);verify(value,request.frozen);return value.transport.status(request);}
   };
 }

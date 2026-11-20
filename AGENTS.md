@@ -24,3 +24,9 @@ For Home authentication changes, qualify positive authenticated HTML bootstrap
 and API access through real HTTP with the deployed Node runtime. Injected
 identity mocks or anonymous login redirects alone do not prove that path.
 Use the existing production-runtime regression in home-runtime-http.test.mjs.
+
+Human20November correction: the Holodeck chat must directly consume canonical
+Conversation for text/audio/transcription/files and inherited updates. Keep only
+world context/projection integration here; do not copy the recorder or build a
+parallel original writer. docs/shared-conversation.md owns the current seam and
+delivery status. Preserve legacy IDs/recovery while the shared surface is qualified.

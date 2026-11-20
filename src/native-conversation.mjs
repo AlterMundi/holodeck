@@ -13,6 +13,25 @@ export class NativeConversationError extends Error {
   constructor(code,message,details={}){super(message);this.code=code;Object.assign(this,details);}
 }
 
+// Both the legacy text bridge and the shared Conversation surface use this same
+// machine-authored capture. No human text, audio or selected files belong here.
+export function captureNativeSituation(room,actor,request,{pairedBeing=null,pairFocusBinding='current-native-binding',serverCapture='at-original-retention'}={}){
+  const preserveActors=pairedBeing?[pairedBeing]:[];
+  const extra={inputAssociation:{humanInputId:request.id,serverCapture,clientReportedCaptureTime:request.view?.capturedAt??null}};
+  if(request.view!==undefined){
+    if(!request.view||typeof request.view!=='object'||Buffer.byteLength(encode(request.view))>4096)
+      throw new NativeConversationError('view','Provide a bounded client-reported view',{retained:false,knownNotSubmitted:true,retryable:true});
+    extra.clientReportedView={evidence:'client-reported-at-interaction-capture',value:structuredClone(request.view),
+      uncertainty:'Client-reported scene-graph/DOM evidence only, including any appliedGeometry field. Not presented pixels, authoritative location, line of sight, attention or understanding. A not-in-document entity reference proves DOM absence only.'};
+  }
+  const observation=room.observe(actor,{after:Math.max(0,room.sequence-16),displayedSequence:request.displayedSequence??null,
+    maxBytes:MAX_OBSERVATION_BYTES-Buffer.byteLength(encode(extra))-256,preserveActors});
+  Object.assign(observation,extra);observation.source.pairFocusBinding=pairedBeing?pairFocusBinding:'unavailable-at-capture';
+  if(!fitSituation(observation,MAX_OBSERVATION_BYTES,{preserveActors}))
+    throw new NativeConversationError('context-capacity','The canonical captured situation exceeds the native context bound',{retained:false,knownNotSubmitted:true,retryable:true});
+  return observation;
+}
+
 // Fixed owner-local bridge. The receiving service resolves authority; browsers
 // never select a command, socket, source directory, binding or paired being.
 export function createUnixNativeTransport(socketPath){
@@ -40,6 +59,8 @@ export function createUnixNativeTransport(socketPath){
     });
   }
   return {inspect:actorRef=>call('inspect',{actorRef}),
+    surface:actorRef=>call('surface',{actorRef}),
+    prepareContext:payload=>call('prepare-context',payload),
     submit:payload=>call('submit',payload),status:payload=>call('status',payload),lookup:payload=>call('lookup',payload)};
 }
 
@@ -144,6 +165,7 @@ export async function createNativeConversation({room,stateDir,transport,fileSyst
     }
   }
   return {
+    hasRetainedIntent:id=>!!(records[id]??tombstones[id]),
     async availability(actor){
       try{const ref=actorRef(actor),binding=await transport.inspect(ref);
         const active=Object.values(records).reverse().find(record=>record.actorRef===ref
@@ -178,19 +200,7 @@ export async function createNativeConversation({room,stateDir,transport,fileSyst
       const record=await transaction(async()=>{
         if(Object.keys(records).length>=MAX_RECORDS)throw new NativeConversationError('capacity','Native intent storage is full',{retained:false,knownNotSubmitted:true,retryable:true});
         const pairedBeing=found.frozen?.actorRef===ref&&typeof found.frozen.beingRef==='string'&&found.frozen.beingRef.length<=200?found.frozen.beingRef:null;
-        const preserveActors=pairedBeing?[pairedBeing]:[];
-        const extra={inputAssociation:{humanInputId:request.id,serverCapture:'at-original-retention',clientReportedCaptureTime:request.view?.capturedAt??null}};
-        if(request.view!==undefined){
-          if(!request.view||typeof request.view!=='object'||Buffer.byteLength(encode(request.view))>4096)
-            throw new NativeConversationError('view','Provide a bounded client-reported view',{retained:false,knownNotSubmitted:true,retryable:true});
-          extra.clientReportedView={evidence:'client-reported-at-interaction-capture',value:structuredClone(request.view),
-            uncertainty:'Client-reported scene-graph/DOM evidence only, including any appliedGeometry field. Not presented pixels, authoritative location, line of sight, attention or understanding. A not-in-document entity reference proves DOM absence only.'};
-        }
-        const observation=room.observe(actor,{after:Math.max(0,room.sequence-16),displayedSequence:request.displayedSequence??null,
-          maxBytes:MAX_OBSERVATION_BYTES-Buffer.byteLength(encode(extra))-256,preserveActors});
-        Object.assign(observation,extra);observation.source.pairFocusBinding=pairedBeing?'known-from-canonical-lookup':'unavailable-at-capture';
-        if(!fitSituation(observation,MAX_OBSERVATION_BYTES,{preserveActors}))
-          throw new NativeConversationError('context-capacity','The canonical captured situation exceeds the native context bound',{retained:false,knownNotSubmitted:true,retryable:true});
+        const observation=captureNativeSituation(room,actor,request,{pairedBeing,pairFocusBinding:'known-from-canonical-lookup'});
         const value={id:request.id,actorRef:ref,text:request.text,observation,phase:'preparing',frozen:null,writeStarted:false,knownNotSubmitted:true};
         records[value.id]=value;
         if(Buffer.byteLength(encode({schema:'holodeck.native-intents/v1',records,tombstones}))>JOURNAL_BYTES-8192){
@@ -277,6 +287,12 @@ export async function nativeFactory({room,stateDir,receiving}){
   const transport=receiving.nativeRoutes
     ?createNativeTransportMux({routes:receiving.nativeRoutes,createTransport:createUnixNativeTransport})
     :createUnixNativeTransport(receiving.nativeSocket);
-  return createNativeConversation({room,stateDir:join(stateDir,'native'),
-    transport});
+  const legacy=await createNativeConversation({room,stateDir:join(stateDir,'native'),transport});
+  if(receiving.sharedConversation!==undefined&&typeof receiving.sharedConversation!=='boolean')throw Error('Select the shared Conversation capability explicitly');
+  if(!receiving.sharedConversation)return legacy;
+  const {createConversationContexts}=await import('./conversation-context.mjs');
+  const contexts=await createConversationContexts({room,stateDir:join(stateDir,'conversation-context'),transport});
+  return {...legacy,contexts,
+    conversationSurface:actor=>transport.surface(actor.ref),
+    authorizeWorldRequest:(id,being)=>contexts.has(id)?contexts.authorizeWorldRequest(id,being):legacy.authorizeWorldRequest(id,being)};
 }

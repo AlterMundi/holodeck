@@ -225,3 +225,11 @@ finished tracking so the human can continue typing and walking. No unscoped fina
 text is borrowed, no native input is replayed and no pending work is cancelled.
 An older owner without this read keeps the outcome unconfirmed; do not infer
 termination from local collector completion alone.
+
+## Direct canonical Conversation extension
+
+The human now requires direct reuse of Conversation's text/audio/files component.
+[Shared Conversation](shared-conversation.md) owns this in-progress extension.
+World-side context preparation reuses the same situation/file writer without
+submitting a human original. The shared canonical frontend is not yet selected;
+legacy input/status recovery and the existing live runtime remain preserved.

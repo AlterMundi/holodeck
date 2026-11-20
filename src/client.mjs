@@ -7,6 +7,7 @@ import { NativeAvatarLayer } from './native-avatar.mjs';
 import {PublicWorldPicker,WorldIndication} from './world-indication.mjs';
 import { ContentVisitor } from './content-visitor.mjs';
 import { AppliedGeometryProbe } from './applied-geometry.mjs';
+import { SharedConversationHost } from './shared-conversation-host.mjs';
 import { WorldAudio } from './world-audio.mjs';
 import { snapshotMayApply, sameRequest } from './client-order.mjs';
 const base=new URL('./',document.baseURI);
@@ -29,7 +30,7 @@ const touchControls={
   },
   dispose(){this.delegate?.dispose();this.holder?.remove();}
 };
-let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null;
+let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null;
 const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
   sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket('network'),waitForWorldConfig:true,
   enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
@@ -199,6 +200,11 @@ async function recoveryAction(kind,action){
 }
 function updateNativeAvailability(){
   const available=state?.native?.available===true;
+  const shared=state?.native?.sharedConversation===true;
+  $('#conversation-panel').classList.toggle('shared-conversation',shared);
+  $('#conversation-form').hidden=shared;$('#conversation-log').hidden=shared;
+  $('#shared-conversation').hidden=!shared;
+  if(shared){$('#conversation-hint').textContent='Podés volver al mundo sin cerrar lo que estás escribiendo o grabando.';return;}
   $('#send').disabled=!available||!!nativeTurn||preparingConversation;
   if(preparingConversation){$('#companion-status').textContent='Conservando el punto que estamos mirando…';return;}
   if(!nativeTurn){
@@ -310,7 +316,16 @@ $('#undo').onclick=async()=>{
   if(change.type==='bridge.set')await action('bridge.set','bridge',{raised:change.previous.raised},entity.revision,{undo:true});
   else if(change.type==='garden.place')await action('garden.remove',change.target,{},entity.revision,{undo:true});
 };
-function openConversation(open){const panel=$('#conversation-panel');panel.hidden=!open;$('#talk').setAttribute('aria-expanded',String(open));if(open)$('#message').focus();else if(panel.contains(document.activeElement))document.activeElement.blur();}
+function openConversation(open){
+  const panel=$('#conversation-panel');panel.hidden=!open;$('#talk').setAttribute('aria-expanded',String(open));
+  if(open&&state?.native?.sharedConversation){
+    if(!sharedConversation)sharedConversation=new SharedConversationHost({window,document,container:$('#shared-conversation'),api,
+      capture:captureInteractionContext,currentActor:()=>state?.actorRef,
+      onStatus:({phase,busy})=>{$('#companion-status').textContent=phases[phase]||(busy?'La conversación está procesando tu intervención.':'Tu intervención quedó en la conversación.');},onError:say});
+    sharedConversation.mount().catch(()=>say('No pude abrir tu conversación. Volvé a tocar Conversar para intentarlo.'));
+  }else if(open)$('#message').focus();
+  else if(panel.contains(document.activeElement)){document.activeElement.blur();window.focus();}
+}
 $('#talk').onclick=()=>openConversation($('#conversation-panel').hidden);
 $('#conversation-close').onclick=()=>openConversation(false);
 function boundConversation(){
@@ -350,9 +365,7 @@ async function readTurn(){
   else if(phase==='unknown')noteRecovery('native',result);
   else clearRecovery('native');
 }
-$('#conversation-form').onsubmit=async event=>{
-  event.preventDefault();if(nativeTurn||preparingConversation||state?.native?.available!==true)return;
-  const text=$('#message').value;if(!text.trim())return;
+async function captureInteractionContext(){
   const capturedActor=state.actorRef,capturedRun=state.run;
   // Freeze this utterance's world view before waiting for an embedded viewer.
   // Walking, remote movement and newer drafts may continue during that wait.
@@ -361,13 +374,19 @@ $('#conversation-form').onsubmit=async event=>{
     others:[...client.getCharacterStates().values()].filter(person=>!person.isLocal).slice(0,8).map(person=>({userId:person.userId,connectionId:person.connectionId,position:person.position}))});
   const appliedGeometry=geometryProbe?.snapshot();
   if(appliedGeometry)view.appliedGeometry=structuredClone(appliedGeometry);
-  preparingConversation=true;updateNativeAvailability();
   let visitContext;
-  try{visitContext=await contentVisitor.context();}finally{preparingConversation=false;}
-  if(state.actorRef!==capturedActor||state.run!==capturedRun){updateNativeAvailability();say('El lugar o tu acceso cambió. Conservé tu mensaje para que lo revises.');return;}
+  visitContext=await contentVisitor.context();
+  if(state.actorRef!==capturedActor||state.run!==capturedRun)throw Error('El lugar o tu acceso cambió.');
   if(visitContext)view.contentVisit=visitContext;
   if(new TextEncoder().encode(JSON.stringify(view)).length>4096)delete view.appliedGeometry;
-  if(new TextEncoder().encode(JSON.stringify(view)).length>4096){updateNativeAvailability();say('No pude conservar este contexto completo. Tu mensaje sigue escrito; acercate al contenido antes de intentar de nuevo.');return;}
+  if(new TextEncoder().encode(JSON.stringify(view)).length>4096)throw Error('No pude conservar este contexto completo.');
+  return view;
+}
+$('#conversation-form').onsubmit=async event=>{
+  event.preventDefault();if(state?.native?.sharedConversation)return;if(nativeTurn||preparingConversation||state?.native?.available!==true)return;
+  const text=$('#message').value;if(!text.trim())return;
+  preparingConversation=true;updateNativeAvailability();
+  let view;try{view=await captureInteractionContext();}catch(error){say(error.message);return;}finally{preparingConversation=false;updateNativeAvailability();}
   const body={id:crypto.randomUUID(),text,displayedSequence:null,view};
   nativeTurn={id:body.id,body,actorRef:state.actorRef,run:state.run,createdAt:Date.now()};$('#send').disabled=true;
   try{nativeTurn=saveIntent(sessionStorage,turnKey,nativeTurn);}catch{nativeTurn=null;updateNativeAvailability();say('No pude conservar este mensaje para comprobarlo después. No se envió.');return;}
@@ -387,5 +406,5 @@ const interval=setInterval(async()=>{
   try{await refresh();}catch{say('La conexión con el taller se interrumpió. Los cambios no se repetirán solos.');}
   finally{refreshing=false;}
 },1500);
-window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);contentVisitor.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);worldAudio.dispose();client.dispose();});
+window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();contentVisitor.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);worldAudio.dispose();client.dispose();});
 refresh().catch(()=>say('No pude conectar con el taller.'));

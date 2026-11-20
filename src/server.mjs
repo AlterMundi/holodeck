@@ -19,10 +19,13 @@ import {SessionBindings,SESSION_MS,sessionKey} from './session-bindings.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
-export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],nativeRoomAuthority=null}={}){
+export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],nativeRoomAuthority=null,conversationOrigins=[]}={}){
   if(!/^\/(?:[a-z0-9-]+\/)*$/.test(basePath))throw Error('Select a bounded absolute base path');
   if(production&&(!identityResolver||!publicOrigin||!stateDir))throw Error('Shared identity, audience and state are required in production');
   const selectedContentVisits=validateContentVisits(contentVisits);
+  if(!Array.isArray(conversationOrigins)||conversationOrigins.length>8||new Set(conversationOrigins).size!==conversationOrigins.length)
+    throw Error('Select bounded Conversation origins');
+  for(const value of conversationOrigins){const selected=new URL(value);if(selected.protocol!=='https:'||selected.origin!==value)throw Error('Select exact HTTPS Conversation origins');}
   if(nativeRoomAuthority!==null&&typeof nativeRoomAuthority!=='function')throw Error('Select the installed native service authority reader');
   const route=path=>basePath+path;
   const app=express();
@@ -149,6 +152,10 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   });
   app.disable('x-powered-by');
   app.use((_req,res,next)=>{res.set('Cache-Control','no-store');next();});
+  if(conversationOrigins.length)app.use((_req,res,next)=>{
+    const selected='(self '+conversationOrigins.map(value=>'"'+value+'"').join(' ')+')';
+    res.set('Permissions-Policy','microphone='+selected+', autoplay='+selected);next();
+  });
   app.use(express.json({limit:'48kb',strict:true}));
   network.registerExpressRoutes(app);
   if(basePath!=='/')app.get(basePath.slice(0,-1),(_req,res)=>res.redirect(308,basePath));
@@ -176,9 +183,39 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   app.get(route('api/state'),asyncRoute(async(req,res)=>{
     if(room.commitUncertain)return res.status(503).json({message:'El taller necesita recuperar su último cambio antes de continuar.'});
     res.json({run:room.run,edition:room.edition,sequence:room.sequence,actorRef:req.actor.id,entities:room.entities,focus:room.focusState(),
-      native:native?await native.availability(req.actor):{available:false}});
+      native:native?{...await native.availability(req.actor),sharedConversation:!!native.contexts}:{available:false}});
   }));
   app.get(route('api/content-visits'),(req,res)=>res.json({visits:visitsForActor(selectedContentVisits,req.actor)}));
+  app.get(route('api/conversation-surface'),asyncRoute(async(req,res)=>{
+    if(!native?.contexts||!native?.conversationSurface)return res.status(503).json({message:'La conversación compartida todavía no está disponible en este mundo.'});
+    const value=await native.conversationSurface(req.actor);
+    if(value?.schema!=='holodeck.conversation-surface/v1'||value.actorRef!==req.actor.ref
+      ||!/^dm:being:v1:[A-Za-z0-9_-]{43}$/.test(value.beingRef)||!/^home:[a-f0-9]{32}$/.test(value.homeRef)
+      ||!/^[a-f0-9]{64}$/.test(value.binding)||typeof value.url!=='string')throw Error('Invalid selected Conversation surface');
+    const selected=new URL(value.url);
+    if(selected.protocol!=='https:'||selected.username||selected.password||selected.hash||selected.search)throw Error('Select the registered HTTPS Conversation entry');
+    if(selected.origin!==publicOrigin&&!conversationOrigins.includes(selected.origin))throw Error('The paired Conversation origin has no selected microphone delegation');
+    res.json(value);
+  }));
+  const requireContext=(req,res)=>{
+    if(native?.contexts)return true;
+    res.status(503).json({scope:'machine-context',work_admitted:false,message:'Todavía no pude conectar el contexto de este lugar con la conversación.'});return false;
+  };
+  app.post(route('api/conversation-contexts'),asyncRoute(async(req,res)=>{
+    if(requireContext(req,res))res.json(await native.contexts.prepare(req.actor,req.body));
+  }));
+  app.get(route('api/conversation-contexts/:id'),asyncRoute(async(req,res)=>{
+    if(requireContext(req,res))res.json(await native.contexts.recover(req.actor,req.params.id,req.query.binding));
+  }));
+  app.post(route('api/conversation-contexts/:id/retry'),asyncRoute(async(req,res)=>{
+    if(requireContext(req,res))res.json(await native.contexts.retry(req.actor,req.params.id,req.body?.binding));
+  }));
+  app.post(route('api/conversation-contexts/:id/release'),asyncRoute(async(req,res)=>{
+    if(requireContext(req,res))res.json(await native.contexts.release(req.actor,req.params.id));
+  }));
+  app.post(route('api/conversation-contexts/:id/discard'),asyncRoute(async(req,res)=>{
+    if(requireContext(req,res))res.json(await native.contexts.discard(req.actor,req.params.id,req.body?.binding,req.body?.reason));
+  }));
   app.post(route('api/observe'),(req,res)=>res.json(room.observe(req.actor,req.body)));
   app.post(route('api/commands'),(req,res)=>projectionHealthy?res.json(room.command(req.actor,req.body)):res.status(503).json({message:'La vista del taller necesita recuperarse antes de agregar cambios.'}));
   app.get(route('api/commands/:id'),(req,res)=>{
@@ -188,6 +225,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   });
   app.post(route('api/projection'),(req,res)=>projectionHealthy?res.json(room.project(req.actor,req.body)):res.status(503).json({message:'La vista del taller necesita recuperarse antes de agregar cambios.'}));
   app.post(route('api/interactions'),asyncRoute(async(req,res)=>{
+    if(native?.contexts&&!native.hasRetainedIntent?.(req.body?.id))return res.status(409).json({scope:'canonical-conversation',message:'Usá la conversación compartida de este mundo. El envío anterior se conserva.'});
     if(!native)return res.status(503).json({message:'La conversación todavía no está conectada a este mundo.'});
     res.json(await native.submit(req.actor,req.body));
   }));
@@ -201,6 +239,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }));
   app.use((error,_req,res,_next)=>{
     if(room.commitUncertain)for(const socket of sockets.keys())socket.close(1011);
+    if(error.contextOnly)return res.status(error.code==='not-found'?404:error.code==='input'?400:409).json({scope:'machine-context',work_admitted:false,
+      message:'No pude confirmar el contexto de este lugar. Tu mensaje y el estado del mundo se conservan.'});
     if(error.code==='not-found'||error.code==='not-retained')return res.status(404).json({code:error.code==='not-retained'?'not-retained':'not-found',retained:error.retained??false,knownNotSubmitted:error.knownNotSubmitted===true,retryable:error.retryable===true,
       message:'No encontré un envío guardado para este turno. No lo reenvié.'});
     if(error.knownNotSubmitted)return res.status(error.code==='capacity'?409:400).json({code:error.code,knownNotSubmitted:true,
@@ -243,7 +283,7 @@ export async function main(){
   }
   validateWorldPorts({...receiving});
   const nativeRoomAuthority=receiving&&Object.hasOwn(receiving,'authoritySocket')?createNativeRoomAuthority(receiving.authoritySocket):null;
-  const runtime=await createHolodeck({production,stateDir,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,contentVisits:receiving?.contentVisits,nativeRoomAuthority});
+  const runtime=await createHolodeck({production,stateDir,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,contentVisits:receiving?.contentVisits,nativeRoomAuthority,conversationOrigins:receiving?.conversationOrigins||[]});
   const port=Number(process.env.PORT||18940);
   if(!Number.isInteger(port)||port<1024||port>65535)throw Error('Select a valid loopback port');
   if(process.env.HOST&&process.env.HOST!=='127.0.0.1')throw Error('Use the existing loopback gateway');
