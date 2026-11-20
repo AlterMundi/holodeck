@@ -64,8 +64,9 @@ Tie references, coordinates/anchors, semantic events, entity revisions and rende
 acknowledgments to the same state. Distinguish authoritative, delivered and rendered
 cursors. A simplified representation cannot invent a different object/state.
 Physical observations additionally retain source/time/uncertainty separately from
-simulation or inference. The first prototype does not yet acknowledge rendered
-geometry; it reports that cursor unknown.
+simulation or inference. The initial prototype reported rendered geometry unknown. Current bounded
+client applied-geometry evidence checks attached scene primitives after rendering;
+it remains distinct from presented pixels or human eyesight. See applied-geometry.md.
 
 DaemonCraft mBit is an important prior embodiment-specific perception adapter.
 Current inspected source uses visual Y slices, CJK block symbols and legend;

@@ -200,3 +200,28 @@ the mandatory perception model.
 An ephemeral local room is sufficient for foundation tests because no native work
 is submitted. Before real native submission, retain intent/capture/outcome through
 the owning durable input path so process loss cannot erase an uncertain effect.
+
+
+## Ended execution with a missing scoped reply
+
+A downstream Matrix selection preserves the independently selected human return
+lifetime in the owning Conversation writer. It must not let an internal callback
+replace a subsequent human reply marker; replacement collectors retain the same
+owner/session/physical fences. Older already frozen items are not relabeled.
+
+For a retained Matrix original with an ended local collector and no own-scoped
+answer, the bridge can use the installed owner's read-only `input terminal UUID`.
+That reader selects one unique physical identity frozen on this original's own
+visible canonical items, not merely the collector's first turn. It reads actual
+native terminal state and revalidates current ownership/boundary afterward.
+Missing, ambiguous, changed, unavailable or still-running observations keep the
+existing wait. The bridge revalidates every read without a terminal-state cache.
+
+A confirmed ended execution with a missing reply remains `phase=problem`, with
+`tracking=false` and separate observed execution metadata. Native acceptance,
+original phase and downstream work remain unchanged. The app preserves the
+original and reports that its reply was not recovered here; it releases only the
+finished tracking so the human can continue typing and walking. No unscoped final
+text is borrowed, no native input is replayed and no pending work is cancelled.
+An older owner without this read keeps the outcome unconfirmed; do not infer
+termination from local collector completion alone.

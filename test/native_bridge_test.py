@@ -104,6 +104,79 @@ class BridgeContracts(unittest.TestCase):
         result=self.bridge.status(self.actor,self.frozen,ident)
         self.assertEqual(result['phase'],'completed');self.assertEqual(result['message'],'Selected fixture result')
         self.assertEqual(len(result['updates']),1)
+    def terminal_fixture(self):
+        ident=str(uuid.uuid4());self.provider.phase='matrix_requested'
+        self.bridge.submit(self.actor,self.frozen,{'id':ident,'text':'Terminal boundary fixture'},self.observation)
+        with sqlite3.connect(self.provider.receiver['db_path']) as db:
+            db.execute("UPDATE turns SET status='completed',completed_at='fixture-time'")
+            db.execute('INSERT INTO interaction_native_messages VALUES(?,?,?,?,?,?,?,?)',
+                ('Unrelated private final MUST NOT LEAK','fixture-native','other-lifetime','unrelated','final_answer','fixture-time',4,None))
+        value={'schema':'telecodex.conversation-terminal/v1','entry_binding':copy.deepcopy(ENTRY),
+            'state':'observed','terminal':True,'status':'completed',
+            'execution':{'input':ident,'local_turn':4,'native_thread':'fixture-native','native_turn':'physical-fixture-turn'}}
+        original=self.provider.presentation;calls=[]
+        def presentation(command):
+            if command.startswith('input terminal '):calls.append(command);return copy.deepcopy(value)
+            return original(command)
+        self.provider.presentation=presentation
+        return ident,value,calls
+
+    def test_observed_execution_end_releases_tracking_without_borrowing_unscoped_final(self):
+        ident,value,calls=self.terminal_fixture()
+        for status in ('completed','failed','interrupted'):
+            with self.subTest(status=status):
+                value['status']=status
+                result=self.bridge.status(self.actor,self.frozen,ident)
+                self.assertEqual(result['phase'],'problem');self.assertFalse(result['tracking'])
+                self.assertEqual(result['nativeAcceptance'],'observed');self.assertTrue(result['retainedOriginal'])
+                self.assertEqual(result['execution'],{'state':'observed','status':status,'nativeThread':'fixture-native',
+                    'nativeTurn':'physical-fixture-turn','replyAssociation':'unavailable'})
+                self.assertEqual(result['updates'],[]);self.assertNotIn('MUST NOT LEAK',json.dumps(result))
+                self.assertIn('Tu mensaje se conserva',result['message'])
+                self.assertEqual(self.provider.conversation_input_status(ident)['phase'],'matrix_requested')
+        self.bridge.status(self.actor,self.frozen,ident)
+        self.assertEqual(len(calls),4);self.assertEqual(len(self.provider.inputs),1)
+
+    def test_unknown_or_mismatched_terminal_evidence_keeps_original_tracking(self):
+        ident,value,calls=self.terminal_fixture();good=copy.deepcopy(value)
+        changes=[{'state':'unknown'},{'status':'inProgress'},{'terminal':False},{'schema':'foreign/v1'},
+            {'entry_binding':[*ENTRY[:3],'foreign-native']},{'execution':{}},
+            *[{'execution':{**good['execution'],key:wrong}} for key,wrong in
+                [('input',str(uuid.uuid4())),('local_turn',5),('native_thread','foreign-native'),('native_turn','')]]]
+        for change in changes:
+            with self.subTest(change=change):
+                value.clear();value.update(copy.deepcopy({**good,**change}))
+                result=self.bridge.status(self.actor,self.frozen,ident)
+                self.assertTrue(result['tracking']);self.assertNotIn('execution',result)
+                self.assertIsNone(result['message']);self.assertEqual(result['updates'],[])
+        value.clear();value.update(good)
+        with sqlite3.connect(self.provider.receiver['db_path']) as db:
+            db.execute("UPDATE turns SET from_user_id=2")
+        result=self.bridge.status(self.actor,self.frozen,ident)
+        self.assertTrue(result['tracking']);self.assertEqual(len(calls),len(changes))
+
+    def test_execution_terminal_always_rereads_owner_and_revalidates_current_authority(self):
+        ident,value,calls=self.terminal_fixture()
+        self.assertFalse(self.bridge.status(self.actor,self.frozen,ident)['tracking'])
+        value.update(state='unavailable',terminal=False)
+        second=self.bridge.status(self.actor,self.frozen,ident)
+        self.assertTrue(second['tracking']);self.assertNotIn('execution',second)
+        self.assertEqual(second['phase'],'queued');self.assertIsNone(second['message'])
+        self.assertEqual(len(calls),2)
+        value.update(state='observed',terminal=True)
+        self.assertFalse(self.bridge.status(self.actor,self.frozen,ident)['tracking'])
+        self.assertEqual(len(calls),3)
+        self.provider.allowed=False
+        with self.assertRaises(module.BridgeError):self.bridge.status(self.actor,self.frozen,ident)
+        self.provider.allowed=True;original=self.provider.presentation
+        def revoke_during_read(command):
+            result=original(command)
+            if command.startswith('input terminal '):self.provider.allowed=False
+            return result
+        self.provider.presentation=revoke_during_read
+        with self.assertRaises(module.BridgeError):self.bridge.status(self.actor,self.frozen,ident)
+        self.assertEqual(len(calls),4)
+
     def test_device_or_arbitrary_operation_is_not_available(self):
         with self.assertRaises(module.BridgeError):self.bridge.dispatch({'operation':'exec','actorRef':self.actor,'command':'fixture'})
     def test_general_acknowledgment_does_not_complete_routed_work(self):

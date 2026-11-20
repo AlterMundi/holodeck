@@ -340,7 +340,11 @@ async function readTurn(){
   }
   while(nativeLines.size>64){const key=nativeLines.keys().next().value;nativeLines.get(key).remove();nativeLines.delete(key);}
   boundConversation();
-  if(phase==='completed'&&result.tracking!==true){
+  const endedWithoutReply=phase==='problem'&&result.tracking===false
+    &&result.execution?.state==='observed'&&result.execution?.replyAssociation==='unavailable'
+    &&['completed','failed','interrupted'].includes(result.execution?.status);
+  if((phase==='completed'&&result.tracking!==true)||endedWithoutReply){
+    if(endedWithoutReply&&result.message)appendMessage(result.message,'notice');
     nativeTurn=null;sessionStorage.removeItem(turnKey);clearRecovery('native');updateNativeAvailability();
   }else if(phase==='problem'){if(result.message)say(result.message);noteRecovery('native',result);}
   else if(phase==='unknown')noteRecovery('native',result);

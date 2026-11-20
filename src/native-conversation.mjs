@@ -91,6 +91,7 @@ export async function createNativeConversation({room,stateDir,transport,fileSyst
     observation:record.observation.id,run:record.observation.run,
     message:result?.message??null,updates:result?.updates??[],
     nativeAcceptance:result?.nativeAcceptance??'unconfirmed',
+    ...(result?.execution?{execution:structuredClone(result.execution)}:{}),
     retained:true,knownNotSubmitted:record.knownNotSubmitted===true,
     retryable:!record.archived&&(record.knownNotSubmitted===true||phase==='unknown'),
     tracking:result?.tracking??!['completed','problem'].includes(phase),

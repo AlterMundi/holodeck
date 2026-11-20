@@ -304,7 +304,33 @@ class NativeBridge:
                 if result['phase'] not in ('problem','unknown') and turn and turn['completed_at'] is not None:
                     result['phase']='completed'
                     result['tracking']=False
+        if (value.get('phase')=='matrix_requested' and result['message'] is None
+            and result['phase'] not in ('problem','unknown') and turn and turn['completed_at'] is not None):
+            ended=self.ended_execution(actor,frozen,input_id,local)
+            if ended:
+                # The execution ended; semantic completion and missing reply
+                # attribution remain unresolved. Never borrow the unscoped text.
+                result.update(phase='problem',tracking=False,execution=ended,
+                    message='El turno terminó, pero no pude recuperar aquí su respuesta. Tu mensaje se conserva.')
         return result
+
+    def ended_execution(self,actor,frozen,input_id,local):
+        # Read the exact recorded physical boundary through the maintained owner.
+        # A final from another publication lifetime never becomes this reply.
+        try:
+            value=self.provider.presentation('input terminal '+ident(input_id))
+        except Exception:return None
+        execution=value.get('execution',{})
+        if (value.get('schema')!='telecodex.conversation-terminal/v1'
+            or value.get('entry_binding')!=frozen['entry'] or value.get('state')!='observed'
+            or value.get('terminal') is not True or value.get('status') not in ('completed','failed','interrupted')
+            or execution.get('input')!=input_id or execution.get('local_turn')!=local
+            or execution.get('native_thread')!=frozen['entry'][3]
+            or not isinstance(execution.get('native_turn'),str) or not 1<=len(execution['native_turn'])<=128):return None
+        self.authorize(actor,frozen)
+        ended={'state':'observed','status':value['status'],'nativeThread':execution['native_thread'],
+               'nativeTurn':execution['native_turn'],'replyAssociation':'unavailable'}
+        return ended
 
     def dispatch(self,request):
         if not isinstance(request,dict):raise BridgeError('input','Provide a native bridge request')

@@ -1,7 +1,7 @@
 # Holodeck MVP roadmap
 
 Human-authorized active native goal: work through a shared, testable MVP.
-Updated 2026-11-19. This roadmap is acceptance coverage, not a completion claim.
+Updated 2026-11-20. This roadmap is acceptance coverage, not a completion claim.
 The existing native goal was resumed on the human request after real shared
 participation and visible native edits. Continue the remaining conversation,
 avatar integration, device/reconnect and content-cycle work under that objective.
@@ -11,7 +11,7 @@ avatar integration, device/reconnect and content-cycle work under that objective
 | [Native situated participation #1](https://github.com/AlterMundi/holodeck/issues/1) | Exact original + immutable situation; seven installed paired routes and identity-pinned return ports; durable uncertain-intent recovery; direct native world API; bounded applied-geometry evidence | Real input, model context uptake, human-confirmed beacon/light edit and browser-independent native avatar selection now observed; accept the repaired conversational return loop; remaining shared human acceptance |
 | [Playable shared creation #2](https://github.com/AlterMundi/holodeck/issues/2) | MML world/presence; bridge; preview/accept/cancel/undo; shared authority; persisted run/commands; keyboard and emulated touch | Two humans report shared movement/creation and the same daimon beacon; finish hosted reconnect and situated conversation collaboration |
 | [Quality and device trial #3](https://github.com/AlterMundi/holodeck/issues/3) | Original low-poly island; bounded lighting; desktop/touch HUD; real browser movement/creation checks | Human play and physical phone/tablet acceptance; further quality based on their use |
-| [Durable sharing #4](https://github.com/AlterMundi/holodeck/issues/4) | Existing Home package/auth boundary; bounded state; protected HTTPS release/audience; real creation exported to the shared viewer and immutable Nexus reviews; actual own-being historical revisit; independently selected stable trial entrance | Human creation review/comment/response/revisit, native association for that new review, and authenticated recovery/device acceptance |
+| [Durable sharing #4](https://github.com/AlterMundi/holodeck/issues/4) | Existing Home package/auth boundary; bounded state; protected HTTPS release/audience; real creation exported to the shared viewer and immutable Nexus reviews; verified native review association; actual own-being historical revisit; independently selected stable trial entrance | Human creation review/comment/response/revisit and authenticated recovery/device acceptance |
 
 The MVP includes a walkable 3D world. QR scanning and augmented physical mapping
 remain candidate creations. Avatar/VR refinement is not a prerequisite for the
@@ -26,3 +26,12 @@ in-place edit, in addition to both participants seeing the human-created light.
 The companion's existing authored animated appearance is now selected as its
 spatial projection through its own native permission; human visibility is pending. It does not make live voice,
 headset use or the separate Avatar interaction mode a prerequisite for Conversation.
+
+On20November, the selected runtime's first actual native `focus.set` indicated the
+same original violet light at revision2, event82. Independent native observation
+and the durable room save retain that exact entity/revision. This is an explicit
+shared indication, not inferred gaze or human-visible pixel acceptance.
+A later original still waiting in the world was traced to a completed physical
+turn whose final lost the human return marker after a downstream Matrix selection.
+The owning return-lifetime repair is under qualification; the original is retained
+without replay or a fabricated completion. Conversational acceptance remains open.

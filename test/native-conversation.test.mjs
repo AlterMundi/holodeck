@@ -116,3 +116,33 @@ test('post-replacement directory sync failure fences writes and preserves the ne
   fail=false;const reopened=await createNativeConversation({room,stateDir:dir,transport});
   assert.equal((await reopened.status(actor,id)).retryable,true);
 });
+
+test('observed execution end preserves original and metadata across reopen without resubmission',async t=>{
+  const {native,transport,dir,room}=await setup(t),id=crypto.randomUUID(),text='  original terminal fixture  ';
+  await native.submit(actor,{id,text});assert.equal((await native.availability(actor)).active.id,id);
+  const execution={state:'observed',status:'completed',nativeThread:'fixture-native',nativeTurn:'physical-fixture-turn',replyAssociation:'unavailable'};
+  const terminal={phase:'problem',tracking:false,retainedOriginal:true,nativeAcceptance:'observed',execution,
+    message:'El turno terminó, pero no pude recuperar aquí su respuesta. Tu mensaje se conserva.',updates:[]};
+  transport.status=async()=>structuredClone(terminal);
+  const result=await native.status(actor,id);
+  assert.deepEqual(result.execution,execution);assert.equal(result.nativeAcceptance,'observed');
+  assert.equal(result.tracking,false);assert.equal(result.retained,true);assert.equal(result.knownNotSubmitted,false);
+  assert.equal(result.retryable,false);assert.deepEqual(result.updates,[]);assert.equal(result.message,terminal.message);
+  assert.equal((await native.availability(actor)).active,null);
+  const reopened=await createNativeConversation({room,stateDir:dir,transport});
+  assert.equal((await reopened.availability(actor)).active,null);
+  assert.deepEqual((await reopened.status(actor,id)).execution,execution);
+  assert.deepEqual((await reopened.submit(actor,{id,text})).execution,execution);
+  const journal=JSON.parse(await fs.readFile(join(dir,'native-turns.json'),'utf8'));
+  assert.equal(journal.records[id].text,text);assert.equal(journal.records[id].phase,'problem');
+  assert.equal(journal.records[id].tracking,false);assert.equal(transport.calls.length,1);
+});
+test('unknown physical execution retains active tracking across reopen',async t=>{
+  const {native,transport,dir,room}=await setup(t),id=crypto.randomUUID();
+  await native.submit(actor,{id,text:'unknown execution fixture'});
+  transport.status=async()=>({phase:'queued',tracking:true,retainedOriginal:true,nativeAcceptance:'observed'});
+  assert.equal((await native.status(actor,id)).tracking,true);
+  const reopened=await createNativeConversation({room,stateDir:dir,transport});
+  assert.equal((await reopened.availability(actor)).active.id,id);
+  assert.equal((await reopened.status(actor,id)).execution,undefined);assert.equal(transport.calls.length,1);
+});
