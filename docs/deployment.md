@@ -111,25 +111,25 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
-The20November selected runtime is source `7f68101`, at
-https://compaii.dmn.homes/holodeck/. Its17,623,040-byte package is
-`bc713b77c1e8dd136df6fd0ae7b29b3b01ed1ab3e0b56ed2ae1261a80e4c5d00`.
-The same App resource `a51218c647644a8fbbd42ed706d70b61`, audience and URL remain.
-All27inventoried files and exact health match. Current/previous room, native
-intent and receiving-configuration hashes were unchanged at sequence84. The two
-updates observed zero established world connections; neither restarted native
-work, replayed input nor fabricated a participant session or grant. The narrated
-presentation and immutable workshop3D review remain selected.
-Current and actual predecessor archives total35,246,080B. Superseded operator
-archives and exact verified stages were retired through the supported writers.
+The20November selected runtime is source `de162ee`, package `81684064`, at
+https://compaii.dmn.homes/holodeck/. Its17,653,760-byte archive contains29pinned
+runtime files plus the manifest; all receiving hashes, exact health and the
+browser-qualified client match. Same App/resource/audience and two visits remain.
+World sequence84 is retained; selection observed zero established world sockets.
 
-Seven explicit existing human/being/home routes select their own native owner.
-Every return socket is pinned to that being before native bridge access, with no
-fallback to another companion. Actual application-UID pairing/binding and
-wrong-actor checks passed all seven lanes; six remote native owners reached their
-fixed return and received unknown-interaction refusals. The current standalone
-Node24 package passed actual MML/Networked DOM peers, shared mutation and exact
-retry. See [transport operations](../deployment/native-transports.md).
+The shared Conversation capability uses seven exact registered HTTPS origins
+for microphone/autoplay delegation, and compatible d0dc7f1e bridges on all seven
+existing routes. No native service/Core restart, goal change, new grant, input or
+provider call was used for qualification. See [shared contract](shared-conversation.md).
+
+The actual predecessor is `bc713b77`/source7f68101. It ignores the additive shared
+configuration and retains the earlier text composer, world/session recovery and
+content viewers. Current/previous operator archives total35,276,800B/96MiB; the
+superseded derived predecessor and verified task stage were retired. Keep the
+current receiving configuration and world/native state during code rollback.
+
+Earlier browser/native evidence below remains attributed to its dated checkpoint;
+it does not replace current actual human/device acceptance.
 
 ## Current browser and native authority
 
@@ -158,7 +158,8 @@ Timeouts/unknown/malformed authority deny without a human-cookie fallback.
 The qualified Home dispatcher overlay changes only14lines in service.py
 (SHA256aad74810b792f349424850a691e1aaf1fd7f7a941fed8eb22981b4b7e34e9548),
 retaining513other file contents, mobile/link/launcher features and existing stores.
-All seven existing bridges now select SHA2569ae435c6b97dd9f738847ec19ba72409e029412f586326e63c9b0966ce9a2b39,
+The earlier seven-bridge checkpoint selected9ae435c6; the current compatible
+shared-Conversation successor is d0dc7f1e on all seven lanes,
 with32KiB observation/48KiB source support. Each scoped restart observed no
 in-flight RPC sockets and preserved config hashes/native core invocations. This
 compatibility preparation preceded the separately verified focus/v2 app selection.
@@ -309,13 +310,12 @@ session storage were preserved; served Apps metadata is retained but hidden.
 
 ## Recovery
 
-Retain the selectedbc713b77 release for forward recovery. The actual predecessor
-`b1d017c2e8fb5ded6c301e42487f7f9a852ea962fae0469273c3814426369376`
-(source d2ee331) supports the same configuration, two content entrances, protected
-session recovery and shared indications. Its older client lacks the subsequent
-utterance-view correction. Rollback changes code only; preserve latest room/native
-files, binding state and request identities. Superseded9d0/34c archives were retired
-only after exact receiving readbacks with actual rollback versions protected.
+Retain the selected81684064 release for forward recovery. Actual rollback is
+bc713b77/source7f68101, compatible with additive receiving configuration and the
+same world/native state, shared indications, protected session recovery and two
+content entrances. It uses the earlier text composer. Roll back code only; never
+replace current room, bindings, originals or pending work. Current/previous
+request and archive identities are held in the private operator record.
 
 Home/Nexus selector preimages remain software-only rollback inputs; preserve live
 grants, media, original messages, pending work and canonical databases.

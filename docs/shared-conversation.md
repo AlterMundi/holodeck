@@ -8,18 +8,27 @@ not a new goal or a claim of delivery.
 
 ## Current state
 
-The selected live Holodeck still uses the earlier minimal text composer until
-this integration is qualified and selected. Canonical Conversation now supplies
-its own compact hosted surface through DaimonApp PR926, with the early capture/cancellation correction in
-[PR927](https://github.com/AlterMundi/DaimonApp/pull/927), source dd5c0e61.
-Its [v1 contract](https://github.com/AlterMundi/DaimonApp/blob/dd5c0e6199780efd11be03782d16af795552ea2e/docs/conversation-surface.md)
-is the canonical protocol reference. The world-side consumer is implemented locally;
-receiving installation and physical acceptance remain separate observations.
+The selected Holodeck now directly embeds canonical Conversation. World source
+`de162ee`, package `81684064`, is active at the existing protected
+https://compaii.dmn.homes/holodeck/ entrance. The same App, fourteen readers,
+seven paired native routes and two content visits remain. Exact29runtime files,
+health and browser-qualified client bytes were read back after selection.
 
-World-side code now prepares context without submitting a human original.
-It is locally tested and disabled by default: receiving.sharedConversation must
-not be selected until the actual shared surface/protocol is qualified. Existing
-inputs, grants, accounts, services and the blocked full-MVP goal remain unchanged.
+Canonical Conversation PR926 supplies the hosted surface; PR927/source dd5c0e61
+freezes text/audio before asynchronous attachments and adds safe source-only
+discard. PR928/source8f643135 fixes the authored mobile margin inside the frame.
+All seven receivers have these compatible changes and the d0dc7f1e native bridge.
+The parent is explicitly activated with seven registered exact HTTPS origins;
+no wildcard or additional identity/grant was introduced.
+
+112Node checks and31Python checks pass, with one unchanged optional gallery skip.
+Actual canonical shell/assets in the walkable browser fixture passed desktop/
+mobile text and file submission, delayed viewer/file work, exact initial capture,
+continued walking, next-draft retention, one mounted frame and forged-envelope
+refusals. Screenshots were inspected and controls fit after the CSS correction.
+The canonical recorder's unchanged cue tests cover10,5,3,2,1seconds and no catch-up
+burst. These synthetic checks are not physical microphone/hearing or real human
+conversation acceptance. The full-MVP goal remains blocked pending its shared trial.
 
 ## Ownership and required shared hook
 
@@ -105,7 +114,7 @@ Browser qualification must exercise the actual canonical shell and components,
 including text, audio, files, alerts, movement and keeping drafts/capture mounted.
 Synthetic local I/O is never a real participant/provider acceptance claim.
 
-Select `receiving.sharedConversation: true` only after the seven compatible
+Selection uses `receiving.sharedConversation: true` after the seven compatible
 native bridges and the canonical early-capture/discard correction are installed.
 Configure `receiving.conversationOrigins` with at most eight exact HTTPS origins
 from the actual paired receiver URLs. These select permissions delegation, not

@@ -9,19 +9,26 @@ This current checkpoint supersedes older receiving selections retained in Git.
 
 ## Selected receiving release
 
-The protected trial is https://compaii.dmn.homes/holodeck/.
-Source `7f68101`,17,623,040-byte package
-`bc713b77c1e8dd136df6fd0ae7b29b3b01ed1ab3e0b56ed2ae1261a80e4c5d00`
-is selected through the existing Home service writer. The same App, shared SSO,
-fourteen selected readers, seven paired native routes and two content entrances
-remain. Exact health and27runtime files match. Current/previous room, native
-intent and receiving-configuration hashes were unchanged at sequence84.
+The protected trial remains https://compaii.dmn.homes/holodeck/.
+Source `de162ee`,17,653,760-byte package `81684064`, directly consumes canonical
+Conversation for text, audio/transcription, files, recording cues and original
+recovery. Exact29runtime files/health and the browser-qualified client match;
+shared capability and seven registered microphone origins are selected. Same
+App, fourteen readers, native routes and two content entrances remain.
 
-The actual predecessor is b1d017c2/source d2ee331. Both support the same receiving
-configuration, two content visits and bounded reconnect bindings. Current and
-previous archives total35,246,080B; superseded archives and verified task stages
-were retired through their existing bounded writers. Rollback changes code only,
-preserving latest room/native state. See [deployment](deployment.md).
+[Shared Conversation](shared-conversation.md) records the exact contract and
+qualification. Canonical PR926/927 plus the PR928 authored-layout correction and
+native bridge d0dc7f1e are installed on all seven receivers, with native processes
+and configuration preserved.112Node/31Python checks pass with one unchanged
+optional gallery skip. Actual canonical desktop/mobile frame checks and visual
+inspection pass with synthetic I/O; physical hearing and real conversation
+acceptance remain unfinished. No umbrella goal resume or fabricated input occurred.
+
+Actual rollback is `bc713b77`/source7f68101; it preserves the current world,
+legacy recovery, indications and content visits but uses the earlier text composer.
+Current and previous archives total35,276,800B/96MiB. Superseded derived archive
+and verified task stage were retired through supported writers. World sequence84
+was retained. See [deployment](deployment.md).
 
 ## Actual human and native evidence
 
@@ -53,10 +60,11 @@ server retention times remain separate observations. The controlled moving-brows
 regression changed from1.689m late-position error to0 while preserving exact text,
 one submission, next draft/focus and the retained frame, with no JS errors.
 
-101Node checks pass with1unchanged optional installed-gallery skip; earlier actual
-installed-gallery qualification remains valid. Build and receiving archive verifier
-pass. The latest package differs from the independently qualified two-browser
-restart package only in build/client.js; its26other inventoried files match exactly.
+The preceding bc713b77 release passed101Node checks with one unchanged optional
+installed-gallery skip and differed from its restart-qualified predecessor only in
+build/client.js. That earlier recovery evidence remains valid for the unchanged
+session registry and transport; current shared-surface qualification is recorded
+above and in shared-conversation.md.
 That exact backend passed actual process replacement with two independent original
 browser pages/tokens, real MML presence and Networked DOM, retained actor/run/shared
 change, draft and command/native references, no POST replay, subsequent WASD and
