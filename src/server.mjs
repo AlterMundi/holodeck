@@ -15,6 +15,7 @@ import { createWorldPort } from './world-port.mjs';
 import {validateContentVisits,visitsForActor} from './content-visits.mjs';
 import {createNativeRoomAuthority} from './native-authority.mjs';
 import {WorldDocument} from './world-document.mjs';
+import {SessionBindings,SESSION_MS,sessionKey} from './session-bindings.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
@@ -25,13 +26,23 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   if(nativeRoomAuthority!==null&&typeof nativeRoomAuthority!=='function')throw Error('Select the installed native service authority reader');
   const route=path=>basePath+path;
   const app=express();
+  // Express4 does not forward a rejected async handler. The upstream MML index
+  // issues the session in such a handler; include its persistence errors in the
+  // same bounded failure path as our own API routes.
+  const registerGet=app.get.bind(app);
+  app.get=(path,...handlers)=>registerGet(path,...handlers.map(handler=>
+    handler.constructor?.name==='AsyncFunction'?asyncRoute(handler):handler));
   enableWs(app,undefined,{wsOptions:{handleProtocols:(protocols,req)=>req.url?.split('?')[0]===route('world')
     ?NetworkedDOM.handleWebsocketSubprotocol(protocols):handleExperienceWebsocketSubprotocol(protocols)}});
   const sessions=new Map();const sockets=new Map();let nextId=0,authorizationTimer=null,pendingSockets=0;
+  const sessionBindings=production?new SessionBindings(stateDir,LIMITS.sessions):null;
+  for(const binding of sessionBindings?.load()||[])sessions.set(binding.key,{id:++nextId,
+    actor:{id:binding.actorRef,kind:'human'},created:binding.created,times:[],connection:null,sourceCookie:undefined});
+  const sessionFor=token=>sessions.get(sessionKey(token));
   const localBoot=randomBytes(4).toString('hex');
   const store=stateDir?new RoomStore(stateDir):null;
   const room=new Room({state:store?.load(),persist:store?s=>store.save(s):null,
-    presence:()=>[...sessions.values()].filter(s=>s.connection!==null&&Date.now()-s.created<1800000)
+    presence:()=>[...sessions.values()].filter(s=>s.connection!==null&&Date.now()-s.created<SESSION_MS)
       .map(s=>({actor:s.actor.id,kind:'human',name:s.actor.name||'Explorador',scope:'authenticated-room-presence',position:null}))});
   const document=new WorldDocument('http://localhost'+route('world'));
   let projectionHealthy=true,projectionQueued=false,projectionRunning=false;
@@ -47,7 +58,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const native=nativeFactory?await nativeFactory({room,stateDir}):null;
   const installedWorldPorts=[];
   async function currentActor(req,session){
-    if(!session||Date.now()-session.created>1800000)return null;
+    if(!session||Date.now()-session.created>=SESSION_MS)return null;
     if(!identityResolver)return session.actor;
     const actor=await identityResolver(req);
     if(!actor||actor.id!==session.actor.id)return null;
@@ -71,7 +82,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(sockets.size+pendingSockets>=LIMITS.sessions*2){socket.close(1013);return;}
     const expected=publicOrigin||`http://${req.headers.host}`;
     if((production||req.headers.origin)&&req.headers.origin!==expected){socket.close(1008);return;}
-    const session=sessions.get(cookieToken(req));
+    const session=sessionFor(cookieToken(req));
     pendingSockets++;
     currentActor(req,session).then(actor=>{
       if(!actor||socket.readyState!==1){socket.close(1008);return;}
@@ -89,7 +100,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(nativeRoomAuthority){const rights=await nativeRoomAuthority(verified);return projectionHealthy?rights:rights.filter(right=>right==='observe');}
     // Compatibility for older receivers only. New native authority selection
     // is explicit and never falls back here after a failed policy query.
-    const session=[...sessions.values()].find(s=>s.actor.id===verified.humanRef&&Date.now()-s.created<1800000);
+    const session=[...sessions.values()].find(s=>s.actor.id===verified.humanRef&&Date.now()-s.created<SESSION_MS&&s.sourceCookie!==undefined);
     if(!session)return [];
     const actor=await currentActor({method:'POST',headers:{cookie:session.sourceCookie,origin:publicOrigin}},session);
     const rights=actor?.rights||[];return projectionHealthy?rights:rights.filter(right=>right==='observe');
@@ -98,19 +109,28 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     async generateAuthorizedSessionToken(req){
       const actor=identityResolver?await identityResolver(req):{id:`local-${localBoot}-${nextId+1}`,kind:'human',name:`Explorador ${nextId+1}`,rights:['observe','edit','project']};
       if(!actor)return null;
-      for(const [token,s]of sessions)if(Date.now()-s.created>1800000&&s.connection===null)sessions.delete(token);
-      if(sessions.size>=LIMITS.sessions){const inactive=[...sessions].find(([,s])=>s.connection===null);if(inactive)sessions.delete(inactive[0]);else return null;}
+      const next=new Map(sessions);
+      for(const [key,s]of next)if(Date.now()-s.created>=SESSION_MS&&s.connection===null)next.delete(key);
+      if(next.size>=LIMITS.sessions){const inactive=[...next].find(([,s])=>s.connection===null);if(inactive)next.delete(inactive[0]);else return null;}
       const token=randomBytes(20).toString('hex'),id=++nextId;
-      sessions.set(token,{id,actor,created:Date.now(),times:[],connection:null,sourceCookie:req.headers.cookie});
-      req.res.cookie('holodeck_session',token,{httpOnly:true,secure:production,sameSite:'lax',path:basePath,maxAge:1800000});
+      next.set(sessionKey(token),{id,actor,created:Date.now(),times:[],connection:null,sourceCookie:req.headers.cookie});
+      sessionBindings?.save(next);
+      sessions.clear();for(const [key,session]of next)sessions.set(key,session);
+      req.res.cookie('holodeck_session',token,{httpOnly:true,secure:production,sameSite:'lax',path:basePath,maxAge:SESSION_MS});
       return token;
     },
-    getClientIdForSessionToken(token){const s=sessions.get(token);return s?{id:s.id}:null;},
-    async onClientConnect(connection,token){
-      const s=sessions.get(token);
+    getClientIdForSessionToken(token){const s=sessionFor(token);return s?{id:s.id}:null;},
+    async onClientConnect(connection,token,_presentedIdentity,socket){
+      const s=sessionFor(token);
       if(!s||s.connection!==null)return new Error('Room session unavailable');
-      const actor=await currentActor({method:'GET',headers:{cookie:s.sourceCookie}},s);
+      // The MML handshake token is independent of the HTTP upgrade cookie.
+      // Validate its owner against THIS socket's current shared-Home identity,
+      // never against another session's remembered authentication cookie.
+      const record=sockets.get(socket);
+      if(!record||socket.readyState!==1||record.session.actor.id!==s.actor.id)return new Error('Room identity does not match this connection');
+      const actor=await currentActor({method:'GET',headers:{cookie:record.session.sourceCookie}},s);
       if(!actor)return new Error('Room access expired');
+      if(s.connection!==null||sessionFor(token)!==s||socket.readyState!==1||!sockets.has(socket))return new Error('Room connection changed');
       s.connection=connection;
       room.atomic(()=>room.event(actor,'participant.joined',{name:actor.name||'Explorador'}));
       return {userId:actor.id,username:actor.name||`Explorador ${s.id}`,characterDescription:{meshFileUrl:route('assets/avatar-1-bodyA-skin01.glb')},colors:null};
@@ -134,7 +154,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   if(basePath!=='/')app.get(basePath.slice(0,-1),(_req,res)=>res.redirect(308,basePath));
   app.get(route('health'),(_req,res)=>res.status(projectionHealthy&&!room.commitUncertain?200:503).json({ok:projectionHealthy&&!room.commitUncertain}));
   app.ws(route('world'),(ws,req)=>{
-    currentActor(req,sessions.get(cookieToken(req))).then(actor=>{
+    currentActor(req,sessionFor(cookieToken(req))).then(actor=>{
       if(!actor){ws.close(1008);return;}
       document.addWebSocket(ws);ws.on('close',()=>{if(document.hasWebSocket(ws))document.removeWebSocket(ws);});
     }).catch(()=>ws.close(1008));
@@ -142,7 +162,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   app.use(route('api'),asyncRoute(async(req,res,next)=>{
     // Bearer fallback is confined to the local development harness.
     const token=cookieToken(req)||(!production?req.headers.authorization?.replace(/^Bearer /,''):null);
-    const session=sessions.get(token),actor=await currentActor(req,session);
+    const session=sessionFor(token),actor=await currentActor(req,session);
     if(!actor)return res.status(401).json({message:'Volvé a entrar al taller.'});
     if(req.method==='POST'){
       const expectedOrigin=publicOrigin||`http://${req.headers.host}`;

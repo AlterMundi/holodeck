@@ -64,11 +64,28 @@ operator artifact, not an App card; deploy it through the ordinary owner command
 Every release reuses the existing App/resource/URL and retains actual predecessor
 and pending request identity. Never rerun an uncertain deployment with a new ID.
 
+The pinned MML0.28 server adaptation in
+`tools/mml-server-auth-context.mjs` forwards the actual server-side WebSocket
+through both existing authentication callbacks. The room checks the handshake
+session's actor against the fresh Home-authorized socket actor, and revalidates
+using that socket's cookie. Another actor's valid Home connection cannot borrow
+a disconnected visitor's token. Same-actor tokens may differ between tabs without
+changing ownership. Missing socket context refuses access.
+
+The maintained postinstall applies only four exact version/hash-pinned dependency
+files (two runtime callsites and their declarations), preserving upstream MIT
+licenses and the browser protocol. Both build paths verify the installed delta;
+unknown dependency bytes refuse before any patch is written. Requalify these pins
+when updating MML. This narrow adaptation does not create another world engine,
+transport, login or source of permissions.
+
 ## Resource bounds and lifecycle
 
 The selected receiver enforces a 32 MiB backing filesystem (actual usable bytes
 come from its quota probe), 384 MiB memory, 100% CPU and 64 tasks. Room state uses
-at most 5 MiB per current/previous/stage file. Native intent/result retention has
+at most 5 MiB per current/previous/stage file. Protected room-session bindings
+use at most8records and8KiB each for their current/atomic-stage file; the existing
+32MiB backing filesystem bounds them together with world/native state. Native intent/result retention has
 its separate small bound; original source attachments stay with the existing
 bounded native attachment writer rather than being copied into app history.
 
@@ -144,9 +161,21 @@ being, minting no session or grant. Native reply completion separately follows t
 exact situated instruction, without falsely requiring umbrella research completion.
 
 The original conversation services stay running across scoped web/bridge updates.
-App replacement clears its in-memory human room sessions: reload obtains a fresh
-Home-validated session; MML reconnect alone reuses the old token. Native authority
-does not depend on this reload. daimon-home2.4.16 and report-conversation0.1.14
+Protected room-session ownership now survives replacement within the existing
+fixed30minute lifetime: persist only SHA256(app token), actorRef and original
+creation time. Never persist Home cookies, names, grants or rights. Restored
+bindings are inert until the request revalidates the same current Home actor and
+service audience; native authority remains independent. Presence/geometry reuse
+the existing MML reconnect path and original token. API recovery reads existing
+command/native results and never automatically resubmits an action.
+
+The first upgrade cannot reconstruct preexisting unrecorded session bindings;
+those tabs need one ordinary reload. Unknown or expired tokens are never adopted
+from a current Home identity. Expired Home access still requires the existing
+sign-in, and expiry is not extended by reconnection. A later application downgrade
+to a release without binding recovery retains world/native state but requires
+reload. Keep the at-most8-record bindings file private and bounded; it is
+application state, not another login or an independent source of rights. daimon-home2.4.16 and report-conversation0.1.14
 are installed/status verified on all seven selected bodies; the receiving surface
 check passed. Installation does not prove existing model contexts reloaded them.
 

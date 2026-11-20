@@ -7,7 +7,9 @@
   "scripts": {
     "build": "node tools/build.mjs",
     "start": "node src/server.mjs",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "postinstall": "node tools/mml-server-auth-context.mjs",
+    "check:mml-auth-context": "node tools/mml-server-auth-context.mjs --check"
   },
   "dependencies": {
     "@mml-io/3d-web-experience-client": "0.28.0",

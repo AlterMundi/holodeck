@@ -3,6 +3,8 @@ import { build } from 'esbuild';
 import { readdir, readFile, writeFile, mkdir, rm, copyFile, lstat } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
+import {ensureMmlServerAuthContext} from '../tools/mml-server-auth-context.mjs';
+ensureMmlServerAuthContext({check:true});
 const root=resolve(new URL('..',import.meta.url).pathname);
 const stage=process.argv[2];
 if(!stage || !resolve(stage).startsWith(root+'/.state/'))throw Error('Stage must be task-owned .state subdirectory');

@@ -14,6 +14,12 @@ anonymous actors or browser-supplied identities. Review docs/deployment.md for t
 selected package/receiver and retain actual source/package/runtime receipts.
 Do not overwrite another Home service. No background native model invocations.
 
+The pinned MML0.28 server dependencies need the maintained socket-context
+adaptation in tools/mml-server-auth-context.mjs. npm ci applies its idempotent
+postinstall; check:mml-auth-context and both build paths verify exact selected
+bytes. Never discard the socket/actor binding or use an unqualified dependency
+bundle. This changes no browser protocol or shared Home authority.
+
 For Home authentication changes, qualify positive authenticated HTML bootstrap
 and API access through real HTTP with the deployed Node runtime. Injected
 identity mocks or anonymous login redirects alone do not prove that path.

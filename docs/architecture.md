@@ -6,7 +6,10 @@ Packages pinned to 0.28.0, Networked DOM 0.26.1. MIT implementation.
 The upstream server provides an authenticator seam, custom messages, independent
 Networked DOM documents and DeltaNet avatar presence. Client provides collision,
 locomotion, animation, joystick and reconnect. No concrete mismatch justifies
-rewriting these systems. The protected trial reuses MML. Software-browser
+rewriting these systems. The protected trial reuses MML. A bounded protected token-hash/actor/time registry
+lets its existing reconnect recover across application restarts within the fixed
+session lifetime. Fresh shared-Home identity/audience remains mandatory; stored
+bindings carry no credentials or rights. Software-browser
 movement and editing have passed controlled checks; two independently signed-in
 humans report shared movement and the same edited light. Physical-device performance
 and headset suitability remain unqualified. Gateway
@@ -64,3 +67,13 @@ is unknown. A readable HUD must use actual native turn states.
 For physical perception and augmentation, reuse the human-selected
 [Daimon Integrators boundary](sensory-integration.md). Device-use status, sensor
 samples, derived world facts and model perception are distinct observations.
+
+## Transport authentication context
+
+The pinned upstream server callbacks now forward their actual WebSocket context.
+Holodeck matches the handshake token's retained owner to that connection's fresh
+Home identity and checks current authority using that socket, rather than another
+session's remembered cookie. The minimal four-file adaptation and reproducible
+postinstall/check are maintained in tools/mml-server-auth-context.mjs; both build
+paths verify exact bytes. Browser protocol, public MML locomotion/presence and
+current per-resource authority remain unchanged.
