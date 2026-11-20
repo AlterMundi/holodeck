@@ -192,7 +192,11 @@ existing human identities and independent model permission for all fourteen
 readers. No sessions, synthetic notes, results, native inputs or human acceptance
 were created for that qualification. The current Nexus artifact HTTP identity
 contract remains human-only; beings' own Home model readership is not a human
-session. The missing native reflection association remains explicit.
+session. The native reflection association was subsequently installed through
+the existing owner writer on20November, with matching local/canonical binding
+and negotiated interactive3D reflection. The HTTPS-only table preserves the four
+prior routes and original report work. Actual human contribution and matched
+native response remain unobserved; association installation does not close them.
 
 `tools/publish-review-draft.py` is the maintained bounded producer: 200 MiB unique
 retained project history, one 16 MiB task stage, exact current/audience/source checks,

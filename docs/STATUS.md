@@ -33,6 +33,12 @@ listeners and bridges now preserve human return lifetime after Matrix selection
 and actual acknowledgment independently. A read-only terminal observation releases
 an ended turn's wait without inventing its missing reply or cancelling downstream
 work. The retained original is unchanged. Human Send/return acceptance is open.
+A later read of the actual selected application's retained journal confirms that
+the same old original is now `problem`, `tracking:false`, with native retention
+unchanged. This verifies the app consumed terminal recovery, beyond the earlier
+bridge-only read. It does not establish a human-visible enabled composer, a new
+message or a matched reply; the original remains preserved.
+
 
 The presentation, artifact-v2 and Nexus lifecycle/native review association are
 installed. Actual human comment/response/revisit remains open; technical checks
@@ -56,6 +62,19 @@ original browser pages: MML presence and DOM geometry, actor/run/shared revision
 draft, command/native references and subsequent WASD recovered without POST
 replay or JS/server errors. Controlled fixtures are not human/device acceptance.
 The first deployment still requires one reload for preexisting unrecorded sessions.
+
+## Later source correction awaiting delivery
+
+The asynchronous viewer path had two reproduced capture defects: movement during
+its wait changed the recorded utterance position/time, and replacement content
+could relabel a pending question's pin. Source now freezes copied world view at
+submission and preserves the original viewer boundary or marks it unavailable.
+101Node tests pass with1unchanged optional gallery skip; the build passes. The
+actual moving-browser regression changed from1.689m late-position error to0,
+with one exact original, next draft/focus and retained frame preserved, no JS
+errors. Original and acknowledgment timestamps remain separate observations.
+This correction is not yet selected live; retain the active human visit and
+finish the already frozen recovery deployment before advancing the next package.
 
 ## Implemented and checked
 

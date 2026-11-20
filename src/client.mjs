@@ -354,16 +354,19 @@ $('#conversation-form').onsubmit=async event=>{
   event.preventDefault();if(nativeTurn||preparingConversation||state?.native?.available!==true)return;
   const text=$('#message').value;if(!text.trim())return;
   const capturedActor=state.actorRef,capturedRun=state.run;
+  // Freeze this utterance's world view before waiting for an embedded viewer.
+  // Walking, remote movement and newer drafts may continue during that wait.
+  const local=client.getLocalCharacterState();
+  const view=structuredClone({capturedAt:Date.now(),run:state.run,edition:state.edition,local:local?{userId:local.userId,connectionId:local.connectionId,position:local.position}:null,
+    others:[...client.getCharacterStates().values()].filter(person=>!person.isLocal).slice(0,8).map(person=>({userId:person.userId,connectionId:person.connectionId,position:person.position}))});
+  const appliedGeometry=geometryProbe?.snapshot();
+  if(appliedGeometry)view.appliedGeometry=structuredClone(appliedGeometry);
   preparingConversation=true;updateNativeAvailability();
   let visitContext;
   try{visitContext=await contentVisitor.context();}finally{preparingConversation=false;}
   if(state.actorRef!==capturedActor||state.run!==capturedRun){updateNativeAvailability();say('El lugar o tu acceso cambió. Conservé tu mensaje para que lo revises.');return;}
-  const local=client.getLocalCharacterState();
-  const view={capturedAt:Date.now(),run:state.run,edition:state.edition,local:local?{userId:local.userId,connectionId:local.connectionId,position:local.position}:null,
-    others:[...client.getCharacterStates().values()].filter(person=>!person.isLocal).slice(0,8).map(person=>({userId:person.userId,connectionId:person.connectionId,position:person.position}))};
   if(visitContext)view.contentVisit=visitContext;
-  const appliedGeometry=geometryProbe?.snapshot();
-  if(appliedGeometry){view.appliedGeometry=appliedGeometry;if(new TextEncoder().encode(JSON.stringify(view)).length>4096)delete view.appliedGeometry;}
+  if(new TextEncoder().encode(JSON.stringify(view)).length>4096)delete view.appliedGeometry;
   if(new TextEncoder().encode(JSON.stringify(view)).length>4096){updateNativeAvailability();say('No pude conservar este contexto completo. Tu mensaje sigue escrito; acercate al contenido antes de intentar de nuevo.');return;}
   const body={id:crypto.randomUUID(),text,displayedSequence:null,view};
   nativeTurn={id:body.id,body,actorRef:state.actorRef,run:state.run,createdAt:Date.now()};$('#send').disabled=true;

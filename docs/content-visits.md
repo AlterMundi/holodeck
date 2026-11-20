@@ -96,3 +96,25 @@ visit context within the existing4KiB view budget. Oversized or missing context
 is explicitly unavailable; camera, selection, source offsets and acknowledgment
 fields are never silently truncated or replaced with a fabricated timestamp.
 The Nexus iframe remains the owning full-context review/native route.
+
+## Situated utterance and asynchronous viewer context
+
+World position, other participants, applied geometry and client capture time are
+copied at submission, before waiting for the embedded viewer. Movement and the
+next draft can continue during that read without replacing the utterance's view.
+Server-authoritative situation capture remains separately timed at original
+retention; a client sample is not authoritative position or human attention.
+
+Each viewer read binds the original frame, visit and immutable pin before waiting
+for readiness or its reply. If that boundary changes, record context unavailable
+for the original pin; do not query, label or store a replacement viewer's state.
+`requestedAt` and `capturedAt` delimit the separate viewer query/acknowledgment
+interval; they do not claim media was sampled at the instantaneous world capture.
+The existing byte limits and explicit unavailable fallback remain unchanged.
+
+The controlled delayed-viewer browser regression reproduced a late-position
+capture before correction. The corrected client retained the exact initial
+position/time while actual MML movement continued, preserving original text,
+next draft/focus and one submission. Two unit regressions additionally reject
+replacement pins during readiness and reply waits. These are synthetic technical
+checks, not a real participant/media/native acceptance claim.

@@ -82,12 +82,17 @@ export class ContentVisitor{
  }
  async context(){
   if(!this.frame||!this.entry)return null;
+  const frame=this.frame,entry=this.entry,visitId=this.visitId,pin={...entry.pin},ready=this.ready,
+   requestedAt=Date.now(),panelVisible=!this.panel.classList.contains('is-walking');
+  const current=()=>!this.disposed&&this.frame===frame&&this.entry===entry&&this.visitId===visitId&&sameVisitPin(this.entry.pin,pin);
+  const unavailable=()=>({node:CONTENT_NODE.id,visitId,pin,requestedAt,contextUnavailable:true});
   try{
-   await this.ready;const context=await this.request('getContext');if(!knownVisitState(context?.state))throw Error('Viewer state unavailable');
-   const captured={node:CONTENT_NODE.id,visitId:this.visitId,pin:this.entry.pin,capturedAt:Date.now(),panelVisible:!this.panel.classList.contains('is-walking'),context,evidence:context.context_status==='playback-only'?'viewer-playback-only; no rendered-frame acknowledgment or human attention':'acknowledged-viewer-state; not human attention or shared playback'};
-   if(new TextEncoder().encode(JSON.stringify(captured)).length>2200)return {node:CONTENT_NODE.id,pin:this.entry.pin,contextUnavailable:true};
+   await ready;if(!current())return unavailable();
+   const context=await this.request('getContext');if(!current()||!knownVisitState(context?.state))return unavailable();
+   const captured={node:CONTENT_NODE.id,visitId,pin,requestedAt,capturedAt:Date.now(),panelVisible,context,evidence:context.context_status==='playback-only'?'viewer-playback-only; no rendered-frame acknowledgment or human attention':'acknowledged-viewer-state; not human attention or shared playback'};
+   if(new TextEncoder().encode(JSON.stringify(captured)).length>2200)return unavailable();
    this.lastContext=captured;return captured;
-  }catch{return {node:CONTENT_NODE.id,pin:this.entry.pin,contextUnavailable:true};}
+  }catch{return unavailable();}
  }
  async walk(){
   await this.ready;const value=await this.request('getContext');
