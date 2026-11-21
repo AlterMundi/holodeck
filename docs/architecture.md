@@ -77,3 +77,12 @@ session's remembered cookie. The minimal four-file adaptation and reproducible
 postinstall/check are maintained in tools/mml-server-auth-context.mjs; both build
 paths verify exact bytes. Browser protocol, public MML locomotion/presence and
 current per-resource authority remain unchanged.
+
+## Runtime co-creation and engine maintenance
+
+The21November human correction selects one shared engine, with creator-owned
+results and runtime-created world entities. Engine-maintainer authority is not
+required for ordinary creation. [Co-creation](co-creation.md) distinguishes the
+working typed activity from the missing generic result/playable creation contract
+and records its next vertical slice. [Maintainers](maintainers.md) records actual
+Oliva contribution/publisher access and the remaining delegated-selector gap.

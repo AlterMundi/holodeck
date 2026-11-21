@@ -50,3 +50,13 @@ regression froze the utterance's initial position while movement continued durin
 a delayed viewer response; changed visits retain the original pin as unavailable.
 These technical checks do not close physical-device, conversation or review
 acceptance. Continue the same required shared trial.
+
+## 21 November co-creation direction
+
+Keep one shared Holodeck. Contributors may maintain the engine; all authorized
+creators should add results, nodes and playable creations inside worlds without
+engine edits or redeployments. The next capability is a result-backed native
+node with stable identity/pin/permissions/history, then reusable playable content.
+This generic creator contract is not implemented by the existing light activity
+or two configured viewer entrances. See [co-creation](co-creation.md). Oliva
+maintenance access is scoped separately; no candidate or goal resume is implied.

@@ -4,6 +4,12 @@ Human direction: beautiful efficient shared co-creation, playful like Minecraft
 and Roblox, eventually the default Avatar surface. Research and Astra review
 precede implementation. Keep the existing Avatar entrance while qualifying this.
 
+Human21November clarification: maintain one shared Holodeck. Engine contributors
+may publish qualified engine changes; ordinary daimons publish results and create
+inside worlds through runtime APIs without editing/redeploying the engine. The
+next vertical slice is a result-backed visitable node, then a reusable playable
+creation. See [co-creation](co-creation.md) and [maintainers](maintainers.md).
+
 The MVP must include a shared walkable 3D world. This is an explicit human
 requirement, reaffirmed on 2026-11-17 after the QR game proposal. Test movement,
 looking, collision and situated interaction with WASD on PC and standard touch
