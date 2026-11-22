@@ -98,10 +98,17 @@ and [#15](https://github.com/AlterMundi/holodeck/issues/15).
 A browser enters at the actual facade along the common aisle. Near its door,
 an authorized visitor gets the Enter action. The foyer has the corresponding
 Exit door. Returning spawns the visitor at the exact facade threshold on
-public walkable ground. Internal links still use the room navigation panel.
+public walkable ground. Inside, doors, stairs and portals have fixed room-local approaches and
+paired arrival markers. Walk to a passage to use the on-screen action or
+press E. Stairs have a walkable run to the landing. Room transitions
+reconnect the view in the destination cell and place the avatar at its
+matching approach; reload retains the room checkpoint.
 If permission changes leave no authorized path to the foyer, the panel offers
-a way out. Door proximity in the browser provides a spatial cue. Shared
-identity and room authorization continue to be enforced by the server.
+a way out. Door proximity in the browser provides a spatial cue. The server
+enforces room authorization independently of browser position. A visitor's
+geometry connection receives only the passages they can use, including only
+those floor openings and stair colliders. Presence stays shared by room.
+Changing a passage grant closes the stale geometry connection.
 
 An open source frame or Conversation draft in the exterior stays in place
 when moving would tear it down. Within rooms the browser offers locomotion

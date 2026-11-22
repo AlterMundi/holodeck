@@ -1,3 +1,4 @@
+import {passageAt,passageMarkup,roomFloor} from './interior-geometry.mjs';
 import {exteriorDoor} from './houses.mjs';
 import {attribute} from './workshop-projection.mjs';
 
@@ -130,6 +131,14 @@ export class InteriorSpaces {
     return false;
   }
 
+  passages(actor,room) {
+    return room.links.flatMap((link,index)=>{
+      if(!this.allows(actor,link.to))return [];
+      const destination=this.rooms.get(link.to);
+      return [{...passageAt(room,link,index,destination),title:destination.title}];
+    });
+  }
+
   view(actor) {
     const current=this.current(actor), room=this.rooms.get(current);
     const houses = new Map(this.houses.directory().map(house=>[house.id,house]));
@@ -141,23 +150,24 @@ export class InteriorSpaces {
     return {id:current,title:room.title,level:room.level,house:room.house,objects:[ROOM_MARKER],
       exteriorDoor:exteriorDoor(houses.get(room.house)),
       ...(room.entry?{exitDoor:FOYER_DOOR}:!this.canReachEntrance(actor,current)?{emergencyExit:true}:{}),
-      exits:room.links.filter(link=>this.allows(actor,link.to)).map(link=>({...link,title:this.rooms.get(link.to).title}))};
+      exits:this.passages(actor,room)};
   }
 }
 
 // Each server-authorized room has its own local collision and render document.
-export function interiorDocument(room) {
+export function interiorDocument(room,passages=[]) {
   const {id,position:{x,y,z},radius,height}=ROOM_MARKER;
   const {floor,wall,end} = room.entry ? {floor:'#aa9376',wall:'#486966',end:'#557675'} :
     room.level<0 ? {floor:'#657378',wall:'#415666',end:'#4c6376'} :
     room.level>0 ? {floor:'#bfaa86',wall:'#667b86',end:'#7a8890'} :
     {floor:'#b5a28e',wall:'#5b7471',end:'#668581'};
   return `<m-group id="${room.id}">
-    <m-cube x="0" y="0" z="0" width="12" height=".2" depth="12" color="${floor}"></m-cube>
+    ${roomFloor(passages,floor)}
     <m-cube x="-6" y="1.65" z="0" width=".2" height="3.3" depth="12" color="${wall}"></m-cube>
     <m-cube x="6" y="1.65" z="0" width=".2" height="3.3" depth="12" color="${wall}"></m-cube>
     <m-cube x="0" y="1.65" z="-6" width="12" height="3.3" depth=".2" color="${end}"></m-cube>
     <m-cube x="0" y="1.65" z="6" width="12" height="3.3" depth=".2" color="${end}"></m-cube>
+    ${passages.map(p=>passageMarkup({...p,label:attribute(p.title)})).join('')}
     ${room.entry?'<m-group id="house-exit"><m-cube y="1.13" z="5.86" width="1.35" height="2.06" depth=".08" color="#c8a36d" collide="false"></m-cube><m-cube x=".45" y="1.05" z="5.79" width=".06" height=".14" depth=".08" color="#343e40" collide="false"></m-cube><m-label y="2.53" z="5.81" ry="180" width="1.55" height=".37" font-size="19" content="Salida" collide="false"></m-label></m-group>':''}
     <m-label x="0" y="2.3" z="-5.87" width="4" height=".65" font-size="26" content="${attribute(room.title)}" collide="false"></m-label>
     <m-cylinder id="${id}" x="${x}" y="${y}" z="${z}" radius="${radius}" height="${height}" color="#af956a"></m-cylinder>

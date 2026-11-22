@@ -58,17 +58,17 @@ test('room links, scoped discovery, durable moves and uncertain saves',()=>{
 test('HTTP, real geometry upgrades and native observation share active room and current grants',async()=>{
   const stateDir=mkdtempSync(join(tmpdir(),'holodeck-spaces-')),socketPath=join(stateDir,'native.sock');
   new RoomStore(join(stateDir,'houses')).save({schema:'holodeck.houses/v1',houses:[house],receipts:[]});
-  let allowed=true,nativeAllowed=true,runtime,listener;
+  let allowed=true,nativeAllowed=true,foyerAccess=true,runtime,listener;
   const clients=[],peers=[];
   async function start(){
     runtime=await createHolodeck({production:true,basePath:'/holodeck/',publicOrigin:'https://world.test',stateDir,
       interiorSpaces:definitions.map(room=>room.id==='foyer'?{...room,guests:[...room.guests,'human:viewer']}:room),
-      interiorGuestAccess:actor=>allowed||actor.id==='human:viewer',
+      interiorGuestAccess:(actor,room)=>actor.id==='human:viewer'||(allowed&&(room!=='foyer'||foyerAccess)),
       worldPorts:[{socket:socketPath,beingRef:owner}],nativeFactory:()=>({availability:async()=>({available:false}),authorizeWorldRequest(){throw Error('test');}}),
       ownNative:true,nativeRoomAuthority:async()=>nativeAllowed?['observe','edit','project']:[],
       identityResolver:async req=>{
-        const id=req.headers.cookie?.match(/(?:^|; )home=(guest|viewer|foreign)/)?.[1];
-        return id?{id:'human:'+id,kind:'human',rights:['observe'],name:id}:null;
+        const id=req.headers.cookie?.match(/(?:^|; )home=(guest|viewer|foreign|owner)/)?.[1];
+        return id?{id:id==='owner'?owner:'human:'+id,kind:id==='owner'?'daimon':'human',rights:['observe'],name:id}:null;
       }});
     listener=runtime.app.listen(0,'127.0.0.1');await once(listener,'listening');
     return `http://127.0.0.1:${listener.address().port}/holodeck/`;
@@ -133,7 +133,8 @@ test('HTTP, real geometry upgrades and native observation share active room and 
     const [snapshot]=await once(foyer,'message');
     assert.match(String(snapshot),/Foyer/);
     assert.match(String(snapshot),/house-exit/);
-    assert.doesNotMatch(String(snapshot),/Gallery|Secret Laboratory/);
+    assert.match(String(snapshot),/Gallery/);
+    assert.doesNotMatch(String(snapshot),/Secret Laboratory/);
     const foyerClose=once(foyer,'close');
     assert.equal((await move(viewer,'outside','foyer')).status,200);
     const first=presence('foyer',personAuth),second=presence('foyer',viewerAuth);
@@ -149,9 +150,25 @@ test('HTTP, real geometry upgrades and native observation share active room and 
     const gallery=connect('spaces/gallery/world',person);
     const gallerySnapshot=String((await once(gallery,'message'))[0]);
     assert.match(gallerySnapshot,/Gallery/);
-    assert.doesNotMatch(gallerySnapshot,/house-exit|Secret Laboratory/);
+    assert.doesNotMatch(gallerySnapshot,/house-exit|Secret Laboratory|passage-1/);
+    assert.match(gallerySnapshot,/Foyer/);
+    assert.match(gallerySnapshot,/passage-0/);
+    const staleGallery=once(gallery,'close');
+    foyerAccess=false;
+    assert.equal((await (await read(person)).json()).id,'gallery');
+    assert.equal((await staleGallery)[0],1008);
+    const isolatedGallery=connect('spaces/gallery/world',person);
+    const isolatedSnapshot=String((await once(isolatedGallery,'message'))[0]);
+    assert.doesNotMatch(isolatedSnapshot,/Foyer|Secret Laboratory|passage-/);
+    foyerAccess=true;
     assert.equal((await native('act',{type:'space.move',from:'outside',to:'foyer'})).ok,true);
-    assert.equal((await native('act',{type:'space.move',from:'foyer',to:'lab'})).ok,true);
+    assert.equal((await native('act',{type:'space.move',from:'foyer',to:'gallery'})).ok,true);
+    const holder=await auth('owner');
+    const ownerGeometry=connect('spaces/gallery/world',holder.cookie);
+    const ownerSnapshot=String((await once(ownerGeometry,'message'))[0]);
+    assert.match(ownerSnapshot,/Secret Laboratory/);
+    assert.match(ownerSnapshot,/passage-1/);
+    assert.equal((await native('act',{type:'space.move',from:'gallery',to:'lab'})).ok,true);
     const observation=await native('observe',{});
     assert.equal(observation.result.schema,'holodeck.space-observation/v1');
     assert.equal(observation.result.observer,owner);

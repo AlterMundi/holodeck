@@ -91,7 +91,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     record.checking=(async()=>{
       try{
         const actor=await currentActor({method:'GET',headers:{cookie:record.session.sourceCookie}},record.session);
-        if(!inScope(actor,record.scope))socket.close(1008);
+        if(!inScope(actor,record.scope)||record.projectionAllowed?.()===false)socket.close(1008);
       }catch{socket.close(1008);}
     })();
     try{await record.checking;}finally{record.checking=null;}
@@ -112,7 +112,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       const record={session,scope,checking:null};sockets.set(socket,record);
       // Upstream transports broadcast synchronously. Enforce the current room
       // before any client payload enters or leaves those transports.
-      const stillAllowed=()=>sessionFor(cookieToken(req))===session&&Date.now()-session.created<SESSION_MS&&inScope(session.actor,scope);
+      const stillAllowed=()=>sessionFor(cookieToken(req))===session&&Date.now()-session.created<SESSION_MS&&inScope(session.actor,scope)&&record.projectionAllowed?.()!==false;
       const send=socket.send.bind(socket),emit=socket.emit.bind(socket);
       socket.send=(...args)=>{
         if(stillAllowed())return send(...args);
@@ -195,7 +195,6 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const existing=cellTransports.get(id);
     if(existing)return existing;
     const address=route('spaces/'+id+'/');
-    const scopedDocument=new WorldDocument('http://localhost'+address+'world');
     const connections=new Map();
     const scopedNetwork=new Networked3dWebExperienceServer({networkPath:address+'network',userAuthenticator:{
       getClientIdForSessionToken:auth.getClientIdForSessionToken,
@@ -217,8 +216,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       environmentConfiguration:{groundPlane:false,sun:{intensity:.9},ambientLight:{intensity:1.5}},
       avatarConfiguration:{allowCustomAvatars:false},allowCustomDisplayName:false,allowOrbitalCamera:true,
       spawnConfiguration:{spawnPosition:{x:0,y:1,z:4},spawnYRotation:180},hud:{respawnButton:false}}});
-    const cell={connections,document:scopedDocument,network:scopedNetwork,
-      ready:scopedDocument.load(interiorDocument(spaces.rooms.get(id))).then(()=>true,()=>false)};
+    const cell={connections,network:scopedNetwork};
     cellTransports.set(id,cell);
     return cell;
   }
@@ -249,17 +247,25 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   for(const channel of ['network','world'])app.ws(route('spaces/:space/'+channel),(ws,req)=>{
     const record=sockets.get(ws),id=req.params.space;
     if(!record||id===OUTSIDE||!inScope(record.session.actor,id)){ws.close(1008);return;}
-    const cell=cellFor(id);
     if(channel==='network'){
-      cell.network.userNetworkingServer.connectClient(ws);
-      cell.ready.then(ready=>{if(!ready)ws.close(1011);});
+      cellFor(id).network.userNetworkingServer.connectClient(ws);
       return;
     }
-    cell.ready.then(ready=>{
-      if(!ready){ws.close(1011);return;}
-      if(ws.readyState!==1||!inScope(record.session.actor,id)){ws.close(1008);return;}
-      cell.document.addWebSocket(ws);
-      ws.on('close',()=>{if(cell.document.hasWebSocket(ws))cell.document.removeWebSocket(ws);});
+    const selectedRoom=spaces.rooms.get(id);
+    const passages=()=>spaces.passages(record.session.actor,selectedRoom);
+    const initial=passages();
+    const signature=links=>links.map(link=>link.slot).join(',');
+    const scope=signature(initial);
+    record.projectionAllowed=()=>signature(passages())===scope;
+    // A connection owns exactly one filtered document. Closing it releases
+    // all DOM work while the room's shared avatar stream stays independent.
+    const scopedDocument=new WorldDocument('http://localhost'+route('spaces/'+id+'/world'));
+    ws.once('close',()=>scopedDocument.dispose());
+    scopedDocument.load(interiorDocument(selectedRoom,initial)).then(()=>{
+      if(ws.readyState!==1||!inScope(record.session.actor,id)||!record.projectionAllowed()){
+        ws.close(1008);return;
+      }
+      scopedDocument.addWebSocket(ws);
     }).catch(()=>ws.close(1011));
   });
   app.use(route('api'),asyncRoute(async(req,res,next)=>{
@@ -373,7 +379,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const known=error instanceof RoomError;
     res.status(known?409:error.type==='entity.too.large'?413:503).json({message:known?'El mundo cambió o esa acción no está disponible. Revisá el lugar antes de intentarlo de nuevo.':'No pude completar esa acción. Conservé los cambios que ya estaban confirmados.'});
   });
-  return {app,room,native,spaces,close(){if(authorizationTimer)clearInterval(authorizationTimer);for(const socket of sockets.keys())socket.close(1001);for(const port of installedWorldPorts)port.close();network.dispose();document.dispose();for(const cell of cellTransports.values()){cell.network.dispose();cell.document.dispose();}}};
+  return {app,room,native,spaces,close(){if(authorizationTimer)clearInterval(authorizationTimer);for(const socket of sockets.keys())socket.close(1001);for(const port of installedWorldPorts)port.close();network.dispose();document.dispose();for(const cell of cellTransports.values()){cell.network.dispose();}}};
 }
 
 export function validateWorldPorts({worldSocket=null,worldSocketBeingRef=null,worldPorts=[],nativeRoutes=null}={}){
