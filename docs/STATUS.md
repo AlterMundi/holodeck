@@ -15,7 +15,7 @@ The obsolete bundled pending trial was withdrawn without claiming its completion
 ## Selected receiving release
 
 The protected entrance remains https://compaii.dmn.homes/holodeck/.
-Source `a715663`,17,797,120-byte package `4663b463`, is selected. All29runtime
+Source `0cd1868`,17,807,360-byte package `00bf85a1`, is selected. All29runtime
 files, exact health, served client and506,528-byte scenery match the qualified
 bundle. Same App, fourteen readers, seven native routes, receiving configuration,
 canonical Conversation and two configured pinned visits remain. Runtime-created
@@ -40,7 +40,7 @@ one exact event. It adds no event polling or separate history database. Selectin
 a discussion topic freezes its reference before any asynchronous viewer request;
 evicted events remain explicitly unavailable. See [world history](world-history.md).
 
-The current full suites report168Node cases:166pass, no failures, two optional
+The current full suites report172Node cases:170pass, no failures, two optional
 builder skips;42Python cases pass. Separate installed-builder/export qualification
 remains valid. Controlled desktop/mobile browsers checked retained frames/drafts,
 history paging and exact event capture, immediate topic removal and cancelled
@@ -109,10 +109,21 @@ readiness/context and a usable mobile selector. Three final same-camera surface
 captures verify the floor correction while ordinary shadows remain. These are
 specific technical observations, not new physical-device or human acceptance.
 
-Actual previous code is `68a24c5e`/source `9f57a35`, compatible with the same
-world/native state and result visits. Current and predecessor archives total
-35,594,240B/96MiB after retiring the superseded generated editing archive through
-the protected writer. Preserve actual selected/predecessor controls and live state.
+Actual previous code is `f1ff94f6`/source `1edd51f`, selected and verified before
+publishing context data. It can read the new context pins and preserves the same
+world/native state; the older parser rejected them. Current and predecessor
+archives total35,604,480B/96MiB. Superseded generated archives and task stages
+were retired after exact protected-writer/readback proof. Source and live data remain.
+
+The current Field portal (node-field-history, revision2) pins
+capture-2026-11-22-field-v1:62selected Project cards,125nodes,124relations and125sources.
+Its October predecessor remains. Four completed own-native node/focus commands
+advanced the same world to event134; all30entities and3previous nodes survived.
+No engine configuration or restart was needed for those content changes. The
+existing verified Field membership for Nicolas was renewed through the owning
+writer and Home mapping, preserving45prior mappings. A policy check is not an
+observed authenticated human visit. The [shared roadmap](shared-roadmap.md) records
+the reviewed next work; houses and private spaces remain unimplemented.
 
 The draft e66a4961… has its own immutable Nexus table, seven exact human selections,
 14model-reader decisions and an installed native review association. The new

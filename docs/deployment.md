@@ -114,8 +114,8 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
-The22November selected runtime is source `a715663`, package `4663b463`, at
-https://compaii.dmn.homes/holodeck/. Its17,797,120-byte archive has29pinned runtime
+The22November selected runtime is source `0cd1868`, package `00bf85a1`, at
+https://compaii.dmn.homes/holodeck/. Its17,807,360-byte archive has29pinned runtime
 files plus manifest; exact runtime/health/client/scenery hashes match. Same App,
 fourteen readers, seven native routes, two configured visits and receiving config
 remain. Oliva PR5 is merged; the spacious layout separates arrival, gallery and
@@ -126,7 +126,7 @@ journal with explicit gaps; they introduce no new persistent history or poller.
 World-data operations preserve original creator identities and human lights.
 The draft result portal was created through the existing native node API, then
 CompAII projected beside and indicated it. The same run/edition now has30entities
-and3nodes, through130 at readback. No configuration/restart was needed per creation.
+and4nodes, through134 after the deliberate Field publication. No configuration/restart was needed per creation.
 
 Own-native mode remains selected with current-being authority and per-body private
 lanes. The protected socket lifecycle helper retains unique-inode/no-symlink checks
@@ -134,17 +134,13 @@ and grants the ordinary native UID only its own socket after app replacement;
 actual post-selection isolation was verified. Trusted root transports stay fixed.
 Do not replace this with all-socket inheritance or shared credentials.
 
-The actual previous code digest is `68a24c5e`, source `9f57a35`. It preserves the
-spatial layout, runtime co-creation, exact result visits, activity UI/API and save
-schema; it lacks the frozen context-retry and small control/feedback corrections. Never restore old room/native/
-config bytes merely to change code. Retain actual current/predecessor selection.
-
-Current/predecessor generated archives total35,594,240B within96MiB. Superseded
-result-visit archive9a34a7ef was retired through the protected writer after exact
-receiving verification. Its source/evidence remain historical. Before another
-publication, tally useful retained roles plus one candidate against96MiB. Verified
-task stages/archives may be removed after exact readback, preserving source,
-current state, unfinished work and actual rollback.
+The actual previous code digest is `f1ff94f6`, source `1edd51f`. It was selected
+and qualified before new context-pin data; both readers accept current saves.
+The selected source adds strict context descriptor/readiness and compact acknowledged
+references. Never restore old Room/native/config bytes merely to change code.
+Current/predecessor generated archives total35,604,480B within96MiB. Superseded
+archives were retired through the protected writer after exact receiving readback;
+verified task stages were removed while live data, source and rollback remain.
 
 Earlier browser/native evidence below remains attributed to its dated checkpoint;
 it does not replace current actual human/device acceptance.

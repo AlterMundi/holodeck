@@ -1,4 +1,8 @@
-# Holodeck MVP roadmap
+# Holodeck roadmap
+
+The complete cross-project sequence is the [reviewed shared roadmap](shared-roadmap.md),
+tracked in the existing [Field Project 13](https://github.com/orgs/AlterMundi/projects/13).
+The MVP coverage below remains its own unfinished acceptance record.
 
 Human-authorized native goal: work through a shared, testable MVP.
 Current status: BLOCKED awaiting required actual human situated use/return and
