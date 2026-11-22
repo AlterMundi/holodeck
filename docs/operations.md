@@ -31,7 +31,15 @@ Ordinary service deployment is not project-content publication or native uptake.
 
 - One room/run; eight simultaneous development/network sessions; 32 authored
   elements including deletion tombstones. No recycled entity identity.
-- 256 semantic events; 256 exact command outcomes; 128 captured observations.
+- 256 semantic events; 256 exact command outcomes; at most128 captured
+  observations and2MiB of serialized read-cache. New reads and legacy loads
+  discard expired/oversized captures and evict the oldest disposable captures
+  within those limits. Default observations fit32KiB; explicit omissions retain
+  all canonical entities/node definitions and the speaker/paired indications.
+  Optional client-reported view details can be omitted with an explicit marker
+  when necessary; this never establishes visual perception. An evicted capture
+  requires a fresh observation for a new action; an already completed exact
+  command retry still resolves its retained result before capture lookup.
   Retry validity five minutes. An expired request is rejected, never re-authored.
   Missing event windows report gaps. Movement uses MML's separate presence path.
 - API body48KiB, with stricter per-operation validation; four writes/second/session.

@@ -72,3 +72,28 @@ test('generated review scene is accepted by the real installed gallery builder',
   assert.ok(readFileSync(join(dir,'review-live.json'),'utf8').includes('dm.review-live/v1'));
  }finally{rmSync(dir,{recursive:true,force:true});}
 });
+
+test('actual shared-capacity creation fits snapshot, review and complete publisher stage through the installed builder',{skip:!process.env.HOLODECK_REVIEW_BUILDER},async t=>{
+ const {MAX_WORLD_ELEMENTS}=await import('../src/world-limits.mjs');
+ const {exportWorldSnapshot}=await import('../tools/export-world-snapshot.mjs');
+ const {createHash}=await import('node:crypto');
+ const room=new Room();
+ for(let i=0;i<MAX_WORLD_ELEMENTS-1;i++)assert.equal(command(room,'garden.place','garden-'+String(i).padEnd(40,'x'),{x:15.5+(i%7)*2,z:-5+Math.floor(i/7)*1.1,color:['mint','amber','rose','violet'][i%4]},null).status,'completed');
+ const native={id:'dm:being:v1:'+'s'.repeat(43),kind:'daimon',rights:['observe','edit']};
+ const o=room.observe(native);assert.equal(room.command(native,{id:crypto.randomUUID(),issuedAt:Date.now(),run:room.run,edition:room.edition,observation:o.id,nativeRequest:'export-format-fixture',type:'node.place',target:'node-game',expectedRevision:null,args:{title:'Captured recipe',shape:'pedestal',position:{x:22,z:4},links:[],play:{schema:'signal-garden/v1',targets:[{x:19,z:-1,radius:.8,color:'mint'}],minContributors:2}}}).status,'completed');
+ for(const raised of [false,true]){
+  if(raised)assert.equal(command(room,'bridge.set','bridge',{raised:true},0).status,'completed');
+  const observation=room.observe(actor),snapshot=exportWorldSnapshot(observation,scenery),{scene,source}=await exportReviewScene(observation,scenery);
+  const inputBytes=JSON.stringify({...scene,holodeckSource:source});assert.ok(Buffer.byteLength(inputBytes)<=8*1024*1024);assert.ok(snapshot.length<=2*1024*1024);assert.ok(scene.parts.length<=256);assert.ok(scene.parts.reduce((n,p)=>n+p.faces.length,0)<=50000);
+  assert.equal(source.snapshotSha256,createHash('sha256').update(snapshot).digest('hex'));assert.ok(source.parts.every(p=>p.entity!=='node-game'));assert.equal(source.meshApproximation.sphere.widthSegments,12);
+  const dir=mkdtempSync(join(tmpdir(),'holodeck-capacity-export-'));
+  try{
+   const site=join(dir,'site');const {mkdirSync}=await import('node:fs');mkdirSync(site);
+   const input=join(dir,'scene.json'),capture=join(dir,'observation.json');writeFileSync(input,inputBytes);writeFileSync(capture,JSON.stringify(observation));writeFileSync(join(site,'snapshot.glb'),snapshot);
+   const built=spawnSync('python3',[process.env.HOLODECK_REVIEW_BUILDER,'--scene',input,'--out',join(site,'index.html'),'--live','--defer-gallery','--bootstrap-gallery'],{encoding:'utf8',timeout:20000,maxBuffer:16384});assert.equal(built.status,0,built.stderr);
+   const publisher=new URL('../tools/publish-review-draft.py',import.meta.url).pathname;
+   const qualified=spawnSync('python3',['-c',`import json,runpy,sys\nfrom pathlib import Path\nm=runpy.run_path(sys.argv[1]);root=Path(sys.argv[2]);site=root/'site';scene=root/'scene.json';observation=json.loads((root/'observation.json').read_text());value=m['creation_source'](observation,json.loads(scene.read_text()),site/'snapshot.glb',m['digest'](scene));(site/'creation.json').write_text(json.dumps(value,separators=(',',':'),ensure_ascii=False));files=m['files_in'](site);total=m['stage_bytes'](root);assert total+16384<=m['STAGE_LIMIT'];assert len(value['entities'])==m['MAX_WORLD_ELEMENTS'];assert value['activity']['nodes']['node-game']['play']==observation['nodes']['node-game']['play'];assert len(files)==5;print(json.dumps({'preparedBytes':total,'siteBytes':sum(p.stat().st_size for p in files),'galleryBytes':(site/'gallery.json').stat().st_size,'creationBytes':(site/'creation.json').stat().st_size,'historyLimit':m['HISTORY_LIMIT']}))`,publisher,dir],{encoding:'utf8',timeout:10000,maxBuffer:16384});assert.equal(qualified.status,0,qualified.stderr);
+   t.diagnostic(JSON.stringify({raised,entities:MAX_WORLD_ELEMENTS,snapshotBytes:snapshot.length,sceneBytes:Buffer.byteLength(inputBytes),parts:scene.parts.length,triangles:scene.parts.reduce((n,p)=>n+p.faces.length,0),...JSON.parse(qualified.stdout)}));
+  }finally{rmSync(dir,{recursive:true,force:true});}
+ }
+});

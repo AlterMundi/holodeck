@@ -58,7 +58,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       onUnavailable:()=>say('No pude identificar ese objeto todavía. Probá de nuevo.')});
     worldIndication=new WorldIndication({document,scene:renderer.mmlCompositionScene.group,getState:()=>state,
       set:record=>action('focus.set',record.target,{},record.revision,{selection:record}),
-      clear:record=>action('focus.clear',null,{},record.sequence)});
+      clear:record=>action('focus.clear',null,{},record.sequence),edit:editLight});
     const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
     renderer.render=state=>{nativeAvatarLayer.update();worldIndication?.update();contentVisitor?.update(client.getLocalCharacterState()?.position);playableHUD.update(client.getLocalCharacterState()?.position);render(state);geometryProbe.afterRender();};
     renderer.dispose=()=>{worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();dispose();};
@@ -120,7 +120,10 @@ let worldDocuments={workshop:{url:socket('world')}};
 client.on('configChanged',config=>{
   if(config.mmlDocuments){worldDocuments={...config.mmlDocuments};delete worldDocuments.preview;}
 });
-function say(text){notice.textContent=text;}
+function say(text){
+  if(!$('#creator').hidden){$('#preview-hint').textContent=text;notice.textContent='';}
+  else notice.textContent=text;
+}
 async function api(path,body){
   const response=await fetch(url(`api/${path}`),{method:body===undefined?'GET':'POST',credentials:'same-origin',
     headers:body===undefined?{}:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
@@ -258,7 +261,7 @@ async function action(type,target,args,expectedRevision,{undo=false,selection=nu
   if(pending||preparingAction){say('Primero tengo que confirmar el cambio anterior.');return null;}
   preparingAction=true;let submittedId=null;
   try{
-    const observation=await api('observe',{after:Math.max(0,(state?.sequence??0)-16),displayedSequence:null,maxBytes:12288});
+    const observation=await api('observe',{after:Math.max(0,(state?.sequence??0)-16),displayedSequence:null,maxBytes:32768});
     if(selection&&(observation.run!==selection.run||observation.edition!==selection.edition)){say('El lugar cambió. Elegí el objeto de nuevo.');return null;}
     const previous=observation.entities[target];
     pending={id:crypto.randomUUID(),issuedAt:Date.now(),run:observation.run,edition:observation.edition,observation:observation.id,type,target,args,expectedRevision};
@@ -298,17 +301,33 @@ function movePreview(){
 function closePreview(){
   const old=preview?.blob;preview=null;client.updateConfig({mmlDocuments:worldDocuments});if(old)URL.revokeObjectURL(old);$('#creator').hidden=true;
 }
+function showPreview(){
+  const editing=!!preview?.target;
+  $('#creator-title').textContent=editing?'Editar esta luz':'Una luz para este lugar';
+  $('#creator').setAttribute('aria-label',editing?'Editar una luz':'Crear una luz');
+  $('#preview-hint').textContent=editing?'La vista previa es tuya. Guardar cambia esta misma luz para todos.':'La vista previa es tuya. Al plantar, aparece para todos.';
+  $('#preview-accept').textContent=editing?'Guardar cambios':'Plantar';
+  for(const choice of document.querySelectorAll('[data-color]'))choice.setAttribute('aria-pressed',String(choice.dataset.color===preview.color));
+  notice.textContent='';$('#creator').hidden=false;
+}
+function editLight(record){
+  const entity=state?.entities?.[record.target];
+  if(pending||preparingAction){say('Primero tengo que confirmar el cambio anterior.');return;}
+  if(!entity||entity.deleted||entity.revision!==record.revision||state.run!==record.run||state.edition!==record.edition){say('La luz cambió. Volvé a elegirla.');return;}
+  closePreview();preview={target:record.target,expectedRevision:record.revision,selection:record,x:entity.x,z:entity.z,color:entity.color};
+  previewDocument();showPreview();say('Podés mover esta luz o cambiar su color. Todavía no cambió para los demás.');
+}
 $('#bridge').onclick=()=>state&&action('bridge.set','bridge',{raised:!state.entities.bridge.raised},state.entities.bridge.revision);
-$('#plant').onclick=()=>{if(movePreview()){$('#creator').hidden=false;say('Elegí dónde dejar esta luz. Todavía la ves solamente vos.');}};
+$('#plant').onclick=()=>{closePreview();if(movePreview()){showPreview();say('Elegí dónde dejar esta luz. Todavía la ves solamente vos.');}};
 $('#preview-move').onclick=movePreview;
 $('#preview-cancel').onclick=()=>{closePreview();say('La vista previa quedó descartada.');};
 $('#preview-accept').onclick=async()=>{
   if(!preview)return;
-  const args={x:preview.x,z:preview.z,color:preview.color};
+  const submittedPreview=preview,args={x:preview.x,z:preview.z,color:preview.color};
   $('#preview-accept').disabled=true;
-  const result=await action('garden.place',`garden-${crypto.randomUUID()}`,args,null);
+  const result=await action(preview.target?'garden.update':'garden.place',preview.target||`garden-${crypto.randomUUID()}`,args,preview.expectedRevision??null,{selection:preview.selection??null});
   $('#preview-accept').disabled=false;
-  if(result?.status==='completed')closePreview();
+  if(result?.status==='completed'&&preview===submittedPreview){closePreview();say('El cambio ya forma parte del mundo.');}
 };
 for(const button of document.querySelectorAll('[data-color]'))button.onclick=()=>{
   if(!preview)return;preview.color=button.dataset.color;
@@ -321,6 +340,7 @@ $('#undo').onclick=async()=>{
   if(!entity||state.run!==change.run||entity.revision!==change.appliedRevision){lastChange=null;$('#undo').disabled=true;say('Este lugar volvió a cambiar. No voy a deshacer el trabajo de otra persona.');return;}
   if(change.type==='bridge.set')await action('bridge.set','bridge',{raised:change.previous.raised},entity.revision,{undo:true});
   else if(change.type==='garden.place')await action('garden.remove',change.target,{},entity.revision,{undo:true});
+  else if(change.type==='garden.update'&&change.previous)await action('garden.update',change.target,{x:change.previous.x,z:change.previous.z,color:change.previous.color},entity.revision,{undo:true});
 };
 function openConversation(open){
   const panel=$('#conversation-panel');panel.hidden=!open;$('#talk').setAttribute('aria-expanded',String(open));

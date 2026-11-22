@@ -1,3 +1,4 @@
+import {MAX_WORLD_ELEMENTS} from '../src/world-limits.mjs';
 import {creationContains,LAYOUT_VERSION} from '../src/world-layout.mjs';
 import {workshopColour} from '../src/workshop.mjs';
 /** Freeze creation geometry for the existing GLB viewer/Nexus static3D adapter.
@@ -9,12 +10,13 @@ import {createHash} from 'node:crypto';
 import {BoxGeometry,CylinderGeometry,SphereGeometry,Matrix4,Quaternion,Euler,Vector3,Color} from 'three';
 import {worldDocument} from '../src/world.mjs';
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
+export const SNAPSHOT_MESH_APPROXIMATION=Object.freeze({scope:'Export-only inscribed triangle derivative; analytic parameters are authoritative, not bitwise MML renderer geometry',sphere:{widthSegments:12,heightSegments:8,maxRelativeRadialError:.06},cylinder:{radialSegments:16}});
 export function exportWorldSnapshot(observation,scenery){
  if(observation?.schema!=='holodeck.situation/v1'||observation.place?.id!=='island-workshop'
   ||typeof observation.run!=='string'||observation.edition!=='island-workshop@draft-1'
   ||!Number.isSafeInteger(observation.source?.through)||observation.source.through<0||typeof observation.entities?.bridge?.raised!=='boolean'
   ||!Number.isSafeInteger(observation.entities.bridge.revision)||observation.entities.bridge.revision<0
-  ||Object.keys(observation.entities).length>32)throw Error('Select a bounded workshop situation');
+  ||Object.keys(observation.entities).length>MAX_WORLD_ELEMENTS)throw Error('Select a bounded workshop situation');
  for(const [id,entity]of Object.entries(observation.entities))if(id!=='bridge'){
   if(!/^garden-[a-z0-9-]{1,40}$/.test(id)||!Number.isFinite(entity.x)||!Number.isFinite(entity.z)
    ||!creationContains(entity.x,entity.z)||!workshopColour(entity.color)
@@ -32,17 +34,17 @@ export function exportWorldSnapshot(observation,scenery){
  document.asset.copyright='2026 Holodeck contributors; original workshop art under MIT';
  document.extras={holodeck:{schema:'holodeck.content-snapshot/v1',run:observation.run,edition:observation.edition,
   semanticSequence:observation.source.through,observation:observation.id,normalizedObservationSha256:digest(JSON.stringify(observation)),
-  scenerySha256:digest(scenery),authoredProjectionSha256:digest(markup),meaning:'Creation geometry from the selected authored source and captured semantic state; not running-world replay or a human-view capture',participantsExported:false}};
+  scenerySha256:digest(scenery),authoredProjectionSha256:digest(markup),meaning:'Creation geometry from the selected authored source and captured semantic state; not running-world replay or a human-view capture',participantsExported:false,meshApproximation:SNAPSHOT_MESH_APPROXIMATION}};
  function node(value,parent){const id=document.nodes.length;document.nodes.push(value);if(parent===null)document.scenes[0].nodes.push(id);else(document.nodes[parent].children??=[]).push(id);return id;}
  function data(array){const bytes=Buffer.from(array.buffer,array.byteOffset,array.byteLength);const id=document.bufferViews.length;document.bufferViews.push({buffer:0,byteOffset:offset,byteLength:bytes.length});chunks.push(bytes);offset+=bytes.length;return id;}
- function mesh(geometry,color,world,parent,name){
+ function mesh(geometry,color,world,parent,name,analyticPrimitive=null){
   const g=(geometry.index?geometry.toNonIndexed():geometry).applyMatrix4(world);g.computeVertexNormals();
   const position=g.attributes.position.array,normal=g.attributes.normal.array,mins=[Infinity,Infinity,Infinity],maxs=[-Infinity,-Infinity,-Infinity];
   position.forEach((value,index)=>{mins[index%3]=Math.min(mins[index%3],value);maxs[index%3]=Math.max(maxs[index%3],value);});
   const p=document.accessors.length;document.accessors.push({bufferView:data(position),componentType:5126,count:position.length/3,type:'VEC3',min:mins,max:maxs});
   const n=document.accessors.length;document.accessors.push({bufferView:data(normal),componentType:5126,count:normal.length/3,type:'VEC3'});
   const c=new Color(color),material=document.materials.length;document.materials.push({pbrMetallicRoughness:{baseColorFactor:[c.r,c.g,c.b,1],metallicFactor:0,roughnessFactor:.85}});
-  const index=document.meshes.length;document.meshes.push({primitives:[{attributes:{POSITION:p,NORMAL:n},material}]});node({name,mesh:index},parent);g.dispose();
+  const index=document.meshes.length;document.meshes.push({primitives:[{attributes:{POSITION:p,NORMAL:n},material}]});node({name,mesh:index,...(analyticPrimitive?{extras:{analyticPrimitive}}:{})},parent);g.dispose();
  }
  const stack=[{node:null,world:new Matrix4()}];let count=0;
  for(const match of markup.matchAll(/<(\/?)(m-[a-z-]+)\b([^>]*)>/g)){
@@ -64,9 +66,9 @@ export function exportWorldSnapshot(observation,scenery){
   let geometry;
   if(tag==='m-cube')geometry=new BoxGeometry(number('width',1),number('height',1),number('depth',1));
   else if(tag==='m-cylinder')geometry=new CylinderGeometry(number('radius',1),number('radius',1),number('height',1),16);
-  else if(tag==='m-sphere')geometry=new SphereGeometry(number('radius',1),16,12);
+  else if(tag==='m-sphere')geometry=new SphereGeometry(number('radius',1),SNAPSHOT_MESH_APPROXIMATION.sphere.widthSegments,SNAPSHOT_MESH_APPROXIMATION.sphere.heightSegments);
   else throw Error('Unsupported snapshot primitive');
-  mesh(geometry,attrs.color||'#ffffff',world,current.node,attrs.id||`${tag.slice(2)}-${++count}`);
+  mesh(geometry,attrs.color||'#ffffff',world,current.node,attrs.id||`${tag.slice(2)}-${++count}`,tag==='m-sphere'?{kind:'sphere',radius:number('radius',1),center:new Vector3().setFromMatrixPosition(world).toArray()}:null);
  }
  document.buffers=[{byteLength:offset}];
  let json=Buffer.from(JSON.stringify(document));json=Buffer.concat([json,Buffer.alloc((4-json.length%4)%4,0x20)]);

@@ -1,3 +1,4 @@
+import {MAX_WORLD_ELEMENTS} from './world-limits.mjs';
 // Geometry recipe for this selected workshop, not a universal scene language.
 // Server serialization and client application checks share the same authored
 // mapping, while the client verifies the actual MML/Three objects independently.
@@ -27,7 +28,7 @@ export function workshopProjection(entities){
     result.push({id,revision:e.revision,deleted:false,nodes:[node(`${id}-base`,'cylinder',[e.x,.24,e.z],[.32,.28],'#d3c19b'),
       node(`${id}-stem`,'cylinder',[e.x,.51,e.z],[.065,.3],'#bc8355'),node(`${id}-light`,'sphere',[e.x,.9,e.z],[.34],color)]});
   }
-  if(result.length>32)throw Error('Workshop entity bound exceeded');
+  if(result.length>MAX_WORLD_ELEMENTS)throw Error('Workshop entity bound exceeded');
   return result;
 }
 export const attribute=value=>String(value).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');

@@ -6,6 +6,28 @@ receiving publication/review and human acceptance remain distinct.
 The existing [snapshot exporter](content-snapshots.md) freezes creation geometry;
 a save, a static snapshot, a review edition and a published selection are distinct.
 
+## Current draft and independently published selection —22November
+
+The same model resource5764af7b14a041a68eb35db248ed5417 now has review draft
+`e66a4961ac675945f4f89baaf8d18f0ad2f8fa26fb558152df5d99c83912240a`,
+model `holodeck-workshop`/`2fc5dceff4ea08575964c32238d2609aac41893cc0d08b14db47cc75522e2cfb`.
+It freezes the redesigned archipelago at the explicitly selected observation
+seq127, rather than claiming the running world has remained unchanged. The
+109-part static model and sanitized activity source retain two node definitions
+(one cooperative game and one declared result). Activity metadata is not an
+executable world replay or a grant to the referenced result.
+
+All five immutable HTTPS files match their publication hashes. The actual hosted
+viewer hydrated109parts, toggled108/109 and made no automatic current-version
+lookup. The old pinned viewer still hydrated106parts with exact historical bytes.
+The independent published entrance57e5fe25924a42d2b1df869fff81cac3 still redirects
+to539aeebd…; it was not promoted or relabeled. All retain the same fourteen readers.
+History uses14,378,815B of the200MiB budget. The temporary own-being reader was
+revoked after verification. These are technical receiving observations, not a
+new human review. A successor Nexus table/association and a distinct in-world
+draft entrance remain unfinished; the published node continues to pin the old
+edition. The older delivery sections below retain their dated evidence.
+
 ## Existing supported operations
 
 **Homes publication.** The installed `daimon-home` writer is
@@ -122,6 +144,39 @@ This manual cycle supports local drafts, explicit publication and exact
 historical review. The qualified link entrance below can select a pinned edition
 while review content advances under the same compatible resource audience. It
 does not supply the broader private-candidate/public-release lifecycle.
+
+## Shared-capacity export derivative
+
+The entity ceiling is read from the same `src/world-capacity.json` as Room and
+projection: currently32 total entities, including bridge and31 lights. Snapshot
+and publisher guards consume this value rather than another literal limit. The
+2MiB GLB,8MiB scene,256 parts/50,000 triangles,16MiB complete preparation stage and
+200MiB retained project-history ceilings are unchanged.
+
+New static snapshots tessellate spheres at12 longitude ×8 latitude segments,
+without changing their analytic radius, centre, colour, semantic entity/part IDs
+or source/projection hashes. GLB extras retain those analytic sphere parameters
+and declare the export-only mesh approximation; review-source metadata carries
+the same declaration. Actual GLTFLoader checks retain axis bounds and outward
+winding. Measured maximum radial face deviation is5.143% of sphere radius,
+within the declared6% bound. This triangle derivative is not bitwise MML renderer
+geometry; the captured editable parameters remain authoritative. Cylinders keep
+the existing16-segment export derivative. Historical published bytes are untouched.
+
+The current506528-byte scenery and actual32-entity fixtures with maximum-length
+light IDs were qualified for both bridge states through the real installed
+review builder and publisher file validator. Lowered:1,273,604-byte GLB,
+2,930,245-byte scene,115 parts/16,244 triangles and7,230,457-byte complete prep.
+Raised:1,318,596-byte GLB,3,032,097-byte scene,125 parts/16,780 triangles and
+7,479,671-byte complete prep. The five-file sites occupy4,281,606/4,428,779 bytes.
+Activity recipes remain outside static geometry and are retained in creation.json.
+These are bounded controlled format/builder checks, not a shared human trial.
+
+The proposed64-entity count was not selected because its complete canonical
+native context exceeded the existing32KiB bound. Its successful export-only
+measurement is retained as audit evidence, not runtime/recovery support. Current
+entity/restore capacity remains32; this exporter change requires no64-capacity
+recovery selection and never restores old world data to force software rollback.
 
 ## Editable activity source alongside the static review
 

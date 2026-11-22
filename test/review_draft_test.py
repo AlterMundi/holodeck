@@ -215,3 +215,22 @@ class ActivitySourceContracts(unittest.TestCase):
             with patch('sys.argv', argv), patch.object(module.subprocess, 'run') as writer:
                 with self.assertRaisesRegex(ValueError, 'same frozen creation'):module.main()
                 writer.assert_not_called()
+
+
+class SharedWorldCapacityContracts(unittest.TestCase):
+    def test_publisher_uses_shared_capacity_and_keeps_old_sources_and_exact_byte_limits(self):
+        capacity = json.loads((Path(__file__).parents[1] / 'src/world-capacity.json').read_text())['elements']
+        self.assertEqual(module.MAX_WORLD_ELEMENTS, capacity)
+        self.assertEqual(module.STAGE_LIMIT, 16 * 1024 * 1024)
+        self.assertEqual(module.HISTORY_LIMIT, 200 * 1024 * 1024)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary);site, selected = ActivitySourceContracts().prepared(root)
+            for i in range(capacity - 1):
+                ident = 'garden-' + str(i).ljust(40, 'x')
+                selected['entities'][ident] = {'id': ident, 'revision': 1, 'x': 22, 'z': 1, 'color': 'mint'}
+            (site / 'creation.json').write_text(json.dumps(selected))
+            self.assertEqual(len(selected['entities']), capacity)
+            self.assertEqual(len(module.files_in(site)), 5)
+            selected['entities']['garden-overflow'] = {'id': 'garden-overflow', 'revision': 1, 'x': 22, 'z': 1, 'color': 'mint'}
+            (site / 'creation.json').write_text(json.dumps(selected))
+            with self.assertRaises(ValueError):module.files_in(site)

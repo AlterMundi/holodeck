@@ -21,6 +21,7 @@ CREATION_FIELDS = {'schema', 'run', 'edition', 'sourceObservation', 'semanticSeq
                    'snapshotSha256', 'scenerySha256', 'authoredProjectionSha256', 'sceneSha256', 'scope'}
 OPTIONAL_CREATION_FIELDS = {'excludedEnvironment', 'activity'}
 ACTIVITY_BYTES = 16 * 1024
+MAX_WORLD_ELEMENTS = json.loads((Path(__file__).resolve().parents[1] / 'src/world-capacity.json').read_text())['elements']
 
 
 def closed(value, fields):
@@ -190,7 +191,7 @@ def files_in(site):
     creation = load(site / 'creation.json', 131072)
     if (set(creation) - OPTIONAL_CREATION_FIELDS != CREATION_FIELDS or creation.get('schema') != 'holodeck.creation-source/v1'
             or creation.get('snapshotSha256') != digest(site / 'snapshot.glb')
-            or not isinstance(creation['entities'], dict) or not 1 <= len(creation['entities']) <= 32
+            or not isinstance(creation['entities'], dict) or not 1 <= len(creation['entities']) <= MAX_WORLD_ELEMENTS
             or not isinstance(creation['parts'], list) or not 1 <= len(creation['parts']) <= 256):
         raise ValueError('The creation source does not match its frozen snapshot')
     for entity in creation['entities'].values():

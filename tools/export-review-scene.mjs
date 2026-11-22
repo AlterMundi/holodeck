@@ -72,7 +72,7 @@ export async function exportReviewScene(observation,scenery,{includeAmbientEnvir
    semanticSequence:observation.source.through,sourceUnits:'m',displayUnits:'mm',scale:1000,sourceUp:'Y',displayUp:'Z',
    displayFromWorld:[[1000,0,0,0],[0,0,-1000,0],[0,1000,0,0],[0,0,0,1]],
    evidence:'Captured semantic state projected through the selected authored source; not a running simulation or human-view capture.',
-   snapshotSha256:sha(glb),scenerySha256:sha(scenery),authoredProjectionSha256:snapshotSource.authoredProjectionSha256,parts:references,excludedEnvironment};
+   snapshotSha256:sha(glb),scenerySha256:sha(scenery),authoredProjectionSha256:snapshotSource.authoredProjectionSha256,meshApproximation:snapshotSource.meshApproximation,parts:references,excludedEnvironment};
   if(!parts.length||Buffer.byteLength(JSON.stringify(scene))>8*1024*1024)throw Error('Review scene exceeds its eight-MiB bound');
   return {scene,source};
  }finally{

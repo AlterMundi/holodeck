@@ -1,3 +1,4 @@
+import {MAX_WORLD_ELEMENTS} from './world-limits.mjs';
 import {creationContains} from './world-layout.mjs';
 import {workshopColour} from './workshop.mjs';
 const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join(',')===keys;
@@ -9,7 +10,7 @@ export function validSignalGarden(play){
   &&target.radius>=.4&&target.radius<=1.5&&creationContains(target.x,target.z,target.radius)&&workshopColour(target.color));
 }
 export function validEntityEditors(editors,entities){
- return editors&&typeof editors==='object'&&!Array.isArray(editors)&&Object.keys(editors).length<=32&&Object.entries(editors).every(([id,stamp])=>entities?.[id]
+ return editors&&typeof editors==='object'&&!Array.isArray(editors)&&Object.keys(editors).length<=MAX_WORLD_ELEMENTS&&Object.entries(editors).every(([id,stamp])=>entities?.[id]
   &&exact(stamp,'actorRef,revision')&&typeof stamp.actorRef==='string'&&stamp.actorRef.length>0&&stamp.actorRef.length<=200
   &&Number.isSafeInteger(stamp.revision)&&stamp.revision>=1&&stamp.revision<=entities[id].revision);
 }

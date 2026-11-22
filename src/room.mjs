@@ -1,3 +1,4 @@
+import {MAX_WORLD_ELEMENTS,DEFAULT_OBSERVATION_BYTES,MAX_OBSERVATION_BYTES,OBSERVATION_CACHE_BYTES} from './world-limits.mjs';
 import {creationContains} from './world-layout.mjs';
 import {validEntityEditors} from './playable-creations.mjs';
 import {MAX_CONTENT_NODES,contentNodeId,validNodeData,validStoredNode,nodeState} from './content-nodes.mjs';
@@ -10,7 +11,7 @@ import {MAX_FOCUS,focusState,validFocusEntry} from './focus.mjs';
 import {validateContentNodes} from './content-visits.mjs';
 
 export const LIMITS = Object.freeze({ events: 256, commands: 256, observations: 128,
-  sessions: 8, elements: 32, retryMs: 300000 });
+  sessions: 8, elements: MAX_WORLD_ELEMENTS, retryMs: 300000 });
 const clone = value => structuredClone(value);
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 export class RoomError extends Error {
@@ -43,12 +44,12 @@ export class Room extends EventEmitter {
       outcomes:[...this.outcomes],observations:[...this.observations],projections:[...this.projections],focuses:[...this.focuses],nodes:this.nodes,entityEditors:this.entityEditors});
   }
 
-  restore(state) {
+  restore(state,{trimObservations=true}={}) {
     if(state?.schema!=='holodeck.room-save/v1'||typeof state.run!=='string'||typeof state.edition!=='string'
       || !Number.isSafeInteger(state.sequence)||state.sequence<0
       || !Array.isArray(state.events)||state.events.length>LIMITS.events
       || !Array.isArray(state.outcomes)||state.outcomes.length>LIMITS.commands
-      || !Array.isArray(state.observations)||state.observations.length>LIMITS.observations
+      || !Array.isArray(state.observations)
       || !Array.isArray(state.projections)||state.projections.length>LIMITS.sessions
       || (state.focuses!==undefined&&(!Array.isArray(state.focuses)||state.focuses.length>MAX_FOCUS||state.focuses.some(entry=>!Array.isArray(entry)||entry.length!==2||!validFocusEntry(entry)||entry[1].sequence>state.sequence)))
       || (state.nodes!==undefined&&(!state.nodes||typeof state.nodes!=='object'||Array.isArray(state.nodes)||Object.keys(state.nodes).length>MAX_CONTENT_NODES||Object.entries(state.nodes).some(([id,node])=>!validStoredNode(node,id))))
@@ -59,6 +60,22 @@ export class Room extends EventEmitter {
     this.edition=copy.edition;this.run=copy.run;this.sequence=copy.sequence;
     this.events=copy.events;this.entities=copy.entities;
     this.outcomes=new Map(copy.outcomes);this.observations=new Map(copy.observations);this.projections=new Map(copy.projections);this.focuses=new Map(copy.focuses||[]);this.nodes=copy.nodes||{};this.entityEditors=copy.entityEditors||{};
+    if(trimObservations)this.trimObservations();
+  }
+
+  // Read captures are disposable command evidence, never action outcomes. Keep
+  // their independent byte/count/age bounds on both legacy load and new reads.
+  trimObservations() {
+    const now=this.clock();
+    for(const [id,item] of this.observations){
+      if(!item||!Number.isFinite(item.capturedAt)||now-item.capturedAt>LIMITS.retryMs
+        ||Buffer.byteLength(JSON.stringify(item))>MAX_OBSERVATION_BYTES)this.observations.delete(id);
+    }
+    const oldest=[...this.observations].sort((a,b)=>a[1].capturedAt-b[1].capturedAt);
+    while(this.observations.size>LIMITS.observations
+      ||Buffer.byteLength(JSON.stringify([...this.observations]))>OBSERVATION_CACHE_BYTES){
+      this.observations.delete(oldest.shift()[0]);
+    }
   }
 
   atomic(operation) {
@@ -72,7 +89,7 @@ export class Room extends EventEmitter {
       changes=this.pendingChanges;
     } catch(error) {
       if(error.commitUncertain)this.commitUncertain=true;
-      else this.restore(before);
+      else this.restore(before,{trimObservations:false});
       throw error;
     }
     finally {this.pendingChanges=null;}
@@ -96,15 +113,13 @@ export class Room extends EventEmitter {
 
   observe(actor, query = {}) { return this.atomic(()=>this.capture(actor,query)); }
 
-  capture(actor, { after = 0, displayedSequence = null, maxBytes = null, preserveActors = [] } = {}) {
+  capture(actor, { after = 0, displayedSequence = null, maxBytes = DEFAULT_OBSERVATION_BYTES, preserveActors = [] } = {}) {
     if (!actor?.rights?.includes('observe')) throw new RoomError('forbidden', 'Room access required');
     if (!Number.isSafeInteger(after) || after < 0 || after > this.sequence)
       throw new RoomError('cursor', 'Invalid semantic cursor');
     if (displayedSequence !== null && (!Number.isSafeInteger(displayedSequence) || displayedSequence < 0 || displayedSequence > this.sequence))
       throw new RoomError('cursor', 'Invalid displayed cursor');
     const now = this.clock();
-    for (const [id, item] of this.observations) if (now - item.capturedAt > LIMITS.retryMs) this.observations.delete(id);
-    if (this.observations.size >= LIMITS.observations) throw new RoomError('capacity', 'Observation capacity reached');
     const observation = { schema: 'holodeck.situation/v1', id: randomUUID(),
       run: this.run, edition: this.edition, capturedAt: now,
       observer: actor.id, scope: 'structured-room-overview',
@@ -117,8 +132,9 @@ export class Room extends EventEmitter {
       events: clone(this.events.filter(event => event.sequence > after)),
       uncertainty: ['Displayed state does not establish attention or understanding.'] };
     if(!Array.isArray(preserveActors)||preserveActors.length>1||preserveActors.some(ref=>typeof ref!=='string'||ref.length>200))throw new RoomError('cursor','Invalid capture preservation');
-    if(maxBytes!==null&&!fitSituation(observation,maxBytes,{preserveActors}))throw new RoomError('capacity','The canonical situation exceeds this capture bound');
+    if(!fitSituation(observation,maxBytes??DEFAULT_OBSERVATION_BYTES,{preserveActors}))throw new RoomError('capacity','The canonical situation exceeds this capture bound');
     this.observations.set(observation.id, observation);
+    this.trimObservations();
     return clone(observation);
   }
 

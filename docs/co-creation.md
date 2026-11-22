@@ -142,3 +142,17 @@ a human's content discovery uses, with creator-declared verification explicit.
 Spatial MML and generic broadcast events retain only public labels, identities
 and selection hashes. The protected Nexus descriptor/viewer remains the authority
 for actual edition validity and access; a referenced result is not model uptake.
+
+## Editing an existing shared light
+
+Selecting a current light offers **Editar luz**, alongside the independent
+**Señalar** action. Editing starts a private preview at the light's existing
+position/colour. Cancel leaves canonical state unchanged; **Mover acá** moves
+only that preview, and **Guardar cambios** updates the same entity identity.
+Creation uses the separate **Plantar** action. Both humans and native creators
+use the existing typed `garden.update` operation and target revision checks.
+
+Undo restores the preceding position/colour only while the applied revision is
+still current. A concurrent edit rejects the old preview rather than replacing
+another participant's work. The preview cannot silently create another light;
+editing remains possible when the authored-element capacity is full.

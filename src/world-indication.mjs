@@ -41,9 +41,10 @@ export class PublicWorldPicker{
  dispose(){for(const[type,listener]of [['pointerdown',this.down],['pointermove',this.move],['pointerup',this.up],['pointercancel',this.cancel]])this.canvas.removeEventListener(type,listener);this.cancel();}
 }
 export class WorldIndication{
- constructor({document,scene,getState,set,clear}){
-  Object.assign(this,{document,scene,getState,set,clear});this.selected=null;this.panel=document.querySelector('#pointing');this.send=document.querySelector('#point-send');this.cancel=document.querySelector('#point-clear');
+ constructor({document,scene,getState,set,clear,edit}){
+  Object.assign(this,{document,scene,getState,set,clear,edit});this.selected=null;this.panel=document.querySelector('#pointing');this.send=document.querySelector('#point-send');this.cancel=document.querySelector('#point-clear');this.editButton=document.querySelector('#point-edit');
   this.send.onclick=async()=>{if(this.selected)await set(this.selected);};
+  if(this.editButton)this.editButton.onclick=()=>{if(this.editable())edit?.(this.selected);};
   this.cancel.onclick=async()=>{this.selected=null;this.removeOutline();const own=this.own();if(own)await clear(own);this.update();};
  }
  own(){const state=this.getState();return state?.focus?.find(signal=>signal.actor===state.actorRef);}
@@ -53,6 +54,7 @@ export class WorldIndication{
   const s=this.selected,root=this.document.querySelector('m-group#workshop');if(!s||!root)return false;
   return !!s.element?.isConnected&&root.contains(s.element)&&s.element.getContainer()===s.container&&root.getAttribute('data-run')===s.run&&root.getAttribute('data-edition')===s.edition&&root.querySelector(`[id="${s.target}"]`)?.getAttribute('data-entity-revision')===String(s.revision);
  }
+ editable(){const s=this.selected,entity=this.getState()?.entities?.[s?.target];return !!this.edit&&this.current()&&s.target.startsWith('garden-')&&!!entity&&!entity.deleted&&entity.revision===s.revision;}
  update(){
   const state=this.getState(),own=this.own(),selected=this.selected,current=this.current();
   const shared=current&&own?.target===selected.target&&own.revision===selected.revision&&own.status==='current';
@@ -62,6 +64,7 @@ export class WorldIndication{
   const message=selected&&!shared?(current?`Elegiste ${entityLabel(selected.target)}.`:'El objeto cambió. Volvé a elegirlo.'):
    own?(own.status==='current'?`Compartiste ${entityLabel(own.target)} como referencia.`:own.status==='deleted'?'El objeto que señalaste fue retirado.':'El objeto que señalaste cambió.'):'';
   this.document.querySelector('#point-label').textContent=message;this.send.hidden=!selected||!current||shared;this.cancel.textContent=own?'Dejar de señalar':'Cancelar';
+  if(this.editButton)this.editButton.hidden=!this.editable();
   const active=this.document.activeElement;if((this.panel.hidden&&this.panel.contains(active))||(this.send.hidden&&active===this.send))active?.blur();
   if(state&&selected&&state.run!==selected.run){this.selected=null;this.removeOutline();}
  }

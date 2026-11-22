@@ -24,9 +24,18 @@ export function captureNativeSituation(room,actor,request,{pairedBeing=null,pair
     extra.clientReportedView={evidence:'client-reported-at-interaction-capture',value:structuredClone(request.view),
       uncertainty:'Client-reported scene-graph/DOM evidence only, including any appliedGeometry field. Not presented pixels, authoritative location, line of sight, attention or understanding. A not-in-document entity reference proves DOM absence only.'};
   }
+  // Keep the canonical world and exact speaker/paired indications ahead of an
+  // optional client-reported view. The cached capture never contains this view.
+  const reserve={inputAssociation:extra.inputAssociation};
   const observation=room.observe(actor,{after:Math.max(0,room.sequence-16),displayedSequence:request.displayedSequence??null,
-    maxBytes:MAX_OBSERVATION_BYTES-Buffer.byteLength(encode(extra))-256,preserveActors});
+    maxBytes:MAX_OBSERVATION_BYTES-Buffer.byteLength(encode(reserve))-256,preserveActors});
   Object.assign(observation,extra);observation.source.pairFocusBinding=pairedBeing?pairFocusBinding:'unavailable-at-capture';
+  if(!fitSituation(observation,MAX_OBSERVATION_BYTES,{preserveActors})&&observation.clientReportedView){
+    const omittedBytes=Buffer.byteLength(encode(observation.clientReportedView.value));
+    observation.clientReportedView={evidence:'client-reported-view-omitted-to-fit-context',value:null,
+      uncertainty:'The optional client-reported view is unavailable in this capture; no visual perception or attention is established.'};
+    observation.source.omissions.clientReportedViewBytes=omittedBytes;
+  }
   if(!fitSituation(observation,MAX_OBSERVATION_BYTES,{preserveActors}))
     throw new NativeConversationError('context-capacity','The canonical captured situation exceeds the native context bound',{retained:false,knownNotSubmitted:true,retryable:true});
   return observation;

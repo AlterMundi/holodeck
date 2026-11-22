@@ -1,9 +1,10 @@
+import {MAX_WORLD_ELEMENTS} from './world-limits.mjs';
 // Authored opt-in workshop sound. Owns one WebAudio context and no device input,
 // voice, network, media file or model activity. Never replays snapshot history.
 const GAP_MS=5000,COOLDOWN_SECONDS=.35,MAX_CUE_NODES=4;
 function snapshot(state){
   if(!state||typeof state.run!=='string'||typeof state.edition!=='string'||!Number.isSafeInteger(state.sequence)||state.sequence<0)return null;
-  const entries=Object.entries(state.entities||{});if(entries.length>32)return null;
+  const entries=Object.entries(state.entities||{});if(entries.length>MAX_WORLD_ELEMENTS)return null;
   const bridge=state.entities?.bridge;
   if(!bridge||!Number.isSafeInteger(bridge.revision)||bridge.revision<0||typeof bridge.raised!=='boolean')return null;
   const garden=new Map();
