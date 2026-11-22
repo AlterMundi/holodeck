@@ -74,7 +74,11 @@ Previous frozen observations remain unchanged.
 ## Experience and bounds
 
 The authored MML node has a natural Spanish instruction/status, coloured ground
-targets and matching/completion markers. Humans use the existing Plant/preview
+targets and matching/completion markers. A nearest-activity HUD mirrors that
+same authoritative title/status; “Cómo jugar” expands its instruction so scene
+geometry and nameplates cannot obscure the only explanation. It closes its
+details when the nearest activity changes and yields to creation, conversation,
+pointing and an expanded content viewer. It computes no independent score. Humans use the existing Plant/preview
 and bridge controls; native actors use the same actual typed garden/bridge
 operations, not emulated controls. Markers/progress are a one-way projection of
 Room and are not themselves a rendered-frame or human-acceptance receipt. Game

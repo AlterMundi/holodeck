@@ -6,6 +6,7 @@ import { saveIntent, loadIntent, archiveIntent, sameActor, nativeRetryRoute } fr
 import { NativeAvatarLayer } from './native-avatar.mjs';
 import {PublicWorldPicker,WorldIndication} from './world-indication.mjs';
 import { ContentVisitor } from './content-visitor.mjs';
+import { PlayableHUD } from './playable-hud.mjs';
 import { AppliedGeometryProbe } from './applied-geometry.mjs';
 import { SharedConversationHost } from './shared-conversation-host.mjs';
 import { WorldAudio } from './world-audio.mjs';
@@ -16,7 +17,7 @@ const socket=path=>{const target=url(path);target.protocol=location.protocol==='
 // MML captures document keys by default. Preserve ordinary text editing and
 // keyboard activation of the HUD without turning typed words into locomotion.
 document.addEventListener('keydown',event=>{
-  if(event.target instanceof Element&&event.target.closest('textarea,input,button,select,[contenteditable="true"]')){
+  if(event.target instanceof Element&&event.target.closest('textarea,input,button,summary,select,[contenteditable="true"]')){
     event.stopImmediatePropagation();
     if(event.key==='Escape'){event.preventDefault();event.target.blur();openConversation(false);}
   }
@@ -30,6 +31,7 @@ const touchControls={
   },
   dispose(){this.delegate?.dispose();this.holder?.remove();}
 };
+const playableHUD=new PlayableHUD(document);
 let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null;
 const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
   sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket('network'),waitForWorldConfig:true,
@@ -54,7 +56,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       set:record=>action('focus.set',record.target,{},record.revision,{selection:record}),
       clear:record=>action('focus.clear',null,{},record.sequence)});
     const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
-    renderer.render=state=>{nativeAvatarLayer.update();worldIndication?.update();contentVisitor?.update(client.getLocalCharacterState()?.position);render(state);geometryProbe.afterRender();};
+    renderer.render=state=>{nativeAvatarLayer.update();worldIndication?.update();contentVisitor?.update(client.getLocalCharacterState()?.position);playableHUD.update(client.getLocalCharacterState()?.position);render(state);geometryProbe.afterRender();};
     renderer.dispose=()=>{worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();dispose();};
     queueMicrotask(options.onInitialized);
     return renderer;
@@ -217,7 +219,7 @@ async function refresh(){
   let incoming;
   try{incoming=await api('state');}catch(error){if(request!==stateRequest)return;worldAudio.breakContinuity();throw error;}
   if(!snapshotMayApply(state,incoming,request,stateRequest))return;
-  state=incoming;contentVisitor.syncNodes(state.nodes);worldAudio.observe(state,{continuityVersion});
+  state=incoming;contentVisitor.syncNodes(state.nodes);playableHUD.sync(state.nodes);worldAudio.observe(state,{continuityVersion});
   const count=client.getCharacterStates().size;
   $('#people').textContent=count>1?`${count} exploradores en el taller`:'Un lugar para crear juntos';
   const compact=window.matchMedia('(max-width:740px)').matches;
