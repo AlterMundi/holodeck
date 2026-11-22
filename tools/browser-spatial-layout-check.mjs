@@ -9,6 +9,7 @@ import {join} from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
 const {createHolodeck}=await import(process.env.HOLODECK_SERVER_MODULE||new URL('../src/server.mjs',import.meta.url).href);
 const execute=promisify(execFile),wait=ms=>new Promise(r=>setTimeout(r,ms));
+const housesOnly=process.env.HOLODECK_HOUSES_ONLY==='1';
 const clickOnly=process.env.HOLODECK_SPATIAL_CLICK_ONLY==='1',surfacesOnly=process.env.HOLODECK_SPATIAL_SURFACES_ONLY==='1';
 const directory=process.env.HOLODECK_EVIDENCE_DIR;if(!directory)throw Error('Select bounded evidence directory');
 const cdpOrigin='http://127.0.0.1:18943',worldOrigin='http://127.0.0.1:18944';
@@ -67,7 +68,10 @@ async function shot(v,name,{mobile=false,angle=Math.PI/2,aerial=false}={}){
 }
 try{
  await mkdir(directory,{recursive:true});
- const geometryBytes=await readFile(process.env.HOLODECK_GEOMETRY_FILE),geometry=JSON.parse(geometryBytes);
+ const geometryBytes=housesOnly
+  ? Buffer.from(JSON.stringify({entities:{bridge:{id:'bridge',revision:0,raised:false}}}))
+  : await readFile(process.env.HOLODECK_GEOMETRY_FILE);
+ const geometry=JSON.parse(geometryBytes);
  const contentNodes=process.env.HOLODECK_CONTENT_NODES_FILE?JSON.parse(await readFile(process.env.HOLODECK_CONTENT_NODES_FILE)):undefined;
  runtime=await createHolodeck({stateDir,publicOrigin:worldOrigin,contentNodes,ownNative:true,worldSocket:socketPath,worldSocketBeingRef:being,
   identityResolver:async req=>req.headers.cookie?.includes('fixture_player=a')?{id:'human:spatial-fixture-a',ref:'human:spatial-fixture-a',kind:'human',rights:['observe','edit','project']}:null,
@@ -78,13 +82,39 @@ try{
  runtime.app.get('/fixture-three-core.mjs',async(_req,res)=>{res.type('text/javascript').send(await readFile(new URL('../node_modules/three/build/three.core.js',import.meta.url),'utf8'));});
  listener=runtime.app.listen(18944,'127.0.0.1');await new Promise((r,j)=>{listener.once('listening',r);listener.once('error',j)});
  browser=await connection((await(await fetch(cdpOrigin+'/json/version')).json()).webSocketDebuggerUrl);
+ if(!housesOnly){
  for(const args of [
   {title:'Jardín de señales',shape:'pedestal',position:{x:22,z:4},play:{schema:'signal-garden/v1',targets:[{x:19,z:-1,radius:1,color:'violet'},{x:25,z:-1,radius:1,color:'amber'}],minContributors:2,requiredBridgeRaised:true},links:[]},
   {title:'Obra compartida',shape:'portal',position:{x:-25,z:-2},result:{pin:{tableId:'spatial-fixture',reportId:'spatial-report',revision:'edition-one'}},links:[]}
  ]){const observation=await native('observe');const outcome=await native('act',{id:randomUUID(),issuedAt:Date.now(),run:observation.run,edition:observation.edition,observation:observation.id,type:'node.place',target:args.play?'node-spatial-game':'node-spatial-result',expectedRevision:null,args});if(outcome.status!=='completed')throw Error('Fixture node refused '+JSON.stringify(outcome));}
  const previous=geometry.entities['garden-compaii-first-signal'];if(previous.x!==19||previous.z!==-1){const o=await native('observe');const moved=await native('act',{id:randomUUID(),issuedAt:Date.now(),run:o.run,edition:o.edition,observation:o.id,type:'garden.update',target:previous.id,expectedRevision:previous.revision,args:{x:19,z:-1,color:previous.color}});if(moved.status!=='completed')throw Error('Local own-signal move failed');}
+ }
  const v=await visitor('a',false);await wait(700);
- if(surfacesOnly){
+ if(housesOnly){
+  const seen=await native('observe');
+  const id=seen.place.housing.ownHouse;
+  const outcome=await native('act',{
+   id:randomUUID(),issuedAt:Date.now(),run:seen.run,edition:seen.edition,
+   observation:seen.id,type:'house.claim',target:id,expectedRevision:null,
+   args:{parcel:'parcel-east-1',facade:{title:'Casa del atlas',color:'#526779',width:3.2,depth:1.6,height:2.2}},
+  });
+  if(outcome.status!=='completed')throw Error('House claim failed '+JSON.stringify(outcome));
+  await until(()=>v.evaluate(`document.querySelector('#${id}')?.getAttribute('data-house-revision')==='1'`),10000,'owner facade projection');
+  const locator=await v.evaluate(`(async()=>{
+    const headers={Authorization:'Bearer '+window.SESSION_TOKEN};
+    const response=await fetch('/api/places/${id}',{headers});
+    return {status:response.status, house:(await response.json()).house};
+  })()`);
+  if(locator.status!==200||locator.house?.id!==id||locator.house.owner!==being)
+    throw Error('Protected durable house address did not resolve '+JSON.stringify(locator));
+  await walk(v,0,10.8,'arrival to house connector');
+  await walk(v,0,15.5,'connected house commons');
+  await walk(v,2.15,15.5,'public approach to owned facade');
+  await shot(v,'house-approach');
+  await walk(v,0,15.5,'return to common aisle');
+  await walk(v,0,23,'walk past all eight plots');
+  await walk(v,0,8.7,'return to arrival');
+ }else if(surfacesOnly){
   const start=await position(v);await shot(v,'arrival-surfaces');
   await v.evaluate('(()=>{const c=holodeckDevelopment.client.getCameraManager();c.maxDistance=100;c.reverseUpdateFromPositions({x:0,y:25,z:11},c.getCameraRotation());})()');await wait(300);
   await v.evaluate('(()=>{const c=holodeckDevelopment.client.getCameraManager(),s=c.getCameraState(),p=holodeckDevelopment.client.getLocalCharacterState().position,dy=s.position.y-(p.y+1.75),dz=s.position.z-p.z,distance=Math.hypot(dy,dz);window.surfaceInspection={distance,cosPhi:dy/distance};c.toggleFlyCamera();c.panFlyCameraLookAt(22/(distance*.01),6/(distance*.01*(dy/distance)));})()');await shot(v,'gallery-surfaces');
@@ -110,7 +140,7 @@ try{
  await walk(v,22,0,'east game');await walk(v,26,0,'game pedestal bypass');await walk(v,26,7,'game south approach');await walk(v,24,5.5,'game south');await shot(v,'game-desktop',{angle:1.2});await shot(v,'game-phone',{mobile:true,angle:1.2});await shot(v,'game-side',{angle:.4});
  }
  const errors=await v.evaluate('fixtureErrors');if(errors.length||originalLookups)throw Error('Unexpected browser error or human-original lookup');
- const evidence={schema:'holodeck.spatial-layout-browser/v1',qualification:surfacesOnly?'Actual MML renderer; arrival camera comparison and public fly-camera surface inspection. Avatar unchanged; no new traversal or interaction claimed. Local synthetic identity/native grants and sanitized public geometry.':'Actual MML renderer and grounded WASD route. Local synthetic identity/native grants; sanitized retained public geometry. Mobile images are viewport composition, not new device acceptance. Aerial is public camera inspection, not avatar traversal.',geometrySha256:createHash('sha256').update(geometryBytes).digest('hex'),preservedLights:Object.keys(geometry.entities).length-1,clickOnly,surfacesOnly,contentNodes,nativeReceipts,authorityReads,originalLookups,route,views,errors,elapsedMs:Date.now()-started};
+ const evidence={schema:'holodeck.spatial-layout-browser/v1',qualification:surfacesOnly?'Actual MML renderer; arrival camera comparison and public fly-camera surface inspection. Avatar unchanged; no new traversal or interaction claimed. Local synthetic identity/native grants and sanitized public geometry.':'Actual MML renderer and grounded WASD route. Local synthetic identity/native grants; sanitized retained public geometry. Mobile images are viewport composition, not new device acceptance. Aerial is public camera inspection, not avatar traversal.',geometrySha256:createHash('sha256').update(geometryBytes).digest('hex'),preservedLights:Object.keys(geometry.entities).length-1,clickOnly,surfacesOnly,housesOnly,contentNodes,nativeReceipts,authorityReads,originalLookups,route,views,errors,elapsedMs:Date.now()-started};
  await writeFile(join(directory,'evidence.json'),JSON.stringify(evidence,null,2));console.log(JSON.stringify({passed:true,views:views.length,walkSamples:route.length,elapsedMs:evidence.elapsedMs}));
 }catch(error){await writeFile(join(directory,'failure.json'),JSON.stringify({error:error.message,route,views,nativeReceipts},null,2));throw error;}
 finally{clearTimeout(deadline);for(const v of visitors){v.ws.close();await browser?.call('Target.disposeBrowserContext',{browserContextId:v.browserContextId}).catch(()=>{});}browser?.ws.close();runtime?.close();if(listener){listener.closeAllConnections();await new Promise(r=>listener.close(r));}await rm(stateDir,{recursive:true,force:true});await writeFile(join(directory,'worker-cleanup.json'),JSON.stringify({contextsDisposed:visitors.length,stateRemoved:true,socketRemoved:true,deadlineSeconds:240,evidenceBoundBytes:2097152}));}

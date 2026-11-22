@@ -1,3 +1,4 @@
+import {Houses, HOUSE_SAVE_BYTES} from './houses.mjs';
 import {readActivity,ActivityError} from './activity.mjs';
 import {nodeVisits} from './content-nodes.mjs';
 import express from 'express';
@@ -48,7 +49,9 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const sessionFor=token=>sessions.get(sessionKey(token));
   const localBoot=randomBytes(4).toString('hex');
   const store=stateDir?new RoomStore(stateDir):null;
-  const room=new Room({state:store?.load(),persist:store?s=>store.save(s):null,contentNodes:selectedContentNodes,
+  const houseStore=stateDir ? new RoomStore(join(stateDir,'houses'),{maxBytes:HOUSE_SAVE_BYTES}) : null;
+  const houses=new Houses({state:houseStore?.load(),persist:houseStore ? state => houseStore.save(state) : null});
+  const room=new Room({houses,state:store?.load(),persist:store?s=>store.save(s):null,contentNodes:selectedContentNodes,
     presence:()=>[...sessions.values()].filter(s=>s.connection!==null&&Date.now()-s.created<SESSION_MS)
       .map(s=>({actor:s.actor.id,kind:'human',name:s.actor.name||'Explorador',scope:'authenticated-room-presence',position:null}))});
   const document=new WorldDocument('http://localhost'+route('world'));
@@ -189,6 +192,16 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     res.json({run:room.run,edition:room.edition,sequence:room.sequence,actorRef:req.actor.id,entities:room.entities,focus:room.focusState(),nodes:room.nodeState(),
       native:native?{...await native.availability(req.actor),sharedConversation:!!native.contexts}:{available:false}});
   }));
+  app.get(route('api/places'),(req,res)=>{
+    if(room.commitUncertain)return res.status(503).json({message:'El taller necesita recuperar su último cambio.'});
+    res.json({world:'island-workshop',houses:room.houses.directory()});
+  });
+  app.get(route('api/places/:id'),(req,res)=>{
+    if(room.commitUncertain)return res.status(503).json({message:'El taller necesita recuperar su último cambio.'});
+    const house=room.houses.directory().find(place=>place.id===req.params.id);
+    if(!house)return res.status(404).json({message:'No encontré esa casa.'});
+    res.json({world:'island-workshop',house});
+  });
   app.get(route('api/activity'),(req,res)=>{
     try{res.json(readActivity(room,req.actor,req.query));}
     catch(error){if(!(error instanceof ActivityError))throw error;

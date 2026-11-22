@@ -1,3 +1,4 @@
+import {Houses, houseAction} from './houses.mjs';
 import {MAX_WORLD_ELEMENTS,DEFAULT_OBSERVATION_BYTES,MAX_OBSERVATION_BYTES,OBSERVATION_CACHE_BYTES} from './world-limits.mjs';
 import {creationContains} from './world-layout.mjs';
 import {validEntityEditors} from './playable-creations.mjs';
@@ -21,7 +22,7 @@ export class RoomError extends Error {
 // Semantic activity authority. Presence ticks never advance entity revisions.
 // Actors and rights come from a receiving adapter, never from command arguments.
 export class Room extends EventEmitter {
-  constructor({ clock = Date.now, edition = 'island-workshop@draft-1', persist = null, state = null, presence = ()=>[], contentNodes } = {}) {
+  constructor({ clock = Date.now, edition = 'island-workshop@draft-1', persist = null, state = null, presence = ()=>[], contentNodes, houses = new Houses() } = {}) {
     super();
     this.clock = clock;
     this.edition = edition;
@@ -35,6 +36,7 @@ export class Room extends EventEmitter {
     this.persist = persist;
     this.presence = presence;
     this.contentNodes = validateContentNodes(contentNodes);
+    this.houses = houses;
     if(state)this.restore(state);
   }
 
@@ -123,7 +125,7 @@ export class Room extends EventEmitter {
     const observation = { schema: 'holodeck.situation/v1', id: randomUUID(),
       run: this.run, edition: this.edition, capturedAt: now,
       observer: actor.id, scope: 'structured-room-overview',
-      place:{...clone(WORKSHOP),contents:clone(this.contentNodes)},
+      place:{...clone(WORKSHOP),contents:clone(this.contentNodes),housing:this.houses.overview(actor.id)},
       source: { after, through: this.sequence, displayedSequence,
         gap: after < (this.events[0]?.sequence ?? 1) - 1 },
       activity: { title: 'Connect the workshop islands', intention: null, evidence:'authored-scenario; participants intentions are not inferred' },
@@ -159,7 +161,17 @@ export class Room extends EventEmitter {
 
   focusState(){return focusState(this.focuses,this.entities,this.nodes);}
 
-  command(actor, command) { return this.atomic(()=>this.execute(actor,command)); }
+  command(actor, command) {
+    if (!houseAction(command?.type)) return this.atomic(() => this.execute(actor, command));
+    if (this.commitUncertain) throw new RoomError('recovery-required','The last checkpoint needs reconciliation before continuing');
+    // House data has its own bounded checkpoint and is never included in resettable Room saves.
+    try {
+      return this.execute(actor, command);
+    } catch (error) {
+      if (error.commitUncertain) this.commitUncertain = true;
+      throw error;
+    }
+  }
 
   execute(actor, command) {
     if (!actor?.rights?.includes('edit')) throw new RoomError('forbidden', 'Editing access required');
@@ -171,7 +183,8 @@ export class Room extends EventEmitter {
       throw new RoomError('command','Native source references come from the receiving world port');
     const key = actor.id + ':' + command.id;
     const fingerprint = hash(command);
-    const old = this.outcomes.get(key);
+    const durable = this.houses.receipt(actor.id, command.id);
+    const old = durable ?? this.outcomes.get(key);
     if (old) {
       if (old.fingerprint !== fingerprint) throw new RoomError('id-reuse', 'Command ID already has different contents');
       return clone(old.result);
@@ -180,9 +193,10 @@ export class Room extends EventEmitter {
       throw new RoomError('expired', 'Command expired; inspect state before making a new decision');
     for (const [id, outcome] of this.outcomes) if (this.clock() - outcome.at > LIMITS.retryMs) this.outcomes.delete(id);
     if (this.outcomes.size >= LIMITS.commands) throw new RoomError('capacity', 'Command history capacity reached');
+    const housing = houseAction(command.type);
     const finish = (status, reason, event = null) => {
       const result = { command: command.id, status, reason, event: event?.sequence ?? null, run: this.run };
-      this.outcomes.set(key, { fingerprint, result, at: this.clock() });
+      if (!housing) this.outcomes.set(key, { fingerprint, result, at: this.clock() });
       return clone(result);
     };
     if (command.run !== this.run || command.edition !== this.edition)
@@ -193,6 +207,11 @@ export class Room extends EventEmitter {
       return finish('rejected', 'Capture a current situation before acting');
     if (actor.kind === 'daimon' && (typeof command.nativeRequest !== 'string' || command.nativeRequest.length > 128))
       return finish('rejected', 'Retain the originating native request');
+    if (housing) {
+      const result = this.houses.publish(actor, command, observation, fingerprint, this.clock());
+      if (result.status === 'completed') this.changed({type:command.type, house:result.house});
+      return result;
+    }
     if(['node.place','node.update','node.remove'].includes(command.type)){
       const previous=this.nodes[command.target],seen=observation.nodes?.[command.target],placing=command.type==='node.place';
       if(actor.kind!=='daimon'||typeof actor.id!=='string'||actor.id.length>200||!contentNodeId(command.target))return finish('rejected','A native creator and canonical node identity are required');
@@ -274,7 +293,7 @@ export class Room extends EventEmitter {
   result(actor, id) {
     if(this.commitUncertain)throw new RoomError('recovery-required','The last checkpoint needs reconciliation before continuing');
     if (!actor?.rights?.includes('observe')) throw new RoomError('forbidden', 'Room access required');
-    return clone(this.outcomes.get(actor.id + ':' + id)?.result ?? null);
+    return this.houses.result(actor.id, id) ?? clone(this.outcomes.get(actor.id + ':' + id)?.result ?? null);
   }
 
   reset() {
