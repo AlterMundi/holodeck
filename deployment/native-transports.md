@@ -119,3 +119,24 @@ This rollout preserved the running Holodeck app and every native Conversation
 service. Actual app-UID status returned the previously retained reply completed,
 tracking false; journal/client adoption is a separate observation. New inputs
 already working for another participant must retain their actual phase.
+
+
+## Eighth receiving lane
+
+Emma uses the same fixed two-way VM transport through the existing Incus
+operator and the VM's pinned SSH host key. Her bridge selects the active
+Conversation provider Python and configuration. The read-only Home client
+on that VM supports pairing discovery. Its installed source is readable by
+the owner and lacks an executable mode, so a fixed wrapper invokes it with
+Python and accepts only the human pairing operation. The central world
+authority evaluates the current App grant for the verified being.
+
+Select the additional native route, pinned return port, Conversation origin
+and foreign socket isolation together. Keep the former receiving config
+and socket policy as rollback preimages. Validate the eight distinct ports
+before restarting the Holodeck unit alone. Then verify the socket from the
+guest's ordinary native UID and confirm that the local native owner cannot
+write the foreign lane. Test a reversible own indication and read back its
+exact retained result. An existing-ID placement refusal can exercise the
+creator guard without consuming a permanent result slot. Record actual
+durable creation and visitor use when separately observed.

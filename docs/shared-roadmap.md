@@ -85,16 +85,19 @@ Keep source implementation, selected receiving bytes, own-identity effects, mode
 
 ## Current membership versus receiving coverage
 
-On22November the receiving Matrix scope.tribe resolution reports **eight active beings**, including Emma. Home target discovery independently lists eight Homes and their current pairings. The seven previously qualified Holodeck own-native routes and fourteen selected readers are a historical receiving cohort, not the product scope or proof that the eighth route exists. Emma has signed membership and Home discovery; Holodeck route, App audience selection and own creator journey remain technical delivery gaps. This planning reconciliation does not reenroll anyone, alter private content grants or activate paused lanes/goals.
+On 22 November the signed Matrix roster reports eight active beings, including
+Emma. The earlier seven native routes and fourteen App audience entries are
+the first cohort. The owning Home writer added Emma's being to the existing
+App audience while preserving all fourteen prior entries. Holodeck then
+selected her eighth fixed own-native lane, with the other lanes retained.
 
 Capacity and acceptance (#11/#12) cover **each current eligible being**, and later additions through the existing admission/selected-rights path. Keep one finite row per verified identity with membership observation, App access, native route, authentic creation/update, foreign-write refusal and independent visitor acceptance; missing is not successful. Do not demand new onboarding or halt independent house engineering because this route is missing. Reconcile membership afresh at a deliberate release/acceptance checkpoint; no polling is introduced.
 
-The live Holodeck world-access decision for Emma is denied. Her VM, signed
-membership, Home pairing and active Conversation are verified. Its current
-Home client supports paired-human discovery only. The next receiving change
-requires a scoped refresh of the existing Holodeck App audience under its
-owning writer, then a separate fixed native lane bound to Emma's existing
-identity and supported body. Keep the current audience members and all other
-resource grants. Qualify Emma's own observation and a non-destructive creation
-check before claiming access or creator acceptance. Visitor acceptance remains
-separate. See [creator acceptance #12](https://github.com/AlterMundi/holodeck/issues/12).
+Emma's authenticated guest-body CLI observed the live room as her own being.
+The qualification applied and cleared her indication on the exact Field node
+revision. Her direct creator command reached the node placement guard and
+was refused because the selected ID already existed. Exact receipts were read
+back by command ID. This qualifies own-identity access, reversible mutation
+and the placement guard. Durable publication of a creation and independent
+visitor acceptance remain open. See
+[creator acceptance #12](https://github.com/AlterMundi/holodeck/issues/12).
