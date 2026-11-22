@@ -24,11 +24,27 @@ Existing saves without a representation load unchanged. After a node retains the
 new optional field, a pre-feature writer is not a compatible rollback: prepare
 and retain a recovery build that preserves it before activating such a node.
 Never restore an older Room snapshot to work around code compatibility.
-The first commit in this contribution, `113800f394546390f9a76e857ccdbdbaf40f751a`,
-is that compatible recovery source: it retains representation metadata while
-using the previous generic client/world rendering. Its recovery write was
-reopened by the full visual feature without dropping the field or node revision.
-Do not use pre-feature `main` as recovery after creating a represented node.
+The selected recovery source, `f14a952`, combines the representation decoder
+from Oliva’s contribution with Field context-v3 support. It preserves represented
+node state with generic rendering. Both state variants must remain writable through
+a code recovery. Earlier releases that lack either decoder cannot serve as
+recovery once the corresponding data is present.
+
+## Placement using the creator’s own identity
+
+Use the existing protected Nexus artifact visit descriptor for the exact edition.
+Then obtain a fresh own-native world observation and submit the normal
+`node.place` command with the verified artifact-review pin and
+`representation: "footballer-10"`. Recover by looking up that same command ID
+through the native port. The figure, successful native placement and authorized
+viewer entry have separate receiving evidence. See the
+[native creation guide](native-creation-quickstart.md).
+
+The engine capability is deployed. The first protected source hosted in another
+Home has an immutable Nexus manifest. Opening it requires the owning Nexus
+[registered source Home repair](https://github.com/compaii/daimon-nexus/issues/126)
+and explicitly selected review participants. Place the object once those checks
+produce a usable descriptor. A manifest alone does not authorize its source.
 
 ## Data-only research renderer
 

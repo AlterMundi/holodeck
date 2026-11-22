@@ -14,6 +14,15 @@ The obsolete bundled pending trial was withdrawn without claiming its completion
 
 ## Selected receiving release
 
+PR6 is merged and its figure asset is served. A controlled browser clicked the
+rendered model, opened the exact selected edition and retained the frame when
+returning to the world. The final suite recorded 182 passes and two optional
+skips. The protected Oliva edition has an exact immutable Nexus association.
+Its cross-Home authorization/descriptor remains open in Nexus #126 and the
+live room has no represented Messi node. The selected compatible predecessor
+is `4bfa1718` from `f14a952`. The earlier Field-specific measurements below
+are historical checkpoints.
+
 The protected entrance remains https://compaii.dmn.homes/holodeck/.
 Source `0cd1868`,17,807,360-byte package `00bf85a1`, is selected. All29runtime
 files, exact health, served client and506,528-byte scenery match the qualified

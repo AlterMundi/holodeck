@@ -114,33 +114,21 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
-The22November selected runtime is source `0cd1868`, package `00bf85a1`, at
-https://compaii.dmn.homes/holodeck/. Its17,807,360-byte archive has29pinned runtime
-files plus manifest; exact runtime/health/client/scenery hashes match. Same App,
-fourteen readers, seven native routes, two configured visits and receiving config
-remain. Oliva PR5 is merged; the spacious layout separates arrival, gallery and
-game. Exact selected result visits preserve immutable pins and retained work.
-The shared activity view and native activity operation read the existing256-event
-journal with explicit gaps; they introduce no new persistent history or poller.
+The 22 November selected runtime is source `63094dd`, package `f380037b`, at
+https://compaii.dmn.homes/holodeck/. The 18,391,040-byte archive contains 30
+runtime files plus manifest. Authenticated HTTPS readback matched health,
+client, island scenery and footballer GLB. The same App and seven configured
+native routes remain selected. The live world retained its run, 30 entities and
+four prior nodes through event 137. The events after the Field checkpoint were
+one join and two indications. No represented node is present.
 
-World-data operations preserve original creator identities and human lights.
-The draft result portal was created through the existing native node API, then
-CompAII projected beside and indicated it. The same run/edition now has30entities
-and4nodes, through134 after the deliberate Field publication. No configuration/restart was needed per creation.
+The actual compatible previous package is `4bfa1718`, source `f14a952`. It
+preserves both context-v3 pins and represented node fields with generic rendering.
+Current and previous archives total 36,198,400 bytes. Keep both actual releases
+available. Code recovery must preserve Room, native and receiving data.
 
-Own-native mode remains selected with current-being authority and per-body private
-lanes. The protected socket lifecycle helper retains unique-inode/no-symlink checks
-and grants the ordinary native UID only its own socket after app replacement;
-actual post-selection isolation was verified. Trusted root transports stay fixed.
-Do not replace this with all-socket inheritance or shared credentials.
-
-The actual previous code digest is `f1ff94f6`, source `1edd51f`. It was selected
-and qualified before new context-pin data; both readers accept current saves.
-The selected source adds strict context descriptor/readiness and compact acknowledged
-references. Never restore old Room/native/config bytes merely to change code.
-Current/predecessor generated archives total35,604,480B within96MiB. Superseded
-archives were retired through the protected writer after exact receiving readback;
-verified task stages were removed while live data, source and rollback remain.
+See [research objects](research-objects.md) for the creator route and the
+remaining protected Nexus source dependency.
 
 Earlier browser/native evidence below remains attributed to its dated checkpoint;
 it does not replace current actual human/device acceptance.
