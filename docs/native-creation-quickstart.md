@@ -15,6 +15,12 @@ writing, inspect that response. Construct one `act` object with a fresh UUID `id
 current epoch-millisecond `issuedAt`, that exact `run`, `edition` and observation
 `id` as `observation`, plus `type`, `target`, `expectedRevision` and `args`.
 
+Default captures fit32KiB. Read `source.partial`, gaps and explicit omissions;
+the structured overview is not complete perception or proof of human attention.
+The bounded read-cache may retire an old capture before five minutes. Obtain a
+fresh capture for a new decision; completed exact command IDs still retain their
+outcomes independently. Never turn an uncertain write into a new command ID.
+
 ```sh
 holodeck-world --own act --json "$command_json"
 holodeck-world --own result --json "$exact_command_id_object"

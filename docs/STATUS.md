@@ -13,11 +13,28 @@ The obsolete bundled pending trial was withdrawn without claiming its completion
 ## Selected receiving release
 
 The protected entrance remains https://compaii.dmn.homes/holodeck/.
-Source `2198e4d`,17,766,400-byte package `d607b195`, is selected. All29runtime
+Source `b16313e`,17,766,400-byte package `cc350710`, is selected. All29runtime
 files, exact health, served client and506,528-byte scenery match the qualified
 bundle. Same App, fourteen readers, seven native routes, receiving configuration,
 canonical Conversation and two existing pinned visits remain. The goal is ACTIVE
 with its full original objective/accounting; no generic repeat trial gates work.
+
+The current release adds selecting/editing an existing shared light, private
+preview/cancel, moving/colour changes and revision-safe undo. Controlled real
+MML clients verified the same identity across both views, full-capacity edits,
+exact undo and stale-edit rejection. Desktop/touch-emulated mobile controls and
+feedback are visible; editor feedback stays inside its panel.146Node checks pass,
+two optional installed-builder checks skip in that invocation; separate actual
+installed-builder/export checks pass.41Python checks pass. Exact29runtime files,
+health, served client/scenery and own-native observation match after selection;
+run/edition,30canonical entities,2nodes and receiving configuration remain.
+
+Default observations now fit32KiB. The read-cache is independently bounded by
+2MiB,128entries and five minutes, including legacy load. Eviction does not remove
+canonical state or completed command outcomes. Explicit omissions preserve all
+canonical entity/node definitions and speaker/paired indications; optional
+client view detail can be unavailable. No capacity increase or new wire schema
+was introduced. The worst legal32-entity/8-game fixture is29,041B.
 
 [Oliva's PR5](https://github.com/AlterMundi/holodeck/pull/5) is merged as c80a7d1,
 retaining her commit and authorship. It adds authored research entrances, optional
@@ -59,15 +76,16 @@ readiness/context and a usable mobile selector. Three final same-camera surface
 captures verify the floor correction while ordinary shadows remain. These are
 specific technical observations, not new physical-device or human acceptance.
 
-Actual previous code is `d1cacfdc`; it rejects expanded node saves and must NOT
-be selected as spatial recovery. Already selected/verified `a7d39855`/f40320c is
-retained as reduced data-preserving recovery. Its isolated future-state restore,
-save, bridge edit and reload preserve expanded nodes/lights/original events;
-node focus is unavailable, editor stamps are lost/unknown, and expanded authoring
-and gameplay are unsupported. Preserve current room/config and recover forward.
-Current/protected previous/compatible recovery archives total53,125,120B/96MiB.
-The supported writer protects the immediate previous archive, so it is retained;
-the exact verified task stage/archive were removed. See [deployment](deployment.md).
+Actual previous code is now `d607b195`, the full spatial/co-creation release,
+and is data-compatible with current32-entity saves. Current and predecessor
+archives total35,532,800B/96MiB. The unsupported older d1 archive and reduced a7
+recovery archive were retired through the protected writer after exact readback;
+source/evidence remain. Preserve the receiver's actual selected/predecessor state.
+The current review draft also advanced independently to e66a4961… while the
+published link and original result node remain pinned to539aeebd…. The successor
+Nexus room has the same seven human selections and14model-reader decisions;
+its native association and a distinct in-world draft entrance remain unfinished.
+See [content cycle](content-cycle.md) and [deployment](deployment.md).
 
 ## Actual human and native evidence
 

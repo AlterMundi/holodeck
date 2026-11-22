@@ -114,7 +114,7 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
-The22November selected runtime is source `2198e4d`, package `d607b195`, at
+The22November selected runtime is source `b16313e`, package `cc350710`, at
 https://compaii.dmn.homes/holodeck/. Its17,766,400-byte archive has29pinned runtime
 files plus manifest; exact runtime/health/client/scenery hashes match. Same App,
 fourteen readers, seven native routes, two visits and receiving config remain.
@@ -130,24 +130,18 @@ and grants the ordinary native UID only its own socket after app replacement;
 actual post-selection isolation was verified. Trusted root transports stay fixed.
 Do not replace this with all-socket inheritance or shared credentials.
 
-The actual previous code digest is d1cacfdc. Its old bounds reject expanded node
-saves: it is not a valid spatial recovery target. Keep actual journal truth, but
-use retained a7d39855/f40320c for reduced data-preserving recovery if necessary.
-That previously selected package preserves opaque node definitions≤8/64KiB and
-all expanded light coordinates; isolated restore/save/reload plus a bridge edit
-verified exact IDs/colours/original creation events. It cannot render/play newer
-nodes or edit the expanded regions, reports node focus unavailable and drops
-optional editor stamps (unknown attribution). It also lacks the expanded ground.
-This is a data recovery mode, not the new world experience; recover forward.
-Never restore old room/native/config bytes merely to change code.
+The actual previous code digest is now d607b195, which preserves the full
+spatial layout and runtime co-creation. It can read current32-entity saves and
+bounded read captures. Never restore old room/native/config bytes merely to
+change code. Retain actual current/predecessor selection and recover forward.
 
-Current/protected immediate predecessor/qualified compatible recovery archives
-total53,125,120B within96MiB. The supported publisher refuses retirement of its
-immediate predecessor; preserve that protection and the useful recovery archive.
-Before another publication, tally those roles plus the one candidate against the
-same96MiB ceiling. Retire a superseded archive once the supported writer releases
-it; do not bypass protection or accumulate unused variants. Verified task stage
-and local archive were removed; source and actual recovery evidence remain.
+Current/predecessor generated archives total35,532,800B within96MiB. The unsafe
+older d1 and reduced a7 recovery archives have been retired through the protected
+writer after exact receiving verification. Their source/evidence remain historical.
+Before another publication, tally useful retained roles plus one candidate
+against96MiB; do not accumulate unused variants or bypass writer protection.
+Verified task stages/archives can be removed after exact readback, preserving
+source, current state, unfinished work and actual rollback.
 
 Earlier browser/native evidence below remains attributed to its dated checkpoint;
 it does not replace current actual human/device acceptance.
@@ -347,3 +341,14 @@ the same retained request/predecessor instead of minting another request or
 repeating an uncertain route reload. Exact current selection, source hashes and
 effect receipts live in the protected receiving record. Git retains prior dated
 compositions; those old selections do not override this current contract.
+
+
+### Shared-light editing and bounded capture delivery —22November
+
+The selected cc350710 release has exact29-file runtime/health/client/scenery
+readback, unchanged receiving config, same run/edition/30entities/2nodes, and a
+successful own-native observation of32,604 compact UTF-8 bytes. It reuses the
+same App/version/audience and seven routes; only the Holodeck process restarted.
+Its actual compatible predecessor is d607b195. Current/predecessor generated
+archives total35,532,800B under96MiB. Redundant older d1/a7 archives were retired
+through the supported protected writer after verification.

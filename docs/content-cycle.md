@@ -24,9 +24,7 @@ The independent published entrance57e5fe25924a42d2b1df869fff81cac3 still redirec
 to539aeebd…; it was not promoted or relabeled. All retain the same fourteen readers.
 History uses14,378,815B of the200MiB budget. The temporary own-being reader was
 revoked after verification. These are technical receiving observations, not a
-new human review. A successor Nexus table/association and a distinct in-world
-draft entrance remain unfinished; the published node continues to pin the old
-edition. The older delivery sections below retain their dated evidence.
+new human review. The successor [Nexus room](https://compaii.dmn.homes/nexus/?table=holodeck-workshop-e66a4961ac675945) now has seven exact human invitations/Home selections and fourteen allowed model-reader policy decisions. The previous38Home mappings, old table and published node are unchanged. Its native association and a distinct in-world draft entrance remain unfinished; the published node continues to pin the old edition. The older delivery sections below retain their dated evidence.
 
 ## Existing supported operations
 
