@@ -2,12 +2,14 @@ import {creationContains} from './world-layout.mjs';
 import {validSignalGarden,signalGardenProgress,signalGardenInstructions} from './playable-creations.mjs';
 import {createHash} from 'node:crypto';
 import {validVisitPin,visitVersion,validateContentVisits} from './content-visits.mjs';
+import {validNodeRepresentation} from './node-representations.mjs';
 export const MAX_CONTENT_NODES=8;
 export const contentNodeId=value=>typeof value==='string'&&/^node-[a-z0-9-]{1,40}$/.test(value);
 export const contentSelection=pin=>createHash('sha256').update(JSON.stringify(Object.fromEntries(Object.entries(pin).sort(([a],[b])=>a.localeCompare(b))))).digest('hex');
 const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join(',')===keys;
 export function validNodeData(args){
- return (exact(args,'links,position,result,shape,title')||exact(args,'links,play,position,shape,title'))&&typeof args.title==='string'&&args.title.trim().length>0&&args.title.length<=40&&!/[\u0000-\u001f]/.test(args.title)
+ return (exact(args,'links,position,result,shape,title')||exact(args,'links,play,position,shape,title')
+  ||exact(args,'links,position,representation,result,shape,title')&&validNodeRepresentation(args.representation))&&typeof args.title==='string'&&args.title.trim().length>0&&args.title.length<=40&&!/[\u0000-\u001f]/.test(args.title)
   &&['pedestal','portal'].includes(args.shape)&&exact(args.position,'x,z')&&[args.position.x,args.position.z].every(Number.isFinite)
   &&creationContains(args.position.x,args.position.z)
   &&(Object.hasOwn(args,'play')?validSignalGarden(args.play):exact(args.result,'pin')&&validVisitPin(args.result.pin))
@@ -16,11 +18,11 @@ export function validNodeData(args){
 }
 export function validStoredNode(node,id){
  return node&&node.id===id&&contentNodeId(id)&&Number.isSafeInteger(node.revision)&&node.revision>=1&&typeof node.owner==='string'&&node.owner.length<=200
-  &&typeof node.deleted==='boolean'&&['deleted,id,links,owner,position,result,revision,shape,title','deleted,id,links,owner,play,position,revision,shape,title'].includes(Object.keys(node).sort().join(','))
-  &&validNodeData({title:node.title,shape:node.shape,position:node.position,...(node.play?{play:node.play}:{result:node.result}),links:node.links});
+  &&typeof node.deleted==='boolean'&&['deleted,id,links,owner,position,result,revision,shape,title','deleted,id,links,owner,play,position,revision,shape,title','deleted,id,links,owner,position,representation,result,revision,shape,title'].includes(Object.keys(node).sort().join(','))
+  &&validNodeData({title:node.title,shape:node.shape,position:node.position,...(node.play?{play:node.play}:{result:node.result}),...(Object.hasOwn(node,'representation')?{representation:node.representation}:{}),links:node.links});
 }
 export function nodeState(nodes,actor=null,context={}){
- return Object.fromEntries(Object.entries(nodes).map(([id,node])=>[id,{id,revision:node.revision,owner:node.owner,deleted:node.deleted,title:node.title,shape:node.shape,position:{...node.position},
+ return Object.fromEntries(Object.entries(nodes).map(([id,node])=>[id,{id,revision:node.revision,owner:node.owner,deleted:node.deleted,title:node.title,shape:node.shape,position:{...node.position},...(node.representation?{representation:node.representation}:{}),
   ...(node.play?(()=>{const progress={...signalGardenProgress(node.play,context),definitionRevision:node.revision};return {play:structuredClone(node.play),progress,...signalGardenInstructions(node.play,progress)};})():{
    ...(actor?.rights?.includes('observe')?{declaredResultPin:structuredClone(node.result.pin)}:{}),
    result:{selection:contentSelection(node.result.pin),kind:visitVersion(node.result.pin)===2?'artifact_review':'report',...(visitVersion(node.result.pin)===2?{adapter:node.result.pin.adapter}:{}),verification:'creator-declared'}}),

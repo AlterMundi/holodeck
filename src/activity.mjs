@@ -1,6 +1,7 @@
 // Read-only public projection of the existing Room event ring. Never serialize
 // arbitrary event.detail: the journal also contains private native references.
 import {LIMITS} from './room.mjs';
+import {validNodeRepresentation} from './node-representations.mjs';
 export const ACTIVITY_LIMIT=20,ACTIVITY_BYTES=32768;
 const TYPES=new Set(['garden.place','garden.update','garden.remove','bridge.set','node.place','node.update','node.remove','focus.set','focus.clear','projection.changed','participant.joined','participant.left']);
 const integer=value=>Number.isSafeInteger(value)&&value>=0;
@@ -47,7 +48,7 @@ function objectState(id,value){
   links.push({id:link.id,revision:link.revision});
  }
  return{kind:'node',id,revision:value.revision,deleted:value.deleted===true,title:value.title,shape:value.shape,position:position(value.position),
-  content:play?'game':value.result?'result':null,play,links};
+  ...(validNodeRepresentation(value.representation)?{representation:value.representation}:{}),content:play?'game':value.result?'result':null,play,links};
 }
 function projectionState(value){
  if(!value||!['orb','beacon','avatar'].includes(value.form)||!position(value.position)||!number(value.position.y))return null;
