@@ -1,3 +1,4 @@
+import {RoomExhibits,EXHIBIT_SAVE_BYTES} from './room-exhibits.mjs';
 import {InteriorSpaces, OUTSIDE, SPACE_SAVE_BYTES, interiorDocument} from './interior-spaces.mjs';
 import {Houses, HOUSE_SAVE_BYTES} from './houses.mjs';
 import {readActivity,ActivityError} from './activity.mjs';
@@ -57,6 +58,9 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const spaceStore=stateDir ? new RoomStore(join(stateDir,'spaces'),{maxBytes:SPACE_SAVE_BYTES}) : null;
   const spaces=new InteriorSpaces({definitions:interiorSpaces,houses,state:spaceStore?.load(),
     persist:spaceStore ? state=>spaceStore.save(state) : null,guestAccess:interiorGuestAccess});
+  const exhibitStore=stateDir?new RoomStore(join(stateDir,'exhibits'),{maxBytes:EXHIBIT_SAVE_BYTES}):null;
+  const exhibits=new RoomExhibits({state:exhibitStore?.load(),spaces,houses,
+    persist:exhibitStore?state=>exhibitStore.save(state):null});
   const room=new Room({houses,state:store?.load(),persist:store?s=>store.save(s):null,contentNodes:selectedContentNodes,
     presence:()=>[...sessions.values()].filter(s=>s.connection!==null&&Date.now()-s.created<SESSION_MS&&spaces.current(s.actor)===OUTSIDE)
       .map(s=>({actor:s.actor.id,kind:'human',name:s.actor.name||'Explorador',scope:'authenticated-room-presence',position:null}))});
@@ -132,7 +136,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const cellTransports=new Map();
   function describeSpace(actor){
     if(spaces.fenced)throw new RoomError('space-uncertain','Room placement needs recovery');
-    const space=spaces.view(actor),cell=cellTransports.get(space.id);
+    const view=spaces.view(actor),exhibit=exhibits.scoped(actor,view.id);
+    const space=exhibit?{...view,exhibitRevision:exhibit.revision}:view,cell=cellTransports.get(space.id);
     if(!cell)return space;
     const participants=[...cell.connections.values()]
       .filter(({actor:peer})=>inScope(peer,space.id))
@@ -146,9 +151,14 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     closeOutOfScope(actor);
     return describeSpace(actor);
   }
+  function putExhibit(actor,input){
+    if(room.commitUncertain||spaces.fenced)return null;
+    return exhibits.put(actor,input,room.nodes);
+  }
   const selectedWorldPorts=validateWorldPorts({worldSocket,worldSocketBeingRef,worldPorts});
   if(selectedWorldPorts.length&&!native)throw Error('Native authority is required for world return ports');
-  for(const selected of selectedWorldPorts)installedWorldPorts.push(await createWorldPort({socketPath:selected.socket,expectedBeingRef:selected.beingRef,room,native,describeSpace,moveSpace,resolveOwnNativeRights:ownNative&&nativeRoomAuthority?async verified=>{const rights=await nativeRoomAuthority(verified);return projectionHealthy?rights:rights.filter(right=>right==='observe');}:null,resolveRights:async verified=>{
+  for(const selected of selectedWorldPorts)installedWorldPorts.push(await createWorldPort({socketPath:selected.socket,expectedBeingRef:selected.beingRef,room,native,describeSpace,moveSpace,
+    putExhibit,exhibitResult:(actor,id)=>exhibits.result(actor,id),resolveOwnNativeRights:ownNative&&nativeRoomAuthority?async verified=>{const rights=await nativeRoomAuthority(verified);return projectionHealthy?rights:rights.filter(right=>right==='observe');}:null,resolveRights:async verified=>{
     if(nativeRoomAuthority){const rights=await nativeRoomAuthority(verified);return projectionHealthy?rights:rights.filter(right=>right==='observe');}
     // Compatibility for older receivers only. New native authority selection
     // is explicit and never falls back here after a failed policy query.
@@ -254,14 +264,16 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const selectedRoom=spaces.rooms.get(id);
     const passages=()=>spaces.passages(record.session.actor,selectedRoom);
     const initial=passages();
-    const signature=links=>links.map(link=>link.slot).join(',');
-    const scope=signature(initial);
-    record.projectionAllowed=()=>signature(passages())===scope;
+    const currentExhibit=()=>exhibits.scoped(record.session.actor,id);
+    const initialExhibit=currentExhibit();
+    const signature=(links,exhibit)=>links.map(link=>link.slot).join(',')+':'+(exhibit?.revision??0);
+    const scope=signature(initial,initialExhibit);
+    record.projectionAllowed=()=>signature(passages(),currentExhibit())===scope;
     // A connection owns exactly one filtered document. Closing it releases
     // all DOM work while the room's shared avatar stream stays independent.
     const scopedDocument=new WorldDocument('http://localhost'+route('spaces/'+id+'/world'));
     ws.once('close',()=>scopedDocument.dispose());
-    scopedDocument.load(interiorDocument(selectedRoom,initial)).then(()=>{
+    scopedDocument.load(interiorDocument(selectedRoom,initial,initialExhibit)).then(()=>{
       if(ws.readyState!==1||!inScope(record.session.actor,id)||!record.projectionAllowed()){
         ws.close(1008);return;
       }
@@ -280,12 +292,19 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(session.times.length>=4)return res.status(429).json({message:'Esperá un momento antes de intentar otra acción.'});
       session.times.push(now);
     }
-    if(req.path==='/space'&&!actor.rights?.includes('observe'))
+    const spaceRoute=req.path==='/space'||req.path==='/space/content-visits';
+    if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
-    if(req.path!=='/space'&&spaces.current(actor)!==OUTSIDE)
+    if(!spaceRoute&&spaces.current(actor)!==OUTSIDE)
       return res.status(409).json({message:'Volvé al exterior para usar esta acción.'});
     req.actor=actor;next();
   }));
+  app.get(route('api/space/content-visits'),(req,res)=>{
+    if(spaces.fenced||room.commitUncertain||exhibits.fenced)return res.status(503).json({message:'No pude recuperar la exposición.'});
+    const active=spaces.current(req.actor);
+    if(active===OUTSIDE)return res.status(404).json({message:'Entrá a la sala para visitar su contenido.'});
+    res.json({visits:exhibits.visit(req.actor,active)});
+  });
   app.get(route('api/space'),(req,res)=>{
     if(spaces.fenced||room.commitUncertain)return res.status(503).json({message:'No pude confirmar tu ubicación.'});
     res.json(describeSpace(req.actor));

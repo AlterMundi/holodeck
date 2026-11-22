@@ -24,8 +24,11 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError}){
   const list=travel.querySelector('nav');
   let near=null,busy=false;
   async function move(destination) {
-    if(busy||!canLeave())return;
-    busy=true;button.disabled=true;
+    if(busy)return;
+    busy=true;
+    try{if(!await canLeave()){busy=false;return;}}
+    catch{busy=false;onError('No pude comprobar el estado de la visita.');return;}
+    button.disabled=true;
     for(const control of list.children)control.disabled=true;
     let next;
     try{

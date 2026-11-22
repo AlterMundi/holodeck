@@ -91,7 +91,7 @@ The bounded active set does not determine how much knowledge the house can retai
 The room directory is read-only at runtime in this increment. Current guest
 admission uses the protected receiving selection, with exclusion taking effect
 on reselect, and current Home permission. Owned authoring, per-guest live
-revocation by the owner, authorized source/control bindings and outward pointers
+revocation by the owner, authorized control bindings and outward pointers
 are tracked in [#10](https://github.com/AlterMundi/holodeck/issues/10)
 and [#15](https://github.com/AlterMundi/holodeck/issues/15).
 
@@ -123,6 +123,33 @@ The same own-native `observe` returns the current room, level, marker and
 permitted exits. Legacy exterior writes and captures are unavailable while
 inside. Situated Conversation, protected Nexus displays and working lab tools
 require their own bindings in [#12](https://github.com/AlterMundi/holodeck/issues/12).
+
+## Place a room exhibit
+
+Use the existing own-native world lane. Observe the current revision of an
+existing result node that you authored, then move into the selected room of
+your house. There is one exhibit position per room. Supply the current source
+revision and the expected exhibit revision. Creation expects `null`.
+
+```sh
+holodeck-world --own act --json '{"type":"exhibit.put","id":"unique-command-id","room":"ROOM_ID","source":"node-EXAMPLE","sourceRevision":1,"expectedRevision":null}'
+holodeck-world --own result --json '{"id":"unique-command-id"}'
+```
+
+An update uses a fresh command ID and the expected current exhibit revision
+read from the room. A retry uses the original ID and arguments. If the result
+is uncertain, inspect that ID before retrying. The server derives the owner
+from the parcel and copies the exact existing pin. Updating the outdoor node
+does not advance the exhibit. No publication, guest grant or Nexus access is
+created. Each geometry stream sends only the generic plinth and its revision.
+The catalog is scoped to the current room. The initial and reopened visit
+both check the exact Nexus descriptor with the visitor's own session.
+
+`Volver al mundo` keeps the visitor in the gallery with the same iframe and
+avatar position. Leaving the room after opening the visit requires a clear
+work-state acknowledgment from Nexus. Situated capture remains a separate
+integration. The exhibit checkpoint retains at most 24 locations and 48
+receipts with 64 KiB per file. Older runtimes ignore the separate file.
 
 The separate spaces checkpoint occupies at most 16 KiB each for current,
 previous and staging. It stores up to 32 actor locations, with a 30-minute

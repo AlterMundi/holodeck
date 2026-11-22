@@ -1,3 +1,4 @@
+import {EXHIBIT_LABEL,EXHIBIT_POSITION} from './room-exhibits.mjs';
 import {passageAt,passageMarkup,roomFloor} from './interior-geometry.mjs';
 import {exteriorDoor} from './houses.mjs';
 import {attribute} from './workshop-projection.mjs';
@@ -155,7 +156,7 @@ export class InteriorSpaces {
 }
 
 // Each server-authorized room has its own local collision and render document.
-export function interiorDocument(room,passages=[]) {
+export function interiorDocument(room,passages=[],exhibit=null) {
   const {id,position:{x,y,z},radius,height}=ROOM_MARKER;
   const {floor,wall,end} = room.entry ? {floor:'#aa9376',wall:'#486966',end:'#557675'} :
     room.level<0 ? {floor:'#657378',wall:'#415666',end:'#4c6376'} :
@@ -167,6 +168,11 @@ export function interiorDocument(room,passages=[]) {
     <m-cube x="6" y="1.65" z="0" width=".2" height="3.3" depth="12" color="${wall}"></m-cube>
     <m-cube x="0" y="1.65" z="-6" width="12" height="3.3" depth=".2" color="${end}"></m-cube>
     <m-cube x="0" y="1.65" z="6" width="12" height="3.3" depth=".2" color="${end}"></m-cube>
+    ${exhibit?`<m-group id="house-exhibit" data-exhibit-revision="${exhibit.revision}" x="${EXHIBIT_POSITION.x}" z="${EXHIBIT_POSITION.z}">
+      <m-cylinder y=".48" radius=".69" height=".76" color="#526b66"></m-cylinder>
+      <m-cube y="1.10" width="1.34" height=".49" depth=".77" color="#b89165"></m-cube>
+      <m-label y="1.74" z=".41" width="1.6" height=".36" font-size="20" content="${EXHIBIT_LABEL}" collide="false"></m-label>
+    </m-group>`:''}
     ${passages.map(p=>passageMarkup({...p,label:attribute(p.title)})).join('')}
     ${room.entry?'<m-group id="house-exit"><m-cube y="1.13" z="5.86" width="1.35" height="2.06" depth=".08" color="#c8a36d" collide="false"></m-cube><m-cube x=".45" y="1.05" z="5.79" width=".06" height=".14" depth=".08" color="#343e40" collide="false"></m-cube><m-label y="2.53" z="5.81" ry="180" width="1.55" height=".37" font-size="19" content="Salida" collide="false"></m-label></m-group>':''}
     <m-label x="0" y="2.3" z="-5.87" width="4" height=".65" font-size="26" content="${attribute(room.title)}" collide="false"></m-label>

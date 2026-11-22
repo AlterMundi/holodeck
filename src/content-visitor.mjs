@@ -3,10 +3,11 @@ import {CONTENT_NODE,validateContentNodes,sameVisitPin,visitResponseMatches,know
 // One retained Nexus visit. Hiding this panel never destroys media, a draft,
 // capture or native response polling. The trusted viewer owns that lifecycle.
 export class ContentVisitor{
- constructor({document,window,base,say}){
-  Object.assign(this,{document,window,base,say});this.entries=[];this.nodes=[CONTENT_NODE];this.pending=new Map();this.disposed=false;this.lastContext=null;
+ constructor({document,window,base,say,scoped=false}){
+  Object.assign(this,{document,window,base,say,scoped});this.entries=[];this.nodes=[CONTENT_NODE];this.catalogGeneration=0;this.pending=new Map();this.disposed=false;this.lastContext=null;
   this.button=document.querySelector('#visit-near');this.panel=document.querySelector('#content-visit');
-  this.button.onclick=()=>this.open(this.nearby?.id).catch(()=>say('No pude abrir esta presentación. Podés volver a intentarlo.'));
+  this.button.onclick=()=>this.open(this.nearby?.id||this.entry?.id,
+    {nodeRevision:this.scoped?(this.nearby||this.entry)?.nodeRevision??null:null}).catch(()=>say('No pude abrir esta presentación. Podés volver a intentarlo.'));
   document.querySelector('#visit-walk').onclick=()=>this.walk();
   this.receive=event=>{
    if(!this.frame||!this.entry)return;
@@ -28,13 +29,14 @@ export class ContentVisitor{
  }
  async loadCatalog(signature=null){
   this.catalogFlight=true;
+  const generation=++this.catalogGeneration;
   try{
-   const response=await fetch(new URL('api/content-visits',this.base),{credentials:'same-origin',signal:AbortSignal.timeout(5000)});
+   const response=await fetch(new URL(this.scoped?'api/space/content-visits':'api/content-visits',this.base),{credentials:'same-origin',signal:AbortSignal.timeout(5000)});
    if(!response.ok)throw Error('Catalog unavailable');
-   const value=await response.json();if(this.disposed)return;
-   this.nodes=validateContentNodes(value.nodes);this.entries=Array.isArray(value.visits)?value.visits.slice(0,16).map(entry=>{const node=this.nodes.find(node=>node.id===entry.node);return {...entry,title:entry.title||node?.title,position:entry.position||node?.position};}):[];this.catalogSignature=signature;this.choices();
-  }catch{/* Keep a currently open visit and the last known discovery on transient failure. */}
-  finally{this.catalogFlight=false;}
+   const value=await response.json();if(this.disposed||generation!==this.catalogGeneration)return false;
+   this.nodes=this.scoped?[]:validateContentNodes(value.nodes);this.entries=Array.isArray(value.visits)?value.visits.slice(0,16).map(entry=>{const node=this.nodes.find(node=>node.id===entry.node);return {...entry,title:entry.title||node?.title,position:entry.position||node?.position};}):[];this.catalogSignature=signature;this.choices();return true;
+  }catch{return false;}
+  finally{if(generation===this.catalogGeneration)this.catalogFlight=false;}
  }
  syncNodes(nodes){
   if(!nodes||this.disposed||this.catalogFlight)return;
@@ -42,9 +44,9 @@ export class ContentVisitor{
   if(signature!==this.catalogSignature)this.catalog=this.loadCatalog(signature);
  }
  update(position){
-  this.nearby=null;let distance=5;
+  this.nearby=null;let distance=this.scoped?2.25:5;
   if(position)for(const entry of this.entries){
-   const at=entry.position||CONTENT_NODE.position,next=Math.hypot(position.x-at.x,position.z-at.z);
+   const at=entry.position||CONTENT_NODE.position,next=Math.hypot(position.x-at.x,position.z-at.z,this.scoped?(position.y??at.y)-at.y:0);
    if(next<distance){distance=next;this.nearby=entry;}
   }
   this.button.hidden=!this.frame&&!this.nearby;
@@ -87,17 +89,23 @@ export class ContentVisitor{
  async open(selectedId,{nodeRevision=null}={}){
   const selected=this.entries.find(entry=>entry.id===selectedId);
   if(nodeRevision!==null&&selected?.nodeRevision!==nodeRevision){this.say('Este contenido cambió de lugar o edición. Volvé a elegirlo en el mundo.');return;}
-  if(this.frame&&(!selectedId||selectedId===this.entry?.id&&(!selected||sameVisitPin(selected.pin,this.entry.pin)))){this.reveal();this.frame.focus();return;}
+  if(!this.scoped&&this.frame&&(!selectedId||selectedId===this.entry?.id&&(!selected||sameVisitPin(selected.pin,this.entry.pin)))){this.reveal();this.frame.focus();return;}
   if(this.opening)return;this.opening=true;
   try{
-   await this.catalog;if(this.selector)this.selector.disabled=true;const entry=this.entries.find(value=>value.id===selectedId)||(!selectedId&&this.entries[0]);if(!entry){this.say('No hay contenido disponible para tu acceso en este lugar.');return;}
+   if(this.scoped){
+    if(!await this.loadCatalog()){if(this.frame)this.minimize();this.say('No pude confirmar tu acceso a esta exposición.');return;}
+   }else await this.catalog;
+   if(this.selector)this.selector.disabled=true;const entry=this.entries.find(value=>value.id===selectedId)||(!selectedId&&this.entries[0]);if(!entry){this.say('No hay contenido disponible para tu acceso en este lugar.');return;}
    if(nodeRevision!==null&&entry.nodeRevision!==nodeRevision){this.say('Este contenido cambió de lugar o edición. Volvé a elegirlo en el mundo.');return;}
    const descriptorURL=new URL(entry.descriptor,this.window.location.origin),entryURL=new URL(entry.entry,this.window.location.origin);
    if([descriptorURL,entryURL].some(url=>url.origin!==this.window.location.origin||!url.pathname.startsWith('/nexus/')))throw Error('Use the selected viewer');
    const response=await fetch(descriptorURL,{credentials:'same-origin',signal:AbortSignal.timeout(5000)});
-   if(!response.ok){if(this.selector&&this.entry)this.selector.value=this.entry.id;this.say(response.status===401||response.status===403?'Este contenido necesita tu acceso a Nexus. Volvé a entrar desde Apps.':'No pude recuperar esta edición del contenido.');return;}
+   if(!response.ok){if(this.scoped&&this.frame)this.minimize();if(this.selector&&this.entry)this.selector.value=this.entry.id;this.say(response.status===401||response.status===403?'Este contenido necesita tu acceso a Nexus. Volvé a entrar desde Apps.':'No pude recuperar esta edición del contenido.');return;}
    const descriptor=await response.json();if(!sameVisitPin(descriptor.pin,entry.pin))throw Error('Content edition changed');
    if(visitVersion(entry.pin)===3&&(descriptor.schema!=='dm.holodeck-visit/descriptor-v3'||descriptor.kind!=='context'||!visitEntryMatches(descriptor.entry,entry.pin)))throw Error('Context edition unavailable');
+   if(this.scoped&&this.frame&&entry.id===this.entry?.id&&sameVisitPin(entry.pin,this.entry.pin)){
+     this.reveal();this.frame.focus();return;
+   }
    if(this.frame){
     await this.ready;const state=await this.request('prepareClose');
     if(state?.canClose!==true||!knownVisitState(state.state)||Object.values(state.state).some(Boolean)){
@@ -115,6 +123,17 @@ export class ContentVisitor{
    frame.src=entryURL.href;this.document.querySelector('#visit-stage').append(frame);
    try{await this.ready;}catch{this.say('El contenido está abierto, pero no pude conectar su contexto con el mundo. Conservé su ventana.');}
   }finally{this.opening=false;if(this.selector){this.selector.disabled=false;if(this.entry)this.selector.value=this.entry.id;}}
+ }
+ async allowLeaveRoom(){
+  if(!this.frame&&!this.opening)return true;
+  if(this.readyAcknowledged&&!this.opening){
+   try{
+    const reply=await this.request('prepareClose');
+    if(reply?.canClose===true&&knownVisitState(reply.state)&&!Object.values(reply.state).some(Boolean))return true;
+   }catch{/* Leave the visit in place if its work state could not be confirmed. */}
+  }
+  this.say('Retomá la visita y terminá el trabajo pendiente antes de cambiar de sala.');
+  return false;
  }
  async context(){
   if(!this.frame||!this.entry)return null;

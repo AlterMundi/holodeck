@@ -5,7 +5,7 @@ import { DaimonPort } from './daimon-port.mjs';
 
 // The receiving operator owns the directory/socket filesystem capability.
 // Native identity and current room rights are independently rechecked per request.
-export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace}){
+export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,putExhibit,exhibitResult}){
   if(!socketPath?.startsWith('/')||!native?.authorizeWorldRequest||typeof resolveRights!=='function')
     throw Error('Select the installed native world port and authority resolver');
   let active=0;
@@ -46,7 +46,13 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
         const port=new DaimonPort(room,async()=>actor);
         const space=describeSpace?.(actor);
         let result;
-        if(request.operation==='act'&&request.args.type==='space.move'){
+        const savedExhibit=own&&request.operation==='result'?exhibitResult?.(actor,request.args.id):null;
+        if(request.operation==='act'&&request.args.type==='exhibit.put'){
+          if(!own)throw Error('Exhibit authoring requires an own-native route');
+          result=putExhibit?.(actor,request.args);
+          if(!result)throw Error('Exhibit authoring unavailable');
+        }else if(savedExhibit)result=savedExhibit;
+        else if(request.operation==='act'&&request.args.type==='space.move'){
           if(!own||!rights.includes('edit')||Object.keys(request.args).sort().join(',')!=='from,to,type')
             throw Error('Room transitions require an own-native route');
           result=moveSpace?.(actor,{from:request.args.from,to:request.args.to});

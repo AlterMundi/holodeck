@@ -40,14 +40,34 @@ function startInterior(space){
   document.querySelector('#people').textContent=space.level===0?'Planta baja':
     space.level<0?`Subsuelo ${-space.level}`:`Piso ${space.level}`;
   const notice=new WorldNotice(document.querySelector('#notice'));
-  const updateDoor=showSpaceLinks(space,{onError:message=>notice.show(message)});
+  const visitor=new ContentVisitor({document,window,base,scoped:true,
+    say:(message,options)=>notice.show(message,options)});
+  let exhibitRevision=space.exhibitRevision===undefined?null:String(space.exhibitRevision);
+  const exhibitObserver=new MutationObserver(()=>{
+    const current=document.querySelector('#house-exhibit')?.getAttribute('data-exhibit-revision')??null;
+    if(current===exhibitRevision)return;
+    exhibitRevision=current;
+    visitor.catalog=visitor.loadCatalog();
+  });
+  exhibitObserver.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['data-exhibit-revision']});
+  const updateDoor=showSpaceLinks(space,{canLeave:()=>visitor.allowLeaveRoom(),onError:message=>notice.show(message)});
+  window.addEventListener('keydown',event=>{
+    if(visitor.frame&&!visitor.panel.classList.contains('is-walking')&&
+       ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE'].includes(event.code)){
+      if(!(event.target instanceof Element&&event.target.closest('button,input,select,textarea')))event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  },true);
   const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
     sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket(`spaces/${space.id}/network`),waitForWorldConfig:true,
     enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
     createRenderer:options=>{
       const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
       const render=renderer.render.bind(renderer);
-      renderer.render=state=>{updateDoor(client.getLocalCharacterState()?.position);render(state);};
+      renderer.render=state=>{
+        const position=client.getLocalCharacterState()?.position;
+        updateDoor(position);visitor.update(position);render(state);
+      };
       queueMicrotask(options.onInitialized);return renderer;
     },
     animationConfig:animations,
@@ -55,7 +75,7 @@ function startInterior(space){
   });
   client.update();
   window.holodeckDevelopment={client};
-  window.addEventListener('pagehide',()=>client.dispose(),{once:true});
+  window.addEventListener('pagehide',()=>{exhibitObserver.disconnect();visitor.dispose();client.dispose();},{once:true});
 }
 
 function startExterior(activeSpace){
