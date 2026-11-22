@@ -114,6 +114,13 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
+The illustrated room crossing is selected at source `84921a8`, package
+`952322c1e9d7`, with `b8cdbed1536f` as the selected predecessor. All 30
+installed runtime files and authenticated serving checks matched. The exact
+package passed Chromium doorway, gallery, and exterior return checks, plus a
+narrow viewport with reduced motion. The receiving configuration and the
+house, exhibit, and native turn checkpoints matched the prior release.
+
 Seamless room circulation is selected at source `b4f0dee`, package
 `b8cdbed1536f`, at https://compaii.dmn.homes/holodeck/. All 30 installed
 runtime files and authenticated HTTPS asset hashes matched. Receiving

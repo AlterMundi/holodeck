@@ -143,6 +143,11 @@ omits the template payload. Presence and interaction permissions come from the
 new room's subscription. Unexpected disconnects purge cached templates. The
 cache excludes live presence, visits, credentials, and embedded viewer state.
 
+A small illuminated arch covers the previous scene during the crossing. It
+fades as soon as the destination accepts input. The effect never holds the
+room transition open, uses no extra assets, and stays still when the browser
+requests reduced motion. Longer crossings show a short status message.
+
 The exterior uses the same renderer and automatic return uses the authored
 door location. A failed transition refreshes the committed location without
 resending the movement. For timing, measure from E until the destination
