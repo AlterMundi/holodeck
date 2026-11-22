@@ -51,6 +51,7 @@ world without changing or redeploying Holodeck.
 - [Content snapshots for existing viewers/review](docs/content-snapshots.md)
 - [Spatial entrances to existing content](docs/content-landmarks.md)
 - [Shared world activity and situated history](docs/world-history.md)
+- [Research objects and replaceable content editions](docs/research-objects.md)
 
 Research includes Social Conjurer, LLMR, VRCopilot, Ubiq-Genie, CraftAssist,
 Resonite, Microverse, Minecraft/Roblox and browser engine alternatives. Their

@@ -7,6 +7,7 @@ import { saveIntent, loadIntent, archiveIntent, sameActor, nativeRetryRoute } fr
 import { NativeAvatarLayer } from './native-avatar.mjs';
 import {PublicWorldPicker,WorldIndication} from './world-indication.mjs';
 import { ContentVisitor } from './content-visitor.mjs';
+import {pickedRepresentationVisit} from './node-representations.mjs';
 import { PlayableHUD } from './playable-hud.mjs';
 import { AppliedGeometryProbe } from './applied-geometry.mjs';
 import { SharedConversationHost } from './shared-conversation-host.mjs';
@@ -63,7 +64,11 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
     worldPicker=new PublicWorldPicker({document,canvas:options.targetElement.querySelector(':scope > canvas'),scene:renderer.mmlCompositionScene.group,
       cameraState:()=>options.coreCameraManager.getCameraState(),proof:()=>geometryProbe?.snapshot(),onPick:record=>{
         if(record.kind==='content')contentVisitor?.openNode(record.node).catch(()=>say('No pude abrir este contenido. Conservé la visita anterior.'));
-        else worldIndication?.select(record);
+        else{
+          worldIndication?.select(record);
+          const visit=pickedRepresentationVisit(record,state);
+          if(visit)contentVisitor?.openNode(visit.id,{expectedRevision:visit.revision}).catch(()=>say('No pude abrir este contenido. Conservé la visita anterior.'));
+        }
       },
       onUnavailable:()=>say('No pude identificar ese objeto todavía. Probá de nuevo.')});
     worldIndication=new WorldIndication({document,scene:renderer.mmlCompositionScene.group,getState:()=>state,
