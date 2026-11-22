@@ -123,6 +123,46 @@ historical review. The qualified link entrance below can select a pinned edition
 while review content advances under the same compatible resource audience. It
 does not supply the broader private-candidate/public-release lifecycle.
 
+## Editable activity source alongside the static review
+
+The bounded publisher now adds optional `activity` inside the existing
+`creation.json` when the same selected immutable situation contains `nodes`:
+
+```json
+{"schema":"holodeck.activity-source/v1","layoutVersion":"captured-layout@2","nodes":{}}
+```
+
+It retains at most eight node definitions/16KiB: stable ID, revision, tombstone,
+authored title, shape, position, exact-revision links and either a signal-garden
+recipe or `{pin,verification:"creator-declared"}`. The declared result pin must be
+present in that observation and match its captured selection hash. Missing or
+mismatched pins fail explicitly; source capture does not invent a result or assert
+publication/read permission. Layout comes only from captured place metadata;
+historical missing layout is explicitly null, never today's global code.
+
+Extraction whitelists editable fields, excluding owners, participant rosters,
+conversation/originals, editor stamps, progress, credentials and private bindings.
+Only the source pointer already shared in the world is retained; it grants no
+access to the referenced Nexus/Home content. Publication retains the same exact
+world/model audience gate and existing200MiB project history/16MiB stage bounds.
+The five-file gallery/GLB/creation bundle, ModelPin and Nexus viewer are unchanged.
+There is no new registry or source-of-truth store.
+
+Publishing activity requires the existing `--observation` and `--scene` inputs.
+The producer checks the entire expected creation source against that same frozen
+capture before publication; edited/retargeted activity is refused. The optional
+field has its own closed schema/byte validation in the staged-file reader. Old
+v1 geometry-only source without activity remains accepted unchanged; absence is
+not a claim that the historical world had no activities. Current viewers do not
+consume this metadata, while an older strict publisher may refuse the new field.
+
+This preserves editable definitions, not authority or a running-world replay.
+Static3D review still omits visit/game geometry by design. The private Room save
+remains the live world state; importing source, reassigning ownership or applying
+edits would require existing current native world operations and their actual
+permissions, observations and revisions. No restore/apply operation or simulation
+history is supplied by this publication increment.
+
 ## Stable entrance source follow-up
 
 Current upstream Cluster03b6a7d was inspected after the initial audit; its

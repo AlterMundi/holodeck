@@ -8,6 +8,7 @@ import argparse
 import fcntl
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -18,7 +19,109 @@ STAGE_LIMIT = 16 * 1024 * 1024
 CREATION_FIELDS = {'schema', 'run', 'edition', 'sourceObservation', 'semanticSequence',
                    'sourceUnits', 'displayUnits', 'displayFromWorld', 'parts', 'entities',
                    'snapshotSha256', 'scenerySha256', 'authoredProjectionSha256', 'sceneSha256', 'scope'}
-OPTIONAL_CREATION_FIELDS = {'excludedEnvironment'}
+OPTIONAL_CREATION_FIELDS = {'excludedEnvironment', 'activity'}
+ACTIVITY_BYTES = 16 * 1024
+
+
+def closed(value, fields):
+    return isinstance(value, dict) and set(value) == set(fields.split())
+
+
+def integer(value, minimum=1, maximum=2**53-1):
+    return type(value) is int and minimum <= value <= maximum
+
+
+def coordinate(value):
+    # Format bound, not the current engine's mutable creation-area policy.
+    return type(value) in (int, float) and math.isfinite(value) and abs(value) <= 1000
+
+
+def node_id(value):
+    return isinstance(value, str) and re.fullmatch(r'node-[a-z0-9-]{1,40}', value) is not None
+
+
+def valid_pin(pin):
+    if not isinstance(pin, dict):
+        return False
+    artifact = pin.get('kind') == 'artifact_review'
+    fields = 'kind tableId reviewId revision adapter' if artifact else 'tableId reportId revision'
+    return (closed(pin, fields) and all(isinstance(v, str) and re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}', v) for v in pin.values())
+            and (not artifact or pin['adapter'] in {'interactive_3d', 'video'}))
+
+
+def valid_play(play):
+    if not isinstance(play, dict) or set(play) not in [set('schema targets minContributors'.split()), set('schema targets minContributors requiredBridgeRaised'.split())]:
+        return False
+    return (play['schema'] == 'signal-garden/v1' and integer(play['minContributors'], 1, 8)
+            and ('requiredBridgeRaised' not in play or type(play['requiredBridgeRaised']) is bool)
+            and isinstance(play['targets'], list) and 1 <= len(play['targets']) <= 4
+            and all(closed(t, 'x z radius color') and all(coordinate(t[k]) for k in ['x', 'z', 'radius'])
+                    and 0 < t['radius'] <= 100 and isinstance(t['color'], str)
+                    and (t['color'] in {'mint', 'amber', 'rose', 'violet'} or re.fullmatch(r'#[a-fA-F0-9]{6}', t['color']))
+                    for t in play['targets']))
+
+
+def validate_activity(activity):
+    if len(json.dumps(activity, separators=(',', ':'), ensure_ascii=False, allow_nan=False).encode()) > ACTIVITY_BYTES:
+        raise ValueError('Activity source exceeds its16KiB bound')
+    if (not closed(activity, 'schema layoutVersion nodes') or activity['schema'] != 'holodeck.activity-source/v1'
+            or not (activity['layoutVersion'] is None or isinstance(activity['layoutVersion'], str) and 1 <= len(activity['layoutVersion']) <= 128)
+            or not isinstance(activity['nodes'], dict) or len(activity['nodes']) > 8):
+        raise ValueError('Select a bounded activity source, not a Room checkpoint')
+    common = set('id revision deleted title shape position links'.split())
+    for ident, node in activity['nodes'].items():
+        if (not isinstance(node, dict) or set(node) not in [common | {'play'}, common | {'result'}]
+                or not node_id(ident) or node['id'] != ident or not integer(node['revision']) or type(node['deleted']) is not bool
+                or not isinstance(node['title'], str) or not node['title'].strip() or len(node['title']) > 40
+                or any(ord(c) < 32 for c in node['title']) or not isinstance(node['shape'], str) or node['shape'] not in {'pedestal', 'portal'}
+                or not closed(node['position'], 'x z') or not all(coordinate(v) for v in node['position'].values())
+                or not isinstance(node['links'], list) or len(node['links']) > 4
+                or any(not closed(link, 'id revision') or not node_id(link['id']) or not integer(link['revision']) for link in node['links'])
+                or len({link['id'] for link in node['links']}) != len(node['links'])):
+            raise ValueError('Retain only bounded editable node definitions')
+        if 'play' in node:
+            if not valid_play(node['play']):
+                raise ValueError('Select a bounded signal-garden recipe')
+        elif not (closed(node['result'], 'pin verification') and node['result']['verification'] == 'creator-declared' and valid_pin(node['result']['pin'])):
+            raise ValueError('Retain a declared Nexus pin, not an access grant')
+    return activity
+
+
+def activity_source(observation):
+    nodes = observation['nodes']
+    if not isinstance(nodes, dict) or len(nodes) > 8:
+        raise ValueError('Select at most eight captured activity nodes')
+    selected = {}
+    for ident, node in nodes.items():
+        if not isinstance(node, dict) or ('play' in node) == ('result' in node):
+            raise ValueError('Select one captured node definition kind')
+        try:
+            value = {key: node[key] for key in ['id', 'revision', 'deleted', 'title', 'shape']}
+            value['position'] = {key: node['position'][key] for key in ['x', 'z']}
+            value['links'] = [{key: link[key] for key in ['id', 'revision']} for link in node['links']]
+            if 'play' in node:
+                play = node['play']
+                value['play'] = {key: play[key] for key in ['schema', 'minContributors']}
+                value['play']['targets'] = [{key: target[key] for key in ['x', 'z', 'radius', 'color']} for target in play['targets']]
+                if 'requiredBridgeRaised' in play:
+                    value['play']['requiredBridgeRaised'] = play['requiredBridgeRaised']
+            else:
+                pin = node.get('declaredResultPin')
+                if not valid_pin(pin):
+                    raise ValueError('Activity result node needs its captured declaredResultPin')
+                selection = hashlib.sha256(json.dumps(pin, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+                if selection != node.get('result', {}).get('selection'):
+                    raise ValueError('Activity result pin differs from the captured selection')
+                value['result'] = {'pin': pin, 'verification': 'creator-declared'}
+            selected[ident] = value
+        except (KeyError, TypeError) as error:
+            raise ValueError('Captured activity definition is incomplete') from error
+    place = observation.get('place') or {}
+    if not isinstance(place, dict):
+        raise ValueError('Select the captured layout metadata')
+    activity = {'schema': 'holodeck.activity-source/v1', 'layoutVersion': place.get('layoutVersion'), 'nodes': selected}
+    # Independent bytes: later mutation of the observation cannot retarget source.
+    return json.loads(json.dumps(validate_activity(activity), allow_nan=False))
 
 
 def load(path, limit):
@@ -103,6 +206,8 @@ def files_in(site):
                    or not all(isinstance(value, str) and len(value) <= 200 for value in part.values())
                    for part in excluded)):
         raise ValueError('Retain only the explicitly excluded ambient backdrop metadata')
+    if 'activity' in creation:
+        validate_activity(creation['activity'])
     return files
 
 
@@ -125,6 +230,9 @@ def creation_source(observation, scene, snapshot, scene_sha256):
             'authoredProjectionSha256': source['authoredProjectionSha256'],
             'sceneSha256': scene_sha256,
             'scope': 'Static creation geometry and editable world parameters; no participants, conversation or running-world replay.'}
+    if 'nodes' in observation:
+        selected['activity'] = activity_source(observation)
+        selected['scope'] = 'Static creation geometry and editable activity definitions; no actor authority, participants, conversation or running-world replay.'
     if source.get('excludedEnvironment'):
         selected['excludedEnvironment'] = source['excludedEnvironment']
     return selected
@@ -172,6 +280,8 @@ def main():
             else:
                 creation_path.write_text(json.dumps(selected, separators=(',', ':'), ensure_ascii=False) + '\n')
         files = files_in(args.site)
+        if not args.observation and (args.site / 'creation.json').exists() and 'activity' in load(args.site / 'creation.json', 131072):
+            raise ValueError('Activity publication needs its confirmed observation and matching scene')
         if stage_bytes(args.site.parent) + 16384 > STAGE_LIMIT:
             raise ValueError('The complete task stage exceeds16MiB including receipt headroom')
         binding = load(args.binding, 131072)

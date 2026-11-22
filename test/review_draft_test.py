@@ -104,3 +104,114 @@ class ReviewDraftContracts(unittest.TestCase):
             (site / 'situation.json').write_text('Unselected private input')
             with self.assertRaises(ValueError):
                 module.files_in(site)
+
+
+class ActivitySourceContracts(unittest.TestCase):
+    def capture(self):
+        import hashlib
+        pin = {'kind': 'artifact_review', 'tableId': 'selected-table', 'reviewId': 'selected-review', 'revision': 'edition-1', 'adapter': 'interactive_3d'}
+        base = {'id': 'node-game', 'revision': 2, 'deleted': False, 'title': 'Jardín compartido', 'shape': 'pedestal',
+                'position': {'x': 22, 'z': 4}, 'links': [{'id': 'node-result', 'revision': 1, 'status': 'revised', 'currentRevision': 3}],
+                'owner': 'private-being', 'progress': {'contributors': 2}, 'conversation': 'private utterance', 'arbitraryExtra': 'private binding',
+                'play': {'schema': 'signal-garden/v1', 'targets': [{'x': 19, 'z': -1, 'radius': .8, 'color': 'mint'}], 'minContributors': 2, 'requiredBridgeRaised': True}}
+        result = {**base, 'id': 'node-result', 'revision': 3, 'deleted': True, 'links': [], 'title': 'Pinned result'}
+        del result['play']
+        result.update(declaredResultPin=pin, result={'selection': hashlib.sha256(json.dumps(pin, sort_keys=True, separators=(',', ':')).encode()).hexdigest(), 'verification': 'creator-declared'})
+        return {'nodes': {'node-game': base, 'node-result': result}, 'place': {'layoutVersion': 'captured-layout@2'},
+                'participants': ['private participant'], 'entityEditors': {'private editor': 1}, 'inputAssociation': {'text': 'private original'}}
+
+    def test_definitions_preserve_recipe_result_pin_links_and_tombstones_without_private_runtime_state(self):
+        capture = self.capture()
+        source = module.activity_source(capture)
+        self.assertEqual(source['layoutVersion'], 'captured-layout@2')
+        game, result = source['nodes']['node-game'], source['nodes']['node-result']
+        self.assertEqual(game['play'], capture['nodes']['node-game']['play'])
+        self.assertEqual(game['links'], [{'id': 'node-result', 'revision': 1}])
+        self.assertEqual(result['revision'], 3);self.assertTrue(result['deleted'])
+        self.assertEqual(result['result'], {'pin': capture['nodes']['node-result']['declaredResultPin'], 'verification': 'creator-declared'})
+        for forbidden in ['private', 'owner', 'progress', 'contributors', 'entityEditors', 'participants', 'inputAssociation', 'currentRevision', 'arbitraryExtra']:
+            self.assertNotIn(forbidden, json.dumps(source))
+        capture['nodes']['node-game']['play']['targets'][0]['x'] = 0
+        self.assertEqual(game['play']['targets'][0]['x'], 19, 'source bytes cannot retarget after later capture edits')
+        unknown = self.capture();unknown.pop('place')
+        self.assertIsNone(module.activity_source(unknown)['layoutVersion'])
+
+    def test_ambiguous_capture_kind_is_not_silently_rewritten(self):
+        capture = self.capture()
+        capture['nodes']['node-game']['result'] = capture['nodes']['node-result']['result']
+        with self.assertRaisesRegex(ValueError, 'one captured'):
+            module.activity_source(capture)
+
+    def test_missing_or_mismatched_declared_pin_refuses_instead_of_inventing_a_reference(self):
+        for change in ['missing', 'changed', 'credential']:
+            capture = self.capture();node = capture['nodes']['node-result']
+            if change == 'missing':node.pop('declaredResultPin')
+            elif change == 'changed':node['declaredResultPin']['revision'] = 'another-edition'
+            else:node['declaredResultPin']['cookie'] = 'private credential'
+            with self.assertRaises(ValueError):module.activity_source(capture)
+
+    def test_closed_format_and_eight_node_sixteen_kib_bounds(self):
+        from copy import deepcopy
+        valid = module.activity_source(self.capture())
+        for mutate in [lambda a:a.update(owner='private'), lambda a:a['nodes']['node-game'].update(progress={}),
+                       lambda a:a['nodes']['node-game']['position'].update(cookie='private'),
+                       lambda a:a['nodes']['node-game']['links'][0].update(status='current'),
+                       lambda a:a['nodes']['node-game']['play'].update(code='execute'),
+                       lambda a:a['nodes']['node-result']['result'].update(grant=True),
+                       lambda a:a['nodes']['node-result']['result']['pin'].update(url='https://private.invalid'),
+                       lambda a:a['nodes']['node-game'].update(revision=True)]:
+            bad = deepcopy(valid);mutate(bad)
+            with self.assertRaises(ValueError):module.validate_activity(bad)
+        bad = deepcopy(valid);bad['layoutVersion'] = 'x' * 16384
+        with self.assertRaisesRegex(ValueError, '16KiB'):module.validate_activity(bad)
+        eight = deepcopy(valid);eight['nodes'] = {f'node-{i}': {**deepcopy(valid['nodes']['node-game']), 'id': f'node-{i}'} for i in range(8)}
+        self.assertEqual(len(module.validate_activity(eight)['nodes']), 8)
+        self.assertLess(len(json.dumps(eight).encode()), 16384)
+        eight['nodes']['node-extra'] = {**deepcopy(valid['nodes']['node-game']), 'id': 'node-extra'}
+        with self.assertRaises(ValueError):module.validate_activity(eight)
+
+    def prepared(self, root):
+        site = root / 'site';site.mkdir()
+        for name, data in [('index.html', 'Controlled renderer fixture'), ('snapshot.glb', 'Controlled frozen source'), ('gallery.json', '{"scenes":[]}')]:
+            (site / name).write_text(data)
+        (site / 'review-live.json').write_text(json.dumps({'schema': 'dm.review-live/v1', 'gallery': 'gallery.json', 'sha256': module.digest(site / 'gallery.json')}))
+        observation = {**self.capture(), 'schema': 'holodeck.situation/v1', 'id': 'controlled-source', 'run': 'run', 'edition': 'edition', 'source': {'through': 9}, 'entities': {'bridge': {'id': 'bridge', 'revision': 1, 'raised': True}}}
+        source = {'run': 'run', 'edition': 'edition', 'semanticSequence': 9, 'snapshotSha256': module.digest(site / 'snapshot.glb'),
+                  'sourceUnits': 'm', 'displayUnits': 'mm', 'displayFromWorld': [], 'parts': [{'part': 'bridge-deck', 'entity': 'bridge', 'revision': 1}],
+                  'scenerySha256': 'a' * 64, 'authoredProjectionSha256': 'b' * 64}
+        scene = {'units': 'mm', 'parts': [{'id': 'bridge-deck'}], 'holodeckSource': source}
+        (root / 'observation.json').write_text(json.dumps({'ok': True, 'result': observation}))
+        (root / 'scene.json').write_text(json.dumps(scene))
+        selected = module.creation_source(observation, scene, site / 'snapshot.glb', module.digest(root / 'scene.json'))
+        (site / 'creation.json').write_text(json.dumps(selected))
+        return site, selected
+
+    def test_optional_activity_uses_same_capture_and_five_files_with_no_extra_registry(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            site, selected = self.prepared(Path(temporary))
+            self.assertEqual(set(selected) - module.CREATION_FIELDS, {'activity'})
+            self.assertEqual(selected['sourceObservation'], 'controlled-source')
+            self.assertEqual(selected['semanticSequence'], 9)
+            self.assertEqual(len(module.files_in(site)), 5)
+            selected['activity']['nodes']['node-game']['owner'] = 'private actor'
+            (site / 'creation.json').write_text(json.dumps(selected))
+            with self.assertRaises(ValueError):module.files_in(site)
+
+    def test_publication_refuses_valid_but_retargeted_activity_or_missing_original_capture_without_writer_call(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary);site, selected = self.prepared(root)
+            argv = ['publisher', str(site), '--binding', str(root / 'unused-binding.json'), '--decision', 'Controlled source fixture']
+            with patch('sys.argv', argv), patch.object(module.subprocess, 'run') as writer:
+                with self.assertRaisesRegex(ValueError, 'confirmed observation'):module.main()
+                writer.assert_not_called()
+            selected['activity']['nodes']['node-game']['title'] = 'Retargeted source'
+            (site / 'creation.json').write_text(json.dumps(selected))
+            argv += ['--observation', str(root / 'observation.json'), '--scene', str(root / 'scene.json')]
+            with patch('sys.argv', argv), patch.object(module.subprocess, 'run') as writer:
+                with self.assertRaisesRegex(ValueError, 'pending creation'):module.main()
+                writer.assert_not_called()
+            captured = json.loads((root / 'observation.json').read_text());captured['result']['source']['through'] = 10
+            (root / 'observation.json').write_text(json.dumps(captured))
+            with patch('sys.argv', argv), patch.object(module.subprocess, 'run') as writer:
+                with self.assertRaisesRegex(ValueError, 'same frozen creation'):module.main()
+                writer.assert_not_called()
