@@ -14,6 +14,17 @@ The obsolete bundled pending trial was withdrawn without claiming its completion
 
 ## Selected receiving release
 
+The room boundary is deployed at source `d542e3e`, with `64b6a856` selected as
+its predecessor. Controlled room qualification used two actual MML peers for
+shared presence and peer exclusion, and Chromium for one complete route through
+a foyer, gallery, underground lab and upper tower, with reload and return.
+The native test checked separate projection, current being access and revocation.
+The live release did not select an occupied house or any interior membership.
+Spatial door anchors and owner-authoring, protected Nexus display and tool
+bindings, and a room-bound canonical Conversation input remain open.
+See [houses and interiors](houses.md).
+
+
 PR6 is merged and its figure asset is served. A controlled browser clicked the
 rendered model, opened the exact selected edition and retained the frame when
 returning to the world. The final suite recorded 182 passes and two optional
