@@ -14,65 +14,100 @@ function box(x,y,z,w,h,d,material,angle=0){add(new BoxGeometry(w,h,d),material,[
 function cylinder(x,y,z,top,bottom,h,material,segments=16){add(new CylinderGeometry(top,bottom,h,segments,1,false),material,[x,y,z]);}
 function stone(x,y,z,s,material='rockLight'){add(new DodecahedronGeometry(s,0),material,[x,y,z],[1,.65,.82],[0,x*.7,z*.2]);}
 function ring(x,y,z,r,t,material,rotation=[Math.PI/2,0,0]){add(new TorusGeometry(r,t,5,32),material,[x,y,z],[1,1,1],rotation);}
-// Faceted floating geology and a second destination, kept below walkable tops.
-cylinder(0,-1.3,0,10.75,8.9,2.6,'rock',24);
-cylinder(0,-3.3,0,8.9,2.4,1.9,'rockLight',12);
-cylinder(0,-4.55,0,2.4,.2,.6,'rock',8);
-cylinder(0,.025,0,10.75,10.75,.15,'grass',32);
+// Four terraces, one shared walkable level. The two new destinations leave
+// arrival/meeting, result viewing and cooperative play room to breathe.
+function island(x,z,r,depth){
+ cylinder(x,-depth*.25,z,r,r*.84,depth*.5,'rock',20);
+ cylinder(x,-depth*.67,z,r*.84,r*.28,depth*.34,'rockLight',10);
+ cylinder(x,-depth*.91,z,r*.28,.18,depth*.14,'rock',7);
+ cylinder(x,-.005,z,r,r,.15,'grass',28); // Grass top y=.07; walking proxy y=.1 (deliberate3cm clearance).
+}
+island(0,0,10.75,5.2);
+island(-22,0,8,5.4);
+island(22,0,10,6);
+// Preserve the north destination and its original bridge/arch coordinates.
 cylinder(0,-1.25,-17,4.9,4.1,2.5,'rock',18);
 cylinder(0,-3.0,-17,4.1,1.1,1.0,'rockLight',10);
-cylinder(0,.025,-17,4.9,4.9,.15,'grass',24);
-// Central plaza and warm paved approach. The thin seams give scale to walking.
-cylinder(0,.12,0,3.3,3.3,.12,'stone',32);
-ring(0,.195,0,2.9,.025,'copper');
-for(let i=0;i<9;i++)box(0,.145,2.8+i*.64,2.1,.09,.56,'path');
-for(let i=0;i<9;i++)box(0,.145,-3.1-i*.72,2.1,.09,.64,'path');
-for(let i=0;i<24;i++){
-  const a=i*Math.PI/12;box(Math.sin(a)*3.12,.20,Math.cos(a)*3.12,.56,.06,.29,'path',a);
+cylinder(0,-.005,-17,4.9,4.9,.15,'grass',24);
+// Distinct ground layers prevent coplanar z-fighting: grass .07, courts .09,
+// paving/decks .1. Collision stays at .1; grass clearance is deliberately3cm.
+// Clear central meeting plaza: no canopy, workbench or tall prop across views.
+cylinder(0,.045,0,4.8,4.8,.09,'stone',32);
+ring(0,.092,0,4.32,.018,'copper');
+function pathBetween(x1,z1,x2,z2,width=2.5,spacing=.9){
+ const dx=x2-x1,dz=z2-z1,length=Math.hypot(dx,dz),count=Math.ceil(length/spacing),angle=Math.atan2(dx,dz);
+ for(let i=0;i<count;i++){
+  const t=(i+.5)/count;box(x1+dx*t,.065,z1+dz*t,width,.07,length/count*.9,'path',angle);
+ }
 }
-// Two workbenches and a copper pergola frame a legible shared gathering place.
-for(const x of [-3.9,3.9]){
-  box(x,.86,.2,1.7,.18,1.0,'path');
-  for(const dx of [-.6,.6])box(x+dx,.44,.2,.12,.8,.7,'copper');
-  box(x,.97,.2,1.36,.035,.72,'stone');
+pathBetween(0,9,0,4.4,2.6);
+pathBetween(0,-4.4,0,-9.9,2.6);
+pathBetween(-4.5,0,-10.3,0,2.8);
+pathBetween(4.5,0,10.3,0,2.8);
+// Broad fixed promenades overlap each circular cap; parent MML supplies the
+// same width/height collision rectangles. All deck top faces are exactly y=.1.
+function promenade(left,right){
+ const center=(left+right)/2,length=right-left;
+ box(center,-.12,0,length,.14,3.2,'rockLight');
+ const count=Math.ceil(length/.52);
+ for(let i=0;i<count;i++)box(left+(i+.5)*length/count,.035,0,length/count*.95,.13,3.2,'path');
+ for(const z of [-1.71,1.71]){
+  box(center,.79,z,length,.07,.075,'copper');
+  for(const x of [left+.14,center,right-.14]){
+   cylinder(x,.43,z,.055,.075,.8,'copper',6);
+   cylinder(x,.89,z,.095,.095,.11,'gold',6);
+  }
+ }
 }
-for(const x of [-2.7,2.7])for(const z of [-2.1,2.1]){
-  cylinder(x,1.55,z,.12,.15,3.0,'copper',8);
-  cylinder(x,.2,z,.3,.34,.24,'stone',8);
-  cylinder(x,3.08,z,.22,.22,.14,'gold',8);
+promenade(-14.6,-9.8);
+promenade(9.8,12.7);
+// West: a quiet open gallery court, with separate northern/southern entrances
+// projected by Room at(-22,-2) and(-22,3). Nothing scenic impersonates a result.
+cylinder(-22,.045,0,4.7,4.7,.09,'stone',28);
+ring(-22,.092,0,4.25,.018,'copper');
+pathBetween(-14.4,0,-18.0,0,2.8);
+// East: deliberately keep the game lawn bare. Its actual recipe, coloured
+// targets and progress belong to Room, not to decorative static ground art.
+cylinder(14.5,.045,0,1.7,1.7,.09,'stone',20);
+pathBetween(15.2,1,18.1,3.6,2.4);
+pathBetween(18.1,3.6,22,4,2.4);
+// Low sitting ledges stay at the edge of the arrival island, outside its axes.
+for(const x of [-5.9,5.9]){
+ box(x,.32,6.1,1.9,.43,.65,'stone');
+ box(x,.57,6.1,2.0,.09,.72,'path');
 }
-for(const x of [-2.7,2.7])box(x,3.2,0,.18,.18,4.7,'copper');
-for(const z of [-2.1,2.1])box(0,3.2,z,5.7,.18,.18,'copper');
-for(const z of [-1.5,-.75,0,.75,1.5])box(0,3.35,z,5.4,.08,.16,'path');
-// Destination arch and a comfortable circular overlook.
-cylinder(0,.15,-17,3.2,3.2,.13,'stone',24);
+// The north arch remains a distant landmark, not a roof over shared content.
+cylinder(0,.045,-17,3.2,3.2,.09,'stone',24);
 ring(0,2.35,-17.8,1.85,.13,'copper',[0,0,0]);
 ring(0,2.35,-17.82,1.61,.035,'gold',[0,0,0]);
 for(const x of [-1.8,1.8]){cylinder(x,1.02,-17.8,.14,.25,1.9,'copper',8);cylinder(x,.2,-17.8,.4,.4,.2,'stone',8);}
-// Sparse sculptural trees leave the arrival sightline and bridge corridor open.
-const trees=[[-7,4,3.4],[-8,0,4],[-6.7,-4.5,3.7],[-4.5,-7,3.2],[7,3,3.7],[8,-1.4,4.1],[6.7,-5.4,3.3],[4.4,-7.8,3.5],[-3.2,-18,2.8],[3.3,-18.5,3.1]];
+// Curated tree groups frame spaces from their rims. Arrival, bridge, both
+// promenades, gallery portals and the eastern target field stay unobstructed.
+const trees=[
+ [-7.2,5.3,3.5],[7.5,5.2,3.7],[-6.6,-6.1,3.7],[6.7,-6.0,3.5],
+ [-3.2,-18.2,2.8],[3.3,-18.5,3.1],
+ [-27.3,-2.8,3.8],[-27.7,1.2,4.1],[-25.7,5.4,3.2],[-20.4,6.0,3.0],[-18.1,-5.7,3.4],[-24.7,-5.8,3.0],
+ [29.0,3.2,4.2],[29.1,-3.1,4.0],[25.8,-7.5,3.7],[19.0,-7.7,3.9],[15.5,5.8,3.3],[21.0,8.0,3.4]
+];
 for(const [x,z,h] of trees){
  cylinder(x,h*.32,z,.12,.22,h*.64,'bark',7);
- add(new ConeGeometry(h*.34,h*.7,7,1), 'pine',[x,h*.64,z]);
- add(new ConeGeometry(h*.27,h*.62,7,1), 'leaf',[x,h*.91,z]);
- add(new ConeGeometry(h*.19,h*.46,7,1), 'mint',[x,h*1.13,z]);
- stone(x+.55,.23,z+.5,.45);
+ add(new ConeGeometry(h*.34,h*.7,7,1),'pine',[x,h*.64,z]);
+ add(new ConeGeometry(h*.27,h*.62,7,1),'leaf',[x,h*.91,z]);
+ add(new ConeGeometry(h*.19,h*.46,7,1),'mint',[x,h*1.13,z]);
 }
-// Curated edge stones, shrubs and lantern posts. No per-frame decorative work.
-for(let i=0;i<19;i++){
- const a=i*2.39996,r=8.6+(i%3)*.43,x=Math.sin(a)*r,z=Math.cos(a)*r;
- if(Math.abs(x)<2.5)continue;
- stone(x,.18,z,.42+(i%3)*.1);
- if(i%2===0){add(new DodecahedronGeometry(.55,0),'leaf',[x*.91,.43,z*.91],[1,.68,.8]);}
+// A few deliberate stone/shrub groups replace the previous dense rim scatter.
+for(const[x,z,s]of [[-8.1,4.8,.6],[8.4,4.3,.7],[-6.5,-7.3,.6],[6.6,-7,.6],[-28.1,-.4,.7],[-25,6.4,.6],[-18,-5.9,.6],[29.7,1,.8],[26.7,-7,.7],[19.4,-8.3,.7],[16,6.5,.6]]){
+ stone(x,.19,z,s);
+ if(s>=.7)add(new DodecahedronGeometry(.65,0),'leaf',[x+.45,.35,z+.4],[1,.55,.8]);
 }
-for(const z of [5.3,-5.2,-9.3])for(const x of [-1.7,1.7]){
- cylinder(x,.65,z,.065,.09,1.15,'copper',6);
- add(new DodecahedronGeometry(.16,0),'gold',[x,1.3,z]);
- cylinder(x,.14,z,.24,.25,.14,'stone',8);
+// Small lanterns give scale at junctions without a row of oversized structures.
+for(const[x,z]of [[-1.7,8.0],[1.7,8.0],[-8.4,2],[8.4,2],[-16.2,1.9],[14.4,-1.9],[-1.7,-8.5],[1.7,-8.5]]){
+ cylinder(x,.58,z,.055,.075,.95,'copper',6);
+ add(new DodecahedronGeometry(.13,0),'gold',[x,1.14,z]);
 }
-// A calm sea and distant sculptural islets give the floating garden a horizon.
+// Calm horizon and off-axis distant islets: no extra walkable destination claim.
 cylinder(0,-7,0,110,110,.12,'water',64);
-for(const [x,z,r] of [[-28,-25,4],[26,-34,6],[-23,24,3]]){
+for(const[x,z,r]of [[-39,-29,4],[38,-34,5],[-31,29,3]]){
  cylinder(x,-4.7,z,r,r*.3,4.5,'rockLight',7);
  cylinder(x,-2.4,z,r,r,.15,'grass',7);
 }

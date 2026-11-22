@@ -1,3 +1,4 @@
+import {creationContains} from './world-layout.mjs';
 import {validEntityEditors} from './playable-creations.mjs';
 import {MAX_CONTENT_NODES,contentNodeId,validNodeData,validStoredNode,nodeState} from './content-nodes.mjs';
 import { randomUUID, createHash } from 'node:crypto';
@@ -237,7 +238,7 @@ export class Room extends EventEmitter {
       }
       const a = command.args;
       if (!a || Object.keys(a).sort().join(',') !== 'color,x,z' || !Number.isFinite(a.x) || !Number.isFinite(a.z)
-        || Math.abs(a.x) > 7 || a.z < -6 || a.z > 6 || !workshopColour(a.color))
+        || !creationContains(a.x,a.z) || !workshopColour(a.color))
         return finish('rejected', 'Choose a valid garden placement');
       if(updating)Object.assign(entity,clone(a),{revision:entity.revision+1});
       else this.entities[command.target] = { id: command.target, revision: 1, ...clone(a) };

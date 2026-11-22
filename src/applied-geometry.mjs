@@ -73,7 +73,7 @@ export class AppliedGeometryProbe{
     this.frames++;this.lastRender=this.monotonic();this.lastRenderAt=this.now();
     if(this.contextLost||this.document.visibilityState==='hidden'){this.invalidate();return;}
     const root=this.document.querySelector('m-group#workshop');
-    const sourceVersion=root?['data-run','data-edition','data-semantic-sequence'].map(name=>root.getAttribute(name)).join('\0'):null;
+    const sourceVersion=root?['data-run','data-edition','data-semantic-sequence','data-layout-version'].map(name=>root.getAttribute(name)).join('\0'):null;
     if(root===this.root&&sourceVersion!==this.sourceVersion)this.invalidate();
     this.sourceVersion=sourceVersion;
     if(root!==this.root){

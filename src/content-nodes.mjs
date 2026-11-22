@@ -1,3 +1,4 @@
+import {creationContains} from './world-layout.mjs';
 import {validSignalGarden,signalGardenProgress,signalGardenInstructions} from './playable-creations.mjs';
 import {createHash} from 'node:crypto';
 import {validVisitPin,visitVersion,validateContentVisits} from './content-visits.mjs';
@@ -8,7 +9,7 @@ const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&
 export function validNodeData(args){
  return (exact(args,'links,position,result,shape,title')||exact(args,'links,play,position,shape,title'))&&typeof args.title==='string'&&args.title.trim().length>0&&args.title.length<=40&&!/[\u0000-\u001f]/.test(args.title)
   &&['pedestal','portal'].includes(args.shape)&&exact(args.position,'x,z')&&[args.position.x,args.position.z].every(Number.isFinite)
-  &&Math.abs(args.position.x)<=7&&args.position.z>=-6&&args.position.z<=6
+  &&creationContains(args.position.x,args.position.z)
   &&(Object.hasOwn(args,'play')?validSignalGarden(args.play):exact(args.result,'pin')&&validVisitPin(args.result.pin))
   &&Array.isArray(args.links)&&args.links.length<=4&&new Set(args.links.map(link=>link?.id)).size===args.links.length
   &&args.links.every(link=>exact(link,'id,revision')&&contentNodeId(link.id)&&Number.isSafeInteger(link.revision)&&link.revision>=1);

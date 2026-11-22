@@ -56,7 +56,7 @@ test('recipe is a closed bounded data union; no fake score/player stamps or dumm
  const room=new Room();assert.equal(act(room,native,'node.place','node-play',{...nodeData(recipe),result:{pin:{tableId:'x',reportId:'x',revision:'x'}}},null).status,'rejected');
  assert.equal(act(room,native,'node.place','node-play',{...nodeData(recipe),entityEditors:{forged:true}},null).status,'rejected');
  assert.equal(act(room,native,'node.place','node-play',nodeData(recipe),null).status,'completed');
- const markup=worldDocument(room);assert.match(markup,/data-play-schema="signal-garden\/v1"/);assert.match(markup,/data-play-target="0"/);assert.match(markup,/Plantá luces menta, ámbar/);assert.ok(!markup.includes('undefined'));assert.ok(!worldDocument(room,{includeVisits:false}).includes('data-play-target'));
+ const markup=worldDocument(room);assert.match(markup,/data-play-schema="signal-garden\/v1"/);assert.match(markup,/data-play-target="0"/);assert.match(room.nodeState()['node-play'].instruction,/Plantá luces menta, ámbar/);assert.ok(!markup.includes('undefined'));assert.ok(!worldDocument(room,{includeVisits:false}).includes('data-play-target'));
  const saved=room.snapshot();assert.deepEqual(new Room({state:saved}).nodes,room.nodes);
 });
 

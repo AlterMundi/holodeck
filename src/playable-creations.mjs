@@ -1,3 +1,4 @@
+import {creationContains} from './world-layout.mjs';
 import {workshopColour} from './workshop.mjs';
 const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join(',')===keys;
 export function validSignalGarden(play){
@@ -5,7 +6,7 @@ export function validSignalGarden(play){
   ||play.schema!=='signal-garden/v1'||!Number.isInteger(play.minContributors)||play.minContributors<1||play.minContributors>8
   ||(play.requiredBridgeRaised!==undefined&&typeof play.requiredBridgeRaised!=='boolean')||!Array.isArray(play.targets)||play.targets.length<1||play.targets.length>4)return false;
  return play.targets.every(target=>exact(target,'color,radius,x,z')&&[target.x,target.z,target.radius].every(Number.isFinite)
-  &&target.radius>=.4&&target.radius<=1.5&&Math.abs(target.x)+target.radius<=7&&Math.abs(target.z)+target.radius<=6&&workshopColour(target.color));
+  &&target.radius>=.4&&target.radius<=1.5&&creationContains(target.x,target.z,target.radius)&&workshopColour(target.color));
 }
 export function validEntityEditors(editors,entities){
  return editors&&typeof editors==='object'&&!Array.isArray(editors)&&Object.keys(editors).length<=32&&Object.entries(editors).every(([id,stamp])=>entities?.[id]

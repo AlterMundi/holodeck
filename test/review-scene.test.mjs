@@ -52,7 +52,7 @@ test('creation review excludes only the named ambient horizon while retaining al
  assert.equal(review.source.snapshotSha256,full.source.snapshotSha256);
  assert.ok(review.source.parts.some(part=>part.entity==='garden-detail'));
  const extent=scene=>{const min=[Infinity,Infinity],max=[-Infinity,-Infinity];for(const part of scene.parts)for(const v of part.vertices)for(let i=0;i<2;i++){min[i]=Math.min(min[i],v[i]);max[i]=Math.max(max[i],v[i]);}return Math.max(...max.map((value,i)=>value-min[i]));};
- assert.equal(extent(full.scene),220000);assert.ok(extent(review.scene)<70000);
+ assert.equal(extent(full.scene),220000);assert.ok(extent(review.scene)<100000);
 });
 test('generated review scene is accepted by the real installed gallery builder',{skip:!process.env.HOLODECK_REVIEW_BUILDER},async()=>{
  const {scene,source}=await exportReviewScene(new Room().observe(actor),scenery);

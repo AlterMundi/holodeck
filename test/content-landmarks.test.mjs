@@ -39,7 +39,7 @@ test('a landmark resolves only selected visits and proximity offers only the cur
  assert.equal(nearestContentNode(nodes,allowed,{x:NaN,z:3}),null);
  assert.throws(()=>validateContentVisits([{...visit,node:'research-unselected'}],nodes));
  const both=[...allowed,{...visit,id:'reading',node:CONTENT_NODE.id}];
- assert.equal(nearestContentNode(nodes,both,{x:-2,y:.1,z:3}).id,CONTENT_NODE.id);
+ assert.equal(nearestContentNode(nodes,both,{x:CONTENT_NODE.position.x+1,y:.1,z:CONTENT_NODE.position.z}).id,CONTENT_NODE.id);
 });
 
 test('the same public entrances appear in situated context and MML while source pins stay outside scenery and exports',()=>{

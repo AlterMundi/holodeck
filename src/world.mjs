@@ -1,3 +1,4 @@
+import {LAYOUT_VERSION,TERRACES,PROMENADES} from './world-layout.mjs';
 import {signalColourName} from './playable-creations.mjs';
 // One-way projection of Room semantics. Static original art is a merged GLB;
 // only traversable surfaces and changing activity elements remain MML primitives.
@@ -12,11 +13,12 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
   const prefix=basePath.endsWith('/')?basePath:basePath+'/';
   const projection=workshopProjection(room.entities),manifest=JSON.stringify(room.entities);
   if(manifest.length>16384)throw Error('Geometry manifest exceeds bound');
-  let out=`<m-group id="workshop" data-run="${attribute(room.run)}" data-edition="${attribute(room.edition)}" data-semantic-sequence="${room.sequence}" data-geometry-state="${attribute(manifest)}">`;
-  out+=`<m-model id="island-scenery" src="${attribute(prefix)}assets/island-scenery.glb" collide="false"></m-model>`;
-  // Invisible simple collision surfaces align with the visible GLB terrace tops.
-  out+=cylinder(0,0,0,10.75,.2,'#6b987e','opacity="0"');
-  out+=cylinder(0,0,-17,4.9,.2,'#6b987e','opacity="0"');
+  let out=`<m-group id="workshop" data-run="${attribute(room.run)}" data-edition="${attribute(room.edition)}" data-semantic-sequence="${room.sequence}" data-layout-version="${LAYOUT_VERSION}" data-geometry-state="${attribute(manifest)}">`;
+  out+=`<m-model id="island-scenery" src="${attribute(prefix)}assets/island-scenery.glb?layout=${LAYOUT_VERSION}" collide="false"></m-model>`;
+  // Flat walking proxies keep y=.1, at most3cm above layered visual ground.
+  // Invisible proxies must not cast shadows onto their visible dressing.
+  for(const terrace of TERRACES)out+=cylinder(terrace.x,0,terrace.z,terrace.radius,.2,'#6b987e','opacity="0" cast-shadows="false"');
+  for(const p of PROMENADES)out+=`<m-cube x="${(p.minX+p.maxX)/2}" y="0" z="${(p.minZ+p.maxZ)/2}" width="${p.maxX-p.minX}" height=".2" depth="${p.maxZ-p.minZ}" opacity="0" cast-shadows="false"></m-cube>`;
   for(const entity of projection){
     if(entity.deleted)continue;
     out+=`<m-group id="${attribute(entity.id)}" data-entity-revision="${entity.revision}">${entity.nodes.map(projectionNodeHTML).join('')}</m-group>`;
@@ -26,12 +28,12 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
    for(const node of room.contentNodes||[CONTENT_NODE]){
     const {x,y,z}=node.position;
     if(node.id!==CONTENT_NODE.id){
-     const labelHeight=Math.max(.45,Math.ceil(node.title.length/24)*.4);
+     const spatialTitle=node.title.length>24?node.title.slice(0,23)+'…':node.title,labelHeight=.35;
      out+=`<m-group id="content-${attribute(node.id)}" x="${x}" y="${y}" z="${z}" data-content-node="${attribute(node.id)}">
        <m-cylinder radius=".75" height=".16" y=".08" color="#536c70" collide="false"></m-cylinder>
        ${node.model?`<m-model src="${attribute(prefix)}assets/${attribute(node.model)}" collide="false"></m-model>`:
         '<m-sphere y="1" radius=".45" color="#8ce4c2" collide="false"></m-sphere>'}
-       <m-label y="${1.8+labelHeight/2}" content="${attribute(node.title)}" font-size="20" width="3.5" height="${labelHeight}" collide="false"></m-label>
+       <m-label y="${1.8+labelHeight/2}" content="${attribute(spatialTitle)}" font-size="18" width="2.5" height="${labelHeight}" color="#163b3f" font-color="#f6edda" collide="false"></m-label>
      </m-group>`;
      continue;
     }
@@ -42,7 +44,7 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
       <m-cube x=".66" y="1.05" width=".15" height="1.7" depth=".22" color="#bc8355"></m-cube>
       <m-cube y="1.85" width="1.48" height=".15" depth=".22" color="#eed19b"></m-cube>
       <m-cube y="1.03" width="1.1" height="1.24" depth=".08" color="#8ce4c2" collide="false"></m-cube>
-      <m-label y="2.2" content="Sala de presentaciones" font-size="24" width="3" height=".8" collide="false"></m-label>
+      <m-label y="2.2" content="Sala de presentaciones" font-size="18" width="2.5" height=".4" color="#163b3f" font-color="#f6edda" collide="false"></m-label>
     </m-group>`;
    }
   }
@@ -56,8 +58,6 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
         <m-sphere y="1.1" radius=".24" color="${node.play?(node.progress.complete?'#efc87a':'#a77bea'):'#8ce4c2'}" collide="false"></m-sphere>
         <m-label y="2.1" content="${attribute(node.title)}" font-size="20" width="2.5" height=".35" color="#163b3f" font-color="#f6edda" collide="false"></m-label></m-group>`;
       if(node.play){
-        out+=`<m-label x="${x}" y="2.65" z="${z}" content="${attribute(node.status)}" font-size="17" width="3.4" height=".35" color="#163b3f" font-color="#f6edda" collide="false"></m-label>
-          <m-label x="${x}" y="3.25" z="${z}" content="${attribute(node.instruction)}" font-size="14" width="3.6" height=".8" color="#163b3f" font-color="#f6edda" collide="false"></m-label>`;
         node.play.targets.forEach((target,index)=>{
           const filled=node.progress.targets[index].entity!==null;
           out+=`<m-group id="play-${attribute(node.id)}-target-${index}" data-play-target="${index}" data-play-filled="${filled}" x="${target.x}" y=".14" z="${target.z}">

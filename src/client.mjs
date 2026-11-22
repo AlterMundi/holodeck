@@ -1,3 +1,4 @@
+import {nearestCreationPosition} from './world-layout.mjs';
 import { Networked3dWebExperienceClient, DefaultVirtualJoystickPlugin } from '@mml-io/3d-web-experience-client';
 import { ThreeJSWorldRenderer } from '@mml-io/3d-web-threejs';
 import { DirectionalLight } from 'three';
@@ -43,7 +44,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
     const light=new DirectionalLight(0xffefd6,1.8);
     light.position.set(12,22,10);light.target.position.set(0,0,-6);light.castShadow=true;
     light.shadow.mapSize.set(1024,1024);
-    Object.assign(light.shadow.camera,{left:-26,right:26,top:26,bottom:-26,near:.1,far:75});
+    Object.assign(light.shadow.camera,{left:-38,right:38,top:32,bottom:-32,near:.1,far:75});
     light.shadow.normalBias=.035;
     renderer.mmlCompositionScene.group.add(light,light.target);
     geometryProbe=new AppliedGeometryProbe({document,scene:renderer.mmlCompositionScene.group,
@@ -290,8 +291,8 @@ function previewDocument(){
 function movePreview(){
   const position=client.getLocalCharacterState()?.position;
   if(!position){say('Esperá a entrar al taller para crear una luz.');return false;}
-  const area=WORKSHOP.creationArea;
-  preview={...preview,x:Math.max(area.minX,Math.min(area.maxX,position.x+1)),z:Math.max(area.minZ,Math.min(area.maxZ,position.z)),color:preview?.color||'mint'};
+  const at=nearestCreationPosition(position.x+1,position.z);
+  preview={...preview,...at,color:preview?.color||'mint'};
   previewDocument();return true;
 }
 function closePreview(){

@@ -1,7 +1,7 @@
 # Spatial entrances to existing content
 
 The receiving owner can select up to eight authored public content entrances,
-including the unchanged reading room. Each additional `research-*` object opens
+including the stable reading-room identity. Each additional `research-*` object opens
 an existing authorized pinned visit through the same retained Nexus frame.
 Conversation continues to own text, audio, files and native submission.
 
@@ -14,10 +14,12 @@ same-application `.glb` asset by basename, without paths or query strings.
 Without a model, a simple noncolliding marker identifies the entrance. That
 marker is a placeholder, not a claim that subject-specific art is complete.
 
-Keep the original entry exactly:
+The current spatial layout selects this reading-room entrance. Its stable identity
+and selected content remain; the gallery position is deliberately moved from
+the original crowded plaza:
 
 ```json
-{"id":"reading-room","title":"Sala de presentaciones","position":{"x":-3,"y":0.1,"z":3}}
+{"id":"reading-room","title":"Sala de presentaciones","position":{"x":-22,"y":0.1,"z":3}}
 ```
 
 The existing `contentVisits[].node` selects one of these IDs. Report and artifact

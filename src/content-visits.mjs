@@ -1,6 +1,6 @@
 // The world owns spatial entrances; Nexus owns media, notes and native review.
 // Receiving configuration contains selected private content references, not this source.
-export const CONTENT_NODE=Object.freeze({id:'reading-room',title:'Sala de presentaciones',position:{x:-3,y:.1,z:3}});
+export const CONTENT_NODE=Object.freeze({id:'reading-room',title:'Sala de presentaciones',position:{x:-22,y:.1,z:3}});
 const slug=value=>typeof value==='string'&&/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$/.test(value);
 // Authored public entrances, not research documents or another mutable world.
 // The receiving owner must select labels/assets suitable for every room reader.
