@@ -2,7 +2,7 @@ const base=new URL('./',document.baseURI);
 const DOOR_RANGE=1.65;
 
 export async function readSpace(){
-  const result=await fetch(new URL('api/space',base),{credentials:'same-origin'});
+  const result=await fetch(new URL('api/space?live=1',base),{credentials:'same-origin'});
   if(!result.ok)throw Error('No pude confirmar el lugar.');
   return result.json();
 }
@@ -13,7 +13,7 @@ export function doorLocation({x,y,z,facing,yaw=facing*90}) {
   return [x,y,z,0,s,0,c,x-Math.sin(rotation)*2.7,y+1.7,z-Math.cos(rotation)*2.7,0,s,0,c].join(',');
 }
 
-export function showSpaceLinks(space,{canLeave=()=>true,onError}){
+export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving,revision,onNear,onAccessLost}){
   const travel=document.querySelector('#space-travel'),button=document.querySelector('#house-door');
   const inside=space.id!=='outside';
   const doors=inside
@@ -28,29 +28,33 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError}){
     busy=true;
     try{if(!await canLeave()){busy=false;return;}}
     catch{busy=false;onError('No pude comprobar el estado de la visita.');return;}
-    button.disabled=true;
+    button.disabled=true;onMoving?.(true);
     for(const control of list.children)control.disabled=true;
     let next;
     try{
       const result=await fetch(new URL('api/space',base),{
         method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({from:space.id,to:destination.to}),
+        body:JSON.stringify({from:space.id,to:destination.to,...(onMoved?{live:1,cachedRevision:revision(destination.to)}:{})}),
       });
       if(result.ok)next=await result.json();
-      else onError('Esta salida no está disponible. Podés volver a intentar.');
+      else{
+        if(result.status===401||result.status===403)onAccessLost?.();
+        onError('Esta salida no está disponible. Podés volver a intentar.');
+      }
     }catch{
       try{next=await readSpace();}catch{}
       if(!next||next.id===space.id)onError('No pude confirmar el cambio de lugar.');
     }
     if(next&&next.id!==space.id){
-      const target=new URL(location.href);
       const arrival=next.id==='outside'?space.exteriorDoor:next.exits.find(exit=>exit.to===space.id)?.door;
+      if(onMoved&&next.live===1){onMoved(next,arrival);return;}
+      const target=new URL(location.href);
       target.hash=arrival?doorLocation(arrival):'';
       history.replaceState(history.state,'',target);
       location.reload();
       return;
     }
-    busy=false;button.disabled=false;
+    busy=false;button.disabled=false;onMoving?.(false);
     for(const control of list.children)control.disabled=false;
   }
 
@@ -64,24 +68,29 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError}){
     list.append(control);
   }
   button.onclick=()=>{if(near)move(near);};
-  document.addEventListener('keydown',event=>{
+  const hotkey=event=>{
     if(event.code!=='KeyE'||event.repeat||!near||!button.getClientRects().length||
        event.altKey||event.ctrlKey||event.metaKey||
        event.target instanceof Element&&event.target.closest('input,textarea,select,[contenteditable="true"]'))return;
     event.preventDefault();
     move(near);
-  });
-  return position=>{
-    let closest=null,distance=DOOR_RANGE;
+  };
+  document.addEventListener('keydown',hotkey);
+  const update=position=>{
+    let closest=null,distance=DOOR_RANGE,nearby=null,prefetchDistance=3.75;
     if(position)for(const destination of doors){
       if(!destination.door)continue;
+      const gap=Math.hypot(position.x-destination.door.x,position.z-destination.door.z);
+      if(gap<prefetchDistance&&destination.to!=='outside'){nearby=destination;prefetchDistance=gap;}
       const stair=destination.kind==='stair';
       if(Math.abs(position.y-destination.door.y)>(stair ? .34 : .8))continue;
-      const gap=Math.hypot(position.x-destination.door.x,position.z-destination.door.z);
       if(gap<distance&&(!stair||gap<.85)){closest=destination;distance=gap;}
     }
+    if(nearby)onNear?.(nearby.to);
     if(closest===near)return;
     near=closest;button.hidden=!near;
     if(near)button.textContent=near.title;
   };
+  update.dispose=()=>document.removeEventListener('keydown',hotkey);
+  return update;
 }

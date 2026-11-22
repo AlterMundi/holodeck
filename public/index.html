@@ -33,6 +33,9 @@ body:has(#content-visit:not([hidden]):not(.is-walking)) .touch-controls{visibili
 .inside-house #house-door{bottom:max(26px,env(safe-area-inset-bottom))}
 body:has(#conversation-panel:not([hidden])) #house-door,body:has(#creator:not([hidden])) #house-door,body:has(#content-visit:not([hidden]):not(.is-walking)) #house-door{display:none}
 #space-travel{position:fixed;z-index:23;top:73px;right:22px;max-width:min(260px,calc(100vw - 44px));padding:8px 12px;border-radius:14px}#space-travel summary{min-height:42px;align-content:center;cursor:pointer}#space-travel nav{display:flex;flex-direction:column;gap:6px;max-height:40dvh;overflow:auto}#space-travel button{text-align:left}
+.room-transition canvas{visibility:hidden}
+.room-transition::after{content:'Entrando…';position:fixed;inset:0;display:grid;place-items:center;background:#163437;color:#e3d4ad;z-index:40}
+.inside-house #creator,.inside-house #pointing,.inside-house #play-near,.inside-house #recovery-panel{display:none!important}
 .inside-house #world-tools,.inside-house #dock,.inside-house #companion-status,.inside-house #sound{display:none}
 @media(max-width:740px){#space-travel{top:145px;right:12px}.inside-house #space-travel{top:100px}}
 </style></head><body>

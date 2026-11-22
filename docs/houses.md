@@ -124,27 +124,31 @@ permitted exits. Legacy exterior writes and captures are unavailable while
 inside. Situated Conversation, protected Nexus displays and working lab tools
 require their own bindings in [#12](https://github.com/AlterMundi/holodeck/issues/12).
 
-## Seamless circulation follow-up
+## Seamless circulation
 
 Nicolás confirmed the live door and portal round trip using E and reported
-long waits on room transitions. The current browser commits the location,
-then reloads the whole document. Two controlled Chromium foyer-to-gallery
-crossings had 204 and 338 ms from input to HTTP response, and 4,787 and 5,476
-ms to the destination geometry and avatar. Each downloaded the same
-4,786,942-byte client. These loopback samples localize the delay and are
-not a measurement of the visitor's device or network.
+long waits. The old client committed the location and then reloaded the whole
+page. Two controlled Chromium foyer-to-gallery crossings took 204 and 338 ms
+to acknowledge the move and 4,787 and 5,476 ms to show the destination and
+avatar. Each downloaded the same 4,786,942-byte client. The deployed gateway
+served that JavaScript as 1,602,552 gzip bytes. Two sampled GLBs had no HTTP
+content encoding. These assets were served with `private, no-store`.
 
-Keep the document, renderer, avatar and input loop mounted. Switch the
-authorized room and subscription within the client and present a new room
-only once its matching collision geometry is ready. Load the nearest allowed
-destination as the avatar approaches its doorway. Hold a bounded in-memory
-cache of recently visited static geometry, collision and common assets.
-Identify entries by room, geometry revision and audience scope, evict distant
-or changed entries, and check access again on entry. Read presence and active
-state from the new room. Do not share or persist protected Nexus credentials
-or live frames in the geometry cache. Start with interior crossings and
-extend the same transport across the exterior door. Measure cold and warm
-time from input to the destination's first playable frame.
+Crossings retain the page, renderer and input loop. The doorway prepares the
+nearest permitted destination. The client keeps up to three recent static room
+templates in memory, each capped at 128 KiB and keyed to the current actor and
+scene revision. The server rechecks authorization and selects the canonical
+location before the client can mount a cached room. A successful warm crossing
+omits the template payload. Presence and interaction permissions come from the
+new room's subscription. Unexpected disconnects purge cached templates. The
+cache excludes live presence, visits, credentials, and embedded viewer state.
+
+The exterior uses the same renderer and automatic return uses the authored
+door location. A failed transition refreshes the committed location without
+resending the movement. For timing, measure from E until the destination
+geometry, avatar and input are ready. Separately record the HTTP response and
+whether the room template was transferred, so a fast acknowledgement is not
+mistaken for a playable frame.
 
 ## Place a room exhibit
 

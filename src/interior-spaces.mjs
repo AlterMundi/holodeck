@@ -94,13 +94,17 @@ export class InteriorSpaces {
     return p.space;
   }
 
-  move(actor, request) {
+  canMove(actor,request) {
     if (this.fenced || !exact(request,'from,to') || !allowedActor(actor?.id) ||
         typeof request.to!=='string' || this.current(actor)!==request.from ||
-        request.from===request.to || !this.allows(actor,request.to)) return null;
-    const here=this.rooms.get(request.from), there=this.rooms.get(request.to);
-    if (request.from===OUTSIDE ? !there?.entry :
-        request.to!==OUTSIDE && !here?.links.some(link=>link.to===request.to)) return null;
+        request.from===request.to || !this.allows(actor,request.to)) return false;
+    if (request.from===OUTSIDE) return this.rooms.get(request.to)?.entry===true;
+    return request.to===OUTSIDE || this.rooms.get(request.from)?.links.some(link=>link.to===request.to);
+  }
+
+  move(actor, request) {
+    if (!this.canMove(actor,request)) return null;
+    const there=this.rooms.get(request.to);
     const now=this.clock();
     const positions=this.positions.filter(p=>p.actor!==actor.id&&now-p.at<WINDOW_MS);
     if (there) {

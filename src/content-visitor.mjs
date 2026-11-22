@@ -124,6 +124,16 @@ export class ContentVisitor{
    try{await this.ready;}catch{this.say('El contenido está abierto, pero no pude conectar su contexto con el mundo. Conservé su ventana.');}
   }finally{this.opening=false;if(this.selector){this.selector.disabled=false;if(this.entry)this.selector.value=this.entry.id;}}
  }
+ changeRoom(scoped){
+  if(this.frame){
+   clearTimeout(this.readyTimer);
+   for(const task of this.pending.values()){clearTimeout(task.timer);task.reject(Error('Room changed'));}
+   this.pending.clear();this.frame.remove();this.frame=null;
+  }
+  this.entry=null;this.nearby=null;this.lastContext=null;this.entries=[];this.scoped=scoped;
+  this.button.hidden=true;this.panel.hidden=true;
+  this.catalog=this.loadCatalog();
+ }
  async allowLeaveRoom(){
   if(!this.frame&&!this.opening)return true;
   if(this.readyAcknowledged&&!this.opening){

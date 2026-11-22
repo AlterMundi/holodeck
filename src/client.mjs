@@ -1,3 +1,5 @@
+import {RemoteDocumentWrapper} from '@mml-io/mml-web';
+import {RoomSceneCache} from './room-scene-cache.mjs';
 import {nearestCreationPosition} from './world-layout.mjs';
 import { Networked3dWebExperienceClient, DefaultVirtualJoystickPlugin } from '@mml-io/3d-web-experience-client';
 import { ThreeJSWorldRenderer } from '@mml-io/3d-web-threejs';
@@ -15,7 +17,7 @@ import { WorldAudio } from './world-audio.mjs';
 import {WorldHistory} from './world-history.mjs';
 import { snapshotMayApply, sameRequest } from './client-order.mjs';
 import { WorldNotice } from './client-feedback.mjs';
-import {readSpace,showSpaceLinks} from './space-travel.mjs';
+import {doorLocation,readSpace,showSpaceLinks} from './space-travel.mjs';
 const base=new URL('./',document.baseURI);
 const url=path=>new URL(path,base);
 const socket=path=>{const target=url(path);target.protocol=location.protocol==='https:'?'wss:':'ws:';return target.href;};
@@ -31,8 +33,8 @@ const touchControls={
   dispose(){this.delegate?.dispose();this.holder?.remove();}
 };
 const activeSpace=await readSpace().catch(()=>null);
-if(activeSpace&&activeSpace.id!=='outside')startInterior(activeSpace);
-else startExterior(activeSpace);
+if(activeSpace&&activeSpace.id!=='outside'&&activeSpace.live!==1)startInterior(activeSpace);
+else startWorld(activeSpace);
 
 function startInterior(space){
   document.body.classList.add('inside-house');
@@ -78,11 +80,125 @@ function startInterior(space){
   window.addEventListener('pagehide',()=>{exhibitObserver.disconnect();visitor.dispose();client.dispose();},{once:true});
 }
 
-function startExterior(activeSpace){
-let updateDoor=()=>{};
+function startWorld(activeSpace){
+const hot=activeSpace?.live===1;
+const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
+let inside=hot&&activeSpace.id!=='outside';
+let updateDoor=()=>{},remoteScene=null,networkScope=null,arrival=null,arrivedFrames=0;
+let moving=false,requestingMove=false,needsSync=false,resyncing=false,moveDeadline=null;
+let prefetched=new Set(),prefetchRequest=null;
+const setMoving=value=>{
+  moving=value;
+  document.body.classList.toggle('room-transition',value);
+  if(!value){clearTimeout(moveDeadline);moveDeadline=null;}
+};
+const removeScene=()=>{remoteScene?.remove();remoteScene=null;};
+function mountScene(){
+  removeScene();
+  if(!inside)return true;
+  const stored=sceneCache.remember(activeSpace.scene);
+  if(!stored)return false;
+  const renderer=client.getRenderer();
+  const wrapper=new RemoteDocumentWrapper(url('api/space/scene').href,window,
+    renderer.mmlCompositionScene.mmlScene,()=>{});
+  remoteScene=wrapper.remoteDocument;
+  remoteScene.append(stored.template.content.cloneNode(true));
+  renderer.mmlTargetElement.append(remoteScene);
+  return true;
+}
+function onNear(destination){
+  if(!sceneCache||moving||prefetchRequest||prefetched.has(destination)||sceneCache.revision(destination))return;
+  prefetched.add(destination);
+  const startedIn=activeSpace.id;
+  const controller=new AbortController();prefetchRequest=controller;
+  fetch(url('api/space/scene?'+new URLSearchParams({room:destination})),{
+    credentials:'same-origin',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(4000)])
+  }).then(response=>response.ok?response.json():null).then(scene=>{
+    if(activeSpace.id===startedIn&&scene?.id===destination)sceneCache.remember(scene);
+  }).catch(()=>{}).finally(()=>{if(prefetchRequest===controller)prefetchRequest=null;});
+}
+function applySpace(next,anchor){
+  if(next.actorRef!==activeSpace.actorRef){sceneCache.clear();location.reload();return;}
+  const changed=next.id!==activeSpace.id;
+  activeSpace=next;inside=next.id!=='outside';arrival=anchor;arrivedFrames=0;
+  stateRequest++;worldAudio.breakContinuity();
+  prefetched=new Set();
+  prefetchRequest?.abort();prefetchRequest=null;
+  document.body.classList.toggle('inside-house',inside);
+  $('#hud h1').textContent=inside?next.title:'El taller de las islas';
+  $('#people').textContent=inside?(next.level===0?'Planta baja':next.level<0?`Subsuelo ${-next.level}`:`Piso ${next.level}`):'Un lugar para crear juntos';
+  if(changed){contentVisitor.changeRoom(inside);worldIndication.selected=null;worldIndication.removeOutline();state=null;}
+  else if(inside)contentVisitor.catalog=contentVisitor.loadCatalog();
+  if(anchor)history.replaceState(history.state,'','#'+doorLocation(anchor));
+  resetDoor();
+  if(!mountScene()){sceneCache.clear();location.reload();}
+  if(!inside)refresh().catch(()=>{});
+}
+function syncCurrent(){
+  if(resyncing||requestingMove)return;
+  resyncing=true;
+  readSpace().then(next=>{
+    if(requestingMove)return;
+    if(next.live!==1||next.actorRef!==activeSpace.actorRef){sceneCache.clear();location.reload();return;}
+    if(networkScope!==next.id)return;
+    needsSync=false;
+    applySpace(next,null);
+  }).catch(()=>{if(!requestingMove)say('No pude confirmar tu ubicación.');})
+    .finally(()=>{resyncing=false;});
+}
+function canFinishMove(){
+  if(requestingMove||needsSync||networkScope!==activeSpace.id||!client.getLocalCharacterState())return false;
+  if(arrival){
+    const {x,y,z,yaw,facing}=arrival;
+    client.updateConfig({spawnConfiguration:{spawnPosition:{x,y,z},spawnYRotation:-(yaw??facing*90)}});
+    client.respawn();arrival=null;
+    return false;
+  }
+  if(inside?!remoteScene?.isConnected:!geometryProbe?.snapshot())return false;
+  return ++arrivedFrames>=2;
+}
+function resetDoor(){
+  updateDoor.dispose?.();
+  $('#house-door').hidden=true;$('#house-door').disabled=false;
+  $('#space-travel nav').replaceChildren();
+  if(!activeSpace)return;
+  updateDoor=showSpaceLinks(activeSpace,{
+    canLeave:()=>{
+      if(moving)return false;
+      if(inside)return contentVisitor.allowLeaveRoom();
+      if(contentVisitor.frame||sharedConversation?.frame||nativeTurn||pending||preview||$('#message').value.trim()){
+        say('Tenés una visita, un borrador o un envío abierto. Retomalo antes de cambiar de lugar.');
+        return false;
+      }
+      return true;
+    },
+    onError:say,
+    ...(hot?{
+      revision:destination=>sceneCache.revision(destination),
+      onNear,
+      onAccessLost:()=>{needsSync=true;sceneCache.clear();removeScene();},
+      onMoving:value=>{
+        requestingMove=value;setMoving(value);
+        if(value){prefetchRequest?.abort();prefetchRequest=null;}
+        if(!value&&needsSync){setMoving(true);syncCurrent();}
+      },
+      onMoved:(next,anchor)=>{
+        requestingMove=false;needsSync=false;
+        applySpace(next,anchor);
+        // Recovery reads the location already committed, without sending the move again.
+        moveDeadline=setTimeout(()=>location.reload(),8000);
+      }
+    }:{})
+  });
+}
 // MML captures document keys by default. Preserve ordinary text editing and
 // keyboard activation of the HUD without turning typed words into locomotion.
 document.addEventListener('keydown',event=>{
+  if(hot&&(moving||inside&&contentVisitor?.frame&&!contentVisitor.panel.classList.contains('is-walking'))&&
+     ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE'].includes(event.code)){
+    if(!(event.target instanceof Element&&event.target.closest('button,input,select,textarea')))event.preventDefault();
+    event.stopImmediatePropagation();return;
+  }
   if(event.target instanceof Element&&event.target.closest('#activity-dialog')){
     event.stopImmediatePropagation();if(event.key==='Escape'){event.preventDefault();worldHistory?.close();}return;
   }
@@ -99,7 +215,7 @@ document.addEventListener('keydown',event=>{
 const playableHUD=new PlayableHUD(document);
 let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null,worldHistory=null;
 const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
-  sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket('network'),waitForWorldConfig:true,
+  sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket(hot?'active/network':'network'),waitForWorldConfig:true,
   enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
   // Upstream's default sun allocates an 8192² shadow map. This small world uses
   // the public renderer factory and a bounded 1024² light instead, on all clients.
@@ -129,8 +245,20 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       clear:record=>action('focus.clear',null,{},record.sequence),edit:editLight,
       visit:record=>contentVisitor.openNode(record.target,{expectedRevision:record.revision}).catch(()=>say('No pude abrir este contenido. Conservé la visita anterior.'))});
     const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
-    renderer.render=state=>{nativeAvatarLayer.update();worldIndication?.update();contentVisitor?.update(client.getLocalCharacterState()?.position);playableHUD.update(client.getLocalCharacterState()?.position);updateDoor(client.getLocalCharacterState()?.position);render(state);geometryProbe.afterRender();};
-    renderer.dispose=()=>{worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();dispose();};
+    if(hot){
+      const configure=renderer.setMMLConfiguration.bind(renderer);
+      renderer.setMMLConfiguration=(configuration,token)=>configure(configuration.interior?{}:configuration,token);
+    }
+    renderer.render=renderState=>{
+      const position=client.getLocalCharacterState()?.position;
+      nativeAvatarLayer.update();
+      if(!inside){worldIndication?.update();if(!moving)playableHUD.update(position);}
+      if(!moving){contentVisitor?.update(position);updateDoor(position);}
+      render(renderState);
+      if(!inside)geometryProbe.afterRender();
+      if(hot&&moving&&canFinishMove())setMoving(false);
+    };
+    renderer.dispose=()=>{removeScene();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();dispose();};
     queueMicrotask(options.onInitialized);
     return renderer;
   },
@@ -145,7 +273,7 @@ window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()
 const $=selector=>document.querySelector(selector);
 const notice=$('#notice');
 const worldNotice=new WorldNotice(notice);
-contentVisitor=new ContentVisitor({document,window,base,say});
+contentVisitor=new ContentVisitor({document,window,base,say,scoped:inside});
 worldHistory=new WorldHistory({document,window,getState:()=>state,
   load:(query,{signal})=>api('activity?'+new URLSearchParams(query),undefined,{signal}),
   resumeWorld:()=>{document.activeElement?.blur();window.focus();},onDiscuss:()=>openConversation(true),
@@ -305,6 +433,7 @@ function updateNativeAvailability(){
   }
 }
 async function refresh(){
+  if(inside)return;
   const request=++stateRequest,continuityVersion=worldAudio.continuityVersion;
   let incoming;
   try{incoming=await api('state');}catch(error){if(request!==stateRequest)return;worldAudio.breakContinuity();throw error;}
@@ -518,20 +647,27 @@ $('#conversation-form').onsubmit=async event=>{
 window.addEventListener('keydown',event=>{if(event.key==='Escape'){openConversation(false);if(preview)closePreview();}});
 let refreshing=false;
 const interval=setInterval(async()=>{
-  if(closed||document.hidden||refreshing)return;refreshing=true;
+  if(closed||inside||document.hidden||refreshing)return;refreshing=true;
   try{await refresh();}catch{say('La conexión con el taller se interrumpió. Los cambios no se repetirán solos.');}
   finally{refreshing=false;}
 },1500);
 window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);worldAudio.dispose();client.dispose();});
 refresh().catch(()=>say('No pude conectar con el taller.'));
-if(activeSpace)updateDoor=showSpaceLinks(activeSpace,{
-  canLeave:()=>{
-    if(contentVisitor.frame||sharedConversation?.frame||nativeTurn||pending||preview||$('#message').value.trim()){
-      say('Tenés una visita, un borrador o un envío abierto. Retomalo antes de cambiar de lugar.');
-      return false;
+resetDoor();
+if(hot){
+  if(inside){applySpace(activeSpace,null);setMoving(true);}
+  client.getWorldConnection().addEventListener(event=>{
+    if(event.type==='disconnected'){
+      networkScope=null;
+      removeScene();
+      setMoving(true);
+      if(!requestingMove&&!moveDeadline){needsSync=true;sceneCache.clear();}
+    }else if(event.type==='world_config'){
+      const config=event.config.mmlDocuments;
+      networkScope=config?.interior?.url.split('/').at(-2)??(config?.workshop?'outside':null);
+      if(needsSync)syncCurrent();
+      else if(moving&&!requestingMove&&networkScope===activeSpace.id&&inside&&!remoteScene)mountScene();
     }
-    return true;
-  },
-  onError:say
-});
+  });
+}
 }

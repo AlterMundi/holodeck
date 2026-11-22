@@ -9,7 +9,7 @@ import { NetworkedDOM } from '@mml-io/networked-dom-server';
 import { handleExperienceWebsocketSubprotocol } from '@mml-io/3d-web-experience-protocol';
 import enableWs from 'express-ws';
 import { readFileSync } from 'node:fs';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { join } from 'node:path';
 import { Room, RoomError, LIMITS } from './room.mjs';
@@ -42,6 +42,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const registerGet=app.get.bind(app);
   app.get=(path,...handlers)=>registerGet(path,...handlers.map(handler=>
     handler.constructor?.name==='AsyncFunction'?asyncRoute(handler):handler));
+  const activeNetworkPath=route('active/network');
   const isWorldSocket = path => path===route('world') ||
     (path.startsWith(route('spaces/')) && path.endsWith('/world'));
   enableWs(app,undefined,{wsOptions:{handleProtocols:(protocols,req)=>isWorldSocket(req.url?.split('?')[0] ?? '')
@@ -111,7 +112,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const session=sessionFor(cookieToken(req));
     pendingSockets++;
     currentActor(req,session).then(actor=>{
-      const scope=req.params.space??OUTSIDE;
+      const scope=path===activeNetworkPath?spaces.current(actor):req.params.space??OUTSIDE;
       if(!inScope(actor,scope)||socket.readyState!==1){socket.close(1008);return;}
       const record={session,scope,checking:null};sockets.set(socket,record);
       // Upstream transports broadcast synchronously. Enforce the current room
@@ -134,6 +135,20 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     }).catch(()=>socket.close(1008)).finally(()=>pendingSockets--);
   });
   const cellTransports=new Map();
+  function interiorScopeKey(actor,selected){
+    return JSON.stringify([spaces.passages(actor,selected).map(link=>link.slot),exhibits.forRoom(selected.id)?.revision??0]);
+  }
+  function visitScene(actor,id,cachedRevision){
+    const selected=spaces.rooms.get(id);
+    if(!selected)return null;
+    const markup=interiorDocument(selected,spaces.passages(actor,selected),exhibits.forRoom(id));
+    const revision=createHash('sha256').update(actor.id+'\n'+markup).digest('hex');
+    return {id,actor:actor.id,revision,...(cachedRevision===revision?{}:{markup})};
+  }
+  function liveSpace(actor,cachedRevision){
+    const space=describeSpace(actor);
+    return {...space,live:1,actorRef:actor.id,scene:visitScene(actor,space.id,cachedRevision)};
+  }
   function describeSpace(actor){
     if(spaces.fenced)throw new RoomError('space-uncertain','Room placement needs recovery');
     const view=spaces.view(actor),exhibit=exhibits.scoped(actor,view.id);
@@ -248,6 +263,18 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   network.registerExpressRoutes(app);
   if(basePath!=='/')app.get(basePath.slice(0,-1),(_req,res)=>res.redirect(308,basePath));
   app.get(route('health'),(_req,res)=>res.status(projectionHealthy&&!room.commitUncertain&&!spaces.fenced?200:503).json({ok:projectionHealthy&&!room.commitUncertain&&!spaces.fenced}));
+  app.ws(activeNetworkPath,(ws)=>{
+    const record=sockets.get(ws);
+    if(!record){ws.close(1008);return;}
+    if(record.scope===OUTSIDE){
+      network.userNetworkingServer.connectClient(ws);
+      return;
+    }
+    const selected=spaces.rooms.get(record.scope);
+    const scopeKey=interiorScopeKey(record.session.actor,selected);
+    record.projectionAllowed=()=>interiorScopeKey(record.session.actor,selected)===scopeKey;
+    cellFor(record.scope).network.userNetworkingServer.connectClient(ws);
+  });
   app.ws(route('world'),(ws,req)=>{
     currentActor(req,sessionFor(cookieToken(req))).then(actor=>{
       if(!inScope(actor,OUTSIDE)||ws.readyState!==1){ws.close(1008);return;}
@@ -292,7 +319,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(session.times.length>=4)return res.status(429).json({message:'Esperá un momento antes de intentar otra acción.'});
       session.times.push(now);
     }
-    const spaceRoute=req.path==='/space'||req.path==='/space/content-visits';
+    const spaceRoute=['/space','/space/content-visits','/space/scene'].includes(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
     if(!spaceRoute&&spaces.current(actor)!==OUTSIDE)
@@ -307,12 +334,24 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   });
   app.get(route('api/space'),(req,res)=>{
     if(spaces.fenced||room.commitUncertain)return res.status(503).json({message:'No pude confirmar tu ubicación.'});
-    res.json(describeSpace(req.actor));
+    res.json(req.query.live==='1'?liveSpace(req.actor):describeSpace(req.actor));
+  });
+  app.get(route('api/space/scene'),(req,res)=>{
+    const {room:destination}=req.query;
+    const from=spaces.current(req.actor);
+    if(room.commitUncertain||typeof destination!=='string'||destination===OUTSIDE||
+       !spaces.canMove(req.actor,{from,to:destination}))return res.sendStatus(404);
+    res.json(visitScene(req.actor,destination));
   });
   app.post(route('api/space'),(req,res)=>{
-    const moved=moveSpace(req.actor,req.body);
+    const input=req.body;
+    const live=input?.live===1;
+    const {live:_live,cachedRevision,...move}=live?input:{};
+    if(live&&cachedRevision!==undefined&&
+       (typeof cachedRevision!=='string'||!/^[a-f0-9]{64}$/.test(cachedRevision)))return res.sendStatus(400);
+    const moved=moveSpace(req.actor,live?move:input);
     if(!moved)return res.status(409).json({message:'No podés entrar por acá. Revisá las salidas de este lugar.'});
-    res.json(moved);
+    res.json(live?liveSpace(req.actor,cachedRevision):moved);
   });
   app.get(route('api/state'),asyncRoute(async(req,res)=>{
     if(room.commitUncertain)return res.status(503).json({message:'El taller necesita recuperar su último cambio antes de continuar.'});

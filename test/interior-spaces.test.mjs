@@ -145,7 +145,16 @@ test('HTTP, real geometry upgrades and native observation share active room and 
     assert.equal(first.error||second.error,undefined);
     assert.equal((await read(person,'state')).status,409);
     assert.equal((await read(foreign,'state')).status,200);
-    assert.equal((await move(person,'foyer','gallery')).status,200);
+    const prepared=await (await fetch(base+'api/space/scene?room=gallery',{headers:headers(person)})).json();
+    assert.equal(prepared.actor,'human:guest');
+    assert.match(prepared.markup,/id="gallery"/);
+    assert.doesNotMatch(prepared.markup,/Secret Laboratory/);
+    assert.equal((await fetch(base+'api/space/scene?room=lab',{headers:headers(person)})).status,404);
+    assert.equal((await fetch(base+'api/space/scene?room=gallery',{headers:headers(foreign)})).status,404);
+    const liveMove=await fetch(base+'api/space',{method:'POST',headers:headers(person),
+      body:JSON.stringify({from:'foyer',to:'gallery',live:1,cachedRevision:prepared.revision})});
+    assert.equal(liveMove.status,200);
+    assert.deepEqual((await liveMove.json()).scene,{id:'gallery',actor:'human:guest',revision:prepared.revision});
     assert.equal((await foyerClose)[0],1008);
     await until(()=>!second.users.has(first.identity),'the other foyer client should see the peer depart');
     assert.equal((await (await read(viewer)).json()).participants.length,1);
@@ -159,6 +168,9 @@ test('HTTP, real geometry upgrades and native observation share active room and 
     foyerAccess=false;
     assert.equal((await (await read(person)).json()).id,'gallery');
     assert.equal((await staleGallery)[0],1008);
+    const afterGrant=await (await fetch(base+'api/space?live=1',{headers:headers(person)})).json();
+    assert.notEqual(afterGrant.scene.revision,prepared.revision);
+    assert.doesNotMatch(afterGrant.scene.markup,/Foyer|Secret Laboratory/);
     const isolatedGallery=connect('spaces/gallery/world',person);
     const isolatedSnapshot=String((await once(isolatedGallery,'message'))[0]);
     assert.doesNotMatch(isolatedSnapshot,/Foyer|Secret Laboratory|passage-/);

@@ -40,8 +40,12 @@ export class RoomExhibits {
   }
 
   scoped(actor, room){
-    if(this.fenced||this.spaces.current(actor)!==room)return null;
-    return this.state.exhibits.find(exhibit=>exhibit.room===room)??null;
+    if(this.spaces.current(actor)!==room)return null;
+    return this.forRoom(room);
+  }
+
+  forRoom(room){
+    return this.fenced?null:this.state.exhibits.find(exhibit=>exhibit.room===room)??null;
   }
 
   result(actor,id){
