@@ -122,7 +122,8 @@ the selected client, scenery, research figure and health. The own-native
 observer returned the original run and 30 entities/four nodes. Receiving config,
 house/Room contents and the native turn journal were preserved. No pilot
 interior is selected in production. The prior estate build `64b6a856` is the
-actual selected predecessor and leaves the additional spaces checkpoint intact.
+actual selected predecessor. A disposable run of its installed bytes wrote the
+legacy Room and preserved both space checkpoints byte for byte.
 
 The preceding 22 November estate runtime is source `2c2d82b`, package `64b6a856`, at
 https://compaii.dmn.homes/holodeck/. The 18,401,280-byte archive contains 30
