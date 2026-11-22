@@ -26,7 +26,7 @@ export class Room extends EventEmitter {
     this.outcomes = new Map();
     this.observations = new Map();
     this.entities = { bridge: { id: 'bridge', revision: 0, raised: false } };
-    this.projections = new Map();this.focuses=new Map();
+    this.projections = new Map();this.focuses=new Map();this.retainedNodes=null;
     this.persist = persist;
     this.presence = presence;
     if(state)this.restore(state);
@@ -35,7 +35,7 @@ export class Room extends EventEmitter {
   snapshot() {
     return clone({schema:'holodeck.room-save/v1',edition:this.edition,run:this.run,
       sequence:this.sequence,events:this.events,entities:this.entities,
-      outcomes:[...this.outcomes],observations:[...this.observations],projections:[...this.projections],focuses:[...this.focuses]});
+      outcomes:[...this.outcomes],observations:[...this.observations],projections:[...this.projections],focuses:[...this.focuses],...(this.retainedNodes===null?{}:{nodes:this.retainedNodes})});
   }
 
   restore(state) {
@@ -46,12 +46,13 @@ export class Room extends EventEmitter {
       || !Array.isArray(state.observations)||state.observations.length>LIMITS.observations
       || !Array.isArray(state.projections)||state.projections.length>LIMITS.sessions
       || (state.focuses!==undefined&&(!Array.isArray(state.focuses)||state.focuses.length>MAX_FOCUS||state.focuses.some(entry=>!Array.isArray(entry)||entry.length!==2||!validFocusEntry(entry)||entry[1].sequence>state.sequence)))
+      || (state.nodes!==undefined&&(!state.nodes||typeof state.nodes!=='object'||Array.isArray(state.nodes)||Object.keys(state.nodes).length>8||Buffer.byteLength(JSON.stringify(state.nodes))>65536))
       || !state.entities?.bridge || Object.keys(state.entities).length>LIMITS.elements)
       throw new RoomError('save','Room checkpoint is invalid; preserve it for recovery');
     const copy=clone(state);
     this.edition=copy.edition;this.run=copy.run;this.sequence=copy.sequence;
     this.events=copy.events;this.entities=copy.entities;
-    this.outcomes=new Map(copy.outcomes);this.observations=new Map(copy.observations);this.projections=new Map(copy.projections);this.focuses=new Map(copy.focuses||[]);
+    this.outcomes=new Map(copy.outcomes);this.observations=new Map(copy.observations);this.projections=new Map(copy.projections);this.focuses=new Map(copy.focuses||[]);this.retainedNodes=copy.nodes??null;
   }
 
   atomic(operation) {
@@ -132,7 +133,7 @@ export class Room extends EventEmitter {
     return this.event(actor, 'projection.changed', projection);
   }
 
-  focusState(){return focusState(this.focuses,this.entities);}
+  focusState(){return focusState(this.focuses,this.entities).map(signal=>signal.target.startsWith('node-')?{...signal,currentRevision:this.retainedNodes?.[signal.target]?.revision??null,status:'unavailable'}:signal);}
 
   command(actor, command) { return this.atomic(()=>this.execute(actor,command)); }
 

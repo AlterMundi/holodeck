@@ -326,3 +326,13 @@ the same retained request/predecessor instead of minting another request or
 repeating an uncertain route reload. Exact current selection, source hashes and
 effect receipts live in the protected receiving record. Git retains prior dated
 compositions; those old selections do not override this current contract.
+
+## Node-record-compatible fallback
+
+This compatible fallback retains up to eight new world-node records as opaque
+bounded JSON when an older engine does not implement their operations/rendering.
+A node indication remains retained but explicitly unavailable to that renderer,
+not falsely deleted. Existing bridge/light operations and atomic recovery keep
+those records untouched. It grants no own-native authority, discovers no new
+content and does not promote a node edition. Use it as code rollback before
+selecting the full runtime-creation release; preserve current world/native state.
