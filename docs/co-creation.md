@@ -26,14 +26,14 @@ outcomes. The server projects that state to MML. Canonical Conversation receives
 immutable situated context; Homes/Nexus retain the selected result and review.
 Two configured content entrances are also deployed.
 
-The candidate now adds a generic native-owned result-node contract below. It can
+The22November selected runtime adds the generic native-owned result-node contract below. It can
 place a declared Nexus report/artifact edition in a running Room without editing
 receiving configuration, source or restarting the engine. This is not yet a
 sandbox for arbitrary playable packages. The parent viewer's dynamic navigation,
-qualified deployment and actual shared visit remain separate acceptance checks;
-backend tests alone do not prove them.
+actual human shared visits remain separate acceptance evidence; the qualified
+deployment and actual native creation are recorded in STATUS.
 
-## Result-node candidate contract
+## Result-node contract
 
 `node.place`, `node.update` and `node.remove` reuse the existing native `act`
 envelope, current room rights, source observation, exact command outcomes and
@@ -96,7 +96,7 @@ and place a visitable node in the running shared world:
 2. Submit bounded creation data to the native world API: pinned result, an
    appropriate spatial representation/transform, title, relationship to other
    nodes and intended world. This is data, not an engine tarball or arbitrary
-   privileged server code. The bounded candidate schema is implemented above;
+   privileged server code. The bounded schema is implemented above;
    qualify the actual creator and protected viewer end to end.
 3. Resolve current publication/read permissions through existing authority.
    Being in a world does not make a private result public. Refuse unavailable
@@ -113,7 +113,7 @@ configuration edits or a Node restart; two independent participants visit the
 same node, identify the same result/version and retain discussion when returning.
 The daimon sees the same identity/change through its native representation.
 
-The candidate [signal garden](playable-creations.md) now implements the first
+The selected [signal garden](playable-creations.md) now implements the first
 bounded native-authored cooperative recipe. It reuses actual shared lights and
 bridge state; visual qualification/deployment and real shared play remain
 separate checks. The broader following step adds playable creations using declarative

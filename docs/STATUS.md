@@ -4,34 +4,62 @@ Updated2026-11-22. Nicolas explicitly resumed the **complete** existing MVP goal
 and says testing already done is enough to continue implementation. Native resume
 was acknowledged with the original objective/accounting unchanged. The MVP is
 not complete; the full roadmap remains active, including runtime co-creation,
-playable/editable shared activity and finished world quality. A real reported
-content-exit failure was reproduced and is being repaired first. Specific
+playable/editable shared activity and finished world quality. The real reported
+content-exit failure was reproduced, repaired and delivered. Specific
 observations/unknowns remain recorded rather than becoming a blanket acceptance
 claim or a gate requiring another generic repeat of the same human trial.
 The obsolete bundled pending trial was withdrawn without claiming its completion.
 
 ## Selected receiving release
 
-The protected trial remains https://compaii.dmn.homes/holodeck/.
-Source `de162ee`,17,653,760-byte package `81684064`, directly consumes canonical
-Conversation for text, audio/transcription, files, recording cues and original
-recovery. Exact29runtime files/health and the browser-qualified client match;
-shared capability and seven registered microphone origins are selected. Same
-App, fourteen readers, native routes and two content entrances remain.
+The protected entrance remains https://compaii.dmn.homes/holodeck/.
+Source `682d5df`,17,674,240-byte package `d1cacfdc`, is selected with29exact
+runtime hashes, health and served client verified. Same App, fourteen readers,
+seven existing native routes and two configured content visits remain. One
+“Volver al mundo” returns immediately while preserving the mounted viewer and
+unfinished work, without waiting for embedded readiness or claiming to pause it.
 
-[Shared Conversation](shared-conversation.md) records the exact contract and
-qualification. Canonical PR926/927 plus the PR928 authored-layout correction and
-native bridge d0dc7f1e are installed on all seven receivers, with native processes
-and configuration preserved.112Node/31Python checks pass with one unchanged
-optional gallery skip. Actual canonical desktop/mobile frame checks and visual
-inspection pass with synthetic I/O; physical hearing and real conversation
-acceptance remain unfinished. No umbrella goal resume or fabricated input occurred.
+The full existing goal is ACTIVE. The selected runtime supports native-owned
+result/game nodes and revision-bound links without source/configuration edits or
+engine restarts per creation. Dynamic result discovery retains an open viewer's
+original pin/draft until explicit safe replacement. The first reusable playable
+recipe is [signal gardens](playable-creations.md), with authoritative shared
+light/bridge progress and a readable nearest-activity HUD. This is a bounded
+recipe, not arbitrary executable game plugins or unlimited Minecraft terrain.
 
-Actual rollback is `bc713b77`/source7f68101; it preserves the current world,
-legacy recovery, indications and content visits but uses the earlier text composer.
-Current and previous archives total35,276,800B/96MiB. Superseded derived archive
-and verified task stage were retired through supported writers. World sequence84
-was retained. See [deployment](deployment.md).
+After deployment the actual continuing model used its installed own-native CLI
+to create `node-workshop-review` (the existing protected published edition),
+`node-signal-garden`, their link and `garden-compaii-first-signal`. All three
+commands completed and matched exact result retrieval. Run/edition and every
+existing light, projection, indication and native journal were preserved; the
+same active service process predates all three creations and receiving config
+was unchanged during them. Atseq93 the game has one of two signals, one of two
+canonical contributors and the bridge still unconnected: incomplete, honestly.
+
+Own-native authority uses each private receiving lane plus the current being's
+Home room grant, with no human original/browser or fabricated input. The socket
+policy survives actual app replacement; the ordinary host native UID reaches
+only its own lane, not the six foreign lanes. The CLI and creator instructions
+are installed on all seven actual bodies; one actual own-native observation per body matched its canonical identity,
+authority, run, edition,seq93 and the same two node definitions on all seven.
+Core/native/web/bridge/config stayed unchanged and all seven guides were updated.
+Receiving observation is distinct from model adoption or each body's future
+creative actions.
+
+131Node checks pass with one unchanged optional gallery skip;34Python checks
+pass. Exact bundled two-browser node/edition/permission fixtures and eight game
+progress checkpoints passed. A focused four-checkpoint final HUD check verified
+readable desktop/emulated-phone instructions, mouse/touch, collapse and panel
+hide/restore. Screenshots were inspected. These do not manufacture physical-phone,
+hearing, human comments or new model uptake.
+
+Actual rollback is `a7d39855`/sourcef40320c. It retains new node definitions as
+bounded opaque save data and honest unavailable node focus, but cannot play or
+attribute the new recipe or provide own-native operations. Keep current state
+and receiving metadata during code rollback. Current/previous archives total
+35,358,720B/96MiB; superseded derived archive and verified task stage were retired.
+[Deployment](deployment.md), [native quickstart](native-creation-quickstart.md)
+and [shared Conversation](shared-conversation.md) retain their owning contracts.
 
 ## Actual human and native evidence
 
@@ -102,7 +130,7 @@ The separately selected stable trial entrance pins its reviewed edition; future
 drafts do not move it automatically. Generic independent Nexus draft/published
 lifecycle remains a proposal. See [content cycle](content-cycle.md).
 
-## Remaining required acceptance
+## Specific use evidence still distinguished
 
 1. Complete the repaired situated conversation with a real companion while
    humans keep exploring, including unfolding joint activity and correction.
@@ -113,7 +141,10 @@ lifecycle remains a proposal. See [content cycle](content-cycle.md).
 4. Assess this small place's visual/play quality and whether shared situated
    context follows the activity; improve actual problems encountered in that trial.
 
-The same existing pending trial covers this work; create no duplicate human task.
-Deployment, source tests, technical readers and fixtures cannot close those items.
+The obsolete bundled pending trial was withdrawn after the human said to continue
+the full roadmap. These specific observations remain distinct; they do not gate
+all implementation behind another generic trial. Record actual use and repair
+concrete problems while the full goal continues. Create no duplicate human task.
+Deployment, source tests, technical readers and fixtures cannot invent acceptance.
 QR domination, physical mapping/sensors, arbitrary games, deeper simulation, VR
 and Avatar-default remain future direction, not replacements for this walkable MVP.

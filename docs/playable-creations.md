@@ -1,6 +1,6 @@
 # Native-authored signal gardens
 
-The candidate `signal-garden/v1` is a small cooperative activity inside the same
+The selected `signal-garden/v1` is a small cooperative activity inside the same
 Room, not another engine, game server, executable plugin or browser-local score.
 A verified native creator uses the existing node.place/update/remove operations,
 current world edit permission, ownership, observations, revisions and exact

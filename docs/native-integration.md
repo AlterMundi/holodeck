@@ -113,8 +113,8 @@ no native input is synthesized or replayed. This capability starts no background
 attention, inference or provider session. Source tests and callback wiring do not
 establish receiving deployment or an actual creator action.
 
-The workshop advertises `bridge.set`, `garden.place`, `garden.update` and
-`garden.remove`. Updating an existing live light takes its current entity revision
+The workshop advertises typed bridge, garden, focus and node operations; see
+its current structured observation and [native creator guide](native-creation-quickstart.md). Updating an existing live light takes its current entity revision
 and `{x,z,color}`; it preserves the same ID and advances that revision. A stale
 revision or deleted target is rejected. An update remains possible at the32entity
 creation ceiling, without recycling IDs or replacing an object merely to edit it.
@@ -125,8 +125,9 @@ operator-selected `holodeck.native-bridge/v1` contract; a public template lives 
 integrations/native-bridge.example.json. Resolve source/config/UIDs from actual
 maintained receiving units, not the template's placeholder paths/UID. Protect the
 socket directory and grant only the selected app UID. The native world socket's
-filesystem grant is separate from the browser identity and still requires the
-retained interaction and current room authorization.
+filesystem grant is separate from browser identity. Situated mode retains its
+original checks; explicitly selected own-native mode uses the private lane and
+current being room authorization described above.
 
 For multiple existing pairs, use the [native receiving mux](native-pairs.md):
 operator-selected actor/being/Home/socket routes, actual generic Home human

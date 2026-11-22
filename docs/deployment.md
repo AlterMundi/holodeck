@@ -111,31 +111,43 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
-The20November selected runtime is source `de162ee`, package `81684064`, at
-https://compaii.dmn.homes/holodeck/. Its17,653,760-byte archive contains29pinned
-runtime files plus the manifest; all receiving hashes, exact health and the
-browser-qualified client match. Same App/resource/audience and two visits remain.
-World sequence84 is retained; selection observed zero established world sockets.
+The22November selected runtime is source `682d5df`, package `d1cacfdc`, at
+https://compaii.dmn.homes/holodeck/. Its17,674,240-byte archive contains29pinned
+runtime files plus the manifest; all actual hashes, exact health and served
+browser-qualified client match. Same App/resource, fourteen readers, seven
+native routes, Conversation origins and two configured visits remain.
 
-The shared Conversation capability uses seven exact registered HTTPS origins
-for microphone/autoplay delegation, and compatible d0dc7f1e bridges on all seven
-existing routes. No native service/Core restart, goal change, new grant, input or
-provider call was used for qualification. See [shared contract](shared-conversation.md).
+`receiving.ownNative:true` is selected after qualifying the central current-being
+authority and per-body private socket access. The protected lifecycle helper in
+`deployment/world-socket-access.py` removes the old ordinary native UID's
+all-socket inheritance, then grants only its own socket after startup. Foreign
+transports remain privileged fixed receiving lanes. Policy is root-protected;
+helper pins unique socket inodes and refuses symlinks/hardlink aliasing before
+ACL changes. Receiving pre/post and ordinary-UID checks passed after real app
+replacement. Do not weaken this boundary or share another body's lane.
 
-The actual predecessor is `bc713b77`/source7f68101. It ignores the additive shared
-configuration and retains the earlier text composer, world/session recovery and
-content viewers. Current/previous operator archives total35,276,800B/96MiB; the
-superseded derived predecessor and verified task stage were retired. Keep the
-current receiving configuration and world/native state during code rollback.
+Actual native creation then added two nodes, their link and one own signal via
+the installed CLI, without another engine/configuration change or restart. The
+existing run/edition/entities/projections/indications/native journal remained;
+node IDs and game state were read back through the same canonical authority.
+
+The actual predecessor is `a7d39855`/sourcef40320c. It preserves up to8opaque node
+records/64KiB and node focus as unavailable, without pretending to render/play
+new nodes. Legacy edits cannot claim old attribution for changed revisions;
+missing optional editor stamps remain unknown. It retains the immediate return
+fix and shared Conversation. Keep current receiving metadata and world/native
+state during code rollback; never restore an older room save to change code.
+Current/previous operator archives total35,358,720B/96MiB after supported
+retirement and exact verified task-stage cleanup.
 
 Earlier browser/native evidence below remains attributed to its dated checkpoint;
 it does not replace current actual human/device acceptance.
 
-## Current browser and native authority
+## Retained browser and native evidence
 
-The selected release includes the qualified restart-recovery and utterance-capture
-corrections. Its actual b1d017c2 predecessor retains recovery but not the later
-asynchronous utterance-view correction. Already open clients adopt changed client
+The selected release retains the earlier qualified restart-recovery and
+utterance-capture corrections. The dated b1d017c2 predecessor described in
+earlier checkpoints is historical; use the actual current/predecessor above. Already open clients adopt changed client
 bytes on ordinary reload; no forced reload is installed.
 
 The public Apps projection offers **Entrar** through existing Home SSO, returning
