@@ -1,11 +1,14 @@
 # Current MVP work
 
-Updated 2026-11-20. The existing human-authorized goal is blocked pending the
-required real shared trial, with its full objective unchanged. Three consecutive
-audits found the same missing participant/device/conversation/review acceptance.
-The deployed service remains available. The MVP is **not complete**. The [roadmap](ROADMAP.md),
-[plan](plan.md) and issues1–4 retain the required shared human/device acceptance.
-This current checkpoint supersedes older receiving selections retained in Git.
+Updated2026-11-22. Nicolas explicitly resumed the **complete** existing MVP goal
+and says testing already done is enough to continue implementation. Native resume
+was acknowledged with the original objective/accounting unchanged. The MVP is
+not complete; the full roadmap remains active, including runtime co-creation,
+playable/editable shared activity and finished world quality. A real reported
+content-exit failure was reproduced and is being repaired first. Specific
+observations/unknowns remain recorded rather than becoming a blanket acceptance
+claim or a gate requiring another generic repeat of the same human trial.
+The obsolete bundled pending trial was withdrawn without claiming its completion.
 
 ## Selected receiving release
 

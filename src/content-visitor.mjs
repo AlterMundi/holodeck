@@ -7,8 +7,7 @@ export class ContentVisitor{
   Object.assign(this,{document,window,base,say});this.entries=[];this.pending=new Map();this.disposed=false;this.lastContext=null;
   this.button=document.querySelector('#visit-near');this.panel=document.querySelector('#content-visit');
   this.button.onclick=()=>this.open().catch(()=>say('No pude abrir esta presentación. Podés volver a intentarlo.'));
-  document.querySelector('#visit-walk').onclick=()=>this.walk().catch(()=>say('No pude confirmar el estado de la presentación. La dejé abierta.'));
-  document.querySelector('#visit-close').onclick=()=>this.close().catch(()=>say('No pude confirmar una salida segura. La presentación sigue abierta.'));
+  document.querySelector('#visit-walk').onclick=()=>this.walk();
   this.receive=event=>{
    if(!this.frame||!this.entry)return;
    const value=event.data;if(!value||typeof value!=='object')return;
@@ -94,19 +93,16 @@ export class ContentVisitor{
    this.lastContext=captured;return captured;
   }catch{return unavailable();}
  }
- async walk(){
-  await this.ready;const value=await this.request('getContext');
-  if(!knownVisitState(value?.state))throw Error('Viewer state unavailable');
-  if(value.state.recording){this.say('Terminá la grabación en la presentación antes de volver al mundo.');return;}
-  this.minimize();this.say('La presentación sigue abierta. Podés volver desde su botón.');
+ walk(){
+  if(!this.frame)return;
+  // Returning is navigation, not disposal. Never trap the visitor behind a
+  // renderer/ready acknowledgment, recording, upload or unsaved draft.
+  // Nexus retains its own capture, playback and pending-work lifecycle.
+  this.minimize();this.say('Volviste al mundo. El contenido sigue abierto y podés retomarlo.');
  }
- async close(){
-  await this.ready;const value=await this.request('prepareClose');
-  if(value?.canClose!==true||!knownVisitState(value.state)||value.state.dirty||value.state.recording||value.state.processing||value.state.playing){this.say('La presentación todavía no confirmó una pausa segura. La dejé abierta.');return;}
-  this.minimize();this.say('Presentación pausada. Conservé su lugar para volver.');
- }
+ close(){return this.walk();}
  minimize(){
-  this.document.activeElement?.blur();this.panel.classList.add('is-walking');this.panel.setAttribute('aria-hidden','true');this.panel.inert=true;
+  this.document.activeElement?.blur();this.window.focus?.();this.panel.classList.add('is-walking');this.panel.setAttribute('aria-hidden','true');this.panel.inert=true;
   // Keep a real layout for the existing renderer's freeze/restore contract.
   // Offscreen application state is never claimed to be visible to a human.
  }

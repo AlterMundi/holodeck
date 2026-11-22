@@ -118,3 +118,15 @@ position/time while actual MML movement continued, preserving original text,
 next draft/focus and one submission. Two unit regressions additionally reject
 replacement pins during readiness and reply waits. These are synthetic technical
 checks, not a real participant/media/native acceptance claim.
+
+## Returning to the world is always available
+
+Human22November report reproduced two actual navigation traps: an unready viewer
+held both controls behind readiness, and recording blocked walk even after ready.
+The former two exits are replaced by one `Volver al mundo` control. It immediately
+moves the same iframe offscreen and restores parent focus, without waiting for
+ready/context/freeze/close acknowledgment. Recording, dirty state, uploads, native
+work and playback are retained by Nexus; no pause/disposal/completion is claimed.
+The visitor can reopen that same frame with its current state. Playback controls
+remain inside the viewer. Safe `prepareClose` still governs replacing a content
+frame with another edition; it never governs ordinary return navigation.

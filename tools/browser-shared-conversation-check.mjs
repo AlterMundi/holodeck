@@ -78,7 +78,7 @@ try{
  await until(()=>evaluate('holodeckDevelopment.client.getLocalCharacterState().position.y>.05&&holodeckDevelopment.client.getLocalCharacterState().position.y<.2'),10000,'settled world');
  await evaluate('document.querySelector("#visit-near").click();true');await until(()=>evaluate('!!document.querySelector("#visit-stage iframe")?.contentWindow.fixture'),10000,'content fixture');
  await evaluate('window.retainedContent=document.querySelector("#visit-stage iframe");true');await wait(150);
- await evaluate('document.querySelector("#visit-close").click();true');await until(()=>evaluate('document.querySelector("#content-visit").classList.contains("is-walking")'),10000,'safe content pause');
+ await evaluate('document.querySelector("#visit-walk").click();true');await until(()=>evaluate('document.querySelector("#content-visit").classList.contains("is-walking")'),10000,'retained content return');
  await evaluate('document.querySelector("#talk").click();true');await until(()=>evaluate('!!document.querySelector("#shared-conversation iframe")'),10000,'canonical frame');
  await until(()=>events.some(e=>e.method==='Runtime.executionContextCreated'&&e.params.context.origin===frameOrigin),10000,'canonical runtime context');
  const frameContext=events.filter(e=>e.method==='Runtime.executionContextCreated'&&e.params.context.origin===frameOrigin&&e.params.context.auxData?.isDefault).at(-1)?.params.context.id;if(!frameContext)throw Error('Canonical frame execution context absent');
