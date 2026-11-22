@@ -14,13 +14,16 @@ The obsolete bundled pending trial was withdrawn without claiming its completion
 
 ## Selected receiving release
 
-The Casa de CompAII and its physical exterior/foyer doors are live on the
-first west parcel. The gallery links the lower lab and an upper tower;
-the lab is kept under the owner's room access. A controlled browser owner and
-guest exercised entry, denial, reload and exact exterior return. Native owner
-entry and room transitions were also observed in production. Real paired-human
-browser traversal, physical interior links, owner editing, versioned content,
-lab controls and room-bound Conversation remain separate work.
+The Casa de CompAII on the first west parcel is live. Nicolás confirmed
+entering the real house, seeing the foyer and leaving. The new interior build
+serves the foyer-to-gallery door, gallery-to-lab stair and gallery-to-tower
+portal without a room selector. Owner access includes the lab. A visitor's
+geometry omits its staircase and floor opening. The signed native owner
+traversed the live map. Separate controlled Chromium identities verified
+walking, reconnecting in the gallery, both directions of the staircase,
+return through the portal and exact exterior return. Live human use of the
+new internal links remains unobserved. Authoring, versioned exhibits, lab
+controls and room-bound Conversation remain separate work.
 
 The room boundary is deployed at source `d542e3e`, with `64b6a856` selected as
 its predecessor. Controlled room qualification used two actual MML peers for

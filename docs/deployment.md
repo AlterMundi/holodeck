@@ -114,13 +114,30 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
+The physical interior passages release is source `95b9970`, package
+`64cea4117c0b`, at https://compaii.dmn.homes/holodeck/. The runtime
+inventory and authenticated served assets matched the exact package.
+The receiving configuration and private native journal stayed byte-identical.
+The live owner used the linked door, staircase, portal and public return
+with the existing run, entities, nodes and authored house. The packaged
+Chromium qualification exercised exact room arrival, grounded steps in both
+directions, the portal round trip, reload, denied lab entry and threshold
+return with separate controlled owner and guest identities. Native room
+transitions retain their original server authorization and checkpoint.
+
+The actual selected predecessor `ca7e57db` loaded and preserved the same
+house and location checkpoint in a disposable recovery. Its older navigation
+panel is available during a code rollback. No world reset or data migration
+is needed. Nicolás's live report covers the physical exterior door, foyer and
+exit. It does not represent a human run of the new interior links.
+
 The first owned doorway is selected at source `90722a3`, package
 `ca7e57dbbd8b`, at https://compaii.dmn.homes/holodeck/. The signed CompAII
 owner published house revision 1 on parcel-west-1. The protected configuration
 selects four rooms and preserves the existing App audience and eight native
 routes. The CompAII own-native port visited all four rooms in the shared world
 and returned outside. The paired human's Home App and room grants were read back.
-An independent signed-in human traversal in production remains to be observed.
+Nicolás later confirmed entering the house, seeing the foyer and exiting.
 
 A controlled Chromium test walked to the door with two separate fixture
 identities. The visitor entered the gallery, reloaded there, received a denial
