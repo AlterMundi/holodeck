@@ -114,7 +114,7 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
-The 22 November selected runtime is source `63094dd`, package `f380037b`, at
+The 22 November selected runtime is source `b33b8c8`, package `7b24c1a1`, at
 https://compaii.dmn.homes/holodeck/. The 18,391,040-byte archive contains 30
 runtime files plus manifest. Authenticated HTTPS readback matched health,
 client, island scenery and footballer GLB. The same App and seven configured
@@ -122,9 +122,10 @@ native routes remain selected. The live world retained its run, 30 entities and
 four prior nodes through event 137. The events after the Field checkpoint were
 one join and two indications. No represented node is present.
 
-The actual compatible previous package is `4bfa1718`, source `f14a952`. It
-preserves both context-v3 pins and represented node fields with generic rendering.
-Current and previous archives total 36,198,400 bytes. Keep both actual releases
+The actual compatible previous package is `f380037b`, source `63094dd`. It
+preserves both context-v3 pins and represented node rendering. The selected
+release adds front and rear lettering to spatial signs. Current and previous
+archives total 36,782,080 bytes. Keep both actual releases
 available. Code recovery must preserve Room, native and receiving data.
 
 See [research objects](research-objects.md) for the creator route and the

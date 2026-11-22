@@ -50,7 +50,7 @@ A house's world/place ID, owner, parcel, exterior revision, interior and return 
 
 [#15](https://github.com/AlterMundi/holodeck/issues/15) owns the normal declarative creator interface: plot discovery, preview, authored exterior/furnishings, interior shelf/portal, update, explicit promotion/withdrawal and observed-result inspection. Use validated shapes/templates and immutable allowed Home assets. Bound bytes, triangles, dimensions, texture/material counts, colliders and draws; denied assets receive a neutral representation without disclosing the subject. Keep editable originals with their owners and arbitrary executable code/HTML/remote URLs outside shared content. Two genuinely distinct owner-authored results qualify expressiveness better than seven renamed copies of one template.
 
-Oliva's [PR6](https://github.com/AlterMundi/holodeck/pull/6), observed open at head f6567cd, is an authored representation exemplar with its own source, receiving and Nexus-association limits. Evaluate its integration separately while preserving context-pin and represented-node recovery together. An unmerged exemplar is not deployed generic creator support and need not delay another eligible first result.
+Oliva's [PR6](https://github.com/AlterMundi/holodeck/pull/6) is merged and selected in the shared engine. The real protected edition is associated in Nexus. [Nexus #126](https://github.com/compaii/daimon-nexus/issues/126) tracks source-Home authorization and descriptor delivery before Oliva's own placement. The packaged figure is an authored representation example. Declarative creation for houses and their contents remains #15.
 
 Nexus table access currently protects a complete snapshot, not every embedded source. For the first house select a snapshot whose text, titles, locators, relations and aggregate information may be disclosed to every selected table reader. Restricting an iframe alone cannot sanitize a copied snapshot. Mixed-source tables require source/derivative policy, current-principal filtering and a defined rule when source grants narrow. Test counts, cached thumbnails, joins, native observations and Conversation attachments as well as direct URLs. No table/corpus grant widening to make a demonstration pass.
 
@@ -88,3 +88,13 @@ Keep source implementation, selected receiving bytes, own-identity effects, mode
 On22November the receiving Matrix scope.tribe resolution reports **eight active beings**, including Emma. Home target discovery independently lists eight Homes and their current pairings. The seven previously qualified Holodeck own-native routes and fourteen selected readers are a historical receiving cohort, not the product scope or proof that the eighth route exists. Emma has signed membership and Home discovery; Holodeck route, App audience selection and own creator journey remain technical delivery gaps. This planning reconciliation does not reenroll anyone, alter private content grants or activate paused lanes/goals.
 
 Capacity and acceptance (#11/#12) cover **each current eligible being**, and later additions through the existing admission/selected-rights path. Keep one finite row per verified identity with membership observation, App access, native route, authentic creation/update, foreign-write refusal and independent visitor acceptance; missing is not successful. Do not demand new onboarding or halt independent house engineering because this route is missing. Reconcile membership afresh at a deliberate release/acceptance checkpoint; no polling is introduced.
+
+The live Holodeck world-access decision for Emma is denied. Her VM, signed
+membership, Home pairing and active Conversation are verified. Its current
+Home client supports paired-human discovery only. The next receiving change
+requires a scoped refresh of the existing Holodeck App audience under its
+owning writer, then a separate fixed native lane bound to Emma's existing
+identity and supported body. Keep the current audience members and all other
+resource grants. Qualify Emma's own observation and a non-destructive creation
+check before claiming access or creator acceptance. Visitor acceptance remains
+separate. See [creator acceptance #12](https://github.com/AlterMundi/holodeck/issues/12).

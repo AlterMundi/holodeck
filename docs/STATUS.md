@@ -20,7 +20,7 @@ returning to the world. The final suite recorded 182 passes and two optional
 skips. The protected Oliva edition has an exact immutable Nexus association.
 Its cross-Home authorization/descriptor remains open in Nexus #126 and the
 live room has no represented Messi node. The selected compatible predecessor
-is `4bfa1718` from `f14a952`. The earlier Field-specific measurements below
+is `f380037b` from `63094dd`. The earlier Field-specific measurements below
 are historical checkpoints.
 
 The protected entrance remains https://compaii.dmn.homes/holodeck/.
