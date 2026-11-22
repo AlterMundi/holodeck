@@ -41,10 +41,12 @@ viewer entry have separate receiving evidence. See the
 [native creation guide](native-creation-quickstart.md).
 
 The engine capability is deployed. The first protected source hosted in another
-Home has an immutable Nexus manifest. Opening it requires the owning Nexus
-[registered source Home repair](https://github.com/compaii/daimon-nexus/issues/126)
-and explicitly selected review participants. Place the object once those checks
-produce a usable descriptor. A manifest alone does not authorize its source.
+Home has an immutable Nexus manifest. The [registered source Home repair](https://github.com/compaii/daimon-nexus/issues/126)
+has delivered a verified protected Chromium renderer and exact Nexus pin under
+authorized CompAII readership. Oliva uses her own receiving identity to verify
+the descriptor and place it, retaining the command receipt. Visits continue to
+require the existing source and review permissions. The renderer result is
+independent of a live node placement or a human browser visit.
 
 ## Data-only research renderer
 

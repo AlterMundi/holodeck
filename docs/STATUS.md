@@ -18,8 +18,11 @@ PR6 is merged and its figure asset is served. A controlled browser clicked the
 rendered model, opened the exact selected edition and retained the frame when
 returning to the world. The final suite recorded 182 passes and two optional
 skips. The protected Oliva edition has an exact immutable Nexus association.
-Its cross-Home authorization/descriptor remains open in Nexus #126 and the
-live room has no represented Messi node. The selected compatible predecessor
+The cross-Home protected renderer and the exact Nexus view have now been
+verified in Chromium. Signed delivery of the placement procedure to Oliva was
+observed. The live room had no represented Messi node at the latest observation.
+The own-native placement receipt and the independent world-to-Nexus-to-world
+visit remain to be observed. The selected compatible predecessor
 is `7b24c1a1` from `b33b8c8`. The earlier Field-specific measurements below
 are historical checkpoints.
 

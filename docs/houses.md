@@ -68,16 +68,53 @@ the lab is a suitable first software tool. Bind the selected object and space
 revision to canonical Conversation capture before moving. Closing or changing
 rooms preserves pending work and the public exit.
 
-The current network serves a single shared MML document and presence stream to
-all room participants admitted at App level. Before revealing private house
-content, bind the actor to an authorized active space on HTTP and both sockets.
-Route geometry, presence and native observations through that binding before
-projection. Door and portal transitions need paired canonical anchors and
-safe reconnect/return. Keep owner-authoring, guest entry, content-read and
-control permissions distinct. Reusing an exact Nexus source pin preserves its
-own audience. A private spatial view must never be implemented by merely hiding
-geometry that has already been sent.
+The room boundary uses the same server and MML transport as the exterior.
+Each selected room has its own collision document and presence stream.
+HTTP, WebSocket and own-native access resolve the same actor and current room.
+Geometry does not include adjacent rooms. The server advertises only permitted
+links. Room permission and current shared App admission are checked separately.
+An open connection is closed after the current room or admission changes.
+Home admission is rechecked at most every two seconds while sockets are open,
+with the existing Home timeout if the authority is slow.
 
-The exterior foundation is deployed. The first multi-room traversal, scoped
-presence and source/control/Conversation qualification are tracked in #9, #10,
-#12 and #15.
+## Configure and verify the first map
+
+The protected receiving configuration may select `interiorSpaces`. It defaults
+to an empty list. Each definition has `id`, `house`, `title`, `level`,
+`entry`, `guests`, and `links`. The signed owner comes from the durable house.
+Each house selects one exterior entrance. Links are reciprocal and confined to
+that house. `door` joins one floor, `stair` joins adjacent floors and `portal`
+may join distant levels. There are at most 24 selected room cells and six links
+per room. Each cell is rendered when first reached and uses local coordinates.
+The bounded active set does not determine how much knowledge the house can retain.
+
+The room directory is read-only at runtime in this increment. Current guest
+admission uses the protected receiving selection, with exclusion taking effect
+on reselect, and current Home permission. Owned authoring, per-guest live
+revocation by the owner, authorized source/control bindings and outward pointers
+are tracked in [#10](https://github.com/AlterMundi/holodeck/issues/10)
+and [#15](https://github.com/AlterMundi/holodeck/issues/15).
+
+A browser entering the same app discovers accessible entrances and exits.
+Navigation is explicit and retains the exterior browser position. The early
+browser route uses a room selector. Spatial door anchors remain part of
+[#9](https://github.com/AlterMundi/holodeck/issues/9). An open source frame or
+Conversation draft in the exterior is kept in place instead of being torn down
+to enter a room. Within an interior the browser currently offers locomotion and
+room transitions.
+
+Use the existing own-native socket and `act` with the exact argument
+`{"type":"space.move","from":"outside","to":"ROOM_ID"}`. Observe after an uncertain
+move. Comparing the currently observed source room prevents accidental repeat.
+The same own-native `observe` returns the current room, level, marker and
+permitted exits. Legacy exterior writes and captures are unavailable while
+inside. Situated Conversation, protected Nexus displays and working lab tools
+require their own bindings in [#12](https://github.com/AlterMundi/holodeck/issues/12).
+
+The separate spaces checkpoint occupies at most 16 KiB each for current,
+previous and staging. It stores up to 32 actor locations, with a 30-minute
+reconnect window and no permissions or credentials. A location that has expired
+or lost permission resolves outside. An uncertain save fences room movement
+until runtime reload. Code recovery can use the prior house-capable package,
+which leaves the separate checkpoint untouched and keeps serving exterior state.
+Do not copy an older Room save over authoritative data.

@@ -5,7 +5,7 @@ import { DaimonPort } from './daimon-port.mjs';
 
 // The receiving operator owns the directory/socket filesystem capability.
 // Native identity and current room rights are independently rechecked per request.
-export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null}){
+export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace}){
   if(!socketPath?.startsWith('/')||!native?.authorizeWorldRequest||typeof resolveRights!=='function')
     throw Error('Select the installed native world port and authority resolver');
   let active=0;
@@ -44,8 +44,21 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
         if(!rights?.includes('observe'))throw Error('Room admission expired');
         const actor={...verified.actor,rights};
         const port=new DaimonPort(room,async()=>actor);
+        const space=describeSpace?.(actor);
         let result;
-        if(request.operation==='observe')result=await port.observe(null,request.args);
+        if(request.operation==='act'&&request.args.type==='space.move'){
+          if(!own||!rights.includes('edit')||Object.keys(request.args).sort().join(',')!=='from,to,type')
+            throw Error('Room transitions require an own-native route');
+          result=moveSpace?.(actor,{from:request.args.from,to:request.args.to});
+          if(!result)throw Error('Room transition unavailable');
+        }else if(space&&space.id!=='outside'){
+          if(!own||request.operation!=='observe')throw Error('Exterior operation unavailable inside');
+          result={schema:'holodeck.space-observation/v1',run:room.run,edition:room.edition,
+            observer:actor.id,space};
+        }else if(request.operation==='observe'){
+          result=await port.observe(null,request.args);
+          if(space?.entrances.length)result.space=space;
+        }
         else if(request.operation==='activity')result=await port.activity(null,request.args);
         else if(request.operation==='project')result=await port.project(null,request.args);
         else if(request.operation==='result')result=await port.result(null,request.args.id);

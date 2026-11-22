@@ -15,9 +15,48 @@ import { WorldAudio } from './world-audio.mjs';
 import {WorldHistory} from './world-history.mjs';
 import { snapshotMayApply, sameRequest } from './client-order.mjs';
 import { WorldNotice } from './client-feedback.mjs';
+import {readSpace,showSpaceLinks} from './space-travel.mjs';
 const base=new URL('./',document.baseURI);
 const url=path=>new URL(path,base);
 const socket=path=>{const target=url(path);target.protocol=location.protocol==='https:'?'wss:':'ws:';return target.href;};
+const animations={airAnimationFileUrl:url('assets/anim_air.glb').href,idleAnimationFileUrl:url('assets/anim_idle.glb').href,
+  jogAnimationFileUrl:url('assets/anim_jog.glb').href,sprintAnimationFileUrl:url('assets/anim_run.glb').href,doubleJumpAnimationFileUrl:url('assets/anim_double_jump.glb').href};
+const touchControls={
+  mount(container,experience){
+    this.holder=document.createElement('div');this.holder.className='touch-controls';container.append(this.holder);
+    this.delegate=new DefaultVirtualJoystickPlugin({radius:58,innerRadius:19});
+    this.delegate.mount(this.holder,experience);
+    for(const button of this.holder.querySelectorAll('button')){button.textContent='Saltar';button.setAttribute('aria-label','Saltar');}
+  },
+  dispose(){this.delegate?.dispose();this.holder?.remove();}
+};
+const activeSpace=await readSpace().catch(()=>null);
+if(activeSpace&&activeSpace.id!=='outside')startInterior(activeSpace);
+else startExterior(activeSpace);
+
+function startInterior(space){
+  document.body.classList.add('inside-house');
+  document.querySelector('#hud h1').textContent=space.title;
+  document.querySelector('#people').textContent=space.level===0?'Planta baja':
+    space.level<0?`Subsuelo ${-space.level}`:`Piso ${space.level}`;
+  const notice=new WorldNotice(document.querySelector('#notice'));
+  showSpaceLinks(space,{onError:message=>notice.show(message)});
+  const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
+    sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket(`spaces/${space.id}/network`),waitForWorldConfig:true,
+    enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
+    createRenderer:options=>{
+      const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
+      queueMicrotask(options.onInitialized);return renderer;
+    },
+    animationConfig:animations,
+    loadingScreen:{title:space.title,background:'#20464c',color:'#f4e8cd'}
+  });
+  client.update();
+  window.holodeckDevelopment={client};
+  window.addEventListener('pagehide',()=>client.dispose(),{once:true});
+}
+
+function startExterior(activeSpace){
 // MML captures document keys by default. Preserve ordinary text editing and
 // keyboard activation of the HUD without turning typed words into locomotion.
 document.addEventListener('keydown',event=>{
@@ -34,15 +73,6 @@ document.addEventListener('keydown',event=>{
     }
   }
 },true);
-const touchControls={
-  mount(container,experience){
-    this.holder=document.createElement('div');this.holder.className='touch-controls';container.append(this.holder);
-    this.delegate=new DefaultVirtualJoystickPlugin({radius:58,innerRadius:19});
-    this.delegate.mount(this.holder,experience);
-    for(const button of this.holder.querySelectorAll('button')){button.textContent='Saltar';button.setAttribute('aria-label','Saltar');}
-  },
-  dispose(){this.delegate?.dispose();this.holder?.remove();}
-};
 const playableHUD=new PlayableHUD(document);
 let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null,worldHistory=null;
 const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
@@ -81,8 +111,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
     queueMicrotask(options.onInitialized);
     return renderer;
   },
-  animationConfig:{airAnimationFileUrl:url('assets/anim_air.glb').href,idleAnimationFileUrl:url('assets/anim_idle.glb').href,
-    jogAnimationFileUrl:url('assets/anim_jog.glb').href,sprintAnimationFileUrl:url('assets/anim_run.glb').href,doubleJumpAnimationFileUrl:url('assets/anim_double_jump.glb').href},
+  animationConfig:animations,
   loadingScreen:{title:'Holodeck',subtitle:'Abriendo el taller de las islas',background:'#20464c',color:'#f4e8cd'},
 });
 client.update();
@@ -472,3 +501,14 @@ const interval=setInterval(async()=>{
 },1500);
 window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);worldAudio.dispose();client.dispose();});
 refresh().catch(()=>say('No pude conectar con el taller.'));
+if(activeSpace)showSpaceLinks(activeSpace,{
+  canLeave:()=>{
+    if(contentVisitor.frame||sharedConversation?.frame||nativeTurn||pending||preview||$('#message').value.trim()){
+      say('Tenés una visita, un borrador o un envío abierto. Retomalo antes de cambiar de lugar.');
+      return false;
+    }
+    return true;
+  },
+  onError:say
+});
+}
