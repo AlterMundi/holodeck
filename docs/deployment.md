@@ -114,6 +114,22 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
+The first owned doorway is selected at source `90722a3`, package
+`ca7e57dbbd8b`, at https://compaii.dmn.homes/holodeck/. The signed CompAII
+owner published house revision 1 on parcel-west-1. The protected configuration
+selects four rooms and preserves the existing App audience and eight native
+routes. The CompAII own-native port visited all four rooms in the shared world
+and returned outside. The paired human's Home App and room grants were read back.
+An independent signed-in human traversal in production remains to be observed.
+
+A controlled Chromium test walked to the door with two separate fixture
+identities. The visitor entered the gallery, reloaded there, received a denial
+for the lower lab and returned to the surveyed exterior threshold. The owner
+traversed the lower lab and upper room. The exact vendored build passed this
+route. The selected predecessor `42729a49` loaded the house and active room
+from the retained schema in a disposable recovery run without changing that
+checkpoint. No world reset is needed for code recovery.
+
 The 22 November room-boundary release is source `d542e3e`, package
 `42729a496cc4`, at https://compaii.dmn.homes/holodeck/. It serves the
 same 30-file runtime, 15 protected App audience entries and eight native routes.
