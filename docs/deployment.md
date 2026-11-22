@@ -114,7 +114,7 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
-The22November selected runtime is source `9f57a35`, package `68a24c5e`, at
+The22November selected runtime is source `a715663`, package `4663b463`, at
 https://compaii.dmn.homes/holodeck/. Its17,797,120-byte archive has29pinned runtime
 files plus manifest; exact runtime/health/client/scenery hashes match. Same App,
 fourteen readers, seven native routes, two configured visits and receiving config
@@ -134,13 +134,13 @@ and grants the ordinary native UID only its own socket after app replacement;
 actual post-selection isolation was verified. Trusted root transports stay fixed.
 Do not replace this with all-socket inheritance or shared credentials.
 
-The actual previous code digest is `23652487`, source `1fab53e`. It preserves the
-spatial layout, runtime co-creation, exact result visits and current save schema;
-activity UI/API are unavailable on that fallback. Never restore old room/native/
+The actual previous code digest is `68a24c5e`, source `9f57a35`. It preserves the
+spatial layout, runtime co-creation, exact result visits, activity UI/API and save
+schema; it lacks the frozen context-retry and small control/feedback corrections. Never restore old room/native/
 config bytes merely to change code. Retain actual current/predecessor selection.
 
-Current/predecessor generated archives total35,563,520B within96MiB. Superseded
-editing archive853c5156 was retired through the protected writer after exact
+Current/predecessor generated archives total35,594,240B within96MiB. Superseded
+result-visit archive9a34a7ef was retired through the protected writer after exact
 receiving verification. Its source/evidence remain historical. Before another
 publication, tally useful retained roles plus one candidate against96MiB. Verified
 task stages/archives may be removed after exact readback, preserving source,
@@ -328,10 +328,11 @@ session storage were preserved; served Apps metadata is retained but hidden.
 
 ## Recovery
 
-Retain selected `68a24c5e` for forward recovery. Actual rollback is
-`23652487`/source `1fab53e`, compatible with current world/native state,
+Retain selected `4663b463` for forward recovery. Actual rollback is
+`68a24c5e`/source `9f57a35`, compatible with current world/native state,
 shared indications, session recovery, configured visits and runtime-created nodes.
-Rollback loses the new activity UI/API, not canonical events. Roll back code only;
+Rollback loses the source-retry repair and control/feedback polish; it preserves
+canonical events, activity UI/API and the save schema. Roll back code only;
 never replace room, bindings, originals or pending work. Current/previous request
 and archive identities are held in the protected operator record.
 
@@ -352,3 +353,17 @@ Source b16313e/package cc350710 added shared-light editing and bounded captures.
 Its29-file receiving proof and unchanged run/config evidence remain historical;
 it is superseded by the selected shared-history release above. Git retains the
 qualification and protected retirement receipts retain actual archive effects.
+
+## Operator readback details
+
+The ordinary package publisher prints status and URL, not the complete immutable
+entry. Resolve its exact publication version from the committed own publication
+receipt before writing the deployment request; the archive digest and publication
+version are different identities. Retain a complete request before invoking the
+service writer. Missing local request input is known unsent, not a remote effect.
+
+The service gateway deliberately strips Authorization before forward-auth. An
+operator's existing exact-origin own-being reader can check health/static bytes
+using its supported Home session cookie; revoke that task-created reader after
+readback. This is not a human session, and the app's human-only identity endpoint
+correctly refuses it. Do not change authentication to accommodate an operator probe.

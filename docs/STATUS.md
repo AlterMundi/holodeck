@@ -13,7 +13,7 @@ The obsolete bundled pending trial was withdrawn without claiming its completion
 ## Selected receiving release
 
 The protected entrance remains https://compaii.dmn.homes/holodeck/.
-Source `9f57a35`,17,797,120-byte package `68a24c5e`, is selected. All29runtime
+Source `a715663`,17,797,120-byte package `4663b463`, is selected. All29runtime
 files, exact health, served client and506,528-byte scenery match the qualified
 bundle. Same App, fourteen readers, seven native routes, receiving configuration,
 canonical Conversation and two configured pinned visits remain. Runtime-created
@@ -37,12 +37,27 @@ one exact event. It adds no event polling or separate history database. Selectin
 a discussion topic freezes its reference before any asynchronous viewer request;
 evicted events remain explicitly unavailable. See [world history](world-history.md).
 
-The current full suites report163Node cases:161pass, no failures, two optional
+The current full suites report168Node cases:166pass, no failures, two optional
 builder skips;42Python cases pass. Separate installed-builder/export qualification
 remains valid. Controlled desktop/mobile browsers checked retained frames/drafts,
 history paging and exact event capture, immediate topic removal and cancelled
 pending actions after actor/run changes. Final served client bytes match that
 browser-qualified build. These are technical checks, not new human acceptance.
+
+The final source-recovery correction resumes the exact retained request hash,
+frozen binding and situation after a missing preparation acknowledgment or ledger
+reopen. HTTP tests cover separately resolved history and fully omitted optional
+view; a newer Room event does not relabel the original. Context recovery never
+submits a human original. Exact receiving readback retains the same Room,
+configuration and private native/context journal bytes. No bridge/Core/native
+reload was needed. The29runtime files, actual HTTPS health/client/scenery and
+own-native socket isolation match after selection.
+
+Selections now show their actual public titles. Confirmed navigation/success
+notices clear after six seconds while errors/uncertainty stay. Escape cancels only
+the editor's private preview. Real browser mouse/touch checked both editor exits,
+retained Conversation draft, updated node title and persistent refusal; no real
+human/provider input was created.
 
 Default observations now fit32KiB. The read-cache is independently bounded by
 2MiB,128entries and five minutes, including legacy load. Eviction does not remove
@@ -91,9 +106,9 @@ readiness/context and a usable mobile selector. Three final same-camera surface
 captures verify the floor correction while ordinary shadows remain. These are
 specific technical observations, not new physical-device or human acceptance.
 
-Actual previous code is `23652487`/source `1fab53e`, compatible with the same
+Actual previous code is `68a24c5e`/source `9f57a35`, compatible with the same
 world/native state and result visits. Current and predecessor archives total
-35,563,520B/96MiB after retiring the superseded generated editing archive through
+35,594,240B/96MiB after retiring the superseded generated editing archive through
 the protected writer. Preserve actual selected/predecessor controls and live state.
 
 The draft e66a4961… has its own immutable Nexus table, seven exact human selections,
