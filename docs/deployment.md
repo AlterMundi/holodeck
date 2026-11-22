@@ -114,19 +114,21 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
-The 22 November selected runtime is source `b33b8c8`, package `7b24c1a1`, at
-https://compaii.dmn.homes/holodeck/. The 18,391,040-byte archive contains 30
+The 22 November selected runtime is source `2c2d82b`, package `64b6a856`, at
+https://compaii.dmn.homes/holodeck/. The 18,401,280-byte archive contains 30
 runtime files plus manifest. Authenticated HTTPS readback matched health,
-client, island scenery and footballer GLB. The same App and seven configured
-native routes remain selected. The live world retained its run, 30 entities and
-four prior nodes through event 137. The events after the Field checkpoint were
-one join and two indications. No represented node is present.
+client, island scenery and footballer GLB. The same App retained its 15 audience
+entries and eight fixed native routes. The live world kept its run, 30 entities
+and four prior nodes. Production native observation returned eight empty
+parcels. The foreign-owner and crossing-footprint publication probes refused.
 
-The actual compatible previous package is `f380037b`, source `63094dd`. It
-preserves both context-v3 pins and represented node rendering. The selected
-release adds front and rear lettering to spatial signs. Current and previous
-archives total 36,782,080 bytes. Keep both actual releases
-available. Code recovery must preserve Room, native and receiving data.
+The previous package is `7b24c1a1`, source `b33b8c8`. The actual previous source
+was tested against disposable legacy and house state. It can write the legacy
+room without touching the separate house checkpoint. During a rollback it
+does not render the housing district, and returning to house-capable code
+recovers its exact addresses and revisions. Current and previous archives
+total 36,792,320 bytes. Do not restore an older world or native journal as part
+of code rollback. See [houses and parcels](houses.md).
 
 See [research objects](research-objects.md) for the creator route and the
 remaining protected Nexus source dependency.
