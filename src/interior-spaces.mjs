@@ -1,5 +1,7 @@
+import {exteriorDoor} from './houses.mjs';
 import {attribute} from './workshop-projection.mjs';
 
+export const FOYER_DOOR = Object.freeze({x:0,y:.11,z:4.9});
 export const OUTSIDE = 'outside';
 export const SPACE_SAVE_BYTES = 16 * 1024;
 const MAX_SPACES = 24;
@@ -113,11 +115,32 @@ export class InteriorSpaces {
     return this.view(actor);
   }
 
+  canReachEntrance(actor, start) {
+    const seen = new Set([start]);
+    const queue = [start];
+    for (const id of queue) {
+      const room = this.rooms.get(id);
+      if (room.entry) return true;
+      for (const link of room.links) {
+        if (seen.has(link.to) || !this.allows(actor,link.to)) continue;
+        seen.add(link.to);
+        queue.push(link.to);
+      }
+    }
+    return false;
+  }
+
   view(actor) {
     const current=this.current(actor), room=this.rooms.get(current);
+    const houses = new Map(this.houses.directory().map(house=>[house.id,house]));
     if (!room) return {id:OUTSIDE,entrances:[...this.rooms.values()]
-      .filter(r=>r.entry&&this.allows(actor,r.id)).map(({id,title})=>({id,title}))};
+      .filter(r=>r.entry&&this.allows(actor,r.id)).map(({id,house})=>{
+        const selected=houses.get(house);
+        return {id,title:selected.facade.title,door:exteriorDoor(selected)};
+      })};
     return {id:current,title:room.title,level:room.level,house:room.house,objects:[ROOM_MARKER],
+      exteriorDoor:exteriorDoor(houses.get(room.house)),
+      ...(room.entry?{exitDoor:FOYER_DOOR}:!this.canReachEntrance(actor,current)?{emergencyExit:true}:{}),
       exits:room.links.filter(link=>this.allows(actor,link.to)).map(link=>({...link,title:this.rooms.get(link.to).title}))};
   }
 }
@@ -125,12 +148,17 @@ export class InteriorSpaces {
 // Each server-authorized room has its own local collision and render document.
 export function interiorDocument(room) {
   const {id,position:{x,y,z},radius,height}=ROOM_MARKER;
+  const {floor,wall,end} = room.entry ? {floor:'#aa9376',wall:'#486966',end:'#557675'} :
+    room.level<0 ? {floor:'#657378',wall:'#415666',end:'#4c6376'} :
+    room.level>0 ? {floor:'#bfaa86',wall:'#667b86',end:'#7a8890'} :
+    {floor:'#b5a28e',wall:'#5b7471',end:'#668581'};
   return `<m-group id="${room.id}">
-    <m-cube x="0" y="0" z="0" width="12" height=".2" depth="12" color="#9b8a72"></m-cube>
-    <m-cube x="-6" y="1.65" z="0" width=".2" height="3.3" depth="12" color="#3f5962"></m-cube>
-    <m-cube x="6" y="1.65" z="0" width=".2" height="3.3" depth="12" color="#3f5962"></m-cube>
-    <m-cube x="0" y="1.65" z="-6" width="12" height="3.3" depth=".2" color="#506b72"></m-cube>
-    <m-cube x="0" y="1.65" z="6" width="12" height="3.3" depth=".2" color="#506b72"></m-cube>
+    <m-cube x="0" y="0" z="0" width="12" height=".2" depth="12" color="${floor}"></m-cube>
+    <m-cube x="-6" y="1.65" z="0" width=".2" height="3.3" depth="12" color="${wall}"></m-cube>
+    <m-cube x="6" y="1.65" z="0" width=".2" height="3.3" depth="12" color="${wall}"></m-cube>
+    <m-cube x="0" y="1.65" z="-6" width="12" height="3.3" depth=".2" color="${end}"></m-cube>
+    <m-cube x="0" y="1.65" z="6" width="12" height="3.3" depth=".2" color="${end}"></m-cube>
+    ${room.entry?'<m-group id="house-exit"><m-cube y="1.13" z="5.86" width="1.35" height="2.06" depth=".08" color="#c8a36d" collide="false"></m-cube><m-cube x=".45" y="1.05" z="5.79" width=".06" height=".14" depth=".08" color="#343e40" collide="false"></m-cube><m-label y="2.53" z="5.81" ry="180" width="1.55" height=".37" font-size="19" content="Salida" collide="false"></m-label></m-group>':''}
     <m-label x="0" y="2.3" z="-5.87" width="4" height=".65" font-size="26" content="${attribute(room.title)}" collide="false"></m-label>
     <m-cylinder id="${id}" x="${x}" y="${y}" z="${z}" radius="${radius}" height="${height}" color="#af956a"></m-cylinder>
   </m-group>`;

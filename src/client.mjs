@@ -40,12 +40,14 @@ function startInterior(space){
   document.querySelector('#people').textContent=space.level===0?'Planta baja':
     space.level<0?`Subsuelo ${-space.level}`:`Piso ${space.level}`;
   const notice=new WorldNotice(document.querySelector('#notice'));
-  showSpaceLinks(space,{onError:message=>notice.show(message)});
+  const updateDoor=showSpaceLinks(space,{onError:message=>notice.show(message)});
   const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
     sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket(`spaces/${space.id}/network`),waitForWorldConfig:true,
     enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
     createRenderer:options=>{
       const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
+      const render=renderer.render.bind(renderer);
+      renderer.render=state=>{updateDoor(client.getLocalCharacterState()?.position);render(state);};
       queueMicrotask(options.onInitialized);return renderer;
     },
     animationConfig:animations,
@@ -57,6 +59,7 @@ function startInterior(space){
 }
 
 function startExterior(activeSpace){
+let updateDoor=()=>{};
 // MML captures document keys by default. Preserve ordinary text editing and
 // keyboard activation of the HUD without turning typed words into locomotion.
 document.addEventListener('keydown',event=>{
@@ -106,7 +109,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       clear:record=>action('focus.clear',null,{},record.sequence),edit:editLight,
       visit:record=>contentVisitor.openNode(record.target,{expectedRevision:record.revision}).catch(()=>say('No pude abrir este contenido. Conservé la visita anterior.'))});
     const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
-    renderer.render=state=>{nativeAvatarLayer.update();worldIndication?.update();contentVisitor?.update(client.getLocalCharacterState()?.position);playableHUD.update(client.getLocalCharacterState()?.position);render(state);geometryProbe.afterRender();};
+    renderer.render=state=>{nativeAvatarLayer.update();worldIndication?.update();contentVisitor?.update(client.getLocalCharacterState()?.position);playableHUD.update(client.getLocalCharacterState()?.position);updateDoor(client.getLocalCharacterState()?.position);render(state);geometryProbe.afterRender();};
     renderer.dispose=()=>{worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();dispose();};
     queueMicrotask(options.onInitialized);
     return renderer;
@@ -501,7 +504,7 @@ const interval=setInterval(async()=>{
 },1500);
 window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);worldAudio.dispose();client.dispose();});
 refresh().catch(()=>say('No pude conectar con el taller.'));
-if(activeSpace)showSpaceLinks(activeSpace,{
+if(activeSpace)updateDoor=showSpaceLinks(activeSpace,{
   canLeave:()=>{
     if(contentVisitor.frame||sharedConversation?.frame||nativeTurn||pending||preview||$('#message').value.trim()){
       say('Tenés una visita, un borrador o un envío abierto. Retomalo antes de cambiar de lugar.');

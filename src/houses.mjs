@@ -12,6 +12,18 @@ export const HOUSE_PLOTS = Object.freeze(ROWS.flatMap((z, index) =>
     x: 4.5 * side, z, side, width:4, depth:2,
   })),
 ));
+// The facade door faces the common aisle. Spawn on the public approach,
+// beyond the facade collider and inside the connected walking surface.
+export function exteriorDoor(house) {
+  const plot = HOUSE_PLOTS.find(candidate => candidate.id === house.parcel);
+  return {
+    x: plot.x - plot.side * (house.facade.width / 2 + .85),
+    y: .11,
+    z: plot.z,
+    facing: plot.side,
+  };
+}
+
 const BEING = /^dm:being:v1:[A-Za-z0-9_-]{43}$/;
 const COMMAND = /^[\w-]{8,80}$/;
 const HASH = /^[a-f0-9]{64}$/;

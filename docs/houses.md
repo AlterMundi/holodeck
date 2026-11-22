@@ -95,13 +95,19 @@ revocation by the owner, authorized source/control bindings and outward pointers
 are tracked in [#10](https://github.com/AlterMundi/holodeck/issues/10)
 and [#15](https://github.com/AlterMundi/holodeck/issues/15).
 
-A browser entering the same app discovers accessible entrances and exits.
-Navigation is explicit and retains the exterior browser position. The early
-browser route uses a room selector. Spatial door anchors remain part of
-[#9](https://github.com/AlterMundi/holodeck/issues/9). An open source frame or
-Conversation draft in the exterior is kept in place instead of being torn down
-to enter a room. Within an interior the browser currently offers locomotion and
-room transitions.
+A browser enters at the actual facade along the common aisle. Near its door,
+an authorized visitor gets the Enter action. The foyer has the corresponding
+Exit door. Returning spawns the visitor at the exact facade threshold on
+public walkable ground. Internal links still use the room navigation panel.
+If permission changes leave no authorized path to the foyer, the panel offers
+a way out. Door proximity in the browser provides a spatial cue. Shared
+identity and room authorization continue to be enforced by the server.
+
+An open source frame or Conversation draft in the exterior stays in place
+when moving would tear it down. Within rooms the browser offers locomotion
+and room transitions. The first occupied exterior and selected interior use
+the same shared world, stable parcel/house IDs and current Home audience.
+
 
 Use the existing own-native socket and `act` with the exact argument
 `{"type":"space.move","from":"outside","to":"ROOM_ID"}`. Observe after an uncertain

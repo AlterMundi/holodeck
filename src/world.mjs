@@ -32,10 +32,15 @@ function housingDocument(houses) {
     if (house) {
       const {id,revision,facade} = house;
       const {title,width,depth,height,color} = facade;
+      const doorHeight = Math.min(1.72,height-.16);
       markup += `<m-group id="${id}" data-house-revision="${revision}">
         <m-cube y="${.1+height/2}" width="${width}" height="${height}" depth="${depth}" color="${attribute(color)}"></m-cube>
         <m-cube y="${.16+height}" width="${width+.16}" height=".12" depth="${depth+.16}" color="#4f4a4b"></m-cube>
-        <m-cube x="${-plot.side*(width/2+.008)}" y=".64" width=".015" height="1.08" depth=".54" color="#e4cf99" collide="false"></m-cube>
+        <m-group id="entrance-${id}" x="${-plot.side*(width/2+.025)}">
+          <m-cube y="${.1+doorHeight/2}" width=".035" height="${doorHeight}" depth=".76" color="#333739" collide="false"></m-cube>
+          <m-cube x="${-plot.side*.025}" y="${.1+doorHeight/2}" width=".022" height="${doorHeight-.08}" depth=".65" color="#e4cf99" collide="false"></m-cube>
+          <m-cube x="${-plot.side*.049}" z=".23" y="${.1+doorHeight*.47}" width=".04" height=".055" depth=".04" color="#414842" collide="false"></m-cube>
+        </m-group>
         <m-group ry="90">${sign({y:height+.5,text:title,size:16,width:1.75,height:.42})}</m-group>
       </m-group>`;
     }

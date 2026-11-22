@@ -58,7 +58,7 @@ The full map can grow over time with bounded loaded views and durable catalogs.
 
 ## Durable places, expressive authoring and source-safe navigation
 
-The room-boundary increment adds separate authorized room geometry and avatar presence, room-scoped own-native observation, and explicit moves between floors and portals. The first authored house still needs spatial door anchors, its protected display and its working control, followed by situated Conversation with the original object and room reference. [House and room contract](houses.md).
+The room-boundary increment adds separate authorized room geometry and avatar presence, room-scoped own-native observation, and explicit moves between floors and portals. The first facade and foyer have matching exterior door anchors. Interior links still use room navigation. The first working house still needs its protected display and working control, followed by situated Conversation with the original object and room reference. [House and room contract](houses.md).
 
 A house's world/place ID, owner, parcel, exterior revision, interior and return anchors are durable definitions in this same service. They are distinct from a resettable game run, active entity projection and participant visit. Current Room.resetNow clears nodes; simply using that list would destroy long-lived house addresses. #8/#11 must preserve addresses and selected pointers across play resets, tested against scoped copies rather than a destructive live reset. A public index plus pageable owner-authorized catalogs separates retained creations/versions from bounded active geometry. All creations need not be live meshes or consume eight result slots.
 

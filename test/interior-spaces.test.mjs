@@ -9,7 +9,7 @@ import WebSocket from 'ws';
 import {UserNetworkingClient} from '@mml-io/3d-web-user-networking';
 import {experienceClientSubProtocols,experienceProtocolToDeltaNetSubProtocol} from '@mml-io/3d-web-experience-protocol';
 import {createHolodeck} from '../src/server.mjs';
-import {houseId} from '../src/houses.mjs';
+import {exteriorDoor,houseId} from '../src/houses.mjs';
 import {RoomStore, RoomCommitUncertain} from '../src/room-store.mjs';
 import {InteriorSpaces} from '../src/interior-spaces.mjs';
 
@@ -31,7 +31,12 @@ test('room links, scoped discovery, durable moves and uncertain saves',()=>{
   const spaces=new InteriorSpaces({houses,definitions,clock:()=>clock,guestAccess:()=>allowed,
     persist:state=>{saved=state;if(fail)throw new RoomCommitUncertain(Error('sync'));}});
   assert.equal(spaces.move(guest,{from:'outside',to:'lab'}),null);
+  const entrance=spaces.view(guest).entrances[0];
+  assert.deepEqual(entrance,{id:'foyer',title:house.facade.title,door:exteriorDoor(house)});
+  assert.deepEqual(entrance.door,{x:-2.65,y:.11,z:15.5,facing:-1});
   assert.equal(spaces.move(guest,{from:'outside',to:'foyer'}).id,'foyer');
+  assert.equal(spaces.view(guest).exitDoor.z,4.9);
+  assert.deepEqual(spaces.view(guest).exteriorDoor,entrance.door);
   assert.deepEqual(spaces.view(guest).exits.map(edge=>edge.to),['gallery']);
   assert.equal(new InteriorSpaces({houses,definitions,state:saved,clock:()=>clock}).current(guest),'foyer');
   fail=true;
@@ -43,6 +48,11 @@ test('room links, scoped discovery, durable moves and uncertain saves',()=>{
   assert.deepEqual(spaces.view(guest),{id:'outside',entrances:[]});
   allowed=true;clock+=30*60*1000;
   assert.equal(spaces.current(guest),'outside');
+  const disconnected = new InteriorSpaces({houses,definitions,state:saved,
+    clock:()=>123,guestAccess:(_actor,room)=>room!=='foyer'});
+  assert.equal(disconnected.view(guest).id,'gallery');
+  assert.equal(disconnected.view(guest).emergencyExit,true);
+  assert.equal(disconnected.move(guest,{from:'gallery',to:'outside'}).id,'outside');
 });
 
 test('HTTP, real geometry upgrades and native observation share active room and current grants',async()=>{
@@ -122,6 +132,7 @@ test('HTTP, real geometry upgrades and native observation share active room and 
     const foyer=connect('spaces/foyer/world',person);
     const [snapshot]=await once(foyer,'message');
     assert.match(String(snapshot),/Foyer/);
+    assert.match(String(snapshot),/house-exit/);
     assert.doesNotMatch(String(snapshot),/Gallery|Secret Laboratory/);
     const foyerClose=once(foyer,'close');
     assert.equal((await move(viewer,'outside','foyer')).status,200);
@@ -136,7 +147,9 @@ test('HTTP, real geometry upgrades and native observation share active room and 
     await until(()=>!second.users.has(first.identity),'the other foyer client should see the peer depart');
     assert.equal((await (await read(viewer)).json()).participants.length,1);
     const gallery=connect('spaces/gallery/world',person);
-    assert.match(String((await once(gallery,'message'))[0]),/Gallery/);
+    const gallerySnapshot=String((await once(gallery,'message'))[0]);
+    assert.match(gallerySnapshot,/Gallery/);
+    assert.doesNotMatch(gallerySnapshot,/house-exit|Secret Laboratory/);
     assert.equal((await native('act',{type:'space.move',from:'outside',to:'foyer'})).ok,true);
     assert.equal((await native('act',{type:'space.move',from:'foyer',to:'lab'})).ok,true);
     const observation=await native('observe',{});
