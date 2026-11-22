@@ -92,6 +92,15 @@ history is copied into this ledger.
 
 Freeze source before upload. Missing acknowledgment retries the same retained
 observation; changed actor, binding, source, room or reused canonical ID refuses.
+The explicit own-ID context retry resumes its retained request hash, frozen
+binding and observation directly, including after ledger reopen. It never
+reconstructs the original request from optional clientReportedView: that view can
+omit all detail for capacity or exclude a separately resolved history reference.
+A changed world does not recapture or relabel the old source. Current actor,
+binding and run checks still apply; a removed source refuses recovery rather than
+creating a replacement. Retrying an already prepared source returns its same file
+receipt without another upload. This repairs machine-source recovery only; no
+human original is resubmitted and an uncertain writer outcome is not replayed.
 Confirmed retained canonical terminal results release local source capacity.
 Explicit pre-writer cancellation can release a machine reservation only after
 canonical absence is verified; unknown preparation is not silently evicted. The actual original/file remains

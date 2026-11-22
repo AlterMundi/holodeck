@@ -103,3 +103,15 @@ The [selected native appearance contract](native-appearance.md) reuses CompAII's
 actual Navegante blanco layered model and maintained renderer as a transparent
 spatial sprite. It is a native projection, separate from human locomotion, with
 bounded authored idle, hidden/reduced-motion pause and a beacon load fallback.
+
+## Contextual controls and feedback
+
+Selections name the current public creation or game, using its canonical title
+without exposing internal identifiers. Escape from a focused light-editor control
+discards only the private preview; it does not save, undo or change the world.
+Conversation drafts and embedded viewer lifecycles retain their existing owners.
+
+Confirmed command success, private-preview cancellation and return-to-world notices
+clear after six seconds so they do not indefinitely cover the avatar or scene.
+Only these explicitly marked notices expire. Errors, rejected edits, uncertain
+operations and recovery controls do not disappear on a general notification timer.

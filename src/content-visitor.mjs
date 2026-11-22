@@ -137,7 +137,7 @@ export class ContentVisitor{
   // Returning is navigation, not disposal. Never trap the visitor behind a
   // renderer/ready acknowledgment, recording, upload or unsaved draft.
   // Nexus retains its own capture, playback and pending-work lifecycle.
-  this.minimize();this.say('Volviste al mundo. El contenido sigue abierto y podés retomarlo.');
+  this.minimize();this.say('Volviste al mundo. El contenido sigue abierto y podés retomarlo.',{transient:true});
  }
  close(){return this.walk();}
  minimize(){

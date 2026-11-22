@@ -72,14 +72,12 @@ export async function createConversationContexts({room,stateDir,transport}){
     }
     return false;
   }
-  return {
-    has:id=>!!records[id],
-    async prepare(actor,request){
+  async function prepareSource(actor,request,retryRecord=null){
       const ref=actorRef(actor);
       if(!request||Object.keys(request).some(k=>!['id','binding','view','displayedSequence'].includes(k))||!uuid(request.id)
         ||!/^[a-f0-9]{64}$/.test(request.binding))throw fail('input','Select the shared original and current binding');
       if(fenced)throw fail('context-recovery','Context source ledger needs receiving recovery');
-      const requestHash=digest({id:request.id,binding:request.binding,view:request.view??null,displayedSequence:request.displayedSequence??null});
+      const requestHash=retryRecord?retryRecord.requestHash:digest({id:request.id,binding:request.binding,view:request.view??null,displayedSequence:request.displayedSequence??null});
       const existing=records[request.id];
       if(existing&&(existing.actorRef!==ref||existing.requestHash!==requestHash))throw fail('id-reuse','Preserve the originally captured source');
       const pending=inflight.get(request.id);
@@ -88,6 +86,9 @@ export async function createConversationContexts({room,stateDir,transport}){
       const work=(async()=>{
         const frozen=await transport.inspect(ref);
         if(frozen.actorRef!==ref||request.binding!==frozen.binding||Buffer.byteLength(encode(frozen))>4096)throw fail('binding','The continuing Conversation changed');
+        // Explicit recovery resumes this exact retained record. Cancellation or
+        // retirement during the authority read must never create a new capture.
+        if(retryRecord&&records[request.id]!==retryRecord)throw fail('not-found','The retained source changed before recovery');
         let record=records[request.id];
         if(record){
           if(encode(record.frozen)!==encode(frozen)||record.observation.run!==room.run)throw fail('binding','Preserve the source from the earlier room or binding');
@@ -115,7 +116,10 @@ export async function createConversationContexts({room,stateDir,transport}){
       inflight.set(request.id,{actorRef:ref,requestHash,work});
       try{return await work;}catch(error){error.contextOnly=true;error.workAdmitted=false;delete error.knownNotSubmitted;throw error;}
       finally{inflight.delete(request.id);}
-    },
+  }
+  return {
+    has:id=>!!records[id],
+    prepare:(actor,request)=>prepareSource(actor,request),
     async authorizeWorldRequest(id,expectedBeingRef){
       if(fenced)throw fail('context-recovery','Context source ledger needs receiving recovery');
       const record=records[id];if(!record||record.phase!=='prepared'||record.observation.run!==room.run
@@ -159,8 +163,9 @@ export async function createConversationContexts({room,stateDir,transport}){
     },
     async retry(actor,id,binding){
       const record=owned(actor,id);if(binding!==record.frozen.binding)throw fail('binding','The original source belongs to another binding');
-      return this.prepare(actor,{id,binding,view:record.observation.clientReportedView?.value,
-        displayedSequence:record.observation.source.displayedSequence??null});
+      // Optional client view may omit historyReference or all view detail. It is
+      // not the original request and cannot reconstruct its immutable hash.
+      return prepareSource(actor,{id,binding},record);
     },
     async inspect(actor,id){const record=owned(actor,id);return {id:record.id,prepared:record.phase==='prepared',work_admitted:false};}
   };

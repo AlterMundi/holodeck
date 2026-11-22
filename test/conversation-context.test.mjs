@@ -105,3 +105,51 @@ test('cancelled capture releases only machine source after canonical absence, ne
  assert.equal(result.canonicalFilesPreserved,true);assert.equal(result.canonicalOriginalAltered,false);
  await assert.rejects(context.inspect(actor,input.id),/source/i);assert.equal(f.writes,0);
 });
+
+function fillContextPressure(room,owner){
+ const peers=[owner,{id:being,kind:'daimon',name:'界'.repeat(40)},...Array.from({length:14},(_,i)=>({id:'human:fixture-'+i+'h'.repeat(175),kind:'human',name:'界'.repeat(40)}))];
+ for(let i=0;i<31;i++){const id='garden-'+String(i).padStart(40,'0');room.entities[id]={id,revision:Number.MAX_SAFE_INTEGER,x:19.123456789012345,z:-3.123456789012345,color:'#a77bea',deleted:false};}
+ const ids=Array.from({length:8},(_,i)=>'node-'+String(i).padStart(40,'0'));
+ ids.forEach((id,i)=>{room.nodes[id]={id,owner:'fixture-owner-'+i+'o'.repeat(180),revision:Number.MAX_SAFE_INTEGER,deleted:false,title:'界'.repeat(40),shape:'pedestal',position:{x:22.123456789012345,z:-1.123456789012345},play:{schema:'signal-garden/v1',targets:Array.from({length:4},(_,n)=>({x:18.123456789012345+n,z:-3.123456789012345,radius:1.123456789012345,color:'#a77bea'})),minContributors:8,requiredBridgeRaised:true},links:ids.filter(v=>v!==id).slice(0,4).map(id=>({id,revision:Number.MAX_SAFE_INTEGER}))};});
+ peers.forEach((peer,i)=>room.focuses.set(peer.id,{actor:peer.id,kind:peer.kind,name:peer.name??'界'.repeat(40),target:Object.keys(room.entities)[i+1],revision:Number.MAX_SAFE_INTEGER,sequence:1,time:Date.now()}));
+ peers.slice(0,8).forEach(peer=>room.projections.set(peer.id,{actor:peer.id,kind:peer.kind,position:{x:1.123456789012345,y:1.123456789012345,z:1.123456789012345},form:'beacon'}));
+ room.presence=()=>peers.slice(0,8).map(peer=>({actor:peer.id,kind:peer.kind,name:peer.name??'界'.repeat(40),scope:'authenticated-network-presence'}));
+}
+
+test('HTTP source retry resumes frozen history-stripped or omitted view after lost ack and ledger reopen',async t=>{
+ const {createHolodeck}=await import('../src/server.mjs');
+ for(const mode of ['history-stripped','view-omitted'])await t.test(mode,async()=>{
+  const dir=mkdtempSync(join(tmpdir(),'holodeck-context-retry-http-')),owner={id:'human:'+'s'.repeat(194),ref:'human:'+'s'.repeat(194),kind:'human',name:'界'.repeat(40),rights:['observe','edit']};
+  const frozen={...initial,actorRef:owner.ref},seen=[];let uploads=0;const sourceDir=join(dir,'contexts');
+  const transport={inspect:async()=>structuredClone(frozen),lookup:async()=>({state:'absent'}),
+   submit:async()=>{throw Error('No human original may be submitted by context recovery');},
+   prepareContext:async value=>{uploads++;seen.push(structuredClone(value));const data=Buffer.from(JSON.stringify(value.observation));
+    const result={schema:'holodeck.prepared-conversation-context/v1',id:value.id,binding,entry_binding:frozen.entry,observation_id:value.observation.id,work_admitted:false,
+     file:{file_id:crypto.randomUUID(),sha256:createHash('sha256').update(data).digest('hex'),name:'holodeck-situation.json',mime:'application/json',size:data.length}};
+    if(uploads===1)throw Error('fixture-lost-source-ack');return result;
+   }};
+  const runtime=await createHolodeck({stateDir:dir,identityResolver:async req=>req.headers.cookie?.includes('fixture=yes')?owner:null,
+   nativeFactory:async({room})=>{
+    room.event(owner,'participant.joined',{});if(mode==='view-omitted')fillContextPressure(room,owner);
+    return{contexts:await createConversationContexts({room,stateDir:sourceDir,transport})};
+   }});
+  const listener=runtime.app.listen(0,'127.0.0.1');await new Promise(resolve=>listener.once('listening',resolve));const base=`http://127.0.0.1:${listener.address().port}`;
+  try{
+   const root=await fetch(base+'/',{headers:{Cookie:'fixture=yes'}}),headers={Cookie:'fixture=yes; '+root.headers.get('set-cookie').split(';')[0],Origin:base,'Content-Type':'application/json'};
+   const view={capturedAt:1234,...(mode==='history-stripped'?{historyReference:{schema:'holodeck.history-reference/v1',run:runtime.room.run,edition:runtime.room.edition,sequence:1,panelVisible:true,explicit:false}}:{padding:''})};
+   if(mode==='view-omitted')view.padding='x'.repeat(4096-Buffer.byteLength(JSON.stringify(view)));
+   const input={id:randomUUID(),binding,view};
+   const failed=await fetch(base+'/api/conversation-contexts',{method:'POST',headers,body:JSON.stringify(input)});assert.equal(failed.status,409);
+   const original=JSON.parse(readFileSync(join(sourceDir,'conversation-contexts.json'),'utf8')).records[input.id];assert.equal(original.phase,'frozen');
+   if(mode==='history-stripped'){assert.equal(original.observation.selectedActivity.event.sequence,1);assert.equal(Object.hasOwn(original.observation.clientReportedView.value,'historyReference'),false);}
+   else assert.equal(original.observation.clientReportedView.value,null);
+   runtime.room.event(owner,'fixture-newer-world',{});
+   runtime.native.contexts=await createConversationContexts({room:runtime.room,stateDir:sourceDir,transport});
+   const path=base+'/api/conversation-contexts/'+input.id+'/retry';
+   const wrong=await fetch(path,{method:'POST',headers,body:JSON.stringify({binding:'f'.repeat(64)})});assert.equal(wrong.status,409);assert.equal(uploads,1);
+   const response=await fetch(path,{method:'POST',headers,body:JSON.stringify({binding})});assert.equal(response.status,200);const recovered=await response.json();assert.equal(recovered.id,input.id);assert.equal(recovered.work_admitted,false);
+   const after=JSON.parse(readFileSync(join(sourceDir,'conversation-contexts.json'),'utf8')).records[input.id];assert.equal(after.phase,'prepared');assert.equal(after.requestHash,original.requestHash);assert.deepEqual(after.frozen,original.frozen);assert.deepEqual(after.observation,original.observation);assert.deepEqual(seen[1],seen[0]);assert.equal(uploads,2);
+   const again=await fetch(path,{method:'POST',headers,body:JSON.stringify({binding})});assert.equal(again.status,200);assert.deepEqual(await again.json(),recovered);assert.equal(uploads,2);
+  }finally{runtime.close();listener.closeAllConnections();await new Promise(resolve=>listener.close(resolve));rmSync(dir,{recursive:true,force:true});}
+ });
+});

@@ -1,6 +1,11 @@
 import {PerspectiveCamera,Raycaster,Vector2,BoxHelper} from 'three';
 import {entityLabel} from './focus.mjs';
 const visible=object=>{for(let p=object;p;p=p.parent)if(!p.visible)return false;return true;};
+export function selectionLabel(id,state){
+ const node=state?.nodes?.[id];
+ return node&&!node.deleted&&typeof node.title==='string'&&node.title.trim()
+  ?`${node.play?'el juego':'el contenido'} «${node.title}»`:entityLabel(id);
+}
 export class PublicWorldPicker{
  constructor({document,canvas,scene,cameraState,proof,onPick,onUnavailable=()=>{}}){
   Object.assign(this,{document,canvas,scene,cameraState,proof,onPick,onUnavailable});this.ray=new Raycaster();this.camera=new PerspectiveCamera();this.gesture=null;
@@ -64,8 +69,8 @@ export class WorldIndication{
   const content=this.document.querySelector('#content-visit');
   const busyPanel=!this.document.querySelector('#conversation-panel').hidden||!this.document.querySelector('#creator').hidden||(content&&!content.hidden&&!content.classList.contains('is-walking'));
   this.panel.hidden=(!selected&&!own)||busyPanel;
-  const message=selected&&!shared?(current?`Elegiste ${entityLabel(selected.target)}.`:'El objeto cambió. Volvé a elegirlo.'):
-   own?(own.status==='current'?`Compartiste ${entityLabel(own.target)} como referencia.`:own.status==='deleted'?'El objeto que señalaste fue retirado.':'El objeto que señalaste cambió.'):'';
+  const message=selected&&!shared?(current?`Elegiste ${selectionLabel(selected.target,state)}.`:'El objeto cambió. Volvé a elegirlo.'):
+   own?(own.status==='current'?`Compartiste ${selectionLabel(own.target,state)} como referencia.`:own.status==='deleted'?'El objeto que señalaste fue retirado.':'El objeto que señalaste cambió.'):'';
   this.document.querySelector('#point-label').textContent=message;this.send.hidden=!selected||!current||shared;this.cancel.textContent=own?'Dejar de señalar':'Cancelar';
   if(this.editButton)this.editButton.hidden=!this.editable();
   if(this.visitButton)this.visitButton.hidden=!this.visitable();

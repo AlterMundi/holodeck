@@ -13,6 +13,7 @@ import { SharedConversationHost } from './shared-conversation-host.mjs';
 import { WorldAudio } from './world-audio.mjs';
 import {WorldHistory} from './world-history.mjs';
 import { snapshotMayApply, sameRequest } from './client-order.mjs';
+import { WorldNotice } from './client-feedback.mjs';
 const base=new URL('./',document.baseURI);
 const url=path=>new URL(path,base);
 const socket=path=>{const target=url(path);target.protocol=location.protocol==='https:'?'wss:':'ws:';return target.href;};
@@ -24,7 +25,12 @@ document.addEventListener('keydown',event=>{
   }
   if(event.target instanceof Element&&event.target.closest('textarea,input,button,summary,select,[contenteditable="true"]')){
     event.stopImmediatePropagation();
-    if(event.key==='Escape'){event.preventDefault();event.target.blur();openConversation(false);}
+    if(event.key==='Escape'){
+      event.preventDefault();
+      if(event.target.closest('#creator')){closePreview();say('La vista previa quedó descartada.',{transient:true});}
+      else openConversation(false);
+      event.target.blur();
+    }
   }
 },true);
 const touchControls={
@@ -81,6 +87,7 @@ let soundBusy=false;
 window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()||null,audioState:()=>worldAudio.status(),avatarState:()=>nativeAvatarLayer?.status()};
 const $=selector=>document.querySelector(selector);
 const notice=$('#notice');
+const worldNotice=new WorldNotice(notice);
 contentVisitor=new ContentVisitor({document,window,base,say});
 worldHistory=new WorldHistory({document,window,getState:()=>state,
   load:(query,{signal})=>api('activity?'+new URLSearchParams(query),undefined,{signal}),
@@ -136,10 +143,10 @@ let worldDocuments={workshop:{url:socket('world')}};
 client.on('configChanged',config=>{
   if(config.mmlDocuments){worldDocuments={...config.mmlDocuments};delete worldDocuments.preview;}
 });
-function say(text){
-  if(worldHistory?.dialog.open){worldHistory.message(text);notice.textContent='';}
-  else if(!$('#creator').hidden){$('#preview-hint').textContent=text;notice.textContent='';}
-  else notice.textContent=text;
+function say(text,options){
+  if(worldHistory?.dialog.open){worldHistory.message(text);worldNotice.clear();}
+  else if(!$('#creator').hidden){$('#preview-hint').textContent=text;worldNotice.clear();}
+  else worldNotice.show(text,options);
 }
 async function api(path,body,{signal}={}){
   const response=await fetch(url(`api/${path}`),{method:body===undefined?'GET':'POST',credentials:'same-origin',
@@ -261,12 +268,12 @@ async function refresh(){
 function settleCommand(result){
   if(!pending||result.command!==pending.id||!['completed','rejected','failed'].includes(result.status))return false;
   if(result.status==='completed'&&pending.type.startsWith('focus.')){
-    say(pending.type==='focus.set'?'La indicación ya es compartida.':'Dejaste de señalar ese objeto.');
+    say(pending.type==='focus.set'?'La indicación ya es compartida.':'Dejaste de señalar ese objeto.',{transient:true});
   }else if(result.status==='completed'){
     const undo=pendingMetadata?.undo;
     lastChange=undo?null:{type:pending.type,target:pending.target,previous:pendingMetadata?.previous,
       appliedRevision:pending.type==='garden.place'?1:pending.expectedRevision+1,run:pending.run};
-    say(undo?'Tu cambio quedó deshecho.':'El cambio ya forma parte del mundo.');
+    say(undo?'Tu cambio quedó deshecho.':'El cambio ya forma parte del mundo.',{transient:true});
   }else say('Ese lugar cambió. Mirá cómo quedó antes de intentarlo de nuevo.');
   pending=null;pendingMetadata=null;sessionStorage.removeItem(pendingKey);clearRecovery('command');return true;
 }
@@ -331,7 +338,7 @@ function showPreview(){
   $('#preview-hint').textContent=editing?'La vista previa es tuya. Guardar cambia esta misma luz para todos.':'La vista previa es tuya. Al plantar, aparece para todos.';
   $('#preview-accept').textContent=editing?'Guardar cambios':'Plantar';
   for(const choice of document.querySelectorAll('[data-color]'))choice.setAttribute('aria-pressed',String(choice.dataset.color===preview.color));
-  notice.textContent='';$('#creator').hidden=false;
+  worldNotice.clear();$('#creator').hidden=false;
 }
 function editLight(record){
   const entity=state?.entities?.[record.target];
@@ -343,14 +350,14 @@ function editLight(record){
 $('#bridge').onclick=()=>state&&action('bridge.set','bridge',{raised:!state.entities.bridge.raised},state.entities.bridge.revision);
 $('#plant').onclick=()=>{closePreview();if(movePreview()){showPreview();say('Elegí dónde dejar esta luz. Todavía la ves solamente vos.');}};
 $('#preview-move').onclick=movePreview;
-$('#preview-cancel').onclick=()=>{closePreview();say('La vista previa quedó descartada.');};
+$('#preview-cancel').onclick=()=>{closePreview();say('La vista previa quedó descartada.',{transient:true});};
 $('#preview-accept').onclick=async()=>{
   if(!preview)return;
   const submittedPreview=preview,args={x:preview.x,z:preview.z,color:preview.color};
   $('#preview-accept').disabled=true;
   const result=await action(preview.target?'garden.update':'garden.place',preview.target||`garden-${crypto.randomUUID()}`,args,preview.expectedRevision??null,{selection:preview.selection??null});
   $('#preview-accept').disabled=false;
-  if(result?.status==='completed'&&preview===submittedPreview){closePreview();say('El cambio ya forma parte del mundo.');}
+  if(result?.status==='completed'&&preview===submittedPreview){closePreview();say('El cambio ya forma parte del mundo.',{transient:true});}
 };
 for(const button of document.querySelectorAll('[data-color]'))button.onclick=()=>{
   if(!preview)return;preview.color=button.dataset.color;
