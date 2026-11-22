@@ -114,15 +114,19 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
-The22November selected runtime is source `b16313e`, package `cc350710`, at
-https://compaii.dmn.homes/holodeck/. Its17,766,400-byte archive has29pinned runtime
+The22November selected runtime is source `9f57a35`, package `68a24c5e`, at
+https://compaii.dmn.homes/holodeck/. Its17,797,120-byte archive has29pinned runtime
 files plus manifest; exact runtime/health/client/scenery hashes match. Same App,
-fourteen readers, seven native routes, two visits and receiving config remain.
-Oliva PR5 is merged; the spacious layout separates arrival, gallery and game.
-Actual world curation used28own-native commands/results, preserving creation
-actors/identities/colours, human lights, run/edition, existing selected pin and
-native journal. The application process/configuration remained unchanged during
-those world-data operations. Ordinary reload adopts the new client; none is forced.
+fourteen readers, seven native routes, two configured visits and receiving config
+remain. Oliva PR5 is merged; the spacious layout separates arrival, gallery and
+game. Exact selected result visits preserve immutable pins and retained work.
+The shared activity view and native activity operation read the existing256-event
+journal with explicit gaps; they introduce no new persistent history or poller.
+
+World-data operations preserve original creator identities and human lights.
+The draft result portal was created through the existing native node API, then
+CompAII projected beside and indicated it. The same run/edition now has30entities
+and3nodes, through130 at readback. No configuration/restart was needed per creation.
 
 Own-native mode remains selected with current-being authority and per-body private
 lanes. The protected socket lifecycle helper retains unique-inode/no-symlink checks
@@ -130,18 +134,17 @@ and grants the ordinary native UID only its own socket after app replacement;
 actual post-selection isolation was verified. Trusted root transports stay fixed.
 Do not replace this with all-socket inheritance or shared credentials.
 
-The actual previous code digest is now d607b195, which preserves the full
-spatial layout and runtime co-creation. It can read current32-entity saves and
-bounded read captures. Never restore old room/native/config bytes merely to
-change code. Retain actual current/predecessor selection and recover forward.
+The actual previous code digest is `23652487`, source `1fab53e`. It preserves the
+spatial layout, runtime co-creation, exact result visits and current save schema;
+activity UI/API are unavailable on that fallback. Never restore old room/native/
+config bytes merely to change code. Retain actual current/predecessor selection.
 
-Current/predecessor generated archives total35,532,800B within96MiB. The unsafe
-older d1 and reduced a7 recovery archives have been retired through the protected
-writer after exact receiving verification. Their source/evidence remain historical.
-Before another publication, tally useful retained roles plus one candidate
-against96MiB; do not accumulate unused variants or bypass writer protection.
-Verified task stages/archives can be removed after exact readback, preserving
-source, current state, unfinished work and actual rollback.
+Current/predecessor generated archives total35,563,520B within96MiB. Superseded
+editing archive853c5156 was retired through the protected writer after exact
+receiving verification. Its source/evidence remain historical. Before another
+publication, tally useful retained roles plus one candidate against96MiB. Verified
+task stages/archives may be removed after exact readback, preserving source,
+current state, unfinished work and actual rollback.
 
 Earlier browser/native evidence below remains attributed to its dated checkpoint;
 it does not replace current actual human/device acceptance.
@@ -325,12 +328,12 @@ session storage were preserved; served Apps metadata is retained but hidden.
 
 ## Recovery
 
-Retain the selected81684064 release for forward recovery. Actual rollback is
-bc713b77/source7f68101, compatible with additive receiving configuration and the
-same world/native state, shared indications, protected session recovery and two
-content entrances. It uses the earlier text composer. Roll back code only; never
-replace current room, bindings, originals or pending work. Current/previous
-request and archive identities are held in the private operator record.
+Retain selected `68a24c5e` for forward recovery. Actual rollback is
+`23652487`/source `1fab53e`, compatible with current world/native state,
+shared indications, session recovery, configured visits and runtime-created nodes.
+Rollback loses the new activity UI/API, not canonical events. Roll back code only;
+never replace room, bindings, originals or pending work. Current/previous request
+and archive identities are held in the protected operator record.
 
 Home/Nexus selector preimages remain software-only rollback inputs; preserve live
 grants, media, original messages, pending work and canonical databases.
@@ -343,12 +346,9 @@ effect receipts live in the protected receiving record. Git retains prior dated
 compositions; those old selections do not override this current contract.
 
 
-### Shared-light editing and bounded capture delivery —22November
+### Earlier shared-light delivery —22November
 
-The selected cc350710 release has exact29-file runtime/health/client/scenery
-readback, unchanged receiving config, same run/edition/30entities/2nodes, and a
-successful own-native observation of32,604 compact UTF-8 bytes. It reuses the
-same App/version/audience and seven routes; only the Holodeck process restarted.
-Its actual compatible predecessor is d607b195. Current/predecessor generated
-archives total35,532,800B under96MiB. Redundant older d1/a7 archives were retired
-through the supported protected writer after verification.
+Source b16313e/package cc350710 added shared-light editing and bounded captures.
+Its29-file receiving proof and unchanged run/config evidence remain historical;
+it is superseded by the selected shared-history release above. Git retains the
+qualification and protected retirement receipts retain actual archive effects.

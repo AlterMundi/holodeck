@@ -83,6 +83,14 @@ current per-resource authority remain unchanged.
 The21November human correction selects one shared engine, with creator-owned
 results and runtime-created world entities. Engine-maintainer authority is not
 required for ordinary creation. [Co-creation](co-creation.md) distinguishes the
-working typed activity from the missing generic result/playable creation contract
-and records its next vertical slice. [Maintainers](maintainers.md) records actual
+working typed activity and implemented native result/playable-node contract,
+including its remaining custom-representation limits. [Maintainers](maintainers.md) records actual
 Oliva contribution/publisher access and the remaining delegated-selector gap.
+
+## Shared activity and situated history
+
+Human [activity view](world-history.md) and native `activity` read one canonical
+bounded Room journal, with explicit retention gaps and separately captured current
+state. Selecting a historical event freezes only an exact reference; the canonical
+server resolves its retained content for Conversation. It does not invent an old
+world reconstruction, human attention or a media clock. No event starts a model.

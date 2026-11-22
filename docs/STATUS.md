@@ -13,21 +13,36 @@ The obsolete bundled pending trial was withdrawn without claiming its completion
 ## Selected receiving release
 
 The protected entrance remains https://compaii.dmn.homes/holodeck/.
-Source `b16313e`,17,766,400-byte package `cc350710`, is selected. All29runtime
+Source `9f57a35`,17,797,120-byte package `68a24c5e`, is selected. All29runtime
 files, exact health, served client and506,528-byte scenery match the qualified
 bundle. Same App, fourteen readers, seven native routes, receiving configuration,
-canonical Conversation and two existing pinned visits remain. The goal is ACTIVE
-with its full original objective/accounting; no generic repeat trial gates work.
+canonical Conversation and two configured pinned visits remain. Runtime-created
+nodes add protected result entrances without changing that configuration. The goal
+remains ACTIVE with its full objective/accounting.
 
-The current release adds selecting/editing an existing shared light, private
-preview/cancel, moving/colour changes and revision-safe undo. Controlled real
-MML clients verified the same identity across both views, full-capacity edits,
-exact undo and stale-edit rejection. Desktop/touch-emulated mobile controls and
-feedback are visible; editor feedback stays inside its panel.146Node checks pass,
-two optional installed-builder checks skip in that invocation; separate actual
-installed-builder/export checks pass.41Python checks pass. Exact29runtime files,
-health, served client/scenery and own-native observation match after selection;
-run/edition,30canonical entities,2nodes and receiving configuration remain.
+The seven existing native receivers now select the qualified public CLI e3e06d5a
+and bridge f08a4db0. Exactly one own `activity` read per body returned canonical
+event130 with its actual expected observer/current-being grant; event fields match
+and only CompAII isSelf=true. Actual native/Core bindings and private configuration
+remain unchanged. Future situated descriptors advertise all five operations through
+a pure formatter check; no synthetic original or model uptake is claimed.
+
+The selected result offers **Visitar contenido** for its exact revision; a changed
+node cannot silently redirect a pending visit to another edition. Returning keeps
+the existing frame and its work. Shared lights support private preview/cancel,
+move/colour edits and revision-safe undo. The recent-activity view now exposes the
+same bounded canonical events to humans and native readers: recorded state versus
+current state, explicit gaps, current-target indication and situated discussion of
+one exact event. It adds no event polling or separate history database. Selecting
+a discussion topic freezes its reference before any asynchronous viewer request;
+evicted events remain explicitly unavailable. See [world history](world-history.md).
+
+The current full suites report163Node cases:161pass, no failures, two optional
+builder skips;42Python cases pass. Separate installed-builder/export qualification
+remains valid. Controlled desktop/mobile browsers checked retained frames/drafts,
+history paging and exact event capture, immediate topic removal and cancelled
+pending actions after actor/run changes. Final served client bytes match that
+browser-qualified build. These are technical checks, not new human acceptance.
 
 Default observations now fit32KiB. The read-cache is independently bounded by
 2MiB,128entries and five minutes, including legacy load. Eviction does not remove
@@ -76,16 +91,20 @@ readiness/context and a usable mobile selector. Three final same-camera surface
 captures verify the floor correction while ordinary shadows remain. These are
 specific technical observations, not new physical-device or human acceptance.
 
-Actual previous code is now `d607b195`, the full spatial/co-creation release,
-and is data-compatible with current32-entity saves. Current and predecessor
-archives total35,532,800B/96MiB. The unsupported older d1 archive and reduced a7
-recovery archive were retired through the protected writer after exact readback;
-source/evidence remain. Preserve the receiver's actual selected/predecessor state.
-The current review draft also advanced independently to e66a4961… while the
-published link and original result node remain pinned to539aeebd…. The successor
-Nexus room has the same seven human selections and14model-reader decisions;
-its native association and a distinct in-world draft entrance remain unfinished.
-See [content cycle](content-cycle.md) and [deployment](deployment.md).
+Actual previous code is `23652487`/source `1fab53e`, compatible with the same
+world/native state and result visits. Current and predecessor archives total
+35,563,520B/96MiB after retiring the superseded generated editing archive through
+the protected writer. Preserve actual selected/predecessor controls and live state.
+
+The draft e66a4961… has its own immutable Nexus table, seven exact human selections,
+14model-reader decisions and an installed native review association. The new
+runtime-created **Taller en revisión** portal sits in the west gallery at(-19.5,-2.5),
+linked to the unchanged published node. CompAII used its own native projection to
+stand beside it and explicitly indicated its revision1, canonical event130.
+All30existing entities, the old published node and publication pin remain unchanged.
+Creation needed no engine configuration change or restart. Actual human review,
+contribution and matched native response are still unobserved. See
+[content cycle](content-cycle.md) and [deployment](deployment.md).
 
 ## Actual human and native evidence
 
@@ -146,10 +165,10 @@ contributions, recordings/transcripts, native review and retained discussion.
 Its deployed lifecycle permits leaving a durably retained native wait while
 protecting local draft, submission uncertainty, recording, upload and ASR.
 
-The actual creation retains full source geometry and a corrected106part review
-presentation, excluding only ambient horizon from fitting. Three immutable Home
-editions, exact pinned HTTPS bytes, own-being current/historical browser rendering
-and part toggles, separate Nexus review tables and native association were checked.
+The actual creation retains full source geometry. The independently published
+106part review and newer109part archipelago draft preserve their exact immutable
+Home editions. Pinned HTTPS bytes, own-being current/historical browser rendering
+and part toggles, separate Nexus review tables and native associations were checked.
 Seven existing humans have their exact review mappings and all fourteen readers
 retain independent model access. No human session or contribution was fabricated.
 The separately selected stable trial entrance pins its reviewed edition; future
