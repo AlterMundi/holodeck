@@ -71,11 +71,47 @@ presentation revision.
 keyboard, camera or browser cookies. It offers observe/project/act/result through
 the app's receiving Unix world port. The installed CLI/socket descriptor appears
 in the situation attachment only when the operator has actually configured it.
-Every operation requires the real retained interaction ID. The native journal
+Situated operations require the real retained interaction ID. The native journal
 authorizer rechecks current pairing/binding and actual native admission; the app
 then checks current room audience/rights before constructing a daimon actor.
 Actions bind `nativeRequest` to that original ID and retain command IDs/outcomes.
 No daemon or model attention is started by installing a CLI or describing it.
+
+### Own native foreground creation
+
+`world_port.py --socket <private-own-lane> --own observe` selects a distinct
+foreground source, without a human original or a Conversation write. Its closed
+wire envelope is `{ownNative:true,operation,args}`; it cannot also contain an
+interaction, human, being or actor selector. The existing situated CLI continues
+to use `--interaction UUID` and its unchanged source checks.
+
+The world port derives the acting being only from its receiving-selected
+`expectedBeingRef`. Own mode requires the explicit `resolveOwnNativeRights`
+callback, wired to the existing central `nativeRoomAuthority` and its fresh
+being service-grant check on every operation. No central authority, invalid pin,
+unknown grant or query failure means refusal. The legacy human-session permission
+fallback is never an own-native resolver. Receiving socket/tunnel access must
+remain private to its selected native body; a path or a claimed being string is
+not a signed caller identity. Successful own responses identify their authority
+as `receiving-lane` plus `current-being-grant`, not a per-command signature.
+Before enabling this callback, qualify the native owner's ordinary UID against
+every receiving endpoint, including inherited socket ACLs after app replacement.
+It must not reach another being's own-native endpoint without a privileged
+operator step. Shared directory access or an inherited all-socket ACL is
+insufficient. Privileged host/service operators remain trusted transport owners;
+the lane contract does not claim to isolate them. Leave own mode disabled until
+that concrete receiving boundary is established. Situated input verification
+retains its independent existing cross-being checks.
+
+Observe/project/act/result reuse the same Room, byte/slot limits, current rights,
+observation ownership, run/edition, target revisions and bounded exact command
+outcomes. For act the server rejects a supplied `nativeRequest` and records
+`own-native:<command.id>` instead. This is an own action reference, never a human
+input UUID or proof of semantic/model uptake. Retrying an uncertain act requires
+its unchanged command ID/content or an exact result read through the same lane;
+no native input is synthesized or replayed. This capability starts no background
+attention, inference or provider session. Source tests and callback wiring do not
+establish receiving deployment or an actual creator action.
 
 The workshop advertises `bridge.set`, `garden.place`, `garden.update` and
 `garden.remove`. Updating an existing live light takes its current entity revision

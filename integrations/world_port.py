@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Direct first-class native world operations, scoped to a retained interaction."""
+"""Native world operations through an interaction or a private own-being lane."""
 import argparse
 import json
 from pathlib import Path
@@ -12,22 +12,27 @@ import uuid
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--socket',required=True)
-    parser.add_argument('--interaction',required=True)
+    source=parser.add_mutually_exclusive_group(required=True)
+    source.add_argument('--interaction')
+    source.add_argument('--own',action='store_true')
     parser.add_argument('operation',choices=['observe','project','act','result'])
     parser.add_argument('--json',default='{}',dest='arguments')
     args=parser.parse_args()
-    if str(uuid.UUID(args.interaction))!=args.interaction:
+    if args.interaction is not None and str(uuid.UUID(args.interaction))!=args.interaction:
         raise ValueError('Select the retained native interaction identity')
     path=Path(args.socket)
     if not path.is_absolute() or not stat.S_ISSOCK(path.lstat().st_mode):
         raise ValueError('The receiving native world port is unavailable')
     parameters=json.loads(args.arguments)
     if not isinstance(parameters,dict):raise ValueError('Provide one typed operation object')
-    if args.operation=='act':
+    if args.own and 'nativeRequest' in parameters:
+        raise ValueError('Own native operations cannot borrow an interaction reference')
+    if args.operation=='act' and not args.own:
         if parameters.get('nativeRequest') not in (None,args.interaction):
             raise ValueError('The action belongs to another retained interaction')
         parameters['nativeRequest']=args.interaction
-    request={'interactionId':args.interaction,'operation':args.operation,'args':parameters}
+    request={**({'ownNative':True} if args.own else {'interactionId':args.interaction}),
+             'operation':args.operation,'args':parameters}
     raw=json.dumps(request,allow_nan=False,separators=(',',':')).encode()+b'\n'
     if len(raw)>16384:raise ValueError('World operation exceeds its bound')
     with socket.socket(socket.AF_UNIX) as stream:

@@ -23,7 +23,7 @@ export class PublicWorldPicker{
   this.ray.setFromCamera(new Vector2((x-rect.left)/rect.width*2-1,-(y-rect.top)/rect.height*2+1),this.camera);
   const owners=new Map();
   for(const entity of root.querySelectorAll('m-group[data-entity-revision]')){
-   if(!(entity.id==='bridge'||/^garden-[a-z0-9-]{1,40}$/.test(entity.id)))continue;
+   if(!(entity.id==='bridge'||/^(?:garden|node)-[a-z0-9-]{1,40}$/.test(entity.id)))continue;
    const record={target:entity.id,revision:Number(entity.getAttribute('data-entity-revision')),container:entity.getContainer(),element:entity};owners.set(entity.getContainer(),record);
    if(entity.id==='bridge'){const control=root.querySelector('m-group#bridge-control');if(control)owners.set(control.getContainer(),{...record,container:control.getContainer(),element:control});}
   }

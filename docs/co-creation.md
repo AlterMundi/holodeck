@@ -26,13 +26,67 @@ outcomes. The server projects that state to MML. Canonical Conversation receives
 immutable situated context; Homes/Nexus retain the selected result and review.
 Two configured content entrances are also deployed.
 
-There is not yet a generic creator-facing contract for adding a new result node,
-collection or playable creation to a running world. The current light vocabulary
-and receiving-selected content entrances must not be described as that capability.
-A new content entrance still needs operator configuration today. Ordinary creators
-must not become service administrators just to work around this gap.
+The candidate now adds a generic native-owned result-node contract below. It can
+place a declared Nexus report/artifact edition in a running Room without editing
+receiving configuration, source or restarting the engine. This is not yet a
+sandbox for arbitrary playable packages. The parent viewer's dynamic navigation,
+qualified deployment and actual shared visit remain separate acceptance checks;
+backend tests alone do not prove them.
 
-## Next vertical slice
+## Result-node candidate contract
+
+`node.place`, `node.update` and `node.remove` reuse the existing native `act`
+envelope, current room rights, source observation, exact command outcomes and
+commit fence. They are native-creator operations; only the verified owner can
+change/remove a node. Creation uses `expectedRevision:null`; update/removal must
+match both observed and current node revision.
+
+```json
+{"type":"node.place","target":"node-example","expectedRevision":null,"args":{"title":"A shared result","shape":"portal","position":{"x":3,"z":2},"result":{"pin":{"kind":"artifact_review","tableId":"existing-table","reviewId":"existing-review","revision":"existing-edition","adapter":"interactive_3d"}},"links":[]}}
+```
+
+The ordinary envelope also needs its existing ID, issuedAt, run, edition, source
+observation and receiving-native request reference. Pins reuse `validVisitPin`: a
+report uses `{tableId,reportId,revision}`; an artifact uses the discriminated
+example above with `interactive_3d` or `video`. No arbitrary URL, HTML, MML, code,
+credential, new service or executable plugin is accepted. This pointer is
+**creator-declared**, not proof that a publication exists or the visitor can read
+it. A plain Home artifact needs an existing appropriate Nexus review first.
+
+Node IDs are `node-` plus1–40 lowercase letters/digits/hyphens. There are eight
+slots including tombstones, with no ID reuse; room reset is the existing explicit
+new-run operation, not automatic cleanup. A title is at most40 characters, shape
+is `pedestal` or `portal`, position is in the existing x±7/z−6…6 creation area.
+Each of at most four links is `{id,revision}` to a live node seen at that exact
+current revision. After changes/removal, that statement keeps its old revision
+and reports `revised`/`deleted`; no line silently follows a changed target.
+
+Room saves retain the exact private declared pin. Shared observations, events and
+MML retain node identity/owner/revision, authored public title/position/shape,
+link state and a canonical selection hash/type, without table/review IDs or
+private routes. Only the verified owning native actor also receives its own
+`creatorDeclaredPin` on observation, retaining its submitted reference for future
+editing; this is not a publication/read-grant claim. Public entities and nodes are preserved by bounded situation
+capture; excess history/other summaries have explicit omission counts, not an
+invented complete-perception claim. Existing5MiB Room current/previous storage,
+32KiB native capture, journal/outcome bounds remain. Node markers/relations are
+visit geometry, excluded from creation GLB/review export. Their semantic
+projection is not a rendered-pixel acknowledgment.
+
+The authenticated content catalog dynamically adds current live nodes alongside
+configured entrances. It constructs only the maintained same-origin Nexus
+descriptor/viewer paths from validated pin fields and supplies `node`, title,
+position and nodeRevision to the existing parent viewer. This world-visible
+pointer is deliberately shared; it grants no content rights. Exact-pin protected
+descriptor and iframe checks still run as the actual human on open. Missing or
+unreadable editions must refuse rather than select current content or borrow an
+operator/human session. The backend never fetches an arbitrary creator URL.
+
+Backward saves without nodes load as empty. An older writer that does not retain
+the optional nodes field is not a compatible software rollback after creation;
+retain a qualified compatible recovery build instead of restoring world state.
+
+## Remaining complete vertical-slice acceptance
 
 The next reusable capability should let a daimon publish one existing real result
 and place a visitable node in the running shared world:
@@ -42,7 +96,8 @@ and place a visitable node in the running shared world:
 2. Submit bounded creation data to the native world API: pinned result, an
    appropriate spatial representation/transform, title, relationship to other
    nodes and intended world. This is data, not an engine tarball or arbitrary
-   privileged server code. Its exact schema remains to be implemented.
+   privileged server code. The bounded candidate schema is implemented above;
+   qualify the actual creator and protected viewer end to end.
 3. Resolve current publication/read permissions through existing authority.
    Being in a world does not make a private result public. Refuse unavailable
    viewers or unreadable pins instead of silently widening the audience.
@@ -74,4 +129,13 @@ currently owner-only; a compatible delegated selection route remains technical
 work. No CompAII credential is to be shared, no new service clone is requested,
 and Oliva's offered research-landmarks package has not been selected here.
 See [maintainer procedure](maintainers.md). The existing full-MVP goal and pending
-real shared trial keep their actual state; this clarification is not a goal resume.
+real shared trial remain incomplete. The human explicitly resumed the complete
+MVP goal on22November; this candidate is one increment toward that full result.
+
+A node publication deliberately shares its **declared result pointer** with the
+world's authorized observers, human and daimon alike. It grants no access to the
+referenced content. Native observation returns the same typed declared pin that
+a human's content discovery uses, with creator-declared verification explicit.
+Spatial MML and generic broadcast events retain only public labels, identities
+and selection hashes. The protected Nexus descriptor/viewer remains the authority
+for actual edition validity and access; a referenced result is not model uptake.

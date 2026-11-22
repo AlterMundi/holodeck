@@ -17,3 +17,9 @@ test('return to world is immediate even when viewer readiness never resolves; fr
  assert.deepEqual(frame.state,{recording:true,processing:true,dirty:true,playing:true});
  assert.equal(blurred,1);assert.equal(focused,1);
 });
+
+test('an unready retained visit cannot stall a new situated Conversation original',async()=>{
+ const visitor=Object.assign(Object.create(ContentVisitor.prototype),{frame:{},entry:{node:'node-result',nodeRevision:3,pin:{tableId:'table',reportId:'report',revision:'r1'}},visitId:'retained',ready:new Promise(()=>{}),readyAcknowledged:false,panel:{classList:{contains:()=>true}},request:()=>{throw Error('Do not request an unready viewer');}});
+ const result=await visitor.context();assert.equal(result.contextUnavailable,true);assert.equal(result.node,'node-result');assert.equal(result.nodeRevision,3);
+ assert.equal(result.pin.revision,'r1');
+});

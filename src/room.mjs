@@ -1,3 +1,4 @@
+import {MAX_CONTENT_NODES,contentNodeId,validNodeData,validStoredNode,nodeState} from './content-nodes.mjs';
 import { randomUUID, createHash } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { WORKSHOP, workshopColour } from './workshop.mjs';
@@ -26,7 +27,7 @@ export class Room extends EventEmitter {
     this.outcomes = new Map();
     this.observations = new Map();
     this.entities = { bridge: { id: 'bridge', revision: 0, raised: false } };
-    this.projections = new Map();this.focuses=new Map();
+    this.projections = new Map();this.focuses=new Map();this.nodes={};
     this.persist = persist;
     this.presence = presence;
     if(state)this.restore(state);
@@ -35,7 +36,7 @@ export class Room extends EventEmitter {
   snapshot() {
     return clone({schema:'holodeck.room-save/v1',edition:this.edition,run:this.run,
       sequence:this.sequence,events:this.events,entities:this.entities,
-      outcomes:[...this.outcomes],observations:[...this.observations],projections:[...this.projections],focuses:[...this.focuses]});
+      outcomes:[...this.outcomes],observations:[...this.observations],projections:[...this.projections],focuses:[...this.focuses],nodes:this.nodes});
   }
 
   restore(state) {
@@ -46,12 +47,13 @@ export class Room extends EventEmitter {
       || !Array.isArray(state.observations)||state.observations.length>LIMITS.observations
       || !Array.isArray(state.projections)||state.projections.length>LIMITS.sessions
       || (state.focuses!==undefined&&(!Array.isArray(state.focuses)||state.focuses.length>MAX_FOCUS||state.focuses.some(entry=>!Array.isArray(entry)||entry.length!==2||!validFocusEntry(entry)||entry[1].sequence>state.sequence)))
+      || (state.nodes!==undefined&&(!state.nodes||typeof state.nodes!=='object'||Array.isArray(state.nodes)||Object.keys(state.nodes).length>MAX_CONTENT_NODES||Object.entries(state.nodes).some(([id,node])=>!validStoredNode(node,id))))
       || !state.entities?.bridge || Object.keys(state.entities).length>LIMITS.elements)
       throw new RoomError('save','Room checkpoint is invalid; preserve it for recovery');
     const copy=clone(state);
     this.edition=copy.edition;this.run=copy.run;this.sequence=copy.sequence;
     this.events=copy.events;this.entities=copy.entities;
-    this.outcomes=new Map(copy.outcomes);this.observations=new Map(copy.observations);this.projections=new Map(copy.projections);this.focuses=new Map(copy.focuses||[]);
+    this.outcomes=new Map(copy.outcomes);this.observations=new Map(copy.observations);this.projections=new Map(copy.projections);this.focuses=new Map(copy.focuses||[]);this.nodes=copy.nodes||{};
   }
 
   atomic(operation) {
@@ -105,7 +107,7 @@ export class Room extends EventEmitter {
       source: { after, through: this.sequence, displayedSequence,
         gap: after < (this.events[0]?.sequence ?? 1) - 1 },
       activity: { title: 'Connect the workshop islands', intention: null, evidence:'authored-scenario; participants intentions are not inferred' },
-      focus:this.focusState(),
+      focus:this.focusState(),nodes:this.nodeState(actor),
       entities: clone(this.entities), participants: clone([...this.presence(),...this.projections.values()]),
       events: clone(this.events.filter(event => event.sequence > after)),
       uncertainty: ['Displayed state does not establish attention or understanding.'] };
@@ -132,7 +134,9 @@ export class Room extends EventEmitter {
     return this.event(actor, 'projection.changed', projection);
   }
 
-  focusState(){return focusState(this.focuses,this.entities);}
+  nodeState(actor=null){return nodeState(this.nodes,actor);}
+
+  focusState(){return focusState(this.focuses,this.entities,this.nodes);}
 
   command(actor, command) { return this.atomic(()=>this.execute(actor,command)); }
 
@@ -168,6 +172,27 @@ export class Room extends EventEmitter {
       return finish('rejected', 'Capture a current situation before acting');
     if (actor.kind === 'daimon' && (typeof command.nativeRequest !== 'string' || command.nativeRequest.length > 128))
       return finish('rejected', 'Retain the originating native request');
+    if(['node.place','node.update','node.remove'].includes(command.type)){
+      const previous=this.nodes[command.target],seen=observation.nodes?.[command.target],placing=command.type==='node.place';
+      if(actor.kind!=='daimon'||typeof actor.id!=='string'||actor.id.length>200||!contentNodeId(command.target))return finish('rejected','A native creator and canonical node identity are required');
+      if(placing){
+        if(previous||command.expectedRevision!==null||Object.keys(this.nodes).length>=MAX_CONTENT_NODES)return finish('rejected','Choose a new node within this world capacity');
+      }else if(!previous||previous.deleted||previous.owner!==actor.id||command.expectedRevision!==previous.revision||seen?.revision!==previous.revision)
+        return finish('rejected','Inspect your current node before changing it');
+      if(command.type==='node.remove'){
+        if(!command.args||typeof command.args!=='object'||Array.isArray(command.args)||Object.keys(command.args).length)return finish('rejected','Choose an explicit node removal');
+        previous.deleted=true;previous.revision++;
+      }else{
+        if(!validNodeData(command.args))return finish('rejected','Choose bounded creation data and an existing Nexus result pin');
+        for(const link of command.args.links){
+          const linked=this.nodes[link.id],observed=observation.nodes?.[link.id];
+          if(link.id===command.target||!linked||linked.deleted||linked.revision!==link.revision||observed?.revision!==link.revision)return finish('rejected','A linked node changed; inspect its current revision');
+        }
+        this.nodes[command.target]={id:command.target,owner:actor.id,revision:placing?1:previous.revision+1,deleted:false,...clone(command.args)};
+      }
+      const event=this.event(actor,command.type,{target:command.target,node:this.nodeState()[command.target],nativeRequest:command.nativeRequest});
+      return finish('completed','World node updated',event);
+    }
     if(command.type==='focus.set'||command.type==='focus.clear'){
       if(typeof actor.id!=='string'||actor.id.length>200||!['human','daimon'].includes(actor.kind)
         ||!command.args||typeof command.args!=='object'||Array.isArray(command.args)||Object.keys(command.args).length)return finish('rejected','Choose an explicit indication');
@@ -178,8 +203,8 @@ export class Room extends EventEmitter {
         this.focuses.delete(actor.id);
         return finish('completed','Indication cleared',this.event(actor,'focus.clear',{target:previous.target,revision:previous.revision,clearedSequence:previous.sequence,nativeRequest:command.nativeRequest??null}));
       }
-      const entity=this.entities[command.target],seen=observation.entities[command.target];
-      if(typeof command.target!=='string'||!(command.target==='bridge'||/^garden-[a-z0-9-]{1,40}$/.test(command.target))
+      const entity=this.entities[command.target]||this.nodes[command.target],seen=observation.entities[command.target]||observation.nodes?.[command.target];
+      if(typeof command.target!=='string'||!(command.target==='bridge'||/^(?:garden|node)-[a-z0-9-]{1,40}$/.test(command.target))
         ||!entity||entity.deleted||!seen||seen.deleted||command.expectedRevision!==entity.revision||seen.revision!==command.expectedRevision)
         return finish('rejected','This object changed; choose its current version');
       if(!this.focuses.has(actor.id)&&this.focuses.size>=MAX_FOCUS)return finish('rejected','Indication capacity reached');
@@ -234,7 +259,7 @@ export class Room extends EventEmitter {
   resetNow() {
     this.run = randomUUID(); this.sequence = 0; this.events = []; this.observations.clear();
     this.entities = { bridge: { id: 'bridge', revision: 0, raised: false } };
-    this.focuses.clear();this.projections.clear(); // Retain outcomes: old IDs must not mutate a new run.
+    this.nodes={};this.focuses.clear();this.projections.clear(); // Retain outcomes: old IDs must not mutate a new run.
     this.changed({ type:'run.reset', run:this.run });
   }
 }

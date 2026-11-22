@@ -1,3 +1,4 @@
+import {nodeVisits} from './content-nodes.mjs';
 import express from 'express';
 import { Networked3dWebExperienceServer } from '@mml-io/3d-web-experience-server';
 import { NetworkedDOM } from '@mml-io/networked-dom-server';
@@ -19,7 +20,7 @@ import {SessionBindings,SESSION_MS,sessionKey} from './session-bindings.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
-export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],nativeRoomAuthority=null,conversationOrigins=[]}={}){
+export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],nativeRoomAuthority=null,conversationOrigins=[],ownNative=false}={}){
   if(!/^\/(?:[a-z0-9-]+\/)*$/.test(basePath))throw Error('Select a bounded absolute base path');
   if(production&&(!identityResolver||!publicOrigin||!stateDir))throw Error('Shared identity, audience and state are required in production');
   const selectedContentVisits=validateContentVisits(contentVisits);
@@ -27,6 +28,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     throw Error('Select bounded Conversation origins');
   for(const value of conversationOrigins){const selected=new URL(value);if(selected.protocol!=='https:'||selected.origin!==value)throw Error('Select exact HTTPS Conversation origins');}
   if(nativeRoomAuthority!==null&&typeof nativeRoomAuthority!=='function')throw Error('Select the installed native service authority reader');
+  if(typeof ownNative!=='boolean'||ownNative&&!nativeRoomAuthority)throw Error('Own native access requires selected central authority and receiving socket policy');
   const route=path=>basePath+path;
   const app=express();
   // Express4 does not forward a rejected async handler. The upstream MML index
@@ -99,7 +101,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   });
   const selectedWorldPorts=validateWorldPorts({worldSocket,worldSocketBeingRef,worldPorts});
   if(selectedWorldPorts.length&&!native)throw Error('Native authority is required for world return ports');
-  for(const selected of selectedWorldPorts)installedWorldPorts.push(await createWorldPort({socketPath:selected.socket,expectedBeingRef:selected.beingRef,room,native,resolveRights:async verified=>{
+  for(const selected of selectedWorldPorts)installedWorldPorts.push(await createWorldPort({socketPath:selected.socket,expectedBeingRef:selected.beingRef,room,native,resolveOwnNativeRights:ownNative&&nativeRoomAuthority?async verified=>{const rights=await nativeRoomAuthority(verified);return projectionHealthy?rights:rights.filter(right=>right==='observe');}:null,resolveRights:async verified=>{
     if(nativeRoomAuthority){const rights=await nativeRoomAuthority(verified);return projectionHealthy?rights:rights.filter(right=>right==='observe');}
     // Compatibility for older receivers only. New native authority selection
     // is explicit and never falls back here after a failed policy query.
@@ -182,10 +184,10 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }));
   app.get(route('api/state'),asyncRoute(async(req,res)=>{
     if(room.commitUncertain)return res.status(503).json({message:'El taller necesita recuperar su último cambio antes de continuar.'});
-    res.json({run:room.run,edition:room.edition,sequence:room.sequence,actorRef:req.actor.id,entities:room.entities,focus:room.focusState(),
+    res.json({run:room.run,edition:room.edition,sequence:room.sequence,actorRef:req.actor.id,entities:room.entities,focus:room.focusState(),nodes:room.nodeState(),
       native:native?{...await native.availability(req.actor),sharedConversation:!!native.contexts}:{available:false}});
   }));
-  app.get(route('api/content-visits'),(req,res)=>res.json({visits:visitsForActor(selectedContentVisits,req.actor)}));
+  app.get(route('api/content-visits'),(req,res)=>res.json({visits:[...visitsForActor(selectedContentVisits,req.actor),...nodeVisits(room.nodes,req.actor)]}));
   app.get(route('api/conversation-surface'),asyncRoute(async(req,res)=>{
     if(!native?.contexts||!native?.conversationSurface)return res.status(503).json({message:'La conversación compartida todavía no está disponible en este mundo.'});
     const value=await native.conversationSurface(req.actor);
@@ -283,7 +285,7 @@ export async function main(){
   }
   validateWorldPorts({...receiving});
   const nativeRoomAuthority=receiving&&Object.hasOwn(receiving,'authoritySocket')?createNativeRoomAuthority(receiving.authoritySocket):null;
-  const runtime=await createHolodeck({production,stateDir,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,contentVisits:receiving?.contentVisits,nativeRoomAuthority,conversationOrigins:receiving?.conversationOrigins||[]});
+  const runtime=await createHolodeck({production,stateDir,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,contentVisits:receiving?.contentVisits,nativeRoomAuthority,conversationOrigins:receiving?.conversationOrigins||[],ownNative:receiving?.ownNative??false});
   const port=Number(process.env.PORT||18940);
   if(!Number.isInteger(port)||port<1024||port>65535)throw Error('Select a valid loopback port');
   if(process.env.HOST&&process.env.HOST!=='127.0.0.1')throw Error('Use the existing loopback gateway');

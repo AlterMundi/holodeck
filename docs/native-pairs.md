@@ -56,6 +56,16 @@ bridge. Current pairing, actual native admission, source pins, room rights and
 action preconditions are still independently checked. A forged being field or
 another participant's known input ID cannot choose an identity.
 
+The same protected being-pinned endpoint may also accept explicit own-native
+foreground operations through `world_port.py --socket <own-lane> --own` when its
+server has selected `resolveOwnNativeRights` backed by the central current Home
+being service grant. This mode carries no interaction/human selector and never
+uses another pair's native journal or the legacy human-cookie fallback. Identity
+comes from the fixed receiving lane, not a caller claim or per-request signature.
+Command provenance uses `own-native:<command.id>` and the existing bounded Room
+receipts. No new pair, original, key, provider turn or automatic attention is
+created. See [the native interface](native-integration.md#own-native-foreground-creation).
+
 ## Existing owner operator path
 
 Use current Shared Resources placement and its held SSH/Incus operator route.

@@ -217,7 +217,7 @@ async function refresh(){
   let incoming;
   try{incoming=await api('state');}catch(error){if(request!==stateRequest)return;worldAudio.breakContinuity();throw error;}
   if(!snapshotMayApply(state,incoming,request,stateRequest))return;
-  state=incoming;worldAudio.observe(state,{continuityVersion});
+  state=incoming;contentVisitor.syncNodes(state.nodes);worldAudio.observe(state,{continuityVersion});
   const count=client.getCharacterStates().size;
   $('#people').textContent=count>1?`${count} exploradores en el taller`:'Un lugar para crear juntos';
   const compact=window.matchMedia('(max-width:740px)').matches;

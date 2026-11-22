@@ -32,13 +32,28 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
       <m-label y="2.2" content="Sala de presentaciones" font-size="24" width="3" height=".5" collide="false"></m-label>
     </m-group>`;
   }
+  if(includeVisits&&room.nodeState){
+    for(const node of Object.values(room.nodeState()))if(!node.deleted){
+      const{x,z}=node.position;
+      out+=`<m-group id="${attribute(node.id)}" data-entity-revision="${node.revision}" x="${x}" y=".1" z="${z}" data-content-node="${attribute(node.id)}" data-content-revision="${node.revision}" data-result-selection="${node.result.selection}">
+        <m-cylinder radius=".7" height=".2" y=".1" color="#536c70"></m-cylinder>
+        <m-cylinder radius=".53" height=".08" y=".24" color="#eed19b" collide="false"></m-cylinder>
+        ${node.shape==='portal'?'<m-cube x="-.5" y="1" width=".12" height="1.5" depth=".14" color="#bc8355"></m-cube><m-cube x=".5" y="1" width=".12" height="1.5" depth=".14" color="#bc8355"></m-cube><m-cube y="1.75" width="1.12" height=".12" depth=".14" color="#eed19b"></m-cube>':'<m-cylinder radius=".18" height=".7" y=".6" color="#bc8355"></m-cylinder>'}
+        <m-sphere y="1.1" radius=".24" color="#8ce4c2" collide="false"></m-sphere>
+        <m-label y="2.1" content="${attribute(node.title)}" font-size="20" width="2.5" height=".35" color="#163b3f" font-color="#f6edda" collide="false"></m-label></m-group>`;
+      for(const link of node.links)if(link.status==='current'){
+        const target=room.nodes[link.id],dx=target.position.x-x,dz=target.position.z-z,length=Math.hypot(dx,dz);
+        if(length>.01)out+=`<m-cube data-content-link="${attribute(node.id)}:${attribute(link.id)}" x="${(x+target.position.x)/2}" y=".13" z="${(z+target.position.z)/2}" width=".045" height=".035" depth="${length}" ry="${Math.atan2(dx,dz)*180/Math.PI}" color="#eed19b" collide="false"></m-cube>`;
+      }
+    }
+  }
   if(includeCues&&room.focusState){
     const groups=new Map();
     for(const signal of room.focusState())if(signal.status==='current'){
       const list=groups.get(signal.target)||[];list.push(signal);groups.set(signal.target,list);
     }
     for(const[target,signals]of groups){
-      const {x,y,z}=focusAnchor(target,room.entities[target]);
+      const {x,y,z}=focusAnchor(target,room.entities[target]||room.nodes[target]);
       const rawName=signals[0].name,name=rawName?.length>18?rawName.slice(0,17)+'…':rawName;
       const label=signals.length>1?`${signals.length} indicaciones`:`${name||(signals[0].kind==='daimon'?'Un daimon':'Una persona')} señaló`;
       out+=`<m-group id="indication-${attribute(target)}" data-focus-target="${attribute(target)}" data-focus-revision="${signals[0].revision}" x="${x}" y="${y}" z="${z}">
