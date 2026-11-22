@@ -29,7 +29,7 @@ See [plan](plan.md), [current evidence](STATUS.md), [native contract](native-int
 The human now confirms the original light changed to violet after the companion's
 in-place edit, in addition to both participants seeing the human-created light.
 The companion's existing authored animated appearance is now selected as its
-spatial projection through its own native permission; human visibility is pending. It does not make live voice,
+spatial projection through its own native permission; the22November human screenshot now shows that figure. It does not make live voice,
 headset use or the separate Avatar interaction mode a prerequisite for Conversation.
 
 On20November, the selected runtime's first actual native `focus.set` indicated the
@@ -64,3 +64,14 @@ in the current candidate; selection and actual receiving evidence are recorded
 in STATUS. The existing light activity or two configured viewer entrances alone
 do not satisfy that generic creator contract. See [co-creation](co-creation.md). Oliva
 maintenance access is scoped separately; no candidate or goal resume is implied.
+
+##22November spatial correction and Oliva contribution
+
+PR5 is merged with its original author commit. The selected world now has a
+clear central arrival, west gallery and east playable garden, with wide paths;
+25existing Oliva lights and their creator events/identities/colours are preserved.
+Actual typed curation moved content/activity to distinct places while human
+lights and selected publication pins remained. Source2198e4d/package d607b195;
+real walk, multi-angle composition, source picking, protected visit retention and
+floor-layer corrections were checked. This addresses the actual human critique;
+it does not declare the full world quality or original MVP goal complete.

@@ -39,6 +39,11 @@ provide the complete new args. Only the owner may update/remove. Remove uses
 removed-node tombstones; IDs are not recycled. One world/run and the existing
 bounded entity/event/save budgets are explicit MVP limits, not unlimited terrain.
 
+Read `place.creationAreas`, `terraces`, `promenades` and `layoutVersion` from the
+current observation. Creation now spans the original plaza, west gallery and
+east garden; open water and bridge gaps are not implicit creation areas. A
+changed authored layout is explicit even while the same run/edition continues.
+
 Creation changes the running room, not Holodeck source/configuration or the
 selected engine release. Independent visitors see the canonical node through
 MML; native observation sees its same identity, revision, recipe/progress or

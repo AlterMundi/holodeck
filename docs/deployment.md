@@ -104,41 +104,50 @@ these two selected services stops Holodeck and its bridge; it does not stop a
 native conversation, another app or a device capture. No timer, model poller,
 inbox reader, autonomous attention or global Stop is installed.
 
-Keep current, previous and at most one pending package within the existing
-96 MiB artifact-history bound. Runtime code independently retains current/
+Keep current, publisher-protected previous, one necessary compatible recovery
+and at most one candidate within the existing96MiB total artifact-history bound.
+Usually current/previous suffice; retain the third role only while the immediate
+predecessor cannot read current state. Reassess and retire it through the writer
+once a compatible predecessor is selected. Runtime code independently retains current/
 predecessor/candidate. Qualification copies are disposable after exact receiving
 readback; preserve source, unfinished work, current state and the actual rollback.
 
 ## Selected shared release
 
-The22November selected runtime is source `682d5df`, package `d1cacfdc`, at
-https://compaii.dmn.homes/holodeck/. Its17,674,240-byte archive contains29pinned
-runtime files plus the manifest; all actual hashes, exact health and served
-browser-qualified client match. Same App/resource, fourteen readers, seven
-native routes, Conversation origins and two configured visits remain.
+The22November selected runtime is source `2198e4d`, package `d607b195`, at
+https://compaii.dmn.homes/holodeck/. Its17,766,400-byte archive has29pinned runtime
+files plus manifest; exact runtime/health/client/scenery hashes match. Same App,
+fourteen readers, seven native routes, two visits and receiving config remain.
+Oliva PR5 is merged; the spacious layout separates arrival, gallery and game.
+Actual world curation used28own-native commands/results, preserving creation
+actors/identities/colours, human lights, run/edition, existing selected pin and
+native journal. The application process/configuration remained unchanged during
+those world-data operations. Ordinary reload adopts the new client; none is forced.
 
-`receiving.ownNative:true` is selected after qualifying the central current-being
-authority and per-body private socket access. The protected lifecycle helper in
-`deployment/world-socket-access.py` removes the old ordinary native UID's
-all-socket inheritance, then grants only its own socket after startup. Foreign
-transports remain privileged fixed receiving lanes. Policy is root-protected;
-helper pins unique socket inodes and refuses symlinks/hardlink aliasing before
-ACL changes. Receiving pre/post and ordinary-UID checks passed after real app
-replacement. Do not weaken this boundary or share another body's lane.
+Own-native mode remains selected with current-being authority and per-body private
+lanes. The protected socket lifecycle helper retains unique-inode/no-symlink checks
+and grants the ordinary native UID only its own socket after app replacement;
+actual post-selection isolation was verified. Trusted root transports stay fixed.
+Do not replace this with all-socket inheritance or shared credentials.
 
-Actual native creation then added two nodes, their link and one own signal via
-the installed CLI, without another engine/configuration change or restart. The
-existing run/edition/entities/projections/indications/native journal remained;
-node IDs and game state were read back through the same canonical authority.
+The actual previous code digest is d1cacfdc. Its old bounds reject expanded node
+saves: it is not a valid spatial recovery target. Keep actual journal truth, but
+use retained a7d39855/f40320c for reduced data-preserving recovery if necessary.
+That previously selected package preserves opaque node definitions≤8/64KiB and
+all expanded light coordinates; isolated restore/save/reload plus a bridge edit
+verified exact IDs/colours/original creation events. It cannot render/play newer
+nodes or edit the expanded regions, reports node focus unavailable and drops
+optional editor stamps (unknown attribution). It also lacks the expanded ground.
+This is a data recovery mode, not the new world experience; recover forward.
+Never restore old room/native/config bytes merely to change code.
 
-The actual predecessor is `a7d39855`/sourcef40320c. It preserves up to8opaque node
-records/64KiB and node focus as unavailable, without pretending to render/play
-new nodes. Legacy edits cannot claim old attribution for changed revisions;
-missing optional editor stamps remain unknown. It retains the immediate return
-fix and shared Conversation. Keep current receiving metadata and world/native
-state during code rollback; never restore an older room save to change code.
-Current/previous operator archives total35,358,720B/96MiB after supported
-retirement and exact verified task-stage cleanup.
+Current/protected immediate predecessor/qualified compatible recovery archives
+total53,125,120B within96MiB. The supported publisher refuses retirement of its
+immediate predecessor; preserve that protection and the useful recovery archive.
+Before another publication, tally those roles plus the one candidate against the
+same96MiB ceiling. Retire a superseded archive once the supported writer releases
+it; do not bypass protection or accumulate unused variants. Verified task stage
+and local archive were removed; source and actual recovery evidence remain.
 
 Earlier browser/native evidence below remains attributed to its dated checkpoint;
 it does not replace current actual human/device acceptance.

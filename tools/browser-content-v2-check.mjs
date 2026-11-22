@@ -32,7 +32,7 @@ try{
  server=createServer(async(req,res)=>{
   const url=new URL(req.url,'http://127.0.0.1');
   if(url.pathname==='/'){
-   res.setHeader('content-type','text/html');res.end(markup+`<script type="module">import {ContentVisitor} from '/src/content-visitor.mjs';window.errors=[];addEventListener('error',e=>errors.push(e.message));addEventListener('unhandledrejection',e=>errors.push(String(e.reason)));window.visitor=new ContentVisitor({document,window,base:new URL('/',location),say:text=>document.querySelector('#notice').textContent=text});visitor.catalog.then(()=>visitor.update({x:-3,z:3}));</script>`);return;
+   res.setHeader('content-type','text/html');res.end(markup+`<script type="module">import {ContentVisitor} from '/src/content-visitor.mjs';window.errors=[];addEventListener('error',e=>errors.push(e.message));addEventListener('unhandledrejection',e=>errors.push(String(e.reason)));window.visitor=new ContentVisitor({document,window,base:new URL('/',location),say:text=>document.querySelector('#notice').textContent=text});visitor.catalog.then(()=>visitor.update(${JSON.stringify(CONTENT_NODE.position)}));</script>`);return;
   }
   if(url.pathname==='/api/content-visits'){res.setHeader('content-type','application/json');res.end(JSON.stringify({nodes:[CONTENT_NODE,landmark],visits:entries}));return;}
   if(url.pathname.startsWith('/src/')){
@@ -60,7 +60,7 @@ try{
  page=await connection(await backgroundTarget());await page.cdp('Page.enable');await page.cdp('Page.navigate',{url:'http://127.0.0.1:'+server.address().port+'/'});await page.until('window.visitor?.entries.length===2');
  await page.evaluate('void visitor.open()');await page.until('!!visitor.frame?.contentWindow.fixture?.requests.length');await page.evaluate('window.original=visitor.frame');
  await page.evaluate('visitor.update({x:9,y:0,z:0})');
- if(await page.evaluate('document.querySelector("#visit-near").textContent')!=='Explorar objeto')throw Error('Research entrance did not replace the nearby action');
+ if(!await page.evaluate('document.querySelector("#visit-near").textContent.startsWith("Visitar " )'))throw Error('Research entrance did not replace the nearby action');
  for(const flag of ['dirty','recording','processing']){
   await page.evaluate(`original.contentWindow.fixture.state.${flag}=true`);await page.evaluate("visitor.openNode('research-fixture')");
   if(!await page.evaluate("visitor.frame===original&&visitor.entry.id==='report'&&document.querySelector('#content-visit select').value==='report'"))throw Error('Protected visit replaced: '+flag);
@@ -68,7 +68,7 @@ try{
  }
  await page.evaluate("void visitor.openNode('research-fixture')");await page.until('visitor.frame!==original&&!!visitor.frame?.contentWindow.fixture');await wait(150);
  if(await page.evaluate('visitor.frame.contentWindow.fixture.requests.length'))throw Error('Loading accepted as ready');
- await page.evaluate("visitor.frame.contentWindow.fixture.ready('ready')");const context=await page.evaluate('visitor.context()');
+ await page.evaluate("visitor.frame.contentWindow.fixture.ready('ready')");await page.until('visitor.readyAcknowledged===true');const context=await page.evaluate('visitor.context()');
  if(context.node!==landmark.id||context.pin.kind!=='artifact_review'||context.context.context_status!=='playback-only'||context.context.review_context!==null||context.context.playback.source_time_ms!==null||!context.evidence.includes('playback-only'))throw Error('Artifact context missing or fabricated');
  await page.evaluate('window.modelFrame=visitor.frame;visitor.walk()');await page.evaluate("visitor.open('model')");
  const evidence=await page.evaluate('({sameFrame:visitor.frame===modelFrame,frames:document.querySelectorAll("#visit-stage iframe").length,title:document.querySelector("#visit-title").textContent,errors,selector:document.querySelector("#content-visit select").value})');

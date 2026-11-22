@@ -74,3 +74,19 @@ Blender's AgX/EXR analysis, EEVEE probes, Cycles samples, light linking and Robl
 The implementation owner should inspect a fixed contact sheet in the actual browser: spawn, central arrival, approach to review, review threshold, approach to play, and return to arrival. Include one phone-width view and the normal desktop view. Check grayscale readability plus the actual colored view; walk the route to check collision and third-person camera clearance. Ask of each view: what is seen first, where can I walk, what is this destination, and what can I do here?
 
 The result is ready for presentation only when those views read clearly, no destination is hidden by its own dressing, the movement/camera fits and the export still loads. Existing semantic/Node tests remain necessary but do not establish that it looks good. A screenshot sheet has not been produced or judged by this research pass. Nicolas's visual acceptance remains separate.
+
+
+## Applied in the22November receiving increment
+
+The coordinated implementation selected source2198e4d/package d607b195: three
+separate destinations, broad walkable promenades, an open arrival, manually
+arranged border lights and short local labels. The one-buffer scenery is506,528B
+with6,932triangles/12material batches. Actual same-camera views exposed coplanar
+grass/stone/path faces; the final asset separates those layers, and invisible
+collision proxies no longer cast shadows. Normal walking stays at0.1m, at most
+3cm above the grass layer. Native creation, collision, source geometry, bounds
+and export consume the coordinated layout; actual WASD traversal and loader/
+review export checks passed. Root then curated the existing world through its
+native API, retaining Oliva's original creation actors and all identities/colours.
+This is demonstrated method adoption in MML/Three, not execution of Blender or
+paid Scenario generation. The human's visual judgment remains distinct.

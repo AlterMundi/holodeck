@@ -13,53 +13,61 @@ The obsolete bundled pending trial was withdrawn without claiming its completion
 ## Selected receiving release
 
 The protected entrance remains https://compaii.dmn.homes/holodeck/.
-Source `682d5df`,17,674,240-byte package `d1cacfdc`, is selected with29exact
-runtime hashes, health and served client verified. Same App, fourteen readers,
-seven existing native routes and two configured content visits remain. One
-“Volver al mundo” returns immediately while preserving the mounted viewer and
-unfinished work, without waiting for embedded readiness or claiming to pause it.
+Source `2198e4d`,17,766,400-byte package `d607b195`, is selected. All29runtime
+files, exact health, served client and506,528-byte scenery match the qualified
+bundle. Same App, fourteen readers, seven native routes, receiving configuration,
+canonical Conversation and two existing pinned visits remain. The goal is ACTIVE
+with its full original objective/accounting; no generic repeat trial gates work.
 
-The full existing goal is ACTIVE. The selected runtime supports native-owned
-result/game nodes and revision-bound links without source/configuration edits or
-engine restarts per creation. Dynamic result discovery retains an open viewer's
-original pin/draft until explicit safe replacement. The first reusable playable
-recipe is [signal gardens](playable-creations.md), with authoritative shared
-light/bridge progress and a readable nearest-activity HUD. This is a bounded
-recipe, not arbitrary executable game plugins or unlimited Minecraft terrain.
+[Oliva's PR5](https://github.com/AlterMundi/holodeck/pull/5) is merged as c80a7d1,
+retaining her commit and authorship. It adds authored research entrances, optional
+local GLB representations, real spatial picking and retained authorized visits.
+Integration preserves native runtime nodes, dynamic catalog updates, exact pins,
+canonical Conversation and the immediate single “Volver al mundo” exit. This
+operator-authored foundation is not a newly published research corpus or a claim
+that all future creator-facing custom-model contracts already exist.
 
-After deployment the actual continuing model used its installed own-native CLI
-to create `node-workshop-review` (the existing protected published edition),
-`node-signal-garden`, their link and `garden-compaii-first-signal`. All three
-commands completed and matched exact result retrieval. Run/edition and every
-existing light, projection, indication and native journal were preserved; the
-same active service process predates all three creations and receiving config
-was unchanged during them. Atseq93 the game has one of two signals, one of two
-canonical contributors and the bridge still unconnected: incomplete, honestly.
+The human-supplied22November screenshot exposed congested composition. The new
+layout keeps an open central arrival, west gallery centred(-22,0), east garden
+centred(22,0), the existing far overlook and wide fixed promenades. Long game
+billboards are removed; the nearest-activity HUD carries the full instruction.
+Short local signs yield a readable route rather than a wall of titles. Three
+visual floor layers eliminate confirmed coplanar grass/stone/path faces;
+invisible walking proxies no longer cast shadows. Methods selected from
+[Scenario expert guides](research/2026-11-22-world-art-adoption.md) were adapted
+to this actual MML/Three pipeline; Blender helpers were not executed.
 
-Own-native authority uses each private receiving lane plus the current being's
-Home room grant, with no human original/browser or fabricated input. The socket
-policy survives actual app replacement; the ordinary host native UID reaches
-only its own lane, not the six foreign lanes. The CLI and creator instructions
-are installed on all seven actual bodies; one actual own-native observation per body matched its canonical identity,
-authority, run, edition,seq93 and the same two node definitions on all seven.
-Core/native/web/bridge/config stayed unchanged and all seven guides were updated.
-Receiving observation is distinct from model adoption or each body's future
-creative actions.
+Actual canonical creation events and independent own-body identity evidence
+identify25existing lights as Oliva's. All were retained and redistributed around
+the gallery/garden borders through own-native typed updates. Original creation
+events/actors, IDs, colours, deletion state and all three human-created lights
+were preserved. Root's own signal moved with its game. The published result node
+is(-25,-2), the game is(22,4), bothrevision2 with a current relationship; the
+published edition pin remains unchanged.28exact commands and result retrievals
+advanced the same run/edition fromseq98 to127 (one independent presence event).
+The same service process, receiving config and native journal persisted through
+those data changes. Game progress is honestly1/2signals,1/2contributors, bridge
+unconnected. This is world curation, not an engine release per object or creator.
 
-131Node checks pass with one unchanged optional gallery skip;34Python checks
-pass. Exact bundled two-browser node/edition/permission fixtures and eight game
-progress checkpoints passed. A focused four-checkpoint final HUD check verified
-readable desktop/emulated-phone instructions, mouse/touch, collapse and panel
-hide/restore. Screenshots were inspected. These do not manufacture physical-phone,
-hearing, human comments or new model uptake.
+139Node checks pass, one optional gallery skip;34Python checks pass. Final asset
+export/loader checks pass. Real MML WASD traversed both promenades and the earlier
+blocked point with the final distribution. Multi-angle desktop/mobile-viewport
+and aerial images were inspected. An actual pointer gesture on the reading-room
+mesh reached ContentVisitor; its no-content fixture granted no real source.
+Separate controlled v2 checks retained dirty/recording/processing work, exact
+readiness/context and a usable mobile selector. Three final same-camera surface
+captures verify the floor correction while ordinary shadows remain. These are
+specific technical observations, not new physical-device or human acceptance.
 
-Actual rollback is `a7d39855`/sourcef40320c. It retains new node definitions as
-bounded opaque save data and honest unavailable node focus, but cannot play or
-attribute the new recipe or provide own-native operations. Keep current state
-and receiving metadata during code rollback. Current/previous archives total
-35,358,720B/96MiB; superseded derived archive and verified task stage were retired.
-[Deployment](deployment.md), [native quickstart](native-creation-quickstart.md)
-and [shared Conversation](shared-conversation.md) retain their owning contracts.
+Actual previous code is `d1cacfdc`; it rejects expanded node saves and must NOT
+be selected as spatial recovery. Already selected/verified `a7d39855`/f40320c is
+retained as reduced data-preserving recovery. Its isolated future-state restore,
+save, bridge edit and reload preserve expanded nodes/lights/original events;
+node focus is unavailable, editor stamps are lost/unknown, and expanded authoring
+and gameplay are unsupported. Preserve current room/config and recover forward.
+Current/protected previous/compatible recovery archives total53,125,120B/96MiB.
+The supported writer protects the immediate previous archive, so it is retained;
+the exact verified task stage/archive were removed. See [deployment](deployment.md).
 
 ## Actual human and native evidence
 
@@ -72,8 +80,8 @@ and [shared Conversation](shared-conversation.md) retain their owning contracts.
   fabricated model input supplied that evidence.
 - The existing Navegante layered animated design was selected through the native
   projection API, read back independently and moved beside the reading-room
-  entrance. It is a2.5D spatial sprite, not a rigged GLB. Human-visible avatar
-  pixels remain unconfirmed. Native presence is independent of human browser login.
+  entrance. It is a2.5D spatial sprite, not a rigged GLB. The provided22November human screenshot visibly shows the selected Navegante
+  beside Nicolas; a still image does not prove all animation states or VR. Native presence is independent of human browser login.
 - Actual native focus indicated the original violet light at revision2/event82;
   independent native observation and durable room state retained that exact target.
 - All seven native listeners and bridges adopted the human-return lifetime and

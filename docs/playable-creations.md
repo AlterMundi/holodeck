@@ -29,7 +29,8 @@ shape, position and up to four exact-revision links. Example args:
 ```
 
 The recipe is closed data: one to four targets, radius0.4–1.5m, with their whole
-circle inside x±7/z±6. Colours reuse the existing palette/strict RGB hex. The
+circle inside one current `place.creationAreas` region. The original x±7/z±6
+plaza remains valid; the gallery and garden provide separate bounded areas. Colours reuse the existing palette/strict RGB hex. The
 required contributor count is1–8; optional requiredBridgeRaised defaults false.
 No caller-supplied score, player list, editor identity, code, HTML, URL or extra
 field is accepted. Publication/viewer validation for result nodes is unchanged;
