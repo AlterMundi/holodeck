@@ -5,6 +5,29 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createHolodeck} from '../src/server.mjs';
 import WebSocket from 'ws';
+import {CONTENT_NODE} from '../src/content-visits.mjs';
+
+test('research entrance discovery uses the authenticated actor and its exact selected pin',async()=>{
+ const node={id:'research-fixture',title:'Shared object',position:{x:5,y:.1,z:3}};
+ const pin={tableId:'private-table',reportId:'private-report',revision:'selected-v1'};
+ const runtime=await createHolodeck({contentNodes:[CONTENT_NODE,node],
+  contentVisits:[{id:'selected',node:node.id,entry:'/nexus/?table=private-table&report_revision=selected-v1',descriptor:'/nexus/descriptor',pin,discoverActors:['human:selected']}],
+  identityResolver:async req=>({id:req.headers.cookie?.includes('selected=yes')?'human:selected':'human:other',kind:'human',rights:['observe']})});
+ const listener=runtime.app.listen(0,'127.0.0.1');await new Promise(resolve=>listener.once('listening',resolve));
+ const base=`http://127.0.0.1:${listener.address().port}/`;
+ try{
+  assert.equal((await fetch(base+'api/content-visits')).status,401);
+  const read=async selected=>{
+   const root=await fetch(base,{headers:selected?{Cookie:'selected=yes'}:{}});
+   const headers={Cookie:(selected?'selected=yes; ':'')+root.headers.get('set-cookie').split(';')[0]};
+   return (await fetch(base+'api/content-visits',{headers})).json();
+  };
+  const other=await read(false);assert.equal(other.nodes.length,2);assert.deepEqual(other.visits,[]);
+  assert.doesNotMatch(JSON.stringify(other),/private-table|private-report|selected-v1|discoverActors/);
+  const selected=await read(true);assert.equal(selected.visits[0].node,node.id);assert.deepEqual(selected.visits[0].pin,pin);
+  assert.equal('discoverActors' in selected.visits[0],false);
+ }finally{runtime.close();listener.closeAllConnections();await new Promise(resolve=>listener.close(resolve));}
+});
 
 test('protected prefixed runtime binds sessions to current actors and rejects forged or revoked authority',async()=>{
  const directory=mkdtempSync(join(tmpdir(),'holodeck-server-'));

@@ -27,6 +27,10 @@ export class PublicWorldPicker{
    const record={target:entity.id,revision:Number(entity.getAttribute('data-entity-revision')),container:entity.getContainer(),element:entity};owners.set(entity.getContainer(),record);
    if(entity.id==='bridge'){const control=root.querySelector('m-group#bridge-control');if(control)owners.set(control.getContainer(),{...record,container:control.getContainer(),element:control});}
   }
+  for(const element of root.querySelectorAll('m-group[data-content-node]')){
+   const node=element.getAttribute('data-content-node');
+   if(node==='reading-room'||/^research-[a-z0-9-]{1,40}$/.test(node))owners.set(element.getContainer(),{kind:'content',node,container:element.getContainer(),element});
+  }
   const cues=new Set([...root.querySelectorAll('m-group[data-focus-target]')].map(element=>element.getContainer()));
   const communication=object=>{for(let p=object;p;p=p.parent)if(cues.has(p))return true;return false;};
   const hit=this.ray.intersectObjects(this.scene.children,true).find(hit=>(hit.object.isMesh||hit.object.isSprite)&&!communication(hit.object)&&visible(hit.object)&&[...(Array.isArray(hit.object.material)?hit.object.material:[hit.object.material])].some(material=>material?.visible&&material.opacity>0));

@@ -1,12 +1,12 @@
-import {CONTENT_NODE,sameVisitPin,visitResponseMatches,knownVisitState,visitVersion} from './content-visits.mjs';
+import {CONTENT_NODE,validateContentNodes,nearestContentNode,sameVisitPin,visitResponseMatches,knownVisitState,visitVersion} from './content-visits.mjs';
 
 // One retained Nexus visit. Hiding this panel never destroys media, a draft,
 // capture or native response polling. The trusted viewer owns that lifecycle.
 export class ContentVisitor{
  constructor({document,window,base,say}){
-  Object.assign(this,{document,window,base,say});this.entries=[];this.pending=new Map();this.disposed=false;this.lastContext=null;
+  Object.assign(this,{document,window,base,say});this.entries=[];this.nodes=[CONTENT_NODE];this.nearbyNode=null;this.pending=new Map();this.disposed=false;this.lastContext=null;
   this.button=document.querySelector('#visit-near');this.panel=document.querySelector('#content-visit');
-  this.button.onclick=()=>this.open().catch(()=>say('No pude abrir esta presentación. Podés volver a intentarlo.'));
+  this.button.onclick=()=>this.openNearby().catch(()=>say('No pude abrir este contenido. Podés volver a intentarlo.'));
   document.querySelector('#visit-walk').onclick=()=>this.walk().catch(()=>say('No pude confirmar el estado de la presentación. La dejé abierta.'));
   document.querySelector('#visit-close').onclick=()=>this.close().catch(()=>say('No pude confirmar una salida segura. La presentación sigue abierta.'));
   this.receive=event=>{
@@ -26,13 +26,22 @@ export class ContentVisitor{
   };
   window.addEventListener('message',this.receive);
   this.catalog=fetch(new URL('api/content-visits',base),{credentials:'same-origin',signal:AbortSignal.timeout(5000)})
-   .then(async response=>{if(!response.ok)throw Error('Catalog unavailable');const value=await response.json();this.entries=Array.isArray(value.visits)?value.visits.slice(0,8):[];this.choices();})
+   .then(async response=>{if(!response.ok)throw Error('Catalog unavailable');const value=await response.json();this.nodes=validateContentNodes(value.nodes);this.entries=Array.isArray(value.visits)?value.visits.slice(0,8):[];this.choices();})
    .catch(()=>{this.entries=[];});
  }
  update(position){
-  const nearby=position&&Math.hypot(position.x-CONTENT_NODE.position.x,position.z-CONTENT_NODE.position.z)<=5;
-  this.button.hidden=!this.frame&&(!nearby||!this.entries.length);
-  this.button.textContent=this.frame?'Volver al contenido':'Visitar contenido';
+  this.nearbyNode=nearestContentNode(this.nodes,this.entries,position);
+  const same=this.frame&&(!this.nearbyNode||this.entry?.node===this.nearbyNode.id);
+  this.button.hidden=!this.frame&&!this.nearbyNode;
+  this.button.textContent=same?'Volver al contenido':this.nearbyNode?.id===CONTENT_NODE.id?'Visitar contenido':'Explorar objeto';
+  this.button.setAttribute('aria-label',same?'Volver al contenido':this.nearbyNode?'Visitar '+this.nearbyNode.title:'Visitar contenido');
+ }
+ async openNearby(){return this.nearbyNode?this.openNode(this.nearbyNode.id):this.open();}
+ async openNode(nodeId){
+  await this.catalog;
+  const entry=this.entries.find(value=>value.node===nodeId);
+  if(!entry){this.say('No hay contenido disponible para tu acceso en este lugar.');return;}
+  return this.open(this.entry?.node===nodeId?this.entry.id:entry.id);
  }
  request(method){
   if(!this.frame||!this.entry||this.disposed||this.pending.size>=4)return Promise.reject(Error('Visit unavailable'));
@@ -82,14 +91,14 @@ export class ContentVisitor{
  }
  async context(){
   if(!this.frame||!this.entry)return null;
-  const frame=this.frame,entry=this.entry,visitId=this.visitId,pin={...entry.pin},ready=this.ready,
+  const frame=this.frame,entry=this.entry,visitId=this.visitId,pin={...entry.pin},node=entry.node||CONTENT_NODE.id,ready=this.ready,
    requestedAt=Date.now(),panelVisible=!this.panel.classList.contains('is-walking');
   const current=()=>!this.disposed&&this.frame===frame&&this.entry===entry&&this.visitId===visitId&&sameVisitPin(this.entry.pin,pin);
-  const unavailable=()=>({node:CONTENT_NODE.id,visitId,pin,requestedAt,contextUnavailable:true});
+  const unavailable=()=>({node,visitId,pin,requestedAt,contextUnavailable:true});
   try{
    await ready;if(!current())return unavailable();
    const context=await this.request('getContext');if(!current()||!knownVisitState(context?.state))return unavailable();
-   const captured={node:CONTENT_NODE.id,visitId,pin,requestedAt,capturedAt:Date.now(),panelVisible,context,evidence:context.context_status==='playback-only'?'viewer-playback-only; no rendered-frame acknowledgment or human attention':'acknowledged-viewer-state; not human attention or shared playback'};
+   const captured={node,visitId,pin,requestedAt,capturedAt:Date.now(),panelVisible,context,evidence:context.context_status==='playback-only'?'viewer-playback-only; no rendered-frame acknowledgment or human attention':'acknowledged-viewer-state; not human attention or shared playback'};
    if(new TextEncoder().encode(JSON.stringify(captured)).length>2200)return unavailable();
    this.lastContext=captured;return captured;
   }catch{return unavailable();}

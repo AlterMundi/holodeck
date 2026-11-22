@@ -21,7 +21,18 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
     if(entity.controls)out+=`<m-group id="bridge-control">${entity.controls.map(projectionNodeHTML).join('')}</m-group>`;
   }
   if(includeVisits){
-    const {x,y,z}=CONTENT_NODE.position;
+   for(const node of room.contentNodes||[CONTENT_NODE]){
+    const {x,y,z}=node.position;
+    if(node.id!==CONTENT_NODE.id){
+     const labelHeight=Math.max(.45,Math.ceil(node.title.length/24)*.4);
+     out+=`<m-group id="content-${attribute(node.id)}" x="${x}" y="${y}" z="${z}" data-content-node="${attribute(node.id)}">
+       <m-cylinder radius=".75" height=".16" y=".08" color="#536c70" collide="false"></m-cylinder>
+       ${node.model?`<m-model src="${attribute(prefix)}assets/${attribute(node.model)}" collide="false"></m-model>`:
+        '<m-sphere y="1" radius=".45" color="#8ce4c2" collide="false"></m-sphere>'}
+       <m-label y="${1.8+labelHeight/2}" content="${attribute(node.title)}" font-size="20" width="3.5" height="${labelHeight}" collide="false"></m-label>
+     </m-group>`;
+     continue;
+    }
     out+=`<m-group id="content-reading-room" x="${x}" y="${y}" z="${z}" data-content-node="reading-room">
       <m-cylinder radius="1.05" height=".15" y=".08" color="#536c70"></m-cylinder>
       <m-cylinder radius=".8" height=".06" y=".18" color="#eed19b"></m-cylinder>
@@ -29,8 +40,9 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
       <m-cube x=".66" y="1.05" width=".15" height="1.7" depth=".22" color="#bc8355"></m-cube>
       <m-cube y="1.85" width="1.48" height=".15" depth=".22" color="#eed19b"></m-cube>
       <m-cube y="1.03" width="1.1" height="1.24" depth=".08" color="#8ce4c2" collide="false"></m-cube>
-      <m-label y="2.2" content="Sala de presentaciones" font-size="24" width="3" height=".5" collide="false"></m-label>
+      <m-label y="2.2" content="Sala de presentaciones" font-size="24" width="3" height=".8" collide="false"></m-label>
     </m-group>`;
+   }
   }
   if(includeCues&&room.focusState){
     const groups=new Map();

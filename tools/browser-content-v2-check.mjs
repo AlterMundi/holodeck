@@ -1,7 +1,9 @@
 import WebSocket from 'ws';
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
-const origin='http://127.0.0.1:18943',wait=ms=>new Promise(r=>setTimeout(r,ms));
+import {CONTENT_NODE} from '../src/content-visits.mjs';
+const origin=process.env.HOLODECK_BROWSER_ORIGIN||'http://127.0.0.1:18943',wait=ms=>new Promise(r=>setTimeout(r,ms));
+if(!/^http:\/\/127\.0\.0\.1:\d+$/.test(origin))throw Error('Select an explicitly owned loopback browser');
 async function connection(target){
  const ws=new WebSocket(target.webSocketDebuggerUrl);await new Promise((r,j)=>{ws.once('open',r);ws.once('error',j)});let next=0;const pending=new Map();
  ws.on('message',raw=>{const m=JSON.parse(raw);if(pending.has(m.id)){const t=pending.get(m.id);pending.delete(m.id);m.error?t.j(Error(m.error.message)):t.r(m.result)}});
@@ -21,17 +23,18 @@ async function backgroundTarget(){
 // native input, selected content or renderer acknowledgment is simulated as real.
 const report={tableId:'fixture-report',reportId:'report',revision:'r1'};
 const model={kind:'artifact_review',tableId:'fixture-model',reviewId:'model',revision:'m1',adapter:'interactive_3d'};
+const landmark={id:'research-fixture',title:'Selected research fixture',position:{x:9,y:0,z:0}};
 const entries=[{id:'report',node:'reading-room',entry:'/nexus/?table=fixture-report&report_revision=r1',descriptor:'/nexus/descriptor/report',pin:report},
- {id:'model',node:'reading-room',entry:'/nexus/?table=fixture-model',descriptor:'/nexus/descriptor/model',pin:model}];
+ {id:'model',node:landmark.id,entry:'/nexus/?table=fixture-model',descriptor:'/nexus/descriptor/model',pin:model}];
 const markup=(await readFile(new URL('../public/index.html',import.meta.url),'utf8')).replace(/<script[\s\S]*?<\/script>/g,'');
 let page,server;
 try{
  server=createServer(async(req,res)=>{
-  const url=new URL(req.url,'http://127.0.0.1:18945');
+  const url=new URL(req.url,'http://127.0.0.1');
   if(url.pathname==='/'){
    res.setHeader('content-type','text/html');res.end(markup+`<script type="module">import {ContentVisitor} from '/src/content-visitor.mjs';window.errors=[];addEventListener('error',e=>errors.push(e.message));addEventListener('unhandledrejection',e=>errors.push(String(e.reason)));window.visitor=new ContentVisitor({document,window,base:new URL('/',location),say:text=>document.querySelector('#notice').textContent=text});visitor.catalog.then(()=>visitor.update({x:-3,z:3}));</script>`);return;
   }
-  if(url.pathname==='/api/content-visits'){res.setHeader('content-type','application/json');res.end(JSON.stringify({visits:entries}));return;}
+  if(url.pathname==='/api/content-visits'){res.setHeader('content-type','application/json');res.end(JSON.stringify({nodes:[CONTENT_NODE,landmark],visits:entries}));return;}
   if(url.pathname.startsWith('/src/')){
    if(!['/src/content-visitor.mjs','/src/content-visits.mjs'].includes(url.pathname)){res.writeHead(404).end();return;}
    res.setHeader('content-type','text/javascript');res.end(await readFile(new URL('..'+url.pathname,import.meta.url)));return;
@@ -53,18 +56,20 @@ try{
   }
   res.writeHead(404).end();
  });
- server.listen(18945,'127.0.0.1');await new Promise((r,j)=>{server.once('listening',r);server.once('error',j)});
- page=await connection(await backgroundTarget());await page.cdp('Page.enable');await page.cdp('Page.navigate',{url:'http://127.0.0.1:18945/'});await page.until('window.visitor?.entries.length===2');
+ server.listen(0,'127.0.0.1');await new Promise((r,j)=>{server.once('listening',r);server.once('error',j)});
+ page=await connection(await backgroundTarget());await page.cdp('Page.enable');await page.cdp('Page.navigate',{url:'http://127.0.0.1:'+server.address().port+'/'});await page.until('window.visitor?.entries.length===2');
  await page.evaluate('void visitor.open()');await page.until('!!visitor.frame?.contentWindow.fixture?.requests.length');await page.evaluate('window.original=visitor.frame');
+ await page.evaluate('visitor.update({x:9,y:0,z:0})');
+ if(await page.evaluate('document.querySelector("#visit-near").textContent')!=='Explorar objeto')throw Error('Research entrance did not replace the nearby action');
  for(const flag of ['dirty','recording','processing']){
-  await page.evaluate(`original.contentWindow.fixture.state.${flag}=true`);await page.evaluate("visitor.open('model')");
+  await page.evaluate(`original.contentWindow.fixture.state.${flag}=true`);await page.evaluate("visitor.openNode('research-fixture')");
   if(!await page.evaluate("visitor.frame===original&&visitor.entry.id==='report'&&document.querySelector('#content-visit select').value==='report'"))throw Error('Protected visit replaced: '+flag);
   await page.evaluate(`original.contentWindow.fixture.state.${flag}=false`);
  }
- await page.evaluate("void visitor.open('model')");await page.until('visitor.frame!==original&&!!visitor.frame?.contentWindow.fixture');await wait(150);
+ await page.evaluate("void visitor.openNode('research-fixture')");await page.until('visitor.frame!==original&&!!visitor.frame?.contentWindow.fixture');await wait(150);
  if(await page.evaluate('visitor.frame.contentWindow.fixture.requests.length'))throw Error('Loading accepted as ready');
  await page.evaluate("visitor.frame.contentWindow.fixture.ready('ready')");const context=await page.evaluate('visitor.context()');
- if(context.pin.kind!=='artifact_review'||context.context.context_status!=='playback-only'||context.context.review_context!==null||context.context.playback.source_time_ms!==null||!context.evidence.includes('playback-only'))throw Error('Artifact context missing or fabricated');
+ if(context.node!==landmark.id||context.pin.kind!=='artifact_review'||context.context.context_status!=='playback-only'||context.context.review_context!==null||context.context.playback.source_time_ms!==null||!context.evidence.includes('playback-only'))throw Error('Artifact context missing or fabricated');
  await page.evaluate('window.modelFrame=visitor.frame;visitor.walk()');await page.evaluate("visitor.open('model')");
  const evidence=await page.evaluate('({sameFrame:visitor.frame===modelFrame,frames:document.querySelectorAll("#visit-stage iframe").length,title:document.querySelector("#visit-title").textContent,errors,selector:document.querySelector("#content-visit select").value})');
  if(!evidence.sameFrame||evidence.frames!==1||evidence.errors.length||evidence.selector!=='model')throw Error('Retention/browser failure '+JSON.stringify(evidence));
