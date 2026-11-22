@@ -54,11 +54,11 @@ export class ContentVisitor{
    :this.frame?'Volver al contenido':'Visitar contenido';
  }
 
- async openNode(nodeId){
+ async openNode(nodeId,{expectedRevision=null}={}){
   await this.catalog;
   const entry=this.entries.find(value=>value.node===nodeId&&value.id===this.entry?.id)||this.entries.find(value=>value.node===nodeId);
   if(!entry){this.say('No hay contenido disponible para tu acceso en este lugar.');return;}
-  return this.open(entry.id);
+  return this.open(entry.id,{nodeRevision:expectedRevision});
  }
 
  request(method){
@@ -84,12 +84,14 @@ export class ContentVisitor{
   this.choiceLabel.hidden=entries.length<2;if(this.entry)this.selector.value=this.entry.id;
  }
  reveal(){this.panel.hidden=false;this.panel.classList.remove('is-walking');this.panel.removeAttribute('aria-hidden');this.panel.inert=false;}
- async open(selectedId){
+ async open(selectedId,{nodeRevision=null}={}){
   const selected=this.entries.find(entry=>entry.id===selectedId);
+  if(nodeRevision!==null&&selected?.nodeRevision!==nodeRevision){this.say('Este contenido cambió de lugar o edición. Volvé a elegirlo en el mundo.');return;}
   if(this.frame&&(!selectedId||selectedId===this.entry?.id&&(!selected||sameVisitPin(selected.pin,this.entry.pin)))){this.reveal();this.frame.focus();return;}
   if(this.opening)return;this.opening=true;
   try{
    await this.catalog;if(this.selector)this.selector.disabled=true;const entry=this.entries.find(value=>value.id===selectedId)||(!selectedId&&this.entries[0]);if(!entry){this.say('No hay contenido disponible para tu acceso en este lugar.');return;}
+   if(nodeRevision!==null&&entry.nodeRevision!==nodeRevision){this.say('Este contenido cambió de lugar o edición. Volvé a elegirlo en el mundo.');return;}
    const descriptorURL=new URL(entry.descriptor,this.window.location.origin),entryURL=new URL(entry.entry,this.window.location.origin);
    if([descriptorURL,entryURL].some(url=>url.origin!==this.window.location.origin||!url.pathname.startsWith('/nexus/')))throw Error('Use the selected viewer');
    const response=await fetch(descriptorURL,{credentials:'same-origin',signal:AbortSignal.timeout(5000)});

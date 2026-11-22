@@ -56,17 +56,17 @@ it. A plain Home artifact needs an existing appropriate Nexus review first.
 Node IDs are `node-` plus1–40 lowercase letters/digits/hyphens. There are eight
 slots including tombstones, with no ID reuse; room reset is the existing explicit
 new-run operation, not automatic cleanup. A title is at most40 characters, shape
-is `pedestal` or `portal`, position is in the existing x±7/z−6…6 creation area.
+is `pedestal` or `portal`, position is in one of the current central/gallery/garden creation regions from `world-layout.mjs`.
 Each of at most four links is `{id,revision}` to a live node seen at that exact
 current revision. After changes/removal, that statement keeps its old revision
 and reports `revised`/`deleted`; no line silently follows a changed target.
 
-Room saves retain the exact private declared pin. Shared observations, events and
-MML retain node identity/owner/revision, authored public title/position/shape,
-link state and a canonical selection hash/type, without table/review IDs or
-private routes. Only the verified owning native actor also receives its own
-`creatorDeclaredPin` on observation, retaining its submitted reference for future
-editing; this is not a publication/read-grant claim. Public entities and nodes are preserved by bounded situation
+Room saves retain the exact creator-declared pin. Authorized world observers
+receive `declaredResultPin` as that same declared pointer, alongside node identity,
+owner/revision, title/position/shape, link state and selection hash/type. Public
+MML geometry carries the hash/type rather than private routes. A pointer is not a
+publication/read grant: the actual viewer and descriptor recheck the participant
+against the pinned result, independently of world membership. Public entities and nodes are preserved by bounded situation
 capture; excess history/other summaries have explicit omission counts, not an
 invented complete-perception claim. Existing5MiB Room current/previous storage,
 32KiB native capture, journal/outcome bounds remain. Node markers/relations are
@@ -156,3 +156,14 @@ Undo restores the preceding position/colour only while the applied revision is
 still current. A concurrent edit rejects the old preview rather than replacing
 another participant's work. The preview cannot silently create another light;
 editing remains possible when the authored-element capacity is full.
+
+
+## Selecting a result in the world
+
+A current runtime result node offers **Visitar contenido**, independently of
+**Señalar**. Games retain their game/indication behavior and lights retain their
+edit controls. Visiting freezes the selected node revision: catalogue changes
+during opening refuse the stale selection instead of following another edition.
+The existing protected descriptor and retained ContentVisitor own the actual
+source access and iframe. **Volver al mundo** keeps that same frame, drafts and
+processing; selecting an unavailable result preserves the previous visit.

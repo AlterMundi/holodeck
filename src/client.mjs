@@ -58,7 +58,8 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       onUnavailable:()=>say('No pude identificar ese objeto todavía. Probá de nuevo.')});
     worldIndication=new WorldIndication({document,scene:renderer.mmlCompositionScene.group,getState:()=>state,
       set:record=>action('focus.set',record.target,{},record.revision,{selection:record}),
-      clear:record=>action('focus.clear',null,{},record.sequence),edit:editLight});
+      clear:record=>action('focus.clear',null,{},record.sequence),edit:editLight,
+      visit:record=>contentVisitor.openNode(record.target,{expectedRevision:record.revision}).catch(()=>say('No pude abrir este contenido. Conservé la visita anterior.'))});
     const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
     renderer.render=state=>{nativeAvatarLayer.update();worldIndication?.update();contentVisitor?.update(client.getLocalCharacterState()?.position);playableHUD.update(client.getLocalCharacterState()?.position);render(state);geometryProbe.afterRender();};
     renderer.dispose=()=>{worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();dispose();};
