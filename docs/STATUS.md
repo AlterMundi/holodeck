@@ -3,8 +3,10 @@
 Updated2026-11-22. Nicolas explicitly resumed the **complete** existing MVP goal
 and says testing already done is enough to continue implementation. Native resume
 was acknowledged with the original objective/accounting unchanged. The MVP is
-not complete; the full roadmap remains active, including runtime co-creation,
-playable/editable shared activity and finished world quality. The real reported
+not complete. After the implementation and receiving corrections, the current
+goal is BLOCKED awaiting actual human situated use/return and review acceptance.
+The full objective/accounting and deployed world remain unchanged; this is not
+a service outage or a request to repeat the shared movement/authentication trial. The real reported
 content-exit failure was reproduced, repaired and delivered. Specific
 observations/unknowns remain recorded rather than becoming a blanket acceptance
 claim or a gate requiring another generic repeat of the same human trial.
@@ -18,7 +20,8 @@ files, exact health, served client and506,528-byte scenery match the qualified
 bundle. Same App, fourteen readers, seven native routes, receiving configuration,
 canonical Conversation and two configured pinned visits remain. Runtime-created
 nodes add protected result entrances without changing that configuration. The goal
-remains ACTIVE with its full objective/accounting.
+is BLOCKED pending actual human situated use/return, with its full objective and
+accounting preserved. No developer job is claimed running in that wait.
 
 The seven existing native receivers now select the qualified public CLI e3e06d5a
 and bridge f08a4db0. Exactly one own `activity` read per body returned canonical

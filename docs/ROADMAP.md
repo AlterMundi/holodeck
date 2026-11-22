@@ -1,7 +1,9 @@
 # Holodeck MVP roadmap
 
 Human-authorized native goal: work through a shared, testable MVP.
-Current status: ACTIVE after Nicolas explicitly resumed the full roadmap22November.
+Current status: BLOCKED awaiting required actual human situated use/return and
+review acceptance after implementation/receiving corrections. Nicolas resumed the
+full roadmap22November; its unchanged objective/accounting remains unfinished.
 The existing objective/accounting and deployed service remain; do not reduce the
 goal to the initial implementation or hold all development behind repeated trials.
 Updated2026-11-22. This roadmap is acceptance coverage, not a completion claim.
@@ -20,8 +22,10 @@ The MVP includes a walkable 3D world. QR scanning and augmented physical mapping
 remain candidate creations. Avatar/VR refinement is not a prerequisite for the
 initial explicit turn-based Conversation mode. No canned companion can satisfy
 native acceptance. Do not mark the goal complete until its actual required work
-is done; keep the full goal active while implementing the remaining roadmap and recording
-specific acceptance truthfully.
+is done; preserve the full objective while recording specific acceptance truthfully.
+The current necessary human step is an ordinary situated comment from inside the
+world; fixtures cannot manufacture that acceptance. No repeated generic auth or
+shared-movement trial is required.
 
 See [plan](plan.md), [current evidence](STATUS.md), [native contract](native-integration.md),
 [visual checks](visual-play.md) and the owning deployment record when available.
