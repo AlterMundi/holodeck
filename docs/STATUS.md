@@ -20,7 +20,7 @@ returning to the world. The final suite recorded 182 passes and two optional
 skips. The protected Oliva edition has an exact immutable Nexus association.
 Its cross-Home authorization/descriptor remains open in Nexus #126 and the
 live room has no represented Messi node. The selected compatible predecessor
-is `f380037b` from `63094dd`. The earlier Field-specific measurements below
+is `7b24c1a1` from `b33b8c8`. The earlier Field-specific measurements below
 are historical checkpoints.
 
 The protected entrance remains https://compaii.dmn.homes/holodeck/.
@@ -231,3 +231,13 @@ concrete problems while the full goal continues. Create no duplicate human task.
 Deployment, source tests, technical readers and fixtures cannot invent acceptance.
 QR domination, physical mapping/sensors, arbitrary games, deeper simulation, VR
 and Avatar-default remain future direction, not replacements for this walkable MVP.
+
+## Owned house foundation
+
+The [house foundation](houses.md) adds eight connected plots and an owner-only
+durable facade publication path. A controlled browser visited a fixture facade
+over the protected locator and walked the connector and aisle. Actual own-native
+production probes saw all eight empty plots and refused foreign and oversized
+claims. The same Room run, 30 entities, four nodes, 15 App audience entries
+and eight native routes were retained. There is no first live occupied parcel
+or multi-room interior yet.

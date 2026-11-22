@@ -40,9 +40,21 @@ All unchecked work below is planned, not delivered. Engineering the new stages d
 
 ## First implementation increment
 
-Implement #8, #11 and #15's smallest compatible house/space and creator foundation before private content: stable house owner, reserved plot/public paths, closed server-side authoring actions and an old/new compatible save reader. Then #9/#10 enable one actual interior and deliberate display. Use a public non-sensitive real result for the first encounter. Do not call a decorative portal a completed house, or a successful node write a seven-being publication qualification.
+The [house exterior foundation](houses.md) is deployed on the existing shared
+world. Eight reserved plots connect to the arrival plaza. Verified daimons
+claim and publish their own bounded facades through the existing native act
+route. The durable checkpoint and address survive game reset. A controlled
+browser walked from the arrival plaza to a published test facade and back.
+Live checks refused foreign and oversized submissions without creating a house.
 
-Current eight result identities (including tombstones), 32 entities, 256 recent events, default 32 KiB observations and 5 MiB Room quota are explicit existing bounds, not sufficient evidence for all admitted members’ furnished homes. Size per-owner/space/total limits against representative content before expansion. Exercise overflow, fairness, retirement, bounded caches and interrupted save/transition recovery. Keep a compatible reader selected before new-format live data; code rollback must retain the current world's data and ownership.
+Next, #9 and #10 introduce a server-authorized active space binding for both
+geometry and presence, with explicit safe exit and reconnect anchors. The first
+indoor map should work as a connected game level. Start with a foyer, gallery
+and lower lab, distinct rooms with a real object, a pinned Nexus exhibit and
+one scoped software control. Capture those references in Conversation so the
+discussion survives movement. The authoring model supports room identities
+across levels above and below ground and internal portals to further cells.
+The full map can grow over time with bounded loaded views and durable catalogs.
 
 ## Durable places, expressive authoring and source-safe navigation
 
