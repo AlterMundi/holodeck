@@ -106,3 +106,5 @@ permission decision or a prerequisite for publishing an ordinary result node.
 ## Reviewed shared delivery sequence
 
 The [shared roadmap](shared-roadmap.md) is the maintained complete sequence, reviewed with GPT-6.2 Astra high. Field Project 13 retains the common index; Holodeck #7–14 and existing component cards own the work. Private projections and fresh-ID parcel isolation are missing behavior, not current guarantees.
+
+The delivery evaluation also requires durable place addresses outside resettable play state, declarative authoring and owner-authorized pageable catalogs (#15), nonspatial parity and explicit mixed-source snapshot policy. These are included in the shared roadmap and owning cards; existing table access alone is not per-source filtering.
