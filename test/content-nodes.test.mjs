@@ -78,3 +78,12 @@ test('human indication and native observation refer to the same result node revi
  act(room,creator,'node.remove','node-shared',{},2);assert.equal(room.focusState()[0].status,'deleted');
  assert.equal(new Room({state:room.snapshot()}).focusState()[0].status,'deleted');
 });
+
+test('native Field entrance shares an exact context pointer while its graph and audience stay with Nexus',()=>{
+ const room=new Room(),pin={kind:'context',tableId:'field-development',contextId:'field-nexus-native',revision:'capture-2026-10-15-v1'};
+ assert.equal(act(room,creator,'node.place','node-field',data({title:'Field · historical context',result:{pin}}),null).status,'completed');
+ const state=room.observe(human).nodes['node-field'];assert.equal(state.result.kind,'context');assert.deepEqual(state.declaredResultPin,pin);assert.equal('graph'in state,false);
+ const visit=nodeVisits(room.nodes,human)[0];assert.match(visit.entry,/context_id=field-nexus-native/);assert.match(visit.entry,/context_version=capture-2026-10-15-v1/);assert.match(visit.descriptor,/contexts\/field-nexus-native\/capture-2026-10-15-v1\/visit$/);
+ assert.deepEqual(nodeVisits(room.nodes,{...human,rights:[]}),[]);
+ const restored=new Room({state:room.snapshot()});assert.deepEqual(restored.observe(creator).nodes['node-field'].declaredResultPin,pin);
+});

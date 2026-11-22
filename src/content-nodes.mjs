@@ -1,7 +1,7 @@
 import {creationContains} from './world-layout.mjs';
 import {validSignalGarden,signalGardenProgress,signalGardenInstructions} from './playable-creations.mjs';
 import {createHash} from 'node:crypto';
-import {validVisitPin,visitVersion,validateContentVisits} from './content-visits.mjs';
+import {validVisitPin,visitVersion,validateContentVisits,visitRoutes} from './content-visits.mjs';
 export const MAX_CONTENT_NODES=8;
 export const contentNodeId=value=>typeof value==='string'&&/^node-[a-z0-9-]{1,40}$/.test(value);
 export const contentSelection=pin=>createHash('sha256').update(JSON.stringify(Object.fromEntries(Object.entries(pin).sort(([a],[b])=>a.localeCompare(b))))).digest('hex');
@@ -23,7 +23,7 @@ export function nodeState(nodes,actor=null,context={}){
  return Object.fromEntries(Object.entries(nodes).map(([id,node])=>[id,{id,revision:node.revision,owner:node.owner,deleted:node.deleted,title:node.title,shape:node.shape,position:{...node.position},
   ...(node.play?(()=>{const progress={...signalGardenProgress(node.play,context),definitionRevision:node.revision};return {play:structuredClone(node.play),progress,...signalGardenInstructions(node.play,progress)};})():{
    ...(actor?.rights?.includes('observe')?{declaredResultPin:structuredClone(node.result.pin)}:{}),
-   result:{selection:contentSelection(node.result.pin),kind:visitVersion(node.result.pin)===2?'artifact_review':'report',...(visitVersion(node.result.pin)===2?{adapter:node.result.pin.adapter}:{}),verification:'creator-declared'}}),
+   result:{selection:contentSelection(node.result.pin),kind:visitVersion(node.result.pin)===3?'context':visitVersion(node.result.pin)===2?'artifact_review':'report',...(visitVersion(node.result.pin)===2?{adapter:node.result.pin.adapter}:{}),verification:'creator-declared'}}),
   links:node.links.map(link=>({...link,currentRevision:nodes[link.id]?.revision??null,status:!nodes[link.id]||nodes[link.id].deleted?'deleted':nodes[link.id].revision===link.revision?'current':'revised'}))}]));
 }
 // Fixed routes from Nexus's existing visit descriptor API. A pointer is not a
@@ -31,10 +31,8 @@ export function nodeState(nodes,actor=null,context={}){
 export function nodeVisits(nodes,actor){
  if(actor?.kind!=='human'||!actor.rights?.includes('observe'))return [];
  return Object.values(nodes).filter(node=>!node.deleted&&!node.play).map(node=>{
-  const pin=node.result.pin,artifact=visitVersion(pin)===2;
-  const query=new URLSearchParams({table:pin.tableId,entry:'web',...(!artifact?{report_revision:pin.revision}:{})});
-  const descriptor=`/nexus/api/tables/${encodeURIComponent(pin.tableId)}/${artifact?'artifact-review':'reports'}/${encodeURIComponent(artifact?pin.reviewId:pin.reportId)}/${encodeURIComponent(pin.revision)}/visit`;
-  const [entry]=validateContentVisits([{id:node.id,node:'reading-room',entry:'/nexus/?'+query,descriptor,pin,discoverActors:[actor.id]}]);
+  const pin=node.result.pin,routes=visitRoutes(pin);
+  const [entry]=validateContentVisits([{id:node.id,node:'reading-room',...routes,pin,discoverActors:[actor.id]}]);
   const {discoverActors,...selected}=entry;
   return {...selected,node:node.id,title:node.title,position:{...node.position,y:.1},nodeRevision:node.revision,resultVerification:'creator-declared'};
  });

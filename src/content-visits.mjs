@@ -46,20 +46,19 @@ export function validateContentVisits(entries=[],nodes=[CONTENT_NODE]){
    if(typeof path!=='string'||path.length>1200||!path.startsWith('/nexus/')||/[\\\u0000-\u0020]/.test(path))throw Error('Use an existing same-origin Nexus route');
    const parsed=new URL(path,'https://world.invalid');if(parsed.origin!=='https://world.invalid'||!parsed.pathname.startsWith('/nexus/')||parsed.hash)throw Error('Use an existing same-origin Nexus route');
   }
-  const entrance=new URL(entry.entry,'https://world.invalid');
-  if(entrance.searchParams.get('table')!==entry.pin.tableId||(visitVersion(entry.pin)===1&&entrance.searchParams.get('report_revision')!==entry.pin.revision))throw Error('Pin the selected report edition in its viewer entrance');
+  if(!visitEntryMatches(entry.entry,entry.pin))throw Error('Pin the selected edition in its viewer entrance');
   ids.add(entry.id);return structuredClone(entry);
  });
 }
 export function visitsForActor(entries,actor){
  return entries.filter(entry=>entry.discoverActors.includes(actor.id)).map(({discoverActors,...entry})=>structuredClone(entry));
 }
-export const visitVersion=pin=>pin?.kind==='artifact_review'?2:1;
+export const visitVersion=pin=>pin?.kind==='context'?3:pin?.kind==='artifact_review'?2:1;
 export function validVisitPin(pin){
  if(!pin||typeof pin!=='object'||Array.isArray(pin))return false;
- const keys=visitVersion(pin)===2?['kind','tableId','reviewId','revision','adapter']:['tableId','reportId','revision'];
+ const version=visitVersion(pin),keys=version===3?['kind','tableId','contextId','revision']:version===2?['kind','tableId','reviewId','revision','adapter']:['tableId','reportId','revision'];
  return Object.keys(pin).length===keys.length&&keys.every(k=>slug(pin[k]))
-  &&(visitVersion(pin)===1||['interactive_3d','video'].includes(pin.adapter));
+  &&(version!==2||['interactive_3d','video'].includes(pin.adapter));
 }
 export function sameVisitPin(a,b){return validVisitPin(a)&&validVisitPin(b)&&visitVersion(a)===visitVersion(b)&&Object.keys(a).every(k=>a[k]===b[k]);}
 export function knownVisitState(value){return !!value&&['dirty','recording','processing','playing'].every(key=>typeof value[key]==='boolean');}
@@ -67,4 +66,35 @@ export function visitResponseMatches(event,{source,origin,id,visitId,pin}){
  const value=event.data;
  return event.source===source&&event.origin===origin&&value?.schema===`dm.holodeck-visit/response-v${visitVersion(pin)}`
   &&value.id===id&&value.visitId===visitId&&sameVisitPin(value.pin,pin);
+}
+
+// Pinned knowledge contexts stay at their owning Nexus. Room keeps one spatial
+// entrance, never a copied evidence graph or a fabricated report identity.
+export function visitEntryMatches(value,pin){
+ if(!validVisitPin(pin)||typeof value!=='string'||value.length>1200||!value.startsWith('/nexus/')||/[\\\u0000-\u0020]/.test(value))return false;
+ let url;try{url=new URL(value,'https://world.invalid');}catch{return false;}
+ if(url.origin!=='https://world.invalid'||url.pathname!=='/nexus/'||url.hash||url.searchParams.getAll('table').length!==1||url.searchParams.get('table')!==pin.tableId)return false;
+ const exactQuery=(key,expected)=>url.searchParams.getAll(key).length===1&&url.searchParams.get(key)===expected;
+ if(visitVersion(pin)===1)return exactQuery('report_revision',pin.revision);
+ if(visitVersion(pin)===3)return exactQuery('context_id',pin.contextId)&&exactQuery('context_version',pin.revision);
+ return true;
+}
+export function visitRoutes(pin){
+ if(!validVisitPin(pin))throw Error('Select an exact supported Nexus pin');
+ const version=visitVersion(pin),query=new URLSearchParams({table:pin.tableId,entry:'web'}),part=encodeURIComponent;
+ let branch,id;
+ if(version===3){branch='contexts';id=pin.contextId;query.set('context_id',id);query.set('context_version',pin.revision);}
+ else if(version===2){branch='artifact-review';id=pin.reviewId;}
+ else{branch='reports';id=pin.reportId;query.set('report_revision',pin.revision);}
+ return {entry:'/nexus/?'+query,descriptor:`/nexus/api/tables/${part(pin.tableId)}/${branch}/${part(id)}/${part(pin.revision)}/visit`};
+}
+export function contextVisitSnapshotMatches(context,pin){
+ if(visitVersion(pin)!==3)return true;
+ const ref=value=>typeof value==='string'&&value.length>0&&value.length<=200&&!/[\u0000-\u001f\u007f]/.test(value);
+ return !!context&&context.context_status==='acknowledged-client-view'
+  &&(context.pin===undefined||sameVisitPin(context.pin,pin))&&ref(context.visit_id)
+  &&Number.isSafeInteger(context.view_revision)&&context.view_revision>=1
+  &&ref(context.focus)&&(context.selection===null||context.selection&&Object.keys(context.selection).sort().join(',')==='kind,object_id'
+    &&['node','relation'].includes(context.selection.kind)&&ref(context.selection.object_id))
+  &&knownVisitState(context.state);
 }
