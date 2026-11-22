@@ -135,6 +135,7 @@ class NativeBridge:
                 'kind':'direct-native-world-port',
                 'argv_prefix':[self.world_port['cli'],'--socket',self.world_port['socket'],'--interaction',ident_],
                 'operations':{'observe':'Read current structured perception; optional --json query',
+                    'activity':'Read recent public world events; optional --json {"limit":20} or exact run/through/before cursors',
                     'project':'Choose a supported projection and position with --json projection',
                     'act':'Apply a typed command with --json command, using a fresh observation and relevant preconditions',
                     'result':'Read an exact command outcome with --json {"id":"command-id"}'},

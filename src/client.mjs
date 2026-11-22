@@ -11,6 +11,7 @@ import { PlayableHUD } from './playable-hud.mjs';
 import { AppliedGeometryProbe } from './applied-geometry.mjs';
 import { SharedConversationHost } from './shared-conversation-host.mjs';
 import { WorldAudio } from './world-audio.mjs';
+import {WorldHistory} from './world-history.mjs';
 import { snapshotMayApply, sameRequest } from './client-order.mjs';
 const base=new URL('./',document.baseURI);
 const url=path=>new URL(path,base);
@@ -18,6 +19,9 @@ const socket=path=>{const target=url(path);target.protocol=location.protocol==='
 // MML captures document keys by default. Preserve ordinary text editing and
 // keyboard activation of the HUD without turning typed words into locomotion.
 document.addEventListener('keydown',event=>{
+  if(event.target instanceof Element&&event.target.closest('#activity-dialog')){
+    event.stopImmediatePropagation();if(event.key==='Escape'){event.preventDefault();worldHistory?.close();}return;
+  }
   if(event.target instanceof Element&&event.target.closest('textarea,input,button,summary,select,[contenteditable="true"]')){
     event.stopImmediatePropagation();
     if(event.key==='Escape'){event.preventDefault();event.target.blur();openConversation(false);}
@@ -33,7 +37,7 @@ const touchControls={
   dispose(){this.delegate?.dispose();this.holder?.remove();}
 };
 const playableHUD=new PlayableHUD(document);
-let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null;
+let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null,worldHistory=null;
 const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
   sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket('network'),waitForWorldConfig:true,
   enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
@@ -78,6 +82,17 @@ window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()
 const $=selector=>document.querySelector(selector);
 const notice=$('#notice');
 contentVisitor=new ContentVisitor({document,window,base,say});
+worldHistory=new WorldHistory({document,window,getState:()=>state,
+  load:(query,{signal})=>api('activity?'+new URLSearchParams(query),undefined,{signal}),
+  resumeWorld:()=>{document.activeElement?.blur();window.focus();},onDiscuss:()=>openConversation(true),
+  onPoint:async reference=>{
+    await refresh();if(state.actorRef!==reference.actorRef)throw Object.assign(Error('History actor changed'),{userMessage:'Tu acceso cambió. Volvé a abrir la actividad.'});
+    if(state.run!==reference.run||state.edition!==reference.edition)throw Object.assign(Error('History room changed'),{userMessage:'Este cambio pertenece a otra etapa del mundo.'});
+    const target=state.entities[reference.target]||state.nodes?.[reference.target];
+    if(!target||target.deleted)throw Object.assign(Error('History target unavailable'),{userMessage:'Este objeto ya no está en el mundo.'});
+    return action('focus.set',reference.target,{},target.revision,{selection:{run:reference.run,edition:reference.edition}});
+  }});
+$('#history-reference-clear').onclick=()=>{worldHistory.clearReference();updateNativeAvailability();};
 function updateSoundButton(){
   const status=worldAudio.status(),button=$('#sound');
   button.textContent=status.active?'Silenciar':status.selected?'Reanudar':'Sonido';
@@ -122,12 +137,13 @@ client.on('configChanged',config=>{
   if(config.mmlDocuments){worldDocuments={...config.mmlDocuments};delete worldDocuments.preview;}
 });
 function say(text){
-  if(!$('#creator').hidden){$('#preview-hint').textContent=text;notice.textContent='';}
+  if(worldHistory?.dialog.open){worldHistory.message(text);notice.textContent='';}
+  else if(!$('#creator').hidden){$('#preview-hint').textContent=text;notice.textContent='';}
   else notice.textContent=text;
 }
-async function api(path,body){
+async function api(path,body,{signal}={}){
   const response=await fetch(url(`api/${path}`),{method:body===undefined?'GET':'POST',credentials:'same-origin',
-    headers:body===undefined?{}:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
+    headers:body===undefined?{}:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),signal});
   const value=await response.json();
   if(!response.ok){const error=Error(value.message||value.detail||'La acción no se pudo completar.');Object.assign(error,value,{httpStatus:response.status});throw error;}
   return value;
@@ -214,12 +230,14 @@ function updateNativeAvailability(){
   $('#conversation-panel').classList.toggle('shared-conversation',shared);
   $('#conversation-form').hidden=shared;$('#conversation-log').hidden=shared;
   $('#shared-conversation').hidden=!shared;
-  if(shared){$('#conversation-hint').textContent='Podés volver al mundo sin cerrar lo que estás escribiendo o grabando.';return;}
+  const historyLabel=worldHistory?.conversationLabel();$('#history-reference-clear').hidden=!historyLabel;
+  const historyHint=historyLabel?`Tema de la próxima intervención: ${historyLabel}. `:'';
+  if(shared){$('#conversation-hint').textContent=historyHint+'Podés volver al mundo sin cerrar lo que estás escribiendo o grabando.';return;}
+  $('#conversation-hint').textContent=historyHint+((available||nativeTurn)?'Podés seguir recorriendo el mundo mientras transcurre mi turno.':'La conversación todavía no está conectada a este mundo.');
   $('#send').disabled=!available||!!nativeTurn||preparingConversation;
   if(preparingConversation){$('#companion-status').textContent='Conservando el punto que estamos mirando…';return;}
   if(!nativeTurn){
     $('#companion-status').textContent=available?'Podemos conversar desde este lugar':'Exploración compartida';
-    $('#conversation-hint').textContent=available?'Podés seguir recorriendo el mundo mientras transcurre mi turno.':'La conversación todavía no está conectada a este mundo.';
   }
 }
 async function refresh(){
@@ -227,7 +245,7 @@ async function refresh(){
   let incoming;
   try{incoming=await api('state');}catch(error){if(request!==stateRequest)return;worldAudio.breakContinuity();throw error;}
   if(!snapshotMayApply(state,incoming,request,stateRequest))return;
-  state=incoming;contentVisitor.syncNodes(state.nodes);playableHUD.sync(state.nodes);worldAudio.observe(state,{continuityVersion});
+  state=incoming;contentVisitor.syncNodes(state.nodes);playableHUD.sync(state.nodes);worldAudio.observe(state,{continuityVersion});worldHistory.observe(state);
   const count=client.getCharacterStates().size;
   $('#people').textContent=count>1?`${count} exploradores en el taller`:'Un lugar para crear juntos';
   const compact=window.matchMedia('(max-width:740px)').matches;
@@ -260,13 +278,17 @@ async function recoverCommand(){
 }
 async function action(type,target,args,expectedRevision,{undo=false,selection=null}={}){
   if(pending||preparingAction){say('Primero tengo que confirmar el cambio anterior.');return null;}
+  if(!state){say('Esperá a entrar al taller para cambiar este lugar.');return null;}
+  const scope={actorRef:state.actorRef,run:state.run,edition:state.edition};
   preparingAction=true;let submittedId=null;
   try{
     const observation=await api('observe',{after:Math.max(0,(state?.sequence??0)-16),displayedSequence:null,maxBytes:32768});
+    if(state?.actorRef!==scope.actorRef||state.run!==scope.run||state.edition!==scope.edition
+      ||observation.observer!==scope.actorRef||observation.run!==scope.run||observation.edition!==scope.edition){say('Tu acceso o este mundo cambió. Volvé a elegir la acción.');return null;}
     if(selection&&(observation.run!==selection.run||observation.edition!==selection.edition)){say('El lugar cambió. Elegí el objeto de nuevo.');return null;}
     const previous=observation.entities[target];
     pending={id:crypto.randomUUID(),issuedAt:Date.now(),run:observation.run,edition:observation.edition,observation:observation.id,type,target,args,expectedRevision};
-    pendingMetadata={command:pending,previous,undo,actorRef:state?.actorRef,createdAt:Date.now()};
+    pendingMetadata={command:pending,previous,undo,actorRef:scope.actorRef,createdAt:Date.now()};
     try{pendingMetadata=saveIntent(sessionStorage,pendingKey,pendingMetadata,4096);pending=pendingMetadata.command;}
     catch{pending=null;pendingMetadata=null;say('El navegador no pudo guardar la confirmación pendiente. El cambio no se envió.');return null;}
     submittedId=pending.id;preparingAction=false;
@@ -345,6 +367,7 @@ $('#undo').onclick=async()=>{
 };
 function openConversation(open){
   const panel=$('#conversation-panel');panel.hidden=!open;$('#talk').setAttribute('aria-expanded',String(open));
+  if(open)updateNativeAvailability();
   if(open&&state?.native?.sharedConversation){
     if(!sharedConversation)sharedConversation=new SharedConversationHost({window,document,container:$('#shared-conversation'),api,
       capture:captureInteractionContext,currentActor:()=>state?.actorRef,
@@ -401,6 +424,8 @@ async function captureInteractionContext(){
     others:[...client.getCharacterStates().values()].filter(person=>!person.isLocal).slice(0,8).map(person=>({userId:person.userId,connectionId:person.connectionId,position:person.position}))});
   const appliedGeometry=geometryProbe?.snapshot();
   if(appliedGeometry)view.appliedGeometry=structuredClone(appliedGeometry);
+  const historyReference=worldHistory.reference();
+  if(historyReference)view.historyReference=structuredClone(historyReference);
   let visitContext;
   visitContext=await contentVisitor.context();
   if(state.actorRef!==capturedActor||state.run!==capturedRun)throw Error('El lugar o tu acceso cambió.');
@@ -433,5 +458,5 @@ const interval=setInterval(async()=>{
   try{await refresh();}catch{say('La conexión con el taller se interrumpió. Los cambios no se repetirán solos.');}
   finally{refreshing=false;}
 },1500);
-window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();contentVisitor.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);worldAudio.dispose();client.dispose();});
+window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);worldAudio.dispose();client.dispose();});
 refresh().catch(()=>say('No pude conectar con el taller.'));

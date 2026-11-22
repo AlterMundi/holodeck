@@ -15,7 +15,7 @@ def main():
     source=parser.add_mutually_exclusive_group(required=True)
     source.add_argument('--interaction')
     source.add_argument('--own',action='store_true')
-    parser.add_argument('operation',choices=['observe','project','act','result'])
+    parser.add_argument('operation',choices=['observe','activity','project','act','result'])
     parser.add_argument('--json',default='{}',dest='arguments')
     args=parser.parse_args()
     if args.interaction is not None and str(uuid.UUID(args.interaction))!=args.interaction:

@@ -1,3 +1,4 @@
+import {readActivity,nativeActivityQuery} from './activity.mjs';
 import { RoomError } from './room.mjs';
 
 // Direct world interface for a receiving-local daimon adapter. It is independent
@@ -15,6 +16,9 @@ export class DaimonPort {
   }
   async observe(receivingContext,query={}){
     return this.room.observe(await this.actor(receivingContext),query);
+  }
+  async activity(receivingContext,args={}){
+    return readActivity(this.room,await this.actor(receivingContext),nativeActivityQuery(args));
   }
   async project(receivingContext,projection){
     return this.room.project(await this.actor(receivingContext),projection);

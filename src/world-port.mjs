@@ -1,3 +1,4 @@
+import {ActivityError} from './activity.mjs';
 import net from 'node:net';
 import { chmodSync,lstatSync } from 'node:fs';
 import { DaimonPort } from './daimon-port.mjs';
@@ -23,7 +24,7 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
         const request=JSON.parse(bytes.subarray(0,end));
         const own=request?.ownNative===true;
         if(!request||Object.keys(request).sort().join(',')!==(own?'args,operation,ownNative':'args,interactionId,operation')
-          ||!['observe','project','act','result'].includes(request.operation)
+          ||!['observe','activity','project','act','result'].includes(request.operation)
           ||!request.args||typeof request.args!=='object'||Array.isArray(request.args))throw Error('Invalid world operation');
         let verified,rights;
         if(own){
@@ -45,6 +46,7 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
         const port=new DaimonPort(room,async()=>actor);
         let result;
         if(request.operation==='observe')result=await port.observe(null,request.args);
+        else if(request.operation==='activity')result=await port.activity(null,request.args);
         else if(request.operation==='project')result=await port.project(null,request.args);
         else if(request.operation==='result')result=await port.result(null,request.args.id);
         else{
@@ -54,7 +56,9 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
         const response=JSON.stringify({ok:true,result,...(own?{authoritySource:{identity:'receiving-lane',access:'current-being-grant'}}:{})});
         if(Buffer.byteLength(response)>131072)throw Error('World response exceeds its bound');
         socket.end(response+'\n');
-      }catch{socket.end(JSON.stringify({ok:false,message:'No pude confirmar esa operación. Revisá el turno, el acceso y el estado del mundo antes de intentar otra acción.'})+'\n');}
+      }catch(error){
+        if(error instanceof ActivityError){socket.end(JSON.stringify({ok:false,code:error.code,message:error.message,...(error.code==='stale-run'?{run:room.run}:{})})+'\n');return;}
+        socket.end(JSON.stringify({ok:false,message:'No pude confirmar esa operación. Revisá el turno, el acceso y el estado del mundo antes de intentar otra acción.'})+'\n');}
     });
   });
   await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(socketPath,resolve);});

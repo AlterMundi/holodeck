@@ -1,3 +1,4 @@
+import {readActivity,ActivityError} from './activity.mjs';
 import {nodeVisits} from './content-nodes.mjs';
 import express from 'express';
 import { Networked3dWebExperienceServer } from '@mml-io/3d-web-experience-server';
@@ -188,6 +189,11 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     res.json({run:room.run,edition:room.edition,sequence:room.sequence,actorRef:req.actor.id,entities:room.entities,focus:room.focusState(),nodes:room.nodeState(),
       native:native?{...await native.availability(req.actor),sharedConversation:!!native.contexts}:{available:false}});
   }));
+  app.get(route('api/activity'),(req,res)=>{
+    try{res.json(readActivity(room,req.actor,req.query));}
+    catch(error){if(!(error instanceof ActivityError))throw error;
+      res.status(error.status).json({code:error.code,message:error.message,...(error.code==='stale-run'?{run:room.run}:{})});}
+  });
   app.get(route('api/content-visits'),(req,res)=>res.json({nodes:selectedContentNodes,visits:[...visitsForActor(selectedContentVisits,req.actor),...nodeVisits(room.nodes,req.actor)]}));
   app.get(route('api/conversation-surface'),asyncRoute(async(req,res)=>{
     if(!native?.contexts||!native?.conversationSurface)return res.status(503).json({message:'La conversación compartida todavía no está disponible en este mundo.'});

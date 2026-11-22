@@ -87,6 +87,10 @@ class BridgeContracts(unittest.TestCase):
         source=json.loads(self.provider.uploads[0][0]);self.assertEqual(source['human_input_id'],ident)
         self.assertEqual(source['observation'],self.observation)
         self.assertEqual(source['native_world_interface']['argv_prefix'][-1],ident)
+        self.assertEqual(set(source['native_world_interface']['operations']),{'observe','activity','project','act','result'})
+        self.assertIn('run/through/before',source['native_world_interface']['operations']['activity'])
+        self.assertEqual(source['native_world_interface']['argv_prefix'][:-1],
+                         [self.bridge.world_port['cli'],'--socket',self.bridge.world_port['socket'],'--interaction'])
         self.assertNotIn('native_world_interface',prepared,'private native descriptor belongs only in the canonical file')
         repeated=self.bridge.dispatch(request);self.assertEqual(repeated,prepared);self.assertEqual(self.provider.inputs,[])
 

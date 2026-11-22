@@ -69,3 +69,14 @@ test('failed cache persistence restores its exact preimage including eviction/ex
  assert.throws(()=>room.observe(speaker),/fixture-save-failed/);assert.deepEqual(room.snapshot(),before);
  reject=false;room.observe(speaker);assert.equal(room.observations.size,1);assert.deepEqual(room.entities,before.entities);assert.deepEqual(room.nodes,before.nodes);
 });
+
+
+test('selected retained activity stays outside optional4KiB view and inside32KiB with the full canonical world',()=>{
+ const {room}=fullRoom();const reference={schema:'holodeck.history-reference/v1',run:room.run,edition:room.edition,sequence:room.sequence,panelVisible:true,explicit:false};
+ const view={capturedAt:1000000,historyReference:reference,padding:''};view.padding='x'.repeat(4096-bytes(view));
+ const before=room.snapshot(),value=captureNativeSituation(room,speaker,{id:crypto.randomUUID(),view},{pairedBeing:paired.id});
+ assert(bytes(value)<=32768);assert.equal(value.selectedActivity.status,'retained');assert.equal(value.selectedActivity.event.sequence,reference.sequence);assert.equal('current' in value.selectedActivity.event,false);assert(bytes(value.selectedActivity)<=2048);
+ assert.deepEqual(value.entities,before.entities);for(const a of [speaker,paired])assert.deepEqual(value.focus.find(s=>s.actor===a.id),room.focusState().find(s=>s.actor===a.id));
+ assert(value.source.omissions.clientReportedViewBytes>0);assert.equal(value.clientReportedView.value,null);
+ const invalid=captureNativeSituation(room,speaker,{id:crypto.randomUUID(),view:{historyReference:{...reference,sequence:'not-a-sequence',eventText:'PRIVATE-FORGED-EVENT'}}},{pairedBeing:paired.id});assert.equal(invalid.selectedActivity.status,'invalid');assert.doesNotMatch(JSON.stringify(invalid),/PRIVATE-FORGED-EVENT/);
+});

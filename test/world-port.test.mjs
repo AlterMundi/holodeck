@@ -121,3 +121,21 @@ test('own native observations and results stay with their being and current room
   assert.equal(stale.result.status,'rejected');assert.equal(a.room.sequence,0);
  }finally{await a.close();await b.close();}
 });
+
+test('own and situated activity share the exact read-only projection, typed cursors and fresh authority',async()=>{
+ const room=new Room(),f=await ownFixture({room});
+ for(let i=0;i<25;i++)room.event({id:f.pin},'participant.left',{});
+ try{
+  const before=room.snapshot(),first=await f.call('activity',{limit:2});assert.equal(first.ok,true);assert.equal(first.result.items.length,2);assert.equal(first.result.observer,f.pin);assert.equal(first.result.items[0].author.isSelf,true);
+  const next=await f.call('activity',{run:room.run,through:first.result.through,before:first.result.nextBefore,limit:2});assert.equal(next.ok,true);assert.equal(next.result.items[0].sequence,23);assert.deepEqual(room.snapshot(),before);
+  for(const args of [{limit:1.5},{limit:true},{limit:2,actor:'forged'},{nativeRequest:'forged'}])assert.equal((await f.call('activity',args)).ok,false);
+  assert.equal((await f.call('activity',{run:'old'})).code,'stale-run');
+  f.rights([]);assert.equal((await f.call('activity',{})).ok,false);assert.deepEqual(room.snapshot(),before);
+ }finally{await f.close();}
+ const dir=mkdtempSync(join(tmpdir(),'holodeck-history-source-')),socketPath=join(dir,'world.sock'),interactionId=crypto.randomUUID();let rights=['observe'],checks=0;
+ const port=await createWorldPort({socketPath,room,native:{async authorizeWorldRequest(id){checks++;assert.equal(id,interactionId);return{actor:{id:'native-situated',kind:'daimon'},nativeRequest:id};}},resolveRights:async()=>rights});
+ const call=args=>new Promise((resolve,reject)=>{const socket=net.createConnection(socketPath);let data='';socket.on('error',reject);socket.on('connect',()=>socket.write(JSON.stringify({interactionId,operation:'activity',args})+'\n'));socket.on('data',chunk=>{data+=chunk;if(data.includes('\n')){resolve(JSON.parse(data.split('\n')[0]));socket.end();}});});
+ try{
+  const before=room.snapshot(),page=await call({limit:1});assert.equal(page.ok,true);assert.equal(page.result.observer,'native-situated');assert.equal(page.result.items[0].author.isSelf,false);rights=[];assert.equal((await call({})).ok,false);assert.equal(checks,2);assert.deepEqual(room.snapshot(),before);
+ }finally{await port.close();rmSync(dir,{recursive:true,force:true});}
+});

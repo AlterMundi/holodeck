@@ -54,6 +54,14 @@ class WorldPortCLI(unittest.TestCase):
         self.assertEqual(value['interactionId'], original)
         self.assertEqual(value['args']['nativeRequest'], original)
 
+    def test_activity_preserves_typed_cursors_without_borrowing_original(self):
+        arguments = {'run': 'fixture-run', 'through': 25, 'before': 20, 'limit': 5}
+        for source in [['--own'], ['--interaction', str(uuid.uuid4())]]:
+            value = self.call(source, 'activity', arguments)
+            self.assertEqual(value['operation'], 'activity')
+            self.assertEqual(value['args'], arguments)
+            self.assertNotIn('nativeRequest', value['args'])
+
     def test_mixed_modes_and_borrowed_original_are_refused_before_socket_write(self):
         with tempfile.TemporaryDirectory() as directory:
             path = str(Path(directory) / 'world.sock')

@@ -1,3 +1,4 @@
+import {resolveHistoryReference} from './activity.mjs';
 import {fitSituation} from './situation-budget.mjs';
 import { constants, promises as fs } from 'node:fs';
 import { join } from 'node:path';
@@ -21,12 +22,16 @@ export function captureNativeSituation(room,actor,request,{pairedBeing=null,pair
   if(request.view!==undefined){
     if(!request.view||typeof request.view!=='object'||Buffer.byteLength(encode(request.view))>4096)
       throw new NativeConversationError('view','Provide a bounded client-reported view',{retained:false,knownNotSubmitted:true,retryable:true});
-    extra.clientReportedView={evidence:'client-reported-at-interaction-capture',value:structuredClone(request.view),
+    const view=structuredClone(request.view);
+    // The exact reference is resolved below, never copied event text from a client.
+    delete view.historyReference;
+    extra.clientReportedView={evidence:'client-reported-at-interaction-capture',value:view,
       uncertainty:'Client-reported scene-graph/DOM evidence only, including any appliedGeometry field. Not presented pixels, authoritative location, line of sight, attention or understanding. A not-in-document entity reference proves DOM absence only.'};
   }
+  if(request.view&&Object.hasOwn(request.view,'historyReference'))extra.selectedActivity=resolveHistoryReference(room,actor,request.view.historyReference);
   // Keep the canonical world and exact speaker/paired indications ahead of an
   // optional client-reported view. The cached capture never contains this view.
-  const reserve={inputAssociation:extra.inputAssociation};
+  const reserve={inputAssociation:extra.inputAssociation,...(extra.selectedActivity?{selectedActivity:extra.selectedActivity}:{})};
   const observation=room.observe(actor,{after:Math.max(0,room.sequence-16),displayedSequence:request.displayedSequence??null,
     maxBytes:MAX_OBSERVATION_BYTES-Buffer.byteLength(encode(reserve))-256,preserveActors});
   Object.assign(observation,extra);observation.source.pairFocusBinding=pairedBeing?pairFocusBinding:'unavailable-at-capture';

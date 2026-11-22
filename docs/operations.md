@@ -89,3 +89,59 @@ upstream DOM snapshot; see [world-document.md](world-document.md). Initial failu
 does not start a ready service. A later fenced representation rejects new game
 edits/projections while preserving the Room's committed state and readable native
 observations/results. Acknowledged upstream state is not human-visible pixels.
+
+## Recent world activity
+
+`GET api/activity` is an authenticated, on-demand read of the existing Room's
+256-event ring. It requires current `observe` rights and does not create a Room
+observation, command outcome, subscription, model input or another history store.
+The ordinary session/authentication boundary is unchanged. Uncertain checkpoints
+return503; historical reads never bypass current admission.
+
+The first request can supply `limit=1..20` and an optional expected `run`. Older
+pages supply all three `run`, `through` and `before`; `through` is the first
+response's frozen sequence ceiling and `before` is an exclusive sequence cursor.
+Unknown/duplicate/malformed query fields return400. A different run returns409
+with `code: stale-run`; reopen the current history rather than merge runs.
+Responses contain at most20 newest-first records and32768 serialized UTF-8 bytes,
+including the envelope. `nextBefore` is the oldest returned sequence when more
+retained records exist, otherwise null. A byte-limited page returns fewer items
+and `byteLimited: true`; its cursor still advances without skipping a record.
+
+The `holodeck.activity/v1` response contains:
+
+- `run`, `edition`, frozen `through`, `currentThrough` and `capturedAt`. Current
+  comparisons use the same synchronous read at `currentThrough`; later edits do
+  not rewrite an earlier record or its frozen history cursor.
+- `retention: {limit, count, firstSequence, lastSequence, earlierUnavailable}`
+  and `gaps: {earlierUnavailable, cursorEvicted, missingSequences}`. Reset changes
+  the run; count eviction removes earlier events. A cursor whose retained window
+  was lost returns an empty page with the explicit gap. No24-hour or full-history
+  promise, replay, rewind or preimage is implied.
+- `items[]` with exact `sequence`, nullable `time`, closed `type`,
+  `author: {ref, name, nameSource, isSelf}`, nullable `target`/`eventRevision`,
+  `detailStatus`, nullable `recorded` post-state and
+  `current: {revision, state, status, actionable}`. Current status is `current`,
+  `revised`, `deleted` or `unavailable`; no historical state is filled from today's
+  snapshot. `actionable` only describes a retained live target, not an authority
+  grant: indicating it must use the existing fresh-observation/current-revision
+  action, and a racing change still rejects.
+
+Public state is allowlisted separately for lights, bridge, nodes, explicit
+indication, public projection and room presence. A node may include its bounded
+public game definition and links; private result pins, selection hashes/URLs,
+`nativeRequest`, original/input identifiers, conversation/provider payload and
+arbitrary event detail never pass through. Unknown event types return
+`type: unavailable`/`detailStatus: unavailable`, retaining only known public
+sequence/time/author fields. Presence/projection does not prove physical presence
+or model attention. Coordinates have their recorded meaning; they are not
+retroactively assigned today's scenery names.
+
+Names currently return null with null provenance: legacy journal names can be a
+generic `Explorador` fallback, and neither that label nor a nickname establishes a
+trusted historical profile name. Exact recorded actor references remain present
+when valid; `isSelf` uses exact authenticated actor-ID equality. Do not infer a
+human pairing or silently backfill a historical name. The product may describe
+unknown details plainly without claiming a historical source or whole scene was
+reopened. Keep only the current page and selected detail in browser memory; this
+route installs no poller or client persistence.

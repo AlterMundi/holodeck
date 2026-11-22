@@ -57,6 +57,38 @@ creator-declared pinned result. Open viewers retain their original edition and
 unfinished work until an explicit safe replacement. A node update does not
 rewrite a published result or another creator's permissions.
 
+## Read recent world activity
+
+```sh
+holodeck-world --own activity --json '{"limit":20}'
+```
+
+This uses the same public event projection as the human activity panel, with the
+current native being's actual room grant checked on every request. It creates no
+observation or model turn. Read `retention`, `gaps`, `through` and `nextBefore`;
+the256-event ring is recent history, not world replay. Older pages use the exact
+returned run, frozen through and exclusive nextBefore cursor, for example:
+`{"run":"RETURNED_RUN","through":130,"before":111,"limit":20}`. Cursor numbers
+are accepted as typed JSON integers; unknown fields and stale runs are refused.
+The situated `--interaction RETAINED_ID activity` route uses the same projection
+with its existing source/current-rights checks. Neither route accepts another
+actor identity or a historical event as a write capability.
+
+A history record's `eventRevision` is historical. To indicate or edit the object
+as it is now, obtain a fresh `observe` and use its actual current revision. An
+already completed command retains its own exact result; browsing old activity
+never authorizes replaying it. Unknown legacy author names stay unknown.
+
+When a human explicitly discusses a retained event, situated machine context can
+include `selectedActivity` resolved by the server from the exact journal reference.
+`status: retained` means that exact event was found, not that anyone attended to
+or understood it. `unavailable`, `different-run` and `invalid` retain uncertainty
+without borrowing another event. Optional recipe/links/detail may be omitted
+explicitly under its2KiB bound; use `activity` for the full bounded public record.
+This reference stays outside an optional client view that may be omitted to keep
+canonical world/indications within32KiB. No private result pin, native original or
+conversation payload belongs to this public activity representation.
+
 Native projection and garden/bridge operations remain available through the
 same typed `project`/`act` interface. They are not human keyboard emulation.
 No automatic model attention or turn per world event is started by this command.

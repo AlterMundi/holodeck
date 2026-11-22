@@ -68,7 +68,7 @@ turn/checksum metadata; their digest is not misrepresented as a canonical
 presentation revision.
 
 `integrations/world_port.py` is the direct daimon interface, independent of human
-keyboard, camera or browser cookies. It offers observe/project/act/result through
+keyboard, camera or browser cookies. It offers observe/activity/project/act/result through
 the app's receiving Unix world port. The installed CLI/socket descriptor appears
 in the situation attachment only when the operator has actually configured it.
 Situated operations require the real retained interaction ID. The native journal
@@ -192,7 +192,7 @@ The initial interaction is an explicit turn in the continuing Conversation.
 Free human exploration continues while that turn runs. Native daimon perception,
 projection and actions are direct APIs, independent of human UI or Avatar mode.
 
-`DaimonPort` exposes observe/project/act/result and requires a receiving authority
+`DaimonPort` exposes observe/activity/project/act/result and requires a receiving authority
 resolver on each call. Room does not issue identities or infer a paired being.
 This port is implemented and tested with fixtures. The protected trial has an
 installed owner CLI/bridge and direct world socket; additional paired routes are
@@ -270,3 +270,47 @@ The human now requires direct reuse of Conversation's text/audio/files component
 World-side context preparation reuses the same situation/file writer without
 submitting a human original. The shared canonical frontend is not yet selected;
 legacy input/status recovery and the existing live runtime remain preserved.
+
+### Situated history reference
+
+The native world `activity` operation reuses `readActivity` and the same
+observe-only rights as the authenticated human GET route. It accepts only
+`run`, `through`, `before` and `limit`, normalizing safe numeric JSON cursors to
+the existing strict query contract. Both situated and own-native lanes keep
+current receiving identity/room grant checks. Request16KiB/response128KiB and the
+activity20-record/32KiB limits are unchanged. It writes no observation or journal.
+
+An optional client view can select exactly one event with
+`historyReference: {schema:'holodeck.history-reference/v1',run,edition,sequence,
+panelVisible,explicit}`. It must be a bounded512-byte closed object, with a
+positive safe sequence and actual boolean flags; one flag must be true. The
+flags are client-reported selection, never event authorship, gaze or attention.
+The UI freezes this reference before any asynchronous viewer capture. No text or
+state copied by the client is accepted as the event. Raw historyReference is
+removed from the optional client-view copy after server resolution.
+
+`captureNativeSituation` resolves the exact current run/edition/sequence from
+that same Room journal at capture, before native original submission. It reserves
+`selectedActivity` together with inputAssociation before `room.observe` fits the
+canonical world. `selectedActivity` is a machine-authored top-level context:
+
+```json
+{"schema":"holodeck.selected-activity/v1","status":"retained","reference":{"schema":"holodeck.history-reference/v1","run":"EXACT_RUN","edition":"EXACT_EDITION","sequence":130,"panelVisible":true,"explicit":false},"source":"canonical-room-journal","selectionEvidence":"client-reported reference; not attention or event authorship","event":{"sequence":130,"time":0,"type":"garden.update","author":{"ref":"EXACT_RECORDED_ACTOR","name":null,"nameSource":null,"isSelf":false},"target":"garden-EXACT_ID","eventRevision":2,"detailStatus":"available","recorded":null},"omissions":{}}
+```
+
+The example is a field contract, not a real event/actor receipt. The selected
+projection excludes duplicate current state (already in the captured world).
+At most2048 UTF-8 bytes are retained; optional recipe, links or recorded detail
+can be omitted with `omissions.recipe`, `links` or `recordedDetail`. Essential
+reference/author/type/time/target/revision remain exact. `recorded:null` is not a
+preimage or reconstruction. Names remain unknown without trusted provenance.
+An invalid reference returns `status: invalid`/null reference; an evicted event
+returns `unavailable`; a different run or edition returns `different-run`. These
+cases do not block the original, invent an event or fall forward to another one.
+No reference means no selectedActivity. Observer identity remains the outer
+canonical observation's observer, distinct from the recorded event author.
+
+If malformed legacy essential identity/edition fields cannot fit even after all
+optional selected detail is removed, the context reports the exact bounded
+reference as unavailable rather than dropping an author silently or blocking the
+original. The public activity endpoint remains the full bounded inspection route.
