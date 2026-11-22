@@ -10,6 +10,13 @@ import {avatarForActor} from './avatar-registry.mjs';
 import {workshopProjection,projectionNodeHTML,attribute} from './workshop-projection.mjs';
 const sphere=(x,y,z,r,color)=>`<m-sphere x="${x}" y="${y}" z="${z}" radius="${r}" color="${color}" collide="false"></m-sphere>`;
 const cylinder=(x,y,z,r,h,color,extra='')=>`<m-cylinder x="${x}" y="${y}" z="${z}" radius="${r}" height="${h}" color="${color}" ${extra}></m-cylinder>`;
+// MML label planes cull their back face. Pair oppositely facing labels so
+// each approach shows normal lettering. Offset the faces to avoid z-fighting.
+function sign({y,text,size,width,height}) {
+  return [[.006,0],[-.006,180]].map(([z,ry]) =>
+    `<m-label y="${y}" z="${z}" ry="${ry}" content="${attribute(text)}" font-size="${size}" width="${width}" height="${height}" color="#163b3f" font-color="#f6edda" collide="false"></m-label>`
+  ).join('');
+}
 export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=true}={}){
   const prefix=basePath.endsWith('/')?basePath:basePath+'/';
   const projection=workshopProjection(room.entities),manifest=JSON.stringify(room.entities);
@@ -34,7 +41,7 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
        <m-cylinder radius=".75" height=".16" y=".08" color="#536c70" collide="false"></m-cylinder>
        ${node.model?`<m-model src="${attribute(prefix)}assets/${attribute(node.model)}" collide="false"></m-model>`:
         '<m-sphere y="1" radius=".45" color="#8ce4c2" collide="false"></m-sphere>'}
-       <m-label y="${1.8+labelHeight/2}" content="${attribute(spatialTitle)}" font-size="18" width="2.5" height="${labelHeight}" color="#163b3f" font-color="#f6edda" collide="false"></m-label>
+       ${sign({y:1.8+labelHeight/2,text:spatialTitle,size:18,width:2.5,height:labelHeight})}
      </m-group>`;
      continue;
     }
@@ -45,7 +52,7 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
       <m-cube x=".66" y="1.05" width=".15" height="1.7" depth=".22" color="#bc8355"></m-cube>
       <m-cube y="1.85" width="1.48" height=".15" depth=".22" color="#eed19b"></m-cube>
       <m-cube y="1.03" width="1.1" height="1.24" depth=".08" color="#8ce4c2" collide="false"></m-cube>
-      <m-label y="2.2" content="Sala de presentaciones" font-size="18" width="2.5" height=".4" color="#163b3f" font-color="#f6edda" collide="false"></m-label>
+      ${sign({y:2.2,text:"Sala de presentaciones",size:18,width:2.5,height:.4})}
     </m-group>`;
    }
   }
@@ -57,13 +64,13 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
         <m-cylinder radius=".53" height=".08" y=".24" color="#eed19b" collide="false"></m-cylinder>
         ${node.shape==='portal'?'<m-cube x="-.5" y="1" width=".12" height="1.5" depth=".14" color="#bc8355"></m-cube><m-cube x=".5" y="1" width=".12" height="1.5" depth=".14" color="#bc8355"></m-cube><m-cube y="1.75" width="1.12" height=".12" depth=".14" color="#eed19b"></m-cube>':'<m-cylinder radius=".18" height=".7" y=".6" color="#bc8355"></m-cylinder>'}
         <m-sphere y="1.1" radius=".24" color="${node.play?(node.progress.complete?'#efc87a':'#a77bea'):'#8ce4c2'}" collide="false"></m-sphere>`}
-        <m-label y="${representation?2.25:2.1}" content="${attribute(representation&&node.title.length>24?node.title.slice(0,23)+'…':node.title)}" font-size="20" width="2.5" height="${representation ? .7 : .35}" color="#163b3f" font-color="#f6edda" collide="false"></m-label></m-group>`;
+        ${sign({y:representation?2.25:2.1,text:representation&&node.title.length>24?node.title.slice(0,23)+'…':node.title,size:20,width:2.5,height:representation ? .7 : .35})}</m-group>`;
       if(node.play){
         node.play.targets.forEach((target,index)=>{
           const filled=node.progress.targets[index].entity!==null;
           out+=`<m-group id="play-${attribute(node.id)}-target-${index}" data-play-target="${index}" data-play-filled="${filled}" x="${target.x}" y=".14" z="${target.z}">
             <m-cylinder radius="${target.radius}" height=".025" color="${workshopColour(target.color)}" opacity="${filled?'.65':'.22'}" collide="false"></m-cylinder>
-            <m-label y=".18" content="${index+1} · ${attribute(signalColourName(target.color))}${filled?' · lista':''}" font-size="15" width="1.5" height=".25" color="#163b3f" font-color="#f6edda" collide="false"></m-label></m-group>`;
+            ${sign({y:.18,text:`${index+1} · ${signalColourName(target.color)}${filled?' · lista':''}`,size:15,width:1.5,height:.25})}</m-group>`;
         });
       }
       for(const link of node.links)if(link.status==='current'){
@@ -84,7 +91,7 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
       out+=`<m-group id="indication-${attribute(target)}" data-focus-target="${attribute(target)}" data-focus-revision="${signals[0].revision}" x="${x}" y="${y}" z="${z}">
         <m-cylinder radius=".48" height=".035" color="#ffe0a0" opacity=".8" collide="false"></m-cylinder>
         <m-sphere y=".15" radius=".09" color="#fff2c9" collide="false"></m-sphere>
-        <m-label y=".5" content="${attribute(label)}" font-size="18" width="1.8" height=".24" color="#163b3f" font-color="#f6edda" collide="false"></m-label></m-group>`;
+        ${sign({y:.5,text:label,size:18,width:1.8,height:.24})}</m-group>`;
     }
   }
   for(const p of room.projections.values()){
