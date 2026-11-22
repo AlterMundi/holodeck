@@ -21,9 +21,15 @@ portal without a room selector. Owner access includes the lab. A visitor's
 geometry omits its staircase and floor opening. The signed native owner
 traversed the live map. Separate controlled Chromium identities verified
 walking, reconnecting in the gallery, both directions of the staircase,
-return through the portal and exact exterior return. Live human use of the
-new internal links remains unobserved. Authoring, versioned exhibits, lab
-controls and room-bound Conversation remain separate work.
+return through the portal and exact exterior return. Nicolás also confirmed the new internal links and portal round trip using E.
+He reported slow crossings. The browser still reloads on each crossing, and
+the measured follow-up is in [houses and interiors](houses.md).
+
+The gallery's first exhibit now points to the exact existing published
+workshop in Nexus. Actual owner authorship and the protected source were
+read back. Controlled browser traversal verified the same-position return
+and denied or revoked viewer access. Human use of the exhibit, broader
+authoring, lab controls and room-bound Conversation remain open.
 
 The room boundary is deployed at source `d542e3e`, with `64b6a856` selected as
 its predecessor. Controlled room qualification used two actual MML peers for

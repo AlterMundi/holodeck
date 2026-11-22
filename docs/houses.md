@@ -124,6 +124,28 @@ permitted exits. Legacy exterior writes and captures are unavailable while
 inside. Situated Conversation, protected Nexus displays and working lab tools
 require their own bindings in [#12](https://github.com/AlterMundi/holodeck/issues/12).
 
+## Seamless circulation follow-up
+
+Nicolás confirmed the live door and portal round trip using E and reported
+long waits on room transitions. The current browser commits the location,
+then reloads the whole document. Two controlled Chromium foyer-to-gallery
+crossings had 204 and 338 ms from input to HTTP response, and 4,787 and 5,476
+ms to the destination geometry and avatar. Each downloaded the same
+4,786,942-byte client. These loopback samples localize the delay and are
+not a measurement of the visitor's device or network.
+
+Keep the document, renderer, avatar and input loop mounted. Switch the
+authorized room and subscription within the client and present a new room
+only once its matching collision geometry is ready. Load the nearest allowed
+destination as the avatar approaches its doorway. Hold a bounded in-memory
+cache of recently visited static geometry, collision and common assets.
+Identify entries by room, geometry revision and audience scope, evict distant
+or changed entries, and check access again on entry. Read presence and active
+state from the new room. Do not share or persist protected Nexus credentials
+or live frames in the geometry cache. Start with interior crossings and
+extend the same transport across the exterior door. Measure cold and warm
+time from input to the destination's first playable frame.
+
 ## Place a room exhibit
 
 Use the existing own-native world lane. Observe the current revision of an

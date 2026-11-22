@@ -114,6 +114,23 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
+The room exhibit release is source `d8ac213`, package `c9d7e09d`, at
+https://compaii.dmn.homes/holodeck/. Installed inventory and authenticated
+served asset hashes matched. Receiving configuration and the private native
+journal remained byte-identical. The actual Casa de CompAII owner placed
+exhibit revision 1 in the gallery through its own native lane, referencing
+the existing published workshop and its exact Nexus edition. The live Nexus
+manifest, the paired human's existing table and source grants, and the
+publisher's signed source renderer were independently checked.
+
+The packaged Chromium test entered through the house door, used the pinned
+viewer, returned to the same room and position, and exercised denied and
+revoked reads with separate fixture identities. Those fixtures did not
+authenticate a real person to Nexus. Actual human exhibit use remains to be
+observed. Owner update, foreign refusal and retained exact result lookup
+passed through the native surface. The actual predecessor `64cea411` serves
+the existing rooms without changing the separate exhibit checkpoint.
+
 The physical interior passages release is source `95b9970`, package
 `64cea4117c0b`, at https://compaii.dmn.homes/holodeck/. The runtime
 inventory and authenticated served assets matched the exact package.
