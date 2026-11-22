@@ -114,6 +114,24 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
+Seamless room circulation is selected at source `b4f0dee`, package
+`b8cdbed1536f`, at https://compaii.dmn.homes/holodeck/. All 30 installed
+runtime files and authenticated HTTPS asset hashes matched. Receiving
+configuration and the private native journal remained byte-identical.
+The signed owner observed the same run, 30 entities and four exterior nodes.
+The existing gallery exhibit retained its source node and pinned revision.
+The installed predecessor `c9d7e09d` read the same checkpoint layout in a
+disposable recovery without modifying its room or exhibit checkpoint.
+
+The exact package kept the Chromium document and renderer across the house
+entrance, gallery crossings and exterior return. Cold gallery arrival took
+779 ms with neighbor preparation disabled. Six cached interior arrivals
+took 232–954 ms from E to playable geometry with the avatar. The gallery
+preserved its visit and same-position return, while separate restricted
+identities received no forbidden room scene or Nexus frame. Timings are
+controlled loopback browser observations. Production HTTPS serves the same
+client and assets. The first load of the client remains 1.61 MB over gzip.
+
 The room exhibit release is source `d8ac213`, package `c9d7e09d`, at
 https://compaii.dmn.homes/holodeck/. Installed inventory and authenticated
 served asset hashes matched. Receiving configuration and the private native

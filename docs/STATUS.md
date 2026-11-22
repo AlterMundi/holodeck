@@ -22,8 +22,11 @@ geometry omits its staircase and floor opening. The signed native owner
 traversed the live map. Separate controlled Chromium identities verified
 walking, reconnecting in the gallery, both directions of the staircase,
 return through the portal and exact exterior return. Nicolás also confirmed the new internal links and portal round trip using E.
-He reported slow crossings. The browser still reloads on each crossing, and
-the measured follow-up is in [houses and interiors](houses.md).
+He reported slow crossings. Source `b4f0dee`, deployed as `b8cdbed1536f`,
+retains the same renderer and uses an authorized bounded in-memory room cache.
+The vendored Chromium run measured 779 ms for a cold gallery entry and
+232–954 ms for reused rooms, compared with the previous 4,787–5,476 ms.
+See [houses and interiors](houses.md).
 
 The gallery's first exhibit now points to the exact existing published
 workshop in Nexus. Actual owner authorship and the protected source were
