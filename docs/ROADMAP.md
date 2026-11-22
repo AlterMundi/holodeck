@@ -79,3 +79,14 @@ lights and selected publication pins remained. The spatial correction began at s
 real walk, multi-angle composition, source picking, protected visit retention and
 floor-layer corrections were checked. This addresses the actual human critique;
 it does not declare the full world quality or original MVP goal complete.
+
+## Field convergence and owned places —22November
+
+The explicit new work reuses Field's versioned context/perspective/iteration
+implementation through Nexus; it does not reset or close the existing MVP goal.
+See [integration and ownership](field-integration.md). The context-v3 viewer seam
+is an additive implementation increment. Owned houses, optional exclusive parcels,
+selected outward pointers and larger interior spaces are the retained next design.
+[Owned houses](https://github.com/AlterMundi/holodeck/issues/7) tracks their namespace isolation, bounded space/save model and first actual own-identity
+house publication still require implementation and receiving proof; a new shape
+or a copied graph alone would not satisfy them.

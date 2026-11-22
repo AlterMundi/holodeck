@@ -1,6 +1,7 @@
 import WebSocket from 'ws';
+import {build} from 'esbuild';
 import {createServer} from 'node:http';
-import {readFile} from 'node:fs/promises';
+import {readFile,writeFile} from 'node:fs/promises';
 import {CONTENT_NODE} from '../src/content-visits.mjs';
 const origin=process.env.HOLODECK_BROWSER_ORIGIN||'http://127.0.0.1:18943',wait=ms=>new Promise(r=>setTimeout(r,ms));
 if(!/^http:\/\/127\.0\.0\.1:\d+$/.test(origin))throw Error('Select an explicitly owned loopback browser');
@@ -23,10 +24,13 @@ async function backgroundTarget(){
 // native input, selected content or renderer acknowledgment is simulated as real.
 const report={tableId:'fixture-report',reportId:'report',revision:'r1'};
 const model={kind:'artifact_review',tableId:'fixture-model',reviewId:'model',revision:'m1',adapter:'interactive_3d'};
+const field={kind:'context',tableId:'fixture-field',contextId:'field-context',revision:'historical-v1'};
 const landmark={id:'research-fixture',title:'Selected research fixture',position:{x:9,y:0,z:0}};
 const entries=[{id:'report',node:'reading-room',entry:'/nexus/?table=fixture-report&report_revision=r1',descriptor:'/nexus/descriptor/report',pin:report},
- {id:'model',node:landmark.id,entry:'/nexus/?table=fixture-model',descriptor:'/nexus/descriptor/model',pin:model}];
+ {id:'model',node:landmark.id,entry:'/nexus/?table=fixture-model',descriptor:'/nexus/descriptor/model',pin:model},
+ {id:'field',node:landmark.id,entry:'/nexus/?table=fixture-field&entry=web&context_id=field-context&context_version=historical-v1',descriptor:'/nexus/descriptor/field',pin:field}];
 const markup=(await readFile(new URL('../public/index.html',import.meta.url),'utf8')).replace(/<script[\s\S]*?<\/script>/g,'');
+const realBridge=process.env.HOLODECK_NEXUS_CONTEXT_BRIDGE?new TextDecoder().decode((await build({entryPoints:[process.env.HOLODECK_NEXUS_CONTEXT_BRIDGE],bundle:true,write:false,format:'esm',platform:'browser',target:'es2022'})).outputFiles[0].contents):null;
 let page,server;
 try{
  server=createServer(async(req,res)=>{
@@ -40,16 +44,18 @@ try{
    res.setHeader('content-type','text/javascript');res.end(await readFile(new URL('..'+url.pathname,import.meta.url)));return;
   }
   if(url.pathname.startsWith('/nexus/descriptor/')){
-   const selected=entries.find(e=>url.pathname.endsWith('/'+e.id));res.setHeader('content-type','application/json');res.end(JSON.stringify({pin:selected.pin,title:selected.id==='model'?'Modelo protegido de prueba':('Informe sobre la creación compartida y sus perspectivas en el tiempo '.repeat(3)).slice(0,160)}));return;
+   const selected=entries.find(e=>url.pathname.endsWith('/'+e.id));res.setHeader('content-type','application/json');res.end(JSON.stringify({...(selected.id==='field'?{schema:'dm.holodeck-visit/descriptor-v3',kind:'context',entry:selected.entry}:{}),pin:selected.pin,title:selected.id==='field'?'Field · contexto histórico':selected.id==='model'?'Modelo protegido de prueba':('Informe sobre la creación compartida y sus perspectivas en el tiempo '.repeat(3)).slice(0,160)}));return;
   }
+  if(url.pathname==='/fixture-context-bridge.js'&&realBridge){res.setHeader('content-type','text/javascript');res.end(realBridge);return;}
   if(url.pathname==='/nexus/'){
-   const pin=url.searchParams.get('table')===model.tableId?model:report,version=pin.kind?2:1;
-   res.setHeader('content-type','text/html');res.end(`<!doctype html><h1>Controlled Nexus protocol fixture</h1><textarea>Retained draft</textarea><script>
+   const pin=url.searchParams.get('table')===field.tableId?field:url.searchParams.get('table')===model.tableId?model:report,version=pin.kind==='context'?3:pin.kind?2:1;
+   res.setHeader('content-type','text/html');res.end(`<!doctype html><h1>Controlled Nexus protocol fixture</h1><textarea>Retained draft</textarea><script type="module">
+    ${version===3&&realBridge?"import {installContextVisit} from '/fixture-context-bridge.js';":''}
     const pin=${JSON.stringify(pin)},version=${version},visitId=new URL(location).searchParams.get('holodeck_visit');
     const state={dirty:false,recording:false,processing:false,playing:false};
-    window.fixture={state,requests:[],readiness:version===2?'loading':'ready',identity:crypto.randomUUID(),ready:readiness=>{fixture.readiness=readiness;parent.postMessage({schema:'dm.holodeck-visit/ready-v'+version,pin,visitId,readiness},location.origin)}};
-    addEventListener('message',event=>{const q=event.data;if(event.source!==parent||event.origin!==location.origin||q.schema!=='dm.holodeck-visit/request-v'+version)return;fixture.requests.push(q);
-     const result=q.method==='describe'?{capabilities:{describe:true,getContext:true,pauseAndFreeze:true,prepareClose:true},readiness:fixture.readiness,state}:q.method==='prepareClose'?{canClose:!state.dirty&&!state.recording&&!state.processing&&!state.playing,state}:version===2?{context_status:'playback-only',playback:{clock:null,source_time_ms:null,paused:true},artifact_anchor:null,review_context:null,state}:{state,report_anchor:{report_id:'report',report_revision:'r1'}};
+    window.fixture={state,requests:[],readiness:version>=2?'loading':'ready',identity:crypto.randomUUID(),ready:readiness=>{fixture.readiness=readiness;if(version===3&&${!!realBridge}){fixture.dispose?.();fixture.dispose=installContextVisit(window,pin,()=>fixture.readiness==='ready'&&!fixture.wrongPin?{visit_id:'fixture-personal-visit',view_revision:3,focus:'project-node',selection:{kind:'relation',object_id:'project-relation'},state}:null,async()=>true);return;}parent.postMessage({schema:'dm.holodeck-visit/ready-v'+version,pin,visitId,readiness},location.origin)}};
+    addEventListener('message',event=>{const q=event.data;if(event.source!==parent||event.origin!==location.origin||q.schema!=='dm.holodeck-visit/request-v'+version)return;fixture.requests.push(q);if(version===3&&${!!realBridge})return;
+     const result=q.method==='describe'?{capabilities:{describe:true,getContext:true,pauseAndFreeze:true,prepareClose:true},readiness:fixture.readiness,state}:q.method==='prepareClose'?{canClose:!state.dirty&&!state.recording&&!state.processing&&!state.playing,state}:version===3?{pin:fixture.wrongPin?{...pin,revision:'later'}:pin,visit_id:'fixture-personal-visit',view_revision:3,context_status:'acknowledged-client-view',focus:'project-node',selection:{kind:'relation',object_id:'project-relation'},state,draft:'private-not-for-world',graph:{private:'not-for-world'}}:version===2?{context_status:'playback-only',playback:{clock:null,source_time_ms:null,paused:true},artifact_anchor:null,review_context:null,state}:{state,report_anchor:{report_id:'report',report_revision:'r1'}};
      parent.postMessage({schema:'dm.holodeck-visit/response-v'+version,id:q.id,visitId,pin,ok:true,result},location.origin);
     });fixture.ready(fixture.readiness);
    </script>`);return;
@@ -57,7 +63,7 @@ try{
   res.writeHead(404).end();
  });
  server.listen(0,'127.0.0.1');await new Promise((r,j)=>{server.once('listening',r);server.once('error',j)});
- page=await connection(await backgroundTarget());await page.cdp('Page.enable');await page.cdp('Page.navigate',{url:'http://127.0.0.1:'+server.address().port+'/'});await page.until('window.visitor?.entries.length===2');
+ page=await connection(await backgroundTarget());await page.cdp('Page.enable');await page.cdp('Page.navigate',{url:'http://127.0.0.1:'+server.address().port+'/'});await page.until('window.visitor?.entries.length===3');
  await page.evaluate('void visitor.open()');await page.until('!!visitor.frame?.contentWindow.fixture?.requests.length');await page.evaluate('window.original=visitor.frame');
  await page.evaluate('visitor.update({x:9,y:0,z:0})');
  if(!await page.evaluate('document.querySelector("#visit-near").textContent.startsWith("Visitar " )'))throw Error('Research entrance did not replace the nearby action');
@@ -77,5 +83,18 @@ try{
  const mobile=await page.evaluate(`(()=>{const panel=document.querySelector('#content-visit').getBoundingClientRect(),selector=document.querySelector('#content-visit select').getBoundingClientRect();return {panel:{left:panel.left,right:panel.right},selector:{left:selector.left,right:selector.right,height:selector.height},viewport:innerWidth}})()`);
  if(mobile.selector.left<mobile.panel.left||mobile.selector.right>mobile.panel.right||mobile.selector.height<40)throw Error('Long protected content title overflows/undersizes the mobile selector '+JSON.stringify(mobile));
  evidence.mobile=mobile;
- console.log(JSON.stringify({qualification:'Actual ContentVisitor and markup; controlled Nexus protocol only, not renderer, participant or native acceptance',protectedSwitches:3,readinessTransition:'loading-to-ready',artifactContext:context,evidence}));
+ await page.evaluate("void visitor.open('field')");await page.until('visitor.entry?.id==="field"&&!!visitor.frame?.contentWindow.fixture');await wait(150);
+ if(await page.evaluate('visitor.readyAcknowledged'))throw Error('Context loading accepted as acknowledged');
+ await page.evaluate("visitor.frame.contentWindow.fixture.ready('ready')");await page.until('visitor.readyAcknowledged===true');
+ const fieldContext=await page.evaluate('visitor.context()');
+ if(fieldContext.pin.kind!=='context'||fieldContext.pin.revision!==field.revision||fieldContext.context.visit_id!=='fixture-personal-visit'||fieldContext.context.view_revision!==3||fieldContext.context.focus!=='project-node'||'graph'in fieldContext.context||'draft'in fieldContext.context||!fieldContext.evidence.includes('not canonical native-ingress'))throw Error('Context pin/reference isolation failed');
+ await page.evaluate('visitor.frame.contentWindow.fixture.wrongPin=true');const wrong=await page.evaluate('visitor.context()');if(!wrong.contextUnavailable||wrong.context)throw Error('Different context revision accepted');
+ await page.evaluate('visitor.frame.contentWindow.fixture.wrongPin=false;window.fieldFrame=visitor.frame;fieldFrame.contentWindow.fixture.state.dirty=true');
+ await page.evaluate("visitor.open('report')");if(!await page.evaluate('visitor.frame===fieldFrame'))throw Error('Dirty context frame replaced');
+ await page.evaluate('visitor.walk()');await page.evaluate("visitor.open('field')");
+ if(!await page.evaluate("visitor.frame===fieldFrame&&fieldFrame.contentWindow.document.querySelector('textarea').value==='Retained draft'"))throw Error('Context return lost frame/draft');
+ if(process.env.HOLODECK_EVIDENCE_DIR){const shot=await page.cdp('Page.captureScreenshot',{format:'jpeg',quality:65});await writeFile(process.env.HOLODECK_EVIDENCE_DIR+'/context-phone.jpg',Buffer.from(shot.data,'base64'));}
+ evidence.context={pin:fieldContext.pin,visit:fieldContext.context,wrongPinUnavailable:wrong.contextUnavailable,dirtyFrameRetained:true,draftRetained:true};
+
+ console.log(JSON.stringify({qualification:'Actual ContentVisitor and markup; controlled Nexus protocol only, not renderer, participant or native acceptance',protectedSwitches:3,readinessTransition:'loading-to-ready',artifactContext:context,contextV3:evidence.context,actualNexusBridge:!!realBridge,evidence}));
 }finally{await page?.close();if(server){server.closeAllConnections();await new Promise(r=>server.close(r));}}

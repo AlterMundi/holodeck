@@ -1,4 +1,4 @@
-import {CONTENT_NODE,validateContentNodes,sameVisitPin,visitResponseMatches,knownVisitState,visitVersion} from './content-visits.mjs';
+import {CONTENT_NODE,validateContentNodes,sameVisitPin,visitResponseMatches,knownVisitState,visitVersion,visitEntryMatches,contextVisitSnapshotMatches} from './content-visits.mjs';
 
 // One retained Nexus visit. Hiding this panel never destroys media, a draft,
 // capture or native response polling. The trusted viewer owns that lifecycle.
@@ -13,9 +13,9 @@ export class ContentVisitor{
    const value=event.data;if(!value||typeof value!=='object')return;
    let bytes;try{bytes=new TextEncoder().encode(JSON.stringify(value)).length;}catch{return;}if(bytes>65536)return;
    if(value.schema===`dm.holodeck-visit/ready-v${visitVersion(this.entry.pin)}`&&event.source===this.frame.contentWindow&&event.origin===this.window.location.origin&&value.visitId===this.visitId&&sameVisitPin(value.pin,this.entry.pin)){
-    if(visitVersion(this.entry.pin)===2&&value.readiness!=='ready')return;
+    if(visitVersion(this.entry.pin)>=2&&value.readiness!=='ready')return;
     if(!this.confirming){this.confirming=true;this.request('describe').then(result=>{
-     if(!['describe','getContext','pauseAndFreeze','prepareClose'].every(method=>result?.capabilities?.[method]===true)||!knownVisitState(result.state)||(visitVersion(this.entry.pin)===2&&result.readiness!=='ready')){this.confirming=false;return;}
+     if(!['describe','getContext','pauseAndFreeze','prepareClose'].every(method=>result?.capabilities?.[method]===true)||!knownVisitState(result.state)||(visitVersion(this.entry.pin)>=2&&result.readiness!=='ready')){this.confirming=false;return;}
      clearTimeout(this.readyTimer);this.readyAcknowledged=true;this.readyResolve(result);
     },()=>{this.confirming=false;});}return;
    }
@@ -80,7 +80,7 @@ export class ContentVisitor{
   const entries=[...this.entries];if(this.entry&&!entries.some(entry=>entry.id===this.entry.id))entries.unshift(this.entry);
   this.selector.replaceChildren();
   entries.forEach((entry,index)=>{const option=this.document.createElement('option');option.value=entry.id;
-   option.textContent=entry.title||(entry.pin.adapter==='interactive_3d'?'Modelo 3D':entry.pin.adapter==='video'?'Video':'Presentación')+` ${index+1}`;this.selector.append(option);});
+   option.textContent=entry.title||(entry.pin.adapter==='interactive_3d'?'Modelo 3D':entry.pin.adapter==='video'?'Video':visitVersion(entry.pin)===3?'Contexto':'Presentación')+` ${index+1}`;this.selector.append(option);});
   this.choiceLabel.hidden=entries.length<2;if(this.entry)this.selector.value=this.entry.id;
  }
  reveal(){this.panel.hidden=false;this.panel.classList.remove('is-walking');this.panel.removeAttribute('aria-hidden');this.panel.inert=false;}
@@ -97,6 +97,7 @@ export class ContentVisitor{
    const response=await fetch(descriptorURL,{credentials:'same-origin',signal:AbortSignal.timeout(5000)});
    if(!response.ok){if(this.selector&&this.entry)this.selector.value=this.entry.id;this.say(response.status===401||response.status===403?'Este contenido necesita tu acceso a Nexus. Volvé a entrar desde Apps.':'No pude recuperar esta edición del contenido.');return;}
    const descriptor=await response.json();if(!sameVisitPin(descriptor.pin,entry.pin))throw Error('Content edition changed');
+   if(visitVersion(entry.pin)===3&&(descriptor.schema!=='dm.holodeck-visit/descriptor-v3'||descriptor.kind!=='context'||!visitEntryMatches(descriptor.entry,entry.pin)))throw Error('Context edition unavailable');
    if(this.frame){
     await this.ready;const state=await this.request('prepareClose');
     if(state?.canClose!==true||!knownVisitState(state.state)||Object.values(state.state).some(Boolean)){
@@ -110,7 +111,7 @@ export class ContentVisitor{
    this.document.querySelector('#visit-title').textContent=typeof descriptor.title==='string'?descriptor.title.slice(0,160):'Contenido';
    this.reveal();
    const frame=this.document.createElement('iframe');frame.title='Contenido y conversación en Nexus';frame.allow='microphone; autoplay';frame.allowFullscreen=true;frame.referrerPolicy='same-origin';
-   this.frame=frame;this.ready=new Promise((resolve,reject)=>{this.readyResolve=resolve;this.readyTimer=setTimeout(()=>reject(Error('Viewer did not load')),visitVersion(entry.pin)===2?40000:15000);});
+   this.frame=frame;this.ready=new Promise((resolve,reject)=>{this.readyResolve=resolve;this.readyTimer=setTimeout(()=>reject(Error('Viewer did not load')),visitVersion(entry.pin)>=2?40000:15000);});
    frame.src=entryURL.href;this.document.querySelector('#visit-stage').append(frame);
    try{await this.ready;}catch{this.say('El contenido está abierto, pero no pude conectar su contexto con el mundo. Conservé su ventana.');}
   }finally{this.opening=false;if(this.selector){this.selector.disabled=false;if(this.entry)this.selector.value=this.entry.id;}}
@@ -126,8 +127,9 @@ export class ContentVisitor{
   let deadline;
   try{
    await ready;if(!current())return unavailable();
-   const context=await Promise.race([this.request('getContext'),new Promise((_,reject)=>{deadline=setTimeout(()=>reject(Error('Viewer context unavailable')),2500);})]);if(!current()||!knownVisitState(context?.state))return unavailable();
-   const captured={node,nodeRevision,visitId,pin,requestedAt,capturedAt:Date.now(),panelVisible,context,evidence:context.context_status==='playback-only'?'viewer-playback-only; no rendered-frame acknowledgment or human attention':'acknowledged-viewer-state; not human attention or shared playback'};
+   const context=await Promise.race([this.request('getContext'),new Promise((_,reject)=>{deadline=setTimeout(()=>reject(Error('Viewer context unavailable')),2500);})]);if(!current()||!knownVisitState(context?.state)||!contextVisitSnapshotMatches(context,pin))return unavailable();
+   const retainedContext=visitVersion(pin)===3?{pin:{...pin},context_status:'acknowledged-client-view',visit_id:context.visit_id,view_revision:context.view_revision,focus:context.focus,selection:context.selection===null?null:{kind:context.selection.kind,object_id:context.selection.object_id},state:Object.fromEntries(['dirty','recording','processing','playing'].map(key=>[key,context.state[key]]))}:context;
+   const captured={node,nodeRevision,visitId,pin,requestedAt,capturedAt:Date.now(),panelVisible,context:retainedContext,evidence:visitVersion(pin)===3?'acknowledged-nexus-visit-reference; not canonical native-ingress capture or human attention':context.context_status==='playback-only'?'viewer-playback-only; no rendered-frame acknowledgment or human attention':'acknowledged-viewer-state; not human attention or shared playback'};
    if(new TextEncoder().encode(JSON.stringify(captured)).length>2200)return unavailable();
    this.lastContext=captured;return captured;
   }catch{return unavailable();}finally{clearTimeout(deadline);}

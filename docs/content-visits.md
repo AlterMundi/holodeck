@@ -130,3 +130,16 @@ work and playback are retained by Nexus; no pause/disposal/completion is claimed
 The visitor can reopen that same frame with its current state. Playback controls
 remain inside the viewer. Safe `prepareClose` still governs replacing a content
 frame with another edition; it never governs ordinary return navigation.
+
+## General Field contexts — additive v3
+
+A context pin is `{kind:"context",tableId,contextId,revision}`. It fixes an
+immutable Nexus snapshot and uses its authenticated context descriptor, explicit
+`context_id`/`context_version` entrance and correlated v3 parent messages.
+Native creators may declare it through the same result-node operations; no graph
+is copied to Room and no report identity is fabricated. Actual table/source
+permission remains with Nexus. The parent keeps only an acknowledged compact
+visit reference and lifecycle flags; graph and draft payloads are excluded.
+See [Field integration](field-integration.md) for authority, history, native
+ingress and owned-place boundaries. Implementation/receiving/human acceptance
+remain separate observations in STATUS.

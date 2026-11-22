@@ -37,3 +37,11 @@ test('acknowledged content retains the selected spatial research entrance',async
  assert.deepEqual(captured.pin,pin);
  assert.equal(captured.context.chapterId,'old-chapter');
 });
+
+test('general Field context retains compact exact visit references without copying a graph, draft or fabricated native-ingress acknowledgment',async()=>{
+ const pin={kind:'context',tableId:'field',contextId:'knowledge',revision:'v1'};
+ const value=visitor(Promise.resolve(),async()=>({pin,context_status:'acknowledged-client-view',visit_id:'personal-visit',view_revision:2,focus:'node-1',selection:{kind:'relation',object_id:'relation-1'},state:context.state,graph:{private:'not for world capture'},draft:'private note'}));
+ value.entry={pin,node:'node-field'};
+ const result=await ContentVisitor.prototype.context.call(value);assert.equal(result.context.view_revision,2);assert.equal(result.context.focus,'node-1');assert.deepEqual(result.context.selection,{kind:'relation',object_id:'relation-1'});assert.equal('graph'in result.context,false);assert.equal('draft'in result.context,false);assert.match(result.evidence,/not canonical native-ingress/);
+ value.request=async()=>({...result.context,pin:{...pin,revision:'v2'}});const wrong=await ContentVisitor.prototype.context.call(value);assert.equal(wrong.contextUnavailable,true);assert.equal('context'in wrong,false);
+});

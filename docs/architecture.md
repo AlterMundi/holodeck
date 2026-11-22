@@ -94,3 +94,12 @@ bounded Room journal, with explicit retention gaps and separately captured curre
 state. Selecting a historical event freezes only an exact reference; the canonical
 server resolves its retained content for Conversation. It does not invent an old
 world reconstruction, human attention or a media clock. No event starts a model.
+
+## Field integration and owned places
+
+[Field convergence](field-integration.md) reuses Nexus's immutable graph, visit,
+perspective and work contracts. A generic context portal must retain its own
+context/version rather than masquerade as a report. Knowledge relationships stay
+in Nexus; Room remains the spatial authority. The owned-house/parcel direction
+requires a real creator namespace and space contract, not another server per
+participant or implicit publication rights from visiting a place.

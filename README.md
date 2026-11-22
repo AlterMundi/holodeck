@@ -55,3 +55,5 @@ world without changing or redeploying Holodeck.
 Research includes Social Conjurer, LLMR, VRCopilot, Ubiq-Genie, CraftAssist,
 Resonite, Microverse, Minecraft/Roblox and browser engine alternatives. Their
 reported results are evidence for hypotheses, not local replication.
+
+Field/Nexus reuse and the owned-house direction: [integration contract](docs/field-integration.md).
