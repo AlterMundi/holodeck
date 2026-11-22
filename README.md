@@ -49,6 +49,7 @@ world without changing or redeploying Holodeck.
 - [Operations and bounds](docs/operations.md)
 - [Candidate physical-world augmentation and QR game](docs/augmented-reality.md)
 - [Content snapshots for existing viewers/review](docs/content-snapshots.md)
+- [Spatial entrances to existing content](docs/content-landmarks.md)
 
 Research includes Social Conjurer, LLMR, VRCopilot, Ubiq-Genie, CraftAssist,
 Resonite, Microverse, Minecraft/Roblox and browser engine alternatives. Their

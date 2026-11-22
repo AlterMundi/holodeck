@@ -1,10 +1,10 @@
-import {CONTENT_NODE,sameVisitPin,visitResponseMatches,knownVisitState,visitVersion} from './content-visits.mjs';
+import {CONTENT_NODE,validateContentNodes,sameVisitPin,visitResponseMatches,knownVisitState,visitVersion} from './content-visits.mjs';
 
 // One retained Nexus visit. Hiding this panel never destroys media, a draft,
 // capture or native response polling. The trusted viewer owns that lifecycle.
 export class ContentVisitor{
  constructor({document,window,base,say}){
-  Object.assign(this,{document,window,base,say});this.entries=[];this.pending=new Map();this.disposed=false;this.lastContext=null;
+  Object.assign(this,{document,window,base,say});this.entries=[];this.nodes=[CONTENT_NODE];this.pending=new Map();this.disposed=false;this.lastContext=null;
   this.button=document.querySelector('#visit-near');this.panel=document.querySelector('#content-visit');
   this.button.onclick=()=>this.open(this.nearby?.id).catch(()=>say('No pude abrir esta presentación. Podés volver a intentarlo.'));
   document.querySelector('#visit-walk').onclick=()=>this.walk();
@@ -32,7 +32,7 @@ export class ContentVisitor{
    const response=await fetch(new URL('api/content-visits',this.base),{credentials:'same-origin',signal:AbortSignal.timeout(5000)});
    if(!response.ok)throw Error('Catalog unavailable');
    const value=await response.json();if(this.disposed)return;
-   this.entries=Array.isArray(value.visits)?value.visits.slice(0,16):[];this.catalogSignature=signature;this.choices();
+   this.nodes=validateContentNodes(value.nodes);this.entries=Array.isArray(value.visits)?value.visits.slice(0,16).map(entry=>{const node=this.nodes.find(node=>node.id===entry.node);return {...entry,title:entry.title||node?.title,position:entry.position||node?.position};}):[];this.catalogSignature=signature;this.choices();
   }catch{/* Keep a currently open visit and the last known discovery on transient failure. */}
   finally{this.catalogFlight=false;}
  }
@@ -52,6 +52,13 @@ export class ContentVisitor{
    ?(this.nearby.title?'Visitar '+this.nearby.title:'Visitar contenido')
    :this.frame&&this.nearby&&this.nearby.id===this.entry?.id&&!sameVisitPin(this.nearby.pin,this.entry.pin)?'Visitar nueva edición'
    :this.frame?'Volver al contenido':'Visitar contenido';
+ }
+
+ async openNode(nodeId){
+  await this.catalog;
+  const entry=this.entries.find(value=>value.node===nodeId&&value.id===this.entry?.id)||this.entries.find(value=>value.node===nodeId);
+  if(!entry){this.say('No hay contenido disponible para tu acceso en este lugar.');return;}
+  return this.open(entry.id);
  }
 
  request(method){

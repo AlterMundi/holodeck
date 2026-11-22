@@ -50,7 +50,10 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       canvas:options.targetElement.querySelector(':scope > canvas'),expectedDocumentURL:socket('world')});
     nativeAvatarLayer=new NativeAvatarLayer({document,base,onFailure:message=>say(message)});
     worldPicker=new PublicWorldPicker({document,canvas:options.targetElement.querySelector(':scope > canvas'),scene:renderer.mmlCompositionScene.group,
-      cameraState:()=>options.coreCameraManager.getCameraState(),proof:()=>geometryProbe?.snapshot(),onPick:record=>worldIndication?.select(record),
+      cameraState:()=>options.coreCameraManager.getCameraState(),proof:()=>geometryProbe?.snapshot(),onPick:record=>{
+        if(record.kind==='content')contentVisitor?.openNode(record.node).catch(()=>say('No pude abrir este contenido. Conservé la visita anterior.'));
+        else worldIndication?.select(record);
+      },
       onUnavailable:()=>say('No pude identificar ese objeto todavía. Probá de nuevo.')});
     worldIndication=new WorldIndication({document,scene:renderer.mmlCompositionScene.group,getState:()=>state,
       set:record=>action('focus.set',record.target,{},record.revision,{selection:record}),

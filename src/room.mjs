@@ -6,6 +6,7 @@ import { WORKSHOP, workshopColour } from './workshop.mjs';
 import { avatarForActor } from './avatar-registry.mjs';
 import {fitSituation} from './situation-budget.mjs';
 import {MAX_FOCUS,focusState,validFocusEntry} from './focus.mjs';
+import {validateContentNodes} from './content-visits.mjs';
 
 export const LIMITS = Object.freeze({ events: 256, commands: 256, observations: 128,
   sessions: 8, elements: 32, retryMs: 300000 });
@@ -18,7 +19,7 @@ export class RoomError extends Error {
 // Semantic activity authority. Presence ticks never advance entity revisions.
 // Actors and rights come from a receiving adapter, never from command arguments.
 export class Room extends EventEmitter {
-  constructor({ clock = Date.now, edition = 'island-workshop@draft-1', persist = null, state = null, presence = ()=>[] } = {}) {
+  constructor({ clock = Date.now, edition = 'island-workshop@draft-1', persist = null, state = null, presence = ()=>[], contentNodes } = {}) {
     super();
     this.clock = clock;
     this.edition = edition;
@@ -31,6 +32,7 @@ export class Room extends EventEmitter {
     this.projections = new Map();this.focuses=new Map();this.nodes={};this.entityEditors={};
     this.persist = persist;
     this.presence = presence;
+    this.contentNodes = validateContentNodes(contentNodes);
     if(state)this.restore(state);
   }
 
@@ -105,7 +107,7 @@ export class Room extends EventEmitter {
     const observation = { schema: 'holodeck.situation/v1', id: randomUUID(),
       run: this.run, edition: this.edition, capturedAt: now,
       observer: actor.id, scope: 'structured-room-overview',
-      place:clone(WORKSHOP),
+      place:{...clone(WORKSHOP),contents:clone(this.contentNodes)},
       source: { after, through: this.sequence, displayedSequence,
         gap: after < (this.events[0]?.sequence ?? 1) - 1 },
       activity: { title: 'Connect the workshop islands', intention: null, evidence:'authored-scenario; participants intentions are not inferred' },
