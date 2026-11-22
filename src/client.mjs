@@ -88,8 +88,11 @@ let updateDoor=()=>{},remoteScene=null,networkScope=null,arrival=null,arrivedFra
 let moving=false,requestingMove=false,needsSync=false,resyncing=false,moveDeadline=null;
 let prefetched=new Set(),prefetchRequest=null;
 const setMoving=value=>{
-  moving=value;
-  document.body.classList.toggle('room-transition',value);
+  if(moving!==value){
+    moving=value;
+    document.body.classList.toggle('room-transition',value);
+    $('#room-passage-message').textContent=value?'Cambiando de lugar…':'';
+  }
   if(!value){clearTimeout(moveDeadline);moveDeadline=null;}
 };
 const removeScene=()=>{remoteScene?.remove();remoteScene=null;};
