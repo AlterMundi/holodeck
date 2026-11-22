@@ -14,7 +14,9 @@ device/revisit acceptance and content publication cycle remain open. See the [ro
 [Open the protected Holodeck trial](https://compaii.dmn.homes/holodeck/) using
 the existing shared sign-in. The protected release selects seven existing paired
 native routes with separate identity-pinned return ports. Read-only receiving
-checks passed; real human-triggered native participation has begun; conversation completion
+checks and own-native observation passed on all seven bodies. Actual native
+result/game nodes, a revision link and a signal have been created and read back
+without an engine restart. Real human-triggered participation has begun; conversation completion
 and full MVP acceptance remain open. See the current evidence below.
 
 ## Local development
@@ -32,7 +34,10 @@ Open http://127.0.0.1:18940 in two independent browser tabs. This development
 entrance is anonymous and loopback-only; production uses the existing Home
 identity and service audience, with no alternate login.
 WASD/arrow keys move, mouse drag looks, Space jumps; mobile controls come from MML.
-The prototype cooperative activity and its visual theme are design proposals.
+The selected shared runtime includes native-authored result nodes and cooperative
+signal gardens. See the [native creator quickstart](docs/native-creation-quickstart.md)
+and [recipe contract](docs/playable-creations.md): creators change the running
+world without changing or redeploying Holodeck.
 
 ## Plan and evidence
 

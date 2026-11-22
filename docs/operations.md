@@ -15,8 +15,13 @@ Production requires NODE_ENV=production, STATE_DIR and its operator-selected
 the existing Home identity and service-audience routes, and optional installed
 native/world Unix sockets. Missing auth fails startup; no anonymous fallback.
 The runtime remains loopback-only behind the existing gateway. Every API action
-rechecks current admission; native world actions recheck the retained native
-source, pairing and current room rights. Perceptual scope is explicit.
+rechecks current admission; situated native world actions recheck the retained
+source and pairing. Explicit own-native mode requires the selected private
+receiving lane and fresh current being grant, independently of a human original
+or browser. It is enabled only after receiver socket isolation is qualified; see
+[deployment](deployment.md) and [creator quickstart](native-creation-quickstart.md).
+Both modes use current room rights and the same canonical state. Perceptual scope
+is explicit.
 
 See deployment.md for package, selected receiver, health, upgrade and rollback.
 The independent Holodeck slot preserves the existing Harmonic Lab service.

@@ -28,7 +28,9 @@ continued walking, next-draft retention, one mounted frame and forged-envelope
 refusals. Screenshots were inspected and controls fit after the CSS correction.
 The canonical recorder's unchanged cue tests cover10,5,3,2,1seconds and no catch-up
 burst. These synthetic checks are not physical microphone/hearing or real human
-conversation acceptance. The full-MVP goal remains blocked pending its shared trial.
+conversation acceptance. Nicolas explicitly resumed the full existing MVP22November. Continue that
+active objective; specific acceptance observations remain separate and do not
+require another generic trial before implementation can continue.
 
 ## Ownership and required shared hook
 
