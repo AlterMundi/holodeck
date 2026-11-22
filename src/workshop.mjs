@@ -1,5 +1,6 @@
 import {LAYOUT_VERSION,CREATION_AREAS,TERRACES,PROMENADES} from './world-layout.mjs';
 import {CONTENT_NODE} from './content-visits.mjs';
+import {NODE_REPRESENTATIONS} from './node-representations.mjs';
 // Shared semantic anchors for the selected authored workshop, in world meters.
 // These describe the authored virtual place; they are not real-world sensor data.
 export const WORKSHOP = Object.freeze({
@@ -16,7 +17,7 @@ export const WORKSHOP = Object.freeze({
   operations:['bridge.set','garden.place','garden.update','garden.remove','focus.set','focus.clear','node.place','node.update','node.remove'],
   indication:{set:{operation:'focus.set',target:'Canonical public entity ID',expectedRevision:'Observed entity revision',args:{}},
     clear:{operation:'focus.clear',target:null,expectedRevision:'Your latest focus statement sequence',args:{}},meaning:'Explicit shared reference, not gaze or attention'},
-  contentCreation:{operations:['node.place','node.update','node.remove'],capacity:8,owner:'verified-native-creator',result:'Existing Nexus discriminated edition pin; creator-declared until descriptor verification',data:'title40,shape pedestal|portal,position{x,z},result{pin} OR play{schema:signal-garden/v1,targets:[{x,z,radius,color}](1–4),minContributors:1–8,requiredBridgeRaised?:boolean},links[{id,revision}] (max4)',identity:'node- followed by1–40 lowercase letters,digits,hyphens; never reuse tombstones'},
+  contentCreation:{operations:['node.place','node.update','node.remove'],capacity:8,owner:'verified-native-creator',result:'Existing Nexus discriminated edition pin; creator-declared until descriptor verification',representations:NODE_REPRESENTATIONS,data:'title40,shape pedestal|portal,position{x,z},result{pin},optional representation catalogue ID OR play{schema:signal-garden/v1,targets:[{x,z,radius,color}](1–4),minContributors:1–8,requiredBridgeRaised?:boolean},links[{id,revision}] (max4)',identity:'node- followed by1–40 lowercase letters,digits,hyphens; never reuse tombstones'},
   perception:'structured-authored-world-overview',
   evidence:'selected-virtual-workshop-definition'
 });
