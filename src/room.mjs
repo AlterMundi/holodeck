@@ -1,3 +1,4 @@
+import {validEntityEditors} from './playable-creations.mjs';
 import {MAX_CONTENT_NODES,contentNodeId,validNodeData,validStoredNode,nodeState} from './content-nodes.mjs';
 import { randomUUID, createHash } from 'node:crypto';
 import { EventEmitter } from 'node:events';
@@ -27,7 +28,7 @@ export class Room extends EventEmitter {
     this.outcomes = new Map();
     this.observations = new Map();
     this.entities = { bridge: { id: 'bridge', revision: 0, raised: false } };
-    this.projections = new Map();this.focuses=new Map();this.nodes={};
+    this.projections = new Map();this.focuses=new Map();this.nodes={};this.entityEditors={};
     this.persist = persist;
     this.presence = presence;
     if(state)this.restore(state);
@@ -36,7 +37,7 @@ export class Room extends EventEmitter {
   snapshot() {
     return clone({schema:'holodeck.room-save/v1',edition:this.edition,run:this.run,
       sequence:this.sequence,events:this.events,entities:this.entities,
-      outcomes:[...this.outcomes],observations:[...this.observations],projections:[...this.projections],focuses:[...this.focuses],nodes:this.nodes});
+      outcomes:[...this.outcomes],observations:[...this.observations],projections:[...this.projections],focuses:[...this.focuses],nodes:this.nodes,entityEditors:this.entityEditors});
   }
 
   restore(state) {
@@ -48,12 +49,13 @@ export class Room extends EventEmitter {
       || !Array.isArray(state.projections)||state.projections.length>LIMITS.sessions
       || (state.focuses!==undefined&&(!Array.isArray(state.focuses)||state.focuses.length>MAX_FOCUS||state.focuses.some(entry=>!Array.isArray(entry)||entry.length!==2||!validFocusEntry(entry)||entry[1].sequence>state.sequence)))
       || (state.nodes!==undefined&&(!state.nodes||typeof state.nodes!=='object'||Array.isArray(state.nodes)||Object.keys(state.nodes).length>MAX_CONTENT_NODES||Object.entries(state.nodes).some(([id,node])=>!validStoredNode(node,id))))
+      || (state.entityEditors!==undefined&&!validEntityEditors(state.entityEditors,state.entities))
       || !state.entities?.bridge || Object.keys(state.entities).length>LIMITS.elements)
       throw new RoomError('save','Room checkpoint is invalid; preserve it for recovery');
     const copy=clone(state);
     this.edition=copy.edition;this.run=copy.run;this.sequence=copy.sequence;
     this.events=copy.events;this.entities=copy.entities;
-    this.outcomes=new Map(copy.outcomes);this.observations=new Map(copy.observations);this.projections=new Map(copy.projections);this.focuses=new Map(copy.focuses||[]);this.nodes=copy.nodes||{};
+    this.outcomes=new Map(copy.outcomes);this.observations=new Map(copy.observations);this.projections=new Map(copy.projections);this.focuses=new Map(copy.focuses||[]);this.nodes=copy.nodes||{};this.entityEditors=copy.entityEditors||{};
   }
 
   atomic(operation) {
@@ -134,7 +136,7 @@ export class Room extends EventEmitter {
     return this.event(actor, 'projection.changed', projection);
   }
 
-  nodeState(actor=null){return nodeState(this.nodes,actor);}
+  nodeState(actor=null){return nodeState(this.nodes,actor,{entities:this.entities,editors:this.entityEditors,sequence:this.sequence});}
 
   focusState(){return focusState(this.focuses,this.entities,this.nodes);}
 
@@ -190,7 +192,8 @@ export class Room extends EventEmitter {
         }
         this.nodes[command.target]={id:command.target,owner:actor.id,revision:placing?1:previous.revision+1,deleted:false,...clone(command.args)};
       }
-      const event=this.event(actor,command.type,{target:command.target,node:this.nodeState()[command.target],nativeRequest:command.nativeRequest});
+      const node=this.nodeState()[command.target];if(node.progress)node.progress.through=this.sequence+1;
+      const event=this.event(actor,command.type,{target:command.target,node,nativeRequest:command.nativeRequest});
       return finish('completed','World node updated',event);
     }
     if(command.type==='focus.set'||command.type==='focus.clear'){
@@ -242,6 +245,9 @@ export class Room extends EventEmitter {
         return finish('rejected','The garden element changed; inspect it before undoing');
       entity.deleted=true;entity.revision++;
     } else return finish('rejected', 'Unsupported activity operation');
+    const actorRef=actor.ref??actor.id;
+    if(typeof actorRef==='string'&&actorRef.length>0&&actorRef.length<=200)this.entityEditors[command.target]={actorRef,revision:this.entities[command.target].revision};
+    else delete this.entityEditors[command.target];
     const event = this.event(actor, command.type, { target: command.target, entity: this.entities[command.target], nativeRequest: command.nativeRequest ?? null });
     return finish('completed', 'World updated', event);
   }
@@ -259,7 +265,7 @@ export class Room extends EventEmitter {
   resetNow() {
     this.run = randomUUID(); this.sequence = 0; this.events = []; this.observations.clear();
     this.entities = { bridge: { id: 'bridge', revision: 0, raised: false } };
-    this.nodes={};this.focuses.clear();this.projections.clear(); // Retain outcomes: old IDs must not mutate a new run.
+    this.nodes={};this.entityEditors={};this.focuses.clear();this.projections.clear(); // Retain outcomes: old IDs must not mutate a new run.
     this.changed({ type:'run.reset', run:this.run });
   }
 }

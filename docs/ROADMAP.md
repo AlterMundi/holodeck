@@ -59,6 +59,8 @@ Keep one shared Holodeck. Contributors may maintain the engine; all authorized
 creators should add results, nodes and playable creations inside worlds without
 engine edits or redeployments. The next capability is a result-backed native
 node with stable identity/pin/permissions/history, then reusable playable content.
-This generic creator contract is not implemented by the existing light activity
-or two configured viewer entrances. See [co-creation](co-creation.md). Oliva
+Runtime result nodes, links and reusable playable definitions are now implemented
+in the current candidate; selection and actual receiving evidence are recorded
+in STATUS. The existing light activity or two configured viewer entrances alone
+do not satisfy that generic creator contract. See [co-creation](co-creation.md). Oliva
 maintenance access is scoped separately; no candidate or goal resume is implied.

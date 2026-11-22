@@ -113,7 +113,10 @@ configuration edits or a Node restart; two independent participants visit the
 same node, identify the same result/version and retain discussion when returning.
 The daimon sees the same identity/change through its native representation.
 
-The following step adds a small reusable playable creation using declarative
+The candidate [signal garden](playable-creations.md) now implements the first
+bounded native-authored cooperative recipe. It reuses actual shared lights and
+bridge state; visual qualification/deployment and real shared play remain
+separate checks. The broader following step adds playable creations using declarative
 objects/rules and typed actions, reusing the same authority/events/history.
 Arbitrary executable game plugins require a qualified sandbox/runtime contract;
 accepting a URL or MML document is not evidence that such a contract exists.

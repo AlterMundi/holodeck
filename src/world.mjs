@@ -1,6 +1,8 @@
+import {signalColourName} from './playable-creations.mjs';
 // One-way projection of Room semantics. Static original art is a merged GLB;
 // only traversable surfaces and changing activity elements remain MML primitives.
 import {focusAnchor} from './focus.mjs';
+import {workshopColour} from './workshop.mjs';
 import {CONTENT_NODE} from './content-visits.mjs';
 import {avatarForActor} from './avatar-registry.mjs';
 import {workshopProjection,projectionNodeHTML,attribute} from './workshop-projection.mjs';
@@ -35,12 +37,22 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
   if(includeVisits&&room.nodeState){
     for(const node of Object.values(room.nodeState()))if(!node.deleted){
       const{x,z}=node.position;
-      out+=`<m-group id="${attribute(node.id)}" data-entity-revision="${node.revision}" x="${x}" y=".1" z="${z}" data-content-node="${attribute(node.id)}" data-content-revision="${node.revision}" data-result-selection="${node.result.selection}">
+      out+=`<m-group id="${attribute(node.id)}" data-entity-revision="${node.revision}" x="${x}" y=".1" z="${z}" data-content-node="${attribute(node.id)}" data-content-revision="${node.revision}" ${node.play?`data-play-schema="signal-garden/v1" data-play-complete="${node.progress.complete}"`:`data-result-selection="${node.result.selection}"`}>
         <m-cylinder radius=".7" height=".2" y=".1" color="#536c70"></m-cylinder>
         <m-cylinder radius=".53" height=".08" y=".24" color="#eed19b" collide="false"></m-cylinder>
         ${node.shape==='portal'?'<m-cube x="-.5" y="1" width=".12" height="1.5" depth=".14" color="#bc8355"></m-cube><m-cube x=".5" y="1" width=".12" height="1.5" depth=".14" color="#bc8355"></m-cube><m-cube y="1.75" width="1.12" height=".12" depth=".14" color="#eed19b"></m-cube>':'<m-cylinder radius=".18" height=".7" y=".6" color="#bc8355"></m-cylinder>'}
-        <m-sphere y="1.1" radius=".24" color="#8ce4c2" collide="false"></m-sphere>
+        <m-sphere y="1.1" radius=".24" color="${node.play?(node.progress.complete?'#efc87a':'#a77bea'):'#8ce4c2'}" collide="false"></m-sphere>
         <m-label y="2.1" content="${attribute(node.title)}" font-size="20" width="2.5" height=".35" color="#163b3f" font-color="#f6edda" collide="false"></m-label></m-group>`;
+      if(node.play){
+        out+=`<m-label x="${x}" y="2.65" z="${z}" content="${attribute(node.status)}" font-size="17" width="3.4" height=".35" color="#163b3f" font-color="#f6edda" collide="false"></m-label>
+          <m-label x="${x}" y="3.25" z="${z}" content="${attribute(node.instruction)}" font-size="14" width="3.6" height=".8" color="#163b3f" font-color="#f6edda" collide="false"></m-label>`;
+        node.play.targets.forEach((target,index)=>{
+          const filled=node.progress.targets[index].entity!==null;
+          out+=`<m-group id="play-${attribute(node.id)}-target-${index}" data-play-target="${index}" data-play-filled="${filled}" x="${target.x}" y=".14" z="${target.z}">
+            <m-cylinder radius="${target.radius}" height=".025" color="${workshopColour(target.color)}" opacity="${filled?'.65':'.22'}" collide="false"></m-cylinder>
+            <m-label y=".18" content="${index+1} · ${attribute(signalColourName(target.color))}${filled?' · lista':''}" font-size="15" width="1.5" height=".25" color="#163b3f" font-color="#f6edda" collide="false"></m-label></m-group>`;
+        });
+      }
       for(const link of node.links)if(link.status==='current'){
         const target=room.nodes[link.id],dx=target.position.x-x,dz=target.position.z-z,length=Math.hypot(dx,dz);
         if(length>.01)out+=`<m-cube data-content-link="${attribute(node.id)}:${attribute(link.id)}" x="${(x+target.position.x)/2}" y=".13" z="${(z+target.position.z)/2}" width=".045" height=".035" depth="${length}" ry="${Math.atan2(dx,dz)*180/Math.PI}" color="#eed19b" collide="false"></m-cube>`;

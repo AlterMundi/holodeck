@@ -93,6 +93,6 @@ through the same component. Holodeck contributes immutable situated context and
 native world access, without becoming another conversation owner or exposing
 other pairs' private content to the shared world. Beacon is explicitly out of scope.
 
-See [shared Conversation integration](shared-conversation.md). The original full
-MVP remains blocked on its prior real acceptance; this new foreground integration
-is human-authorized work, not an automatic goal Resume or completion.
+See [shared Conversation integration](shared-conversation.md). Nicolas explicitly resumed the full existing MVP goal on22November. Continue
+implementation under that unchanged objective; retain dated acceptance evidence
+and concrete unknowns without holding all development behind a repeated trial.
