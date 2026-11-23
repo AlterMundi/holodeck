@@ -11,6 +11,7 @@ The long, cooler gallery gives visitors room to look and pass one another.
 
 - [Arrival through the garden](review/garden.jpg)
 - [House threshold and scale model](review/threshold.jpg)
+- [The walk from the plaza to the house](house-walk.md)
 - [Harmonic Beacon workshop from the stair](review/beacon.jpg)
 - [Architecture of the collection room](review/gallery.jpg)
 

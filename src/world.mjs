@@ -46,13 +46,17 @@ function houseModel(part, plot, position, id, prefix) {
   return `<m-model id="${id}" src="${attribute(prefix+'assets/'+part.asset)}" x="${x}" y="${y+.1}" z="${z}" ry="${-plot.side*90}" collide="false"></m-model>`;
 }
 
-function housingDocument(houses, prefix, houseVisual) {
+function housingDocument(houses, prefix, houseVisual, walk) {
+  const authoredWalk = assetFile(walk?.asset) && /^[a-f0-9]{64}$/.test(walk.revision);
+  const walkSource = authoredWalk ? prefix + 'assets/' + walk.asset + '?v=' + walk.revision.slice(0,12) : '';
   let markup = HOUSE_GROUND.map(({id,minX,maxX,minZ,maxZ}) =>
     `<m-cube id="${id}" x="${(minX+maxX)/2}" y="0" z="${(minZ+maxZ)/2}" width="${maxX-minX}" height=".2" depth="${maxZ-minZ}" color="#6a8d7b"></m-cube>`
   ).join('');
   // The visual centerline has no collider. The two solid ground pieces
   // overlap and meet the existing arrival island at the same walking height.
-  markup += '<m-cube x="0" y=".101" z="17.42" width="2.8" height=".006" depth="15.24" color="#c8b695" collide="false"></m-cube>';
+  markup += authoredWalk ?
+    `<m-model id="house-walk" src="${attribute(walkSource)}" collide="false" cast-shadows="false"></m-model>` :
+    '<m-cube x="0" y=".101" z="17.42" width="2.8" height=".006" depth="15.24" color="#c8b695" collide="false"></m-cube>';
   for (const plot of HOUSE_PLOTS) {
     const house = houses.find(entry => entry.parcel === plot.id);
     markup += `<m-group id="${plot.id}" x="${plot.x}" z="${plot.z}">
@@ -108,7 +112,7 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
   // Invisible proxies must not cast shadows onto their visible dressing.
   for(const terrace of TERRACES)out+=cylinder(terrace.x,0,terrace.z,terrace.radius,.2,'#6b987e','opacity="0" cast-shadows="false"');
   for(const p of PROMENADES)out+=`<m-cube x="${(p.minX+p.maxX)/2}" y="0" z="${(p.minZ+p.maxZ)/2}" width="${p.maxX-p.minX}" height=".2" depth="${p.maxZ-p.minZ}" opacity="0" cast-shadows="false"></m-cube>`;
-  out+=housingDocument(room.houses?.directory() ?? [],prefix,houseVisual);
+  out+=housingDocument(room.houses?.directory() ?? [],prefix,houseVisual,commonsVisual?.houseWalk);
   for(const entity of projection){
     if(entity.deleted)continue;
     out+=`<m-group id="${attribute(entity.id)}" data-entity-revision="${entity.revision}">${entity.nodes.map(projectionNodeHTML).join('')}</m-group>`;

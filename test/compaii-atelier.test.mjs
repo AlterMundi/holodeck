@@ -6,6 +6,8 @@ import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {ATELIER_PROFILE,ATELIER_ROOMS,selectAtelier} from '../src/compaii-atelier.mjs';
 import {COMPAII_HOUSE,interiorArt} from '../src/interior-art.mjs';
+import {Room} from '../src/room.mjs';
+import {worldDocument} from '../src/world.mjs';
 import {RoomStore} from '../src/room-store.mjs';
 import {createHolodeck} from '../src/server.mjs';
 import {captureNativeSituation} from '../src/native-conversation.mjs';
@@ -35,6 +37,13 @@ test('profile is optional and uses the exact existing room graph and parcel edit
   const profile=selectAtelier(ATELIER_PROFILE,source,[house]);
   assert.match(profile.houseVisual(house).facade.asset,/atelier-facade/);
   assert.equal(profile.houseVisual({...house,revision:2}),null);
+  const exterior=new Room({houses:{directory:()=>[house]}});
+  const authored=worldDocument(exterior,{basePath:'/holodeck/',...profile});
+  const fallback=worldDocument(exterior);
+  assert.match(authored,/<m-model id="house-walk" src="\/holodeck\/assets\/house-walk\.glb\?v=[a-f0-9]{12}" collide="false" cast-shadows="false">/);
+  assert.doesNotMatch(fallback,/house-walk\.glb/);
+  assert.deepEqual(authored.match(/<m-cube id="house-(?:approach|commons)"[^>]+>/g),
+    fallback.match(/<m-cube id="house-(?:approach|commons)"[^>]+>/g));
   assert.equal(profile.interiorArtwork({...source.get(lab),house:'other'}),null);
   assert.deepEqual(profile.interiorArtwork(source.get(lab)).station,interiorArt(source.get(lab)).station);
 });

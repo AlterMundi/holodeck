@@ -18,7 +18,8 @@ permission bridge; `contentVisits` selects at most eight protected report or art
 It carries route metadata and private content references, not credentials.
 
 The optional `artProfile: "compaii-atelier-v1"` selects the packaged
-Blender commons, garden, facade, foyer, gallery, listening tower and Beacon chamber. It binds to the
+Blender commons, parcel walk, garden, facade, foyer, gallery, listening tower
+and Beacon chamber. It binds to the
 existing west parcel and exact ordered room graph. Gallery art follows the
 visitor's current lab passage permission. The lab and both gallery
 variants travel through the existing room-scoped asset route. Files under
