@@ -25,7 +25,25 @@ Room event tail recorded joins and leaves during activation. The directly
 usable predecessor `581dbb6a09cb` retains room plans and furnishings.
 
 The [shared Home entrance](https://compaii.dmn.homes/holodeck/) serves source
-`586f9ac`, package `143361af802d`. The foyer has a flush limestone route
+`edf991b`, package `7191104b0306`. It retains the Cycles-lit foyer from
+source `5040075` and compacts generated server whitespace. The package drops
+from 33,464,320 to 30,269,440 bytes. All 33 non-server inventory entries
+matched the preceding candidate byte for byte. Live HTTPS, own-native read,
+the exact world and protected checkpoints matched; `3f889689814a` is the
+compatible predecessor.
+
+The foyer runtime reads one 512px, 35,511-byte static diffuse atlas attached
+to its existing geometry and UVs. The texture covers direct and indirect
+light from Cycles while the lower real-time key and ambient fill keep avatars
+lit. The lamps retain their original emission. Chromium handled the same
+authorized asset, showed the atlas in the actual WebGL material, and verified
+movement and the touch-emulated doorway circuit on the lighting candidate.
+The compact candidate also passed its real HTTP authentication fixture.
+The software-rendered frame trace yielded 9–11 samples per run, so
+representative frame pacing remains open.
+[Player-height capture](../art/compaii-house/redesign/review/foyer-baked-light.jpg)
+
+Source `586f9ac`, package `143361af802d`, established the foyer's flush limestone route
 around the table, an oak gallery door with the existing room label, a framed
 clerestory and a soft side light. The
 [matched game-camera views](../art/compaii-house/redesign/README.md#blender-to-webgl)
