@@ -24,6 +24,7 @@ blender -b --factory-startup -t 4 --python-exit-code 1 \
   -P art/compaii-house/redesign/mirador.py -- "$ART_OUTPUT" "$ART_OUTPUT/previous-surroundings.glb"
 ```
 
+[Previous Mirador](review/mirador-before.jpg) ·
 [Mirador from the approach](review/mirador-candidate-raised.jpg) ·
 [Seaward arch](review/mirador-candidate-mirador.jpg) ·
 [Bridge lowered](review/mirador-candidate-lowered.jpg)
