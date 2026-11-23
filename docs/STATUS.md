@@ -55,13 +55,21 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`fe60974`, package `f20f5adb9697`. The situated Conversation panel gives
+`6baba0e`, package `ee6605739077`. The Blender-authored façade of Casa de
+CompAII frames the opening with limestone, oak, brass and two lanterns. Its
+parcel and entrance coordinates match the preceding release. A packaged
+Chromium participant walked from the plaza, entered with E and returned to
+the exact exterior anchor with the same document. Protected HTTPS served the
+exact GLB in identity and Brotli, and the checked world files kept their
+digests. The selected rollback is `f20f5adb9697`.
+[Façade comparison](../art/compaii-house/redesign/README.md#parcel-entrance-review)
+
+Source `fe60974`, package `f20f5adb9697`, gave the situated Conversation panel
 more room to the reply while keeping the current room topic and close
 button in view. The packaged Chromium trial read every line of the test
 reply on desktop, two portrait phone sizes and a short landscape screen.
 Closing and reopening preserved the same iframe and unsent draft. The
-protected readback matched all 57 installed files and the prior world
-checkpoint. Package `9a6e34467ee7` is the selected rollback.
+protected readback matched all 57 installed files and the prior world checkpoint.
 [Panel qualification](visual-play.md#situated-conversation-panel)
 
 Source `f168f96`, package `9a6e34467ee7`, established action discovery. The scoped room observation now offers

@@ -276,6 +276,18 @@ denied both entry to the lab and direct art retrieval. This exercises the
 existing renderer and room authority. Touch and physical-device performance
 require their own receiving checks.
 
+### Parcel entrance review
+
+[Prior façade](review/parcel-entrance-baseline.jpg) and
+[released façade](review/parcel-entrance-candidate.jpg) use the same desktop
+viewport, camera direction and walking route in separate packaged Chromium
+sessions. The avatar partially overlaps the address at the threshold. The
+asset loaded at its exact revision on each run. The simulated visitor opened
+the door with E and returned to the exterior anchor `(-2.075, .11, 15.5)`
+without reloading the document. The new façade was also read back byte for
+byte from the protected HTTPS asset route. The original Blender file now
+includes this edition alongside the existing house cells.
+
 The supported first control handoff is the authenticated
 [Harmonic Lab panel](https://compaii.dmn.homes/harmonic_lab/). Walk toward
 the Spatializer or Weaver bench to open its tool card inside the room view.

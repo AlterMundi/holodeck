@@ -166,6 +166,13 @@ lighting direction, avatar/camera clearance, touch input and shared circulation.
 Reconfirm the released route with independent browser identities and simulated
 inputs. Record technical results and any voluntary participant feedback separately.
 
+The [west parcel entrance comparison](../art/compaii-house/redesign/README.md#parcel-entrance-review)
+shows the served limestone surround, oak reveal, windows and new address plaque
+at player height. The paired packaged browser runs exercised approach, door
+entry and exact exterior return. The next art review follows the same walk
+through the foyer and down to the bench, with attention to light and detail
+as they read through the real game camera.
+
 The [arrival directory and route markers](../art/compaii-house/redesign/commons-wayfinding.md)
 now give the existing plaza a readable first turn. Packaged desktop and
 touch-emulated players took the east promenade into the garden. The
