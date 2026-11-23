@@ -110,6 +110,14 @@ Set exposure from the actual garden-to-workshop route. The foyer is the first
 comparison for baked light, playable lighting and frame cost.
 Progressive path tracing is an option for stationary reference and inspection.
 
+Use distance haze outdoors to separate the water, coast and far landmarks.
+Match the haze to the sky at the horizon and keep nearby paths, signs and
+avatars clear. For the Beacon, lamp filaments and portal edges, test restrained
+glow driven by emissive materials with a high luminance threshold. Preserve the
+value contrast of plaster, bright windows and HUD text. Measure the two effects
+independently from the same moving camera and keep a lightweight presentation
+for touch devices where a full-screen post-processing pass costs too much.
+
 | Release area | Build and verify in the existing world |
 | --- | --- |
 | **Commons, paths and garden** | [#3](https://github.com/AlterMundi/holodeck/issues/3), [#8](https://github.com/AlterMundi/holodeck/issues/8). Rebuild the visible legacy scenery in Blender in place. Stage the arrival, garden and neighborhoods as connected districts with sightlines from the real spawn. Keep routes, player clearance, terrain/collider agreement, exact existing placements and creator permissions. Qualify the actual walk and transition cost on desktop and a phone. |

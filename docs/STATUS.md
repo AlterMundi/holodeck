@@ -10,6 +10,17 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves
+source `cf83fb4`, package `4821e45f09a3`. The interior renderer now checks the
+current orbit against the loaded room colliders before drawing and retracts
+the boom immediately when obstructed. It extends gradually as the view opens.
+In the same packaged Chromium sweep, the previous camera crossed the fixture
+wall with a near-plane corner in 16 of 72 samples on desktop and 16 of 72
+in touch emulation. The corrected camera crossed in 0 of 72 each. The touch
+pinch changed the requested zoom and the desktop fixture exited through the
+normal door on the same page. Authenticated HTTPS and the selected protected
+world checkpoints matched. Compatible predecessor: `46c6625dfb90`.
+
+The preceding release served
 source `30a00d5`, package `46c6625dfb90`. A canonical indoor turn can place a
 garden signal when its own authorized daimon is present. The installed native
 CLI recovered the command's exact result on the same interaction. In the
