@@ -15,10 +15,23 @@ The local Nexus reader used the deployed authority and current review
 tables to list five distinct CompAII editions over three pages. The existing
 Holodeck pin matched. The proof refused a different actor and returned no
 invented version. Nexus's browser receiver and Holodeck's package remain
-selected as before. Direct placement from this source catalog is the next
-authoring step. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-creator-loop)
+selected as before. The owner used this catalog for the finished gallery
+placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-creator-loop)
 
 ## Selected receiving release
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+`9a7880a`, package `0f4587163293`. Each human can save or reset their own
+avatar appearance from the plaza or inside a house. Chromium with two
+independent identities verified distinct automatic appearances, a live
+peer update and the selected mesh response in the same renderer, touch
+selection in the foyer, and recovery in a fresh browser session after
+restart. Protected HTTP tests refused the wrong origin, substituted
+identity and foreign write input. The technical reader matched the
+deployed HTTPS client and 57 installed files. The protected semantic
+checkpoints matched their exact pre-deployment bytes. The immediate rollback
+package `4c8be4dc262a` admitted a fixture actor without writing over the
+new choice checkpoint. [Retention and recovery](deployment.md#resource-bounds-and-lifecycle)
 
 The central bridge now checks each verified world actor against the
 current registered Holodeck App and exact retained Home source. Requests
