@@ -5,6 +5,7 @@ import {InteriorSpaces, OUTSIDE, SPACE_SAVE_BYTES, interiorDocument} from './int
 import {InteriorLayouts,LAYOUT_SAVE_BYTES} from './interior-layouts.mjs';
 import {RoomDesigns,DESIGN_SAVE_BYTES} from './room-designs.mjs';
 import {IndoorGardens,INDOOR_GARDEN_BYTES} from './indoor-gardens.mjs';
+import {GardenEditors} from './garden-editors.mjs';
 import {readOwnedRoomArt} from './owned-room-art.mjs';
 import {Houses, HOUSE_SAVE_BYTES,houseId} from './houses.mjs';
 import {readActivity,ActivityError} from './activity.mjs';
@@ -140,6 +141,9 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const gardenStore=stateDir?new RoomStore(join(stateDir,'indoor-gardens'),{maxBytes:INDOOR_GARDEN_BYTES}):null;
   const indoorGardens=new IndoorGardens({state:gardenStore?.load(),spaces,houses,legacyRooms:selectedRooms,
     persist:gardenStore?value=>gardenStore.save(value):null});
+  const editorStore=stateDir?new RoomStore(join(stateDir,'garden-editors'),{maxBytes:16*1024}):null;
+  const gardenEditors=new GardenEditors({state:editorStore?.load(),owner:id=>indoorGardens.owner(id),
+    allows:(actor,id)=>spaces.allows(actor,id),persist:editorStore?value=>editorStore.save(value):null});
   const kits=readOwnedRoomArt();
   const designStore=stateDir?new RoomStore(join(stateDir,'room-designs'),{maxBytes:DESIGN_SAVE_BYTES}):null;
   const designs=new RoomDesigns({state:designStore?.load(),spaces,houses,legacyRooms:selectedRooms,kits,
@@ -255,7 +259,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   function interiorScopeKey(actor,selected){
     return JSON.stringify([spaces.passages(actor,selected).map(link=>link.slot),
       !selected.entry&&!spaces.canReachEntrance(actor,selected.id),exhibits.forRoom(selected.id)?.revision??0,
-      designs.forRoom(selected.id)?.revision??0]);
+      designs.forRoom(selected.id)?.revision??0,gardenEditors.grant(actor,selected.id)?.revision??0]);
   }
   function visitScene(actor,id,cachedRevision){
     const selected=spaces.rooms.get(id);
@@ -277,6 +281,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const outdoorSky=includeSky?(view.id===OUTSIDE?atelier?.outdoorSky:art?.outdoorSky):null;
     const space={...view,...(view.id===OUTSIDE?{}:{objects:roomObjects(view)}),
       ...(indoorGardens.owner(view.id)?{playableInterior:true}:{}),
+      ...(gardenEditors.grant(actor,view.id)?{canDesignGarden:true}:{}),
       ...(activity?{activity}:{}),
       ...(art?.lightRig?{indoorLighting:true}:{}),
       ...(outdoorSky?{outdoorSky}:{}),
@@ -392,11 +397,19 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       throw error;
     }
   }
-  function indoorGarden(actor,input){
+  function indoorGarden(actor,input,delegated=false){
     if(room.commitUncertain||spaces.fenced||!gardenStore)return null;
+    if(input.type==='garden.editor.current'||input.type==='garden.editor.set'){
+      const selected=gardenEditors.act(actor,input);
+      if(selected&&input.type==='garden.editor.set'){
+        for(const [socket,record] of sockets)
+          if(record.scope===input.room&&record.projectionAllowed?.()===false)socket.close(1008);
+      }
+      return selected;
+    }
     if(input.type==='garden.result')return indoorGardens.result(actor,input.id);
     if(input.type==='garden.preview')return indoorGardens.act(actor,{...input,type:'garden.put'},{preview:true});
-    try{return indoorGardens.act(actor,input);}
+    try{return indoorGardens.act(actor,input,{delegated});}
     catch(error){if(indoorGardens.fenced)spaces.fenced=true;throw error;}
   }
   const selectedWorldPorts=validateWorldPorts({worldSocket,worldSocketBeingRef,worldPorts});
@@ -563,7 +576,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(session.times.length>=4)return res.status(429).json({message:'Esperá un momento antes de intentar otra acción.'});
       session.times.push(now);
     }
-    const spaceRoute=['/space','/space/content-visits','/space/scene','/space/garden'].includes(req.path)||req.path.startsWith('/space/art/')||
+    const spaceRoute=['/space','/space/content-visits','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||
       req.path==='/appearance'||req.path==='/conversation-surface'||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
@@ -620,12 +633,33 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(command!==undefined&&value?.room!==id)return res.sendStatus(404);
     res.json(value);
   });
-  app.post(route('api/space/garden'),(req,res)=>{
+  async function gardenEditor(req,id){
+    const actor=req.actor;
+    if(!projectionHealthy||typeof id!=='string'||actor.kind!=='human'||!inScope(actor,id)||!native?.conversationSurface)return null;
+    const grant=gardenEditors.grant(actor,id);
+    if(!grant)return null;
+    const pair=await native.conversationSurface(actor).catch(()=>null);
+    if(pair?.schema!=='holodeck.conversation-surface/v1'||pair.actorRef!==actor.ref||
+       pair.beingRef!==indoorGardens.owner(id))return null;
+    const current=await currentActor(req,req.holodeckSession);
+    return projectionHealthy&&inScope(current,id)&&gardenEditors.grant(current,id)===grant?current:null;
+  }
+  app.get(route('api/space/garden-editor'),asyncRoute(async(req,res)=>{
+    const id=req.query.room;
+    if(!await gardenEditor(req,id))return res.sendStatus(403);
+    const current=indoorGardens.current(id);
+    res.json({room:id,garden:current?{room:id,title:current.title,revision:current.revision,play:current.play}:null});
+  }));
+  app.post(route('api/space/garden'),asyncRoute(async(req,res)=>{
     if(spaces.fenced||room.commitUncertain)return res.sendStatus(503);
-    const result=req.body?.type==='garden.signal'?indoorGarden(req.actor,req.body):null;
+    const input=req.body;
+    const editor=input?.type==='garden.put'?await gardenEditor(req,input.room):null;
+    if(input?.type==='garden.put'&&!editor)return res.sendStatus(403);
+    const result=editor?indoorGarden(editor,input,true):
+      input?.type==='garden.signal'?indoorGarden(req.actor,input):null;
     if(!result)return res.status(409).json({message:'La señal no se pudo colocar. Revisá el jardín actual.'});
     res.json(result);
-  });
+  }));
   app.get(route('api/space/content-visits'),asyncRoute(async(req,res)=>{
     if(spaces.fenced||room.commitUncertain||exhibits.fenced)return res.status(503).json({message:'No pude recuperar la exposición.'});
     const active=spaces.current(req.actor);

@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
-import {validSignalGarden,signalGardenProgress} from './playable-creations.mjs';
+import {signalGardenProgress} from './playable-creations.mjs';
 import {workshopColour} from './workshop.mjs';
+import {validIndoorGardenRecipe} from './indoor-garden-recipe.mjs';
 
 export const INDOOR_GARDEN_BYTES=64*1024;
 const SCHEMA='holodeck.indoor-gardens/v1';
@@ -12,15 +13,7 @@ const exact=(value,fields)=>value&&typeof value==='object'&&!Array.isArray(value
 const stamp=value=>Number.isSafeInteger(value)&&value>0;
 const title=value=>typeof value==='string'&&value.trim()===value&&value.length>0&&value.length<=48&&!/[\u0000-\u001f\u007f]/.test(value);
 
-// The common aisle stays clear of either Blender kit's furniture, the
-// old room marker, the exhibit position and all six passage approach slots.
 const COLORS=new Set(['mint','amber','rose','violet'].map(workshopColour));
-const contains=(x,z,radius)=>Math.abs(x)+radius<=1.25&&z-radius>=-1.4&&z+radius<=3.25;
-function validRecipe(play){
-  return validSignalGarden(play,contains)&&!Object.hasOwn(play,'requiredBridgeRaised')&&
-    play.minContributors<=play.targets.length&&play.targets.every((a,index)=>
-      COLORS.has(workshopColour(a.color))&&play.targets.slice(0,index).every(b=>Math.hypot(a.x-b.x,a.z-b.z)>=a.radius+b.radius+.08));
-}
 const validSignal=value=>value===null||exact(value,'actor,color,sequence')&&
   typeof value.actor==='string'&&ACTOR.test(value.actor)&&stamp(value.sequence)&&
   COLORS.has(value.color);
@@ -53,7 +46,7 @@ export class IndoorGardens {
 
   validGarden(value){
     return exact(value,'play,revision,room,sequence,signals,title')&&this.owner(value.room)&&
-      title(value.title)&&validRecipe(value.play)&&stamp(value.revision)&&
+      title(value.title)&&validIndoorGardenRecipe(value.play)&&stamp(value.revision)&&
       Number.isSafeInteger(value.sequence)&&value.sequence>=0&&Array.isArray(value.signals)&&
       value.signals.length===value.play.targets.length&&value.signals.every(signal=>validSignal(signal)&&
         (signal===null||signal.sequence<=value.sequence));
@@ -103,7 +96,7 @@ export class IndoorGardens {
     return receipt&&this.spaces.allows(actor,receipt.result.room)?structuredClone(receipt.result):null;
   }
 
-  act(actor,input,{preview=false}={}){
+  act(actor,input,{preview=false,delegated=false}={}){
     if(this.fenced||!safeId(input?.id)||!actor?.rights?.includes('observe')||!actor.rights.includes('edit')||
        typeof actor.id!=='string'||!ACTOR.test(actor.id))return null;
     const author=input.type==='garden.put';
@@ -111,8 +104,10 @@ export class IndoorGardens {
     const owner=this.owner(room);
     if(!owner||!this.spaces.allows(actor,room))return null;
     if(author){
-      if(actor.kind!=='daimon'||actor.id!==owner||!exact(input,'expectedRevision,id,play,room,title,type')||
-         !title(input.title)||!validRecipe(input.play))return null;
+      const nativeOwner=actor.kind==='daimon'&&actor.id===owner;
+      const pairedEditor=actor.kind==='human'&&delegated&&this.inRoom(actor,room);
+      if((!nativeOwner&&!pairedEditor)||!exact(input,'expectedRevision,id,play,room,title,type')||
+         !title(input.title)||!validIndoorGardenRecipe(input.play))return null;
     }else if(preview||input.type!=='garden.signal'||!this.inRoom(actor,room)||
        !exact(input,'color,expectedRevision,id,index,room,type')||!current||
        !Number.isInteger(input.index)||input.index<0||input.index>=current.play.targets.length||

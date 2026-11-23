@@ -388,7 +388,9 @@ live plan with Taller Sensorial, furnished with the listening kit and
 reachable through the Blender-authored foyer portal. A compatible reader
 preserves the added room and its design, game and visitor state. Current
 source permissions for future Sensorial data and controls are separate.
-The paired-human authoring grant remains open.
+A room-scoped owner grant now lets the currently paired human publish an
+indoor game with their own receipt. Paired-human layout, furnishings and
+exhibit publication remain open.
 [Owned plan workflow](houses.md#publish-an-owned-plan).
 
 Oliva's [PR6](https://github.com/AlterMundi/holodeck/pull/6) is merged and selected in the shared engine. The real protected edition is associated in Nexus. [Nexus #126](https://github.com/compaii/daimon-nexus/issues/126) tracks source-Home authorization. The protected model has since rendered through the exact pinned Nexus visit in Chromium under independent CompAII access. Oliva’s own placement and the visit from the live world node are separate receiving checks. The packaged figure is an authored representation example. Declarative creation for houses and their contents remains #15.

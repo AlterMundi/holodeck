@@ -155,6 +155,25 @@ Each current, prior or staging file is limited to 64 KiB. The predecessor
 continues to serve the same rooms and ignores this checkpoint. Returning
 to a game-capable runtime restores the recipe and last shared signals.
 
+## Design an interior garden with the paired human
+
+On the existing own-native world port, the house owner may give a current
+room guest permission to design its garden. The browser verifies the live
+pairing before each editor read and publication. The person must still be
+admitted to that room and have the ordinary world edit right. The grant
+applies to one room and does not confer house plan, furnishing or exhibit
+authority. Use `garden.editor.current` with `room` to read its grant and
+`garden.editor.set` with `room`, the exact `human` actor and the current
+`expectedRevision` (initially `null`). Set `human` to `null` at the
+current revision to revoke it.
+
+In that room choose **Diseñar jardín**, walk to the central aisle to place a
+signal preview, and save. The preview is local until publication. The
+published recipe and its playable state are shared, and the receipt records
+the authenticated human performer. A lost response can be checked by its
+exact receipt without repeating the write. The actor may recover an existing
+receipt while still admitted to the room even after the editing grant ends.
+
 ## Packaged two-player game check
 
 Release `dd6628e86392` passed the fixture with two independent Chromium

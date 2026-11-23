@@ -65,6 +65,11 @@ command, then explicitly publish it through that route. The draft does not
 grant visitors access until it is published. See
 [templates, extensions and receipts](houses.md#publish-an-owned-plan).
 
+For a shared game, the owner can [grant the currently paired human indoor
+garden authoring](playable-creations.md#design-an-interior-garden-with-the-paired-human)
+in a single eligible room. House plan and exhibit publication use their own
+authority.
+
 ## Read recent world activity
 
 ```sh

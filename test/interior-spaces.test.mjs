@@ -416,7 +416,7 @@ test('own-native layout publication adds a live guest route and survives process
     const authored=await act(game);
     assert.equal(authored.result.revision,1);
     assert.equal((await request(outsider,gardenPath)).status,404);
-    assert.equal((await request(visitor,'space/garden',game)).status,409,'visitors cannot publish a recipe over HTTP');
+    assert.equal((await request(visitor,'space/garden',game)).status,403,'visitors cannot publish a recipe over HTTP');
     const signal={type:'garden.signal',room:'foyer',expectedRevision:1,id:'receive-signal-1',index:0,color:'mint'};
     assert.equal((await request(outsider,'space/garden',signal)).status,409);
     const player=await request(visitor,'space/garden',signal);
@@ -516,6 +516,81 @@ test('own-native layout publication adds a live guest route and survives process
     assert.equal((await request(visitor,gardenPath)).status,404);
   }finally{
     await stop();
+    rmSync(stateDir,{recursive:true,force:true});
+  }
+});
+
+test('an explicitly granted, currently paired human publishes with their own indoor receipt',async()=>{
+  const stateDir=mkdtempSync(join(tmpdir(),'holodeck-garden-editor-'));
+  const socketPath=join(stateDir,'author.sock');
+  new RoomStore(join(stateDir,'houses')).save({schema:'holodeck.houses/v1',houses:[house],receipts:[]});
+  let listener,runtime,pair=owner;
+  try{
+    runtime=await createHolodeck({production:true,basePath:'/holodeck/',publicOrigin:'https://world.test',
+      stateDir,ownNative:true,worldSocket:socketPath,worldSocketBeingRef:owner,
+      nativeRoomAuthority:async()=>['observe','edit'],
+      nativeFactory:()=>({authorizeWorldRequest(){throw Error('fixture');},
+        availability:async()=>({available:false}),
+        conversationSurface:async actor=>({schema:'holodeck.conversation-surface/v1',actorRef:actor.ref,beingRef:pair})}),
+      identityResolver:async req=>{
+        const who=req.headers.cookie?.match(/(?:^|; )home=(guest|other)/)?.[1];
+        return who?{id:'human:'+who,ref:'human:'+who,kind:'human',rights:['observe','edit'],name:who}:null;
+      }});
+    listener=runtime.app.listen(0,'127.0.0.1');await once(listener,'listening');
+    const base='http://127.0.0.1:'+listener.address().port+'/holodeck/';
+    const act=async args=>{
+      const conn=net.createConnection(socketPath);await once(conn,'connect');
+      conn.write(JSON.stringify({ownNative:true,operation:'act',args})+'\n');
+      let reply='';for await(const chunk of conn)reply+=chunk;return JSON.parse(reply);
+    };
+    const [main,other]=['foyer','annex'];
+    assert.equal((await act({type:'layout.publish',id:'editor-layout',house:house.id,expectedRevision:null,rooms:[
+      room(main,'Foyer',0,true,[{kind:'door',to:other}],[guest.id,'human:other']),
+      room(other,'Annex',0,false,[{kind:'door',to:main}],[guest.id,'human:other']),
+    ]})).ok,true);
+    const login=async who=>{
+      const response=await fetch(base,{headers:{Cookie:'home='+who,Accept:'application/json'}});
+      assert.equal(response.status,200);
+      return {Cookie:'home='+who+'; '+response.headers.get('set-cookie').split(';')[0],
+        Origin:'https://world.test','Content-Type':'application/json'};
+    };
+    const granted=await login('guest'),foreign=await login('other');
+    const request=(headers,path,input)=>fetch(base+'api/'+path,
+      {headers,method:input?'POST':'GET',body:input&&JSON.stringify(input)});
+    const edit='space/garden-editor?room='+main,game='space/garden';
+    const recipe={type:'garden.put',id:'human-publish-1',room:main,expectedRevision:null,title:'Jardín de la dupla',
+      play:{schema:'signal-garden/v1',minContributors:1,targets:[{x:0,z:1,radius:.45,color:'mint'}]}};
+    assert.equal((await request(granted,'space',{from:'outside',to:main})).status,200);
+    assert.equal((await request(foreign,'space',{from:'outside',to:main})).status,200);
+    assert.equal((await request(granted,edit)).status,403);
+    assert.equal((await request(granted,game,recipe)).status,403);
+    const permit={type:'garden.editor.set',room:main,human:guest.id,expectedRevision:null};
+    assert.equal((await act({...permit,human:'human:uninvited'})).ok,false);
+    assert.equal((await act(permit)).result.grant.revision,1);
+    assert.equal((await request(foreign,edit)).status,403);
+    assert.equal((await request(granted,'space/garden-editor?room='+other)).status,403);
+    pair='dm:being:v1:'+'p'.repeat(43);
+    assert.equal((await request(granted,edit)).status,403);
+    pair=owner;
+    assert.deepEqual(await (await request(granted,edit)).json(),{room:main,garden:null});
+    const published=await request(granted,game,recipe);
+    assert.equal(published.status,200);
+    const receipt=await published.json();
+    assert.equal(receipt.revision,1);
+    const readReceipt=game+'?room='+main+'&result='+recipe.id;
+    assert.deepEqual(await (await request(granted,readReceipt)).json(),receipt);
+    assert.equal((await request(foreign,readReceipt)).status,404);
+    assert.equal((await act({type:'garden.result',id:recipe.id})).ok,false);
+    assert.equal(new RoomStore(join(stateDir,'indoor-gardens')).load().receipts[0].actor,guest.id);
+    assert.equal((await act({...permit,human:null})).ok,false,'stale grant revision');
+    assert.equal((await act({...permit,human:null,expectedRevision:1})).result.grant.revision,2);
+    assert.equal((await request(granted,edit)).status,403);
+    assert.deepEqual(await (await request(granted,readReceipt)).json(),receipt);
+    assert.equal(new RoomStore(join(stateDir,'garden-editors')).load().grants[0].human,null);
+  }finally{
+    if(listener){
+      runtime.close();listener.closeAllConnections();await new Promise(resolve=>listener.close(resolve));
+    }
     rmSync(stateDir,{recursive:true,force:true});
   }
 });

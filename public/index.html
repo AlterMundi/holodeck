@@ -31,6 +31,9 @@ body:has(#beacon-panel[open]) .touch-controls{visibility:hidden;pointer-events:n
 #signal-editor label{display:block;margin:8px 0}#signal-editor input:not([type=checkbox]),#signal-editor select{padding:6px;color:var(--ink);background:#102d31;border:1px solid var(--line);border-radius:8px;font:inherit}
 #signal-title{width:100%}#signal-targets{list-style:none;padding:0;margin:8px 0}#signal-targets li{display:flex;align-items:center;gap:8px;margin:4px 0}#signal-editor button,#garden-create{min-height:44px}
 body:has(#signal-editor:not([hidden])) #play-near,body:has(#signal-editor:not([hidden])) #pointing{display:none}
+#indoor-design-tools{position:fixed;z-index:22;right:14px;bottom:140px;display:grid;justify-items:end;gap:6px}
+#indoor-design-tools button{min-height:44px}
+.room-transition #indoor-design-tools,body:has(#conversation-panel:not([hidden])) #indoor-design-tools,body:has(#content-visit:not([hidden]):not(.is-walking)) #indoor-design-tools,body:has(#signal-editor:not([hidden])) #indoor-design-tools{display:none}
 .inside-house #garden-create{display:none}
 @media(max-width:740px){#signal-editor{right:12px;top:160px;bottom:auto;max-width:calc(100vw - 24px);max-height:50dvh}}
 body:has(#content-visit:not([hidden]):not(.is-walking)) #beacon-control,body:has(#conversation-panel:not([hidden])) #beacon-control,.room-transition #beacon-control{display:none}
@@ -174,6 +177,7 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
 <nav id="dock" class="glass" aria-label="Acciones del taller"><button id="bridge" class="primary">Conectar islas</button><button id="plant">Crear luz</button><button id="talk" aria-expanded="false" aria-controls="conversation-panel">Conversar</button><button id="undo" class="icon" title="Deshacer mi último cambio" aria-label="Deshacer mi último cambio" disabled>↶</button></nav>
 <section id="pointing" class="glass" aria-label="Indicar un objeto" hidden><p id="point-label"></p><div class="row"><button id="point-visit" class="primary" type="button" hidden>Visitar contenido</button><button id="point-send" class="primary" type="button">Señalar</button><button id="point-edit" type="button" hidden>Editar luz</button><button id="point-clear" type="button">Cancelar</button></div></section>
 <details id="play-near" class="glass" hidden><summary><strong id="play-title"></strong> · Cómo jugar<span id="play-progress" role="status"></span></summary><p id="play-instruction"></p><button id="play-edit" type="button" hidden>Editar jardín</button></details>
+<div id="indoor-design-tools" hidden><button id="indoor-design" type="button">Diseñar jardín</button><button id="indoor-design-forget" type="button" hidden>Cerrar seguimiento</button></div>
 <form id="signal-editor" class="glass" aria-label="Editar jardín de señales" hidden>
   <h2 id="signal-heading">Jardín de señales</h2>
   <div id="signal-fields">

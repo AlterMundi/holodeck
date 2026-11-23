@@ -17,6 +17,7 @@ import { BeaconControls } from './beacon-controls.mjs';
 import {pickedRepresentationVisit} from './node-representations.mjs';
 import { PlayableHUD } from './playable-hud.mjs';
 import { IndoorGardenHUD } from './indoor-garden-hud.mjs';
+import { indoorGardenContains,validIndoorGardenRecipe } from './indoor-garden-recipe.mjs';
 import { OutdoorSky } from './outdoor-sky.mjs';
 import { SignalGardenEditor } from './signal-garden-editor.mjs';
 import { AppliedGeometryProbe } from './applied-geometry.mjs';
@@ -165,7 +166,7 @@ const garden=new IndoorGardenHUD({
     return recovered.ok?recovered.json():null;
   }
 });
-let projectedGarden=null;
+let projectedGarden=null,signalEditor=null;
 const hot=activeSpace?.live===1;
 const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
 let inside=hot&&activeSpace.id!=='outside';
@@ -181,7 +182,10 @@ const setMoving=value=>{
   }
   if(!value){clearTimeout(moveDeadline);moveDeadline=null;}
 };
-const removeScene=()=>{pendingRoomArt=null;projectedGarden=null;beaconControls.clear();galleryModels?.clear();remoteScene?.remove();remoteScene=roomModel=null;};
+const removeScene=()=>{
+  if(signalEditor?.draft?.mode)signalEditor.dismiss();
+  pendingRoomArt=null;projectedGarden=null;beaconControls.clear();galleryModels?.clear();remoteScene?.remove();remoteScene=roomModel=null;
+};
 function mountScene(){
   removeScene();
   if(!inside)return true;
@@ -269,6 +273,7 @@ function applySpace(next,anchor){
   resetDoor();
   if(!mountScene()){sceneCache.clear();location.reload();}
   updateNativeAvailability();
+  syncIndoorDesign();
   if(!inside)refresh().catch(()=>{});
 }
 function syncCurrent(){
@@ -307,6 +312,7 @@ function resetDoor(){
   updateDoor=showSpaceLinks(activeSpace,{
     canLeave:()=>{
       if(moving)return false;
+      if(signalEditor?.active){say('Guardá o cerrá el diseño antes de cambiar de lugar.');return false;}
       if(inside)return contentVisitor.allowLeaveRoom();
       if((contentVisitor.frame&&!contentVisitor.parked)||nativeTurn||pending||preview||signalEditor.active||$('#message').value.trim()){
         say('Tenés una visita, un borrador o un envío abierto. Retomalo antes de cambiar de lugar.');
@@ -802,14 +808,105 @@ function editLight(record){
 $('#bridge').onclick=()=>state&&action('bridge.set','bridge',{raised:!state.entities.bridge.raised},state.entities.bridge.revision);
 $('#plant').onclick=()=>{if(signalEditor.active){say('Guardá o descartá el jardín antes de crear una luz.');return;}closePreview();if(movePreview()){showPreview();say('Elegí dónde dejar esta luz. Todavía la ves solamente vos.');}};
 let signalPreview=null,signalMarkup=null;
-const signalEditor=new SignalGardenEditor({document,
+const indoorSaveKey='holodeck:indoor-design:'+base.pathname;
+let indoorReading=false;
+const editorRoom=()=>inside&&activeSpace.playableInterior===true?
+  {room:activeSpace.id,actorRef:activeSpace.actorRef}:null;
+const designScope=()=>activeSpace.canDesignGarden===true?editorRoom():null;
+const sameDesign=(a,b)=>!!a&&!!b&&a.room===b.room&&a.actorRef===b.actorRef;
+const indoorSaveSlot=scope=>indoorSaveKey+scope.room;
+function pendingIndoorSave(scope){
+  if(!scope)return null;
+  try{
+    const pending=loadIntent(sessionStorage,indoorSaveSlot(scope),512);
+    return sameDesign(scope,pending)&&typeof pending.id==='string'?pending:null;
+  }catch{return null;}
+}
+function syncIndoorDesign(){
+  const pending=pendingIndoorSave(editorRoom());
+  $('#indoor-design-tools').hidden=!pending&&!designScope();
+  $('#indoor-design').textContent=pending?'Comprobar guardado':'Diseñar jardín';
+  $('#indoor-design-forget').hidden=!pending;
+}
+function clearIndoorSave(scope,id){
+  if(pendingIndoorSave(scope)?.id===id)sessionStorage.removeItem(indoorSaveSlot(scope));
+  syncIndoorDesign();
+}
+async function readIndoorSave(command){
+  const response=await fetch(url('api/space/garden?'+new URLSearchParams({room:command.room,result:command.id})),
+    {signal:AbortSignal.timeout(5000)}).catch(()=>null);
+  const receipt=response?.ok?await response.json().catch(()=>null):null;
+  return receipt?.room===command.room&&Number.isSafeInteger(receipt.revision)?receipt:null;
+}
+async function saveIndoorDesign(node,args,track,mode){
+  const command={type:'garden.put',id:crypto.randomUUID(),room:mode.room,
+    expectedRevision:node?.revision??null,title:args.title,play:args.play};
+  if(!sameDesign(mode,designScope()))return;
+  try{saveIntent(sessionStorage,indoorSaveSlot(mode),
+    {id:command.id,room:command.room,actorRef:mode.actorRef},512);}
+  catch{say('No pude guardar el seguimiento del diseño. No se publicó.');return;}
+  track(command.id);
+  const response=await fetch(url('api/space/garden'),{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(command),signal:AbortSignal.timeout(5000)}).catch(()=>null);
+  const receipt=response?.ok?await response.json().catch(()=>null):null;
+  const confirmed=receipt?.room===mode.room||(!response||response.ok||response.status>=500)&&await readIndoorSave(command);
+  if(confirmed){
+    clearIndoorSave(mode,command.id);
+    signalEditor.settle(command.id,'completed');
+    if(sameDesign(mode,designScope())&&garden.room===mode.room){
+      garden.nextRead=0;void garden.refresh();
+    }
+    say('Jardín publicado.',{transient:true});
+  }else if(response&&!response.ok&&response.status<500){
+    clearIndoorSave(mode,command.id);
+    signalEditor.settle(command.id,'conflict');
+  }else syncIndoorDesign();
+}
+$('#indoor-design').onclick=async()=>{
+  const scope=editorRoom();
+  if(!scope||moving||indoorReading||signalEditor.active)return;
+  indoorReading=true;
+  try{
+    const pending=pendingIndoorSave(scope);
+    if(pending){
+      if(await readIndoorSave(pending)){clearIndoorSave(scope,pending.id);say('El jardín quedó publicado.',{transient:true});}
+      else say('Todavía no pude confirmar el guardado. Podés comprobarlo de nuevo.');
+      return;
+    }
+    if(!sameDesign(scope,designScope()))return;
+    const response=await fetch(url('api/space/garden-editor?'+new URLSearchParams({room:scope.room})),
+      {signal:AbortSignal.timeout(10000)});
+    if(!response.ok)throw Error('Access unavailable');
+    const source=await response.json();
+    if(sameDesign(scope,designScope())&&!moving&&source.room===scope.room)
+      signalEditor.open(source.garden,{...scope,contains:indoorGardenContains,validRecipe:validIndoorGardenRecipe,radius:.45});
+  }catch{say('No pude abrir el editor de este jardín. Revisá tu acceso.');}
+  finally{indoorReading=false;}
+};
+$('#indoor-design-forget').onclick=()=>{
+  const scope=editorRoom(),pending=pendingIndoorSave(scope);
+  if(indoorReading||!pending)return;
+  clearIndoorSave(scope,pending.id);say('Cerraste el seguimiento. El guardado anterior puede haber quedado publicado.');
+};
+signalEditor=new SignalGardenEditor({document,
   position:()=>client.getLocalCharacterState()?.position,
-  allowed:node=>!inside&&!preview&&state?.canEdit===true&&
+  allowed:(node,mode)=>mode?sameDesign(mode,designScope())&&!moving:!inside&&!preview&&state?.canEdit===true&&
     (!node||!node.deleted&&state.nodes?.[node.id]?.revision===node.revision&&state.nodes[node.id].owner===state.actorRef),
-  save:(node,args,target,onPending)=>action(node?'node.update':'node.place',target,args,node?.revision??null,{onPending}),
+  save:(node,args,target,onPending,mode)=>mode?saveIndoorDesign(node,args,onPending,mode):
+    action(node?'node.update':'node.place',target,args,node?.revision??null,{onPending}),
   remove:(node,onPending)=>action('node.remove',node.id,{},node.revision,{onPending}),
-  preview:targets=>{
+  preview:(targets,mode)=>{
     const markup=targets?.map(({x,z,radius,color})=>`<m-cylinder x="${x}" y=".124" z="${z}" radius="${radius}" height=".02" color="${workshopColour(color)}" opacity=".44" collide="false"></m-cylinder>`).join('')??null;
+    if(mode){
+      const prior=remoteScene?.querySelector('#indoor-design-preview');
+      if(prior?.innerHTML===markup)return;
+      prior?.remove();
+      if(markup&&remoteScene&&sameDesign(mode,designScope())){
+        const group=document.createElement('m-group');group.id='indoor-design-preview';
+        group.innerHTML=markup;remoteScene.append(group);
+      }
+      return;
+    }
     if(markup===signalMarkup)return;
     const old=signalPreview;signalMarkup=markup;
     signalPreview=markup?URL.createObjectURL(new Blob([markup],{type:'text/html'})):null;
@@ -949,6 +1046,7 @@ const interval=setInterval(async()=>{
 window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();beaconControls.close();garden.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);if(signalPreview)URL.revokeObjectURL(signalPreview);worldAudio.dispose();client.dispose();});
 refresh().catch(()=>say('No pude conectar con el taller.'));
 resetDoor();
+syncIndoorDesign();
 if(hot){
   if(inside){applySpace(activeSpace,null);setMoving(true);}
   client.getWorldConnection().addEventListener(event=>{
