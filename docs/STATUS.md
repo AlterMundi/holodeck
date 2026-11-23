@@ -71,6 +71,19 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+`48d1abf`, package `30ac6bf788e9`. The gallery portal now sits in front of
+the east plaster wall, and both directions use a Blender-authored arch and
+an access-filtered plaque and light. Independent Chromium desktop and
+touch-emulated profiles crossed both ways in their original documents and
+landed at the exact existing coordinates. The initially denied visitor
+kept the same gallery art and received neither the active cue nor a tower
+asset. Revoking gallery access from the tower removed the return cue and
+kept the exterior escape. Restoring access restored the return.
+The deployed 59-file inventory and protected HTTPS matched, and the
+retained world checkpoint kept its digests. Rollback is `c5bbc4efbe77`.
+[Portals at player height](../art/compaii-house/redesign/README.md#blender-to-webgl)
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
 `1f4a383`, package `c5bbc4efbe77`. The gallery now has an oak drafting
 bench, a stone and bronze central pedestal, and a flat-file archive. Both
 room variants retain the same display anchors, colliders and material batch
