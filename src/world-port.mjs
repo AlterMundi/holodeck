@@ -3,6 +3,7 @@ import net from 'node:net';
 import { chmodSync,lstatSync } from 'node:fs';
 import { DaimonPort } from './daimon-port.mjs';
 import {situatedGardenCommandId} from './indoor-gardens.mjs';
+import {MAX_WORLD_REQUEST_BYTES} from './world-limits.mjs';
 
 function situatedInterior({request,verified,actor,room,conversationPlace,indoorGarden,approachSpace,moveSpace}){
   const {operation,args}=request;
@@ -52,7 +53,7 @@ function situatedInterior({request,verified,actor,room,conversationPlace,indoorG
 
 // The receiving operator owns the directory/socket filesystem capability.
 // Native identity and current room rights are independently rechecked per request.
-export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,approachSpace,conversationPlace,putExhibit,exhibitResult,currentLayout,previewLayout,publishLayout,layoutResult,roomDesign,indoorGarden}){
+export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,approachSpace,conversationPlace,putExhibit,exhibitResult,currentLayout,draftLayout,previewLayout,publishLayout,layoutResult,roomDesign,indoorGarden}){
   if(!socketPath?.startsWith('/')||!native?.authorizeWorldRequest||typeof resolveRights!=='function')
     throw Error('Select the installed native world port and authority resolver');
   let active=0;
@@ -65,7 +66,7 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
     socket.on('data',async data=>{
       if(handled)return;
       bytes=Buffer.concat([bytes,data]);
-      if(bytes.length>16384){handled=true;socket.destroy();return;}
+      if(bytes.length>MAX_WORLD_REQUEST_BYTES){handled=true;socket.destroy();return;}
       const end=bytes.indexOf(10);if(end<0)return;handled=true;
       try{
         const request=JSON.parse(bytes.subarray(0,end));
@@ -114,6 +115,10 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
           if(!own||Object.keys(request.args).sort().join(',')!=='id,type')throw Error('Layout receipts require an own-native route');
           result=layoutResult?.(actor,request.args.id);
           if(!result)throw Error('Layout receipt unavailable');
+        }else if(request.operation==='act'&&request.args.type==='layout.draft'){
+          if(!own||!actor.rights.includes('edit'))throw Error('Layout drafting requires an own-native route');
+          result=draftLayout?.(actor,request.args);
+          if(!result)throw Error('Layout draft unavailable');
         }else if(request.operation==='act'&&['layout.preview','layout.publish'].includes(request.args.type)){
           if(!own||!actor.rights.includes('edit'))throw Error('Layout authoring requires an own-native route');
           result=request.args.type==='layout.preview'?

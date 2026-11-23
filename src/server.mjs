@@ -360,7 +360,9 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   for(const selected of selectedWorldPorts)installedWorldPorts.push(await createWorldPort({socketPath:selected.socket,expectedBeingRef:selected.beingRef,room,native,describeSpace,moveSpace,conversationPlace,
     approachSpace:(actor,destination)=>room.commitUncertain?null:spaces.approach(actor,destination),
     putExhibit,exhibitResult:(actor,id)=>exhibits.result(actor,id),
-    currentLayout:actor=>layouts.current(actor),previewLayout:(actor,input)=>layouts.preview(actor,input),
+    currentLayout:actor=>layouts.current(actor),
+    draftLayout:(actor,input)=>room.commitUncertain||spaces.fenced||!layoutStore?null:layouts.draft(actor,input),
+    previewLayout:(actor,input)=>layouts.preview(actor,input),
     publishLayout,layoutResult:(actor,id)=>layouts.result(actor,id),roomDesign,indoorGarden,
     resolveOwnNativeRights:ownNative&&nativeRoomAuthority?async verified=>{const rights=await nativeRoomAuthority(verified);return projectionHealthy?rights:rights.filter(right=>right==='observe');}:null,resolveRights:async verified=>{
     if(nativeRoomAuthority){const rights=await nativeRoomAuthority(verified);return projectionHealthy?rights:rights.filter(right=>right==='observe');}

@@ -83,6 +83,51 @@ test('owner previews a bounded plan without writing and publishes an exact recov
   assert.equal(saves,1);
 });
 
+test('drafts provide checked starter and extension commands without publishing or widening access',()=>{
+  let saves=0;
+  const {houses,store}=setup({persist:()=>saves++});
+  const starter={type:'layout.draft',id:'draft-starter-1',template:'atelier',guests:[visitor.id]};
+  assert.equal(store.draft(seeded,starter),null);
+  assert.equal(store.draft(visitor,starter),null);
+  assert.equal(store.draft({...owner,rights:['observe']},starter),null);
+  assert.equal(store.draft(owner,{...starter,house:houseId(other.id)}),null);
+  assert.equal(store.draft(owner,{...starter,template:'unlisted'}),null);
+  assert.equal(store.draft(owner,{...starter,guests:[visitor.id,visitor.id]}),null);
+  const signal=store.draft(other,{...starter,template:'signal-house',guests:[]});
+  assert.equal(signal.command.house,houseId(other.id));
+  assert.ok(signal.command.rooms.some(room=>room.level===1&&room.links[0].kind==='portal'));
+  assert.ok(signal.command.rooms.every(room=>room.guests.length===0));
+  const initial=store.draft(owner,starter);
+  assert.deepEqual(store.draft(owner,starter),initial);
+  assert.deepEqual(store.definitions(),baseDefinitions);
+  assert.equal(saves,0);
+  assert.equal(initial.command.expectedRevision,null);
+  assert.deepEqual(store.publish(owner,initial.command),{house:selectedHouse,revision:1});
+  assert.equal(store.draft(owner,starter),null);
+  assert.equal(saves,1);
+  const [entry,gallery]=initial.command.rooms;
+  const request={type:'layout.draft',id:'draft-extend-01',from:entry.id,
+    room:'listening-room',title:'Sala de escucha',level:2,kind:'portal',guests:[]};
+  assert.equal(store.draft(other,request),null);
+  assert.equal(store.draft(owner,{...request,kind:'stair'}),null);
+  assert.equal(store.draft(owner,{...request,room:'gallery'}),null);
+  const extension=store.draft(owner,request);
+  assert.equal(extension.revision,2);
+  assert.equal(extension.command.expectedRevision,1);
+  assert.deepEqual(extension.command.rooms[1],gallery);
+  const added=extension.command.rooms.at(-1);
+  assert.deepEqual(added.links,[link('portal',entry.id)]);
+  assert.deepEqual(added.guests,[]);
+  assert.deepEqual(extension.command.rooms[0],{...entry,links:[...entry.links,link('portal',added.id)]});
+  const spaces=new InteriorSpaces({houses,definitions:store.definitions()});
+  assert.equal(spaces.rooms.has(added.id),false);
+  const result=store.publish(owner,extension.command);
+  assert.deepEqual(result,{house:selectedHouse,revision:2});
+  assert.deepEqual(store.result(owner,request.id),result);
+  assert.equal(store.publish(owner,{...extension.command,id:'draft-stale-01'}),null);
+  assert.equal(saves,2);
+});
+
 test('only an active native owner may publish; legacy and foreign room definitions are protected',()=>{
   const {store} = setup();
   const original = proposal(null,firstRooms);

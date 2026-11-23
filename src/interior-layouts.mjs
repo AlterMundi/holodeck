@@ -1,5 +1,6 @@
 import {createHash} from 'node:crypto';
 import {HOUSE_PLOTS,houseId} from './houses.mjs';
+import {MAX_WORLD_REQUEST_BYTES} from './world-limits.mjs';
 
 export const LAYOUT_SAVE_BYTES = 64 * 1024;
 const MAX_RECEIPTS = 32;
@@ -8,6 +9,19 @@ const SCHEMA = 'holodeck.interior-layouts/v1';
 const BEING = /^dm:being:v1:[A-Za-z0-9_-]{43}$/;
 const COMMAND = /^[A-Za-z0-9_-]{8,80}$/;
 const FINGERPRINT = /^[a-f0-9]{64}$/;
+const ROOM_SLUG = /^[a-z][a-z0-9-]{0,24}$/;
+const STARTERS = new Map([
+  ['atelier',[
+    {slug:'foyer',title:'Vestíbulo',level:0,links:[['door','gallery'],['stair','workshop']]},
+    {slug:'gallery',title:'Galería',level:0,links:[['door','foyer']]},
+    {slug:'workshop',title:'Taller',level:-1,links:[['stair','foyer']]},
+  ]],
+  ['signal-house',[
+    {slug:'foyer',title:'Vestíbulo',level:0,links:[['door','playroom']]},
+    {slug:'playroom',title:'Sala de juegos',level:0,links:[['door','foyer'],['portal','observatory']]},
+    {slug:'observatory',title:'Observatorio',level:1,links:[['portal','playroom']]},
+  ]],
+]);
 
 const exact = (value, fields) => value && typeof value === 'object' &&
   !Array.isArray(value) && Object.keys(value).sort().join(',') === fields;
@@ -98,6 +112,45 @@ export class InteriorLayouts {
     const house = houseId(actor.id);
     if (!this.owns(actor,house)) return null;
     return structuredClone(this.state.layouts.find(layout => layout.house === house) ?? null);
+  }
+
+  draft(actor, input) {
+    if (this.fenced || !nativeEditor(actor) || input?.type !== 'layout.draft' ||
+        typeof input.id !== 'string' || !COMMAND.test(input.id) || !Array.isArray(input.guests))
+      return null;
+    const house = houseId(actor.id);
+    if (!this.owns(actor,house)) return null;
+
+    const current = this.current(actor);
+    const roomId = slug => `home-${house.slice(6,22)}-${slug}`;
+    let rooms;
+    if (!current && exact(input,'guests,id,template,type')) {
+      const plan = STARTERS.get(input.template);
+      if (!plan) return null;
+      rooms = plan.map(({slug,title,level,links},index)=>({
+        id:roomId(slug),house,title,level,entry:index===0,guests:[...input.guests],
+        links:links.map(([kind,to])=>({kind,to:roomId(to)})),
+      }));
+    } else if (current && exact(input,'from,guests,id,kind,level,room,title,type')) {
+      if (typeof input.room !== 'string' || !ROOM_SLUG.test(input.room)) return null;
+      rooms = current.rooms;
+      const from = rooms.find(room=>room.id===input.from);
+      const id = roomId(input.room);
+      if (!from || rooms.some(room=>room.id===id)) return null;
+      from.links.push({kind:input.kind,to:id});
+      rooms.push({id,house,title:input.title,level:input.level,entry:false,
+        guests:[...input.guests],links:[{kind:input.kind,to:from.id}]});
+    } else {
+      return null;
+    }
+    const command = {type:'layout.publish',id:input.id,house,
+      expectedRevision:current?.revision ?? null,rooms};
+    const wire = JSON.stringify({operation:'act',args:command,ownNative:true});
+    // The installed Python client can encode each non-ASCII code unit as \uXXXX.
+    const wireBytes = wire.replace(/[^\x00-\x7f]/g,'\\u0000').length+1;
+    if (wireBytes > MAX_WORLD_REQUEST_BYTES) return null;
+    const checked = this.preview(actor,command);
+    return checked ? {command,revision:checked.revision} : null;
   }
 
   accepts(actor, input) {

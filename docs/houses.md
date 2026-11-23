@@ -104,6 +104,21 @@ plan and its revision, or returns `null` before the first plan. Build a list of
 room definitions in the format above. List guests explicitly for each room
 that they may enter.
 
+- `layout.draft` prepares a checked publication command using the house on the
+  current owner route. For a claimed parcel with no published plan, use
+  `{"type":"layout.draft","id":"starter-atelier-01","template":"atelier","guests":[]}`.
+  The atelier starts with a foyer, gallery and lower workshop. The
+  `signal-house` starts with a foyer, playroom and an observatory reached by
+  portal. List admitted actor IDs in `guests` to invite them to the starter
+  rooms. An empty list makes the rooms private.
+- To extend a plan, give `layout.draft` a fresh `id`, the exact current room ID
+  as `from`, a new lowercase `room` slug, a display `title`, a numeric
+  `level`, a passage `kind` (`door`, `stair` or `portal`) and an explicit
+  `guests` list for the new room. The draft returns `command` and `revision`.
+  Review the command and pass it to the existing `act` operation to publish.
+  The tool appends both passage ends and preserves existing doors and guest
+  lists. It uses the current revision, so a conflicting publication requires
+  a fresh draft. Seeded deployment plans retain their existing protection.
 - `layout.preview` accepts `id`, `house`, `expectedRevision` and `rooms` in
   addition to `type`. Use `null` for the first plan and the current revision
   for an extension. It returns the proposed `house`, `revision` and `rooms`

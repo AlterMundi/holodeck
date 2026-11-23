@@ -432,17 +432,26 @@ test('own-native layout publication adds a live guest route and survives process
     assert.deepEqual(finishedGame.signals,[{color:'#8ce4c2'},{color:'#efc87a'}]);
     assert.deepEqual((await act({},socketPath,'observe')).result.space.activity,finishedGame);
 
-    const expanded=structuredClone(definitions);
-    expanded[0].links.push({kind:'portal',to:'tower'});
-    expanded.push(room('tower','Tower',2,false,[{kind:'portal',to:'foyer'}]));
-    assert.deepEqual((await act({...publication,id:'receive-layout-02',expectedRevision:1,rooms:expanded})).result,
-      {house:house.id,revision:2});
+    const requestDraft={type:'layout.draft',id:'receive-layout-02',from:'foyer',
+      room:'tower',title:'Tower',level:2,kind:'portal',guests:[guest.id]};
+    assert.equal((await act(requestDraft,foreignPath)).ok,false);
+    const drafted=(await act(requestDraft)).result;
+    assert.equal(drafted.revision,2);
+    const expanded=drafted.command.rooms;
+    const tower=expanded.at(-1).id;
+    assert.deepEqual((await get(visitor,'space')).exits,foyer.exits);
+    assert.equal((await request(visitor,'space/scene?room='+tower)).status,404);
+    assert.deepEqual((await act(drafted.command)).result,{house:house.id,revision:2});
     const routes=(await get(visitor,'space')).exits;
-    assert.deepEqual(routes.map(exit=>exit.to),['gallery','tower']);
+    assert.deepEqual(routes.map(exit=>exit.to),['gallery',tower]);
     assert.equal(routes[0].slot,foyer.exits[0].slot);
+    assert.equal((await request(visitor,'space',{from:'foyer',to:tower,live:1})).status,200);
+    assert.equal((await get(visitor,'space')).id,tower);
 
     await stop();
     await start();
+    assert.equal((await get(visitor,'space')).id,tower);
+    assert.equal((await request(visitor,'space',{from:tower,to:'foyer',live:1})).status,200);
     assert.equal((await get(visitor,'space')).id,'foyer');
     assert.deepEqual(await get(visitor,gardenPath),finishedGame);
     assert.deepEqual(await get(visitor,gardenPath+'&result='+signal.id),guestReceipt);
