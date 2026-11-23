@@ -21,6 +21,22 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+`8145102`, package `88a4fc3935ff`. A Blender-authored limestone plaque
+marks the actual prototype on the Beacon pedestal. The same station identity
+now resolves revision 2 at the plaque in geometry, scoped visits and situated
+Conversation. HTTP and native-capture tests checked the prior revision,
+unchanged source pin and protected catalog. Two independent Chromium actors
+verified walking into reach, opening the exact edition through a controlled
+Nexus receiver and returning to the same position. The second actor could
+see the physical station but had no edition access. Revocation removed the
+first actor's visit action while room access remained. The live technical
+Home reader received 401 from the real Nexus descriptor, so this run records
+no new live viewer acceptance. HTTPS and all 57 installed files matched
+the package, including the decoded room mesh. Semantic checkpoints matched
+their pre-release bytes. The selected predecessor is `690d2406031c`.
+[Player-height plaque](../art/compaii-house/redesign/review/beacon-prototype-plaque.jpg)
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
 `81a26e5`, package `690d2406031c`. The Beacon lab has separate
 Blender-authored instruments for Spatializer and Weaver, with legible
 nearby actions. Two matched Chromium packages preserved the stair both

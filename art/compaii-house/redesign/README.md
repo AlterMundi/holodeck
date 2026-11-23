@@ -175,6 +175,7 @@ point for the existing H.B. Guitar review. The atelier advances that station
 to revision 2 with the same identity and Nexus edition. Authorized proximity,
 the scene anchor and the room reference in Conversation use the new position.
 The older profile retains its original bench and station revision.
+[Plaque at player height](review/beacon-prototype-plaque.jpg)
 
 
 ```sh

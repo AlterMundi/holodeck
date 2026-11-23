@@ -20,6 +20,14 @@ missing pinned edition is refused rather than silently visiting today's current
 report. The descriptor must return that same pin before the frame is mounted.
 The existing player exposes its own chapter navigation and contributions.
 
+In the atelier Beacon room, the authored prototype plaque marks the
+approach to the existing H.B. Guitar edition. The same station identity
+and revision supply the room object, visit catalog and situated
+Conversation reference. The atelier position is revision 2. Older
+retained references and the fallback profile retain revision 1.
+Everyone admitted to the room can refer to the physical plaque.
+The visit action still requires access to the pinned Nexus edition.
+
 ## Acknowledged visit boundary
 
 Nexus installs the bridge only for an explicit UUID `holodeck_visit` query.
