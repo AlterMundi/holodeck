@@ -117,7 +117,10 @@ Flow and Visor X sources with the same reader.
 The shared table selection is stored with the room checkpoint. A desktop actor
 shared the Support Study in Chromium and a separate touch actor saw the same
 model 11.3 seconds later on the catalog refresh. Both advanced to the next saved
-edition and kept independent rotations. Revoking only the touch actor's source
+edition and kept independent rotations. With the subsequent authorized room
+stream, the peer began its own catalog read in 496 ms and rendered the initial
+197,642-triangle model in 1,001 ms in the same local Chromium fixture. Exact
+edition changes from Home still use the regular refresh. Revoking only the touch actor's source
 permission removed that model for the touch actor while the desktop actor still
 saw it. The desktop actor then cleared the table. This test used distinct
 fixture identities and two retained editions from the Home reader.
@@ -143,7 +146,13 @@ Conversation delivery from the new workshop remains to be observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`e60627d`, package `7581493a9cfd`, with `36f3a9e52819` as compatible rollback.
+`75f202b`, package `0bd9b4649d4e`, with `7581493a9cfd` as compatible rollback.
+It retains the selected Matter room and adds its bounded placement refresh
+stream. Receiver readback matched 64 installed payloads, 20 protected HTTPS
+responses and eight scope denials, including the new stream outside room
+authority. The two-browser refresh timing was measured in the isolated fixture.
+
+Package `7581493a9cfd` was built from `e60627d` and expanded the live graph.
 Atelier layout revision 4 adds Manipulación de Materia as the third foyer
 passage. The five prior rooms and their grants remain in the graph. The installed
 selection has three current project groups, two historical archive editions,
