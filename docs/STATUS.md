@@ -71,6 +71,20 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+`e4e10c4`, package `2368984d62cf`; rollback is `923fc4da0bb4`.
+The actual CompAII native owner adopted the four existing authored rooms at
+revision 1. Reading the live plan and exact receipt confirmed the original
+room records, including their links and guest lists. Only the separate
+Atelier layout checkpoint changed. In receiving tests, the visitor's
+active foyer scene and exits stayed identical, the lab stayed denied,
+a foreign owner could neither draft nor publish, and a restart recovered
+the receipt while the current receiving grant still determined guest access.
+The prior package reads the unchanged receiving plan if selected for rollback.
+The new foyer portal still needs an authored fitting and a compatible rollback
+reader for saved room designs and games.
+[Owner workflow](houses.md#publish-an-owned-plan).
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) previously served source
 `569deeb`, package `923fc4da0bb4`; rollback is `b3bf0f8950d2`.
 An eligible owner can draft a starter home or extend one room through the
 existing native world port, then publish the returned command explicitly.
