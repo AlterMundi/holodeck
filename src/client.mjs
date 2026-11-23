@@ -127,6 +127,7 @@ const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
 let inside=hot&&activeSpace.id!=='outside';
 let updateDoor=()=>{},remoteScene=null,networkScope=null,arrival=null;
 let moving=false,requestingMove=false,needsSync=false,resyncing=false,moveDeadline=null;
+let roomTopic;
 let prefetched=new Set(),prefetchRequest=null,pendingRoomArt=null;
 const setMoving=value=>{
   if(moving!==value){
@@ -218,7 +219,7 @@ function applySpace(next,anchor){
   document.body.classList.toggle('has-situated-conversation',inside&&next.sharedConversation===true);
   $('#hud h1').textContent=inside?next.title:'Plaza de llegada';
   $('#people').textContent=inside?(next.level===0?'Planta baja':next.level<0?`Subsuelo ${-next.level}`:`Piso ${next.level}`):'Un lugar para crear juntos';
-  if(changed){contentVisitor.changeRoom(inside);worldIndication.selected=null;worldIndication.removeOutline();state=null;}
+  if(changed){roomTopic=undefined;contentVisitor.changeRoom(inside);worldIndication.selected=null;worldIndication.removeOutline();state=null;}
   else if(inside)contentVisitor.catalog=contentVisitor.loadCatalog();
   if(anchor)history.replaceState(history.state,'','#'+doorLocation(anchor));
   resetDoor();
@@ -546,9 +547,36 @@ async function recoveryAction(kind,action){
   finally{recoveryBusy=false;renderRecovery();await refresh().catch(()=>{});}
 }
 const sharedSurface=()=>inside?activeSpace?.sharedConversation===true:state?.native?.sharedConversation===true;
+const roomObjects=()=>inside?(activeSpace?.objects??[]).filter(object=>
+  (object.kind==='fixture'||object.kind==='workstation')&&Number.isSafeInteger(object.revision)):[];
+function roomSubject(objects=roomObjects()){
+  const entry=contentVisitor?.readyAcknowledged&&contentVisitor.entry;
+  const station=beaconControls.reference()||(entry&&{id:entry.node,revision:entry.nodeRevision});
+  const selected=roomTopic===undefined?station:roomTopic;
+  return selected&&objects.find(object=>object.id===selected.id&&object.revision===selected.revision);
+}
+function syncRoomTopic(){
+  const objects=roomObjects(),label=$('#room-topic'),select=$('#room-topic-choice');
+  label.hidden=!sharedSurface()||!objects.length;
+  if(label.hidden)return;
+  const entries=[['','Este lugar'],...objects.map(object=>[object.id,object.title])];
+  const signature=JSON.stringify(entries);
+  if(signature!==select.dataset.topics){
+    select.dataset.topics=signature;
+    select.replaceChildren(...entries.map(([id,title])=>{
+      const option=document.createElement('option');option.value=id;option.textContent=title;return option;
+    }));
+  }
+  select.value=roomSubject(objects)?.id??'';
+}
+$('#room-topic-choice').onchange=event=>{
+  const item=roomObjects().find(object=>object.id===event.target.value);
+  roomTopic=item?{id:item.id,revision:item.revision}:null;
+};
 function updateNativeAvailability(){
   const available=state?.native?.available===true;
   const shared=sharedSurface();
+  syncRoomTopic();
   $('#talk').disabled=inside&&!shared;
   $('#conversation-panel').classList.toggle('shared-conversation',shared);
   $('#conversation-form').hidden=shared;$('#conversation-log').hidden=shared;
@@ -769,11 +797,9 @@ async function captureInteractionContext(){
   if(moving||!capturedActor)throw Error('Esperá a llegar para conversar desde este lugar.');
   if(inside){
     const position=client.getLocalCharacterState()?.position;
-    const entry=contentVisitor.readyAcknowledged&&contentVisitor.entry;
-    const workstation=beaconControls.reference()??(entry&&activeSpace?.objects?.find(object=>object.kind==='workstation'&&
-      object.id===entry.node&&object.revision===entry.nodeRevision));
+    const subject=roomSubject();
     return structuredClone({capturedAt:Date.now(),spaceId:capturedSpace,local:position?{position}:null,
-      ...(workstation?{workstation:{id:workstation.id,revision:workstation.revision}}:{})});
+      ...(subject?{roomObject:{id:subject.id,revision:subject.revision}}:{})});
   }
   const capturedRun=state?.run;
   if(!capturedRun)throw Error('No pude confirmar el mundo desde donde estás pensando.');

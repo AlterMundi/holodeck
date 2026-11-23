@@ -63,6 +63,8 @@ const facade={
   asset:FACADE_ASSET,
   bounds:{min:[-.732565,0,-1.573],max:[.732565,2.649471,1.574201]},
 };
+const fixture=(room,id,title,x,y,z)=>({id,title,kind:'fixture',position:{x,y,z},
+  revision:Number.parseInt(ATELIER_ASSET_REVISIONS['room-art/compaii-atelier/'+room+'.glb'].slice(0,12),16)+1});
 const floorProfile={replacesShell:true,authoredExhibitBase:true};
 const box=({x,y,z,w,h,d})=>`<m-cube x="${x}" y="${y}" z="${z}" width="${w}" height="${h}" depth="${d}" opacity="0" cast-shadows="false"></m-cube>`;
 const gardenVisual={asset:GARDEN_ASSET,revision:GARDEN_REVISION,x:0,y:0,z:0,sx:1,sy:1,sz:1,
@@ -148,6 +150,8 @@ export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt())
   }
   const asset=name=>assets.get(name+'.glb');
   const foyerArt={...asset('foyer'),...floorProfile,ambient:.22,keyLight:foyerKey,authoredDoor:true,
+    fixtures:[fixture('foyer','foyer-orientation-table','Mesa de orientación',0,.66,.16),
+      fixture('foyer','foyer-bench','Banco del vestíbulo',-5.13,.582,1.18)],
     colliders:[
       {x:0,y:.383,z:.16,w:1.78,h:.566,d:2.34},
       {x:-5.13,y:.341,z:1.18,w:.88,h:.482,d:2.91},
@@ -155,6 +159,9 @@ export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt())
     ].map(box).join(''),
     lightRig:softLight({id:'vestibule-practical',x:-2.83,y:1.78,z:-1.42,intensity:13,distance:6,color:'#ffbb75'})};
   const galleryArt={...floorProfile,ambient:.40,colliders:galleryColliders,keyLight:galleryKey,
+    fixtures:[fixture('gallery','gallery-finished-plinth','Expositor central',2.5,.965,1.25),
+      fixture('gallery','gallery-work-plinth','Expositor de trabajo',3.3945,1.1075,-.34944),
+      fixture('gallery','gallery-archive-plinth','Expositor de archivo',3.3945,1.4075,3.67744)],
     lightRig:softLight({id:'collection-warm-bounce',x:4.2,y:2.6,z:1.6,intensity:12,distance:7,color:'#ffd8ae'})};
   const labArt={...asset('beacon'),...floorProfile,authoredStairs:true,ambient:.27,keyLight:chamberKey,
     station:interiorArt(rooms.get(lab)).station,
@@ -164,6 +171,7 @@ export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt())
      box({x:-3.758,y:.643,z:2.659,w:2.068,h:1.085,d:.886}),
     lightRig:chamberRig};
   const towerArt={...asset('tower'),replacesShell:true,authoredPortal:true,ambient:.64,
+    fixtures:[fixture('tower','tower-resonator','Resonador de la torre',.54,2.42,5.46)],
     colliders:box({x:5.59,y:.365,z:-.12,w:.38,h:.53,d:7.8}),
     lightRig:[
       {id:'tower-clarity',x:5.28,y:3.82,z:1,intensity:39,distance:11,color:'#b1d1ff'},

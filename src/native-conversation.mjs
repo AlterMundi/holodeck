@@ -18,18 +18,28 @@ export class NativeConversationError extends Error {
 // machine-authored capture. No human text, audio or selected files belong here.
 export function captureNativeSituation(room,actor,request,{pairedBeing=null,pairFocusBinding='current-native-binding',serverCapture='at-original-retention',interior=null}={}){
   const preserveActors=pairedBeing?[pairedBeing]:[];
-  const extra={inputAssociation:{humanInputId:request.id,serverCapture,clientReportedCaptureTime:request.view?.capturedAt??null}};
+  const capturedAt=request.view?.capturedAt;
+  const clientReportedCaptureTime=Number.isSafeInteger(capturedAt)?capturedAt:null;
+  const extra={inputAssociation:{humanInputId:request.id,serverCapture,clientReportedCaptureTime}};
   if(request.view!==undefined){
     if(!request.view||typeof request.view!=='object'||Buffer.byteLength(encode(request.view))>4096)
       throw new NativeConversationError('view','Provide a bounded client-reported view',{retained:false,knownNotSubmitted:true,retryable:true});
-    const view=interior?{capturedAt:request.view.capturedAt,spaceId:interior.place.id,
-      local:request.view.local?{position:request.view.local.position}:null}:structuredClone(request.view);
-    if(interior&&request.view.workstation){
-      const requested=request.view.workstation;
-      const station=interior.place.objects.find(item=>item.kind==='workstation'&&
+    const position=request.view.local?.position;
+    const local=position&&[position.x,position.y,position.z].every(Number.isFinite)
+      ?{position:{x:position.x,y:position.y,z:position.z}}:null;
+    const view=interior?{capturedAt:clientReportedCaptureTime,spaceId:interior.place.id,local}:structuredClone(request.view);
+    const requested=interior&&(request.view.roomObject??request.view.workstation);
+    if(requested&&Number.isSafeInteger(requested.revision)){
+      const object=interior.place.objects.find(item=>
+        (item.kind==='workstation'||request.view.roomObject&&item.kind==='fixture')&&
         item.id===requested.id&&item.revision===requested.revision);
-      if(station)extra.referredWorkstation={id:station.id,title:station.title,revision:station.revision,
-        evidence:'client-reported reference matched the current authorized room station'};
+      if(object){
+        if(request.view.roomObject)extra.referredRoomObject={id:object.id,kind:object.kind,title:object.title,
+          revision:object.revision,position:structuredClone(object.position),
+          evidence:'client-reported reference matched the current authorized room object'};
+        if(object.kind==='workstation')extra.referredWorkstation={id:object.id,title:object.title,revision:object.revision,
+          evidence:'client-reported reference matched the current authorized room station'};
+      }
     }
     // The exact reference is resolved below, never copied event text from a client.
     delete view.historyReference;

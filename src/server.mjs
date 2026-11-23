@@ -232,7 +232,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const art=artForRoom(spaces.rooms.get(view.id),view.exits ?? []);
     const objects=art?.replacesShell||art?.hideMarker?[]:view.objects;
     const stations=[art?.station,...(art?.controls??[])].filter(Boolean);
-    const fixtures=(art?.fixtures??[]).map(fixture=>({...fixture,revision:art.designRevision}));
+    const fixtures=(art?.fixtures??[]).map(fixture=>({...fixture,revision:art.designRevision??fixture.revision}));
     return [...objects,...fixtures,...stations.map(station=>({id:station.id,kind:'workstation',title:station.title,
       position:station.position,revision:station.revision}))];
   }

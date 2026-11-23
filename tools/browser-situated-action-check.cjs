@@ -206,6 +206,8 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     await keyboard.bringToFront();
     await progress(keyboard,'1/2 señales');
     await keyboard.locator('#talk').click();
+    const topic=keyboard.getByRole('combobox',{name:'Tema de la conversación'});
+    await topic.selectOption({label:'Mesa de escucha'});
     const compose=keyboard.frameLocator('#shared-conversation iframe');
     await compose.locator('body').evaluate(async()=>{
       const until=performance.now()+10000;
@@ -226,6 +228,9 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     assert.equal(situations.length,1);
     const original=situations[0];
     assert.equal(original.capture.place.id,'owned-foyer');
+    assert.deepEqual(original.capture.referredRoomObject,{id:'left-bench',kind:'fixture',title:'Mesa de escucha',revision:1,
+      position:{x:-1.55,y:.64,z:.25},evidence:'client-reported reference matched the current authorized room object'});
+    await topic.selectOption({label:'Banco de prototipos'});
     assert.equal(original.capture.place.activity.progress.contributors,1);
     assert.equal(original.capture.place.activity.revision,1);
     assert.deepEqual([...new Set(original.capture.participants.map(p=>p.actor))].sort(),['human:guest','human:player']);
@@ -308,6 +313,8 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     final(original.id,primaryText);
     await keyboard.locator('#talk').click();
     await waitForAnswer(primaryText);
+    assert.equal(await topic.inputValue(),'right-bench');
+    assert.equal(original.capture.referredRoomObject.id,'left-bench');
     assert.equal(await answer(primaryText).count(),1);
     assert.equal(await answer(siblingText).count(),1);
     const reply=compose.locator('article[data-source-id="native:'+originals[0].entry+'"]');

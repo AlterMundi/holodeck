@@ -155,7 +155,16 @@ ID is a match check. Ordinary movement after intake does not replace the
 frozen place. Recover and retry preserve the exact source.
 
 The source names the room, level and local objects, with scoped presence
-and an optional exhibit revision. The deployed source also retains the
+and an optional exhibit revision. The **Tema** selector lets the visitor
+choose a fixture or workstation, or continue with the room as a whole. A
+selection persists while walking in that room and clears upon crossing to
+another room. At intake, the server matches the object's exact ID and
+revision against the authorized room catalogue, then records the catalogue's
+title, kind and position. A stale object selection yields the room context
+without the object. A source already prepared retains that exact earlier
+topic through a move, design change or later selection.
+Gallery topics name the physical displays regardless of edition visibility.
+They contain no Nexus pin or protected source metadata. The deployed source also retains the
 room's signal-garden revision, sequence and derived progress at intake.
 In the packaged test, the room recipe changes while the writer waits, and
 the retained source still contains the original round. The observation is

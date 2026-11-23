@@ -60,6 +60,8 @@ test('a canonical interior source freezes its authorized place before awaits and
       play:{schema:'signal-garden/v1',minContributors:2,targets:[
         {x:0,z:2,radius:.45,color:'mint'},{x:0,z:.8,radius:.45,color:'amber'}]}};
     assert.equal((await port('act',layout,true)).ok,true);
+    const design={type:'design.put',id:'fixture-design-1',room:'foyer',kit:'listening-workshop',expectedRevision:null};
+    assert.equal((await port('act',design,true)).ok,true);
     assert.equal((await port('act',game,true)).ok,true);
     const base='http://127.0.0.1:'+listener.address().port+'/holodeck/';
     async function browserHeaders(){
@@ -74,11 +76,13 @@ test('a canonical interior source freezes its authorized place before awaits and
     assert.equal((await fetch(base+'api/conversation-surface',{headers})).status,200);
     assert.equal((await fetch(base+'api/state',{headers})).status,409,'inside API stays scoped');
     const body={id,binding,view:{spaceId:'foyer',capturedAt:123,historyReference:{unverified:true},
-      others:[{private:'forged'}],local:{position:{x:1,y:.1,z:2}}}};
+      others:[{private:'forged'}],local:{position:{x:1,y:.1,z:2,private:'forged'}},
+      roomObject:{id:'left-bench',revision:1,title:'private forged title',pin:{revision:'private forged pin'}}}};
     const pending=post('conversation-contexts',body);
     await entered;
     assert.equal((await move('foyer','outside')).status,200);
     assert.equal((await port('act',{...game,id:'fixture-garden-2',title:'Nuevo jardín',expectedRevision:1},true)).ok,true);
+    assert.equal((await port('act',{...design,id:'fixture-design-2',kit:'project-archive',expectedRevision:1},true)).ok,true);
     releaseInspect();
     const prepared=await pending;
     assert.equal(prepared.status,200,await prepared.clone().text());
@@ -91,6 +95,9 @@ test('a canonical interior source freezes its authorized place before awaits and
     assert.equal(uploads[0].place.activity.revision,1);
     assert.equal(uploads[0].place.activity.progress.filledTargets,0);
     assert.equal(uploads[0].inputAssociation.humanInputId,id);
+    assert.deepEqual(uploads[0].referredRoomObject,{id:'left-bench',kind:'fixture',title:'Mesa de escucha',revision:1,
+      position:{x:-1.55,y:.64,z:.25},evidence:'client-reported reference matched the current authorized room object'});
+    assert.deepEqual(uploads[0].clientReportedView.value.local,{position:{x:1,y:.1,z:2}});
     assert.deepEqual(uploads[0].entities,{});
     assert.deepEqual(uploads[0].events,[]);
     assert.doesNotMatch(JSON.stringify(uploads[0]),/private|historyReference|Connect the workshop islands/);
@@ -104,6 +111,7 @@ test('a canonical interior source freezes its authorized place before awaits and
     assert.equal(observed.result.space.id,'foyer');
     assert.equal(observed.result.space.activity.revision,2);
     assert.equal(observed.result.space.activity.title,'Nuevo jardín');
+    assert.ok(observed.result.space.objects.some(object=>object.id==='left-bench'&&object.title==='Mesa de consulta'&&object.revision===2));
     assert.equal(observed.result.space.activity.canPlay,false);
     assert.equal((await port('observe',{},true)).result.space.id,'outside');
     assert.equal((await port('act',{type:'garden.signal',room:'foyer',expectedRevision:2,
@@ -118,6 +126,7 @@ test('a canonical interior source freezes its authorized place before awaits and
     assert.equal((await move('outside','foyer')).status,200);
     const otherId=randomUUID();
     assert.equal((await post('conversation-contexts',{...body,id:otherId})).status,200);
+    assert.equal(uploads[1].referredRoomObject,undefined,'stale topic must not be silently retargeted');
     const humanSignal=await post('space/garden',{...signal,id:'fixture-human-signal',index:1,color:'amber'});
     assert.equal(humanSignal.status,200);
     assert.equal((await port('act',{type:'space.move',from:'outside',to:'foyer'},true)).ok,true);

@@ -154,6 +154,10 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   assert.deepEqual(entered.keyLight,{position:[4.87,3.15,1.75],target:[-2.30,.80,-2.3],color:'#ffe3bf',intensity:87});
   assert.deepEqual(open.keyLight,{position:[-4.82,3.62,.5],target:[2.45,1.05,.5],color:'#cde3ff'});
   assert.deepEqual(sealed.keyLight,open.keyLight);
+  assert.deepEqual(sealed.objects,open.objects);
+  assert.deepEqual(sealed.objects.map(object=>object.id),['gallery-finished-plinth','gallery-work-plinth','gallery-archive-plinth']);
+  assert.ok(sealed.objects.every(object=>object.kind==='fixture'&&Number.isSafeInteger(object.revision)));
+  assert.doesNotMatch(JSON.stringify(sealed.objects),/reviewId|tableId|publicationVersion|pin/);
   assert.notEqual(openPath,sealedPath);
   assert.ok(open.exits.some(exit=>exit.to===lab));
   assert.ok(!sealed.exits.some(exit=>exit.to===lab));
