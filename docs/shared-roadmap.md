@@ -142,6 +142,12 @@ lighting direction, avatar/camera clearance, touch input and shared circulation.
 Reconfirm the released route with independent browser identities and simulated
 inputs. Record technical results and any voluntary participant feedback separately.
 
+The [arrival directory and route markers](../art/compaii-house/redesign/commons-wayfinding.md)
+now give the existing plaza a readable first turn. Packaged desktop and
+touch-emulated players took the east promenade into the garden. Continue
+the foreground terrace, threshold and workshop finish pass on the same
+player-height route.
+
 ### Finish the architecture and props in the running game
 
 Nicolás observed better light and textures and identified three still-open

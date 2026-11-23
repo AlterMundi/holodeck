@@ -10,6 +10,17 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+`7143e82`, package `abf87584ed54`. A double-sided Blender directory is visible
+from the ordinary spawn. Matching markers identify Jardín, Galería exterior,
+Casas and Mirador and mark the return to the plaza. The asset adds five
+material batches and 278,456 bytes, with no extra textures, colliders or
+shadow passes. Packaged Chromium walked from the spawn to the east garden
+using WASD and a separate 390 px touch-joystick trial. Authenticated HTTPS
+served the exact GLB and preserved the selected world and its protected
+checkpoints. Package `a86bab2467ae` remains available for recovery.
+[Editable scene and arrival views](../art/compaii-house/redesign/commons-wayfinding.md)
+
+The preceding release served source
 `303bd86`, package `a86bab2467ae`. Four original Blender headlands give the
 arrival view a distant shoreline. The exterior blends into horizon-coloured
 fog between 24 and 124 m. The 59,152-byte terrain asset adds four batches
