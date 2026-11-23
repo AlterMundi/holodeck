@@ -1,8 +1,11 @@
 """Author the Manipulación de Materia workshop in Blender meters."""
 import json
-from math import pi
+from math import cos, pi, sin
 from pathlib import Path
 import sys
+import struct
+from tempfile import TemporaryDirectory
+import zlib
 
 import bpy
 from mathutils import Vector
@@ -37,19 +40,87 @@ green = finish('Deep green tool surface', (.032, .113, .100), .62)
 steel = finish('Blued steel fixtures', (.043, .053, .062), .36, .67)
 brass = finish('Satin bronze index marks', (.52, .297, .111), .33, .65)
 lamp = finish('Warm opal', (1, .77, .49), .31, emission=2)
-recess = finish('Cold window recess', (.15, .23, .30), .67)
-etched = finish('Light etched lettering', (.72, .54, .30), .45, .19)
+recess = finish('Dusk window glass', (.065, .129, .16), .42, emission=.12)
+etched = finish('Light etched lettering', (.68, .51, .28), .45, .65)
+patina = finish('Patinated workshop bronze', (.14, .13, .082), .6, .53)
 glazing = finish('Clear archive glazing', (.35, .58, .52), .16)
 glazing.node_tree.nodes.get('Principled BSDF').inputs['Alpha'].default_value = .085
+
+
+def tile_image(name, colour_at):
+    # A small, seamlessly repeating pigment map. Keep it packed in Blender and
+    # embedded in the static export so a room visit has no texture requests.
+    def chunk(kind, data):
+        return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind + data))
+
+    size = 128
+    pixels = bytearray()
+    for y in range(size):
+        pixels.append(0)
+        for x in range(size):
+            pixels.extend(colour_at(x / size, y / size))
+    png = b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', size, size, 8, 2, 0, 0, 0))
+    png += chunk(b'IDAT', zlib.compress(pixels, 9)) + chunk(b'IEND', b'')
+    with TemporaryDirectory() as stage:
+        path = Path(stage) / (name + '.png')
+        path.write_bytes(png)
+        image = bpy.data.images.load(str(path))
+        image.pack()
+        image.filepath = '//' + path.name
+    return image
+
+
+def pigment(base, amount):
+    return tuple(max(0, min(255, round(channel + amount))) for channel in base)
+
+
+def plaster_pigment(u, v):
+    wave = 5 * cos(2*pi*(u + 2*v)) + 2 * sin(2*pi*(5*u - 3*v))
+    grain = 1.8 * sin(2*pi*17*u) * cos(2*pi*23*v)
+    return pigment((168, 153, 131), wave + grain)
+
+
+def stone_pigment(u, v):
+    bands = sin(2*pi*(u + v)) + .4 * cos(2*pi*(5*u - 3*v))
+    joints = min(u, 1-u, v, 1-v)
+    if joints < .010:
+        return pigment((74, 67, 60), 5 * bands)
+    return pigment((134, 120, 103), 8 * bands + (5 if joints < .018 else 0))
+
+
+def oak_pigment(u, v):
+    warp = .045 * sin(2*pi*v) + .06 * sin(2*pi*(3*v - u))
+    grain = 4 * sin(2*pi*(17*u + warp)) + 3 * cos(2*pi*(29*u - v + warp))
+    latewood = 4 * cos(2*pi*(4*u + .13 * cos(2*pi*v)))
+    return pigment((124, 78, 48), grain + latewood)
+
+
+tex_scale = {plaster.name: .62, stone.name: .84, oak.name: 1.8}
+for material, name, texture in [(plaster, 'limewash', plaster_pigment),
+                                (stone, 'cut-limestone', stone_pigment),
+                                (oak, 'oiled-oak', oak_pigment)]:
+    graph = material.node_tree
+    image_node = graph.nodes.new('ShaderNodeTexImage')
+    image_node.image = tile_image(name, texture)
+    graph.links.new(image_node.outputs['Color'], graph.nodes.get('Principled BSDF').inputs['Base Color'])
 
 
 def fit(obj, name, material, rounded):
     obj.name = name
     obj.data.materials.append(material)
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    if material.name in tex_scale and obj.data.uv_layers.active:
+        scale = tex_scale[material.name]
+        uv = obj.data.uv_layers.active.data
+        for face in obj.data.polygons:
+            axis = max(range(3), key=lambda i: abs(face.normal[i]))
+            a, b = [(1, 2), (0, 2), (0, 1)][axis]
+            for index in face.loop_indices:
+                vertex = obj.data.vertices[obj.data.loops[index].vertex_index].co
+                uv[index].uv = (vertex[a] * scale, vertex[b] * scale)
     if rounded:
         bevel = obj.modifiers.new('Joinery arris', 'BEVEL')
-        bevel.width, bevel.segments = rounded, 3
+        bevel.width, bevel.segments = rounded, 2 if rounded>=.04 else 1
         obj.modifiers.new('Weighted shading', 'WEIGHTED_NORMAL')
     return obj
 
@@ -74,7 +145,7 @@ def anchor(name, x, y, z):
     obj.empty_display_size = .32
 
 
-def lettering(name, text, point, size):
+def lettering(name, text, point, size, turn=0):
     curve = bpy.data.curves.new(name, 'FONT')
     curve.body, curve.size, curve.align_x = text, size, 'CENTER'
     curve.materials.append(etched)
@@ -82,6 +153,7 @@ def lettering(name, text, point, size):
     scene.collection.objects.link(obj)
     obj.location = point
     obj.rotation_euler.x = pi / 2
+    obj.rotation_euler.z = turn
 
 
 box('Full room walking surface', (0, 0, -.10), (12, 12, .4), stone, 0)
@@ -107,12 +179,31 @@ box('Return doorway shadow', (-3, 6.18, 1.58), (1.58, .12, 3.12), oak, .02)
 for y in (-3.9, -1.7, .5, 2.7, 4.8):
     box('Oak ceiling rib', (0, y, 3.89), (11.42, .19, .23), oak, .027)
 box('Plaster ceiling', (0, 0, 4.08), (12, 12, .14), plaster, 0)
+for x in (-5.90, 5.90):
+    for y in (-4.64, -2.36, .02, 2.43, 4.83):
+        box('Rebated wall post', (x, y, 1.98), (.14, .22, 3.78), oak, .018)
+    box('Raised wainscot top rail', (x, 0, 1.12), (.19, 11.8, .122), oak, .017)
+    box('Continuous wainscot field', (x, 0, .68), (.11, 11.8, .84), green, .012)
+    box('Inset bronze skirting line', (x, 0, .29), (.15, 11.8, .025), patina, .005)
+for x in (-4.94, 1.94):
+    width = 2.12 if x<0 else 8.06
+    for z in (1.9, 2.83):
+        box('Blackened steel window transom', (x, 5.93, z), (width, .11, .046), steel, .006)
+for x in (-4.47, -2.14):
+    box('Bronze return aisle edge', (x, 4.23, .102), (.035, 2.89, .006), patina, .003)
+box('Return passage oak header', (-3, 5.83, 3.51), (2.20, .12, .31), green, .025)
+lettering('Return heading', 'VESTÍBULO', (-3, 5.753, 3.438), .148)
+box('Inlaid material-room nameplate', (-4.89, 2.09, 2.60), (.11, 2.24, .31), green, .028)
 
 # Routes run along the front aisle and around all four sides of the table.
 for x in (-1.07, 1.07):
     box('Workbench end saddle', (x, .43, .435), (.18, 1.33, .87), oak, .045)
     box('Bench bronze shoe', (x, .43, .075), (.22, 1.39, .14), brass)
 box('Drawer of bench tools', (0, .43, .79), (2.24, 1.11, .16), oak)
+for x in (-.58, .58):
+    box('Inset drawer fascia', (x, -.139, .798), (1.04, .04, .118), green, .012)
+    box('Bronze drawer pull', (x, -.169, .798), (.23, .042, .039), brass, .012)
+    box('Workbench end join', (x * 1.75, .80, .451), (.15, .07, .78), patina, .018)
 box('Bevelled worktable profile', (0, .43, .95), (2.72, 1.58, .17), oak, .056)
 box('Inset model handling pad', (0, .43, 1.041), (2.42, 1.30, .025), green, .012)
 for x in (-1.36, 1.36):
@@ -124,8 +215,12 @@ box('Bench light opal', (0, .43, 2.399), (2.45, .22, .034), lamp, .014)
 
 # All display volumes have a separate anchor, so project geometry remains data.
 for index, y in enumerate((1.36, -.52)):
+    box('Recessed display cabinet back', (-5.79, y, 1.2), (.13, 1.80, 2.21), green, .025)
+    for dy in (-.875,.875):
+        box('Vertical display stile', (-5.67, y+dy, 1.2), (.38, .074, 2.28), oak, .016)
     for level, z in enumerate((.64, 1.34, 2.04)):
         box('Oak shelf', (-5.38, y, z), (.77, 1.78, .085), oak, .022)
+        box('Shelf bronze nosing', (-4.997, y, z+.020), (.019, 1.72, .033), patina, .004)
         for dy in (-.68, .68):
             box('Bronze shelf bracket', (-5.62, y + dy, z - .095), (.41, .048, .17), brass)
         anchor(f'shelf-{index * 3 + level}', -5.25, y, z + .048)
@@ -152,18 +247,55 @@ for part in [pad, *marks]:
     part.parent = platform
     part.matrix_world = world
 lettering('Archive heading', 'ARCHIVO', (cabinet_x, 2.934, 2.326), .133)
-lettering('Room heading', 'MANIPULACIÓN DE MATERIA', (0, 5.835, 3.45), .239)
+lettering('Collection heading', 'COLECCIÓN', (-4.82, 2.09, 2.54), .157, turn=pi/2)
 anchor('worktable-model', 0, .43, 1.058)
 anchor('archive-turntable', cabinet_x, cabinet_y, 1.009)
 anchor('archive-model', cabinet_x, cabinet_y, 1.061)
 anchor('entrance', -3, 4.81, .11)
 
-visual = [obj for obj in scene.objects if obj.type in {'MESH', 'FONT'}]
+# Bake static surfaces into one draw batch per material. Keep the authored
+# objects editable, including the cabinet glazing and rotating platform.
+groups = {}
+standalone = []
+for obj in scene.objects:
+    if obj.type not in {'MESH', 'FONT'}:
+        continue
+    material = obj.data.materials[0]
+    if obj.type != 'MESH' or obj == platform or obj.parent == platform or material == glazing:
+        standalone.append(obj)
+    else:
+        groups.setdefault(material, []).append(obj)
+
+bpy.context.view_layer.update()
+graph = bpy.context.evaluated_depsgraph_get()
+batches = []
+for material, sources in groups.items():
+    bpy.ops.object.select_all(action='DESELECT')
+    copies = []
+    for source in sources:
+        mesh = bpy.data.meshes.new_from_object(source.evaluated_get(graph),
+                                               preserve_all_data_layers=True, depsgraph=graph)
+        copy = bpy.data.objects.new('Export surface', mesh)
+        scene.collection.objects.link(copy)
+        copy.matrix_world = source.matrix_world
+        copy.select_set(True)
+        copies.append(copy)
+    bpy.context.view_layer.objects.active = copies[0]
+    if len(copies) > 1:
+        bpy.ops.object.join()
+    copies[0].name = 'Surface · ' + material.name
+    batches.append(copies[0])
+
 bpy.ops.object.select_all(action='DESELECT')
-for obj in visual:
+for obj in batches + standalone:
     obj.select_set(True)
 bpy.ops.export_scene.gltf(filepath=str(output / 'matter-workshop.glb'), export_format='GLB',
                           export_animations=False, use_selection=True, export_extras=False)
+for obj in batches:
+    bpy.data.objects.remove(obj, do_unlink=True)
+for mesh in list(bpy.data.meshes):
+    if not mesh.users:
+        bpy.data.meshes.remove(mesh)
 (output / 'anchors.json').write_text(json.dumps({
     obj.name: [round(obj.location.x, 4), round(obj.location.z, 4), round(-obj.location.y, 4)]
     for obj in scene.objects if obj.type == 'EMPTY'}, indent=2) + '\n')

@@ -1,13 +1,21 @@
 # Manipulación de Materia
 
-The editable Blender draft gives Casa de CompAII's Collection a naturally lit
+The editable Blender scene gives Casa de CompAII's Collection a naturally lit
 working room, with a walk all the way around the worktable, shelves on the left
 and a glazed archive turntable on the right. Named Blender empties mark the
 entrance, stable shelf positions, model origin and archive rotation center.
 The rotating GLB node `archive_turntable_platform` carries its pad and two
 visible index marks. The cabinet housing remains fixed during viewer navigation.
 The lamp and player-height camera in the editable file are reference lighting.
-The export leaves room for the engine to attach real models and the game HUD.
+The room uses embedded 128-pixel pigment maps for limewash, honed
+limestone and oiled oak. The exported meshes keep the Blender UVs, wood
+joinery, window frames, wall panels and bronze edges. Texture files are packed
+in the editable scene and served within the original room GLB. The export
+leaves the published anchors and turntable hierarchy intact. Opaque static
+surfaces batch by material in the GLB. The cabinet glazing and moving parts
+keep separate nodes, and the Blender source keeps all joinery editable.
+The [Chromium view at player height](player-height.jpg) shows the actual
+export, lighting and collision shell as installed by the browser fixture.
 
 Build with Blender 5.2.2:
 
@@ -46,6 +54,6 @@ The Blender producer was exercised against five exact retained reviews.
 The exports came to 2,873–4,756 triangles and 216–315 kB. Each could be
 imported and rendered in Blender. The shelf contents mounted in the isolated desktop and touch candidate. The
 receiving index and exact-access contract are in [deployment](../../docs/deployment.md#receiving-contracts).
-The cabinet cycles exact retained editions in the isolated candidate. The worktable follows existing Home editions in the candidate. Live room
-selection and restoration to a shelf remain pending. The current three fixed gallery
-displays are available through the existing viewer path.
+The deployed worktable uses exact Home editions and the cabinet lets
+authorized editors return a historical edition to a shelf. The fixed gallery
+displays retain their own existing viewer path.
