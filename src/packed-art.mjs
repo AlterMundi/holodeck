@@ -2,6 +2,15 @@ import {createHash} from 'node:crypto';
 import {readFileSync,statSync} from 'node:fs';
 import {brotliDecompressSync} from 'node:zlib';
 
+// Bundled MML locomotion clips keep their canonical GLB bytes and URLs.
+export const ANIMATION_ASSET_REVISIONS=Object.freeze({
+  'assets/anim_air.glb':'370b7b800de11d66cb365ec8a147135a789c476922daee80ed664cbce9941c8f',
+  'assets/anim_double_jump.glb':'a40ea3c384d4428e7a3c584f726f6a1c73adb4ea3fa3fa943447d1dcf2c05cd7',
+  'assets/anim_idle.glb':'616abbfb6997bb1ebf149ce7fa272c740dbbabd75c53651214b0f52eb24e0841',
+  'assets/anim_jog.glb':'553512641d0ffcbed244f1129d5bfa1c31d4c6e3ee2b154663cc14f9aea18cce',
+  'assets/anim_run.glb':'9edf0340d0b17a4dbb84a33f773e076f60d136b6d99eb0094578408da3a332b3',
+});
+
 const MAX_ART_BYTES=4*1024*1024;
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 

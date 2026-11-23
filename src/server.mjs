@@ -15,7 +15,7 @@ import { NetworkedDOM } from '@mml-io/networked-dom-server';
 import { handleExperienceWebsocketSubprotocol } from '@mml-io/3d-web-experience-protocol';
 import enableWs from 'express-ws';
 import { existsSync, readFileSync } from 'node:fs';
-import {sendPackedArt} from './packed-art.mjs';
+import {ANIMATION_ASSET_REVISIONS,readPackedArt,sendPackedArt} from './packed-art.mjs';
 import { packedClientHandler } from './packed-client.mjs';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
@@ -108,6 +108,10 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     persist:spaceStore ? state=>spaceStore.save(state) : null,guestAccess:interiorGuestAccess});
   const exteriorArt=packedExteriorArt();
   const atelier=selectAtelier(artProfile,spaces.rooms,houses.directory(),exteriorArt);
+  for(const [path,revision] of Object.entries(ANIMATION_ASSET_REVISIONS)){
+    const asset=readPackedArt(path,revision);
+    if(asset)exteriorArt.set(path,asset);
+  }
   const selectedRooms=new Set(interiorSpaces.map(item=>item.id));
   const gardenStore=stateDir?new RoomStore(join(stateDir,'indoor-gardens'),{maxBytes:INDOOR_GARDEN_BYTES}):null;
   const indoorGardens=new IndoorGardens({state:gardenStore?.load(),spaces,houses,legacyRooms:selectedRooms,
