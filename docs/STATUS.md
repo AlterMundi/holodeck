@@ -112,13 +112,20 @@ Per-receiver remote qualification and native owner selection remain outstanding.
 [DaimonApp PR #1005](https://github.com/AlterMundi/DaimonApp/pull/1005) merged
 as `d76fbd817` after all six applicable CI jobs passed. The selected master
 tree matched the tested head. The routed bridges and compatible native owner
-still require selection and receiving qualification.
-The post-merge ITACA preflight matched the running root listener and bridge
-to their recorded preimages. The qualified root listener includes the exact
-merged production edits. The owner snapshot found a live physical writer.
-Selection therefore uses the established voice fence and exact physical
-collector handoff, followed by observation of the successor collector. The
-preflight submitted no inputs and changed no goals or services.
+were selected on ITACA for the CompAII route. The other seven bridges still
+require receiving qualification and selection.
+
+The root listener's compatibility build `e71c5e12bceb` contains the exact
+merged production edits. The listener changed under the existing voice
+admission fence while its independent Codex process and the dashboard kept
+running. The owner readback verified the same physical turn with a fresh
+collector receipt, and a preceding turn with its terminal outcome. All 49
+session bindings and the paused or blocked goals survived the handoff. The
+root bridge now serves module `9cc872d84a6a`. Its receiving socket resolved
+the same canonical Conversation and refused a foreign actor. Current
+configuration, Core and listener selections survived the bridge replacement.
+Qualification submitted no human input, model turn or device command. Positive
+production use of the newly selected routed turn path remains open.
 
 Source `23de47f`, package `faae992dce4e`, established the HUD input correction. The exterior reference card passes
 pointer input through its inactive margins while its action buttons
