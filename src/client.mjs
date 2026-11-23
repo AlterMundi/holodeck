@@ -13,6 +13,7 @@ import { GalleryModels } from './gallery-models.mjs';
 import { BeaconControls } from './beacon-controls.mjs';
 import {pickedRepresentationVisit} from './node-representations.mjs';
 import { PlayableHUD } from './playable-hud.mjs';
+import { SignalGardenEditor } from './signal-garden-editor.mjs';
 import { AppliedGeometryProbe } from './applied-geometry.mjs';
 import { SharedConversationHost } from './shared-conversation-host.mjs';
 import { WorldAudio } from './world-audio.mjs';
@@ -182,7 +183,7 @@ function resetDoor(){
     canLeave:()=>{
       if(moving)return false;
       if(inside)return contentVisitor.allowLeaveRoom();
-      if(contentVisitor.frame||nativeTurn||pending||preview||$('#message').value.trim()){
+      if(contentVisitor.frame||nativeTurn||pending||preview||signalEditor.active||$('#message').value.trim()){
         say('Tenés una visita, un borrador o un envío abierto. Retomalo antes de cambiar de lugar.');
         return false;
       }
@@ -462,7 +463,9 @@ async function refresh(){
   let incoming;
   try{incoming=await api('state');}catch(error){if(request!==stateRequest)return;worldAudio.breakContinuity();throw error;}
   if(!snapshotMayApply(state,incoming,request,stateRequest))return;
-  state=incoming;contentVisitor.syncNodes(state.nodes);playableHUD.sync(state.nodes);worldAudio.observe(state,{continuityVersion});worldHistory.observe(state);
+  state=incoming;contentVisitor.syncNodes(state.nodes);playableHUD.sync(state.nodes,state.actorRef,state.canEdit===true);
+  $('#garden-create').hidden=state.canEdit!==true;
+  worldAudio.observe(state,{continuityVersion});worldHistory.observe(state);
   const count=client.getCharacterStates().size;
   $('#people').textContent=count>1?`${count} exploradores en el taller`:'Un lugar para crear juntos';
   const compact=window.matchMedia('(max-width:740px)').matches;
@@ -479,6 +482,8 @@ function settleCommand(result){
   if(!pending||result.command!==pending.id||!['completed','rejected','failed'].includes(result.status))return false;
   if(result.status==='completed'&&pending.type.startsWith('focus.')){
     say(pending.type==='focus.set'?'La indicación ya es compartida.':'Dejaste de señalar ese objeto.',{transient:true});
+  }else if(result.status==='completed'&&pending.type.startsWith('node.')){
+    say('El jardín ya forma parte del mundo.',{transient:true});
   }else if(result.status==='completed'){
     const undo=pendingMetadata?.undo;
     lastChange=undo?null:{type:pending.type,target:pending.target,previous:pendingMetadata?.previous,
@@ -558,7 +563,24 @@ function editLight(record){
   previewDocument();showPreview();say('Podés mover esta luz o cambiar su color. Todavía no cambió para los demás.');
 }
 $('#bridge').onclick=()=>state&&action('bridge.set','bridge',{raised:!state.entities.bridge.raised},state.entities.bridge.revision);
-$('#plant').onclick=()=>{closePreview();if(movePreview()){showPreview();say('Elegí dónde dejar esta luz. Todavía la ves solamente vos.');}};
+$('#plant').onclick=()=>{if(signalEditor.active){say('Guardá o descartá el jardín antes de crear una luz.');return;}closePreview();if(movePreview()){showPreview();say('Elegí dónde dejar esta luz. Todavía la ves solamente vos.');}};
+let signalPreview=null,signalMarkup=null;
+const signalEditor=new SignalGardenEditor({document,
+  position:()=>client.getLocalCharacterState()?.position,
+  allowed:node=>!inside&&!preview&&state?.canEdit===true&&
+    (!node||state.nodes?.[node.id]?.revision===node.revision&&state.nodes[node.id].owner===state.actorRef),
+  save:(node,args,target)=>action(node?'node.update':'node.place',target,args,node?.revision??null),
+  preview:targets=>{
+    const markup=targets?.map(({x,z,radius,color})=>`<m-cylinder x="${x}" y=".124" z="${z}" radius="${radius}" height=".02" color="${workshopColour(color)}" opacity=".44" collide="false"></m-cylinder>`).join('')??null;
+    if(markup===signalMarkup)return;
+    const old=signalPreview;signalMarkup=markup;
+    signalPreview=markup?URL.createObjectURL(new Blob([markup],{type:'text/html'})):null;
+    client.updateConfig({mmlDocuments:signalPreview?{...worldDocuments,preview:{url:signalPreview}}:worldDocuments});
+    if(old)URL.revokeObjectURL(old);
+  },
+});
+$('#garden-create').onclick=()=>{if(!signalEditor.active)signalEditor.open();};
+$('#play-edit').onclick=()=>{const node=state?.nodes?.[playableHUD.selected];if(node?.play&&!signalEditor.active)signalEditor.open(node);};
 $('#preview-move').onclick=movePreview;
 $('#preview-cancel').onclick=()=>{closePreview();say('La vista previa quedó descartada.',{transient:true});};
 $('#preview-accept').onclick=async()=>{
@@ -679,14 +701,14 @@ $('#conversation-form').onsubmit=async event=>{
   }catch(error){if(sameRequest(nativeTurn,body.id)){$('#companion-status').textContent=phases.unknown;noteRecovery('native',error);}}
 };
 // Escape closes panels; it does not interrupt a native turn or stop the world.
-window.addEventListener('keydown',event=>{if(event.key==='Escape'){openConversation(false);if(preview)closePreview();}});
+window.addEventListener('keydown',event=>{if(event.key==='Escape'){openConversation(false);if(preview)closePreview();signalEditor.close();}});
 let refreshing=false;
 const interval=setInterval(async()=>{
   if(closed||inside||document.hidden||refreshing)return;refreshing=true;
   try{await refresh();}catch{say('La conexión con el taller se interrumpió. Los cambios no se repetirán solos.');}
   finally{refreshing=false;}
 },1500);
-window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);worldAudio.dispose();client.dispose();});
+window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);if(signalPreview)URL.revokeObjectURL(signalPreview);worldAudio.dispose();client.dispose();});
 refresh().catch(()=>say('No pude conectar con el taller.'));
 resetDoor();
 if(hot){

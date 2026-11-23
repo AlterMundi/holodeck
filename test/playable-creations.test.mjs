@@ -1,5 +1,7 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
+import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {Room} from '../src/room.mjs';import {worldDocument} from '../src/world.mjs';
+import {createHolodeck} from '../src/server.mjs';
 import {nodeVisits} from '../src/content-nodes.mjs';
 import {validSignalGarden,signalGardenProgress,signalColourName} from '../src/playable-creations.mjs';
 const native={id:'dm:being:v1:'+'d'.repeat(43),ref:'dm:being:v1:'+'d'.repeat(43),kind:'daimon',rights:['observe','edit']};
@@ -9,6 +11,83 @@ const nodeData=play=>({title:'Jardín de señales',shape:'pedestal',position:{x:
 function proposal(room,actor,type,target,args,expectedRevision){const o=room.observe(actor);return {id:crypto.randomUUID(),issuedAt:Date.now(),run:o.run,edition:o.edition,observation:o.id,type,target,args,expectedRevision,...(actor.kind==='daimon'?{nativeRequest:'controlled-play-original'}:{})};}
 const act=(room,actor,...args)=>room.command(actor,proposal(room,actor,...args));
 const progress=room=>room.observe(human).nodes['node-play'].progress;
+
+test('browser recipe author can create, revise and remove only their own node at its observed revision',()=>{
+ const room=new Room(),visitor={...human,id:'human:visitor'},reader={...visitor,rights:['observe']};
+ const target='node-human-garden',data=nodeData(recipe),next={...data,title:'Jardín ampliado'};
+ assert.throws(()=>act(room,reader,'node.place',target,data,null),/Editing access required/);
+ const create=proposal(room,human,'node.place',target,data,null),beforeCreate=room.observe(human);
+ const receipt=room.command(human,create);
+ assert.equal(receipt.status,'completed');assert.deepEqual(room.command(human,create),receipt);
+ assert.equal(room.nodeState()[target].owner,human.id);
+ assert.equal(room.nodeState()[target].revision,1);
+ assert.equal(new Room({state:room.snapshot()}).nodes[target].owner,human.id);
+ assert.equal(act(room,visitor,'node.update',target,next,1).status,'rejected');
+ assert.equal(act(room,native,'node.remove',target,{},1).status,'rejected');
+ const stale={...proposal(room,human,'node.update',target,next,1),observation:beforeCreate.id};
+ assert.equal(room.command(human,stale).status,'rejected');
+ assert.equal(act(room,human,'node.update',target,next,1).status,'completed');
+ assert.equal(act(room,human,'node.remove',target,{},1).status,'rejected');
+ assert.equal(act(room,human,'node.remove',target,{},2).status,'completed');
+ assert.equal(room.nodes[target].owner,human.id);assert.equal(room.nodes[target].revision,3);
+ assert.equal(room.nodes[target].deleted,true);assert.deepEqual(nodeVisits(room.nodes,visitor),[]);
+});
+
+test('browser recipe edits cannot spoof authorship, publish result pins or replace result nodes',()=>{
+ const room=new Room(),data=nodeData(recipe),{play,...base}=data;
+ const result={...base,result:{pin:{kind:'context',tableId:'study',contextId:'mapping',revision:'first'}}};
+ const target='node-browser-garden',nativeTarget='node-native-result';
+ const forged={...proposal(room,human,'node.place',target,data,null),nativeRequest:'forged-original'};
+ assert.throws(()=>room.command(human,forged),/Native source/);
+ assert.equal(act(room,human,'node.place',target,{...data,owner:native.id},null).status,'rejected');
+ assert.equal(act(room,human,'node.place',target,result,null).status,'rejected');
+ assert.equal(act(room,human,'node.place',target,{...result,play},null).status,'rejected');
+ assert.equal(act(room,human,'node.place',target,data,null).status,'completed');
+ assert.equal(act(room,human,'node.update',target,result,1).status,'rejected');
+ assert.equal(act(room,native,'node.place',nativeTarget,result,null).status,'completed');
+ assert.equal(room.nodes[target].revision,1);
+ assert.equal(room.nodes[nativeTarget].owner,native.id);
+ assert.equal(nodeVisits(room.nodes,human).length,1);
+ // Older checkpoints can carry a result under a human owner string.
+ const state=room.snapshot();state.nodes[nativeTarget].owner=human.id;
+ const restored=new Room({state});
+ assert.equal(act(restored,human,'node.update',nativeTarget,data,1).status,'rejected');
+ assert.equal(act(restored,human,'node.remove',nativeTarget,{},1).status,'rejected');
+ assert.deepEqual(restored.nodes[nativeTarget],state.nodes[nativeTarget]);
+});
+
+test('browser recipe commands use the current authenticated HTTP actor and edit grant',async t=>{
+ const stateDir=mkdtempSync(join(tmpdir(),'holodeck-playable-http-')),publicOrigin='https://world.test';
+ t.after(()=>rmSync(stateDir,{recursive:true,force:true}));
+ let rights=['observe','edit'];
+ const runtime=await createHolodeck({stateDir,publicOrigin,production:true,
+  identityResolver:async req=>req.headers.cookie?.includes('home=fixture')?{...human,rights}:null});
+ const listener=runtime.app.listen(0,'127.0.0.1');
+ await new Promise(resolve=>listener.once('listening',resolve));
+ t.after(()=>{runtime.close();listener.closeAllConnections();return new Promise(resolve=>listener.close(resolve));});
+ const base=`http://127.0.0.1:${listener.address().port}`;
+ const index=await fetch(base+'/',{headers:{cookie:'home=fixture'}});
+ assert.equal(index.status,200);await index.text();
+ const cookie='home=fixture; '+index.headers.get('set-cookie').split(';')[0];
+ const current=async()=>await (await fetch(base+'/api/state',{headers:{cookie}})).json();
+ const post=(path,body,headers={})=>fetch(base+'/api/'+path,{method:'POST',
+  headers:{cookie,origin:publicOrigin,'content-type':'application/json',...headers},body:JSON.stringify(body)});
+ assert.equal((await current()).canEdit,true);
+ const captured=await post('observe',{});assert.equal(captured.status,200);
+ const {run,edition,id:observation}=await captured.json();
+ const place={id:crypto.randomUUID(),issuedAt:Date.now(),run,edition,observation,
+  type:'node.place',target:'node-http-garden',expectedRevision:null,args:nodeData(recipe)};
+ assert.equal((await post('commands',place,{origin:'https://other.test'})).status,403);
+ const placed=await post('commands',place);assert.equal(placed.status,200);
+ assert.equal((await placed.json()).status,'completed');
+ assert.equal((await current()).nodes[place.target].owner,human.id);
+ rights=['observe'];
+ assert.equal((await current()).canEdit,false);
+ const denied=await post('commands',{...place,id:crypto.randomUUID(),target:'node-other-garden'});
+ assert.equal(denied.status,409);
+ assert.equal((await current()).nodes['node-other-garden'],undefined);
+});
+
 test('native-authored game uses actual shared planting, contributors and cursor; recipe revision stays stable while gameplay changes',()=>{
  const room=new Room(),definition=proposal(room,native,'node.place','node-play',nodeData(recipe),null),created=room.command(native,definition);
  assert.equal(created.status,'completed');assert.deepEqual(room.command(native,definition),created);assert.equal(room.nodeState()['node-play'].progress.through,room.sequence);

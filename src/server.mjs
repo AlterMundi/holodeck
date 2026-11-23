@@ -437,7 +437,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   });
   app.get(route('api/state'),asyncRoute(async(req,res)=>{
     if(room.commitUncertain)return res.status(503).json({message:'El taller necesita recuperar su último cambio antes de continuar.'});
-    res.json({run:room.run,edition:room.edition,sequence:room.sequence,actorRef:req.actor.id,entities:room.entities,focus:room.focusState(),nodes:room.nodeState(),
+    const canEdit=projectionHealthy&&['observe','edit'].every(right=>req.actor.rights?.includes(right));
+    res.json({run:room.run,edition:room.edition,sequence:room.sequence,actorRef:req.actor.id,canEdit,entities:room.entities,focus:room.focusState(),nodes:room.nodeState(),
       native:native?{...await native.availability(req.actor),sharedConversation:!!native.contexts}:{available:false}});
   }));
   app.get(route('api/places'),(req,res)=>{

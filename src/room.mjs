@@ -214,12 +214,15 @@ export class Room extends EventEmitter {
     }
     if(['node.place','node.update','node.remove'].includes(command.type)){
       const previous=this.nodes[command.target],seen=observation.nodes?.[command.target],placing=command.type==='node.place';
-      if(actor.kind!=='daimon'||typeof actor.id!=='string'||actor.id.length>200||!contentNodeId(command.target))return finish('rejected','A native creator and canonical node identity are required');
+      const removing=command.type==='node.remove';
+      if(!['human','daimon'].includes(actor.kind)||typeof actor.id!=='string'||actor.id.length>200||!contentNodeId(command.target))return finish('rejected','A creator and canonical node identity are required');
       if(placing){
         if(previous||command.expectedRevision!==null||Object.keys(this.nodes).length>=MAX_CONTENT_NODES)return finish('rejected','Choose a new node within this world capacity');
       }else if(!previous||previous.deleted||previous.owner!==actor.id||command.expectedRevision!==previous.revision||seen?.revision!==previous.revision)
         return finish('rejected','Inspect your current node before changing it');
-      if(command.type==='node.remove'){
+      if(actor.kind==='human'&&((!placing&&!previous.play)||(!removing&&!command.args?.play)))
+        return finish('rejected','Only signal gardens can be authored from the browser');
+      if(removing){
         if(!command.args||typeof command.args!=='object'||Array.isArray(command.args)||Object.keys(command.args).length)return finish('rejected','Choose an explicit node removal');
         previous.deleted=true;previous.revision++;
       }else{

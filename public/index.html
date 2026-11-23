@@ -15,6 +15,12 @@
 
 #visit-near{position:fixed;z-index:22;right:22px;top:90px;max-width:calc(100vw - 44px)}
 #beacon-control{position:fixed;z-index:22;right:22px;top:148px;max-width:calc(100vw - 44px);min-height:44px;padding:10px 16px;border-radius:13px;font-weight:600;text-decoration:none;align-content:center}
+#signal-editor{position:fixed;z-index:26;right:20px;bottom:105px;width:335px;max-width:calc(100vw - 40px);max-height:min(65dvh,540px);overflow:auto;padding:16px;border-radius:16px}
+#signal-editor label{display:block;margin:8px 0}#signal-editor input:not([type=checkbox]),#signal-editor select{padding:6px;color:var(--ink);background:#102d31;border:1px solid var(--line);border-radius:8px;font:inherit}
+#signal-title{width:100%}#signal-targets{list-style:none;padding:0;margin:8px 0}#signal-targets li{display:flex;align-items:center;gap:8px;margin:4px 0}#signal-editor button,#garden-create{min-height:44px}
+body:has(#signal-editor:not([hidden])) #play-near,body:has(#signal-editor:not([hidden])) #pointing{display:none}
+.inside-house #garden-create{display:none}
+@media(max-width:740px){#signal-editor{right:12px;top:160px;bottom:auto;max-width:calc(100vw - 24px);max-height:50dvh}}
 body:has(#content-visit:not([hidden]):not(.is-walking)) #beacon-control,body:has(#conversation-panel:not([hidden])) #beacon-control,.room-transition #beacon-control{display:none}
 @media(max-width:740px){#beacon-control{top:205px;right:12px;max-width:calc(100vw - 24px);font-size:14px}}
 #content-visit{position:fixed;inset:5vh 4vw;z-index:45;display:flex;flex-direction:column;border-radius:20px;padding:12px;gap:10px;background:#163b3f}
@@ -66,7 +72,7 @@ body:has(#conversation-panel:not([hidden])) #house-door,body:has(#creator:not([h
 @media(max-width:740px){#space-travel{top:145px;right:12px}.inside-house #space-travel{top:100px}}
 </style></head><body>
 <header id="hud" class="glass"><span class="brand-mark" aria-hidden="true"></span><div><small>Holodeck</small><h1>Plaza de llegada</h1><div id="people">Entrando a la plaza…</div></div><button id="sound" type="button" aria-pressed="false" aria-label="Activar sonido del mundo">Sonido</button></header>
-<div id="world-tools"><aside id="help"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> moverte · arrastrá para mirar · espacio para saltar</aside><button id="activity-open" class="glass" type="button" aria-haspopup="dialog" disabled>Actividad</button></div>
+<div id="world-tools"><aside id="help"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> moverte · arrastrá para mirar · espacio para saltar</aside><button id="garden-create" class="glass" type="button" hidden>Crear jardín</button><button id="activity-open" class="glass" type="button" aria-haspopup="dialog" disabled>Actividad</button></div>
 <button id="house-door" type="button" class="primary" hidden>Entrar</button>
 <details id="space-travel" class="glass" hidden><summary>Entradas y salidas</summary><nav aria-label="Entradas y salidas"></nav></details>
 <div id="companion-status" class="glass" role="status">Exploración compartida</div>
@@ -74,7 +80,15 @@ body:has(#conversation-panel:not([hidden])) #house-door,body:has(#creator:not([h
 <div id="room-passage"><span class="passage-arch" aria-hidden="true"></span><p id="room-passage-message" role="status"></p></div>
 <nav id="dock" class="glass" aria-label="Acciones del taller"><button id="bridge" class="primary">Conectar islas</button><button id="plant">Crear luz</button><button id="talk" aria-expanded="false" aria-controls="conversation-panel">Conversar</button><button id="undo" class="icon" title="Deshacer mi último cambio" aria-label="Deshacer mi último cambio" disabled>↶</button></nav>
 <section id="pointing" class="glass" aria-label="Indicar un objeto" hidden><p id="point-label"></p><div class="row"><button id="point-visit" class="primary" type="button" hidden>Visitar contenido</button><button id="point-send" class="primary" type="button">Señalar</button><button id="point-edit" type="button" hidden>Editar luz</button><button id="point-clear" type="button">Cancelar</button></div></section>
-<details id="play-near" class="glass" hidden><summary><strong id="play-title"></strong> · Cómo jugar<span id="play-progress" role="status"></span></summary><p id="play-instruction"></p></details>
+<details id="play-near" class="glass" hidden><summary><strong id="play-title"></strong> · Cómo jugar<span id="play-progress" role="status"></span></summary><p id="play-instruction"></p><button id="play-edit" type="button" hidden>Editar jardín</button></details>
+<form id="signal-editor" class="glass" aria-label="Editar jardín de señales" hidden>
+  <h2>Jardín de señales</h2><p>Caminá hasta cada punto y agregá una señal. La vista previa es tuya hasta guardar.</p>
+  <label>Nombre <input id="signal-title" maxlength="40" required></label>
+  <label>Colaboradores <input id="signal-minimum" type="number" min="1" max="8" required></label>
+  <label><input id="signal-bridge" type="checkbox"> Requiere conectar las islas</label>
+  <ol id="signal-targets"></ol><p id="signal-notice" role="status"></p>
+  <div class="row"><button id="signal-add" type="button">Agregar señal acá</button><button id="signal-save" class="primary">Guardar jardín</button><button id="signal-cancel" type="button">Cancelar</button></div>
+</form>
 <button id="visit-near" type="button" class="primary" hidden>Visitar la presentación</button>
 <a id="beacon-control" class="primary" target="_blank" rel="noopener" hidden></a>
 <section id="content-visit" aria-label="Contenido visitado" class="glass" hidden><header><h2 id="visit-title">Presentación</h2><button id="visit-walk" type="button" class="primary">Volver al mundo</button></header><div id="visit-stage"></div></section>

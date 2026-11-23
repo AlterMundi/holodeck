@@ -106,6 +106,14 @@ immutable source editions by their own Homes version and snapshot checksum.
 A live human gallery walk, actual physical mobile performance, and human
 inspection and return remain unverified.
 
+The browser authoring candidate lets an authenticated editor place and edit a
+signal garden using the existing world command path. Walk to set up to four
+signals, choose their colors and collaboration rule, and preview before
+publishing. The edited revision is still owned by the original actor.
+Controlled Chromium used two browser identities to verify the private
+preview, visible published and edited revisions, foreign edit exclusion and
+cancelled changes. The candidate is pending deployment.
+
 Isolated Chromium walked from the normal exterior spawn to the east garden,
 past the miniature, through the original house entrance and into the foyer,
 gallery and Beacon lab. It returned to the original exterior doorway with
