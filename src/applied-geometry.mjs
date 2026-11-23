@@ -40,10 +40,14 @@ export function verifyWorkshopGeometry(root,scene,{expectedDocumentURL}={}){
     const sequence=Number(rawSequence);if(!Number.isSafeInteger(sequence))return null;
     const manifest=root.getAttribute('data-geometry-state');if(!manifest||manifest.length>16384)return null;
     const entities=workshopProjection(JSON.parse(manifest));
-    const scenery=find(root,'island-scenery');
-    if(!live(scenery,scene)||scenery.modelGraphics?.hasLoadedModel?.()!==true||!scenery.getContentBounds?.())return null;
-    let sceneryMeshes=0;scenery.getContainer().traverse(node=>{if(node.isMesh&&node.geometry?.attributes?.position?.count)sceneryMeshes++;});
-    if(!sceneryMeshes)return null;
+    const commons=find(root,'authored-commons');
+    const sceneryModels=[find(root,'island-scenery'),...(commons?[commons]:[])];
+    for(const scenery of sceneryModels){
+      if(!live(scenery,scene)||scenery.modelGraphics?.hasLoadedModel?.()!==true||!scenery.getContentBounds?.())return null;
+      let sceneryMeshes=0;
+      scenery.getContainer().traverse(node=>{if(node.isMesh&&node.geometry?.attributes?.position?.count)sceneryMeshes++;});
+      if(!sceneryMeshes)return null;
+    }
     const entityRefs=[];
     for(const entity of entities){
       const group=find(root,entity.id);

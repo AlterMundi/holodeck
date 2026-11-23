@@ -18,7 +18,7 @@ permission bridge; `contentVisits` selects at most eight protected report or art
 It carries route metadata and private content references, not credentials.
 
 The optional `artProfile: "compaii-atelier-v1"` selects the packaged
-Blender garden, facade, foyer, gallery and Beacon chamber. It binds to the
+Blender commons, garden, facade, foyer, gallery, listening tower and Beacon chamber. It binds to the
 existing west parcel and exact ordered room graph. Gallery art follows the
 visitor's current lab passage permission. The lab and both gallery
 variants travel through the existing room-scoped asset route. Files under
@@ -93,6 +93,12 @@ Canvas is omitted: upstream JSDOM explicitly supports the optional dependency's
 absence, and this MVP's server-authored MML does not use HTML Canvas. Browser
 WebGL/Three rendering is independent and remains available. Qualify a real server
 Canvas dependency only when a later creation needs that capability.
+
+The stage stores the browser bundle once at `runtime/client.js.br`. The
+existing `client/client.js` URL negotiates Brotli and streams the same
+decoded bytes for identity clients. Match served decoded bytes against
+the ordinary build during receiving readback. The uncompressed build
+remains available to the development server.
 
 The archive remains below the existing 32 MiB limit and its declared unpacked
 inventory below 128 MiB. Validate the exact archive using the maintained receiving

@@ -3,6 +3,7 @@ import { build } from 'esbuild';
 import { readdir, readFile, writeFile, mkdir, rm, copyFile, lstat } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
+import { brotliCompressSync, constants as zlib } from 'node:zlib';
 import {ensureMmlServerAuthContext} from '../tools/mml-server-auth-context.mjs';
 ensureMmlServerAuthContext({check:true});
 const root=resolve(new URL('..',import.meta.url).pathname);
@@ -20,6 +21,14 @@ await copyFile(join(root,'node_modules/jsdom/lib/jsdom/browser/default-styleshee
 const digest=b=>createHash('sha256').update(b).digest('hex');
 async function copyTree(from,to){await mkdir(to,{recursive:true});for(const entry of await readdir(from,{withFileTypes:true})){const src=join(from,entry.name),dst=join(to,entry.name);if(entry.isDirectory())await copyTree(src,dst);else if(entry.isFile())await copyFile(src,dst);else throw Error('Regular selected files only');}}
 await copyTree(join(root,'public'),join(stage,'public'));await copyTree(join(root,'build'),join(stage,'build'));
+// Keep one exact browser bundle in the archive. The receiving HTTP route
+// serves this wire representation or streams its identity representation.
+const clientBundle=join(stage,'build/client.js');
+const packedClient=brotliCompressSync(await readFile(clientBundle),{params:{
+ [zlib.BROTLI_PARAM_MODE]:zlib.BROTLI_MODE_TEXT,[zlib.BROTLI_PARAM_QUALITY]:6,
+}});
+await writeFile(join(stage,'runtime/client.js.br'),packedClient);
+await rm(clientBundle);
 await copyFile(join(root,'deployment/entry.mjs'),join(stage,'entry.mjs'));
 // Retain notices for the actual installed runtime dependency closure used by
 // the server/client bundles, Canvas remains an upstream optional server capability and is not shipped.

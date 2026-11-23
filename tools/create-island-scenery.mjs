@@ -4,10 +4,11 @@ import { BoxGeometry, CylinderGeometry, ConeGeometry, DodecahedronGeometry, Toru
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 const args=process.argv.slice(2);
-const eastReplaced=args[0]==='--east-replaced';
+const commonsReplaced=args[0]==='--atelier-surroundings';
+const eastReplaced=commonsReplaced||args[0]==='--east-replaced';
 const stageRoot=resolve(new URL('../.state',import.meta.url).pathname)+'/';
 if(args.length&&(!eastReplaced||args.length!==2||!resolve(args[1]).startsWith(stageRoot)))
-  throw Error('Use --east-replaced with a task-owned .state output path');
+  throw Error('Use --east-replaced or --atelier-surroundings with a task-owned .state output path');
 const palettes={rock:'#364e59',rockLight:'#536c70',grass:'#6b987e',stone:'#cbd1b6',path:'#d3c19b',copper:'#bc8355',bark:'#786551',pine:'#365f58',leaf:'#6c9985',mint:'#a8cbb0',gold:'#e5b868',water:'#86adb0'};
 const groups=new Map();
 function add(geometry,material,position=[0,0,0],scale=[1,1,1],rotation=[0,0,0]){
@@ -28,7 +29,7 @@ function island(x,z,r,depth){
  cylinder(x,-depth*.91,z,r*.28,.18,depth*.14,'rock',7);
  cylinder(x,-.005,z,r,r,.15,'grass',28); // Grass top y=.07; walking proxy y=.1 (deliberate3cm clearance).
 }
-island(0,0,10.75,5.2);
+if(!commonsReplaced)island(0,0,10.75,5.2);
 island(-22,0,8,5.4);
 island(22,0,10,6);
 // Preserve the north destination and its original bridge/arch coordinates.
@@ -38,18 +39,12 @@ cylinder(0,-.005,-17,4.9,4.9,.15,'grass',24);
 // Distinct ground layers prevent coplanar z-fighting: grass .07, courts .09,
 // paving/decks .1. Collision stays at .1; grass clearance is deliberately3cm.
 // Clear central meeting plaza: no canopy, workbench or tall prop across views.
-cylinder(0,.045,0,4.8,4.8,.09,'stone',32);
-ring(0,.092,0,4.32,.018,'copper');
 function pathBetween(x1,z1,x2,z2,width=2.5,spacing=.9){
  const dx=x2-x1,dz=z2-z1,length=Math.hypot(dx,dz),count=Math.ceil(length/spacing),angle=Math.atan2(dx,dz);
  for(let i=0;i<count;i++){
   const t=(i+.5)/count;box(x1+dx*t,.065,z1+dz*t,width,.07,length/count*.9,'path',angle);
  }
 }
-pathBetween(0,9,0,4.4,2.6);
-pathBetween(0,-4.4,0,-9.9,2.6);
-pathBetween(-4.5,0,-10.3,0,2.8);
-pathBetween(4.5,0,10.3,0,2.8);
 // Broad fixed promenades overlap each circular cap; parent MML supplies the
 // same width/height collision rectangles. All deck top faces are exactly y=.1.
 function promenade(left,right){
@@ -65,8 +60,16 @@ function promenade(left,right){
   }
  }
 }
-promenade(-14.6,-9.8);
-promenade(9.8,12.7);
+if(!commonsReplaced){
+ cylinder(0,.045,0,4.8,4.8,.09,'stone',32);
+ ring(0,.092,0,4.32,.018,'copper');
+ pathBetween(0,9,0,4.4,2.6);
+ pathBetween(0,-4.4,0,-9.9,2.6);
+ pathBetween(-4.5,0,-10.3,0,2.8);
+ pathBetween(4.5,0,10.3,0,2.8);
+ promenade(-14.6,-9.8);
+ promenade(9.8,12.7);
+}
 // West: a quiet open gallery court, with separate northern/southern entrances
 // projected by Room at(-22,-2) and(-22,3). Nothing scenic impersonates a result.
 cylinder(-22,.045,0,4.7,4.7,.09,'stone',28);
@@ -80,7 +83,7 @@ if(!eastReplaced){
  pathBetween(18.1,3.6,22,4,2.4);
 }
 // Low sitting ledges stay at the edge of the arrival island, outside its axes.
-for(const x of [-5.9,5.9]){
+if(!commonsReplaced)for(const x of [-5.9,5.9]){
  box(x,.32,6.1,1.9,.43,.65,'stone');
  box(x,.57,6.1,2.0,.09,.72,'path');
 }
@@ -98,7 +101,7 @@ const trees=[
  [29.0,3.2,4.2],[29.1,-3.1,4.0],[25.8,-7.5,3.7],[19.0,-7.7,3.9],[15.5,5.8,3.3],[21.0,8.0,3.4]
 ];
 for(const [x,z,h] of trees){
- if(eastReplaced&&x>=14)continue;
+ if(eastReplaced&&x>=14||commonsReplaced&&Math.abs(x)<11&&Math.abs(z)<11)continue;
  cylinder(x,h*.32,z,.12,.22,h*.64,'bark',7);
  add(new ConeGeometry(h*.34,h*.7,7,1),'pine',[x,h*.64,z]);
  add(new ConeGeometry(h*.27,h*.62,7,1),'leaf',[x,h*.91,z]);
@@ -106,13 +109,13 @@ for(const [x,z,h] of trees){
 }
 // A few deliberate stone/shrub groups replace the previous dense rim scatter.
 for(const[x,z,s]of [[-8.1,4.8,.6],[8.4,4.3,.7],[-6.5,-7.3,.6],[6.6,-7,.6],[-28.1,-.4,.7],[-25,6.4,.6],[-18,-5.9,.6],[29.7,1,.8],[26.7,-7,.7],[19.4,-8.3,.7],[16,6.5,.6]]){
- if(eastReplaced&&x>=14)continue;
+ if(eastReplaced&&x>=14||commonsReplaced&&Math.abs(x)<11&&Math.abs(z)<11)continue;
  stone(x,.19,z,s);
  if(s>=.7)add(new DodecahedronGeometry(.65,0),'leaf',[x+.45,.35,z+.4],[1,.55,.8]);
 }
 // Small lanterns give scale at junctions without a row of oversized structures.
 for(const[x,z]of [[-1.7,8.0],[1.7,8.0],[-8.4,2],[8.4,2],[-16.2,1.9],[14.4,-1.9],[-1.7,-8.5],[1.7,-8.5]]){
- if(eastReplaced&&x>=14)continue;
+ if(eastReplaced&&x>=14||commonsReplaced&&Math.abs(x)<11&&Math.abs(z)<11)continue;
  cylinder(x,.58,z,.055,.075,.95,'copper',6);
  add(new DodecahedronGeometry(.13,0),'gold',[x,1.14,z]);
 }

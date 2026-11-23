@@ -15,6 +15,7 @@ CELLS = {
     'beacon': ('VIS · Beacon chamber', (-25, 9.4, 0)),
     'gallery': ('VIS · Collection gallery', (25, 7, 0)),
     'gallery-sealed': ('VIS · Collection gallery', (25, 7, 0)),
+    'tower': ('VIS · Listening tower', (0, 0, 0)),
 }
 ALBEDO_RESOLUTION = 1024
 NORMAL_RESOLUTION = 1024
@@ -216,8 +217,12 @@ if __name__ == '__main__':
     destination.mkdir(parents=True, exist_ok=True)
     collection, origin = CELLS[cell]
     obj = mesh_for(collection, origin, cell)
-    color = bake(obj, cell+'-albedo', 'DIFFUSE', ALBEDO_RESOLUTION, destination)
-    normal = bake(obj, cell+'-normal', 'NORMAL', NORMAL_RESOLUTION, destination)
+    # This smaller cell keeps its look with a 768px atlas and fits the
+    # existing package budget alongside both permissioned gallery variants.
+    color_size = 768 if cell == 'tower' else ALBEDO_RESOLUTION
+    normal_size = 768 if cell == 'tower' else NORMAL_RESOLUTION
+    color = bake(obj, cell+'-albedo', 'DIFFUSE', color_size, destination)
+    normal = bake(obj, cell+'-normal', 'NORMAL', normal_size, destination)
     portable_materials(obj, color, normal)
     path = destination / (cell+'.glb')
     bpy.ops.export_scene.gltf(filepath=str(path), export_format='GLB', use_selection=True,

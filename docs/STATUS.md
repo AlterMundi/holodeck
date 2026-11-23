@@ -18,7 +18,7 @@ The current published world remains the one qualified below.
 
 The candidate package can select this scene through
 `compaii-atelier-v1` in the ordinary receiving configuration. The verified
-31,365,120-byte archive is inside the existing 32 MiB package limit and
+30,279,680-byte archive is inside the existing 32 MiB package limit and
 includes the previous scenery as a compatible option. No Room migration
 is required. The packaged production entry admitted a fixture identity
 over the existing Home HTTP contract and returned the authored foyer.
@@ -26,15 +26,24 @@ Chromium walked the packaged garden, facade, foyer, gallery and lab using
 the real room IDs, then returned to the exact exterior entrance. It
 preserved the renderer, world run, entities, creation nodes and protected
 prototype pointer. An independent fixture received only the sealed gallery
-art and no lab bytes. The remaining commons and upper interior, registered
-working controls, shared device and human acceptance remain open.
+art and no lab bytes.
+
+The same profile now includes the Blender commons and listening tower.
+Chromium loaded the exact commons at the existing spawn. It entered and
+left the tower using the existing portal actions and unchanged anchors,
+keeping the same page. The closed gallery and lab continue to use their
+room-scoped asset routes. The packaged browser client is about 1.34 MB
+on disk with Brotli. A fixture exercised the production startup and
+compared Brotli and identity HTTP delivery to the same original bundle.
+Working Beacon stations, live rollout and shared device and human
+acceptance remain open.
 
 The package and historical retention ceilings are separate. The currently
 retained Home runtime archives exceed the 96 MiB history budget. Reconcile
 superseded generated archives through the existing version writer before
 publishing another package. Preserve the deployed current and rollback.
 
-The Blender export now produces all four self-contained, textured GLBs. The
+The Blender art package includes the self-contained room GLBs. The
 candidate Beacon chamber was mounted through the existing room-scoped renderer
 in isolated Chromium. The actual browser drew nine textured material batches,
 one shadow-casting light and three fills. The owner fixture crossed the

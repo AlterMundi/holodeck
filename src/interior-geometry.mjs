@@ -43,7 +43,7 @@ export function roomFloor(passages,color,visible=true) {
   return floor;
 }
 
-export function passageMarkup(passage,visibleSteps=true) {
+export function passageMarkup(passage,visibleSteps=true,authoredPortal=false) {
   const slot=SLOTS[passage.slot],y=passage.rise*STAIR_STEPS*RISE;
   const portal=passage.kind==='portal',color=portal?'#9384bd':passage.rise?'#779491':'#d6b58c';
   const fill=portal?'#4f6a8d':passage.rise?'#3f5b5e':'#675948';
@@ -55,6 +55,8 @@ export function passageMarkup(passage,visibleSteps=true) {
   }
   if(passage.rise)for(const side of [-1,1])
     steps+=cube(side*.91,.57+y/2,STAIR_STEPS*TREAD/2,.12,1.04+Math.abs(y),STAIR_STEPS*TREAD,'#7a9690',attributes);
+  if(portal&&authoredPortal)
+    return `<m-group id="passage-${passage.slot}" x="${slot.x}" z="${slot.z}" ry="${slot.rotation}"></m-group>`;
   return `<m-group id="passage-${passage.slot}" x="${slot.x}" z="${slot.z}" ry="${slot.rotation}">
     ${steps}<m-cube y="${1.13+y}" z=".035" width="1.44" height="2.06" depth=".08" color="${color}" collide="false"></m-cube>
     <m-cube y="${1.1+y}" z=".086" width="1.22" height="1.82" depth=".025" color="${fill}" collide="false"></m-cube>

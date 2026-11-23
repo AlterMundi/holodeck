@@ -54,10 +54,27 @@ for cell in garden facade foyer beacon gallery gallery-sealed; do
   blender -b "$ART_OUTPUT/casa-compaii-redesign.blend" -t 8 --python-exit-code 1 \
     -P art/compaii-house/redesign/export_cells.py -- "$EXPORT_OUTPUT" "$cell"
 done
+blender -b art/compaii-house/redesign/listening-tower.blend -t 8 --python-exit-code 1 \
+  -P art/compaii-house/redesign/export_cells.py -- "$EXPORT_OUTPUT" tower
 ```
 
-The export evaluates the actual modeled details, bakes one 1024² color atlas
-and one tangent normal atlas per cell, and preserves the material batch
+The [listening tower](listening-tower.blend) has its own editable room-scale
+source and can be regenerated with `tower.py`. It uses a warm wall resonator
+and cool clerestory light as orientation points. The existing return portal
+retains its address in the shared world. [Approach](review/tower-approach.jpg) ·
+[Return](review/tower-return.jpg).
+
+The [arrival commons](holodeck-commons.blend) can be regenerated with
+`commons.py`. It replaces the main terrace and both connecting decks in
+their existing coordinates. The center remains open for creation and
+gathering. A shaded bench and tree frame the arrival without crossing the
+main walking lines. The neighboring islands and room entrances keep their
+existing geometry addresses. [Arrival](review/commons-spawn.jpg) ·
+[Garden approach](review/commons-garden-approach.jpg) ·
+[House approach](review/commons-house-approach.jpg).
+
+The export evaluates the actual modeled details, bakes one color atlas
+and one tangent normal atlas per cell (1024², or 768² for the tower), and preserves the material batch
 boundaries and their scalar metalness, roughness and emission. The GLBs embed
 their images and use core glTF without a required decoder. Each cell is
 bounded at 4 MiB and 64,000 triangles. PNGs alongside the GLBs are disposable
@@ -72,6 +89,8 @@ room-local bounds. Keep Blender area lights and camera setups in the source.
 | Beacon laboratory | 2,644,700 | 28,416 | 9 |
 | Gallery with stair | 1,615,544 | 7,168 | 6 |
 | Gallery with continuous floor | 1,550,224 | 5,640 | 6 |
+| Listening tower | 1,983,396 | 26,056 | 10 |
+| Arrival commons | 582,668 | 14,880 | 10 |
 
 The laboratory export registers the authored chamber to the existing room.
 It rebuilds the visible six-tread stair and rail at the existing activation
@@ -102,11 +121,11 @@ immutable source, normal Nexus controls and publication audiences remain
 authoritative. Scenes without a supported static snapshot still have their
 ordinary versioned opening action when authorized.
 
-For the connected local candidate, generate the retained scenery around the
-new eastern garden with `tools/create-island-scenery.mjs --east-replaced`.
-This removes the superseded eastern planting and dressing while keeping the
-original land base, measuring the replacement against the existing walkable
-terrace. The checked-in exports are selected by
+Generate the retained surrounding scenery with
+`tools/create-island-scenery.mjs --atelier-surroundings` and a task-owned
+`.state` output path. This leaves the neighboring islands and horizon in
+place while the new exports replace the eastern dressing, central terrace
+and connecting decks. The checked-in exports are selected by
 `compaii-atelier-v1` in [the receiving configuration](../../../docs/deployment.md#receiving-contracts).
 The server verifies the asset hashes and exact room layout before enabling
 this profile. The current scenery is also packaged for use without the

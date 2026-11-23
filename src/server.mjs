@@ -10,7 +10,8 @@ import { Networked3dWebExperienceServer } from '@mml-io/3d-web-experience-server
 import { NetworkedDOM } from '@mml-io/networked-dom-server';
 import { handleExperienceWebsocketSubprotocol } from '@mml-io/3d-web-experience-protocol';
 import enableWs from 'express-ws';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { packedClientHandler } from './packed-client.mjs';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { join } from 'node:path';
@@ -85,7 +86,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       await Promise.all([...sockets].map(([socket,record])=>checkSocket(socket,record)));
       if(room.commitUncertain){projectionHealthy=false;return;}
       await document.load(worldDocument(room,{basePath,houseVisual:atelier?.houseVisual??houseVisual,
-        gardenVisual:atelier?.gardenVisual??gardenVisual,sceneryAsset:atelier?.sceneryAsset}));projectionHealthy=true;
+        gardenVisual:atelier?.gardenVisual??gardenVisual,sceneryAsset:atelier?.sceneryAsset,
+        commonsVisual:atelier?.commonsVisual}));projectionHealthy=true;
     }}catch{projectionHealthy=false;}finally{projectionRunning=false;}
   };
   await project();if(!projectionHealthy){document.dispose();throw Error('The initial world representation could not load');}room.on('change',project);
@@ -317,6 +319,9 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     res.set('Permissions-Policy','microphone='+selected+', autoplay='+selected);next();
   });
   app.use(express.json({limit:'48kb',strict:true}));
+  const packedClient=new URL('../runtime/client.js.br',import.meta.url);
+  if(existsSync(packedClient))
+    app.get(route('client/client.js'),packedClientHandler(readFileSync(packedClient)));
   network.registerExpressRoutes(app);
   if(basePath!=='/')app.get(basePath.slice(0,-1),(_req,res)=>res.redirect(308,basePath));
   app.get(route('health'),(_req,res)=>res.status(projectionHealthy&&!room.commitUncertain&&!spaces.fenced?200:503).json({ok:projectionHealthy&&!room.commitUncertain&&!spaces.fenced}));

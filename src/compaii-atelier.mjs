@@ -15,15 +15,18 @@ const layout=[
 ];
 const FACADE_ASSET='compaii-atelier-facade.glb';
 const GARDEN_ASSET='compaii-atelier-garden.glb';
+const COMMONS_ASSET='compaii-atelier-commons.glb';
 const SURROUNDINGS_ASSET='island-scenery-atelier.glb';
 const dossier={
   'room-art/compaii-atelier/foyer.glb':'f0a8b2b9f63a67559024e7387036bb0592623f3170a4a9863fead7e44eab03f6',
   'room-art/compaii-atelier/gallery.glb':'b6b72597851615355a24aa5450922a13dea581eabb1d56fc7d92d102bd088c38',
   'room-art/compaii-atelier/gallery-sealed.glb':'53d1e89c9fc2ef4a4f79908b57c4990e23a69f6125706b1fa7144533312ca1b9',
   'room-art/compaii-atelier/beacon.glb':'0ab7546ae7d540e14dbed049a70da52a2aeb36bd575fd8f31532c94a81ef762f',
+  'room-art/compaii-atelier/tower.glb':'47ba2a0964304eba1f3cbf945121e737c5d9addd7e71c1696bfa8b52ddb872de',
   ['assets/'+FACADE_ASSET]:'940aa64038396e43db8beca859e33f4f52c6ae3a84d1702457159c0af1224077',
   ['assets/'+GARDEN_ASSET]:'ecf2f1225a065b1a1b4b067ad2cd0f3ac96bc62b5d8a31a8894dd1a50490361b',
-  ['assets/'+SURROUNDINGS_ASSET]:'2e2e7de478fb9421ba5ca71f055119323c431484dedfe37801378192d871ee41',
+  ['assets/'+COMMONS_ASSET]:'d198082624d94bacf41ecded2913dc88ae2869396f5b9319a0c51b931ba8843c',
+  ['assets/'+SURROUNDINGS_ASSET]:'61f058ac7d7ba1de6f2fff1237dae7a473afcd2596849939eabb4b41b443a104',
 };
 
 const facade={
@@ -33,6 +36,15 @@ const facade={
 const gardenVisual={asset:GARDEN_ASSET,x:22,y:.102,z:-2.75,sx:.50,sy:.78,sz:.55};
 const floorProfile={replacesShell:true,authoredExhibitBase:true};
 const box=({x,y,z,w,h,d})=>`<m-cube x="${x}" y="${y}" z="${z}" width="${w}" height="${h}" depth="${d}" opacity="0" cast-shadows="false"></m-cube>`;
+const commonsVisual={asset:COMMONS_ASSET,colliders:[
+  {x:-9.11,y:1.30,z:-2.87,w:.34,h:2.45,d:.34},
+  {x:-9.11,y:1.30,z:-4.50,w:.34,h:2.45,d:.34},
+  {x:-8.73,y:.29,z:-3.68,w:.59,h:.43,d:1.54},
+  {x:-5.13,y:.28,z:6.84,w:1.41,h:.42,d:.59},
+  {x:7.82,y:.28,z:3.86,w:1.41,h:.42,d:.59},
+  {x:-7.95,y:.96,z:-5.55,w:.34,h:1.78,d:.34},
+  {x:6.68,y:.845,z:6.95,w:.30,h:1.55,d:.30},
+].map(box).join('')};
 const softLight=({id,x,y,z,color,intensity,distance})=>`<m-light id="${id}" x="${x}" y="${y}" z="${z}" type="point" intensity="${intensity}" distance="${distance}" color="${color}" cast-shadows="false"></m-light>`;
 const chamberRig='<m-light id="instrument-key" x="-.44" y="4.53" z="1.9" type="spotlight" distance="8" angle="38" intensity="105" cast-shadows="true" color="#ffd6a2"></m-light>'+[
   {id:'stair-bounce',x:-3,y:2.6,z:-4.5,distance:8,intensity:22,color:'#91b4e6'},
@@ -80,13 +92,21 @@ export function selectAtelier(profile,rooms,houses){
      box({x:3.802,y:.643,z:-.791,w:2.332,h:1.085,d:.886})+
      box({x:-3.758,y:.643,z:2.659,w:2.068,h:1.085,d:.886}),
     lightRig:chamberRig};
+  const towerArt={...asset('tower'),replacesShell:true,authoredPortal:true,ambient:.64,
+    colliders:box({x:5.59,y:.365,z:-.12,w:.38,h:.53,d:7.8}),
+    lightRig:[
+      {id:'tower-clarity',x:5.28,y:3.82,z:1,intensity:39,distance:11,color:'#b1d1ff'},
+      {id:'tower-resonator',x:.54,y:3.9,z:4.7,intensity:29,distance:7,color:'#ffe2ac'},
+      {id:'tower-return',x:-3,y:3.6,z:-4.88,intensity:22,distance:6,color:'#ffcb86'},
+    ].map(softLight).join('')};
   return {
-    sceneryAsset:SURROUNDINGS_ASSET,gardenVisual,
+    sceneryAsset:SURROUNDINGS_ASSET,gardenVisual,commonsVisual,
     houseVisual:house=>house.id===COMPAII_HOUSE&&house.revision===1?{facade}:null,
     interiorArtwork:(room,passages=[])=>{
       if(room?.house!==COMPAII_HOUSE)return null;
       if(room.id===foyer)return foyerArt;
       if(room.id===lab)return labArt;
+      if(room.id===tower)return towerArt;
       if(room.id!==gallery)return null;
       const hasLabStair=passages.some(link=>link.kind==='stair'&&link.to===lab);
       return {...galleryArt,...asset(hasLabStair?'gallery':'gallery-sealed'),authoredStairs:hasLabStair};
