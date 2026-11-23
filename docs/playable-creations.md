@@ -128,6 +128,12 @@ Public progress omits contributor identities and can be read in the active
 room, including from a native observation. The current signal set is shared;
 the browser shows its lights without reconnecting or pausing movement.
 
+An admitted situated Conversation turn can use the same `garden.signal` action
+in its captured room once the daimon is in that room. The native `result`
+operation uses the original command ID on the same interaction to recover its
+receipt. The player's existing own-native lane still supports `garden.result`
+for commands issued on that lane.
+
 The separate checkpoint caps room games at 24 and exact receipts at 64.
 Each current, prior or staging file is limited to 64 KiB. The predecessor
 continues to serve the same rooms and ignores this checkpoint. Returning

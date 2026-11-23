@@ -26,6 +26,11 @@ const validSignal=value=>value===null||exact(value,'actor,color,sequence')&&
   COLORS.has(value.color);
 const safeId=value=>typeof value==='string'&&ID.test(value);
 
+export function situatedGardenCommandId(interactionId,id){
+  if(!safeId(interactionId)||!safeId(id))return null;
+  return 'turn-'+createHash('sha256').update(JSON.stringify([interactionId,id])).digest('hex');
+}
+
 export class IndoorGardens {
   constructor({state,spaces,houses,legacyRooms,persist}){
     this.spaces=spaces;this.houses=houses;this.legacyRooms=legacyRooms;this.persist=persist;this.fenced=false;

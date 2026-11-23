@@ -162,4 +162,17 @@ the retained source still contains the original round. The observation is
 scoped to the authorized room. The paired
 daimon must hold both current app observation and room access. A situated
 native read after observed canonical admission resolves only that room.
-An indoor original does not grant exterior edits or projections.
+
+The same admitted turn can place a `garden.signal` in the captured room if the
+daimon is currently there and holds its own edit grant. Use the current recipe
+revision and a command ID. `result` with that same ID and interaction recovers
+the exact receipt, including after departure while access still holds. The
+server separates command IDs by interaction, so a sibling turn cannot read
+or replay that command's receipt. Other indoor mutations and movement use the
+existing own-native routes. Exterior edits and projections are unavailable
+from an indoor turn.
+
+Room access alone does not authorize an exact protected gallery reference as
+a Conversation attachment. The visitor catalog checks Nexus with the human
+visitor's session. Sharing the edition locator with a paired being requires
+an independent check of that being's access to the exact table and version.

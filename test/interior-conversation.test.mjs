@@ -16,7 +16,7 @@ test('a canonical interior source freezes its authorized place before awaits and
   const being='dm:being:v1:'+'a'.repeat(43),house=houseId(being),user='human:test';
   const binding='b'.repeat(64),socket=join(dir,'world.sock');
   const frozen={actorRef:user,beingRef:being,binding,entry:[1,{},2,'fixture']};
-  let grant=true,uploads=[],inspectEntered,releaseInspect,runtime,listener;
+  let grant=true,canEdit=true,admitted=true,uploads=[],inspectEntered,releaseInspect,runtime,listener;
   const entered=new Promise(resolve=>{inspectEntered=resolve;});
   const parked=new Promise(resolve=>{releaseInspect=resolve;});
   new RoomStore(join(dir,'houses')).save({schema:'holodeck.houses/v1',houses:[{
@@ -25,8 +25,8 @@ test('a canonical interior source freezes its authorized place before awaits and
   try{
     runtime=await createHolodeck({basePath:'/holodeck/',publicOrigin:'https://world.test',stateDir:dir,
       ownNative:true,
-      identityResolver:async req=>req.headers.cookie?.includes('fixture=user')?{id:user,ref:user,kind:'human',rights:['observe']}:null,
-      nativeRoomAuthority:async()=>grant?['observe','edit','project']:[],
+      identityResolver:async req=>req.headers.cookie?.includes('fixture=user')?{id:user,ref:user,kind:'human',rights:['observe','edit']}:null,
+      nativeRoomAuthority:async()=>grant?(canEdit?['observe','edit','project']:['observe']):[],
       worldPorts:[{socket,beingRef:being}],
       nativeFactory:async({room,stateDir,allowInteriorSource})=>{
         const transport={
@@ -38,7 +38,7 @@ test('a canonical interior source freezes its authorized place before awaits and
               entry_binding:req.frozen.entry,observation_id:req.observation.id,work_admitted:false,
               file:{file_id:randomUUID(),sha256:'d'.repeat(64),name:'holodeck-situation.json',mime:'application/json',size:2000}};
           },
-          status:async()=>({phase:'working',retainedOriginal:true,tracking:true,nativeAcceptance:'observed'}),
+          status:async()=>({phase:'working',retainedOriginal:true,tracking:true,nativeAcceptance:admitted?'observed':'unavailable'}),
         };
         const contexts=await createConversationContexts({room,stateDir:join(stateDir,'context'),transport,allowInteriorSource});
         return {contexts,conversationSurface:async()=>({schema:'holodeck.conversation-surface/v1',
@@ -47,22 +47,27 @@ test('a canonical interior source freezes its authorized place before awaits and
       }});
     listener=runtime.app.listen(0,'127.0.0.1');await once(listener,'listening');
     const id=randomUUID();
-    async function port(operation,args={},own=false){
+    async function port(operation,args={},own=false,interactionId=id){
       const conn=net.createConnection(socket);
       await once(conn,'connect');
-      conn.write(JSON.stringify({...(own?{ownNative:true}:{interactionId:id}),operation,args})+'\n');
+      conn.write(JSON.stringify({...(own?{ownNative:true}:{interactionId}),operation,args})+'\n');
       let value='';for await (const block of conn)value+=block;
       return JSON.parse(value);
     }
     const layout={type:'layout.publish',id:'fixture-layout-1',house,expectedRevision:null,
       rooms:[{id:'foyer',house,title:'Vestíbulo',level:0,entry:true,guests:[user],links:[]}]};
     const game={type:'garden.put',id:'fixture-garden-1',room:'foyer',title:'Jardín situado',expectedRevision:null,
-      play:{schema:'signal-garden/v1',minContributors:1,targets:[{x:0,z:2,radius:.45,color:'mint'}]}};
+      play:{schema:'signal-garden/v1',minContributors:2,targets:[
+        {x:0,z:2,radius:.45,color:'mint'},{x:0,z:.8,radius:.45,color:'amber'}]}};
     assert.equal((await port('act',layout,true)).ok,true);
     assert.equal((await port('act',game,true)).ok,true);
     const base='http://127.0.0.1:'+listener.address().port+'/holodeck/';
-    const first=await fetch(base,{headers:{Cookie:'fixture=user',Accept:'application/json'}});
-    const headers={Cookie:'fixture=user; '+first.headers.get('set-cookie').split(';')[0],Origin:'https://world.test','Content-Type':'application/json'};
+    async function browserHeaders(){
+      const response=await fetch(base,{headers:{Cookie:'fixture=user',Accept:'application/json'}});
+      return {Cookie:'fixture=user; '+response.headers.get('set-cookie').split(';')[0],
+        Origin:'https://world.test','Content-Type':'application/json'};
+    }
+    let headers=await browserHeaders();
     const post=(path,body)=>fetch(base+'api/'+path,{headers,method:'POST',body:JSON.stringify(body)});
     const move=(from,to)=>post('space',{from,to,live:1});
     assert.equal((await move('outside','foyer')).status,200);
@@ -106,8 +111,39 @@ test('a canonical interior source freezes its authorized place before awaits and
     assert.equal(uploads[0].place.activity.revision,1);
     assert.equal((await port('project')).ok,false);
     assert.equal((await port('act',{type:'space.move',from:'outside',to:'foyer'})).ok,false);
+    const signal={type:'garden.signal',room:'foyer',expectedRevision:2,
+      id:'fixture-native-signal',index:0,color:'mint'};
+    assert.equal((await port('act',signal)).ok,false,'room reference does not move the daimon');
+    headers=await browserHeaders();
+    assert.equal((await move('outside','foyer')).status,200);
+    const otherId=randomUUID();
+    assert.equal((await post('conversation-contexts',{...body,id:otherId})).status,200);
+    const humanSignal=await post('space/garden',{...signal,id:'fixture-human-signal',index:1,color:'amber'});
+    assert.equal(humanSignal.status,200);
+    assert.equal((await port('act',{type:'space.move',from:'outside',to:'foyer'},true)).ok,true);
+    assert.equal((await port('act',{...signal,room:'outside'})).ok,false);
+    assert.equal((await port('act',{...signal,expectedRevision:1})).ok,false);
+    canEdit=false;
+    assert.equal((await port('act',signal)).ok,false);
+    canEdit=true;
+    admitted=false;
+    assert.equal((await port('act',signal)).ok,false);
+    admitted=true;
+    const acted=await port('act',signal);
+    assert.equal(acted.ok,true);
+    assert.deepEqual(acted,await port('act',signal),'exact retry preserves the first result');
+    assert.equal((await port('act',{...signal,color:'amber'})).ok,false,'command ID cannot be reused');
+    assert.equal((await port('result',{id:signal.id},false,otherId)).ok,false,'a sibling turn cannot use the receipt');
+    assert.deepEqual(await port('result',{id:signal.id}),acted);
+    const latest=(await port('observe')).result.space.activity;
+    assert.equal(latest.sequence,acted.result.sequence);
+    assert.equal(latest.progress.contributors,2);
+    assert.equal(latest.progress.complete,true);
+    assert.equal((await port('act',{type:'space.move',from:'foyer',to:'outside'},true)).ok,true);
+    assert.deepEqual(await port('result',{id:signal.id}),acted,'receipt survives leaving the room');
     grant=false;
     assert.equal((await port('observe')).ok,false);
+    assert.equal((await port('result',{id:signal.id})).ok,false);
     const readback=await fetch(base+'api/conversation-contexts/'+id+'?binding='+binding,{headers});
     assert.equal(readback.status,409);
   }finally{

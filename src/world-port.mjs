@@ -2,6 +2,27 @@ import {ActivityError} from './activity.mjs';
 import net from 'node:net';
 import { chmodSync,lstatSync } from 'node:fs';
 import { DaimonPort } from './daimon-port.mjs';
+import {situatedGardenCommandId} from './indoor-gardens.mjs';
+
+function situatedInterior({request,verified,actor,room,conversationPlace,indoorGarden}){
+  const {operation,args}=request;
+  const captured=conversationPlace?.(actor,verified.capturedSpace);
+  if(!captured)throw Error('The current being has no access to that room');
+  const fields=Object.keys(args).sort().join(',');
+  if(operation==='observe'&&!fields)
+    return {schema:'holodeck.space-observation/v1',run:room.run,edition:room.edition,
+      observer:actor.id,space:captured};
+
+  const id=situatedGardenCommandId(verified.nativeRequest,args.id);
+  let result;
+  if(id&&operation==='act'&&args.type==='garden.signal'&&args.room===captured.id&&
+     fields==='color,expectedRevision,id,index,room,type')
+    result=indoorGarden?.(actor,{...args,id});
+  else if(id&&operation==='result'&&fields==='id')
+    result=indoorGarden?.(actor,{type:'garden.result',id});
+  if(!result||result.room!==captured.id)throw Error('Situated garden operation unavailable');
+  return result;
+}
 
 // The receiving operator owns the directory/socket filesystem capability.
 // Native identity and current room rights are independently rechecked per request.
@@ -48,11 +69,7 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
         let result;
         const savedExhibit=own&&request.operation==='result'?exhibitResult?.(actor,request.args.id):null;
         if(verified.capturedSpace){
-          if(request.operation!=='observe'||Object.keys(request.args).length)throw Error('Situated interior turns permit room observation only');
-          const captured=conversationPlace?.(actor,verified.capturedSpace);
-          if(!captured)throw Error('The current being has no access to that room');
-          result={schema:'holodeck.space-observation/v1',run:room.run,edition:room.edition,
-            observer:actor.id,space:captured};
+          result=situatedInterior({request,verified,actor,room,conversationPlace,indoorGarden});
         }else if(request.operation==='act'&&request.args.type==='layout.current'){
           if(!own||!rights.includes('edit')||Object.keys(request.args).length!==1)throw Error('Reading the draft base requires an own-native editor route');
           result=currentLayout?.(actor)??null;
