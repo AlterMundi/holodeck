@@ -9,6 +9,15 @@ acceptance. The obsolete bundled pending trial was withdrawn.
 
 ## Selected receiving release
 
+Source `3e15eb6`, package `538da75a94c9`, enables the continuing
+Conversation in authorized rooms. The receiving package passed a scoped
+preparation test that moves the speaker outside during an asynchronous
+binding read and verifies that the retained source still names the original
+room. Native observe resolves that captured room under fresh authority and
+refuses exterior mutation from the indoor original. The live selected
+runtime and authenticated health/assets matched. Human and model acceptance
+remain separate.
+
 Nicolás reported that the lab stair was missing. The selected Home pair
 already had the foyer and gallery grant; the lab was still limited to its
 owner. Receiving configuration now adds exactly that existing paired

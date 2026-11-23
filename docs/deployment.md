@@ -114,6 +114,13 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
+Indoor Conversation is selected at source `3e15eb6`, package
+`538da75a94c9`, with `a7cf9e539e70` retained as the immediate compatible
+predecessor. Installed inventory, authenticated HTTPS asset hashes, current
+room configuration and the private native turn journal matched the selected
+staging and pre-activation checks. The fixed source format and existing
+canonical route remain in use. See [indoor source contract](shared-conversation.md#indoor-source-contract).
+
 The first Blender room-art mounting is selected at source `6f01e67`,
 package `a7cf9e539e70`, with `952322c1e9d7` as the compatible predecessor.
 All 31 runtime files and authenticated HTTPS health/assets matched.
