@@ -81,7 +81,7 @@ function housingDocument(houses, prefix, houseVisual) {
   return markup;
 }
 
-export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=true,houseVisual,gardenVisual,sceneryAsset='island-scenery.glb',sceneryRevision,commonsVisual}={}){
+export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=true,houseVisual,gardenVisual,sceneryAsset='island-scenery.glb',sceneryRevision,commonsVisual,coastalRidges}={}){
   if(!assetFile(sceneryAsset))throw Error('Select a packaged scenery asset');
   const prefix=basePath.endsWith('/')?basePath:basePath+'/';
   const projection=workshopProjection(room.entities),manifest=JSON.stringify(room.entities);
@@ -89,6 +89,10 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
   let out=`<m-group id="workshop" data-run="${attribute(room.run)}" data-edition="${attribute(room.edition)}" data-semantic-sequence="${room.sequence}" data-layout-version="${LAYOUT_VERSION}" data-geometry-state="${attribute(manifest)}">`;
   const sceneryQuery='?layout='+LAYOUT_VERSION+(/^[a-f0-9]{64}$/.test(sceneryRevision)?'&v='+sceneryRevision.slice(0,12):'');
   out+=`<m-model id="island-scenery" src="${attribute(prefix+'assets/'+sceneryAsset+sceneryQuery)}" collide="false"></m-model>`;
+  if(assetFile(coastalRidges?.asset)&&/^[a-f0-9]{64}$/.test(coastalRidges.revision)){
+    const source=prefix+'assets/'+coastalRidges.asset+'?v='+coastalRidges.revision.slice(0,12);
+    out+=`<m-model id="coastal-ridges" src="${attribute(source)}" collide="false" cast-shadows="false"></m-model>`;
+  }
   if(assetFile(commonsVisual?.asset)){
     const revision=/^[a-f0-9]{64}$/.test(commonsVisual.revision)?'?v='+commonsVisual.revision.slice(0,12):'';
     out+=`<m-model id="authored-commons" src="${attribute(prefix+'assets/'+commonsVisual.asset+revision)}" collide="false"></m-model>`+

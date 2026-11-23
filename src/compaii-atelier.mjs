@@ -22,6 +22,9 @@ const SURROUNDINGS_ASSET='island-scenery-atelier.glb';
 const SURROUNDINGS_REVISION='694d83c8ba05d59b062fa7cf0f816461ddb9f8bdff3609549f0f932fa28f69b0';
 const OUTDOOR_SKY=Object.freeze({asset:'coastal-sky.jpg',
   revision:'2e9a63bbb5eb0e3a60e6144cff155e753211e093ee2870efda480129a01baae8'});
+const COASTAL_RIDGES=Object.freeze({asset:'coastal-ridges.glb',
+  revision:'518884afc176e4351746b8cce5e0461d1be7c7e36db0f3fc70a9a813e88b9119'});
+const COASTAL_FOG=Object.freeze({fogNear:24,fogFar:124,fogColor:{r:.716,g:.776,b:.784}});
 const dossier={
   'room-art/compaii-atelier/foyer.glb':'eb3bd88a7dc7e288ea6335f90b4ef24880d37dcd004c008e16a936a427c8198a',
   'room-art/compaii-atelier/gallery.glb':'1028d39b34938571ce0385e7bd6604f61c79a4f614ed3395648244e313d0dd35',
@@ -33,6 +36,7 @@ const dossier={
   ['assets/'+COMMONS_ASSET]:COMMONS_REVISION,
   ['assets/'+SURROUNDINGS_ASSET]:SURROUNDINGS_REVISION,
   ['assets/'+OUTDOOR_SKY.asset]:OUTDOOR_SKY.revision,
+  ['assets/'+COASTAL_RIDGES.asset]:COASTAL_RIDGES.revision,
 };
 
 const facade={
@@ -112,7 +116,8 @@ export function selectAtelier(profile,rooms,houses){
       {id:'tower-return',x:-3,y:3.6,z:-4.88,intensity:22,distance:6,color:'#ffcb86'},
     ].map(softLight).join('')};
   return {
-    sceneryAsset:SURROUNDINGS_ASSET,sceneryRevision:SURROUNDINGS_REVISION,outdoorSky:OUTDOOR_SKY,gardenVisual,commonsVisual,
+    sceneryAsset:SURROUNDINGS_ASSET,sceneryRevision:SURROUNDINGS_REVISION,outdoorSky:OUTDOOR_SKY,
+    coastalRidges:COASTAL_RIDGES,coastalFog:COASTAL_FOG,gardenVisual,commonsVisual,
     houseVisual:house=>house.id===COMPAII_HOUSE&&house.revision===1?{facade}:null,
     interiorArtwork:(room,passages=[])=>{
       if(room?.house!==COMPAII_HOUSE)return null;

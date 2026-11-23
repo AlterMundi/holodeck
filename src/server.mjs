@@ -123,7 +123,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(room.commitUncertain){projectionHealthy=false;return;}
       await document.load(worldDocument(room,{basePath,houseVisual:atelier?.houseVisual??houseVisual,
         gardenVisual:atelier?.gardenVisual??gardenVisual,sceneryAsset:atelier?.sceneryAsset,sceneryRevision:atelier?.sceneryRevision,
-        commonsVisual:atelier?.commonsVisual}));projectionHealthy=true;
+        commonsVisual:atelier?.commonsVisual,coastalRidges:atelier?.coastalRidges}));projectionHealthy=true;
     }}catch{projectionHealthy=false;}finally{projectionRunning=false;}
   };
   await project();if(!projectionHealthy){document.dispose();throw Error('The initial world representation could not load');}room.on('change',project);
@@ -389,7 +389,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       onClientDisconnect(connection){connections.delete(connection);},
       onClientUserIdentityUpdate(){return false;}
     },worldConfig:{mmlDocuments:{interior:{url:'ws://'+address+'world'}},enableChat:false,enableTweakPane:false,
-      environmentConfiguration:{groundPlane:false,sun:{intensity:.9},
+      environmentConfiguration:{groundPlane:false,sun:{intensity:.9},fog:{fogFar:0},
         ambientLight:{intensity:artForRoom(spaces.rooms.get(id))?.ambient ?? 1.5}},
       avatarConfiguration:{allowCustomAvatars:false},allowCustomDisplayName:false,allowOrbitalCamera:true,
       spawnConfiguration:{spawnPosition:{x:0,y:1,z:4},spawnYRotation:180},hud:{respawnButton:false}}});
@@ -401,7 +401,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     webClientServing:{indexUrl:basePath,indexContent:index,clientBuildDir:new URL('../build',import.meta.url).pathname,clientUrl:route('client/')},
     assetServing:{assetsDir:new URL('../public/assets',import.meta.url).pathname,assetsUrl:route('assets/')},
     worldConfig:{mmlDocuments:{workshop:{url:'ws://'+route('world')}},enableChat:false,enableTweakPane:false,
-      environmentConfiguration:{groundPlane:false,sun:{intensity:1.4},ambientLight:{intensity:1.2},fog:{fogNear:45,fogFar:140,fogColor:{r:.67,g:.78,b:.79}}},
+      environmentConfiguration:{groundPlane:false,sun:{intensity:1.4},ambientLight:{intensity:1.2},
+        fog:atelier?.coastalFog??{fogNear:45,fogFar:140,fogColor:{r:.67,g:.78,b:.79}}},
       avatarConfiguration:{allowCustomAvatars:false},allowCustomDisplayName:false,allowOrbitalCamera:true,
       spawnConfiguration:{spawnPosition:{x:0,y:1,z:6},spawnYRotation:180},hud:{respawnButton:false}}
   });
