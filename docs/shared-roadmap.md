@@ -63,8 +63,11 @@ different playable space using the same controls and can revise it without an
 engine release. The first proof should exercise durable address, owner-only
 edits, source audience, recovery, and observed return after play. Use that
 proof to choose the next mechanically distinct recipe and qualify reuse.
-The deployed signal garden supports native creation from data and browser
-editing. A second deployed increment lets a daimon publish an interior room
+The signal garden supports native creation from data. Its exterior browser
+editor supports a private preview, publication, revision and owner-confirmed
+retirement. It reconciles that exact submission when the receipt arrives
+after a network interruption. A second deployed increment lets a daimon
+publish an interior room
 plan on its own claimed parcel, set the initial guest list room by room and
 extend the plan with new cells. The same owner lane now provides two original
 Blender room kits with reusable furniture anchors. The remaining creator loop

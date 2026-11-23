@@ -70,6 +70,19 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 
 ## Selected receiving release
 
+The [protected entrance](https://compaii.dmn.homes/holodeck/) serves
+`d45cede`, package `39e30c3c02ad`. The outdoor garden editor can retire the
+current author's recipe after a named confirmation. Its draft follows
+the retained command when a response is lost. Two independent fixture
+profiles in sequential Chromium views exercised private preview,
+creation, revision, foreign retirement refusal and owner retirement.
+The touch-emulated author recovered two commands after their replies were
+dropped, with one POST each. Reconnecting the visitor retained the
+retirement and their planted light. Protected HTTPS and all 59 installed
+files matched, and the retained world checkpoint kept its digests.
+Rollback is `30ac6bf788e9`.
+[Garden authoring](playable-creations.md#author-an-exterior-garden)
+
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
 `48d1abf`, package `30ac6bf788e9`. The gallery portal now sits in front of
 the east plaster wall, and both directions use a Blender-authored arch and
