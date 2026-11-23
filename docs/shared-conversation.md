@@ -304,6 +304,24 @@ release binary with `HOLODECK_TELECODEX_SOURCE` and
 temporary root with synthetic Telegram, identity and app-server. Keep its
 socket local to the packaged world under test. The mode needs neither a
 provider account nor a deployed receiver configuration.
+
+Set `HOLODECK_ROUTE_NATIVE=1` to exercise the selected-worker path. Use a
+matched Telecodex source and binary that expose the active-execution proof
+in the original's trace. The loopback owner creates a separate fixture work
+topic, and the browser selects it using the existing canonical selector.
+The test checks that the selected worker receives the original and exact
+attachment, that the world observes the required proof for the action, and
+that the same instruction covers the final after its live proof disappears.
+It keeps the second fixture original on the direct path. On 23 November
+the scripted CLI run and the separate foreground model run both passed.
+The model crossed the two offered passages, detected amber already present
+and placed the missing mint signal. The two simulated browser participants
+saw the completion. The real isolated owner returned the model's exact
+answer once after the simulated provider sent a covering result. A
+different original could not read the action receipt, and the correct
+original recovered it after releasing its source. Production routing and
+physical-device acceptance remain separate.
+
 The harness overwrites the two captures and one
 structured result in that directory on repeated checks.
 

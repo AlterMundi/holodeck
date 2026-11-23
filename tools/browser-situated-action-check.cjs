@@ -17,7 +17,7 @@ const {mkdtempSync,rmSync}=require('node:fs');
 const {resolve}=require('node:path');
 const {pathToFileURL}=require('node:url');
 const root=join(__dirname,'..');
-const {HOLODECK_PLAYWRIGHT,HOLODECK_STAGE,HOLODECK_CONVERSATION_RELEASE,HOLODECK_FIXTURE_TLS,HOLODECK_EVIDENCE_DIR,HOLODECK_MODEL_HANDOFF,HOLODECK_TELECODEX_SOURCE,HOLODECK_TELECODEX_BINARY}=process.env;
+const {HOLODECK_PLAYWRIGHT,HOLODECK_STAGE,HOLODECK_CONVERSATION_RELEASE,HOLODECK_FIXTURE_TLS,HOLODECK_EVIDENCE_DIR,HOLODECK_MODEL_HANDOFF,HOLODECK_TELECODEX_SOURCE,HOLODECK_TELECODEX_BINARY,HOLODECK_ROUTE_NATIVE}=process.env;
 if(!HOLODECK_PLAYWRIGHT||!HOLODECK_STAGE||!HOLODECK_CONVERSATION_RELEASE||!HOLODECK_FIXTURE_TLS||!HOLODECK_EVIDENCE_DIR)
   throw Error('Select the installed browser/Conversation assets, existing package stage, local TLS and bounded evidence directory');
 const {chromium}=require(resolve(HOLODECK_PLAYWRIGHT));
@@ -26,7 +26,11 @@ const modelHandoff=HOLODECK_MODEL_HANDOFF?resolve(HOLODECK_MODEL_HANDOFF):null;
 const realOwner=!!(HOLODECK_TELECODEX_SOURCE||HOLODECK_TELECODEX_BINARY);
 if(realOwner&&(!HOLODECK_TELECODEX_SOURCE||!HOLODECK_TELECODEX_BINARY))
   throw Error('Select both the isolated Telecodex source and release binary');
-const playerText=modelHandoff?'Can you come here and complete the garden with me? Place the missing signal and tell me what happened.':'The first signal is in this room.';
+const routed=HOLODECK_ROUTE_NATIVE==='1';
+if(routed&&!realOwner)throw Error('The routed trial needs the isolated Telecodex owner');
+const playerText=(routed?'#Alpha ':'')+(modelHandoff?
+  'Can you come here and complete the garden with me? Place the missing signal and tell me what happened.':
+  'The first signal is in this room.');
 
 async function readModelAnswer(request){
   const target=join(modelHandoff,'request.json');
@@ -53,7 +57,8 @@ async function readModelAnswer(request){
 function openCanonicalOwner(socket){
   const child=spawn('/usr/bin/python3',[join(root,'tools/canonical-conversation-fixture.py'),
     '--telecodex-source',resolve(HOLODECK_TELECODEX_SOURCE),
-    '--telecodex-binary',resolve(HOLODECK_TELECODEX_BINARY),'--actor','human:player','--world-socket',socket],
+    '--telecodex-binary',resolve(HOLODECK_TELECODEX_BINARY),'--actor','human:player','--world-socket',socket,
+    ...(routed?['--routed']:[])],
     {stdio:['pipe','pipe','inherit']});
   const ended=new Promise(resolve=>child.once('close',resolve));
   const rows=createInterface({input:child.stdout});
@@ -373,6 +378,8 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
       assert.equal(admission.text,playerText);
       assert.deepEqual(admission.file,original.file);
       assert.deepEqual(admission.source,original.capture);
+      if(routed)assert.match(admission.instruction,/^[a-f0-9-]{36}$/);
+      else assert.equal(admission.instruction,null);
       assert.deepEqual(admission.worldInterface.argv_prefix,[join(root,'integrations/world_port.py'),'--socket',path,'--interaction',original.id]);
     }
     const nativeApproach=[];
@@ -444,6 +451,12 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
         assert.equal(completion.presentation.preview,text);
         const answer=completion.status.updates.find(item=>item.source===source);
         assert.equal(answer?.sha256,digest(text));
+        if(completion.workerFinal){
+          assert.equal(completion.presentation.kind,'worker_result');
+          assert.equal(answer.instruction,admission.instruction);
+          assert.equal(completion.workerFinal.nativeTurn,admission.nativeTurn);
+          return {source,...completion.workerFinal};
+        }
         if(originalId===original.id)assert.equal(answer.nativeTurn,admission.nativeTurn);
         return {source,nativeTurn:answer.nativeTurn,nativeItem:answer.nativeItem};
       }
@@ -482,7 +495,7 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     assert.equal(runtime.native.contexts.has(original.id),true);
     await keyboard.locator('#conversation-close').click();
     const primary=await final(original.id,primaryText);
-    assert.match(primary.source,/^native:[0-9]+$/);
+    assert.match(primary.source,routed?/^(?:native:[0-9]+|delivery:[a-f0-9-]{36})$/:/^native:[0-9]+$/);
     assert.equal((await worldRequest('act',command,original.id)).ok,false);
     assert.deepEqual(await worldRequest('result',{id:command.id},original.id),effect);
     await keyboard.locator('#talk').click();
@@ -571,11 +584,11 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     console.error('The original garden effect and Conversation reply were verified');
     await touch.screenshot({path:join(HOLODECK_EVIDENCE_DIR,'reconnected-game.png')});
     assert.deepEqual(errors,[]);
-    const evidence={replyLayout,draftAfterReturn:true,simulatedActors:true,actualModel:!!modelAnswer,canonicalTransportSimulated:!canonical,canonicalNativePeerSimulated:true,canonicalAttachmentFromNativePacket:!!admission,touchActions:true,keyboardMovement:true,matchingProgress:true,
+    const evidence={replyLayout,draftAfterReturn:true,simulatedActors:true,actualModel:!!modelAnswer,canonicalTransportSimulated:!canonical,canonicalNativePeerSimulated:true,routedConversation:routed,canonicalAttachmentFromNativePacket:!!admission,touchActions:true,keyboardMovement:true,matchingProgress:true,
       retainedRoomTopic:original.capture.referredRoomObject.id,nextRoomTopic,
       situatedRoom:original.capture.place.id,initialContributors:original.capture.place.activity.progress.contributors,
       ...(admission?{canonicalLocalTurn:admission.localTurn,canonicalNativeTurn:primary.nativeTurn,canonicalNativeItem:primary.nativeItem,
-        canonicalFinalSource:primary.source,canonicalContextSha256:admission.file.sha256,canonicalReplySha256:digest(primaryText)}:{}),
+        canonicalFinalSource:primary.source,canonicalInstruction:primary.instruction??null,canonicalContextSha256:admission.file.sha256,canonicalReplySha256:digest(primaryText)}:{}),
       canonicalOriginals:originals.length,canonicalPosts,machineAttachments:uploads,replyRenderedOnce:true,siblingCompletedFirst:!canonical,
       sameConversationFrame:true,foreignReceiptDenied:true,receiptRecoveredAfterRelease:true,harnessNativeApproach:modelAnswer?null:nativeApproach,worldReceipt:effect.result,recoveredComplete:recovered.progress.complete};
     writeFileSync(join(HOLODECK_EVIDENCE_DIR,'result.json'),JSON.stringify(evidence,null,2)+'\n');

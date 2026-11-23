@@ -9,6 +9,22 @@ and devices, and keep direct use separately attributed when observed.
 
 ## Foreground model qualification
 
+The separate selected-worker fixture ran the current packaged world and
+installed Conversation client through the isolated Telecodex routing
+owner. An explicit selector reached one worker, which received the exact
+original and machine attachment. The bridge observed its live execution
+before the CLI could take the two passages and apply the missing signal.
+Both Chromium views saw the shared result. The retained Conversation frame
+showed one covering worker final, and only the same original recovered
+the action receipt after the live proof and source lease ended. The other
+browser reconnected to the completed activity. A second run used a real
+Codex model to follow the scoped action offers, choose the missing mint
+signal and write its own reply. Both browsers verified completion, and the
+reply from the isolated owner matched the model's exact text. Pair identity,
+native provider events and browser HTTP were fixtures. The production-routed
+original remains a separate observation.
+[Selected-worker qualification](shared-conversation.md#return-to-the-same-conversation)
+
 The combined 23 November trial used the packaged world, the installed
 Conversation web client, two Chromium participants and an isolated instance
 of the actual Telecodex owner, Provider and NativeBridge. The desktop moved
@@ -1244,9 +1260,9 @@ context or authorize its receipt. The original reply appeared once in the
 same retained Conversation frame after reopening and refreshing the panel.
 Reloading the other browser restored the game result and never exposed the
 private text. This qualifies an isolated handoff using a synthetic canonical
-writer, admission and final. A separate Telecodex test exercised the actual
-final-event projection from a synthetic native peer. Actual model choice and
-final generation in this same world action remain open.
+writer, admission and final. The separate foreground model trial above used
+a real Codex action and reply in this isolated scenario. The production
+round trip still requires a genuine routed original and observed final.
 
 The live client freezes copied world position, other participants, geometry and
 capture time before waiting for an embedded viewer. A changed visit cannot relabel

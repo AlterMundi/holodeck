@@ -18,10 +18,13 @@ from types import SimpleNamespace
 
 MAX_LINE = 131072
 ATTACHMENT_MARKER = "\n[Retained original file attachments]\n"
+ROUTED_SELECTOR = "#Alpha "
+WORK_TOPIC = 7
+WORK_THREAD = "native-topic-7"
 
 
 class CanonicalOwner:
-    def __init__(self, journey, provider, native, actor, being, world_port):
+    def __init__(self, journey, provider, native, actor, being, world_port, routed=False):
         self.journey = journey
         self.provider = provider
         self.actor = actor
@@ -36,6 +39,7 @@ class CanonicalOwner:
         home_auth = SimpleNamespace(enabled=True, human_ref=actor, origin=origin, entry="/")
         self.bridge = native.NativeBridge(provider, lambda: pair, world_port=world_port, home_auth=home_auth)
         self.world_port = world_port
+        self.routed = routed
         self.originals = {}
         self.active = None
 
@@ -49,14 +53,32 @@ class CanonicalOwner:
         receipt = self.provider.conversation_input_submit(body)
         self.originals[ident] = {"text": body["text"], "file": body["files"][0]}
         self.active = ident
-        self.journey.wait(lambda: len(self.journey.packets) > before)
-        method, packet = self.journey.packets[before]
-        if (len(self.journey.packets) != before + 1 or method != "turn/start"
-                or packet.get("clientUserMessageId") != "conversation:" + ident):
-            raise ValueError("The native peer did not receive this exact original in its own turn")
-        self.originals[ident].update(packet=packet, nativeTurn=self.journey.web_turn,
-                                     nativeThread=self.journey.web_thread)
+        original = self.originals[ident]
+        if self.routed and body["text"].startswith(ROUTED_SELECTOR):
+            self.journey.wait(lambda: len(self.journey.worker_packets.get(WORK_THREAD, [])) == 1)
+            route = self.route(ident)
+            packet = self.journey.worker_packets[WORK_THREAD][0]
+            if len(self.journey.packets) != before or packet.get("threadId") != WORK_THREAD:
+                raise ValueError("The original reached an unexpected native thread")
+            if route["forwarded_original"] != body["text"]:
+                raise ValueError("The owner trace changed the forwarded original")
+            original.update(packet=packet, nativeTurn=self.journey.workers[WORK_THREAD],
+                            nativeThread=WORK_THREAD, instruction=route["instruction"])
+        else:
+            self.journey.wait(lambda: len(self.journey.packets) > before)
+            method, packet = self.journey.packets[before]
+            if (len(self.journey.packets) != before + 1 or method != "turn/start"
+                    or packet.get("clientUserMessageId") != "conversation:" + ident):
+                raise ValueError("The native peer did not receive this exact original in its own turn")
+            original.update(packet=packet, nativeTurn=self.journey.web_turn, nativeThread=self.journey.web_thread)
         return receipt
+
+    def route(self, ident):
+        trace = self.provider.conversation_input_trace(ident)
+        routes = trace["routes"]
+        if trace["id"] != ident or len(routes) != 1 or routes[0]["target"]["thread_id"] != WORK_TOPIC:
+            raise ValueError("The original does not select exactly the fixture worker")
+        return routes[0]
 
     def status(self, ident, observation, file):
         return self.bridge.status(self.actor, self.bridge.inspect(self.actor), ident,
@@ -67,9 +89,7 @@ class CanonicalOwner:
             raise ValueError("Select this fixture's active original")
         original = self.originals[ident]
         retained = self.provider.conversation_input_status(ident)
-        local_turn = retained.get("local_turn")
-        if (retained.get("text") != original["text"] or retained.get("files") != [original["file"]]
-                or type(local_turn) is not int or local_turn <= 0):
+        if retained.get("text") != original["text"] or retained.get("files") != [original["file"]]:
             raise ValueError("The canonical owner did not retain the exact original")
         prompt = original["packet"]["input"][0]["text"]
         if original["text"] not in prompt:
@@ -100,12 +120,25 @@ class CanonicalOwner:
                 ]):
             raise ValueError("The native attachment does not describe this exact world interaction")
         self.journey.wait(lambda: self.status(ident, source, file)["phase"] == "working")
-        if self.status(ident, source, file)["nativeAcceptance"] != "observed":
+        observed = self.status(ident, source, file)
+        if observed["nativeAcceptance"] != "observed":
             raise ValueError("The canonical owner did not observe native admission")
+        local_turn = retained.get("local_turn")
+        if "instruction" in original:
+            proof = observed.get("activeExecution", {})
+            route = self.route(ident)
+            if (proof.get("instruction") != original["instruction"]
+                    or route["instruction"] != original["instruction"]
+                    or not route.get("native_acceptance")):
+                raise ValueError("The bridge did not observe the exact active routed execution")
+            local_turn = proof.get("local_turn")
+        if type(local_turn) is not int or local_turn <= 0:
+            raise ValueError("The owner did not observe a local native turn")
         original.update(source=source, localTurn=local_turn)
         return {
             "id": ident, "text": retained["text"], "source": source, "worldInterface": interface,
             "file": file, "localTurn": local_turn, "nativeTurn": original["nativeTurn"],
+            "instruction": original.get("instruction"),
         }
 
     def final(self, ident, text):
@@ -117,6 +150,8 @@ class CanonicalOwner:
         source, file = original["source"], original["file"]
         if self.status(ident, source, file)["phase"] != "working":
             raise ValueError("The selected original no longer has a running native turn")
+        if "instruction" in original:
+            return self.routed_final(ident, text)
         thread, turn = original["nativeThread"], original["nativeTurn"]
         item = turn + "-fixture-final"
         self.journey.broadcast(thread, "item/completed", {
@@ -139,6 +174,30 @@ class CanonicalOwner:
             raise ValueError("The canonical presentation did not retain exactly one final")
         self.active = None
         return {"id": ident, "status": observed, "presentation": cards[0]}
+
+    def routed_final(self, ident, text):
+        original = self.originals[ident]
+        source, file = original["source"], original["file"]
+        item = original["nativeTurn"] + "-fixture-final"
+        self.journey.answer_worker(WORK_TOPIC, text, item=item)
+        self.journey.wait(lambda: self.status(ident, source, file)["phase"] == "completed")
+        self.journey.idle()
+        observed = self.status(ident, source, file)
+        route = self.route(ident)
+        answers = [update for update in observed["updates"]
+                   if update.get("instruction") == original["instruction"] and update.get("text") == text]
+        if (route["instruction"] != original["instruction"] or route.get("active_execution") is not None
+                or len(answers) != 1 or not any(result.get("declared") and result.get("instruction_covered")
+                    and result.get("source") == answers[0]["source"] for result in route["results"])):
+            raise ValueError("The owner did not publish a covering final for this routed original")
+        cards = [card for card in self.provider.presentation_list(0, 0)["items"]
+                 if card.get("source", card.get("id")) == answers[0]["source"]]
+        if len(cards) != 1 or cards[0].get("preview") != text or cards[0].get("kind") != "worker_result":
+            raise ValueError("The canonical presentation did not retain the routed final")
+        self.active = None
+        return {"id": ident, "status": observed, "presentation": cards[0],
+                "workerFinal": {"instruction": original["instruction"],
+                                "nativeTurn": original["nativeTurn"], "nativeItem": item}}
 
     def dispatch(self, operation, args):
         if operation in ("inspect", "lookup", "prepareContext", "status"):
@@ -196,6 +255,7 @@ def main():
     parser.add_argument("--actor", default="human:player")
     parser.add_argument("--being", default="dm:being:v1:" + "m" * 43)
     parser.add_argument("--world-socket", required=True, type=Path)
+    parser.add_argument("--routed", action="store_true")
     args = parser.parse_args()
     if (not re.fullmatch(r"human:[A-Za-z0-9:._/-]{1,240}", args.actor)
             or not re.fullmatch(r"dm:being:v1:[A-Za-z0-9_-]{43}", args.being)
@@ -211,17 +271,27 @@ def main():
         from conversation_input_control_io import Inputs
         from dashboard.provider import Provider
         spec.loader.exec_module(native)
-        journey = Inputs(str(args.telecodex_binary.resolve()))
+        fixture = Inputs
+        if args.routed:
+            from conversation_routing_io import CanonicalRouting
+            fixture = CanonicalRouting
+        journey = fixture(str(args.telecodex_binary.resolve()))
         try:
             journey.start()
-            journey.admit("Initialize fixture-owned conversation.", topic=1)
-            journey.wait(lambda: journey.has("Initial goal turn delivered.", 1))
-            journey.idle()
+            for topic in (WORK_TOPIC, 1) if args.routed else (1,):
+                journey.admit("Initialize fixture-owned conversation.", topic=topic)
+                journey.wait(lambda: journey.has("Initial goal turn delivered.", topic))
+                journey.idle()
+            if args.routed:
+                journey.stop()
+                journey.config.write_text(journey.config.read_text() + journey.target_config)
+                journey.start()
+                journey.routing = True
             journey.wait_control_socket(journey.socket)
             provider = Provider({"receiver_config": str(journey.config),
                                  "native_home": str(journey.root / "codex-home")})
             world_port = {"cli": str(source.with_name("world_port.py")), "socket": str(args.world_socket)}
-            serve(CanonicalOwner(journey, provider, native, args.actor, args.being, world_port), output)
+            serve(CanonicalOwner(journey, provider, native, args.actor, args.being, world_port, args.routed), output)
         finally:
             journey.close()
 
