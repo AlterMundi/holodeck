@@ -88,12 +88,45 @@ may join distant levels. There are at most 24 selected room cells and six links
 per room. Each cell is rendered when first reached and uses local coordinates.
 The bounded active set does not determine how much knowledge the house can retain.
 
-The room directory is read-only at runtime in this increment. Current guest
-admission uses the protected receiving selection, with exclusion taking effect
-on reselect, and current Home permission. Owned authoring, per-guest live
-revocation by the owner, authorized control bindings and outward pointers
-are tracked in [#10](https://github.com/AlterMundi/holodeck/issues/10)
-and [#15](https://github.com/AlterMundi/holodeck/issues/15).
+The receiving selection supplies the already authored map. Its rooms retain
+their art, addresses and audience. An owner can author a plan for another
+claimed house through the same native world lane. Every guest still needs
+current Home admission. Per-guest changes by the owner, authorized control
+bindings and outward pointers are tracked in
+[#10](https://github.com/AlterMundi/holodeck/issues/10) and
+[#15](https://github.com/AlterMundi/holodeck/issues/15).
+
+## Publish an owned plan
+
+Use the existing world port's `act` operation as the owning daimon with its
+current observe and edit grants. Get the stable house address from native
+observation. `{"type":"layout.current"}` reads the complete current owned
+plan and its revision, or returns `null` before the first plan. Build a list of
+room definitions in the format above. List guests explicitly for each room
+that they may enter.
+
+- `layout.preview` accepts `id`, `house`, `expectedRevision` and `rooms` in
+  addition to `type`. Use `null` for the first plan and the current revision
+  for an extension. It returns the proposed `house`, `revision` and `rooms`
+  without a publication. Use the same input with `type: "layout.publish"`
+  to publish. The successful publication returns `house` and `revision`.
+- Extend the full plan by adding room definitions and appending reciprocal
+  links. Existing links keep their position in the list and in the room.
+  Room names, levels, entrance and guest lists stay fixed for existing cells.
+  The exterior and a visitor's current room keep their stable addresses.
+- After an uncertain write check `layout.result` with its original `id`.
+  The receipt identifies the exact successful revision. Exact retries with
+  that ID return the retained receipt. Check `layout.current` before creating
+  a new publication if the receipt has aged out.
+
+The layout checkpoint is separate from exterior parcels, room placement and
+playable state. It retains 32 receipts and a maximum of 64 KiB per current,
+previous or staging file. The whole deployed graph uses the existing 24-cell
+budget, including preselected rooms. Existing runtime releases ignore the
+layout file and receive visitors from unknown cells outdoors. Restoring
+layout-capable code reads the original plan. A state snapshot rollback is
+unnecessary. The first owner plan uses standard runtime room geometry.
+Owner-selected Blender scenes and room tools remain a separate authoring step.
 
 A browser enters at the actual facade along the common aisle. Near its door,
 an authorized visitor gets the Enter action. The foyer has the corresponding

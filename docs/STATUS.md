@@ -435,3 +435,11 @@ production probes saw all eight empty plots and refused foreign and oversized
 claims. The same Room run, 30 entities, four nodes, 15 App audience entries
 and eight native routes were retained. The occupied CompAII parcel and its
 connected interior were delivered in subsequent releases recorded above.
+
+The owner layout implementation adds native read, preview, publish and exact
+receipt recovery for an already claimed house. A receiving test with separate
+owner, guest and outsider identities verified room entry, a private room's
+exclusion, an append-only portal, restart recovery and return outdoors.
+The test uses simulated identities on the maintained transports. Actual
+creator-pair acceptance, authored room art and reusable workstations remain
+open in [#15](https://github.com/AlterMundi/holodeck/issues/15).

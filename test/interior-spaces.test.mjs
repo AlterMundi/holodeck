@@ -234,3 +234,103 @@ test('HTTP, real geometry upgrades and native observation share active room and 
     await stop();rmSync(stateDir,{recursive:true,force:true});
   }
 });
+
+test('own-native layout publication adds a live guest route and survives process restart', async()=>{
+  const stateDir=mkdtempSync(join(tmpdir(),'holodeck-layout-receiving-'));
+  const foreign='dm:being:v1:'+'z'.repeat(43);
+  new RoomStore(join(stateDir,'houses')).save({schema:'holodeck.houses/v1',houses:[house],receipts:[]});
+  let runtime,listener,base,socketPath,foreignPath,boot=0;
+  async function start(){
+    socketPath=join(stateDir,'owner-'+(++boot)+'.sock');
+    foreignPath=join(stateDir,'foreign-'+boot+'.sock');
+    runtime=await createHolodeck({production:true,basePath:'/holodeck/',publicOrigin:'https://world.test',stateDir,
+      worldPorts:[{socket:socketPath,beingRef:owner},{socket:foreignPath,beingRef:foreign}],ownNative:true,
+      nativeRoomAuthority:async()=>['observe','edit'],
+      nativeFactory:()=>({availability:async()=>({available:false}),authorizeWorldRequest(){throw Error('test');}}),
+      identityResolver:async req=>{
+        const id=req.headers.cookie?.match(/(?:^|; )home=(guest|outsider)/)?.[1];
+        return id?{id:'human:'+id,kind:'human',rights:['observe'],name:id}:null;
+      }});
+    listener=runtime.app.listen(0,'127.0.0.1');
+    await once(listener,'listening');
+    base='http://127.0.0.1:'+listener.address().port+'/holodeck/';
+  }
+  async function stop(){
+    if(!listener)return;
+    runtime.close();
+    listener.closeAllConnections();
+    await new Promise(resolve=>listener.close(resolve));
+    listener=null;
+  }
+  async function act(args,path=socketPath){
+    const socket=net.createConnection(path);
+    await once(socket,'connect');
+    socket.write(JSON.stringify({ownNative:true,operation:'act',args})+'\n');
+    let response='';
+    for await(const chunk of socket)response+=chunk;
+    return JSON.parse(response);
+  }
+  async function signIn(name){
+    const cookie='home='+name;
+    const response=await fetch(base,{headers:{Cookie:cookie,Accept:'application/json'}});
+    assert.equal(response.status,200);
+    return cookie+'; '+response.headers.get('set-cookie').split(';')[0];
+  }
+  const request=(Cookie,path,body)=>fetch(base+'api/'+path,{
+    method:body?'POST':'GET',headers:{Cookie,Origin:'https://world.test','Content-Type':'application/json'},
+    body:body&&JSON.stringify(body)});
+  async function get(cookie,path){
+    const response=await request(cookie,path);
+    assert.equal(response.status,200);
+    return response.json();
+  }
+
+  const publication={type:'layout.publish',id:'receive-layout-01',house:house.id,expectedRevision:null,rooms:definitions};
+  try{
+    await start();
+    const visitor=await signIn('guest'),outsider=await signIn('outsider');
+    const initial=await get(visitor,'state');
+    assert.deepEqual(initial.entrances,[]);
+    assert.equal((await act({type:'layout.current'})).result,null);
+    const preview=await act({...publication,type:'layout.preview'});
+    assert.deepEqual(preview.result,{house:house.id,revision:1,rooms:definitions});
+    assert.deepEqual((await get(visitor,'state')).entrances,[]);
+    assert.equal((await act(publication,foreignPath)).ok,false);
+    const published=await act(publication);
+    assert.deepEqual(published.result,{house:house.id,revision:1});
+    assert.deepEqual(await act(publication),published);
+    assert.deepEqual((await act({type:'layout.current'})).result,preview.result);
+    const state=await get(visitor,'state');
+    assert.equal(state.run,initial.run);
+    assert.deepEqual(state.entrances.map(entrance=>entrance.id),['foyer']);
+    assert.deepEqual((await get(outsider,'state')).entrances,[]);
+    assert.equal((await request(outsider,'space',{from:'outside',to:'foyer',live:1})).status,409);
+    const entry=await request(visitor,'space',{from:'outside',to:'foyer',live:1});
+    assert.equal(entry.status,200);
+    const foyer=await entry.json();
+    assert.equal(foyer.scene.id,'foyer');
+    assert.deepEqual(foyer.exits.map(exit=>exit.to),['gallery']);
+    assert.equal((await request(visitor,'space/scene?room=lab')).status,404);
+
+    const expanded=structuredClone(definitions);
+    expanded[0].links.push({kind:'portal',to:'tower'});
+    expanded.push(room('tower','Tower',2,false,[{kind:'portal',to:'foyer'}]));
+    assert.deepEqual((await act({...publication,id:'receive-layout-02',expectedRevision:1,rooms:expanded})).result,
+      {house:house.id,revision:2});
+    const routes=(await get(visitor,'space')).exits;
+    assert.deepEqual(routes.map(exit=>exit.to),['gallery','tower']);
+    assert.equal(routes[0].slot,foyer.exits[0].slot);
+
+    await stop();
+    await start();
+    assert.equal((await get(visitor,'space')).id,'foyer');
+    assert.deepEqual((await act({type:'layout.current'})).result,{house:house.id,revision:2,rooms:expanded});
+    assert.deepEqual((await act({type:'layout.result',id:publication.id})).result,published.result);
+    const exit=await request(visitor,'space',{from:'foyer',to:'outside',live:1});
+    assert.equal(exit.status,200);
+    assert.equal((await exit.json()).id,'outside');
+  }finally{
+    await stop();
+    rmSync(stateDir,{recursive:true,force:true});
+  }
+});

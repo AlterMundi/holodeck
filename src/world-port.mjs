@@ -5,7 +5,7 @@ import { DaimonPort } from './daimon-port.mjs';
 
 // The receiving operator owns the directory/socket filesystem capability.
 // Native identity and current room rights are independently rechecked per request.
-export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,conversationPlace,putExhibit,exhibitResult}){
+export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,conversationPlace,putExhibit,exhibitResult,currentLayout,previewLayout,publishLayout,layoutResult}){
   if(!socketPath?.startsWith('/')||!native?.authorizeWorldRequest||typeof resolveRights!=='function')
     throw Error('Select the installed native world port and authority resolver');
   let active=0;
@@ -53,6 +53,19 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
           if(!captured)throw Error('The current being has no access to that room');
           result={schema:'holodeck.space-observation/v1',run:room.run,edition:room.edition,
             observer:actor.id,space:captured};
+        }else if(request.operation==='act'&&request.args.type==='layout.current'){
+          if(!own||!rights.includes('edit')||Object.keys(request.args).length!==1)throw Error('Reading the draft base requires an own-native editor route');
+          result=currentLayout?.(actor)??null;
+        }else if(request.operation==='act'&&request.args.type==='layout.result'){
+          if(!own||Object.keys(request.args).sort().join(',')!=='id,type')throw Error('Layout receipts require an own-native route');
+          result=layoutResult?.(actor,request.args.id);
+          if(!result)throw Error('Layout receipt unavailable');
+        }else if(request.operation==='act'&&['layout.preview','layout.publish'].includes(request.args.type)){
+          if(!own||!actor.rights.includes('edit'))throw Error('Layout authoring requires an own-native route');
+          result=request.args.type==='layout.preview'?
+            previewLayout?.(actor,{...request.args,type:'layout.publish'}):
+            publishLayout?.(actor,request.args);
+          if(!result)throw Error('Layout unavailable');
         }else if(request.operation==='act'&&request.args.type==='exhibit.put'){
           if(!own)throw Error('Exhibit authoring requires an own-native route');
           result=putExhibit?.(actor,request.args);

@@ -464,6 +464,10 @@ async function refresh(){
   try{incoming=await api('state');}catch(error){if(request!==stateRequest)return;worldAudio.breakContinuity();throw error;}
   if(!snapshotMayApply(state,incoming,request,stateRequest))return;
   state=incoming;contentVisitor.syncNodes(state.nodes);playableHUD.sync(state.nodes,state.actorRef,state.canEdit===true);
+  if(activeSpace?.id==='outside'&&Array.isArray(state.entrances)&&
+    JSON.stringify(activeSpace.entrances)!==JSON.stringify(state.entrances)){
+    activeSpace={...activeSpace,entrances:state.entrances};resetDoor();
+  }
   $('#garden-create').hidden=state.canEdit!==true;
   worldAudio.observe(state,{continuityVersion});worldHistory.observe(state);
   const count=client.getCharacterStates().size;

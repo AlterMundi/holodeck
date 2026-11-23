@@ -23,8 +23,8 @@ export const EXHIBIT_POSITION=Object.freeze({x:2.5,y:.1,z:1.25});
 export const EXHIBIT_LABEL='Exposición';
 
 export class RoomExhibits {
-  constructor({state,spaces,houses,persist}){
-    this.spaces=spaces;this.houses=houses;this.persist=persist;
+  constructor({state,spaces,houses,persist,artForRoom=interiorArt}){
+    this.spaces=spaces;this.houses=houses;this.persist=persist;this.artForRoom=artForRoom;
     this.state=state??{schema,exhibits:[],receipts:[]};
     const {exhibits,receipts}=this.state;
     if(!exact(this.state,'exhibits,receipts,schema')||this.state.schema!==schema||
@@ -79,7 +79,7 @@ export class RoomExhibits {
 
   visit(actor,room){
     if(this.spaces.current(actor)!==room)return [];
-    const station=interiorArt(this.spaces.rooms.get(room))?.station;
+    const station=this.artForRoom(this.spaces.rooms.get(room))?.station;
     const exhibit=this.forRoom(room);
     const localStation=station?{
       id:station.id,node:station.id,title:station.title,position:station.position,
