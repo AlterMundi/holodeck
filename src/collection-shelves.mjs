@@ -38,11 +38,10 @@ export class CollectionShelves {
     this.items=new Map();
     this.list=panel.querySelector('ul');
     this.visibleLinks='';
-    this.archive=new CollectionArchive({scene,panel:archivePanel,loader:this.loader,
-      readModel:(edition,signal)=>modelBytes(base,edition,signal)});
-    this.worktable=new CollectionWorktable({base,scene,panel:worktablePanel,webgl,onReference,onSharedChange:()=>{
-      this.flight?.abort();this.flight=null;this.refreshAt=0;
-    }});
+    const refreshSoon=()=>{this.flight?.abort();this.flight=null;this.refreshAt=0;};
+    this.archive=new CollectionArchive({base,scene,panel:archivePanel,loader:this.loader,
+      readModel:(edition,signal)=>modelBytes(base,edition,signal),onRestored:refreshSoon});
+    this.worktable=new CollectionWorktable({base,scene,panel:worktablePanel,webgl,onReference,onSharedChange:refreshSoon});
   }
 
   update(room,root,player,bench,canDiscuss){
@@ -77,7 +76,7 @@ export class CollectionShelves {
       const current=data?.room===this.room?data:null;
       this.sync(current?.projects);
       this.archive.sync(current?.archive,this.root);
-      this.worktable.sync(current?.projects,current?.worktable);
+      this.worktable.sync(current?.projects.filter(project=>!project.restored),current?.worktable);
     }catch{
       if(!controller.signal.aborted){this.sync([]);this.archive.clear();this.worktable.clear();}
     }finally{

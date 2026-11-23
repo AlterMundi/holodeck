@@ -131,8 +131,9 @@ regression rejects an unknown part or a historical edition that the speaker
 can no longer access.
 
 The compatible Workshop reader is installed. Live room selection and
-Conversation delivery remain pending. Restoring an archived project to a shelf
-remains open.
+Conversation delivery remain pending. The archive now supports returning an
+exact edition to a separate free shelf. The browser fixture opened the restored
+edition and removed only that historical model after source access was revoked.
 [Room and source contract](houses.md#the-collection)
 
 ## Selected receiving release

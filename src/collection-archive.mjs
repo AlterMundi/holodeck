@@ -6,11 +6,14 @@ const fullKey=edition=>identity(edition)+':'+(edition.representative?.sha256??''
 const hex=(value,length)=>typeof value==='string'&&value.length===length&&/^[a-f0-9]+$/.test(value);
 
 export class CollectionArchive{
-  constructor({scene,panel,loader,readModel}){
-    Object.assign(this,{scene,panel,loader,readModel,entries:[],angle:0});
+  constructor({base,scene,panel,loader,readModel,onRestored}){
+    Object.assign(this,{base,scene,panel,loader,readModel,onRestored,entries:[],angle:0});
     this.name=panel.querySelector('strong');
     this.count=panel.querySelector('output');
     this.inspect=panel.querySelector('a');
+    this.restore=panel.querySelector('[data-restore]');
+    this.status=panel.querySelector('[role=status]');
+    this.restore.onclick=()=>this.returnToShelf();
     this.previous=panel.querySelector('[data-previous]');
     this.next=panel.querySelector('[data-next]');
     this.previous.onclick=()=>this.step(-1);
@@ -20,6 +23,7 @@ export class CollectionArchive{
   sync(data,root){
     this.root=root;
     this.anchor=data?.anchor;
+    this.canRestore=data?.canRestore===true;
     this.entries=(Array.isArray(data?.editions)?data.editions.slice(0,6):[]).filter(edition=>
       hex(edition.resource,32)&&hex(edition.version,64)&&typeof edition.label==='string');
     const prior=this.edition&&identity(this.edition);
@@ -36,6 +40,7 @@ export class CollectionArchive{
     this.removeModel();
     this.label?.remove();this.label=null;
     this.edition=edition;
+    this.status.textContent='';
     if(edition){
       const label=this.root.ownerDocument.createElement('m-label');
       const chars=Array.from(edition.label),short=chars.length>35?chars.slice(0,34).join('')+'…':edition.label;
@@ -52,6 +57,8 @@ export class CollectionArchive{
 
   controls(){
     const edition=this.edition;
+    this.restore.hidden=!edition||!this.canRestore;
+    this.restore.disabled=!!this.restoring;
     if(!edition){
       this.panel.hidden=true;
       this.name.textContent='';
@@ -64,6 +71,29 @@ export class CollectionArchive{
     this.count.value=(index+1)+' / '+this.entries.length;
     this.previous.disabled=this.next.disabled=this.entries.length<2;
     this.inspect.href='/view/'+edition.resource+'?version='+edition.version+'&display=work';
+  }
+
+  async returnToShelf(){
+    if(this.panel.hidden||!this.canRestore||!this.edition||this.restoring)return;
+    const {resource,version}=this.edition;
+    const controller=new AbortController();
+    this.restoring=controller;this.restore.disabled=true;this.status.textContent='';
+    try{
+      const response=await fetch(new URL('api/space/collection/archive',this.base),{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({resource,version}),
+        signal:AbortSignal.any([controller.signal,AbortSignal.timeout(8500)]),
+      });
+      if(controller.signal.aborted)return;
+      this.status.textContent=response.ok?'La edición volvió a la repisa.':'No pude devolver esta edición a la repisa.';
+    }catch{
+      if(!controller.signal.aborted)this.status.textContent='No pude confirmar el cambio. Podés comprobarlo en la repisa.';
+    }finally{
+      if(this.restoring===controller){
+        this.restoring=null;this.restore.disabled=false;
+        this.onRestored();
+      }
+    }
   }
 
   step(direction){
@@ -118,6 +148,7 @@ export class CollectionArchive{
   }
 
   clear(){
+    this.restoring?.abort();this.restoring=null;
     this.entries=[];
     this.select(null);
     this.root=null;this.anchor=null;this.angle=0;this.turn=null;

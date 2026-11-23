@@ -131,8 +131,14 @@ Each archive entry needs both current catalog access and permission to read
 the historical Home manifest. A pin already on a current shelf appears only
 on the shelf. The room sends the eligible archive metadata in the same
 scoped collection response. The cabinet animates the indexed platform and
-renders one archived miniature at a time. Restoring a version to a shelf
-still requires the owner's publication and room-placement action.
+renders one archived miniature at a time. Restoring a version uses the existing
+Home read scope and the room owner's authority, directly or through the paired
+human with room edit rights. The exact archived pin occupies a free shelf, and
+its position is shared by all visitors who can still read it. Holodeck keeps the
+placements in a dedicated 2 KiB checkpoint with the current, previous and
+bounded staging writer. The earlier receiver can serve the same room and
+preserves the placement checkpoint during rollback. Home retains the immutable
+editions and their actual publication state.
 
 The optional `collection-representatives/index.json` under protected state
 binds exact viewer editions to Blender shelf derivatives. The index schema is

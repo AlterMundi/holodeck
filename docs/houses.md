@@ -141,8 +141,10 @@ distinct source editions in its inventory.
 
 A glazed archive cabinet has one revolving platform. Show one authorized
 archived project's miniature and name at a time. Step forward or backward to
-browse, then open the exact edition. Restoring returns the project to its shelf
-through the existing authorized lifecycle writer and keeps its edition history.
+browse, then open the exact edition. The owner or a paired visitor with edit
+access can move a historical edition to a free shelf. The shelf links to that
+edition, and the current project stays in its original place. The move leaves
+the Home publication and edition history intact.
 The cabinet can remain empty for a visitor without archive access.
 
 Keep a clear walk around the central worktable. Put the full selected review

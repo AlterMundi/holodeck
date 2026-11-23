@@ -163,6 +163,19 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const tableResources=new Set(collection?.projects.flatMap(project=>project.resources));
   let table=tableStore?.load()??{room:collection?.room,revision:0,resource:null};
   let tableUnavailable=false;
+  const archiveStore=collection?.archive?.length&&stateDir?
+    new RoomStore(join(stateDir,'collection-placement'),{maxBytes:2048}):null;
+  const heldArchive=archiveStore?.load();
+  const pinKey=entry=>entry.resource+':'+entry.version;
+  const archiveKeys=new Set(collection?.archive?.map(pinKey));
+  const shelfCount=matterArt?.shelves.length??0;
+  const baseShelves=collection?.projects.length??0;
+  let placed=heldArchive&&heldArchive.room===collection?.room ? heldArchive.placed : [];
+  let archiveUnavailable=false;
+  if(!Array.isArray(placed)||placed.length>6||placed.some(key=>typeof key!=='string'||
+    !/^[a-f0-9]{32}:[a-f0-9]{64}$/.test(key))||new Set(placed).size!==placed.length)
+    throw Error('Invalid Collection placement checkpoint');
+  placed=placed.filter(key=>archiveKeys.has(key));
   if(!Number.isSafeInteger(table.revision)||table.revision<0||
      (table.resource!==null&&!/^[a-f0-9]{32}$/.test(table.resource)))
     throw Error('Invalid worktable checkpoint');
@@ -617,7 +630,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(session.times.length>=4)return res.status(429).json({message:'Esperá un momento antes de intentar otra acción.'});
       session.times.push(now);
     }
-    const spaceRoute=['/space','/space/content-visits','/space/collection','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
+    const spaceRoute=['/space','/space/content-visits','/space/collection','/space/collection/archive','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
       req.path==='/appearance'||req.path==='/conversation-surface'||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
@@ -705,10 +718,21 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const model=representatives.get(edition.resource+':'+edition.version);
     return model?{...edition,representative:{sha256:model.sha256,scene:model.scene}}:edition;
   }
+  async function canRestoreCollection(actor){
+    if(!actor.rights?.includes('edit')||!archiveStore||archiveUnavailable)
+      return false;
+    const owner=houses.directory().find(house=>house.id===spaces.rooms.get(collection.room)?.house)?.owner;
+    if(!owner)return false;
+    if(actor.kind==='daimon')return owner===actor.id;
+    if(actor.kind!=='human'||!native?.conversationSurface)return false;
+    const pair=await native.conversationSurface(actor).catch(()=>null);
+    return pair?.schema==='holodeck.conversation-surface/v1'&&pair.actorRef===actor.ref&&pair.beingRef===owner;
+  }
   app.get(route('api/space/collection'),asyncRoute(async(req,res)=>{
     if(!collection||!inScope(req.actor,collection.room))return res.sendStatus(404);
     const session=req.holodeckSession;
     const projection=await readCollection(req.headers.cookie,collection);
+    const mayRestore=projection?.archive.length&&placed.length+baseShelves<shelfCount&&await canRestoreCollection(req.actor);
     const actor=await currentActor(req,session);
     if(!inScope(actor,collection.room))return res.sendStatus(404);
     if(projection===null)return res.status(503).json({message:'La colección no está disponible en este momento.'});
@@ -716,14 +740,22 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const projects=projection.projects.map(project=>({...project,editions:project.editions.map(withRepresentative),
       ...(art?.shelves?{anchor:art.shelves[project.shelf]}:{})}));
     const current=new Set(projects.flatMap(project=>project.editions.map(edition=>edition.resource+':'+edition.version)));
-    const archive=projection.archive.filter(edition=>!current.has(edition.resource+':'+edition.version)).map(withRepresentative);
+    const visibleArchive=projection.archive.filter(edition=>!current.has(pinKey(edition))).map(withRepresentative);
+    const archive=visibleArchive.filter(edition=>!placed.includes(pinKey(edition)));
+    const restored=visibleArchive.flatMap(edition=>{
+      const slot=placed.indexOf(pinKey(edition));
+      const shelf=slot+baseShelves,anchor=art?.shelves?.[shelf];
+      if(slot<0||!anchor)return [];
+      return [{id:'restored:'+slot,shelf,anchor,restored:true,editions:[{...edition,title:edition.label}]}];
+    });
     const worktable=collection.art?{
       revision:table.revision,
       resource:projects.some(project=>project.editions.some(edition=>edition.resource===table.resource))?table.resource:null,
       canShare:!tableUnavailable&&actor.rights.includes('edit'),
     }:null;
-    res.json({room:collection.room,projects,...(worktable?{worktable}:{}),
-      ...(collection.archive&&art?.archive?{archive:{anchor:art.archive,editions:archive}}:{})});
+    const canRestore=!!(archive.length&&mayRestore&&actor.rights.includes('edit')&&!archiveUnavailable&&placed.length+baseShelves<shelfCount);
+    res.json({room:collection.room,projects:[...projects,...restored],...(worktable?{worktable}:{}),
+      ...(collection.archive&&art?.archive?{archive:{anchor:art.archive,editions:archive,...(canRestore?{canRestore}:{})}}:{})});
   }));
   app.post(route('api/space/collection'),asyncRoute(async(req,res)=>{
     if(!collection?.art||!inScope(req.actor,collection.room))return res.sendStatus(404);
@@ -752,6 +784,34 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       }
       table=next;
     }
+    res.sendStatus(204);
+  }));
+  app.post(route('api/space/collection/archive'),asyncRoute(async(req,res)=>{
+    if(!collection?.art||!inScope(req.actor,collection.room))return res.sendStatus(404);
+    const input=req.body;
+    if(!input||Object.keys(input).sort().join(',')!=='resource,version'||
+       typeof input.resource!=='string'||typeof input.version!=='string')return res.sendStatus(400);
+    const pin=collection.archive?.find(item=>item.resource===input.resource&&item.version===input.version);
+    if(!pin)return res.sendStatus(404);
+    const key=pinKey(pin);
+    if(!req.actor.rights.includes('edit')||!archiveStore)return res.sendStatus(403);
+    const scope=collection.projects.filter(project=>project.resources.includes(pin.resource));
+    const projection=await readCollection(req.headers.cookie,{projects:scope,archive:[pin]});
+    if(!await canRestoreCollection(req.actor))return res.sendStatus(403);
+    const actor=await currentActor(req,req.holodeckSession);
+    if(!inScope(actor,collection.room))return res.sendStatus(404);
+    if(!actor.rights.includes('edit'))return res.sendStatus(403);
+    if(!projection?.archive.length)return res.sendStatus(404);
+    if(projection.projects.some(project=>project.editions.some(edition=>pinKey(edition)===key)))return res.sendStatus(409);
+    if(placed.includes(key))return res.sendStatus(204);
+    if(archiveUnavailable||placed.length+baseShelves>=shelfCount)return res.sendStatus(409);
+    const next=[...placed,key];
+    try{archiveStore.save({room:collection.room,placed:next});}
+    catch(error){
+      if(error.commitUncertain)archiveUnavailable=true;
+      return res.sendStatus(503);
+    }
+    placed=next;
     res.sendStatus(204);
   }));
   app.get(route('api/space/collection-model/:resource/:version'),asyncRoute(async(req,res)=>{
