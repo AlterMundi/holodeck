@@ -93,8 +93,29 @@ body:has(#conversation-panel:not([hidden])) #house-door,body:has(#creator:not([h
   body:not(.inside-house):has(#garden-create:not([hidden])) #play-near{top:265px}
   body:not(.inside-house):has(#garden-create:not([hidden])):has(#visit-near[hidden]) #play-near{top:205px}
 }
+#appearance-open{position:fixed;right:22px;bottom:max(24px,env(safe-area-inset-bottom));z-index:20;min-height:44px}
+#appearance-dialog{width:min(390px,calc(100vw - 24px));box-sizing:border-box;color:var(--ink);background:#173339;border-radius:18px;padding:22px;border:1px solid var(--line)}
+#appearance-dialog::backdrop{background:#07181bbb}
+#appearance-dialog h2{margin:0 0 18px}
+#appearance-dialog label,#appearance-choice{display:block}
+#appearance-choice{box-sizing:border-box;width:100%;min-height:44px;margin:6px 0 16px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:#10272c;color:var(--ink);font:inherit}
+#appearance-status:empty{display:none}
+body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-visit:not([hidden]):not(.is-walking)) #appearance-open{display:none}
+@media(max-width:740px){#appearance-open{right:12px;top:12px;bottom:auto;padding:8px 12px;font-size:14px}#hud{max-width:calc(100vw - 120px)}}
 </style></head><body>
 <header id="hud" class="glass"><span class="brand-mark" aria-hidden="true"></span><div><small>Holodeck</small><h1>Plaza de llegada</h1><div id="people">Entrando a la plaza…</div></div><button id="sound" type="button" aria-pressed="false" aria-label="Activar sonido del mundo">Sonido</button></header>
+<button id="appearance-open" type="button" class="glass" aria-haspopup="dialog">Apariencia</button>
+<dialog id="appearance-dialog" aria-labelledby="appearance-title"><form id="appearance-form">
+  <h2 id="appearance-title">Tu avatar</h2>
+  <label for="appearance-choice">Apariencia</label>
+  <select id="appearance-choice" disabled>
+    <option value="">Automática</option>
+    <optgroup label="Presentación masculina"><option value="0">Estilo 1</option><option value="2">Estilo 2</option><option value="4">Estilo 3</option><option value="6">Estilo 4</option></optgroup>
+    <optgroup label="Presentación femenina"><option value="1">Estilo 1</option><option value="3">Estilo 2</option><option value="5">Estilo 3</option><option value="7">Estilo 4</option></optgroup>
+  </select>
+  <p id="appearance-status" role="status"></p>
+  <div class="row"><button id="appearance-save" class="primary" type="submit" disabled>Guardar</button><button id="appearance-close" type="button">Cerrar</button></div>
+</form></dialog>
 <div id="world-tools"><aside id="help"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> moverte · arrastrá para mirar · espacio para saltar</aside><button id="garden-create" class="glass" type="button" hidden>Crear jardín</button><button id="activity-open" class="glass" type="button" aria-haspopup="dialog" disabled>Actividad</button></div>
 <button id="house-door" type="button" class="primary" hidden>Entrar</button>
 <details id="space-travel" class="glass" hidden><summary>Entradas y salidas</summary><nav aria-label="Entradas y salidas"></nav></details>

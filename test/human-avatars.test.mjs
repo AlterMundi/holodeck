@@ -34,6 +34,65 @@ test('every retained human receives a distinct avatar and reconnecting does not 
   assert.equal(model(restored,humans[4]),appearances[4]);
 });
 
+test('explicit avatar choices outlive session leases and have bounded durable retention',()=>{
+  const first=session('human:first').actor;
+  const second=session('human:second').actor;
+  let saved;
+  const profiles=new HumanAvatarProfiles(null,null,null,value=>{saved=value;});
+  assert.equal(profiles.choose(first,6),true);
+  profiles.retain([session('human:replacement')]);
+  assert.equal(profiles.model(first),'avatar-wardrobe-v1-3.glb');
+  assert.equal(profiles.preference(second),null);
+  assert.equal(profiles.choose(session('other','daimon').actor,4),false);
+  assert.equal(profiles.choose(first,-1),false);
+  assert.doesNotMatch(JSON.stringify(saved),/human:/);
+  const restored=new HumanAvatarProfiles(null,null,saved,value=>{saved=value;});
+  assert.equal(restored.preference(first),6);
+  assert.equal(restored.choose(first,null),true);
+  assert.equal(restored.preference(first),null);
+  for(let i=0;i<65;i++)restored.choose(session(`human:fixture-${i}`).actor,3);
+  assert.equal(saved.choices.length,64);
+  assert.equal(restored.preference(session('human:fixture-0').actor),null);
+  assert.equal(restored.preference(session('human:fixture-64').actor),3);
+});
+
+test('appearance writes require the authenticated actor and survive a runtime restart',async t=>{
+  const stateDir=mkdtempSync(join(tmpdir(),'holodeck-avatar-choice-'));
+  const startup=async()=>{
+    const runtime=await createHolodeck({production:true,basePath:'/holodeck/',stateDir,
+      publicOrigin:'https://world.test',identityResolver:async req=>{
+        const id=/fixture=(first|second)/.exec(req.headers.cookie??'')?.[1];
+        return id?{id,kind:'human',rights:['observe']}:null;
+      }});
+    const server=runtime.app.listen(0,'127.0.0.1');
+    await once(server,'listening');
+    const base=`http://127.0.0.1:${server.address().port}/holodeck/`;
+    const close=()=>{runtime.close();server.closeAllConnections();return new Promise(resolve=>server.close(resolve));};
+    return {base,close};
+  };
+  let runtime=await startup();
+  t.after(async()=>{await runtime?.close();rmSync(stateDir,{recursive:true,force:true});});
+  const login=async id=>{
+    const fixture='fixture='+id;
+    const response=await fetch(runtime.base,{headers:{Cookie:fixture}});
+    return fixture+'; '+response.headers.get('set-cookie').split(';')[0];
+  };
+  const read=cookie=>fetch(runtime.base+'api/appearance',{headers:{Cookie:cookie}});
+  const write=(cookie,data,origin='https://world.test')=>fetch(runtime.base+'api/appearance',{
+    method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(data)
+  });
+  const first=await login('first'),second=await login('second');
+  assert.equal((await write(first,{choice:3},'https://elsewhere.test')).status,403);
+  assert.equal((await write(first,{choice:3,actor:'second'})).status,400);
+  assert.equal((await write(first.replace('fixture=first','fixture=second'),{choice:3})).status,401);
+  assert.deepEqual(await (await write(first,{choice:3})).json(),{choice:3});
+  assert.deepEqual(await (await read(second)).json(),{choice:null});
+  await runtime.close();runtime=null;
+  runtime=await startup();
+  assert.deepEqual(await (await read(await login('first'))).json(),{choice:3});
+  assert.deepEqual(await (await read(await login('second'))).json(),{choice:null});
+});
+
 const rigs=['avatar-1-bodyA-skin01','avatar-2-bodyB-skin03','avatar-3-bodyA-skin05','avatar-4-bodyB-skin07'];
 function readGlb(file){
   assert.equal(file.subarray(0,4).toString(),'glTF');

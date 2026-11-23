@@ -167,6 +167,16 @@ use at most8records and8KiB each for their current/atomic-stage file; the existi
 its separate small bound; original source attachments stay with the existing
 bounded native attachment writer rather than being copied into app history.
 
+Explicit human avatar choices use the existing authenticated API and MML
+character-description projection. They live in a separate 8 KiB per-file
+checkpoint under `human-avatar-choices`, with the same atomic current,
+previous and staging writer. It retains 64 selections by most recent change;
+resetting to automatic removes the preference. Only a hashed actor ID and
+catalog slot are stored. The original automatic lease checkpoint stays
+compatible with the previous package. That package ignores the choice
+checkpoint. A temporarily unreadable choice checkpoint leaves the world
+available with automatic appearances and refuses overwrites.
+
 No native library is expanded or downloaded at startup, and the application
 produces no temporary media payload. The existing receiver's private temporary
 namespace is inherited; do not claim its declarative 32 MiB option is enforced

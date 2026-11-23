@@ -9,12 +9,16 @@ const rigs=[
 ];
 const outfits=rigs.map((_,index)=>`avatar-wardrobe-v1-${index+1}.glb`);
 const profiles=[...rigs.map(rig=>rig+'.glb'),...outfits];
+const preferenceLimit=64;
+const preferenceSchema='holodeck.avatar-choices/v1';
+const validSlot=slot=>Number.isInteger(slot)&&slot>=0&&slot<profiles.length;
 
 const actorKey=actor=>createHash('sha256').update(actor.id).digest('hex');
 
 export class HumanAvatarProfiles {
-  constructor(state=null,save=null){
+  constructor(state=null,save=null,preferences=null,savePreferences=null){
     this.save=save;
+    this.savePreferences=savePreferences;
     if(state===null)state={schema:'holodeck.human-avatars/v1',assignments:[]};
     if(state.schema!=='holodeck.human-avatars/v1'||!Array.isArray(state.assignments)||
        state.assignments.length>profiles.length)throw Error('Invalid avatar assignments');
@@ -22,7 +26,12 @@ export class HumanAvatarProfiles {
     if(this.assignments.size!==state.assignments.length||
        new Set(this.assignments.values()).size!==this.assignments.size||
        [...this.assignments].some(([key,slot])=>!/^[a-f0-9]{64}$/.test(key)||
-         !Number.isInteger(slot)||slot<0||slot>=profiles.length))throw Error('Invalid avatar assignments');
+         !validSlot(slot)))throw Error('Invalid avatar assignments');
+    this.preferences=new Map(preferences?.choices);
+    if(preferences&&(preferences.schema!==preferenceSchema||!Array.isArray(preferences.choices)||
+       this.preferences.size!==preferences.choices.length||this.preferences.size>preferenceLimit||
+       [...this.preferences].some(([key,slot])=>!/^[a-f0-9]{64}$/.test(key)||!validSlot(slot))))
+      throw Error('Invalid avatar choices');
   }
 
   retain(sessions){
@@ -44,7 +53,24 @@ export class HumanAvatarProfiles {
   }
 
   model(actor){
-    return actor.kind==='human'?(profiles[this.assignments.get(actorKey(actor))]??profiles[0]):profiles[0];
+    return profiles[this.preference(actor)??(actor.kind==='human'?this.assignments.get(actorKey(actor)):0)]??profiles[0];
+  }
+
+  preference(actor){
+    return actor.kind==='human'?this.preferences.get(actorKey(actor))??null:null;
+  }
+
+  choose(actor,slot){
+    if(actor.kind!=='human'||(slot!==null&&!validSlot(slot)))return false;
+    const key=actorKey(actor),current=this.preferences.get(key)??null;
+    if(slot===current)return true;
+    const choices=new Map(this.preferences);
+    choices.delete(key);
+    if(slot!==null)choices.set(key,slot);
+    if(choices.size>preferenceLimit)choices.delete(choices.keys().next().value);
+    this.savePreferences?.({schema:preferenceSchema,choices:[...choices]});
+    this.preferences=choices;
+    return true;
   }
 }
 

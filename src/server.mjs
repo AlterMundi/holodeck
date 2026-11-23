@@ -68,17 +68,29 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const sessionBindings=production?new SessionBindings(stateDir,LIMITS.sessions):null;
   for(const binding of sessionBindings?.load()||[])sessions.set(binding.key,{id:++nextId,
     actor:{id:binding.actorRef,kind:'human'},created:binding.created,times:[],connection:null,sourceCookie:undefined});
-  let avatars=new HumanAvatarProfiles();
-  if(production){
+  let avatarAssignments=null,saveAvatarAssignments=null,avatarChoices=null,saveAvatarChoices=null;
+  let avatarChoicesUnavailable=false;
+  if(stateDir){
     try{
       const avatarStore=new RoomStore(join(stateDir,'human-avatars'),{maxBytes:2048});
+      avatarAssignments=avatarStore.load();
       let failed=false;
-      avatars=new HumanAvatarProfiles(avatarStore.load(),state=>{
+      saveAvatarAssignments=state=>{
         try{avatarStore.save(state);failed=false;}
-        catch{if(!failed)console.error('Holodeck avatar preferences could not be saved');failed=true;}
-      });
-    }catch{console.error('Holodeck avatar preferences could not be restored');}
+        catch{if(!failed)console.error('Holodeck avatar assignments could not be saved');failed=true;}
+      };
+    }catch{console.error('Holodeck avatar assignments could not be restored');}
+    try{
+      const choiceStore=new RoomStore(join(stateDir,'human-avatar-choices'),{maxBytes:8192});
+      avatarChoices=choiceStore.load();
+      saveAvatarChoices=state=>choiceStore.save(state);
+      // Refuse writes over unreadable selections while the ordinary world remains available.
+      new HumanAvatarProfiles(null,null,avatarChoices);
+    }catch{avatarChoices=null;avatarChoicesUnavailable=true;console.error('Holodeck avatar choices could not be restored');}
   }
+  let avatars;
+  try{avatars=new HumanAvatarProfiles(avatarAssignments,saveAvatarAssignments,avatarChoices,saveAvatarChoices);}
+  catch{avatars=new HumanAvatarProfiles(null,null,avatarChoices,saveAvatarChoices);console.error('Holodeck avatar assignments could not be restored');}
   avatars.retain(sessions.values());
   const avatarProfile=actor=>({meshFileUrl:route('assets/'+avatars.model(actor))});
   const wardrobeAssets=humanWardrobeAssets();
@@ -491,13 +503,41 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       session.times.push(now);
     }
     const spaceRoute=['/space','/space/content-visits','/space/scene','/space/garden'].includes(req.path)||req.path.startsWith('/space/art/')||
-      req.path==='/conversation-surface'||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
+      req.path==='/appearance'||req.path==='/conversation-surface'||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
     if(!spaceRoute&&spaces.current(actor)!==OUTSIDE)
       return res.status(409).json({message:'Volvé al exterior para usar esta acción.'});
     req.actor=actor;req.holodeckSession=session;next();
   }));
+  app.get(route('api/appearance'),(req,res)=>{
+    if(req.actor.kind!=='human')return res.sendStatus(403);
+    res.json({choice:avatars.preference(req.actor)});
+  });
+  app.post(route('api/appearance'),(req,res)=>{
+    const actor=req.actor;
+    if(actor.kind!=='human')return res.sendStatus(403);
+    if(avatarChoicesUnavailable)return res.status(503).json({message:'La apariencia no se puede guardar en este momento.'});
+    const input=req.body;
+    try{
+      if(!input||Object.keys(input).length!==1||!Object.hasOwn(input,'choice')||!avatars.choose(actor,input.choice))
+        return res.status(400).json({message:'Elegí una apariencia del catálogo.'});
+    }catch(error){
+      if(error.commitUncertain)avatarChoicesUnavailable=true;
+      return res.status(503).json({message:'La apariencia no se pudo confirmar. Volvé a abrir el selector para comprobarla.'});
+    }
+    const profile=avatarProfile(actor);
+    for(const session of sessions.values()){
+      if(session.actor.id===actor.id&&session.connection!==null)
+        network.userNetworkingServer.updateUserCharacterDescription(session.connection,profile);
+    }
+    for(const cell of cellTransports.values()){
+      for(const [connection,peer] of cell.connections){
+        if(peer.actor.id===actor.id)cell.network.userNetworkingServer.updateUserCharacterDescription(connection,profile);
+      }
+    }
+    res.json({choice:avatars.preference(actor)});
+  });
   app.get(route('api/space/art/:revision'),(req,res)=>{
     const id=spaces.current(req.actor);
     const selected=spaces.rooms.get(id);

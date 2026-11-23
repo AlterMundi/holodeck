@@ -31,6 +31,44 @@ const url=path=>new URL(path,base);
 const socket=path=>{const target=url(path);target.protocol=location.protocol==='https:'?'wss:':'ws:';return target.href;};
 const animations={airAnimationFileUrl:url('assets/anim_air.glb').href,idleAnimationFileUrl:url('assets/anim_idle.glb').href,
   jogAnimationFileUrl:url('assets/anim_jog.glb').href,sprintAnimationFileUrl:url('assets/anim_run.glb').href,doubleJumpAnimationFileUrl:url('assets/anim_double_jump.glb').href};
+const appearanceDialog=document.querySelector('#appearance-dialog');
+const appearanceChoice=document.querySelector('#appearance-choice');
+const appearanceSave=document.querySelector('#appearance-save');
+const appearanceStatus=document.querySelector('#appearance-status');
+let appearanceGeneration=0;
+async function requestAppearance(body){
+  const response=await fetch(url('api/appearance'),body===undefined?{}:{
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)
+  });
+  if(!response.ok)throw Error((await response.json().catch(()=>null))?.message||'La apariencia no está disponible en este momento.');
+  return response.json();
+}
+async function readAppearance(body){
+  const generation=++appearanceGeneration;
+  appearanceChoice.disabled=appearanceSave.disabled=true;
+  appearanceStatus.textContent=body?'Guardando…':'Cargando…';
+  try{
+    const {choice}=await requestAppearance(body);
+    if(generation!==appearanceGeneration)return;
+    appearanceChoice.value=choice??'';
+    appearanceStatus.textContent=body?'Guardada.':'';
+    appearanceChoice.disabled=appearanceSave.disabled=false;
+  }catch(error){
+    if(generation===appearanceGeneration)appearanceStatus.textContent=error.message;
+  }
+}
+document.querySelector('#appearance-open').onclick=()=>{
+  appearanceDialog.showModal();void readAppearance();
+};
+document.querySelector('#appearance-close').onclick=()=>appearanceDialog.close();
+appearanceDialog.addEventListener('close',()=>{appearanceGeneration++;});
+document.querySelector('#appearance-form').onsubmit=event=>{
+  event.preventDefault();
+  if(!appearanceSave.disabled)void readAppearance({choice:appearanceChoice.value===''?null:Number(appearanceChoice.value)});
+};
+window.addEventListener('keydown',event=>{
+  if(appearanceDialog.open)event.stopImmediatePropagation();
+},true);
 const touchControls={
   mount(container,experience){
     this.holder=document.createElement('div');this.holder.className='touch-controls';container.append(this.holder);

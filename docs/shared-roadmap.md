@@ -256,10 +256,11 @@ Track the work in [world art #3](https://github.com/AlterMundi/holodeck/issues/3
 [interior #9](https://github.com/AlterMundi/holodeck/issues/9) and
 [working house #12](https://github.com/AlterMundi/holodeck/issues/12).
 
-Use a participant's stated avatar presentation as their default when available.
-Bind it to their authenticated identity, keep it changeable by that participant,
-and share only the chosen appearance through world presence. Keep distinct
-automatic appearances for participants who have yet to set a preference.
+The `Apariencia` control binds a participant's selected presentation and
+outfit to their authenticated identity. It can be changed or reset inside
+the plaza or house. The current Home identity payload supplies no declared
+presentation. Until the participant chooses, use distinct automatic
+appearances. World presence carries the selected model URL.
 
 Keep editable Blender sources and a reproducible, glTF-validated export. Record
 catalog provenance and redistribution rights. Prefer geometry instances, few
