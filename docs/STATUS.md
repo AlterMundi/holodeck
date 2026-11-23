@@ -18,7 +18,9 @@ is retained. All 50 installed files and seven added GLB routes matched through
 authenticated HTTPS. Protected world checkpoints, the original world and
 own-native readback matched. Two controlled Chromium contexts loaded and
 rendered their distinct selected rigs outdoors and in the same room, including
-an alternate wardrobe. The camera correction is retained, with its
+an alternate wardrobe. After the touch context closed its page and reconnected
+with the retained session, both browsers again rendered the same actor-to-rig
+mapping in the room. The camera correction is retained, with its
 package `4821e45f09a3` available for compatible recovery.
 
 The preceding release served
