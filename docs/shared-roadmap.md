@@ -345,6 +345,16 @@ calibrated views and sparse geometry. [ViewCrafter](https://arxiv.org/abs/2409.0
 demonstrates trajectory-conditioned novel-view synthesis. Neither source
 verifies a Holodeck asset or performance on the target browser.
 
+The first isolated trial now has a captured appearance fit and a comparison
+from a reserved viewpoint. Both splat-only and hybrid paths run on the
+existing Holodeck geometry and interaction surface. The observed gaps and
+software renderer cost leave the GLB selected. The [Matter appearance
+study](../art/collection/appearance-study/README.md) retains the source and
+actual outcome. Candidate continuation is to bake the generated color and
+lighting into Blender materials, then compare a bounded splat only where it
+adds detail in movement.
+
+
 ## Delivery sequence and cards
 
 The roadmap stages retain their individual exit evidence. For Holodeck,
