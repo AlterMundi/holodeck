@@ -219,6 +219,31 @@ def gallery_stair():
     return pieces
 
 
+def close_gallery_gables(obj):
+    # Registered X/Z profile of the copper canopy, raised clerestory and
+    # lined roof. The infill is at the two end walls only. The roof slot
+    # stays open along the length of the gallery.
+    profile = [(-5.91,3.78),(5.91,3.78),(5.91,4.01),
+               (-2.96,4.69),(-3.94,5.025),(-5.91,3.93)]
+    count = len(profile)
+    pieces = [obj]
+    for near,far in [(-5.88,-5.62),(5.77,5.96)]:
+        vertices = [(x,y,z) for y in (near,far) for x,z in profile]
+        faces = [tuple(range(count)),tuple(reversed(range(count,2*count)))]
+        for i in range(count):
+            j = (i+1) % count
+            faces.append((i,i+count,j+count,j))
+        mesh = bpy.data.meshes.new('Limewash gable infill')
+        mesh.from_pydata(vertices,[],faces)
+        mesh.update()
+        gable = bpy.data.objects.new('Limewash gable infill',mesh)
+        bpy.context.collection.objects.link(gable)
+        mesh.materials.append(bpy.data.materials['Ivory limewash'])
+        pieces.append(gable)
+    select(pieces)
+    bpy.ops.object.join()
+
+
 def register_gallery(obj,stair):
     obj.data.transform(Matrix.Translation((0,0,.10)) @
                        Matrix.Diagonal((-1.095,-.832,1,1)))
@@ -247,6 +272,8 @@ def register_gallery(obj,stair):
         ('Collection sign oak backing',(0,-5.641,2.695),(3.47,.042,.585),oak,.008),
         ('Collection wash light track',(2.10,-.12,3.571),(.146,8.04,.09),iron,.015),
         ('Limestone viewing strip',(-.55,-.08,.095),(2.36,8.98,.012),stone,.002),
+        ('Entrance wall oak plate',(0,5.788,3.875),(11.78,.23,.19),oak,.028),
+        ('Collection wall oak plate',(0,-5.632,3.875),(11.78,.19,.19),oak,.028),
     ]
     for y in (-5.55,-3.69,-1.84,0,1.84,3.69,5.55):
         finish.append(('Clerestory oak divider',(-3.47,y,4.586),(1.03,.07,.112),oak,.012))
@@ -267,6 +294,7 @@ def register_gallery(obj,stair):
             ('Plinth bronze edge',(plinth_x-.015,y,face_height-.13),(.009,.440,.019),brass,.003),
         ])
     append_blocks(obj,floor+finish+(gallery_stair() if stair else []))
+    close_gallery_gables(obj)
 
 
 def register_beacon(obj):
