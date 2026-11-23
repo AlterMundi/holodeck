@@ -15,6 +15,7 @@ CELLS = {
     'facade': ('VIS · House', (0, 0, 0)),
     'foyer': ('VIS · House', (0, 0, 0)),
     'beacon': ('VIS · Beacon chamber', (-25, 9.4, 0)),
+    'beacon-return': ('VIS · Beacon chamber', (-25, 9.4, 0)),
     'gallery': ('VIS · Collection gallery', (25, 7, 0)),
     'gallery-sealed': ('VIS · Collection gallery', (25, 7, 0)),
     'tower': ('VIS · Listening tower', (0, 0, 0)),
@@ -25,6 +26,7 @@ MAX_BYTES = 4 * 1024 * 1024
 MAX_TRIANGLES = 64_000
 LAB_LETTERING = 'Laboratory sign ivory'
 FOYER_LETTERING = 'Foyer sign ivory'
+RETURN_LETTERING = 'Gallery return sign ivory'
 BEACON_STAIRS = ('Descending stair tread', 'Stair rail', 'Stone wall at stair')
 FOYER_EXTERIOR = ('Stone plinth','Warm entrance floor','Entrance step','CASA DE COMPAII',
                   'Clerestory smoked glass','Vertical recessed window','Amber window sill',
@@ -160,7 +162,7 @@ def foyer_joinery():
 def mesh_for(collection, origin, cell):
     scope = bpy.data.collections[collection]
     scope.hide_render = False
-    exclusions = {'beacon':BEACON_STAIRS, 'foyer':FOYER_EXTERIOR,
+    exclusions = {'beacon':BEACON_STAIRS, 'beacon-return':BEACON_STAIRS, 'foyer':FOYER_EXTERIOR,
                   'gallery':GALLERY_FLOOR,'gallery-sealed':GALLERY_FLOOR}.get(cell, ())
     objects = [obj for obj in scope.objects if not obj.name.startswith(exclusions)]
     if cell in ('gallery','gallery-sealed'):
@@ -176,8 +178,10 @@ def mesh_for(collection, origin, cell):
     obj.name = collection
     obj.location -= Vector(origin)
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-    if cell=='beacon':
+    if cell in ('beacon','beacon-return'):
         register_beacon(obj)
+    if cell=='beacon-return':
+        register_beacon_return(obj)
     if cell=='facade':
         # Front +Z in glTF. The checked-in chamber is full size; the fixture's
         # approved west-parcel facade is 3.15 × 1.5 × 2.65 in world space.
@@ -258,7 +262,7 @@ def gallery_foyer_door():
     ]
 
 
-def letter_gallery_sign(obj, x, material, lines):
+def letter_room_sign(obj, x, y, material, lines):
     parts = [obj]
     ivory = bpy.data.materials['Ivory lettering'].copy()
     ivory.name = material
@@ -269,7 +273,7 @@ def letter_gallery_sign(obj, x, material, lines):
         text = bpy.data.curves.new(body, 'FONT')
         text.body, text.align_x, text.size, text.extrude = body, 'CENTER', size, .001
         letters = bpy.data.objects.new(body, text)
-        letters.location = (x,5.714,height)
+        letters.location = (x,y,height)
         letters.rotation_euler.x = pi/2
         text.materials.append(ivory)
         bpy.context.collection.objects.link(letters)
@@ -355,10 +359,10 @@ def register_gallery(obj,stair):
         ])
     append_blocks(obj,floor+finish+gallery_foyer_door()+(gallery_stair() if stair else []))
     close_gallery_gables(obj)
-    letter_gallery_sign(obj, -3, FOYER_LETTERING,
+    letter_room_sign(obj, -3, 5.714, FOYER_LETTERING,
                        [('VESTÍBULO', 3.071, .246), ('PLANTA BAJA', 2.939, .113)])
     if stair:
-        letter_gallery_sign(obj, 3, LAB_LETTERING,
+        letter_room_sign(obj, 3, 5.714, LAB_LETTERING,
                            [('LABORATORIO', 2.194, .247), ('NIVEL -1', 2.061, .107)])
 
 
@@ -434,6 +438,31 @@ def register_beacon(obj):
     bpy.ops.object.join()
 
 
+def register_beacon_return(obj):
+    # Slot zero is at X -3 and Z -5.86. Fit the leaf above the highest
+    # tread, against the existing landing, with no change to collision.
+    stone, oak, basalt = 'Honed honey limestone', 'Dark oiled oak', 'Split basalt'
+    brass, iron = 'Satin brass', 'Blue gunmetal'
+    append_blocks(obj, [
+        ('Return door limewash recess',(-3,5.869,2.223),(1.82,.096,2.566),'Ivory limewash',.013),
+        ('Return door limestone surround',(-3,5.803,2.015),(1.67,.156,2.16),stone,.025),
+        ('Return door oak lining',(-3,5.700,1.994),(1.49,.110,2.10),oak,.021),
+        ('Return door oak leaf',(-3,5.638,1.975),(1.33,.065,1.99),oak,.017),
+        ('Return door lower inset',(-3,5.599,1.536),(.978,.028,.781),iron,.018),
+        ('Return door upper inset',(-3,5.599,2.428),(.978,.028,.904),iron,.018),
+        ('Return door lower brass bead',(-3,5.579,1.911),(.930,.014,.018),brass,.004),
+        ('Return door upper brass bead',(-3,5.579,2.862),(.930,.014,.018),brass,.004),
+        ('Return door kick plate',(-3,5.588,1.065),(1.228,.025,.152),basalt,.008),
+        ('Return door brass backplate',(-2.573,5.582,1.970),(.084,.027,.228),brass,.006),
+        ('Return door lever',(-2.641,5.544,2.019),(.171,.050,.036),brass,.009),
+        ('Return sign oak frame',(-3,5.797,3.843),(2.025,.115,.468),oak,.024),
+        ('Return sign gunmetal face',(-3,5.725,3.843),(1.893,.040,.369),iron,.015),
+        ('Return sign brass sill',(-3,5.695,3.664),(1.796,.023,.017),brass,.004),
+    ])
+    letter_room_sign(obj, -3, 5.700, RETURN_LETTERING,
+                     [('GALERÍA', 3.839, .251), ('PLANTA BAJA', 3.713, .109)])
+
+
 def bake(obj, name, mode, resolution, scratch):
     image = bpy.data.images.new(name, width=resolution, height=resolution, alpha=False)
     image.colorspace_settings.name = 'sRGB' if mode == 'DIFFUSE' else 'Non-Color'
@@ -480,7 +509,7 @@ def portable_materials(obj, color, normal, contact=None, bounce=None):
             if node not in (shader, nodes.get('Material Output')):
                 nodes.remove(node)
         # Tiny bevels and glyph faces stay crisp in their solid sign material.
-        if mat.name in (LAB_LETTERING, FOYER_LETTERING):
+        if mat.name in (LAB_LETTERING, FOYER_LETTERING, RETURN_LETTERING):
             links.new(shader.outputs['BSDF'], nodes.get('Material Output').inputs['Surface'])
             continue
         color_node = nodes.new('ShaderNodeTexImage')
@@ -536,10 +565,11 @@ if __name__ == '__main__':
     color = bake(obj, cell+'-albedo', 'DIFFUSE', color_size, destination)
     normal = bake(obj, cell+'-normal', 'NORMAL', normal_size, destination)
     bounce = None
-    if cell in ('foyer','beacon','gallery','gallery-sealed'):
+    lit_room = 'beacon' if cell=='beacon-return' else cell
+    if lit_room in ('foyer','beacon','gallery','gallery-sealed'):
         lighting = runpy.run_path(str(Path(__file__).with_name('cell-irradiance.py')))
-        bounce = lighting['portable_bounce'](obj,cell,destination/(cell+'-albedo.png'),color_size,destination)
-    contact = bake_contact(obj, cell, destination) if cell in ('foyer','beacon','gallery','gallery-sealed') else None
+        bounce = lighting['portable_bounce'](obj,lit_room,destination/(cell+'-albedo.png'),color_size,destination)
+    contact = bake_contact(obj, cell, destination) if lit_room in ('foyer','beacon','gallery','gallery-sealed') else None
     portable_materials(obj, color, normal, contact, bounce)
     path = destination / (cell+'.glb')
     bpy.ops.export_scene.gltf(filepath=str(path), export_format='GLB', use_selection=True,

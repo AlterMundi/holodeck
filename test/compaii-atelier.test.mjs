@@ -103,8 +103,10 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   const expected={schema:'holodeck.houses/v1',receipts:[],houses:[house]};
   store.save(expected);
   let prototypeAccess=true;
+  let galleryAccess=true;
   const runtime=await createHolodeck({stateDir,basePath:'/holodeck/',artProfile:ATELIER_PROFILE,
     interiorSpaces:definitions,
+    interiorGuestAccess:(actor,room)=>actor.id!=='human:lab'||room!==gallery||galleryAccess,
     galleryAuthorization:async (cookie,pin)=>prototypeAccess&&cookie.includes('fixture=lab')&&
       pin.revision==='published-935e6262-organic-head',
     identityResolver:async req=>{
@@ -182,13 +184,13 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   assert.equal(stairMarkup?.match(/opacity="0" cast-shadows="false"/g)?.length,8);
   assert.doesNotMatch(stairMarkup,/<m-label|collide="false"/);
   assert.doesNotMatch(sealed.scene.markup,/id="passage-1"|Laboratorio/);
-  const readGalleryModel=async (actor,path)=>{
+  const readRoomModel=async (actor,path)=>{
     const result=await actor.read(path);
     assert.equal(result.status,200);
     const bytes=Buffer.from(await result.arrayBuffer());
     return JSON.parse(bytes.toString('utf8',20,20+bytes.readUInt32LE(12)));
   };
-  const openModel=await readGalleryModel(authorized,openPath);
+  const openModel=await readRoomModel(authorized,openPath);
   const lettering=openModel.materials.find(material=>material.name==='Laboratory sign ivory');
   assert.ok(lettering);
   assert.equal(lettering.pbrMetallicRoughness.baseColorTexture,undefined);
@@ -196,7 +198,7 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   assert.ok(red>blue&&blue>0);
   assert.equal((await authorized.read(sealedPath)).status,404);
   assert.equal((await visitor.read(openPath)).status,404);
-  const sealedModel=await readGalleryModel(visitor,sealedPath);
+  const sealedModel=await readRoomModel(visitor,sealedPath);
   assert.ok(!sealedModel.materials.some(material=>material.name==='Laboratory sign ivory'));
   for(const model of [openModel,sealedModel]){
     const sign=model.materials.find(material=>material.name==='Foyer sign ivory');
@@ -205,6 +207,26 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
     assert.ok(sign.emissiveFactor.every(channel=>channel>0));
   }
   const chamber=await authorized.move(gallery,lab);
+  assert.deepEqual(chamber.exits[0].door,{x:-3,y:.95,z:-5.52,yaw:180});
+  const returnMarkup=chamber.scene.markup.match(/<m-group id="passage-0"[^>]*>(.*?)<\/m-group>/s)?.[1];
+  assert.equal(returnMarkup?.match(/opacity="0" cast-shadows="false"/g)?.length,8);
+  assert.doesNotMatch(returnMarkup,/<m-label|collide="false"/);
+  const chamberPath=roomArt(chamber);
+  const returnModel=await readRoomModel(authorized,chamberPath);
+  const returnSign=returnModel.materials.find(material=>material.name==='Gallery return sign ivory');
+  assert.ok(returnSign?.emissiveFactor.every(channel=>channel>0));
+  assert.equal(returnSign.pbrMetallicRoughness.baseColorTexture,undefined);
+  galleryAccess=false;
+  const emergency=await liveLocation(authorized);
+  assert.equal(emergency.id,lab);
+  assert.equal(emergency.emergencyExit,true);
+  assert.deepEqual(emergency.exits,[]);
+  assert.doesNotMatch(emergency.scene.markup,/id="passage-0"|Galería/);
+  assert.notEqual(roomArt(emergency),chamberPath);
+  const emergencyModel=await readRoomModel(authorized,roomArt(emergency));
+  assert.ok(!emergencyModel.materials.some(material=>material.name==='Gallery return sign ivory'));
+  assert.equal((await authorized.read(chamberPath)).status,404);
+  galleryAccess=true;
   assert.deepEqual(chamber.keyLight,{position:[-.44,4.35,1.9],target:[-.44,1.07,1.9],color:'#ffe0b6',intensity:68});
   assert.match(chamber.scene.markup,/id="spatializer-practical"/);
   assert.match(chamber.scene.markup,/id="weaver-practical"/);

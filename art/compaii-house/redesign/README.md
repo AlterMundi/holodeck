@@ -58,7 +58,7 @@ and a physical phone. See the [environment production plan](../../../docs/shared
 Export each selected collection from a fresh load of the editable scene:
 
 ```sh
-for cell in garden facade foyer beacon gallery gallery-sealed; do
+for cell in garden facade foyer beacon beacon-return gallery gallery-sealed; do
   blender -b "$ART_OUTPUT/casa-compaii-redesign.blend" -t 8 --python-exit-code 1 \
     -P art/compaii-house/redesign/export_cells.py -- "$EXPORT_OUTPUT" "$cell"
 done
@@ -213,7 +213,8 @@ room-local bounds. Keep Blender area lights and camera setups in the source.
 | Garden | 1,747,624 | 15,728 | 11 |
 | Parcel facade | 2,836,316 | 19,712 | 9 |
 | Foyer | 1,536,588 | 6,700 | 7 |
-| Beacon laboratory | 2,644,700 | 28,416 | 9 |
+| Beacon laboratory, emergency exit only | 3,666,048 | 43,800 | 9 |
+| Beacon laboratory, gallery return | 3,925,492 | 48,460 | 10 |
 | Gallery with stair | 3,196,296 | 31,652 | 11 |
 | Gallery with continuous floor | 2,510,800 | 19,588 | 10 |
 | Listening tower | 1,983,396 | 26,056 | 10 |
@@ -348,6 +349,25 @@ to the exact approach in the same document. The continuous-floor visitor
 received no laboratory route or model. The updated gallery assets transfer
 in 1,490,289 and 1,471,814 bytes with Brotli.
 [Door from the gallery approach](review/gallery-foyer-door.jpg).
+
+### Laboratory return to the gallery
+
+The laboratory's upper landing has a limestone surround, recessed oak
+and gunmetal panels, brass fittings and a **Galería · Planta baja** sign.
+The stair, rail collision and approach at slot zero retain their existing
+positions. The art endpoint serves the return edition only when the viewer
+can enter the gallery. Losing that access selects the previous laboratory
+model and exposes the existing emergency exit, with no gallery door or
+sign and no further access to the return model.
+
+The laboratory editions share their room envelope and texture sizes,
+with two atlases at 1024² and two at 512² each. The return edition
+transfers in 1,703,241 bytes with Brotli. The viewer receives only the currently
+authorized edition.
+[Door from the laboratory stair approach](review/beacon-return-gallery-door.jpg).
+Independent Chromium fixtures confirmed the authorized WASD and E-key
+return at the same gallery landing without a reload, and the denied
+visitor's sealed gallery and restricted art responses.
 
 The supported first control handoff is the authenticated
 [Harmonic Lab panel](https://compaii.dmn.homes/harmonic_lab/). Walk toward

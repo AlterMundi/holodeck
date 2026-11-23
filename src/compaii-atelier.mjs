@@ -44,6 +44,7 @@ export const ATELIER_ASSET_REVISIONS=Object.freeze({
   'room-art/compaii-atelier/gallery.glb':'1aa239e905e9f9e5e7869175914f4aa648b9ec507595b00dba0d5b9dfd726776',
   'room-art/compaii-atelier/gallery-sealed.glb':'84317f7627b64d360f7dc8f9fe37a6a5b79160b591878c144de4dd58d151867e',
   'room-art/compaii-atelier/beacon.glb':'881d86774a6e92aefb9ff224c3a5ac60544a44fa6a2ff14f7fd05bb34b8e96c7',
+  'room-art/compaii-atelier/beacon-return.glb':'897636fc8a9229a867742fe7d4d2d5ba84c1c607fbb542916aecf39e08279798',
   'room-art/compaii-atelier/tower.glb':'47ba2a0964304eba1f3cbf945121e737c5d9addd7e71c1696bfa8b52ddb872de',
   ['assets/'+FACADE_ASSET]:'1cc4b093c2452d8871daaeee0148f876137296525d9d3c55c59399a9afe408e1',
   ['assets/'+GARDEN_ASSET]:GARDEN_REVISION,
@@ -194,7 +195,10 @@ export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt())
     interiorArtwork:(room,passages=[])=>{
       if(room?.house!==COMPAII_HOUSE)return null;
       if(room.id===foyer)return foyerArt;
-      if(room.id===lab)return labArt;
+      if(room.id===lab){
+        const returnStair=passages.some(link=>link.slot===0&&link.kind==='stair'&&link.to===gallery);
+        return returnStair?{...labArt,...asset('beacon-return'),authoredPassages:[0]}:labArt;
+      }
       if(room.id===tower)return towerArt;
       if(room.id!==gallery)return null;
       const hasLabStair=passages.some(link=>link.kind==='stair'&&link.to===lab);
