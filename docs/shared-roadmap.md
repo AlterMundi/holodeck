@@ -245,9 +245,10 @@ Start with the [foyer](../art/compaii-house/redesign/review/foyer-baked-light.jp
 and [Beacon room](../art/compaii-house/redesign/review/beacon-light-after.jpg).
 The foyer now has an orientation table and a place to sit. The Beacon
 benches now have separate listening and movement instruments, each beside
-the action for its existing panel. Continue the player-height finish pass
-through the miniature, exterior paths, gallery and tower with the same
-standard. Use scale, joinery, hardware and purposeful work objects to carry
+the action for its existing panel. The tower now has a player-height coastal view through its authored east
+clerestory, and the resonator sill collision matches the visible wood.
+Continue the finish pass through the miniature, exterior paths, gallery and
+tower with the same standard. Use scale, joinery, hardware and purposeful work objects to carry
 the detail while leaving the route and interaction targets clear. Compare
 matched before/after captures in the browser and verify clearance,
 transitions and frame cost on the revised route.

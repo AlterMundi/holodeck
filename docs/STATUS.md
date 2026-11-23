@@ -39,7 +39,16 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`a347c29`, package `9c74540f56f0`. The tower's authored resonator sill
+`a356c63`, package `685aa8875b4b`. The tower's authored east clerestory now
+opens visually onto the same coastal sky as the commons. The packaged
+player-height trial saw the panorama through the seven window bays, returned
+to the opaque gallery through the existing E-key portal in the same
+renderer, and verified the opaque lab backdrop. The protected HTTPS check
+matched all 57 installed files and the prior world checkpoint. Package
+`9c74540f56f0` is the selected rollback.
+[Visual qualification](visual-play.md#tower-east-clerestory)
+
+Source `a347c29`, package `9c74540f56f0`, established the tower walk-up. The tower's authored resonator sill
 now stops the avatar before it intersects the wood. In the packaged
 Chromium trial the avatar walked to the sill and stopped at room Z 4.995,
 then returned to the gallery by the existing portal and keyboard action.

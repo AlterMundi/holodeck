@@ -178,3 +178,13 @@ invalidated the result, and restoring mint completed it again. Both views
 matched the authenticated native observation and showed the same status and
 readable instructions without a reload. The light edits used the authenticated
 command path. The phone input was Chromium touch emulation.
+
+## Tower east clerestory
+
+The seven east window bays use the original Blender apertures. The existing
+coastal panorama (1536×768, 37,943 bytes) appears behind the windows once
+the authorized tower model is mounted. The renderer reuses the decoded sky
+from outdoors. The packaged Chromium trial captured a player-height frame
+and observed 44 frames through the walk and E-key exit. The gallery kept its
+opaque backdrop after crossing, and the authorized Beacon lab also kept its
+own backdrop. The tower's model and collisions keep their prior revision.
