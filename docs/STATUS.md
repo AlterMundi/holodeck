@@ -30,7 +30,7 @@ clerestory trim, baked contact shadows and one soft cross-light that matches
 the clerestory. Both floor variants were walked in the packaged browser
 simulation. The [matched player-height comparison](../art/compaii-house/redesign/README.md#blender-to-webgl)
 records the change under the normal WebGL renderer. The new geometry and maps
-add 338 KiB to the combined gallery variants. All 43 installed files, protected
+add 333 KiB to the combined gallery variants. All 43 installed files, protected
 HTTPS health, identity and Brotli client bytes, and the retained world and
 protected checkpoints were checked. Package `cc796555b993` is the compatible
 recovery.
