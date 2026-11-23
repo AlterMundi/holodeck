@@ -167,7 +167,7 @@ export function interiorDocument(room,passages=[],exhibit=null,art=null) {
     room.level>0 ? {floor:'#bfaa86',wall:'#667b86',end:'#7a8890'} :
     {floor:'#b5a28e',wall:'#5b7471',end:'#668581'};
   return `<m-group id="${room.id}">
-    ${roomFloor(passages,floor)}
+    ${roomFloor(passages,art?'#746d61':floor)}
     ${art?'<m-model id="room-art" src="'+attribute(art.src)+'" collide="false"></m-model>'+art.colliders:''}
     <m-cube x="-6" y="1.65" z="0" width=".2" height="3.3" depth="12" color="${wall}"></m-cube>
     <m-cube x="6" y="1.65" z="0" width=".2" height="3.3" depth="12" color="${wall}"></m-cube>
@@ -180,7 +180,7 @@ export function interiorDocument(room,passages=[],exhibit=null,art=null) {
     </m-group>`:''}
     ${passages.map(p=>passageMarkup({...p,label:attribute(p.title)})).join('')}
     ${room.entry?'<m-group id="house-exit"><m-cube y="1.13" z="5.86" width="1.35" height="2.06" depth=".08" color="#c8a36d" collide="false"></m-cube><m-cube x=".45" y="1.05" z="5.79" width=".06" height=".14" depth=".08" color="#343e40" collide="false"></m-cube><m-label y="2.53" z="5.81" ry="180" width="1.55" height=".37" font-size="19" content="Salida" collide="false"></m-label></m-group>':''}
-    <m-label x="0" y="2.3" z="-5.87" width="4" height=".65" font-size="26" content="${attribute(room.title)}" collide="false"></m-label>
+    ${art?'':`<m-label x="0" y="2.3" z="-5.87" width="4" height=".65" font-size="26" content="${attribute(room.title)}" collide="false"></m-label>`}
     <m-cylinder id="${id}" x="${x}" y="${y}" z="${z}" radius="${radius}" height="${height}" color="#af956a"></m-cylinder>
   </m-group>`;
 }

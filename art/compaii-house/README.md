@@ -63,8 +63,8 @@ and accessibility have their own browser acceptance.
 ## First playable mounting
 
 The original Beacon workshop objects also have a room-local export. Blender
-batches the materials into six meshes, with 20,744 triangles and no textures
-or decoder extensions. The 775,584-byte GLB is attached to the already
+batches the materials into seven meshes, with 21,184 triangles and no textures
+or decoder extensions. The 801,332-byte GLB is attached to the already
 authorized CompAII laboratory. Its current stairs, entry/exit and situated
 room identity provide the walkable integration boundary. Simple collision
 proxies cover the prototype base and console. Scene authorization applies to

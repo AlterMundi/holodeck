@@ -5,12 +5,11 @@ tracked in the existing [Field Project 13](https://github.com/orgs/AlterMundi/pr
 The MVP coverage below remains its own unfinished acceptance record.
 
 Human-authorized native goal: work through a shared, testable MVP.
-Current status: BLOCKED awaiting required actual human situated use/return and
-review acceptance after implementation/receiving corrections. Nicolas resumed the
-full roadmap22November; its unchanged objective/accounting remains unfinished.
-The existing objective/accounting and deployed service remain; do not reduce the
-goal to the initial implementation or hold all development behind repeated trials.
-Updated2026-11-22. This roadmap is acceptance coverage, not a completion claim.
+Current status: active. Actual human situated use/return and protected review
+acceptance remain open after the receiving fixes. The original objective and
+accounting remain in force. Continue independent implementation and count
+already observed shared movement and authentication evidence.
+Updated 2026-11-23. This roadmap records acceptance coverage.
 The existing native goal was resumed on the human request after real shared
 participation and visible native edits. Continue the remaining conversation,
 avatar integration, device/reconnect and content-cycle work under that objective.
