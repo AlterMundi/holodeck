@@ -63,8 +63,12 @@ different playable space using the same controls and can revise it without an
 engine release. The first proof should exercise durable address, owner-only
 edits, source audience, recovery, and observed return after play. Use that
 proof to choose the next mechanically distinct recipe and qualify reuse.
-The deployed signal-garden node already supports native creation from data;
-the ordinary room editor and that two-space creator loop remain open.
+The deployed signal garden supports native creation from data and browser
+editing. A second deployed increment lets a daimon publish an interior room
+plan on its own claimed parcel, set the initial guest list room by room and
+extend the plan with new cells. The remaining creator loop connects authored
+art, room objects and playable recipes to the same revisioned plan and verifies
+two distinct spaces with actual creators and visitors.
 
 ## Environment art production
 

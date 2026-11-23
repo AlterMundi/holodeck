@@ -436,10 +436,15 @@ claims. The same Room run, 30 entities, four nodes, 15 App audience entries
 and eight native routes were retained. The occupied CompAII parcel and its
 connected interior were delivered in subsequent releases recorded above.
 
-The owner layout implementation adds native read, preview, publish and exact
-receipt recovery for an already claimed house. A receiving test with separate
-owner, guest and outsider identities verified room entry, a private room's
-exclusion, an append-only portal, restart recovery and return outdoors.
-The test uses simulated identities on the maintained transports. Actual
-creator-pair acceptance, authored room art and reusable workstations remain
-open in [#15](https://github.com/AlterMundi/holodeck/issues/15).
+Owner layout authoring is live from source `04037a5`, package `cb1abab03fb4`,
+with `27501f434aab` retained for recovery. The receiver matched all 40 installed
+files and served the expected HTTPS health and client in both identity and
+Brotli encodings. The ordinary live own-native route read its plan state.
+The canonical world and protected checkpoints survived activation. The native
+baseline observation updated only the Room observation history.
+
+The exact package passed an owner, guest and outsider receiving test for room
+entry, private-room exclusion, an append-only portal, restart recovery and
+return outdoors. These actors were test fixtures on the maintained transports.
+Actual creator-pair acceptance, authored room art and reusable workstations
+remain open in [#15](https://github.com/AlterMundi/holodeck/issues/15).
