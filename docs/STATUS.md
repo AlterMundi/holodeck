@@ -9,7 +9,19 @@ and devices, and keep direct use separately attributed when observed.
 
 ## Selected receiving release
 
-The [protected entrance](https://compaii.dmn.homes/holodeck/) serves
+The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+`69c5351`, package `f8b4039586fe`. The eight existing concurrent world sessions
+can each have a distinct human appearance. Four rigs and four alternate
+wardrobes share the existing animation path. The server returns the same
+appearance in the plaza and inside rooms while the actor's session binding
+is retained. All 50 installed files and seven added GLB routes matched through
+authenticated HTTPS. Protected world checkpoints, the original world and
+own-native readback matched. Two controlled Chromium contexts loaded and
+rendered their distinct selected rigs outdoors and in the same room, including
+an alternate wardrobe. The camera correction is retained, with its
+package `4821e45f09a3` available for compatible recovery.
+
+The preceding release served
 source `cf83fb4`, package `4821e45f09a3`. The interior renderer now checks the
 current orbit against the loaded room colliders before drawing and retracts
 the boom immediately when obstructed. It extends gradually as the view opens.
