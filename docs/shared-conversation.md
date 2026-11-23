@@ -221,13 +221,32 @@ refused on the completed route. The public scene exposes the game effect without
 This covers the browser and world/Conversation handoff with synthetic
 admission and final text. In a separate Telecodex qualification,
 `foreground_capture` exercised native final-event projection through the
-actual owner and isolated SQLite with a synthetic peer. A model choosing the
-world action and issuing the final from the same real turn remains open.
+actual owner and isolated SQLite with a synthetic peer.
+
+The optional foreground model trial keeps the browser participants and
+canonical admission simulated. An actual Codex model reads the exact fixture
+original and its immutable room source, explores only through the scoped
+native CLI, and supplies its own answer. The browser harness independently
+reads the scoped receipt and projects the model's exact answer into the
+Conversation client. In the 23 November trial the model found the two permitted
+passages, chose the missing mint signal in the foyer and observed two
+contributors and a complete garden. Both browsers showed the effect and the
+reply was rendered once under the original. The receipt survived release.
+Canonical ingress and final-event projection through a production native
+session still require an observed end-to-end example.
 
 Use the existing package stage and installed Conversation/Playwright assets.
 Select a task-owned evidence directory and a short-lived loopback certificate
 (`key.pem` and `cert.pem`). The test starts two ephemeral listeners and browser
-profiles and closes them when done. It overwrites the two captures and one
+profiles and closes them when done. For the foreground model variant, set
+`HOLODECK_MODEL_HANDOFF` to a fresh private empty directory. When the fixture
+original exists, the harness atomically writes `request.json` with the input,
+immutable source, exact interaction ID and local CLI and socket coordinates.
+A foreground model participant uses the scoped CLI and atomically writes
+`answer.json` with `original`, `commandId` and `answer`. The harness
+waits at most four minutes and checks the actual effect before projecting the
+reply. Remove the handoff files after retaining the scoped result.
+The harness overwrites the two captures and one
 structured result in that directory on repeated checks.
 
 ```sh

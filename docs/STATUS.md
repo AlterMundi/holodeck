@@ -7,6 +7,19 @@ qualification for continued Holodeck delivery. The previous human observations
 remain valid. Qualify newer releases with independent simulated participants
 and devices, and keep direct use separately attributed when observed.
 
+## Foreground model qualification
+
+An actual Codex model used the scoped world CLI against the isolated two-browser
+trial. It used the original's captured foyer, took two authorized passages from
+outside, and chose the missing mint signal from the live garden state. Its
+action and result returned the same room, revision 1 and sequence 3. A fresh
+observation showed two contributors. The two browsers saw completion. The
+canonical client rendered the actual model's answer once under its fixture
+original, and that original recovered the receipt after release. Canonical
+admission and final-event transport were simulated. A single production turn
+using the actual canonical writer and native final-event return remains open.
+[Trial contract](shared-conversation.md#return-to-the-same-conversation)
+
 ## Author catalog receiving evidence
 
 The existing private Home owner adapter now verifies exact retained
@@ -41,8 +54,8 @@ independent simulated participants. The original remained bound to its
 first topic while the human walked. The native CLI used two authorized
 passages, placed the matching signal, and recovered its exact receipt.
 Both browsers saw the completed garden and the canonical client showed
-the associated fixture reply once. A real model choosing and answering
-in the same turn is still open. Tests refused off-route, stale, terminal
+the associated fixture reply once. The later foreground model qualification
+is recorded above. Tests refused off-route, stale, terminal
 and foreign-original movement. The protected runtime matched all 57
 installed files and prior world checkpoint bytes. Package
 `466151c5c732` remains available for recovery.

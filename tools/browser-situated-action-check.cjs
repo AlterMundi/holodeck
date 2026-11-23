@@ -1,8 +1,9 @@
 // Loopback qualification using the installed canonical web client and real
 // Holodeck context ledger, world port and scene. Synthetic participants,
-// writer/admission and final events. No provider or production requests.
+// writer/admission and final events. Can accept an actual model response from
+// a foreground participant restricted to this test world. No production requests.
 const {createServer}=require('node:https');
-const {readFileSync,writeFileSync}=require('node:fs');
+const {lstatSync,readFileSync,writeFileSync,renameSync}=require('node:fs');
 const {createHash,randomUUID}=require('node:crypto');
 const assert=require('node:assert/strict');
 const {once}=require('node:events');
@@ -14,11 +15,34 @@ const {mkdtempSync,rmSync}=require('node:fs');
 const {resolve}=require('node:path');
 const {pathToFileURL}=require('node:url');
 const root=join(__dirname,'..');
-const {HOLODECK_PLAYWRIGHT,HOLODECK_STAGE,HOLODECK_CONVERSATION_RELEASE,HOLODECK_FIXTURE_TLS,HOLODECK_EVIDENCE_DIR}=process.env;
+const {HOLODECK_PLAYWRIGHT,HOLODECK_STAGE,HOLODECK_CONVERSATION_RELEASE,HOLODECK_FIXTURE_TLS,HOLODECK_EVIDENCE_DIR,HOLODECK_MODEL_HANDOFF}=process.env;
 if(!HOLODECK_PLAYWRIGHT||!HOLODECK_STAGE||!HOLODECK_CONVERSATION_RELEASE||!HOLODECK_FIXTURE_TLS||!HOLODECK_EVIDENCE_DIR)
   throw Error('Select the installed browser/Conversation assets, existing package stage, local TLS and bounded evidence directory');
 const {chromium}=require(resolve(HOLODECK_PLAYWRIGHT));
 const stage=resolve(HOLODECK_STAGE);
+const modelHandoff=HOLODECK_MODEL_HANDOFF?resolve(HOLODECK_MODEL_HANDOFF):null;
+const playerText=modelHandoff?'Can you come here and complete the garden with me? Place the missing signal and tell me what happened.':'The first signal is in this room.';
+
+async function readModelAnswer(request){
+  const target=join(modelHandoff,'request.json');
+  writeFileSync(target+'.stage',JSON.stringify(request),{flag:'wx',mode:0o600});
+  renameSync(target+'.stage',target);
+  const response=join(modelHandoff,'answer.json'),deadline=Date.now()+240000;
+  while(Date.now()<deadline){
+    try{
+      const stats=lstatSync(response);
+      if(!stats.isFile()||stats.size>2048)throw Error('Invalid model handoff answer file');
+      const value=JSON.parse(readFileSync(response,'utf8'));
+      if(value.original!==request.original||typeof value.answer!=='string'||!value.answer.trim()||
+        typeof value.commandId!=='string'||!/^[a-zA-Z0-9._-]{1,64}$/.test(value.commandId))
+        throw Error('The model answer must identify the current original and exact command');
+      return value;
+    }catch(error){if(error.code!=='ENOENT')throw error;}
+    await new Promise(resolve=>setTimeout(resolve,250));
+  }
+  throw Error('The model handoff ended without an answer');
+}
+
 const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
 
 (async()=>{
@@ -227,7 +251,7 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     for(let step=0;!canonicalRequests.includes('GET /api/interaction/inputs')&&step<150;step++)
       await new Promise(resolve=>setTimeout(resolve,100));
     assert.ok(canonicalRequests.includes('GET /api/interaction/inputs'));
-    await compose.locator('#conversation-message').fill('The first signal is in this room.');
+    await compose.locator('#conversation-message').fill(playerText);
     await compose.locator('#conversation-compose').evaluate(form=>form.requestSubmit());
     await keyboard.waitForFunction(()=>document.querySelector('#companion-status'),null);
     for(let attempt=0;!situations.length&&attempt<100;attempt++)await new Promise(r=>setTimeout(r,100));
@@ -256,7 +280,7 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     for(let attempt=0;!originals.length&&attempt<100;attempt++)await new Promise(r=>setTimeout(r,100));
     assert.equal(originals.length,1);
     const nativeApproach=[];
-    for(const expected of [{from:'outside',to:'owned-entry'},{from:'owned-entry',to:'owned-foyer'}]){
+    if(!modelHandoff)for(const expected of [{from:'outside',to:'owned-entry'},{from:'owned-entry',to:'owned-foyer'}]){
       const observation=await worldRequest('observe',{},original.id);
       assert.equal(observation.result.space.activity.canPlay,false);
       assert.deepEqual(observation.result.approach,expected);
@@ -264,7 +288,7 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
       assert.deepEqual(moved,{ok:true,result:expected});
       nativeApproach.push(moved.result);
     }
-    assert.equal((await worldRequest('observe',{},original.id)).result.space.activity.canPlay,true);
+    if(!modelHandoff)assert.equal((await worldRequest('observe',{},original.id)).result.space.activity.canPlay,true);
     const whileWalking=await keyboard.evaluate(()=>document.querySelector('#shared-conversation iframe')!==null&&
       document.querySelector('#conversation-panel').hidden);
     assert.equal(whileWalking,true);
@@ -280,11 +304,15 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     assert.equal(siblingContext.body.work_admitted,false);
     originals.push({id:sibling,binding,text:'Fixture sibling original.',files:siblingContext.body.files,
       phase:'accepted',entry:2,received_at:new Date().toISOString()});
-    const command={type:'garden.signal',id:'readable-native-signal',room:'owned-foyer',expectedRevision:1,index:0,color:'mint'};
-    const effect=await worldRequest('act',command,original.id);
+    const modelAnswer=modelHandoff?await readModelAnswer({
+      original:original.id,input:originals[0].text,source:original.capture,socket:path,
+      cli:join(root,'integrations/world_port.py'),
+    }):null;
+    const command={type:'garden.signal',id:modelAnswer?.commandId??'readable-native-signal',room:'owned-foyer',expectedRevision:1,index:0,color:'mint'};
+    const effect=modelAnswer?await worldRequest('result',{id:command.id},original.id):await worldRequest('act',command,original.id);
     assert.equal(effect.ok,true);
     assert.deepEqual(await worldRequest('result',{id:command.id},original.id),effect);
-    assert.deepEqual(await worldRequest('act',command,original.id),effect);
+    if(!modelAnswer)assert.deepEqual(await worldRequest('act',command,original.id),effect);
     assert.equal((await worldRequest('result',{id:command.id},originals[1].id)).ok,false);
     assert.equal((await worldRequest('observe',{},original.id)).result.space.activity.progress.complete,true);
     await progress(keyboard,'¡Jardín completado!');
@@ -294,7 +322,7 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
       const markerCount=await page.locator('#indoor-garden-markers m-sphere').count();
       assert.equal(markerCount,2);
     }
-    const primaryText='Fixture result: mint signal committed in the captured room. Two contributors completed the garden.';
+    const primaryText=modelAnswer?.answer??'Fixture result: mint signal committed in the captured room. Two contributors completed the garden.';
     const siblingText='Fixture sibling result: read-only question completed.';
     function final(originalId,text){
       const entry=originals.find(row=>row.id===originalId);
@@ -340,8 +368,8 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     assert.equal(await answer(siblingText).count(),1);
     const reply=compose.locator('article[data-source-id="native:'+originals[0].entry+'"]');
     assert.equal(await reply.count(),1);
-    assert.match(await reply.innerText(),/mint signal committed/);
-    assert.equal(originals[0].text,'The first signal is in this room.');
+    assert.equal(await reply.locator('.reply-text').innerText(),primaryText);
+    assert.equal(originals[0].text,playerText);
     assert.equal(originals[0].files[0].sha256,original.file.sha256);
     assert.equal(await touch.locator('#shared-conversation iframe').count(),0);
     assert.ok(!(await touch.locator('body').innerText()).includes(primaryText));
@@ -375,14 +403,14 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     assert.equal(originals.length,2);
     assert.equal(uploads,2);
     assert.equal(canonicalPosts,1);
-    console.error('The admitted original reached the garden through its two authorized passages');
+    console.error('The original garden effect and Conversation reply were verified');
     await touch.screenshot({path:join(HOLODECK_EVIDENCE_DIR,'reconnected-game.png')});
     assert.deepEqual(errors,[]);
-    const evidence={simulatedActors:true,actualModel:false,touchActions:true,keyboardMovement:true,matchingProgress:true,
+    const evidence={simulatedActors:true,actualModel:!!modelAnswer,canonicalTransportSimulated:true,touchActions:true,keyboardMovement:true,matchingProgress:true,
       retainedRoomTopic:original.capture.referredRoomObject.id,nextRoomTopic,
       situatedRoom:original.capture.place.id,initialContributors:original.capture.place.activity.progress.contributors,
       canonicalOriginals:originals.length,canonicalPosts,machineAttachments:uploads,replyRenderedOnce:true,siblingCompletedFirst:true,
-      sameConversationFrame:true,foreignReceiptDenied:true,receiptRecoveredAfterRelease:true,nativeApproach,worldReceipt:effect.result,recoveredComplete:recovered.progress.complete};
+      sameConversationFrame:true,foreignReceiptDenied:true,receiptRecoveredAfterRelease:true,harnessNativeApproach:modelAnswer?null:nativeApproach,worldReceipt:effect.result,recoveredComplete:recovered.progress.complete};
     writeFileSync(join(HOLODECK_EVIDENCE_DIR,'result.json'),JSON.stringify(evidence,null,2)+'\n');
     console.log(JSON.stringify(evidence));
   }finally{
