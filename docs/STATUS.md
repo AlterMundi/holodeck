@@ -25,7 +25,24 @@ Room event tail recorded joins and leaves during activation. The directly
 usable predecessor `581dbb6a09cb` retains room plans and furnishings.
 
 The [shared Home entrance](https://compaii.dmn.homes/holodeck/) now serves
-source `8c56091`, package `4232c649d9f1`, with the [Blender coastal sky](../art/compaii-house/redesign/coastal-sky.md)
+source `3c474c6`, package `0af62b029659`, with the [Blender coastal foliage](../art/compaii-house/redesign/coastal-trees.md)
+and scoped doorway timing correction. Both versioned foliage assets and the
+Brotli and identity client matched the installed 43-file inventory through
+the protected HTTPS route. The Room and protected checkpoints matched the
+pre-activation baseline. Prior package `4232c649d9f1` remains the immediate
+recovery selection.
+
+Same-camera MML comparison showed the new branches, needles and leaf masses
+on the same world placement with keyboard movement. The foliage adds 570,216
+bytes and 7,480 triangles across the Commons and surroundings and removes two
+draw batches. Doorway profiling found two foyer model requests in the old
+path and one per crossing with the new path. The exact selected package
+reused an authorized room template on re-entry without remounting the page.
+The software-browser revisit took 1.1 seconds. The exact touch-emulated
+fixture crossed in 1.9 seconds and returned in 1.8 seconds. Cold desktop
+timings remained variable, so the timing work continues.
+
+The preceding source `8c56091`, package `4232c649d9f1`, selected the [Blender coastal sky](../art/compaii-house/redesign/coastal-sky.md)
 and [water materials](../art/compaii-house/redesign/coastal-water.md).
 The exact HTTPS client, sky, water and Commons assets matched the installed
 43-file inventory. The canonical run and protected state were retained.
