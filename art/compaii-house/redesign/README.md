@@ -16,6 +16,7 @@ The long, cooler gallery gives visitors room to look and pass one another.
 - [West verge garden and path](parcel-garden.md)
 - [Outdoor gallery island and presentation pavilion](gallery-island.md)
 - [North Mirador](mirador.md)
+- [East Garden, playable meadow and sea arbor](east-garden.md)
 - [Harmonic Beacon workshop from the stair](review/beacon.jpg)
 - [Architecture of the collection room](review/gallery.jpg)
 

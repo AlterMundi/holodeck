@@ -28,7 +28,9 @@ function gardenModel(part, prefix) {
   const {asset,x,y,z,sx,sy,sz} = part;
   if (![x,y,z].every(Number.isFinite) ||
       ![sx,sy,sz].every(value => Number.isFinite(value) && value>0)) return '';
-  return `<m-model id="authored-garden" src="${attribute(prefix+'assets/'+asset)}" x="${x}" y="${y}" z="${z}" sx="${sx}" sy="${sy}" sz="${sz}" collide="false"></m-model>`;
+  const revision=/^[a-f0-9]{64}$/.test(part.revision)?'?v='+part.revision.slice(0,12):'';
+  const model=`<m-model id="authored-garden" src="${attribute(prefix+'assets/'+asset+revision)}" x="${x}" y="${y}" z="${z}" sx="${sx}" sy="${sy}" sz="${sz}" collide="false"></m-model>`;
+  return part.colliders?model+`<m-group id="authored-garden-colliders">${part.colliders}</m-group>`:model;
 }
 
 // Exported models are ground-registered in meters, with the entrance facing

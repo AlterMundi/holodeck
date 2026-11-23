@@ -17,6 +17,7 @@ const layout=[
 ];
 const FACADE_ASSET='compaii-atelier-facade.glb';
 const GARDEN_ASSET='compaii-atelier-garden.glb';
+const GARDEN_REVISION='44042fb171ad5be40f870f6c9c2e3dda7206cabec6fdc52e5c8b40be8cc288fb';
 const COMMONS_ASSET='compaii-atelier-commons.glb';
 const COMMONS_REVISION='c886dceb1c58807b553b9a8bfcfb499dbcc5f105ef3a60264fcb9f6b3be06a75';
 const WAYFINDING=Object.freeze({asset:'commons-signs.glb',
@@ -45,7 +46,7 @@ export const ATELIER_ASSET_REVISIONS=Object.freeze({
   'room-art/compaii-atelier/beacon.glb':'cb2c403d2aa50f0886c1e0d7e9d008f5f657704f1a1b172bd4be623855c2cd0c',
   'room-art/compaii-atelier/tower.glb':'47ba2a0964304eba1f3cbf945121e737c5d9addd7e71c1696bfa8b52ddb872de',
   ['assets/'+FACADE_ASSET]:'940aa64038396e43db8beca859e33f4f52c6ae3a84d1702457159c0af1224077',
-  ['assets/'+GARDEN_ASSET]:'ecf2f1225a065b1a1b4b067ad2cd0f3ac96bc62b5d8a31a8894dd1a50490361b',
+  ['assets/'+GARDEN_ASSET]:GARDEN_REVISION,
   ['assets/'+COMMONS_ASSET]:COMMONS_REVISION,
   ['assets/'+WAYFINDING.asset]:WAYFINDING.revision,
   ['assets/'+HOUSE_WALK.asset]:HOUSE_WALK.revision,
@@ -62,9 +63,16 @@ const facade={
   asset:FACADE_ASSET,
   bounds:{min:[-.732565,0,-1.573],max:[.732565,2.649471,1.574201]},
 };
-const gardenVisual={asset:GARDEN_ASSET,x:22,y:.102,z:-2.75,sx:.50,sy:.78,sz:.55};
 const floorProfile={replacesShell:true,authoredExhibitBase:true};
 const box=({x,y,z,w,h,d})=>`<m-cube x="${x}" y="${y}" z="${z}" width="${w}" height="${h}" depth="${d}" opacity="0" cast-shadows="false"></m-cube>`;
+const gardenVisual={asset:GARDEN_ASSET,revision:GARDEN_REVISION,x:0,y:0,z:0,sx:1,sy:1,sz:1,
+  colliders:[
+    {x:24.05,y:.295,z:7.79,w:2.57,h:.39,d:.40},
+    ...[22.72,25.38].flatMap(x=>[6.65,7.83].map(z=>({x,y:1.265,z,w:.23,h:2.33,d:.23}))),
+    ...[19.35,22.15,24.95].map(x=>({x,y:.224,z:-7.095,w:1.70,h:.25,d:.805})),
+    ...[[16.5,-6.83],[22.02,-8.5],[27.76,-6.49],[18.42,7.55],[27.80,6.54]]
+      .map(([x,z])=>({x,y:.98,z,w:.29,h:1.76,d:.29})),
+  ].map(box).join('')};
 const parcelGarden={...PARCEL_GARDEN,colliders:[
   {x:-7.70,y:.296,z:18.145,w:.398,h:.396,d:1.19},
   {x:-7.73,y:.791,z:15.35,w:.272,h:1.382,d:.270},

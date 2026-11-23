@@ -8,6 +8,7 @@ import {ATELIER_PROFILE,ATELIER_ROOMS,selectAtelier} from '../src/compaii-atelie
 import {COMPAII_HOUSE,interiorArt} from '../src/interior-art.mjs';
 import {Room} from '../src/room.mjs';
 import {HOUSE_GROUND,HOUSE_PLOTS} from '../src/houses.mjs';
+import {TERRACES,CREATION_AREAS} from '../src/world-layout.mjs';
 import {worldDocument} from '../src/world.mjs';
 import {RoomStore} from '../src/room-store.mjs';
 import {createHolodeck} from '../src/server.mjs';
@@ -55,6 +56,16 @@ test('profile is optional and uses the exact existing room graph and parcel edit
   assert.deepEqual(plots(authored),plots(fallback));
   assert.match(authored,/<m-model id="parcel-garden" src="\/holodeck\/assets\/parcel-garden\.glb\?v=[a-f0-9]{12}" collide="false">/);
   assert.doesNotMatch(fallback,/parcel-garden\.glb/);
+  assert.match(authored,/<m-model id="authored-garden" src="\/holodeck\/assets\/compaii-atelier-garden\.glb\?v=[a-f0-9]{12}" x="0" y="0" z="0" sx="1" sy="1" sz="1" collide="false">/);
+  const east=authored.match(/<m-group id="authored-garden-colliders">([^]*?)<\/m-group>/)[1];
+  const fixtures=[...east.matchAll(/<m-cube x="([^"]+)" y="[^"]+" z="([^"]+)" width="([^"]+)" height="[^"]+" depth="([^"]+)"/g)];
+  const eastTerrace=TERRACES.find(item=>item.id==='garden'),eastField=CREATION_AREAS.find(item=>item.id==='garden');
+  assert.equal(fixtures.length,13);
+  for(const [, ...bounds] of fixtures){
+    const [x,z,w,d]=bounds.map(Number);
+    assert.ok(z-d/2>eastField.maxZ||z+d/2<eastField.minZ);
+    assert.ok(Math.hypot(Math.abs(x-eastTerrace.x)+w/2,Math.abs(z-eastTerrace.z)+d/2)<eastTerrace.radius);
+  }
   assert.match(authored,/<m-model id="mirador" src="\/holodeck\/assets\/mirador\.glb\?v=[a-f0-9]{12}" collide="false">/);
   assert.doesNotMatch(fallback,/mirador\.glb|mirador-colliders/);
   const mirador=authored.match(/<m-group id="mirador-colliders">([^]*?)<\/m-group>/)[1];
