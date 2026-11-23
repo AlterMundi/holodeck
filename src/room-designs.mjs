@@ -57,7 +57,8 @@ export class RoomDesigns {
   inspect(actor,room){
     if(!this.canEdit(actor)||this.owner(room)!==actor.id)return null;
     const design=this.forRoom(room);
-    const kits=[...this.kits.entries()].map(([id,{title}])=>({id,title}));
+    const kits=[...this.kits.entries()].filter(([,kit])=>kit.publishable!==false)
+      .map(([id,{title}])=>({id,title}));
     return structuredClone({design,kits});
   }
 
@@ -75,6 +76,7 @@ export class RoomDesigns {
     const fingerprint=createHash('sha256').update(JSON.stringify([input.room,input.kit,input.expectedRevision])).digest('hex');
     const prior=this.state.receipts.find(value=>value.result.owner===actor.id&&value.id===input.id);
     if(prior)return !preview&&prior.fingerprint===fingerprint?structuredClone(prior.result):null;
+    if(this.kits.get(input.kit).publishable===false)return null;
     const current=this.forRoom(input.room);
     if((current?.revision??null)!==input.expectedRevision||current?.kit===input.kit)return null;
     const result={room:input.room,kit:input.kit,owner:actor.id,revision:(current?.revision??0)+1};

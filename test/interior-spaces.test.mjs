@@ -366,7 +366,7 @@ test('own-native layout publication adds a live guest route and survives process
     assert.deepEqual((await act({type:'layout.current'})).result,preview.result);
     const design={type:'design.put',id:'receive-design-01',expectedRevision:null,room:'foyer',kit:'listening-workshop'};
     const options=(await act({type:'design.current',room:'foyer'})).result;
-    assert.deepEqual(options.kits.map(kit=>kit.id),['listening-workshop','project-archive']);
+    assert.deepEqual(options.kits.slice(0,2).map(kit=>kit.id),['listening-workshop','project-archive']);
     assert.equal(options.design,null);
     assert.equal((await act(design,foreignPath)).ok,false);
     assert.equal((await act({type:'design.current',room:'foyer'},foreignPath)).ok,false);

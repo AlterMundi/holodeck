@@ -595,6 +595,15 @@ Its29-file receiving proof and unchanged run/config evidence remain historical;
 it is superseded by the selected shared-history release above. Git retains the
 qualification and protected retirement receipts retain actual archive effects.
 
+## Introducing an owned room kit
+
+Room design checkpoints and receipts retain kit IDs. A new kit must be
+readable by the active rollback package before it enters a live design.
+Deploy the kit's exact art and reader with publication disabled, then use
+that package as the immediate predecessor of the enabled writer. Both
+packages serve identical GLB bytes behind current room access. The reader
+honors existing receipts and does not accept new publications of the kit.
+
 ## Operator readback details
 
 The ordinary package publisher prints status and URL, not the complete immutable

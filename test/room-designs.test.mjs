@@ -17,6 +17,7 @@ test('an uncertain design write fences the session and recovers its exact receip
   const store=new RoomStore(dir,{maxBytes:DESIGN_SAVE_BYTES});
   const first=new RoomDesigns({...options,persist:state=>store.save(state)});
   const accepted=first.put(owner,original);
+  const firstCheckpoint=store.load();
   try{
     store.synchronizeDirectory=()=>{throw Error('simulated directory sync failure');};
     assert.throws(()=>first.put(owner,update),RoomCommitUncertain);
@@ -27,6 +28,13 @@ test('an uncertain design write fences the session and recovers its exact receip
     assert.deepEqual(recovered.result(owner,update.id),{owner:owner.id,room:'foyer',kit:'second',revision:2});
     assert.deepEqual(recovered.put(owner,update),recovered.result(owner,update.id));
     assert.equal(recovered.put(owner,{...update,kit:'first'}),null);
+    const readerKits=new Map([['first',{title:'First'}],['second',{title:'Second',publishable:false}]]);
+    const predecessor=new RoomDesigns({...options,state:store.load(),kits:readerKits});
+    assert.equal(predecessor.inspect(owner,'foyer').design.kit,'second');
+    assert.deepEqual(predecessor.inspect(owner,'foyer').kits,[{id:'first',title:'First'}]);
+    assert.deepEqual(predecessor.put(owner,update),recovered.result(owner,update.id));
+    const trial=new RoomDesigns({...options,state:firstCheckpoint,kits:readerKits});
+    assert.equal(trial.put(owner,update,true),null);
   }finally{
     rmSync(dir,{force:true,recursive:true});
   }

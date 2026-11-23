@@ -1,4 +1,4 @@
-"""Build the two original Holodeck room kits with Blender 5.2."""
+"""Build the original Holodeck room kits with Blender 5.2."""
 import json
 from math import cos, radians, sin, tau
 from pathlib import Path
@@ -28,8 +28,12 @@ MATERIALS = {
     "Amber glazing": ("#d9a56e", .02, .57, .54),
     "Jade glazing": ("#b1cfbd", .05, .55, .34),
     "Clerestory brass": ("#837047", .3, .53, 0),
+    "Smoked walnut": ("#554034", 0, .52, 0),
+    "Limewash teal": ("#506c67", 0, .88, 0),
+    "Pale workshop enamel": ("#bac9b2", .05, .4, 0),
+    "Opal task glass": ("#f5ddab", .02, .49, .6),
 }
-SLUGS = ("listening-workshop", "project-archive")
+SLUGS = ("listening-workshop", "project-archive", "sensorial-workshop")
 # Shared room-local bounds for conservative collider boxes. Keep the same
 # volumes across both appearances so changing them leaves positions valid.
 FOOTPRINTS = (
@@ -192,13 +196,49 @@ def archive():
     block("Drawer loop", (x, .553, z + .758), (.22, .035, .032), "Bronzed brass", .011)
 
 
+def sensorial():
+    x, z = -1.55, .25
+    upholstered_base("Woven pad under the samples bench", x, z, "Blue felt")
+    feet(x, z, "Smoked walnut")
+    block("Beveled limestone worktop", (x, .89, z), (1.16, .144, 1.8), "Limestone", .042)
+    block("Walnut apron", (x, .754, z), (1.08, .18, 1.66), "Smoked walnut", .028)
+    for dz in (-.38, .38):
+        block("Inset drawer face", (x+.544, .754, z+dz), (.034, .118, .72), "Honey ash", .013)
+        block("Drawer tab", (x+.568,.754,z+dz), (.031,.021,.185), "Bronzed brass", .005)
+    block("Frame of the sample tray", (x-.064, .989, z-.29), (.78,.077,.99), "Smoked walnut", .022)
+    block("Felt-lined tray bed", (x-.064,1.032,z-.29), (.72,.019,.93), "Blue felt", .008)
+    for i, finish in enumerate(("Glazed porcelain", "Limestone", "Oxide")):
+        shift = i * .25 - .25
+        cylinder("Material specimen", (x+.095, 1.082, z-.29+shift), .103, .072, finish, sides=22)
+        block("Blank sample tag", (x-.25, 1.054, z-.29+shift), (.11,.012,.074), "Waxed paper", .006)
+    block("Reference leaf", (x-.08,.987,z+.542), (.54,.047,.29), "Waxed paper", .012, -6)
+    block("Brass measuring strip", (x+.355,.973,z+.362), (.046,.014,.56), "Bronzed brass", .005)
+
+    x, z = 1.55, -.85
+    block("Recessed stone toe kick", (x,.204,z), (1.11,.202,1.64), "Deep slate", .038)
+    block("Tall instrument cabinet", (x,.55,z), (1.04,.618,1.49), "Smoked walnut", .033)
+    for dz in (-.51,-.34,-.17,.0,.17,.34,.51):
+        block("Vent slat to the aisle", (x-.531,.537,z+dz), (.041,.386,.058), "Honey ash", .012)
+    block("Limestone cradle", (x,.899,z), (1.15,.125,1.63), "Limestone", .033)
+    block("Enamel enclosure", (x,1.123,z-.18), (.85,.31,.79), "Oxide", .043)
+    block("Dark measurement face", (x,1.287,z-.18), (.76,.036,.72), "Deep slate", .014)
+    for radius, coating in ((.26,"Bronzed brass"),(.195,"Pale workshop enamel"),(.12,"Trace")):
+        halo("Passive tuning ring", (x,1.316,z-.18), radius,.009,coating)
+    cylinder("Porcelain reference mount", (x,1.342,z-.18), .085,.05,"Glazed porcelain", sides=24)
+    for dz in (.35,.535):
+        cylinder("Mechanism adjustment dial", (x-.192,1.005,z+dz), .062,.065,"Bronzed brass", sides=20)
+        cylinder("Neutral calibration cap", (x+.202,.995,z+dz), .047,.042,"Pale workshop enamel", sides=16)
+    block("Brass maker strip", (x,.99,z+.437),(.108,.027,.41),"Bronzed brass", .008)
+
+
 def enclosure(slug):
     archive = slug == "project-archive"
-    plaster = "Library plaster" if archive else "Bone plaster"
-    frame = "Oxide" if archive else "Soot oak"
-    infill = "Deep slate" if archive else "Dark ash"
-    window = "Jade glazing" if archive else "Amber glazing"
-    soffit = "Bone plaster" if archive else "Dark ash"
+    sensory = slug == "sensorial-workshop"
+    plaster = "Limewash teal" if sensory else "Library plaster" if archive else "Bone plaster"
+    frame = "Smoked walnut" if sensory else "Oxide" if archive else "Soot oak"
+    infill = "Deep slate" if archive or sensory else "Dark ash"
+    window = "Opal task glass" if sensory else "Jade glazing" if archive else "Amber glazing"
+    soffit = "Soot oak" if sensory else "Bone plaster" if archive else "Dark ash"
 
     # Subtract nothing from the engine shell. All modeled wall surfaces sit
     # behind the published door faces and stair landings at ±5.86.
@@ -229,6 +269,9 @@ def enclosure(slug):
                               rise / 2 - .105, .024, window, .006)
                 panel("Honed window sill", 0, 1.74 - rise / 2 - .13, 5.91,
                       width + .37, .104, .059, "Limestone", .016)
+                if sensory:
+                    for u in (-1.51, 1.51):
+                        panel("Walnut edge of acoustic bay",u,1.74,5.898,.11,1.79,.047,frame,.009)
             # End walls frame the room title and the house exit. Slim
             # recessed panels also keep the entry sightline legible.
             for u in (-4.85, 4.85):
@@ -343,7 +386,7 @@ def inspect_glb(filename):
 
 def build(slug, output, review):
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    (workshop if slug == SLUGS[0] else archive)()
+    dict(zip(SLUGS,(workshop,archive,sensorial)))[slug]()
     enclosure(slug)
     parts = sorted((obj for obj in bpy.context.scene.objects if obj.type == "MESH"), key=lambda obj: obj.name)
     if review:
@@ -366,5 +409,5 @@ if __name__ == "__main__":
     review = Path(args[1]).resolve() if len(args) > 1 else None
     if review:
         review.mkdir(parents=True, exist_ok=True)
-    for slug in SLUGS:
+    for slug in args[2:] or SLUGS:
         build(slug, output, review)

@@ -9,6 +9,14 @@ cream ceiling. Both are original Blender geometry with scalar materials. The fol
 active room and its authorized project exhibit continue to resolve through
 Holodeck and the existing source viewer.
 
+The **Materials workshop** adds a limestone sample tray with three specimens,
+walnut drawer joinery and a passive instrument cradle. The slate instrument
+face has concentric brass and enamel tuning rings. These are modeled
+prototypes. The room's warmer task light and the cool return fill echo the
+opal glazing and leave the playing aisle open. The kit can be selected for
+an eligible owned room, including Casa de CompAII's Taller Sensorial.
+[Editable Blender source](sensorial-workshop.blend).
+
 The kits fit the same two furniture volumes in the existing room. The
 room-local coordinate system is glTF and Holodeck's X, up Y and Z, in
 meters. Each row gives a box center followed by its dimensions.
@@ -27,8 +35,9 @@ at X 2.5, Z 1.25 lies outside the furniture volumes.
 
 ## Build and review
 
-Run Blender 5.2.2 inside the project. The optional second path receives two
-editable Blender scenes and two eye-height review images. The images include
+Run Blender 5.2.2 inside the project. The optional second path receives
+editable Blender scenes and their eye-height review images. After that path
+you can supply a single kit slug to rebuild just that model. The images include
 the ordinary floor for context and use Blender lights. Holodeck supplies its
 runtime lighting. Exact byte comparisons to the checked-in GLBs can be made
 with the same Blender build.
@@ -47,3 +56,4 @@ by part.
 | --- | ---: | ---: | ---: |
 | owned-listening-workshop.glb | 505,760 | 9,344 | 13 |
 | owned-project-archive.glb | 534,332 | 9,176 | 14 |
+| owned-sensorial-workshop.glb | 547,384 | 10,108 | 15 |
