@@ -14,11 +14,19 @@ architectural redesign with unified materials, light and composition. The
 [new Blender source](../art/compaii-house/redesign/) restarts the visible
 environment from the garden route, adjoining house and miniature, workshop
 and separate gallery. The design and rendered views are available for review.
-The current published world remains the one qualified below.
 
-The candidate package can select this scene through
-`compaii-atelier-v1` in the ordinary receiving configuration. The verified
-30,269,440-byte archive is inside the existing 32 MiB package limit and
+The [shared Home entrance](https://compaii.dmn.homes/holodeck/) now selects
+`compaii-atelier-v1` from source `f69cb10`, runtime package `5183299a7fbd`.
+The previous usable package is `a1ec8c4e05db`. Installed bytes matched all 40
+inventory entries. The decoded client, Brotli representation, health and
+four visible scenery assets matched through the protected HTTPS route.
+Room, houses, exhibits and the native turn journal were byte-identical
+across deployment. Own-native observation retained the same run, edition
+and all 30 entities. The live own-native route visited the lab and observed
+the three workstations, followed the existing portal to the listening
+tower, then returned outdoors.
+
+The verified 30,269,440-byte archive fits the existing 32 MiB package limit and
 includes the previous scenery as a compatible option. No Room migration
 is required. The packaged production entry admitted a fixture identity
 over the existing Home HTTP contract and returned the authored foyer.
@@ -42,14 +50,17 @@ the exact tool cards in the owning panel build, and returned to the same
 spot. The controlled receiver reports let the panel distinguish ready from
 stopped. The browser made only read requests during either handoff. Room
 fixtures also verified the workstation reference in a situated observation.
-The [owning panel source](https://github.com/AlterMundi/harmonic-weaver/commit/420efaa)
-supports the instrument selector. Live deployment, actual instrument readiness
-or actuation, and shared device and human acceptance remain open.
+The deployed [Harmonic Lab panel](https://compaii.dmn.homes/harmonic_lab/)
+uses the instrument selector from the
+[owning panel source](https://github.com/AlterMundi/harmonic-weaver/commit/420efaa).
+Only its browser script was replaced in the existing panel package.
+Served health, script and HTML matched at the receiver. Anonymous requests
+remain subject to sign-in and current audience checks. Actual instrument
+readiness or actuation, and shared device and human acceptance remain open.
 
-The package and historical retention ceilings are separate. The currently
-retained Home runtime archives exceed the 96 MiB history budget. Reconcile
-superseded generated archives through the existing version writer before
-publishing another package. Preserve the deployed current and rollback.
+The owning writer retired ten superseded generated Holodeck runtime
+archives. Its four retained packages total 88,023,040 bytes within the
+96 MiB history budget, including the deployed current and rollback.
 
 The Blender art package includes the self-contained room GLBs. The
 candidate Beacon chamber was mounted through the existing room-scoped renderer
@@ -85,8 +96,10 @@ geometry after excluding only the original horizon-water material, leaving
 the published file intact. The actual WebGL client rendered the sealed
 gallery with three displays for an admitted owner fixture and one for an
 independent visitor fixture, which made no draft or archive model request.
-All three test slots used the verified 1,500,604-byte published snapshot.
-The three distinct live sources, physical mobile performance, and human
+All three test slots used the same verified published snapshot. After
+deployment an authorized owner reader separately verified the three
+immutable source editions by their own Homes version and snapshot checksum.
+A live human gallery walk, actual physical mobile performance, and human
 inspection and return remain unverified.
 
 Isolated Chromium walked from the normal exterior spawn to the east garden,

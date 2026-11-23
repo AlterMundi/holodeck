@@ -479,7 +479,14 @@ session storage were preserved; served Apps metadata is retained but hidden.
 
 ## Recovery
 
-Retain selected `4663b463` for forward recovery. Actual rollback is
+For the selected atelier release `5183299a7fbd`, the directly usable
+predecessor is `a1ec8c4e05db`. It tolerates the additive receiving fields
+and renders its own prior art. Keep the exact current receiving state and
+world checkpoints across a code-only rollback. The current panel selector
+has its separate Home slot and can independently return to `4fdf5b8e944c`.
+See [current receiving evidence](STATUS.md#selected-receiving-release).
+
+For the earlier `4663b463` release, the recorded rollback was
 `68a24c5e`/source `9f57a35`, compatible with current world/native state,
 shared indications, session recovery, configured visits and runtime-created nodes.
 Rollback loses the source-retry repair and control/feedback polish; it preserves
