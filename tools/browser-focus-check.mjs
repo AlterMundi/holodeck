@@ -29,9 +29,55 @@ async function screenPoint(page,id){
  const p=new Vector3(...value.position).project(camera),x=value.rect.left+(p.x+1)*value.rect.width/2,y=value.rect.top+(1-p.y)*value.rect.height/2;
  if(x<5||y<5||x>value.rect.width-5||y>value.rect.height-5)throw Error('Fixture target outside actual camera viewport '+id+' '+JSON.stringify({x,y,...value}));return {x,y};
 }
-async function mouse(page,point){await page.cdp('Input.dispatchMouseEvent',{type:'mouseMoved',...point});await page.cdp('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...point});await page.cdp('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...point});}
+async function mouse(page,point){await page.cdp('Input.dispatchMouseEvent',{type:'mouseMoved',...point});await Promise.all(['mousePressed','mouseReleased'].map(type=>page.cdp('Input.dispatchMouseEvent',{type,button:'left',clickCount:1,...point})));}
 async function touch(page,point,drag=null){await page.cdp('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...point,id:1,radiusX:1,radiusY:1,force:1}]});if(drag)await page.cdp('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...drag,id:1,radiusX:1,radiusY:1,force:1}]});await wait(drag?400:40);await page.cdp('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}
 async function settled(page){await page.until('!!holodeckDevelopment.appliedGeometry()');await wait(180);}
+async function simultaneousMobileControls(page,room){
+ // Real CDP contacts, never synthetic DOM handlers or private input mutation.
+ // Restore this owned fixture's safe spawn after earlier pointing/navigation.
+ await page.cdp('Page.bringToFront');
+ await page.evaluate('window.mobileControlsReloading=true');await page.cdp('Page.reload');
+ await page.until('!window.mobileControlsReloading&&!!window.holodeckDevelopment?.appliedGeometry()&&holodeckDevelopment.client.getLocalCharacterState()?.position.z>5.9&&holodeckDevelopment.client.getCameraManager().getCameraState().position.z>6');await settled(page);
+ const controls=await page.evaluate(`(()=>{
+  const host=document.querySelector('.touch-controls'),stick=[...host.querySelectorAll('span')].find(e=>{const r=e.getBoundingClientRect();return r.width===116&&r.height===116}),jump=[...host.querySelectorAll('button')].find(e=>e.getAttribute('aria-label')==='Saltar');
+  const canvas=[...document.querySelectorAll('canvas')].find(e=>{const r=e.getBoundingClientRect();return r.width>100&&r.height>100&&r.left>=0&&r.top>=0});
+  if(!stick||!jump||!canvas)return null;
+  const center=e=>{const r=e.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2}},r=canvas.getBoundingClientRect(),look={x:r.left+r.width*.72,y:r.top+r.height*.5};
+  if(document.elementFromPoint(look.x,look.y)!==canvas)return null;
+  return{stick:center(stick),jump:center(jump),look};
+ })()`);
+ if(!controls)throw Error('Visible mobile movement/look/jump targets unavailable');
+ const sample=()=>page.evaluate('({position:structuredClone(holodeckDevelopment.client.getLocalCharacterState().position),rotation:structuredClone(holodeckDevelopment.client.getCameraManager().getCameraState().rotation)})');
+ // This fixture's authored ground/collision surface is y=.1.
+ await page.until('Math.abs(holodeckDevelopment.client.getLocalCharacterState().position.y-.1)<.03');
+ const start=await sample();
+ const touchPoint=(point,id)=>({...point,id,radiusX:1,radiusY:1,force:1});
+ const stick=touchPoint(controls.stick,11),moving={...stick,y:stick.y-28},look=touchPoint(controls.look,22),jump=touchPoint(controls.jump,33);
+ const send=(type,touchPoints)=>page.cdp('Input.dispatchTouchEvent',{type,touchPoints}).catch(error=>{
+  throw Error(type+' '+touchPoints.map(point=>point.id).join(',')+': '+error.message,{cause:error});
+ });
+ let hasContacts=false;
+ const focusBefore=JSON.stringify(room.focusState());
+ let combined,cancelled,released,fresh;
+ try{
+  await send('touchStart',[stick]);hasContacts=true;await send('touchMove',[moving]);
+  await send('touchStart',[moving,look]);await send('touchStart',[moving,look,jump]);
+  await send('touchMove',[moving,{...look,x:look.x-44},jump]);
+  await page.until(`(()=>{const p=holodeckDevelopment.client.getLocalCharacterState().position,q=holodeckDevelopment.client.getCameraManager().getCameraState().rotation,b=${JSON.stringify(start)};return Math.hypot(p.x-b.position.x,p.z-b.position.z)>.1&&p.y>b.position.y+.15&&1-Math.abs(q.x*b.rotation.x+q.y*b.rotation.y+q.z*b.rotation.z+q.w*b.rotation.w)>.00001})()`,4000);
+  combined=await sample();
+  if(!await page.evaluate('document.querySelector("#pointing").hidden')||JSON.stringify(room.focusState())!==focusBefore)throw Error('Simultaneous mobile controls picked/shared an object');
+  // Cancel all three contacts while moving/airborne. No manual reset of input.
+  await send('touchCancel',[]);hasContacts=false;
+  await page.until(`Math.abs(holodeckDevelopment.client.getLocalCharacterState().position.y-(${start.position.y}))<.05`,5000);await wait(250);cancelled=await sample();
+  await wait(450);released=await sample();
+  if(Math.hypot(released.position.x-cancelled.position.x,released.position.z-cancelled.position.z)>.06||Math.abs(cancelled.position.y-start.position.y)>.05||Math.abs(released.position.y-start.position.y)>.05)throw Error('Cancelled mobile controls kept moving or jumping');
+  // A new pointer must work after cancellation; do not merely check no errors.
+  const restart=touchPoint(controls.stick,44);await send('touchStart',[restart]);hasContacts=true;await send('touchMove',[{...restart,y:restart.y-28}]);
+  await page.until(`(()=>{const p=holodeckDevelopment.client.getLocalCharacterState().position;return Math.hypot(p.x-(${released.position.x}),p.z-(${released.position.z}))>.15})()`,4000);fresh=await sample();
+ }finally{if(hasContacts)await send('touchCancel',[]);}
+ if(JSON.stringify(room.focusState())!==focusBefore||!await page.evaluate('document.querySelector("#pointing").hidden'))throw Error('Recovered mobile gesture changed object selection');
+ return{contacts:3,start,combined,cancelled,released,fresh,cancelledWithoutManualInputReset:true,unintendedIndications:false,qualification:'Actual isolated Chromium touch emulation; no physical-device or human acceptance claim.'};
+}
 try{
  stateDir=await mkdtemp(join(tmpdir(),'holodeck-pointing-'));
  service=await createHolodeck({stateDir,identityResolver:async req=>{
@@ -50,10 +96,11 @@ try{
   const page=await connection(await(await fetch(origin+'/json/new?about:blank',{method:'PUT'})).json());owned.push(page);
   await page.cdp('Page.enable');await page.cdp('Network.enable');await page.cdp('Network.setCookie',{name:'fixture_human',value:slot,url:i?'http://localhost:18944/':'http://127.0.0.1:18944/'});
   await page.cdp('Page.addScriptToEvaluateOnNewDocument',{source:'window.checkErrors=[];addEventListener("error",e=>checkErrors.push(e.message));addEventListener("unhandledrejection",e=>checkErrors.push(String(e.reason)))'});
-  if(i){await page.cdp('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});await page.cdp('Emulation.setTouchEmulationEnabled',{enabled:true});}
+  if(i){await page.cdp('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});await page.cdp('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:5});}
   await page.cdp('Page.navigate',{url:i?'http://localhost:18944/':'http://127.0.0.1:18944/'});await page.until('!!window.holodeckDevelopment?.appliedGeometry()&&holodeckDevelopment.client.getLocalCharacterState()?.position.z>5.9&&holodeckDevelopment.client.getCameraManager().getCameraState().position.z>6');await wait(500);await settled(page);
  }
- const [a,b]=owned;await a.cdp('Page.bringToFront');await settled(a);
+ const [a,b]=owned;
+ await a.cdp('Page.bringToFront');await settled(a);
  await mouse(a,await screenPoint(a,'garden-alpha-light'));await a.until('!document.querySelector("#pointing").hidden&&!document.querySelector("#point-send").hidden');
  if(service.room.focusState().length)throw Error('Picking automatically shared an indication');
  await a.click('#point-send');await a.until('document.querySelector("#point-label").textContent.includes("Compartiste")');
@@ -61,8 +108,16 @@ try{
  await b.cdp('Page.bringToFront');await b.until('!!document.querySelector("[data-focus-target=garden-alpha]")');
  await fetch('http://127.0.0.1:18944/fixture/native-indicate',{method:'POST'});
  await a.cdp('Page.bringToFront');await a.until('document.querySelector("[data-focus-target=garden-alpha] m-label")?.getAttribute("content")==="2 indicaciones"');await settled(a);
- await mouse(a,await screenPoint(a,'garden-beta-light'));await a.until('!document.querySelector("#point-send").hidden');
- await mouse(a,await screenPoint(a,'garden-alpha-light'));await a.until('document.querySelector("#point-send").hidden');
+ const betaPoint=await screenPoint(a,'garden-beta-light');
+ const betaHit=await a.evaluate(`document.elementFromPoint(${betaPoint.x},${betaPoint.y})?.outerHTML.slice(0,240)`);
+ if(!betaHit?.startsWith('<canvas'))throw Error('Fixture light is obscured by UI '+JSON.stringify({betaPoint,betaHit}));
+ await mouse(a,betaPoint);
+ await a.until('!document.querySelector("#point-send").hidden').catch(async error=>{
+  const label=await a.evaluate('document.querySelector("#point-label").textContent');
+  throw Error('Repick did not select the fixture light: '+JSON.stringify({betaPoint,betaHit,label}),{cause:error});
+ });
+ await mouse(a,await screenPoint(a,'garden-alpha-light'));
+ await a.until('document.querySelector("#point-send").hidden&&document.querySelector("#point-label").textContent.includes("Compartiste")');
  evidence.cueDoesNotBlockPicking=true;
  await a.click('#talk');await a.evaluate('document.querySelector("#message").focus()');
  const beforeTyping=await a.evaluate('holodeckDevelopment.client.getLocalCharacterState().position');
@@ -78,7 +133,7 @@ try{
  const joystick=await b.evaluate(`(()=>{const host=document.querySelector('.touch-controls');const elements=[...host.querySelectorAll('span')];const e=elements.find(e=>{const r=e.getBoundingClientRect();return r.width===116&&r.height===116});if(!e)return null;const r=e.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}})()`);
  if(!joystick)throw Error('Actual standard touch joystick not found');
  const beforeStick=await b.evaluate('holodeckDevelopment.client.getLocalCharacterState().position');
- await b.cdp('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...joystick,id:1,radiusX:1,radiusY:1,force:1}]});await b.cdp('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:joystick.x,y:joystick.y+40,id:1,radiusX:1,radiusY:1,force:1}]});try{await b.until(`Math.hypot(holodeckDevelopment.client.getLocalCharacterState().position.x-${beforeStick.x},holodeckDevelopment.client.getLocalCharacterState().position.z-${beforeStick.z})>.15`,4000);}finally{await b.cdp('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}await wait(150);
+ await b.cdp('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...joystick,id:1,radiusX:1,radiusY:1,force:1}]});await b.cdp('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:joystick.x,y:joystick.y+40,id:1,radiusX:1,radiusY:1,force:1}]});try{await b.until(`Math.hypot(holodeckDevelopment.client.getLocalCharacterState().position.x-(${beforeStick.x}),holodeckDevelopment.client.getLocalCharacterState().position.z-(${beforeStick.z}))>.15`,4000);}finally{await b.cdp('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}await wait(150);
  const afterStick=await b.evaluate('holodeckDevelopment.client.getLocalCharacterState().position');if(Math.hypot(afterStick.x-beforeStick.x,afterStick.z-beforeStick.z)<.1||!await b.evaluate('document.querySelector("#pointing").hidden'))throw Error('Joystick movement interfered with pointing');evidence.joystick={before:beforeStick,after:afterStick};
  await settled(b);await touch(b,await screenPoint(b,'garden-beta-light'));await b.until('!document.querySelector("#point-send").hidden');if(service.room.focusState().some(f=>f.actor==='human:point-b'))throw Error('Touch selection shared without confirmation');await touch(b,await b.evaluate(`(()=>{const r=document.querySelector('#point-send').getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}})()`));await b.until('document.querySelector("#point-label").textContent.includes("Compartiste")');
  if(service.room.focusState().find(f=>f.actor==='human:point-b')?.target!=='garden-beta')throw Error('Touch selected wrong canonical target');
@@ -88,11 +143,18 @@ try{
  for(const actor of ['human:point-a',pairedBeing])if(!captured.focus.some(f=>f.actor===actor&&f.target==='garden-alpha'&&f.revision===1&&f.status==='current'))throw Error('Native context lost exact speaker/pair reference');
  await a.click('#conversation-close');
  const walkStart=await a.evaluate('holodeckDevelopment.client.getLocalCharacterState().position');
- await a.cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'a',code:'KeyA',windowsVirtualKeyCode:65});try{await a.until(`Math.hypot(holodeckDevelopment.client.getLocalCharacterState().position.x-${walkStart.x},holodeckDevelopment.client.getLocalCharacterState().position.z-${walkStart.z})>.15`,4000);}finally{await a.cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'a',code:'KeyA',windowsVirtualKeyCode:65});}evidence.walkAfterIndicating=true;
+ await a.cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'a',code:'KeyA',windowsVirtualKeyCode:65});try{await a.until(`Math.hypot(holodeckDevelopment.client.getLocalCharacterState().position.x-(${walkStart.x}),holodeckDevelopment.client.getLocalCharacterState().position.z-(${walkStart.z}))>.15`,4000);}finally{await a.cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'a',code:'KeyA',windowsVirtualKeyCode:65});}evidence.walkAfterIndicating=true;
  if(directory){await mkdir(directory,{recursive:true});for(const [name,page]of [['desktop',a],['mobile',b]]){await page.cdp('Page.bringToFront');await wait(150);const shot=await page.cdp('Page.captureScreenshot',{format:'png'});await writeFile(directory+'/'+name+'.png',Buffer.from(shot.data,'base64'));}}
  await fetch('http://127.0.0.1:18944/fixture/revise',{method:'POST'});await a.cdp('Page.bringToFront');await a.until('document.querySelector("#point-label").textContent.includes("cambió")');await a.until('!document.querySelector("[data-focus-target=garden-alpha]")');
  if(service.room.focusState().filter(f=>f.target==='garden-alpha').some(f=>f.status!=='revised'||f.revision!==1||f.currentRevision!==2)||captured.focus.some(f=>f.target==='garden-alpha'&&f.status!=='current'))throw Error('Revised statement retargeted or changed frozen source');
  await a.click('#point-clear');await a.until('document.querySelector("#pointing").hidden');if(service.room.focusState().some(f=>f.actor==='human:point-a')||!service.room.focusState().some(f=>f.actor===pairedBeing))throw Error('Clear erased another actor');
+ // Clear this fixture actor's earlier indication with the normal control.
+ await b.cdp('Page.bringToFront');
+ await touch(b,await b.evaluate(`(()=>{const r=document.querySelector('#point-clear').getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}})()`));
+ await b.until('document.querySelector("#pointing").hidden');
+ if(service.room.focusState().some(f=>f.actor==='human:point-b'))throw Error('Touch clear left the actor’s indication');
+ evidence.simultaneousMobileControls=await simultaneousMobileControls(b,service.room);
+ if(directory)await writeFile(directory+'/multitouch.json',JSON.stringify(evidence.simultaneousMobileControls,null,2)+'\n');
  evidence.focus=service.room.focusState().map(({actor,target,revision,currentRevision,status})=>({actor:actor===pairedBeing?'fixture-native':actor,target,revision,currentRevision,status}));
  evidence.capture={bytes:Buffer.byteLength(JSON.stringify(captured)),focusCount:captured.focus.length,exactOriginal:true,exactSpeakerPairRefs:true};evidence.errors=[];for(const p of owned)evidence.errors.push(...await p.evaluate('checkErrors'));if(evidence.errors.length)throw Error('Browser JavaScript error');
  evidence.qualification='Actual isolated desktop/mobile MML/Three pointer picking, shared canonical refs and server-frozen native context through controlled transport; no real human/native model participation.';
