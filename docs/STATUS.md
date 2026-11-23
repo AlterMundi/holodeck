@@ -25,7 +25,29 @@ Room event tail recorded joins and leaves during activation. The directly
 usable predecessor `581dbb6a09cb` retains room plans and furnishings.
 
 The [shared Home entrance](https://compaii.dmn.homes/holodeck/) serves source
-`edf991b`, package `7191104b0306`. It retains the Cycles-lit foyer from
+`983a146`, package `bb14267c7e56`. The Harmonic Beacon lab uses the same
+Cycles pipeline as the foyer. Its 58,679-byte atlas lights the stair, central
+instrument and two benches, with a softer dynamic light for avatars.
+Exact geometry, UV data and lamp emission matched the previous lab asset.
+The packaged Chromium fixture used E to descend from the gallery in the same
+page, mounted the atlas in the actual WebGL material and saw all three
+workstations. An unauthorized visitor continued to receive the sealed gallery
+and denial for the lab asset. Live HTTPS, world and protected checkpoints
+matched. Package `7191104b0306` is the compatible predecessor.
+[Before and after from the same staircase view](../art/compaii-house/redesign/README.md#blender-to-webgl)
+
+The [Harmonic Lab panel](https://compaii.dmn.homes/harmonic_lab/) now serves
+the request confirmation fix from Harmonic Weaver `dc825ae`, package
+`87df9184488a`. The panel confirms only the exact start it submitted and
+waits for service status before offering a ready interface. Chromium exercised
+the exact panel script through its real Node and Python routes with a
+simulated launcher. One explicit Weaver click created one matching job and
+the interface opened after readiness. A response containing an older
+Spatializer job showed that the receiver was busy and created no new job.
+The deployed panel served matching static files and health; the live device
+and human interaction evidence remains separate.
+
+Source `edf991b`, package `7191104b0306`, retains the Cycles-lit foyer from
 source `5040075` and compacts generated server whitespace. The package drops
 from 33,464,320 to 30,269,440 bytes. All 33 non-server inventory entries
 matched the preceding candidate byte for byte. Live HTTPS, own-native read,
