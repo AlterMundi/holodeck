@@ -49,7 +49,34 @@ body:has(#content-visit:not([hidden]):not(.is-walking)) .touch-controls{visibili
 #content-visit.is-walking{inset:auto;left:-200vw;top:0;width:92vw;height:90vh;visibility:hidden;pointer-events:none}
 @media(max-width:740px){#visit-near{top:148px;right:12px;max-width:calc(100vw - 24px);font-size:14px}#content-visit{inset:max(8px,env(safe-area-inset-top)) 8px max(8px,env(safe-area-inset-bottom));padding:8px;border-radius:14px}#visit-title{font-size:19px;flex-basis:100%}#content-visit header{gap:6px}#content-visit button{padding:8px 12px}}
 #pointing{position:fixed;z-index:23;right:20px;bottom:105px;width:280px;max-width:calc(100vw - 40px);padding:14px;border-radius:16px;pointer-events:none}#pointing p{margin:0 0 8px;color:var(--ink)}#pointing button{font-size:14px;padding:8px 12px;pointer-events:auto}@media(max-width:740px){#pointing{top:205px;bottom:auto;right:12px;max-width:calc(100vw - 24px)}}
-#shared-conversation{flex:1;min-height:0;display:flex}#shared-conversation iframe{width:100%;height:100%;flex:1;border:0;border-radius:12px;background:#163b3f}#conversation-panel.shared-conversation{width:430px;padding:14px;gap:10px}#conversation-panel.shared-conversation #conversation-hint{font-size:14px}@media(max-width:740px){#conversation-panel.shared-conversation{top:105px;bottom:100px;right:12px;width:calc(100vw - 24px);padding:12px}}
+#shared-conversation{flex:1;min-height:0;display:flex}
+#shared-conversation iframe{width:100%;height:100%;min-width:0;flex:1;border:0;border-radius:12px;background:#163b3f}
+#conversation-panel.shared-conversation{
+ top:max(20px,env(safe-area-inset-top));right:max(20px,env(safe-area-inset-right));bottom:max(24px,env(safe-area-inset-bottom));
+ width:clamp(410px,44vw,510px);padding:14px;gap:8px
+}
+#conversation-panel.shared-conversation header{flex:none;flex-wrap:nowrap}
+#conversation-panel.shared-conversation header h2{flex:none;white-space:nowrap}
+#conversation-panel.shared-conversation #room-topic{flex:1;min-width:0}
+#conversation-panel.shared-conversation #conversation-close{flex:none}
+@media(max-width:740px){
+ #conversation-panel.shared-conversation{
+  top:calc(env(safe-area-inset-top) + 86px);right:max(12px,env(safe-area-inset-right));
+  left:max(12px,env(safe-area-inset-left));bottom:calc(env(safe-area-inset-bottom) + 88px);
+  width:auto;max-width:none;padding:10px
+ }
+}
+@media(max-width:740px) and (max-height:740px){
+ #conversation-panel.shared-conversation{
+  top:max(8px,env(safe-area-inset-top));bottom:max(8px,env(safe-area-inset-bottom))
+ }
+}
+@media(min-width:741px) and (max-height:540px){
+ #conversation-panel.shared-conversation{
+  top:max(8px,env(safe-area-inset-top));bottom:max(8px,env(safe-area-inset-bottom));
+  width:min(540px,62vw);padding:10px
+ }
+}
 #play-near{position:fixed;z-index:21;right:22px;top:148px;width:310px;max-width:calc(100vw - 44px);padding:12px 15px;border-radius:15px;font-size:14px}#play-near summary{cursor:pointer;min-height:44px;align-content:center;color:var(--gold)}#play-near summary strong{color:var(--ink)}#play-progress{display:block;margin:3px 0 0;color:var(--mint)}#play-instruction{margin:10px 0 0;color:var(--ink)}body:has(#content-visit:not([hidden]):not(.is-walking)) #play-near,body:has(#creator:not([hidden])) #play-near,body:has(#conversation-panel:not([hidden])) #play-near,body:has(#pointing:not([hidden])) #play-near{display:none}@media(max-width:740px){#play-near{top:205px;right:12px;width:calc(100vw - 24px);max-width:none;padding:10px 13px}body:has(#visit-near[hidden]) #play-near{top:148px}}
 
 /* One deliberate history surface; existing world/Conversation/viewer stay mounted. */
@@ -145,7 +172,7 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
 <dialog id="beacon-panel" aria-labelledby="beacon-panel-title"><header><h2 id="beacon-panel-title">Laboratorio</h2><div class="row"><a target="_blank" rel="noopener">Abrir aparte</a><button type="button" autofocus>Volver al mundo</button></div></header><div class="beacon-panel-stage"></div></dialog>
 <section id="content-visit" aria-label="Contenido visitado" class="glass" hidden><header><h2 id="visit-title">Presentación</h2><button id="visit-walk" type="button" class="primary">Volver al mundo</button></header><p id="visit-loading" role="status" hidden></p><div id="visit-stage"></div></section>
 <section id="creator" class="glass" aria-label="Crear una luz" hidden><h2 id="creator-title">Una luz para este lugar</h2><p id="preview-hint" role="status">La vista previa es tuya. Al plantar, aparece para todos.</p><div class="row colors" role="group" aria-label="Color de la luz"><button class="swatch" data-color="mint" style="--color:#8ce4c2" aria-label="Menta" aria-pressed="true"></button><button class="swatch" data-color="amber" style="--color:#efc87a" aria-label="Ámbar" aria-pressed="false"></button><button class="swatch" data-color="rose" style="--color:#e8a2b9" aria-label="Rosa" aria-pressed="false"></button><button class="swatch" data-color="violet" style="--color:#a77bea" aria-label="Violeta" aria-pressed="false"></button></div><div class="row"><button id="preview-move">Mover acá</button><button id="preview-accept" class="primary">Plantar</button><button id="preview-cancel">Cancelar</button></div></section>
-<section id="conversation-panel" class="glass" aria-label="Conversación situada" hidden><header><h2>Desde acá</h2><button id="history-reference-clear" type="button" hidden>Quitar tema</button><button id="conversation-close" class="icon" aria-label="Volver al mundo">×</button></header><p id="conversation-hint">Podés seguir recorriendo el mundo mientras transcurre mi turno.</p><label id="room-topic" hidden>Tema <select id="room-topic-choice" aria-label="Tema de la conversación"></select></label><div id="shared-conversation" hidden></div><div id="conversation-log" aria-live="polite"></div><form id="conversation-form"><label for="message">Hablemos de este lugar</label><textarea id="message" maxlength="2000" rows="2" placeholder="¿Qué hacemos acá juntos?"></textarea><button id="send" class="primary" type="submit" disabled>Enviar</button></form></section>
+<section id="conversation-panel" class="glass" aria-label="Conversación situada" hidden><header><h2>Desde acá</h2><button id="history-reference-clear" type="button" hidden>Quitar tema</button><label id="room-topic" hidden>Tema <select id="room-topic-choice" aria-label="Tema de la conversación"></select></label><button id="conversation-close" class="icon" aria-label="Volver al mundo">×</button></header><p id="conversation-hint">Podés seguir recorriendo el mundo mientras transcurre mi turno.</p><div id="shared-conversation" hidden></div><div id="conversation-log" aria-live="polite"></div><form id="conversation-form"><label for="message">Hablemos de este lugar</label><textarea id="message" maxlength="2000" rows="2" placeholder="¿Qué hacemos acá juntos?"></textarea><button id="send" class="primary" type="submit" disabled>Enviar</button></form></section>
 <section id="recovery-panel" class="glass" aria-label="Envíos por confirmar" hidden><h2>Hay un envío por confirmar</h2><div id="recovery-items"></div></section>
 <dialog id="activity-dialog" aria-labelledby="activity-title"><header><div><small>Historia compartida</small><h2 id="activity-title">Actividad del mundo</h2></div><button id="activity-close" type="button">Volver al mundo</button></header><div class="activity-toolbar"><button id="activity-refresh" type="button">Ver recientes</button><span id="activity-updates" hidden>Hay cambios nuevos</span><span id="activity-count"></span></div><p id="activity-status" role="status"></p><p id="activity-gap" hidden></p><div class="activity-body"><div class="activity-index"><ol id="activity-list" aria-label="Cambios registrados"></ol><nav aria-label="Recorrer la actividad"><button id="activity-newer" type="button" disabled>Más recientes</button><button id="activity-older" type="button" disabled>Más antiguos</button></nav></div><section class="activity-inspection" aria-label="Detalle del cambio"><div id="activity-detail"><p>Elegí un cambio para verlo.</p></div><div class="activity-actions"><button id="activity-point" type="button" hidden>Señalar cómo está ahora</button><button id="activity-discuss" class="primary" type="button" hidden>Conversar sobre este cambio</button></div></section></div></dialog>
 <script>window.SESSION_TOKEN="SESSION.TOKEN.PLACEHOLDER";</script><script type="module" src="./client/client.js"></script></body></html>

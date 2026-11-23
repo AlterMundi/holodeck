@@ -429,10 +429,11 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     await touch.bringToFront();
     await progress(touch,'¡Jardín completado!');
     for(const page of [touch,keyboard]){
-      const markerCount=await page.locator('#indoor-garden-markers m-sphere').count();
-      assert.equal(markerCount,2);
+      await page.bringToFront();
+      await page.waitForFunction(()=>document.querySelectorAll('#indoor-garden-markers m-sphere').length===2,
+        null,{timeout:12000});
     }
-    const primaryText=modelAnswer?.answer??'Fixture result: mint signal committed in the captured room. Two contributors completed the garden.';
+    const primaryText=modelAnswer?.answer??'I reached the listening room through both authorized passages and placed the missing mint signal beside the amber one. Both circles are filled, two contributors are recorded, and the garden is complete.';
     const siblingText='Fixture sibling result: read-only question completed.';
     async function final(originalId,text){
       if(canonical){
@@ -498,13 +499,39 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     assert.equal(originals[0].files[0].sha256,original.file.sha256);
     assert.equal(await touch.locator('#shared-conversation iframe').count(),0);
     assert.ok(!(await touch.locator('body').innerText()).includes(primaryText));
-    const replyText=reply.locator('.reply-text');
-    await replyText.scrollIntoViewIfNeeded();
-    assert.ok(await replyText.evaluate(el=>{
-      const r=el.getBoundingClientRect();
-      return el.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));
-    }),'canonical result was clipped or obscured after scrolling');
-    await keyboard.screenshot({path:join(HOLODECK_EVIDENCE_DIR,'canonical-reply.png')});
+    const replyText=reply.locator('.reply-text'),replyLayout=[];
+    for(const viewport of [{width:1000,height:700},{width:390,height:844},{width:375,height:667},{width:844,height:430}]){
+      await keyboard.setViewportSize(viewport);
+      await keyboard.locator('#conversation-close').waitFor();
+      await replyText.scrollIntoViewIfNeeded();
+      const lines=await replyText.evaluate(el=>{
+        const range=document.createRange();range.selectNodeContents(el);
+        const rects=[...range.getClientRects()].filter(r=>r.width>0&&r.height>1);
+        const visible=rects.filter(r=>[r.top+1,r.bottom-1].every(y=>
+          el.contains(document.elementFromPoint(r.x+r.width/2,y)))).length;
+        return {visible,total:rects.length};
+      });
+      const controls=await keyboard.locator('#conversation-panel').evaluate(panel=>{
+        const close=panel.querySelector('#conversation-close').getBoundingClientRect(),r=panel.getBoundingClientRect();
+        return {withinViewport:r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight,
+          closeReachable:document.elementFromPoint(close.x+close.width/2,close.y+close.height/2)?.id==='conversation-close'};
+      });
+      replyLayout.push({viewport,lines,controls});
+      assert.ok(lines.total>2&&lines.visible===lines.total,JSON.stringify(replyLayout));
+      assert.ok(controls.withinViewport&&controls.closeReachable,JSON.stringify(replyLayout));
+      assert.ok(await compose.locator('#conversation-message').isVisible());
+      if(viewport.width===1000)await keyboard.screenshot({path:join(HOLODECK_EVIDENCE_DIR,'canonical-reply.png')});
+      if(viewport.width===375)await keyboard.screenshot({path:join(HOLODECK_EVIDENCE_DIR,'canonical-reply-phone.png')});
+    }
+    await keyboard.setViewportSize({width:1000,height:700});
+    const draft=compose.locator('#conversation-message');
+    const draftText='Una idea para cuando vuelva a esta sala.';
+    await draft.fill(draftText);
+    await keyboard.locator('#conversation-close').click();
+    await keyboard.locator('#talk').click();
+    assert.ok(await frameHandle.evaluate(frame=>frame===document.querySelector('#shared-conversation iframe')));
+    assert.equal(await draft.inputValue(),draftText);
+    await draft.fill('');
     await keyboard.locator('#conversation-close').click();
     const released=await keyboard.evaluate(async id=>{
       const result=await fetch('api/conversation-contexts/'+id+'/release',{
@@ -544,7 +571,7 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     console.error('The original garden effect and Conversation reply were verified');
     await touch.screenshot({path:join(HOLODECK_EVIDENCE_DIR,'reconnected-game.png')});
     assert.deepEqual(errors,[]);
-    const evidence={simulatedActors:true,actualModel:!!modelAnswer,canonicalTransportSimulated:!canonical,canonicalNativePeerSimulated:true,canonicalAttachmentFromNativePacket:!!admission,touchActions:true,keyboardMovement:true,matchingProgress:true,
+    const evidence={replyLayout,draftAfterReturn:true,simulatedActors:true,actualModel:!!modelAnswer,canonicalTransportSimulated:!canonical,canonicalNativePeerSimulated:true,canonicalAttachmentFromNativePacket:!!admission,touchActions:true,keyboardMovement:true,matchingProgress:true,
       retainedRoomTopic:original.capture.referredRoomObject.id,nextRoomTopic,
       situatedRoom:original.capture.place.id,initialContributors:original.capture.place.activity.progress.contributors,
       ...(admission?{canonicalLocalTurn:admission.localTurn,canonicalNativeTurn:primary.nativeTurn,canonicalNativeItem:primary.nativeItem,

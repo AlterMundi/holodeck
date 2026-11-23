@@ -635,9 +635,10 @@ function updateNativeAvailability(){
   $('#conversation-form').hidden=shared;$('#conversation-log').hidden=shared;
   $('#shared-conversation').hidden=!shared;
   const historyLabel=inside?null:worldHistory?.conversationLabel();$('#history-reference-clear').hidden=!historyLabel;
-  const historyHint=historyLabel?`Tema de la próxima intervención: ${historyLabel}. `:'';
-  if(shared){$('#conversation-hint').textContent=historyHint+'Podés volver al mundo sin cerrar lo que estás escribiendo o grabando.';return;}
-  $('#conversation-hint').textContent=historyHint+((available||nativeTurn)?'Podés seguir recorriendo el mundo mientras transcurre mi turno.':'La conversación todavía no está conectada a este mundo.');
+  const hint=$('#conversation-hint'),historyHint=historyLabel?`Tema de la próxima intervención: ${historyLabel}.`:'';
+  hint.hidden=shared&&!historyLabel;
+  if(shared){hint.textContent=historyHint;return;}
+  hint.textContent=(historyHint?historyHint+' ':'')+((available||nativeTurn)?'Podés seguir recorriendo el mundo mientras transcurre mi turno.':'La conversación todavía no está conectada a este mundo.');
   $('#send').disabled=!available||!!nativeTurn||preparingConversation;
   if(preparingConversation){$('#companion-status').textContent='Conservando el punto que estamos mirando…';return;}
   if(!nativeTurn){
