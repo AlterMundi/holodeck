@@ -479,9 +479,11 @@ session storage were preserved; served Apps metadata is retained but hidden.
 
 ## Recovery
 
-For the selected atelier release `a286c3c0a36e`, the directly usable
-predecessor is `5183299a7fbd`. It retains the same receiving fields,
-world art and canonical state. Keep the exact current receiving state and
+For the selected atelier release `c8f4eb5a011f`, the directly usable
+predecessor is `a286c3c0a36e`. It retains the same receiving fields,
+world art and canonical state. It can load and play saved browser-created
+gardens. Browser recipe editing is available again on a forward deployment.
+Keep the exact current receiving state and
 world checkpoints across a code-only rollback. The current panel selector
 has its separate Home slot and can independently return to `4fdf5b8e944c`.
 See [current receiving evidence](STATUS.md#selected-receiving-release).

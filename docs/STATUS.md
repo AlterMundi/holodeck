@@ -16,10 +16,13 @@ environment from the garden route, adjoining house and miniature, workshop
 and separate gallery. The design and rendered views are available for review.
 
 The [shared Home entrance](https://compaii.dmn.homes/holodeck/) now selects
-`compaii-atelier-v1` from source `2cf9adc`, runtime package `a286c3c0a36e`,
-with Plaza de llegada as the initial scene label. The installed HTML and
-HTTPS client matched and the canonical world run was preserved. The prior
-atelier package `5183299a7fbd` remains directly usable for recovery.
+`compaii-atelier-v1` from source `378af4a`, runtime package `c8f4eb5a011f`,
+with Plaza de llegada as the initial scene label and the signal-garden
+editor for authenticated creators. All 40 installed files and the HTTPS
+client matched. Room, houses, exhibits, receiving selection and the native
+turn journal were byte-identical across the update. The directly usable
+predecessor is `a286c3c0a36e`. A cross-version fixture verified that it reads
+gardens saved by the new release and lets participants still play them.
 
 The preceding atelier deployment matched all 40 installed
 inventory entries. The decoded client, Brotli representation, health and
@@ -62,8 +65,8 @@ Served health, script and HTML matched at the receiver. Anonymous requests
 remain subject to sign-in and current audience checks. Actual instrument
 readiness or actuation, and shared device and human acceptance remain open.
 
-The owning writer retired eleven superseded generated Holodeck runtime
-archives across both updates. Its four retained packages total 99,061,760 bytes within the
+The owning writer retired thirteen superseded generated Holodeck runtime
+archives across these updates. Its three retained packages total 90,849,280 bytes within the
 96 MiB history budget, including the deployed current and rollback.
 
 The Blender art package includes the self-contained room GLBs. The
@@ -106,13 +109,13 @@ immutable source editions by their own Homes version and snapshot checksum.
 A live human gallery walk, actual physical mobile performance, and human
 inspection and return remain unverified.
 
-The browser authoring candidate lets an authenticated editor place and edit a
+The browser editor lets an authenticated creator place and edit a
 signal garden using the existing world command path. Walk to set up to four
 signals, choose their colors and collaboration rule, and preview before
 publishing. The edited revision is still owned by the original actor.
 Controlled Chromium used two browser identities to verify the private
 preview, visible published and edited revisions, foreign edit exclusion and
-cancelled changes. The candidate is pending deployment.
+cancelled changes. Human co-editing on the deployed world is still open.
 
 Isolated Chromium walked from the normal exterior spawn to the east garden,
 past the miniature, through the original house entrance and into the foyer,
