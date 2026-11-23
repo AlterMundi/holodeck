@@ -239,7 +239,11 @@ the fixed 2× buffer by a further 75% when touch rendering stayed slow.
 First and warm foyer passages used the same renderer and improved in that
 software trial. Compare art changes at the same viewport and keep
 physical-device frame pacing separate.
-[Frame and passage evidence](visual-play.md)
+The bundled locomotion clips now transfer 72% fewer bytes on a cold visit.
+The constrained Chromium fixture still transfers a 1.82 MB compressed
+house facade before the first walk. Keep the next facade export and
+first-movement latency separately measurable.
+[Frame, passage and cold arrival evidence](visual-play.md)
 
 ### Finish the architecture and props in the running game
 

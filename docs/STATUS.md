@@ -70,7 +70,15 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 
 ## Selected receiving release
 
-The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+The [protected entrance](https://compaii.dmn.homes/holodeck/) serves
+source `28494e0`, package `090f9dfbbc07`. The five bundled locomotion
+clips transfer 690,901 fewer bytes and keep identical decoded assets
+and range support. All 59 installed files and the protected HTTPS
+identity and Brotli representations matched. The checked world files
+kept their digests and scoped room art still denied the technical
+reader. Rollback is `81df51cdebe9`. [Cold arrival measurements](visual-play.md#cold-arrival-and-locomotion-assets).
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) previously served source
 `ed51aee`, package `81df51cdebe9`. The touch renderer now adjusts frame
 buffer density after sustained slow frames. In a matched software Chromium
 comparison, the stabilized touch buffer held 75% fewer pixels and room

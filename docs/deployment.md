@@ -124,7 +124,8 @@ decoded bytes for identity clients. Match served decoded bytes against
 the ordinary build during receiving readback. The uncompressed build
 remains available to the development server.
 
-Selected atelier GLBs with a smaller Brotli representation are stored once
+Selected atelier GLBs and the five pinned MML locomotion clips with a
+smaller Brotli representation are stored once
 under `runtime/art`, outside the static asset mount. The builder checks
 their original SHA-256. Startup checks the bounded decoded bytes against the
 same pinned digest. The existing asset URLs negotiate Brotli or identity.

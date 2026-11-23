@@ -80,6 +80,25 @@ HUD, touch coordinates and actor's room authority used the same CSS and
 server checks. The software-rendered numbers qualify this workload.
 Physical-phone and GPU-backed frame pacing remain open.
 
+## Cold arrival and locomotion assets
+
+The Home package now serves the five original avatar locomotion clips with
+Brotli. It preserves their decoded GLBs, URLs and identity byte ranges. In
+fresh desktop Chromium profiles at 6.4 Mb/s and 80 ms added latency, the
+encoded animation bodies fell from 959,316 to 268,415 bytes (72.0%).
+All measured resource bodies through visible arrival totaled 5.77 MB
+before and 5.08 MB after. The clips finished transferring about 1.8 s
+earlier, and the commons model about 0.85 s earlier.
+
+Two runs per package measured navigation to an observed WASD displacement.
+The previous package took 12.31 and 12.40 s. The compression-only package
+took 12.37 and 11.27 s. These SwiftShader runs bound the transfer benefit.
+The small sample does not establish a general movement improvement.
+The same runs still requested a 1.82 MB compressed house facade. Keep
+separating download, frame readiness and actual movement when tuning the
+next exterior export. Early location and terrain preload experiments were
+slower in this fixture and were discarded.
+
 ## Exterior facade shadow finish
 
 At the shared exterior return, the real-time sun cast repeating dark
