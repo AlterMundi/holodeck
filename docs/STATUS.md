@@ -81,9 +81,19 @@ and returned through the same door. The selected shelf coordinates matched
 the Blender anchor. The room art endpoint refused access immediately after
 leaving. The final exported shell was checked in the lightweight renderer.
 
-This candidate does not select any live world layout. The in-world project
-models, revolving archive controls, full-geometry worktable and its live
-edition swaps are pending integration. [Room and source contract](houses.md#the-collection)
+The next packaged trial mounted the Blender miniatures of Guitarra,
+Harmonic Flow and Visor X on their shelf anchors. Desktop and touch Chromium
+opened the exact Home edition into a separate tab and returned to the same
+position. Revocation in the controlled source removed the geometry, plaque
+and link, and further miniature reads returned 404. The real Home viewer
+routes separately returned all four exact selected versions to the
+authorized creator. An anonymous read of the protected Visor X version
+was denied. The two Chromium interaction trials used fixture identities and a
+controlled viewer destination.
+
+This candidate does not select a live world layout. The archive controls,
+full-geometry worktable and live saved-edition swaps are pending integration.
+[Room and source contract](houses.md#the-collection)
 
 ## Selected receiving release
 

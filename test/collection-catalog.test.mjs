@@ -1,5 +1,6 @@
 import {once} from 'node:events';
-import {mkdtempSync,rmSync} from 'node:fs';
+import {mkdirSync,mkdtempSync,rmSync,writeFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import assert from 'node:assert/strict';
@@ -36,7 +37,21 @@ test('collection projects stay grouped and editions follow each visitor and thei
     id:house,owner,revision:1,parcel:'parcel-west-1',
     facade:{color:'#226655',title:'House',width:2,depth:1,height:2},
   }]});
-  let revoked=false,unavailable=false,hold,expiredSession=false;
+  const sceneVersion='d'.repeat(64);
+  const json=Buffer.from(JSON.stringify({asset:{version:'2.0'},scene:0,scenes:[{nodes:[0]}],
+    nodes:[{mesh:0}],meshes:[{primitives:[{attributes:{POSITION:0},indices:1}]}],buffers:[{byteLength:44}],
+    accessors:[{count:3,type:'VEC3',componentType:5126},{count:3,type:'SCALAR',componentType:5123}]}));
+  const length=(json.length+3)&~3,glb=Buffer.alloc(20+length+8+44);
+  glb.write('glTF');glb.writeUInt32LE(2,4);glb.writeUInt32LE(glb.length,8);glb.writeUInt32LE(length,12);
+  glb.write('JSON',16);glb.fill(32,20,20+length);json.copy(glb,20);
+  glb.writeUInt32LE(44,20+length);glb.write('BIN\0',24+length);
+  const sha256=createHash('sha256').update(glb).digest('hex'),models=join(stateDir,'collection-representatives');
+  mkdirSync(models);
+  writeFileSync(join(models,sha256+'.glb'),glb);
+  writeFileSync(join(models,'index.json'),JSON.stringify({schema:'holodeck.collection-representatives/v1',
+    entries:[{resource:main,version,scene:sceneVersion,sha256}]}));
+  const thumbnail='/api/space/collection-model/'+main+'/'+version;
+  let revoked=false,unavailable=false,hold,expiredSession=false,mainVersion=version;
   const requests=[];
   const runtime=await createHolodeck({
     stateDir,publicOrigin:'https://home.test',matterCollection:{...selected,art:'matter-workshop-v1'},
@@ -57,14 +72,14 @@ test('collection projects stay grouped and editions follow each visitor and thei
         if(unavailable)return new Response('',{status:503});
         const allowed=headers.Cookie.endsWith('owner')?[main,component,lenses,foreign]:[main,foreign];
         return Response.json({entries:allowed.map(resource=>({resource_ref:'dm:resource:v1:'+resource,
-          kind:'artifact',model_review:true,title:'Project '+resource[0],version_ref:version}))});
+          kind:'artifact',model_review:true,title:'Project '+resource[0],version_ref:resource===main?mainVersion:version}))});
       }
       const resource=url.pathname.split('/')[2];
       assert.notEqual(resource,foreign);
       if(hold)await hold();
       if(resource===main&&revoked)return new Response('',{status:404});
       return Response.json({schema:'dm.review-live/v1',gallery:'gallery.json',sha256:gallerySha256},
-        {headers:{'X-Home-Version':resource===lenses?'c'.repeat(64):version}});
+        {headers:{'X-Home-Version':resource===lenses?'c'.repeat(64):resource===main?mainVersion:version}});
     },
   });
   const listener=runtime.app.listen(0,'127.0.0.1');
@@ -88,6 +103,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
   }
   const [author,visitor]=await Promise.all([session('owner'),session('guest')]);
   assert.equal((await visitor.catalog()).status,404);
+  assert.equal((await visitor.art(thumbnail)).status,404);
   assert.equal(requests.length,0);
   const entered=await author.move('outside','matter');
   assert.equal(entered.status,200);
@@ -103,11 +119,23 @@ test('collection projects stay grouped and editions follow each visitor and thei
 
   const response=await author.catalog();
   assert.equal(response.headers.get('cache-control'),'no-store');
-  const model=resource=>({resource,version,title:'Project '+resource[0],gallerySha256});
+  const model=resource=>({resource,version,title:'Project '+resource[0],gallerySha256,
+    ...(resource===main?{representative:{scene:sceneVersion,sha256}}:{})});
   const guitar=(...resources)=>({id:'guitar',shelf:0,anchor:{x:-5.25,y:.688,z:-1.36},editions:resources.map(model)});
   assert.deepEqual(await response.json(),{room:'matter',projects:[guitar(main,component)]});
   assert.deepEqual(await (await visitor.catalog()).json(),{room:'matter',projects:[guitar(main)]});
+  const thumbnailResponse=await visitor.art(thumbnail);
+  assert.equal(thumbnailResponse.status,200);
+  assert.equal(thumbnailResponse.headers.get('cache-control'),'no-store');
+  assert.deepEqual(Buffer.from(await thumbnailResponse.arrayBuffer()),glb);
+  mainVersion='e'.repeat(64);
+  const updated=(await (await visitor.catalog()).json()).projects[0].editions[0];
+  assert.equal(updated.version,mainVersion);
+  assert.equal(updated.representative,undefined);
+  assert.equal((await visitor.art(thumbnail)).status,404);
+  mainVersion=version;
   revoked=true;
+  assert.equal((await visitor.art(thumbnail)).status,404);
   assert.deepEqual(await (await visitor.catalog()).json(),{room:'matter',projects:[]});
   revoked=false;
   unavailable=true;

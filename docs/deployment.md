@@ -115,6 +115,27 @@ shared deadline and byte bounds. The compatible configuration can remain
 unselected while a room or thumbnail preparation is ongoing. The route and
 shell do not activate the complete worktable or archive interaction.
 
+The optional `collection-representatives/index.json` under protected state
+binds exact viewer editions to Blender shelf derivatives. The index schema is
+`holodeck.collection-representatives/v1`. Each entry has `resource`,
+`version`, `scene` and `sha256`. Each file named `<sha256>.glb` belongs
+beside the index. Stage the checked GLBs first and select the index as one
+complete file at activation. The process reads the selected index at startup.
+Keep at most 18 entries and retire stale derivative files when advancing the
+index. The index uses at most 16 KiB, with each GLB at most 384 KiB and 4,800
+indexed triangles. There are no textures or external buffers. Source
+publication history and access grants stay in Homes.
+
+The client draws at most three nearby thumbnails and refreshes the scoped
+catalog every 12 seconds while the room is active. The thumbnail response
+requires a new exact-edition access check. The client verifies the bytes and
+releases nearby models on movement, revocation or room departure. If the
+current edition lacks a miniature, its authorized title and exact viewer
+link remain available. The viewer opens as a separate tab so the world
+position and controls remain in place. No derivative enters the application
+package, browser persistent storage, or public room geometry.
+
+
 Caddy's maintained service writer preserves `/holodeck/` on both HTTP and
 WebSocket requests. Its forward-auth checks the selected current service audience
 before proxying; incoming identity headers and Authorization are stripped.

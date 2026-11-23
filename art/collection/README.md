@@ -42,6 +42,7 @@ full worktable model separate from these shelf assets.
 
 The Blender producer was exercised against five exact retained reviews.
 The exports came to 2,873–4,756 triangles and 216–315 kB. Each could be
-imported and rendered in Blender. The shelf contents and worktable refresh
-have yet to be connected to the live room. The current three fixed gallery
+imported and rendered in Blender. The shelf contents mounted in the isolated desktop and touch candidate. The
+receiving index and exact-access contract are in [deployment](../../docs/deployment.md#receiving-contracts).
+Live room selection and worktable refresh remain pending. The current three fixed gallery
 displays are available through the existing viewer path.

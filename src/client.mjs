@@ -12,6 +12,7 @@ import { NativeAvatarLayer } from './native-avatar.mjs';
 import {PublicWorldPicker,WorldIndication} from './world-indication.mjs';
 import { ContentVisitor } from './content-visitor.mjs';
 import { GalleryModels } from './gallery-models.mjs';
+import { CollectionShelves } from './collection-shelves.mjs';
 import {applyGallerySigns} from './gallery-display.mjs';
 import { BeaconControls } from './beacon-controls.mjs';
 import {pickedRepresentationVisit} from './node-representations.mjs';
@@ -222,7 +223,7 @@ const setMoving=value=>{
 };
 const removeScene=()=>{
   if(signalEditor?.draft?.mode)signalEditor.dismiss();
-  pendingRoomArt=null;projectedGarden=null;beaconControls.clear();galleryModels?.clear();remoteScene?.remove();remoteScene=roomModel=null;
+  pendingRoomArt=null;projectedGarden=null;beaconControls.clear();galleryModels?.clear();collectionShelves?.clear();remoteScene?.remove();remoteScene=roomModel=null;
 };
 function mountScene(){
   removeScene();
@@ -413,7 +414,7 @@ document.addEventListener('keydown',event=>{
   }
 },true);
 const playableHUD=new PlayableHUD(document);
-let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,galleryModels=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null,worldHistory=null;
+let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,galleryModels=null,collectionShelves=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null,worldHistory=null;
 const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
   sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket(hot?'active/network':'network'),waitForWorldConfig:true,
   enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
@@ -424,6 +425,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
     const frameBudget=capWorldPixelRatio(renderer,rendererBudget);
     galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
+    collectionShelves=new CollectionShelves({base,scene:renderer.mmlCompositionScene.group,panel:document.querySelector('#collection-shelf')});
     const sky=new OutdoorSky(renderer.mmlCompositionScene.group.parent,base);
     const light=new DirectionalLight(0xffefd6,1.8);
     light.position.set(12,22,10);light.target.position.set(0,0,-6);light.castShadow=true;
@@ -509,6 +511,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       sky.update(!inside||roomSkyReady?skySelection:null);
       nativeAvatarLayer.update();
       galleryModels.update();
+      const collectionRoom=inside&&!moving&&activeSpace.collectionShelves?activeSpace.id:null;
+      collectionShelves.update(collectionRoom,collectionRoom?remoteScene:null,position);
       garden.update(inside&&!moving&&activeSpace.playableInterior?activeSpace.id:null);gardenMarkers();
       if(!inside){worldIndication?.update();if(!moving)playableHUD.update(position);}
       if(!moving){

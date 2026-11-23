@@ -70,7 +70,7 @@ export async function readGalleryModel(pin,{request=fetch,signal}={}){
   return bytes.buffer;
 }
 
-function disposeModel(root){
+export function disposeModel(root){
   const geometry=new Set(),materials=new Set();
   root.traverse(node=>{
     if(node.geometry)geometry.add(node.geometry);
@@ -81,7 +81,7 @@ function disposeModel(root){
   for(const item of materials)item.dispose();
 }
 
-export function placeGalleryModel(scene,plinth){
+export function placeGalleryModel(scene,plinth,{width=1.10,depth=.83,height=.65}={}){
   const model=new Group();model.add(scene);
   const omit=[];
   scene.traverse(node=>{
@@ -99,7 +99,7 @@ export function placeGalleryModel(scene,plinth){
     bounds.union(node.geometry.boundingBox.clone().applyMatrix4(node.matrixWorld));
   });
   const size=bounds.getSize(new Vector3()),center=bounds.getCenter(new Vector3());
-  const scale=Math.min(1.10/size.x,.83/size.z,.65/size.y);
+  const scale=Math.min(width/size.x,depth/size.z,height/size.y);
   if(bounds.isEmpty()||!Number.isFinite(scale)||scale<=0){disposeModel(model);throw Error('Gallery snapshot has no displayable bounds');}
   model.scale.setScalar(scale);
   model.position.set(plinth.x-center.x*scale,plinth.y+.015-bounds.min.y*scale,plinth.z-center.z*scale);

@@ -33,6 +33,7 @@ import {GALLERY_STAGES} from './gallery-display.mjs';
 import {createGalleryAuthorization} from './gallery-authorization.mjs';
 import {collectionSelection,createCollectionReader} from './collection-catalog.mjs';
 import {readMatterWorkshopArt} from './matter-workshop-art.mjs';
+import {readCollectionRepresentatives} from './collection-representatives.mjs';
 import {createNativeRoomAuthority,createNativeReviewAuthority} from './native-authority.mjs';
 import {WorldDocument} from './world-document.mjs';
 import {SessionBindings,SESSION_MS,sessionKey} from './session-bindings.mjs';
@@ -156,6 +157,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   if(collection&&!publicOrigin)throw Error('Collection requires the existing Home origin');
   const matterArt=collection?.art&&readMatterWorkshopArt();
   const readCollection=collection&&createCollectionReader(publicOrigin,{request:collectionSourceRequest});
+  const representatives=readCollectionRepresentatives(stateDir,collection);
   function artForRoom(room,passages){
     if(matterArt&&room?.id===collection.room&&!room.links.some(link=>link.kind==='stair'))return matterArt;
     if(selectedRooms.has(room?.id))return (atelier?.interiorArtwork??interiorArtwork)(room,passages);
@@ -302,6 +304,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       ...(art?.lightRig?{indoorLighting:true}:{}),
       ...(outdoorSky?{outdoorSky}:{}),
       ...(art?.keyLight?{keyLight:art.keyLight}:{}),
+      ...(collection?.room===view.id&&art?.shelves?{collectionShelves:true}:{}),
       ...(exhibit?{exhibitRevision:exhibit.revision}:{})};
     const cell=cellTransports.get(space.id);
     if(!cell)return space;
@@ -590,7 +593,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(session.times.length>=4)return res.status(429).json({message:'Esperá un momento antes de intentar otra acción.'});
       session.times.push(now);
     }
-    const spaceRoute=['/space','/space/content-visits','/space/collection','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||
+    const spaceRoute=['/space','/space/content-visits','/space/collection','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
       req.path==='/appearance'||req.path==='/conversation-surface'||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
@@ -681,7 +684,24 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(!inScope(session.actor,collection.room)||!inScope(await currentActor(req,session),collection.room))return res.sendStatus(404);
     if(projects===null)return res.status(503).json({message:'La colección no está disponible en este momento.'});
     const shelves=artForRoom(spaces.rooms.get(collection.room))?.shelves;
-    res.json({room:collection.room,projects:shelves?projects.map(project=>({...project,anchor:shelves[project.shelf]})):projects});
+    const projected=projects.map(project=>{
+      const editions=project.editions.map(edition=>{
+        const model=representatives.get(edition.resource+':'+edition.version);
+        return model?{...edition,representative:{sha256:model.sha256,scene:model.scene}}:edition;
+      });
+      return {...project,editions,...(shelves?{anchor:shelves[project.shelf]}:{})};
+    });
+    res.json({room:collection.room,projects:projected});
+  }));
+  app.get(route('api/space/collection-model/:resource/:version'),asyncRoute(async(req,res)=>{
+    if(!collection||!inScope(req.actor,collection.room))return res.sendStatus(404);
+    const {resource,version}=req.params;
+    const model=representatives.get(resource+':'+version);
+    if(!model)return res.sendStatus(404);
+    const projects=await readCollection(req.headers.cookie,{projects:[{id:'model',resources:[resource]}]});
+    if(projects?.[0]?.editions[0]?.version!==version||!inScope(await currentActor(req,req.holodeckSession),collection.room))
+      return res.sendStatus(404);
+    res.type('model/gltf-binary').send(model.bytes);
   }));
   app.get(route('api/space/content-visits'),asyncRoute(async(req,res)=>{
     if(spaces.fenced||room.commitUncertain||exhibits.fenced)return res.status(503).json({message:'No pude recuperar la exposición.'});
