@@ -115,8 +115,43 @@ def register_foyer(obj):
         frame.append(('Clerestory mullion',(5.445,y,2.80),(.12,.070,.78),oak,.012))
     for y in (-4.4,-3.95,-3.5,0, .45,.90,1.35,1.80,2.25,2.70,3.15,3.60,4.05,4.50):
         frame.append(('East wall oak batten',(5.66,y,1.42),(.13,.068,2.29),oak,.013))
+    frame.extend(foyer_joinery())
     append_blocks(obj,frame)
     append_foyer_path(obj)
+
+
+def foyer_joinery():
+    oak, stone, brass = 'Dark oiled oak', 'Honed honey limestone', 'Satin brass'
+    basalt, ivory, iron = 'Split basalt', 'Ivory limewash', 'Blue gunmetal'
+    specs = [
+        ('West wall-bench stone back',(-5.46,-1.18,.86),(.21,2.96,1.34),stone,.037),
+        ('West bench oak cap',(-5.13,-1.18,.526),(.88,2.91,.11),oak,.024),
+        ('West bench oak front rail',(-4.72,-1.18,.434),(.10,2.83,.13),oak,.018),
+        ('West bench basalt kick',(-5.17,-1.18,.204),(.65,2.71,.22),basalt,.025),
+        ('West dado',(-5.62,.2,1.58),(.16,11.36,.093),oak,.018),
+        ('West dado brass seam',(-5.539,.2,1.627),(.015,11.29,.020),brass,.005),
+        ('North limestone foot rail',(.61,5.66,.189),(5.01,.14,.17),stone,.021),
+        ('Table long joinery rail',(-.59,-.16,.493),(.105,2.00,.15),oak,.018),
+        ('Table long joinery rail',(.59,-.16,.493),(.105,2.00,.15),oak,.018),
+        ('Table apron east seam',(.637,-.16,.558),(.024,1.97,.018),brass,.005),
+        ('Table apron west seam',(-.637,-.16,.558),(.024,1.97,.018),brass,.005),
+        ('Table inset site plan',(0,-.30,.686),(1.11,1.36,.058),basalt,.026),
+        ('Table plan limestone field',(0,-.30,.719),(.987,1.243,.016),stone,.012),
+        ('Table plan oak hall outline',(0,-.30,.735),(.767,1.02,.020),oak,.017),
+        ('Table plan hall floor',(0,-.30,.747),(.69,.91,.015),ivory,.010),
+        ('Table plan central table',(0,-.30,.770),(.092,.17,.025),oak,.006),
+        ('Table plan inner route',(-.16,-.191,.758),(.030,.80,.012),brass,.004),
+        ('Table plan arrival route',(-.083,-.62,.758),(.183,.034,.012),brass,.004),
+        ('Table plan arrival door',(0,-.796,.767),(.127,.024,.027),iron,.007),
+        ('Table plan internal threshold',(-.207,.212,.767),(.117,.025,.027),iron,.007),
+    ]
+    for y in (-2.35,0):
+        specs.append(('West bench inset support',(-5.06,y,.355),(.72,.28,.486),basalt,.027))
+    for y in (-4.90,-4.12,-3.34,.44,1.22,2.00,2.78,3.56,4.34,5.12):
+        specs.append(('West wall dado vertical',(-5.62,y,.908),(.12,.052,1.14),oak,.011))
+    for y in (-.99,.383):
+        specs.append(('Plan tray brass end fillet',(0,y,.719),(1.04,.028,.026),brass,.008))
+    return specs
 
 
 def mesh_for(collection, origin, cell):

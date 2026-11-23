@@ -40,7 +40,7 @@ const COASTAL_RIDGES=Object.freeze({asset:'coastal-ridges.glb',
   revision:'518884afc176e4351746b8cce5e0461d1be7c7e36db0f3fc70a9a813e88b9119'});
 const COASTAL_FOG=Object.freeze({fogNear:24,fogFar:124,fogColor:{r:.716,g:.776,b:.784}});
 export const ATELIER_ASSET_REVISIONS=Object.freeze({
-  'room-art/compaii-atelier/foyer.glb':'eb3bd88a7dc7e288ea6335f90b4ef24880d37dcd004c008e16a936a427c8198a',
+  'room-art/compaii-atelier/foyer.glb':'7816835b65ffbf025ae295dee37d0db978bede7a9dbc83f66e44d53d052ede59',
   'room-art/compaii-atelier/gallery.glb':'a6ef6bacab1f3278978f5a98a150d1d0cd827680fb78c96d131163b224956b17',
   'room-art/compaii-atelier/gallery-sealed.glb':'af8d86f08a5a0136c38f772b85448d445f681ea89ebc6c876799c4899ea2f583',
   'room-art/compaii-atelier/beacon.glb':'cb2c403d2aa50f0886c1e0d7e9d008f5f657704f1a1b172bd4be623855c2cd0c',
@@ -147,7 +147,11 @@ export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt())
   }
   const asset=name=>assets.get(name+'.glb');
   const foyerArt={...asset('foyer'),...floorProfile,ambient:.22,keyLight:foyerKey,authoredDoor:true,
-    colliders:box({x:0,y:.352,z:.16,w:1.78,h:.504,d:2.34}),
+    colliders:[
+      {x:0,y:.383,z:.16,w:1.78,h:.566,d:2.34},
+      {x:-5.13,y:.341,z:1.18,w:.88,h:.482,d:2.91},
+      {x:-5.46,y:.86,z:1.18,w:.21,h:1.34,d:2.96},
+    ].map(box).join(''),
     lightRig:softLight({id:'vestibule-practical',x:-2.83,y:1.78,z:-1.42,intensity:13,distance:6,color:'#ffbb75'})};
   const galleryArt={...floorProfile,ambient:.40,colliders:galleryColliders,keyLight:galleryKey,
     lightRig:softLight({id:'collection-warm-bounce',x:4.2,y:2.6,z:1.6,intensity:12,distance:7,color:'#ffd8ae'})};

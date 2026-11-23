@@ -128,6 +128,7 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   const [authorized,visitor]=await Promise.all([actor('lab'),actor('gallery')]);
   const entered=await authorized.move('outside',foyer);
   assert.match(entered.scene.markup,/vestibule-practical/);
+  assert.match(entered.scene.markup,/<m-cube x="-5\.13" y="0\.341" z="1\.18" width="0\.88" height="0\.482" depth="2\.91" opacity="0" cast-shadows="false">/);
   assert.match(entered.scene.markup,/id="passage-0" x="-3" z="-5.86"[^>]*>\s*<m-label[^>]*content="Galería"/);
   assert.deepEqual(entered.exits[0].door,{x:-3,y:.11,z:-4.81,yaw:180});
   const foyerResponse=await authorized.read(roomArt(entered));
@@ -146,6 +147,7 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   assert.equal(atlases.size,1);
   assert.equal(document.images[atlases.values().next().value].mimeType,'image/jpeg');
   const open=await authorized.move(foyer,gallery);
+  assert.equal((await authorized.read(roomArt(entered))).status,404);
   await visitor.move('outside',foyer);
   const sealed=await visitor.move(foyer,gallery);
   const openPath=roomArt(open),sealedPath=roomArt(sealed);

@@ -17,6 +17,7 @@ The long, cooler gallery gives visitors room to look and pass one another.
 - [Outdoor gallery island and presentation pavilion](gallery-island.md)
 - [North Mirador](mirador.md)
 - [East Garden, playable meadow and sea arbor](east-garden.md)
+- [Foyer joinery and orientation table](foyer-joinery.md)
 - [Harmonic Beacon workshop from the stair](review/beacon.jpg)
 - [Architecture of the collection room](review/gallery.jpg)
 
