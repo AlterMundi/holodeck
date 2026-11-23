@@ -25,6 +25,20 @@ async function isolatedTarget(){
 const owned=[],pin={tableId:'fixture-table',reportId:'fixture-report',revision:'fixture-v1'},accepted=[],records=new Map();
 let mode='denied',loads=0,service,server;
 const evidence={},directory=process.env.HOLODECK_EVIDENCE_DIR;
+async function approachReadingRoom(page,offset){
+ const target=await page.evaluate(`(async()=>{
+  const {nodes}=await (await fetch('/api/content-visits')).json();
+  const {x,y,z}=nodes.find(node=>node.id==='reading-room').position;
+  const client=holodeckDevelopment.client;
+  client.updateConfig({spawnConfiguration:{spawnPosition:{x:x+${offset},y,z},spawnYRotation:90}});
+  client.respawn();client.getCameraManager().setOrbitAngle(0);
+  return {x,y,z};
+ })()`);
+ await page.until(`(()=>{const c=holodeckDevelopment.client,p=c.getLocalCharacterState().position;
+  const camera=c.getCameraManager().getCameraState().position;
+  return Math.abs(p.x-(${target.x+offset}))<.3&&Math.abs(p.z-(${target.z}))<.3&&camera.x>p.x+.1;
+ })()`);
+}
 try{
  service=await createHolodeck({identityResolver:async req=>({id:req.headers.cookie?.includes('fixture_phone=1')?'human:visit-phone-fixture':'human:visit-fixture',kind:'human',rights:['observe','edit','project']}),
  contentVisits:[{id:'fixture-visit',node:'reading-room',entry:'/nexus/?table=fixture-table&report_revision=fixture-v1',descriptor:'/nexus/api/fixture-visit',pin,discoverActors:['human:visit-fixture','human:visit-phone-fixture']}],
@@ -44,9 +58,12 @@ try{
  await page.cdp('Page.enable');await page.cdp('Page.addScriptToEvaluateOnNewDocument',{source:'window.checkErrors=[];addEventListener("error",e=>checkErrors.push(e.message));addEventListener("unhandledrejection",e=>checkErrors.push(String(e.reason)))'});
  await page.cdp('Page.navigate',{url:'http://127.0.0.1:18944/'});await page.until('window.holodeckDevelopment?.client.getLocalCharacterState()?.position.z>5.9');
  await page.cdp('Page.bringToFront');await page.until('holodeckDevelopment.client.getLocalCharacterState().position.y>.05&&holodeckDevelopment.client.getLocalCharacterState().position.y<.2');await page.click('canvas');
+ await approachReadingRoom(page,6);
  const before=await page.evaluate('holodeckDevelopment.client.getLocalCharacterState().position');
- await page.cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'w',code:'KeyW',windowsVirtualKeyCode:87});await wait(1000);await page.cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'w',code:'KeyW',windowsVirtualKeyCode:87});
- await wait(150);await page.until('!document.querySelector("#visit-near").hidden');
+ const approach={key:'w',code:'KeyW',windowsVirtualKeyCode:87};
+ await page.cdp('Input.dispatchKeyEvent',{type:'keyDown',...approach});
+ try{await page.until('!document.querySelector("#visit-near").hidden');}
+ finally{await page.cdp('Input.dispatchKeyEvent',{type:'keyUp',...approach});}
  const after=await page.evaluate('holodeckDevelopment.client.getLocalCharacterState().position');
  async function moveAfterReturn(label,direction='d'){
   const measured=await page.evaluate('({width:retainedFrame.getBoundingClientRect().width,height:retainedFrame.getBoundingClientRect().height,stageWidth:retainedFrame.contentWindow.document.documentElement.clientWidth})');
@@ -139,6 +156,7 @@ try{
  await phone.cdp('Page.addScriptToEvaluateOnNewDocument',{source:'window.checkErrors=[];addEventListener("error",e=>checkErrors.push(e.message));addEventListener("unhandledrejection",e=>checkErrors.push(String(e.reason)))'});
  await phone.cdp('Page.navigate',{url:'http://127.0.0.1:18944/'});await phone.cdp('Page.bringToFront');
  await phone.until('window.holodeckDevelopment?.client.getLocalCharacterState()?.position.y>.05&&holodeckDevelopment.client.getLocalCharacterState().position.y<.2');
+ await approachReadingRoom(phone,2);
  await phone.until('!document.querySelector("#visit-near").hidden');await phone.click('#visit-near',{touch:true});await phone.until('!!document.querySelector("#visit-stage iframe")?.contentWindow.fixture');
  await phone.evaluate('window.retainedFrame=document.querySelector("#visit-stage iframe");retainedFrame.contentWindow.fixture.state={recording:true,processing:true,dirty:true,playing:true};retainedFrame.contentDocument.querySelector("textarea").value="Phone draft remains";true');
  if(!await phone.evaluate('getComputedStyle(document.querySelector(".touch-controls")).visibility==="hidden"'))throw Error('World touch controls cover open content');

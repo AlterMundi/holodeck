@@ -21,6 +21,24 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+`b3ea542`, package `2cf1afb29358`. A scoped visit can keep its unsaved
+work while the world cannot confirm access to the source. In the packaged
+Chromium trial, an authorized dirty visit prevented a normal exit. After
+the exact edition disappeared from the authorized catalog, six in-world
+door crossings reached the plaza and brought the visitor back to the
+original lab. The frame stayed hidden, the renderer stayed mounted and
+no additional close request was sent. The restored authorization reopened
+the same frame with the original draft and no viewer reload. Tests also
+refused an independent reader and excluded a delayed stale visit reference
+from Conversation. This used controlled identities and a controlled Nexus
+viewer. The deployed HTTPS client and 57 installed files matched, and the
+protected world checkpoints matched their exact prior bytes. Package
+`88a4fc3935ff` is retained for recovery.
+An independent exterior report test verified eight immediate returns,
+desktop movement, emulated touch movement and draft preservation.
+[Visit recovery](content-visits.md#acknowledged-visit-boundary)
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
 `8145102`, package `88a4fc3935ff`. A Blender-authored limestone plaque
 marks the actual prototype on the Beacon pedestal. The same station identity
 now resolves revision 2 at the plaque in geometry, scoped visits and situated
