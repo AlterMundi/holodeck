@@ -21,7 +21,19 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`73bda34`, package `a89de8821e78`. A working indoor Conversation can now
+`a4dd8f7`, package `13e918610edb`. An indoor garden receipt remains
+readable under the original native turn after canonical completion and
+source release. The packaged two-browser trial recovered the same exact
+receipt after the canonical reply. The socket integration checks also
+verified ledger reopen, current binding and access, sibling isolation,
+read-only completion and bounded eviction. The predecessor can read an
+active preparation in the additive ledger; it leaves the index unused
+and its next ledger write can drop the index. The protected receiving
+check matched all 57 files and detected no change to the prior world
+checkpoint. Package `a89de8821e78` remains the selected rollback.
+[A closed turn's receipt](shared-conversation.md#indoor-source-contract)
+
+Source `73bda34`, package `a89de8821e78`, established the situated approach. A working indoor Conversation can now
 return the next permitted passage to its captured room. The daimon can
 take it explicitly through the same native interaction. The package trial
 used the installed Conversation client and native world CLI with two
