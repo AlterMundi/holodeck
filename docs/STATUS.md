@@ -10,7 +10,20 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`a70cd6e`, package `d6f496475d18`. The three near islands and offshore
+`c1cc8c0`, package `13604226f697`. Authorized gallery pieces and their
+plaques open the exact Nexus edition with a click or tap from nearby. The
+gallery rechecks access and revision before opening. The existing HUD visit
+action still works. Chromium clicked three fixture models and a restricted
+touch visitor tapped the finished piece and its plaque. Each visit returned
+to the same location. The restricted visitor requested only the finished
+edition, and archive revocation removed the display and resume option.
+Authenticated receiving matched the exact client and all 57 installed files
+with the world and room checkpoint preserved. The verified direct gesture ran
+with fixture editions and identities. Package `d6f496475d18` is the
+compatible rollback. [Visit contract](content-visits.md#walkable-gallery)
+
+The previous terrain release served source `a70cd6e`, package
+`d6f496475d18`. The three near islands and offshore
 skerries now have Blender-authored cliffs and terrain with the existing
 Commons basalt and meadow texture family. Chromium verified the three
 player-height views, the raised bridge round trip and the open gap when
