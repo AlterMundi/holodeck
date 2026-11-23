@@ -21,9 +21,12 @@ edit rights. Current room access applies on every new observation.
 Canonical Conversation PR926 supplies the hosted surface; PR927/source dd5c0e61
 freezes text/audio before asynchronous attachments and adds safe source-only
 discard. PR928/source8f643135 fixes the authored mobile margin inside the frame.
-All seven receivers have these compatible changes and the d0dc7f1e native bridge.
-The parent is explicitly activated with seven registered exact HTTPS origins;
-no wildcard or additional identity/grant was introduced.
+The original activation used seven exact HTTPS origins. The current
+configuration has eight paired routes and eight exact origins. CompAII,
+Eko, Oliva and Emma have the selected routed proof receiver. The remaining
+four are covered by the existing service-stop hold. Configuration and
+receiver readback do not qualify a production situated original. See the
+[active trial coverage](ROADMAP.md).
 
 112Node checks and31Python checks pass, with one unchanged optional gallery skip.
 Actual canonical shell/assets in the walkable browser fixture passed desktop/

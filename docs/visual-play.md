@@ -360,3 +360,22 @@ avatar. The previous package's longer
 reconnect check reached the saved room and timed out while waiting for both
 avatar meshes. The candidate passed that check. The fixture drove chat
 directly through the renderer.
+
+## Spatial player nameplates
+
+Other players have small rounded nameplates in the world HUD palette.
+They remain attached to the avatar and depth-tested against the room, so
+geometry can occlude them. The name texture uses a single line no wider
+than 300 pixels. If a name exceeds the space, the texture ends it at a
+whole grapheme and adds an ellipsis. The authenticated profile retains the
+full display name. Nameplates and chat bubbles keep their separate styles
+and lifetimes.
+
+The same camera and two separate simulated Chromium identities show
+[the previous rectangular label](../art/compaii-house/redesign/review/player-nameplate-before.jpg)
+and [the compact label](../art/compaii-house/redesign/review/player-nameplate-after.jpg).
+The checked long name used 278 × 46 pixels after the change, compared with
+743 × 76 before. Both clients drew the other player's label again in the
+same interior and after one reconnect. Keep the label's close-range role
+in mind. Readability at greater distances and on a physical phone remains
+unverified.

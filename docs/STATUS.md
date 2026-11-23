@@ -71,7 +71,18 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`5ed04de`, package `ad811d21a9cd`; the compatible rollback is
+`a0b714b`, package `dd19ca2d3d67`; rollback is `ad811d21a9cd`.
+The only runtime file changed is the browser bundle. The published
+client uses compact spatial nameplates for nearby peers. Two simulated
+Chromium participants saw each other's name and distinct outfit outside,
+inside and after reconnect. A fixture renderer call verified the separate
+local chat bubble. The protected HTTPS response matched the exact client
+bytes. World semantic data and tracked grants matched. The presence event
+and saved visit positions advanced during deployment.
+[Matched player-height review](visual-play.md#spatial-player-nameplates).
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) previously served source
+`5ed04de`, package `ad811d21a9cd`; the compatible rollback was
 `f0e7e98fa781` from `43ed460`. The actual Casa owner selected the new
 Blender-authored Materials Workshop for Taller Sensorial and read back
 its exact receipt at design revision 2. The previous design checkpoint
