@@ -80,11 +80,15 @@ circulation within one renderer, exact exterior returns, edition revocation,
 foreign edit refusal and recovery across a service restart. The existing Nexus
 protocol was exercised against controlled fixture editions. Next qualify an
 independent authorized source visit and the owner catalog across stored editions.
-The room's accessible index searches only the exact editions the visitor can
-open now. The installed Nexus can resolve one known review edition and Homes
-can authorize one exact source version. The missing owner inventory is a
-paginated Nexus edition query joined to authoritative Homes resource ownership
-under the native actor. A read grant alone cannot prove authorship.
+The room's accessible index searches the exact editions the visitor can open
+now. The source catalog reads existing Nexus review rows and proves the exact
+retained Home resource and owner before showing a result. A live own-native
+read returned five distinct editions across three pages for CompAII, including
+the existing in-world pin. The next authoring step is to select a catalog pin
+directly for a room exhibit and recheck the source owner at publication without
+creating an exterior world node.
+[Home ownership operation](https://github.com/nicoechaniz/daimon-cluster/pull/553) ·
+[Nexus owner catalog](https://github.com/compaii/daimon-nexus/pull/130)
 
 ## Environment art production
 

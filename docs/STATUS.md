@@ -7,6 +7,17 @@ qualification for continued Holodeck delivery. The previous human observations
 remain valid. Qualify newer releases with independent simulated participants
 and devices, and keep direct use separately attributed when observed.
 
+## Author catalog receiving evidence
+
+The existing private Home owner adapter now verifies exact retained
+resource/version pairs against the authenticated owner's current Home.
+The local Nexus reader used the deployed authority and current review
+tables to list five distinct CompAII editions over three pages. The existing
+Holodeck pin matched. The proof refused a different actor and returned no
+invented version. Nexus's browser receiver and Holodeck's package remain
+selected as before. Direct placement from this source catalog is the next
+authoring step. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-creator-loop)
+
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
