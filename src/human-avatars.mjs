@@ -8,7 +8,8 @@ const rigs=[
   'avatar-4-bodyB-skin07',
 ];
 const outfits=rigs.map((_,index)=>`avatar-wardrobe-v1-${index+1}.glb`);
-const profiles=[...rigs.map(rig=>rig+'.glb'),...outfits];
+const profiles=Object.freeze([...rigs.map(rig=>rig+'.glb'),...outfits]);
+export {profiles as avatarModelFiles};
 const preferenceLimit=64;
 const preferenceSchema='holodeck.avatar-choices/v1';
 const validSlot=slot=>Number.isInteger(slot)&&slot>=0&&slot<profiles.length;

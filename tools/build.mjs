@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { avatarModelFiles } from '../src/human-avatars.mjs';
 import {ensureMmlServerAuthContext} from './mml-server-auth-context.mjs';
 ensureMmlServerAuthContext({check:true});
 
@@ -34,16 +35,17 @@ const modelCancellation={
   }
 };
 
-// Reuse the pinned renderer's spatial labels and their lifetime, with a
-// compact player nameplate and a clear sightline above the local avatar.
-const avatarLabels={
-  name:'mml-avatar-labels',
+// Preserve the pinned character renderer and its spatial-label lifetime.
+// The packaged rigs and pinned LOD can use the existing direct loader when
+// optional worker-side texture processing is unavailable.
+const avatarRendering={
+  name:'mml-avatar-rendering',
   setup(api){
     api.onLoad({filter:/\/@mml-io\/3d-web-threejs\/build\/index\.js$/},async ({path})=>{
       const bytes=await readFile(path);
       if(createHash('sha256').update(bytes).digest('hex')!==
         '4177dd0ce868ff3b72aeb57968401a7941e7fdd613d4b53a72ddd9fcb672111c')
-        throw Error('Requalify the MML avatar label adaptation for these dependency bytes');
+        throw Error('Requalify the MML avatar rendering adaptation for these dependency bytes');
       let source=bytes.toString('utf8');
       const replacements=[
         [`    this.usernameTooltip = new CharacterTooltip(
@@ -80,18 +82,92 @@ const avatarLabels={
       this.material.depthWrite = false;
       this.material.toneMapped = false;
     }`],
+        [`    for (let i = 0; i < this.maxWorkers; i++) {
+      const worker = new Worker(GLTFLoadingWorker_default);
+      worker.onmessage = this.handleWorkerMessage.bind(this);
+      worker.onerror = this.handleWorkerError.bind(this);
+      this.workers.push(worker);
+    }`,`    if (typeof Worker !== "function" || typeof OffscreenCanvas !== "function") return;
+    for (let i = 0; i < this.maxWorkers; i++) {
+      let worker;
+      try {
+        worker = new Worker(GLTFLoadingWorker_default);
+      } catch {
+        break;
+      }
+      worker.onmessage = this.handleWorkerMessage.bind(this);
+      worker.onerror = (event) => {
+        event.preventDefault();
+        this.retireWorker(worker);
+      };
+      this.workers.push(worker);
+    }`],
+        [`  handleWorkerError(error) {
+    console.error("gLTF texture worker error:", error);
+  }`,`  retireWorker(worker) {
+    this.workers = this.workers.filter((entry) => entry !== worker);
+    this.workerIndex = 0;
+    worker.terminate();
+    for (const [id, job] of this.activeJobs) {
+      if (job.worker !== worker) continue;
+      clearTimeout(job.timeout);
+      this.activeJobs.delete(id);
+      job.reject(new Error("Avatar worker unavailable"));
+    }
+  }`],
+        ['      const worker = this.getNextWorker();',
+          '      if (this.workers.length === 0) { reject(new Error("Avatar worker unavailable")); return; }\n      const worker = this.getNextWorker();'],
+        [`      const timeout = setTimeout(() => {
+        if (this.activeJobs.has(id)) {
+          this.activeJobs.delete(id);
+          reject(new Error("gLTF process timeout"));
+        }
+      }, 6e4);`,`      const timeout = setTimeout(() => this.retireWorker(worker),
+        fallbackAvatarModel(fileUrl) ? 12000 : 60000);`],
+        ['      worker.postMessage(message);',`      try {
+        worker.postMessage(message);
+      } catch {
+        this.retireWorker(worker);
+      }`],
+        ['    this.workerPool = new GLTFLoadingWorkerPool();','    this.workerPool = null;'],
+        [`      const processedBuffer = await this.processGLTFInWorker(
+        fileUrl,
+        maxTextureSize,
+        abortController
+      );
+      return await this.loadFromBuffer(processedBuffer, fileUrl);`,`      let processedBuffer;
+      try {
+        processedBuffer = await this.processGLTFInWorker(fileUrl, maxTextureSize, abortController);
+      } catch (error) {
+        if (abortController?.signal.aborted) return null;
+        if (!fallbackAvatarModel(fileUrl)) throw error;
+        const direct = await this.modelLoader.load(fileUrl, undefined, abortController);
+        return abortController?.signal.aborted ? null : direct.group;
+      }
+      return await this.loadFromBuffer(processedBuffer, fileUrl);`],
+        ['      const processedBuffer = await this.workerPool.processGLTF(',
+          '      this.workerPool ??= new GLTFLoadingWorkerPool();\n      const processedBuffer = await this.workerPool.processGLTF('],
       ];
       for(const [before,after] of replacements){
-        if(source.split(before).length!==2)throw Error('Pinned MML character label source no longer matches');
+        if(source.split(before).length!==2)throw Error('Pinned MML avatar source no longer matches');
         source=source.replace(before,after);
       }
       const nameplateModule=fileURLToPath(new URL('../src/player-nameplate.mjs',import.meta.url));
-      return {contents:`import { playerNameplate } from ${JSON.stringify(nameplateModule)};\n`+source,
+      const prelude=`import { playerNameplate } from ${JSON.stringify(nameplateModule)};
+const holodeckAvatarFiles = new Set(${JSON.stringify(avatarModelFiles)});
+function fallbackAvatarModel(fileUrl) {
+  if (fileUrl === lowPolyLoDModelURL) return true;
+  const assetBase = new URL("./assets/", document.baseURI);
+  const url = new URL(fileUrl, document.baseURI);
+  return url.href.startsWith(assetBase.href) && holodeckAvatarFiles.has(url.href.slice(assetBase.href.length));
+}
+`;
+      return {contents:prelude+source,
         resolveDir:dirname(path)};
     });
   }
 };
 await build({entryPoints:['src/client.mjs'],outfile:'build/client.js',bundle:true,
   format:'esm',platform:'browser',target:'es2022',minify:true,
-  plugins:[modelCancellation,avatarLabels],
+  plugins:[modelCancellation,avatarRendering],
   loader:{'.wasm':'file'},assetNames:'[name]-[hash]'});
