@@ -4,6 +4,8 @@ The complete cross-project sequence is the [reviewed shared roadmap](shared-road
 tracked in the existing [Field Project 13](https://github.com/orgs/AlterMundi/projects/13).
 The MVP coverage below remains its own unfinished acceptance record.
 
+The active goal now includes the [complete environment art production plan](shared-roadmap.md#environment-art-production). Nicolás confirmed entry to the Beacon basement and requested a full visual redesign. The commons, attractive small house exterior, expandable interior, working Beacon instruments and versioned 3D gallery are all part of the same goal, together with the existing native and multi-user acceptance checks.
+
 Human-authorized native goal: work through a shared, testable MVP.
 Current status: active. Actual human situated use/return and protected review
 acceptance remain open after the receiving fixes. The original objective and

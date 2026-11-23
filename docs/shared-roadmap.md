@@ -66,6 +66,55 @@ proof to choose the next mechanically distinct recipe and qualify reuse.
 The deployed signal-garden node already supports native creation from data;
 the ordinary room editor and that two-space creator loop remain open.
 
+## Environment art production
+
+The RPG housing reference sets a quality bar for architectural composition,
+furnishing and useful play. Start visible art in a blank Blender scene and
+review one coherent design before changing the public world. Use existing
+layouts, colliders, anchors and user state as the migration contract. Design an original settlement that takes cues from
+resonant instruments. Three recurring details tie it together: structural ribs,
+tensioned elements and brass joints in carved stone. Use pale mineral plaster,
+dark lacquered wood, warm instrument light and cool garden shade. Frame the
+garden from the arrival and save the main workshop reveal for the bottom of the
+stair. Let the interior open up into an asymmetric room whose instrument is the
+first thing a player sees. Keep each route simple enough to learn after one
+walk. Reserve expansion edges for later rooms and link distant floors with the
+existing internal portals.
+
+| Release area | Build and verify in the existing world |
+| --- | --- |
+| **Commons, paths and garden** | [#3](https://github.com/AlterMundi/holodeck/issues/3), [#8](https://github.com/AlterMundi/holodeck/issues/8). Rebuild the visible legacy scenery in Blender in place. Stage the arrival, garden and neighborhoods as connected districts with sightlines from the real spawn. Keep routes, player clearance, terrain/collider agreement, exact existing placements and creator permissions. Qualify the actual walk and transition cost on desktop and a phone. |
+| **CompAII house and small exterior** | [#7](https://github.com/AlterMundi/holodeck/issues/7), [#9](https://github.com/AlterMundi/holodeck/issues/9), [#10](https://github.com/AlterMundi/holodeck/issues/10). Use the same silhouette, roof proportions and material family for the parcel-scale version and full architectural source. Make the threshold, atrium and stair readable from both directions. Author the foyer, park, lower workshop and upper rooms in Blender. Qualify entry, navigation, expansion, denied-room exclusion, reconnect and exact exterior return. |
+| **Harmonic Beacon workshop** | [#12](https://github.com/AlterMundi/holodeck/issues/12). Retain the pinned guitar prototype bench. Give Spatializer and Weaver distinct working stations with spatial anchors, project labels, actual readiness, existing authorization and a visible return. Bind to their own interfaces after authenticating the intended receiving route. The current maintained local lab and audio routes are real tooling. Their private or loopback URLs cannot serve as a shared Holodeck link. Check safe software control and observed effect first. Preserve the owning operator, device state and explicit actuation. |
+| **Walkable 3D collection** | [#4](https://github.com/AlterMundi/holodeck/issues/4), [#12](https://github.com/AlterMundi/holodeck/issues/12), [#15](https://github.com/AlterMundi/holodeck/issues/15). Provide an active workbench for drafts, a finished exhibition and an archive that can reopen old editions. Use the owning Homes/Nexus status and exact versions. Place at least one authorized actual 3D creation in each state, with useful titles and room-scale context. Visitors inspect the same edition in the existing viewer and return to the same place. Keep draft and restricted models outside unrelated projections. |
+| **HUD and creator tools** | [#2](https://github.com/AlterMundi/holodeck/issues/2), [#3](https://github.com/AlterMundi/holodeck/issues/3), [#15](https://github.com/AlterMundi/holodeck/issues/15). Use a small place plaque, a restrained action dock and one contextual affordance. Keep the camera, joystick and touch actions clear. Establish one reusable kit of collision-checked modules, furniture, anchored tools, signs and playable objectives. An eligible creator uses their own identity to preview, publish, revise and recover a spatial creation; a visitor can find and use it. |
+
+First finish a short sequence from the garden, past the small house façade and
+through the warm threshold to a working Beacon bench. The
+[clean-sheet source and review](../art/compaii-house/redesign/) sets the starting
+architecture and its original lighting and material palette. Use the same finished
+roof silhouette and entrance proportions in the miniature and house. Carry the
+established visual language through the commons and the separate gallery once
+that sequence works. Give the gallery a quieter pace with framed views and room
+to stop at a work without blocking the route. Compare previous and new versions
+at matching player height, camera, route, resolution and device. Check arrival,
+facade, threshold, workshop reveal and station in motion and as stills, with and
+without the HUD. Check grayscale value separation, recognizable silhouettes,
+lighting direction, avatar/camera clearance, touch input and shared circulation.
+Reconfirm the released route with participants. Record technical and human
+judgment separately.
+
+Keep editable Blender sources and a reproducible, glTF-validated export. Record
+catalog provenance and redistribution rights. Prefer geometry instances, few
+material batches, baked detail and bounded room-local lighting. Keep collision
+simple and separate, and qualify it against the art. Set per-cell budgets from
+the known 0.8 MB / 21k-triangle workshop baseline and measure the first frame,
+warm crossing, worst visible cell, draw calls and physical-device frame pacing.
+Keep a compatible predecessor and a bounded cache of authorized revisions.
+Carry tool/object selection into the continuing Conversation without stalling
+the world. Sensorial and later embodiments build on the same room and tool
+contract under their own source access and device authority.
+
 ## Reuse and boundaries
 
 | Authority | Reuse | Remaining integration |
@@ -81,7 +130,7 @@ Spatial adjacency is not a support/contradiction relation. Knowledge graphs and 
 
 ## Delivery sequence and cards
 
-All unchecked work below is planned, not delivered. Engineering the new stages does not resume the original blocked native goal or erase its full objective/accounting.
+The roadmap stages retain their individual exit evidence. The active Holodeck MVP goal still includes actual situated Conversation, shared play and physical-device acceptance. See [current evidence](STATUS.md) for shipped slices and outstanding observations.
 
 | Stage | Owning cards and dependencies | Exit evidence |
 | --- | --- | --- |

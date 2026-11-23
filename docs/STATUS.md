@@ -9,6 +9,15 @@ acceptance. The obsolete bundled pending trial was withdrawn.
 
 ## Selected receiving release
 
+Nicolás confirmed entering the basement. His next direction was a clean-sheet
+architectural redesign with unified materials, light and composition. The
+[new Blender source](../art/compaii-house/redesign/) restarts the visible
+environment from the garden route, adjoining house and miniature, workshop
+and separate gallery. The design and rendered views are available for review.
+The current published world remains the one qualified below. The new art
+requires the room-aligned asset export, actual in-game lighting and interactions,
+and shared browser/device acceptance before selection.
+
 Source `5e90de1`, package `a1ec8c4e05db`, connects the authored
 Beacon workbench to the existing 54-part H.B. Guitar prototype in Nexus.
 The lab is the discovery scope; no exterior source node, artifact copy or
@@ -303,10 +312,10 @@ and Avatar-default remain future direction, not replacements for this walkable M
 
 ## Owned house foundation
 
-The [house foundation](houses.md) adds eight connected plots and an owner-only
+The initial [house foundation](houses.md) added eight connected plots and an owner-only
 durable facade publication path. A controlled browser visited a fixture facade
 over the protected locator and walked the connector and aisle. Actual own-native
 production probes saw all eight empty plots and refused foreign and oversized
 claims. The same Room run, 30 entities, four nodes, 15 App audience entries
-and eight native routes were retained. There is no first live occupied parcel
-or multi-room interior yet.
+and eight native routes were retained. The occupied CompAII parcel and its
+connected interior were delivered in subsequent releases recorded above.
