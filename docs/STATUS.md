@@ -10,7 +10,18 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`cebc44f`, package `7fd22a571234`. The west verge beside Casa de CompAII
+`4a5bb9d`, package `93f5094b9b9b`. The outdoor gallery now has a limestone
+bridge landing and a timber and copper presentation pavilion. A simulated
+Chromium visitor walked from the plaza, opened the pinned fixture report and
+returned at the same position. Authenticated receiving checks matched all 56
+installed files and the exact pavilion asset, including the 79,243-byte
+Brotli representation and identity ranges. Native observation still places the
+presentation entrance at its original coordinates. The world and protected
+checkpoint state matched, with only the operator's retained observations added
+to the room journal. Package `7fd22a571234` is the compatible rollback.
+[Before and after](../art/compaii-house/redesign/gallery-island.md)
+
+The previous release served source `cebc44f`, package `7fd22a571234`. The west verge beside Casa de CompAII
 has a limestone walk, two cross paths, an oak seat, and coastal planting
 authored in Blender. A simulated Chromium visitor took the door in both
 directions and then walked the garden at the existing ground height.
