@@ -9,7 +9,21 @@ and devices, and keep direct use separately attributed when observed.
 
 ## Selected receiving release
 
-The [protected entrance](https://compaii.dmn.homes/holodeck/) now serves
+The [protected entrance](https://compaii.dmn.homes/holodeck/) serves
+source `30a00d5`, package `46c6625dfb90`. A canonical indoor turn can place a
+garden signal when its own authorized daimon is present. The installed native
+CLI recovered the command's exact result on the same interaction. In the
+packaged simulation, one touch participant placed the first light, the
+keyboard participant sent a single original and kept walking, and the native
+fixture identity placed the second light using that interaction. Both browsers
+saw the completed round and the touch browser recovered it after reload.
+The original retained the incomplete state at sequence 2 and the action
+receipt returned sequence 3. This is an installed CLI and browser simulation
+with controlled admission, without a live model or device. All 43 installed
+files, protected checkpoints, the original world and authenticated HTTPS
+matched. The compatible predecessor is `777ce31c9fb4`.
+
+The preceding release served
 source `0c8a44e`, package `777ce31c9fb4`. A situated native observer can read
 the current signal-garden revision and progress of the room referred to by the
 original, subject to current room access. The archived Conversation attachment

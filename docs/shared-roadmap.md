@@ -127,6 +127,33 @@ lighting direction, avatar/camera clearance, touch input and shared circulation.
 Reconfirm the released route with independent browser identities and simulated
 inputs. Record technical results and any voluntary participant feedback separately.
 
+### Finish the architecture and props in the running game
+
+Nicolás observed better light and textures and identified three still-open
+quality defects: unfinished objects, openings that look accidental and too
+little spatial detail. Inspect the authored Blender scene and its packaged
+WebGL export at walking height, close up and in motion. Walk each threshold
+both ways, look back from each landing, and inspect the back and underside of
+objects the player can walk around. Close unintended gaps, exposed backs and
+light leaks at floor, wall, stair and roof joins. Give intentional openings a
+recognizable purpose, frame or view and keep collision aligned with the visible
+edge. Check contact shadows and surface scale after geometry changes.
+
+Start with the [foyer](../art/compaii-house/redesign/review/foyer-baked-light.jpg)
+and [Beacon room](../art/compaii-house/redesign/review/beacon-light-after.jpg).
+The foyer's broad bare wall and plain table carry little information about the
+house. The Beacon benches still read as generic furniture despite their
+different tools. Give the entry a usable place to pause and orient, detail
+the benches around their actual controls, and resolve exposed joints at the
+stair and lower landing. Continue through the miniature, exterior paths,
+gallery and tower with the same standard. Use scale, joinery, hardware and
+purposeful work objects to carry the detail while leaving the route and
+interaction targets clear. Compare matched before/after captures in the
+browser and verify clearance, transitions and frame cost on the revised route.
+Track the work in [world art #3](https://github.com/AlterMundi/holodeck/issues/3),
+[interior #9](https://github.com/AlterMundi/holodeck/issues/9) and
+[working house #12](https://github.com/AlterMundi/holodeck/issues/12).
+
 Keep editable Blender sources and a reproducible, glTF-validated export. Record
 catalog provenance and redistribution rights. Prefer geometry instances, few
 material batches, baked detail and bounded room-local lighting. Keep collision
