@@ -10,7 +10,26 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`98be5ab`, package `d2dff872e6aa`. The Beacon lab now has a dressed limestone
+`cc5022b`, package `b6043ceebadf`. The gallery has a framed clerestory,
+a suspended exhibition light rail, matte stone backs for the three plinths
+and a high-contrast Colección sign. Both Blender variants share the fittings
+and the 512 px Cycles light map technique. Packaged Chromium walked the
+viewing path with the stair open and crossed the continuous floor when the lab
+was restricted. Both exact room exports and all 54 installed files matched
+receiving. The protected checkpoints matched. Package `d2dff872e6aa` remains
+the compatible rollback.
+[Before and after](../art/compaii-house/redesign/README.md#gallery-exhibition-bays)
+
+A second Chromium trial used the same installed gallery profile with three
+different pinned fixture editions. The admitted owner saw and opened all
+three and returned to the walkable scene. The limited visitor received only
+the finished edition. Revoking the archive removed its display, plaque and
+resume option. The three live source bindings remain selected. Live Nexus
+descriptors return `shared_sign_in_required` for the CompAII Home owner
+reader, which also receives HTTP 401 from `/access/identity`. An actual
+authorized Nexus participant remains a separate receiving case.
+
+The previous release served source `98be5ab`, package `d2dff872e6aa`. The Beacon lab now has a dressed limestone
 landing with bronze edges, continuous stone and oak skirting, acoustic wall bays
 and instrument drawers at the Spatializer and Weaver benches. The scoped GLB
 uses nine material batches and ships in 1,602,320 bytes of Brotli. Packaged

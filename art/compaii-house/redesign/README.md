@@ -113,6 +113,12 @@ Both exports use the editable gallery cell, the named fittings in
 rig. Each retains nine material batches and one 512 px static diffuse map.
 The runtime key still lights the moving avatar. Browser trials used the
 existing camera and collision over both floor variants.
+The exact same packaged rooms also rendered three distinct fixture works
+for the admitted actor and one for the limited visitor. The archive
+disappeared after its source access was revoked.
+[Admitted actor fixture](review/gallery-finish-owner-fixture.jpg) ·
+[Limited visitor fixture](review/gallery-finish-visitor-fixture.jpg)
+
 
 ### Beacon joinery and workstations
 

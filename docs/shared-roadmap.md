@@ -155,7 +155,12 @@ surface and workshop finish pass on the same route, particularly adjoining
 islands and the house yard. The
 [Beacon workshop finish](../art/compaii-house/redesign/README.md#beacon-joinery-and-workstations)
 now ties its existing stair, walls and acoustic work bays together. Continue
-the remaining furniture, exhibit and room finish at walking height.
+the remaining furniture and room finish at walking height. The
+[gallery exhibition bays](../art/compaii-house/redesign/README.md#gallery-exhibition-bays)
+make the three existing plinth positions legible with matte backgrounds,
+a framed clerestory and a gallery lighting rail. Both the stair and continuous
+floor variants have player-height Chromium readback. Exact source access and
+live participant evidence remain separate from the fixture exhibits.
 
 The selected archive stores the 13 atelier GLBs losslessly and leaves
 6,653,952 bytes below the existing receiver limit. The matched Chromium
