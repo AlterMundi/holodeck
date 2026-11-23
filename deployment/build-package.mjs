@@ -4,6 +4,7 @@ import { readdir, readFile, writeFile, mkdir, rm, copyFile, lstat } from 'node:f
 import { dirname, join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { brotliCompressSync, constants as zlib } from 'node:zlib';
+import {ATELIER_ASSET_REVISIONS} from '../src/compaii-atelier.mjs';
 import {ensureMmlServerAuthContext} from '../tools/mml-server-auth-context.mjs';
 ensureMmlServerAuthContext({check:true});
 const root=resolve(new URL('..',import.meta.url).pathname);
@@ -23,6 +24,18 @@ await copyFile(join(root,'node_modules/jsdom/lib/jsdom/browser/default-styleshee
 const digest=b=>createHash('sha256').update(b).digest('hex');
 async function copyTree(from,to){await mkdir(to,{recursive:true});for(const entry of await readdir(from,{withFileTypes:true})){const src=join(from,entry.name),dst=join(to,entry.name);if(entry.isDirectory())await copyTree(src,dst);else if(entry.isFile())await copyFile(src,dst);else throw Error('Regular selected files only');}}
 await copyTree(join(root,'public'),join(stage,'public'));await copyTree(join(root,'build'),join(stage,'build'));
+// Preserve the qualified bytes and their existing URLs with one disk representation.
+for(const [path,revision] of Object.entries(ATELIER_ASSET_REVISIONS)){
+  if(!path.endsWith('.glb'))continue;
+  const original=join(stage,'public',path),bytes=await readFile(original);
+  if(bytes.length>4*1024*1024||digest(bytes)!==revision)throw Error('Unqualified art export: '+path);
+  const packed=brotliCompressSync(bytes,{params:{[zlib.BROTLI_PARAM_QUALITY]:6}});
+  if(packed.length+1024>=bytes.length)continue;
+  const output=join(stage,'runtime/art',path+'.br');
+  await mkdir(dirname(output),{recursive:true});
+  await writeFile(output,packed);
+  await rm(original);
+}
 // Keep one exact browser bundle in the archive. The receiving HTTP route
 // serves this wire representation or streams its identity representation.
 const clientBundle=join(stage,'build/client.js');

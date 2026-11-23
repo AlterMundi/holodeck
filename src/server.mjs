@@ -1,5 +1,5 @@
 import {interiorArt} from './interior-art.mjs';
-import {selectAtelier} from './compaii-atelier.mjs';
+import {packedExteriorArt,selectAtelier} from './compaii-atelier.mjs';
 import {RoomExhibits,EXHIBIT_SAVE_BYTES} from './room-exhibits.mjs';
 import {InteriorSpaces, OUTSIDE, SPACE_SAVE_BYTES, interiorDocument} from './interior-spaces.mjs';
 import {InteriorLayouts,LAYOUT_SAVE_BYTES} from './interior-layouts.mjs';
@@ -15,6 +15,7 @@ import { NetworkedDOM } from '@mml-io/networked-dom-server';
 import { handleExperienceWebsocketSubprotocol } from '@mml-io/3d-web-experience-protocol';
 import enableWs from 'express-ws';
 import { existsSync, readFileSync } from 'node:fs';
+import {sendPackedArt} from './packed-art.mjs';
 import { packedClientHandler } from './packed-client.mjs';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
@@ -92,7 +93,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     validate:definitions=>new InteriorSpaces({definitions,houses})});
   const spaces=new InteriorSpaces({definitions:layouts.definitions(),houses,state:spaceStore?.load(),
     persist:spaceStore ? state=>spaceStore.save(state) : null,guestAccess:interiorGuestAccess});
-  const atelier=selectAtelier(artProfile,spaces.rooms,houses.directory());
+  const exteriorArt=packedExteriorArt();
+  const atelier=selectAtelier(artProfile,spaces.rooms,houses.directory(),exteriorArt);
   const selectedRooms=new Set(interiorSpaces.map(item=>item.id));
   const gardenStore=stateDir?new RoomStore(join(stateDir,'indoor-gardens'),{maxBytes:INDOOR_GARDEN_BYTES}):null;
   const indoorGardens=new IndoorGardens({state:gardenStore?.load(),spaces,houses,legacyRooms:selectedRooms,
@@ -418,6 +420,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const packedClient=new URL('../runtime/client.js.br',import.meta.url);
   if(existsSync(packedClient))
     app.get(route('client/client.js'),packedClientHandler(readFileSync(packedClient)));
+  for(const [path,art] of exteriorArt)
+    app.get(route(path),(req,res)=>sendPackedArt(req,res,art,true));
   network.registerExpressRoutes(app);
   if(basePath!=='/')app.get(basePath.slice(0,-1),(_req,res)=>res.redirect(308,basePath));
   app.get(route('health'),(_req,res)=>res.status(projectionHealthy&&!room.commitUncertain&&!spaces.fenced?200:503).json({ok:projectionHealthy&&!room.commitUncertain&&!spaces.fenced}));
@@ -491,6 +495,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(!selected||!inScope(req.actor,id))return res.sendStatus(404);
     const art=artForRoom(selected,spaces.passages(req.actor,selected));
     if(!art||req.params.revision!==art.revision)return res.sendStatus(404);
+    if(art.packed)return sendPackedArt(req,res,art);
     res.type('model/gltf-binary').send(art.bytes);
   });
   app.get(route('api/space/garden'),(req,res)=>{

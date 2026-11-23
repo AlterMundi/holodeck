@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {COMPAII_HOUSE,interiorArt} from './interior-art.mjs';
+import {readPackedArt} from './packed-art.mjs';
 import {BEACON_CONTROLS} from './beacon-controls.mjs';
 
 export const ATELIER_PROFILE='compaii-atelier-v1';
@@ -31,7 +32,7 @@ const OUTDOOR_SKY=Object.freeze({asset:'coastal-sky.jpg',
 const COASTAL_RIDGES=Object.freeze({asset:'coastal-ridges.glb',
   revision:'518884afc176e4351746b8cce5e0461d1be7c7e36db0f3fc70a9a813e88b9119'});
 const COASTAL_FOG=Object.freeze({fogNear:24,fogFar:124,fogColor:{r:.716,g:.776,b:.784}});
-const dossier={
+export const ATELIER_ASSET_REVISIONS=Object.freeze({
   'room-art/compaii-atelier/foyer.glb':'eb3bd88a7dc7e288ea6335f90b4ef24880d37dcd004c008e16a936a427c8198a',
   'room-art/compaii-atelier/gallery.glb':'1028d39b34938571ce0385e7bd6604f61c79a4f614ed3395648244e313d0dd35',
   'room-art/compaii-atelier/gallery-sealed.glb':'91c46b91164fd1ebfd20052cdf20d2dae59c0222126af016f16920a426dadc48',
@@ -46,7 +47,7 @@ const dossier={
   ['assets/'+SURROUNDINGS_ASSET]:SURROUNDINGS_REVISION,
   ['assets/'+OUTDOOR_SKY.asset]:OUTDOOR_SKY.revision,
   ['assets/'+COASTAL_RIDGES.asset]:COASTAL_RIDGES.revision,
-};
+});
 
 const facade={
   asset:FACADE_ASSET,
@@ -88,7 +89,17 @@ function readAsset(path,revision){
   return {bytes,revision:revision+'.glb'};
 }
 
-export function selectAtelier(profile,rooms,houses){
+export function packedExteriorArt(){
+  const assets=new Map();
+  for(const [path,revision] of Object.entries(ATELIER_ASSET_REVISIONS)){
+    if(!path.startsWith('assets/')||!path.endsWith('.glb'))continue;
+    const asset=readPackedArt(path,revision);
+    if(asset)assets.set(path,asset);
+  }
+  return assets;
+}
+
+export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt()){
   if(profile===undefined)return null;
   if(profile!==ATELIER_PROFILE)throw Error('Unknown Holodeck art profile');
   if(!houses.some(house=>house.id===COMPAII_HOUSE&&house.parcel==='parcel-west-1'))
@@ -100,9 +111,12 @@ export function selectAtelier(profile,rooms,houses){
       throw Error('The Atelier requires the existing authored room layout');
   }
   const assets=new Map();
-  for(const [path,revision] of Object.entries(dossier)){
-    const asset=readAsset(path,revision);
-    if(path.startsWith('room-art/'))assets.set(path.split('/').at(-1),asset);
+  for(const [path,revision] of Object.entries(ATELIER_ASSET_REVISIONS)){
+    if(path.startsWith('room-art/')){
+      assets.set(path.split('/').at(-1),readPackedArt(path,revision)??readAsset(path,revision));
+    }else if(!exterior.has(path)){
+      readAsset(path,revision);
+    }
   }
   const asset=name=>assets.get(name+'.glb');
   const foyerArt={...asset('foyer'),...floorProfile,ambient:.22,keyLight:foyerKey,authoredDoor:true,

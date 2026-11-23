@@ -115,6 +115,17 @@ decoded bytes for identity clients. Match served decoded bytes against
 the ordinary build during receiving readback. The uncompressed build
 remains available to the development server.
 
+Selected atelier GLBs with a smaller Brotli representation are stored once
+under `runtime/art`, outside the static asset mount. The builder checks
+their original SHA-256. Startup checks the bounded decoded bytes against the
+same pinned digest. The existing asset URLs negotiate Brotli or identity.
+Exterior byte ranges use the identity representation, and encoding-specific
+validators are sent with `Vary: Accept-Encoding`. Both exterior and room art
+retain the existing `no-store` policy. The room route applies the current
+actor, room, passage and revision checks before serving either representation.
+Development and rollback packages may use the original uncompressed exports.
+
+
 The archive remains below the existing 32 MiB limit and its declared unpacked
 inventory below 128 MiB. Validate the exact archive using the maintained receiving
 package verifier before publication. Publish the package as one stable private
