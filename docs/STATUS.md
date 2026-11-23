@@ -10,7 +10,23 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`c1cc8c0`, package `13604226f697`. Authorized gallery pieces and their
+`6c8e54c`, package `1d7b90767013`. The continuing Conversation inside a
+room can now carry the explicitly selected fixture or workstation. The server
+matches the current authorized object and freezes its revision at intake.
+A Chromium trial using the installed Conversation client selected the listening
+table, submitted, changed the next topic and walked while the attachment was
+held. The first source still named the original table. The native port carried
+out a garden signal under the admitted fixture turn. A separate HTTP trial
+revised the furnishings mid-prepare and rejected a stale object selection
+without adding it to the next source. The paired room permission remains
+required. Gallery choices describe physical displays. The edition pin remains
+behind source access. Authenticated receiving matched the exact served client,
+57 installed files and the Room checkpoint. The previous package
+`13604226f697` is the compatible rollback.
+[Situated Conversation contract](shared-conversation.md#indoor-conversation)
+
+The previous gallery-interaction release served source `c1cc8c0`, package
+`13604226f697`. Authorized gallery pieces and their
 plaques open the exact Nexus edition with a click or tap from nearby. The
 gallery rechecks access and revision before opening. The existing HUD visit
 action still works. Chromium clicked three fixture models and a restricted

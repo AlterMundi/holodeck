@@ -346,6 +346,7 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     await touch.screenshot({path:join(HOLODECK_EVIDENCE_DIR,'reconnected-game.png')});
     assert.deepEqual(errors,[]);
     const evidence={simulatedActors:true,actualModel:false,touchActions:true,keyboardMovement:true,matchingProgress:true,
+      retainedRoomTopic:original.capture.referredRoomObject.id,nextRoomTopic:await topic.inputValue(),
       situatedRoom:original.capture.place.id,initialContributors:original.capture.place.activity.progress.contributors,
       canonicalOriginals:originals.length,canonicalPosts,machineAttachments:uploads,replyRenderedOnce:true,siblingCompletedFirst:true,
       sameConversationFrame:true,foreignReceiptDenied:true,worldReceipt:effect.result,recoveredComplete:recovered.progress.complete};
