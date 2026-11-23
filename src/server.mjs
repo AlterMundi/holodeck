@@ -183,10 +183,11 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     return {...space,participants};
   }
   function roomObjects(view){
-    const art=artForRoom(spaces.rooms.get(view.id),view.exits ?? []),station=art?.station;
+    const art=artForRoom(spaces.rooms.get(view.id),view.exits ?? []);
     const objects=art?.replacesShell?[]:view.objects;
-    return station?[...objects,{id:station.id,kind:'workstation',title:station.title,
-      position:station.position,revision:station.revision}]:objects;
+    const stations=[art?.station,...(art?.controls??[])].filter(Boolean);
+    return [...objects,...stations.map(station=>({id:station.id,kind:'workstation',title:station.title,
+      position:station.position,revision:station.revision}))];
   }
   function conversationPlace(actor,id){
     const selected=spaces.rooms.get(id);

@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {COMPAII_HOUSE,interiorArt} from './interior-art.mjs';
+import {BEACON_CONTROLS} from './beacon-controls.mjs';
 
 export const ATELIER_PROFILE='compaii-atelier-v1';
 export const ATELIER_ROOMS=Object.freeze({
@@ -88,6 +89,7 @@ export function selectAtelier(profile,rooms,houses){
     lightRig:softLight({id:'collection-daylight',x:-3.9,y:3.91,z:1.6,intensity:24,distance:8,color:'#b9d4f5'})};
   const labArt={...asset('beacon'),...floorProfile,authoredStairs:true,ambient:.60,
     station:interiorArt(rooms.get(lab)).station,
+    controls:BEACON_CONTROLS,
     colliders:'<m-cylinder x="-.44" y=".315" z="1.9" radius="1.62" height=".43" opacity="0" cast-shadows="false"></m-cylinder>'+
      box({x:3.802,y:.643,z:-.791,w:2.332,h:1.085,d:.886})+
      box({x:-3.758,y:.643,z:2.659,w:2.068,h:1.085,d:.886}),

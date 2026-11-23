@@ -18,7 +18,7 @@ The current published world remains the one qualified below.
 
 The candidate package can select this scene through
 `compaii-atelier-v1` in the ordinary receiving configuration. The verified
-30,279,680-byte archive is inside the existing 32 MiB package limit and
+30,269,440-byte archive is inside the existing 32 MiB package limit and
 includes the previous scenery as a compatible option. No Room migration
 is required. The packaged production entry admitted a fixture identity
 over the existing Home HTTP contract and returned the authored foyer.
@@ -35,8 +35,16 @@ keeping the same page. The closed gallery and lab continue to use their
 room-scoped asset routes. The packaged browser client is about 1.34 MB
 on disk with Brotli. A fixture exercised the production startup and
 compared Brotli and identity HTTP delivery to the same original bundle.
-Working Beacon stations, live rollout and shared device and human
-acceptance remain open.
+The profile includes contextual Spatializer and Weaver links beside their
+authored workbenches. Each opens the existing Harmonic Lab panel in a new
+tab and keeps the world in place. Chromium walked to both benches, opened
+the exact tool cards in the owning panel build, and returned to the same
+spot. The controlled receiver reports let the panel distinguish ready from
+stopped. The browser made only read requests during either handoff. Room
+fixtures also verified the workstation reference in a situated observation.
+The [owning panel source](https://github.com/AlterMundi/harmonic-weaver/commit/420efaa)
+supports the instrument selector. Live deployment, actual instrument readiness
+or actuation, and shared device and human acceptance remain open.
 
 The package and historical retention ceilings are separate. The currently
 retained Home runtime archives exceed the 96 MiB history budget. Reconcile

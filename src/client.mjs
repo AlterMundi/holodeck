@@ -10,6 +10,7 @@ import { NativeAvatarLayer } from './native-avatar.mjs';
 import {PublicWorldPicker,WorldIndication} from './world-indication.mjs';
 import { ContentVisitor } from './content-visitor.mjs';
 import { GalleryModels } from './gallery-models.mjs';
+import { BeaconControls } from './beacon-controls.mjs';
 import {pickedRepresentationVisit} from './node-representations.mjs';
 import { PlayableHUD } from './playable-hud.mjs';
 import { AppliedGeometryProbe } from './applied-geometry.mjs';
@@ -43,6 +44,7 @@ function startInterior(space){
   document.querySelector('#people').textContent=space.level===0?'Planta baja':
     space.level<0?`Subsuelo ${-space.level}`:`Piso ${space.level}`;
   const notice=new WorldNotice(document.querySelector('#notice'));
+  const beaconControls=new BeaconControls(document.querySelector('#beacon-control'));
   let galleryModels;
   const visitor=new ContentVisitor({document,window,base,scoped:true,
     onCatalog:entries=>galleryModels?.sync(entries),
@@ -73,7 +75,8 @@ function startInterior(space){
       const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
       renderer.render=state=>{
         const position=client.getLocalCharacterState()?.position;
-        galleryModels.update();visitor.refreshGallery();updateDoor(position);visitor.update(position);render(state);
+        galleryModels.update();visitor.refreshGallery();updateDoor(position);visitor.update(position);
+        beaconControls.update(space.objects,position);render(state);
       };
       renderer.dispose=()=>{galleryModels.clear();dispose();};
       queueMicrotask(options.onInitialized);return renderer;
@@ -87,6 +90,7 @@ function startInterior(space){
 }
 
 function startWorld(activeSpace){
+const beaconControls=new BeaconControls(document.querySelector('#beacon-control'));
 const hot=activeSpace?.live===1;
 const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
 let inside=hot&&activeSpace.id!=='outside';
@@ -101,7 +105,7 @@ const setMoving=value=>{
   }
   if(!value){clearTimeout(moveDeadline);moveDeadline=null;}
 };
-const removeScene=()=>{galleryModels?.clear();remoteScene?.remove();remoteScene=null;};
+const removeScene=()=>{beaconControls.clear();galleryModels?.clear();remoteScene?.remove();remoteScene=null;};
 function mountScene(){
   removeScene();
   if(!inside)return true;
@@ -269,6 +273,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       galleryModels.update();
       if(!inside){worldIndication?.update();if(!moving)playableHUD.update(position);}
       if(!moving){if(inside)contentVisitor?.refreshGallery();contentVisitor?.update(position);updateDoor(position);}
+      beaconControls.update(inside&&!moving&&remoteScene?activeSpace.objects:null,position);
       render(renderState);
       if(!inside)geometryProbe.afterRender();
       if(hot&&moving&&canFinishMove())setMoving(false);
@@ -633,8 +638,8 @@ async function captureInteractionContext(){
   if(inside){
     const position=client.getLocalCharacterState()?.position;
     const entry=contentVisitor.readyAcknowledged&&contentVisitor.entry;
-    const workstation=entry&&activeSpace?.objects?.find(object=>object.kind==='workstation'&&
-      object.id===entry.node&&object.revision===entry.nodeRevision);
+    const workstation=beaconControls.reference()??(entry&&activeSpace?.objects?.find(object=>object.kind==='workstation'&&
+      object.id===entry.node&&object.revision===entry.nodeRevision));
     return structuredClone({capturedAt:Date.now(),spaceId:capturedSpace,local:position?{position}:null,
       ...(workstation?{workstation:{id:workstation.id,revision:workstation.revision}}:{})});
   }

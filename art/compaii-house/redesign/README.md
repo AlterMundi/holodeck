@@ -146,9 +146,11 @@ existing renderer and room authority. Touch and physical-device performance
 require their own receiving checks.
 
 The supported first control handoff is the authenticated
-[Harmonic Lab panel](https://compaii.dmn.homes/harmonic_lab/). Its readiness
-view performs no audio or camera start. Spatializer and body Weaver currently
-open on the selected receiver's browser. The remote headless Weaver router
-is a separate documented option. Qualify the intended user and receiver
-before putting a working control label on either bench.
+[Harmonic Lab panel](https://compaii.dmn.homes/harmonic_lab/). Walk toward
+the Spatializer or Weaver bench to open its tool card in a separate tab.
+Returning to the world tab resumes at the same position. The world keeps the
+selected bench as a situated reference while it remains nearby. The panel
+reads readiness and owns the existing explicit actions. Spatializer and
+body Weaver interfaces open from the selected receiver's browser. The
+headless Weaver router remains a separate documented option.
 [Owning panel contract](https://github.com/AlterMundi/harmonic-weaver/blob/73f08bcc2c8119cba34e10d661d26f4f9773657f/docs/laboratory/integrations/CONTROL_PANEL.md).

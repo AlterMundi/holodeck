@@ -162,19 +162,22 @@ export class InteriorSpaces {
 // Each server-authorized room has its own local collision and render document.
 export function interiorDocument(room,passages=[],exhibit=null,art=null) {
   const {id,position:{x,y,z},radius,height}=ROOM_MARKER;
-  const station=art?.station;
   const walls=art?.replacesShell?' opacity="0" cast-shadows="false"':'';
-  const stationMarkup=station? `<m-group id="${station.id}" x="${station.position.x}" z="${station.position.z}">
+  const station=art?.station;
+  const stationMarkup=station?`<m-group id="${station.id}" x="${station.position.x}" z="${station.position.z}">
     <m-label y="1.21" z=".52" width="2.33" height=".32" font-size="20" content="${attribute(station.title)}" collide="false"></m-label>
     <m-label y="1.21" z="-.52" ry="180" width="2.33" height=".32" font-size="20" content="${attribute(station.title)}" collide="false"></m-label>
   </m-group>`:'';
+  // The Blender benches already carry their own physical nameplates.
+  const controlAnchors=(art?.controls??[]).map(control=>
+    `<m-group id="${control.id}" x="${control.position.x}" z="${control.position.z}"></m-group>`).join('');
   const {floor,wall,end} = room.entry ? {floor:'#aa9376',wall:'#486966',end:'#557675'} :
     room.level<0 ? {floor:'#657378',wall:'#415666',end:'#4c6376'} :
     room.level>0 ? {floor:'#bfaa86',wall:'#667b86',end:'#7a8890'} :
     {floor:'#b5a28e',wall:'#5b7471',end:'#668581'};
   return `<m-group id="${room.id}">
     ${roomFloor(passages,art?'#746d61':floor,!art?.replacesShell)}
-    ${stationMarkup}
+    ${stationMarkup}${controlAnchors}
     ${art?'<m-model id="room-art" src="'+attribute(art.src)+'" collide="false"></m-model>'+art.colliders+(art.lightRig??''):''}
     <m-cube x="-6" y="1.65" z="0" width=".2" height="3.3" depth="12" color="${wall}"${walls}></m-cube>
     <m-cube x="6" y="1.65" z="0" width=".2" height="3.3" depth="12" color="${wall}"${walls}></m-cube>

@@ -8,6 +8,7 @@ import {ATELIER_PROFILE,ATELIER_ROOMS,selectAtelier} from '../src/compaii-atelie
 import {COMPAII_HOUSE,interiorArt} from '../src/interior-art.mjs';
 import {RoomStore} from '../src/room-store.mjs';
 import {createHolodeck} from '../src/server.mjs';
+import {captureNativeSituation} from '../src/native-conversation.mjs';
 
 const owner='dm:being:v1:2wG9cFk2YwACrjlcc6JFGux_lcGN_thQ5lq4WdDefKU';
 const house={id:COMPAII_HOUSE,owner,revision:1,parcel:'parcel-west-1',
@@ -88,6 +89,17 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   assert.equal((await visitor.read(sealedPath)).status,200);
   const chamber=await authorized.move(gallery,lab);
   assert.match(chamber.scene.markup,/type="spotlight"[^>]+cast-shadows="true"/);
+  assert.deepEqual(chamber.objects.map(object=>object.id),['beacon-prototypes','beacon-spatializer','beacon-weaver']);
+  assert.match(chamber.scene.markup,/id="beacon-spatializer"/);
+  assert.match(chamber.scene.markup,/id="beacon-weaver"/);
+  assert.ok(!sealed.objects.some(object=>object.id.startsWith('beacon-')));
+  const interior={id:'capture-atelier',run:runtime.room.run,edition:runtime.room.edition,
+    sequence:runtime.room.sequence,capturedAt:123,place:{...chamber,participants:[]}};
+  const capture=revision=>captureNativeSituation(runtime.room,{id:'human:lab'},
+    {id:'message-lab',view:{spaceId:lab,workstation:{id:'beacon-weaver',revision}}},{interior});
+  assert.equal(capture(1).referredWorkstation.title,'Weaver');
+  assert.equal(capture(2).referredWorkstation,undefined);
+  assert.doesNotMatch(JSON.stringify(capture(1)),/localhost|harmonic_lab|csrf/i);
   const bytes=await authorized.read(roomArt(chamber));
   assert.equal(bytes.status,200);
   assert.match(bytes.headers.get('Cache-Control'),/no-store/);

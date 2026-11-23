@@ -28,6 +28,13 @@ writes no Room checkpoint. Omit the selector to use the existing world art
 with the same data and route permissions. The optional gallery source pins
 are independent of the art profile.
 
+The atelier profile includes Spatializer and Weaver bench handoffs to the
+existing same-origin `/harmonic_lab/` App. Select the owning panel build
+that supports `?service=audio` and `?service=body` for direct instrument
+selection. Earlier panel builds still open their overview. The navigation
+retains the world tab, and the panel's own audience and explicit device
+controls apply. Holodeck never calls the panel's status or write endpoints.
+
 The optional `gallery` receiving selection names an existing interior
 `room` and two distinct exact `artifact_review` pins (`draft` and `archive`,
 both with adapter `interactive_3d`). The finished edition continues to come
