@@ -164,11 +164,26 @@ and a scripted native worker.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`372644a`, package `52e35e6d6b2a`, with `717ab15e74b7` as compatible rollback.
-The selected release includes exact worktable references on their native
+`a7d556b`, package `2f68982b6294`, with `52e35e6d6b2a` as compatible rollback.
+Manipulación de Materia now uses the Blender pass inspired by the appearance
+study. Warm fixture bounce and contact shading are embedded in the limestone
+floor texture. Bulbs, windows and oak define the cool-to-warm contrast.
+The exact room art is 164,006 bytes over Brotli. The isolated Chromium route
+verified keyboard clearance at the worktable and cabinet. Emulated touch
+verified the Matter portal, cabinet rotation, exact archived edition, restore
+to shelf, retained placement and return through the same authored foyer.
+At the same desktop camera and lightweight software graphics setting, the
+prior release measured 167 ms median per frame and the new package 150 ms.
+This single comparison does not establish physical-device performance.
+Receiver readback matched 64 payloads, 20 protected HTTPS responses and
+eight scope denials. Configuration, layout, Collection state, avatar choices
+and native turn files matched their pre-release hashes. Main room readback
+showed only participant presence events and unchanged entities and nodes.
+[Player-height capture](../art/collection/player-height.jpg).
+
+Package `52e35e6d6b2a` used source `372644a`. It included exact worktable references on their native
 return lane and the short landscape Conversation adjustment. Readback matched
 64 installed payloads, 20 protected HTTPS responses and eight scope denials.
-The protected world checkpoints matched their pre-release hashes.
 
 Package `717ab15e74b7` used source `4e0140b`. Manipulación de Materia uses the finished Blender revision with embedded stone,
 oak and limewash textures, dressed windows, cabinetry and wayfinding. The
@@ -180,7 +195,6 @@ Atelier portals and rotated and restored an exact archive edition. In the
 software-rendered lightweight fixture the prior median was 133 ms per frame;
 the finished model measured 150 ms, down from 167 ms unbatched. Physical
 device performance remains unmeasured for this revision.
-[Player-height capture](../art/collection/player-height.jpg).
 
 Package `17703a02cdef` used source `68dc721`. Indoor garden authors can start from a two-circle solo design or a four-circle
 cooperative design through the owned native lane or the paired editor. The

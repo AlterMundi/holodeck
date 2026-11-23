@@ -350,9 +350,10 @@ from a reserved viewpoint. Both splat-only and hybrid paths run on the
 existing Holodeck geometry and interaction surface. The observed gaps and
 software renderer cost leave the GLB selected. The [Matter appearance
 study](../art/collection/appearance-study/README.md) retains the source and
-actual outcome. Candidate continuation is to bake the generated color and
-lighting into Blender materials, then compare a bounded splat only where it
-adds detail in movement.
+actual outcome. The selected workshop translates the study's palette and
+warm fixture bounce into editable Blender materials and a bounded floor
+texture. A spatially limited splat remains a candidate where it could add
+detail in movement.
 
 
 ## Delivery sequence and cards
