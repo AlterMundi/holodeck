@@ -130,17 +130,29 @@ verified retained Home files and a fixture Conversation receiver. The API
 regression rejects an unknown part or a historical edition that the speaker
 can no longer access.
 
-The Workshop candidate is pending live room selection and live Conversation
-delivery. Restoring an archived project to a shelf remains open.
+The compatible Workshop reader is installed. Live room selection and
+Conversation delivery remain pending. Restoring an archived project to a shelf
+remains open.
 [Room and source contract](houses.md#the-collection)
 
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`aa7fa49`, package `6efba4f288ac`; rollback is `15a8b042040a`.
+`80db308`, package `36f3a9e52819`, with `6efba4f288ac` as rollback.
+The installed reader accepts both independently scoped foyer portals and
+includes the Matter shell, shelves, archive, table and exact part context.
+The expanded plan exercised both portal addresses in the receiver fixture.
+The live configuration retains the existing room graph until expansion is
+selected with a compatible predecessor. Readback matched all 64 runtime
+files and 20 protected HTTPS responses. The layout and tracked creation
+checkpoints matched pre-deployment hashes. Root checkpoint changes reflected
+ongoing presence events.
+
+The preceding source was `aa7fa49`, package `6efba4f288ac`; its rollback
+was `15a8b042040a`.
 The prior bundle reproduced “Room connection changed” when desktop and touch
 Chromium used separate sessions of the same authorized identity in the foyer.
-The current bundle renders both in the room with the same persistent actor
+That bundle rendered both in the room with the same persistent actor
 identity and separate sockets. The room counts one semantic participant. An
 induced real cross-identity handshake rejection showed the localized retry
 and recovered the same room after the simulated fault cleared. The qualified
