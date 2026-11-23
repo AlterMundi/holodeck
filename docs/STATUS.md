@@ -15,8 +15,9 @@ up to three visited rooms. An acknowledged move and matching current presence
 scope remain necessary to show a room. In packaged Chromium with 80 ms added
 latency and 800 kB/s download, the Beacon revisit reached visible geometry in
 0.92 s, compared with 2.98 s for the previous Brotli release. The lab and foyer
-were each fetched once during the revised route. The lab's first visit reached
-visible geometry in 2.92 s. In a separate scenario on the same candidate,
+were each fetched once during the revised route. First lab entry reached visible
+geometry in 4.44 s on the uncompressed release, 2.85 s with Brotli alone and
+2.92 s on the selected release, under the same room-transfer throttle. In a separate scenario on the same candidate,
 revoking lab access refused entry and art fetch and kept lab geometry out of
 the gallery. The ordinary round trip landed at the original exterior door
 without a reload. Authenticated HTTPS and exact installed-file and world checks
