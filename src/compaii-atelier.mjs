@@ -17,6 +17,7 @@ const layout=[
 const FACADE_ASSET='compaii-atelier-facade.glb';
 const GARDEN_ASSET='compaii-atelier-garden.glb';
 const COMMONS_ASSET='compaii-atelier-commons.glb';
+const COMMONS_REVISION='9692049f367d813f055f7608923be49ffd49911aa9844da15250d450d2da6105';
 const SURROUNDINGS_ASSET='island-scenery-atelier.glb';
 const dossier={
   'room-art/compaii-atelier/foyer.glb':'f0a8b2b9f63a67559024e7387036bb0592623f3170a4a9863fead7e44eab03f6',
@@ -26,7 +27,7 @@ const dossier={
   'room-art/compaii-atelier/tower.glb':'47ba2a0964304eba1f3cbf945121e737c5d9addd7e71c1696bfa8b52ddb872de',
   ['assets/'+FACADE_ASSET]:'940aa64038396e43db8beca859e33f4f52c6ae3a84d1702457159c0af1224077',
   ['assets/'+GARDEN_ASSET]:'ecf2f1225a065b1a1b4b067ad2cd0f3ac96bc62b5d8a31a8894dd1a50490361b',
-  ['assets/'+COMMONS_ASSET]:'d198082624d94bacf41ecded2913dc88ae2869396f5b9319a0c51b931ba8843c',
+  ['assets/'+COMMONS_ASSET]:COMMONS_REVISION,
   ['assets/'+SURROUNDINGS_ASSET]:'61f058ac7d7ba1de6f2fff1237dae7a473afcd2596849939eabb4b41b443a104',
 };
 
@@ -37,7 +38,7 @@ const facade={
 const gardenVisual={asset:GARDEN_ASSET,x:22,y:.102,z:-2.75,sx:.50,sy:.78,sz:.55};
 const floorProfile={replacesShell:true,authoredExhibitBase:true};
 const box=({x,y,z,w,h,d})=>`<m-cube x="${x}" y="${y}" z="${z}" width="${w}" height="${h}" depth="${d}" opacity="0" cast-shadows="false"></m-cube>`;
-const commonsVisual={asset:COMMONS_ASSET,colliders:[
+const commonsVisual={asset:COMMONS_ASSET,revision:COMMONS_REVISION,colliders:[
   {x:-9.11,y:1.30,z:-2.87,w:.34,h:2.45,d:.34},
   {x:-9.11,y:1.30,z:-4.50,w:.34,h:2.45,d:.34},
   {x:-8.73,y:.29,z:-3.68,w:.59,h:.43,d:1.54},

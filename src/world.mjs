@@ -88,9 +88,11 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
   if(manifest.length>16384)throw Error('Geometry manifest exceeds bound');
   let out=`<m-group id="workshop" data-run="${attribute(room.run)}" data-edition="${attribute(room.edition)}" data-semantic-sequence="${room.sequence}" data-layout-version="${LAYOUT_VERSION}" data-geometry-state="${attribute(manifest)}">`;
   out+=`<m-model id="island-scenery" src="${attribute(prefix+'assets/'+sceneryAsset)}?layout=${LAYOUT_VERSION}" collide="false"></m-model>`;
-  if(assetFile(commonsVisual?.asset))
-    out+=`<m-model id="authored-commons" src="${attribute(prefix+'assets/'+commonsVisual.asset)}" collide="false"></m-model>`+
+  if(assetFile(commonsVisual?.asset)){
+    const revision=/^[a-f0-9]{64}$/.test(commonsVisual.revision)?'?v='+commonsVisual.revision.slice(0,12):'';
+    out+=`<m-model id="authored-commons" src="${attribute(prefix+'assets/'+commonsVisual.asset+revision)}" collide="false"></m-model>`+
       commonsVisual.colliders;
+  }
   out+=gardenModel(gardenVisual,prefix);
   // Flat walking proxies keep y=.1, at most3cm above layered visual ground.
   // Invisible proxies must not cast shadows onto their visible dressing.
