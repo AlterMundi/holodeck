@@ -71,6 +71,18 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+`7ab2e36`, package `6f8b29367e82`; rollback is `7961787f8543`.
+Casa's actual owner granted the currently selected paired human garden
+editing in Taller Sensorial. The grant alone was written in production.
+Current room admission, the explicit grant and canonical pairing are
+rechecked before a browser publication. In the packaged Chromium trial
+a simulated pair edited locally, lost the response after the one write
+and recovered the human-authored receipt. A separate visitor saw only
+the published game and completed it. Revocation removed the editor.
+The live installation and protected HTTPS matched the package.
+[Editor at player height](../art/compaii-house/redesign/review/paired-garden-editor.jpg).
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) previously served source
 `8cfd18a`, package `7961787f8543`; rollback is `190fce2fde22`.
 The indoor map tracks the player and camera heading and highlights only
 current authorized doors. In packaged Chromium a desktop visitor marked
