@@ -56,6 +56,30 @@ movement checks used the actual emulated touch joystick and keyboard W at
 their CSS dimensions. The DPR 1 desktop retained its native resolution.
 Physical phone and GPU-backed frame pacing remain open.
 
+### Adaptive touch rendering
+
+A matched loopback Chromium trial on the 390 × 844 view at DPR 3 used
+SwiftShader for both runs. The previous 780 × 1688 framebuffer settled
+at 390 × 844 with adaptation, a 75% reduction in world pixels. Draw calls
+stayed at 124 in the commons and 30 in the foyer. Interval medians used
+12–13 consecutive render intervals per room.
+
+| Measurement | Fixed 2× | Adaptive, settled at 1× |
+| --- | ---: | ---: |
+| First load to grounded avatar and mounted exterior | 9.29 s | 9.09 s |
+| Commons median render interval | 732 ms | 275 ms |
+| Foyer median render interval | 678 ms | 265 ms |
+| First foyer crossing until movement resumed | 4.66 s | 1.69 s |
+| Return to the exterior | 4.56 s | 3.06 s |
+| Warm foyer crossing until movement resumed | 4.33 s | 1.79 s |
+
+Both runs kept one renderer and used an authorized cached scene on the warm
+crossing. The desktop smoke run kept the native DPR 1 buffer at 1100 × 710.
+Separate joystick and WASD trials moved the grounded avatar. The
+HUD, touch coordinates and actor's room authority used the same CSS and
+server checks. The software-rendered numbers qualify this workload.
+Physical-phone and GPU-backed frame pacing remain open.
+
 ## Exterior facade shadow finish
 
 At the shared exterior return, the real-time sun cast repeating dark

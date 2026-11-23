@@ -70,6 +70,16 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 
 ## Selected receiving release
 
+The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+`ed51aee`, package `81df51cdebe9`. The touch renderer now adjusts frame
+buffer density after sustained slow frames. In a matched software Chromium
+comparison, the stabilized touch buffer held 75% fewer pixels and room
+draw calls matched. The first foyer crossing fell from 4.66 to 1.69 seconds.
+The same renderer, authorized warm scene, touch joystick and desktop WASD
+passed the packaged fixtures. Protected HTTPS matched all 59 installed
+files and the preserved world checkpoint. Rollback is `39e30c3c02ad`.
+[Frame and passage evidence](visual-play.md#adaptive-touch-rendering)
+
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves
 `d45cede`, package `39e30c3c02ad`. The outdoor garden editor can retire the
 current author's recipe after a named confirmation. Its draft follows

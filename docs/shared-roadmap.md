@@ -234,9 +234,11 @@ frame pacing separately from transfer size. A 6.4 Mb/s Chromium trial with
 previous Brotli package took 2.98 s to render the revisit. Continue exact
 first-visit qualification and frame pacing across the remaining routes. A
 matched Chromium software-rendering trial now verifies a 55.6% smaller
-WebGL buffer at 390 × 844 and device ratio 3, with faster first and warm
-foyer passages in the same renderer. Compare further art changes at the
-same viewport and distinguish physical-device frame pacing.
+WebGL buffer at 390 × 844 and device ratio 3. The next comparison reduced
+the fixed 2× buffer by a further 75% when touch rendering stayed slow.
+First and warm foyer passages used the same renderer and improved in that
+software trial. Compare art changes at the same viewport and keep
+physical-device frame pacing separate.
 [Frame and passage evidence](visual-play.md)
 
 ### Finish the architecture and props in the running game
