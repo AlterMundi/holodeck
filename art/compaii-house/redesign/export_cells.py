@@ -33,7 +33,8 @@ BEACON_STAIRS = ('Descending stair tread', 'Stair rail', 'Stone wall at stair')
 FOYER_EXTERIOR = ('Stone plinth','Warm entrance floor','Entrance step','CASA DE COMPAII',
                   'Clerestory smoked glass','Vertical recessed window','Amber window sill',
                   'Right wing stone rib','Facade ')
-GALLERY_FLOOR = ('Limestone gallery floor','Published stone base','Published oak top')
+GALLERY_BASE = ('Limestone gallery floor', 'Drafts stone base', 'Drafts oak top',
+                'Published stone base', 'Published oak top', 'Archive stone base', 'Archive oak top')
 
 
 def select(objects):
@@ -179,14 +180,8 @@ def mesh_for(collection, origin, cell):
     scope.hide_render = False
     exclusions = {'beacon':BEACON_STAIRS, 'beacon-return':BEACON_STAIRS, 'foyer':FOYER_EXTERIOR,
                   'foyer-gallery':FOYER_EXTERIOR,
-                  'gallery':GALLERY_FLOOR,'gallery-sealed':GALLERY_FLOOR}.get(cell, ())
+                  'gallery':GALLERY_BASE,'gallery-sealed':GALLERY_BASE}.get(cell, ())
     objects = [obj for obj in scope.objects if not obj.name.startswith(exclusions)]
-    if cell in ('gallery','gallery-sealed'):
-        # Keep the working bench clear of the actual stair approach as well
-        # as the opening cut in the floor below it.
-        for obj in objects:
-            if obj.name.startswith(('Drafts stone base','Drafts oak top')):
-                obj.location.y += 2.98
     select(objects)
     bpy.ops.object.convert(target='MESH')
     bpy.ops.object.join()
@@ -343,8 +338,6 @@ def register_gallery(obj,stair):
         ('Clerestory oak sill',(-5.73,0,2.59),(.38,11.66,.13),'Dark oiled oak',.026),
         ('Gallery limestone skirting',(-5.62,0,.19),(.13,11.66,.22),'Honed honey limestone',.022),
         ('Collection wall oak skirting',(5.70,0,.18),(.15,11.60,.18),'Dark oiled oak',.024),
-        ('Published exhibit base',(2.5,-1.25,.48),(1.24,.96,.76),'Split basalt',.055),
-        ('Published exhibit top',(2.5,-1.25,.91),(1.32,1.04,.11),'Dark oiled oak',.042),
         # The roof slot remains open to the cool light between these headers.
         ('Clerestory outer oak header',(-3.96,0,4.55),(.13,11.54,.18),oak,.018),
         ('Clerestory inner oak header',(-2.98,0,4.62),(.13,11.54,.18),oak,.018),
@@ -363,7 +356,7 @@ def register_gallery(obj,stair):
         finish.append(('Track suspension',(2.10,y,3.742),(.031,.035,.29),iron,.004))
     for x in (-1.75,.65):
         finish.append(('Bronze viewing strip seam',(x,-.08,.102),(.016,8.98,.007),brass,.001))
-    for y,plinth_x,face_height in ((.34944,1.984,.58),(-1.25,1.864,.49),(-3.67744,1.984,.73)):
+    for y in (.34944,-1.25,-3.67744):
         # A neutral frame belongs to the room. Edition labels and models
         # remain actor-filtered projections at the original plinth anchors.
         finish.extend([
@@ -372,16 +365,53 @@ def register_gallery(obj,stair):
             ('Shadow bay bronze foot',(5.44,y,.956),(.018,1.195,.020),brass,.003),
             ('Gallery track head',(2.10,y,3.487),(.217,.223,.100),iron,.019),
             ('Gallery lamp glass',(2.10,y,3.431),(.154,.158,.021),'Honey lamp glass',.005),
-            ('Plinth recessed face',(plinth_x,y,face_height),(.026,.559,.322),oak,.012),
-            ('Plinth bronze edge',(plinth_x-.015,y,face_height-.13),(.009,.440,.019),brass,.003),
         ])
-    append_blocks(obj,floor+finish+gallery_foyer_door()+(gallery_stair() if stair else []))
+    append_blocks(obj,floor+finish+gallery_furniture()+gallery_foyer_door()+(gallery_stair() if stair else []))
     close_gallery_gables(obj)
     letter_room_sign(obj, -3, 5.714, FOYER_LETTERING,
                        [('VESTÍBULO', 3.071, .246), ('PLANTA BAJA', 2.939, .113)])
     if stair:
         letter_room_sign(obj, 3, 5.714, LAB_LETTERING,
                            [('LABORATORIO', 2.194, .247), ('NIVEL -1', 2.061, .107)])
+
+
+def gallery_furniture():
+    """Three silhouettes share the gallery's oak and bronze joinery."""
+    oak, stone, brass = 'Dark oiled oak', 'Honed honey limestone', 'Satin brass'
+    basalt, iron = 'Split basalt', 'Blue gunmetal'
+    x, work, exhibit, archive = 3.3945, .34944, -1.25, -3.67744
+    # The three work surfaces, collision envelopes and exhibit anchors stay in
+    # place. These fittings carry no edition titles or protected geometry.
+    pieces = [
+        ('Workbench oak slab', (x,work,1.0465), (2.88,1.36,.122), oak,.027),
+        ('Workbench blue working insert', (x+.06,work,1.105), (2.19,.95,.006), iron,.003),
+        ('Workbench long back rail', (x,work+.49,.714), (2.65,.09,.13), oak,.014),
+        ('Workbench low stretcher', (x,work,.313), (2.65,.12,.14), oak,.013),
+        ('Workbench tool drawer cabinet', (x+.77,work,.763), (.76,1.017,.43), oak,.022),
+        ('Workbench drawer face', (x+.77,work+.525,.793), (.706,.043,.259), iron,.010),
+        ('Workbench drawer pull', (x+.77,work+.553,.821), (.198,.027,.032), brass,.006),
+        ('Exhibit basalt footing', (2.5,exhibit,.18), (1.268,.984,.164), basalt,.037),
+        ('Exhibit limestone body', (2.5,exhibit,.54), (1.10,.81,.65), stone,.065),
+        ('Exhibit bronze reveal', (2.5,exhibit,.861), (1.19,.88,.026), brass,.005),
+        ('Exhibit oak display deck', (2.5,exhibit,.917), (1.32,1.04,.096), oak,.030),
+        ('Archive basalt kick', (x,archive,.175), (2.77,1.19,.152), basalt,.025),
+        ('Archive flat-file carcass', (x+.025,archive,.781), (2.74,1.23,1.076), oak,.023),
+        ('Archive oak capping', (x,archive,1.3555), (2.88,1.36,.104), oak,.025),
+    ]
+    for offset in (-1.24,1.24):
+        for side in (-1,1):
+            pieces.append(('Workbench trestle leg', (x+offset,work+side*.48,.551),
+                           (.158,.182,.904), oak,.021))
+        pieces.append(('Workbench trestle bronze foot', (x+offset,work,.131),
+                       (.217,1.16,.064), brass,.011))
+    # Drawer fronts face the viewing path. Their handles sit within the case's
+    # footprint, with broad dark joints visible from the arrival.
+    for height in (.374,.591,.808,1.025,1.222):
+        pieces.extend([
+            ('Archive flat drawer face', (x-1.369,archive,height), (.064,1.082,.164), iron,.013),
+            ('Archive recessed pull', (x-1.418,archive,height+.015), (.031,.322,.035), brass,.006),
+        ])
+    return pieces
 
 
 def register_beacon(obj):

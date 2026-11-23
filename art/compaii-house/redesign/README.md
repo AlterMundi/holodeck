@@ -106,8 +106,17 @@ A framed clerestory and a suspended lighting rail distinguish the viewing path
 from the collection wall. Three oak-framed, matte stone bays back the existing
 plinths, and a warm inset behind the collection sign makes the lettering legible
 from the entrance. The bronze floor seams guide the walk through the room.
-The original pedestals and Nexus pins keep their positions and authorization.
-The lab stair and the continuous visitor floor have separate exports.
+The three display points keep their original positions and audience. The
+working bay has an oak trestle bench with a blue inset and tool drawer. The
+finished bay uses a limestone pedestal with a bronze reveal and dark oak top.
+The archive uses a five-drawer flat file with recessed bronze pulls. The
+joinery is modeled in Blender in [the registered gallery export](export_cells.py).
+Both permission variants share these fittings, which carry no source labels or
+models. The permitted lab stair and the continuous visitor floor keep separate
+exports.
+
+[Previous fittings at player height](review/gallery-furniture-before.jpg) ·
+[Workbench, pedestal and flat file at the same camera](review/gallery-furniture-after.jpg)
 
 [Previous entry](review/gallery-finish-before-entry.jpg) ·
 [Revised entry](review/gallery-finish-revised-open-entry.jpg) ·
@@ -116,7 +125,8 @@ The lab stair and the continuous visitor floor have separate exports.
 
 Both exports use the editable gallery cell, the named fittings in
 [`register_gallery()`](export_cells.py) and the same Cycles lighting
-rig. Each retains nine material batches and one 512 px static diffuse map.
+rig. The static diffuse map remains 512 px. The stair variant batches the
+geometry into 11 glTF primitives and the continuous-floor variant into 10.
 The runtime key still lights the moving avatar. Browser trials used the
 existing camera and collision over both floor variants.
 The exact same packaged rooms also rendered three distinct fixture works
@@ -255,7 +265,7 @@ meters. The draft and archive anchors are at `(3.3945, .1, -.34944)` and
 protected receiving configuration. The published anchor preserves the
 existing owner placement. Holodeck checks each source through Nexus before
 offering to open it at its pedestal. The renderer fits the existing
-protected snapshot inside the authored case, above the plinth top. It omits
+protected snapshot above the corresponding authored work surface. It omits
 the horizon water from the display, matching the existing review export. The
 immutable source, normal Nexus controls and publication audiences remain
 authoritative. Scenes without a supported static snapshot still have their

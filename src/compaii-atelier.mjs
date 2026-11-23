@@ -42,8 +42,8 @@ const COASTAL_FOG=Object.freeze({fogNear:24,fogFar:124,fogColor:{r:.716,g:.776,b
 export const ATELIER_ASSET_REVISIONS=Object.freeze({
   'room-art/compaii-atelier/foyer.glb':'7816835b65ffbf025ae295dee37d0db978bede7a9dbc83f66e44d53d052ede59',
   'room-art/compaii-atelier/foyer-gallery.glb':'7a742175fc530b774e50b4e0917bf50eea60dfdca0124285d742a92c4996c27b',
-  'room-art/compaii-atelier/gallery.glb':'1aa239e905e9f9e5e7869175914f4aa648b9ec507595b00dba0d5b9dfd726776',
-  'room-art/compaii-atelier/gallery-sealed.glb':'84317f7627b64d360f7dc8f9fe37a6a5b79160b591878c144de4dd58d151867e',
+  'room-art/compaii-atelier/gallery.glb':'a88c1610a401c78b0fbb19e655312920100fab41862040aac3097f18efee8c83',
+  'room-art/compaii-atelier/gallery-sealed.glb':'c27c9c92fa1cf472d85a1123d685ceef967af9e642aa8ae1a1636c9f54c43c06',
   'room-art/compaii-atelier/beacon.glb':'881d86774a6e92aefb9ff224c3a5ac60544a44fa6a2ff14f7fd05bb34b8e96c7',
   'room-art/compaii-atelier/beacon-return.glb':'897636fc8a9229a867742fe7d4d2d5ba84c1c607fbb542916aecf39e08279798',
   'room-art/compaii-atelier/tower.glb':'47ba2a0964304eba1f3cbf945121e737c5d9addd7e71c1696bfa8b52ddb872de',
