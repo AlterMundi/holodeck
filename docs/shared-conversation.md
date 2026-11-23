@@ -243,7 +243,8 @@ the real-owner probe are independent. Combining them and verifying an
 actual production round trip remain open.
 
 ```sh
-python3 tools/check-canonical-conversation-owner.py   --telecodex-source "$TELECODEX_SOURCE" --telecodex-binary "$TELECODEX_BINARY"
+python3 tools/check-canonical-conversation-owner.py \
+  --telecodex-source "$TELECODEX_SOURCE" --telecodex-binary "$TELECODEX_BINARY"
 ```
 
 The separate routed path still reports transport-accepted work as queued

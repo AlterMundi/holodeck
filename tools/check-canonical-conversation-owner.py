@@ -34,13 +34,16 @@ def main():
         j.wait(lambda: j.has("Initial goal turn delivered.", 1))
         j.idle()
         j.wait_control_socket(j.socket)
-        provider = Provider({"receiver_config":str(j.config), "native_home":str(j.root / "codex-home")})
+        provider = Provider({"receiver_config": str(j.config), "native_home": str(j.root / "codex-home")})
         human_ref = "human:telegram:100"
-        binding = native.NativeBridge(provider, lambda: {
-            "schema":"dm.human-endpoint/v1", "home_ref":"home:test-holodeck-fixture",
-            "owner_being_ref":"dm:being:v1:" + "a" * 43,
-            "human":{"ref":human_ref,"kind":"human","revision":"canonical-owner-probe"},
-        })
+        pair = {
+            "schema": "dm.human-endpoint/v1",
+            "home_ref": "home:test-holodeck-fixture",
+            "owner_being_ref": "dm:being:v1:" + "a" * 43,
+            "human": {"ref": human_ref, "kind": "human", "revision": "canonical-owner-probe"},
+        }
+        port = {"cli": str(source.with_name("world_port.py")), "socket": str(j.root / "probe-world.sock")}
+        binding = native.NativeBridge(provider, lambda: pair, world_port=port)
         frozen = binding.inspect(human_ref)
         original_id = str(uuid.uuid4())
         situation = {
@@ -63,14 +66,26 @@ def main():
         method, packet = j.packets[0]
         assert method == "turn/start"
         assert packet["clientUserMessageId"] == "conversation:" + original_id
-        assert body["text"] in packet["input"][0]["text"]
+        prompt = packet["input"][0]["text"]
+        assert body["text"] in prompt
+        attachments = json.loads(prompt.split("\n[Retained original file attachments]\n", 1)[1].splitlines()[0])
+        assert len(attachments) == 1
+        received = attachments[0]
         retained = provider.conversation_input_status(original_id)
         assert retained["text"] == body["text"]
         assert retained["files"] == [prepared["file"]]
         ref, file_bytes = provider.conversation_file_read(original_id, 0)
         assert ref == prepared["file"]
         assert hashlib.sha256(file_bytes).hexdigest() == ref["sha256"]
-        assert json.loads(file_bytes)["observation"] == situation
+        assert received["file_id"] == ref["file_id"] and received["sha256"] == ref["sha256"]
+        retained_path = Path(received["local_path"]).resolve()
+        assert retained_path.is_relative_to(j.root) and retained_path.read_bytes() == file_bytes
+        packet_source = json.loads(file_bytes)
+        assert packet_source["observation"] == situation
+        assert packet_source["native_world_interface"]["argv_prefix"] == [
+            port["cli"], "--socket", port["socket"], "--interaction", original_id,
+        ]
+
         def status():
             return binding.status(human_ref, frozen, original_id, None, situation["id"], prepared["file"])
         j.wait(lambda: status()["phase"] == "working")
@@ -108,6 +123,7 @@ def main():
             "active_phase":"working", "terminal_phase":result["phase"], "native_item":update["nativeItem"],
             "final_sha256":update["sha256"], "canonical_presentation_copies":len(observed),
             "exact_original_association":True, "wrong_file_denied":True,
+            "native_packet_reference_exact":True, "world_descriptor_scoped":True,
         }, sort_keys=True))
     finally:
         j.close()
