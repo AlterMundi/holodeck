@@ -11,7 +11,7 @@ export class ContentVisitor{
   Object.assign(this,{document,window,base,say,scoped,roomId,onCatalog});this.entries=[];this.nodes=[CONTENT_NODE];this.catalogGeneration=0;this.pending=new Map();this.disposed=false;this.lastContext=null;this.catalogRenewAt=Infinity;
   this.button=document.querySelector('#visit-near');this.panel=document.querySelector('#content-visit');
   this.loading=document.querySelector('#visit-loading');this.roomGeneration=0;this.renewScopedCatalog=false;
-  this.visitRoom=null;this.parked=false;this.accessGeneration=0;
+  this.visitRoom=null;this.parked=false;this.accessGeneration=0;this.roomSyncPending=false;
   const openEntry=selected=>{
    const exact=this.scoped?{nodeRevision:selected?.nodeRevision??null,expectedPin:selected?.pin??null}:undefined;
    return this.open(selected?.id,exact).catch(()=>say('No pude abrir esta presentación. Podés volver a intentarlo.'));
@@ -41,6 +41,7 @@ export class ContentVisitor{
   this.catalog=this.loadCatalog();
  }
  async loadCatalog(signature=null){
+  if(this.roomSyncPending)return false;
   this.catalogFlight=true;
   const generation=++this.catalogGeneration;
   try{
@@ -106,7 +107,21 @@ export class ContentVisitor{
  }
 
  canUseFrame(){
-  return !this.parked&&this.roomId===this.visitRoom&&(!this.scoped||this.hasCurrentEntry());
+  return !this.roomSyncPending&&!this.parked&&this.roomId===this.visitRoom&&(!this.scoped||this.hasCurrentEntry());
+ }
+
+ suspendRoom(){
+  if(!this.scoped||this.roomId===null||this.roomSyncPending)return;
+  this.roomSyncPending=true;this.catalogGeneration++;this.catalogFlight=false;this.opening=false;
+  this.entries=[];this.nearby=null;this.lastContext=null;
+  if(this.selector)this.selector.disabled=false;
+  this.reconcileVisitAccess();
+  this.button.hidden=true;this.index.close();this.index.update([]);this.onCatalog([]);
+ }
+
+ confirmRoom(){
+  this.roomSyncPending=false;
+  this.catalog=this.loadCatalog();
  }
 
  reference(){
@@ -176,6 +191,7 @@ export class ContentVisitor{
    return this.open(entry.id,{nodeRevision:entry.nodeRevision,expectedPin:entry.pin});
  }
  async open(selectedId,{nodeRevision=null,expectedPin=null}={}){
+  if(this.roomSyncPending)return;
   if(this.parked){
    this.say('La visita anterior sigue guardada en este navegador. Volvé a su sala cuando recuperes el acceso.');
    return;
@@ -183,8 +199,9 @@ export class ContentVisitor{
   const selected=this.entries.find(entry=>entry.id===selectedId);
   if((nodeRevision!==null&&selected?.nodeRevision!==nodeRevision)||(expectedPin&&!sameVisitPin(selected?.pin,expectedPin))){this.say('Este contenido cambió de lugar o edición. Volvé a elegirlo en el mundo.');return;}
   if(!this.scoped&&this.frame&&(!selectedId||selectedId===this.entry?.id&&(!selected||sameVisitPin(selected.pin,this.entry.pin)))){this.reveal();this.frame.focus();return;}
-  if(this.opening)return;this.opening=true;
-  const generation=this.roomGeneration,current=()=>!this.disposed&&this.roomGeneration===generation;
+  if(this.opening)return;
+  const opening={};this.opening=opening;
+  const current=()=>!this.disposed&&this.opening===opening&&!this.roomSyncPending;
   try{
    if(this.scoped){
     if(!await this.loadCatalog()){if(this.frame)this.minimize();this.say('No pude confirmar tu acceso a esta exposición.');return;}
@@ -263,7 +280,7 @@ export class ContentVisitor{
   this.nearby=null;this.lastContext=null;this.entries=[];this.scoped=scoped;
   this.renewScopedCatalog=false;this.catalogRenewAt=Infinity;this.onCatalog([]);
   this.index.update([]);this.button.hidden=true;this.panel.hidden=true;
-  this.catalog=this.loadCatalog();
+  this.confirmRoom();
  }
  async allowLeaveRoom(){
   if(this.parked)return true;
@@ -284,7 +301,7 @@ export class ContentVisitor{
   const frame=this.frame,entry=this.entry,visitId=this.visitId,pin={...entry.pin},ready=this.ready,
    generation=this.roomGeneration,accessGeneration=this.accessGeneration,scoped=this.scoped,visitRoom=this.visitRoom,
    requestedAt=Date.now(),panelVisible=!this.panel.classList.contains('is-walking');
-  const authorized=()=>!this.disposed&&this.roomGeneration===generation&&
+  const authorized=()=>!this.disposed&&!this.roomSyncPending&&this.roomGeneration===generation&&
    this.accessGeneration===accessGeneration&&(!scoped||this.hasCurrentEntry(entry,visitRoom));
   const current=()=>authorized()&&this.frame===frame&&this.entry===entry&&this.visitId===visitId&&sameVisitPin(this.entry.pin,pin);
   const node=entry.node||CONTENT_NODE.id,nodeRevision=entry.nodeRevision??null;

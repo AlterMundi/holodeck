@@ -244,7 +244,7 @@ function onNear(destination){
   fetch(url('api/space/scene?'+new URLSearchParams({room:destination})),{
     credentials:'same-origin',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(4000)])
   }).then(response=>response.ok?response.json():null).then(scene=>{
-    if(activeSpace.id===startedIn&&scene?.id===destination)sceneCache.remember(scene);
+    if(!controller.signal.aborted&&activeSpace.id===startedIn&&scene?.id===destination)sceneCache.remember(scene);
   }).catch(()=>{}).finally(()=>{if(prefetchRequest===controller)prefetchRequest=null;});
 }
 function applySpace(next,anchor){
@@ -261,7 +261,7 @@ function applySpace(next,anchor){
   $('#hud h1').textContent=inside?next.title:'Plaza de llegada';
   $('#people').textContent=inside?(next.level===0?'Planta baja':next.level<0?`Subsuelo ${-next.level}`:`Piso ${next.level}`):'Un lugar para crear juntos';
   if(changed){roomTopic=undefined;contentVisitor.changeRoom(inside,next.id);worldIndication.selected=null;worldIndication.removeOutline();state=null;}
-  else if(inside)contentVisitor.catalog=contentVisitor.loadCatalog();
+  else if(inside)contentVisitor.confirmRoom();
   if(anchor)history.replaceState(history.state,'','#'+doorLocation(anchor));
   resetDoor();
   if(!mountScene()){sceneCache.clear();location.reload();}
@@ -276,7 +276,11 @@ function syncCurrent(){
     if(next.live!==1||next.actorRef!==activeSpace.actorRef){sceneCache.clear();location.reload();return;}
     if(networkScope!==next.id)return;
     needsSync=false;
+    const returnedOutside=inside&&next.id==='outside';
+    if(next.id!==activeSpace.id)contentVisitor.suspendRoom();
     applySpace(next,arrivalDoor(activeSpace,next));
+    if(returnedOutside)say(contentVisitor.parked?'Volviste al exterior. Tu visita sigue guardada en esta pestaña.':
+      'Volviste al exterior.',{transient:true});
   }).catch(()=>{if(!requestingMove)say('No pude confirmar tu ubicación.');})
     .finally(()=>{resyncing=false;});
 }
@@ -898,7 +902,11 @@ if(hot){
       networkScope=null;
       removeScene();
       setMoving(true);
-      if(!requestingMove&&!moveDeadline){needsSync=true;sceneCache.clear();}
+      if(!requestingMove&&!moveDeadline){
+        needsSync=true;sceneCache.clear();
+        prefetchRequest?.abort();prefetchRequest=null;prefetched.clear();
+        contentVisitor.suspendRoom();
+      }
     }else if(event.type==='world_config'){
       const config=event.config.mmlDocuments;
       networkScope=config?.interior?.url.split('/').at(-2)??(config?.workshop?'outside':null);

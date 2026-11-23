@@ -94,6 +94,13 @@ export class InteriorSpaces {
     return p.space;
   }
 
+  releaseDeniedPosition(actor) {
+    if (this.fenced) return;
+    const saved=this.positions.find(entry=>entry.actor===actor.id);
+    if (saved && !this.allows(actor,saved.space))
+      this.savePositions(this.positions.filter(entry=>entry!==saved));
+  }
+
   canMove(actor,request) {
     if (this.fenced || !exact(request,'from,to') || !allowedActor(actor?.id) ||
         typeof request.to!=='string' || this.current(actor)!==request.from ||

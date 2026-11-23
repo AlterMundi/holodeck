@@ -162,6 +162,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     record.checking=(async()=>{
       try{
         const actor=await currentActor({method:'GET',headers:{cookie:record.session.sourceCookie}},record.session);
+        if(actor?.rights?.includes('observe'))spaces.releaseDeniedPosition(actor);
         if(!inScope(actor,record.scope)||record.projectionAllowed?.()===false)socket.close(1008);
       }catch{socket.close(1008);}
     })();
@@ -178,6 +179,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const session=sessionFor(cookieToken(req));
     pendingSockets++;
     currentActor(req,session).then(actor=>{
+      if(path===activeNetworkPath&&actor?.rights?.includes('observe'))spaces.releaseDeniedPosition(actor);
       const scope=path===activeNetworkPath?spaces.current(actor):req.params.space??OUTSIDE;
       if(!inScope(actor,scope)||socket.readyState!==1){socket.close(1008);return;}
       const record={session,scope,checking:null};sockets.set(socket,record);

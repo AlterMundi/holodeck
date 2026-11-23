@@ -70,6 +70,14 @@ frame to become available. Ordinary authorized room exits still check for
 unfinished Nexus work. This recovery holds within the running page. Nexus owns
 draft recovery after reload or browser close.
 
+An unexpected room presence disconnect suspends the room's visit catalog and
+hides the same frame before any reconnect result is applied. The player can
+resume the visit once the server confirms the room and exact edition. If the
+world still admits the actor but the room grant is gone, the server releases
+that saved interior position and the browser returns to the exterior.
+Restoring the grant enables re-entry through the doors. The other occupants
+and their grants are independent. Nexus source authorization stays with Nexus.
+
 Participant projections and visit entrances are not part of a creation snapshot.
 The existing GLB exporter explicitly excludes visit-only geometry and retains
 its creation-only source scope. This does not reconstruct historical playback.

@@ -283,6 +283,11 @@ test('HTTP, real geometry upgrades and native observation share active room and 
     assert.deepEqual(await (await read(person)).json(),{id:'outside',entrances:[]});
     assert.equal((await rejoinedClose)[0],1008);
     await denied('spaces/gallery/world',person);
+    allowed=true;
+    assert.equal((await (await read(person)).json()).id,'outside');
+    const positions=new RoomStore(join(stateDir,'spaces')).load().positions;
+    assert.ok(!positions.some(entry=>entry.actor==='human:guest'));
+    assert.ok(positions.some(entry=>entry.actor===owner&&entry.space==='lab'));
   }finally{
     await stop();rmSync(stateDir,{recursive:true,force:true});
   }
