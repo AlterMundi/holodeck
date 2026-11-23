@@ -13,7 +13,7 @@ export function doorLocation({x,y,z,facing,yaw=facing*90}) {
   return [x,y,z,0,s,0,c,x-Math.sin(rotation)*2.7,y+1.7,z-Math.cos(rotation)*2.7,0,s,0,c].join(',');
 }
 
-export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving,revision,onNear,onAccessLost}){
+export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving,revision,onNear,onAccessLost,onDoorDenied}){
   const travel=document.querySelector('#space-travel'),button=document.querySelector('#house-door');
   const inside=space.id!=='outside';
   const doors=inside
@@ -39,6 +39,7 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
       if(result.ok)next=await result.json();
       else{
         if(result.status===401||result.status===403)onAccessLost?.();
+        else if(result.status===409)onDoorDenied?.(destination.to);
         onError('Esta salida no está disponible. Podés volver a intentar.');
       }
     }catch{

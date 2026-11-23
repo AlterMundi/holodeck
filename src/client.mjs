@@ -123,7 +123,7 @@ const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
 let inside=hot&&activeSpace.id!=='outside';
 let updateDoor=()=>{},remoteScene=null,networkScope=null,arrival=null;
 let moving=false,requestingMove=false,needsSync=false,resyncing=false,moveDeadline=null;
-let prefetched=new Set(),prefetchRequest=null;
+let prefetched=new Set(),prefetchRequest=null,pendingRoomArt=null;
 const setMoving=value=>{
   if(moving!==value){
     moving=value;
@@ -132,12 +132,12 @@ const setMoving=value=>{
   }
   if(!value){clearTimeout(moveDeadline);moveDeadline=null;}
 };
-const removeScene=()=>{projectedGarden=null;beaconControls.clear();galleryModels?.clear();remoteScene?.remove();remoteScene=null;};
+const removeScene=()=>{pendingRoomArt=null;projectedGarden=null;beaconControls.clear();galleryModels?.clear();remoteScene?.remove();remoteScene=null;};
 function mountScene(){
   removeScene();
   if(!inside)return true;
   const stored=sceneCache.remember(activeSpace.scene);
-  if(!stored)return false;
+  if(stored?.id!==activeSpace.id)return false;
   // The move acknowledgement can arrive before the old presence connection
   // closes. Keep the detached scene and mount it only for the new scope.
   if(networkScope!==activeSpace.id)return true;
@@ -147,12 +147,27 @@ function mountScene(){
   remoteScene=wrapper.remoteDocument;
   remoteScene.append(stored.template.content.cloneNode(true));
   renderer.mmlTargetElement.append(remoteScene);
+  const model=remoteScene.querySelector('m-model#room-art[src]');
+  const source=model?.getAttribute('src');
+  const prefix=url('api/space/art/').pathname;
+  if(!stored.art&&source?.startsWith(prefix)&&/^[a-f0-9]{64}\.glb$/.test(source.slice(prefix.length))){
+    pendingRoomArt={stored,model,source};
+  }
   if(!contentVisitor?.catalogFlight){
     const entries=contentVisitor?.entries??[];
     galleryModels?.sync(entries);
     applyGallerySigns(remoteScene,entries);
   }
   return true;
+}
+// Keep one unattached loader handle only after the authorized model has loaded.
+function keepRoomArt(){
+  if(!pendingRoomArt||needsSync||networkScope!==activeSpace.id)return;
+  const {stored,model,source}=pendingRoomArt;
+  if(!model.modelGraphics?.hasLoadedModel())return;
+  pendingRoomArt=null;
+  const address=model.contentSrcToContentAddress(source);
+  sceneCache.keepArt(stored,()=>model.getScene().getGraphicsAdapter().getResourceManager().loadModel(address));
 }
 // Cosmetic, non-colliding projection of the current server-authorized room.
 function gardenMarkers(){
@@ -252,6 +267,7 @@ function resetDoor(){
       revision:destination=>sceneCache.revision(destination),
       onNear,
       onAccessLost:()=>{needsSync=true;sceneCache.clear();removeScene();},
+      onDoorDenied:destination=>sceneCache.forget(destination),
       onMoving:value=>{
         requestingMove=value;setMoving(value);
         if(value){prefetchRequest?.abort();prefetchRequest=null;}
@@ -358,9 +374,10 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       beaconControls.update(inside&&!moving&&remoteScene?activeSpace.objects:null,position);
       render(renderState);
       if(!inside)geometryProbe.afterRender();
+      else keepRoomArt();
       if(hot&&moving&&canFinishMove())setMoving(false);
     };
-    renderer.dispose=()=>{removeScene();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(options.onInitialized);
     return renderer;
   },

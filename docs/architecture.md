@@ -33,6 +33,17 @@ Mutation IDs retain exact outcomes for a bounded retry horizon. Execution checks
 server-resolved rights and relevant target preconditions. The local adapter is a
 development harness only, not a source of identity or companion grants.
 
+The live renderer can reuse up to three visited-room entries bound to the
+browser session's actor and the exact server-generated scene revision. A
+retained entry holds the parsed static room model only after that model has
+loaded in the authorized room. Its handle never mounts a model by itself.
+Every move still requires a current server acknowledgement and a matching
+presence scope. Changed editions, denied destinations, eviction, access loss
+and unexpected disconnects release retained handles. The cache lives in page
+memory, outside browser storage, and does not retain presence or private exhibit
+payloads. The private art endpoint continues to use its live-room check and
+`no-store`.
+
 Situation capture belongs to the moment of an utterance. The observation records
 the delivered cursor, actor, room/run/edition, relevant public events, participants,
 activity and mutable entities. It reports gaps explicitly. Structured room overview
