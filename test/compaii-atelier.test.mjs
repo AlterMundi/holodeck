@@ -7,6 +7,7 @@ import {test} from 'node:test';
 import {ATELIER_PROFILE,ATELIER_ROOMS,selectAtelier} from '../src/compaii-atelier.mjs';
 import {COMPAII_HOUSE,interiorArt} from '../src/interior-art.mjs';
 import {Room} from '../src/room.mjs';
+import {HOUSE_GROUND,HOUSE_PLOTS} from '../src/houses.mjs';
 import {worldDocument} from '../src/world.mjs';
 import {RoomStore} from '../src/room-store.mjs';
 import {createHolodeck} from '../src/server.mjs';
@@ -52,6 +53,18 @@ test('profile is optional and uses the exact existing room graph and parcel edit
   const plots=markup=>markup.match(/<m-group id="parcel-(?:west|east)-[1-4]"[^>]+>/g);
   assert.equal(plots(authored).length,8);
   assert.deepEqual(plots(authored),plots(fallback));
+  assert.match(authored,/<m-model id="parcel-garden" src="\/holodeck\/assets\/parcel-garden\.glb\?v=[a-f0-9]{12}" collide="false">/);
+  assert.doesNotMatch(fallback,/parcel-garden\.glb/);
+  const garden=authored.match(/<m-group id="parcel-garden-colliders">([^]*?)<\/m-group>/)[1];
+  const obstacles=[...garden.matchAll(/<m-cube x="([^"]+)" y="[^"]+" z="([^"]+)" width="([^"]+)" height="[^"]+" depth="([^"]+)"/g)];
+  assert.equal(obstacles.length,3);
+  const terrace=HOUSE_GROUND.find(ground=>ground.id==='house-commons');
+  for(const [, ...bounds] of obstacles){
+    const [x,z,w,d]=bounds.map(Number),minX=x-w/2,maxX=x+w/2,minZ=z-d/2,maxZ=z+d/2;
+    assert.ok(terrace.minX<=minX&&maxX<=terrace.maxX&&terrace.minZ<=minZ&&maxZ<=terrace.maxZ);
+    assert.ok(HOUSE_PLOTS.every(plot=>maxX<=plot.x-plot.width/2||minX>=plot.x+plot.width/2||
+      maxZ<=plot.z-plot.depth/2||minZ>=plot.z+plot.depth/2));
+  }
   assert.equal(profile.interiorArtwork({...source.get(lab),house:'other'}),null);
   assert.deepEqual(profile.interiorArtwork(source.get(lab)).station,interiorArt(source.get(lab)).station);
 });

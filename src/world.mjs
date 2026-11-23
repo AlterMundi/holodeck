@@ -47,7 +47,7 @@ function houseModel(part, plot, position, id, prefix) {
 }
 
 function housingDocument(houses, prefix, houseVisual, site) {
-  const {houseWalk:walk,parcelTerrain:terrain}=site??{};
+  const {houseWalk:walk,parcelTerrain:terrain,parcelGarden}=site??{};
   const authoredWalk = assetFile(walk?.asset) && /^[a-f0-9]{64}$/.test(walk.revision);
   const walkSource = authoredWalk ? prefix + 'assets/' + walk.asset + '?v=' + walk.revision.slice(0,12) : '';
   const authoredTerrain = assetFile(terrain?.asset) && /^[a-f0-9]{64}$/.test(terrain.revision);
@@ -58,6 +58,11 @@ function housingDocument(houses, prefix, houseVisual, site) {
   if(authoredTerrain){
     const terrainSource=prefix+'assets/'+terrain.asset+'?v='+terrain.revision.slice(0,12);
     markup+=`<m-model id="parcel-terrain" src="${attribute(terrainSource)}" collide="false" cast-shadows="false"></m-model>`;
+    if(assetFile(parcelGarden?.asset)&&/^[a-f0-9]{64}$/.test(parcelGarden.revision)){
+      const source=prefix+'assets/'+parcelGarden.asset+'?v='+parcelGarden.revision.slice(0,12);
+      markup+=`<m-model id="parcel-garden" src="${attribute(source)}" collide="false"></m-model>
+        <m-group id="parcel-garden-colliders">${parcelGarden.colliders}</m-group>`;
+    }
   }
   // The visual centerline has no collider. The two solid ground pieces
   // overlap and meet the existing arrival island at the same walking height.
