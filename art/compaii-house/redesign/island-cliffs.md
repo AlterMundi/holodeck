@@ -31,3 +31,17 @@ blender -b --factory-startup -t 4 --python-exit-code 1 \
   -P art/compaii-house/redesign/island-cliffs.py -- "$ART_OUTPUT" \
   "$ART_OUTPUT/inherited.glb" public/assets/compaii-atelier-commons.glb
 ```
+
+## Running game
+
+Chromium loaded the exact GLB and captured views from 1.85 m at all three
+shores. A separate keyboard trial raised the original bridge, walked to the
+Mirador and returned in the same renderer. It then lowered the bridge and
+observed the interruption at the existing edge. Both traversals used the
+existing Room bridge revisions, and the island walking height stayed at
+0.10 m. The run used software WebGL and fixture participants.
+
+[West before](review/island-cliffs-before-west.jpg) ·
+[West after](review/island-cliffs-candidate-west.jpg) ·
+[East garden](review/island-cliffs-candidate-east.jpg) ·
+[North Mirador](review/island-cliffs-candidate-north.jpg)

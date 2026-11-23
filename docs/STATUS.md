@@ -10,7 +10,17 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`69ea465`, package `90e9cfa41190`. The western landing now opens to a
+`a70cd6e`, package `d6f496475d18`. The three near islands and offshore
+skerries now have Blender-authored cliffs and terrain with the existing
+Commons basalt and meadow texture family. Chromium verified the three
+player-height views, the raised bridge round trip and the open gap when
+lowered. Authenticated HTTPS matched all 57 installed files and the exact
+498,396-byte Brotli scenery. The Room checkpoint, western result nodes and
+Signal Garden recipe matched. Package `90e9cfa41190` is the compatible rollback.
+[Terrain source and running views](../art/compaii-house/redesign/island-cliffs.md)
+
+The previous west court release served source `69ea465`, package
+`90e9cfa41190`. The western landing now opens to a
 Blender-authored limestone court with basalt seams and a seaward oak bench.
 A short threshold joins the court to the pavilion apron. The runtime retires
 four legacy paving batches and retains the existing coastal geometry, tree
