@@ -217,17 +217,18 @@ existing geometry addresses. [Arrival](review/commons-spawn.jpg) ·
 [House approach](review/commons-house-approach.jpg).
 
 The export evaluates the actual modeled details, bakes one color atlas
-and one tangent normal atlas per cell (1024², or 768² for the tower), and preserves the material batch
+and one tangent normal atlas per cell, and preserves the material batch
 boundaries and their scalar metalness, roughness and emission. The GLBs embed
-their images and use core glTF without a required decoder. Each cell is
-bounded at 4 MiB and 64,000 triangles. PNGs alongside the GLBs are disposable
-bake outputs. The JSON inventories report bytes, triangles, primitives and
+their images and use core glTF without a required decoder. The facade
+uses its full 1024² color bake as JPEG at quality 94 and a 768²
+lossless tangent-normal PNG. Each cell is
+bounded at 4 MiB and 64,000 triangles. Image files alongside the GLBs are disposable bake outputs. The JSON inventories report bytes, triangles, primitives and
 room-local bounds. Keep Blender area lights and camera setups in the source.
 
 | Cell | GLB bytes | Triangles | Material primitives |
 | --- | ---: | ---: | ---: |
 | Garden | 1,747,624 | 15,728 | 11 |
-| Parcel facade | 2,836,316 | 19,712 | 9 |
+| Parcel facade | 2,105,312 | 19,712 | 9 |
 | Foyer | 1,536,588 | 6,700 | 7 |
 | Foyer with gallery sign | 2,749,896 | 22,852 | 9 |
 | Beacon laboratory, emergency exit only | 3,666,048 | 43,800 | 9 |
@@ -250,7 +251,9 @@ facing the aisle and its measured dimensions inside the lot. The arrival
 edition uses a dressed limestone arch, a deep oak reveal, a brass edge,
 readable address lettering, window bays and two emissive lanterns. It uses
 the existing exterior lights and fits the exact prior model bounds. The
-packaged facade transfers in 1,824,932 bytes with Brotli. The smaller
+packaged facade transfers in 1,089,929 bytes with Brotli. The new atlas
+export preserves the previous index and attribute data, material
+parameters and nine draw batches. The smaller
 house model in the garden shares the architectural source. Indoors the
 registered hall preserves the doorway and leaves navigation space around the
 table. The collection gallery has two art revisions. The permitted viewer

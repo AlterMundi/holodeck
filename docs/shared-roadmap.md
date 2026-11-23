@@ -240,9 +240,9 @@ First and warm foyer passages used the same renderer and improved in that
 software trial. Compare art changes at the same viewport and keep
 physical-device frame pacing separate.
 The bundled locomotion clips now transfer 72% fewer bytes on a cold visit.
-The constrained Chromium fixture still transfers a 1.82 MB compressed
-house facade before the first walk. Keep the next facade export and
-first-movement latency separately measurable.
+The west parcel facade now transfers 1.09 MB in place of 1.82 MB,
+with the same geometry and a qualified visit through its doorway.
+Continue measuring first movement independently of download size.
 [Frame, passage and cold arrival evidence](visual-play.md)
 
 ### Finish the architecture and props in the running game

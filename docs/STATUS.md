@@ -71,6 +71,15 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves
+source `542b509`, package `c8b9be33abd57`. The optimized Blender
+facade transfers 1.09 MB with Brotli, 40.3% below the prior variant.
+Geometry, material bindings and the door anchor match, and the
+packaged Chromium fixture walked through the foyer and back.
+All 59 installed files, protected HTTPS representations and retained
+world digests matched. Rollback is `090f9dfbbc07`.
+[Facade and arrival measurements](visual-play.md#optimized-exterior-facade).
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) previously served
 source `28494e0`, package `090f9dfbbc07`. The five bundled locomotion
 clips transfer 690,901 fewer bytes and keep identical decoded assets
 and range support. All 59 installed files and the protected HTTPS

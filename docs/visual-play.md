@@ -94,10 +94,27 @@ Two runs per package measured navigation to an observed WASD displacement.
 The previous package took 12.31 and 12.40 s. The compression-only package
 took 12.37 and 11.27 s. These SwiftShader runs bound the transfer benefit.
 The small sample does not establish a general movement improvement.
-The same runs still requested a 1.82 MB compressed house facade. Keep
-separating download, frame readiness and actual movement when tuning the
-next exterior export. Early location and terrain preload experiments were
+Those runs still requested the previous 1.82 MB compressed house facade. Early location and terrain preload experiments were
 slower in this fixture and were discarded.
+
+## Optimized exterior facade
+
+The Blender facade export kept the full-resolution color atlas with
+core glTF JPEG and baked a smaller lossless normal atlas. Its geometry,
+material assignments, lettering and threshold coordinates match the
+previous export. The exact Brotli response fell from 1,824,932 to
+1,089,929 bytes. Player-height Chromium captures inspected the gable,
+limestone and glazing from the approach and returned threshold.
+The fixture walked the west aisle, entered using E and returned to the
+same threshold within the same page.
+
+In a paired 6.4 Mb/s and 80 ms latency trial, the browser received
+4.35 MB of resource bodies by visible arrival with the new facade
+and 5.08 MB with the previous one. The facade response ended about
+1.03 s earlier. Observed first WASD displacement took 12.42 s with
+the smaller model and 12.18 s with the previous one. This check establishes
+the transfer saving and confirms movement on the new package. Software
+render readiness still warrants separate profiling.
 
 ## Exterior facade shadow finish
 
