@@ -569,7 +569,9 @@ function closeTracking(kind){
   const record=kind==='command'?pendingMetadata:nativeTurn;
   try{archiveIntent(sessionStorage,archiveKey,{kind,...record});}
   catch{say('Esta pestaña ya conserva varios envíos sin confirmar. Comprobá alguno antes de cerrar otro seguimiento.');return;}
-  if(kind==='command'){pending=null;pendingMetadata=null;sessionStorage.removeItem(pendingKey);}
+  if(kind==='command'){
+    signalEditor.untrack(pending.id);pending=null;pendingMetadata=null;sessionStorage.removeItem(pendingKey);
+  }
   else{archivedNativeIds.add(nativeTurn.id);nativeTurn=null;sessionStorage.removeItem(turnKey);updateNativeAvailability();}
   clearRecovery(kind);say('Cerramos el seguimiento. El envío anterior no se canceló ni se deshizo.');
 }
@@ -675,14 +677,16 @@ function settleCommand(result){
   if(result.status==='completed'&&pending.type.startsWith('focus.')){
     say(pending.type==='focus.set'?'La indicación ya es compartida.':'Dejaste de señalar ese objeto.',{transient:true});
   }else if(result.status==='completed'&&pending.type.startsWith('node.')){
-    say('El jardín ya forma parte del mundo.',{transient:true});
+    say(pending.type==='node.remove'?'El jardín se retiró del mundo.':'El jardín ya forma parte del mundo.',{transient:true});
   }else if(result.status==='completed'){
     const undo=pendingMetadata?.undo;
     lastChange=undo?null:{type:pending.type,target:pending.target,previous:pendingMetadata?.previous,
       appliedRevision:pending.type==='garden.place'?1:pending.expectedRevision+1,run:pending.run};
     say(undo?'Tu cambio quedó deshecho.':'El cambio ya forma parte del mundo.',{transient:true});
   }else say('Ese lugar cambió. Mirá cómo quedó antes de intentarlo de nuevo.');
-  pending=null;pendingMetadata=null;sessionStorage.removeItem(pendingKey);clearRecovery('command');return true;
+  const id=pending.id;
+  pending=null;pendingMetadata=null;sessionStorage.removeItem(pendingKey);clearRecovery('command');
+  signalEditor.settle(id,result.status);return true;
 }
 async function recoverCommand(){
   if(!pending)return;
@@ -690,7 +694,7 @@ async function recoverCommand(){
   try{const result=await api(`commands/${id}`);if(sameRequest(pending,id))settleCommand(result);}
   catch(error){if(sameRequest(pending,id))noteRecovery('command',error);}
 }
-async function action(type,target,args,expectedRevision,{undo=false,selection=null}={}){
+async function action(type,target,args,expectedRevision,{undo=false,selection=null,onPending=null}={}){
   if(pending||preparingAction){say('Primero tengo que confirmar el cambio anterior.');return null;}
   if(!state){say('Esperá a entrar al taller para cambiar este lugar.');return null;}
   const scope={actorRef:state.actorRef,run:state.run,edition:state.edition};
@@ -706,6 +710,7 @@ async function action(type,target,args,expectedRevision,{undo=false,selection=nu
     try{pendingMetadata=saveIntent(sessionStorage,pendingKey,pendingMetadata,4096);pending=pendingMetadata.command;}
     catch{pending=null;pendingMetadata=null;say('El navegador no pudo guardar la confirmación pendiente. El cambio no se envió.');return null;}
     submittedId=pending.id;preparingAction=false;
+    onPending?.(submittedId);
     const result=await api('commands',pending);
     if(!sameRequest(pending,submittedId))return result;
     settleCommand(result);await refresh();return result;
@@ -760,8 +765,9 @@ let signalPreview=null,signalMarkup=null;
 const signalEditor=new SignalGardenEditor({document,
   position:()=>client.getLocalCharacterState()?.position,
   allowed:node=>!inside&&!preview&&state?.canEdit===true&&
-    (!node||state.nodes?.[node.id]?.revision===node.revision&&state.nodes[node.id].owner===state.actorRef),
-  save:(node,args,target)=>action(node?'node.update':'node.place',target,args,node?.revision??null),
+    (!node||!node.deleted&&state.nodes?.[node.id]?.revision===node.revision&&state.nodes[node.id].owner===state.actorRef),
+  save:(node,args,target,onPending)=>action(node?'node.update':'node.place',target,args,node?.revision??null,{onPending}),
+  remove:(node,onPending)=>action('node.remove',node.id,{},node.revision,{onPending}),
   preview:targets=>{
     const markup=targets?.map(({x,z,radius,color})=>`<m-cylinder x="${x}" y=".124" z="${z}" radius="${radius}" height=".02" color="${workshopColour(color)}" opacity=".44" collide="false"></m-cylinder>`).join('')??null;
     if(markup===signalMarkup)return;

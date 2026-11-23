@@ -102,6 +102,22 @@ capture, overlapping target matching, closed recipes, result-branch compatibilit
 and source MML/export exclusion. Browser rendering and real shared play are
 separate receiving checks; the candidate's tests are controlled fixtures.
 
+## Author an exterior garden
+
+An editor in the shared exterior can choose **Crear jardín** to start a private
+preview. Walk to each intended circle, place it there and set its color.
+**Guardar jardín** publishes the same draft under the current actor. The
+garden's author can reopen **Editar jardín** from **Cómo jugar** and publish a
+new revision. The same view offers **Retirar jardín** with an explicit
+confirmation naming the garden. Removing the definition keeps the lights that
+participants planted, and its identity stays in the activity history.
+
+If a save or retirement loses its reply, the draft stays read-only while the
+existing confirmation panel checks the retained command. A late confirmation
+closes the corresponding draft. Closing the editor keeps the command available
+in the same browser tab. Other visitors can play and see progress. They need
+the author identity and current revision to revise or retire the definition.
+
 ## Play in an owned interior
 
 An owner of an authored house plan can publish a signal garden in any of

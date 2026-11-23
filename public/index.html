@@ -155,12 +155,20 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
 <section id="pointing" class="glass" aria-label="Indicar un objeto" hidden><p id="point-label"></p><div class="row"><button id="point-visit" class="primary" type="button" hidden>Visitar contenido</button><button id="point-send" class="primary" type="button">Señalar</button><button id="point-edit" type="button" hidden>Editar luz</button><button id="point-clear" type="button">Cancelar</button></div></section>
 <details id="play-near" class="glass" hidden><summary><strong id="play-title"></strong> · Cómo jugar<span id="play-progress" role="status"></span></summary><p id="play-instruction"></p><button id="play-edit" type="button" hidden>Editar jardín</button></details>
 <form id="signal-editor" class="glass" aria-label="Editar jardín de señales" hidden>
-  <h2>Jardín de señales</h2><p>Caminá hasta cada punto y agregá una señal. La vista previa es tuya hasta guardar.</p>
-  <label>Nombre <input id="signal-title" maxlength="40" required></label>
-  <label>Colaboradores <input id="signal-minimum" type="number" min="1" max="8" required></label>
-  <label><input id="signal-bridge" type="checkbox"> Requiere conectar las islas</label>
-  <ol id="signal-targets"></ol><p id="signal-notice" role="status"></p>
-  <div class="row"><button id="signal-add" type="button">Agregar señal acá</button><button id="signal-save" class="primary">Guardar jardín</button><button id="signal-cancel" type="button">Cancelar</button></div>
+  <h2 id="signal-heading">Jardín de señales</h2>
+  <div id="signal-fields">
+    <p>Caminá hasta cada punto y agregá una señal. La vista previa es tuya hasta guardar.</p>
+    <label>Nombre <input id="signal-title" maxlength="40" required></label>
+    <label>Colaboradores <input id="signal-minimum" type="number" min="1" max="8" required></label>
+    <label><input id="signal-bridge" type="checkbox"> Requiere conectar las islas</label>
+    <ol id="signal-targets"></ol>
+  </div>
+  <p id="signal-notice" role="status"></p>
+  <div id="signal-actions" class="row"><button id="signal-add" type="button">Agregar señal acá</button><button id="signal-save" class="primary">Guardar jardín</button><button id="signal-cancel" type="button">Cancelar</button><button id="signal-remove" type="button" hidden>Retirar jardín</button></div>
+  <section id="signal-remove-confirm" aria-labelledby="signal-remove-title" hidden>
+    <p id="signal-remove-title"></p><p>El jardín dejará de estar disponible para todos. Las luces que plantaron quedan en el mundo.</p>
+    <div class="row"><button id="signal-remove-back" type="button">Volver</button><button id="signal-remove-accept" type="button">Retirar del mundo</button></div>
+  </section>
 </form>
 <button id="visit-near" type="button" class="primary" hidden>Visitar la presentación</button>
 <dialog id="exhibition-index" aria-labelledby="exhibition-title">
