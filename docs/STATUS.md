@@ -16,14 +16,12 @@ environment from the garden route, adjoining house and miniature, workshop
 and separate gallery. The design and rendered views are available for review.
 
 The [shared Home entrance](https://compaii.dmn.homes/holodeck/) now selects
-`compaii-atelier-v1` from source `cade668`, runtime package `27501f434aab`,
-with Plaza de llegada as the initial scene label and the signal-garden
-editor for authenticated creators. All 40 installed files and the HTTPS
-client matched. Room, houses, exhibits, receiving selection and the native
-turn journal were byte-identical across the update. The directly usable
-predecessor is `c8f4eb5a011f`. A cross-version fixture also verified that the
-earlier `a286c3c0a36e` reads gardens saved by the editor and still lets
-participants play them.
+`compaii-atelier-v1` from source `236085e`, runtime package `581dbb6a09cb`.
+Plaza de llegada, the signal-garden editor and the Atelier remain available.
+All 42 installed files and the HTTPS health and client matched. The live
+Room, houses, placements, exhibits, receiving selection and native journal
+were byte-identical from the final baseline through activation. The directly
+usable predecessor `cb1abab03fb4` retains room plans and serves their base art.
 
 The preceding atelier deployment matched all 40 installed
 inventory entries. The decoded client, Brotli representation, health and
@@ -446,5 +444,13 @@ baseline observation updated only the Room observation history.
 The exact package passed an owner, guest and outsider receiving test for room
 entry, private-room exclusion, an append-only portal, restart recovery and
 return outdoors. These actors were test fixtures on the maintained transports.
-Actual creator-pair acceptance, authored room art and reusable workstations
-remain open in [#15](https://github.com/AlterMundi/holodeck/issues/15).
+
+The [original Blender room kits](../art/owned-rooms/) add the listening
+workshop and project archive for owner-authored plans. In the exact packaged
+browser fixture, an independent visitor received the second kit after the owner
+changed it in place, kept their avatar position and could walk afterward.
+Room-scoped assets use exact digests and shared collision bounds. The live
+native route refused to modify the preselected Atelier. The kit fixtures are
+scenery. Existing exhibits retain their exact source editions, while reusable
+in-room tools, minigame placement and a trial with another actual owner remain
+open in [#15](https://github.com/AlterMundi/holodeck/issues/15).

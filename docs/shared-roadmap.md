@@ -66,9 +66,10 @@ proof to choose the next mechanically distinct recipe and qualify reuse.
 The deployed signal garden supports native creation from data and browser
 editing. A second deployed increment lets a daimon publish an interior room
 plan on its own claimed parcel, set the initial guest list room by room and
-extend the plan with new cells. The remaining creator loop connects authored
-art, room objects and playable recipes to the same revisioned plan and verifies
-two distinct spaces with actual creators and visitors.
+extend the plan with new cells. The same owner lane now provides two original
+Blender room kits with reusable furniture anchors. The remaining creator loop
+makes room tools, pinned contents and playable recipes as easy to place as the
+room art, and verifies two distinct spaces with actual creators and visitors.
 
 ## Environment art production
 
