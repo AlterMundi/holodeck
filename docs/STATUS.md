@@ -71,7 +71,24 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`4392b8e`, package `b8270bcb062f`; rollback is `dd19ca2d3d67`.
+`1c74364`, package `ad5230b3c7b1`; rollback is `b8270bcb062f`.
+The assigned avatar now renders when the optional texture worker fails,
+is unavailable, or times out. Touch Chromium rendered the assigned
+skinned model with all four injected faults and in the healthy case.
+A separate desktop and touch pair saw the same assigned appearances in
+the plaza and inside a room, with the touch client's worker failing.
+Physical phone behavior remains a separate observation.
+
+The first activation reached the 128-receipt boundary. The scoped Homes
+limit is now 256 for Holodeck, preserving both receipt histories, the
+existing grants and the 4,096 aggregate limit. The original request
+completed as Holodeck's 129th receipt. Protected HTTPS and all 62 packaged
+files matched. Room-position checkpoints advanced during the rollout.
+[Rendering checks](visual-play.md#avatar-loading-with-limited-worker-support) ·
+[Scoped receipt repair](https://github.com/nicoechaniz/daimon-cluster/pull/552).
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) previously served source
+`4392b8e`, package `b8270bcb062f`; rollback was `dd19ca2d3d67`.
 Only the shell and browser bundle changed. The explicit **Cerrar contenido**
 action preserves a dirty Nexus fixture and closes a clean visit from the
 world. In the packaged Chromium trial the visitor then left the lab through

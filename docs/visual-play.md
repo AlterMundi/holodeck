@@ -399,3 +399,20 @@ location request retryable, and shows an explicit retry if the module or
 scene takes longer. Touch Chromium without the optional nameplate APIs
 showed Retry after a blocked location request and entered on an explicit tap.
 The actual phone's failure cause is still unconfirmed.
+
+### Avatar loading with limited worker support
+
+The assigned avatar is independent of optional worker texture processing.
+When the processor fails or reaches its deadline, the client uses the existing
+model loader for the same packaged GLB. The bundled low-detail rig can use
+the same recovery path. A failed worker releases its pending jobs and timers.
+The renderer still resolves the authenticated profile and appearance through
+the existing world session. This recovery uses the browser's ordinary GLB
+and Draco support.
+
+In a 390 × 844 emulated touch viewport, both the healthy processor and four
+fault cases reached a skinned, textured copy of the assigned avatar. An
+immediate error, unavailable OffscreenCanvas or a rejected texture worker
+constructor took 1.1 to 1.4 seconds after the first player pose. An intentionally
+silent processor took 20.6 seconds in the same fixture. These are loopback
+software-renderer timings.
