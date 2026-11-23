@@ -572,7 +572,7 @@ def register_beacon_return(obj):
                      [('GALERÍA', 3.839, .251), ('PLANTA BAJA', 3.713, .109)])
 
 
-def bake(obj, name, mode, resolution, scratch):
+def bake(obj, name, mode, resolution, scratch, *, jpeg_quality=None):
     image = bpy.data.images.new(name, width=resolution, height=resolution, alpha=False)
     image.colorspace_settings.name = 'sRGB' if mode == 'DIFFUSE' else 'Non-Color'
     for mat in obj.data.materials:
@@ -588,9 +588,15 @@ def bake(obj, name, mode, resolution, scratch):
     scene.render.bake.use_pass_color = True
     scene.render.bake.margin = 8
     bpy.ops.object.bake(type=mode)
-    image.filepath_raw = str(scratch / (name + '.png'))
-    image.file_format = 'PNG'
-    image.save()
+    suffix = '.jpg' if jpeg_quality is not None else '.png'
+    image.filepath_raw = str(scratch / (name + suffix))
+    image.file_format = 'JPEG' if jpeg_quality is not None else 'PNG'
+    if jpeg_quality is None:
+        image.save()
+    else:
+        image.save(quality=jpeg_quality)
+        # Use the saved representation as the source for glTF embedding.
+        image.reload()
     image.pack()
     return image
 
@@ -671,8 +677,10 @@ if __name__ == '__main__':
     # existing package budget alongside both permissioned gallery variants.
     color_size = 768 if cell == 'tower' else ALBEDO_RESOLUTION
     lit_room = {'beacon-return':'beacon','foyer-gallery':'foyer'}.get(cell,cell)
-    normal_size = {'tower':768,'foyer':896}.get(lit_room,NORMAL_RESOLUTION)
-    color = bake(obj, cell+'-albedo', 'DIFFUSE', color_size, destination)
+    normal_size = {'facade':768,'tower':768,'foyer':896}.get(lit_room,NORMAL_RESOLUTION)
+    # Preserve full-resolution facade color and keep tangent normals lossless.
+    color = bake(obj, cell+'-albedo', 'DIFFUSE', color_size, destination,
+                 jpeg_quality=94 if cell == 'facade' else None)
     normal = bake(obj, cell+'-normal', 'NORMAL', normal_size, destination)
     bounce = None
     if lit_room in ('foyer','beacon','gallery','gallery-sealed'):
