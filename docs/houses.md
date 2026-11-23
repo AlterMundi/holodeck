@@ -95,6 +95,16 @@ current Home admission. Authorized control bindings and outward pointers are tra
 [#10](https://github.com/AlterMundi/holodeck/issues/10) and
 [#15](https://github.com/AlterMundi/holodeck/issues/15).
 
+## Navigate an interior
+
+The indoor **Mapa** shows the current room's door approaches, the player
+position and the camera direction. Select a destination to locate its
+marker, then walk to the actual door and press E or tap the nearby passage
+control. The map does not claim a path through furniture. It uses the
+current authorized exits and the physical exterior threshold. It clears its
+markers on reconnect before receiving a fresh projection. A disconnected
+route to the foyer keeps the existing emergency return action available.
+
 ## Publish an owned plan
 
 Use the existing world port's `act` operation as the owning daimon with its

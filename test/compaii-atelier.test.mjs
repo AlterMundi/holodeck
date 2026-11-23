@@ -1,5 +1,6 @@
 import {once} from 'node:events';
 import {createConnection} from 'node:net';
+import WebSocket from 'ws';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
@@ -252,11 +253,11 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   const expected={schema:'holodeck.houses/v1',receipts:[],houses:[house]};
   store.save(expected);
   let prototypeAccess=true;
-  let galleryAccess=true,towerAccess=true,towerReturnAccess=true;
+  let galleryAccess=true,towerAccess=true,towerReturnAccess=true,foyerReturnAccess=true;
   const runtime=await createHolodeck({stateDir,basePath:'/holodeck/',artProfile:ATELIER_PROFILE,
     interiorSpaces:definitions,
     interiorGuestAccess:(actor,room)=>actor.id==='human:lab'?room!==gallery||galleryAccess:
-      (room!==tower||towerAccess)&&(room!==gallery||towerReturnAccess),
+      (room!==tower||towerAccess)&&(room!==gallery||towerReturnAccess)&&(room!==foyer||foyerReturnAccess),
     galleryAuthorization:async (cookie,pin)=>prototypeAccess&&cookie.includes('fixture=lab')&&
       pin.revision==='published-935e6262-organic-head',
     identityResolver:async req=>{
@@ -279,6 +280,8 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
       'Content-Type':'application/json'};
     const postMove=(from,to)=>fetch(base+'api/space',{headers,method:'POST',body:JSON.stringify({from,to,live:1})});
     return {read:path=>fetch(origin+path,{headers}),postMove,
+      geometry:room=>new WebSocket(origin.replace('http:','ws:')+'/holodeck/spaces/'+room+'/world',
+        'networked-dom-v0.2.1',{headers:{Cookie:headers.Cookie}}),
       move:async(from,to)=>{
         const result=await postMove(from,to);
         assert.equal(result.status,200);
@@ -452,6 +455,19 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   const towerPath=roomArt(upper);
   assert.equal((await visitor.read(towerPath)).status,200);
   assert.equal((await authorized.read(towerPath)).status,404);
+  const routeSocket=visitor.geometry(tower);
+  try{
+    await once(routeSocket,'message',{signal:AbortSignal.timeout(5000)});
+    const scopeChanged=once(routeSocket,'close',{signal:AbortSignal.timeout(5000)});
+    foyerReturnAccess=false;
+    const blockedHome=await liveLocation(visitor);
+    assert.deepEqual(blockedHome.exits,upper.exits);
+    assert.equal(blockedHome.emergencyExit,true);
+    assert.equal((await scopeChanged)[0],1008);
+  }finally{
+    foyerReturnAccess=true;
+    routeSocket.terminate();
+  }
   towerReturnAccess=false;
   const closedReturn=await liveLocation(visitor);
   assert.equal(roomArt(closedReturn),towerPath);

@@ -101,7 +101,7 @@ function startInterior(space){
     visitor.catalog=visitor.loadCatalog();
   });
   exhibitObserver.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['data-exhibit-revision']});
-  const updateDoor=showSpaceLinks(space,{canLeave:()=>visitor.allowLeaveRoom(),onError:message=>notice.show(message)});
+  const updateDoor=showSpaceLinks(space,{mapEnabled:false,canLeave:()=>visitor.allowLeaveRoom(),onError:message=>notice.show(message)});
   window.addEventListener('keydown',event=>{
     if(event.target instanceof Element&&event.target.closest('#exhibition-index')){event.stopImmediatePropagation();return;}
     if((beaconControls.opened||visitor.frame&&!visitor.panel.classList.contains('is-walking'))&&
@@ -140,7 +140,7 @@ function startInterior(space){
   });
   client.update();
   window.holodeckDevelopment={client};
-  window.addEventListener('pagehide',()=>{exhibitObserver.disconnect();beaconControls.close();visitor.dispose();client.dispose();},{once:true});
+  window.addEventListener('pagehide',()=>{updateDoor.dispose?.();exhibitObserver.disconnect();beaconControls.close();visitor.dispose();client.dispose();},{once:true});
 }
 
 function startWorld(activeSpace){
@@ -303,7 +303,6 @@ function canFinishMove(){
 function resetDoor(){
   updateDoor.dispose?.();
   $('#house-door').hidden=true;$('#house-door').disabled=false;
-  $('#space-travel nav').replaceChildren();
   if(!activeSpace)return;
   updateDoor=showSpaceLinks(activeSpace,{
     canLeave:()=>{
@@ -319,8 +318,11 @@ function resetDoor(){
     ...(hot?{
       revision:destination=>sceneCache.revision(destination),
       onNear,
-      onAccessLost:()=>{needsSync=true;sceneCache.clear();removeScene();},
-      onDoorDenied:destination=>sceneCache.forget(destination),
+      onAccessLost:()=>{needsSync=true;sceneCache.clear();updateDoor.suspend?.();removeScene();},
+      onDoorDenied:destination=>{
+        sceneCache.forget(destination);
+        if(inside){updateDoor.suspend?.();queueMicrotask(()=>syncCurrent());}
+      },
       onMoving:value=>{
         requestingMove=value;setMoving(value);
         if(value){prefetchRequest?.abort();prefetchRequest=null;}
@@ -351,7 +353,10 @@ document.addEventListener('keydown',event=>{
     event.stopImmediatePropagation();
     if(event.key==='Escape'){
       event.preventDefault();
-      if(event.target.closest('#creator')){closePreview();say('La vista previa quedó descartada.',{transient:true});}
+      if(event.target.closest('#space-travel')){
+        $('#space-travel').open=false;$('#space-travel summary').focus();
+      }
+      else if(event.target.closest('#creator')){closePreview();say('La vista previa quedó descartada.',{transient:true});}
       else openConversation(false);
       event.target.blur();
     }
@@ -456,7 +461,11 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       galleryModels.update();
       garden.update(inside&&!moving&&activeSpace.playableInterior?activeSpace.id:null);gardenMarkers();
       if(!inside){worldIndication?.update();if(!moving)playableHUD.update(position);}
-      if(!moving){if(inside)contentVisitor?.refreshScopedCatalog();contentVisitor?.update(position);updateDoor(position);}
+      if(!moving){
+        if(inside)contentVisitor?.refreshScopedCatalog();
+        contentVisitor?.update(position);
+        updateDoor(position,()=>options.coreCameraManager.getCameraState().rotation);
+      }
       beaconControls.update(inside&&!moving&&remoteScene?activeSpace.objects:null,position);
       render(renderState);
       if(!inside&&drawWorld)geometryProbe.afterRender();
@@ -945,6 +954,7 @@ if(hot){
   client.getWorldConnection().addEventListener(event=>{
     if(event.type==='disconnected'){
       networkScope=null;
+      updateDoor.suspend?.();
       removeScene();
       setMoving(true);
       if(!requestingMove&&!moveDeadline){
@@ -956,7 +966,10 @@ if(hot){
       const config=event.config.mmlDocuments;
       networkScope=config?.interior?.url.split('/').at(-2)??(config?.workshop?'outside':null);
       if(needsSync)syncCurrent();
-      else if(moving&&!requestingMove&&networkScope===activeSpace.id&&inside&&!remoteScene)mountScene();
+      else if(moving&&!requestingMove&&networkScope===activeSpace.id){
+        resetDoor();
+        if(inside&&!remoteScene)mountScene();
+      }
     }
   });
 }

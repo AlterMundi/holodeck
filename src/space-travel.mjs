@@ -1,3 +1,5 @@
+import {showRoomMap} from './room-map.mjs';
+
 const base=()=>new URL('./',document.baseURI);
 const DOOR_RANGE=1.65;
 const STAIR_RANGE=.85;
@@ -26,16 +28,18 @@ export function arrivalDoor(from,next){
   return next.exits.find(exit=>exit.to===from.id)?.door??null;
 }
 
-export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving,revision,onNear,onAccessLost,onDoorDenied}){
+export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving,revision,onNear,onAccessLost,onDoorDenied,
+  mapEnabled=true}){
   const travel=document.querySelector('#space-travel'),button=document.querySelector('#house-door');
   const inside=space.id!=='outside';
   const doors=inside
-    ? [...space.exits.map(exit=>({...exit,title:(exit.kind==='portal'?'Cruzar portal · ':
+    ? [...space.exits.map(exit=>({...exit,mapTitle:exit.title,title:(exit.kind==='portal'?'Cruzar portal · ':
         exit.kind==='stair'?(exit.rise<0?'Bajar · ':'Subir · '):'Ir a · ')+exit.title})),
-        ...(space.exitDoor?[{to:'outside',title:'Salir al exterior',door:space.exitDoor}]:[])]
+        ...(space.exitDoor?[{to:'outside',mapTitle:'Salida al exterior',title:'Salir al exterior',door:space.exitDoor}]:[])]
     : space.entrances.map(entrance=>({to:entrance.id,title:'Entrar · '+entrance.title,door:entrance.door}));
   const list=travel.querySelector('nav');
-  let near=null,busy=false;
+  const map=inside&&mapEnabled?showRoomMap(travel,doors):null;
+  let near=null,busy=false,suspended=false;
   async function move(destination) {
     if(busy)return;
     busy=true;
@@ -74,7 +78,9 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
 
   const links=[];
   if(space.emergencyExit)links.push({to:'outside',title:'Volver al exterior'});
-  travel.hidden=!links.length;
+  const summary=travel.querySelector('summary');
+  if(summary)summary.textContent=links.length?'Mapa y regreso':'Mapa';
+  travel.hidden=!map&&!links.length;
   for(const destination of links){
     const control=document.createElement('button');
     control.type='button';control.textContent=destination.title;
@@ -90,7 +96,9 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
     move(near);
   };
   document.addEventListener('keydown',hotkey);
-  const update=position=>{
+  const update=(position,rotation)=>{
+    if(suspended)return;
+    map?.update(position,rotation);
     let closest=null,distance=DOOR_RANGE,nearby=null,prefetchDistance=3.75;
     if(position)for(const destination of doors){
       if(!destination.door)continue;
@@ -108,6 +116,16 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
     near=closest;button.hidden=!near;
     if(near)button.textContent=near.title;
   };
-  update.dispose=()=>document.removeEventListener('keydown',hotkey);
+  update.suspend=()=>{
+    if(suspended)return;
+    suspended=true;near=null;
+    button.hidden=true;button.textContent='';travel.hidden=true;travel.open=false;
+    map?.clear();
+    list.replaceChildren();
+  };
+  update.dispose=()=>{
+    update.suspend();
+    document.removeEventListener('keydown',hotkey);
+  };
   return update;
 }

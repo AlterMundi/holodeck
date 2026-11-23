@@ -50,3 +50,42 @@ test('the tower portal warms near the gallery stair without offering the wrong a
     dom.window.close();
   }
 });
+
+test('the room map follows the actor and only highlights authorized physical doors',()=>{
+  const dom=new JSDOM(`<details id="space-travel"><summary></summary>
+    <section class="room-map" hidden><div class="room-map-plot"></div><div class="room-map-destinations"></div></section>
+    <nav></nav></details><button id="house-door" hidden></button>`);
+  const prior=globalThis.document;
+  globalThis.document=dom.window.document;
+  const travel=document.querySelector('details');
+  const show=space=>showSpaceLinks(space,{onError:assert.fail});
+  const mapButtons=()=>[...travel.querySelectorAll('.room-map-destinations button')];
+  const portal={to:'tower',title:'Torre',kind:'portal',door:{x:3,y:.11,z:-4.81}};
+  let update=show({id:'gallery',exits:[portal]});
+  try{
+    travel.open=true;
+    assert.equal(travel.hidden,false);
+    assert.deepEqual(mapButtons().map(button=>button.textContent),['Torre']);
+    mapButtons()[0].click();
+    assert.equal(mapButtons()[0].getAttribute('aria-pressed'),'true');
+    assert.equal(travel.querySelector('.room-map-pin[data-selected]').style.left,'75%');
+    update({x:-3,y:.1,z:0},()=>({x:0,y:0,z:0,w:1}));
+    assert.equal(travel.querySelector('.room-map-player').style.left,'25%');
+    assert.equal(travel.querySelector('.room-map-player').style.getPropertyValue('--map-heading'),'0deg');
+    assert.equal(document.querySelector('#house-door').hidden,true,'selection does not activate a crossing');
+    update.suspend();
+    assert.equal(travel.open,false);
+    assert.equal(travel.hidden,true);
+    assert.equal(mapButtons().length,0);
+    assert.equal(travel.querySelector('.room-map-plot').childElementCount,0);
+    update.dispose();
+    update=show({id:'gallery',exits:[],emergencyExit:true});
+    assert.equal(mapButtons().length,0);
+    assert.equal(travel.querySelector('nav button').textContent,'Volver al exterior');
+    assert.doesNotMatch(travel.textContent,/Torre/);
+  }finally{
+    update.dispose();
+    globalThis.document=prior;
+    dom.window.close();
+  }
+});

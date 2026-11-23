@@ -87,6 +87,26 @@ body:has(#content-visit:not([hidden]):not(.is-walking)) .touch-controls{visibili
 .inside-house #house-door{bottom:max(26px,env(safe-area-inset-bottom))}
 body:has(#conversation-panel:not([hidden])) #house-door,body:has(#creator:not([hidden])) #house-door,body:has(#content-visit:not([hidden]):not(.is-walking)) #house-door{display:none}
 #space-travel{position:fixed;z-index:23;top:73px;right:22px;max-width:min(260px,calc(100vw - 44px));padding:8px 12px;border-radius:14px}#space-travel summary{min-height:42px;align-content:center;cursor:pointer}#space-travel nav{display:flex;flex-direction:column;gap:6px;max-height:40dvh;overflow:auto}#space-travel button{text-align:left}
+.inside-house #space-travel{top:20px;padding:0 13px;max-height:calc(100dvh - 124px);overflow:auto;overscroll-behavior:contain}
+.inside-house #space-travel[open]{width:min(252px,calc(100vw - 32px));padding-bottom:12px}
+#space-travel summary{color:var(--gold)}
+#space-travel summary:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+.room-map-plot{position:relative;aspect-ratio:1;margin:4px 0 10px;border:1px solid #b7c5b073;border-radius:8px;background:linear-gradient(90deg,#c3d4be14 1px,transparent 1px) center/25% 100%,linear-gradient(#c3d4be14 1px,transparent 1px) center/100% 25%,#102e34}
+.room-map-plot::before{content:'';position:absolute;inset:6px;border:1px solid #b7c5b03d;border-radius:5px;pointer-events:none}
+.room-map-pin,.room-map-player{position:absolute;display:block;transform:translate(-50%,-50%);width:11px;height:11px}
+.room-map-pin,.room-map-destinations button::before{border:1px solid #f4dbab;background:#be9961;border-radius:2px}
+.room-map-pin[data-kind=stair],.room-map-destinations button[data-kind=stair]::before{background:repeating-linear-gradient(0deg,#85caba 0 2px,#203e40 2px 4px);border-color:#98dac8}
+.room-map-pin[data-kind=portal],.room-map-destinations button[data-kind=portal]::before{rotate:45deg;background:#b5a2d6;border-color:#e0d2fb}
+.room-map-pin[data-kind=outside],.room-map-destinations button[data-kind=outside]::before{border-radius:50%;background:transparent;border:2px solid #f3d39b}
+.room-map-pin[data-selected]{outline:2px solid var(--ink);outline-offset:3px}
+.room-map-player{z-index:1;border:2px solid #102e34;border-radius:50%;background:#f9f1d9;box-shadow:0 0 0 1px #f9f1d9;rotate:var(--map-heading);transform-origin:center}
+.room-map-player[data-heading]::before{content:'';position:absolute;inset:auto auto 7px 50%;translate:-50%;border:4px solid transparent;border-top:0;border-bottom:7px solid #f9f1d9}
+.room-map-hint{margin:0 0 6px;color:var(--muted);font-size:13px}.room-map-destinations{display:grid;gap:4px}
+.room-map-destinations button{display:flex;align-items:center;gap:10px;padding:7px 10px;font-size:14px;line-height:1.25;overflow-wrap:anywhere}
+.room-map-destinations button::before{content:'';flex:0 0 10px;height:10px}
+.room-map-destinations button[aria-pressed=true]{border-color:var(--gold);background:#245153}
+.inside-house #space-travel nav:not(:empty){margin-top:8px}
+.room-transition #space-travel,body:has(#conversation-panel:not([hidden])) #space-travel,body:has(#content-visit:not([hidden]):not(.is-walking)) #space-travel{visibility:hidden;pointer-events:none}
 .room-transition canvas{visibility:hidden}
 #room-passage{
   position:fixed;inset:0;z-index:40;display:grid;place-items:center;
@@ -114,7 +134,7 @@ body:has(#conversation-panel:not([hidden])) #house-door,body:has(#creator:not([h
 .inside-house #world-tools,.inside-house #dock,.inside-house #companion-status,.inside-house #sound{display:none}
 .inside-house.has-situated-conversation #dock{display:flex;left:auto;right:max(14px,env(safe-area-inset-right));bottom:max(84px,env(safe-area-inset-bottom));transform:none}
 .inside-house #dock button:not(#talk){display:none}
-@media(max-width:740px){#space-travel{top:145px;right:12px}.inside-house #space-travel{top:100px}}
+@media(max-width:740px){#space-travel{top:145px;right:12px}.inside-house #space-travel{top:66px;max-height:calc(100dvh - 170px)}}
 @media(max-width:740px){
   #world-tools:has(#garden-create:not([hidden])){flex-direction:column;align-items:flex-end;gap:6px}
   body:has(#garden-create:not([hidden])) #companion-status{max-width:min(230px,calc(100vw - 166px));overflow-wrap:anywhere}
@@ -147,7 +167,7 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
 </form></dialog>
 <div id="world-tools"><aside id="help"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> moverte · arrastrá para mirar · espacio para saltar</aside><button id="garden-create" class="glass" type="button" hidden>Crear jardín</button><button id="activity-open" class="glass" type="button" aria-haspopup="dialog" disabled>Actividad</button></div>
 <button id="house-door" type="button" class="primary" hidden>Entrar</button>
-<details id="space-travel" class="glass" hidden><summary>Entradas y salidas</summary><nav aria-label="Entradas y salidas"></nav></details>
+<details id="space-travel" class="glass" hidden><summary>Mapa</summary><section class="room-map" aria-label="Mapa de la sala" hidden><div class="room-map-plot" aria-hidden="true"></div><p class="room-map-hint">Señalá una salida en el mapa.</p><div class="room-map-destinations" role="group" aria-label="Salidas"></div></section><nav aria-label="Regreso al exterior"></nav></details>
 <div id="companion-status" class="glass" role="status">Exploración compartida</div>
 <div id="notice" class="glass" role="status"></div>
 <div id="room-passage"><span class="passage-arch" aria-hidden="true"></span><p id="room-passage-message" role="status"></p></div>

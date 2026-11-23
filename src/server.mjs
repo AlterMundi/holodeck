@@ -253,7 +253,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     return interiorDocument(room,passages,exhibit,art&&{...art,src,gallerySigns},passageAsset);
   }
   function interiorScopeKey(actor,selected){
-    return JSON.stringify([spaces.passages(actor,selected).map(link=>link.slot),exhibits.forRoom(selected.id)?.revision??0,
+    return JSON.stringify([spaces.passages(actor,selected).map(link=>link.slot),
+      !selected.entry&&!spaces.canReachEntrance(actor,selected.id),exhibits.forRoom(selected.id)?.revision??0,
       designs.forRoom(selected.id)?.revision??0]);
   }
   function visitScene(actor,id,cachedRevision){
@@ -537,10 +538,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const initial=passages();
     const currentExhibit=()=>exhibits.scoped(record.session.actor,id);
     const initialExhibit=currentExhibit();
-    const signature=(links,exhibit)=>JSON.stringify([links.map(link=>link.slot),exhibit?.revision??0,
-      designs.forRoom(id)?.revision??0]);
-    const scope=signature(initial,initialExhibit);
-    record.projectionAllowed=()=>signature(passages(),currentExhibit())===scope;
+    const scope=interiorScopeKey(record.session.actor,selectedRoom);
+    record.projectionAllowed=()=>interiorScopeKey(record.session.actor,spaces.rooms.get(id))===scope;
     // A connection owns exactly one filtered document. Closing it releases
     // all DOM work while the room's shared avatar stream stays independent.
     const scopedDocument=new WorldDocument('http://localhost'+route('spaces/'+id+'/world'));

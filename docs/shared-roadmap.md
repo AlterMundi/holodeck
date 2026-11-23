@@ -364,6 +364,12 @@ discussion survives movement. The authoring model supports room identities
 across levels above and below ground and internal portals to further cells.
 The full map can grow over time with bounded loaded views and durable catalogs.
 
+The walkable interior now has a room-local map showing only the actor's
+current physical passages. It marks the player and camera heading on
+desktop and touch. The labels highlight a map destination, then the existing
+door interaction does the crossing. The room reconnect replaces the map
+when the adjacent passages or the authorized route to the exterior change.
+
 ## Durable places, expressive authoring and source-safe navigation
 
 The room-boundary increment adds separate authorized room geometry and avatar presence, room-scoped own-native observation, and explicit moves between floors and portals. The first facade and foyer have matching exterior door anchors. Interior doors, stairs and portals have paired in-world approaches and per-visitor geometry. The first working house uses a pinned Nexus exhibit authored from an existing owned result. It still needs its working control and situated Conversation with the original object and room reference. [House and room contract](houses.md).
