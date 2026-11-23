@@ -144,9 +144,12 @@ inputs. Record technical results and any voluntary participant feedback separate
 
 The [arrival directory and route markers](../art/compaii-house/redesign/commons-wayfinding.md)
 now give the existing plaza a readable first turn. Packaged desktop and
-touch-emulated players took the east promenade into the garden. Continue
-the foreground terrace, threshold and workshop finish pass on the same
-player-height route.
+touch-emulated players took the east promenade into the garden. The
+[authored house walk](../art/compaii-house/redesign/house-walk.md) now
+makes the turn from the public aisle to the Casa threshold legible.
+Continue the foreground terrain and workshop finish pass on the same
+player-height route, especially the flat terrace perimeter and the floor
+and wall joints.
 
 ### Finish the architecture and props in the running game
 

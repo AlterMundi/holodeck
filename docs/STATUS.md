@@ -10,7 +10,17 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`7143e82`, package `abf87584ed54`. A double-sided Blender directory is visible
+`3203c0a`, package `0b49c7c4393b`. Blender-authored limestone with brick
+and basalt edging connects the plaza approach to the existing parcels.
+The first west branch reaches the Casa de CompAII doorway. Packaged
+Chromium walked from ordinary spawn across the new paving, entered and
+exited with E, and landed at the exact existing X/Z anchor without a page
+reload. Authenticated HTTPS served the exact 258,952-byte GLB and all 53
+selected runtime files matched. The world and protected checkpoints survived
+activation. Package `abf87584ed54` remains the compatible rollback.
+[Editable artwork and player-height comparison](../art/compaii-house/redesign/house-walk.md)
+
+The previous release served source `7143e82`, package `abf87584ed54`. A double-sided Blender directory is visible
 from the ordinary spawn. Matching markers identify Jardín, Galería exterior,
 Casas and Mirador and mark the return to the plaza. The asset adds five
 material batches and 278,456 bytes, with no extra textures, colliders or
