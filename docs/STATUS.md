@@ -16,12 +16,13 @@ environment from the garden route, adjoining house and miniature, workshop
 and separate gallery. The design and rendered views are available for review.
 
 The [shared Home entrance](https://compaii.dmn.homes/holodeck/) now selects
-`compaii-atelier-v1` from source `236085e`, runtime package `581dbb6a09cb`.
-Plaza de llegada, the signal-garden editor and the Atelier remain available.
-All 42 installed files and the HTTPS health and client matched. The live
-Room, houses, placements, exhibits, receiving selection and native journal
-were byte-identical from the final baseline through activation. The directly
-usable predecessor `cb1abab03fb4` retains room plans and serves their base art.
+`compaii-atelier-v1` from source `a94628c`, runtime package `17fbd16989d5`.
+Plaza de llegada, the outdoor signal-garden editor and the Atelier remain
+available. All 42 installed files and the HTTPS health and client matched.
+The same canonical run and entity count were read back. The receiving,
+house, placement, exhibit, creator and native journal state matched; the
+Room event tail recorded joins and leaves during activation. The directly
+usable predecessor `581dbb6a09cb` retains room plans and furnishings.
 
 The preceding atelier deployment matched all 40 installed
 inventory entries. The decoded client, Brotli representation, health and
@@ -448,6 +449,13 @@ browser fixture, an independent visitor received the second kit after the owner
 changed it in place, kept their avatar position and could walk afterward.
 Room-scoped assets use exact digests and shared collision bounds. The live
 native route refused to modify the preselected Atelier. The kit fixtures are
-scenery. Existing exhibits retain their exact source editions, while reusable
-in-room tools, minigame placement and a trial with another actual owner remain
-open in [#15](https://github.com/AlterMundi/holodeck/issues/15).
+scenery. Existing exhibits retain their exact source editions. Reusable
+working tools remain open in [#15](https://github.com/AlterMundi/holodeck/issues/15).
+
+The deployed [indoor signal garden](playable-creations.md#play-in-an-owned-interior)
+lets owners preview and publish a room-local recipe. In two independent
+Chromium instances, the touch-emulated participant placed the amber light,
+the keyboard participant walked to the mint circle, and both saw the two
+lights and the same completed round. The packaged receiving test also checked
+layout isolation, native readback, stale recipe denial, restart recovery and
+two rooms with distinct recipes. These were simulated participants and devices.
