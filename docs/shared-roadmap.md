@@ -377,10 +377,11 @@ eligible parcel. A starter offers either an atelier with a lower workshop or a
 playroom with an upper observatory. The draft appends reciprocal passages,
 keeps existing door slots and guest lists, and returns the full revisioned
 command for explicit owner publication. This uses the same layout store and
-receipts. The selected Casa supports exact owner adoption of its live plan,
-with the existing four-room graph and current receiving permissions. Adding
-a new room to this plan requires a fitting authored for its actual wall and
-a compatible recovery version for dependent furnishing and game saves.
+receipts. The selected Casa's owner used the same route to extend the
+live plan with Taller Sensorial, furnished with the listening kit and
+reachable through the Blender-authored foyer portal. A compatible reader
+preserves the added room and its design, game and visitor state. Current
+source permissions for future Sensorial data and controls are separate.
 The paired-human authoring grant remains open.
 [Owned plan workflow](houses.md#publish-an-owned-plan).
 

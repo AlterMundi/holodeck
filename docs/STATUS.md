@@ -71,6 +71,21 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+`182e0f4`, package `5238eae47181`; rollback is the expansion-compatible
+reader `abcd47bebe5c` from `54e16f3`. The actual owner opened the furnished
+Taller Sensorial via the foyer's second slot. The live layout and design
+read back as revisions 3 and 1; production changes were limited to the
+Atelier plan and its design. The opening uses the previous foyer/gallery
+audience intersection. The original room addresses, links and access remain
+in force. In the packaged Chromium trial one simulated visitor walked up
+to the authored fitting, crossed with E and returned to the same foyer
+anchor in the same renderer. A separate visitor received neither the fitting
+nor passage access. A restart using the compatible reader restored an added
+room with its saved furnishings, game and visit position. No Sensorial data
+or devices are attached to this room yet.
+[Portal at player height](../art/compaii-house/redesign/review/foyer-sensorial-portal.jpg).
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) previously served source
 `e4e10c4`, package `2368984d62cf`; rollback is `923fc4da0bb4`.
 The actual CompAII native owner adopted the four existing authored rooms at
 revision 1. Reading the live plan and exact receipt confirmed the original

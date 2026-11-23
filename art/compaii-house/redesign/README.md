@@ -215,6 +215,7 @@ stone face. The walking approach stays at x=3, z=-4.81; the original gallery
 door stays at x=-3. The GLB contains 4,600 triangles in five material draws
 and no texture downloads. The active room supplies the current authorized
 destination label and only serves the GLB to actors with the matching passage.
+[Portal at player height](review/foyer-sensorial-portal.jpg).
 
 Regenerate with Blender 5.2.2 and an empty output directory:
 
