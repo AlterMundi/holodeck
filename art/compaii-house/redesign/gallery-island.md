@@ -46,3 +46,13 @@ mounting blocks bring the lettering forward on both faces. The receiving check
 matched the exact model, identity ranges and Brotli transfer over authenticated
 HTTPS and independently read the original presentation anchor through the native
 world route.
+
+The court qualification repeated the bridge, pavilion and pinned fixture
+visit on the final build. The avatar returned to the same view and position.
+A separate foot-height probe recorded the avatar stepping to the seat top at
+Y=0.507 m on the existing locomotion controller. The west portal positions
+and revisions matched native receiving. Both exterior GLBs and all 57
+installed files matched the selected protected deployment.
+
+[View from the landing](review/gallery-court-from-bridge.jpg) ·
+[Seaward seat from player height](review/gallery-court-seaward-seat.jpg)

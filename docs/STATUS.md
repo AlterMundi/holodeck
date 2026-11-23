@@ -10,7 +10,18 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`25258be`, package `c968b95c4d77`. Both Harmonic Beacon workstations now
+`69ea465`, package `90e9cfa41190`. The western landing now opens to a
+Blender-authored limestone court with basalt seams and a seaward oak bench.
+A short threshold joins the court to the pavilion apron. The runtime retires
+four legacy paving batches and retains the existing coastal geometry, tree
+meshes and water maps. Authenticated receiving matched all 57 installed files,
+both exact revisioned GLBs and the protected world checkpoints. Native readback
+preserved all west result node coordinates and revisions, including the original
+presentation anchor. Package `d4953c7489df` is the compatible predecessor.
+[West court source and walkthrough evidence](../art/compaii-house/redesign/gallery-island.md)
+
+The previous workstation release served source `25258be`, package
+`c968b95c4d77`. Both Harmonic Beacon workstations now
 open the existing authenticated Harmonic Lab panel in the world, focused on
 the selected tool. Closing it restores control at the same position in the
 same renderer. The panel mounts only on request and detaches when dismissed
