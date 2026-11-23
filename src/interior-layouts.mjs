@@ -48,7 +48,8 @@ function extendsLayout(previous, rooms) {
 }
 
 export class InteriorLayouts {
-  constructor({state,houses,baseDefinitions = [],persist,validate,draftBaseline = []}) {
+  constructor({state,houses,baseDefinitions = [],persist,validate,draftBaseline = [],
+    allowBaselineExtension = false}) {
     if (!Array.isArray(baseDefinitions) || typeof validate !== 'function')
       throw Error('Select the maintained interior graph validator');
     this.houses = houses;
@@ -56,6 +57,7 @@ export class InteriorLayouts {
     this.validate = validate;
     this.baseDefinitions = structuredClone(baseDefinitions);
     this.draftBaseline = structuredClone(draftBaseline);
+    this.allowBaselineExtension = allowBaselineExtension;
     this.legacyHouses = new Set(this.baseDefinitions.map(room => room.house));
     this.fenced = false;
 
@@ -88,7 +90,14 @@ export class InteriorLayouts {
   }
 
   merged(layouts) {
-    return [...this.baseDefinitions,...layouts.flatMap(layout => layout.rooms)];
+    return [...this.baseDefinitions,...layouts.flatMap(layout => this.projectedRooms(layout))];
+  }
+
+  projectedRooms(layout) {
+    return layout.rooms.map(room=>{
+      const original=this.draftBaseline.find(baseline=>baseline.id===room.id);
+      return original?{...room,guests:original.guests}:room;
+    });
   }
 
   validDefinitions(layouts) {
@@ -100,8 +109,6 @@ export class InteriorLayouts {
   }
 
   definitions() {
-    if (this.draftBaseline.length && this.state.layouts.length)
-      return structuredClone(this.draftBaseline);
     return structuredClone(this.merged(this.state.layouts));
   }
 
@@ -116,8 +123,7 @@ export class InteriorLayouts {
     const house = houseId(actor.id);
     if (!this.owns(actor,house)) return null;
     const current = this.state.layouts.find(layout => layout.house === house);
-    return current ? structuredClone(this.draftBaseline.length ?
-      {...current,rooms:this.draftBaseline} : current) : null;
+    return current ? structuredClone({...current,rooms:this.projectedRooms(current)}) : null;
   }
 
   draft(actor, input) {
@@ -172,8 +178,12 @@ export class InteriorLayouts {
   prepare(actor, input, fingerprint) {
     const previous = this.state.layouts.find(layout => layout.house === input.house);
     if ((previous?.revision ?? null) !== input.expectedRevision) return null;
-    if (this.draftBaseline.length && (previous || !isDeepStrictEqual(input.rooms,this.draftBaseline)))
-      return null;
+    if (this.draftBaseline.length) {
+      if (!previous && !isDeepStrictEqual(input.rooms,this.draftBaseline)) return null;
+      if (previous && (!this.allowBaselineExtension || !this.draftBaseline.every(room=>
+        isDeepStrictEqual(input.rooms.find(candidate=>candidate.id===room.id)?.guests,room.guests))))
+        return null;
+    }
     const layout = {house:input.house,revision:(previous?.revision ?? 0)+1,
       rooms:structuredClone(input.rooms)};
     if (!revision(layout.revision)) return null;

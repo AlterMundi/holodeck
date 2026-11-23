@@ -207,6 +207,23 @@ the actor has passage access. Both portal landings retain their addresses.
 [Return from the tower](review/tower-gallery-return.jpg) ·
 [Approach to the tower resonator](review/tower-approach.jpg).
 
+The Atelier's second foyer fitting is the [editable oak and brass portal](foyer-portal.blend).
+It uses honey limestone feet, a dark enamel center, a teal inlay and a brass
+destination plate. Its geometry is local to the passage so the same fitting
+works in reverse. At foyer slot 1 it projects in front of the existing inner
+stone face. The walking approach stays at x=3, z=-4.81; the original gallery
+door stays at x=-3. The GLB contains 4,600 triangles in five material draws
+and no texture downloads. The active room supplies the current authorized
+destination label and only serves the GLB to actors with the matching passage.
+
+Regenerate with Blender 5.2.2 and an empty output directory:
+
+```sh
+blender -b --factory-startup -t 4 --python-exit-code 1 \
+  -P art/compaii-house/redesign/foyer-portal.py -- "$ART_OUTPUT" --render
+```
+
+
 The [arrival commons](holodeck-commons.blend) can be regenerated with
 `commons.py`. It replaces the main terrace and both connecting decks in
 their existing coordinates. The center remains open for creation and

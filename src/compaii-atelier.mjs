@@ -15,6 +15,27 @@ const layout=[
   [lab,-1,false,[['stair',gallery]]],
   [tower,2,false,[['portal',gallery]]],
 ];
+// The build directly preceding the first writer must already recover
+// expanded room, furnishing and activity checkpoints.
+export const ATELIER_EXPANSION_WRITES=false;
+const FOYER_PORTAL_PATH='room-art/compaii-atelier/foyer-portal.glb';
+const originalRooms=new Set(Object.values(ATELIER_ROOMS));
+const addedFoyerPortal=link=>link?.kind==='portal'&&!originalRooms.has(link.to);
+
+function matchesOriginalLinks(id,links,baseline){
+  return (links.length===baseline.length ||
+    (id===foyer&&links.length===2&&addedFoyerPortal(links[1]))) &&
+    baseline.every(([kind,to],index)=>links[index]?.to===to&&links[index]?.kind===kind);
+}
+
+export function matchesAtelierLayout(rooms,baseline){
+  return baseline.every(original=>{
+    const room=rooms.find(room=>room.id===original.id);
+    return room?.house===COMPAII_HOUSE && room.entry===original.entry &&
+      room.level===original.level && room.title===original.title &&
+      matchesOriginalLinks(room.id,room.links,original.links.map(link=>[link.kind,link.to]));
+  });
+}
 const FACADE_ASSET='compaii-atelier-facade.glb';
 const GARDEN_ASSET='compaii-atelier-garden.glb';
 const GARDEN_REVISION='44042fb171ad5be40f870f6c9c2e3dda7206cabec6fdc52e5c8b40be8cc288fb';
@@ -42,6 +63,7 @@ const COASTAL_RIDGES=Object.freeze({asset:'coastal-ridges.glb',
   revision:'518884afc176e4351746b8cce5e0461d1be7c7e36db0f3fc70a9a813e88b9119'});
 const COASTAL_FOG=Object.freeze({fogNear:24,fogFar:124,fogColor:{r:.716,g:.776,b:.784}});
 export const ATELIER_ASSET_REVISIONS=Object.freeze({
+  [FOYER_PORTAL_PATH]:'c18e510bba8fbab0d2a7e91bed63402c1aa82c4963678b58663f1c259741eee2',
   'room-art/compaii-atelier/foyer.glb':'7816835b65ffbf025ae295dee37d0db978bede7a9dbc83f66e44d53d052ede59',
   'room-art/compaii-atelier/foyer-gallery.glb':'7a742175fc530b774e50b4e0917bf50eea60dfdca0124285d742a92c4996c27b',
   'room-art/compaii-atelier/gallery.glb':'a014d251eaf7ef33f6ba66fc696ecf4ad946177c6fccf8f64a0b75546118e3ba',
@@ -143,7 +165,7 @@ export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt())
   for(const [id,level,entry,links] of layout){
     const room=rooms.get(id);
     if(room?.house!==COMPAII_HOUSE||room.level!==level||room.entry!==entry||
-       room.links.length!==links.length||links.some(([kind,to],index)=>room.links[index].to!==to||room.links[index].kind!==kind))
+       !matchesOriginalLinks(id,room.links,links))
       throw Error('The Atelier requires the existing authored room layout');
   }
   const assets=new Map();
@@ -198,6 +220,12 @@ export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt())
     sceneryAsset:SURROUNDINGS_ASSET,sceneryRevision:SURROUNDINGS_REVISION,outdoorSky:OUTDOOR_SKY,
     coastalRidges:COASTAL_RIDGES,coastalFog:COASTAL_FOG,gardenVisual,commonsVisual,
     houseVisual:house=>house.id===COMPAII_HOUSE&&house.revision===1?{facade}:null,
+    passageFitting:(room,passage)=>{
+      if(room?.house!==COMPAII_HOUSE||passage.kind!=='portal')return null;
+      const selected=room.id===foyer ? passage.slot===1&&addedFoyerPortal(passage) :
+        !originalRooms.has(room.id)&&passage.to===foyer;
+      return selected?asset('foyer-portal'):null;
+    },
     interiorArtwork:(room,passages=[])=>{
       if(room?.house!==COMPAII_HOUSE)return null;
       if(room.id===foyer){

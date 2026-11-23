@@ -33,6 +33,12 @@ receiving graph remains the compatible fallback. A rollback predating
 adoption continues to serve those same four rooms and leaves the adopted
 plan and receipt on disk. Reinstating an adoption-capable package reads the
 receipt again. Current receiving access lists still govern these rooms.
+Before the first expansion, activate the release that can already read
+the added room and its design, exhibit, game and visit saves. Select that
+reader's exact deployed digest as the predecessor of the expansion writer.
+Use the compatible reader for rollback once an added room holds state.
+The original guest lists still come from receiving configuration, and
+the actor-scoped art route serves the new fitting only with passage access.
 The optional gallery source pins
 are independent of the art profile. The gallery and tower meshes contain
 passive portal fittings. Each live scene adds the destination plaque and

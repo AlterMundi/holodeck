@@ -43,15 +43,16 @@ test('the Atelier owner adopts the exact live plan and recovers its receipt with
     listener=null;
   }
   t.after(stop);
-  async function start(interiorSpaces){
+  async function start(interiorSpaces,atelierLayoutWrites=false){
     ownerSocket=join(stateDir,'owner-'+(++boot)+'.sock');
     foreignSocket=join(stateDir,'foreign-'+boot+'.sock');
     runtime=await createHolodeck({stateDir,basePath:'/holodeck/',artProfile:ATELIER_PROFILE,
-      interiorSpaces,ownNative:true,
+      interiorSpaces,ownNative:true,atelierLayoutWrites,
       worldPorts:[{socket:ownerSocket,beingRef:owner},{socket:foreignSocket,beingRef:foreign}],
       nativeRoomAuthority:async()=>['observe','edit'],
       nativeFactory:()=>({availability:async()=>({available:false}),authorizeWorldRequest(){throw Error('fixture');}}),
-      identityResolver:async()=>({kind:'human',id:'human:gallery',rights:['observe']})});
+      identityResolver:async req=>({kind:'human',rights:['observe'],
+        id:req.headers.cookie?.includes('role=lab')?'human:lab':'human:gallery'})});
     listener=runtime.app.listen(0,'127.0.0.1');
     await once(listener,'listening');
     base='http://127.0.0.1:'+listener.address().port+'/holodeck/';
@@ -64,10 +65,15 @@ test('the Atelier owner adopts the exact live plan and recovers its receipt with
     for await(const chunk of socket)response+=chunk;
     return JSON.parse(response);
   }
+  async function login(role){
+    const cookie=role?'role='+role:null;
+    const response=await fetch(base,{headers:{Accept:'application/json',...(cookie?{Cookie:cookie}:{})}});
+    assert.equal(response.status,200);
+    return {Cookie:[cookie,response.headers.get('set-cookie').split(';')[0]].filter(Boolean).join('; '),
+      'Content-Type':'application/json'};
+  }
   await start(definitions);
-  const login=await fetch(base,{headers:{Accept:'application/json'}});
-  assert.equal(login.status,200);
-  const headers={Cookie:login.headers.get('set-cookie').split(';')[0],'Content-Type':'application/json'};
+  let headers=await login();
   const visit=await fetch(base+'api/space',{headers,method:'POST',
     body:JSON.stringify({from:'outside',to:foyer,live:1})});
   assert.equal(visit.status,200);
@@ -102,6 +108,63 @@ test('the Atelier owner adopts the exact live plan and recovers its receipt with
   assert.deepEqual((await act({type:'layout.current'})).result,
     {house:house.id,revision:1,rooms:updated});
   assert.deepEqual(adoptedStore.load().layouts[0].rooms,definitions);
+
+  const extension={type:'layout.draft',id:'atelier-extension-1',from:foyer,
+    kind:'portal',room:'sensorial',title:'Taller Sensorial',level:0,guests:['human:gallery']};
+  assert.equal((await act(extension)).ok,false,'the compatible predecessor reads but cannot expand');
+  await stop();
+  await start(updated,true);
+  headers=await login();
+  assert.equal((await act({...extension,kind:'door'})).ok,false);
+  assert.equal((await act({...extension,from:gallery})).ok,false);
+  const expansion=(await act(extension)).result.command;
+  const added=expansion.rooms.at(-1).id;
+  const receipt=(await act(expansion)).result;
+  assert.deepEqual(receipt,{house:house.id,revision:2});
+  const design={type:'design.put',id:'added-room-design-1',room:added,
+    kit:'listening-workshop',expectedRevision:null};
+  const garden={type:'garden.put',id:'added-room-garden-1',room:added,title:'Jardín de escucha',
+    expectedRevision:null,play:{schema:'signal-garden/v1',minContributors:1,
+      targets:[{x:0,z:2,radius:.55,color:'violet'}]}};
+  const designReceipt=(await act(design)).result;
+  const gardenReceipt=(await act(garden)).result;
+  assert.equal(designReceipt.revision,1);
+  assert.equal(gardenReceipt.revision,1);
+
+  async function read(path,auth=headers){
+    const response=await fetch(base+'api/'+path,{headers:auth});
+    assert.equal(response.status,200);
+    return response.json();
+  }
+  const move=(from,to,auth=headers)=>fetch(base+'api/space',{headers:auth,method:'POST',
+    body:JSON.stringify({from,to,live:1})});
+  const expanded=await read('space?live=1');
+  assert.equal(expanded.id,foyer);
+  assert.deepEqual(expanded.exits[0],before.exits[0]);
+  assert.deepEqual(expanded.exits[1].door,{x:3,y:.11,z:-4.81,yaw:180});
+  const fitting=expanded.scene.markup.match(/id="portal-fitting-1" src="([^"]+)"/)[1];
+  const authorizedAsset=await fetch(new URL(fitting,base),{headers});
+  assert.equal(authorizedAsset.status,200);
+  assert.equal(Buffer.from(await authorizedAsset.arrayBuffer()).subarray(0,4).toString(),'glTF');
+  const otherHeaders=await login('lab');
+  assert.equal((await move('outside',foyer,otherHeaders)).status,200);
+  assert.doesNotMatch((await read('space?live=1',otherHeaders)).scene.markup,/portal-fitting|Taller Sensorial/);
+  assert.equal((await fetch(new URL(fitting,base),{headers:otherHeaders})).status,404);
+  assert.equal((await move(foyer,added,otherHeaders)).status,409);
+  assert.equal((await move(foyer,added)).status,200);
+  const destination=await read('space?live=1');
+  assert.match(destination.scene.markup,/portal-fitting-0/);
+  assert.equal(destination.objects.find(object=>object.id==='left-bench').title,'Mesa de escucha');
+  assert.equal((await read('space/garden?room='+added)).title,garden.title);
+  await stop();
+  await start(updated);
+  headers=await login();
+  assert.equal((await read('space?live=1')).id,added);
+  assert.deepEqual((await act({type:'layout.result',id:extension.id})).result,receipt);
+  assert.deepEqual((await act({type:'design.result',id:design.id})).result,designReceipt);
+  assert.deepEqual((await act({type:'garden.result',id:garden.id})).result,gardenReceipt);
+  assert.equal((await act({...extension,id:'reader-cannot-write',from:added,room:'extra'})).ok,false);
+  assert.equal((await move(added,foyer)).status,200);
 });
 
 test('profile is optional and uses the exact existing room graph and parcel edition',()=>{

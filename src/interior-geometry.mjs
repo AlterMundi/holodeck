@@ -43,7 +43,7 @@ export function roomFloor(passages,color,visible=true) {
   return floor;
 }
 
-export function passageMarkup(passage,{visibleSteps=true,authoredPortal=null,authoredDoor=false,authoredPassages=[]}={}) {
+export function passageMarkup(passage,{visibleSteps=true,authoredPortal=null,authoredDoor=false,authoredPassages=[],portalAsset=null}={}) {
   const slot=SLOTS[passage.slot],y=passage.rise*STAIR_STEPS*RISE;
   const portal=passage.kind==='portal',color=portal?'#9384bd':passage.rise?'#779491':'#d6b58c';
   const fill=portal?'#4f6a8d':passage.rise?'#3f5b5e':'#675948';
@@ -55,6 +55,12 @@ export function passageMarkup(passage,{visibleSteps=true,authoredPortal=null,aut
   }
   if(passage.rise)for(const side of [-1,1])
     steps+=cube(side*.91,.57+y/2,STAIR_STEPS*TREAD/2,.12,1.04+Math.abs(y),STAIR_STEPS*TREAD,'#7a9690',attributes);
+  if(portal&&portalAsset)
+    return `<m-group id="passage-${passage.slot}" x="${slot.x}" z="${slot.z}" ry="${slot.rotation}">
+    <m-model id="portal-fitting-${passage.slot}" src="${portalAsset}" collide="false" cast-shadows="false"></m-model>
+    <m-label y="3.21" z=".61" width="1.52" height=".19" padding="2" font-size="13" alignment="center" color="#18323c" font-color="#ffe3b0" content="${passage.label}" collide="false"></m-label>
+    <m-light y="2.24" z=".96" type="point" intensity="2" distance="3.2" color="#8cddd3" cast-shadows="false"></m-light>
+  </m-group>`;
   if(portal&&authoredPortal){
     const {plaque,light}=authoredPortal;
     return `<m-group id="passage-${passage.slot}" x="${slot.x}" z="${slot.z}" ry="${slot.rotation}">

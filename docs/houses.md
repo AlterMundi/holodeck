@@ -125,8 +125,10 @@ that they may enter.
   and its receipt. The receiving configuration still owns the access lists
   for its four authored rooms. The adoption keeps their ordered links,
   positions, Blender assets and exhibit/prototype bindings. An authored
-  expansion fitting and compatible rollback reader are required to open
-  another room from this plan.
+  expansion uses a portal in the foyer's second slot. The compatible reader
+  preserves appended rooms, furniture, activities and visit placement when
+  recovering from an expansion-capable build. The original receiving-room
+  access lists remain in force, and added rooms use their own explicit guests.
 - `layout.preview` accepts `id`, `house`, `expectedRevision` and `rooms` in
   addition to `type`. Use `null` for the first plan and the current revision
   for an extension. It returns the proposed `house`, `revision` and `rooms`
