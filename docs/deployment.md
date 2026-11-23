@@ -115,6 +115,15 @@ shared deadline and byte bounds. The compatible configuration can remain
 unselected while a room or thumbnail preparation is ongoing. The route and
 shell do not activate the complete worktable or archive interaction.
 
+An optional `matterCollection.archive` selects up to six explicitly named
+retained editions, with `resource`, immutable `version` and display `label`.
+Each archive entry needs both current catalog access and permission to read
+the historical Home manifest. A pin already on a current shelf appears only
+on the shelf. The room sends the eligible archive metadata in the same
+scoped collection response. The cabinet animates the indexed platform and
+renders one archived miniature at a time. Restoring a version to a shelf
+still requires the owner's publication and room-placement action.
+
 The optional `collection-representatives/index.json` under protected state
 binds exact viewer editions to Blender shelf derivatives. The index schema is
 `holodeck.collection-representatives/v1`. Each entry has `resource`,
@@ -126,7 +135,7 @@ index. The index uses at most 16 KiB, with each GLB at most 384 KiB and 4,800
 indexed triangles. There are no textures or external buffers. Source
 publication history and access grants stay in Homes.
 
-The client draws at most three nearby thumbnails and refreshes the scoped
+The client draws at most three nearby shelf thumbnails and one cabinet model. It refreshes the scoped
 catalog every 12 seconds while the room is active. The thumbnail response
 requires a new exact-edition access check. The client verifies the bytes and
 releases nearby models on movement, revocation or room departure. If the

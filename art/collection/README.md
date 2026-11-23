@@ -4,6 +4,8 @@ The editable Blender draft gives Casa de CompAII's Collection a naturally lit
 working room, with a walk all the way around the worktable, shelves on the left
 and a glazed archive turntable on the right. Named Blender empties mark the
 entrance, stable shelf positions, model origin and archive rotation center.
+The rotating GLB node `archive_turntable_platform` carries its pad and two
+visible index marks. The cabinet housing remains fixed during viewer navigation.
 The lamp and player-height camera in the editable file are reference lighting.
 The export leaves room for the engine to attach real models and the game HUD.
 
@@ -44,5 +46,6 @@ The Blender producer was exercised against five exact retained reviews.
 The exports came to 2,873–4,756 triangles and 216–315 kB. Each could be
 imported and rendered in Blender. The shelf contents mounted in the isolated desktop and touch candidate. The
 receiving index and exact-access contract are in [deployment](../../docs/deployment.md#receiving-contracts).
-Live room selection and worktable refresh remain pending. The current three fixed gallery
+The cabinet cycles exact retained editions in the isolated candidate. Live
+room selection, restoration to a shelf, and worktable refresh remain pending. The current three fixed gallery
 displays are available through the existing viewer path.

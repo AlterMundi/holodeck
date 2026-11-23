@@ -51,9 +51,11 @@ export function readCollectionRepresentatives(stateDir,selection){
   if(!manifest||manifest.schema!=='holodeck.collection-representatives/v1'||
      !Array.isArray(manifest.entries)||manifest.entries.length>18)throw Error('Invalid Collection representative index');
   const allowed=new Set(selection.projects.flatMap(project=>project.resources));
+  const archived=new Set((selection.archive??[]).map(item=>item.resource+':'+item.version));
   for(const record of manifest.entries){
     if(!record||Object.keys(record).sort().join(',')!=='resource,scene,sha256,version'||
-       !valid(record.resource,RESOURCE)||!allowed.has(record.resource)||!valid(record.version,DIGEST)||
+       !valid(record.resource,RESOURCE)||!valid(record.version,DIGEST)||
+       !(allowed.has(record.resource)||archived.has(record.resource+':'+record.version))||
        !valid(record.scene,DIGEST)||!valid(record.sha256,DIGEST))throw Error('Invalid Collection representative edition');
     const key=record.resource+':'+record.version;
     if(entries.has(key))throw Error('Select one representative per exact edition');

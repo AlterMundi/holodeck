@@ -91,9 +91,19 @@ authorized creator. An anonymous read of the protected Visor X version
 was denied. The two Chromium interaction trials used fixture identities and a
 controlled viewer destination.
 
-This candidate does not select a live world layout. The archive controls,
-full-geometry worktable and live saved-edition swaps are pending integration.
-[Room and source contract](houses.md#the-collection)
+The archive candidate mounted two miniatures derived from real retained
+Guitar review versions. Desktop and touch Chromium advanced the indexed
+platform, opened the selected exact historical viewer link, returned to
+the same place, and stepped back. Revoking only historical permission
+removed the cabinet's model, plaque and action and returned 404 for the
+historical miniature. The current edition remained readable. The owner
+reader separately verified both exact historical manifests and viewer pages
+against the real Home gateway. The interactive tests used a controlled
+viewer destination and fixture identities.
+
+This candidate does not select a live world layout. Restoring an archived
+project to a shelf, the full-geometry worktable and live saved-edition swaps
+are pending integration. [Room and source contract](houses.md#the-collection)
 
 ## Selected receiving release
 

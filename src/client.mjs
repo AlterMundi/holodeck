@@ -425,7 +425,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
     const frameBudget=capWorldPixelRatio(renderer,rendererBudget);
     galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
-    collectionShelves=new CollectionShelves({base,scene:renderer.mmlCompositionScene.group,panel:document.querySelector('#collection-shelf')});
+    collectionShelves=new CollectionShelves({base,scene:renderer.mmlCompositionScene.group,panel:document.querySelector('#collection-shelf'),
+      archivePanel:document.querySelector('#collection-archive')});
     const sky=new OutdoorSky(renderer.mmlCompositionScene.group.parent,base);
     const light=new DirectionalLight(0xffefd6,1.8);
     light.position.set(12,22,10);light.target.position.set(0,0,-6);light.castShadow=true;

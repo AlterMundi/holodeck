@@ -142,8 +142,15 @@ for x in (cabinet_x - 1.236, cabinet_x + 1.236):
 box('Archive front glazing', (cabinet_x, 3.04, 1.60), (2.42, .009, 1.46), glazing, 0)
 box('Cabinet light opal', (cabinet_x, cabinet_y, 2.276), (2.38, .21, .036), lamp, .014)
 cylinder('Fixed archive drive housing', (cabinet_x, cabinet_y, .926), .49, .14, steel)
-cylinder('Revolving archive display', (cabinet_x, cabinet_y, 1.01), .624, .055, brass)
-cylinder('Inset revolving display pad', (cabinet_x, cabinet_y, 1.044), .605, .018, green)
+platform = cylinder('archive_turntable_platform', (cabinet_x, cabinet_y, 1.01), .624, .055, brass)
+pad = cylinder('Inset revolving display pad', (cabinet_x, cabinet_y, 1.044), .605, .018, green)
+marks = [box('Revolving archive index', (cabinet_x, cabinet_y + offset, 1.055),
+             (.027, .097, .008), brass, .003) for offset in (-.555, .555)]
+bpy.context.view_layer.update()
+for part in [pad, *marks]:
+    world = part.matrix_world.copy()
+    part.parent = platform
+    part.matrix_world = world
 lettering('Archive heading', 'ARCHIVO', (cabinet_x, 2.934, 2.326), .133)
 lettering('Room heading', 'MANIPULACIÓN DE MATERIA', (0, 5.835, 3.45), .239)
 anchor('worktable-model', 0, .43, 1.058)

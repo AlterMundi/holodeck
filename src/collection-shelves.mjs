@@ -1,5 +1,6 @@
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {disposeModel,placeGalleryModel} from './gallery-models.mjs';
+import {CollectionArchive} from './collection-archive.mjs';
 
 const REFRESH_MS=12000;
 const MODEL_LIMIT=384*1024;
@@ -31,11 +32,13 @@ async function modelBytes(base,edition,signal){
 }
 
 export class CollectionShelves {
-  constructor({base,scene,panel}){
+  constructor({base,scene,panel,archivePanel}){
     Object.assign(this,{base,scene,panel,loader:new GLTFLoader()});
     this.items=new Map();
     this.list=panel.querySelector('ul');
     this.visibleLinks='';
+    this.archive=new CollectionArchive({scene,panel:archivePanel,loader:this.loader,
+      readModel:(edition,signal)=>modelBytes(base,edition,signal)});
   }
 
   update(room,root,player){
@@ -54,6 +57,7 @@ export class CollectionShelves {
       if(item.edition.representative&&!item.mesh&&!item.pending&&now>=(item.retryAt??0))this.load(item);
     }
     this.links(nearest.filter(value=>value.distance<=1.85).map(value=>value.item));
+    this.archive.update(player);
   }
 
   async refresh(){
@@ -65,9 +69,11 @@ export class CollectionShelves {
         {cache:'no-store',redirect:'error',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(6500)])});
       const data=response.ok?await response.json():null;
       if(controller.signal.aborted)return;
-      this.sync(data?.room===this.room?data.projects:[]);
+      const current=data?.room===this.room?data:null;
+      this.sync(current?.projects);
+      this.archive.sync(current?.archive,this.root);
     }catch{
-      if(!controller.signal.aborted)this.sync([]);
+      if(!controller.signal.aborted){this.sync([]);this.archive.clear();}
     }finally{
       if(this.flight===controller)this.flight=null;
     }
@@ -147,7 +153,7 @@ export class CollectionShelves {
   clear(){
     this.flight?.abort();this.flight=null;
     for(const item of this.items.values())this.remove(item);
-    this.links([]);
+    this.links([]);this.archive.clear();
     this.room=null;this.root=null;this.refreshAt=0;
   }
 }

@@ -4,7 +4,7 @@ import {readPackedArt} from './packed-art.mjs';
 import anchors from '../art/collection/anchors.json' with {type:'json'};
 
 const path='room-art/matter-workshop.glb';
-const digest='7793cf44397363347da1d56159efa74d099e87362087f5eceed6d9a6bd937c55';
+const digest='37c1afcb19f3e43729d5990cc1cf9fd68edde3c380480191e50fc89c0faa34cf';
 export const MATTER_ART_REVISIONS=Object.freeze({[path]:digest});
 
 // Coordinates refer to the meters in the Blender shell and the existing
@@ -28,6 +28,7 @@ export function readMatterWorkshopArt(){
     throw Error('Matter workshop does not match the qualified Blender export');
   return {...packed,bytes,revision:digest+'.glb',replacesShell:true,colliders,lightRig,ambient:.38,
     keyLight:{position:[-.75,2.36,-.43],target:[0,1,-.43],color:'#ffe1b6',intensity:67},
+    archive:position(anchors['archive-model']),
     shelves:Array.from({length:6},(_,index)=>position(anchors['shelf-'+index])),
     fixtures:[
       {id:'worktable',title:'Mesa de trabajo',revision:1,position:position(anchors['worktable-model']),kind:'fixture'},

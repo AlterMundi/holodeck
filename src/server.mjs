@@ -677,29 +677,36 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(!result)return res.status(409).json({message:'La señal no se pudo colocar. Revisá el jardín actual.'});
     res.json(result);
   }));
+  function withRepresentative(edition){
+    const model=representatives.get(edition.resource+':'+edition.version);
+    return model?{...edition,representative:{sha256:model.sha256,scene:model.scene}}:edition;
+  }
   app.get(route('api/space/collection'),asyncRoute(async(req,res)=>{
     if(!collection||!inScope(req.actor,collection.room))return res.sendStatus(404);
     const session=req.holodeckSession;
-    const projects=await readCollection(req.headers.cookie,collection);
+    const projection=await readCollection(req.headers.cookie,collection);
     if(!inScope(session.actor,collection.room)||!inScope(await currentActor(req,session),collection.room))return res.sendStatus(404);
-    if(projects===null)return res.status(503).json({message:'La colección no está disponible en este momento.'});
-    const shelves=artForRoom(spaces.rooms.get(collection.room))?.shelves;
-    const projected=projects.map(project=>{
-      const editions=project.editions.map(edition=>{
-        const model=representatives.get(edition.resource+':'+edition.version);
-        return model?{...edition,representative:{sha256:model.sha256,scene:model.scene}}:edition;
-      });
-      return {...project,editions,...(shelves?{anchor:shelves[project.shelf]}:{})};
-    });
-    res.json({room:collection.room,projects:projected});
+    if(projection===null)return res.status(503).json({message:'La colección no está disponible en este momento.'});
+    const art=artForRoom(spaces.rooms.get(collection.room));
+    const projects=projection.projects.map(project=>({...project,editions:project.editions.map(withRepresentative),
+      ...(art?.shelves?{anchor:art.shelves[project.shelf]}:{})}));
+    const current=new Set(projects.flatMap(project=>project.editions.map(edition=>edition.resource+':'+edition.version)));
+    const archive=projection.archive.filter(edition=>!current.has(edition.resource+':'+edition.version)).map(withRepresentative);
+    res.json({room:collection.room,projects,
+      ...(collection.archive&&art?.archive?{archive:{anchor:art.archive,editions:archive}}:{})});
   }));
   app.get(route('api/space/collection-model/:resource/:version'),asyncRoute(async(req,res)=>{
     if(!collection||!inScope(req.actor,collection.room))return res.sendStatus(404);
     const {resource,version}=req.params;
     const model=representatives.get(resource+':'+version);
     if(!model)return res.sendStatus(404);
-    const projects=await readCollection(req.headers.cookie,{projects:[{id:'model',resources:[resource]}]});
-    if(projects?.[0]?.editions[0]?.version!==version||!inScope(await currentActor(req,req.holodeckSession),collection.room))
+    const pin=collection.archive?.find(item=>item.resource===resource&&item.version===version);
+    const onShelf=collection.projects.some(project=>project.resources.includes(resource));
+    const projection=await readCollection(req.headers.cookie,{
+      projects:onShelf?[{id:'model',resources:[resource]}]:[],archive:pin?[pin]:[],
+    });
+    const current=projection?.projects[0]?.editions[0]?.version===version;
+    if(!(current||projection?.archive.length)||!inScope(await currentActor(req,req.holodeckSession),collection.room))
       return res.sendStatus(404);
     res.type('model/gltf-binary').send(model.bytes);
   }));

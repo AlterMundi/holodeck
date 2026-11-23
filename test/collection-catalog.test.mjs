@@ -11,7 +11,7 @@ import {RoomStore} from '../src/room-store.mjs';
 import {createHolodeck} from '../src/server.mjs';
 
 const main='1'.repeat(32),component='2'.repeat(32),lenses='3'.repeat(32),foreign='4'.repeat(32);
-const version='a'.repeat(64),gallerySha256='b'.repeat(64);
+const version='a'.repeat(64),gallerySha256='b'.repeat(64),oldVersion='f'.repeat(64);
 const selected={room:'matter',projects:[
   {id:'guitar',resources:[main,component]},
   {id:'lenses',resources:[lenses]},
@@ -37,6 +37,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
     id:house,owner,revision:1,parcel:'parcel-west-1',
     facade:{color:'#226655',title:'House',width:2,depth:1,height:2},
   }]});
+  const archived=[{resource:main,version:oldVersion,label:'Guitarra · Banco inicial'}];
   const sceneVersion='d'.repeat(64);
   const json=Buffer.from(JSON.stringify({asset:{version:'2.0'},scene:0,scenes:[{nodes:[0]}],
     nodes:[{mesh:0}],meshes:[{primitives:[{attributes:{POSITION:0},indices:1}]}],buffers:[{byteLength:44}],
@@ -49,12 +50,13 @@ test('collection projects stay grouped and editions follow each visitor and thei
   mkdirSync(models);
   writeFileSync(join(models,sha256+'.glb'),glb);
   writeFileSync(join(models,'index.json'),JSON.stringify({schema:'holodeck.collection-representatives/v1',
-    entries:[{resource:main,version,scene:sceneVersion,sha256}]}));
+    entries:[version,oldVersion].map(version=>({resource:main,version,scene:sceneVersion,sha256}))}));
   const thumbnail='/api/space/collection-model/'+main+'/'+version;
-  let revoked=false,unavailable=false,hold,expiredSession=false,mainVersion=version;
+  const archivedThumbnail='/api/space/collection-model/'+main+'/'+oldVersion;
+  let revoked=false,unavailable=false,hold,expiredSession=false,mainVersion=version,historicalDenied=false;
   const requests=[];
   const runtime=await createHolodeck({
-    stateDir,publicOrigin:'https://home.test',matterCollection:{...selected,art:'matter-workshop-v1'},
+    stateDir,publicOrigin:'https://home.test',matterCollection:{...selected,art:'matter-workshop-v1',archive:archived},
     interiorSpaces:[{id:'matter',house,title:'Manipulación de Materia',entry:true,level:0,guests:['human:guest'],links:[]}],
     identityResolver:async req=>{
       if(expiredSession)return null;
@@ -74,12 +76,12 @@ test('collection projects stay grouped and editions follow each visitor and thei
         return Response.json({entries:allowed.map(resource=>({resource_ref:'dm:resource:v1:'+resource,
           kind:'artifact',model_review:true,title:'Project '+resource[0],version_ref:resource===main?mainVersion:version}))});
       }
-      const resource=url.pathname.split('/')[2];
+      const [, ,resource,requestedVersion]=url.pathname.split('/');
       assert.notEqual(resource,foreign);
       if(hold)await hold();
-      if(resource===main&&revoked)return new Response('',{status:404});
+      if(resource===main&&(revoked||requestedVersion===oldVersion&&historicalDenied))return new Response('',{status:404});
       return Response.json({schema:'dm.review-live/v1',gallery:'gallery.json',sha256:gallerySha256},
-        {headers:{'X-Home-Version':resource===lenses?'c'.repeat(64):resource===main?mainVersion:version}});
+        {headers:{'X-Home-Version':resource===lenses?'c'.repeat(64):requestedVersion}});
     },
   });
   const listener=runtime.app.listen(0,'127.0.0.1');
@@ -122,8 +124,16 @@ test('collection projects stay grouped and editions follow each visitor and thei
   const model=resource=>({resource,version,title:'Project '+resource[0],gallerySha256,
     ...(resource===main?{representative:{scene:sceneVersion,sha256}}:{})});
   const guitar=(...resources)=>({id:'guitar',shelf:0,anchor:{x:-5.25,y:.688,z:-1.36},editions:resources.map(model)});
-  assert.deepEqual(await response.json(),{room:'matter',projects:[guitar(main,component)]});
-  assert.deepEqual(await (await visitor.catalog()).json(),{room:'matter',projects:[guitar(main)]});
+  const archive={anchor:{x:3.35,y:1.061,z:-3.68},
+    editions:[{...model(main),version:oldVersion,label:archived[0].label}]};
+  assert.deepEqual(await response.json(),{room:'matter',projects:[guitar(main,component)],archive});
+  assert.deepEqual(await (await visitor.catalog()).json(),{room:'matter',projects:[guitar(main)],archive});
+  assert.equal((await visitor.art(archivedThumbnail)).status,200);
+  historicalDenied=true;
+  assert.deepEqual((await (await visitor.catalog()).json()).archive,{...archive,editions:[]});
+  assert.equal((await visitor.art(archivedThumbnail)).status,404);
+  assert.equal((await visitor.art(thumbnail)).status,200);
+  historicalDenied=false;
   const thumbnailResponse=await visitor.art(thumbnail);
   assert.equal(thumbnailResponse.status,200);
   assert.equal(thumbnailResponse.headers.get('cache-control'),'no-store');
@@ -136,7 +146,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
   mainVersion=version;
   revoked=true;
   assert.equal((await visitor.art(thumbnail)).status,404);
-  assert.deepEqual(await (await visitor.catalog()).json(),{room:'matter',projects:[]});
+  assert.deepEqual(await (await visitor.catalog()).json(),{room:'matter',projects:[],archive:{...archive,editions:[]}});
   revoked=false;
   unavailable=true;
   assert.equal((await visitor.catalog()).status,503);
