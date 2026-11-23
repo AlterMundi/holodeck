@@ -9,6 +9,18 @@ acceptance. The obsolete bundled pending trial was withdrawn.
 
 ## Selected receiving release
 
+Source `5e90de1`, package `a1ec8c4e05db`, connects the authored
+Beacon workbench to the existing 54-part H.B. Guitar prototype in Nexus.
+The lab is the discovery scope; no exterior source node, artifact copy or
+additional access was created. The exact Nexus manifest, paired human's
+current invitation and the immutable Home source permission were read back.
+The own publisher verified the exact source renderer. Controlled Chromium
+walked to the station, opened one fixture iframe for the exact pin, and
+returned to the same room and position. The live native owner observed the
+same workbench identity and revision, then returned outside. Actual human
+use of the published viewer from the room and real instrument controls
+remain open.
+
 Source `3e15eb6`, package `538da75a94c9`, enables the continuing
 Conversation in authorized rooms. The receiving package passed a scoped
 preparation test that moves the speaker outside during an asynchronous

@@ -114,6 +114,13 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
+The Beacon prototype workbench is selected at source `5e90de1`,
+package `a1ec8c4e05db`, with `538da75a94c9` as the immediate predecessor.
+All 31 runtime files and authenticated HTTPS asset hashes matched. The
+station reuses the existing exact Nexus/Home review. The receiving
+configuration and native journal matched their pre-activation readings.
+See the [room-local workstation](../art/compaii-house/README.md#first-playable-mounting).
+
 Indoor Conversation is selected at source `3e15eb6`, package
 `538da75a94c9`, with `a7cf9e539e70` retained as the immediate compatible
 predecessor. Installed inventory, authenticated HTTPS asset hashes, current
