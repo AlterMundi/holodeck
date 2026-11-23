@@ -84,12 +84,16 @@ test('gallery HTTP catalog checks each source grant and rechecks active room bef
   assert.doesNotMatch(JSON.stringify(await entered.json()),/draft-v1|archive-v1|model-published-v1/);
   const response=await author.catalog();
   assert.match(response.headers.get('Cache-Control'),/no-store/);
-  const {visits}=await response.json();
+  const {visits,gallery}=await response.json();
+  assert.equal(gallery,true);
   assert.deepEqual(visits.map(visit=>visit.id),['house-exhibit','house-exhibit-draft','house-exhibit-archive']);
+  assert.deepEqual(visits.map(visit=>visit.title),['Terminado','En proceso','Archivo']);
   assert.deepEqual(visits.map(visit=>visit.pin),[published,selection.draft,selection.archive]);
   assert.deepEqual((await (await visitor.catalog()).json()).visits,[visits[0]]);
   revoked=true;
-  assert.deepEqual(await (await visitor.catalog()).json(),{visits:[]});
+  assert.deepEqual(await (await visitor.catalog()).json(),{gallery:true,visits:[]});
+  revoked=false;
+  assert.deepEqual((await (await visitor.catalog()).json()).visits,[visits[0]]);
 
   let started,release;
   const pending=new Promise(resolve=>{started=resolve;});
@@ -99,5 +103,5 @@ test('gallery HTTP catalog checks each source grant and rechecks active room bef
   await pending;
   try{assert.equal((await author.move('gallery','outside')).status,200);}
   finally{release();}
-  assert.deepEqual(await (await racing).json(),{visits:[]});
+  assert.deepEqual(await (await racing).json(),{gallery:false,visits:[]});
 });

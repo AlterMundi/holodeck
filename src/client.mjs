@@ -10,6 +10,7 @@ import { NativeAvatarLayer } from './native-avatar.mjs';
 import {PublicWorldPicker,WorldIndication} from './world-indication.mjs';
 import { ContentVisitor } from './content-visitor.mjs';
 import { GalleryModels } from './gallery-models.mjs';
+import {applyGallerySigns} from './gallery-display.mjs';
 import { BeaconControls } from './beacon-controls.mjs';
 import {pickedRepresentationVisit} from './node-representations.mjs';
 import { PlayableHUD } from './playable-hud.mjs';
@@ -144,7 +145,11 @@ function mountScene(){
   remoteScene=wrapper.remoteDocument;
   remoteScene.append(stored.template.content.cloneNode(true));
   renderer.mmlTargetElement.append(remoteScene);
-  if(!contentVisitor?.catalogFlight)galleryModels?.sync(contentVisitor?.entries??[]);
+  if(!contentVisitor?.catalogFlight){
+    const entries=contentVisitor?.entries??[];
+    galleryModels?.sync(entries);
+    applyGallerySigns(remoteScene,entries);
+  }
   return true;
 }
 // Cosmetic, non-colliding projection of the current server-authorized room.
@@ -349,7 +354,7 @@ const $=selector=>document.querySelector(selector);
 const notice=$('#notice');
 const worldNotice=new WorldNotice(notice);
 contentVisitor=new ContentVisitor({document,window,base,say,scoped:inside,onCatalog:entries=>{
-  if(remoteScene)galleryModels?.sync(entries);
+  if(remoteScene){galleryModels?.sync(entries);applyGallerySigns(remoteScene,entries);}
 }});
 worldHistory=new WorldHistory({document,window,getState:()=>state,
   load:(query,{signal})=>api('activity?'+new URLSearchParams(query),undefined,{signal}),

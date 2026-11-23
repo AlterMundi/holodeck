@@ -26,6 +26,7 @@ import { worldDocument } from './world.mjs';
 import { createWorldPort } from './world-port.mjs';
 import {sameVisitPin,validateContentNodes,validateContentVisits,visitsForActor} from './content-visits.mjs';
 import {allowedGalleryVisits,gallerySlots} from './gallery-catalog.mjs';
+import {GALLERY_STAGES} from './gallery-display.mjs';
 import {createGalleryAuthorization} from './gallery-authorization.mjs';
 import {createNativeRoomAuthority} from './native-authority.mjs';
 import {WorldDocument} from './world-document.mjs';
@@ -172,7 +173,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const cellTransports=new Map();
   function renderInterior(room,passages,exhibit){
     const art=artForRoom(room,passages),src=art?route('api/space/art/'+art.revision):null;
-    return interiorDocument(room,passages,exhibit,art&&{...art,src});
+    const gallerySigns=room.id===gallery?.room&&exhibit?.pin.kind==='artifact_review'&&exhibit.pin.adapter==='interactive_3d';
+    return interiorDocument(room,passages,exhibit,art&&{...art,src,gallerySigns});
   }
   function interiorScopeKey(actor,selected){
     return JSON.stringify([spaces.passages(actor,selected).map(link=>link.slot),exhibits.forRoom(selected.id)?.revision??0,
@@ -490,8 +492,10 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     };
     const visits=await allowedGalleryVisits({entries:currentEntries(),currentEntries,
       authorize:pin=>authorizeGallery(req.headers.cookie,pin)});
-    res.json({visits:visits.map(entry=>({...entry,galleryDisplay:
-      entry.pin.kind==='artifact_review'&&entry.pin.adapter==='interactive_3d'}))});
+    res.json({gallery:inScope(req.actor,active),visits:visits.map(entry=>{
+      const display=Object.hasOwn(GALLERY_STAGES,entry.id)&&entry.pin.kind==='artifact_review'&&entry.pin.adapter==='interactive_3d';
+      return display?{...entry,title:GALLERY_STAGES[entry.id].title,galleryDisplay:true}:entry;
+    })});
   }));
   app.get(route('api/space'),(req,res)=>{
     if(spaces.fenced||room.commitUncertain)return res.status(503).json({message:'No pude confirmar tu ubicación.'});

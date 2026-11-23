@@ -1,14 +1,10 @@
 import {Box3,Group,Vector3} from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {sameVisitPin,validVisitPin} from './content-visits.mjs';
+import {GALLERY_STAGES} from './gallery-display.mjs';
 
 const MODEL_BYTES=4*1024*1024;
 const LEASE_MS=30000;
-const PLINTHS={
-  'house-exhibit':{x:2.5,y:.965,z:1.25},
-  'house-exhibit-draft':{x:3.3945,y:1.1075,z:-.34944},
-  'house-exhibit-archive':{x:3.3945,y:1.4075,z:3.67744},
-};
 const hex=(s,n)=>typeof s==='string'&&s.length===n&&/^[a-f0-9]+$/.test(s);
 
 async function read(request,path,signal,limit,version){
@@ -114,7 +110,7 @@ export class GalleryModels{
   }
 
   sync(entries){
-    const current=entries.filter(entry=>entry.galleryDisplay===true&&Object.hasOwn(PLINTHS,entry.id));
+    const current=entries.filter(entry=>entry.galleryDisplay===true&&Object.hasOwn(GALLERY_STAGES,entry.id));
     for(const [id,item] of this.items){
       if(item.failed||!current.some(entry=>entry.id===id&&entry.nodeRevision===item.entry.nodeRevision&&sameVisitPin(entry.pin,item.entry.pin)))this.remove(id);
     }
@@ -131,7 +127,7 @@ export class GalleryModels{
     this.readModel(entry.pin,{signal:AbortSignal.any([controller.signal,AbortSignal.timeout(9000)])})
       .then(bytes=>this.loader.parseAsync(bytes,'')).then(({scene})=>{
         if(this.items.get(entry.id)!==item||this.now()>=item.expires){disposeModel(scene);return;}
-        const model=placeGalleryModel(scene,PLINTHS[entry.id]);
+        const model=placeGalleryModel(scene,GALLERY_STAGES[entry.id].position);
         model.name=entry.id+'-display';
         this.scene.add(model);item.model=model;
       }).catch(()=>{item.failed=true;});

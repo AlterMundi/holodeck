@@ -6,6 +6,7 @@ export class ContentVisitor{
  constructor({document,window,base,say,scoped=false,onCatalog=()=>{}}){
   Object.assign(this,{document,window,base,say,scoped,onCatalog});this.entries=[];this.nodes=[CONTENT_NODE];this.catalogGeneration=0;this.pending=new Map();this.disposed=false;this.lastContext=null;this.galleryRenewAt=Infinity;
   this.button=document.querySelector('#visit-near');this.panel=document.querySelector('#content-visit');
+  this.loading=document.querySelector('#visit-loading');this.roomGeneration=0;this.galleryRoom=false;
   this.button.onclick=()=>this.open(this.nearby?.id||this.entry?.id,
     {nodeRevision:this.scoped?(this.nearby||this.entry)?.nodeRevision??null:null}).catch(()=>say('No pude abrir esta presentación. Podés volver a intentarlo.'));
   document.querySelector('#visit-walk').onclick=()=>this.walk();
@@ -35,12 +36,13 @@ export class ContentVisitor{
    if(!response.ok)throw Error('Catalog unavailable');
    const value=await response.json();if(this.disposed||generation!==this.catalogGeneration)return false;
    this.nodes=this.scoped?[]:validateContentNodes(value.nodes);this.entries=Array.isArray(value.visits)?value.visits.slice(0,16).map(entry=>{const node=this.nodes.find(node=>node.id===entry.node);return {...entry,title:entry.title||node?.title,position:entry.position||node?.position};}):[];this.catalogSignature=signature;this.choices();
-   this.galleryRenewAt=this.scoped&&this.entries.some(entry=>entry.galleryDisplay===true)?performance.now()+20000:Infinity;
+   this.galleryRoom=this.scoped&&(value.gallery===true||this.entries.some(entry=>entry.galleryDisplay===true));
+   this.galleryRenewAt=this.galleryRoom?performance.now()+20000:Infinity;
    if(this.scoped&&this.frame&&!this.hasCurrentEntry())this.minimize();
    this.onCatalog(this.entries);return true;
   }catch{
    if(this.scoped&&!this.disposed&&generation===this.catalogGeneration){
-    this.entries=[];this.nearby=null;this.choices();this.galleryRenewAt=Infinity;this.onCatalog([]);
+    this.entries=[];this.nearby=null;this.choices();this.galleryRenewAt=this.galleryRoom?performance.now()+20000:Infinity;this.onCatalog([]);
     if(this.frame)this.minimize();
    }
    return false;
@@ -105,60 +107,86 @@ export class ContentVisitor{
   this.choiceLabel.hidden=entries.length<2;if(this.entry)this.selector.value=this.entry.id;
  }
  reveal(){this.panel.hidden=false;this.panel.classList.remove('is-walking');this.panel.removeAttribute('aria-hidden');this.panel.inert=false;}
+ showLoading(message=''){
+  if(!this.loading)return;
+  this.loading.textContent=message;
+  this.loading.hidden=!message;
+ }
+ removeFrame(){
+  clearTimeout(this.readyTimer);this.readyReject?.(Error('Visit changed'));this.readyReject=null;
+  for(const task of this.pending.values()){clearTimeout(task.timer);task.reject(Error('Visit changed'));}
+  this.pending.clear();this.frame?.remove();this.frame=null;this.showLoading();
+ }
  async open(selectedId,{nodeRevision=null}={}){
   const selected=this.entries.find(entry=>entry.id===selectedId);
   if(nodeRevision!==null&&selected?.nodeRevision!==nodeRevision){this.say('Este contenido cambió de lugar o edición. Volvé a elegirlo en el mundo.');return;}
   if(!this.scoped&&this.frame&&(!selectedId||selectedId===this.entry?.id&&(!selected||sameVisitPin(selected.pin,this.entry.pin)))){this.reveal();this.frame.focus();return;}
   if(this.opening)return;this.opening=true;
+  const generation=this.roomGeneration,current=()=>!this.disposed&&this.roomGeneration===generation;
   try{
    if(this.scoped){
     if(!await this.loadCatalog()){if(this.frame)this.minimize();this.say('No pude confirmar tu acceso a esta exposición.');return;}
    }else await this.catalog;
+   if(!current())return;
    if(this.selector)this.selector.disabled=true;const entry=this.entries.find(value=>value.id===selectedId)||(!selectedId&&this.entries[0]);if(!entry){
     if(this.scoped&&this.frame&&!this.hasCurrentEntry())this.minimize();
     this.say('No hay contenido disponible para tu acceso en este lugar.');return;
    }
    if(nodeRevision!==null&&entry.nodeRevision!==nodeRevision){this.say('Este contenido cambió de lugar o edición. Volvé a elegirlo en el mundo.');return;}
-   const descriptorURL=new URL(entry.descriptor,this.window.location.origin),entryURL=new URL(entry.entry,this.window.location.origin);
+   const descriptorURL=new URL(entry.descriptor,this.window.location.origin);
+   let entryURL=new URL(entry.entry,this.window.location.origin);
    if([descriptorURL,entryURL].some(url=>url.origin!==this.window.location.origin||!url.pathname.startsWith('/nexus/')))throw Error('Use the selected viewer');
    const response=await fetch(descriptorURL,{credentials:'same-origin',signal:AbortSignal.timeout(5000)});
+   if(!current())return;
    if(!response.ok){if(this.scoped&&this.frame)this.minimize();if(this.selector&&this.entry)this.selector.value=this.entry.id;this.say(response.status===401||response.status===403?'Este contenido necesita tu acceso a Nexus. Volvé a entrar desde Apps.':'No pude recuperar esta edición del contenido.');return;}
-   const descriptor=await response.json();if(!sameVisitPin(descriptor.pin,entry.pin))throw Error('Content edition changed');
+   const descriptor=await response.json();if(!current())return;
+   if(!sameVisitPin(descriptor.pin,entry.pin))throw Error('Content edition changed');
    if(visitVersion(entry.pin)===3&&(descriptor.schema!=='dm.holodeck-visit/descriptor-v3'||descriptor.kind!=='context'||!visitEntryMatches(descriptor.entry,entry.pin)))throw Error('Context edition unavailable');
-   if(this.scoped&&this.frame&&entry.id===this.entry?.id&&sameVisitPin(entry.pin,this.entry.pin)){
+   const verifyGallery=entry.galleryDisplay===true;
+   if(verifyGallery){
+    if(descriptor.schema!=='dm.holodeck-visit/descriptor-v2'||descriptor.kind!==entry.pin.adapter||
+       !visitEntryMatches(descriptor.entry,entry.pin))throw Error('Gallery edition unavailable');
+    entryURL=new URL(descriptor.entry,this.window.location.origin);
+   }
+   if(this.scoped&&this.frame&&!this.frame.inert&&entry.id===this.entry?.id&&sameVisitPin(entry.pin,this.entry.pin)){
      this.reveal();this.frame.focus();return;
    }
    if(this.frame){
-    await this.ready;const state=await this.request('prepareClose');
-    if(state?.canClose!==true||!knownVisitState(state.state)||Object.values(state.state).some(Boolean)){
-     if(this.selector)this.selector.value=this.entry.id;this.reveal();this.say('Terminá el trabajo pendiente en esta visita antes de cambiar de contenido.');return;
+    if(!this.frame.inert){
+     await this.ready;if(!current())return;
+     const state=await this.request('prepareClose');if(!current())return;
+     if(state?.canClose!==true||!knownVisitState(state.state)||Object.values(state.state).some(Boolean)){
+      if(this.selector)this.selector.value=this.entry.id;this.reveal();this.say('Terminá el trabajo pendiente en esta visita antes de cambiar de contenido.');return;
+     }
     }
-    for(const task of this.pending.values()){clearTimeout(task.timer);task.reject(Error('Visit changed'));}this.pending.clear();
-    this.frame.remove();this.frame=null;
+    this.removeFrame();
    }
    this.entry=entry;this.confirming=false;this.readyAcknowledged=false;this.lastContext=null;this.visitId=crypto.randomUUID();entryURL.searchParams.set('holodeck_visit',this.visitId);
-   if(this.selector){this.selector.value=entry.id;const option=Array.from(this.selector.options).find(value=>value.value===entry.id);if(option&&typeof descriptor.title==='string')option.textContent=descriptor.title.slice(0,100);}
+   if(this.selector){this.selector.value=entry.id;const option=Array.from(this.selector.options).find(value=>value.value===entry.id);if(option&&typeof descriptor.title==='string')option.textContent=verifyGallery?entry.title+' · '+descriptor.title.slice(0,75):descriptor.title.slice(0,100);}
    this.document.querySelector('#visit-title').textContent=typeof descriptor.title==='string'?descriptor.title.slice(0,160):'Contenido';
    this.reveal();
    const frame=this.document.createElement('iframe');frame.title='Contenido y conversación en Nexus';frame.allow='microphone; autoplay';frame.allowFullscreen=true;frame.referrerPolicy='same-origin';
-   this.frame=frame;this.ready=new Promise((resolve,reject)=>{this.readyResolve=resolve;this.readyTimer=setTimeout(()=>reject(Error('Viewer did not load')),visitVersion(entry.pin)>=2?40000:15000);});
+   if(verifyGallery){frame.inert=true;this.showLoading('Abriendo la edición de la galería…');}
+   this.frame=frame;this.ready=new Promise((resolve,reject)=>{this.readyResolve=resolve;this.readyReject=reject;this.readyTimer=setTimeout(()=>reject(Error('Viewer did not load')),visitVersion(entry.pin)>=2?40000:15000);});
    frame.src=entryURL.href;this.document.querySelector('#visit-stage').append(frame);
-   try{await this.ready;}catch{this.say('El contenido está abierto, pero no pude conectar su contexto con el mundo. Conservé su ventana.');}
-  }finally{this.opening=false;if(this.selector){this.selector.disabled=false;if(this.entry)this.selector.value=this.entry.id;}}
+   try{await this.ready;if(current()&&this.frame===frame&&verifyGallery&&this.hasCurrentEntry()){frame.inert=false;this.showLoading();}}
+   catch{if(current()){
+    if(verifyGallery)this.showLoading('No pude confirmar esta edición. Podés volver al mundo o elegir otra.');
+    else this.say('El contenido está abierto, pero no pude conectar su contexto con el mundo. Conservé su ventana.');
+   }}
+  }finally{if(current()){this.opening=false;if(this.selector){this.selector.disabled=false;if(this.entry)this.selector.value=this.entry.id;}}}
  }
  changeRoom(scoped){
-  if(this.frame){
-   clearTimeout(this.readyTimer);
-   for(const task of this.pending.values()){clearTimeout(task.timer);task.reject(Error('Room changed'));}
-   this.pending.clear();this.frame.remove();this.frame=null;
-  }
+  this.roomGeneration++;this.opening=false;this.removeFrame();
+  if(this.selector)this.selector.disabled=false;
   this.entry=null;this.nearby=null;this.lastContext=null;this.entries=[];this.scoped=scoped;
-  this.galleryRenewAt=Infinity;this.onCatalog([]);
+  this.galleryRoom=false;this.galleryRenewAt=Infinity;this.onCatalog([]);
   this.button.hidden=true;this.panel.hidden=true;
   this.catalog=this.loadCatalog();
  }
  async allowLeaveRoom(){
   if(!this.frame&&!this.opening)return true;
+  if(this.frame?.inert)return true;
   if(this.readyAcknowledged&&!this.opening){
    try{
     const reply=await this.request('prepareClose');

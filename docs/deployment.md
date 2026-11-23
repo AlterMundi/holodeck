@@ -49,7 +49,9 @@ origin. Each exact descriptor has a three-second deadline and an 8 KiB limit.
 Nexus must verify the edition, table and source access before Holodeck lists its
 pointer. A move or edition change during the check invalidates that result.
 Responses use `no-store`; the browser rechecks the catalog on open or resume.
-The same-origin viewer still performs its own access checks.
+The viewer uses the launch URL returned by the exact Nexus descriptor and
+performs its own access checks. Its frame stays hidden and inert until the
+viewer reports that same pin through both the ready and describe messages.
 
 The in-room 3D display reads the exact Nexus manifest and the authorized
 Homes version's `creation.json` and `snapshot.glb` through that same
@@ -58,7 +60,9 @@ SHA-256 before loading. This display accepts the existing Holodeck static
 snapshot format, capped at 4 MiB per GLB and three active displays. The
 ordinary Nexus viewer remains the action for other asset formats. Displays
 renew their catalog authorization every 20 seconds while the gallery is
-active, expire after 30 seconds, and are removed on access loss or departure.
+active, including when no editions are visible. Models expire after 30
+seconds. The wayfinding plaques and corresponding choices follow the same
+authorized catalog as the models and are removed on access loss or departure.
 No protected GLB goes into the deployable package or room preload cache.
 
 Caddy's maintained service writer preserves `/holodeck/` on both HTTP and
