@@ -55,11 +55,19 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`b68562d`, package `b9d7be97b791`. The gallery's end walls now meet the
+`6045be8`, package `439002172ad6`. The gallery's authorized laboratory
+stair has an authored door and a legible floor sign. Chromium walked down,
+entered with E and returned to the exact gallery landing in the same document.
+A restricted visitor received the continuous floor and was denied the lab and
+its assets. Protected readback matched both models, all 57 installed files and
+the retained world state. The selected rollback is `b9d7be97b791`.
+[Laboratory door at player height](../art/compaii-house/redesign/README.md#laboratory-door-and-sign)
+
+Source `b68562d`, package `b9d7be97b791`, joined the gallery's end walls to the
 pitched roof in both access variants. The side clerestory still admits the
 same light. Matched Chromium views confirmed that the unintended end-wall
 openings were closed. The installed asset inventory and world state digests
-matched. The selected rollback is `dbcc946605ad`.
+matched.
 [Gallery roof review](../art/compaii-house/redesign/README.md#gallery-roof-joins)
 
 Source `6b07de8`, package `dbcc946605ad`, kept the tower action hidden from the
@@ -133,6 +141,15 @@ the same canonical Conversation and refused a foreign actor. Current
 configuration, Core and listener selections survived the bridge replacement.
 Qualification submitted no human input, model turn or device command. Positive
 production use of the newly selected routed turn path remains open.
+
+The seven remaining bridges each constructed the candidate in their real
+service interpreter with their current Provider and Home authorization
+configuration. All seven native and bridge invocations stayed unchanged.
+The native receivers use two current builds. Backporting the routed change
+also required the live steering handle's physical-turn correlation from the
+root source. The first composition built and passed the isolated direct-routing
+HTTP, owner and result tests. The second build is running under the same
+bounded qualification. No remote selection or model call was made.
 
 Source `23de47f`, package `faae992dce4e`, established the HUD input correction. The exterior reference card passes
 pointer input through its inactive margins while its action buttons
