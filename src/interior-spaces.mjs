@@ -162,7 +162,7 @@ export class InteriorSpaces {
 // Each server-authorized room has its own local collision and render document.
 export function interiorDocument(room,passages=[],exhibit=null,art=null) {
   const {id,position:{x,y,z},radius,height}=ROOM_MARKER;
-  const walls=art?.replacesShell?' opacity="0" cast-shadows="false"':'';
+  const walls=art?.replacesShell||art?.replacesWalls?' opacity="0" cast-shadows="false"':'';
   const station=art?.station;
   const stationMarkup=station?`<m-group id="${station.id}" x="${station.position.x}" z="${station.position.z}">
     <m-label y="1.21" z=".52" width="2.33" height=".32" font-size="20" content="${attribute(station.title)}" collide="false"></m-label>
@@ -171,12 +171,12 @@ export function interiorDocument(room,passages=[],exhibit=null,art=null) {
   // The Blender benches already carry their own physical nameplates.
   const controlAnchors=(art?.controls??[]).map(control=>
     `<m-group id="${control.id}" x="${control.position.x}" z="${control.position.z}"></m-group>`).join('');
-  const {floor,wall,end} = room.entry ? {floor:'#aa9376',wall:'#486966',end:'#557675'} :
+  const {floor,wall,end} = art?.palette ?? (room.entry ? {floor:'#aa9376',wall:'#486966',end:'#557675'} :
     room.level<0 ? {floor:'#657378',wall:'#415666',end:'#4c6376'} :
     room.level>0 ? {floor:'#bfaa86',wall:'#667b86',end:'#7a8890'} :
-    {floor:'#b5a28e',wall:'#5b7471',end:'#668581'};
+    {floor:'#b5a28e',wall:'#5b7471',end:'#668581'});
   return `<m-group id="${room.id}">
-    ${roomFloor(passages,art?'#746d61':floor,!art?.replacesShell)}
+    ${roomFloor(passages,art&&!art.palette?'#746d61':floor,!art?.replacesShell)}
     ${stationMarkup}${controlAnchors}
     ${art?'<m-model id="room-art" src="'+attribute(art.src)+'" collide="false"></m-model>'+art.colliders+(art.lightRig??''):''}
     <m-cube x="-6" y="1.65" z="0" width=".2" height="3.3" depth="12" color="${wall}"${walls}></m-cube>
@@ -190,7 +190,7 @@ export function interiorDocument(room,passages=[],exhibit=null,art=null) {
     </m-group>`:''}
     ${passages.map(p=>passageMarkup({...p,label:attribute(p.title)},!art?.authoredStairs,art?.authoredPortal)).join('')}
     ${room.entry?'<m-group id="house-exit"><m-cube y="1.13" z="5.86" width="1.35" height="2.06" depth=".08" color="#c8a36d" collide="false"></m-cube><m-cube x=".45" y="1.05" z="5.79" width=".06" height=".14" depth=".08" color="#343e40" collide="false"></m-cube><m-label y="2.53" z="5.81" ry="180" width="1.55" height=".37" font-size="19" content="Salida" collide="false"></m-label></m-group>':''}
-    ${art?'':`<m-label x="0" y="2.3" z="-5.87" width="4" height=".65" font-size="26" content="${attribute(room.title)}" collide="false"></m-label>`}
-    ${art?.replacesShell?'':`<m-cylinder id="${id}" x="${x}" y="${y}" z="${z}" radius="${radius}" height="${height}" color="#af956a"></m-cylinder>`}
+    ${art&&!art.palette?'':`<m-label x="0" y="2.3" z="-5.87" width="4" height=".65" font-size="26" content="${attribute(room.title)}"${art?.palette?' color="#163b3f" font-color="#f6edda"':''} collide="false"></m-label>`}
+    ${art?.replacesShell||art?.hideMarker?'':`<m-cylinder id="${id}" x="${x}" y="${y}" z="${z}" radius="${radius}" height="${height}" color="#af956a"></m-cylinder>`}
   </m-group>`;
 }

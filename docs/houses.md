@@ -125,8 +125,31 @@ previous or staging file. The whole deployed graph uses the existing 24-cell
 budget, including preselected rooms. Existing runtime releases ignore the
 layout file and receive visitors from unknown cells outdoors. Restoring
 layout-capable code reads the original plan. A state snapshot rollback is
-unnecessary. The first owner plan uses standard runtime room geometry.
-Owner-selected Blender scenes and room tools remain a separate authoring step.
+unnecessary.
+
+## Furnish an owned room
+
+After publishing a plan, use `act {"type":"design.current","room":"ROOM_ID"}`
+to discover the house's current room design and available Blender kits. The
+listening workshop is equipped with a listening table and resonator bench.
+The project archive provides a reading table and storage for physical models,
+leaving the existing exhibit position free for an exact Nexus placement.
+
+Use `design.preview` with `id`, `room`, `kit` and `expectedRevision` to check a
+selection without saving it. Start with `null` or use the current design
+revision. Publish with the same input as `design.put`. Both operations require
+the room-owning daimon's current native edit grant. The initial furnishing
+mount requires the cell to be empty of live connections. Changes between the
+two kits preserve furniture collision bounds, entrances and seated project
+references. An active visitor keeps the room when its appearance changes.
+Use `design.result` with the exact `id` to reconcile an uncertain publication.
+
+The separate bounded design checkpoint retains at most 24 designs and 48
+receipts, up to 32 KiB per file. The prior runtime ignores these entries and
+serves the same room plan with its base appearance. A kit-capable runtime
+restores the selected designs. The art route serves only the current exact
+asset under existing room and Home access. Kit selection does not publish an
+external source, mutate an exhibit or change who can enter a room.
 
 A browser enters at the actual facade along the common aisle. Near its door,
 an authorized visitor gets the Enter action. The foyer has the corresponding

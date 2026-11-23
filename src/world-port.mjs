@@ -5,7 +5,7 @@ import { DaimonPort } from './daimon-port.mjs';
 
 // The receiving operator owns the directory/socket filesystem capability.
 // Native identity and current room rights are independently rechecked per request.
-export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,conversationPlace,putExhibit,exhibitResult,currentLayout,previewLayout,publishLayout,layoutResult}){
+export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,conversationPlace,putExhibit,exhibitResult,currentLayout,previewLayout,publishLayout,layoutResult,roomDesign}){
   if(!socketPath?.startsWith('/')||!native?.authorizeWorldRequest||typeof resolveRights!=='function')
     throw Error('Select the installed native world port and authority resolver');
   let active=0;
@@ -66,6 +66,13 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
             previewLayout?.(actor,{...request.args,type:'layout.publish'}):
             publishLayout?.(actor,request.args);
           if(!result)throw Error('Layout unavailable');
+        }else if(request.operation==='act'&&['design.current','design.preview','design.put','design.result'].includes(request.args.type)){
+          if(!own||!rights.includes('edit'))throw Error('Room design requires an own-native editor route');
+          const fields=Object.keys(request.args).sort().join(',');
+          if((request.args.type==='design.current'&&fields!=='room,type')||
+             (request.args.type==='design.result'&&fields!=='id,type'))throw Error('Invalid room design lookup');
+          result=roomDesign?.(actor,request.args);
+          if(!result)throw Error('Room design unavailable');
         }else if(request.operation==='act'&&request.args.type==='exhibit.put'){
           if(!own)throw Error('Exhibit authoring requires an own-native route');
           result=putExhibit?.(actor,request.args);

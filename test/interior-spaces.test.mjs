@@ -300,6 +300,18 @@ test('own-native layout publication adds a live guest route and survives process
     assert.deepEqual(published.result,{house:house.id,revision:1});
     assert.deepEqual(await act(publication),published);
     assert.deepEqual((await act({type:'layout.current'})).result,preview.result);
+    const design={type:'design.put',id:'receive-design-01',expectedRevision:null,room:'foyer',kit:'listening-workshop'};
+    const options=(await act({type:'design.current',room:'foyer'})).result;
+    assert.deepEqual(options.kits.map(kit=>kit.id),['listening-workshop','project-archive']);
+    assert.equal(options.design,null);
+    assert.equal((await act(design,foreignPath)).ok,false);
+    assert.equal((await act({type:'design.current',room:'foyer'},foreignPath)).ok,false);
+    assert.equal((await act({...design,kit:'https://example.test/unselected.glb'})).ok,false);
+    const trialDesign=(await act({...design,type:'design.preview'})).result;
+    assert.equal(trialDesign.kit,'listening-workshop');
+    assert.equal((await act({type:'design.current',room:'foyer'})).result.design,null);
+    assert.deepEqual((await act(design)).result,trialDesign);
+    assert.deepEqual((await act(design)).result,trialDesign);
     const state=await get(visitor,'state');
     assert.equal(state.run,initial.run);
     assert.deepEqual(state.entrances.map(entrance=>entrance.id),['foyer']);
@@ -310,7 +322,24 @@ test('own-native layout publication adds a live guest route and survives process
     const foyer=await entry.json();
     assert.equal(foyer.scene.id,'foyer');
     assert.deepEqual(foyer.exits.map(exit=>exit.to),['gallery']);
+    assert.equal(foyer.objects.find(item=>item.id==='left-bench').title,'Mesa de escucha');
+    const asset=foyer.scene.markup.match(/api\/space\/art\/([a-f0-9]{64}\.glb)/)[1];
+    const furnished=await request(visitor,'space/art/'+asset);
+    assert.equal(furnished.status,200);
+    assert.equal(Buffer.from(await furnished.arrayBuffer()).subarray(0,4).toString(),'glTF');
+    assert.equal((await request(outsider,'space/art/'+asset)).status,404);
     assert.equal((await request(visitor,'space/scene?room=lab')).status,404);
+
+    const redesigned=(await act({...design,id:'receive-design-02',expectedRevision:1,kit:'project-archive'})).result;
+    assert.equal(redesigned.revision,2);
+    const archive=await get(visitor,'space?live=1');
+    assert.equal(archive.id,foyer.id);
+    assert.notEqual(archive.scene.revision,foyer.scene.revision);
+    assert.deepEqual(archive.exits,foyer.exits);
+    assert.equal(archive.objects.find(item=>item.id==='left-bench').title,'Mesa de consulta');
+    assert.equal(archive.objects.find(item=>item.id==='left-bench').revision,2);
+    assert.equal((await request(visitor,'space/art/'+asset)).status,404);
+    assert.equal((await act({...design,id:'stale-design-01',expectedRevision:1})).ok,false);
 
     const expanded=structuredClone(definitions);
     expanded[0].links.push({kind:'portal',to:'tower'});
@@ -324,6 +353,8 @@ test('own-native layout publication adds a live guest route and survives process
     await stop();
     await start();
     assert.equal((await get(visitor,'space')).id,'foyer');
+    assert.deepEqual((await act({type:'design.current',room:'foyer'})).result.design,redesigned);
+    assert.deepEqual((await act({type:'design.result',id:design.id})).result,trialDesign);
     assert.deepEqual((await act({type:'layout.current'})).result,{house:house.id,revision:2,rooms:expanded});
     assert.deepEqual((await act({type:'layout.result',id:publication.id})).result,published.result);
     const exit=await request(visitor,'space',{from:'foyer',to:'outside',live:1});

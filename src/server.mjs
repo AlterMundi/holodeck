@@ -3,6 +3,8 @@ import {selectAtelier} from './compaii-atelier.mjs';
 import {RoomExhibits,EXHIBIT_SAVE_BYTES} from './room-exhibits.mjs';
 import {InteriorSpaces, OUTSIDE, SPACE_SAVE_BYTES, interiorDocument} from './interior-spaces.mjs';
 import {InteriorLayouts,LAYOUT_SAVE_BYTES} from './interior-layouts.mjs';
+import {RoomDesigns,DESIGN_SAVE_BYTES} from './room-designs.mjs';
+import {readOwnedRoomArt} from './owned-room-art.mjs';
 import {Houses, HOUSE_SAVE_BYTES} from './houses.mjs';
 import {readActivity,ActivityError} from './activity.mjs';
 import {nodeVisits} from './content-nodes.mjs';
@@ -75,8 +77,15 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     persist:spaceStore ? state=>spaceStore.save(state) : null,guestAccess:interiorGuestAccess});
   const atelier=selectAtelier(artProfile,spaces.rooms,houses.directory());
   const selectedRooms=new Set(interiorSpaces.map(item=>item.id));
-  const artForRoom=(room,passages)=>selectedRooms.has(room?.id)?
-    (atelier?.interiorArtwork??interiorArtwork)(room,passages):null;
+  const kits=readOwnedRoomArt();
+  const designStore=stateDir?new RoomStore(join(stateDir,'room-designs'),{maxBytes:DESIGN_SAVE_BYTES}):null;
+  const designs=new RoomDesigns({state:designStore?.load(),spaces,houses,legacyRooms:selectedRooms,kits,
+    persist:designStore?value=>designStore.save(value):null});
+  function artForRoom(room,passages){
+    if(selectedRooms.has(room?.id))return (atelier?.interiorArtwork??interiorArtwork)(room,passages);
+    const design=designs.forRoom(room?.id);
+    return design?{...kits.get(design.kit),designRevision:design.revision}:null;
+  }
   const gallery=gallerySlots(gallerySelection,spaces.rooms);
   const authorizeGallery=gallery&&(galleryAuthorization??createGalleryAuthorization(publicOrigin));
   const exhibitStore=stateDir?new RoomStore(join(stateDir,'exhibits'),{maxBytes:EXHIBIT_SAVE_BYTES}):null;
@@ -162,7 +171,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     return interiorDocument(room,passages,exhibit,art&&{...art,src});
   }
   function interiorScopeKey(actor,selected){
-    return JSON.stringify([spaces.passages(actor,selected).map(link=>link.slot),exhibits.forRoom(selected.id)?.revision??0]);
+    return JSON.stringify([spaces.passages(actor,selected).map(link=>link.slot),exhibits.forRoom(selected.id)?.revision??0,
+      designs.forRoom(selected.id)?.revision??0]);
   }
   function visitScene(actor,id,cachedRevision){
     const selected=spaces.rooms.get(id);
@@ -191,9 +201,10 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }
   function roomObjects(view){
     const art=artForRoom(spaces.rooms.get(view.id),view.exits ?? []);
-    const objects=art?.replacesShell?[]:view.objects;
+    const objects=art?.replacesShell||art?.hideMarker?[]:view.objects;
     const stations=[art?.station,...(art?.controls??[])].filter(Boolean);
-    return [...objects,...stations.map(station=>({id:station.id,kind:'workstation',title:station.title,
+    const fixtures=(art?.fixtures??[]).map(fixture=>({...fixture,revision:art.designRevision}));
+    return [...objects,...fixtures,...stations.map(station=>({id:station.id,kind:'workstation',title:station.title,
       position:station.position,revision:station.revision}))];
   }
   function conversationPlace(actor,id){
@@ -247,12 +258,28 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       throw error;
     }
   }
+  function roomDesign(actor,input){
+    if(room.commitUncertain||spaces.fenced||!designStore)return null;
+    if(input.type==='design.current')return designs.inspect(actor,input.room);
+    if(input.type==='design.result')return designs.result(actor,input.id);
+    if(input.type==='design.preview')return designs.put(actor,{...input,type:'design.put'},true);
+    // The first furniture mount introduces colliders. Do it only when
+    // nobody is connected in the cell. Subsequent kit changes keep them fixed.
+    if(!designs.forRoom(input.room)&&
+       [...sockets.values()].some(connection=>connection.scope===input.room))return null;
+    try{
+      return designs.put(actor,input);
+    }catch(error){
+      if(designs.fenced)spaces.fenced=true;
+      throw error;
+    }
+  }
   const selectedWorldPorts=validateWorldPorts({worldSocket,worldSocketBeingRef,worldPorts});
   if(selectedWorldPorts.length&&!native)throw Error('Native authority is required for world return ports');
   for(const selected of selectedWorldPorts)installedWorldPorts.push(await createWorldPort({socketPath:selected.socket,expectedBeingRef:selected.beingRef,room,native,describeSpace,moveSpace,conversationPlace,
     putExhibit,exhibitResult:(actor,id)=>exhibits.result(actor,id),
     currentLayout:actor=>layouts.current(actor),previewLayout:(actor,input)=>layouts.preview(actor,input),
-    publishLayout,layoutResult:(actor,id)=>layouts.result(actor,id),
+    publishLayout,layoutResult:(actor,id)=>layouts.result(actor,id),roomDesign,
     resolveOwnNativeRights:ownNative&&nativeRoomAuthority?async verified=>{const rights=await nativeRoomAuthority(verified);return projectionHealthy?rights:rights.filter(right=>right==='observe');}:null,resolveRights:async verified=>{
     if(nativeRoomAuthority){const rights=await nativeRoomAuthority(verified);return projectionHealthy?rights:rights.filter(right=>right==='observe');}
     // Compatibility for older receivers only. New native authority selection
@@ -376,7 +403,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const initial=passages();
     const currentExhibit=()=>exhibits.scoped(record.session.actor,id);
     const initialExhibit=currentExhibit();
-    const signature=(links,exhibit)=>links.map(link=>link.slot).join(',')+':'+(exhibit?.revision??0);
+    const signature=(links,exhibit)=>JSON.stringify([links.map(link=>link.slot),exhibit?.revision??0,
+      designs.forRoom(id)?.revision??0]);
     const scope=signature(initial,initialExhibit);
     record.projectionAllowed=()=>signature(passages(),currentExhibit())===scope;
     // A connection owns exactly one filtered document. Closing it releases
