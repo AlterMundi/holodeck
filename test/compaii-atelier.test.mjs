@@ -133,7 +133,12 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
       }};
   }
   const [authorized,visitor]=await Promise.all([actor('lab'),actor('gallery')]);
+  const liveLocation=actor=>actor.read('/holodeck/api/space?live=1').then(response=>response.json());
+  const exteriorSky=(await liveLocation(visitor)).outdoorSky;
+  assert.equal(exteriorSky.asset,'coastal-sky.jpg');
+  assert.match(exteriorSky.revision,/^[a-f0-9]{64}$/);
   const entered=await authorized.move('outside',foyer);
+  assert.equal(entered.outdoorSky,undefined);
   assert.match(entered.scene.markup,/vestibule-practical/);
   assert.match(entered.scene.markup,/<m-cube x="-5\.13" y="0\.341" z="1\.18" width="0\.88" height="0\.482" depth="2\.91" opacity="0" cast-shadows="false">/);
   assert.match(entered.scene.markup,/id="passage-0" x="-3" z="-5.86"[^>]*>\s*<m-label[^>]*content="Galería"/);
@@ -208,6 +213,9 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   assert.equal((await visitor.read(roomArt(chamber))).status,404);
   assert.equal((await visitor.read('/holodeck/assets/compaii-atelier/beacon.glb')).status,404);
   const upper=await visitor.move(gallery,tower);
+  assert.deepEqual(upper.outdoorSky,exteriorSky);
+  assert.deepEqual((await liveLocation(visitor)).outdoorSky,exteriorSky);
+  assert.equal((await liveLocation(authorized)).outdoorSky,undefined);
   assert.match(upper.scene.markup,/tower-resonator/);
   assert.match(upper.scene.markup,/<m-cube x="0.54" y="0.65" z="5.6" width="5.63" height="0.2" depth="0.31" opacity="0" cast-shadows="false">/);
   assert.match(upper.scene.markup,/id="passage-0"[^>]*><\/m-group>/);
@@ -215,7 +223,8 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   const towerPath=roomArt(upper);
   assert.equal((await visitor.read(towerPath)).status,200);
   assert.equal((await authorized.read(towerPath)).status,404);
-  await visitor.move(tower,gallery);
+  assert.equal((await visitor.move(tower,gallery)).outdoorSky,undefined);
+  assert.equal((await liveLocation(visitor)).outdoorSky,undefined);
   assert.equal((await visitor.read(towerPath)).status,404);
   assert.deepEqual(new RoomStore(join(stateDir,'houses')).load(),expected);
 });

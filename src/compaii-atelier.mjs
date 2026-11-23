@@ -173,6 +173,8 @@ export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt())
      box({x:-3.758,y:.643,z:2.659,w:2.068,h:1.085,d:.886}),
     lightRig:chamberRig};
   const towerArt={...asset('tower'),replacesShell:true,authoredPortal:true,ambient:.64,
+    // The east clerestory is an open aperture in the Blender model.
+    outdoorSky:OUTDOOR_SKY,
     fixtures:[fixture('tower','tower-resonator','Resonador de la torre',.54,2.42,5.46)],
     // The baked mesh is visual only. Match the east seat and the oak sill
     // under the resonator using the authored tower's room-space dimensions.

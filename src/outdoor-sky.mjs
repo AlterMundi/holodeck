@@ -1,6 +1,6 @@
 import {EquirectangularReflectionMapping,SRGBColorSpace,TextureLoader} from 'three';
 
-// A baked image replaces the default scene background in the exterior only.
+// A baked panorama backs the exterior and selected authored room apertures.
 // Keep the decoded texture across room changes and release it with the renderer.
 export class OutdoorSky {
   constructor(scene,base){

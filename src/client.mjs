@@ -166,7 +166,7 @@ let projectedGarden=null;
 const hot=activeSpace?.live===1;
 const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
 let inside=hot&&activeSpace.id!=='outside';
-let updateDoor=()=>{},remoteScene=null,networkScope=null,arrival=null;
+let updateDoor=()=>{},remoteScene=null,roomModel=null,networkScope=null,arrival=null;
 let moving=false,requestingMove=false,needsSync=false,resyncing=false,moveDeadline=null;
 let roomTopic;
 let prefetched=new Set(),prefetchRequest=null,pendingRoomArt=null;
@@ -178,7 +178,7 @@ const setMoving=value=>{
   }
   if(!value){clearTimeout(moveDeadline);moveDeadline=null;}
 };
-const removeScene=()=>{pendingRoomArt=null;projectedGarden=null;beaconControls.clear();galleryModels?.clear();remoteScene?.remove();remoteScene=null;};
+const removeScene=()=>{pendingRoomArt=null;projectedGarden=null;beaconControls.clear();galleryModels?.clear();remoteScene?.remove();remoteScene=roomModel=null;};
 function mountScene(){
   removeScene();
   if(!inside)return true;
@@ -193,11 +193,11 @@ function mountScene(){
   remoteScene=wrapper.remoteDocument;
   remoteScene.append(stored.template.content.cloneNode(true));
   renderer.mmlTargetElement.append(remoteScene);
-  const model=remoteScene.querySelector('m-model#room-art[src]');
-  const source=model?.getAttribute('src');
+  roomModel=remoteScene.querySelector('m-model#room-art[src]');
+  const source=roomModel?.getAttribute('src');
   const prefix=url('api/space/art/').pathname;
   if(!stored.art&&source?.startsWith(prefix)&&/^[a-f0-9]{64}\.glb$/.test(source.slice(prefix.length))){
-    pendingRoomArt={stored,model,source};
+    pendingRoomArt={stored,model:roomModel,source};
   }
   if(!contentVisitor?.catalogFlight){
     const entries=contentVisitor?.entries??[];
@@ -423,7 +423,12 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
           interiorKey.intensity=key.intensity??160;
         }
       }
-      sky.update(!inside?activeSpace?.outdoorSky:null);
+      const skySelection=activeSpace?.outdoorSky;
+      // Wait for the scoped room model to occlude the background outside its
+      // authored apertures. Disconnect removes the scene and clears this view.
+      const roomSkyReady=skySelection&&networkScope===activeSpace.id&&remoteScene?.isConnected&&
+        roomModel?.modelGraphics?.hasLoadedModel();
+      sky.update(!inside||roomSkyReady?skySelection:null);
       nativeAvatarLayer.update();
       galleryModels.update();
       garden.update(inside&&!moving&&activeSpace.playableInterior?activeSpace.id:null);gardenMarkers();

@@ -220,20 +220,21 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     return {id,actor:actor.id,revision,...(cachedRevision===revision?{}:{markup})};
   }
   function liveSpace(actor,cachedRevision){
-    const space=describeSpace(actor);
+    const space=describeSpace(actor,true);
     return {...space,live:1,actorRef:actor.id,
-      ...(space.id===OUTSIDE&&atelier?.outdoorSky?{outdoorSky:atelier.outdoorSky}:{}),
       sharedConversation:!!(native?.contexts&&native?.conversationSurface),scene:visitScene(actor,space.id,cachedRevision)};
   }
-  function describeSpace(actor){
+  function describeSpace(actor,includeSky=false){
     if(spaces.fenced)throw new RoomError('space-uncertain','Room placement needs recovery');
     const view=spaces.view(actor),exhibit=exhibits.scoped(actor,view.id),
       art=artForRoom(spaces.rooms.get(view.id),view.exits ?? []);
     const activity=indoorGardens.view(actor,view.id);
+    const outdoorSky=includeSky?(view.id===OUTSIDE?atelier?.outdoorSky:art?.outdoorSky):null;
     const space={...view,...(view.id===OUTSIDE?{}:{objects:roomObjects(view)}),
       ...(indoorGardens.owner(view.id)?{playableInterior:true}:{}),
       ...(activity?{activity}:{}),
       ...(art?.lightRig?{indoorLighting:true}:{}),
+      ...(outdoorSky?{outdoorSky}:{}),
       ...(art?.keyLight?{keyLight:art.keyLight}:{}),
       ...(exhibit?{exhibitRevision:exhibit.revision}:{})};
     const cell=cellTransports.get(space.id);
