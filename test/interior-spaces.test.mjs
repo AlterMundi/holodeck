@@ -524,14 +524,17 @@ test('an explicitly granted, currently paired human publishes with their own ind
   const stateDir=mkdtempSync(join(tmpdir(),'holodeck-garden-editor-'));
   const socketPath=join(stateDir,'author.sock');
   new RoomStore(join(stateDir,'houses')).save({schema:'holodeck.houses/v1',houses:[house],receipts:[]});
-  let listener,runtime,pair=owner;
+  let listener,runtime,pair=owner,pairGate=null;
   try{
     runtime=await createHolodeck({production:true,basePath:'/holodeck/',publicOrigin:'https://world.test',
       stateDir,ownNative:true,worldSocket:socketPath,worldSocketBeingRef:owner,
       nativeRoomAuthority:async()=>['observe','edit'],
       nativeFactory:()=>({authorizeWorldRequest(){throw Error('fixture');},
         availability:async()=>({available:false}),
-        conversationSurface:async actor=>({schema:'holodeck.conversation-surface/v1',actorRef:actor.ref,beingRef:pair})}),
+        conversationSurface:async actor=>{
+          if(pairGate)await pairGate();
+          return {schema:'holodeck.conversation-surface/v1',actorRef:actor.ref,beingRef:pair};
+        }}),
       identityResolver:async req=>{
         const who=req.headers.cookie?.match(/(?:^|; )home=(guest|other)/)?.[1];
         return who?{id:'human:'+who,ref:'human:'+who,kind:'human',rights:['observe','edit'],name:who}:null;
@@ -583,7 +586,15 @@ test('an explicitly granted, currently paired human publishes with their own ind
     assert.equal((await act({type:'garden.result',id:recipe.id})).ok,false);
     assert.equal(new RoomStore(join(stateDir,'indoor-gardens')).load().receipts[0].actor,guest.id);
     assert.equal((await act({...permit,human:null})).ok,false,'stale grant revision');
+    let entered,release;
+    const waiting=new Promise(resolve=>{entered=resolve;});
+    const pendingPair=new Promise(resolve=>{release=resolve;});
+    pairGate=()=>{entered();return pendingPair;};
+    const inFlight=request(granted,game,{...recipe,id:'revoke-in-flight',expectedRevision:1});
+    await waiting;
     assert.equal((await act({...permit,human:null,expectedRevision:1})).result.grant.revision,2);
+    release();
+    assert.equal((await inFlight).status,403,'revocation wins over a pending source check');
     assert.equal((await request(granted,edit)).status,403);
     assert.deepEqual(await (await request(granted,readReceipt)).json(),receipt);
     assert.equal(new RoomStore(join(stateDir,'garden-editors')).load().grants[0].human,null);
