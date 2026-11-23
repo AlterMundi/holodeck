@@ -261,6 +261,8 @@ are finished in both access variants and the side clerestory stays open.
 The [laboratory door and sign](../art/compaii-house/redesign/README.md#laboratory-door-and-sign)
 now fit the stair's materials and identify the lower floor. The corresponding
 continuous-floor gallery remains a neutral room for visitors without lab access.
+The [return to the foyer](../art/compaii-house/redesign/README.md#gallery-return-to-the-foyer)
+now has a matching oak threshold and floor sign for visitors in either variant.
 The tower has a player-height coastal view through its authored east
 clerestory, and the resonator sill collision matches the visible wood.
 Continue the finish pass through the miniature, exterior paths, gallery and

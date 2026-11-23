@@ -55,12 +55,21 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`6045be8`, package `439002172ad6`. The gallery's authorized laboratory
+`d14de6d`, package `07475f3bb3dc`. Both gallery variants have a finished oak
+threshold to the foyer and an in-world floor sign. In paired Chromium
+qualification, both fixture visitors crossed to the foyer and back by keyboard
+in the same document. The visitor without laboratory access kept the sealed
+gallery and could not retrieve the open gallery or Beacon asset. Protected
+readback matched both asset revisions, the installed inventory and retained
+world state. The selected rollback is `439002172ad6`.
+[Gallery foyer doorway](../art/compaii-house/redesign/README.md#gallery-return-to-the-foyer)
+
+Source `6045be8`, package `439002172ad6`, finished the gallery's authorized laboratory
 stair has an authored door and a legible floor sign. Chromium walked down,
 entered with E and returned to the exact gallery landing in the same document.
 A restricted visitor received the continuous floor and was denied the lab and
 its assets. Protected readback matched both models, all 57 installed files and
-the retained world state. The selected rollback is `b9d7be97b791`.
+the retained world state.
 [Laboratory door at player height](../art/compaii-house/redesign/README.md#laboratory-door-and-sign)
 
 Source `b68562d`, package `b9d7be97b791`, joined the gallery's end walls to the
@@ -127,8 +136,8 @@ Per-receiver remote qualification and native owner selection remain outstanding.
 [DaimonApp PR #1005](https://github.com/AlterMundi/DaimonApp/pull/1005) merged
 as `d76fbd817` after all six applicable CI jobs passed. The selected master
 tree matched the tested head. The routed bridges and compatible native owner
-were selected on ITACA for the CompAII route. The other seven bridges still
-require receiving qualification and selection.
+were selected for CompAII, Eko and Oliva. The other five bridges still
+require selection.
 
 The root listener's compatibility build `e71c5e12bceb` contains the exact
 merged production edits. The listener changed under the existing voice
@@ -142,14 +151,20 @@ configuration, Core and listener selections survived the bridge replacement.
 Qualification submitted no human input, model turn or device command. Positive
 production use of the newly selected routed turn path remains open.
 
-The seven remaining bridges each constructed the candidate in their real
+The seven peer bridges each constructed the candidate in their real
 service interpreter with their current Provider and Home authorization
-configuration. All seven native and bridge invocations stayed unchanged.
+configuration during preflight.
 The native receivers use two current builds. Backporting the routed change
 also required the live steering handle's physical-turn correlation from the
-root source. The first composition built and passed the isolated direct-routing
-HTTP, owner and result tests. The second build is running under the same
-bounded qualification. No remote selection or model call was made.
+root source. Both compositions passed the isolated direct-routing HTTP,
+owner and result tests. Eko and Oliva then selected listener `7d187ccd12c1`
+and bridge `fa3447e8a311`. Both verified their canonical Conversation binding
+and foreign-actor denial. Eko's listener was active at the expected revision
+after the operator reported a companion PID change. Service-manager evidence
+showed an independently scheduled Matrix restart, and separate readback
+verified its exact listener, Core PID, goals and heartbeat controls. The
+initial operator result is retained. Oliva's scoped handoff completed normally.
+No new native input or model call was made.
 
 Source `23de47f`, package `faae992dce4e`, established the HUD input correction. The exterior reference card passes
 pointer input through its inactive margins while its action buttons
