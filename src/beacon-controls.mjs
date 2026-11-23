@@ -1,4 +1,6 @@
 const panel='/harmonic_lab/';
+const STATUS_LIMIT=128*1024;
+const STATUS_LIFETIME=30000;
 const station=(id,title,service,x,z)=>Object.freeze({id,title,service,revision:1,
   position:Object.freeze({x,y:.1,z})});
 
@@ -20,9 +22,51 @@ export function nearbyBeaconControl(objects,position){
   return nearest;
 }
 
+export function summarizeBeaconStatus(value,service){
+  const hosts=value?.hosts;
+  if(!Array.isArray(hosts)||!hosts.length||hosts.length>8)return 'Estado sin confirmar.';
+  const states=new Map();
+  for(const host of hosts){
+    let label;
+    if(host?.online===false)label='Sin respuesta';
+    else if(host?.online===true&&Array.isArray(host.services)){
+      const entry=host.services.find(tool=>tool?.id===service);
+      if(entry?.status==='ready')label='En marcha';
+      else if(['queued','starting'].includes(host.job?.phase)&&
+        Array.isArray(host.job?.services)&&host.job.services.includes(service))label='Iniciando';
+      else if(entry?.installed===false)label='Sin instalar';
+      else if(entry?.enabled===false)label='No seleccionado';
+      else if(entry?.status==='stopped')label='Detenido';
+    }
+    label??='Sin confirmar';
+    states.set(label,(states.get(label)??0)+1);
+  }
+  if(states.size===1&&hosts.length===1)return states.keys().next().value+'.';
+  return [...states].map(([label,count])=>label+' ('+count+')').join(' · ');
+}
+
+async function readBeaconStatus(signal){
+  const response=await fetch(panel+'api/status',{credentials:'same-origin',redirect:'manual',cache:'no-store',signal});
+  if(response.status===401||response.status===403||response.type==='opaqueredirect')
+    return {denied:true};
+  if(!response.ok||!response.body||!response.headers.get('Content-Type')?.startsWith('application/json'))return null;
+  const reader=response.body.getReader(),buffer=new Uint8Array(STATUS_LIMIT);
+  let size=0;
+  try{
+    while(true){
+      const {value,done}=await reader.read();
+      if(done)return JSON.parse(new TextDecoder().decode(buffer.subarray(0,size)));
+      if(size+value.byteLength>buffer.length)return null;
+      buffer.set(value,size);size+=value.byteLength;
+    }
+  }finally{await reader.cancel().catch(()=>{});}
+}
+
 export class BeaconControls{
-  constructor(link,panel){
+  constructor(link,panel,{statusButton,statusText,readStatus=readBeaconStatus}={}){
     this.link=link;this.panel=panel;
+    this.statusButton=statusButton;this.statusText=statusText;this.readStatus=readStatus;
+    if(statusButton)statusButton.onclick=()=>void this.checkStatus();
     this.stage=panel.querySelector('.beacon-panel-stage');
     this.title=panel.querySelector('h2');
     this.external=panel.querySelector('a');
@@ -38,6 +82,33 @@ export class BeaconControls{
   }
 
   get opened(){return this.panel.open;}
+
+  resetStatus(){
+    clearTimeout(this.statusExpiry);
+    this.statusRequest?.abort();
+    this.statusRequest=null;
+    if(this.statusText)this.statusText.textContent='';
+    if(this.statusButton)this.statusButton.disabled=false;
+  }
+
+  async checkStatus(){
+    const station=this.current;
+    if(!station||this.statusRequest)return;
+    this.resetStatus();
+    const controller=new AbortController();
+    this.statusRequest=controller;
+    this.statusButton.disabled=true;
+    this.statusText.textContent='Consultando al laboratorio…';
+    const signal=AbortSignal.any([controller.signal,AbortSignal.timeout(18000)]);
+    let value;
+    try{value=await this.readStatus(signal);}catch{}
+    if(this.statusRequest!==controller)return;
+    this.statusRequest=null;
+    this.statusButton.disabled=false;
+    this.statusText.textContent=value?.denied?'Se necesita acceso a Harmonic Lab.':
+      summarizeBeaconStatus(value,station.service);
+    this.statusExpiry=setTimeout(()=>this.resetStatus(),STATUS_LIFETIME);
+  }
 
   open(){
     if(this.opened||!this.current)return;
@@ -62,9 +133,11 @@ export class BeaconControls{
     const next=nearbyBeaconControl(objects,position);
     if(next===this.current)return;
     this.close();
+    this.resetStatus();
     this.current=next;
     if(this.last!==next)this.last=null;
     this.link.hidden=!next;
+    if(this.statusButton)this.statusButton.hidden=!next;
     if(!next){this.link.removeAttribute('href');return;}
     this.link.href=panel+'?service='+next.service;
     this.link.textContent='Abrir '+next.title;

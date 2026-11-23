@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {BeaconControls,BEACON_CONTROLS,nearbyBeaconControl} from '../src/beacon-controls.mjs';
+import {BeaconControls,BEACON_CONTROLS,nearbyBeaconControl,summarizeBeaconStatus} from '../src/beacon-controls.mjs';
 
 const spatial=BEACON_CONTROLS[0],weaver=BEACON_CONTROLS[1];
 const objects=BEACON_CONTROLS.map(({id,revision})=>({id,revision,kind:'workstation'}));
@@ -55,4 +55,46 @@ test('a nearby bench mounts one owner panel only on open and discards it when ac
   assert.equal(controls.reference(),null);
   controls.update(objects,weaver.position);
   assert.equal(controls.reference(),null);
+});
+
+test('station status uses only confirmed tool states and hides host identities',()=>{
+  const status={csrf:'private',hosts:[
+    {id:'private',online:true,services:[{id:'audio',status:'ready'},{id:'body',status:'stopped'}]},
+    {id:'other',online:false},
+  ]};
+  assert.equal(summarizeBeaconStatus(status,'audio'),'En marcha (1) · Sin respuesta (1)');
+  assert.equal(summarizeBeaconStatus(status,'body'),'Detenido (1) · Sin respuesta (1)');
+  assert.equal(summarizeBeaconStatus({hosts:[{online:false}]},'body'),'Sin respuesta.');
+  assert.equal(summarizeBeaconStatus({hosts:[{online:true,services:[]}]},'body'),'Sin confirmar.');
+  assert.equal(summarizeBeaconStatus(null,'body'),'Estado sin confirmar.');
+});
+
+test('the status check is explicit, deduplicated and discarded when the bench changes',async()=>{
+  const link={hidden:true,removeAttribute:name=>delete link[name]};
+  const elements={'.beacon-panel-stage':{},h2:{},a:{},button:{}};
+  const panel={open:false,querySelector:selector=>elements[selector],addEventListener(){}};
+  const statusButton={hidden:true},statusText={};
+  let release,signal,reads=0;
+  const controls=new BeaconControls(link,panel,{statusButton,statusText,readStatus:incoming=>{
+    signal=incoming;reads++;return new Promise(resolve=>{release=resolve;});
+  }});
+  controls.update(objects,spatial.position);
+  assert.equal(reads,0);
+  assert.equal(statusButton.hidden,false);
+  const first=controls.checkStatus();
+  await controls.checkStatus();
+  assert.equal(reads,1);
+  assert.equal(statusButton.disabled,true);
+  controls.update(objects,weaver.position);
+  assert.equal(signal.aborted,true);
+  release({hosts:[{online:true,services:[{id:'audio',status:'ready'}]}]});
+  await first;
+  assert.equal(statusText.textContent,'');
+  const second=controls.checkStatus();
+  release({denied:true});
+  await second;
+  assert.equal(statusText.textContent,'Se necesita acceso a Harmonic Lab.');
+  controls.clear();
+  assert.equal(statusText.textContent,'');
+  assert.equal(statusButton.hidden,true);
 });

@@ -370,6 +370,12 @@ desktop and touch. The labels highlight a map destination, then the existing
 door interaction does the crossing. The room reconnect replaces the map
 when the adjacent passages or the authorized route to the exterior change.
 
+At the Beacon benches, a visitor can ask the existing Harmonic Lab panel for
+one current audio or body service status without launching the instrument.
+The browser uses the same audience check as the panel and only renders a
+brief room-local summary. Device output still requires observed evidence
+from the owning instrument.
+
 ## Durable places, expressive authoring and source-safe navigation
 
 The room-boundary increment adds separate authorized room geometry and avatar presence, room-scoped own-native observation, and explicit moves between floors and portals. The first facade and foyer have matching exterior door anchors. Interior doors, stairs and portals have paired in-world approaches and per-visitor geometry. The first working house uses a pinned Nexus exhibit authored from an existing owned result. It still needs its working control and situated Conversation with the original object and room reference. [House and room contract](houses.md).

@@ -52,8 +52,14 @@ selection. Earlier panel builds still open their overview. The active
 workstation opens the same-origin panel in a modal while keeping the world
 renderer and player position. The panel must allow same-origin embedding
 and owns its audience, readiness and explicit start controls. It links to
-the instrument on the configured workstation once ready. Holodeck does
-not proxy or call the panel's status or write endpoints.
+the instrument on the configured workstation once ready. **Consultar estado**
+at a nearby bench makes one direct browser GET to the existing panel with
+the visitor's same-origin session. It displays a short service summary for
+that instrument. No host identifiers, device URLs or panel credentials are
+retained. The summary expires after 30 seconds and disappears when the visitor
+leaves the bench. The panel supplies service readiness. Actual device output is a separate
+observation. The Holodeck server does not
+proxy panel requests or actuate instruments.
 
 The optional `gallery` receiving selection names an existing interior
 `room` and two distinct exact `artifact_review` pins (`draft` and `archive`,

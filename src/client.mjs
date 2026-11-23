@@ -89,7 +89,7 @@ function startInterior(space){
   document.querySelector('#people').textContent=space.level===0?'Planta baja':
     space.level<0?`Subsuelo ${-space.level}`:`Piso ${space.level}`;
   const notice=new WorldNotice(document.querySelector('#notice'));
-  const beaconControls=new BeaconControls(document.querySelector('#beacon-control'),document.querySelector('#beacon-panel'));
+  const beaconControls=benchControls();
   let galleryModels;
   const visitor=new ContentVisitor({document,window,base,scoped:true,
     onCatalog:entries=>{galleryModels?.sync(entries);applyGallerySigns(document.getElementById(space.id),entries);},
@@ -141,11 +141,17 @@ function startInterior(space){
   });
   client.update();
   window.holodeckDevelopment={client};
-  window.addEventListener('pagehide',()=>{updateDoor.dispose?.();exhibitObserver.disconnect();beaconControls.close();visitor.dispose();client.dispose();},{once:true});
+  window.addEventListener('pagehide',()=>{updateDoor.dispose?.();exhibitObserver.disconnect();beaconControls.clear();visitor.dispose();client.dispose();},{once:true});
+}
+
+function benchControls(){
+  return new BeaconControls(document.querySelector('#beacon-control'),document.querySelector('#beacon-panel'),{
+    statusButton:document.querySelector('#beacon-status-check'),statusText:document.querySelector('#beacon-status-text'),
+  });
 }
 
 function startWorld(activeSpace){
-const beaconControls=new BeaconControls(document.querySelector('#beacon-control'),document.querySelector('#beacon-panel'));
+const beaconControls=benchControls();
 const garden=new IndoorGardenHUD({
   position:()=>client.getLocalCharacterState()?.position,
   onError:say,
@@ -1043,7 +1049,7 @@ const interval=setInterval(async()=>{
   try{await refresh();}catch{say('La conexión con el taller se interrumpió. Los cambios no se repetirán solos.');}
   finally{refreshing=false;}
 },1500);
-window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();beaconControls.close();garden.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);if(signalPreview)URL.revokeObjectURL(signalPreview);worldAudio.dispose();client.dispose();});
+window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();beaconControls.clear();garden.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);if(signalPreview)URL.revokeObjectURL(signalPreview);worldAudio.dispose();client.dispose();});
 refresh().catch(()=>say('No pude conectar con el taller.'));
 resetDoor();
 syncIndoorDesign();

@@ -16,9 +16,14 @@
 @media(min-width:741px) and (max-width:1040px){#help{display:none}}
 
 #visit-near{position:fixed;z-index:22;right:22px;top:90px;max-width:calc(100vw - 44px)}
-#beacon-control{position:fixed;z-index:22;right:22px;top:148px;max-width:calc(100vw - 44px);min-height:44px;padding:10px 16px;border:1px solid #ba965b;border-radius:13px;background:var(--gold);color:#264440;font-weight:600;text-decoration:none;align-content:center;box-shadow:0 5px 18px #07181b4d}
+#beacon-station{position:fixed;z-index:22;right:22px;top:148px;max-width:min(430px,calc(100vw - 44px));display:grid;justify-items:end;gap:7px}
+#beacon-station:has(#beacon-control[hidden]){display:none}
+#beacon-station .row{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px}
+#beacon-control{min-height:44px;padding:10px 16px;border:1px solid #ba965b;border-radius:13px;background:var(--gold);color:#264440;font-weight:600;text-decoration:none;align-content:center;box-shadow:0 5px 18px #07181b4d}
 #beacon-control:hover{background:#f7dfb0}
 #beacon-control:focus-visible{outline:3px solid var(--mint);outline-offset:3px}
+#beacon-status-text{margin:0;padding:7px 11px;border-radius:10px;font-size:14px}
+#beacon-status-text:empty{padding:0;border:0;box-shadow:none}
 #beacon-panel{width:min(960px,calc(100vw - 36px));height:min(740px,calc(100dvh - 36px));max-width:none;max-height:none;padding:12px;border:1px solid var(--line);border-radius:20px;background:#163b3f;color:var(--ink);overflow:hidden}
 #beacon-panel[open]{display:flex;flex-direction:column;gap:10px}#beacon-panel::backdrop{background:#081b24b8}
 #beacon-panel header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}#beacon-panel h2{margin:0}
@@ -36,8 +41,8 @@ body:has(#signal-editor:not([hidden])) #play-near,body:has(#signal-editor:not([h
 .room-transition #indoor-design-tools,body:has(#conversation-panel:not([hidden])) #indoor-design-tools,body:has(#content-visit:not([hidden]):not(.is-walking)) #indoor-design-tools,body:has(#signal-editor:not([hidden])) #indoor-design-tools{display:none}
 .inside-house #garden-create{display:none}
 @media(max-width:740px){#signal-editor{right:12px;top:160px;bottom:auto;max-width:calc(100vw - 24px);max-height:50dvh}}
-body:has(#content-visit:not([hidden]):not(.is-walking)) #beacon-control,body:has(#conversation-panel:not([hidden])) #beacon-control,.room-transition #beacon-control{display:none}
-@media(max-width:740px){#beacon-control{top:205px;right:12px;max-width:calc(100vw - 24px);font-size:14px}}
+body:has(#content-visit:not([hidden]):not(.is-walking)) #beacon-station,body:has(#conversation-panel:not([hidden])) #beacon-station,.room-transition #beacon-station{display:none}
+@media(max-width:740px){#beacon-station{top:205px;right:12px;max-width:calc(100vw - 24px);font-size:14px}}
 #exhibition-index{box-sizing:border-box;width:min(480px,calc(100vw - 24px));max-height:min(580px,calc(100dvh - 24px));padding:18px;border:1px solid var(--line);border-radius:18px;background:#163b3f;color:var(--ink)}
 #exhibition-index::backdrop{background:#081b2480}#exhibition-index header{display:flex;gap:12px;justify-content:space-between;align-items:center}#exhibition-index h2{margin:0;font:24px Georgia,serif}#exhibition-index label{display:block;margin-block:12px 6px}
 #exhibition-search{box-sizing:border-box;width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#102d31;color:var(--ink);font:inherit}
@@ -200,7 +205,7 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
   <label for="exhibition-search">Buscar obra o etapa</label><input id="exhibition-search" type="search" maxlength="80" autocomplete="off">
   <ul id="exhibition-results"></ul><p id="exhibition-empty" role="status" hidden>No hay obras que coincidan.</p>
 </dialog>
-<a id="beacon-control" class="primary" target="_blank" rel="noopener" hidden></a>
+<section id="beacon-station" aria-label="Controles del banco"><div class="row"><button id="beacon-status-check" type="button" class="glass" hidden>Consultar estado</button><a id="beacon-control" class="primary" target="_blank" rel="noopener" hidden></a></div><p id="beacon-status-text" class="glass" role="status"></p></section>
 <dialog id="beacon-panel" aria-labelledby="beacon-panel-title"><header><h2 id="beacon-panel-title">Laboratorio</h2><div class="row"><a target="_blank" rel="noopener">Abrir aparte</a><button type="button" autofocus>Volver al mundo</button></div></header><div class="beacon-panel-stage"></div></dialog>
 <section id="content-visit" aria-label="Contenido visitado" class="glass" hidden><header><h2 id="visit-title">Presentación</h2><button id="visit-walk" type="button" class="primary">Volver al mundo</button></header><p id="visit-loading" role="status" hidden></p><div id="visit-stage"></div></section>
 <section id="creator" class="glass" aria-label="Crear una luz" hidden><h2 id="creator-title">Una luz para este lugar</h2><p id="preview-hint" role="status">La vista previa es tuya. Al plantar, aparece para todos.</p><div class="row colors" role="group" aria-label="Color de la luz"><button class="swatch" data-color="mint" style="--color:#8ce4c2" aria-label="Menta" aria-pressed="true"></button><button class="swatch" data-color="amber" style="--color:#efc87a" aria-label="Ámbar" aria-pressed="false"></button><button class="swatch" data-color="rose" style="--color:#e8a2b9" aria-label="Rosa" aria-pressed="false"></button><button class="swatch" data-color="violet" style="--color:#a77bea" aria-label="Violeta" aria-pressed="false"></button></div><div class="row"><button id="preview-move">Mover acá</button><button id="preview-accept" class="primary">Plantar</button><button id="preview-cancel">Cancelar</button></div></section>
