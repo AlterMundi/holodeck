@@ -152,7 +152,10 @@ carries the neighborhood's visible perimeter to the waterline. Chromium
 walked the public approach, used the foyer door in both directions and
 reached the west verge at the existing floor height. Continue the terrain
 surface and workshop finish pass on the same route, particularly adjoining
-islands, the house yard and workshop floor and wall joints.
+islands and the house yard. The
+[Beacon workshop finish](../art/compaii-house/redesign/README.md#beacon-joinery-and-workstations)
+now ties its existing stair, walls and acoustic work bays together. Continue
+the remaining furniture, exhibit and room finish at walking height.
 
 The selected archive stores the 13 atelier GLBs losslessly and leaves
 6,653,952 bytes below the existing receiver limit. The matched Chromium

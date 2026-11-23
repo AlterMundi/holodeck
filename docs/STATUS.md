@@ -10,7 +10,22 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`239819d`, package `b7107ba7645e`. A session can keep parsed static art from
+`98be5ab`, package `d2dff872e6aa`. The Beacon lab now has a dressed limestone
+landing with bronze edges, continuous stone and oak skirting, acoustic wall bays
+and instrument drawers at the Spatializer and Weaver benches. The scoped GLB
+uses nine material batches and ships in 1,602,320 bytes of Brotli. Packaged
+Chromium took the same stair with E in both directions, rendered the new model
+and found the two original tool handoff links. A separate scoped HTTP trial
+verified denied and revoked lab art. Receiving matched all 54 live files, the
+exact decoded GLB and the world checkpoints. Package `b7107ba7645e` remains
+the compatible rollback.
+[Before and after at walking height](../art/compaii-house/redesign/README.md#beacon-joinery-and-workstations)
+
+Activation required a [scoped Home journal capacity repair](https://github.com/nicoechaniz/daimon-cluster/pull/552).
+ITACA retained its original 128 entries and completed the same deployment
+request as entry 129. Package audiences and receiver state were preserved.
+
+The previous release served source `239819d`, package `b7107ba7645e`. A session can keep parsed static art from
 up to three visited rooms. An acknowledged move and matching current presence
 scope remain necessary to show a room. In packaged Chromium with 80 ms added
 latency and 800 kB/s download, the Beacon revisit reached visible geometry in
