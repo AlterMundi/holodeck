@@ -30,6 +30,12 @@ LIGHTS = {
         ('Spatializer pendant', (3.79,.80,2.70), (3.79,.58,.95), 124, (1,.79,.55), .54),
         ('Weaver pendant', (-3.76,-2.67,2.70), (-3.76,-2.42,.95), 124, (1,.77,.50), .54),
     ),
+    'gallery': (
+        ('Clerestory', (-4.30,-.5,3.79), (2.45,-.5,1.05), 350, (.76,.85,1), 2.5),
+        ('Draft wash', (2.10,.34944,3.39), (3.3945,.34944,1.11), 52, (1,.82,.58), .52),
+        ('Finished wash', (2.10,-1.25,3.39), (2.5,-1.25,.965), 75, (1,.87,.66), .54),
+        ('Archive wash', (2.10,-3.67744,3.39), (3.3945,-3.67744,1.41), 56, (1,.77,.49), .52),
+    ),
 }
 
 
@@ -42,7 +48,7 @@ def select_lighting(room, cell):
     scene.cycles.diffuse_bounces = 3
     scene.cycles.use_denoising = True
     scene.world.node_tree.nodes['Background'].inputs[1].default_value = .15 if cell == 'foyer' else .08
-    for spec in LIGHTS[cell]:
+    for spec in LIGHTS['gallery' if cell=='gallery-sealed' else cell]:
         area(*spec)
 
 

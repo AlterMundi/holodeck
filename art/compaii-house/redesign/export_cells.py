@@ -169,7 +169,9 @@ def register_gallery(obj,stair):
               (1.70,.45,.142),'Honed honey limestone',.012) for index in range(6)] if stair else []
     rails = [('Gallery stair oak rail',(x,4.51,.53),(.12,2.72,.115),'Dark oiled oak',.015)
              for x in (2.08,3.92)] if stair else []
-    append_blocks(obj,floor+steps+rails+[
+    oak, stone, brass = 'Dark oiled oak', 'Honed honey limestone', 'Satin brass'
+    basalt, iron = 'Split basalt', 'Blue gunmetal'
+    finish = [
         ('Gallery entrance wall',(0,5.96,1.965),(11.84,.20,3.94),'Ivory limewash',.032),
         ('Clerestory lower wall',(-5.79,0,1.28),(.21,11.64,2.56),'Ivory limewash',.038),
         ('Clerestory oak sill',(-5.73,0,2.59),(.38,11.66,.13),'Dark oiled oak',.026),
@@ -177,7 +179,35 @@ def register_gallery(obj,stair):
         ('Collection wall oak skirting',(5.70,0,.18),(.15,11.60,.18),'Dark oiled oak',.024),
         ('Published exhibit base',(2.5,-1.25,.48),(1.24,.96,.76),'Split basalt',.055),
         ('Published exhibit top',(2.5,-1.25,.91),(1.32,1.04,.11),'Dark oiled oak',.042),
-    ])
+        # The roof slot remains open to the cool light between these headers.
+        ('Clerestory outer oak header',(-3.96,0,4.55),(.13,11.54,.18),oak,.018),
+        ('Clerestory inner oak header',(-2.98,0,4.62),(.13,11.54,.18),oak,.018),
+        ('Collection basalt wall foot',(5.55,.03,.19),(.095,11.31,.177),basalt,.014),
+        ('Collection oak dado rail',(5.55,.03,.601),(.115,11.30,.078),oak,.013),
+        ('Collection oak eave moulding',(5.55,.03,3.615),(.19,11.30,.185),oak,.021),
+        ('Collection sign oak backing',(0,-5.641,2.695),(3.47,.042,.585),oak,.008),
+        ('Collection wash light track',(2.10,-.12,3.571),(.146,8.04,.09),iron,.015),
+        ('Limestone viewing strip',(-.55,-.08,.095),(2.36,8.98,.012),stone,.002),
+    ]
+    for y in (-5.55,-3.69,-1.84,0,1.84,3.69,5.55):
+        finish.append(('Clerestory oak divider',(-3.47,y,4.586),(1.03,.07,.112),oak,.012))
+    for y in (-2.163,.998):
+        finish.append(('Track suspension',(2.10,y,3.742),(.031,.035,.29),iron,.004))
+    for x in (-1.75,.65):
+        finish.append(('Bronze viewing strip seam',(x,-.08,.102),(.016,8.98,.007),brass,.001))
+    for y,plinth_x,face_height in ((.34944,1.984,.58),(-1.25,1.864,.49),(-3.67744,1.984,.73)):
+        # A neutral frame belongs to the room. Edition labels and models
+        # remain actor-filtered projections at the original plinth anchors.
+        finish.extend([
+            ('Oak shadow bay',(5.528,y,1.924),(.099,1.40,2.196),oak,.023),
+            ('Inset matte stone shadow bay',(5.467,y,1.924),(.036,1.245,2.022),basalt,.012),
+            ('Shadow bay bronze foot',(5.44,y,.956),(.018,1.195,.020),brass,.003),
+            ('Gallery track head',(2.10,y,3.487),(.217,.223,.100),iron,.019),
+            ('Gallery lamp glass',(2.10,y,3.431),(.154,.158,.021),'Honey lamp glass',.005),
+            ('Plinth recessed face',(plinth_x,y,face_height),(.026,.559,.322),oak,.012),
+            ('Plinth bronze edge',(plinth_x-.015,y,face_height-.13),(.009,.440,.019),brass,.003),
+        ])
+    append_blocks(obj,floor+steps+rails+finish)
 
 
 def register_beacon(obj):
@@ -350,7 +380,7 @@ if __name__ == '__main__':
     color = bake(obj, cell+'-albedo', 'DIFFUSE', color_size, destination)
     normal = bake(obj, cell+'-normal', 'NORMAL', normal_size, destination)
     bounce = None
-    if cell in ('foyer','beacon'):
+    if cell in ('foyer','beacon','gallery','gallery-sealed'):
         lighting = runpy.run_path(str(Path(__file__).with_name('cell-irradiance.py')))
         bounce = lighting['portable_bounce'](obj,cell,destination/(cell+'-albedo.png'),color_size,destination)
     contact = bake_contact(obj, cell, destination) if cell in ('foyer','beacon','gallery','gallery-sealed') else None

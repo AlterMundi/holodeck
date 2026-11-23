@@ -34,8 +34,8 @@ const COASTAL_RIDGES=Object.freeze({asset:'coastal-ridges.glb',
 const COASTAL_FOG=Object.freeze({fogNear:24,fogFar:124,fogColor:{r:.716,g:.776,b:.784}});
 export const ATELIER_ASSET_REVISIONS=Object.freeze({
   'room-art/compaii-atelier/foyer.glb':'eb3bd88a7dc7e288ea6335f90b4ef24880d37dcd004c008e16a936a427c8198a',
-  'room-art/compaii-atelier/gallery.glb':'1028d39b34938571ce0385e7bd6604f61c79a4f614ed3395648244e313d0dd35',
-  'room-art/compaii-atelier/gallery-sealed.glb':'91c46b91164fd1ebfd20052cdf20d2dae59c0222126af016f16920a426dadc48',
+  'room-art/compaii-atelier/gallery.glb':'a6ef6bacab1f3278978f5a98a150d1d0cd827680fb78c96d131163b224956b17',
+  'room-art/compaii-atelier/gallery-sealed.glb':'af8d86f08a5a0136c38f772b85448d445f681ea89ebc6c876799c4899ea2f583',
   'room-art/compaii-atelier/beacon.glb':'cb2c403d2aa50f0886c1e0d7e9d008f5f657704f1a1b172bd4be623855c2cd0c',
   'room-art/compaii-atelier/tower.glb':'47ba2a0964304eba1f3cbf945121e737c5d9addd7e71c1696bfa8b52ddb872de',
   ['assets/'+FACADE_ASSET]:'940aa64038396e43db8beca859e33f4f52c6ae3a84d1702457159c0af1224077',

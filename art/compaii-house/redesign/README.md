@@ -94,6 +94,26 @@ keeps the bench lights. The lighting matches the existing geometry and
 collision. See the [stair reveal before](review/beacon-light-before.jpg)
 and [after](review/beacon-light-after.jpg) in the game renderer.
 
+### Gallery exhibition bays
+
+A framed clerestory and a suspended lighting rail distinguish the viewing path
+from the collection wall. Three oak-framed, matte stone bays back the existing
+plinths, and a warm inset behind the collection sign makes the lettering legible
+from the entrance. The bronze floor seams guide the walk through the room.
+The original pedestals and Nexus pins keep their positions and authorization.
+The lab stair and the continuous visitor floor have separate exports.
+
+[Previous entry](review/gallery-finish-before-entry.jpg) ·
+[Revised entry](review/gallery-finish-revised-open-entry.jpg) ·
+[Collection wall](review/gallery-finish-revised-open-collection.jpg) ·
+[Restricted visitor floor](review/gallery-finish-revised-sealed-collection.jpg)
+
+Both exports use the editable gallery cell, the named fittings in
+[`register_gallery()`](export_cells.py) and the same Cycles lighting
+rig. Each retains nine material batches and one 512 px static diffuse map.
+The runtime key still lights the moving avatar. Browser trials used the
+existing camera and collision over both floor variants.
+
 ### Beacon joinery and workstations
 
 At the stair foot, dressed limestone and bronze edging set the landing apart
