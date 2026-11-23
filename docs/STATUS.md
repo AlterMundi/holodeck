@@ -10,7 +10,20 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`2580dcf`, package `e67257c79677`. Physical entrance now lands inside the
+`a709490`, package `97a2bb3fe1b7`. Visitors can search room exhibits by
+the authorized Nexus title or stage and open an exact edition from their
+current position. Near a plinth, the existing world action stays available.
+Two packaged Chromium profiles exercised the list and physical displays.
+The limited touch visitor saw and fetched only the finished fixture. The
+index route returned to the same avatar position, and a separate browser
+test verified title search without accents and cleanup on revocation.
+The Nexus auth and editions in these browser trials were controlled.
+Authenticated HTTPS matched the exact client and 57 installed files.
+World and protected checkpoints matched. Package `e67257c79677` is the
+compatible rollback. [Gallery visit contract](content-visits.md#walkable-gallery)
+
+The previous threshold and facade release served source `2580dcf`, package
+`e67257c79677`. Physical entrance now lands inside the
 foyer and looks into the room. Return still lands at the exact outside
 door. This corrects an observed Chromium route where the avatar kept the
 old exterior coordinate after entering. The outdoor sunlight no longer

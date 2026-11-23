@@ -151,8 +151,7 @@ index. Titles come from the exact authorized Nexus descriptors. Search also
 matches the in-world stages, including **En proceso**, **Terminado** and
 **Archivo**. The index is another entrance to the same pinned visit and
 position. It follows the current room catalog, drops entries when their access
-changes and closes when the room changes. It does not list other rooms or
-enumerate the source owner's artifact history.
+changes and closes when the room changes. It covers the current room. The source owner retains artifact history.
 
 When close to a display, visitors can open an authorized exact review by
 clicking the model or its stage plaque, or tapping it on touch. The nearby
