@@ -31,6 +31,7 @@ import {createGalleryAuthorization} from './gallery-authorization.mjs';
 import {createNativeRoomAuthority} from './native-authority.mjs';
 import {WorldDocument} from './world-document.mjs';
 import {SessionBindings,SESSION_MS,sessionKey} from './session-bindings.mjs';
+import {HumanAvatarProfiles,humanWardrobeAssets} from './human-avatars.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
@@ -65,6 +66,20 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const sessionBindings=production?new SessionBindings(stateDir,LIMITS.sessions):null;
   for(const binding of sessionBindings?.load()||[])sessions.set(binding.key,{id:++nextId,
     actor:{id:binding.actorRef,kind:'human'},created:binding.created,times:[],connection:null,sourceCookie:undefined});
+  let avatars=new HumanAvatarProfiles();
+  if(production){
+    try{
+      const avatarStore=new RoomStore(join(stateDir,'human-avatars'),{maxBytes:2048});
+      let failed=false;
+      avatars=new HumanAvatarProfiles(avatarStore.load(),state=>{
+        try{avatarStore.save(state);failed=false;}
+        catch{if(!failed)console.error('Holodeck avatar preferences could not be saved');failed=true;}
+      });
+    }catch{console.error('Holodeck avatar preferences could not be restored');}
+  }
+  avatars.retain(sessions.values());
+  const avatarProfile=actor=>({meshFileUrl:route('assets/'+avatars.model(actor))});
+  const wardrobeAssets=humanWardrobeAssets();
   const sessionFor=token=>sessions.get(sessionKey(token));
   const localBoot=randomBytes(4).toString('hex');
   const store=stateDir?new RoomStore(stateDir):null;
@@ -327,6 +342,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       const token=randomBytes(20).toString('hex'),id=++nextId;
       next.set(sessionKey(token),{id,actor,created:Date.now(),times:[],connection:null,sourceCookie:req.headers.cookie});
       sessionBindings?.save(next);
+      avatars.retain(next.values());
       sessions.clear();for(const [key,session]of next)sessions.set(key,session);
       req.res.cookie('holodeck_session',token,{httpOnly:true,secure:production,sameSite:'lax',path:basePath,maxAge:SESSION_MS});
       return token;
@@ -345,7 +361,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(s.connection!==null||sessionFor(token)!==s||socket.readyState!==1||!sockets.has(socket))return new Error('Room connection changed');
       s.connection=connection;
       room.atomic(()=>room.event(actor,'participant.joined',{name:actor.name||'Explorador'}));
-      return {userId:actor.id,username:actor.name||`Explorador ${s.id}`,characterDescription:{meshFileUrl:route('assets/avatar-1-bodyA-skin01.glb')},colors:null};
+      return {userId:actor.id,username:actor.name||`Explorador ${s.id}`,characterDescription:avatarProfile(actor),colors:null};
     },
     onClientDisconnect(connection){for(const s of sessions.values())if(s.connection===connection){s.connection=null;if(!room.commitUncertain)room.atomic(()=>room.event(s.actor,'participant.left',{}));}},
     onClientUserIdentityUpdate(){return false;}
@@ -368,7 +384,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
           return new Error('Room connection changed');
         connections.set(connection,{actor});
         return {userId:actor.id,username:actor.name||'Explorador',
-          characterDescription:{meshFileUrl:route('assets/avatar-1-bodyA-skin01.glb')},colors:null};
+          characterDescription:avatarProfile(actor),colors:null};
       },
       onClientDisconnect(connection){connections.delete(connection);},
       onClientUserIdentityUpdate(){return false;}
@@ -391,6 +407,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   });
   app.disable('x-powered-by');
   app.use((_req,res,next)=>{res.set('Cache-Control','no-store');next();});
+  for(const [name,bytes] of wardrobeAssets)
+    app.get(route('assets/'+name),(_req,res)=>res.type('model/gltf-binary').send(bytes));
   if(conversationOrigins.length)app.use((_req,res,next)=>{
     const selected='(self '+conversationOrigins.map(value=>'"'+value+'"').join(' ')+')';
     res.set('Permissions-Policy','microphone='+selected+', autoplay='+selected);next();

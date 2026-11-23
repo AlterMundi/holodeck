@@ -78,6 +78,17 @@ postinstall/check are maintained in tools/mml-server-auth-context.mjs; both buil
 paths verify exact bytes. Browser protocol, public MML locomotion/presence and
 current per-resource authority remain unchanged.
 
+Humans receive distinct appearances from the same authenticated
+MML profile path outdoors and indoors. Four licensed example rigs and four
+alternate wardrobes cover all eight existing simultaneous world-session
+slots. The audience that may sign in remains independent of that capacity.
+Appearance is assigned without reading names or inferring physical traits.
+It stays with the actor across doors, reloads and reconnects while any
+world-session binding remains retained. An expired or evicted lease releases
+the appearance. The cosmetic checkpoint stores only hashed actor IDs and
+profile slots. It is bounded separately and can be rebuilt from retained
+sessions if unavailable. Native daimon projections use their existing recipe.
+
 ## Runtime co-creation and engine maintenance
 
 The21November human correction selects one shared engine, with creator-owned
