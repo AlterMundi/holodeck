@@ -169,7 +169,7 @@ pacing remains a separate measurement.
 Rebuild the editable scene without rerendering its review cameras using
 `house.py -- "$ART_OUTPUT" --scene-only`, then run the Beacon export above.
 
-The central instrument has an enamel prototype plaque mounted on the
+The central instrument has a limestone prototype plaque mounted on the
 stair-facing rim. Its named `prototype.inspect` anchor is the selection
 point for the existing H.B. Guitar review. The atelier advances that station
 to revision 2 with the same identity and Nexus edition. Authorized proximity,

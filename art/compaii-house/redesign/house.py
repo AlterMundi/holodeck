@@ -318,9 +318,10 @@ cx,cy,cz=.5,11.87,2.12
 beam(lab,'Instrument basalt foot',underground(cx,cy,.03),underground(cx,cy,.41),1.84,iron,48)
 beam(lab,'Thin brass rim',underground(cx,cy,.41),underground(cx,cy,.46),1.75,brass,48)
 block(lab,'Prototype plaque foot',underground(cx,cy-1.55,.47),(1.01,.29,.18),brass,.026)
-block(lab,'Prototype enamel plaque',underground(cx,cy-1.69,.61),(1.26,.071,.25),iron,.023)
+block(lab,'Prototype limestone plaque',underground(cx,cy-1.69,.61),(1.26,.071,.25),stone,.023)
 prototype_lettering = text(lab,'BANCO DE PROTOTIPOS',underground(cx,cy-1.727,.563),.105)
 prototype_lettering.data.resolution_u = 3
+prototype_lettering.data.materials[0] = iron
 for angle in [0,math.tau/3,math.tau*2/3]:
     base=underground(cx+1.54*math.cos(angle),cy+1.54*math.sin(angle),.45)
     beam(lab,'Resonator tension strut',base,underground(cx,cy,cz),.067,brass)
