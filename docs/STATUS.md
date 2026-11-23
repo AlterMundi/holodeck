@@ -55,13 +55,22 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`d14de6d`, package `07475f3bb3dc`. Both gallery variants have a finished oak
+`faedbdf`, package `7baeee4a660c`. The Beacon stair now has an authored
+door and sign to the gallery. Chromium climbed the stair with WASD, crossed
+with E and returned to the exact gallery landing in the same document. If the
+visitor loses gallery access while still in Beacon, the server selects the
+base laboratory and emergency exit and refuses the authored return asset.
+Protected readback matched both Beacon variants, all 58 installed files
+and the retained world state. The selected rollback is `07475f3bb3dc`.
+[Beacon return at player height](../art/compaii-house/redesign/README.md#laboratory-return-to-the-gallery)
+
+Source `d14de6d`, package `07475f3bb3dc`, finished the oak
 threshold to the foyer and an in-world floor sign. In paired Chromium
 qualification, both fixture visitors crossed to the foyer and back by keyboard
 in the same document. The visitor without laboratory access kept the sealed
 gallery and could not retrieve the open gallery or Beacon asset. Protected
 readback matched both asset revisions, the installed inventory and retained
-world state. The selected rollback is `439002172ad6`.
+world state.
 [Gallery foyer doorway](../art/compaii-house/redesign/README.md#gallery-return-to-the-foyer)
 
 Source `6045be8`, package `439002172ad6`, finished the gallery's authorized laboratory

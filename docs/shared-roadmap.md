@@ -261,6 +261,9 @@ are finished in both access variants and the side clerestory stays open.
 The [laboratory door and sign](../art/compaii-house/redesign/README.md#laboratory-door-and-sign)
 now fit the stair's materials and identify the lower floor. The corresponding
 continuous-floor gallery remains a neutral room for visitors without lab access.
+The [return from Beacon](../art/compaii-house/redesign/README.md#laboratory-return-to-the-gallery)
+uses the same architectural vocabulary. Beacon serves that door and sign only
+while the viewer can use the gallery stair.
 The [return to the foyer](../art/compaii-house/redesign/README.md#gallery-return-to-the-foyer)
 now has a matching oak threshold and floor sign for visitors in either variant.
 The tower has a player-height coastal view through its authored east
