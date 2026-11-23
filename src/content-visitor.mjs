@@ -7,9 +7,9 @@ const ROOM_VISIT_REACH=2.25;
 // capture or native response polling. The trusted viewer owns that lifecycle.
 export class ContentVisitor{
  constructor({document,window,base,say,scoped=false,onCatalog=()=>{}}){
-  Object.assign(this,{document,window,base,say,scoped,onCatalog});this.entries=[];this.nodes=[CONTENT_NODE];this.catalogGeneration=0;this.pending=new Map();this.disposed=false;this.lastContext=null;this.galleryRenewAt=Infinity;
+  Object.assign(this,{document,window,base,say,scoped,onCatalog});this.entries=[];this.nodes=[CONTENT_NODE];this.catalogGeneration=0;this.pending=new Map();this.disposed=false;this.lastContext=null;this.catalogRenewAt=Infinity;
   this.button=document.querySelector('#visit-near');this.panel=document.querySelector('#content-visit');
-  this.loading=document.querySelector('#visit-loading');this.roomGeneration=0;this.galleryRoom=false;
+  this.loading=document.querySelector('#visit-loading');this.roomGeneration=0;this.renewScopedCatalog=false;
   this.button.onclick=()=>{
    const selected=this.nearby||this.entry;
    const exact=this.scoped?{nodeRevision:selected?.nodeRevision??null,expectedPin:selected?.pin??null}:undefined;
@@ -42,13 +42,13 @@ export class ContentVisitor{
    if(!response.ok)throw Error('Catalog unavailable');
    const value=await response.json();if(this.disposed||generation!==this.catalogGeneration)return false;
    this.nodes=this.scoped?[]:validateContentNodes(value.nodes);this.entries=Array.isArray(value.visits)?value.visits.slice(0,16).map(entry=>{const node=this.nodes.find(node=>node.id===entry.node);return {...entry,title:entry.title||node?.title,position:entry.position||node?.position};}):[];this.catalogSignature=signature;this.choices();
-   this.galleryRoom=this.scoped&&(value.gallery===true||this.entries.some(entry=>entry.galleryDisplay===true));
-   this.galleryRenewAt=this.galleryRoom?performance.now()+20000:Infinity;
+   this.renewScopedCatalog=this.scoped&&(value.revalidate===true||value.gallery===true||this.entries.some(entry=>entry.galleryDisplay===true));
+   this.catalogRenewAt=this.renewScopedCatalog?performance.now()+20000:Infinity;
    if(this.scoped&&this.frame&&!this.hasCurrentEntry())this.minimize();
    this.onCatalog(this.entries);return true;
   }catch{
    if(this.scoped&&!this.disposed&&generation===this.catalogGeneration){
-    this.entries=[];this.nearby=null;this.choices();this.galleryRenewAt=this.galleryRoom?performance.now()+20000:Infinity;this.onCatalog([]);
+    this.entries=[];this.nearby=null;this.choices();this.catalogRenewAt=this.renewScopedCatalog?performance.now()+20000:Infinity;this.onCatalog([]);
     if(this.frame)this.minimize();
    }
    return false;
@@ -74,13 +74,13 @@ export class ContentVisitor{
    :canResume?'Volver al contenido':'Visitar contenido';
  }
 
- refreshGallery(){
-  if(!this.disposed&&!this.catalogFlight&&performance.now()>=this.galleryRenewAt)
+ refreshScopedCatalog(){
+  if(!this.disposed&&!this.catalogFlight&&performance.now()>=this.catalogRenewAt)
    this.catalog=this.loadCatalog();
  }
 
  hasCurrentEntry(){
-  return this.entries.some(value=>value.id===this.entry?.id&&sameVisitPin(value.pin,this.entry.pin));
+  return this.entries.some(value=>value.id===this.entry?.id&&value.nodeRevision===this.entry.nodeRevision&&sameVisitPin(value.pin,this.entry.pin));
  }
 
  async openNode(nodeId,{expectedRevision=null}={}){
@@ -169,14 +169,15 @@ export class ContentVisitor{
    if(!response.ok){if(this.scoped&&this.frame)this.minimize();if(this.selector&&this.entry)this.selector.value=this.entry.id;this.say(response.status===401||response.status===403?'Este contenido necesita tu acceso a Nexus. Volvé a entrar desde Apps.':'No pude recuperar esta edición del contenido.');return;}
    const descriptor=await response.json();if(!current())return;
    if(!sameVisitPin(descriptor.pin,entry.pin))throw Error('Content edition changed');
-   if(visitVersion(entry.pin)===3&&(descriptor.schema!=='dm.holodeck-visit/descriptor-v3'||descriptor.kind!=='context'||!visitEntryMatches(descriptor.entry,entry.pin)))throw Error('Context edition unavailable');
-   const verifyGallery=entry.galleryDisplay===true;
-   if(verifyGallery){
-    if(descriptor.schema!=='dm.holodeck-visit/descriptor-v2'||descriptor.kind!==entry.pin.adapter||
-       !visitEntryMatches(descriptor.entry,entry.pin))throw Error('Gallery edition unavailable');
-    entryURL=new URL(descriptor.entry,this.window.location.origin);
+   const version=visitVersion(entry.pin);
+   const verifyScoped=this.scoped;
+   if(verifyScoped||version===3){
+    const kind=version===2?entry.pin.adapter:version===3?'context':'narrated_visual';
+    if(descriptor.schema!==`dm.holodeck-visit/descriptor-v${version}`||descriptor.kind!==kind||
+       !visitEntryMatches(descriptor.entry,entry.pin))throw Error('Selected edition unavailable');
+    if(verifyScoped)entryURL=new URL(descriptor.entry,this.window.location.origin);
    }
-   if(this.scoped&&this.frame&&!this.frame.inert&&entry.id===this.entry?.id&&sameVisitPin(entry.pin,this.entry.pin)){
+   if(this.scoped&&this.frame&&!this.frame.inert&&entry.id===this.entry?.id&&entry.nodeRevision===this.entry.nodeRevision&&sameVisitPin(entry.pin,this.entry.pin)){
      this.reveal();this.frame.focus();return;
    }
    if(this.frame){
@@ -190,16 +191,16 @@ export class ContentVisitor{
     this.removeFrame();
    }
    this.entry=entry;this.confirming=false;this.readyAcknowledged=false;this.lastContext=null;this.visitId=crypto.randomUUID();entryURL.searchParams.set('holodeck_visit',this.visitId);
-   if(this.selector){this.selector.value=entry.id;const option=Array.from(this.selector.options).find(value=>value.value===entry.id);if(option&&typeof descriptor.title==='string')option.textContent=verifyGallery?entry.title+' · '+descriptor.title.slice(0,75):descriptor.title.slice(0,100);}
+   if(this.selector){this.selector.value=entry.id;const option=Array.from(this.selector.options).find(value=>value.value===entry.id);if(option&&typeof descriptor.title==='string')option.textContent=entry.galleryDisplay?entry.title+' · '+descriptor.title.slice(0,75):descriptor.title.slice(0,100);}
    this.document.querySelector('#visit-title').textContent=typeof descriptor.title==='string'?descriptor.title.slice(0,160):'Contenido';
    this.reveal();
    const frame=this.document.createElement('iframe');frame.title='Contenido y conversación en Nexus';frame.allow='microphone; autoplay';frame.allowFullscreen=true;frame.referrerPolicy='same-origin';
-   if(verifyGallery){frame.inert=true;this.showLoading('Abriendo la edición de la galería…');}
+   if(verifyScoped){frame.inert=true;this.showLoading('Abriendo la edición…');}
    this.frame=frame;this.ready=new Promise((resolve,reject)=>{this.readyResolve=resolve;this.readyReject=reject;this.readyTimer=setTimeout(()=>reject(Error('Viewer did not load')),visitVersion(entry.pin)>=2?40000:15000);});
    frame.src=entryURL.href;this.document.querySelector('#visit-stage').append(frame);
-   try{await this.ready;if(current()&&this.frame===frame&&verifyGallery&&this.hasCurrentEntry()){frame.inert=false;this.showLoading();}}
+   try{await this.ready;if(current()&&this.frame===frame&&verifyScoped&&this.hasCurrentEntry()){frame.inert=false;this.showLoading();}}
    catch{if(current()){
-    if(verifyGallery)this.showLoading('No pude confirmar esta edición. Podés volver al mundo o elegir otra.');
+    if(verifyScoped)this.showLoading('No pude confirmar esta edición. Podés volver al mundo o elegir otra.');
     else this.say('El contenido está abierto, pero no pude conectar su contexto con el mundo. Conservé su ventana.');
    }}
   }finally{if(current()){this.opening=false;if(this.selector){this.selector.disabled=false;if(this.entry)this.selector.value=this.entry.id;}}}
@@ -208,7 +209,7 @@ export class ContentVisitor{
   this.roomGeneration++;this.opening=false;this.removeFrame();
   if(this.selector)this.selector.disabled=false;
   this.entry=null;this.nearby=null;this.lastContext=null;this.entries=[];this.scoped=scoped;
-  this.galleryRoom=false;this.galleryRenewAt=Infinity;this.onCatalog([]);
+  this.renewScopedCatalog=false;this.catalogRenewAt=Infinity;this.onCatalog([]);
   this.button.hidden=true;this.panel.hidden=true;
   this.catalog=this.loadCatalog();
  }

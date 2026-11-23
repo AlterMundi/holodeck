@@ -109,7 +109,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     return design?{...kits.get(design.kit),designRevision:design.revision}:null;
   }
   const gallery=gallerySlots(gallerySelection,spaces.rooms);
-  const authorizeGallery=gallery&&(galleryAuthorization??createGalleryAuthorization(publicOrigin));
+  const authorizeRoomVisit=galleryAuthorization??(publicOrigin?createGalleryAuthorization(publicOrigin):null);
   const exhibitStore=stateDir?new RoomStore(join(stateDir,'exhibits'),{maxBytes:EXHIBIT_SAVE_BYTES}):null;
   const exhibits=new RoomExhibits({state:exhibitStore?.load(),spaces,houses,artForRoom,
     persist:exhibitStore?state=>exhibitStore.save(state):null});
@@ -275,6 +275,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }
   function putExhibit(actor,input){
     if(room.commitUncertain||spaces.fenced)return null;
+    if(input.type==='exhibit.current')return exhibits.inspect(actor,input.room);
+    if(input.type==='exhibit.preview')return exhibits.put(actor,{...input,type:'exhibit.put'},room.nodes,true);
     return exhibits.put(actor,input,room.nodes);
   }
   function publishLayout(actor,input){
@@ -516,15 +518,17 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(spaces.fenced||room.commitUncertain||exhibits.fenced)return res.status(503).json({message:'No pude recuperar la exposición.'});
     const active=spaces.current(req.actor);
     if(active===OUTSIDE)return res.status(404).json({message:'Entrá a la sala para visitar su contenido.'});
-    if(active!==gallery?.room)return res.json({visits:exhibits.visit(req.actor,active)});
+    const isGallery=active===gallery?.room;
     const currentEntries=()=>{
       if(Date.now()-req.holodeckSession.created>=SESSION_MS||
-         !inScope(req.holodeckSession.actor,active)||exhibits.fenced)return [];
+         !inScope(req.holodeckSession.actor,active)||spaces.fenced||room.commitUncertain||exhibits.fenced)return [];
       const placed=exhibits.visit(req.actor,active);
+      if(!isGallery)return placed;
       return [...placed,...gallery.slots.filter(slot=>!placed.some(entry=>sameVisitPin(entry.pin,slot.pin)))];
     };
     const visits=await allowedGalleryVisits({entries:currentEntries(),currentEntries,
-      authorize:pin=>authorizeGallery(req.headers.cookie,pin)});
+      authorize:pin=>authorizeRoomVisit?.(req.headers.cookie,pin)});
+    if(!isGallery)return res.json({revalidate:true,visits});
     res.json({gallery:inScope(req.actor,active),visits:visits.map(entry=>{
       const display=Object.hasOwn(GALLERY_STAGES,entry.id)&&entry.pin.kind==='artifact_review'&&entry.pin.adapter==='interactive_3d';
       return display?{...entry,title:GALLERY_STAGES[entry.id].title,galleryDisplay:true}:entry;

@@ -98,8 +98,10 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
             throw Error('Indoor gardens require an own-native route');
           result=indoorGarden?.(actor,request.args);
           if(!result)throw Error('Indoor garden unavailable');
-        }else if(request.operation==='act'&&request.args.type==='exhibit.put'){
-          if(!own)throw Error('Exhibit authoring requires an own-native route');
+        }else if(request.operation==='act'&&['exhibit.current','exhibit.preview','exhibit.put'].includes(request.args.type)){
+          if(!own||!rights.includes('edit'))throw Error('Exhibit authoring requires an own-native editor route');
+          if(request.args.type==='exhibit.current'&&Object.keys(request.args).sort().join(',')!=='room,type')
+            throw Error('Invalid exhibit lookup');
           result=putExhibit?.(actor,request.args);
           if(!result)throw Error('Exhibit authoring unavailable');
         }else if(savedExhibit)result=savedExhibit;

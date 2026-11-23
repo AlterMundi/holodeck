@@ -50,6 +50,7 @@ test('workshop art follows the exact house, current room grant and asset revisio
   let grant=true,runtime,listener;
   try {
     runtime=await createHolodeck({basePath:'/holodeck/',stateDir,
+      galleryAuthorization:async cookie=>cookie?.startsWith('fixture=guest;'),
       interiorSpaces:[definition,{id:'vestibulo',house,title:'Vestíbulo',level:0,entry:true,
         guests:['human:guest'],links:[{kind:'stair',to:lab}]}],
       interiorGuestAccess:(_actor,id)=>id!==lab||grant,
@@ -80,7 +81,7 @@ test('workshop art follows the exact house, current room grant and asset revisio
     assert.match(prepared.markup,/id="room-art"/);
     assert.equal((await read(model)).status,404);
     assert.equal((await read('api/space/content-visits')).status,200);
-    assert.deepEqual(await (await read('api/space/content-visits')).json(),{visits:[]});
+    assert.deepEqual(await (await read('api/space/content-visits')).json(),{revalidate:true,visits:[]});
     const entered=await (await move('vestibulo',lab)).json();
     assert.equal(entered.id,lab);
     const station=entered.objects.find(item=>item.id==='beacon-prototypes');

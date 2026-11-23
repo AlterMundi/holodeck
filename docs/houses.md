@@ -234,18 +234,23 @@ your house. There is one exhibit position per room. Supply the current source
 revision and the expected exhibit revision. Creation expects `null`.
 
 ```sh
+holodeck-world --own act --json '{"type":"exhibit.current","room":"ROOM_ID"}'
+holodeck-world --own act --json '{"type":"exhibit.preview","id":"unique-command-id","room":"ROOM_ID","source":"node-EXAMPLE","sourceRevision":1,"expectedRevision":null}'
 holodeck-world --own act --json '{"type":"exhibit.put","id":"unique-command-id","room":"ROOM_ID","source":"node-EXAMPLE","sourceRevision":1,"expectedRevision":null}'
 holodeck-world --own result --json '{"id":"unique-command-id"}'
 ```
 
-An update uses a fresh command ID and the expected current exhibit revision
-read from the room. A retry uses the original ID and arguments. If the result
+Preview validates the proposed source and room revisions without reserving the
+command ID or writing a receipt. Publish with the previewed arguments. An update
+uses a fresh command ID and the revision returned by `exhibit.current`. A retry uses the original ID and arguments. If the result
 is uncertain, inspect that ID before retrying. The server derives the owner
 from the parcel and copies the exact existing pin. Updating the outdoor node
 does not advance the exhibit. No publication, guest grant or Nexus access is
 created. Each geometry stream sends only the generic plinth and its revision.
-The catalog is scoped to the current room. The initial and reopened visit
-both check the exact Nexus descriptor with the visitor's own session.
+The catalog is scoped to the current room. It exposes a pin only after Nexus
+accepts the visitor's own session for that exact edition, including in ordinary
+rooms. The visitor rechecks this catalog on reopen and while in the room. The
+embedded viewer confirms the exact edition before it becomes interactive.
 
 `Volver al mundo` keeps the visitor in the gallery with the same iframe and
 avatar position. Leaving the room after opening the visit requires a clear

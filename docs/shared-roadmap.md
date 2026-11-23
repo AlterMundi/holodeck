@@ -69,7 +69,9 @@ plan on its own claimed parcel, set the initial guest list room by room and
 extend the plan with new cells. The same owner lane now provides two original
 Blender room kits with reusable furniture anchors. The remaining creator loop
 makes room tools and pinned contents as easy to place as the room art. Indoor
-signal gardens can be placed using the owner lane. Exercise the full loop in
+signal gardens can be placed using the owner lane. The same lane can read and
+preview an exact pinned exhibit before publishing it. Room access and Nexus
+edition access are checked separately. Exercise the full loop in
 two distinct rooms with independent simulated creators and visitors.
 
 ## Environment art production

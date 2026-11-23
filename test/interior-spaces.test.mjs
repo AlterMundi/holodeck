@@ -59,10 +59,19 @@ test('HTTP, real geometry upgrades and native observation share active room and 
   const stateDir=mkdtempSync(join(tmpdir(),'holodeck-spaces-')),socketPath=join(stateDir,'native.sock'),foreignSocket=join(stateDir,'foreign.sock');
   const foreignBeing='dm:being:v1:'+'z'.repeat(43);
   new RoomStore(join(stateDir,'houses')).save({schema:'holodeck.houses/v1',houses:[house],receipts:[]});
-  let allowed=true,nativeAllowed=true,foyerAccess=true,runtime,listener;
+  let allowed=true,nativeAllowed=true,foyerAccess=true,editionAccess=false,runtime,listener;
   const clients=[],peers=[];
   async function start(){
-    runtime=await createHolodeck({production:true,basePath:'/holodeck/',publicOrigin:'https://world.test',stateDir,
+    const fetchHTTP=globalThis.fetch;
+    globalThis.fetch=async(url,options)=>{
+      const revision=url.pathname.match(/^\/nexus\/api\/tables\/published-fixture\/artifact-review\/work\/(version-[12])\/visit$/)?.[1];
+      if(url.origin!=='https://world.test'||!revision)return fetchHTTP(url,options);
+      if(!editionAccess||options.headers.Cookie!=='__Host-home=guest')return new Response(null,{status:403});
+      return Response.json({schema:'dm.holodeck-visit/descriptor-v2',kind:'interactive_3d',
+        entry:'/nexus/?table=published-fixture&review=work',pin:{kind:'artifact_review',
+          tableId:'published-fixture',reviewId:'work',revision,adapter:'interactive_3d'}});
+    };
+    try{runtime=await createHolodeck({production:true,basePath:'/holodeck/',publicOrigin:'https://world.test',stateDir,
       interiorSpaces:definitions.map(room=>room.id==='foyer'?{...room,guests:[...room.guests,'human:viewer',foreignBeing]}:
         room.id==='gallery'?{...room,guests:[...room.guests,foreignBeing]}:room),
       interiorGuestAccess:(actor,room)=>actor.id==='human:viewer'||(allowed&&(room!=='foyer'||foyerAccess)),
@@ -71,7 +80,7 @@ test('HTTP, real geometry upgrades and native observation share active room and 
       identityResolver:async req=>{
         const id=req.headers.cookie?.match(/(?:^|; )home=(guest|viewer|foreign|owner)/)?.[1];
         return id?{id:id==='owner'?owner:'human:'+id,kind:id==='owner'?'daimon':'human',rights:['observe'],name:id}:null;
-      }});
+      }});}finally{globalThis.fetch=fetchHTTP;}
     listener=runtime.app.listen(0,'127.0.0.1');await once(listener,'listening');
     return `http://127.0.0.1:${listener.address().port}/holodeck/`;
   }
@@ -89,7 +98,7 @@ test('HTTP, real geometry upgrades and native observation share active room and 
   let base=await start();
   try{
     async function auth(name){
-      const cookie='home='+name;
+      const cookie='home='+name+'; __Host-home='+name;
       const response=await fetch(base,{headers:{Cookie:cookie,Accept:'application/json'}});
       return {cookie:cookie+'; '+response.headers.get('set-cookie').split(';')[0],
         token:(await response.json()).sessionToken};
@@ -185,13 +194,29 @@ test('HTTP, real geometry upgrades and native observation share active room and 
     const place={type:'exhibit.put',id:'receipt-fixture-one',room:'gallery',source:sourceId,sourceRevision:1,expectedRevision:null};
     assert.equal((await native('act',{type:'space.move',from:'outside',to:'foyer'},foreignSocket)).ok,true);
     assert.equal((await native('act',{type:'space.move',from:'foyer',to:'gallery'},foreignSocket)).ok,true);
+    const inspect={type:'exhibit.current',room:place.room};
+    const preview={...place,type:'exhibit.preview'};
+    assert.equal((await native('act',inspect,foreignSocket)).ok,false);
+    assert.equal((await native('act',preview,foreignSocket)).ok,false);
     assert.equal((await native('act',place,foreignSocket)).ok,false);
+    assert.equal((await native('act',inspect)).result.exhibit,null);
+    const proposed=(await native('act',preview)).result;
+    assert.deepEqual(proposed.pin,firstPin);
+    assert.equal((await native('act',inspect)).result.exhibit,null);
+    assert.equal((await native('result',{id:place.id})).ok,false);
     const firstExhibit=(await native('act',place)).result;
-    assert.deepEqual(firstExhibit.pin,firstPin);
+    assert.deepEqual(firstExhibit,proposed);
+    assert.deepEqual((await native('act',inspect)).result.exhibit,firstExhibit);
     assert.deepEqual((await native('result',{id:place.id})).result,firstExhibit);
     assert.equal((await native('result',{id:place.id},foreignSocket)).ok,false);
     const visit=async()=>await (await fetch(base+'api/space/content-visits',{headers:headers(person)})).json();
+    assert.deepEqual(await visit(),{revalidate:true,visits:[]});
+    assert.equal((await (await read(person)).json()).id,'gallery');
+    editionAccess=true;
     assert.deepEqual((await visit()).visits[0].pin,firstPin);
+    editionAccess=false;
+    assert.deepEqual(await visit(),{revalidate:true,visits:[]});
+    editionAccess=true;
     assert.equal((await fetch(base+'api/space/content-visits',{headers:headers(foreign)})).status,404);
     const secondPin={...firstPin,revision:'version-2'};
     runtime.room.nodes[sourceId]={...runtime.room.nodes[sourceId],revision:2,result:{pin:secondPin}};

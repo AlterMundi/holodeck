@@ -87,7 +87,7 @@ function startInterior(space){
       const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
       renderer.render=state=>{
         const position=client.getLocalCharacterState()?.position;
-        galleryModels.update();visitor.refreshGallery();updateDoor(position);visitor.update(position);
+        galleryModels.update();visitor.refreshScopedCatalog();updateDoor(position);visitor.update(position);
         beaconControls.update(space.objects,position);render(state);
       };
       renderer.dispose=()=>{picker.dispose();galleryModels.clear();dispose();};
@@ -382,7 +382,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       galleryModels.update();
       garden.update(inside&&!moving&&activeSpace.playableInterior?activeSpace.id:null);gardenMarkers();
       if(!inside){worldIndication?.update();if(!moving)playableHUD.update(position);}
-      if(!moving){if(inside)contentVisitor?.refreshGallery();contentVisitor?.update(position);updateDoor(position);}
+      if(!moving){if(inside)contentVisitor?.refreshScopedCatalog();contentVisitor?.update(position);updateDoor(position);}
       beaconControls.update(inside&&!moving&&remoteScene?activeSpace.objects:null,position);
       render(renderState);
       if(!inside)geometryProbe.afterRender();

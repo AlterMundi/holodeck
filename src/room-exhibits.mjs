@@ -55,14 +55,19 @@ export class RoomExhibits {
     return receipt?.result.owner===actor.id ? structuredClone(receipt.result) : null;
   }
 
-  put(actor,input,nodes){
+  inspect(actor,room){
+    if(this.fenced||!this.owns(actor,room)||this.spaces.current(actor)!==room)return null;
+    return {room,exhibit:structuredClone(this.forRoom(room)),position:EXHIBIT_POSITION};
+  }
+
+  put(actor,input,nodes,preview=false){
     if(this.fenced||!exact(input,'expectedRevision,id,room,source,sourceRevision,type')||input.type!=='exhibit.put'||
         !commandId(input.id)||!roomId(input.room)||!contentNodeId(input.source)||!revision(input.sourceRevision)||
         !(input.expectedRevision===null||revision(input.expectedRevision))||
         !this.owns(actor,input.room)||this.spaces.current(actor)!==input.room)return null;
     const fingerprint=digest([actor.id,input.room,input.source,input.sourceRevision,input.expectedRevision]);
     const prior=this.state.receipts.find(entry=>entry.id===input.id);
-    if(prior)return prior.fingerprint===fingerprint?structuredClone(prior.result):null;
+    if(prior)return !preview&&prior.fingerprint===fingerprint?structuredClone(prior.result):null;
     const current=this.scoped(actor,input.room);
     if((current?.revision??null)!==input.expectedRevision||(!current&&this.state.exhibits.length>=maxExhibits))return null;
     const source=nodes[input.source],pin=source?.result?.pin;
@@ -70,6 +75,7 @@ export class RoomExhibits {
     const result={owner:actor.id,room:input.room,source:source.id,sourceRevision:source.revision,
       revision:(current?.revision??0)+1,pin:structuredClone(pin)};
     if(!validExhibit(result))return null;
+    if(preview)return result;
     const next={schema,exhibits:[...this.state.exhibits.filter(exhibit=>exhibit.room!==input.room),result],
       receipts:[...this.state.receipts.slice(-(maxReceipts-1)),{id:input.id,fingerprint,result}]};
     try{this.persist?.(next);}catch(error){if(error.commitUncertain)this.fenced=true;throw error;}
