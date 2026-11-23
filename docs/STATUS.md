@@ -10,7 +10,16 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`4a5bb9d`, package `93f5094b9b9b`. The outdoor gallery now has a limestone
+`f536823`, package `8af3e721d5e3`. The North Mirador now has a limestone walk,
+basalt and oak seats and a seaward copper arch authored in Blender. A simulated
+Chromium participant raised the bridge from the HUD, walked both directions
+with WASD, lowered the bridge and reached the interrupted crossing. The exact
+authored assets and all 57 installed files matched live serving. Native
+observation confirmed the original Mirador, bridge and control anchors.
+Package `93f5094b9b9b` is the compatible rollback.
+[Mirador source and walkthrough captures](../art/compaii-house/redesign/mirador.md)
+
+The previous release served source `4a5bb9d`, package `93f5094b9b9b`. The outdoor gallery now has a limestone
 bridge landing and a timber and copper presentation pavilion. A simulated
 Chromium visitor walked from the plaza, opened the pinned fixture report and
 returned at the same position. Authenticated receiving checks matched all 56

@@ -158,8 +158,11 @@ spawn, entered and returned from the Casa, and followed the garden path.
 The [outdoor gallery island](../art/compaii-house/redesign/gallery-island.md)
 now has a paved landing and an open pavilion at the existing presentation
 anchor. A simulated visitor crossed from the plaza, opened a pinned fixture
-report and returned at the same position. Finish the northern Mirador, the
-east garden and further interior furniture. The
+report and returned at the same position. The [North Mirador](../art/compaii-house/redesign/mirador.md)
+now frames the horizon with a copper arch, a limestone walk and two seating
+wings. The existing bridge passed a WASD round trip when raised. Its lowered
+state left the crossing physically interrupted in the same renderer. Finish
+the east garden and further interior furniture. The
 [Beacon workshop finish](../art/compaii-house/redesign/README.md#beacon-joinery-and-workstations)
 now ties its existing stair, walls and acoustic work bays together. Continue
 the remaining furniture and room finish at walking height. The
@@ -169,8 +172,8 @@ a framed clerestory and a gallery lighting rail. Both the stair and continuous
 floor variants have player-height Chromium readback. Exact source access and
 live participant evidence remain separate from the fixture exhibits.
 
-The selected archive stores 15 atelier GLBs losslessly and leaves
-6,285,312 bytes below the existing receiver limit. The matched Chromium
+The selected archive stores 16 atelier GLBs losslessly and leaves
+6,244,352 bytes below the existing receiver limit. The matched Chromium
 route transferred 43.6% fewer bytes for selected exterior models and
 35.2% fewer for the foyer, gallery and Beacon lab. Retain the exact
 decoded GLBs, revisioned URLs, identity ranges and authorization on
