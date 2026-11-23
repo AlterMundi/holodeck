@@ -31,7 +31,53 @@ const modelCancellation={
     });
   }
 };
+
+// The pinned renderer places a name sprite over the controlled avatar.
+// Keep the remote labels and chat bubbles, and leave the local sightline clear.
+const localAvatarLabel={
+  name:'mml-local-avatar-label',
+  setup(api){
+    api.onLoad({filter:/\/@mml-io\/3d-web-threejs\/build\/index\.js$/},async ({path})=>{
+      const bytes=await readFile(path);
+      if(createHash('sha256').update(bytes).digest('hex')!==
+        '4177dd0ce868ff3b72aeb57968401a7941e7fdd613d4b53a72ddd9fcb672111c')
+        throw Error('Requalify the MML local avatar label adaptation for these dependency bytes');
+      let source=bytes.toString('utf8');
+      const replacements=[
+        [`    this.usernameTooltip = new CharacterTooltip(
+      this.config.isLocal ? {
+        secondsToFadeOut: 10
+      } : {}
+    );
+    this.usernameTooltip.setText(this.config.username);
+    this.add(this.usernameTooltip);`,`    if (!this.config.isLocal) {
+      this.usernameTooltip = new CharacterTooltip({});
+      this.usernameTooltip.setText(this.config.username);
+      this.add(this.usernameTooltip);
+    }`],
+        [`      this.usernameTooltip.setText(username);
+      this.usernameTooltip.show();`,`      this.usernameTooltip?.setText(username);
+      this.usernameTooltip?.show();`],
+        [`      this.usernameTooltip.setHeightOffset(height);
+      height += this.usernameTooltip.scale.y;`,`      if (this.usernameTooltip) {
+        this.usernameTooltip.setHeightOffset(height);
+        height += this.usernameTooltip.scale.y;
+      }`],
+        [`    if (this.config.isLocal) {
+      this.usernameTooltip.show();
+    }
+`,''],
+        ['    this.usernameTooltip.dispose();','    this.usernameTooltip?.dispose();'],
+      ];
+      for(const [before,after] of replacements){
+        if(source.split(before).length!==2)throw Error('Pinned MML character label source no longer matches');
+        source=source.replace(before,after);
+      }
+      return {contents:source};
+    });
+  }
+};
 await build({entryPoints:['src/client.mjs'],outfile:'build/client.js',bundle:true,
   format:'esm',platform:'browser',target:'es2022',minify:true,
-  plugins:[modelCancellation],
+  plugins:[modelCancellation,localAvatarLabel],
   loader:{'.wasm':'file'},assetNames:'[name]-[hash]'});
