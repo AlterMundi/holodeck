@@ -25,7 +25,7 @@ MAX_TRIANGLES = 64_000
 BEACON_STAIRS = ('Descending stair tread', 'Stair rail', 'Stone wall at stair')
 FOYER_EXTERIOR = ('Stone plinth','Warm entrance floor','Entrance step','CASA DE COMPAII',
                   'Clerestory smoked glass','Vertical recessed window','Amber window sill',
-                  'Right wing stone rib')
+                  'Right wing stone rib','Facade ')
 GALLERY_FLOOR = ('Limestone gallery floor','Published stone base','Published oak top')
 
 

@@ -201,14 +201,14 @@ def roof(scope, name, origin, scale):
               (x+px*scale,y+8.63*scale,z+pz*scale)],.038*scale,brass)
 
 
-def arch(scope, center, span, spring, depth, finish):
+def arch(scope, center, span, spring, depth, finish, prefix=''):
     x,y,z = center
     points = [(x+math.cos(i*math.pi/24)*r,y,z+spring+math.sin(i*math.pi/24)*r)
               for r in [span,span+.18] for i in range(25)]
-    shell(scope,'Arched portal band',points,[(i,i+1,i+26,i+25) for i in range(24)],
+    shell(scope,prefix+'Arched portal band',points,[(i,i+1,i+26,i+25) for i in range(24)],
           finish,depth,.017)
     for side in [-1,1]:
-        block(scope,'Portal pier',(x+side*(span+.08),y,z+spring*.5),
+        block(scope,prefix+'Portal pier',(x+side*(span+.08),y,z+spring*.5),
               (.18,depth,spring),finish,.017)
 
 
@@ -235,20 +235,37 @@ for y in [.02,8.21]:
           [tuple(range(len(profile)+2))],oak,.17,.034)
 for x,z in [(-1.18,4.32),(-.86,4.49),(-.54,4.69),(-.22,4.88),
             (.10,5.00),(.42,4.96),(.74,4.88),(1.06,4.77),(1.38,4.65)]:
-    block(house,'Clerestory smoked glass',(x,-.198,(z+3.82)*.5),
-          (.165,.06,z-3.82),iron,.014)
-arch(house,(0,-.29,.42),1.29,1.41,.28,brass)
+    block(house,'Clerestory smoked glass',(x,-.198,(z+3.94)*.5),
+          (.165,.06,z-3.94),iron,.014)
+# A limestone surround carries the opening. Deep oak jambs and a narrow brass
+# edge read together from the public path without filling the walkable opening.
+arch(house,(0,-.39,.42),1.48,1.41,.23,stone,'Facade ')
+arch(house,(0,-.41,.42),1.29,1.41,.40,oak,'Facade ')
+arch(house,(0,-.612,.42),1.29,1.41,.036,brass)
 arch_infill(house,(0,-.13,.42),1.385,1.41,3.34,plaster)
 for x in [-1.59,1.59]:
     block(house,'Carved portal shoulder',(x,-.12,1.69),(.35,.42,3.30),plaster,.035)
-text(house,'CASA DE COMPAII',(0,-.248,3.48),.198)
-for i in range(6):
-    x = -3.89+i*.43
-    block(house,'Vertical recessed window',(x,-.227,2.19),(.14,.018,1.4),iron,.006)
-    block(house,'Amber window sill',(x,-.239,1.57),(.109,.012,.15),amber,.005)
-    block(house,'Right wing stone rib',(2.64+i*.25,-.24,2.09),(.11,.078,1.49),stone,.012)
+block(house,'Facade address panel',(0,-.318,3.706),(3.98,.172,.39),iron,.042)
+block(house,'Facade address sill',(0,-.412,3.541),(3.81,.030,.030),brass,.008)
+text(house,'CASA DE COMPAII',(0,-.408,3.623),.254)
+for side in (-1,1):
+    bay_x = side * 3.33
+    block(house,'Facade window casing',(bay_x,-.255,2.14),(1.32,.125,1.92),stone,.048)
+    block(house,'Facade window recess',(bay_x,-.326,2.16),(1.10,.050,1.65),oak,.030)
+    block(house,'Facade window glazing',(bay_x,-.358,2.16),(.91,.035,1.44),iron,.019)
+    for offset in (-.29,0,.29):
+        block(house,'Facade window mullion',(bay_x+offset,-.386,2.16),
+              (.053,.035,1.44),oak,.008)
+    block(house,'Facade window transom',(bay_x,-.392,2.55),(.916,.044,.066),oak,.009)
+    block(house,'Facade window sill',(bay_x,-.340,1.38),(1.42,.30,.13),stone,.026)
+    lamp_x = side * 2.14
+    block(house,'Facade sconce housing',(lamp_x,-.289,2.22),(.33,.18,.55),iron,.038)
+    block(house,'Facade sconce glass',(lamp_x,-.392,2.23),(.17,.041,.30),amber,.019)
+    block(house,'Facade sconce cap',(lamp_x,-.392,2.413),(.24,.17,.065),brass,.012)
 for i in range(4):
     block(house,'Entrance step',(0,-1.04+i*.26,.055+i*.048),(2.91,.29,.11+i*.096),stone,.017)
+    block(house,'Facade step nosing',(0,-1.167+i*.26,.106+i*.096),
+          (2.78,.029,.013),basalt,.004)
 block(house,'Hall table',(0,4.0,.94),(1.4,1.65,.12),oak,.044)
 for x in [-.55,.55]:
     for y in [3.38,4.62]:

@@ -211,7 +211,7 @@ room-local bounds. Keep Blender area lights and camera setups in the source.
 | Cell | GLB bytes | Triangles | Material primitives |
 | --- | ---: | ---: | ---: |
 | Garden | 1,747,624 | 15,728 | 11 |
-| Parcel facade | 2,550,804 | 15,232 | 9 |
+| Parcel facade | 2,836,316 | 19,712 | 9 |
 | Foyer | 1,536,588 | 6,700 | 7 |
 | Beacon laboratory | 2,644,700 | 28,416 | 9 |
 | Gallery with stair | 1,615,544 | 7,168 | 6 |
@@ -228,7 +228,11 @@ shadow and three low-cost lights fill the workstations and stair. The
 existing published runtime selects its established room asset.
 
 The exterior facade is registered to the existing west parcel with its front
-facing the aisle and its measured dimensions inside the lot. The smaller
+facing the aisle and its measured dimensions inside the lot. The arrival
+edition uses a dressed limestone arch, a deep oak reveal, a brass edge,
+readable address lettering, window bays and two emissive lanterns. It uses
+the existing exterior lights and fits the exact prior model bounds. The
+packaged facade transfers in 1,824,932 bytes with Brotli. The smaller
 house model in the garden shares the architectural source. Indoors the
 registered hall preserves the doorway and leaves navigation space around the
 table. The collection gallery has two art revisions. The permitted viewer
