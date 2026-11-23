@@ -100,7 +100,7 @@ They can refer to the same project without copying it or its permissions.
 For Casa de CompAII, the Beacon lab is the place to see a prototype and reach
 authorized Spatializer and Weaver tools. Sensorial is the place for runs,
 readings and analysis as those bindings become available. In the 3D gallery,
-a workbench, an adjoining exhibit and an archive can carry the same artifact
+a workbench, adjoining shelves and an archive can carry the same artifact
 through its different states. A house elsewhere can show a different use of
 that artifact, reaching the same Nexus edition.
 
@@ -132,15 +132,34 @@ can open a project that Nexus has not imported. Neither presence in the room
 nor having read a past edition authorizes a new read. A permission change
 removes the object, label, thumbnail and pick target together.
 
-The active projects live on shelves. The bench can present the latest work
-authorized for that room, with a physical link to its project on the shelf.
-Closed archive drawers reveal older published editions and archived projects
-on request, with their original dates, state and author. Their geometry is
-loaded only while open. Use publisher-selected lifecycle state, never infer
-archive status from age or reinterpret an old pin as a new current edition.
-Opening an object opens the same 3D Viewer at exactly the displayed scene and
-edition. Closing it restores the player's position, view and controls. Use
-stable IDs for shelves and drawered content as the collection grows.
+### Manipulación de Materia
+
+The active projects live on shelves. Each shelf position carries a representative
+object and its label. Complementary resources of the same project, such as the
+guitar assembly and a component study, share one project position and keep
+distinct source editions in its inventory.
+
+A glazed archive cabinet has one revolving platform. Show one authorized
+archived project's miniature and name at a time. Step forward or backward to
+browse, then open the exact edition. Restoring returns the project to its shelf
+through the existing authorized lifecycle writer and keeps its edition history.
+The cabinet can remain empty for a visitor without archive access.
+
+Keep a clear walk around the central worktable. Put the full selected review
+model there in the game renderer. Use the 3D Viewer's controls for orbit,
+parts, section, visibility, selection and annotation in a contextual game HUD.
+Inspect controls change the local view. Shared selection and agreed revisions
+have an explicit room effect. Conversation about the object captures the exact
+edition, scene and part when pointing or sending. The next draft leaves
+that reference usable.
+
+An open worktable follows its authorized project's saved review stream.
+Stage and validate each exact model before committing it to the same table.
+Carry camera and selected parts while stable IDs and geometry allow it.
+Cancel superseded loads and keep the displayed edition with its status if a
+draft fails validation. Revocation removes restricted content. Keep canonical
+selection and version history in the 3D Viewer. Future integration with Ani's
+Wiggle Control editor can use this table and the same scoped selection.
 
 Produce the representative alongside each saved review edition in the existing
 publisher workflow. An authored substitute is appropriate for assemblies with
@@ -156,18 +175,31 @@ preserved. Show an honest metadata marker for a confirmed accessible project
 whose miniature has yet to be made.
 
 Validate catalog-to-shelf coverage under the same identity as the Viewer,
-independent room and source denial, an exact-version revision swap, archived
-drawer open/close and inspection return. Measure arrival and walking on wide
+independent room and source denial, an exact-version revision swap while Holodeck stays open, archive turntable
+selection and authorized restore, and inspection return. Measure arrival and walking on wide
 and touch layouts. Proximity bounds simultaneous model loads. Close or leave
 the room to release its model resources. Retention of the derivative follows
 the existing per-project publication budget.
 
-On 23 November a read under CompAII's supported Home identity found three
-distinct resources marked for the Viewer on this Home. All three resolved an
-exact current review manifest. One exposes a scene index. The manifests do
-not declare a shelf representative. This count describes that one identity,
-not the whole tribe. The current gallery's three fixed exhibition editions
-are an existing interaction path and can coexist during migration.
+On 23 November, the creator's ordinary authenticated Viewer reader showed
+two Guitar resources and one Holodeck creation. The paired-human-only audience
+explained why Harmonic Flow and Visor X were absent. Nicolás authorized adding
+the creator to those two resources. The Home audience writer selected exactly
+the creator and the paired human. It retained the previous versions and reused
+the same published model bytes. The creator's actual HTTPS catalog now offers
+all five resources and their exact current review manifests.
+
+The shared Guitar review contains seven model-menu entries, its complementary
+Guitar resource nine, Harmonic Flow 32 and Visor X three. The counts include
+current review variants and do not measure historical CAD coverage.
+Blender exported a bounded representative for each of the five selected source
+scenes using the existing Viewer's exact versions. Neither private project was
+copied into the currently deployed room package.
+
+The Blender room draft and shelf export workflow are in
+[art/collection](../art/collection/README.md). The live gallery's three fixed
+exhibition editions continue to provide the existing interaction path until
+the complete Collection is connected.
 
 ## Configure and verify the first map
 
