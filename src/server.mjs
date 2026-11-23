@@ -24,6 +24,7 @@ import { Room, RoomError, LIMITS } from './room.mjs';
 import { RoomStore } from './room-store.mjs';
 import { homeIdentityResolver } from './home-identity.mjs';
 import { worldDocument } from './world.mjs';
+import { TERRACE_TOP } from './world-layout.mjs';
 import { createWorldPort } from './world-port.mjs';
 import {sameVisitPin,validateContentNodes,validateContentVisits,visitsForActor} from './content-visits.mjs';
 import {allowedGalleryVisits,gallerySlots} from './gallery-catalog.mjs';
@@ -435,7 +436,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       environmentConfiguration:{groundPlane:false,sun:{intensity:1.4},ambientLight:{intensity:1.2},
         fog:atelier?.coastalFog??{fogNear:45,fogFar:140,fogColor:{r:.67,g:.78,b:.79}}},
       avatarConfiguration:{allowCustomAvatars:false},allowCustomDisplayName:false,allowOrbitalCamera:true,
-      spawnConfiguration:{spawnPosition:{x:0,y:1,z:6},spawnYRotation:180},hud:{respawnButton:false}}
+      spawnConfiguration:{spawnPosition:{x:0,y:TERRACE_TOP+.001,z:6},spawnYRotation:180},hud:{respawnButton:false}}
   });
   app.disable('x-powered-by');
   app.use((_req,res,next)=>{res.set('Cache-Control','no-store');next();});

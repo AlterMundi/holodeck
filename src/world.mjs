@@ -1,5 +1,5 @@
 import {HOUSE_GROUND,HOUSE_PLOTS} from './houses.mjs';
-import {LAYOUT_VERSION,TERRACES,PROMENADES} from './world-layout.mjs';
+import {LAYOUT_VERSION,TERRACE_TOP,TERRACES,PROMENADES} from './world-layout.mjs';
 import {signalColourName} from './playable-creations.mjs';
 // One-way projection of Room semantics. Static original art is a merged GLB;
 // only traversable surfaces and changing activity elements remain MML primitives.
@@ -130,8 +130,8 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
   out+=gardenModel(gardenVisual,prefix);
   // Flat walking proxies keep y=.1, at most3cm above layered visual ground.
   // Invisible proxies must not cast shadows onto their visible dressing.
-  for(const terrace of TERRACES)out+=cylinder(terrace.x,0,terrace.z,terrace.radius,.2,'#6b987e','opacity="0" cast-shadows="false"');
-  for(const p of PROMENADES)out+=`<m-cube x="${(p.minX+p.maxX)/2}" y="0" z="${(p.minZ+p.maxZ)/2}" width="${p.maxX-p.minX}" height=".2" depth="${p.maxZ-p.minZ}" opacity="0" cast-shadows="false"></m-cube>`;
+  for(const terrace of TERRACES)out+=cylinder(terrace.x,0,terrace.z,terrace.radius,2*TERRACE_TOP,'#6b987e','opacity="0" cast-shadows="false"');
+  for(const p of PROMENADES)out+=`<m-cube x="${(p.minX+p.maxX)/2}" y="0" z="${(p.minZ+p.maxZ)/2}" width="${p.maxX-p.minX}" height="${2*TERRACE_TOP}" depth="${p.maxZ-p.minZ}" opacity="0" cast-shadows="false"></m-cube>`;
   out+=housingDocument(room.houses?.directory() ?? [],prefix,houseVisual,commonsVisual);
   for(const entity of projection){
     if(entity.deleted)continue;

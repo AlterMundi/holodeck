@@ -1,6 +1,7 @@
 // Shared spatial contract: authored geometry, collision, native perception and
 // creator bounds consume these same metre/Y-up regions. Original plaza retained.
 export const LAYOUT_VERSION='island-archipelago@2';
+export const TERRACE_TOP=.1;
 export const TERRACES=Object.freeze([
  {id:'arrival',x:0,z:0,radius:10.75}, {id:'overlook',x:0,z:-17,radius:4.9},
  {id:'gallery',x:-22,z:0,radius:8}, {id:'garden',x:22,z:0,radius:10}
