@@ -1,0 +1,97 @@
+const RESOURCE=/^[a-f0-9]{32}$/;
+const VERSION=/^[a-f0-9]{64}$/;
+const PROJECT=/^[a-z0-9][a-z0-9-]{0,39}$/;
+const SOURCE_PREFIX='dm:resource:v1:';
+
+export function collectionSelection(selection,rooms){
+  if(selection===undefined)return null;
+  if(!selection||!['projects,room','art,projects,room'].includes(Object.keys(selection).sort().join(','))||!rooms.has(selection.room)||
+     !Array.isArray(selection.projects)||selection.projects.length<1||selection.projects.length>6)
+    throw Error('Select an existing Collection room and one to six shelf projects');
+  if(selection.art!==undefined&&(selection.art!=='matter-workshop-v1'||
+     rooms.get(selection.room).links?.some(link=>link.kind==='stair')))
+    throw Error('Select the Matter workshop shell on a room without stairs');
+  const ids=new Set(),selected=new Set();
+  const projects=selection.projects.map(project=>{
+    if(!project||Object.keys(project).sort().join(',')!=='id,resources'||typeof project.id!=='string'||
+       !PROJECT.test(project.id)||ids.has(project.id)||!Array.isArray(project.resources)||
+       project.resources.length<1||project.resources.length>3)
+      throw Error('Select project IDs with one to three existing Home resources');
+    ids.add(project.id);
+    for(const resource of project.resources){
+      if(typeof resource!=='string'||!RESOURCE.test(resource)||selected.has(resource))
+        throw Error('Select distinct Home resources for the Collection');
+      selected.add(resource);
+    }
+    return Object.freeze({id:project.id,resources:Object.freeze([...project.resources])});
+  });
+  return Object.freeze({room:selection.room,projects:Object.freeze(projects),...(selection.art?{art:selection.art}:{})});
+}
+
+async function boundedJSON(response,limit){
+  const reader=response.body?.getReader();
+  if(!reader)return null;
+  try{
+    if(response.status!==200||response.redirected||Number(response.headers.get('content-length'))>limit)return null;
+    const parts=[];let size=0;
+    for(;;){
+      const {done,value}=await reader.read();
+      if(done)return JSON.parse(Buffer.concat(parts,size).toString('utf8'));
+      size+=value.byteLength;
+      if(size>limit)return null;
+      parts.push(value);
+    }
+  }finally{reader.cancel().catch(()=>{});}
+}
+
+function sourceCookie(cookie){
+  if(typeof cookie!=='string'||Buffer.byteLength(cookie)>8192||/[\x00-\x1f\x7f]/.test(cookie))return null;
+  const matches=cookie.split(';').map(part=>part.trim()).filter(part=>part.startsWith('__Host-home='));
+  return matches.length===1?matches[0]:null;
+}
+
+function title(value){
+  return typeof value==='string'&&value.length<=180?value.replace(/[\x00-\x1f\x7f]/g,' ').trim():'';
+}
+
+export function createCollectionReader(origin,{request=fetch}={}){
+  const selected=new URL(origin);
+  if(selected.protocol!=='https:'||selected.origin!==origin)throw Error('Select the canonical HTTPS Home origin');
+  return async (cookie,selection)=>{
+    const session=sourceCookie(cookie);
+    if(!session)return null;
+    const signal=AbortSignal.timeout(3500);
+    const read=path=>request(new URL(path,selected),{headers:{Cookie:session,Accept:'application/json'},
+      cache:'no-store',redirect:'error',signal});
+    let catalog;
+    try{catalog=await boundedJSON(await read('/catalog.json'),1024*1024);}catch{return null;}
+    if(!Array.isArray(catalog?.entries)||catalog.entries.length>2048)return null;
+    const available=new Map();
+    for(const row of catalog.entries){
+      if(row?.kind!=='artifact'||row.model_review!==true||typeof row.resource_ref!=='string'||
+         !row.resource_ref.startsWith(SOURCE_PREFIX)||typeof row.version_ref!=='string'||
+         !VERSION.test(row.version_ref)||!title(row.title))continue;
+      const resource=row.resource_ref.slice(SOURCE_PREFIX.length);
+      if(RESOURCE.test(resource))available.set(resource,{version:row.version_ref,title:title(row.title)});
+    }
+    async function exact(resource){
+      const entry=available.get(resource);
+      if(!entry)return null;
+      try{
+        const response=await read('/works/'+resource+'/'+entry.version+'/review-live.json');
+        const manifest=await boundedJSON(response,16*1024);
+        if(response.headers.get('x-home-version')!==entry.version||manifest?.schema!=='dm.review-live/v1'||
+           manifest.gallery!=='gallery.json'||typeof manifest.sha256!=='string'||!VERSION.test(manifest.sha256))return null;
+        const index=manifest.scene_index;
+        const sceneIndexSha256=index?.file==='scene-index.json'&&typeof index.sha256==='string'&&VERSION.test(index.sha256)
+          ?index.sha256:null;
+        return {resource,...entry,gallerySha256:manifest.sha256,...(sceneIndexSha256?{sceneIndexSha256}:{})};
+      }catch{return null;}
+    }
+    const projects=await Promise.all(selection.projects.map(async ({id,resources},shelf)=>{
+      const editions=(await Promise.all(resources.map(exact))).filter(Boolean);
+      return editions.length>0?{id,shelf,editions}:null;
+    }));
+    return projects.filter(Boolean);
+  };
+}

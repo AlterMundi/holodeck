@@ -94,6 +94,27 @@ descriptor. Its short in-world line fits the plaque, while the exhibition list
 retains the full title. Clicking either line selects the same pinned edition.
 No protected GLB goes into the deployable package or room preload cache.
 
+The optional `matterCollection` receiving selection names one existing interior
+`room` and up to six ordered shelf `projects`. Each project has a stable
+`id` and one to three distinct Home `resources`. A project can group
+complementary 3D reviews without copying their editions. The optional
+`art: "matter-workshop-v1"` mounts the qualified Blender shell on that room.
+Use the existing room permission and compatible room graph. Rooms with
+descending or ascending stairs keep the ordinary art because the workshop
+floor is continuous. The ordinary cell art endpoint serves the shell only
+during authorized room presence.
+
+`GET api/space/collection` uses the current visitor's Home session on the
+same HTTPS origin. It intersects the selected project resources with Home's
+current authorized 3D Viewer catalog. For each visible resource it requires
+the exact version header and canonical review manifest before returning its
+title, immutable edition and gallery digest. Where available, it also returns
+the validated scene-index digest. Movement or admission change cancels the
+projection. The response uses `no-store`, and the source requests have a
+shared deadline and byte bounds. The compatible configuration can remain
+unselected while a room or thumbnail preparation is ongoing. The route and
+shell do not activate the complete worktable or archive interaction.
+
 Caddy's maintained service writer preserves `/holodeck/` on both HTTP and
 WebSocket requests. Its forward-auth checks the selected current service audience
 before proxying; incoming identity headers and Authorization are stripped.

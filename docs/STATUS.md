@@ -68,6 +68,23 @@ invented version. Nexus's browser receiver and Holodeck's package remain
 selected as before. The owner used this catalog for the finished gallery
 placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-creator-loop)
 
+## Manipulación de Materia candidate
+
+The Collection reader now groups the two Guitar reviews under one shelf
+position and pins the edition of each readable review. The ordinary creator
+identity resolved both Guitar resources, Harmonic Flow and Visor X against
+the real HTTPS Home catalog and exact source manifests. The browser trial
+used a separate isolated room with fixture identities and a controlled source
+response. Chromium entered from the foyer, walked in from the real arrival
+point, collided with the table and archive cabinet, went around the table,
+and returned through the same door. The selected shelf coordinates matched
+the Blender anchor. The room art endpoint refused access immediately after
+leaving. The final exported shell was checked in the lightweight renderer.
+
+This candidate does not select any live world layout. The in-world project
+models, revolving archive controls, full-geometry worktable and its live
+edition swaps are pending integration. [Room and source contract](houses.md#the-collection)
+
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source

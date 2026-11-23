@@ -84,22 +84,29 @@ def lettering(name, text, point, size):
     obj.rotation_euler.x = pi / 2
 
 
-box('Full room walking surface', (0, 0, -.20), (11.6, 10, .4), stone, 0)
-for x in (-5.7, 5.7):
-    box('Side wall', (x, 0, 2.04), (.25, 10, 4.08), plaster, .035)
-    box('Basalt skirting', (x, 0, .14), (.34, 10, .28), border)
+box('Full room walking surface', (0, 0, -.10), (12, 12, .4), stone, 0)
+for x in (-6.02, 6.02):
+    box('Side wall', (x, 0, 2.04), (.25, 12, 4.08), plaster, .035)
+    box('Basalt skirting', (x, 0, .14), (.25, 12, .28), border)
 for x in (-3.33, 3.33):
-    box('Entry wall wings', (x, -4.9, 1.45), (4.75, .25, 2.9), plaster)
-box('Entry lintel', (0, -4.9, 3.46), (11.6, .25, 1.20), plaster)
-box('Rear window base', (0, 4.9, .78), (11.6, .25, 1.56), plaster)
-box('Rear beam', (0, 4.9, 3.66), (11.6, .30, .83), plaster)
-for x in (-5.02, -2.5, 0, 2.5, 5.02):
-    box('Limestone mullion', (x, 4.85, 2.4), (.20, .36, 1.72), stone, .035)
-box('Broad sill', (0, 4.69, 1.52), (11.45, .52, .16), stone)
-box('Cool window backdrop', (0, 5.03, 2.4), (11.50, .12, 1.70), recess)
+    box('Entry wall wings', (x, -6.02, 1.45), (4.75, .25, 2.9), plaster)
+box('Entry lintel', (0, -6.02, 3.46), (12, .25, 1.20), plaster)
+# Give the return passage a solid dressed surround at the standard north slot.
+for center, width in [(-4.94, 2.16), (1.94, 8.16)]:
+    box('Rear window base', (center, 6.02, .78), (width, .25, 1.56), plaster)
+    box('Broad sill', (center, 5.75, 1.52), (width, .52, .16), stone)
+box('Rear beam', (0, 6.02, 3.66), (12, .30, .83), plaster)
+for x in (-5.02, -1.87, 0, 2.5, 5.02):
+    box('Limestone mullion', (x, 5.98, 2.4), (.20, .36, 1.72), stone, .035)
+for center, width in [(-4.94, 2.16), (1.94, 8.16)]:
+    box('Cool window backdrop', (center, 6.19, 2.4), (width, .12, 1.70), recess)
+for x in (-3.91, -2.09):
+    box('Dressed return jamb', (x, 6.01, 1.58), (.24, .30, 3.16), stone, .05)
+box('Dressed return lintel', (-3, 6.01, 3.15), (2.08, .30, .27), stone, .04)
+box('Return doorway shadow', (-3, 6.18, 1.58), (1.58, .12, 3.12), oak, .02)
 for y in (-3.9, -1.7, .5, 2.7, 4.8):
     box('Oak ceiling rib', (0, y, 3.89), (11.42, .19, .23), oak, .027)
-box('Plaster ceiling', (0, 0, 4.08), (11.6, 10, .14), plaster, 0)
+box('Plaster ceiling', (0, 0, 4.08), (12, 12, .14), plaster, 0)
 
 # Routes run along the front aisle and around all four sides of the table.
 for x in (-1.07, 1.07):
@@ -116,12 +123,12 @@ box('Bench light housing', (0, .43, 2.48), (2.58, .30, .14), steel, .045)
 box('Bench light opal', (0, .43, 2.399), (2.45, .22, .034), lamp, .014)
 
 # All display volumes have a separate anchor, so project geometry remains data.
-for x in (-3.7, -1.82):
-    for z in (.64, 1.34, 2.04):
-        box('Oak shelf', (x, 3.83, z), (1.78, .77, .085), oak, .022)
-        for dx in (-.68, .68):
-            box('Bronze shelf bracket', (x + dx, 4.1, z - .095), (.048, .41, .17), brass)
-        anchor(f'shelf-{x}-{z}', x, 3.7, z + .048)
+for index, y in enumerate((1.36, -.52)):
+    for level, z in enumerate((.64, 1.34, 2.04)):
+        box('Oak shelf', (-5.38, y, z), (.77, 1.78, .085), oak, .022)
+        for dy in (-.68, .68):
+            box('Bronze shelf bracket', (-5.62, y + dy, z - .095), (.41, .048, .17), brass)
+        anchor(f'shelf-{index * 3 + level}', -5.25, y, z + .048)
 
 cabinet_x, cabinet_y = 3.35, 3.68
 box('Archive oak base', (cabinet_x, cabinet_y, .419), (2.57, 1.40, .84), oak, .053)
@@ -138,11 +145,11 @@ cylinder('Fixed archive drive housing', (cabinet_x, cabinet_y, .926), .49, .14, 
 cylinder('Revolving archive display', (cabinet_x, cabinet_y, 1.01), .624, .055, brass)
 cylinder('Inset revolving display pad', (cabinet_x, cabinet_y, 1.044), .605, .018, green)
 lettering('Archive heading', 'ARCHIVO', (cabinet_x, 2.934, 2.326), .133)
-lettering('Room heading', 'MANIPULACIÓN DE MATERIA', (0, 4.468, 3.45), .239)
+lettering('Room heading', 'MANIPULACIÓN DE MATERIA', (0, 5.835, 3.45), .239)
 anchor('worktable-model', 0, .43, 1.058)
 anchor('archive-turntable', cabinet_x, cabinet_y, 1.009)
 anchor('archive-model', cabinet_x, cabinet_y, 1.061)
-anchor('entrance', 0, -4.44, .015)
+anchor('entrance', -3, 4.81, .11)
 
 visual = [obj for obj in scene.objects if obj.type in {'MESH', 'FONT'}]
 bpy.ops.object.select_all(action='DESELECT')
@@ -173,7 +180,7 @@ bpy.ops.object.camera_add(location=(-.72, -4.38, 1.68))
 camera = bpy.context.object
 camera.data.lens = 20
 scene.camera = camera
-aim(camera, (.21, 2.79, 1.30))
+aim(camera, (-.57, 2.79, 1.30))
 scene.world = bpy.data.worlds.new('Interior bounce')
 scene.world.color = (.10, .10, .10)
 scene.render.engine = 'CYCLES'

@@ -196,7 +196,7 @@ Blender exported a bounded representative for each of the five selected source
 scenes using the existing Viewer's exact versions. Neither private project was
 copied into the currently deployed room package.
 
-The Blender room draft and shelf export workflow are in
+The isolated playable room candidate and shelf export workflow are in
 [art/collection](../art/collection/README.md). The live gallery's three fixed
 exhibition editions continue to provide the existing interaction path until
 the complete Collection is connected.

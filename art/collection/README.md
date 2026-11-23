@@ -15,8 +15,11 @@ blender --background --factory-startup --python-exit-code 1 \
 ```
 
 The build generates one editable scene, one static GLB, named world-space
-anchors and one player-height reference render. It does not change active
-room layout, collisions or services. See the [Collection contract](../../docs/houses.md#the-collection)
+anchors and one player-height reference render. The runtime asset stays behind
+the ordinary scoped room-art endpoint and can be selected through the existing
+protected receiving configuration. Invisible cell geometry and the workshop's
+furniture colliders support walking and room passage. The build itself does
+not select a live room. See the [Collection contract](../../docs/houses.md#the-collection)
 for publishing selection, the live worktable and archive interactions.
 
 ## Shelf edition derivative
