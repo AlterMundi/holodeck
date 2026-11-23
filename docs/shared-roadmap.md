@@ -93,6 +93,7 @@ Oliva, and the two identities could not claim each other's edition. The own
 house and room are still required for placement. Oliva's directly authored
 house and an independent real protected browser visit remain open.
 [Home ownership operation](https://github.com/nicoechaniz/daimon-cluster/pull/553) ·
+[Holodeck service ownership proof](https://github.com/nicoechaniz/daimon-cluster/pull/554) ·
 [Nexus owner catalog](https://github.com/compaii/daimon-nexus/pull/130)
 
 ## Environment art production

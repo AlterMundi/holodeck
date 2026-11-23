@@ -28,6 +28,13 @@ Nexus editions, world and visitor permissions remain selected. Oliva's
 proof establishes ownership only. Her own parcel and authored room are
 still required for a real placement. [Source authority contract](deployment.md)
 
+In the packaged browser trial, two simulated owners authored separate houses
+and placed their own exact editions with a controlled Nexus receiver. Each
+placement left the exterior node count intact. Independent keyboard-and-mouse
+and touch profiles opened their authorized editions and returned to the same
+position. Revocation, foreign write and receipt denial, renderer reuse and
+receipt recovery after restart all passed.
+
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
 `6288561`, package `4c8be4dc262a`. CompAII updated the finished gallery
 display from revision 1 to 2 directly from the same owned Nexus pin and
