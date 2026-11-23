@@ -249,7 +249,7 @@ test('own-native layout publication adds a live guest route and survives process
       nativeFactory:()=>({availability:async()=>({available:false}),authorizeWorldRequest(){throw Error('test');}}),
       identityResolver:async req=>{
         const id=req.headers.cookie?.match(/(?:^|; )home=(guest|outsider)/)?.[1];
-        return id?{id:'human:'+id,kind:'human',rights:['observe'],name:id}:null;
+        return id?{id:'human:'+id,kind:'human',rights:['observe','edit'],name:id}:null;
       }});
     listener=runtime.app.listen(0,'127.0.0.1');
     await once(listener,'listening');
@@ -262,10 +262,10 @@ test('own-native layout publication adds a live guest route and survives process
     await new Promise(resolve=>listener.close(resolve));
     listener=null;
   }
-  async function act(args,path=socketPath){
+  async function act(args,path=socketPath,operation='act'){
     const socket=net.createConnection(path);
     await once(socket,'connect');
-    socket.write(JSON.stringify({ownNative:true,operation:'act',args})+'\n');
+    socket.write(JSON.stringify({ownNative:true,operation,args})+'\n');
     let response='';
     for await(const chunk of socket)response+=chunk;
     return JSON.parse(response);
@@ -341,6 +341,33 @@ test('own-native layout publication adds a live guest route and survives process
     assert.equal((await request(visitor,'space/art/'+asset)).status,404);
     assert.equal((await act({...design,id:'stale-design-01',expectedRevision:1})).ok,false);
 
+    const game={type:'garden.put',id:'receive-garden-1',room:'foyer',title:'Two lights',expectedRevision:null,
+      play:{schema:'signal-garden/v1',minContributors:2,
+        targets:[{x:0,z:0,radius:.45,color:'mint'},{x:0,z:1.25,radius:.45,color:'amber'}]}};
+    const gardenPath='space/garden?room=foyer';
+    assert.equal((await act(game,foreignPath)).ok,false);
+    assert.equal((await act({...game,play:{...game.play,targets:[{x:4,z:0,radius:1,color:'mint'}]}})).ok,false);
+    assert.equal((await act({...game,type:'garden.preview'})).ok,true);
+    assert.equal(await get(visitor,gardenPath),null);
+    const authored=await act(game);
+    assert.equal(authored.result.revision,1);
+    assert.equal((await request(outsider,gardenPath)).status,404);
+    assert.equal((await request(visitor,'space/garden',game)).status,409,'visitors cannot publish a recipe over HTTP');
+    const signal={type:'garden.signal',room:'foyer',expectedRevision:1,id:'receive-signal-1',index:0,color:'mint'};
+    assert.equal((await request(outsider,'space/garden',signal)).status,409);
+    const player=await request(visitor,'space/garden',signal);
+    assert.equal(player.status,200);
+    const guestReceipt=await player.json();
+    assert.deepEqual(await get(visitor,gardenPath+'&result='+signal.id),guestReceipt);
+    assert.equal((await act({type:'garden.result',id:signal.id})).ok,false);
+    assert.equal((await act({type:'space.move',from:'outside',to:'foyer'})).ok,true);
+    assert.equal((await act({...signal,id:'receive-owner-signal',index:1,color:'amber'})).ok,true);
+    const finishedGame=await get(visitor,gardenPath);
+    assert.equal(finishedGame.progress.complete,true);
+    assert.equal(finishedGame.progress.contributors,2);
+    assert.deepEqual(finishedGame.signals,[{color:'#8ce4c2'},{color:'#efc87a'}]);
+    assert.deepEqual((await act({},socketPath,'observe')).result.space.activity,finishedGame);
+
     const expanded=structuredClone(definitions);
     expanded[0].links.push({kind:'portal',to:'tower'});
     expanded.push(room('tower','Tower',2,false,[{kind:'portal',to:'foyer'}]));
@@ -353,13 +380,29 @@ test('own-native layout publication adds a live guest route and survives process
     await stop();
     await start();
     assert.equal((await get(visitor,'space')).id,'foyer');
+    assert.deepEqual(await get(visitor,gardenPath),finishedGame);
+    assert.deepEqual(await get(visitor,gardenPath+'&result='+signal.id),guestReceipt);
     assert.deepEqual((await act({type:'design.current',room:'foyer'})).result.design,redesigned);
     assert.deepEqual((await act({type:'design.result',id:design.id})).result,trialDesign);
     assert.deepEqual((await act({type:'layout.current'})).result,{house:house.id,revision:2,rooms:expanded});
     assert.deepEqual((await act({type:'layout.result',id:publication.id})).result,published.result);
+    const newRound=await act({...game,id:'receive-garden-2',title:'Second round',expectedRevision:1});
+    assert.equal(newRound.result.revision,2);
+    assert.equal((await request(visitor,'space/garden',{...signal,id:'stale-signal-1'})).status,409);
+    assert.equal((await get(visitor,gardenPath)).progress.filledTargets,0);
+    const galleryGame={...game,id:'receive-gallery-game',room:'gallery',title:'One violet signal',
+      play:{schema:'signal-garden/v1',minContributors:1,targets:[{x:0,z:2,radius:.55,color:'violet'}]}};
+    assert.equal((await act(galleryGame)).ok,true);
+    assert.equal((await request(visitor,'space/garden?room=gallery')).status,404);
+    assert.equal((await request(visitor,'space',{from:'foyer',to:'gallery',live:1})).status,200);
+    const galleryView=await get(visitor,'space/garden?room=gallery');
+    assert.equal(galleryView.title,galleryGame.title);
+    assert.deepEqual(galleryView.targets,galleryGame.play.targets);
+    assert.equal((await request(visitor,'space',{from:'gallery',to:'foyer',live:1})).status,200);
     const exit=await request(visitor,'space',{from:'foyer',to:'outside',live:1});
     assert.equal(exit.status,200);
     assert.equal((await exit.json()).id,'outside');
+    assert.equal((await request(visitor,gardenPath)).status,404);
   }finally{
     await stop();
     rmSync(stateDir,{recursive:true,force:true});

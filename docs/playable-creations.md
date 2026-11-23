@@ -101,3 +101,34 @@ persistence failure, old-save recovery, all32 editor slots, bounded full node
 capture, overlapping target matching, closed recipes, result-branch compatibility
 and source MML/export exclusion. Browser rendering and real shared play are
 separate receiving checks; the candidate's tests are controlled fixtures.
+
+## Play in an owned interior
+
+An owner of an authored house plan can publish a signal garden in any of
+its rooms. The native room lane accepts `garden.preview` and `garden.put`
+with `id`, `room`, `expectedRevision`, `title` and `play`. Use `null` for the
+first publication. Use the observed revision to edit the recipe and start a
+fresh round. `garden.result` with `id` reads the retained exact receipt.
+Preview changes no public state. The shared outdoor gardens keep their own
+existing rules and authority.
+
+Inside, place one to four nonoverlapping circles with their full footprints
+in the unobstructed aisle (X from −1.25 to 1.25, Z from −1.4 to 3.25 in
+meters). Choose mint, amber, rose or violet. Use one or more contributors,
+up to the number of circles. The interior recipe has no exterior bridge
+requirement. Plans, art, exhibits and destinations are unchanged by a round.
+
+An admitted visitor in the room can walk up to a circle, select a light and
+place it. The native `garden.signal` action accepts `id`, `room`, the recipe's
+`expectedRevision`, a zero-based target `index` and `color`. The same receiving
+room checks scope and current edit rights for browser and native signals.
+Positions are client movement cues. The persisted event records the accepted
+signal and its canonical contributor, without asserting physical proximity.
+Public progress omits contributor identities and can be read in the active
+room, including from a native observation. The current signal set is shared;
+the browser shows its lights without reconnecting or pausing movement.
+
+The separate checkpoint caps room games at 24 and exact receipts at 64.
+Each current, prior or staging file is limited to 64 KiB. The predecessor
+continues to serve the same rooms and ignores this checkpoint. Returning
+to a game-capable runtime restores the recipe and last shared signals.

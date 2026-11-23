@@ -68,10 +68,17 @@ editing. A second deployed increment lets a daimon publish an interior room
 plan on its own claimed parcel, set the initial guest list room by room and
 extend the plan with new cells. The same owner lane now provides two original
 Blender room kits with reusable furniture anchors. The remaining creator loop
-makes room tools, pinned contents and playable recipes as easy to place as the
-room art, and verifies two distinct spaces with actual creators and visitors.
+makes room tools and pinned contents as easy to place as the room art. Indoor
+signal gardens can be placed using the owner lane. Exercise the full loop in
+two distinct rooms with independent simulated creators and visitors.
 
 ## Environment art production
+
+Nicolás selected photorealistic rendering for the complete shared world.
+Judge work at player height in the running game, across arrival, paths, houses
+and interiors. Use physically grounded materials, believable light and shadow,
+human scale and purposeful detail. Keep walkability and room transitions fluid
+in the same release. Run those comparisons with simulated players and devices.
 
 The RPG housing reference sets a quality bar for architectural composition,
 furnishing and useful play. Start visible art in a blank Blender scene and
@@ -135,7 +142,11 @@ Spatial adjacency is not a support/contradiction relation. Knowledge graphs and 
 
 ## Delivery sequence and cards
 
-The roadmap stages retain their individual exit evidence. The active Holodeck MVP goal still includes actual situated Conversation, shared play and physical-device acceptance. See [current evidence](STATUS.md) for shipped slices and outstanding observations.
+The roadmap stages retain their individual exit evidence. For Holodeck,
+Nicolás directed continued implementation and delivery using independent
+simulated participants, device emulation and simulated inputs to qualify the
+full situated Conversation, shared play and device experience. Direct use
+remains separately attributed when observed. See [current evidence](STATUS.md).
 
 | Stage | Owning cards and dependencies | Exit evidence |
 | --- | --- | --- |
@@ -207,7 +218,10 @@ Source review: Holodeck 0cd1868, Nexus 08ba4ad (PR125 merged 39e4515), collectiv
 
 Astra's independent review found that existing Room.capture/nodeState project room-wide data, current fresh-ID placement does not enforce future parcel ownership, and a native pin does not establish source-reading rights. These findings became #8/#10 rather than optimistic assumptions. The additional evaluation found reset-scoped addresses and eight-node catalogs unsuitable for durable houses, and called for declarative authored assets, nonspatial parity and explicit mixed-source policy. These findings became #15 and amendments to #8/#10/#11/#12. The recommendation to prove one house/two actors before scaling is the sequence above. No new engine or renderer replacement was justified.
 
-Keep source implementation, selected receiving bytes, own-identity effects, model uptake and participant acceptance separate. Current new planning/integration does not change paused Stash work, unrelated goals, device/account budgets or attention controls. Required actual human acceptance remains open; no synthetic original or inferred approval can close it.
+Keep source implementation, selected receiving bytes, own-identity effects,
+model uptake, fixture behavior and direct participant feedback distinct.
+Holodeck can proceed using qualified simulations. Use fixture authors for
+simulated originals and preserve authenticated human provenance where it exists.
 
 ## Current membership versus receiving coverage
 

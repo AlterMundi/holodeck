@@ -13,6 +13,7 @@ import { GalleryModels } from './gallery-models.mjs';
 import { BeaconControls } from './beacon-controls.mjs';
 import {pickedRepresentationVisit} from './node-representations.mjs';
 import { PlayableHUD } from './playable-hud.mjs';
+import { IndoorGardenHUD } from './indoor-garden-hud.mjs';
 import { SignalGardenEditor } from './signal-garden-editor.mjs';
 import { AppliedGeometryProbe } from './applied-geometry.mjs';
 import { SharedConversationHost } from './shared-conversation-host.mjs';
@@ -92,6 +93,27 @@ function startInterior(space){
 
 function startWorld(activeSpace){
 const beaconControls=new BeaconControls(document.querySelector('#beacon-control'));
+const garden=new IndoorGardenHUD({
+  position:()=>client.getLocalCharacterState()?.position,
+  onError:say,
+  async read(room,{signal}){
+    const result=await fetch(url('api/space/garden?'+new URLSearchParams({room})),{signal});
+    return result.ok?result.json():null;
+  },
+  async act(command){
+    const outcome=await fetch(url('api/space/garden'),{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(command),signal:AbortSignal.timeout(5000)}).catch(()=>null);
+    if(outcome?.ok){
+      const result=await outcome.json().catch(()=>null);
+      if(result)return result;
+    }else if(outcome&&outcome.status<500)return null;
+    // Read this exact receipt after an uncertain transport. Never replay a signal automatically.
+    const query=new URLSearchParams({room:command.room,result:command.id});
+    const recovered=await fetch(url('api/space/garden?'+query),{signal:AbortSignal.timeout(5000)});
+    return recovered.ok?recovered.json():null;
+  }
+});
+let projectedGarden=null;
 const hot=activeSpace?.live===1;
 const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
 let inside=hot&&activeSpace.id!=='outside';
@@ -106,7 +128,7 @@ const setMoving=value=>{
   }
   if(!value){clearTimeout(moveDeadline);moveDeadline=null;}
 };
-const removeScene=()=>{beaconControls.clear();galleryModels?.clear();remoteScene?.remove();remoteScene=null;};
+const removeScene=()=>{projectedGarden=null;beaconControls.clear();galleryModels?.clear();remoteScene?.remove();remoteScene=null;};
 function mountScene(){
   removeScene();
   if(!inside)return true;
@@ -120,6 +142,27 @@ function mountScene(){
   renderer.mmlTargetElement.append(remoteScene);
   if(!contentVisitor?.catalogFlight)galleryModels?.sync(contentVisitor?.entries??[]);
   return true;
+}
+// Cosmetic, non-colliding projection of the current server-authorized room.
+function gardenMarkers(){
+  if(!remoteScene)return;
+  const game=garden.game;
+  const version=game?game.room+':'+game.sequence:null;
+  if(version===projectedGarden)return;
+  remoteScene.querySelector('#indoor-garden-markers')?.remove();
+  projectedGarden=version;
+  if(!game)return;
+  const template=document.createElement('template');
+  const targets=game.targets.map(({x,z,radius,color},index)=>{
+    const rim=workshopColour(color),light=workshopColour(game.signals[index]?.color);
+    return `<m-group x="${x}" z="${z}">
+      <m-cylinder radius="${radius}" height=".025" y=".12" color="${rim}" collide="false"></m-cylinder>
+      <m-cylinder radius="${radius-.058}" height=".028" y=".131" color="#304e50" collide="false"></m-cylinder>
+      ${light?`<m-sphere radius=".16" y=".27" color="${light}" collide="false"></m-sphere>`:''}
+    </m-group>`;
+  });
+  template.innerHTML='<m-group id="indoor-garden-markers">'+targets.join('')+'</m-group>';
+  remoteScene.append(template.content);
 }
 function onNear(destination){
   if(!sceneCache||moving||prefetchRequest||prefetched.has(destination)||sceneCache.revision(destination))return;
@@ -272,6 +315,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       light.visible=!inside||!activeSpace.indoorLighting;
       nativeAvatarLayer.update();
       galleryModels.update();
+      garden.update(inside&&!moving&&activeSpace.playableInterior?activeSpace.id:null);gardenMarkers();
       if(!inside){worldIndication?.update();if(!moving)playableHUD.update(position);}
       if(!moving){if(inside)contentVisitor?.refreshGallery();contentVisitor?.update(position);updateDoor(position);}
       beaconControls.update(inside&&!moving&&remoteScene?activeSpace.objects:null,position);
@@ -712,7 +756,7 @@ const interval=setInterval(async()=>{
   try{await refresh();}catch{say('La conexión con el taller se interrumpió. Los cambios no se repetirán solos.');}
   finally{refreshing=false;}
 },1500);
-window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);if(signalPreview)URL.revokeObjectURL(signalPreview);worldAudio.dispose();client.dispose();});
+window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();garden.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);if(signalPreview)URL.revokeObjectURL(signalPreview);worldAudio.dispose();client.dispose();});
 refresh().catch(()=>say('No pude conectar con el taller.'));
 resetDoor();
 if(hot){

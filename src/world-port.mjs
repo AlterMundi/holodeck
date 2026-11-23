@@ -5,7 +5,7 @@ import { DaimonPort } from './daimon-port.mjs';
 
 // The receiving operator owns the directory/socket filesystem capability.
 // Native identity and current room rights are independently rechecked per request.
-export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,conversationPlace,putExhibit,exhibitResult,currentLayout,previewLayout,publishLayout,layoutResult,roomDesign}){
+export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,conversationPlace,putExhibit,exhibitResult,currentLayout,previewLayout,publishLayout,layoutResult,roomDesign,indoorGarden}){
   if(!socketPath?.startsWith('/')||!native?.authorizeWorldRequest||typeof resolveRights!=='function')
     throw Error('Select the installed native world port and authority resolver');
   let active=0;
@@ -73,6 +73,11 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
              (request.args.type==='design.result'&&fields!=='id,type'))throw Error('Invalid room design lookup');
           result=roomDesign?.(actor,request.args);
           if(!result)throw Error('Room design unavailable');
+        }else if(request.operation==='act'&&['garden.preview','garden.put','garden.signal','garden.result'].includes(request.args.type)){
+          if(!own||(request.args.type==='garden.result'&&Object.keys(request.args).sort().join(',')!=='id,type'))
+            throw Error('Indoor gardens require an own-native route');
+          result=indoorGarden?.(actor,request.args);
+          if(!result)throw Error('Indoor garden unavailable');
         }else if(request.operation==='act'&&request.args.type==='exhibit.put'){
           if(!own)throw Error('Exhibit authoring requires an own-native route');
           result=putExhibit?.(actor,request.args);

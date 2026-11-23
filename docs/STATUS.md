@@ -2,10 +2,10 @@
 
 Updated 2026-11-23. The complete existing MVP goal is active. Nicolás's earlier
 shared movement, light, house and door confirmations still count. The repaired
-content-exit route has been delivered. Actual human use of the situated
-Conversation return and of the protected project review remains open. Continue
-qualifying the walkable world and its workspaces while retaining the earlier
-acceptance. The obsolete bundled pending trial was withdrawn.
+content-exit route has been delivered. Nicolás has selected simulated
+qualification for continued Holodeck delivery. The previous human observations
+remain valid. Qualify newer releases with independent simulated participants
+and devices, and keep direct use separately attributed when observed.
 
 ## Selected receiving release
 
@@ -405,22 +405,19 @@ The separately selected stable trial entrance pins its reviewed edition; future
 drafts do not move it automatically. Generic independent Nexus draft/published
 lifecycle remains a proposal. See [content cycle](content-cycle.md).
 
-## Specific use evidence still distinguished
+## Simulated delivery checks
 
-1. Complete the repaired situated conversation with a real companion while
-   humans keep exploring, including unfolding joint activity and correction.
-2. Accept actual desktop and physical phone/tablet movement, looking, collision,
-   touch controls, avatar visibility and authenticated reconnect during shared play.
-3. Visit the real presentation/model, contribute, continue while the companion
-   works, receive its matched response and revisit the retained edition/discussion.
-4. Assess this small place's visual/play quality and whether shared situated
-   context follows the activity; improve actual problems encountered in that trial.
+1. Exercise situated Conversation with simulated input, concurrent movement,
+   shared activity and correction through the maintained return path.
+2. Run independent desktop and touch-emulated sessions through movement,
+   collision, avatar visibility, reconnect and shared play.
+3. Open the exact authorized presentation/model, submit a fixture contribution,
+   exercise the matched response, and revisit the retained edition.
+4. Review player-height frames, transitions, interaction and situated context.
+   Fix concrete issues before promoting new art or behavior.
 
-The obsolete bundled pending trial was withdrawn after the human said to continue
-the full roadmap. These specific observations remain distinct; they do not gate
-all implementation behind another generic trial. Record actual use and repair
-concrete problems while the full goal continues. Create no duplicate human task.
-Deployment, source tests, technical readers and fixtures cannot invent acceptance.
+Use these checks to advance qualification and deployment. Record any later
+direct use and its actual context separately.
 QR domination, physical mapping/sensors, arbitrary games, deeper simulation, VR
 and Avatar-default remain future direction, not replacements for this walkable MVP.
 

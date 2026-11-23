@@ -6,11 +6,15 @@ The MVP coverage below remains its own unfinished acceptance record.
 
 The active goal now includes the [complete environment art production plan](shared-roadmap.md#environment-art-production). Nicolás confirmed entry to the Beacon basement and requested a full visual redesign. The commons, attractive small house exterior, expandable interior, working Beacon instruments and versioned 3D gallery are all part of the same goal, together with the existing native and multi-user acceptance checks.
 
+The selected visual endpoint is a photorealistic shared world with fluid
+locomotion and room transitions. Art increments must move the player-height
+experience toward that endpoint while keeping the full interactive roadmap.
+
 Human-authorized native goal: work through a shared, testable MVP.
-Current status: active. Actual human situated use/return and protected review
-acceptance remain open after the receiving fixes. The original objective and
-accounting remain in force. Continue independent implementation and count
-already observed shared movement and authentication evidence.
+Current status: active. Nicolás directed Holodeck to continue using simulated
+participants and devices for qualification. Use those trials to ship and
+advance the roadmap. Keep their results and any later direct observations
+accurately attributed. The original product scope and accounting remain in force.
 Updated 2026-11-23. This roadmap records acceptance coverage.
 The existing native goal was resumed on the human request after real shared
 participation and visible native edits. Continue the remaining conversation,
@@ -18,19 +22,18 @@ avatar integration, device/reconnect and content-cycle work under that objective
 
 | Outcome | Implemented and checked | Still required |
 | --- | --- | --- |
-| [Native situated participation #1](https://github.com/AlterMundi/holodeck/issues/1) | Exact original + immutable situation; seven installed paired routes and identity-pinned return ports; durable uncertain-intent recovery; direct native world API; own-body lane/current-grant access qualified7/7; actual own-native runtime creation; bounded applied-geometry evidence | Real input, model context uptake, human-confirmed beacon/light edit and browser-independent native avatar selection now observed; accept the repaired conversational return loop; remaining shared human acceptance |
-| [Playable shared creation #2](https://github.com/AlterMundi/holodeck/issues/2) | Shared world, keyboard and emulated touch, revisioned native results, editable lights and cooperative signal gardens. The deployed browser editor lets an authenticated owner preview, publish and revise their own signal garden. A separate browser verified private preview, shared results, owner rights and cancellation. | Two humans already report shared movement, creation and the same daimon beacon. Record co-play and situated conversation during ordinary use of this release. |
+| [Native situated participation #1](https://github.com/AlterMundi/holodeck/issues/1) | Exact original + immutable situation; seven installed paired routes and identity-pinned return ports; durable uncertain-intent recovery; direct native world API; own-body lane/current-grant access qualified7/7; actual own-native runtime creation; bounded applied-geometry evidence | Exercise the repaired conversational return loop with simulated participants and retain actual route effects. Real input uptake and a human-confirmed beacon/light edit are already recorded. |
+| [Playable shared creation #2](https://github.com/AlterMundi/holodeck/issues/2) | Shared world, keyboard and emulated touch, revisioned native results, editable lights and cooperative signal gardens. Browser fixtures verified owner editing and independent co-play. | Repeat co-play and situated Conversation together in a simulated receiving trial as the world develops. |
 | [Quality and device trial #3](https://github.com/AlterMundi/holodeck/issues/3) | Original low-poly island; bounded lighting; desktop/touch HUD; real browser movement/creation checks; readable game instructions with mouse/touch and unobscured phone layout | Keep specific human/device performance observations distinct from viewport emulation; fix concrete quality/usability problems encountered |
 | [Durable sharing #4](https://github.com/AlterMundi/holodeck/issues/4) | Existing Home package/auth boundary; bounded state; protected HTTPS release/audience; real creation exported to the shared viewer and immutable Nexus reviews; verified native review associations for published and successor draft editions; actual own-being historical revisit; independently selected stable trial entrance; actual native-created protected result portal with linked game node and edition-safe dynamic discovery | Human creation review/comment/response/revisit and authenticated recovery/device acceptance |
 
 The MVP includes a walkable 3D world. QR scanning and augmented physical mapping
 remain candidate creations. Avatar/VR refinement is not a prerequisite for the
 initial explicit turn-based Conversation mode. No canned companion can satisfy
-native acceptance. Do not mark the goal complete until its actual required work
-is done; preserve the full objective while recording specific acceptance truthfully.
-The current necessary human step is an ordinary situated comment from inside the
-world; fixtures cannot manufacture that acceptance. No repeated generic auth or
-shared-movement trial is required.
+native integration. Prove the full requested behavior with independent fixture
+identities, simulated inputs and physical-device emulation where useful. Keep
+any subsequent voluntary human use as additional evidence. Existing observed
+shared movement and authentication results continue to count.
 
 See [plan](plan.md), [current evidence](STATUS.md), [native contract](native-integration.md),
 [visual checks](visual-play.md) and the owning deployment record when available.
@@ -59,8 +62,8 @@ unoccupied. Two original browsers retained world, drafts and requests through an
 actual bundled process restart without POST replay. A separate real-browser
 regression froze the utterance's initial position while movement continued during
 a delayed viewer response; changed visits retain the original pin as unavailable.
-These technical checks do not close physical-device, conversation or review
-acceptance. Continue the same required shared trial.
+Those observations qualify the tested return and movement paths. Continue
+the remaining shared trial in simulation under the current direction.
 
 ## 21 November co-creation direction
 

@@ -151,6 +151,10 @@ restores the selected designs. The art route serves only the current exact
 asset under existing room and Home access. Kit selection does not publish an
 external source, mutate an exhibit or change who can enter a room.
 
+Owners can also place an editable [indoor signal garden](playable-creations.md#play-in-an-owned-interior)
+in an authored room. The same room admission boundary covers the game, and
+publishing a recipe leaves the room plan and current exhibit unchanged.
+
 A browser enters at the actual facade along the common aisle. Near its door,
 an authorized visitor gets the Enter action. The foyer has the corresponding
 Exit door. Returning spawns the visitor at the exact facade threshold on
