@@ -8,11 +8,15 @@ not a new goal or a claim of delivery.
 
 ## Current state
 
-The selected Holodeck now directly embeds canonical Conversation. World source
-`de162ee`, package `81684064`, is active at the existing protected
-https://compaii.dmn.homes/holodeck/ entrance. The same App, fourteen readers,
-seven paired native routes and two content visits remain. Exact29runtime files,
-health and browser-qualified client bytes were read back after selection.
+Holodeck directly embeds canonical Conversation at the
+[protected entrance](https://compaii.dmn.homes/holodeck/).
+[Current package and receiving evidence](STATUS.md#selected-receiving-release)
+are tracked in the release record. An interior Conversation attachment freezes
+the authorized room and its garden state under `place.activity`. A subsequent
+native observation through the same authorized interaction reads current state
+under `space.activity`, even while the observer remains elsewhere. The remote
+view sets `canPlay` false. Playing still requires being in the room and having
+edit rights. Current room access applies on every new observation.
 
 Canonical Conversation PR926 supplies the hosted surface; PR927/source dd5c0e61
 freezes text/audio before asynchronous attachments and adds safe source-only

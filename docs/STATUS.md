@@ -9,6 +9,26 @@ and devices, and keep direct use separately attributed when observed.
 
 ## Selected receiving release
 
+The [protected entrance](https://compaii.dmn.homes/holodeck/) now serves
+source `0c8a44e`, package `777ce31c9fb4`. A situated native observer can read
+the current signal-garden revision and progress of the room referred to by the
+original, subject to current room access. The archived Conversation attachment
+keeps its earlier revision. Remote reading grants no play action and does not
+move the observer. The native-port regression exercises that distinction and
+revocation. The selected release matched all 43 installed files, authenticated
+HTTPS, the original world and protected checkpoints. The compatible predecessor
+is `bb14267c7e56`.
+
+Two independent Chromium contexts exercised the packaged world and installed
+canonical Conversation shell with simulated receiving I/O. The touch player
+placed the first signal. The keyboard player submitted one original from the
+same room, walked with WASD while context delivery waited, and completed the
+second signal. Both saw the completed garden. The single original retained its
+one-signal attachment at revision 1, sequence 2, and identified both participants
+in the room. The visitor reloaded into the same room and recovered the completed
+garden at revision 1, sequence 3. Hiding Conversation retained its frame. This
+trial used emulated touch and did not invoke a native model.
+
 Nicolás confirmed entering the basement. His next direction was a clean-sheet
 architectural redesign with unified materials, light and composition. The
 [new Blender source](../art/compaii-house/redesign/) restarts the visible
@@ -24,7 +44,7 @@ house, placement, exhibit, creator and native journal state matched; the
 Room event tail recorded joins and leaves during activation. The directly
 usable predecessor `581dbb6a09cb` retains room plans and furnishings.
 
-The [shared Home entrance](https://compaii.dmn.homes/holodeck/) serves source
+The preceding shared Home release served source
 `983a146`, package `bb14267c7e56`. The Harmonic Beacon lab uses the same
 Cycles pipeline as the foyer. Its 58,679-byte atlas lights the stair, central
 instrument and two benches, with a softer dynamic light for avatars.
