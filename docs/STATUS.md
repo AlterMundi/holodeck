@@ -103,7 +103,10 @@ candidate also constructed its existing Provider, Home and Nexus readers
 under the actual service interpreter. The exact routed owner delta also built
 against the installed root source and passed its isolated HTTP routing suite.
 Per-receiver remote qualification and native owner selection remain outstanding.
-[DaimonApp PR #1005](https://github.com/AlterMundi/DaimonApp/pull/1005)
+[DaimonApp PR #1005](https://github.com/AlterMundi/DaimonApp/pull/1005) merged
+as `d76fbd817` after all six applicable CI jobs passed. The selected master
+tree matched the tested head. The routed bridges and compatible native owner
+still require selection and receiving qualification.
 
 Source `23de47f`, package `faae992dce4e`, established the HUD input correction. The exterior reference card passes
 pointer input through its inactive margins while its action buttons
