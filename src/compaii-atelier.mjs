@@ -24,7 +24,7 @@ const addedFoyerPortal=link=>link?.kind==='portal'&&!originalRooms.has(link.to);
 
 function matchesOriginalLinks(id,links,baseline){
   return (links.length===baseline.length ||
-    (id===foyer&&links.length===2&&addedFoyerPortal(links[1]))) &&
+    (id===foyer&&links.length<=3&&links.slice(baseline.length).every(addedFoyerPortal))) &&
     baseline.every(([kind,to],index)=>links[index]?.to===to&&links[index]?.kind===kind);
 }
 
@@ -222,7 +222,7 @@ export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt())
     houseVisual:house=>house.id===COMPAII_HOUSE&&house.revision===1?{facade}:null,
     passageFitting:(room,passage)=>{
       if(room?.house!==COMPAII_HOUSE||passage.kind!=='portal')return null;
-      const selected=room.id===foyer ? passage.slot===1&&addedFoyerPortal(passage) :
+      const selected=room.id===foyer ? passage.slot>=1&&addedFoyerPortal(passage) :
         !originalRooms.has(room.id)&&passage.to===foyer;
       return selected?asset('foyer-portal'):null;
     },

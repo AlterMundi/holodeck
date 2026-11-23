@@ -40,7 +40,7 @@ Use the compatible reader for rollback once an added room holds state.
 The original guest lists still come from receiving configuration, and
 the actor-scoped art route serves the new fitting only with passage access.
 The optional gallery source pins
-are independent of the art profile. The gallery and tower meshes contain
+are independent of the art profile. The foyer supports two appended portal fittings while keeping the original gallery door and each previously assigned slot. The gallery and tower meshes contain
 passive portal fittings. Each live scene adds the destination plaque and
 light only for links in that actor's current passage list. The static mesh
 can remain mounted after a destination is revoked.

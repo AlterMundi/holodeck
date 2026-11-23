@@ -157,6 +157,11 @@ test('the Atelier owner adopts the exact live plan and recovers its receipt with
   assert.match(destination.scene.markup,/portal-fitting-0/);
   assert.equal(destination.objects.find(object=>object.id==='left-bench').title,'Mesa de escucha');
   assert.equal((await read('space/garden?room='+added)).title,garden.title);
+  const matterExpansion={...extension,id:'atelier-extension-matter',room:'matter',
+    title:'Manipulación de Materia',guests:['human:lab']};
+  const draft=(await act(matterExpansion)).result.command;
+  const matter=draft.rooms.at(-1).id;
+  assert.deepEqual((await act(draft)).result,{house:house.id,revision:3});
   await stop();
   await start(updated);
   headers=await login();
@@ -166,6 +171,16 @@ test('the Atelier owner adopts the exact live plan and recovers its receipt with
   assert.deepEqual((await act({type:'garden.result',id:garden.id})).result,gardenReceipt);
   assert.equal((await act({...extension,id:'reader-cannot-write',from:added,room:'extra'})).ok,false);
   assert.equal((await move(added,foyer)).status,200);
+  const labHeaders=await login('lab');
+  const west=await read('space?live=1',labHeaders);
+  assert.deepEqual(west.exits.find(exit=>exit.to===matter).door,{x:4.81,y:.11,z:-3,yaw:90});
+  assert.match(west.scene.markup,/portal-fitting-2[^>]+/);
+  assert.doesNotMatch(west.scene.markup,/Taller Sensorial/);
+  const east=await read('space?live=1');
+  assert.deepEqual(east.exits.find(exit=>exit.to===added).door,expanded.exits[1].door);
+  assert.doesNotMatch(east.scene.markup,/Manipulación de Materia/);
+  assert.equal((await move(foyer,matter,labHeaders)).status,200);
+  assert.equal((await move(matter,foyer,labHeaders)).status,200);
 });
 
 test('profile is optional and uses the exact existing room graph and parcel edition',()=>{
