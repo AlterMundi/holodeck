@@ -55,6 +55,18 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+`ecb2082`, package `e0d22d459d58`. In the gallery each authorized display
+shows its stage and the title from the exact Nexus descriptor. Either line of
+the plaque opens the corresponding edition. Long names fit the physical plaque,
+and the exhibition list retains their full titles. In the packaged Chromium trial
+the owner saw three editions, while the limited visitor saw only the finished
+one and opened it by clicking its title. The viewer returned to the same position.
+Revoking the archive grant removed its title, model and reopening action at
+catalog renewal. The browser trial used simulated identities and sources.
+Protected HTTPS and the installed 59-file inventory matched, and the retained
+world checkpoint kept its digests. Rollback is `d92d749ca0bd`.
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
 `72b060f`, package `d92d749ca0bd`. The foyer has a Blender-authored gallery
 plaque that reads from the approach past the pier. Chromium crossed with WASD
 and E and returned to the same foyer landing in one document. A visitor
