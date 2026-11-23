@@ -29,8 +29,10 @@ const PARCEL_GARDEN=Object.freeze({asset:'parcel-garden.glb',
   revision:'bc6d9755145d2ea5969e8c07abf2e643026867d718e75d62e0a004f3e6d22ac0'});
 const GALLERY_ISLAND=Object.freeze({asset:'gallery-island.glb',
   revision:'b1eab19de3c578ac4276a1ce9279bcbc13bcb9e1723dcb69afbe3d883380a3c1'});
+const MIRADOR=Object.freeze({asset:'mirador.glb',
+  revision:'613c83a5c2a052d22c5868ef7a49c62619ef0f3d546f58178391d1d4f3f0d7b4'});
 const SURROUNDINGS_ASSET='island-scenery-atelier.glb';
-const SURROUNDINGS_REVISION='694d83c8ba05d59b062fa7cf0f816461ddb9f8bdff3609549f0f932fa28f69b0';
+const SURROUNDINGS_REVISION='38ba825c17b367780440ada804b6d07468d1559d47e6ebd3f43c2214c7d62ac8';
 const OUTDOOR_SKY=Object.freeze({asset:'coastal-sky.jpg',
   revision:'2e9a63bbb5eb0e3a60e6144cff155e753211e093ee2870efda480129a01baae8'});
 const COASTAL_RIDGES=Object.freeze({asset:'coastal-ridges.glb',
@@ -50,6 +52,7 @@ export const ATELIER_ASSET_REVISIONS=Object.freeze({
   ['assets/'+PARCEL_TERRAIN.asset]:PARCEL_TERRAIN.revision,
   ['assets/'+PARCEL_GARDEN.asset]:PARCEL_GARDEN.revision,
   ['assets/'+GALLERY_ISLAND.asset]:GALLERY_ISLAND.revision,
+  ['assets/'+MIRADOR.asset]:MIRADOR.revision,
   ['assets/'+SURROUNDINGS_ASSET]:SURROUNDINGS_REVISION,
   ['assets/'+OUTDOOR_SKY.asset]:OUTDOOR_SKY.revision,
   ['assets/'+COASTAL_RIDGES.asset]:COASTAL_RIDGES.revision,
@@ -68,7 +71,11 @@ const parcelGarden={...PARCEL_GARDEN,colliders:[
   {x:-7.75,y:.732,z:21.16,w:.246,h:1.264,d:.244},
 ].map(box).join('')};
 const commonsVisual={asset:COMMONS_ASSET,revision:COMMONS_REVISION,wayfinding:WAYFINDING,houseWalk:HOUSE_WALK,
-  parcelTerrain:PARCEL_TERRAIN,parcelGarden,galleryIsland:GALLERY_ISLAND,colliders:[
+  parcelTerrain:PARCEL_TERRAIN,parcelGarden,galleryIsland:GALLERY_ISLAND,mirador:{...MIRADOR,
+    colliders:[-1,1].flatMap(side=>[
+      {x:side*2.32,y:.31,z:-17.815,w:.52,h:.42,d:1.825},
+      {x:side*1.94,y:1.20,z:-19,w:.69,h:2.20,d:.69},
+    ]).map(box).join('')},colliders:[
   {x:-9.11,y:1.30,z:-2.87,w:.34,h:2.45,d:.34},
   {x:-9.11,y:1.30,z:-4.50,w:.34,h:2.45,d:.34},
   {x:-8.73,y:.29,z:-3.68,w:.59,h:.43,d:1.54},

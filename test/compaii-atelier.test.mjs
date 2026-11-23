@@ -55,6 +55,12 @@ test('profile is optional and uses the exact existing room graph and parcel edit
   assert.deepEqual(plots(authored),plots(fallback));
   assert.match(authored,/<m-model id="parcel-garden" src="\/holodeck\/assets\/parcel-garden\.glb\?v=[a-f0-9]{12}" collide="false">/);
   assert.doesNotMatch(fallback,/parcel-garden\.glb/);
+  assert.match(authored,/<m-model id="mirador" src="\/holodeck\/assets\/mirador\.glb\?v=[a-f0-9]{12}" collide="false">/);
+  assert.doesNotMatch(fallback,/mirador\.glb|mirador-colliders/);
+  const mirador=authored.match(/<m-group id="mirador-colliders">([^]*?)<\/m-group>/)[1];
+  const seating=[...mirador.matchAll(/<m-cube x="([^"]+)" y="[^"]+" z="([^"]+)" width="([^"]+)"/g)];
+  assert.equal(seating.length,4);
+  assert.ok(seating.every(([,x,z,width])=>Math.abs(Number(x))-Number(width)/2>1.4&&Number(z)<-16.9));
   assert.match(authored,/<m-model id="gallery-island" src="\/holodeck\/assets\/gallery-island\.glb\?v=[a-f0-9]{12}" collide="false">/);
   const visit=markup=>markup.match(/<m-group id="content-reading-room"[^>]+>[\s\S]+?<\/m-group>/)[0];
   assert.equal(visit(authored).match(/opacity="0" cast-shadows="false"/g).length,5);
