@@ -35,8 +35,18 @@ walkable ground, exhibit anchor and stair coordinates remain authoritative.
 The gallery selects open-stair or continuous-floor art with the existing
 per-visitor passage rules. Requests for the other variant's hash return 404
 even while the visitor is in the gallery. The authored gallery keeps the
-existing published exhibit discovery point. Draft and archive screens need
-their own source-authorized descriptor selection before disclosure.
+existing published exhibit discovery point. The receiving candidate now
+selects the existing exact draft and archival Nexus reviews for the other two
+pedestals. The published selection still comes from the retained owner
+placement. Each pointer is returned only to a visitor currently in the room
+with a successful exact Nexus descriptor check. The three selections were
+read back from the durable exhibit, the existing draft area and a protected
+historical manifest. HTTP fixtures exercised distinct visitor scopes,
+revocation and room departure while a descriptor was in flight. Chromium
+with a controlled Nexus server verified that returning to an available
+edition reused its viewer and a revoked edition no longer appeared as a
+resume action or current world reference. Authenticated gallery traversal
+against published Nexus content and the in-world object displays remain open.
 
 Isolated Chromium walked from the normal exterior spawn to the east garden,
 past the miniature, through the original house entrance and into the foyer,

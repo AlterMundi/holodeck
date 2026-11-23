@@ -91,11 +91,13 @@ the same gallery ID and exhibition anchor, and the server serves only the
 variant suited to the visitor's currently permitted passages.
 
 The published exhibit anchor remains at `(2.5, .1, 1.25)` in gallery-local
-meters. Use the existing pinned publication at that pedestal. The workshop's
-draft and historical reviews are separate exact Nexus editions. Select and
-authorize their descriptors before showing a visitor the associated title or
-open action. The current gallery placement does not create resource copies
-or extend permission to either review.
+meters. The draft and archive anchors are at `(3.3945, .1, -.34944)` and
+`(3.3945, .1, 3.67744)`. They use the exact review pins selected in the
+protected receiving configuration. The published anchor preserves the
+existing owner placement. Holodeck checks each source through Nexus before
+offering to open it at its pedestal. This connects the viewer action at each
+anchor. Direct rendering of each authorized model at its pedestal is a
+separate implementation step.
 
 For the connected local candidate, generate the retained scenery around the
 new eastern garden with `tools/create-island-scenery.mjs --east-replaced`.

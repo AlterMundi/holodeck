@@ -18,18 +18,22 @@ import { RoomStore } from './room-store.mjs';
 import { homeIdentityResolver } from './home-identity.mjs';
 import { worldDocument } from './world.mjs';
 import { createWorldPort } from './world-port.mjs';
-import {validateContentNodes,validateContentVisits,visitsForActor} from './content-visits.mjs';
+import {sameVisitPin,validateContentNodes,validateContentVisits,visitsForActor} from './content-visits.mjs';
+import {allowedGalleryVisits,gallerySlots} from './gallery-catalog.mjs';
+import {createGalleryAuthorization} from './gallery-authorization.mjs';
 import {createNativeRoomAuthority} from './native-authority.mjs';
 import {WorldDocument} from './world-document.mjs';
 import {SessionBindings,SESSION_MS,sessionKey} from './session-bindings.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
-export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt,houseVisual,gardenVisual}={}){
+export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt,houseVisual,gardenVisual,gallerySelection,galleryAuthorization}={}){
   if(!/^\/(?:[a-z0-9-]+\/)*$/.test(basePath))throw Error('Select a bounded absolute base path');
   if(production&&(!identityResolver||!publicOrigin||!stateDir))throw Error('Shared identity, audience and state are required in production');
   if(typeof interiorArtwork!=='function'||production&&(interiorArtwork!==interiorArt||houseVisual||gardenVisual))
     throw Error('Select checked-in art for production');
+  if(galleryAuthorization!==undefined&&(production||typeof galleryAuthorization!=='function'))
+    throw Error('Use the configured Nexus authority for gallery visits');
   const selectedContentNodes=validateContentNodes(contentNodes);
   const selectedContentVisits=validateContentVisits(contentVisits,selectedContentNodes);
   if(!Array.isArray(conversationOrigins)||conversationOrigins.length>8||new Set(conversationOrigins).size!==conversationOrigins.length)
@@ -62,6 +66,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const spaceStore=stateDir ? new RoomStore(join(stateDir,'spaces'),{maxBytes:SPACE_SAVE_BYTES}) : null;
   const spaces=new InteriorSpaces({definitions:interiorSpaces,houses,state:spaceStore?.load(),
     persist:spaceStore ? state=>spaceStore.save(state) : null,guestAccess:interiorGuestAccess});
+  const gallery=gallerySlots(gallerySelection,spaces.rooms);
+  const authorizeGallery=gallery&&(galleryAuthorization??createGalleryAuthorization(publicOrigin));
   const exhibitStore=stateDir?new RoomStore(join(stateDir,'exhibits'),{maxBytes:EXHIBIT_SAVE_BYTES}):null;
   const exhibits=new RoomExhibits({state:exhibitStore?.load(),spaces,houses,
     persist:exhibitStore?state=>exhibitStore.save(state):null});
@@ -372,7 +378,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
     if(!spaceRoute&&spaces.current(actor)!==OUTSIDE)
       return res.status(409).json({message:'Volvé al exterior para usar esta acción.'});
-    req.actor=actor;next();
+    req.actor=actor;req.holodeckSession=session;next();
   }));
   app.get(route('api/space/art/:revision'),(req,res)=>{
     const id=spaces.current(req.actor);
@@ -382,12 +388,21 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(!art||req.params.revision!==art.revision)return res.sendStatus(404);
     res.type('model/gltf-binary').send(art.bytes);
   });
-  app.get(route('api/space/content-visits'),(req,res)=>{
+  app.get(route('api/space/content-visits'),asyncRoute(async(req,res)=>{
     if(spaces.fenced||room.commitUncertain||exhibits.fenced)return res.status(503).json({message:'No pude recuperar la exposición.'});
     const active=spaces.current(req.actor);
     if(active===OUTSIDE)return res.status(404).json({message:'Entrá a la sala para visitar su contenido.'});
-    res.json({visits:exhibits.visit(req.actor,active)});
-  });
+    if(active!==gallery?.room)return res.json({visits:exhibits.visit(req.actor,active)});
+    const currentEntries=()=>{
+      if(Date.now()-req.holodeckSession.created>=SESSION_MS||
+         !inScope(req.holodeckSession.actor,active)||exhibits.fenced)return [];
+      const placed=exhibits.visit(req.actor,active);
+      return [...placed,...gallery.slots.filter(slot=>!placed.some(entry=>sameVisitPin(entry.pin,slot.pin)))];
+    };
+    const visits=await allowedGalleryVisits({entries:currentEntries(),currentEntries,
+      authorize:pin=>authorizeGallery(req.headers.cookie,pin)});
+    res.json({visits});
+  }));
   app.get(route('api/space'),(req,res)=>{
     if(spaces.fenced||room.commitUncertain)return res.status(503).json({message:'No pude confirmar tu ubicación.'});
     res.json(req.query.live==='1'?liveSpace(req.actor):describeSpace(req.actor));
@@ -527,7 +542,7 @@ export async function main(){
   }
   validateWorldPorts({...receiving});
   const nativeRoomAuthority=receiving&&Object.hasOwn(receiving,'authoritySocket')?createNativeRoomAuthority(receiving.authoritySocket):null;
-  const runtime=await createHolodeck({production,stateDir,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,contentVisits:receiving?.contentVisits,contentNodes:receiving?.contentNodes,nativeRoomAuthority,conversationOrigins:receiving?.conversationOrigins||[],ownNative:receiving?.ownNative??false,interiorSpaces:receiving?.interiorSpaces??[]});
+  const runtime=await createHolodeck({production,stateDir,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,contentVisits:receiving?.contentVisits,contentNodes:receiving?.contentNodes,nativeRoomAuthority,conversationOrigins:receiving?.conversationOrigins||[],ownNative:receiving?.ownNative??false,interiorSpaces:receiving?.interiorSpaces??[],gallerySelection:receiving?.gallery});
   const port=Number(process.env.PORT||18940);
   if(!Number.isInteger(port)||port<1024||port>65535)throw Error('Select a valid loopback port');
   if(process.env.HOST&&process.env.HOST!=='127.0.0.1')throw Error('Use the existing loopback gateway');

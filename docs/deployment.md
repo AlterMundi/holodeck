@@ -17,6 +17,22 @@ native/world Unix sockets. `authoritySocket` selects the existing central native
 permission bridge; `contentVisits` selects at most eight protected report or artifact entrances.
 It carries route metadata and private content references, not credentials.
 
+The optional `gallery` receiving selection names an existing interior
+`room` and two distinct exact `artifact_review` pins (`draft` and `archive`,
+both with adapter `interactive_3d`). The finished edition continues to come
+from the existing owner placement in that room. Keep receiving selections
+in the protected configuration. Select editions whose resources already
+exist in Nexus. Changing these pointers changes neither the source publication
+nor its audience. Omit `gallery` for the existing single-placement behavior.
+
+Only the active gallery asks Nexus about these editions. The request uses the
+visitor's existing Home or Nexus session cookies on the configured HTTPS
+origin. Each exact descriptor has a three-second deadline and an 8 KiB limit.
+Nexus must verify the edition, table and source access before Holodeck lists its
+pointer. A move or edition change during the check invalidates that result.
+Responses use `no-store`; the browser rechecks the catalog on open or resume.
+The same-origin viewer still performs its own access checks.
+
 Caddy's maintained service writer preserves `/holodeck/` on both HTTP and
 WebSocket requests. Its forward-auth checks the selected current service audience
 before proxying; incoming identity headers and Authorization are stripped.

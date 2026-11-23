@@ -31,7 +31,7 @@ const entries=[{id:'report',node:'reading-room',entry:'/nexus/?table=fixture-rep
  {id:'field',node:landmark.id,entry:'/nexus/?table=fixture-field&entry=web&context_id=field-context&context_version=historical-v1',descriptor:'/nexus/descriptor/field',pin:field}];
 const markup=(await readFile(new URL('../public/index.html',import.meta.url),'utf8')).replace(/<script[\s\S]*?<\/script>/g,'');
 const realBridge=process.env.HOLODECK_NEXUS_CONTEXT_BRIDGE?new TextDecoder().decode((await build({entryPoints:[process.env.HOLODECK_NEXUS_CONTEXT_BRIDGE],bundle:true,write:false,format:'esm',platform:'browser',target:'es2022'})).outputFiles[0].contents):null;
-let page,server;
+let page,server,galleryAllowed=true;
 try{
  server=createServer(async(req,res)=>{
   const url=new URL(req.url,'http://127.0.0.1');
@@ -39,6 +39,10 @@ try{
    res.setHeader('content-type','text/html');res.end(markup+`<script type="module">import {ContentVisitor} from '/src/content-visitor.mjs';window.errors=[];addEventListener('error',e=>errors.push(e.message));addEventListener('unhandledrejection',e=>errors.push(String(e.reason)));window.visitor=new ContentVisitor({document,window,base:new URL('/',location),say:text=>document.querySelector('#notice').textContent=text});visitor.catalog.then(()=>visitor.update(${JSON.stringify(CONTENT_NODE.position)}));</script>`);return;
   }
   if(url.pathname==='/api/content-visits'){res.setHeader('content-type','application/json');res.end(JSON.stringify({nodes:[CONTENT_NODE,landmark],visits:entries}));return;}
+  if(url.pathname==='/api/space/content-visits'){
+   res.setHeader('content-type','application/json');
+   res.end(JSON.stringify({visits:galleryAllowed?[{...entries[1],position:landmark.position,nodeRevision:2}]:[]}));return;
+  }
   if(url.pathname.startsWith('/src/')){
    if(!['/src/content-visitor.mjs','/src/content-visits.mjs'].includes(url.pathname)){res.writeHead(404).end();return;}
    res.setHeader('content-type','text/javascript');res.end(await readFile(new URL('..'+url.pathname,import.meta.url)));return;
@@ -95,6 +99,23 @@ try{
  if(!await page.evaluate("visitor.frame===fieldFrame&&fieldFrame.contentWindow.document.querySelector('textarea').value==='Retained draft'"))throw Error('Context return lost frame/draft');
  if(process.env.HOLODECK_EVIDENCE_DIR){const shot=await page.cdp('Page.captureScreenshot',{format:'jpeg',quality:65});await writeFile(process.env.HOLODECK_EVIDENCE_DIR+'/context-phone.jpg',Buffer.from(shot.data,'base64'));}
  evidence.context={pin:fieldContext.pin,visit:fieldContext.context,wrongPinUnavailable:wrong.contextUnavailable,dirtyFrameRetained:true,draftRetained:true};
+
+ await page.evaluate('visitor.changeRoom(true)');
+ await page.until('visitor.entries.length===1');
+ await page.evaluate('visitor.update({x:9,y:0,z:0});document.querySelector("#visit-near").click()');
+ await page.until('!!visitor.frame?.contentWindow.fixture');
+ await page.evaluate("visitor.frame.contentWindow.fixture.ready('ready')");
+ await page.until('visitor.readyAcknowledged===true');
+ await page.evaluate('window.galleryFrame=visitor.frame;document.querySelector("#visit-walk").click()');
+ await page.evaluate("visitor.open('model',{nodeRevision:2})");
+ if(!await page.evaluate("visitor.frame===galleryFrame&&!visitor.panel.inert"))throw Error('Gallery resume replaced the viewer');
+ galleryAllowed=false;
+ await page.evaluate("visitor.open('model',{nodeRevision:2})");
+ await page.evaluate('visitor.update({x:9,y:0,z:0})');
+ if(!await page.evaluate("visitor.frame===galleryFrame&&visitor.panel.inert&&visitor.selector.options.length===0&&visitor.button.hidden"))
+  throw Error('Revoked gallery edition still offered as an active visit');
+ if(await page.evaluate('visitor.context()'))throw Error('Revoked gallery edition still projected as current context');
+ evidence.gallery={sameFrame:true,revokedChoiceHidden:true,revokedContextSuppressed:true};
 
  console.log(JSON.stringify({qualification:'Actual ContentVisitor and markup; controlled Nexus protocol only, not renderer, participant or native acceptance',protectedSwitches:3,readinessTransition:'loading-to-ready',artifactContext:context,contextV3:evidence.context,actualNexusBridge:!!realBridge,evidence}));
 }finally{await page?.close();if(server){server.closeAllConnections();await new Promise(r=>server.close(r));}}

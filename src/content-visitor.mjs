@@ -35,7 +35,12 @@ export class ContentVisitor{
    if(!response.ok)throw Error('Catalog unavailable');
    const value=await response.json();if(this.disposed||generation!==this.catalogGeneration)return false;
    this.nodes=this.scoped?[]:validateContentNodes(value.nodes);this.entries=Array.isArray(value.visits)?value.visits.slice(0,16).map(entry=>{const node=this.nodes.find(node=>node.id===entry.node);return {...entry,title:entry.title||node?.title,position:entry.position||node?.position};}):[];this.catalogSignature=signature;this.choices();return true;
-  }catch{return false;}
+  }catch{
+   if(this.scoped&&!this.disposed&&generation===this.catalogGeneration){
+    this.entries=[];this.nearby=null;this.choices();
+   }
+   return false;
+  }
   finally{if(generation===this.catalogGeneration)this.catalogFlight=false;}
  }
  syncNodes(nodes){
@@ -49,11 +54,16 @@ export class ContentVisitor{
    const at=entry.position||CONTENT_NODE.position,next=Math.hypot(position.x-at.x,position.z-at.z,this.scoped?(position.y??at.y)-at.y:0);
    if(next<distance){distance=next;this.nearby=entry;}
   }
-  this.button.hidden=!this.frame&&!this.nearby;
+  const canResume=this.frame&&(!this.scoped||this.hasCurrentEntry());
+  this.button.hidden=!canResume&&!this.nearby;
   this.button.textContent=this.nearby&&this.nearby.id!==this.entry?.id
    ?(this.nearby.title?'Visitar '+this.nearby.title:'Visitar contenido')
    :this.frame&&this.nearby&&this.nearby.id===this.entry?.id&&!sameVisitPin(this.nearby.pin,this.entry.pin)?'Visitar nueva edición'
-   :this.frame?'Volver al contenido':'Visitar contenido';
+   :canResume?'Volver al contenido':'Visitar contenido';
+ }
+
+ hasCurrentEntry(){
+  return this.entries.some(value=>value.id===this.entry?.id&&sameVisitPin(value.pin,this.entry.pin));
  }
 
  async openNode(nodeId,{expectedRevision=null}={}){
@@ -79,7 +89,7 @@ export class ContentVisitor{
    this.selector.onchange=()=>this.open(this.selector.value).catch(()=>{if(this.entry)this.selector.value=this.entry.id;this.say('No pude cambiar de contenido. Conservé la visita anterior.');});
    label.append(this.selector);this.document.querySelector('#content-visit header').append(label);this.choiceLabel=label;
   }
-  const entries=[...this.entries];if(this.entry&&!entries.some(entry=>entry.id===this.entry.id))entries.unshift(this.entry);
+  const entries=[...this.entries];if(!this.scoped&&this.entry&&!entries.some(entry=>entry.id===this.entry.id))entries.unshift(this.entry);
   this.selector.replaceChildren();
   entries.forEach((entry,index)=>{const option=this.document.createElement('option');option.value=entry.id;
    option.textContent=entry.title||(entry.pin.adapter==='interactive_3d'?'Modelo 3D':entry.pin.adapter==='video'?'Video':visitVersion(entry.pin)===3?'Contexto':'Presentación')+` ${index+1}`;this.selector.append(option);});
@@ -95,7 +105,10 @@ export class ContentVisitor{
    if(this.scoped){
     if(!await this.loadCatalog()){if(this.frame)this.minimize();this.say('No pude confirmar tu acceso a esta exposición.');return;}
    }else await this.catalog;
-   if(this.selector)this.selector.disabled=true;const entry=this.entries.find(value=>value.id===selectedId)||(!selectedId&&this.entries[0]);if(!entry){this.say('No hay contenido disponible para tu acceso en este lugar.');return;}
+   if(this.selector)this.selector.disabled=true;const entry=this.entries.find(value=>value.id===selectedId)||(!selectedId&&this.entries[0]);if(!entry){
+    if(this.scoped&&this.frame&&!this.hasCurrentEntry())this.minimize();
+    this.say('No hay contenido disponible para tu acceso en este lugar.');return;
+   }
    if(nodeRevision!==null&&entry.nodeRevision!==nodeRevision){this.say('Este contenido cambió de lugar o edición. Volvé a elegirlo en el mundo.');return;}
    const descriptorURL=new URL(entry.descriptor,this.window.location.origin),entryURL=new URL(entry.entry,this.window.location.origin);
    if([descriptorURL,entryURL].some(url=>url.origin!==this.window.location.origin||!url.pathname.startsWith('/nexus/')))throw Error('Use the selected viewer');
@@ -146,7 +159,7 @@ export class ContentVisitor{
   return false;
  }
  async context(){
-  if(!this.frame||!this.entry)return null;
+  if(!this.frame||!this.entry||this.scoped&&!this.hasCurrentEntry())return null;
   const frame=this.frame,entry=this.entry,visitId=this.visitId,pin={...entry.pin},ready=this.ready,
    requestedAt=Date.now(),panelVisible=!this.panel.classList.contains('is-walking');
   const current=()=>!this.disposed&&this.frame===frame&&this.entry===entry&&this.visitId===visitId&&sameVisitPin(this.entry.pin,pin);
