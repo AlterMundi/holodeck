@@ -71,6 +71,21 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+`edc50a1`, package `190fce2fde22`; rollback is `5238eae47181`.
+A situated original can keep the acknowledged indoor visit's exact placement
+revision alongside its room and object reference. Holodeck checks the
+speaker's actual Nexus edition access and retains an opaque room reference
+without transferring the source pin or content to the native recipient.
+The focused receiving trial matched a versioned fixture after movement
+and omitted its reference on source denial. The packaged desktop and touch
+trial also passed the shared garden and canonical Conversation return with
+simulated participants and a fixture reply. Protected HTTPS and retained
+world checkpoints matched. The private Sensorial bench has no selected
+browser-readable edition on this route.
+[Conversation contract](shared-conversation.md) ·
+[Sensorial source boundary](sensory-integration.md#taller-sensorial-receiving-boundary).
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) previously served source
 `182e0f4`, package `5238eae47181`; rollback is the expansion-compatible
 reader `abcd47bebe5c` from `54e16f3`. The actual owner opened the furnished
 Taller Sensorial via the foyer's second slot. The live layout and design
