@@ -355,6 +355,27 @@ warm fixture bounce into editable Blender materials and a bounded floor
 texture. A spatially limited splat remains a candidate where it could add
 detail in movement.
 
+### Separate implementation objective — room appearance
+
+Implement an authoring system that takes an editable Blender module and a
+selected visual treatment through calibrated references to a walkable runtime
+appearance. Start with Manipulación de Materia in the isolated Holodeck
+fixture. The same module coordinates, collision surfaces, passages and
+interaction anchors must work while switching between its base look and a
+new appearance. Moving participants and interactive objects remain live.
+
+Keep the preparation and export steps repeatable for another authored module.
+Compare the result with the current Blender export at a held-out player-height
+view and while walking around furniture, using the worktable and leaving
+through the door. Record visual continuity, loading, frame time and asset cost
+on the same route and graphics profile, including the lightweight profile.
+Use the trial to choose where surface textures, baked illumination or a
+localized splat serve the appearance best.
+
+Develop and qualify this work separately. Integration into the live Holodeck
+release follows the verified result. The paused Holodeck MVP and its draft
+work remain available for resumption.
+
 
 ## Delivery sequence and cards
 
