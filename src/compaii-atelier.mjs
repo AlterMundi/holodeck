@@ -17,7 +17,7 @@ const layout=[
 ];
 // The build directly preceding the first writer must already recover
 // expanded room, furnishing and activity checkpoints.
-export const ATELIER_EXPANSION_WRITES=false;
+export const ATELIER_EXPANSION_WRITES=true;
 const FOYER_PORTAL_PATH='room-art/compaii-atelier/foyer-portal.glb';
 const originalRooms=new Set(Object.values(ATELIER_ROOMS));
 const addedFoyerPortal=link=>link?.kind==='portal'&&!originalRooms.has(link.to);
