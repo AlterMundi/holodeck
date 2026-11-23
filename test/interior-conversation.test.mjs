@@ -24,7 +24,7 @@ test('a canonical interior source freezes its authorized place before awaits and
   }],receipts:[]});
   try{
     runtime=await createHolodeck({basePath:'/holodeck/',publicOrigin:'https://world.test',stateDir:dir,
-      interiorSpaces:[{id:'foyer',house,title:'Vestíbulo',level:0,entry:true,guests:[user],links:[]}],
+      ownNative:true,
       identityResolver:async req=>req.headers.cookie?.includes('fixture=user')?{id:user,ref:user,kind:'human',rights:['observe']}:null,
       nativeRoomAuthority:async()=>grant?['observe','edit','project']:[],
       worldPorts:[{socket,beingRef:being}],
@@ -46,6 +46,20 @@ test('a canonical interior source freezes its authorized place before awaits and
           authorizeWorldRequest:contexts.authorizeWorldRequest};
       }});
     listener=runtime.app.listen(0,'127.0.0.1');await once(listener,'listening');
+    const id=randomUUID();
+    async function port(operation,args={},own=false){
+      const conn=net.createConnection(socket);
+      await once(conn,'connect');
+      conn.write(JSON.stringify({...(own?{ownNative:true}:{interactionId:id}),operation,args})+'\n');
+      let value='';for await (const block of conn)value+=block;
+      return JSON.parse(value);
+    }
+    const layout={type:'layout.publish',id:'fixture-layout-1',house,expectedRevision:null,
+      rooms:[{id:'foyer',house,title:'Vestíbulo',level:0,entry:true,guests:[user],links:[]}]};
+    const game={type:'garden.put',id:'fixture-garden-1',room:'foyer',title:'Jardín situado',expectedRevision:null,
+      play:{schema:'signal-garden/v1',minContributors:1,targets:[{x:0,z:2,radius:.45,color:'mint'}]}};
+    assert.equal((await port('act',layout,true)).ok,true);
+    assert.equal((await port('act',game,true)).ok,true);
     const base='http://127.0.0.1:'+listener.address().port+'/holodeck/';
     const first=await fetch(base,{headers:{Cookie:'fixture=user',Accept:'application/json'}});
     const headers={Cookie:'fixture=user; '+first.headers.get('set-cookie').split(';')[0],Origin:'https://world.test','Content-Type':'application/json'};
@@ -54,12 +68,12 @@ test('a canonical interior source freezes its authorized place before awaits and
     assert.equal((await move('outside','foyer')).status,200);
     assert.equal((await fetch(base+'api/conversation-surface',{headers})).status,200);
     assert.equal((await fetch(base+'api/state',{headers})).status,409,'inside API stays scoped');
-    const id=randomUUID();
     const body={id,binding,view:{spaceId:'foyer',capturedAt:123,historyReference:{unverified:true},
       others:[{private:'forged'}],local:{position:{x:1,y:.1,z:2}}}};
     const pending=post('conversation-contexts',body);
     await entered;
     assert.equal((await move('foyer','outside')).status,200);
+    assert.equal((await port('act',{...game,id:'fixture-garden-2',title:'Nuevo jardín',expectedRevision:1},true)).ok,true);
     releaseInspect();
     const prepared=await pending;
     assert.equal(prepared.status,200,await prepared.clone().text());
@@ -68,6 +82,9 @@ test('a canonical interior source freezes its authorized place before awaits and
     assert.equal(uploads.length,1);
     assert.equal(uploads[0].place.id,'foyer');
     assert.equal(uploads[0].scope,'structured-interior-room');
+    assert.equal(uploads[0].place.activity.title,'Jardín situado');
+    assert.equal(uploads[0].place.activity.revision,1);
+    assert.equal(uploads[0].place.activity.progress.filledTargets,0);
     assert.equal(uploads[0].inputAssociation.humanInputId,id);
     assert.deepEqual(uploads[0].entities,{});
     assert.deepEqual(uploads[0].events,[]);
@@ -77,13 +94,6 @@ test('a canonical interior source freezes its authorized place before awaits and
     const changed=await post('conversation-contexts',{...body,id:randomUUID()});
     assert.equal(changed.status,409);
     assert.equal(uploads.length,1);
-    async function port(operation,args={}){
-      const conn=net.createConnection(socket);
-      await once(conn,'connect');
-      conn.write(JSON.stringify({interactionId:id,operation,args})+'\n');
-      let value='';for await (const block of conn)value+=block;
-      return JSON.parse(value);
-    }
     const observed=await port('observe');
     assert.equal(observed.ok,true);
     assert.equal(observed.result.space.id,'foyer');

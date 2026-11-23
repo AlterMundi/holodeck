@@ -45,6 +45,7 @@ export function captureNativeSituation(room,actor,request,{pairedBeing=null,pair
     capturedAt:interior.capturedAt,observer:actor.id,scope:'structured-interior-room',
     place:{id:interior.place.id,title:interior.place.title,level:interior.place.level,
       house:interior.place.house,objects:interior.place.objects,
+      ...(interior.place.activity?{activity:structuredClone(interior.place.activity)}:{}),
       ...(interior.place.exhibitRevision?{exhibitRevision:interior.place.exhibitRevision}:{})},
     source:{through:interior.sequence,displayedSequence:null},
     activity:null,focus:[],nodes:{},entities:{},events:[],participants:interior.place.participants,

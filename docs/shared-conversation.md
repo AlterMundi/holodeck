@@ -151,7 +151,10 @@ ID is a match check. Ordinary movement after intake does not replace the
 frozen place. Recover and retry preserve the exact source.
 
 The source names the room, level and local objects, with scoped presence
-and an optional exhibit revision. It carries neither exterior objects and
+and an optional exhibit revision. The next source build also retains the
+room's signal-garden revision, sequence and derived progress at intake.
+The fixture edits the recipe while the writer is suspended and verifies
+that the retained source still contains the original round. It carries neither exterior objects and
 history nor adjoining-room metadata or private content pins. The paired
 daimon must hold both current app observation and room access. A situated
 native read after observed canonical admission resolves only that room.

@@ -15,14 +15,24 @@ architectural redesign with unified materials, light and composition. The
 environment from the garden route, adjoining house and miniature, workshop
 and separate gallery. The design and rendered views are available for review.
 
-The [shared Home entrance](https://compaii.dmn.homes/holodeck/) now selects
-`compaii-atelier-v1` from source `a94628c`, runtime package `17fbd16989d5`.
+The preceding co-play release selected `compaii-atelier-v1` from source
+`a94628c`, runtime package `17fbd16989d5`.
 Plaza de llegada, the outdoor signal-garden editor and the Atelier remain
 available. All 42 installed files and the HTTPS health and client matched.
 The same canonical run and entity count were read back. The receiving,
 house, placement, exhibit, creator and native journal state matched; the
 Room event tail recorded joins and leaves during activation. The directly
 usable predecessor `581dbb6a09cb` retains room plans and furnishings.
+
+The [shared Home entrance](https://compaii.dmn.homes/holodeck/) now serves
+source `e30ece2`, package `4581272b06f6`, with the [Blender Commons maps](../art/compaii-house/redesign/commons-pbr.md).
+The receiver matched the 42 installed files, HTTPS health, client and exact
+revisioned Commons asset. The prior game package `17fbd16989d5` is retained
+for compatible recovery. Controlled WebGL compared the two assets from the
+same grounded camera, rendered all five mapped materials, and walked the
+route. The new asset adds 381,732 bytes with the same 14,880 triangles and
+10 batches. World placement and collision remain unchanged. The software
+renderer sample is insufficient to characterize device frame pacing.
 
 The preceding atelier deployment matched all 40 installed
 inventory entries. The decoded client, Brotli representation, health and
