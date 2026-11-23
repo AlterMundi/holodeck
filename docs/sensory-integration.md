@@ -51,3 +51,15 @@ This dependency belongs to physical augmentation and later embodied inputs; it
 does not remove the initial walkable-3D or situated-turn acceptance requirement.
 No device capture, inference process, control, background attention or deployment
 was started by this integration note.
+
+## Taller Sensorial receiving boundary
+
+Casa de CompAII has a furnished Taller Sensorial and an authorized foyer
+portal. The [existing bench operations record](https://github.com/AlterMundi/shared-resources-storage-retention/blob/main/docs/services/cuevanico-sensorial-bench.md)
+describes a restricted operator terminal, with a private owner repository
+and separate institutional editorial intake. Neither path supplies a
+shared Sensorial dashboard or an existing exact Homes/Nexus edition for
+the room. The protected camera recorder has its own owner and permissions.
+The room may use the existing edition-bound exhibit and Conversation
+workflow when the Sensorial owner selects a compatible distribution.
+There is no terminal relay, data copy or device control in Holodeck.

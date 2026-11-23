@@ -154,6 +154,11 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const exhibitStore=stateDir?new RoomStore(join(stateDir,'exhibits'),{maxBytes:EXHIBIT_SAVE_BYTES}):null;
   const exhibits=new RoomExhibits({state:exhibitStore?.load(),spaces,houses,artForRoom,
     persist:exhibitStore?state=>exhibitStore.save(state):null});
+  function interiorVisits(actor,id){
+    const placed=exhibits.visit(actor,id);
+    return id===gallery?.room?
+      [...placed,...gallery.slots.filter(slot=>!placed.some(entry=>sameVisitPin(entry.pin,slot.pin)))]:placed;
+  }
   const room=new Room({houses,state:store?.load(),persist:store?s=>store.save(s):null,contentNodes:selectedContentNodes,
     presence:()=>[...sessions.values()].filter(s=>s.connection!==null&&Date.now()-s.created<SESSION_MS&&spaces.current(s.actor)===OUTSIDE)
       .map(s=>({actor:s.actor.id,kind:'human',name:s.actor.name||'Explorador',scope:'authenticated-room-presence',position:null}))});
@@ -312,14 +317,24 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     return rights.includes('observe')&&!spaces.fenced&&!room.commitUncertain&&
       spaces.allows(actor,id)&&spaces.allows(recipient,id);
   }
-  function captureConversationPlace(actor,request){
+  function captureConversationPlace(actor,request,cookie){
     const id=spaces.current(actor);
     if(spaces.fenced||room.commitUncertain||id!==(request.view?.spaceId??OUTSIDE))
       throw new RoomError('scope-changed','Tu lugar cambió. Volvé a intentar con el borrador que conservaste.');
     if(id===OUTSIDE)return null;
     const place=conversationPlace(actor,id);
     if(!place)throw new RoomError('forbidden','Tu acceso a esta sala cambió.');
-    return {id:randomUUID(),run:room.run,edition:room.edition,sequence:room.sequence,capturedAt:Date.now(),place};
+    const snapshot={id:randomUUID(),run:room.run,edition:room.edition,sequence:room.sequence,capturedAt:Date.now(),place};
+    const selected=request.view?.roomVisit;
+    const entry=selected&&interiorVisits(actor,id).find(visit=>visit.node===selected.id&&visit.nodeRevision===selected.revision);
+    if(entry&&authorizeRoomVisit){
+      // The paired daimon's room grant does not imply access to the speaker's
+      // source edition. Verify the speaker and retain only the room address.
+      const reference={id:entry.node,revision:entry.nodeRevision};
+      snapshot.roomVisit=Promise.resolve().then(()=>authorizeRoomVisit(cookie,entry.pin))
+        .then(allowed=>allowed===true?reference:null,()=>null);
+    }
+    return snapshot;
   }
   function moveSpace(actor,request){
     if(room.commitUncertain||!actor.rights?.includes('observe'))return null;
@@ -620,9 +635,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const currentEntries=()=>{
       if(Date.now()-req.holodeckSession.created>=SESSION_MS||
          !inScope(req.holodeckSession.actor,active)||spaces.fenced||room.commitUncertain||exhibits.fenced)return [];
-      const placed=exhibits.visit(req.actor,active);
-      if(!isGallery)return placed;
-      return [...placed,...gallery.slots.filter(slot=>!placed.some(entry=>sameVisitPin(entry.pin,slot.pin)))];
+      return interiorVisits(req.actor,active);
     };
     const visits=await allowedGalleryVisits({entries:currentEntries(),currentEntries,
       authorize:pin=>authorizeRoomVisit?.(req.headers.cookie,pin,{details:true})});
@@ -692,7 +705,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     res.status(503).json({scope:'machine-context',work_admitted:false,message:'Todavía no pude conectar el contexto de este lugar con la conversación.'});return false;
   };
   app.post(route('api/conversation-contexts'),asyncRoute(async(req,res)=>{
-    if(requireContext(req,res))res.json(await native.contexts.prepare(req.actor,req.body,captureConversationPlace));
+    if(requireContext(req,res))res.json(await native.contexts.prepare(req.actor,req.body,
+      (actor,request)=>captureConversationPlace(actor,request,req.headers.cookie)));
   }));
   app.get(route('api/conversation-contexts/:id'),asyncRoute(async(req,res)=>{
     if(requireContext(req,res))res.json(await native.contexts.recover(req.actor,req.params.id,req.query.binding));

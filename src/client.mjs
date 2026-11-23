@@ -889,8 +889,10 @@ async function captureInteractionContext(){
   if(inside){
     const position=client.getLocalCharacterState()?.position;
     const subject=roomSubject();
+    const visit=contentVisitor.reference();
     return structuredClone({capturedAt:Date.now(),spaceId:capturedSpace,local:position?{position}:null,
-      ...(subject?{roomObject:{id:subject.id,revision:subject.revision}}:{})});
+      ...(subject?{roomObject:{id:subject.id,revision:subject.revision}}:{}),
+      ...(visit?{roomVisit:visit}:{})});
   }
   const capturedRun=state?.run;
   if(!capturedRun)throw Error('No pude confirmar el mundo desde donde estás pensando.');

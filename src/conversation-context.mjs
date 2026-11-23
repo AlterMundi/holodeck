@@ -133,10 +133,12 @@ export async function createConversationContexts({room,stateDir,transport,allowI
           const canonical=await transport.lookup({actorRef:ref,id:request.id,textSha256:null});
           if(canonical.state!=='absent')throw fail('id-reuse','Recover the existing canonical original before preparing another source');
           if(Object.keys(records).length>=MAX_RECORDS&&!await retireConfirmed())throw fail('capacity','Prepared sources need their retained results before new admission');
+          const roomVisit=await interior?.roomVisit;
           record=await transaction(async()=>{
             if(interior&&interior.run!==room.run)throw fail('scope-changed','El mundo cambió durante la preparación');
             if(Object.keys(records).length>=MAX_RECORDS)throw fail('capacity','Context source capacity reached');
-            const observation=captureNativeSituation(room,actor,request,{pairedBeing:frozen.beingRef,serverCapture:'at-machine-context-preparation',interior});
+            const observation=captureNativeSituation(room,actor,request,{
+              pairedBeing:frozen.beingRef,serverCapture:'at-machine-context-preparation',interior,roomVisit});
             const value={id:request.id,actorRef:ref,requestHash,frozen,observation,phase:'frozen'};records[value.id]=value;
             try{await persist();}catch(error){if(!error.replaced)delete records[value.id];throw error;}return value;
           });

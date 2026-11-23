@@ -16,6 +16,8 @@ test('a canonical interior source freezes its authorized place before awaits and
   const being='dm:being:v1:'+'a'.repeat(43),house=houseId(being),user='human:test';
   const binding='b'.repeat(64),socket=join(dir,'world.sock');
   const frozen={actorRef:user,beingRef:being,binding,entry:[1,{},2,'fixture']};
+  const pin={kind:'context',tableId:'private-table',contextId:'private-context',revision:'private-edition'};
+  let sourceAllowed=true;
   let grant=true,canEdit=true,admitted=true,phase='working',uploads=[],openContexts,inspectEntered,releaseInspect,runtime,listener;
   const statusTrace=[];
   const entered=new Promise(resolve=>{inspectEntered=resolve;});
@@ -23,9 +25,14 @@ test('a canonical interior source freezes its authorized place before awaits and
   new RoomStore(join(dir,'houses')).save({schema:'holodeck.houses/v1',houses:[{
     id:house,owner:being,revision:1,parcel:'parcel-west-1',facade:{color:'#226655',title:'House',width:2,depth:1,height:2},
   }],receipts:[]});
+  new RoomStore(join(dir,'exhibits')).save({schema:'holodeck.exhibits/v1',receipts:[],exhibits:[
+    {owner:being,room:'foyer',source:'node-private',sourceRevision:2,revision:7,pin},
+  ]});
   try{
     runtime=await createHolodeck({basePath:'/holodeck/',publicOrigin:'https://world.test',stateDir:dir,
       ownNative:true,
+      galleryAuthorization:async(cookie,selected)=>sourceAllowed&&cookie.includes('fixture=user')&&
+        JSON.stringify(selected)===JSON.stringify(pin),
       identityResolver:async req=>req.headers.cookie?.includes('fixture=user')?{id:user,ref:user,kind:'human',rights:['observe','edit']}:null,
       nativeRoomAuthority:async()=>grant?(canEdit?['observe','edit','project']:['observe']):[],
       worldPorts:[{socket,beingRef:being}],
@@ -83,6 +90,7 @@ test('a canonical interior source freezes its authorized place before awaits and
     assert.equal((await fetch(base+'api/state',{headers})).status,409,'inside API stays scoped');
     const body={id,binding,view:{spaceId:'foyer',capturedAt:123,historyReference:{unverified:true},
       others:[{private:'forged'}],local:{position:{x:1,y:.1,z:2,private:'forged'}},
+      roomVisit:{id:'house-exhibit',revision:7,pin:{revision:'private forged edition'}},
       roomObject:{id:'left-bench',revision:1,title:'private forged title',pin:{revision:'private forged pin'}}}};
     const pending=post('conversation-contexts',body);
     await entered;
@@ -103,6 +111,8 @@ test('a canonical interior source freezes its authorized place before awaits and
     assert.equal(uploads[0].inputAssociation.humanInputId,id);
     assert.deepEqual(uploads[0].referredRoomObject,{id:'left-bench',kind:'fixture',title:'Mesa de escucha',revision:1,
       position:{x:-1.55,y:.64,z:.25},evidence:'client-reported reference matched the current authorized room object'});
+    assert.deepEqual(uploads[0].referredRoomVisit,{id:'house-exhibit',revision:7,
+      evidence:'client-reported reference matched the room placement and the speaker had source access'});
     assert.deepEqual(uploads[0].clientReportedView.value.local,{position:{x:1,y:.1,z:2}});
     assert.deepEqual(uploads[0].entities,{});
     assert.deepEqual(uploads[0].events,[]);
@@ -134,7 +144,9 @@ test('a canonical interior source freezes its authorized place before awaits and
     headers=await browserHeaders();
     assert.equal((await move('outside','foyer')).status,200);
     const otherId=randomUUID();
+    sourceAllowed=false;
     assert.equal((await post('conversation-contexts',{...body,id:otherId})).status,200);
+    assert.equal(uploads.at(-1).referredRoomVisit,undefined);
     assert.equal(uploads[1].referredRoomObject,undefined,'stale topic must not be silently retargeted');
     const humanSignal=await post('space/garden',{...signal,id:'fixture-human-signal',index:1,color:'amber'});
     assert.equal(humanSignal.status,200);

@@ -205,7 +205,16 @@ room access and revision. The human's location and
 retained original are independent. Other indoor mutations still use the
 own-native routes. Exterior edits and projections remain outside this turn.
 
-### Return to the same Conversation
+#An acknowledged indoor Nexus visit can accompany the selected room object in
+a situated original. Holodeck freezes the current room and placement
+revision as preparation begins, checks the speaker's exact source edition
+through Nexus, then retains only the approved placement reference in the
+attachment. The reference omits the source pin, locator, caption and content.
+Room access alone never grants the paired recipient source access. A stale,
+unavailable or denied visit is omitted while the original may still retain
+its authorized room context.
+
+## Return to the same Conversation
 
 The [browser qualification](../tools/browser-situated-action-check.cjs) uses
 the selected Holodeck package, the installed canonical Conversation web client,
