@@ -1,0 +1,201 @@
+import {Box3,BufferAttribute,BufferGeometry,Group,Mesh,MeshStandardMaterial,Plane,Vector3} from 'three';
+import {disposeModel} from './gallery-models.mjs';
+
+const key=edition=>edition.resource+':'+edition.version+':'+edition.gallerySha256;
+const same=(a,b)=>a&&b&&key(a)===key(b);
+const reviewPrefix=edition=>'/works/'+edition.resource+'/'+edition.version+'/';
+
+function loadReview(base,edition,scene,signal){
+  return new Promise((resolve,reject)=>{
+    signal.throwIfAborted();
+    const worker=new Worker(new URL('client/collection-review-worker.js',base),{type:'module'});
+    const finish=(callback,value)=>{
+      signal.removeEventListener('abort',abort);
+      worker.terminate();
+      callback(value);
+    };
+    const abort=()=>finish(reject,signal.reason);
+    signal.addEventListener('abort',abort,{once:true});
+    worker.onmessage=({data})=>data.review?finish(resolve,data.review):finish(reject,Error('Review unavailable'));
+    worker.onerror=()=>finish(reject,Error('Review reader unavailable'));
+    worker.postMessage({edition,scene});
+  });
+}
+function makeModel(review,anchor){
+  const group=new Group(),inside=new Group(),bounds=new Box3(),parts=new Map();
+  group.add(inside);
+  try{
+    for(const part of review.parts){
+      const geometry=new BufferGeometry();
+      geometry.setAttribute('position',new BufferAttribute(part.positions,3));
+      geometry.setIndex(new BufferAttribute(part.indices,1));
+      geometry.computeVertexNormals();geometry.computeBoundingBox();
+      const mesh=new Mesh(geometry,new MeshStandardMaterial({color:part.color,roughness:.54,metalness:.12}));
+      mesh.name=part.id;mesh.castShadow=true;mesh.receiveShadow=true;
+      inside.add(mesh);parts.set(part.id,mesh);
+      bounds.union(geometry.boundingBox);
+    }
+    const size=bounds.getSize(new Vector3()),center=bounds.getCenter(new Vector3());
+    const scale=Math.min(1.22/Math.hypot(size.x,size.z),.93/size.y);
+    if(!Number.isFinite(scale)||scale<=0)throw Error('Empty worktable model');
+    inside.position.set(-center.x*scale,-bounds.min.y*scale,-center.z*scale);
+    inside.scale.setScalar(scale);
+    group.position.set(anchor.x,anchor.y+.022,anchor.z);
+    group.name='collection-worktable-model';
+    return {group,parts,height:size.y*scale};
+  }catch(error){disposeModel(group);throw error;}
+}
+
+function options(select,rows){
+  const prior=select.value;
+  select.replaceChildren(...rows.map(({id,title})=>{
+    const option=select.ownerDocument.createElement('option');
+    option.value=id;option.textContent=title;
+    return option;
+  }));
+  if(rows.some(row=>row.id===prior))select.value=prior;
+}
+
+export class CollectionWorktable{
+  constructor({base,scene,panel,webgl}){
+    Object.assign(this,{base,scene,panel,webgl,yaw:0,editions:[],hidden:new Set()});
+    this.details=panel.querySelector('details');
+    this.project=panel.querySelector('[data-project]');
+    this.sceneChoice=panel.querySelector('[data-scenes]');
+    this.part=panel.querySelector('[data-parts]');
+    this.status=panel.querySelector('[role=status]');
+    this.section=panel.querySelector('[data-section]');
+    this.visibility=panel.querySelector('[data-visibility]');
+    this.controls=panel.querySelector('fieldset');
+    this.project.onchange=()=>this.choose(this.project.value);
+    this.sceneChoice.onchange=()=>{this.requestedScene=this.sceneChoice.value;this.load(this.requestedScene);};
+    this.part.onchange=()=>this.projectModel();
+    this.section.oninput=()=>this.projectModel();
+    this.visibility.onclick=()=>{
+      const id=this.part.value;
+      if(!id)return;
+      if(this.hidden.has(id))this.hidden.delete(id);else this.hidden.add(id);
+      this.projectModel();
+    };
+    for(const button of panel.querySelectorAll('[data-turn]'))button.onclick=()=>{
+      this.yaw+=Number(button.dataset.turn)*Math.PI/8;
+      this.projectModel();
+    };
+  }
+
+  update(player,anchor){
+    this.anchor=anchor;
+    const near=!!(player&&anchor&&Math.hypot(player.x-anchor.x,player.z-anchor.z)<2.05);
+    this.panel.hidden=!near||(!this.editions.length&&!this.resource);
+
+  }
+
+  sync(projects){
+    const editions=(projects??[]).flatMap(project=>project.editions);
+    const signature=JSON.stringify(editions.map(edition=>[edition.resource,edition.title]));
+    if(signature!==this.signature){
+      this.signature=signature;
+      options(this.project,[{id:'',title:'Elegí un proyecto'},...editions.map(edition=>({id:edition.resource,title:edition.title}))]);
+    }
+    this.editions=editions;
+    if(!this.resource)return;
+    const desired=editions.find(edition=>edition.resource===this.resource);
+    if(!desired){this.closeModel();return;}
+    if(this.shown&&!same(this.shown,desired))this.verifyShown();
+    if(!same(this.flight?.edition,desired)&&(!same(this.shown,desired)||!this.model))
+      this.load(this.requestedScene);
+  }
+
+  choose(resource){
+    this.closeModel();
+    if(!resource)return;
+    this.resource=resource;this.project.value=resource;
+    this.load();
+  }
+
+  async verifyShown(){
+    if(this.lease)return;
+    const shown=this.shown,controller=new AbortController();
+    this.lease=controller;
+    let allowed=false;
+    try{
+      const response=await fetch(reviewPrefix(shown)+'review-live.json',{cache:'no-store',redirect:'error',
+        signal:AbortSignal.any([controller.signal,AbortSignal.timeout(4500)])});
+      allowed=response.ok&&response.headers.get('X-Home-Version')===shown.version;
+      await response.body?.cancel();
+    }catch{}
+    if(this.lease===controller)this.lease=null;
+    if(!controller.signal.aborted&&this.shown===shown&&!allowed)this.removeModel();
+  }
+
+  async load(sceneId){
+    const edition=this.editions.find(item=>item.resource===this.resource);
+    if(!edition||!this.anchor)return;
+    this.flight?.controller.abort();
+    const controller=new AbortController(),flight={controller,edition};
+    this.flight=flight;
+    this.status.textContent='Cargando modelo…';
+    try{
+      const review=await loadReview(this.base,edition,sceneId,
+        AbortSignal.any([controller.signal,AbortSignal.timeout(26000)]));
+      if(this.flight!==flight||controller.signal.aborted)return;
+      const replacement=makeModel(review,this.anchor);
+      const priorPart=this.part.value;
+      this.removeModel();
+      this.model=replacement;this.review=review;this.shown=edition;
+      this.scene.add(replacement.group);
+      if(!review.choices.some(choice=>choice.id===this.requestedScene))this.requestedScene=null;
+      options(this.sceneChoice,review.choices);this.sceneChoice.value=review.id;
+      options(this.part,[{id:'',title:'Todas las piezas'},...review.parts.map(({id,label})=>({id,title:label}))]);
+      if(replacement.parts.has(priorPart))this.part.value=priorPart;
+      this.hidden=new Set([...this.hidden].filter(id=>replacement.parts.has(id)));
+      this.status.textContent='';
+      this.controls.disabled=false;
+      this.projectModel();
+    }catch{
+      if(this.flight===flight&&!controller.signal.aborted){
+        this.status.textContent=this.model?'La edición nueva no cargó. Seguís viendo la anterior.':'No pude cargar el modelo.';
+        if(this.review)this.sceneChoice.value=this.review.id;
+      }
+    }finally{if(this.flight===flight)this.flight=null;}
+  }
+
+  projectModel(){
+    if(!this.model)return;
+    const {group,parts,height}=this.model;
+    group.rotation.y=this.yaw;
+    const fraction=Number(this.section.value)/100;
+    const clipping=fraction<1;
+    this.webgl.localClippingEnabled=clipping;
+    const plane=clipping?[new Plane(new Vector3(0,-1,0),group.position.y+height*fraction)]:null;
+    for(const [id,mesh] of parts){
+      mesh.visible=!this.hidden.has(id);
+      mesh.material.emissive.setHex(id===this.part.value?0x7a4f19:0);
+      mesh.material.emissiveIntensity=.65;
+      mesh.material.clippingPlanes=plane;
+    }
+    this.visibility.disabled=!this.part.value;
+    this.visibility.textContent=this.hidden.has(this.part.value)?'Mostrar pieza':'Ocultar pieza';
+  }
+
+  removeModel(){
+    if(this.model)disposeModel(this.model.group);
+    this.model=null;this.shown=null;this.review=null;
+    this.controls.disabled=true;this.webgl.localClippingEnabled=false;
+  }
+
+  closeModel(){
+    this.flight?.controller.abort();this.flight=null;
+    this.lease?.abort();this.lease=null;
+    this.removeModel();
+    this.resource='';this.requestedScene=null;this.project.value='';
+    this.yaw=0;this.hidden.clear();this.section.value='100';
+    this.sceneChoice.replaceChildren();this.part.replaceChildren();
+    this.status.textContent='';
+  }
+
+  clear(){
+    this.closeModel();this.sync([]);this.panel.hidden=true;this.anchor=null;
+    this.details.open=!matchMedia('(max-width: 600px)').matches;
+  }
+}

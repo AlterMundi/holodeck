@@ -161,6 +161,11 @@ draft fails validation. Revocation removes restricted content. Keep canonical
 selection and version history in the 3D Viewer. Future integration with Ani's
 Wiggle Control editor can use this table and the same scoped selection.
 
+The current candidate decodes the full Home scene in a worker and brings it
+to the existing world renderer. Selecting a scene, rotating, slicing and
+hiding a part changes only the inspecting visitor's view. Exact shared part
+references and durable joint selections remain separate work.
+
 Produce the representative alongside each saved review edition in the existing
 publisher workflow. An authored substitute is appropriate for assemblies with
 a poor automatic silhouette. Derive an exact-version reference and hash from

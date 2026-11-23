@@ -46,6 +46,6 @@ The Blender producer was exercised against five exact retained reviews.
 The exports came to 2,873–4,756 triangles and 216–315 kB. Each could be
 imported and rendered in Blender. The shelf contents mounted in the isolated desktop and touch candidate. The
 receiving index and exact-access contract are in [deployment](../../docs/deployment.md#receiving-contracts).
-The cabinet cycles exact retained editions in the isolated candidate. Live
-room selection, restoration to a shelf, and worktable refresh remain pending. The current three fixed gallery
+The cabinet cycles exact retained editions in the isolated candidate. The worktable follows existing Home editions in the candidate. Live room
+selection and restoration to a shelf remain pending. The current three fixed gallery
 displays are available through the existing viewer path.

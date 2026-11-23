@@ -110,6 +110,22 @@ body:has(#conversation-panel:not([hidden])) #collection-shelf,body:has(#content-
 #collection-archive a{display:block;min-height:44px;align-content:center;color:var(--ink);font-size:14px;text-underline-offset:3px}
 body:has(#conversation-panel:not([hidden])) #collection-archive,body:has(#content-visit:not([hidden]):not(.is-walking)) #collection-archive{display:none}
 @media(max-width:600px){#collection-archive{right:12px;top:123px;width:min(245px,calc(100vw - 24px))}}
+#collection-worktable{position:fixed;z-index:22;right:max(18px,env(safe-area-inset-right));top:96px;width:min(320px,calc(100vw - 36px));padding:13px 15px;border-radius:12px;max-height:55dvh;overflow:auto}
+#collection-worktable summary{cursor:pointer;font:600 13px/1.3 system-ui;color:var(--gold)}
+#collection-worktable details[open] summary{margin-bottom:8px}
+#collection-worktable:has(details:not([open])){width:max-content}
+#collection-worktable summary:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
+#collection-worktable label{display:grid;gap:3px;font-size:12px;color:var(--muted)}
+#collection-worktable select{min-height:40px;width:100%;color:var(--ink);background:#102d31;border:1px solid var(--line);border-radius:8px;padding:4px 8px;font:inherit}
+#collection-worktable fieldset{border:0;margin:8px 0 0;padding:0;display:grid;gap:7px;min-width:0}
+#collection-worktable fieldset:disabled{display:none}
+#collection-worktable .row{justify-content:space-between}
+#collection-worktable button{min-height:40px;padding:5px 10px;font-size:13px}
+#collection-worktable input{width:100%;accent-color:var(--gold)}
+#collection-worktable p{font-size:13px;margin:6px 0 0}
+#collection-worktable p:empty{display:none}
+body:has(#conversation-panel:not([hidden])) #collection-worktable,body:has(#content-visit:not([hidden]):not(.is-walking)) #collection-worktable{display:none}
+@media(max-width:600px){#collection-worktable{right:12px;top:123px;width:min(235px,calc(100vw - 24px));max-height:47dvh}#collection-worktable summary{min-height:24px;align-content:center}#collection-worktable select,#collection-worktable button{min-height:44px}}
 #house-door{position:fixed;z-index:23;bottom:max(98px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);max-width:calc(100vw - 30px)}
 .inside-house #house-door{bottom:max(26px,env(safe-area-inset-bottom))}
 body:has(#conversation-panel:not([hidden])) #house-door,body:has(#creator:not([hidden])) #house-door,body:has(#content-visit:not([hidden]):not(.is-walking)) #house-door{display:none}
@@ -218,6 +234,7 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
 <div id="world-tools"><aside id="help"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> moverte · arrastrá para mirar · espacio para saltar</aside><button id="garden-create" class="glass" type="button" hidden>Crear jardín</button><button id="activity-open" class="glass" type="button" aria-haspopup="dialog" disabled>Actividad</button></div>
 <aside id="collection-shelf" class="glass" aria-labelledby="collection-shelf-title" hidden><h2 id="collection-shelf-title">Abrir en el Visor 3D</h2><ul></ul></aside>
 <aside id="collection-archive" class="glass" aria-labelledby="collection-archive-title" hidden><h2 id="collection-archive-title">Vitrina de archivo</h2><strong aria-live="polite"></strong><nav aria-label="Recorrer ediciones archivadas"><button type="button" data-previous aria-label="Edición anterior">←</button><output aria-label="Posición en el archivo"></output><button type="button" data-next aria-label="Edición siguiente">→</button></nav><a target="_blank" rel="noopener">Abrir en el Visor 3D</a></aside>
+<aside id="collection-worktable" class="glass" hidden aria-labelledby="collection-worktable-title"><details open><summary id="collection-worktable-title">Mesa de trabajo</summary><label>Proyecto<select data-project aria-label="Proyecto"></select></label><p role="status"></p><fieldset disabled aria-label="Inspección del modelo"><label>Escena<select data-scenes aria-label="Escena"></select></label><label>Pieza<select data-parts aria-label="Pieza"></select></label><label>Corte horizontal<input type="range" min="0" max="100" value="100" data-section aria-label="Corte horizontal"></label><div class="row"><button type="button" data-turn="-1" aria-label="Girar a la izquierda">↶</button><button type="button" data-visibility>Ocultar pieza</button><button type="button" data-turn="1" aria-label="Girar a la derecha">↷</button></div></fieldset></details></aside>
 <button id="house-door" type="button" class="primary" hidden>Entrar</button>
 <details id="space-travel" class="glass" hidden><summary>Mapa</summary><section class="room-map" aria-label="Mapa de la sala" hidden><div class="room-map-plot" aria-hidden="true"></div><p class="room-map-hint">Marcá una salida y cerrá el mapa para seguir la flecha.</p><div class="room-map-destinations" role="group" aria-label="Salidas"></div></section><nav aria-label="Regreso al exterior"></nav></details>
 <aside id="door-guidance" class="glass" aria-label="Salida marcada" hidden><span class="door-guide-arrow" aria-hidden="true">↑</span><span><span class="door-guide-title"></span><span class="door-guide-distance"></span></span><button type="button" aria-label="Quitar salida marcada">×</button></aside>

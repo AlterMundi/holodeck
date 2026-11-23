@@ -101,9 +101,22 @@ reader separately verified both exact historical manifests and viewer pages
 against the real Home gateway. The interactive tests used a controlled
 viewer destination and fixture identities.
 
-This candidate does not select a live world layout. Restoring an archived
-project to a shelf, the full-geometry worktable and live saved-edition swaps
-are pending integration. [Room and source contract](houses.md#the-collection)
+The worktable candidate mounted the full retained Support Study geometry
+using its actual authorized Home scene-index and scene files. The two selected
+editions have 197,642 and 34,000 triangles. In the isolated desktop and touch
+Chromium runs the table retained the first model when the replacement bytes
+failed the checksum, then advanced to the second edition once valid bytes
+were available. Avatar position, rotation of the model and the cut setting
+survived the swap. The chosen part cleared when its ID disappeared from the
+new scene. Leaving the table controls left the model visible, and source
+revocation removed it. The source files came from the authenticated Home
+owner reader. Edition switching and revocation used a controlled gateway. A separate
+authorized HTTPS read decoded the current Guitarra, Support Study, Harmonic
+Flow and Visor X sources with the same reader.
+
+This candidate leaves live room selection pending. Restoring an archived
+project to a shelf, explicit shared table state and the exact worktable
+Conversation reference remain open. [Room and source contract](houses.md#the-collection)
 
 ## Selected receiving release
 

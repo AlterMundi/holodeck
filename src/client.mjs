@@ -426,7 +426,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const frameBudget=capWorldPixelRatio(renderer,rendererBudget);
     galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
     collectionShelves=new CollectionShelves({base,scene:renderer.mmlCompositionScene.group,panel:document.querySelector('#collection-shelf'),
-      archivePanel:document.querySelector('#collection-archive')});
+      archivePanel:document.querySelector('#collection-archive'),worktablePanel:document.querySelector('#collection-worktable'),
+      webgl:renderer.composer.renderer});
     const sky=new OutdoorSky(renderer.mmlCompositionScene.group.parent,base);
     const light=new DirectionalLight(0xffefd6,1.8);
     light.position.set(12,22,10);light.target.position.set(0,0,-6);light.castShadow=true;
@@ -513,7 +514,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       nativeAvatarLayer.update();
       galleryModels.update();
       const collectionRoom=inside&&!moving&&activeSpace.collectionShelves?activeSpace.id:null;
-      collectionShelves.update(collectionRoom,collectionRoom?remoteScene:null,position);
+      collectionShelves.update(collectionRoom,collectionRoom?remoteScene:null,position,
+        collectionRoom?activeSpace.objects.find(object=>object.id==='worktable')?.position:null);
       garden.update(inside&&!moving&&activeSpace.playableInterior?activeSpace.id:null);gardenMarkers();
       if(!inside){worldIndication?.update();if(!moving)playableHUD.update(position);}
       if(!moving){

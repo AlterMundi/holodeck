@@ -112,8 +112,8 @@ title, immutable edition and gallery digest. Where available, it also returns
 the validated scene-index digest. Movement or admission change cancels the
 projection. The response uses `no-store`, and the source requests have a
 shared deadline and byte bounds. The compatible configuration can remain
-unselected while a room or thumbnail preparation is ongoing. The route and
-shell do not activate the complete worktable or archive interaction.
+unselected while a room or thumbnail preparation is ongoing. The selected room exposes the worktable and archive controls when their
+source editions are available.
 
 An optional `matterCollection.archive` selects up to six explicitly named
 retained editions, with `resource`, immutable `version` and display `label`.
@@ -144,6 +144,22 @@ link remain available. The viewer opens as a separate tab so the world
 position and controls remain in place. No derivative enters the application
 package, browser persistent storage, or public room geometry.
 
+
+The worktable follows the selected readable project while the same room
+remains active. Its worker reads the exact current Home version and validates
+the response version and checksum before decoding. It uses the compact scene
+index and selected scene file when the publisher supplies them, or the
+bounded gallery file otherwise. The existing packed and plain Viewer formats
+carry full review triangles. The worker accepts at most 25 MiB per geometry
+response and 300,000 triangles in a scene. Closing the room terminates pending
+jobs. The browser keeps one mounted worktable model and no persistent copy.
+
+The table's scene, rotation, cut plane and visibility controls are local to
+each visitor. The 12-second collection refresh follows a saved publication
+without changing the player's position. If staging fails, the prior model
+remains visible only while its exact version is still authorized in Home.
+Room departure or loss of source access clears the model and controls.
+The worktable and archive introduce no writes to the publication registry.
 
 Caddy's maintained service writer preserves `/holodeck/` on both HTTP and
 WebSocket requests. Its forward-auth checks the selected current service audience
