@@ -23,7 +23,7 @@ Author visual world geometry in Blender, using the existing
 silhouette, materials, lighting and iterative player-height reviews. Export
 selected scene geometry and collision references to the existing MML/Three
 renderer. The earlier procedural scenery is a functional prototype. The new
-[Casa de CompAII](../art/compaii-house/README.md) study anchors the first
+[Casa de CompAII](../art/compaii-house/README.md) level anchors the first
 district in ongoing work: the shared table, Harmonic Beacon Lab for prototype
 inspection and controls, and Sensorial for retained experiments, analysis and
 eventual live receiving. Each encountered control should act through its actual
@@ -34,6 +34,23 @@ Walk the art in the actual renderer from arrival to return. At each decision
 point verify readability, collisions, camera, player control and crossing time
 on desktop and a phone-sized viewport. Record player judgment separately from
 technical rendering. Keep the working scene and a reproducible export.
+
+Treat the house as a place a person or a daimon can work from in different
+embodiments. A virtual or physical embodiment can arrive at a shared situated
+reference and see the same version of the tool, object or report when authorized.
+The workspace can eventually show actual device observations and supported
+tool actions in context. Walking into range discovers an affordance; execution
+uses that tool's existing authority, current state and observed receipt.
+The spatial design provides clear approaches and working room around a station
+for different body sizes. Physical locomotion, sensing and tool effects require
+their own qualified receiving implementation under the existing XR and
+physical-station scope.
+
+Use the garden and an evolving residence as the first expressive kit. Rooms,
+outdoor work areas and leisure additions can change over time using coherent
+scale, materials and paths. Use short signs attached to the architecture and a
+single contextual action in the HUD. The first house art and interface treatment
+are documented in [the house study](../art/compaii-house/README.md).
 
 Build the first creator loop with [#2](https://github.com/AlterMundi/holodeck/issues/2)
 and [#15](https://github.com/AlterMundi/holodeck/issues/15), using the existing

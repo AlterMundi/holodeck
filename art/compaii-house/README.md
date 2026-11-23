@@ -1,13 +1,24 @@
 # Casa de CompAII
 
-An original Blender architectural study for the existing CompAII house in
-Holodeck. The arrival leads to a shared table. Two adjacent low thresholds
-connect the labs from inside, so a joint work session can move between an
-instrument design and the observations used to evaluate it. Exposed ribs,
-mineral surfaces, brass and a continuous slate floor tie the house together.
-Warm concentric geometry marks Harmonic Beacon. A cool gridded observation
-wall marks Sensorial. The editable model keeps architecture, both workspaces,
-shared furniture, lights and review cameras in named Blender collections.
+The current Blender level is a house that can grow one wing at a time.
+The garden has a reflecting pool, seats and a dedicated outdoor work patio.
+A low stone entrance frames the tall shared atrium. From there, one wide
+stair descends into the warm acoustic lab and one direct stair climbs to the
+cool Sensorial gallery. Both use the same visible table and skylight as
+orientation landmarks. Materials and proportions tie the wings together
+while allowing each addition to have a purpose and an individual character.
+
+Two project rooms and a courtyard form the starting house. Leave intentional
+edges for a future workshop, leisure room or greenhouse. Add the next room
+where it serves a job and gives an intelligible connection to the main house.
+Generalize the same placement flow for furniture, authorized active workstations
+and game objectives. The patio's outdoor bench is the first example of a
+placement slot. An authorized owner should be able to preview a replacement,
+see clearances and access, publish a durable revision and recover the previous
+layout without relearning the engine. The Blender study shows those positions;
+the normal player-facing creator is tracked in #15.
+
+The previous three parallel rooms remain an archived study in `model.py`.
 
 | Place | Spatial intent | First supported working binding |
 | --- | --- | --- |
@@ -23,6 +34,28 @@ colliders to the existing independent room projections and preserve the current
 doorway, source access and ordinary return. Connector names and camera
 locations in this study are authoring data, separate from room authority.
 
+## Wayfinding and interface
+
+- Architecture leads: the threshold, atrium light, stair and distinctive
+  lab entrances establish direction before overlays are needed. Use short
+  place names on mounted stone or metal plaques in the approach line of
+  sight. At a two-way junction, indicate both approaches. Check size and
+  contrast in motion at player height and from both directions.
+- A single contextual action sits near the lower center when a station is
+  in range. Show its verb and recognizable name, plus the key or the
+  touch affordance. Give the same place a spatially stable position and
+  a persistent identity. This way, the architecture still reads while
+  an actionable station provides clear feedback and keyboard focus.
+- Protect the center of the view. Use a compact room label on arrival and
+  a focused panel for actual data, tools or conversation. Keep long text
+  and routine debug status off the scenery. A dedicated panel can expose
+  measurements, units, source, timestamp and status when the player opens
+  the control. Check the real interface at phone width and with reduced motion.
+
+The supplied HUD illustration is a design study over the Blender view. It
+does not represent installed controls. The actual rendering, input layout
+and accessibility have their own browser acceptance.
+
 ## Reproduce and review
 
 From the Holodeck checkout, run Blender 5.2.2 with the scene script and a small
@@ -30,18 +63,27 @@ task-owned output directory on the project data filesystem.
 
 ```sh
 blender -b --factory-startup --python-exit-code 1 -t 8 \
-  -P art/compaii-house/model.py -- "$ART_OUTPUT"
+  -P art/compaii-house/level.py -- "$ART_OUTPUT"
 ```
 
-The script produces one compressed editable Blender scene, three original
-Cycles views, and a neutral GLB candidate with no runtime data or external
-resources. Keep the editable model and the chosen camera setup. Before
-in-world delivery, export by room, choose a measured draw and byte budget,
-align the authored openings with collision, and walk arrival and return
-from the actual third-person camera. Review the two project inputs separately
-from mesh qualification. The served house continues to have its own scope
-and revision.
+The script tests walking-floor support along the continuous route at 15 cm
+intervals and checks that the centerline camera is clear. It saves a
+compressed editable file and six Cycles views taken from player height.
+This is a Blender scene qualification. Runtime locomotion, collision and
+controls require the existing Holodeck integration: align the authored
+floors/rails with allowed traversal, export the visible sections per their
+scope, and qualify the walk and return in a real client. Review source
+authorization and any reversible control separately from art.
 
 - [Holodeck house contract](../../docs/houses.md)
 - [Harmonic Beacon source](https://github.com/nicoechaniz/harmonic-beacon-webapp)
 - [Sensorial accepted bench baseline](https://github.com/compaii/HarmonicBeaconCenter/blob/c163931/implementation/sensory-system/linux-rust/PLATFORM-ACCEPTANCE.md)
+
+
+## Design references
+
+- [ESO Homestead](https://www.elderscrollsonline.com/en-us/updates/update/homestead)
+  informs the idea of a personal, furnished residence with activities.
+- [Roblox creation templates](https://create.roblox.com/docs/experiences)
+  inform the ease of recombining working game elements.
+- [Shared MMORPG roadmap](../../docs/shared-roadmap.md#mmorpg-experience-and-creator-loop)
