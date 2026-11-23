@@ -213,7 +213,7 @@ function syncCurrent(){
     if(next.live!==1||next.actorRef!==activeSpace.actorRef){sceneCache.clear();location.reload();return;}
     if(networkScope!==next.id)return;
     needsSync=false;
-    applySpace(next,null);
+    applySpace(next,inside&&next.id==='outside'?activeSpace.exteriorDoor:null);
   }).catch(()=>{if(!requestingMove)say('No pude confirmar tu ubicación.');})
     .finally(()=>{resyncing=false;});
 }

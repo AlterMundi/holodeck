@@ -111,6 +111,11 @@ export class InteriorSpaces {
       if (positions.length>=MAX_ACTIVE) return null;
       positions.push({actor:actor.id,space:there.id,at:now});
     }
+    this.savePositions(positions);
+    return this.view(actor);
+  }
+
+  savePositions(positions) {
     try {
       this.persist?.({schema:'holodeck.spaces/v1',positions});
     } catch(error) {
@@ -118,7 +123,17 @@ export class InteriorSpaces {
       throw error;
     }
     this.positions=positions;
-    return this.view(actor);
+  }
+
+  clearRestoredGuestPositions(definitions,owner) {
+    const rooms=new Map(definitions.map(room=>[room.id,room]));
+    const positions=this.positions.filter(({actor,space})=>{
+      const previous=this.rooms.get(space),next=rooms.get(space);
+      return actor===owner||!previous||!next?.guests.includes(actor)||previous.guests.includes(actor);
+    });
+    // These entries are already denied under the current layout. Discard them
+    // before restoring a grant, so a lost layout save cannot evict an admitted guest.
+    if(positions.length!==this.positions.length)this.savePositions(positions);
   }
 
   canReachEntrance(actor, start) {

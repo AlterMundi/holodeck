@@ -262,8 +262,16 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   function publishLayout(actor,input){
     if(room.commitUncertain||spaces.fenced||!layoutStore)return null;
     try{
-      const layout=layouts.publish(actor,input);
-      if(layout)spaces.rooms=new Map(layouts.definitions().map(definition=>[definition.id,definition]));
+      const layout=layouts.publish(actor,input,rooms=>{
+        spaces.clearRestoredGuestPositions(rooms,actor.id);
+      });
+      if(layout){
+        spaces.rooms=new Map(layouts.definitions().map(definition=>[definition.id,definition]));
+        for(const [socket,record] of sockets){
+          if(!inScope(record.session.actor,record.scope)||record.projectionAllowed?.()===false)
+            socket.close(1008);
+        }
+      }
       return layout;
     }catch(error){
       if(layouts.fenced)spaces.fenced=true;

@@ -91,8 +91,7 @@ The bounded active set does not determine how much knowledge the house can retai
 The receiving selection supplies the already authored map. Its rooms retain
 their art, addresses and audience. An owner can author a plan for another
 claimed house through the same native world lane. Every guest still needs
-current Home admission. Per-guest changes by the owner, authorized control
-bindings and outward pointers are tracked in
+current Home admission. Authorized control bindings and outward pointers are tracked in
 [#10](https://github.com/AlterMundi/holodeck/issues/10) and
 [#15](https://github.com/AlterMundi/holodeck/issues/15).
 
@@ -112,8 +111,13 @@ that they may enter.
   to publish. The successful publication returns `house` and `revision`.
 - Extend the full plan by adding room definitions and appending reciprocal
   links. Existing links keep their position in the list and in the room.
-  Room names, levels, entrance and guest lists stay fixed for existing cells.
-  The exterior and a visitor's current room keep their stable addresses.
+  Existing room names, levels and the exterior entrance stay fixed. Edit the
+  explicit guest lists in the same revisioned plan. Home admission still
+  applies, and entry grants do not add any authoring or Nexus rights.
+- Removing a guest ends their active visit to that room and closes its
+  scope-bound connections. Other admitted visitors stay in place. Restoring a
+  grant lets the returning guest enter normally from outside rather than
+  restoring their previous private-room placement.
 - After an uncertain write check `layout.result` with its original `id`.
   The receipt identifies the exact successful revision. Exact retries with
   that ID return the retained receipt. Check `layout.current` before creating
@@ -126,6 +130,10 @@ budget, including preselected rooms. Existing runtime releases ignore the
 layout file and receive visitors from unknown cells outdoors. Restoring
 layout-capable code reads the original plan. A state snapshot rollback is
 unnecessary.
+
+Before restoring a room grant, the server clears a stale placement there for
+the previously denied actor. If saving the updated plan then fails, the
+previously denied actor remains outside and the old plan remains authoritative.
 
 ## Furnish an owned room
 

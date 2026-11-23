@@ -398,6 +398,44 @@ test('own-native layout publication adds a live guest route and survives process
     const galleryView=await get(visitor,'space/garden?room=gallery');
     assert.equal(galleryView.title,galleryGame.title);
     assert.deepEqual(galleryView.targets,galleryGame.play.targets);
+
+    const revised=structuredClone(expanded);
+    revised.find(item=>item.id==='gallery').guests=['human:outsider'];
+    revised.find(item=>item.id==='foyer').guests.push('human:outsider');
+    const change={...publication,id:'receive-layout-guests',expectedRevision:2,rooms:revised};
+    assert.equal((await act({...change,type:'layout.preview'})).result.revision,3);
+    assert.equal((await get(visitor,'space')).id,'gallery');
+    assert.deepEqual((await get(outsider,'state')).entrances,[]);
+    assert.equal((await act(change,foreignPath)).ok,false);
+    assert.equal((await act({...change,expectedRevision:1})).ok,false);
+    const ws=new WebSocket(base.replace('http:','ws:')+'spaces/gallery/world','networked-dom-v0.2.1',
+      {headers:{Cookie:visitor,Origin:'https://world.test'}});
+    try {
+      await once(ws,'message');
+      const closed=once(ws,'close');
+      assert.deepEqual((await act(change)).result,{house:house.id,revision:3});
+      assert.equal((await closed)[0],1008);
+    }finally{ws.terminate();}
+    assert.equal((await get(visitor,'space')).id,'outside');
+    assert.equal((await request(visitor,'space/garden?room=gallery')).status,404);
+    assert.equal((await get(outsider,'state')).entrances[0].id,'foyer');
+    assert.equal((await request(outsider,'space',{from:'outside',to:'foyer',live:1})).status,200);
+    assert.equal((await request(outsider,'space',{from:'foyer',to:'gallery',live:1})).status,200);
+    assert.deepEqual(await get(outsider,'space/garden?room=gallery'),galleryView);
+
+    await stop();
+    await start();
+    assert.equal((await get(visitor,'space')).id,'outside');
+    assert.equal((await get(outsider,'space')).id,'gallery');
+    const restored=structuredClone(revised);
+    restored.find(item=>item.id==='gallery').guests.push(guest.id);
+    const regrant={...change,id:'restore-layout-guest',expectedRevision:3,rooms:restored};
+    assert.deepEqual((await act(regrant)).result,{house:house.id,revision:4});
+    assert.equal((await get(visitor,'space')).id,'outside','restored grant never revives the old placement');
+    assert.equal((await get(outsider,'space')).id,'gallery');
+    assert.deepEqual((await act(regrant)).result,{house:house.id,revision:4});
+    assert.equal((await request(visitor,'space',{from:'outside',to:'foyer',live:1})).status,200);
+    assert.equal((await request(visitor,'space',{from:'foyer',to:'gallery',live:1})).status,200);
     assert.equal((await request(visitor,'space',{from:'gallery',to:'foyer',live:1})).status,200);
     const exit=await request(visitor,'space',{from:'foyer',to:'outside',live:1});
     assert.equal(exit.status,200);

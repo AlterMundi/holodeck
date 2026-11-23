@@ -19,15 +19,14 @@ const digest = json => createHash('sha256').update(json).digest('hex');
 const nativeEditor = actor => actor?.kind === 'daimon' && typeof actor.id === 'string' &&
   BEING.test(actor.id) && ['observe','edit'].every(right => actor.rights?.includes(right));
 
-// Link indices are physical door slots. Keep old links at their exact indices,
-// along with room labels, levels, exterior entry and original guest audiences.
+// Link indices are physical door slots. Keep old links at their exact indices
+// along with their room labels, levels and exterior entry.
 function extendsLayout(previous, rooms) {
   const byId = new Map(rooms.map(room => [room.id,room]));
   return previous.every(room => {
     const next = byId.get(room.id);
     return next && room.title === next.title && room.level === next.level &&
-      room.entry === next.entry && room.guests.length === next.guests.length &&
-      room.guests.every((actor,index) => actor === next.guests[index]) &&
+      room.entry === next.entry &&
       room.links.every((link,index) => link.to === next.links[index]?.to &&
         link.kind === next.links[index]?.kind);
   });
@@ -134,7 +133,7 @@ export class InteriorLayouts {
     return this.prepare(actor,input,digest(json))?.layout ?? null;
   }
 
-  publish(actor, input) {
+  publish(actor, input, beforeSave) {
     if (!this.accepts(actor,input)) return null;
     const json = JSON.stringify(input);
     if (!fits(json)) return null;
@@ -143,6 +142,7 @@ export class InteriorLayouts {
     if (prior) return prior.fingerprint === fingerprint ? structuredClone(prior.result) : null;
     const prepared = this.prepare(actor,input,fingerprint);
     if (!prepared) return null;
+    beforeSave?.(prepared.layout.rooms);
     try {
       this.persist?.(prepared.next);
     } catch (error) {

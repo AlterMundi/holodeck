@@ -110,8 +110,8 @@ test('an extension preserves position and access for existing visitors and guard
   assert.equal(store.publish(owner,proposal(1,[foyer])),null);
   const reordered = [{...extendedRooms[0],links:extendedRooms[0].links.toReversed()},...extendedRooms.slice(1)];
   assert.equal(store.publish(owner,proposal(1,reordered)),null);
-  const newGuests = [{...extendedRooms[0],guests:[...foyer.guests,'human:unselected']},...extendedRooms.slice(1)];
-  assert.equal(store.publish(owner,proposal(1,newGuests)),null);
+  const duplicateGuests = [{...extendedRooms[0],guests:[...foyer.guests,foyer.guests[0]]},...extendedRooms.slice(1)];
+  assert.equal(store.publish(owner,proposal(1,duplicateGuests)),null);
   assert.deepEqual(store.publish(owner,proposal(1,extendedRooms)),{house:selectedHouse,revision:2});
   assert.deepEqual(store.publish(owner,original),{house:selectedHouse,revision:1});
 
