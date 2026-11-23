@@ -4,7 +4,7 @@ import {readPackedArt} from './packed-art.mjs';
 import anchors from '../art/collection/anchors.json' with {type:'json'};
 
 const path='room-art/matter-workshop.glb';
-const digest='8f2621359d3e4687d146e8f9016681addc8e2c5c03b152aea61afc69244d5c02';
+const digest='d9cf9ab31f3fb5bd7ac40d7f7d7bbbd78f3c7a1748b131262a716a780be68aa7';
 export const MATTER_ART_REVISIONS=Object.freeze({[path]:digest});
 
 // Coordinates refer to the meters in the Blender shell and the existing
@@ -16,9 +16,9 @@ const furniture=[
 ];
 const colliders=furniture.map(({x,y,z,width,height,depth})=>
   `<m-cube x="${x}" y="${y}" z="${z}" width="${width}" height="${height}" depth="${depth}" opacity="0" cast-shadows="false"></m-cube>`).join('');
-const lightRig='<m-light x="3.35" y="2.235" z="-3.68" type="point" intensity="12" distance="4" color="#ffd4a4" cast-shadows="false"></m-light>'+
-  '<m-light x="-1.5" y="2.8" z="-5.4" type="point" intensity="11" distance="8" color="#c3dbff" cast-shadows="false"></m-light>'+
-  '<m-light x="-2.55" y="2.9" z="1.85" type="point" intensity="15" distance="7" color="#ffe5bf" cast-shadows="false"></m-light>';
+const lightRig='<m-light x="3.35" y="2.235" z="-3.68" type="point" intensity="13" distance="4" color="#ffd097" cast-shadows="false"></m-light>'+
+  '<m-light x="-1.5" y="2.8" z="-5.4" type="point" intensity="7" distance="7" color="#bfd6ff" cast-shadows="false"></m-light>'+
+  '<m-light x="-2.55" y="2.9" z="1.85" type="point" intensity="12" distance="7" color="#ffdfaf" cast-shadows="false"></m-light>';
 
 const position=([x,y,z])=>({x,y,z});
 
@@ -28,7 +28,7 @@ export function readMatterWorkshopArt(){
   if(bytes.length>512*1024||createHash('sha256').update(bytes).digest('hex')!==digest)
     throw Error('Matter workshop does not match the qualified Blender export');
   return {...packed,bytes,revision:digest+'.glb',replacesShell:true,colliders,lightRig,ambient:.34,
-    keyLight:{position:[-.75,2.36,-.43],target:[0,1,-.43],color:'#ffe1b6',intensity:44},
+    keyLight:{position:[-.48,2.36,-.43],target:[0,1,-.43],color:'#ffdbad',intensity:53},
     archive:position(anchors['archive-model']),
     shelves:Array.from({length:6},(_,index)=>position(anchors['shelf-'+index])),
     fixtures:[

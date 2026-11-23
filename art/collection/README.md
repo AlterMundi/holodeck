@@ -8,7 +8,11 @@ The rotating GLB node `archive_turntable_platform` carries its pad and two
 visible index marks. The cabinet housing remains fixed during viewer navigation.
 The lamp and player-height camera in the editable file are reference lighting.
 The room uses embedded 128-pixel pigment maps for limewash, honed
-limestone and oiled oak. The exported meshes keep the Blender UVs, wood
+limestone and oiled oak. A 256-pixel floor map places warm bounce below the
+bench pendant and archive canopy, with contact darkening at the bench feet
+and along the walls. The blue windows, warm opal and darker oak carry the
+palette tested in the [appearance study](appearance-study/README.md).
+The exported meshes keep the Blender UVs, wood
 joinery, window frames, wall panels and bronze edges. Texture files are packed
 in the editable scene and served within the original room GLB. The export
 leaves the published anchors and turntable hierarchy intact. Opaque static

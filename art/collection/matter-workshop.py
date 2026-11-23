@@ -1,6 +1,6 @@
 """Author the Manipulación de Materia workshop in Blender meters."""
 import json
-from math import cos, pi, sin
+from math import cos, exp, pi, sin
 from pathlib import Path
 import sys
 import struct
@@ -34,31 +34,34 @@ def finish(name, colour, roughness, metal=0, emission=0):
 
 plaster = finish('Warm ivory mineral plaster', (.59, .47, .33), .83)
 stone = finish('Honed limestone', (.43, .32, .235), .66)
+floor = finish('Honed limestone floor with fixture bounce', (.43, .32, .235), .59)
 border = finish('Basalt stair and skirting', (.078, .093, .087), .76)
 oak = finish('Oiled oak casework', (.255, .119, .057), .50)
-green = finish('Deep green tool surface', (.032, .113, .100), .62)
+green = finish('Deep green tool surface', (.026, .080, .051), .65)
 steel = finish('Blued steel fixtures', (.043, .053, .062), .36, .67)
 brass = finish('Satin bronze index marks', (.52, .297, .111), .33, .65)
-lamp = finish('Warm opal', (1, .77, .49), .31, emission=2)
-recess = finish('Dusk window glass', (.065, .129, .16), .42, emission=.12)
+lamp = finish('Warm opal', (1, .67, .33), .31, emission=2)
+recess = finish('Dusk window glass', (.037, .077, .126), .58, emission=.23)
 etched = finish('Light etched lettering', (.68, .51, .28), .45, .65)
 patina = finish('Patinated workshop bronze', (.14, .13, .082), .6, .53)
 glazing = finish('Clear archive glazing', (.35, .58, .52), .16)
 glazing.node_tree.nodes.get('Principled BSDF').inputs['Alpha'].default_value = .085
 
 
-def tile_image(name, colour_at):
+def tile_image(name, colour_at, size=128):
     # A small, seamlessly repeating pigment map. Keep it packed in Blender and
     # embedded in the static export so a room visit has no texture requests.
     def chunk(kind, data):
         return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind + data))
 
-    size = 128
     pixels = bytearray()
-    for y in range(size):
-        pixels.append(0)
+    for y in reversed(range(size)):
+        pixels.append(1)  # PNG Sub filter preserves gradients in the bounded export.
+        previous = (0, 0, 0)
         for x in range(size):
-            pixels.extend(colour_at(x / size, y / size))
+            colour = colour_at((x + .5) / size, (y + .5) / size)
+            pixels.extend((now - left) % 256 for now, left in zip(colour, previous))
+            previous = colour
     png = b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', size, size, 8, 2, 0, 0, 0))
     png += chunk(b'IDAT', zlib.compress(pixels, 9)) + chunk(b'IEND', b'')
     with TemporaryDirectory() as stage:
@@ -77,7 +80,7 @@ def pigment(base, amount):
 def plaster_pigment(u, v):
     wave = 5 * cos(2*pi*(u + 2*v)) + 2 * sin(2*pi*(5*u - 3*v))
     grain = 1.8 * sin(2*pi*17*u) * cos(2*pi*23*v)
-    return pigment((168, 153, 131), wave + grain)
+    return pigment((165, 143, 116), wave + grain)
 
 
 def stone_pigment(u, v):
@@ -85,23 +88,48 @@ def stone_pigment(u, v):
     joints = min(u, 1-u, v, 1-v)
     if joints < .010:
         return pigment((74, 67, 60), 5 * bands)
-    return pigment((134, 120, 103), 8 * bands + (5 if joints < .018 else 0))
+    return pigment((142, 122, 96), 8 * bands + (5 if joints < .018 else 0))
 
 
 def oak_pigment(u, v):
     warp = .045 * sin(2*pi*v) + .06 * sin(2*pi*(3*v - u))
     grain = 4 * sin(2*pi*(17*u + warp)) + 3 * cos(2*pi*(29*u - v + warp))
     latewood = 4 * cos(2*pi*(4*u + .13 * cos(2*pi*v)))
-    return pigment((124, 78, 48), grain + latewood)
+    return pigment((111, 65, 37), grain + latewood)
+
+
+def floor_pigment(u, v):
+    x, y = 12 * (u - .5), 12 * (v - .5)
+    tile_u, tile_v = (x * .84) % 1, (y * .84) % 1
+    joint = min(tile_u, 1 - tile_u, tile_v, 1 - tile_v)
+    blend = min(1, joint / .035)
+    stone_rgb = tuple(
+        grout + (stone_channel - grout) * blend
+        for grout, stone_channel in zip((78, 66, 52), (142, 122, 96))
+    )
+    grain = 4 * sin(2 * pi * (tile_u + tile_v)) + 2 * cos(2 * pi * (5 * tile_u - 3 * tile_v))
+    # Fixed pools from the pendant and the archive canopy. Dynamic models
+    # and people continue to receive real lights and shadows in the room.
+    pendant = exp(-((x / 1.61)**2 + ((y - .43) / 2.28)**2))
+    archive = exp(-(((x - 3.35) / 1.25)**2 + ((y - 2.86) / 1.65)**2))
+    contact = sum(exp(-(((x - side) / .27)**2 + ((y - .43) / .81)**2))
+                  for side in (-1.07, 1.07))
+    edge = exp(-((5.95 - max(abs(x), abs(y))) / .53)**2)
+    occlusion = 1 - .32 * contact - .21 * edge
+    return tuple(round(max(0, min(255, (channel + grain) * occlusion + warm)))
+                 for channel, warm in zip(stone_rgb, (
+                     28 * pendant + 24 * archive, 19 * pendant + 14 * archive,
+                     8 * pendant + 6 * archive)))
 
 
 tex_scale = {plaster.name: .62, stone.name: .84, oak.name: 1.8}
-for material, name, texture in [(plaster, 'limewash', plaster_pigment),
-                                (stone, 'cut-limestone', stone_pigment),
-                                (oak, 'oiled-oak', oak_pigment)]:
+for material, name, texture, size in [(plaster, 'limewash', plaster_pigment, 128),
+                                       (stone, 'cut-limestone', stone_pigment, 128),
+                                       (oak, 'oiled-oak', oak_pigment, 128),
+                                       (floor, 'workshop-floor-bounce', floor_pigment, 256)]:
     graph = material.node_tree
     image_node = graph.nodes.new('ShaderNodeTexImage')
-    image_node.image = tile_image(name, texture)
+    image_node.image = tile_image(name, texture, size)
     graph.links.new(image_node.outputs['Color'], graph.nodes.get('Principled BSDF').inputs['Base Color'])
 
 
@@ -109,15 +137,16 @@ def fit(obj, name, material, rounded):
     obj.name = name
     obj.data.materials.append(material)
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    if material.name in tex_scale and obj.data.uv_layers.active:
-        scale = tex_scale[material.name]
+    if (material.name in tex_scale or material == floor) and obj.data.uv_layers.active:
+        scale = tex_scale.get(material.name, 1 / 12)
+        offset = .5 if material == floor else 0
         uv = obj.data.uv_layers.active.data
         for face in obj.data.polygons:
             axis = max(range(3), key=lambda i: abs(face.normal[i]))
             a, b = [(1, 2), (0, 2), (0, 1)][axis]
             for index in face.loop_indices:
                 vertex = obj.data.vertices[obj.data.loops[index].vertex_index].co
-                uv[index].uv = (vertex[a] * scale, vertex[b] * scale)
+                uv[index].uv = (vertex[a] * scale + offset, vertex[b] * scale + offset)
     if rounded:
         bevel = obj.modifiers.new('Joinery arris', 'BEVEL')
         bevel.width, bevel.segments = rounded, 2 if rounded>=.04 else 1
@@ -156,7 +185,7 @@ def lettering(name, text, point, size, turn=0):
     obj.rotation_euler.z = turn
 
 
-box('Full room walking surface', (0, 0, -.10), (12, 12, .4), stone, 0)
+box('Full room walking surface', (0, 0, -.10), (12, 12, .4), floor, 0)
 for x in (-6.02, 6.02):
     box('Side wall', (x, 0, 2.04), (.25, 12, 4.08), plaster, .035)
     box('Basalt skirting', (x, 0, .14), (.25, 12, .28), border)
@@ -306,10 +335,10 @@ def aim(obj, target):
 
 
 for point, target, colour, power, size in [
-    ((-.75, .43, 2.36), (0, .43, .96), (1, .82, .63), 75, 2.0),
-    ((3.35, 3.64, 2.26), (3.35, 3.64, .95), (1, .79, .57), 41, 1.6),
-    ((-1.5, 4.65, 2.84), (-1, -2, .9), (.61, .77, 1), 335, 4.8),
-    ((-2.7, -3.9, 2.91), (-1.1, 1.3, .95), (1, .80, .60), 130, 2.6),
+    ((-.48, .43, 2.36), (0, .43, .96), (1, .75, .49), 111, 2.0),
+    ((3.35, 3.64, 2.26), (3.35, 3.64, .95), (1, .71, .43), 48, 1.6),
+    ((-1.5, 4.65, 2.84), (-1, -2, .9), (.57, .73, 1), 220, 4.8),
+    ((-2.7, -3.9, 2.91), (-1.1, 1.3, .95), (1, .77, .53), 110, 2.6),
 ]:
     bpy.ops.object.light_add(type='AREA', location=point)
     light = bpy.context.object
