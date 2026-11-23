@@ -24,11 +24,26 @@ house, placement, exhibit, creator and native journal state matched; the
 Room event tail recorded joins and leaves during activation. The directly
 usable predecessor `581dbb6a09cb` retains room plans and furnishings.
 
-The [shared Home entrance](https://compaii.dmn.homes/holodeck/) serves gallery
-source `2bfc1ef`, package `75b08bb68ebc`, with all 43 installed files and
-protected HTTPS health, identity and Brotli client bytes checked. The Room
-checkpoint and bounded house, room, exhibit, receiving and native state
-matched across activation. Package `0af62b029659` is the compatible recovery.
+The [shared Home entrance](https://compaii.dmn.homes/holodeck/) serves source
+`69c712c`, package `5f19c2909409`. The gallery now has Blender-authored
+clerestory trim, baked contact shadows and one soft cross-light that matches
+the clerestory. Both floor variants were walked in the packaged browser
+simulation. The [matched player-height comparison](../art/compaii-house/redesign/README.md#blender-to-webgl)
+records the change under the normal WebGL renderer. The new geometry and maps
+add 338 KiB to the combined gallery variants. All 43 installed files, protected
+HTTPS health, identity and Brotli client bytes, and the retained world and
+protected checkpoints were checked. Package `cc796555b993` is the compatible
+recovery.
+
+That recovery package also delivers source `0f351c1`, which lets owners revise
+guest lists for their own authored rooms. Chromium verified that a revoked
+guest is returned to the exterior door in the same page and keeps movement.
+Restoring access requires re-entry. The native, HTTP and WebSocket trial
+retained the exact receipts, denied foreign edits and preserved an admitted
+visitor's room and activity across restart. These were isolated tests with
+simulated actors. No live house audience was changed for qualification.
+
+The earlier `2bfc1ef` gallery stage release selected package `75b08bb68ebc`.
 
 The preceding release, source `3c474c6`, package `0af62b029659`, shipped the
 [Blender coastal foliage](../art/compaii-house/redesign/coastal-trees.md)
