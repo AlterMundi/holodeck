@@ -71,7 +71,20 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`1c74364`, package `ad5230b3c7b1`; rollback is `b8270bcb062f`.
+`3db4981`, package `15a8b042040a`; rollback is `ad5230b3c7b1`.
+The entry screen and canonical URL can select lightweight graphics before the
+first rendered world frame. Touch Chromium measured a 214 × 464 backing buffer
+on a 390 × 844 CSS viewport, with multisampling and dynamic shadows disabled.
+It walked with the ordinary joystick and kept the same authenticated actor.
+The automatic desktop fixture kept antialiasing and keyboard movement. The
+lightweight renderer and URL selection survived the Sensorial portal round
+trip, a deliberately delayed room model and a separate failed entry retry.
+Physical device performance is still separate. All 62 runtime files and
+protected HTTPS matched, with unchanged tracked receiving checkpoints.
+[Graphics qualification](visual-play.md#lightweight-graphics-at-entry).
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) previously served source
+`1c74364`, package `ad5230b3c7b1`; rollback was `b8270bcb062f`.
 The assigned avatar now renders when the optional texture worker fails,
 is unavailable, or times out. Touch Chromium rendered the assigned
 skinned model with all four injected faults and in the healthy case.

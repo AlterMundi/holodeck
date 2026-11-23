@@ -416,3 +416,19 @@ immediate error, unavailable OffscreenCanvas or a rejected texture worker
 constructor took 1.1 to 1.4 seconds after the first player pose. An intentionally
 silent processor took 20.6 seconds in the same fixture. These are loopback
 software-renderer timings.
+
+### Lightweight graphics at entry
+
+The startup screen offers **Entrar con gráficos livianos**. The
+[lightweight entrance](https://compaii.dmn.homes/holodeck/?graficos=livianos)
+allocates the 0.55× world buffer immediately, with a non-multisampled WebGL
+context and dynamic shadows disabled. The controls retain their CSS size.
+The selection stays in the URL across room passages and entry retries.
+The standard entrance uses automatic quality.
+
+In touch Chromium, the 390 × 844 controls stayed at CSS size while the
+actual world buffer was 214 × 464. The joystick moved the avatar by more
+than one meter. The desktop fixture kept antialiasing in automatic mode
+and moved with WASD. A separate captured portal trial retained the lighter
+WebGL context through entry and return. A failed initial location lookup
+recovered on touch retry without losing the selected quality.
