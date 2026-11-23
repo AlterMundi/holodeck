@@ -139,6 +139,11 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
     out+=`<m-group id="${attribute(entity.id)}" data-entity-revision="${entity.revision}">${entity.nodes.map(projectionNodeHTML).join('')}</m-group>`;
     if(entity.controls)out+=`<m-group id="bridge-control">${entity.controls.map(projectionNodeHTML).join('')}</m-group>`;
   }
+  const northBridge=commonsVisual?.northBridge;
+  if(room.entities.bridge.raised&&assetFile(northBridge?.asset)&&/^[a-f0-9]{64}$/.test(northBridge.revision)){
+    const source=prefix+'assets/'+northBridge.asset+'?v='+northBridge.revision.slice(0,12);
+    out+=`<m-model id="north-bridge-finish" src="${attribute(source)}" collide="false"></m-model>`;
+  }
   if(includeVisits){
    for(const node of room.contentNodes||[CONTENT_NODE]){
     const {x,y,z}=node.position;

@@ -7,7 +7,7 @@ import {test} from 'node:test';
 import {ATELIER_PROFILE,ATELIER_ROOMS,selectAtelier} from '../src/compaii-atelier.mjs';
 import {COMPAII_HOUSE,interiorArt} from '../src/interior-art.mjs';
 import {Room} from '../src/room.mjs';
-import {HOUSE_GROUND,HOUSE_PLOTS} from '../src/houses.mjs';
+import {Houses,HOUSE_GROUND,HOUSE_PLOTS} from '../src/houses.mjs';
 import {TERRACES,CREATION_AREAS} from '../src/world-layout.mjs';
 import {worldDocument} from '../src/world.mjs';
 import {RoomStore} from '../src/room-store.mjs';
@@ -39,7 +39,7 @@ test('profile is optional and uses the exact existing room graph and parcel edit
   const profile=selectAtelier(ATELIER_PROFILE,source,[house]);
   assert.match(profile.houseVisual(house).facade.asset,/atelier-facade/);
   assert.equal(profile.houseVisual({...house,revision:2}),null);
-  const exterior=new Room({houses:{directory:()=>[house]}});
+  const exterior=new Room({houses:new Houses({state:{schema:'holodeck.houses/v1',houses:[house],receipts:[]}})});
   const authored=worldDocument(exterior,{basePath:'/holodeck/',...profile});
   const fallback=worldDocument(exterior);
   assert.match(authored,/<m-model id="house-walk" src="\/holodeck\/assets\/house-walk\.glb\?v=[a-f0-9]{12}" collide="false" cast-shadows="false">/);
@@ -68,6 +68,16 @@ test('profile is optional and uses the exact existing room graph and parcel edit
   }
   assert.match(authored,/<m-model id="mirador" src="\/holodeck\/assets\/mirador\.glb\?v=[a-f0-9]{12}" collide="false">/);
   assert.doesNotMatch(fallback,/mirador\.glb|mirador-colliders/);
+  assert.doesNotMatch(authored,/north-bridge-finish/);
+  const visitor={id:'human:bridge-art',kind:'human',rights:['observe','edit']};
+  const observation=exterior.observe(visitor);
+  const action=exterior.command(visitor,{id:crypto.randomUUID(),issuedAt:exterior.clock(),run:exterior.run,
+    edition:exterior.edition,observation:observation.id,type:'bridge.set',target:'bridge',
+    expectedRevision:observation.entities.bridge.revision,args:{raised:true}});
+  assert.equal(action.status,'completed');
+  const raised=worldDocument(exterior,{basePath:'/holodeck/',...profile});
+  assert.match(raised,/<m-model id="north-bridge-finish" src="\/holodeck\/assets\/north-bridge\.glb\?v=[a-f0-9]{12}" collide="false">/);
+  assert.doesNotMatch(worldDocument(exterior),/north-bridge-finish/);
   const mirador=authored.match(/<m-group id="mirador-colliders">([^]*?)<\/m-group>/)[1];
   const seating=[...mirador.matchAll(/<m-cube x="([^"]+)" y="[^"]+" z="([^"]+)" width="([^"]+)"/g)];
   assert.equal(seating.length,4);

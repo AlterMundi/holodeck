@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from coastal_water import pack_glb, parse_glb
 
 args = sys.argv[sys.argv.index("--") + 1:]
-output, surroundings = map(Path, args)
+output = Path(args[0])
 output.mkdir(exist_ok=True, parents=True)
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.context.scene.unit_settings.system = "METRIC"
@@ -120,28 +120,92 @@ arch_band("Seaward arch narrow bronze fillet",2.106,2.139,-18.799,.039,bronze)
 arch_band("Inside edge of arch",1.793,1.818,-18.806,.043,bronze)
 box("Crown cover plate",0,3.151,-19,.224,.055,.438,bronze,.011)
 
-# Normalize mesh normals before baking joined, material-batched output.
+
+# The approach apron resolves the stone-to-moving-deck joint on the plaza
+# side. Its stop line leaves 20 mm before the first plank and every tile
+# stays over the existing arrival terrace. There is no added walkable level.
+for row in range(6):
+    z = -9.732 + .394 * row
+    half_width = 1.29 + row*.036
+    seam = (.14 if row % 2 else -.12)
+    breaks = [-half_width, -.80+seam, -.30+seam, .27+seam, .78+seam, half_width]
+    for index, (left, right) in enumerate(zip(breaks, breaks[1:])):
+        box("North apron staggered limestone flag", (left+right)/2,.096,z,
+            right-left-.011,.018,.382,stone[(index+2*row)%4],.004)
+    for side in (-1,1):
+        box("North apron dressed basalt margin",side*(half_width+.085),.094,z,
+            .164,.021,.382,basalt,.004)
+        box("North apron bronze fillet",side*(half_width-.040),.104,z,
+            .014,.004,.381,bronze,.002)
+box("North apron basalt keeper",0,.088,-9.925,2.705,.036,.021,basalt,.003)
+for col in range(7):
+    box("Bronze fastener at the movable joint",(col-3)*.37,.106,-9.919,
+        .069,.004,.011,bronze,.002)
+
+# The raised bridge sleeve fits over the existing eight moving deck blocks.
+# All pieces are visual. The engine still owns collision, lowering and rails.
+mirador = pieces
+pieces = []
+deck_oak = finish("Brushed deck oak", (.209,.112,.054), .82)
+deck_end = finish("End-grain oak", (.164,.086,.041), .87)
+for row in range(8):
+    z = -10.2 - .55*row
+    for bay in range(4):
+        box("Seasoned oak deck board",(bay-1.5)*.615,.26,z,
+            .611,.074,.492,deck_oak if (row+bay)%3 else oak,.007)
+    for side in (-1,1):
+        box("End-grain deck fascia",side*1.224,.183,z,.027,.196,.497,deck_end,.005)
+        box("Bronze tread pin",side*1.121,.297,z-.16,.034,.004,.029,bronze,.002)
+    for edge in (-1,1):
+        box("Darkened exposed plank edge",0,.19,z+edge*.245,
+            2.448,.199,.013,deck_end,.004)
+for side in (-1,1):
+    x = side*1.12
+    box("Chamfered copper handrail",x,1.042,-12.10,.078,.091,4.254,copper,.010)
+    box("Bronze handrail inset",x,1.088,-12.10,.032,.006,4.220,bronze,.002)
+    for row in range(0,8,2):
+        z = -10.2 - .55*row
+        box("Oak sleeve at existing upright",x,.640,z,.095,.804,.095,deck_oak,.006)
+        box("Bronze upright shoe",x,.329,z,.121,.052,.117,bronze,.005)
+
+crossing = pieces
+for name, parts in [("Mirador and fixed apron", mirador), ("Raised bridge finish", crossing)]:
+    collection = bpy.data.collections.new(name)
+    bpy.context.scene.collection.children.link(collection)
+    for part in parts:
+        for parent in list(part.users_collection):
+            parent.objects.unlink(part)
+        collection.objects.link(part)
+
+
+def export_model(parts, stem):
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in parts:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = parts[0]
+    bpy.ops.object.convert(target="MESH")
+    bpy.ops.object.join()
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.mesh.normals_make_consistent(inside=False)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    parts[0].name = stem
+    assert not parts[0].data.validate(verbose=True), "Invalid merged crossing mesh"
+    bpy.ops.export_scene.gltf(filepath=str(output/(stem+".glb")), export_format="GLB",
+                             use_selection=True, export_cameras=False, export_lights=False)
+
+
 bpy.context.preferences.filepaths.save_version = 0
 bpy.ops.wm.save_as_mainfile(filepath=str(output / "mirador.blend"), compress=True)
-bpy.ops.object.select_all(action="DESELECT")
-for obj in pieces:
-    obj.select_set(True)
-bpy.context.view_layer.objects.active = pieces[0]
-bpy.ops.object.convert(target="MESH")
-bpy.ops.object.join()
-bpy.ops.object.mode_set(mode="EDIT")
-bpy.ops.mesh.select_all(action="SELECT")
-bpy.ops.mesh.normals_make_consistent(inside=False)
-bpy.ops.object.mode_set(mode="OBJECT")
-pieces[0].name = "North Mirador paving, seats and seaward frame"
-assert not pieces[0].data.validate(verbose=True), "Invalid merged Mirador mesh"
-bpy.ops.export_scene.gltf(filepath=str(output/"mirador.glb"), export_format="GLB",
-                         use_selection=True, export_cameras=False, export_lights=False)
+export_model(mirador, "mirador")
+export_model(crossing, "north-bridge")
 
 # Filter the exact old scenery, retaining everything outside the old north
 # structure. Untouched meshes, textures, sampler settings and water UVs stay
 # byte-identical. The old file remains in Git and in the receiving rollback.
-original=surroundings.read_bytes()
+if len(args) == 1:
+    sys.exit(0)
+original=Path(args[1]).read_bytes()
 assert sha256(original).hexdigest()=="694d83c8ba05d59b062fa7cf0f816461ddb9f8bdff3609549f0f932fa28f69b0"
 doc, blob = parse_glb(original)
 removed={}
