@@ -4,7 +4,7 @@ import {NODE_REPRESENTATIONS} from './node-representations.mjs';
 // Shared semantic anchors for the selected authored workshop, in world meters.
 // These describe the authored virtual place; they are not real-world sensor data.
 export const WORKSHOP = Object.freeze({
-  id:'island-workshop',layoutVersion:LAYOUT_VERSION,terraces:TERRACES,promenades:PROMENADES,creationAreas:CREATION_AREAS,name:'El taller de las islas',
+  id:'island-workshop',layoutVersion:LAYOUT_VERSION,terraces:TERRACES,promenades:PROMENADES,creationAreas:CREATION_AREAS,name:'Plaza de llegada',
   frame:{units:'meters',up:'y',origin:{x:0,y:0,z:0},north:'negative-z'},
   anchors:{
     'workshop-center':{x:0,y:.1,z:0},

@@ -140,7 +140,7 @@ function applySpace(next,anchor){
   prefetchRequest?.abort();prefetchRequest=null;
   document.body.classList.toggle('inside-house',inside);
   document.body.classList.toggle('has-situated-conversation',inside&&next.sharedConversation===true);
-  $('#hud h1').textContent=inside?next.title:'El taller de las islas';
+  $('#hud h1').textContent=inside?next.title:'Plaza de llegada';
   $('#people').textContent=inside?(next.level===0?'Planta baja':next.level<0?`Subsuelo ${-next.level}`:`Piso ${next.level}`):'Un lugar para crear juntos';
   if(changed){contentVisitor.changeRoom(inside);worldIndication.selected=null;worldIndication.removeOutline();state=null;}
   else if(inside)contentVisitor.catalog=contentVisitor.loadCatalog();
@@ -283,7 +283,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
     return renderer;
   },
   animationConfig:animations,
-  loadingScreen:{title:'Holodeck',subtitle:'Abriendo el taller de las islas',background:'#20464c',color:'#f4e8cd'},
+  loadingScreen:{title:'Holodeck',subtitle:'Abriendo la plaza',background:'#20464c',color:'#f4e8cd'},
 });
 client.update();
 const worldAudio=new WorldAudio({onChange:()=>updateSoundButton()});
