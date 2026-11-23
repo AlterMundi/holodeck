@@ -130,21 +130,36 @@ verified retained Home files and a fixture Conversation receiver. The API
 regression rejects an unknown part or a historical edition that the speaker
 can no longer access.
 
-The compatible Workshop reader is installed. Live room selection and
-Conversation delivery remain pending. The archive now supports returning an
-exact edition to a separate free shelf. The browser fixture opened the restored
-edition and removed only that historical model after source access was revoked.
+The Matter room is selected in the live Atelier. The archive supports returning
+an exact edition to a separate free shelf. In desktop and touch Chromium the
+browser fixture opened the restored edition and removed only that historical
+model after source access was revoked. The real Home owner separately confirmed
+four current resources and two exact historical editions. Touch Chromium also
+verified the two distinct portals and Matter round trip in an isolated copy
+of the authored Atelier graph. Live human
+Conversation delivery from the new workshop remains to be observed.
 [Room and source contract](houses.md#the-collection)
 
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`80db308`, package `36f3a9e52819`, with `6efba4f288ac` as rollback.
+`e60627d`, package `7581493a9cfd`, with `36f3a9e52819` as compatible rollback.
+Atelier layout revision 4 adds Manipulación de Materia as the third foyer
+passage. The five prior rooms and their grants remain in the graph. The installed
+selection has three current project groups, two historical archive editions,
+and six exact representative entries. The real native owner entered from the
+foyer, observed the worktable and archive, and returned to its starting place.
+Readback matched 64 installed payloads, 20 protected HTTPS responses and
+seven expected scope denials. A protected human browser visit is separate
+from this native and technical receipt.
+
+The preceding package `36f3a9e52819` was built from `80db308` and initially
+had `6efba4f288ac` as rollback.
 The installed reader accepts both independently scoped foyer portals and
 includes the Matter shell, shelves, archive, table and exact part context.
 The expanded plan exercised both portal addresses in the receiver fixture.
-The live configuration retains the existing room graph until expansion is
-selected with a compatible predecessor. Readback matched all 64 runtime
+That initial deployment retained the prior room graph as preparation for the
+expansion. Readback matched all 64 runtime
 files and 20 protected HTTPS responses. The layout and tracked creation
 checkpoints matched pre-deployment hashes. Root checkpoint changes reflected
 ongoing presence events.
