@@ -21,6 +21,12 @@ found the upstream sun defaults to an 8192-square shadow map. The selected bound
 light completed software-rendered screenshot checks where the earlier default
 attempt timed out; this is not a general mobile FPS benchmark.
 
+The WebGL buffer uses up to 2× display density and at most 2.5 million
+pixels. The canvas keeps the same CSS dimensions and camera aspect, so the
+HUD, input coordinates and touch controls retain screen resolution. The
+pinned MML composer's window resize and the experience client's container
+resize both apply the same limit.
+
 ## Controls
 
 - PC: WASD, drag to look, Space to jump. MML owns locomotion/collision.

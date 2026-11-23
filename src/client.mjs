@@ -1,6 +1,7 @@
 import {RemoteDocumentWrapper} from '@mml-io/mml-web';
 import {RoomSceneCache} from './room-scene-cache.mjs';
 import {constrainInteriorCamera} from './interior-camera.mjs';
+import {capWorldPixelRatio} from './render-pixel-budget.mjs';
 import {nearestCreationPosition} from './world-layout.mjs';
 import { Networked3dWebExperienceClient, DefaultVirtualJoystickPlugin } from '@mml-io/3d-web-experience-client';
 import { ThreeJSWorldRenderer } from '@mml-io/3d-web-threejs';
@@ -76,6 +77,7 @@ function startInterior(space){
     createRenderer:options=>{
       constrainInteriorCamera(options,()=>space.id);
       const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
+      capWorldPixelRatio(renderer);
       galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
       galleryModels.sync(visitor.entries);
       const picker=new PublicWorldPicker({document,canvas:options.targetElement.querySelector(':scope > canvas'),
@@ -318,6 +320,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
   createRenderer:options=>{
     constrainInteriorCamera(options,()=>inside&&activeSpace?.id);
     const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
+    capWorldPixelRatio(renderer);
     galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
     const sky=new OutdoorSky(renderer.mmlCompositionScene.group.parent,base);
     const light=new DirectionalLight(0xffefd6,1.8);
