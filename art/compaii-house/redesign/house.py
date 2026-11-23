@@ -103,9 +103,9 @@ def beam(scope, name, a, b, radius, finish, sides=12):
     return own(obj, scope, name, finish)
 
 
-def curve(scope, name, coordinates, depth, finish, cyclic=False):
+def curve(scope, name, coordinates, depth, finish, cyclic=False, bevel_resolution=3):
     data = bpy.data.curves.new(name, 'CURVE')
-    data.dimensions, data.bevel_depth, data.bevel_resolution = '3D', depth, 3
+    data.dimensions, data.bevel_depth, data.bevel_resolution = '3D', depth, bevel_resolution
     spline = data.splines.new('POLY')
     spline.points.add(len(coordinates)-1)
     for point, value in zip(spline.points, coordinates):
@@ -334,18 +334,59 @@ beam(lab,'Instrument light lens',underground(cx,cy,4.50),
      underground(cx,cy,4.475),.59,amber,48)
 anchor('prototype.inspect',underground(cx,cy-2.12,.02))
 
+def listening_console(x, y):
+    def at(dx, dy, z):
+        return underground(x+dx,y+dy,z)
+
+    block(lab,'Spatial monitoring console',at(0,.046,1.145),(1.35,.69,.15),iron,.035)
+    block(lab,'Spatial positioning inset',at(-.17,.083,1.224),(.91,.52,.024),basalt,.018)
+    for radius in (.092,.171,.239):
+        curve(lab,'Etched listening field',
+              [at(-.17+radius*math.cos(angle),.083+radius*math.sin(angle),1.238)
+               for angle in (n*math.tau/32 for n in range(32))],
+              .0042,brass,cyclic=True,bevel_resolution=1)
+    for dx,dy in [(-.17,-.18),(-.32,.17),(.015,.136)]:
+        beam(lab,'Movable brass source marker',at(dx,dy,1.229),at(dx,dy,1.277),.028,brass,16)
+    for dy in (-.141,.026,.193):
+        beam(lab,'Monitor trim dial',at(.449,dy,1.22),at(.449,dy,1.279),.048,brass,16)
+        block(lab,'Monitor trim index',at(.449,dy-.016,1.28),(.008,.020,.003),basalt,.001)
+    for side in (-1,1):
+        dx=side*1.016
+        block(lab,'Nearfield speaker cabinet',at(dx,.215,1.29),(.35,.26,.405),oak,.027)
+        block(lab,'Speaker face',at(dx,.080,1.288),(.292,.024,.355),iron,.017)
+        for z,radius in [(1.227,.087),(1.394,.048)]:
+            beam(lab,'Speaker rim',at(dx,.079,z),at(dx,.056,z),radius,brass,24)
+            beam(lab,'Speaker cone',at(dx,.056,z),at(dx,.049,z),radius*.84,basalt,24)
+
+
+def movement_console(x, y):
+    def at(dx, dy, z):
+        return underground(x+dx,y+dy,z)
+
+    block(lab,'Weaver instrument foot',at(0,.095,1.133),(1.87,.70,.11),iron,.036)
+    block(lab,'Upright motion routing panel',at(0,.266,1.439),(1.77,.208,.561),oak,.037)
+    block(lab,'Recessed patch bay',at(0,.152,1.46),(1.58,.035,.451),iron,.021)
+    for col in (-.60,-.40,-.20,0,.20,.40,.60):
+        for z in (1.345,1.463,1.581):
+            beam(lab,'Recessed motion jack bezel',at(col,.135,z),at(col,.116,z),.032,brass,12)
+            beam(lab,'Motion jack socket',at(col,.115,z),at(col,.108,z),.017,basalt,12)
+    for left,right,top in [(-.60,-.40,1.659),(-.20,.20,1.691),(.40,.60,1.659)]:
+        curve(lab,'Patched movement route',
+              [at(left+(right-left)*step/16,.094-.043*math.sin(math.pi*step/16),
+                  1.581+(top-1.581)*math.sin(math.pi*step/16))
+               for step in range(17)],.012,copper,bevel_resolution=1)
+    for dx in (-.62,-.31,0,.31,.62):
+        block(lab,'Recessed gesture key well',at(dx,-.209,1.189),(.223,.193,.019),basalt,.010)
+        block(lab,'Gesture key',at(dx,-.205,1.207),(.160,.128,.029),brass,.014)
+
+
 for name,x,y,width in [('Spatializer',-4.32,8.37,2.65),('Weaver',4.27,12.85,2.35)]:
     block(lab,name+' bench top',underground(x,y,1.02),(width,1.15,.13),oak,.07)
     for dx in [-(width*.40),width*.40]:
         block(lab,'Bench stone end',underground(x+dx,y,.51),(.17,.86,.94),basalt,.045)
     block(lab,'Brass bench nameplate',underground(x,y-.585,.86),(1.55,.068,.24),iron,.022)
     text(lab,name,underground(x,y-.62,.812),.157)
-    panel=block(lab,name+' angled console',underground(x,y+.20,1.205),(1.37,.50,.21),iron,.045)
-    panel.rotation_euler.x=math.radians(11)
-    dials=[-.31,0,.31] if name=='Spatializer' else [-.42,-.14,.14,.42]
-    for dx in dials:
-        beam(lab,'Mounted tactile dial',underground(x+dx,y+.1,1.277),
-             underground(x+dx,y+.1,1.334),.068,brass)
+    (listening_console if name=='Spatializer' else movement_console)(x,y)
     beam(lab,'Pendant cable',underground(x,y,5.21),underground(x,y,2.83),.02,iron)
     beam(lab,'Spun brass pendant',underground(x,y,2.83),underground(x,y,2.69),.30,brass,28)
     beam(lab,'Warm lamp lens',underground(x,y,2.70),underground(x,y,2.668),.25,amber,28)
@@ -432,7 +473,8 @@ def select_review(name):
 select_review('garden')
 scene.render.filepath='//garden.jpg'
 bpy.ops.wm.save_as_mainfile(filepath=str(output/'casa-compaii-redesign.blend'),compress=True)
-for name in arguments[1:] or ['garden','beacon']:
+review_names=arguments[1:] or ['garden','beacon']
+for name in ([] if review_names==['--scene-only'] else review_names):
     select_review(name)
     scene.render.filepath=str(output/(name+'.jpg'))
     bpy.ops.render.render(write_still=True)

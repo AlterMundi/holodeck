@@ -21,8 +21,9 @@ The long, cooler gallery gives visitors room to look and pass one another.
 - [Harmonic Beacon workshop from the stair](review/beacon.jpg)
 - [Architecture of the collection room](review/gallery.jpg)
 
-All geometry is authored in Blender. The visible benches are designed to open
-the supported Spatializer and Weaver interfaces once those routes are qualified.
+All visible architecture and instruments in this scene are authored in Blender.
+The bench controls open the embedded Spatializer and Weaver panels near their
+respective instruments.
 The instrument is an architectural reference. The live tool and exact published
 prototype remain owned by their existing services. The gallery's three anchors
 reserve space for drafts, published versions and the archive under their
@@ -145,6 +146,17 @@ The export rebakes albedo, normals, contact and static diffuse light with the
 existing Cycles rig. The room's Brotli payload is 1,602,320 bytes, compared
 with 1,612,132 bytes for the preceding edition.
 
+The next revision gives each instrument a distinct use and silhouette.
+Spatializer has two nearfield monitors and an inset listening field with
+three brass source markers. Weaver has a vertical patch matrix,
+curved patch leads and a lower row of gesture keys. These modeled components
+represent the tools in their idle state. The nearby world action opens the
+existing authenticated panel for actual control. Both worktops still use
+their original envelopes.
+
+Rebuild the editable scene without rerendering its review cameras using
+`house.py -- "$ART_OUTPUT" --scene-only`, then run the Beacon export above.
+
 
 ```sh
 blender -b art/compaii-house/redesign/casa-compaii-redesign.blend -t 6 --python-exit-code 1 \
@@ -242,8 +254,8 @@ require their own receiving checks.
 
 The supported first control handoff is the authenticated
 [Harmonic Lab panel](https://compaii.dmn.homes/harmonic_lab/). Walk toward
-the Spatializer or Weaver bench to open its tool card in a separate tab.
-Returning to the world tab resumes at the same position. The world keeps the
+the Spatializer or Weaver bench to open its tool card inside the room view.
+Closing the panel resumes at the same position. The world keeps the
 selected bench as a situated reference while it remains nearby. The panel
 reads readiness and owns the existing explicit actions. Spatializer and
 body Weaver interfaces open from the selected receiver's browser. The

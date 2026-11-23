@@ -43,7 +43,7 @@ export const ATELIER_ASSET_REVISIONS=Object.freeze({
   'room-art/compaii-atelier/foyer.glb':'7816835b65ffbf025ae295dee37d0db978bede7a9dbc83f66e44d53d052ede59',
   'room-art/compaii-atelier/gallery.glb':'a6ef6bacab1f3278978f5a98a150d1d0cd827680fb78c96d131163b224956b17',
   'room-art/compaii-atelier/gallery-sealed.glb':'af8d86f08a5a0136c38f772b85448d445f681ea89ebc6c876799c4899ea2f583',
-  'room-art/compaii-atelier/beacon.glb':'cb2c403d2aa50f0886c1e0d7e9d008f5f657704f1a1b172bd4be623855c2cd0c',
+  'room-art/compaii-atelier/beacon.glb':'c92cdfe063db2ad5f0d59bdf35000125880e6a39941bb6a8af1d3a1920ed98b7',
   'room-art/compaii-atelier/tower.glb':'47ba2a0964304eba1f3cbf945121e737c5d9addd7e71c1696bfa8b52ddb872de',
   ['assets/'+FACADE_ASSET]:'940aa64038396e43db8beca859e33f4f52c6ae3a84d1702457159c0af1224077',
   ['assets/'+GARDEN_ASSET]:GARDEN_REVISION,

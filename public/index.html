@@ -16,7 +16,9 @@
 @media(min-width:741px) and (max-width:1040px){#help{display:none}}
 
 #visit-near{position:fixed;z-index:22;right:22px;top:90px;max-width:calc(100vw - 44px)}
-#beacon-control{position:fixed;z-index:22;right:22px;top:148px;max-width:calc(100vw - 44px);min-height:44px;padding:10px 16px;border-radius:13px;font-weight:600;text-decoration:none;align-content:center}
+#beacon-control{position:fixed;z-index:22;right:22px;top:148px;max-width:calc(100vw - 44px);min-height:44px;padding:10px 16px;border:1px solid #ba965b;border-radius:13px;background:var(--gold);color:#264440;font-weight:600;text-decoration:none;align-content:center;box-shadow:0 5px 18px #07181b4d}
+#beacon-control:hover{background:#f7dfb0}
+#beacon-control:focus-visible{outline:3px solid var(--mint);outline-offset:3px}
 #beacon-panel{width:min(960px,calc(100vw - 36px));height:min(740px,calc(100dvh - 36px));max-width:none;max-height:none;padding:12px;border:1px solid var(--line);border-radius:20px;background:#163b3f;color:var(--ink);overflow:hidden}
 #beacon-panel[open]{display:flex;flex-direction:column;gap:10px}#beacon-panel::backdrop{background:#081b24b8}
 #beacon-panel header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}#beacon-panel h2{margin:0}

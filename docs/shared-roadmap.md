@@ -243,15 +243,14 @@ edge. Check contact shadows and surface scale after geometry changes.
 
 Start with the [foyer](../art/compaii-house/redesign/review/foyer-baked-light.jpg)
 and [Beacon room](../art/compaii-house/redesign/review/beacon-light-after.jpg).
-The foyer's broad bare wall and plain table carry little information about the
-house. The Beacon benches still read as generic furniture despite their
-different tools. Give the entry a usable place to pause and orient, detail
-the benches around their actual controls, and resolve exposed joints at the
-stair and lower landing. Continue through the miniature, exterior paths,
-gallery and tower with the same standard. Use scale, joinery, hardware and
-purposeful work objects to carry the detail while leaving the route and
-interaction targets clear. Compare matched before/after captures in the
-browser and verify clearance, transitions and frame cost on the revised route.
+The foyer now has an orientation table and a place to sit. The Beacon
+benches now have separate listening and movement instruments, each beside
+the action for its existing panel. Continue the player-height finish pass
+through the miniature, exterior paths, gallery and tower with the same
+standard. Use scale, joinery, hardware and purposeful work objects to carry
+the detail while leaving the route and interaction targets clear. Compare
+matched before/after captures in the browser and verify clearance,
+transitions and frame cost on the revised route.
 Track the work in [world art #3](https://github.com/AlterMundi/holodeck/issues/3),
 [interior #9](https://github.com/AlterMundi/holodeck/issues/9) and
 [working house #12](https://github.com/AlterMundi/holodeck/issues/12).
