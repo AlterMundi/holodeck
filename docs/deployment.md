@@ -114,6 +114,14 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
+The first Blender room-art mounting is selected at source `6f01e67`,
+package `a7cf9e539e70`, with `952322c1e9d7` as the compatible predecessor.
+All 31 runtime files and authenticated HTTPS health/assets matched.
+The authored Beacon room asset has its own content digest and is read
+under the existing active-room authority. Actual protected browser use
+remains separate from controlled Chromium images and motion. No saved
+schema, access grant or project operation changed.
+
 The illustrated room crossing is selected at source `84921a8`, package
 `952322c1e9d7`, with `b8cdbed1536f` as the selected predecessor. All 30
 installed runtime files and authenticated serving checks matched. The exact

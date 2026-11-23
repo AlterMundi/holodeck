@@ -9,6 +9,18 @@ acceptance. The obsolete bundled pending trial was withdrawn.
 
 ## Selected receiving release
 
+The Blender-authored Beacon workshop is live in the existing CompAII
+laboratory. Source `6f01e67`, package `a7cf9e539e70`, uses the existing room
+ACL, stairs and return path. The seven-mesh GLB is 801,332 bytes and served
+only in the current authorized room. The exact vendored release passed
+scoped byte readback with two permitted identities plus denial and revocation
+checks. Chromium decoded and rendered the actual model in the walkable room.
+A signed live owner traversed foyer, gallery, lab and public return. The
+receiving configuration and house, exhibit and native-turn checkpoints
+matched the previous release. Actual project controls and human use of
+this art release remain open.
+[Art and reproduction](../art/compaii-house/README.md).
+
 The Casa de CompAII on the first west parcel is live. Nicolás confirmed
 entering the real house, seeing the foyer and leaving. The new interior build
 serves the foyer-to-gallery door, gallery-to-lab stair and gallery-to-tower
