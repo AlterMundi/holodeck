@@ -7,7 +7,9 @@ from pathlib import Path
 import bpy
 from mathutils import Vector
 
-out = Path(sys.argv[sys.argv.index('--') + 1]).resolve()
+args = sys.argv[sys.argv.index('--') + 1:]
+out = Path(args[0]).resolve()
+requested_views = args[1:]
 out.mkdir(parents=True, exist_ok=True)
 bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
@@ -395,6 +397,20 @@ for x,y in ((-11,-17.9),(-10.1,-18.15),(-5.0,-18.07),(5.4,-17.94),(10.7,-18.0)):
         bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1,radius=.26,location=(x-.26+i*.25,y,.37))
         tuft=own(bpy.context.object,'Herb cluster',leaf)
         tuft.scale=(.78,1.22,.58)
+before_import = set(bpy.context.scene.objects)
+garden_stone = Path(__file__).with_name('assets')/'rock-09-garden.glb'
+bpy.ops.import_scene.gltf(filepath=str(garden_stone))
+stones = [obj for obj in bpy.context.scene.objects if obj not in before_import]
+assert len(stones)==1 and stones[0].type=='MESH'
+stone = own(stones[0],'Garden stone near the pool')
+stone.location = (-5.78,-15.24,.032)
+stone.rotation_euler.z = .73
+companion = stone.copy()
+structure.objects.link(companion)
+companion.name = 'Garden stone by the herb bed'
+companion.location = (-5.63,-13.08,0)
+companion.rotation_euler.z = -1.02
+companion.scale = (.69,.69,.69)
 rail('Garden west terrace edge',(-10.95,-18.75,.91),(-3.09,-18.75,.91))
 rail('Garden terrace edge',(3.44,-18.75,.91),(11.21,-18.75,.91))
 rail('Open-air station east edge',(11.18,-18.75,.91),(11.18,-12.0,.91))
@@ -517,7 +533,10 @@ scene.render.image_settings.file_format='JPEG'
 scene.render.image_settings.quality=91
 bpy.context.preferences.filepaths.save_version=0
 bpy.ops.wm.save_as_mainfile(filepath=str(out/'Casa de CompAII - Nivel.blend'),compress=True)
+assert set(requested_views) <= views.keys(), 'Unknown camera'
 for name,cam in views.items():
+    if requested_views and name not in requested_views:
+        continue
     scene.camera=cam
     scene.render.filepath=str(out/(name+'.jpg'))
     bpy.ops.render.render(write_still=True)

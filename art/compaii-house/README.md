@@ -34,6 +34,10 @@ colliders to the existing independent room projections and preserve the current
 doorway, source access and ordinary return. Connector names and camera
 locations in this study are authoring data, separate from room authority.
 
+Decorative objects can come from reusable catalogs when they fit the space.
+The garden incorporates the first compact derivative from the
+[asset intake and qualification workflow](assets/README.md).
+
 ## Wayfinding and interface
 
 - Architecture leads: the threshold, atrium light, stair and distinctive

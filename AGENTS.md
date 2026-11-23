@@ -30,3 +30,9 @@ Conversation for text/audio/transcription/files and inherited updates. Keep only
 world context/projection integration here; do not copy the recorder or build a
 parallel original writer. docs/shared-conversation.md owns the current seam and
 delivery status. Preserve legacy IDs/recovery while the shared surface is qualified.
+
+For catalog props, record each source and license and check that shared delivery
+permits adaptation and redistribution. Author derivatives in Blender, preserve
+the original separately and measure the runtime mesh/material/texture cost.
+Inspect the placed result before publishing. The first worked example and asset
+intake guidance are in art/compaii-house/assets/README.md.
