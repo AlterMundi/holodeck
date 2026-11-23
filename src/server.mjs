@@ -31,7 +31,7 @@ import {sameVisitPin,validateContentNodes,validateContentVisits,visitsForActor} 
 import {allowedGalleryVisits,gallerySlots} from './gallery-catalog.mjs';
 import {GALLERY_STAGES} from './gallery-display.mjs';
 import {createGalleryAuthorization} from './gallery-authorization.mjs';
-import {collectionSelection,createCollectionReader} from './collection-catalog.mjs';
+import {collectionSelection,createCollectionReader,createCollectionReferenceReader} from './collection-catalog.mjs';
 import {readMatterWorkshopArt} from './matter-workshop-art.mjs';
 import {readCollectionRepresentatives} from './collection-representatives.mjs';
 import {createNativeRoomAuthority,createNativeReviewAuthority} from './native-authority.mjs';
@@ -157,6 +157,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   if(collection&&!publicOrigin)throw Error('Collection requires the existing Home origin');
   const matterArt=collection?.art&&readMatterWorkshopArt();
   const readCollection=collection&&createCollectionReader(publicOrigin,{request:collectionSourceRequest});
+  const readTableReference=collection?.art&&createCollectionReferenceReader(publicOrigin,readCollection,{request:collectionSourceRequest});
   const representatives=readCollectionRepresentatives(stateDir,collection);
   const tableStore=collection?.art&&stateDir?new RoomStore(join(stateDir,'collection-worktable'),{maxBytes:1024}):null;
   const tableResources=new Set(collection?.projects.flatMap(project=>project.resources));
@@ -345,7 +346,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     return rights.includes('observe')&&!spaces.fenced&&!room.commitUncertain&&
       spaces.allows(actor,id)&&spaces.allows(recipient,id);
   }
-  function captureConversationPlace(actor,request,cookie){
+  function captureConversationPlace(actor,request,cookie,reauthorize){
     const id=spaces.current(actor);
     if(spaces.fenced||room.commitUncertain||id!==(request.view?.spaceId??OUTSIDE))
       throw new RoomError('scope-changed','Tu lugar cambió. Volvé a intentar con el borrador que conservaste.');
@@ -361,6 +362,21 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       const reference={id:entry.node,revision:entry.nodeRevision};
       snapshot.roomVisit=Promise.resolve().then(()=>authorizeRoomVisit(cookie,entry.pin))
         .then(allowed=>allowed===true?reference:null,()=>null);
+    }
+    if(request.view?.worktable!==undefined){
+      const reference=structuredClone(request.view.worktable);
+      if(!readTableReference||collection.room!==id||!place.objects.some(object=>object.id==='worktable')||
+        !tableResources.has(reference?.resource))
+        throw new RoomError('scope-changed','Volvé a seleccionar el modelo en la mesa de trabajo.');
+      snapshot.resolveWorktable=async()=>{
+        const confirmed=await readTableReference(cookie,reference);
+        if(!confirmed||!spaces.allows(await reauthorize()??{},id))
+          throw new RoomError('scope-changed','No pude confirmar esa edición o pieza. El borrador sigue en la conversación.');
+        const target=new URL('/view/'+confirmed.resource,publicOrigin);
+        target.searchParams.set('version',confirmed.version);
+        target.searchParams.set('display','work');
+        return {...confirmed,viewer:target.href};
+      };
     }
     return snapshot;
   }
@@ -832,7 +848,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   };
   app.post(route('api/conversation-contexts'),asyncRoute(async(req,res)=>{
     if(requireContext(req,res))res.json(await native.contexts.prepare(req.actor,req.body,
-      (actor,request)=>captureConversationPlace(actor,request,req.headers.cookie)));
+      (actor,request)=>captureConversationPlace(actor,request,req.headers.cookie,
+        ()=>currentActor(req,req.holodeckSession))));
   }));
   app.get(route('api/conversation-contexts/:id'),asyncRoute(async(req,res)=>{
     if(requireContext(req,res))res.json(await native.contexts.recover(req.actor,req.params.id,req.query.binding));

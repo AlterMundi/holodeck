@@ -115,6 +115,16 @@ shared deadline and byte bounds. The compatible configuration can remain
 unselected while a room or thumbnail preparation is ongoing. The selected room exposes the worktable and archive controls when their
 source editions are available.
 
+The Matter worktable can pass a selected model or part to the existing
+Conversation surface. The preparation checks the room, the current speaker
+session, and the exact Home manifest and scene or part. The prepared
+`referredWorktable` contains the edition, scene, scene version, optional part,
+and the ordinary Home viewer link. When the review has a scene index,
+preparation checks that index's digest without transferring the full model.
+The legacy gallery path checks the gallery digest. The paired being needs
+current room access. Following the viewer link requires the reader's own
+Home access. A missing or revoked reference leaves the draft in Conversation.
+
 An optional `matterCollection.archive` selects up to six explicitly named
 retained editions, with `resource`, immutable `version` and display `label`.
 Each archive entry needs both current catalog access and permission to read

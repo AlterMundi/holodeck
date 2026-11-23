@@ -1,17 +1,18 @@
 import {once} from 'node:events';
 import {mkdirSync,mkdtempSync,rmSync,writeFileSync} from 'node:fs';
-import {createHash} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {collectionSelection} from '../src/collection-catalog.mjs';
+import {createConversationContexts} from '../src/conversation-context.mjs';
 import {houseId} from '../src/houses.mjs';
 import {RoomStore} from '../src/room-store.mjs';
 import {createHolodeck} from '../src/server.mjs';
 
 const main='1'.repeat(32),component='2'.repeat(32),lenses='3'.repeat(32),foreign='4'.repeat(32);
-const version='a'.repeat(64),gallerySha256='b'.repeat(64),oldVersion='f'.repeat(64);
+const version='a'.repeat(64),oldVersion='f'.repeat(64);
 const selected={room:'matter',projects:[
   {id:'guitar',resources:[main,component]},
   {id:'lenses',resources:[lenses]},
@@ -39,6 +40,10 @@ test('collection projects stay grouped and editions follow each visitor and thei
   }]});
   const archived=[{resource:main,version:oldVersion,label:'Guitarra · Banco inicial'}];
   const sceneVersion='d'.repeat(64);
+  const review=Buffer.from(JSON.stringify({scenes:[{id:'bench-scene',title:'Estudio',version:sceneVersion,units:'mm',
+    parts:[{id:'bridge',label:'Puente',color:'#008888'}]}]}));
+  const gallerySha256=createHash('sha256').update(review).digest('hex');
+  const user='human:guest',binding='b'.repeat(64),entry=[1,{},2,'fixture'],observations=[];
   const json=Buffer.from(JSON.stringify({asset:{version:'2.0'},scene:0,scenes:[{nodes:[0]}],
     nodes:[{mesh:0}],meshes:[{primitives:[{attributes:{POSITION:0},indices:1}]}],buffers:[{byteLength:44}],
     accessors:[{count:3,type:'VEC3',componentType:5126},{count:3,type:'SCALAR',componentType:5123}]}));
@@ -61,8 +66,21 @@ test('collection projects stay grouped and editions follow each visitor and thei
     identityResolver:async req=>{
       if(expiredSession)return null;
       return req.headers.cookie?.includes('__Host-home=owner')?{id:owner,kind:'daimon',rights:['observe','edit']}:
-        req.headers.cookie?.includes('__Host-home=guest')?{id:'human:guest',kind:'human',rights:['observe']}:null;
+        req.headers.cookie?.includes('__Host-home=guest')?{id:'human:guest',ref:user,kind:'human',rights:['observe']}:null;
     },
+    nativeRoomAuthority:async()=>['observe'],
+    nativeFactory:async({room,stateDir,allowInteriorSource})=>({contexts:await createConversationContexts({
+      room,stateDir:join(stateDir,'contexts'),allowInteriorSource,transport:{
+        inspect:async()=>({actorRef:user,beingRef:owner,binding,entry}),
+        lookup:async()=>({state:'absent'}),
+        prepareContext:async ({id,observation})=>{
+          observations.push(observation);
+          return {schema:'holodeck.prepared-conversation-context/v1',id,binding,entry_binding:entry,
+            observation_id:observation.id,work_admitted:false,
+            file:{file_id:randomUUID(),sha256:'0'.repeat(64),name:'holodeck-situation.json',mime:'application/json',size:512}};
+        },
+      },
+    })}),
     collectionSourceRequest:async (url,{headers,redirect,cache,signal})=>{
       assert.equal(url.origin,'https://home.test');
       assert.match(headers.Cookie,/^__Host-home=(owner|guest)$/);
@@ -76,10 +94,11 @@ test('collection projects stay grouped and editions follow each visitor and thei
         return Response.json({entries:allowed.map(resource=>({resource_ref:'dm:resource:v1:'+resource,
           kind:'artifact',model_review:true,title:'Project '+resource[0],version_ref:resource===main?mainVersion:version}))});
       }
-      const [, ,resource,requestedVersion]=url.pathname.split('/');
+      const [, ,resource,requestedVersion,file]=url.pathname.split('/');
       assert.notEqual(resource,foreign);
       if(hold)await hold();
       if(resource===main&&(revoked||requestedVersion===oldVersion&&historicalDenied))return new Response('',{status:404});
+      if(file==='gallery.json')return new Response(review,{headers:{'X-Home-Version':requestedVersion}});
       return Response.json({schema:'dm.review-live/v1',gallery:'gallery.json',sha256:gallerySha256},
         {headers:{'X-Home-Version':resource===lenses?'c'.repeat(64):requestedVersion}});
     },
@@ -99,6 +118,8 @@ test('collection projects stay grouped and editions follow each visitor and thei
       Origin:'https://home.test','Content-Type':'application/json'};
     return {
       move:(from,to)=>fetch(base+'api/space',{headers,method:'POST',body:JSON.stringify({from,to,live:1})}),
+      prepare:(worktable,id=randomUUID())=>fetch(base+'api/conversation-contexts',{headers,method:'POST',
+        body:JSON.stringify({id,binding,view:{spaceId:'matter',worktable}})}),
       catalog:()=>fetch(base+'api/space/collection',{headers}),
       share:(resource,revision)=>fetch(base+'api/space/collection',{headers,method:'POST',body:JSON.stringify({resource,revision})}),
       art:path=>fetch(new URL(path,base),{headers}),
@@ -139,9 +160,26 @@ test('collection projects stay grouped and editions follow each visitor and thei
   assert.deepEqual((await (await visitor.catalog()).json()).worktable,table(2,main));
   assert.deepEqual(new RoomStore(join(stateDir,'collection-worktable')).load(),{room:'matter',revision:2,resource:main});
   assert.equal((await visitor.art(archivedThumbnail)).status,200);
+  const speaker=await session('guest');
+  const reference={resource:main,version:oldVersion,scene:'bench-scene',sceneVersion,part:'bridge'};
+  const first=await speaker.prepare(reference);
+  assert.equal(first.status,200,await first.clone().text());
+  assert.equal((await first.json()).work_admitted,false);
+  assert.equal(observations.length,1);
+  const placed=observations[0].referredWorktable;
+  assert.equal(placed.partLabel,'Puente');
+  assert.equal(placed.part,'bridge');
+  assert.equal(placed.version,oldVersion);
+  assert.equal(placed.sceneVersion,sceneVersion);
+  assert.equal(placed.viewer,'https://home.test/view/'+main+'?version='+oldVersion+'&display=work');
+  assert.equal(observations[0].clientReportedView.value.worktable,undefined);
+  assert.equal((await speaker.prepare({...reference,part:'forged'})).status,409);
+
   historicalDenied=true;
   assert.deepEqual((await (await visitor.catalog()).json()).archive,{...archive,editions:[]});
   assert.equal((await visitor.art(archivedThumbnail)).status,404);
+  assert.equal((await speaker.prepare(reference)).status,409);
+  assert.equal(observations.length,1);
   assert.equal((await visitor.art(thumbnail)).status,200);
   historicalDenied=false;
   const thumbnailResponse=await visitor.art(thumbnail);

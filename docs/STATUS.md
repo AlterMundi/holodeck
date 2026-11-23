@@ -122,8 +122,16 @@ permission removed that model for the touch actor while the desktop actor still
 saw it. The desktop actor then cleared the table. This test used distinct
 fixture identities and two retained editions from the Home reader.
 
-The Workshop candidate is pending live room selection. Restoring an archived
-project to a shelf and sharing exact parts in Conversation remain open.
+The worktable can now refer a specific scene or part to Conversation. Desktop
+and touch Chromium prepared an exact part reference after the model on the table advanced
+to a different Home edition. It kept the selected earlier version and part ID,
+and **Quitar referencia** removed them from the next preparation. This used
+verified retained Home files and a fixture Conversation receiver. The API
+regression rejects an unknown part or a historical edition that the speaker
+can no longer access.
+
+The Workshop candidate is pending live room selection and live Conversation
+delivery. Restoring an archived project to a shelf remains open.
 [Room and source contract](houses.md#the-collection)
 
 ## Selected receiving release

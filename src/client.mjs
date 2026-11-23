@@ -205,7 +205,7 @@ const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
 let inside=hot&&activeSpace.id!=='outside';
 let updateDoor=()=>{},remoteScene=null,roomModel=null,networkScope=null,arrival=null;
 let moving=false,requestingMove=false,needsSync=false,resyncing=false,moveDeadline=null,passageNotice=null;
-let roomTopic;
+let roomTopic,worktableTopic;
 let prefetched=new Set(),prefetchRequest=null,pendingRoomArt=null;
 const setMoving=value=>{
   if(moving!==value){
@@ -306,7 +306,7 @@ function applySpace(next,anchor){
   document.body.classList.toggle('has-situated-conversation',inside&&next.sharedConversation===true);
   $('#hud h1').textContent=inside?next.title:'Plaza de llegada';
   $('#people').textContent=inside?(next.level===0?'Planta baja':next.level<0?`Subsuelo ${-next.level}`:`Piso ${next.level}`):'Un lugar para crear juntos';
-  if(changed){roomTopic=undefined;contentVisitor.changeRoom(inside,next.id);worldIndication.selected=null;worldIndication.removeOutline();state=null;}
+  if(changed){roomTopic=undefined;worktableTopic=undefined;contentVisitor.changeRoom(inside,next.id);worldIndication.selected=null;worldIndication.removeOutline();state=null;}
   else if(inside)contentVisitor.confirmRoom();
   if(anchor){
     const destination=new URL(location.href);
@@ -427,7 +427,10 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
     collectionShelves=new CollectionShelves({base,scene:renderer.mmlCompositionScene.group,panel:document.querySelector('#collection-shelf'),
       archivePanel:document.querySelector('#collection-archive'),worktablePanel:document.querySelector('#collection-worktable'),
-      webgl:renderer.composer.renderer});
+      webgl:renderer.composer.renderer,onReference:(reference,label)=>{
+        if(moving||!inside||!sharedSurface())return;
+        worktableTopic={reference,label};openConversation(true);
+      }});
     const sky=new OutdoorSky(renderer.mmlCompositionScene.group.parent,base);
     const light=new DirectionalLight(0xffefd6,1.8);
     light.position.set(12,22,10);light.target.position.set(0,0,-6);light.castShadow=true;
@@ -515,7 +518,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       galleryModels.update();
       const collectionRoom=inside&&!moving&&activeSpace.collectionShelves?activeSpace.id:null;
       collectionShelves.update(collectionRoom,collectionRoom?remoteScene:null,position,
-        collectionRoom?activeSpace.objects.find(object=>object.id==='worktable')?.position:null);
+        collectionRoom?activeSpace.objects.find(object=>object.id==='worktable')?.position:null,activeSpace?.sharedConversation===true);
       garden.update(inside&&!moving&&activeSpace.playableInterior?activeSpace.id:null);gardenMarkers();
       if(!inside){worldIndication?.update();if(!moving)playableHUD.update(position);}
       if(!moving){
@@ -736,9 +739,11 @@ function updateNativeAvailability(){
   $('#conversation-form').hidden=shared;$('#conversation-log').hidden=shared;
   $('#shared-conversation').hidden=!shared;
   const historyLabel=inside?null:worldHistory?.conversationLabel();$('#history-reference-clear').hidden=!historyLabel;
+  const worktableLabel=inside&&shared?worktableTopic?.label:null;
+  $('#worktable-reference-clear').hidden=!worktableLabel;
   const hint=$('#conversation-hint'),historyHint=historyLabel?`Tema de la próxima intervención: ${historyLabel}.`:'';
-  hint.hidden=shared&&!historyLabel;
-  if(shared){hint.textContent=historyHint;return;}
+  hint.hidden=shared&&!historyLabel&&!worktableLabel;
+  if(shared){hint.textContent=worktableLabel?'Mesa de trabajo · '+worktableLabel:historyHint;return;}
   hint.textContent=(historyHint?historyHint+' ':'')+((available||nativeTurn)?'Podés seguir recorriendo el mundo mientras transcurre mi turno.':'La conversación todavía no está conectada a este mundo.');
   $('#send').disabled=!available||!!nativeTurn||preparingConversation;
   if(preparingConversation){$('#companion-status').textContent='Conservando el punto que estamos mirando…';return;}
@@ -1005,6 +1010,7 @@ function openConversation(open){
 }
 $('#talk').onclick=()=>openConversation($('#conversation-panel').hidden);
 $('#conversation-close').onclick=()=>openConversation(false);
+$('#worktable-reference-clear').onclick=()=>{worktableTopic=undefined;updateNativeAvailability();};
 function boundConversation(){
   const log=$('#conversation-log');while(log.children.length>128)log.firstElementChild.remove();
   for(const[key,line]of nativeLines)if(!line.isConnected)nativeLines.delete(key);
@@ -1051,7 +1057,7 @@ async function captureInteractionContext(){
     const visit=contentVisitor.reference();
     return structuredClone({capturedAt:Date.now(),spaceId:capturedSpace,local:position?{position}:null,
       ...(subject?{roomObject:{id:subject.id,revision:subject.revision}}:{}),
-      ...(visit?{roomVisit:visit}:{})});
+      ...(visit?{roomVisit:visit}:{}),...(worktableTopic?{worktable:worktableTopic.reference}:{})});
   }
   const capturedRun=state?.run;
   if(!capturedRun)throw Error('No pude confirmar el mundo desde donde estás pensando.');

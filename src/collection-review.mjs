@@ -123,11 +123,11 @@ function plainParts(scene){
   });
 }
 
-export async function readWorktableReview(edition,requested,{request=fetch,signal}={}){
+function reviewSource(edition,{request=fetch,signal}={}){
   if(!hex(edition.resource,32)||!hex(edition.version,64)||!hex(edition.gallerySha256,64))
     throw Error('Invalid Home review edition');
   const base='/works/'+edition.resource+'/'+edition.version+'/';
-  const read=async (file,sha,limit)=>{
+  return async (file,sha,limit)=>{
     const response=await request(base+file,{cache:'no-store',credentials:'same-origin',redirect:'error',signal});
     if(!response.ok||response.headers.get('X-Home-Version')!==edition.version||
        Number(response.headers.get('Content-Length'))>limit||!response.body){
@@ -138,19 +138,49 @@ export async function readWorktableReview(edition,requested,{request=fetch,signa
     if(await digest(bytes)!==sha)throw Error('Home review checksum changed');
     return JSON.parse(new TextDecoder().decode(bytes));
   };
+}
+
+async function readSceneIndex(edition,read){
+  if(!hex(edition.sceneIndexSha256,64))throw Error('Invalid Home scene index');
+  const index=await read('scene-index.json',edition.sceneIndexSha256,256*1024);
+  if(index?.schema!=='dm.review-scene-index/v1'||!Array.isArray(index.entries)||!index.entries.length||
+     index.entries.length>64)throw Error('Invalid Home scene index');
+  const entries=index.entries.map((entry,i)=>{
+    if(entry.file!=='scene-'+String(i).padStart(3,'0')+'.json'||!hex(entry.sha256,64))
+      throw Error('Invalid Home scene entry');
+    return {...entry,scene:sceneMetadata(entry.scene)};
+  });
+  const initial=entries.find(entry=>entry.scene.id===index.initial);
+  if(!initial||new Set(entries.map(entry=>entry.scene.id)).size!==entries.length)throw Error('Invalid Home scene selection');
+  return {entries,initial};
+}
+
+export async function readWorktableReference(edition,reference,options){
+  if(!name(reference.scene)||!hex(reference.sceneVersion,64)||
+     (reference.part!==null&&!name(reference.part)))return null;
+  const read=reviewSource(edition,options);
+  let scene;
+  if(edition.sceneIndexSha256){
+    const {entries}=await readSceneIndex(edition,read);
+    scene=entries.find(entry=>entry.scene.id===reference.scene)?.scene;
+  }else{
+    const gallery=await read('gallery.json',edition.gallerySha256,MAX_BYTES);
+    if(!Array.isArray(gallery?.scenes)||gallery.scenes.length>64)return null;
+    const matches=gallery.scenes.filter(item=>item.id===reference.scene);
+    if(matches.length===1)scene=sceneMetadata(matches[0]);
+  }
+  if(!scene||scene.version!==reference.sceneVersion)return null;
+  const part=scene.parts.find(part=>part.id===reference.part);
+  if(reference.part!==null&&!part)return null;
+  return {resource:edition.resource,version:edition.version,scene:scene.id,sceneVersion:scene.version,
+    part:part?.id??null,sceneTitle:scene.title,...(part?{partLabel:part.label}:{})};
+}
+
+export async function readWorktableReview(edition,requested,options){
+  const read=reviewSource(edition,options);
   let file='gallery.json',sha=edition.gallerySha256,expected,choices;
   if(edition.sceneIndexSha256){
-    if(!hex(edition.sceneIndexSha256,64))throw Error('Invalid Home scene index');
-    const index=await read('scene-index.json',edition.sceneIndexSha256,256*1024);
-    if(index?.schema!=='dm.review-scene-index/v1'||!Array.isArray(index.entries)||!index.entries.length||
-       index.entries.length>64)throw Error('Invalid Home scene index');
-    const entries=index.entries.map((entry,i)=>{
-      if(entry.file!=='scene-'+String(i).padStart(3,'0')+'.json'||!hex(entry.sha256,64))
-        throw Error('Invalid Home scene entry');
-      return {...entry,scene:sceneMetadata(entry.scene)};
-    });
-    const initial=entries.find(entry=>entry.scene.id===index.initial);
-    if(!initial||new Set(entries.map(entry=>entry.scene.id)).size!==entries.length)throw Error('Invalid Home scene selection');
+    const {entries,initial}=await readSceneIndex(edition,read);
     const chosen=entries.find(entry=>entry.scene.id===requested)??initial;
     file=chosen.file;sha=chosen.sha256;expected=chosen.scene;
     choices=entries.map(({scene:{id,title}})=>({id,title}));

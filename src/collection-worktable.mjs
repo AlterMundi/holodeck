@@ -57,12 +57,20 @@ function options(select,rows){
 }
 
 export class CollectionWorktable{
-  constructor({base,scene,panel,webgl,onSharedChange}){
+  constructor({base,scene,panel,webgl,onSharedChange,onReference}){
     Object.assign(this,{base,scene,panel,webgl,onSharedChange,yaw:0,editions:[],hidden:new Set()});
     this.details=panel.querySelector('details');
     this.project=panel.querySelector('[data-project]');
     this.sceneChoice=panel.querySelector('[data-scenes]');
     this.part=panel.querySelector('[data-parts]');
+    this.discuss=panel.querySelector('[data-discuss]');
+    this.discuss.onclick=()=>{
+      const review=this.review,edition=this.shown;
+      if(!review||!edition)return;
+      const part=review.parts.find(item=>item.id===this.part.value);
+      onReference?.({resource:edition.resource,version:edition.version,scene:review.id,
+        sceneVersion:review.version,part:part?.id??null},part?.label??review.title);
+    };
     this.status=panel.querySelector('[role=status]:not([data-shared-status])');
     this.sharedStatus=panel.querySelector('[data-shared-status]');
     this.share=panel.querySelector('[data-share]');
@@ -92,8 +100,9 @@ export class CollectionWorktable{
     };
   }
 
-  update(player,anchor){
+  update(player,anchor,canDiscuss){
     this.anchor=anchor;
+    this.discuss.hidden=!canDiscuss;
     const near=!!(player&&anchor&&Math.hypot(player.x-anchor.x,player.z-anchor.z)<2.05);
     this.panel.hidden=!near||(!this.editions.length&&!this.resource);
 
@@ -223,6 +232,7 @@ export class CollectionWorktable{
       mesh.material.emissiveIntensity=.65;
       mesh.material.clippingPlanes=plane;
     }
+    this.discuss.textContent=this.part.value?'Conversar sobre esta pieza':'Conversar sobre este modelo';
     this.visibility.disabled=!this.part.value;
     this.visibility.textContent=this.hidden.has(this.part.value)?'Mostrar pieza':'Ocultar pieza';
   }

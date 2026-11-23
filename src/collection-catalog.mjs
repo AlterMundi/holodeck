@@ -1,3 +1,5 @@
+import {readWorktableReference} from './collection-review.mjs';
+
 const RESOURCE=/^[a-f0-9]{32}$/;
 const VERSION=/^[a-f0-9]{64}$/;
 const PROJECT=/^[a-z0-9][a-z0-9-]{0,39}$/;
@@ -109,5 +111,22 @@ export function createCollectionReader(origin,{request=fetch}={}){
       })),
     ]);
     return {projects:projects.filter(Boolean),archive:archive.filter(Boolean)};
+  };
+}
+
+export function createCollectionReferenceReader(origin,readCollection,{request=fetch}={}){
+  return async (cookie,reference)=>{
+    const session=sourceCookie(cookie);
+    if(!session||!reference||Object.keys(reference).sort().join(',')!=='part,resource,scene,sceneVersion,version'||
+       typeof reference.resource!=='string'||!RESOURCE.test(reference.resource)||
+       typeof reference.version!=='string'||!VERSION.test(reference.version))return null;
+    const {resource,version}=reference;
+    const catalog=await readCollection(cookie,{projects:[],archive:[{resource,version}]});
+    const edition=catalog?.archive[0];
+    if(!edition)return null;
+    const signal=AbortSignal.timeout(4500);
+    const source=(path,options)=>request(new URL(path,origin),{...options,headers:{Cookie:session,Accept:'application/json'}});
+    try{return await readWorktableReference(edition,reference,{request:source,signal});}
+    catch{return null;}
   };
 }

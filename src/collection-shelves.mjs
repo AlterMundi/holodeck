@@ -33,19 +33,19 @@ async function modelBytes(base,edition,signal){
 }
 
 export class CollectionShelves {
-  constructor({base,scene,panel,archivePanel,worktablePanel,webgl}){
+  constructor({base,scene,panel,archivePanel,worktablePanel,webgl,onReference}){
     Object.assign(this,{base,scene,panel,loader:new GLTFLoader()});
     this.items=new Map();
     this.list=panel.querySelector('ul');
     this.visibleLinks='';
     this.archive=new CollectionArchive({scene,panel:archivePanel,loader:this.loader,
       readModel:(edition,signal)=>modelBytes(base,edition,signal)});
-    this.worktable=new CollectionWorktable({base,scene,panel:worktablePanel,webgl,onSharedChange:()=>{
+    this.worktable=new CollectionWorktable({base,scene,panel:worktablePanel,webgl,onReference,onSharedChange:()=>{
       this.flight?.abort();this.flight=null;this.refreshAt=0;
     }});
   }
 
-  update(room,root,player,bench){
+  update(room,root,player,bench,canDiscuss){
     if(this.room!==room||this.root!==root){
       this.clear();
       this.room=room;this.root=root;
@@ -62,7 +62,7 @@ export class CollectionShelves {
     }
     this.links(nearest.filter(value=>value.distance<=1.85).map(value=>value.item));
     this.archive.update(player);
-    this.worktable.update(player,bench);
+    this.worktable.update(player,bench,canDiscuss);
   }
 
   async refresh(){

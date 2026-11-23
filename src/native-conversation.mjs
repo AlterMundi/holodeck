@@ -16,13 +16,15 @@ export class NativeConversationError extends Error {
 
 // Both the legacy text bridge and the shared Conversation surface use this same
 // machine-authored capture. No human text, audio or selected files belong here.
-export function captureNativeSituation(room,actor,request,{pairedBeing=null,pairFocusBinding='current-native-binding',serverCapture='at-original-retention',interior=null,roomVisit=null}={}){
+export function captureNativeSituation(room,actor,request,{pairedBeing=null,pairFocusBinding='current-native-binding',serverCapture='at-original-retention',interior=null,roomVisit=null,worktable=null}={}){
   const preserveActors=pairedBeing?[pairedBeing]:[];
   const capturedAt=request.view?.capturedAt;
   const clientReportedCaptureTime=Number.isSafeInteger(capturedAt)?capturedAt:null;
   const extra={inputAssociation:{humanInputId:request.id,serverCapture,clientReportedCaptureTime}};
   if(interior&&roomVisit)extra.referredRoomVisit={id:roomVisit.id,revision:roomVisit.revision,
     evidence:'client-reported reference matched the room placement and the speaker had source access'};
+  if(interior&&worktable)extra.referredWorktable={...worktable,fixture:'worktable',
+    evidence:'Client-selected reference matched the exact Home review that the speaker could access. Opening the edition requires Home access.'};
   if(request.view!==undefined){
     if(!request.view||typeof request.view!=='object'||Buffer.byteLength(encode(request.view))>4096)
       throw new NativeConversationError('view','Provide a bounded client-reported view',{retained:false,knownNotSubmitted:true,retryable:true});
