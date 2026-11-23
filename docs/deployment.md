@@ -67,6 +67,9 @@ renew their catalog authorization every 20 seconds while the gallery is
 active, including when no editions are visible. Models expire after 30
 seconds. The wayfinding plaques and corresponding choices follow the same
 authorized catalog as the models and are removed on access loss or departure.
+A plaque shows the stage and the title supplied by the authorized exact
+descriptor. Its short in-world line fits the plaque, while the exhibition list
+retains the full title. Clicking either line selects the same pinned edition.
 No protected GLB goes into the deployable package or room preload cache.
 
 Caddy's maintained service writer preserves `/holodeck/` on both HTTP and

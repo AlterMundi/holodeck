@@ -179,8 +179,8 @@ export class ContentVisitor{
     if(display.id===entry.id&&display.nodeRevision===entry.nodeRevision&&sameVisitPin(display.pin,entry.pin))
      targets.set(model,entry);
    }
-   for(const facing of ['front','back']){
-    const plaque=scene?.querySelector('#'+entry.id+'-sign-'+facing);
+   for(const suffix of ['sign-front','sign-back','edition-front','edition-back']){
+    const plaque=scene?.querySelector('#'+entry.id+'-'+suffix);
     if(plaque?.getContainer)targets.set(plaque.getContainer(),entry);
    }
   }
