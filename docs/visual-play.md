@@ -161,9 +161,10 @@ operations and recovery controls do not disappear on a general notification time
 ## Tower resonator walk-up
 
 The Blender resonator's oak sill now has a collision surface at its authored
-room dimensions. The 23 November packaged Chromium trial approached with WASD
-and stopped the avatar at Z 4.995 against the sill face at Z 5.445. The 0.45 m
-clearance matches the avatar collision radius. The player-height frame shows
+room dimensions. In the 23 November packaged Chromium comparison, the same
+WASD approach stopped at Z 5.450 on the predecessor and Z 4.995 on the new
+release. The 0.45 m clearance to the sill face at Z 5.445 matches the avatar
+collision radius. The player-height frame shows
 the sill in front of the avatar. Retreat and the existing keyboard portal
 returned to the gallery arrival at X 4.81, Z −3 in the same session.
 This is a desktop Chromium trial of the tower collision and portal.
