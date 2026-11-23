@@ -188,3 +188,17 @@ from outdoors. The packaged Chromium trial captured a player-height frame
 and observed 44 frames through the walk and E-key exit. The gallery kept its
 opaque backdrop after crossing, and the authorized Beacon lab also kept its
 own backdrop. The tower's model and collisions keep their prior revision.
+
+## Input across the reference card
+
+The exterior reference card passes pointer input through inactive areas.
+Its action buttons keep their normal hit targets. In the Chromium fixture
+the earlier card intercepted a pointer aimed at a second world object
+after a shared indication. With the change, that pointer reached the
+canvas and selecting the first object again showed its existing indication.
+
+The emulated phone trial held three contacts for the joystick, camera drag
+and jump. It observed movement, rotation and lift together, then settled
+after a browser touch cancel. A fresh contact moved the avatar again
+without selecting or sharing a world object. This is a touchscreen
+emulation result.

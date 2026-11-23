@@ -39,7 +39,14 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`a356c63`, package `685aa8875b4b`. The tower's authored east clerestory now
+`23de47f`, package `faae992dce4e`. The exterior reference card passes
+pointer input through its inactive margins while its action buttons
+remain interactive. In Chromium the margin no longer consumed the
+pointer aimed at the next world object after a confirmed indication.
+The protected HTTPS check matched all 57 installed files and the prior
+world checkpoint. Package `685aa8875b4b` is the selected rollback.
+
+Source `a356c63`, package `685aa8875b4b`, added the coastal view. The tower's authored east clerestory now
 opens visually onto the same coastal sky as the commons. The packaged
 player-height trial saw the panorama through the seven window bays, returned
 to the opaque gallery through the existing E-key portal in the same
