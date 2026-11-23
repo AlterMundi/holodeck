@@ -109,7 +109,12 @@ outcomes. For act the server rejects a supplied `nativeRequest` and records
 `own-native:<command.id>` instead. This is an own action reference, never a human
 input UUID or proof of semantic/model uptake. Retrying an uncertain act requires
 its unchanged command ID/content or an exact result read through the same lane;
-no native input is synthesized or replayed. This capability starts no background
+no native input is synthesized or replayed. For a situated indoor garden
+action, use `holodeck-world --interaction <original> result '{"id":"<command-id>"}'`.
+This also recovers recent receipts after the original completes and its
+prepared source is released, while the current pair and room grants still hold.
+See the [indoor source contract](shared-conversation.md#indoor-source-contract)
+for retention. This capability starts no background
 attention, inference or provider session. Source tests and callback wiring do not
 establish receiving deployment or an actual creator action.
 

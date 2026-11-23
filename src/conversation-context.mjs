@@ -3,7 +3,7 @@ import {join} from 'node:path';
 import {createHash} from 'node:crypto';
 import {captureNativeSituation,NativeConversationError} from './native-conversation.mjs';
 
-const MAX_RECORDS=32,MAX_BYTES=1800*1024;
+const MAX_RECORDS=32,MAX_RECEIPTS=32,MAX_BYTES=1800*1024;
 const uuid=value=>typeof value==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(value);
 const encode=value=>JSON.stringify(value);
 const digest=value=>createHash('sha256').update(encode(value)).digest('hex');
@@ -20,7 +20,7 @@ export async function createConversationContexts({room,stateDir,transport,allowI
   await fs.mkdir(stateDir,{recursive:true,mode:0o700});
   const meta=await fs.lstat(stateDir);
   if(!meta.isDirectory()||meta.isSymbolicLink()||meta.uid!==process.getuid()||(meta.mode&0o077))throw Error('Private context source state required');
-  const path=join(stateDir,'conversation-contexts.json');let records={},serial=Promise.resolve(),fenced=false;
+  const path=join(stateDir,'conversation-contexts.json');let records={},receipts={},serial=Promise.resolve(),fenced=false;
   const inflight=new Map();let retireCursor=0;
   try{
     const file=await fs.open(path,constants.O_RDONLY|constants.O_NOFOLLOW);
@@ -35,18 +35,35 @@ export async function createConversationContexts({room,stateDir,transport,allowI
           ||r.observation.inputAssociation?.humanInputId!==id||!['frozen','prepared'].includes(r.phase)
           ||r.phase==='prepared'&&!fileRef(r.file))throw Error('Invalid context source record');
       }
-      records=saved.records;
+      const retained=saved.receipts??{};
+      if(typeof retained!=='object'||Array.isArray(retained)||Object.keys(retained).length>MAX_RECEIPTS)
+        throw Error('Invalid context receipt index');
+      for(const [id,r] of Object.entries(retained)){
+        if(!uuid(id)||saved.records[id]||!r||typeof r.actorRef!=='string'||!r.actorRef.startsWith('human:')
+          ||r.frozen?.actorRef!==r.actorRef||typeof r.frozen.beingRef!=='string'
+          ||!uuid(r.run)||typeof r.space!=='string'||typeof r.observationId!=='string'||!fileRef(r.file))
+          throw Error('Invalid context receipt reference');
+      }
+      records=saved.records;receipts=retained;
     }finally{await file.close();}
   }catch(error){if(error.code!=='ENOENT')throw error;}
   const transaction=fn=>{const work=serial.then(fn);serial=work.catch(()=>{});return work;};
-  async function persist(){
+  async function persist(nextReceipts=receipts){
     if(fenced)throw fail('context-recovery','Context source ledger needs receiving recovery');
-    const bytes=Buffer.from(encode({schema:'holodeck.conversation-contexts/v1',records}));
+    nextReceipts={...nextReceipts};
+    const serialize=()=>Buffer.from(encode({schema:'holodeck.conversation-contexts/v1',records,receipts:nextReceipts}));
+    const oldest=Object.keys(nextReceipts);
+    while(oldest.length>MAX_RECEIPTS)delete nextReceipts[oldest.shift()];
+    let bytes=serialize();
+    while(bytes.length>MAX_BYTES&&oldest.length){
+      delete nextReceipts[oldest.shift()];
+      bytes=serialize();
+    }
     if(bytes.length>MAX_BYTES||Object.keys(records).length>MAX_RECORDS)throw fail('capacity','Context source capacity reached');
     const stage=path+'.stage';const file=await fs.open(stage,constants.O_CREAT|constants.O_TRUNC|constants.O_WRONLY|constants.O_NOFOLLOW,0o600);
     try{await file.writeFile(bytes);await file.sync();}finally{await file.close();}
     let replaced=false;
-    try{await fs.rename(stage,path);replaced=true;const dir=await fs.open(stateDir,constants.O_RDONLY);try{await dir.sync();}finally{await dir.close();}}
+    try{await fs.rename(stage,path);replaced=true;const dir=await fs.open(stateDir,constants.O_RDONLY);try{await dir.sync();}finally{await dir.close();}receipts=nextReceipts;}
     catch(error){if(replaced){fenced=true;error.replaced=true;}throw error;}
   }
   const actorRef=actor=>{
@@ -57,6 +74,19 @@ export async function createConversationContexts({room,stateDir,transport,allowI
   const result=record=>({id:record.id,binding:record.frozen.binding,files:[structuredClone(record.file)],work_admitted:false});
   const statusPayload=record=>({actorRef:record.actorRef,frozen:record.frozen,id:record.id,textSha256:null,
     observationId:record.observation.id,contextFile:record.file});
+  async function retire(record,status){
+    return transaction(async()=>{
+      if(records[record.id]!==record)return false;
+      const next={...receipts};
+      if(status.phase==='completed'&&status.nativeAcceptance==='observed'&&record.observation.scope==='structured-interior-room'){
+        const {actorRef,frozen,file,observation}=record;
+        next[record.id]={actorRef,frozen,file,run:observation.run,space:observation.place.id,observationId:observation.id};
+      }
+      delete records[record.id];
+      try{await persist(next);}catch(error){if(!error.replaced)records[record.id]=record;throw error;}
+      return true;
+    });
+  }
   async function retireConfirmed(){
     // Bounded metadata reads, no model work and no unconfirmed source eviction.
     const available=Object.values(records).filter(r=>r.phase==='prepared');
@@ -65,9 +95,7 @@ export async function createConversationContexts({room,stateDir,transport,allowI
     for(const candidate of selected){
       let status;try{status=await transport.status(statusPayload(candidate));}catch{continue;}
       if(status.retainedOriginal===true&&status.tracking===false&&['completed','problem'].includes(status.phase)){
-        await transaction(async()=>{if(records[candidate.id]!==candidate)return;delete records[candidate.id];
-          try{await persist();}catch(error){if(!error.replaced)records[candidate.id]=candidate;throw error;}});
-        return true;
+        if(await retire(candidate,status))return true;
       }
     }
     return false;
@@ -78,6 +106,7 @@ export async function createConversationContexts({room,stateDir,transport,allowI
         ||!/^[a-f0-9]{64}$/.test(request.binding))throw fail('input','Select the shared original and current binding');
       if(fenced)throw fail('context-recovery','Context source ledger needs receiving recovery');
       const requestHash=retryRecord?retryRecord.requestHash:digest({id:request.id,binding:request.binding,view:request.view??null,displayedSequence:request.displayedSequence??null});
+      if(receipts[request.id])throw fail('id-reuse','Recover the existing canonical original before preparing another source');
       const existing=records[request.id];
       if(existing&&(existing.actorRef!==ref||existing.requestHash!==requestHash))throw fail('id-reuse','Preserve the originally captured source');
       const pending=inflight.get(request.id);
@@ -130,32 +159,41 @@ export async function createConversationContexts({room,stateDir,transport,allowI
   }
   return {
     has:id=>!!records[id],
+    hasWorldRequest:id=>!!(records[id]||receipts[id]),
     prepare:(actor,request,capturePlace)=>prepareSource(actor,request,null,capturePlace),
     async authorizeWorldRequest(id,expectedBeingRef){
       if(fenced)throw fail('context-recovery','Context source ledger needs receiving recovery');
-      const record=records[id];if(!record||record.phase!=='prepared'||record.observation.run!==room.run
-        ||record.frozen.beingRef!==expectedBeingRef)throw fail('native-scope','The prepared source does not belong to this room and return lane');
-      const current=await transport.inspect(record.actorRef);
-      if(encode(current)!==encode(record.frozen))throw fail('binding','The current pair or Conversation changed');
-      if(record.observation.scope==='structured-interior-room'&&(!allowInteriorSource||
-        !await allowInteriorSource({id:record.actorRef,ref:record.actorRef,kind:'human'},expectedBeingRef,record.observation.place.id)))
-        throw fail('forbidden','El acceso a esa sala cambió');
-      const status=await transport.status(statusPayload(record));
-      if(status.nativeAcceptance!=='observed'||status.phase==='problem'||status.retainedOriginal!==true)
+      const record=records[id],receipt=receipts[id],source=record??receipt;
+      const capturedSpace=receipt?.space??(record?.observation.scope==='structured-interior-room'?record.observation.place.id:null);
+      if(!source||(record&&record.phase!=='prepared')||(receipt?.run??record?.observation.run)!==room.run
+        ||source.frozen.beingRef!==expectedBeingRef)throw fail('native-scope','The prepared source does not belong to this room and return lane');
+      const current=await transport.inspect(source.actorRef);
+      if(encode(current)!==encode(source.frozen))throw fail('binding','The current pair or Conversation changed');
+      const status=await transport.status(record?statusPayload(record):{
+        actorRef:receipt.actorRef,frozen:receipt.frozen,id,textSha256:null,
+        observationId:receipt.observationId,contextFile:receipt.file,
+      });
+      if(status.nativeAcceptance!=='observed'||status.phase==='problem'||status.retainedOriginal!==true
+        ||(receipt&&(status.phase!=='completed'||status.tracking!==false)))
         throw fail('native-scope','Actual canonical admission is not observed');
-      const final=await transport.inspect(record.actorRef);
-      if(encode(final)!==encode(record.frozen))throw fail('binding','The pair or Conversation changed during canonical observation');
-      return {actor:{id:current.beingRef,ref:current.beingRef,kind:'daimon'},humanRef:record.actorRef,nativeRequest:record.id,
-        ...(record.observation.scope==='structured-interior-room'?{
-          capturedSpace:record.observation.place.id,working:status.phase==='working',
-        }:{})};
+      if(capturedSpace&&(!allowInteriorSource||
+        !await allowInteriorSource({id:source.actorRef,ref:source.actorRef,kind:'human'},expectedBeingRef,capturedSpace)))
+        throw fail('forbidden','El acceso a esa sala cambió');
+      const final=await transport.inspect(source.actorRef);
+      if(encode(final)!==encode(source.frozen))throw fail('binding','The pair or Conversation changed during canonical observation');
+      if(fenced||(records[id]??receipts[id])!==source||(receipt?.run??record?.observation.run)!==room.run)
+        throw fail('native-scope','The retained room source changed');
+      return {actor:{id:current.beingRef,ref:current.beingRef,kind:'daimon'},humanRef:source.actorRef,nativeRequest:id,
+        ...(capturedSpace?{capturedSpace,working:status.phase==='working',receiptOnly:!!receipt}: {})};
     },
     async release(actor,id){
+      const previous=receipts[id];
+      if(previous&&previous.actorRef===actorRef(actor)&&!fenced)return {released:true,canonicalOriginalPreserved:true};
       const record=owned(actor,id);if(fenced||record.phase!=='prepared')return {released:false};
       const status=await transport.status(statusPayload(record));
       if(status.retainedOriginal!==true||status.tracking!==false||!['completed','problem'].includes(status.phase))return {released:false};
-      await transaction(async()=>{if(records[id]!==record)return;delete records[id];try{await persist();}catch(error){if(!error.replaced)records[id]=record;throw error;}});
-      return {released:true,canonicalOriginalPreserved:true};
+      const released=await retire(record,status);
+      return {released,canonicalOriginalPreserved:true};
     },
     async discard(actor,id,binding,reason){
       const ref=actorRef(actor);

@@ -29,7 +29,7 @@ async function fixture(t){
    assert.equal(request.textSha256,null,'no duplicate human text is retained by the world');
    return statuses.get(request.id)||{nativeAcceptance:'unconfirmed',phase:'unknown',retainedOriginal:false,tracking:true};
   }};
- return {dir,room,transport,prepared,statuses,get uploads(){return uploads;},get writes(){return writes;},setCurrent:value=>{current=value;},open:()=>createConversationContexts({room,stateDir:dir,transport})};
+ return {dir,room,transport,prepared,statuses,get uploads(){return uploads;},get writes(){return writes;},setCurrent:value=>{current=value;},open:allowInteriorSource=>createConversationContexts({room,stateDir:dir,transport,allowInteriorSource})};
 }
 const request=()=>({id:randomUUID(),binding,view:{capturedAt:1234,local:{position:{x:1,y:.1,z:2}}}});
 
@@ -92,6 +92,31 @@ test('unconfirmed preparation is bounded at32 records, without evicting or fabri
  assert.equal(f.uploads,32);assert.equal(f.writes,0);
 });
 
+test('capacity retirement and explicit release retain the most recent 32 indoor receipt references',async t=>{
+ const f=await fixture(t),context=await f.open(async()=>true);
+ const capture=()=>({id:randomUUID(),run:f.room.run,edition:f.room.edition,sequence:0,capturedAt:123,
+  place:{id:'foyer',title:'Foyer',level:0,house:'fixture',objects:[],participants:[]}});
+ const completed={nativeAcceptance:'observed',phase:'completed',retainedOriginal:true,tracking:false};
+ const first=request();await context.prepare(actor,first,capture);f.statuses.set(first.id,completed);
+ const active=Array.from({length:31},request);
+ for(const input of active)await context.prepare(actor,input,capture);
+ const last=request();await context.prepare(actor,last,capture);
+ assert.equal(context.has(first.id),false);
+ assert.equal(context.hasWorldRequest(first.id),true);
+ assert.equal((await context.authorizeWorldRequest(first.id,being)).receiptOnly,true);
+ for(const input of [...active,last]){
+  f.statuses.set(input.id,completed);
+  assert.equal((await context.release(actor,input.id)).released,true);
+ }
+ const resumed=await f.open(async()=>true);
+ assert.equal(resumed.hasWorldRequest(first.id),false);
+ assert.equal(resumed.hasWorldRequest(last.id),true);
+ assert.equal((await resumed.authorizeWorldRequest(last.id,being)).capturedSpace,'foyer');
+ f.setCurrent({...initial,binding:'e'.repeat(64)});
+ await assert.rejects(resumed.authorizeWorldRequest(last.id,being),/changed/);
+ assert.equal(Object.keys(JSON.parse(readFileSync(join(f.dir,'conversation-contexts.json'),'utf8')).receipts).length,32);
+ assert.equal(f.uploads,33);
+});
 test('cancelled capture releases only machine source after canonical absence, never retained originals',async t=>{
  const f=await fixture(t),context=await f.open(),input=request();await context.prepare(actor,input);
  f.transport.lookup=async()=>({state:'retained'});

@@ -329,6 +329,8 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     assert.equal(runtime.native.contexts.has(original.id),true);
     await keyboard.locator('#conversation-close').click();
     final(original.id,primaryText);
+    assert.equal((await worldRequest('act',command,original.id)).ok,false);
+    assert.deepEqual(await worldRequest('result',{id:command.id},original.id),effect);
     await keyboard.locator('#talk').click();
     await waitForAnswer(primaryText);
     const nextRoomTopic=await topic.inputValue();
@@ -351,6 +353,17 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     }),'canonical result was clipped or obscured after scrolling');
     await keyboard.screenshot({path:join(HOLODECK_EVIDENCE_DIR,'canonical-reply.png')});
     await keyboard.locator('#conversation-close').click();
+    const released=await keyboard.evaluate(async id=>{
+      const result=await fetch('api/conversation-contexts/'+id+'/release',{
+        method:'POST',headers:{'Content-Type':'application/json'},body:'{}',
+      });
+      return {status:result.status,body:await result.json()};
+    },original.id);
+    assert.deepEqual(released,{status:200,body:{released:true,canonicalOriginalPreserved:true}});
+    assert.equal(runtime.native.contexts.has(original.id),false);
+    assert.deepEqual(await worldRequest('result',{id:command.id},original.id),effect);
+    assert.equal((await worldRequest('result',{id:command.id},sibling)).ok,false);
+    assert.equal((await worldRequest('observe',{},original.id)).ok,false);
     await touch.reload({waitUntil:'domcontentloaded'});await touch.bringToFront();
     await progress(touch,'¡Jardín completado!');
     assert.equal(await touch.locator('#hud h1').textContent(),'Sala de prueba');
@@ -369,7 +382,7 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
       retainedRoomTopic:original.capture.referredRoomObject.id,nextRoomTopic,
       situatedRoom:original.capture.place.id,initialContributors:original.capture.place.activity.progress.contributors,
       canonicalOriginals:originals.length,canonicalPosts,machineAttachments:uploads,replyRenderedOnce:true,siblingCompletedFirst:true,
-      sameConversationFrame:true,foreignReceiptDenied:true,nativeApproach,worldReceipt:effect.result,recoveredComplete:recovered.progress.complete};
+      sameConversationFrame:true,foreignReceiptDenied:true,receiptRecoveredAfterRelease:true,nativeApproach,worldReceipt:effect.result,recoveredComplete:recovered.progress.complete};
     writeFileSync(join(HOLODECK_EVIDENCE_DIR,'result.json'),JSON.stringify(evidence,null,2)+'\n');
     console.log(JSON.stringify(evidence));
   }finally{

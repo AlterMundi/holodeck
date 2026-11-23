@@ -10,6 +10,7 @@ function situatedInterior({request,verified,actor,room,conversationPlace,indoorG
   if(!captured)throw Error('The current being has no access to that room');
   const fields=Object.keys(args).sort().join(',');
   const next=()=>verified.working&&actor.rights.includes('edit')?approachSpace?.(actor,captured.id):null;
+  if(verified.receiptOnly&&operation!=='result')throw Error('The completed turn only supports receipt recovery');
   if(operation==='observe'&&!fields){
     const approach=next();
     return {schema:'holodeck.space-observation/v1',run:room.run,edition:room.edition,
@@ -28,7 +29,7 @@ function situatedInterior({request,verified,actor,room,conversationPlace,indoorG
 
   const id=situatedGardenCommandId(verified.nativeRequest,command.id);
   let result;
-  if(id&&operation==='act'&&command.type==='garden.signal'&&command.room===captured.id&&
+  if(id&&verified.working&&operation==='act'&&command.type==='garden.signal'&&command.room===captured.id&&
      commandFields==='color,expectedRevision,id,index,room,type'&&currentOriginal)
     result=indoorGarden?.(actor,{...command,id});
   else if(id&&operation==='result'&&fields==='id')

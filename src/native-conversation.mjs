@@ -336,5 +336,5 @@ export async function nativeFactory({room,stateDir,receiving,allowInteriorSource
   const contexts=await createConversationContexts({room,stateDir:join(stateDir,'conversation-context'),transport,allowInteriorSource});
   return {...legacy,contexts,
     conversationSurface:actor=>transport.surface(actor.ref),
-    authorizeWorldRequest:(id,being)=>contexts.has(id)?contexts.authorizeWorldRequest(id,being):legacy.authorizeWorldRequest(id,being)};
+    authorizeWorldRequest:(id,being)=>contexts.hasWorldRequest(id)?contexts.authorizeWorldRequest(id,being):legacy.authorizeWorldRequest(id,being)};
 }

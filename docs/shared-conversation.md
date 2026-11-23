@@ -173,11 +173,19 @@ daimon must hold both current app observation and room access. A situated
 native read after observed canonical admission resolves only that room.
 
 The same admitted turn can place a `garden.signal` in the captured room if the
-daimon is currently there and holds its own edit grant. Use the current recipe
+daimon is currently there, holds its own edit grant and the turn is still working. Use the current recipe
 revision and a command ID. `result` with that same ID and interaction recovers
 the exact receipt, including after departure while access still holds. The
 server separates command IDs by interaction, so a sibling turn cannot read
-or replay that command's receipt.
+or replay that command's receipt. After canonical completion releases the
+prepared source, the native route still accepts that exact `result` call.
+It rechecks the original and attachment, the current pair and both room
+grants. This read-only route exposes neither the room observation nor a
+new action. The context ledger retains up to 32 recent indoor receipt
+references within its existing 1,800 KiB limit. The oldest references
+give way to active preparations and newer completions. The garden's
+own receipt limit still applies. The index contains no chat text or room
+snapshot and survives a restart on the same world run.
 
 If the daimon starts elsewhere, `observe` can include `approach` with the
 next permitted `from` and `to` on the route to the captured room. This
@@ -207,7 +215,9 @@ and unavailable to the sibling interaction.
 The fixture delivers the sibling final first. The original remains open and
 its context remains retained. Reopening and refreshing the same iframe shows
 the original's final once, and the touch browser can reconnect to the completed
-garden. The public scene exposes the game effect without exposing either reply.
+garden. After explicit source release, the original retrieves the exact
+receipt again. A sibling, a new action and a full room observation are
+refused on the completed route. The public scene exposes the game effect without exposing either reply.
 This covers the browser and world/Conversation handoff with synthetic
 admission and final text. In a separate Telecodex qualification,
 `foreground_capture` exercised native final-event projection through the

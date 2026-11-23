@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {once} from 'node:events';
-import {mkdtempSync,rmSync} from 'node:fs';
+import {mkdtempSync,readFileSync,rmSync} from 'node:fs';
 import net from 'node:net';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
@@ -16,7 +16,7 @@ test('a canonical interior source freezes its authorized place before awaits and
   const being='dm:being:v1:'+'a'.repeat(43),house=houseId(being),user='human:test';
   const binding='b'.repeat(64),socket=join(dir,'world.sock');
   const frozen={actorRef:user,beingRef:being,binding,entry:[1,{},2,'fixture']};
-  let grant=true,canEdit=true,admitted=true,phase='working',uploads=[],inspectEntered,releaseInspect,runtime,listener;
+  let grant=true,canEdit=true,admitted=true,phase='working',uploads=[],openContexts,inspectEntered,releaseInspect,runtime,listener;
   const entered=new Promise(resolve=>{inspectEntered=resolve;});
   const parked=new Promise(resolve=>{releaseInspect=resolve;});
   new RoomStore(join(dir,'houses')).save({schema:'holodeck.houses/v1',houses:[{
@@ -38,12 +38,13 @@ test('a canonical interior source freezes its authorized place before awaits and
               entry_binding:req.frozen.entry,observation_id:req.observation.id,work_admitted:false,
               file:{file_id:randomUUID(),sha256:'d'.repeat(64),name:'holodeck-situation.json',mime:'application/json',size:2000}};
           },
-          status:async()=>({phase,retainedOriginal:true,tracking:true,nativeAcceptance:admitted?'observed':'unavailable'}),
+          status:async()=>({phase,retainedOriginal:true,tracking:phase==='working',nativeAcceptance:admitted?'observed':'unavailable'}),
         };
-        const contexts=await createConversationContexts({room,stateDir:join(stateDir,'context'),transport,allowInteriorSource});
-        return {contexts,conversationSurface:async()=>({schema:'holodeck.conversation-surface/v1',
+        openContexts=()=>createConversationContexts({room,stateDir:join(stateDir,'context'),transport,allowInteriorSource});
+        let contexts=await openContexts();
+        return {contexts,reopen:async()=>{contexts=await openContexts();},conversationSurface:async()=>({schema:'holodeck.conversation-surface/v1',
           actorRef:user,beingRef:being,homeRef:'home:'+'c'.repeat(32),binding,url:'https://world.test/conversation/'}),
-          authorizeWorldRequest:contexts.authorizeWorldRequest};
+          authorizeWorldRequest:(...args)=>contexts.authorizeWorldRequest(...args)};
       }});
     listener=runtime.app.listen(0,'127.0.0.1');await once(listener,'listening');
     const id=randomUUID();
@@ -169,10 +170,26 @@ test('a canonical interior source freezes its authorized place before awaits and
     assert.equal(latest.progress.complete,true);
     assert.equal((await port('act',{type:'space.move',from:'foyer',to:'outside'},true)).ok,true);
     assert.deepEqual(await port('result',{id:signal.id}),acted,'receipt survives leaving the room');
+    phase='completed';
+    assert.equal((await port('act',signal)).ok,false,'completed commands use the receipt reader');
+    const release=await post('conversation-contexts/'+id+'/release',{});
+    assert.deepEqual(await release.json(),{released:true,canonicalOriginalPreserved:true});
+    const ledger=JSON.parse(readFileSync(join(dir,'context','conversation-contexts.json'),'utf8'));
+    assert.equal(ledger.records[id],undefined);
+    assert.deepEqual(Object.keys(ledger.receipts[id]).sort(),['actorRef','file','frozen','observationId','run','space']);
+    await runtime.native.reopen();
+    assert.deepEqual(await port('result',{id:signal.id}),acted,'the exact receipt survives ledger restart');
+    assert.equal((await port('result',{id:signal.id},false,otherId)).ok,false);
+    assert.equal((await port('act',signal)).ok,false);
+    assert.equal((await port('observe')).ok,false);
+    await assert.rejects((await openContexts()).prepare({id:user,ref:user,kind:'human'},body),/existing canonical/);
+    admitted=false;
+    assert.equal((await port('result',{id:signal.id})).ok,false);
+    admitted=true;
     grant=false;
     assert.equal((await port('observe')).ok,false);
     assert.equal((await port('result',{id:signal.id})).ok,false);
-    const readback=await fetch(base+'api/conversation-contexts/'+id+'?binding='+binding,{headers});
+    const readback=await fetch(base+'api/conversation-contexts/'+otherId+'?binding='+binding,{headers});
     assert.equal(readback.status,409);
   }finally{
     releaseInspect();
