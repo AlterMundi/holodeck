@@ -150,9 +150,12 @@ makes the turn from the public aisle to the Casa threshold legible.
 The [parcel terrace](../art/compaii-house/redesign/parcel-terrace.md)
 carries the neighborhood's visible perimeter to the waterline. Chromium
 walked the public approach, used the foyer door in both directions and
-reached the west verge at the existing floor height. Continue the terrain
-surface and workshop finish pass on the same route, particularly adjoining
-islands and the house yard. The
+reached the west verge at the existing floor height. The
+[west verge garden](../art/compaii-house/redesign/parcel-garden.md) now
+connects both ends of the public aisle to a coastal walk with a seat and
+shade alongside the Casa. The visitor fixture walked from the existing
+spawn, entered and returned from the Casa, and followed the garden path.
+Adjoining islands and further room furniture remain in the finish pass. The
 [Beacon workshop finish](../art/compaii-house/redesign/README.md#beacon-joinery-and-workstations)
 now ties its existing stair, walls and acoustic work bays together. Continue
 the remaining furniture and room finish at walking height. The
@@ -162,8 +165,8 @@ a framed clerestory and a gallery lighting rail. Both the stair and continuous
 floor variants have player-height Chromium readback. Exact source access and
 live participant evidence remain separate from the fixture exhibits.
 
-The selected archive stores the 13 atelier GLBs losslessly and leaves
-6,653,952 bytes below the existing receiver limit. The matched Chromium
+The selected archive stores 14 atelier GLBs losslessly and leaves
+6,367,232 bytes below the existing receiver limit. The matched Chromium
 route transferred 43.6% fewer bytes for selected exterior models and
 35.2% fewer for the foyer, gallery and Beacon lab. Retain the exact
 decoded GLBs, revisioned URLs, identity ranges and authorization on

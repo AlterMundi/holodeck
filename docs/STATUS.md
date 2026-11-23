@@ -10,7 +10,17 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`cc5022b`, package `b6043ceebadf`. The gallery has a framed clerestory,
+`cebc44f`, package `7fd22a571234`. The west verge beside Casa de CompAII
+has a limestone walk, two cross paths, an oak seat, and coastal planting
+authored in Blender. A simulated Chromium visitor took the door in both
+directions and then walked the garden at the existing ground height.
+Authenticated HTTPS matched the exact garden model, its 151,767-byte
+Brotli representation and identity ranges. All 55 installed files and
+the protected checkpoints matched. Package `b6043ceebadf` is the
+compatible rollback.
+[West verge artist source and running-game captures](../art/compaii-house/redesign/parcel-garden.md)
+
+The previous release served source `cc5022b`, package `b6043ceebadf`. The gallery has a framed clerestory,
 a suspended exhibition light rail, matte stone backs for the three plinths
 and a high-contrast Colección sign. Both Blender variants share the fittings
 and the 512 px Cycles light map technique. Packaged Chromium walked the
