@@ -144,8 +144,8 @@ export class InteriorSpaces {
     });
   }
 
-  view(actor) {
-    const current=this.current(actor), room=this.rooms.get(current);
+  view(actor,current=this.current(actor)) {
+    const room=this.allows(actor,current)&&this.rooms.get(current);
     const houses = new Map(this.houses.directory().map(house=>[house.id,house]));
     if (!room) return {id:OUTSIDE,entrances:[...this.rooms.values()]
       .filter(r=>r.entry&&this.allows(actor,r.id)).map(({id,house})=>{

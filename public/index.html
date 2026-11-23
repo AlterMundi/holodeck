@@ -58,6 +58,8 @@ body:has(#conversation-panel:not([hidden])) #house-door,body:has(#creator:not([h
 @media(prefers-reduced-motion:reduce){.room-transition .passage-arch{animation:none}}
 .inside-house #creator,.inside-house #pointing,.inside-house #play-near,.inside-house #recovery-panel{display:none!important}
 .inside-house #world-tools,.inside-house #dock,.inside-house #companion-status,.inside-house #sound{display:none}
+.inside-house.has-situated-conversation #dock{display:flex;left:auto;right:max(14px,env(safe-area-inset-right));bottom:max(84px,env(safe-area-inset-bottom));transform:none}
+.inside-house #dock button:not(#talk){display:none}
 @media(max-width:740px){#space-travel{top:145px;right:12px}.inside-house #space-travel{top:100px}}
 </style></head><body>
 <header id="hud" class="glass"><span class="brand-mark" aria-hidden="true"></span><div><small>Holodeck</small><h1>El taller de las islas</h1><div id="people">Entrando al taller…</div></div><button id="sound" type="button" aria-pressed="false" aria-label="Activar sonido del mundo">Sonido</button></header>

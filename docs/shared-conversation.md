@@ -139,3 +139,20 @@ there is no fallback recorder, copied chat UI or parallel native writer.
 Physical phone/microphone/hearing acceptance and the full shared MVP trial remain
 separate. This work does not resume the blocked umbrella goal or create another
 human pending item. Beacon work is explicitly outside this session.
+
+
+## Indoor source contract
+
+A shared Conversation iframe can stay mounted while a human closes its
+panel and moves between allowed rooms. New indoor sources freeze the
+server-selected room at preparation intake, before waiting for the
+canonical Conversation binding and file writer. The client's captured room
+ID is a match check. Ordinary movement after intake does not replace the
+frozen place. Recover and retry preserve the exact source.
+
+The source names the room, level and local objects, with scoped presence
+and an optional exhibit revision. It carries neither exterior objects and
+history nor adjoining-room metadata or private content pins. The paired
+daimon must hold both current app observation and room access. A situated
+native read after observed canonical admission resolves only that room.
+An indoor original does not grant exterior edits or projections.

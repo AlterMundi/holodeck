@@ -10,7 +10,7 @@ import { NetworkedDOM } from '@mml-io/networked-dom-server';
 import { handleExperienceWebsocketSubprotocol } from '@mml-io/3d-web-experience-protocol';
 import enableWs from 'express-ws';
 import { readFileSync } from 'node:fs';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { join } from 'node:path';
 import { Room, RoomError, LIMITS } from './room.mjs';
@@ -77,7 +77,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     }}catch{projectionHealthy=false;}finally{projectionRunning=false;}
   };
   await project();if(!projectionHealthy){document.dispose();throw Error('The initial world representation could not load');}room.on('change',project);
-  const native=nativeFactory?await nativeFactory({room,stateDir}):null;
+  const native=nativeFactory?await nativeFactory({room,stateDir,allowInteriorSource}):null;
   const installedWorldPorts=[];
   async function currentActor(req,session){
     if(!session||Date.now()-session.created>=SESSION_MS)return null;
@@ -152,7 +152,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }
   function liveSpace(actor,cachedRevision){
     const space=describeSpace(actor);
-    return {...space,live:1,actorRef:actor.id,scene:visitScene(actor,space.id,cachedRevision)};
+    return {...space,live:1,actorRef:actor.id,sharedConversation:!!(native?.contexts&&native?.conversationSurface),scene:visitScene(actor,space.id,cachedRevision)};
   }
   function describeSpace(actor){
     if(spaces.fenced)throw new RoomError('space-uncertain','Room placement needs recovery');
@@ -163,6 +163,35 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       .filter(({actor:peer})=>inScope(peer,space.id))
       .map(({actor:peer})=>({actor:peer.id,kind:peer.kind,name:peer.name||'Explorador'}));
     return {...space,participants};
+  }
+  function conversationPlace(actor,id){
+    const selected=spaces.rooms.get(id);
+    if(!actor.rights?.includes('observe')||!selected||spaces.fenced||room.commitUncertain||!spaces.allows(actor,id))return null;
+    const view=spaces.view(actor,id);
+    const exhibit=exhibits.scoped(actor,id);
+    return {id,title:selected.title,level:selected.level,house:selected.house,
+      objects:view.id===id?view.objects:[],
+      ...(exhibit?{exhibitRevision:exhibit.revision}:{}),
+      participants:[...(cellTransports.get(id)?.connections.values()??[])]
+        .filter(({actor:peer})=>inScope(peer,id))
+        .map(({actor:peer})=>({actor:peer.id,kind:peer.kind,name:peer.name||'Explorador'}))};
+  }
+  async function allowInteriorSource(actor,beingRef,id){
+    const recipient={id:beingRef,ref:beingRef,kind:'daimon'};
+    if(!nativeRoomAuthority||spaces.fenced||room.commitUncertain||
+      !spaces.allows(actor,id)||!spaces.allows(recipient,id))return false;
+    const rights=await nativeRoomAuthority({actor:recipient});
+    return rights.includes('observe')&&!spaces.fenced&&!room.commitUncertain&&
+      spaces.allows(actor,id)&&spaces.allows(recipient,id);
+  }
+  function captureConversationPlace(actor,request){
+    const id=spaces.current(actor);
+    if(spaces.fenced||room.commitUncertain||id!==(request.view?.spaceId??OUTSIDE))
+      throw new RoomError('scope-changed','Tu lugar cambió. Volvé a intentar con el borrador que conservaste.');
+    if(id===OUTSIDE)return null;
+    const place=conversationPlace(actor,id);
+    if(!place)throw new RoomError('forbidden','Tu acceso a esta sala cambió.');
+    return {id:randomUUID(),run:room.run,edition:room.edition,sequence:room.sequence,capturedAt:Date.now(),place};
   }
   function moveSpace(actor,request){
     if(room.commitUncertain||!actor.rights?.includes('observe'))return null;
@@ -177,7 +206,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }
   const selectedWorldPorts=validateWorldPorts({worldSocket,worldSocketBeingRef,worldPorts});
   if(selectedWorldPorts.length&&!native)throw Error('Native authority is required for world return ports');
-  for(const selected of selectedWorldPorts)installedWorldPorts.push(await createWorldPort({socketPath:selected.socket,expectedBeingRef:selected.beingRef,room,native,describeSpace,moveSpace,
+  for(const selected of selectedWorldPorts)installedWorldPorts.push(await createWorldPort({socketPath:selected.socket,expectedBeingRef:selected.beingRef,room,native,describeSpace,moveSpace,conversationPlace,
     putExhibit,exhibitResult:(actor,id)=>exhibits.result(actor,id),resolveOwnNativeRights:ownNative&&nativeRoomAuthority?async verified=>{const rights=await nativeRoomAuthority(verified);return projectionHealthy?rights:rights.filter(right=>right==='observe');}:null,resolveRights:async verified=>{
     if(nativeRoomAuthority){const rights=await nativeRoomAuthority(verified);return projectionHealthy?rights:rights.filter(right=>right==='observe');}
     // Compatibility for older receivers only. New native authority selection
@@ -324,7 +353,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(session.times.length>=4)return res.status(429).json({message:'Esperá un momento antes de intentar otra acción.'});
       session.times.push(now);
     }
-    const spaceRoute=['/space','/space/content-visits','/space/scene'].includes(req.path)||req.path.startsWith('/space/art/');
+    const spaceRoute=['/space','/space/content-visits','/space/scene'].includes(req.path)||req.path.startsWith('/space/art/')||
+      req.path==='/conversation-surface'||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
     if(!spaceRoute&&spaces.current(actor)!==OUTSIDE)
@@ -401,7 +431,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     res.status(503).json({scope:'machine-context',work_admitted:false,message:'Todavía no pude conectar el contexto de este lugar con la conversación.'});return false;
   };
   app.post(route('api/conversation-contexts'),asyncRoute(async(req,res)=>{
-    if(requireContext(req,res))res.json(await native.contexts.prepare(req.actor,req.body));
+    if(requireContext(req,res))res.json(await native.contexts.prepare(req.actor,req.body,captureConversationPlace));
   }));
   app.get(route('api/conversation-contexts/:id'),asyncRoute(async(req,res)=>{
     if(requireContext(req,res))res.json(await native.contexts.recover(req.actor,req.params.id,req.query.binding));

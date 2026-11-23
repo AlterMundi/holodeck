@@ -5,7 +5,7 @@ import { DaimonPort } from './daimon-port.mjs';
 
 // The receiving operator owns the directory/socket filesystem capability.
 // Native identity and current room rights are independently rechecked per request.
-export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,putExhibit,exhibitResult}){
+export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,conversationPlace,putExhibit,exhibitResult}){
   if(!socketPath?.startsWith('/')||!native?.authorizeWorldRequest||typeof resolveRights!=='function')
     throw Error('Select the installed native world port and authority resolver');
   let active=0;
@@ -44,10 +44,16 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
         if(!rights?.includes('observe'))throw Error('Room admission expired');
         const actor={...verified.actor,rights};
         const port=new DaimonPort(room,async()=>actor);
-        const space=describeSpace?.(actor);
+        const space=verified.capturedSpace?null:describeSpace?.(actor);
         let result;
         const savedExhibit=own&&request.operation==='result'?exhibitResult?.(actor,request.args.id):null;
-        if(request.operation==='act'&&request.args.type==='exhibit.put'){
+        if(verified.capturedSpace){
+          if(request.operation!=='observe'||Object.keys(request.args).length)throw Error('Situated interior turns permit room observation only');
+          const captured=conversationPlace?.(actor,verified.capturedSpace);
+          if(!captured)throw Error('The current being has no access to that room');
+          result={schema:'holodeck.space-observation/v1',run:room.run,edition:room.edition,
+            observer:actor.id,space:captured};
+        }else if(request.operation==='act'&&request.args.type==='exhibit.put'){
           if(!own)throw Error('Exhibit authoring requires an own-native route');
           result=putExhibit?.(actor,request.args);
           if(!result)throw Error('Exhibit authoring unavailable');

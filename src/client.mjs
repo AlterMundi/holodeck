@@ -128,6 +128,7 @@ function applySpace(next,anchor){
   prefetched=new Set();
   prefetchRequest?.abort();prefetchRequest=null;
   document.body.classList.toggle('inside-house',inside);
+  document.body.classList.toggle('has-situated-conversation',inside&&next.sharedConversation===true);
   $('#hud h1').textContent=inside?next.title:'El taller de las islas';
   $('#people').textContent=inside?(next.level===0?'Planta baja':next.level<0?`Subsuelo ${-next.level}`:`Piso ${next.level}`):'Un lugar para crear juntos';
   if(changed){contentVisitor.changeRoom(inside);worldIndication.selected=null;worldIndication.removeOutline();state=null;}
@@ -135,6 +136,7 @@ function applySpace(next,anchor){
   if(anchor)history.replaceState(history.state,'','#'+doorLocation(anchor));
   resetDoor();
   if(!mountScene()){sceneCache.clear();location.reload();}
+  updateNativeAvailability();
   if(!inside)refresh().catch(()=>{});
 }
 function syncCurrent(){
@@ -169,7 +171,7 @@ function resetDoor(){
     canLeave:()=>{
       if(moving)return false;
       if(inside)return contentVisitor.allowLeaveRoom();
-      if(contentVisitor.frame||sharedConversation?.frame||nativeTurn||pending||preview||$('#message').value.trim()){
+      if(contentVisitor.frame||nativeTurn||pending||preview||$('#message').value.trim()){
         say('Tenés una visita, un borrador o un envío abierto. Retomalo antes de cambiar de lugar.');
         return false;
       }
@@ -419,13 +421,15 @@ async function recoveryAction(kind,action){
   }catch(error){if(current())noteRecovery(kind,error);}
   finally{recoveryBusy=false;renderRecovery();await refresh().catch(()=>{});}
 }
+const sharedSurface=()=>inside?activeSpace?.sharedConversation===true:state?.native?.sharedConversation===true;
 function updateNativeAvailability(){
   const available=state?.native?.available===true;
-  const shared=state?.native?.sharedConversation===true;
+  const shared=sharedSurface();
+  $('#talk').disabled=inside&&!shared;
   $('#conversation-panel').classList.toggle('shared-conversation',shared);
   $('#conversation-form').hidden=shared;$('#conversation-log').hidden=shared;
   $('#shared-conversation').hidden=!shared;
-  const historyLabel=worldHistory?.conversationLabel();$('#history-reference-clear').hidden=!historyLabel;
+  const historyLabel=inside?null:worldHistory?.conversationLabel();$('#history-reference-clear').hidden=!historyLabel;
   const historyHint=historyLabel?`Tema de la próxima intervención: ${historyLabel}. `:'';
   if(shared){$('#conversation-hint').textContent=historyHint+'Podés volver al mundo sin cerrar lo que estás escribiendo o grabando.';return;}
   $('#conversation-hint').textContent=historyHint+((available||nativeTurn)?'Podés seguir recorriendo el mundo mientras transcurre mi turno.':'La conversación todavía no está conectada a este mundo.');
@@ -564,9 +568,9 @@ $('#undo').onclick=async()=>{
 function openConversation(open){
   const panel=$('#conversation-panel');panel.hidden=!open;$('#talk').setAttribute('aria-expanded',String(open));
   if(open)updateNativeAvailability();
-  if(open&&state?.native?.sharedConversation){
+  if(open&&sharedSurface()){
     if(!sharedConversation)sharedConversation=new SharedConversationHost({window,document,container:$('#shared-conversation'),api,
-      capture:captureInteractionContext,currentActor:()=>state?.actorRef,
+      capture:captureInteractionContext,currentActor:()=>activeSpace?.actorRef??state?.actorRef,
       onStatus:({phase,busy})=>{$('#companion-status').textContent=phases[phase]||(busy?'La conversación está procesando tu intervención.':'Tu intervención quedó en la conversación.');},onError:say});
     sharedConversation.mount().catch(()=>say('No pude abrir tu conversación. Volvé a tocar Conversar para intentarlo.'));
   }else if(open)$('#message').focus();
@@ -612,11 +616,18 @@ async function readTurn(){
   else clearRecovery('native');
 }
 async function captureInteractionContext(){
-  const capturedActor=state.actorRef,capturedRun=state.run;
+  const capturedActor=activeSpace?.actorRef??state?.actorRef,capturedSpace=activeSpace?.id??'outside';
+  if(moving||!capturedActor)throw Error('Esperá a llegar para conversar desde este lugar.');
+  if(inside){
+    const position=client.getLocalCharacterState()?.position;
+    return structuredClone({capturedAt:Date.now(),spaceId:capturedSpace,local:position?{position}:null});
+  }
+  const capturedRun=state?.run;
+  if(!capturedRun)throw Error('No pude confirmar el mundo desde donde estás pensando.');
   // Freeze this utterance's world view before waiting for an embedded viewer.
   // Walking, remote movement and newer drafts may continue during that wait.
   const local=client.getLocalCharacterState();
-  const view=structuredClone({capturedAt:Date.now(),run:state.run,edition:state.edition,local:local?{userId:local.userId,connectionId:local.connectionId,position:local.position}:null,
+  const view=structuredClone({capturedAt:Date.now(),spaceId:capturedSpace,run:state.run,edition:state.edition,local:local?{userId:local.userId,connectionId:local.connectionId,position:local.position}:null,
     others:[...client.getCharacterStates().values()].filter(person=>!person.isLocal).slice(0,8).map(person=>({userId:person.userId,connectionId:person.connectionId,position:person.position}))});
   const appliedGeometry=geometryProbe?.snapshot();
   if(appliedGeometry)view.appliedGeometry=structuredClone(appliedGeometry);
@@ -624,7 +635,7 @@ async function captureInteractionContext(){
   if(historyReference)view.historyReference=structuredClone(historyReference);
   let visitContext;
   visitContext=await contentVisitor.context();
-  if(state.actorRef!==capturedActor||state.run!==capturedRun)throw Error('El lugar o tu acceso cambió.');
+  if((activeSpace?.actorRef??state?.actorRef)!==capturedActor||state?.run!==capturedRun||(activeSpace?.id??'outside')!==capturedSpace)throw Error('El lugar o tu acceso cambió.');
   if(visitContext)view.contentVisit=visitContext;
   if(new TextEncoder().encode(JSON.stringify(view)).length>4096)delete view.appliedGeometry;
   if(new TextEncoder().encode(JSON.stringify(view)).length>4096)throw Error('No pude conservar este contexto completo.');

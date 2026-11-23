@@ -1,0 +1,102 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+import {once} from 'node:events';
+import {mkdtempSync,rmSync} from 'node:fs';
+import net from 'node:net';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {createConversationContexts} from '../src/conversation-context.mjs';
+import {houseId} from '../src/houses.mjs';
+import {RoomStore} from '../src/room-store.mjs';
+import {createHolodeck} from '../src/server.mjs';
+
+test('a canonical interior source freezes its authorized place before awaits and limits native observation',async()=>{
+  const dir=mkdtempSync(join(tmpdir(),'holodeck-room-conversation-'));
+  const being='dm:being:v1:'+'a'.repeat(43),house=houseId(being),user='human:test';
+  const binding='b'.repeat(64),socket=join(dir,'world.sock');
+  const frozen={actorRef:user,beingRef:being,binding,entry:[1,{},2,'fixture']};
+  let grant=true,uploads=[],inspectEntered,releaseInspect,runtime,listener;
+  const entered=new Promise(resolve=>{inspectEntered=resolve;});
+  const parked=new Promise(resolve=>{releaseInspect=resolve;});
+  new RoomStore(join(dir,'houses')).save({schema:'holodeck.houses/v1',houses:[{
+    id:house,owner:being,revision:1,parcel:'parcel-west-1',facade:{color:'#226655',title:'House',width:2,depth:1,height:2},
+  }],receipts:[]});
+  try{
+    runtime=await createHolodeck({basePath:'/holodeck/',publicOrigin:'https://world.test',stateDir:dir,
+      interiorSpaces:[{id:'foyer',house,title:'Vestíbulo',level:0,entry:true,guests:[user],links:[]}],
+      identityResolver:async req=>req.headers.cookie?.includes('fixture=user')?{id:user,ref:user,kind:'human',rights:['observe']}:null,
+      nativeRoomAuthority:async()=>grant?['observe','edit','project']:[],
+      worldPorts:[{socket,beingRef:being}],
+      nativeFactory:async({room,stateDir,allowInteriorSource})=>{
+        const transport={
+          inspect:async()=>{inspectEntered();await parked;return frozen;},
+          lookup:async()=>({state:'absent'}),
+          prepareContext:async req=>{
+            uploads.push(req.observation);
+            return {schema:'holodeck.prepared-conversation-context/v1',id:req.id,binding,
+              entry_binding:req.frozen.entry,observation_id:req.observation.id,work_admitted:false,
+              file:{file_id:randomUUID(),sha256:'d'.repeat(64),name:'holodeck-situation.json',mime:'application/json',size:2000}};
+          },
+          status:async()=>({phase:'working',retainedOriginal:true,tracking:true,nativeAcceptance:'observed'}),
+        };
+        const contexts=await createConversationContexts({room,stateDir:join(stateDir,'context'),transport,allowInteriorSource});
+        return {contexts,conversationSurface:async()=>({schema:'holodeck.conversation-surface/v1',
+          actorRef:user,beingRef:being,homeRef:'home:'+'c'.repeat(32),binding,url:'https://world.test/conversation/'}),
+          authorizeWorldRequest:contexts.authorizeWorldRequest};
+      }});
+    listener=runtime.app.listen(0,'127.0.0.1');await once(listener,'listening');
+    const base='http://127.0.0.1:'+listener.address().port+'/holodeck/';
+    const first=await fetch(base,{headers:{Cookie:'fixture=user',Accept:'application/json'}});
+    const headers={Cookie:'fixture=user; '+first.headers.get('set-cookie').split(';')[0],Origin:'https://world.test','Content-Type':'application/json'};
+    const post=(path,body)=>fetch(base+'api/'+path,{headers,method:'POST',body:JSON.stringify(body)});
+    const move=(from,to)=>post('space',{from,to,live:1});
+    assert.equal((await move('outside','foyer')).status,200);
+    assert.equal((await fetch(base+'api/conversation-surface',{headers})).status,200);
+    assert.equal((await fetch(base+'api/state',{headers})).status,409,'inside API stays scoped');
+    const id=randomUUID();
+    const body={id,binding,view:{spaceId:'foyer',capturedAt:123,historyReference:{unverified:true},
+      others:[{private:'forged'}],local:{position:{x:1,y:.1,z:2}}}};
+    const pending=post('conversation-contexts',body);
+    await entered;
+    assert.equal((await move('foyer','outside')).status,200);
+    releaseInspect();
+    const prepared=await pending;
+    assert.equal(prepared.status,200,await prepared.clone().text());
+    const attachment=await prepared.json();
+    assert.equal(attachment.work_admitted,false);
+    assert.equal(uploads.length,1);
+    assert.equal(uploads[0].place.id,'foyer');
+    assert.equal(uploads[0].scope,'structured-interior-room');
+    assert.equal(uploads[0].inputAssociation.humanInputId,id);
+    assert.deepEqual(uploads[0].entities,{});
+    assert.deepEqual(uploads[0].events,[]);
+    assert.doesNotMatch(JSON.stringify(uploads[0]),/private|historyReference|Connect the workshop islands/);
+    const retained=await fetch(base+'api/conversation-contexts/'+id+'?binding='+binding,{headers});
+    assert.deepEqual((await retained.json()).files,attachment.files);
+    const changed=await post('conversation-contexts',{...body,id:randomUUID()});
+    assert.equal(changed.status,409);
+    assert.equal(uploads.length,1);
+    async function port(operation,args={}){
+      const conn=net.createConnection(socket);
+      await once(conn,'connect');
+      conn.write(JSON.stringify({interactionId:id,operation,args})+'\n');
+      let value='';for await (const block of conn)value+=block;
+      return JSON.parse(value);
+    }
+    const observed=await port('observe');
+    assert.equal(observed.ok,true);
+    assert.equal(observed.result.space.id,'foyer');
+    assert.equal((await port('project')).ok,false);
+    assert.equal((await port('act',{type:'space.move',from:'outside',to:'foyer'})).ok,false);
+    grant=false;
+    assert.equal((await port('observe')).ok,false);
+    const readback=await fetch(base+'api/conversation-contexts/'+id+'?binding='+binding,{headers});
+    assert.equal(readback.status,409);
+  }finally{
+    releaseInspect();
+    runtime?.close();
+    if(listener){listener.closeAllConnections();await new Promise(resolve=>listener.close(resolve));}
+    rmSync(dir,{recursive:true,force:true});
+  }
+});

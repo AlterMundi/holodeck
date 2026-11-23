@@ -16,23 +16,33 @@ export class NativeConversationError extends Error {
 
 // Both the legacy text bridge and the shared Conversation surface use this same
 // machine-authored capture. No human text, audio or selected files belong here.
-export function captureNativeSituation(room,actor,request,{pairedBeing=null,pairFocusBinding='current-native-binding',serverCapture='at-original-retention'}={}){
+export function captureNativeSituation(room,actor,request,{pairedBeing=null,pairFocusBinding='current-native-binding',serverCapture='at-original-retention',interior=null}={}){
   const preserveActors=pairedBeing?[pairedBeing]:[];
   const extra={inputAssociation:{humanInputId:request.id,serverCapture,clientReportedCaptureTime:request.view?.capturedAt??null}};
   if(request.view!==undefined){
     if(!request.view||typeof request.view!=='object'||Buffer.byteLength(encode(request.view))>4096)
       throw new NativeConversationError('view','Provide a bounded client-reported view',{retained:false,knownNotSubmitted:true,retryable:true});
-    const view=structuredClone(request.view);
+    const view=interior?{capturedAt:request.view.capturedAt,spaceId:interior.place.id,
+      local:request.view.local?{position:request.view.local.position}:null}:structuredClone(request.view);
     // The exact reference is resolved below, never copied event text from a client.
     delete view.historyReference;
     extra.clientReportedView={evidence:'client-reported-at-interaction-capture',value:view,
       uncertainty:'Client-reported scene-graph/DOM evidence only, including any appliedGeometry field. Not presented pixels, authoritative location, line of sight, attention or understanding. A not-in-document entity reference proves DOM absence only.'};
   }
-  if(request.view&&Object.hasOwn(request.view,'historyReference'))extra.selectedActivity=resolveHistoryReference(room,actor,request.view.historyReference);
+  if(!interior&&request.view&&Object.hasOwn(request.view,'historyReference'))extra.selectedActivity=resolveHistoryReference(room,actor,request.view.historyReference);
   // Keep the canonical world and exact speaker/paired indications ahead of an
   // optional client-reported view. The cached capture never contains this view.
   const reserve={inputAssociation:extra.inputAssociation,...(extra.selectedActivity?{selectedActivity:extra.selectedActivity}:{})};
-  const observation=room.observe(actor,{after:Math.max(0,room.sequence-16),displayedSequence:request.displayedSequence??null,
+  const observation=interior?{
+    schema:'holodeck.situation/v1',id:interior.id,run:interior.run,edition:interior.edition,
+    capturedAt:interior.capturedAt,observer:actor.id,scope:'structured-interior-room',
+    place:{id:interior.place.id,title:interior.place.title,level:interior.place.level,
+      house:interior.place.house,objects:interior.place.objects,
+      ...(interior.place.exhibitRevision?{exhibitRevision:interior.place.exhibitRevision}:{})},
+    source:{through:interior.sequence,displayedSequence:null},
+    activity:null,focus:[],nodes:{},entities:{},events:[],participants:interior.place.participants,
+    uncertainty:['This capture covers only the authorized room. Shared presence does not establish location within it, attention or understanding.'],
+  }:room.observe(actor,{after:Math.max(0,room.sequence-16),displayedSequence:request.displayedSequence??null,
     maxBytes:MAX_OBSERVATION_BYTES-Buffer.byteLength(encode(reserve))-256,preserveActors});
   Object.assign(observation,extra);observation.source.pairFocusBinding=pairedBeing?pairFocusBinding:'unavailable-at-capture';
   if(!fitSituation(observation,MAX_OBSERVATION_BYTES,{preserveActors})&&observation.clientReportedView){
@@ -296,7 +306,7 @@ export async function createNativeConversation({room,stateDir,transport,fileSyst
   };
 }
 
-export async function nativeFactory({room,stateDir,receiving}){
+export async function nativeFactory({room,stateDir,receiving,allowInteriorSource}){
   if(!receiving?.nativeSocket&&!receiving?.nativeRoutes)return null;
   const transport=receiving.nativeRoutes
     ?createNativeTransportMux({routes:receiving.nativeRoutes,createTransport:createUnixNativeTransport})
@@ -305,7 +315,7 @@ export async function nativeFactory({room,stateDir,receiving}){
   if(receiving.sharedConversation!==undefined&&typeof receiving.sharedConversation!=='boolean')throw Error('Select the shared Conversation capability explicitly');
   if(!receiving.sharedConversation)return legacy;
   const {createConversationContexts}=await import('./conversation-context.mjs');
-  const contexts=await createConversationContexts({room,stateDir:join(stateDir,'conversation-context'),transport});
+  const contexts=await createConversationContexts({room,stateDir:join(stateDir,'conversation-context'),transport,allowInteriorSource});
   return {...legacy,contexts,
     conversationSurface:actor=>transport.surface(actor.ref),
     authorizeWorldRequest:(id,being)=>contexts.has(id)?contexts.authorizeWorldRequest(id,being):legacy.authorizeWorldRequest(id,being)};

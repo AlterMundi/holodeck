@@ -9,6 +9,13 @@ acceptance. The obsolete bundled pending trial was withdrawn.
 
 ## Selected receiving release
 
+Nicolás reported that the lab stair was missing. The selected Home pair
+already had the foyer and gallery grant; the lab was still limited to its
+owner. Receiving configuration now adds exactly that existing paired
+human to the lab. The Holodeck web unit reloaded the selection and the
+signed native observer responded. The author has not yet observed the
+paired human's resulting browser entry.
+
 The Blender-authored Beacon workshop is live in the existing CompAII
 laboratory. Source `6f01e67`, package `a7cf9e539e70`, uses the existing room
 ACL, stairs and return path. The seven-mesh GLB is 801,332 bytes and served
