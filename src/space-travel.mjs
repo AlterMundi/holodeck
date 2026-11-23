@@ -1,5 +1,7 @@
 const base=()=>new URL('./',document.baseURI);
 const DOOR_RANGE=1.65;
+const STAIR_RANGE=.85;
+const PORTAL_RANGE=.90;
 
 export async function readSpace(){
   const result=await fetch(new URL('api/space?live=1',base()),{credentials:'same-origin'});
@@ -96,7 +98,10 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
       if(gap<prefetchDistance&&destination.to!=='outside'){nearby=destination;prefetchDistance=gap;}
       const stair=destination.kind==='stair';
       if(Math.abs(position.y-destination.door.y)>(stair ? .34 : .8))continue;
-      if(gap<distance&&(!stair||gap<.85)){closest=destination;distance=gap;}
+      // A portal is a deliberate approach to its floor marker. Keep its warm
+      // scene prefetch, but do not offer travel from the adjacent stair aisle.
+      const reach=stair?STAIR_RANGE:destination.kind==='portal'?PORTAL_RANGE:DOOR_RANGE;
+      if(gap<distance&&gap<reach){closest=destination;distance=gap;}
     }
     if(nearby)onNear?.(nearby.to);
     if(closest===near)return;
