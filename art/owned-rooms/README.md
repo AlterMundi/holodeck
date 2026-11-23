@@ -15,7 +15,9 @@ face has concentric brass and enamel tuning rings. These are modeled
 prototypes. The room's warmer task light and the cool return fill echo the
 opal glazing and leave the playing aisle open. The kit can be selected for
 an eligible owned room, including Casa de CompAII's Taller Sensorial.
-[Editable Blender source](sensorial-workshop.blend).
+The packaged GLB is 67,434 bytes with Brotli.
+[Editable Blender source](sensorial-workshop.blend) ·
+[Packaged Chromium at player height](sensorial-player-height.jpg).
 
 The kits fit the same two furniture volumes in the existing room. The
 room-local coordinate system is glTF and Holodeck's X, up Y and Z, in

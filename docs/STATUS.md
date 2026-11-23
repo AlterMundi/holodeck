@@ -71,7 +71,20 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`a2065ca`, package `aded7e3a47ab`; rollback is `6f8b29367e82`.
+`5ed04de`, package `ad811d21a9cd`; the compatible rollback is
+`f0e7e98fa781` from `43ed460`. The actual Casa owner selected the new
+Blender-authored Materials Workshop for Taller Sensorial and read back
+its exact receipt at design revision 2. The previous design checkpoint
+matches revision 1. The layout, room access, garden state and other
+tracked checkpoints were preserved. Two simulated Chromium participants
+verified the protected art hash and 15 rendered materials. A paired
+editor recovered its single garden write after response loss, a separate
+visitor completed the game and revocation removed editor access. The
+prototype furniture has no attached Sensorial telemetry or device controls.
+[Workshop at player height](../art/owned-rooms/sensorial-player-height.jpg).
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) previously served source
+`a2065ca`, package `aded7e3a47ab`; rollback was `6f8b29367e82`.
 The Spatializer and Weaver benches can each request one current service
 status from the existing Harmonic Lab panel. The response is a short,
 expiring summary selected for the current bench. Reading it sends no

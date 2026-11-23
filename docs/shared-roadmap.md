@@ -390,9 +390,10 @@ playroom with an upper observatory. The draft appends reciprocal passages,
 keeps existing door slots and guest lists, and returns the full revisioned
 command for explicit owner publication. This uses the same layout store and
 receipts. The selected Casa's owner used the same route to extend the
-live plan with Taller Sensorial, furnished with the listening kit and
-reachable through the Blender-authored foyer portal. A compatible reader
-preserves the added room and its design, game and visitor state. Current
+live plan with Taller Sensorial via the Blender-authored foyer portal.
+The owner selected the Materials Workshop kit through the same supported
+furnishing workflow. A compatible reader preserves the room and its
+design, game and visitor state. Current
 source permissions for future Sensorial data and controls are separate.
 A room-scoped owner grant now lets the currently paired human publish an
 indoor game with their own receipt. Paired-human layout, furnishings and
