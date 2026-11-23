@@ -97,6 +97,25 @@ The small sample does not establish a general movement improvement.
 Those runs still requested the previous 1.82 MB compressed house facade. Early location and terrain preload experiments were
 slower in this fixture and were discarded.
 
+## Spawn on the arrival terrace
+
+The first exterior spawn is 1 mm above the runtime terrace collider top.
+The floor projection and the launch height use the same layout constant.
+A paired Chromium trace at 6.4 Mb/s with 80 ms latency showed the previous
+first rendered avatar at y=0.623 m while it was falling to y=0.100 m.
+The new package rendered its first avatar at y=0.100 m. Measured arrival
+at floor height was 8.64 s, versus 9.86 and 10.13 s in the baseline runs.
+Observed first movement beyond 15 cm stayed near 12 s. The first render
+of the full exterior still had a software-rendered frame taking about
+1.4 s.
+
+Skipping all draws behind the loading screen let the upstream load
+gate finish about 0.4 s earlier, but shifted 4.4–5.0 s of blocking work to
+the first visible draw and increased the movement measurement to
+13.49–14.02 s. That experiment was discarded. Preserve normal warmup,
+auth, collision and spawn gates when testing the next rendering change.
+These figures use SwiftShader and the existing protected-route fixture.
+
 ## Optimized exterior facade
 
 The Blender facade export kept the full-resolution color atlas with

@@ -242,7 +242,10 @@ physical-device frame pacing separate.
 The bundled locomotion clips now transfer 72% fewer bytes on a cold visit.
 The west parcel facade now transfers 1.09 MB in place of 1.82 MB,
 with the same geometry and a qualified visit through its doorway.
-Continue measuring first movement independently of download size.
+The first rendered avatar now starts on the walking surface. Startup
+traces still show a full-scene render stall before responsive movement in
+the software fixture. Keep measuring first movement independently of
+download size.
 [Frame, passage and cold arrival evidence](visual-play.md)
 
 ### Finish the architecture and props in the running game

@@ -71,6 +71,15 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves
+source `0ef7d80`, package `b7539eba9652`. The exterior avatar spawns
+at the terrace surface. Packaged Chromium verified the grounded
+first frame, movement with WASD and emulated touch, and the house
+door round trip. The software render delay remains measurable.
+All 59 installed files, protected HTTPS checks and the retained
+world digests matched. Rollback is `c8b9be33abd57`.
+[Startup measurements](visual-play.md#spawn-on-the-arrival-terrace).
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) previously served
 source `542b509`, package `c8b9be33abd57`. The optimized Blender
 facade transfers 1.09 MB with Brotli, 40.3% below the prior variant.
 Geometry, material bindings and the door anchor match, and the
