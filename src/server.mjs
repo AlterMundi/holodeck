@@ -1,3 +1,4 @@
+import {interiorArt} from './interior-art.mjs';
 import {RoomExhibits,EXHIBIT_SAVE_BYTES} from './room-exhibits.mjs';
 import {InteriorSpaces, OUTSIDE, SPACE_SAVE_BYTES, interiorDocument} from './interior-spaces.mjs';
 import {Houses, HOUSE_SAVE_BYTES} from './houses.mjs';
@@ -135,13 +136,17 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     }).catch(()=>socket.close(1008)).finally(()=>pendingSockets--);
   });
   const cellTransports=new Map();
+  function renderInterior(room,passages,exhibit){
+    const art=interiorArt(room),src=art?route('api/space/art/'+art.revision):null;
+    return interiorDocument(room,passages,exhibit,art&&{src,colliders:art.colliders});
+  }
   function interiorScopeKey(actor,selected){
     return JSON.stringify([spaces.passages(actor,selected).map(link=>link.slot),exhibits.forRoom(selected.id)?.revision??0]);
   }
   function visitScene(actor,id,cachedRevision){
     const selected=spaces.rooms.get(id);
     if(!selected)return null;
-    const markup=interiorDocument(selected,spaces.passages(actor,selected),exhibits.forRoom(id));
+    const markup=renderInterior(selected,spaces.passages(actor,selected),exhibits.forRoom(id));
     const revision=createHash('sha256').update(actor.id+'\n'+markup).digest('hex');
     return {id,actor:actor.id,revision,...(cachedRevision===revision?{}:{markup})};
   }
@@ -300,7 +305,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     // all DOM work while the room's shared avatar stream stays independent.
     const scopedDocument=new WorldDocument('http://localhost'+route('spaces/'+id+'/world'));
     ws.once('close',()=>scopedDocument.dispose());
-    scopedDocument.load(interiorDocument(selectedRoom,initial,initialExhibit)).then(()=>{
+    scopedDocument.load(renderInterior(selectedRoom,initial,initialExhibit)).then(()=>{
       if(ws.readyState!==1||!inScope(record.session.actor,id)||!record.projectionAllowed()){
         ws.close(1008);return;
       }
@@ -319,13 +324,19 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(session.times.length>=4)return res.status(429).json({message:'Esperá un momento antes de intentar otra acción.'});
       session.times.push(now);
     }
-    const spaceRoute=['/space','/space/content-visits','/space/scene'].includes(req.path);
+    const spaceRoute=['/space','/space/content-visits','/space/scene'].includes(req.path)||req.path.startsWith('/space/art/');
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
     if(!spaceRoute&&spaces.current(actor)!==OUTSIDE)
       return res.status(409).json({message:'Volvé al exterior para usar esta acción.'});
     req.actor=actor;next();
   }));
+  app.get(route('api/space/art/:revision'),(req,res)=>{
+    const id=spaces.current(req.actor);
+    const art=interiorArt(spaces.rooms.get(id));
+    if(!art||!inScope(req.actor,id)||req.params.revision!==art.revision)return res.sendStatus(404);
+    res.type('model/gltf-binary').send(art.bytes);
+  });
   app.get(route('api/space/content-visits'),(req,res)=>{
     if(spaces.fenced||room.commitUncertain||exhibits.fenced)return res.status(503).json({message:'No pude recuperar la exposición.'});
     const active=spaces.current(req.actor);

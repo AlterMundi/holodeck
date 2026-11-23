@@ -28,7 +28,7 @@ The previous three parallel rooms remain an archived study in `model.py`.
 
 The panels and prototype currently show architectural placeholders. Sample
 traces are drawn in the artwork and labeled as an interface study. There is no
-live instrument operation, device connection, or verified in-world placement.
+live instrument operation, device connection, or whole-house runtime placement.
 The next integration should map the authored visual geometry and approved
 colliders to the existing independent room projections and preserve the current
 doorway, source access and ordinary return. Connector names and camera
@@ -59,6 +59,21 @@ The garden incorporates the first compact derivative from the
 The supplied HUD illustration is a design study over the Blender view. It
 does not represent installed controls. The actual rendering, input layout
 and accessibility have their own browser acceptance.
+
+## First playable mounting
+
+The original Beacon workshop objects also have a room-local export. Blender
+batches the materials into six meshes, with 20,744 triangles and no textures
+or decoder extensions. The 775,584-byte GLB is attached to the already
+authorized CompAII laboratory. Its current stairs, entry/exit and situated
+room identity provide the walkable integration boundary. Simple collision
+proxies cover the prototype base and console. Scene authorization applies to
+the GLB as well as the room markup. The console and instrument remain visual
+studies pending independent, real project bindings.
+
+```sh
+blender -b "$ART_OUTPUT/Casa de CompAII - Nivel.blend"   --python-exit-code 1 -P art/compaii-house/export_beacon_room.py --   public/room-art/beacon-workshop.glb
+```
 
 ## Reproduce and review
 

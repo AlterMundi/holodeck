@@ -1,16 +1,11 @@
 # Current MVP work
 
-Updated2026-11-22. Nicolas explicitly resumed the **complete** existing MVP goal
-and says testing already done is enough to continue implementation. Native resume
-was acknowledged with the original objective/accounting unchanged. The MVP is
-not complete. After the implementation and receiving corrections, the current
-goal is BLOCKED awaiting actual human situated use/return and review acceptance.
-The full objective/accounting and deployed world remain unchanged; this is not
-a service outage or a request to repeat the shared movement/authentication trial. The real reported
-content-exit failure was reproduced, repaired and delivered. Specific
-observations/unknowns remain recorded rather than becoming a blanket acceptance
-claim or a gate requiring another generic repeat of the same human trial.
-The obsolete bundled pending trial was withdrawn without claiming its completion.
+Updated 2026-11-23. The complete existing MVP goal is active. Nicolás's earlier
+shared movement, light, house and door confirmations still count. The repaired
+content-exit route has been delivered. Actual human use of the situated
+Conversation return and of the protected project review remains open. Continue
+qualifying the walkable world and its workspaces while retaining the earlier
+acceptance. The obsolete bundled pending trial was withdrawn.
 
 ## Selected receiving release
 

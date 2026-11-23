@@ -160,7 +160,7 @@ export class InteriorSpaces {
 }
 
 // Each server-authorized room has its own local collision and render document.
-export function interiorDocument(room,passages=[],exhibit=null) {
+export function interiorDocument(room,passages=[],exhibit=null,art=null) {
   const {id,position:{x,y,z},radius,height}=ROOM_MARKER;
   const {floor,wall,end} = room.entry ? {floor:'#aa9376',wall:'#486966',end:'#557675'} :
     room.level<0 ? {floor:'#657378',wall:'#415666',end:'#4c6376'} :
@@ -168,6 +168,7 @@ export function interiorDocument(room,passages=[],exhibit=null) {
     {floor:'#b5a28e',wall:'#5b7471',end:'#668581'};
   return `<m-group id="${room.id}">
     ${roomFloor(passages,floor)}
+    ${art?'<m-model id="room-art" src="'+attribute(art.src)+'" collide="false"></m-model>'+art.colliders:''}
     <m-cube x="-6" y="1.65" z="0" width=".2" height="3.3" depth="12" color="${wall}"></m-cube>
     <m-cube x="6" y="1.65" z="0" width=".2" height="3.3" depth="12" color="${wall}"></m-cube>
     <m-cube x="0" y="1.65" z="-6" width="12" height="3.3" depth=".2" color="${end}"></m-cube>
