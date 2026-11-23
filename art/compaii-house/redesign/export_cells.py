@@ -1,5 +1,6 @@
 """Bake the authored cells into self-contained core glTF for runtime review."""
 import json
+from math import pi
 import runpy
 import struct
 import sys
@@ -22,6 +23,7 @@ ALBEDO_RESOLUTION = 1024
 NORMAL_RESOLUTION = 1024
 MAX_BYTES = 4 * 1024 * 1024
 MAX_TRIANGLES = 64_000
+LAB_LETTERING = 'Laboratory sign ivory'
 BEACON_STAIRS = ('Descending stair tread', 'Stair rail', 'Stone wall at stair')
 FOYER_EXTERIOR = ('Stone plinth','Warm entrance floor','Entrance step','CASA DE COMPAII',
                   'Clerestory smoked glass','Vertical recessed window','Amber window sill',
@@ -197,7 +199,21 @@ def gallery_stair():
     pieces = [
         ('Gallery stair end wall',(3,5.963,-.453),(1.71,.20,1.114),stone,.018),
         ('Gallery stair well underside',(3,4.51,-.988),(1.73,2.71,.075),basalt,.008),
+        ('Lab doorway stone frame',(3,5.800,.323),(1.67,.178,2.16),stone,.024),
+        ('Lab door oak casing',(3,5.696,.290),(1.50,.091,2.07),oak,.018),
+        ('Lab door oak leaf',(3,5.639,.263),(1.35,.074,1.96),oak,.016),
+        ('Lab door gunmetal inset',(3,5.596,.322),(1.11,.018,1.57),iron,.016),
+        ('Lab door basalt kick plate',(3,5.591,-.590),(1.23,.028,.19),basalt,.009),
+        ('Lab door satin brass backplate',(3.475,5.580,.218),(.084,.027,.223),brass,.004),
+        ('Lab door handle',(3.409,5.548,.238),(.17,.048,.033),brass,.012),
+        ('Lab address oak panel',(3,5.802,2.199),(2.15,.107,.491),oak,.028),
+        ('Lab address gunmetal field',(3,5.738,2.199),(2.025,.04,.386),iron,.012),
+        ('Lab address brass sill',(3,5.713,2.015),(1.929,.016,.016),brass,.003),
     ]
+    for x in (2.64, 3.36):
+        pieces.append(('Lab door inset oak stile',(x,5.579,.322),(.037,.031,1.51),oak,.006))
+    for z in (-.172, .755):
+        pieces.append(('Lab door inset oak crossbar',(3,5.577,z),(1.096,.033,.064),oak,.008))
     for index in range(6):
         depth = 5.86-.45*(index+.5)
         top = .095-.14*(6-index)
@@ -217,6 +233,27 @@ def gallery_stair():
                 ('Gallery stair bronze baluster',(x,y,.50),(.040,.052,.690),brass,.005),
             ])
     return pieces
+
+
+def letter_gallery_lab_sign(obj):
+    parts = [obj]
+    ivory = bpy.data.materials['Ivory lettering'].copy()
+    ivory.name = LAB_LETTERING
+    surface = ivory.node_tree.nodes.get('Principled BSDF')
+    surface.inputs['Emission Color'].default_value = (.84,.72,.53,1)
+    surface.inputs['Emission Strength'].default_value = .12
+    for body, height, size in [('LABORATORIO', 2.194, .247), ('NIVEL -1', 2.061, .107)]:
+        text = bpy.data.curves.new(body, 'FONT')
+        text.body, text.align_x, text.size, text.extrude = body, 'CENTER', size, .001
+        letters = bpy.data.objects.new(body, text)
+        letters.location = (3,5.714,height)
+        letters.rotation_euler.x = pi/2
+        text.materials.append(ivory)
+        bpy.context.collection.objects.link(letters)
+        parts.append(letters)
+    select(parts)
+    bpy.ops.object.convert(target='MESH')
+    bpy.ops.object.join()
 
 
 def close_gallery_gables(obj):
@@ -295,6 +332,8 @@ def register_gallery(obj,stair):
         ])
     append_blocks(obj,floor+finish+(gallery_stair() if stair else []))
     close_gallery_gables(obj)
+    if stair:
+        letter_gallery_lab_sign(obj)
 
 
 def register_beacon(obj):
@@ -414,6 +453,10 @@ def portable_materials(obj, color, normal, contact=None, bounce=None):
         for node in list(nodes):
             if node not in (shader, nodes.get('Material Output')):
                 nodes.remove(node)
+        # Tiny bevels and glyph faces stay crisp in their solid sign material.
+        if mat.name == LAB_LETTERING:
+            links.new(shader.outputs['BSDF'], nodes.get('Material Output').inputs['Surface'])
+            continue
         color_node = nodes.new('ShaderNodeTexImage')
         color_node.image = color
         links.new(color_node.outputs['Color'], shader.inputs['Base Color'])

@@ -214,7 +214,7 @@ room-local bounds. Keep Blender area lights and camera setups in the source.
 | Parcel facade | 2,836,316 | 19,712 | 9 |
 | Foyer | 1,536,588 | 6,700 | 7 |
 | Beacon laboratory | 2,644,700 | 28,416 | 9 |
-| Gallery with stair | 2,655,216 | 21,120 | 9 |
+| Gallery with stair | 2,926,652 | 26,392 | 10 |
 | Gallery with continuous floor | 2,247,352 | 14,328 | 9 |
 | Listening tower | 1,983,396 | 26,056 | 10 |
 | Arrival commons | 582,668 | 14,880 | 10 |
@@ -323,9 +323,20 @@ Both browser fixtures fetched their exact permitted models. The stair and
 tower links remained available to the first visitor. The visitor descended
 with WASD, entered Beacon with E and returned to the same gallery landing in
 the same document. The second visitor crossed the continuous floor at
-gallery height and received a denial for direct lab entry. The packaged assets
-transfer in 1,458,461 bytes for the stair edition and 1,463,368 bytes for the
-continuous floor with Brotli.
+gallery height and received a denial for direct lab entry. With Brotli, the
+assets in those views transfer in 1,458,461 bytes for the stair edition
+and 1,463,368 bytes for the continuous floor.
+
+### Laboratory door and sign
+
+The stair edition includes a limestone surround, an oak door with a
+gunmetal inset and brass hardware, and an ivory **Laboratorio** sign with
+the floor number. The authored fittings sit inside the existing gallery
+envelope. The stair and rails retain their original collision surfaces
+and the door retains its original route and activation point. The existing
+continuous-floor asset contains no laboratory door or sign. The stair
+edition transfers in 1,482,647 bytes with Brotli.
+[View from the stair landing in Chromium](review/gallery-laboratory-door.jpg).
 
 The supported first control handoff is the authenticated
 [Harmonic Lab panel](https://compaii.dmn.homes/harmonic_lab/). Walk toward

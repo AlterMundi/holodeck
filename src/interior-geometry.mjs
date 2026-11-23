@@ -43,7 +43,7 @@ export function roomFloor(passages,color,visible=true) {
   return floor;
 }
 
-export function passageMarkup(passage,{visibleSteps=true,authoredPortal=false,authoredDoor=false}={}) {
+export function passageMarkup(passage,{visibleSteps=true,authoredPortal=false,authoredDoor=false,authoredStairDoor=false}={}) {
   const slot=SLOTS[passage.slot],y=passage.rise*STAIR_STEPS*RISE;
   const portal=passage.kind==='portal',color=portal?'#9384bd':passage.rise?'#779491':'#d6b58c';
   const fill=portal?'#4f6a8d':passage.rise?'#3f5b5e':'#675948';
@@ -57,6 +57,10 @@ export function passageMarkup(passage,{visibleSteps=true,authoredPortal=false,au
     steps+=cube(side*.91,.57+y/2,STAIR_STEPS*TREAD/2,.12,1.04+Math.abs(y),STAIR_STEPS*TREAD,'#7a9690',attributes);
   if(portal&&authoredPortal)
     return `<m-group id="passage-${passage.slot}" x="${slot.x}" z="${slot.z}" ry="${slot.rotation}"></m-group>`;
+  // The gallery model carries the carpentry and wayfinding, while MML keeps
+  // its existing invisible stair and rail colliders at the passage slot.
+  if(passage.kind==='stair'&&authoredStairDoor)
+    return `<m-group id="passage-${passage.slot}" x="${slot.x}" z="${slot.z}" ry="${slot.rotation}">${steps}</m-group>`;
   if(passage.kind==='door'&&authoredDoor)
     return `<m-group id="passage-${passage.slot}" x="${slot.x}" z="${slot.z}" ry="${slot.rotation}">
     <m-label y="2.48" z=".48" width="1.35" height=".22" font-size="16" alignment="center" color="#34291e" font-color="#fff0d1" content="${passage.label}" collide="false"></m-label></m-group>`;

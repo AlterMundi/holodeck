@@ -231,7 +231,8 @@ export function interiorDocument(room,passages=[],exhibit=null,art=null) {
       ${art?.gallerySigns?'':`<m-label y="1.74" z=".41" width="1.6" height=".36" font-size="20" content="${EXHIBIT_LABEL}" collide="false"></m-label>`}
     </m-group>`:''}
     ${passages.map(p=>passageMarkup({...p,label:attribute(p.title)},{
-      visibleSteps:!art?.authoredStairs,authoredPortal:art?.authoredPortal,authoredDoor:art?.authoredDoor})).join('')}
+      visibleSteps:!art?.authoredStairs,authoredPortal:art?.authoredPortal,
+      authoredDoor:art?.authoredDoor,authoredStairDoor:art?.authoredStairDoor})).join('')}
     ${room.entry?'<m-group id="house-exit"><m-cube y="1.13" z="5.86" width="1.35" height="2.06" depth=".08" color="#c8a36d" collide="false"></m-cube><m-cube x=".45" y="1.05" z="5.79" width=".06" height=".14" depth=".08" color="#343e40" collide="false"></m-cube><m-label y="2.53" z="5.81" ry="180" width="1.55" height=".37" font-size="19" content="Salida" collide="false"></m-label></m-group>':''}
     ${art&&!art.palette?'':`<m-label x="0" y="2.3" z="-5.87" width="4" height=".65" font-size="26" content="${attribute(room.title)}"${art?.palette?' color="#163b3f" font-color="#f6edda"':''} collide="false"></m-label>`}
     ${art?.replacesShell||art?.hideMarker?'':`<m-cylinder id="${id}" x="${x}" y="${y}" z="${z}" radius="${radius}" height="${height}" color="#af956a"></m-cylinder>`}
