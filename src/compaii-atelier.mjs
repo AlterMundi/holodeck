@@ -19,6 +19,9 @@ const GARDEN_ASSET='compaii-atelier-garden.glb';
 const COMMONS_ASSET='compaii-atelier-commons.glb';
 const COMMONS_REVISION='9692049f367d813f055f7608923be49ffd49911aa9844da15250d450d2da6105';
 const SURROUNDINGS_ASSET='island-scenery-atelier.glb';
+const SURROUNDINGS_REVISION='d0c5d692cbb64edb79213da7188515f126587588c94004bdec74878a53a9acb4';
+const OUTDOOR_SKY=Object.freeze({asset:'coastal-sky.jpg',
+  revision:'2e9a63bbb5eb0e3a60e6144cff155e753211e093ee2870efda480129a01baae8'});
 const dossier={
   'room-art/compaii-atelier/foyer.glb':'f0a8b2b9f63a67559024e7387036bb0592623f3170a4a9863fead7e44eab03f6',
   'room-art/compaii-atelier/gallery.glb':'b6b72597851615355a24aa5450922a13dea581eabb1d56fc7d92d102bd088c38',
@@ -28,7 +31,8 @@ const dossier={
   ['assets/'+FACADE_ASSET]:'940aa64038396e43db8beca859e33f4f52c6ae3a84d1702457159c0af1224077',
   ['assets/'+GARDEN_ASSET]:'ecf2f1225a065b1a1b4b067ad2cd0f3ac96bc62b5d8a31a8894dd1a50490361b',
   ['assets/'+COMMONS_ASSET]:COMMONS_REVISION,
-  ['assets/'+SURROUNDINGS_ASSET]:'61f058ac7d7ba1de6f2fff1237dae7a473afcd2596849939eabb4b41b443a104',
+  ['assets/'+SURROUNDINGS_ASSET]:SURROUNDINGS_REVISION,
+  ['assets/'+OUTDOOR_SKY.asset]:OUTDOOR_SKY.revision,
 };
 
 const facade={
@@ -103,7 +107,7 @@ export function selectAtelier(profile,rooms,houses){
       {id:'tower-return',x:-3,y:3.6,z:-4.88,intensity:22,distance:6,color:'#ffcb86'},
     ].map(softLight).join('')};
   return {
-    sceneryAsset:SURROUNDINGS_ASSET,gardenVisual,commonsVisual,
+    sceneryAsset:SURROUNDINGS_ASSET,sceneryRevision:SURROUNDINGS_REVISION,outdoorSky:OUTDOOR_SKY,gardenVisual,commonsVisual,
     houseVisual:house=>house.id===COMPAII_HOUSE&&house.revision===1?{facade}:null,
     interiorArtwork:(room,passages=[])=>{
       if(room?.house!==COMPAII_HOUSE)return null;

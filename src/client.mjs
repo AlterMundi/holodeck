@@ -14,6 +14,7 @@ import { BeaconControls } from './beacon-controls.mjs';
 import {pickedRepresentationVisit} from './node-representations.mjs';
 import { PlayableHUD } from './playable-hud.mjs';
 import { IndoorGardenHUD } from './indoor-garden-hud.mjs';
+import { OutdoorSky } from './outdoor-sky.mjs';
 import { SignalGardenEditor } from './signal-garden-editor.mjs';
 import { AppliedGeometryProbe } from './applied-geometry.mjs';
 import { SharedConversationHost } from './shared-conversation-host.mjs';
@@ -282,6 +283,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
   createRenderer:options=>{
     const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
     galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
+    const sky=new OutdoorSky(renderer.mmlCompositionScene.group.parent,base);
     const light=new DirectionalLight(0xffefd6,1.8);
     light.position.set(12,22,10);light.target.position.set(0,0,-6);light.castShadow=true;
     light.shadow.mapSize.set(1024,1024);
@@ -313,6 +315,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
     renderer.render=renderState=>{
       const position=client.getLocalCharacterState()?.position;
       light.visible=!inside||!activeSpace.indoorLighting;
+      sky.update(!inside?activeSpace?.outdoorSky:null);
       nativeAvatarLayer.update();
       galleryModels.update();
       garden.update(inside&&!moving&&activeSpace.playableInterior?activeSpace.id:null);gardenMarkers();
@@ -323,7 +326,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       if(!inside)geometryProbe.afterRender();
       if(hot&&moving&&canFinishMove())setMoving(false);
     };
-    renderer.dispose=()=>{removeScene();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();dispose();};
+    renderer.dispose=()=>{removeScene();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();dispose();};
     queueMicrotask(options.onInitialized);
     return renderer;
   },

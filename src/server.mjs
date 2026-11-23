@@ -106,7 +106,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       await Promise.all([...sockets].map(([socket,record])=>checkSocket(socket,record)));
       if(room.commitUncertain){projectionHealthy=false;return;}
       await document.load(worldDocument(room,{basePath,houseVisual:atelier?.houseVisual??houseVisual,
-        gardenVisual:atelier?.gardenVisual??gardenVisual,sceneryAsset:atelier?.sceneryAsset,
+        gardenVisual:atelier?.gardenVisual??gardenVisual,sceneryAsset:atelier?.sceneryAsset,sceneryRevision:atelier?.sceneryRevision,
         commonsVisual:atelier?.commonsVisual}));projectionHealthy=true;
     }}catch{projectionHealthy=false;}finally{projectionRunning=false;}
   };
@@ -187,7 +187,9 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }
   function liveSpace(actor,cachedRevision){
     const space=describeSpace(actor);
-    return {...space,live:1,actorRef:actor.id,sharedConversation:!!(native?.contexts&&native?.conversationSurface),scene:visitScene(actor,space.id,cachedRevision)};
+    return {...space,live:1,actorRef:actor.id,
+      ...(space.id===OUTSIDE&&atelier?.outdoorSky?{outdoorSky:atelier.outdoorSky}:{}),
+      sharedConversation:!!(native?.contexts&&native?.conversationSurface),scene:visitScene(actor,space.id,cachedRevision)};
   }
   function describeSpace(actor){
     if(spaces.fenced)throw new RoomError('space-uncertain','Room placement needs recovery');
