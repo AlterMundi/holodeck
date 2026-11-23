@@ -172,6 +172,43 @@ or replay that command's receipt. Other indoor mutations and movement use the
 existing own-native routes. Exterior edits and projections are unavailable
 from an indoor turn.
 
+### Return to the same Conversation
+
+The [browser qualification](../tools/browser-situated-action-check.cjs) uses
+the selected Holodeck package, the installed canonical Conversation web client,
+the real Holodeck context ledger and world socket, and synthetic I/O for the
+canonical writer, admission and final messages. Two independent Chromium
+actors contribute to the scenario. One uses the touch controls to set the
+first signal. The other submits through Conversation and continues moving
+while the original's machine attachment is held. The actual CLI applies the
+second signal under that exact admitted fixture interaction. Both browsers
+see completion. The original action receipt is recoverable with the same ID
+and unavailable to the sibling interaction.
+
+The fixture delivers the sibling final first. The original remains open and
+its context remains retained. Reopening and refreshing the same iframe shows
+the original's final once, and the touch browser can reconnect to the completed
+garden. The public scene exposes the game effect without exposing either reply.
+This covers the browser and world/Conversation handoff with synthetic
+admission and final text. In a separate Telecodex qualification,
+`foreground_capture` exercised native final-event projection through the
+actual owner and isolated SQLite with a synthetic peer. A model choosing the
+world action and issuing the final from the same real turn remains open.
+
+Use the existing package stage and installed Conversation/Playwright assets.
+Select a task-owned evidence directory and a short-lived loopback certificate
+(`key.pem` and `cert.pem`). The test starts two ephemeral listeners and browser
+profiles and closes them when done. It overwrites the two captures and one
+structured result in that directory on repeated checks.
+
+```sh
+HOLODECK_STAGE="$PACKAGE_STAGE" \
+HOLODECK_PLAYWRIGHT="$PLAYWRIGHT_INSTALLATION" \
+HOLODECK_CONVERSATION_RELEASE="$CONVERSATION_RELEASE" \
+HOLODECK_FIXTURE_TLS="$FIXTURE_TLS" HOLODECK_EVIDENCE_DIR="$EVIDENCE_DIR" \
+node tools/browser-situated-action-check.cjs
+```
+
 Room access alone does not authorize an exact protected gallery reference as
 a Conversation attachment. The visitor catalog checks Nexus with the human
 visitor's session. Sharing the edition locator with a paired being requires

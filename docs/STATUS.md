@@ -698,6 +698,21 @@ contribution and matched native response are still unobserved. See
 
 ## Technical qualification and recovery
 
+On 23 November, the current foyer-release package and the installed
+Conversation web assets passed an additional [situated return qualification](shared-conversation.md#return-to-the-same-conversation).
+One synthetic original submitted through the browser with its frozen room
+attachment. The sender kept walking while preparation was pending. The native
+CLI then applied the original's signal in the correct room, and two independent
+Chromium identities saw the completed round.
+The unrelated fixture final arrived first and did not release the original's
+context or authorize its receipt. The original reply appeared once in the
+same retained Conversation frame after reopening and refreshing the panel.
+Reloading the other browser restored the game result and never exposed the
+private text. This qualifies an isolated handoff using a synthetic canonical
+writer, admission and final. A separate Telecodex test exercised the actual
+final-event projection from a synthetic native peer. Actual model choice and
+final generation in this same world action remain open.
+
 The live client freezes copied world position, other participants, geometry and
 capture time before waiting for an embedded viewer. A changed visit cannot relabel
 a question with another frame/pin. World sample, viewer query/acknowledgment and
