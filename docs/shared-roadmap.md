@@ -110,9 +110,10 @@ Set exposure from the actual garden-to-workshop route. The foyer is the first
 comparison for baked light, playable lighting and frame cost.
 Progressive path tracing is an option for stationary reference and inspection.
 
-Use distance haze outdoors to separate the water, coast and far landmarks.
-Match the haze to the sky at the horizon and keep nearby paths, signs and
-avatars clear. For the Beacon, lamp filaments and portal edges, test restrained
+Tune the exterior distance fog, currently set to start at 45 metres and
+reach full density at 140 metres, to separate the water, coast and far
+landmarks. Match the haze to the sky at the horizon and keep nearby paths,
+signs and avatars clear. For the Beacon, lamp filaments and portal edges, test restrained
 glow driven by emissive materials with a high luminance threshold. Preserve the
 value contrast of plaster, bright windows and HUD text. Measure the two effects
 independently from the same moving camera and keep a lightweight presentation
@@ -167,6 +168,11 @@ browser and verify clearance, transitions and frame cost on the revised route.
 Track the work in [world art #3](https://github.com/AlterMundi/holodeck/issues/3),
 [interior #9](https://github.com/AlterMundi/holodeck/issues/9) and
 [working house #12](https://github.com/AlterMundi/holodeck/issues/12).
+
+Use a participant's stated avatar presentation as their default when available.
+Bind it to their authenticated identity, keep it changeable by that participant,
+and share only the chosen appearance through world presence. Keep distinct
+automatic appearances for participants who have yet to set a preference.
 
 Keep editable Blender sources and a reproducible, glTF-validated export. Record
 catalog provenance and redistribution rights. Prefer geometry instances, few
