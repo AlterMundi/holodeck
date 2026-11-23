@@ -254,8 +254,9 @@ The foyer now has an orientation table and a place to sit. The Beacon
 benches now have separate listening and movement instruments, each beside
 the action for its existing panel. The [gallery descent](../art/compaii-house/redesign/README.md#gallery-descent)
 now closes the floor-edge leaks and gives the stair visibly supported rails.
-Continue at the gallery's upper wall-to-roof join and refine passage cues
-where the stair and tower routes meet. The tower now has a player-height coastal view through its authored east
+The tower action now appears only at its entry marker, away from the stair
+approach, with breadth preserved for scene preloading. Continue at the
+gallery's upper wall-to-roof join. The tower now has a player-height coastal view through its authored east
 clerestory, and the resonator sill collision matches the visible wood.
 Continue the finish pass through the miniature, exterior paths, gallery and
 tower with the same standard. Use scale, joinery, hardware and purposeful work objects to carry

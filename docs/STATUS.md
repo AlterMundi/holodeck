@@ -55,14 +55,20 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`9c42428`, package `996fdd11d758`. The laboratory descent now has a closed
+`6b07de8`, package `dbcc946605ad`. The tower action stays hidden from the
+gallery stair approach and becomes available at the tower's entry marker.
+Scene preloading keeps its wider reach. Independent desktop keyboard and
+touch-emulated Chromium clients crossed to the tower and back in the same
+document. The installed inventory and protected client bytes matched, and the
+world checkpoint kept its digests. The selected rollback is `996fdd11d758`.
+
+Source `9c42428`, package `996fdd11d758`, finished the laboratory descent with a closed
 stair well and a legible tread edge. A simulated Chromium visitor walked from
 the gallery entrance and used E to enter the laboratory and return to the
 gallery landing in the same document. A separate restricted visitor received
 the continuous floor and was denied the stair, open gallery model and lab art.
 The receiving manifest matched all 57 files, retained world digests matched,
-and protected HTTPS denied direct access to the room art. The selected rollback
-is `ee6605739077`.
+and protected HTTPS denied direct access to the room art.
 [Descent comparison](../art/compaii-house/redesign/README.md#gallery-descent)
 
 Source `6baba0e`, package `ee6605739077`, finished the opening of Casa de
