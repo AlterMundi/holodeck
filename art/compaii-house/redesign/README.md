@@ -320,8 +320,10 @@ pixels to zero. The intentional [side clerestory](review/gallery-gable-candidate
 retained its 6,952 background pixels in the matched region.
 
 Both browser fixtures fetched their exact permitted models. The stair and
-tower links remained available to the first visitor. The second crossed the
-continuous floor at gallery height and had no lab exit. The packaged assets
+tower links remained available to the first visitor. The visitor descended
+with WASD, entered Beacon with E and returned to the same gallery landing in
+the same document. The second visitor crossed the continuous floor at
+gallery height and received a denial for direct lab entry. The packaged assets
 transfer in 1,458,461 bytes for the stair edition and 1,463,368 bytes for the
 continuous floor with Brotli.
 
