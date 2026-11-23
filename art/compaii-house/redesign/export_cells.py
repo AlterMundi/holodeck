@@ -191,6 +191,34 @@ def mesh_for(collection, origin, cell):
     return obj
 
 
+def gallery_stair():
+    stone, oak, basalt = 'Honed honey limestone', 'Dark oiled oak', 'Split basalt'
+    brass, iron = 'Satin brass', 'Blue gunmetal'
+    pieces = [
+        ('Gallery stair end wall',(3,5.963,-.453),(1.71,.20,1.114),stone,.018),
+        ('Gallery stair well underside',(3,4.51,-.988),(1.73,2.71,.075),basalt,.008),
+    ]
+    for index in range(6):
+        depth = 5.86-.45*(index+.5)
+        top = .095-.14*(6-index)
+        pieces.extend([
+            ('Gallery stair stone',(3,depth,top-.071),(1.70,.45,.142),stone,.012),
+            ('Gallery stair basalt nosing',(3,depth+.194,top-.002),(1.57,.028,.009),basalt,.003),
+        ])
+    for x in (2.08,3.92):
+        pieces.extend([
+            ('Gallery stair limestone cheek',(x,4.51,-.455),(.14,2.71,1.10),stone,.012),
+            ('Gallery stair oak cap',(x,4.51,.112),(.15,2.71,.048),oak,.008),
+            ('Gallery stair oak handrail',(x,4.51,.879),(.112,2.74,.084),oak,.019),
+        ])
+        for y in (3.22,4.08,4.94,5.80):
+            pieces.extend([
+                ('Gallery stair rail shoes',(x,y,.158),(.105,.11,.044),iron,.007),
+                ('Gallery stair bronze baluster',(x,y,.50),(.040,.052,.690),brass,.005),
+            ])
+    return pieces
+
+
 def register_gallery(obj,stair):
     obj.data.transform(Matrix.Translation((0,0,.10)) @
                        Matrix.Diagonal((-1.095,-.832,1,1)))
@@ -200,10 +228,6 @@ def register_gallery(obj,stair):
               (2.15,3.85,-3.16,5.89)] if stair else [(-5.89,5.89,-5.89,5.89)]
     floor = [('Gallery limestone floor',((x1+x2)/2,-(z1+z2)/2,.035),
               (x2-x1,z2-z1,.122),'Honed honey limestone',0) for x1,x2,z1,z2 in bounds]
-    steps = [('Gallery stair stone',(3,5.86-.45*(index+.5),.024-.14*(6-index)),
-              (1.70,.45,.142),'Honed honey limestone',.012) for index in range(6)] if stair else []
-    rails = [('Gallery stair oak rail',(x,4.51,.53),(.12,2.72,.115),'Dark oiled oak',.015)
-             for x in (2.08,3.92)] if stair else []
     oak, stone, brass = 'Dark oiled oak', 'Honed honey limestone', 'Satin brass'
     basalt, iron = 'Split basalt', 'Blue gunmetal'
     finish = [
@@ -242,7 +266,7 @@ def register_gallery(obj,stair):
             ('Plinth recessed face',(plinth_x,y,face_height),(.026,.559,.322),oak,.012),
             ('Plinth bronze edge',(plinth_x-.015,y,face_height-.13),(.009,.440,.019),brass,.003),
         ])
-    append_blocks(obj,floor+steps+rails+finish)
+    append_blocks(obj,floor+finish+(gallery_stair() if stair else []))
 
 
 def register_beacon(obj):

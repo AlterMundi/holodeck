@@ -214,7 +214,7 @@ room-local bounds. Keep Blender area lights and camera setups in the source.
 | Parcel facade | 2,836,316 | 19,712 | 9 |
 | Foyer | 1,536,588 | 6,700 | 7 |
 | Beacon laboratory | 2,644,700 | 28,416 | 9 |
-| Gallery with stair | 1,615,544 | 7,168 | 6 |
+| Gallery with stair | 2,645,124 | 20,704 | 9 |
 | Gallery with continuous floor | 1,550,224 | 5,640 | 6 |
 | Listening tower | 1,983,396 | 26,056 | 10 |
 | Arrival commons | 582,668 | 14,880 | 10 |
@@ -239,6 +239,13 @@ table. The collection gallery has two art revisions. The permitted viewer
 sees the authored stair. The other revision has a continuous floor. Both use
 the same gallery ID and exhibition anchor, and the server serves only the
 variant suited to the visitor's currently permitted passages.
+
+The gallery stair export closes the exposed sides and bottom of the well
+with limestone and basalt. Dark nosings follow the six existing tread
+heights. Oak handrails, bronze balusters and metal shoes sit over the
+existing collision rails. This is registered room art. The descent keeps
+its existing coordinates and permissions, and the continuous-floor
+variant keeps its previous asset revision.
 
 The published exhibit anchor remains at `(2.5, .1, 1.25)` in gallery-local
 meters. The draft and archive anchors are at `(3.3945, .1, -.34944)` and
