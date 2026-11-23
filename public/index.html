@@ -70,6 +70,13 @@ body:has(#conversation-panel:not([hidden])) #house-door,body:has(#creator:not([h
 .inside-house.has-situated-conversation #dock{display:flex;left:auto;right:max(14px,env(safe-area-inset-right));bottom:max(84px,env(safe-area-inset-bottom));transform:none}
 .inside-house #dock button:not(#talk){display:none}
 @media(max-width:740px){#space-travel{top:145px;right:12px}.inside-house #space-travel{top:100px}}
+@media(max-width:740px){
+  #world-tools:has(#garden-create:not([hidden])){flex-direction:column;align-items:flex-end;gap:6px}
+  body:has(#garden-create:not([hidden])) #companion-status{max-width:min(230px,calc(100vw - 166px));overflow-wrap:anywhere}
+  body:not(.inside-house):has(#garden-create:not([hidden])) #visit-near{top:205px}
+  body:not(.inside-house):has(#garden-create:not([hidden])) #play-near{top:265px}
+  body:not(.inside-house):has(#garden-create:not([hidden])):has(#visit-near[hidden]) #play-near{top:205px}
+}
 </style></head><body>
 <header id="hud" class="glass"><span class="brand-mark" aria-hidden="true"></span><div><small>Holodeck</small><h1>Plaza de llegada</h1><div id="people">Entrando a la plaza…</div></div><button id="sound" type="button" aria-pressed="false" aria-label="Activar sonido del mundo">Sonido</button></header>
 <div id="world-tools"><aside id="help"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> moverte · arrastrá para mirar · espacio para saltar</aside><button id="garden-create" class="glass" type="button" hidden>Crear jardín</button><button id="activity-open" class="glass" type="button" aria-haspopup="dialog" disabled>Actividad</button></div>
