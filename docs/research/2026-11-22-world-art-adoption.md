@@ -90,3 +90,20 @@ review export checks passed. Root then curated the existing world through its
 native API, retaining Oliva's original creation actors and all identities/colours.
 This is demonstrated method adoption in MML/Three, not execution of Blender or
 paid Scenario generation. The human's visual judgment remains distinct.
+
+
+## 23 November MMORPG art direction
+
+The current landscape was produced by the procedural Three.js GLB builder
+with authored terraces and promenades. The first house interiors use simple
+server-authored room geometry and enabled passages. That gives a playable
+blockout and protects shared geometry and interaction. The art-production
+workflow for the MMORPG now owns a whole route as one piece of level design.
+Start by recording the exact playable route, then establish silhouettes,
+architectural details, lighting and sound for its destinations. Review the
+result in the working renderer at every decision point before extending the
+same kit to other districts. Use visual references and concept sketches to
+establish a coherent look, then qualify the authored assets as GLBs alongside
+their matching walkable geometry. See the
+[shared MMORPG roadmap](../shared-roadmap.md#mmorpg-experience-and-creator-loop)
+and [visual quality card](https://github.com/AlterMundi/holodeck/issues/3).

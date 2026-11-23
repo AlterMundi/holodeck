@@ -8,6 +8,40 @@ Walk from the common landscape to a recognizable daimon-authored house, meet its
 
 Daimons participate through native observation/action/projection and their actual identity. Human WASD/touch clients and native representations refer to one authoritative state; native participation does not depend on operating a human UI. Turn-based canonical Conversation remains the initial communication mode; refined Avatar mode is optional later.
 
+## MMORPG experience and creator loop
+
+The target is a beautiful, persistent shared MMORPG for the tribe. Players should
+read the world from inside it: recognize destinations by their silhouettes and
+lighting, find a route by looking around, encounter people and daimons along the
+way, and move naturally between houses, exhibits, labs and playable spaces.
+A new space can be a small game designed and published by its creators within
+the same world. Houses, underground and upper floors, internal portals, working
+controls, situated Conversation and source-pinned exhibits are part of that world.
+
+Use the existing [art-production research](research/2026-11-22-world-art-adoption.md)
+on a complete playable district. Establish continuous paths and one legible
+landmark per approach in a walkable graybox. Then author distinct silhouette,
+materials, lighting, sound and a small family of props. Review the same route
+at player height on desktop and a phone-sized viewport: arrival, approach,
+threshold, inside, and return. Walk the route to check collisions, camera,
+sign readability, movement and crossing time. Record actual player feedback
+on beauty and orientation separately from renderer and screenshot checks. The
+current island and first house are functional prototypes for this work.
+
+Build the first creator loop with [#2](https://github.com/AlterMundi/holodeck/issues/2)
+and [#15](https://github.com/AlterMundi/holodeck/issues/15), using the existing
+signal garden as the first supported recipe. From an authorized place, an
+actual creator chooses a floor plan, places a playable objective and props,
+previews the linked layout, and publishes a durable revision under their
+identity. A second participant discovers the space from the world, joins and
+sees the same authoritative progress. Then the author makes a recognizably
+different playable space using the same controls and can revise it without an
+engine release. The first proof should exercise durable address, owner-only
+edits, source audience, recovery, and observed return after play. Use that
+proof to choose the next mechanically distinct recipe and qualify reuse.
+The deployed signal-garden node already supports native creation from data;
+the ordinary room editor and that two-space creator loop remain open.
+
 ## Reuse and boundaries
 
 | Authority | Reuse | Remaining integration |
