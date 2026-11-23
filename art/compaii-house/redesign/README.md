@@ -214,8 +214,8 @@ room-local bounds. Keep Blender area lights and camera setups in the source.
 | Parcel facade | 2,836,316 | 19,712 | 9 |
 | Foyer | 1,536,588 | 6,700 | 7 |
 | Beacon laboratory | 2,644,700 | 28,416 | 9 |
-| Gallery with stair | 2,645,124 | 20,704 | 9 |
-| Gallery with continuous floor | 1,550,224 | 5,640 | 6 |
+| Gallery with stair | 2,655,216 | 21,120 | 9 |
+| Gallery with continuous floor | 2,247,352 | 14,328 | 9 |
 | Listening tower | 1,983,396 | 26,056 | 10 |
 | Arrival commons | 582,668 | 14,880 | 10 |
 
@@ -307,7 +307,23 @@ laboratory and the return action restores the original stair landing.
 
 An independent visitor with gallery access alone received the continuous
 floor. The open gallery and Beacon models were denied to that fixture.
-The deployed gallery model is 1,473,557 bytes with Brotli compression.
+The stair edition shown here was 1,473,557 bytes with Brotli compression.
+
+### Gallery roof joins
+
+Limewash gables and oak plates close both end-wall joins without changing
+the gallery envelope. The [before](review/gallery-gable-baseline-stair.jpg)
+and [after](review/gallery-gable-candidate-stair.jpg) WebGL views use the
+same camera and viewport. In fixed comparison regions at the stair and
+collection ends, the visible background dropped from 11,783 and 4,535
+pixels to zero. The intentional [side clerestory](review/gallery-gable-candidate-clerestory.jpg)
+retained its 6,952 background pixels in the matched region.
+
+Both browser fixtures fetched their exact permitted models. The stair and
+tower links remained available to the first visitor. The second crossed the
+continuous floor at gallery height and had no lab exit. The packaged assets
+transfer in 1,458,461 bytes for the stair edition and 1,463,368 bytes for the
+continuous floor with Brotli.
 
 The supported first control handoff is the authenticated
 [Harmonic Lab panel](https://compaii.dmn.homes/harmonic_lab/). Walk toward

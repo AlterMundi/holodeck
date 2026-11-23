@@ -55,12 +55,19 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`6b07de8`, package `dbcc946605ad`. The tower action stays hidden from the
+`b68562d`, package `b9d7be97b791`. The gallery's end walls now meet the
+pitched roof in both access variants. The side clerestory still admits the
+same light. Matched Chromium views confirmed that the unintended end-wall
+openings were closed. The installed asset inventory and world state digests
+matched. The selected rollback is `dbcc946605ad`.
+[Gallery roof review](../art/compaii-house/redesign/README.md#gallery-roof-joins)
+
+Source `6b07de8`, package `dbcc946605ad`, kept the tower action hidden from the
 gallery stair approach and becomes available at the tower's entry marker.
 Scene preloading keeps its wider reach. Independent desktop keyboard and
 touch-emulated Chromium clients crossed to the tower and back in the same
 document. The installed inventory and protected client bytes matched, and the
-world checkpoint kept its digests. The selected rollback is `996fdd11d758`.
+world checkpoint kept its digests.
 
 Source `9c42428`, package `996fdd11d758`, finished the laboratory descent with a closed
 stair well and a legible tread edge. A simulated Chromium visitor walked from
