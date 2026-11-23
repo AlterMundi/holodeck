@@ -97,6 +97,13 @@ test('a canonical interior source freezes its authorized place before awaits and
     const observed=await port('observe');
     assert.equal(observed.ok,true);
     assert.equal(observed.result.space.id,'foyer');
+    assert.equal(observed.result.space.activity.revision,2);
+    assert.equal(observed.result.space.activity.title,'Nuevo jardín');
+    assert.equal(observed.result.space.activity.canPlay,false);
+    assert.equal((await port('observe',{},true)).result.space.id,'outside');
+    assert.equal((await port('act',{type:'garden.signal',room:'foyer',expectedRevision:2,
+      id:'fixture-outside-signal',index:0,color:'mint'},true)).ok,false);
+    assert.equal(uploads[0].place.activity.revision,1);
     assert.equal((await port('project')).ok,false);
     assert.equal((await port('act',{type:'space.move',from:'outside',to:'foyer'})).ok,false);
     grant=false;

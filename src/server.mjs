@@ -223,7 +223,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const selected=spaces.rooms.get(id);
     if(!actor.rights?.includes('observe')||!selected||spaces.fenced||room.commitUncertain||!spaces.allows(actor,id))return null;
     const view=spaces.view(actor,id);
-    const exhibit=exhibits.scoped(actor,id),activity=indoorGardens.view(actor,id);
+    const exhibit=exhibits.scoped(actor,id),activity=indoorGardens.observe(actor,id);
     return {id,title:selected.title,level:selected.level,house:selected.house,
       objects:view.id===id?roomObjects(view):[],
       ...(activity?{activity}:{}),

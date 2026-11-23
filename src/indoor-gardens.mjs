@@ -71,6 +71,11 @@ export class IndoorGardens {
 
   view(actor,room){
     if(!this.inRoom(actor,room))return null;
+    return this.observe(actor,room);
+  }
+
+  observe(actor,room){
+    if(this.fenced||!actor?.rights?.includes('observe')||!this.spaces.allows(actor,room)||!this.owner(room))return null;
     const current=this.current(room);
     if(!current)return null;
     const {play,revision,title,signals,sequence}=current;
@@ -84,7 +89,7 @@ export class IndoorGardens {
     return {room,revision,sequence,title,targets:structuredClone(play.targets),
       signals:signals.map(signal=>signal?{color:signal.color}:null),
       progress:signalGardenProgress(play,{entities,editors,sequence}),
-      canPlay:actor.rights.includes('edit')};
+      canPlay:actor.rights.includes('edit')&&this.spaces.current(actor)===room};
   }
 
   result(actor,id){
