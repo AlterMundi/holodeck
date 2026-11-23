@@ -29,14 +29,14 @@ import {sameVisitPin,validateContentNodes,validateContentVisits,visitsForActor} 
 import {allowedGalleryVisits,gallerySlots} from './gallery-catalog.mjs';
 import {GALLERY_STAGES} from './gallery-display.mjs';
 import {createGalleryAuthorization} from './gallery-authorization.mjs';
-import {createNativeRoomAuthority} from './native-authority.mjs';
+import {createNativeRoomAuthority,createNativeReviewAuthority} from './native-authority.mjs';
 import {WorldDocument} from './world-document.mjs';
 import {SessionBindings,SESSION_MS,sessionKey} from './session-bindings.mjs';
 import {HumanAvatarProfiles,humanWardrobeAssets} from './human-avatars.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
-export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt,houseVisual,gardenVisual,gallerySelection,galleryAuthorization,artProfile}={}){
+export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt,houseVisual,gardenVisual,gallerySelection,galleryAuthorization,nativeReviewAuthority=null,artProfile}={}){
   if(!/^\/(?:[a-z0-9-]+\/)*$/.test(basePath))throw Error('Select a bounded absolute base path');
   if(production&&(!identityResolver||!publicOrigin||!stateDir))throw Error('Shared identity, audience and state are required in production');
   if(typeof interiorArtwork!=='function'||production&&(interiorArtwork!==interiorArt||houseVisual||gardenVisual))
@@ -49,6 +49,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     throw Error('Select bounded Conversation origins');
   for(const value of conversationOrigins){const selected=new URL(value);if(selected.protocol!=='https:'||selected.origin!==value)throw Error('Select exact HTTPS Conversation origins');}
   if(nativeRoomAuthority!==null&&typeof nativeRoomAuthority!=='function')throw Error('Select the installed native service authority reader');
+  if(nativeReviewAuthority!==null&&typeof nativeReviewAuthority!=='function')throw Error('Select the installed Nexus ownership reader');
   if(typeof ownNative!=='boolean'||ownNative&&!nativeRoomAuthority)throw Error('Own native access requires selected central authority and receiving socket policy');
   const route=path=>basePath+path;
   const app=express();
@@ -274,10 +275,16 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     return describeSpace(actor);
   }
   function putExhibit(actor,input){
-    if(room.commitUncertain||spaces.fenced)return null;
+    const canWrite=()=>!room.commitUncertain&&!spaces.fenced;
+    if(!canWrite())return null;
     if(input.type==='exhibit.current')return exhibits.inspect(actor,input.room);
-    if(input.type==='exhibit.preview')return exhibits.put(actor,{...input,type:'exhibit.put'},room.nodes,true);
-    return exhibits.put(actor,input,room.nodes);
+    const preview=input.type==='exhibit.preview';
+    const authorizeReview=nativeReviewAuthority&&(async(author,pin)=>{
+      if(await nativeReviewAuthority(author,pin)!==true)return false;
+      const rights=await nativeRoomAuthority({actor:author});
+      return projectionHealthy&&rights.includes('observe')&&rights.includes('edit');
+    });
+    return exhibits.put(actor,preview?{...input,type:'exhibit.put'}:input,room.nodes,{preview,authorizeReview,canWrite});
   }
   function publishLayout(actor,input){
     if(room.commitUncertain||spaces.fenced||!layoutStore)return null;
@@ -675,7 +682,8 @@ export async function main(){
   }
   validateWorldPorts({...receiving});
   const nativeRoomAuthority=receiving&&Object.hasOwn(receiving,'authoritySocket')?createNativeRoomAuthority(receiving.authoritySocket):null;
-  const runtime=await createHolodeck({production,stateDir,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,contentVisits:receiving?.contentVisits,contentNodes:receiving?.contentNodes,nativeRoomAuthority,conversationOrigins:receiving?.conversationOrigins||[],ownNative:receiving?.ownNative??false,interiorSpaces:receiving?.interiorSpaces??[],gallerySelection:receiving?.gallery,artProfile:receiving?.artProfile});
+  const nativeReviewAuthority=nativeRoomAuthority?createNativeReviewAuthority(receiving.authoritySocket):null;
+  const runtime=await createHolodeck({production,stateDir,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,nativeReviewAuthority,contentVisits:receiving?.contentVisits,contentNodes:receiving?.contentNodes,nativeRoomAuthority,conversationOrigins:receiving?.conversationOrigins||[],ownNative:receiving?.ownNative??false,interiorSpaces:receiving?.interiorSpaces??[],gallerySelection:receiving?.gallery,artProfile:receiving?.artProfile});
   const port=Number(process.env.PORT||18940);
   if(!Number.isInteger(port)||port<1024||port>65535)throw Error('Select a valid loopback port');
   if(process.env.HOST&&process.env.HOST!=='127.0.0.1')throw Error('Use the existing loopback gateway');

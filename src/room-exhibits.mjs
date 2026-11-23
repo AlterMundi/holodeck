@@ -60,19 +60,47 @@ export class RoomExhibits {
     return {room,exhibit:structuredClone(this.forRoom(room)),position:EXHIBIT_POSITION};
   }
 
-  put(actor,input,nodes,preview=false){
-    if(this.fenced||!exact(input,'expectedRevision,id,room,source,sourceRevision,type')||input.type!=='exhibit.put'||
-        !commandId(input.id)||!roomId(input.room)||!contentNodeId(input.source)||!revision(input.sourceRevision)||
-        !(input.expectedRevision===null||revision(input.expectedRevision))||
-        !this.owns(actor,input.room)||this.spaces.current(actor)!==input.room)return null;
-    const fingerprint=digest([actor.id,input.room,input.source,input.sourceRevision,input.expectedRevision]);
-    const prior=this.state.receipts.find(entry=>entry.id===input.id);
+  async put(actor,input,nodes,{preview=false,authorizeReview=null,canWrite=()=>true}={}){
+    const directlyPinned=exact(input,'expectedRevision,id,pin,room,type');
+    if(input?.type!=='exhibit.put'||!commandId(input.id)||!roomId(input.room)||
+        !(input.expectedRevision===null||revision(input.expectedRevision)))return null;
+
+    let source,sourceRevision,pin;
+    if(directlyPinned){
+      pin=input.pin;
+      if(!validVisitPin(pin)||pin.kind!=='artifact_review'||pin.adapter!=='interactive_3d')return null;
+      // Receivers predating direct placement require the v1 reference shape.
+      // Only the pin is dereferenced. This stable reference creates no node.
+      source='node-nexus-'+digest([pin.tableId,pin.reviewId,pin.revision,pin.adapter]).slice(0,34);
+      sourceRevision=1;
+    }else{
+      if(!exact(input,'expectedRevision,id,room,source,sourceRevision,type')||
+          !contentNodeId(input.source)||!revision(input.sourceRevision))return null;
+      ({source,sourceRevision}=input);
+    }
+    const fingerprint=digest(directlyPinned?
+      [actor.id,input.room,'review',pin.tableId,pin.reviewId,pin.revision,pin.adapter,input.expectedRevision]:
+      [actor.id,input.room,source,sourceRevision,input.expectedRevision]);
+    const inRoom=()=>!this.fenced&&this.owns(actor,input.room)&&this.spaces.current(actor)===input.room;
+    const priorReceipt=()=>this.state.receipts.find(entry=>entry.id===input.id);
+    const matchesRevision=current=>(current?.revision??null)===input.expectedRevision&&
+      (current||this.state.exhibits.length<maxExhibits);
+    if(!inRoom()||!canWrite())return null;
+    const prior=priorReceipt();
     if(prior)return !preview&&prior.fingerprint===fingerprint?structuredClone(prior.result):null;
-    const current=this.scoped(actor,input.room);
-    if((current?.revision??null)!==input.expectedRevision||(!current&&this.state.exhibits.length>=maxExhibits))return null;
-    const source=nodes[input.source],pin=source?.result?.pin;
-    if(!source||source.deleted||source.owner!==actor.id||source.revision!==input.sourceRevision||!validVisitPin(pin))return null;
-    const result={owner:actor.id,room:input.room,source:source.id,sourceRevision:source.revision,
+    if(!matchesRevision(this.forRoom(input.room)))return null;
+    if(directlyPinned){
+      if(await authorizeReview?.(actor,pin)!==true||!inRoom()||!canWrite())return null;
+      const saved=priorReceipt();
+      if(saved)return !preview&&saved.fingerprint===fingerprint?structuredClone(saved.result):null;
+    }else{
+      const node=nodes[source];
+      pin=node?.result?.pin;
+      if(!node||node.deleted||node.owner!==actor.id||node.revision!==sourceRevision||!validVisitPin(pin))return null;
+    }
+    const current=this.forRoom(input.room);
+    if(!matchesRevision(current))return null;
+    const result={owner:actor.id,room:input.room,source,sourceRevision,
       revision:(current?.revision??0)+1,pin:structuredClone(pin)};
     if(!validExhibit(result))return null;
     if(preview)return result;

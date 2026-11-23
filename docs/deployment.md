@@ -346,6 +346,16 @@ The installed owner CLI calls read-only `check-service-access`, reusing existing
 service capability, current actor, audience and exact selected App checks.
 Timeouts/unknown/malformed authority deny without a human-cookie fallback.
 
+Direct Nexus exhibit placement uses the same central UID-guarded socket.
+The selected bridge configuration has an optional `review_owner` object with
+`beingRef`, `nexus_reader`, `database`, `publisher` and `binding`. Use absolute
+selected files for the stdlib Nexus resolver, its database, the receiving Home
+publisher and its binding. The bridge accepts the exact pin and verified native
+being. Its Home operation proves current ownership of the immutable source.
+Separate Home bindings can be selected only through maintained owner custody.
+The web package gets a scoped proof and retains no publisher credential.
+Recovery can use the previous package, which reads the same v1 checkpoint.
+
 The qualified Home dispatcher overlay changes only14lines in service.py
 (SHA256aad74810b792f349424850a691e1aaf1fd7f7a941fed8eb22981b4b7e34e9548),
 retaining513other file contents, mobile/link/launcher features and existing stores.

@@ -102,7 +102,7 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
           if(!own||!rights.includes('edit'))throw Error('Exhibit authoring requires an own-native editor route');
           if(request.args.type==='exhibit.current'&&Object.keys(request.args).sort().join(',')!=='room,type')
             throw Error('Invalid exhibit lookup');
-          result=putExhibit?.(actor,request.args);
+          result=await putExhibit?.(actor,request.args);
           if(!result)throw Error('Exhibit authoring unavailable');
         }else if(savedExhibit)result=savedExhibit;
         else if(request.operation==='act'&&request.args.type==='space.move'){

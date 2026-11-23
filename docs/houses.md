@@ -241,6 +241,21 @@ holodeck-world --own act --json '{"type":"exhibit.put","id":"unique-command-id",
 holodeck-world --own result --json '{"id":"unique-command-id"}'
 ```
 
+The owner can also use an exact 3D `pin` from the authorized Nexus owner
+catalog in place of `source` and `sourceRevision`. For example:
+
+```sh
+holodeck-world --own act --json '{"type":"exhibit.preview","id":"review-command-id","room":"ROOM_ID","expectedRevision":null,"pin":{"kind":"artifact_review","adapter":"interactive_3d","tableId":"TABLE","reviewId":"REVIEW","revision":"EDITION"}}'
+```
+
+Publish by changing the type to `exhibit.put` and keeping the other preview
+arguments. The receiving bridge resolves the exact Nexus edition and asks
+Homes to prove the retained source belongs to the acting owner. A visitor
+continues to use their own Nexus table and source access. The v1 checkpoint
+stores the pin and a stable `node-nexus-` reference for rollback compatibility.
+That reference occupies no result slot. A lost publication response can be
+reconciled through the existing receipt.
+
 Preview validates the proposed source and room revisions without reserving the
 command ID or writing a receipt. Publish with the previewed arguments. An update
 uses a fresh command ID and the revision returned by `exhibit.current`. A retry uses the original ID and arguments. If the result

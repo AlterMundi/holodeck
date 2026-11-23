@@ -8,6 +8,7 @@ application-authored world observation. Unknown writes are never retried here.
 import argparse
 from contextlib import closing
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -51,11 +52,12 @@ def ident(value):
 
 
 class NativeBridge:
-    def __init__(self,provider,pair_reader,world_port=None,home_auth=None,world_access_reader=None):
+    def __init__(self,provider,pair_reader,world_port=None,home_auth=None,world_access_reader=None,review_ownership_reader=None):
         self.provider=provider
         self.pair_reader=pair_reader
         self.world_port=world_port
         self.world_access_reader=world_access_reader
+        self.review_ownership_reader=review_ownership_reader
         self.human_ref='human:telegram:'+str(provider.human)
         self.home_origin=None
         self.home_entry=None
@@ -386,6 +388,19 @@ class NativeBridge:
 
     def dispatch(self,request):
         if not isinstance(request,dict):raise BridgeError('input','Provide a native bridge request')
+        if request.get('operation')=='review-ownership':
+            if (set(request)!={'operation','beingRef','pin'} or
+                not isinstance(request['beingRef'],str) or
+                not re.fullmatch(r'dm:being:v1:[A-Za-z0-9_-]{43}',request['beingRef']) or
+                not isinstance(request['pin'],dict)):
+                raise BridgeError('identity','Select the verified native being and exact review')
+            if self.review_ownership_reader is None:
+                raise BridgeError('authority-unavailable','Current review ownership is unavailable')
+            owned=self.review_ownership_reader(request['beingRef'],request['pin'])
+            if type(owned) is not bool:
+                raise BridgeError('authority-unavailable','Current review ownership is unconfirmed')
+            return {'schema':'holodeck.review-ownership/v1','beingRef':request['beingRef'],
+                    'pin':request['pin'],'owned':owned}
         if request.get('operation')=='world-access':
             if set(request)!={'operation','beingRef'} or not isinstance(request['beingRef'],str) or not re.fullmatch(r'dm:being:v1:[A-Za-z0-9_-]{43}',request['beingRef']):
                 raise BridgeError('identity','Select the verified native being')
@@ -415,7 +430,7 @@ def configuration(path):
     value=json.loads(file.read_text())
     required={'schema','provider_source','dashboard_config','home_command','socket_path','allowed_uids'}
     world=value.get('world_port')
-    if (not required<=set(value) or set(value)-required-{'world_port','world_service_key'} or value['schema']!='holodeck.native-bridge/v1'
+    if (not required<=set(value) or set(value)-required-{'world_port','world_service_key','review_owner'} or value['schema']!='holodeck.native-bridge/v1'
         or not isinstance(value['allowed_uids'],list) or not 1<=len(value['allowed_uids'])<=8
         or any(type(uid) is not int or uid<0 for uid in value['allowed_uids'])
         or not isinstance(value['home_command'],list) or len(value['home_command'])!=2
@@ -428,7 +443,34 @@ def configuration(path):
     if 'world_service_key' in value and (not isinstance(value['world_service_key'],str)
             or not re.fullmatch('s-[a-f0-9]{24}',value['world_service_key'])):
         raise ValueError('Select the fixed owned world service')
+    if 'review_owner' in value:
+        review=value['review_owner']
+        paths={'nexus_reader','database','publisher','binding'}
+        if (not isinstance(review,dict) or set(review)!=paths|{'beingRef'} or
+            not isinstance(review['beingRef'],str) or
+            not re.fullmatch(r'dm:being:v1:[A-Za-z0-9_-]{43}',review['beingRef']) or
+            any(not isinstance(review[key],str) or not Path(review[key]).is_absolute() for key in paths)):
+            raise ValueError('Select a fixed Nexus owner and receiving Home binding')
     return value
+
+
+def review_reader(selection):
+    def load(path,name):
+        spec=importlib.util.spec_from_file_location(name,path)
+        module=importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    nexus=load(selection['nexus_reader'],'selected_nexus_owner_catalog')
+    publisher=load(selection['publisher'],'selected_home_owner_publisher')
+    def read(being,pin):
+        if being!=selection['beingRef']:
+            return False
+        binding=publisher.read_binding(selection['binding'])
+        def authorize(scope):
+            return publisher.owner_request(binding,'check-review-ownership',scope)
+        return nexus.resolve_owned_review(selection['database'],being,authorize,pin) is not None
+    return read
 
 
 def serve(path):
@@ -453,7 +495,8 @@ def serve(path):
             or type(result.get('allowed')) is not bool):raise ValueError('Service decision scope changed')
         return result['allowed']
     bridge=NativeBridge(provider,pair_reader,config.get('world_port'),home_auth=home_auth,
-        world_access_reader=world_access_reader if 'world_service_key' in config else None)
+        world_access_reader=world_access_reader if 'world_service_key' in config else None,
+        review_ownership_reader=review_reader(config['review_owner']) if 'review_owner' in config else None)
     slots=threading.BoundedSemaphore(4)
     class Handler(socketserver.StreamRequestHandler):
         def handle(self):

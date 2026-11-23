@@ -4,7 +4,7 @@ import net from 'node:net';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {createNativeRoomAuthority} from '../src/native-authority.mjs';
+import {createNativeRoomAuthority,createNativeReviewAuthority} from '../src/native-authority.mjs';
 import {createHolodeck} from '../src/server.mjs';
 
 const being='dm:being:v1:'+'a'.repeat(43),other='dm:being:v1:'+'b'.repeat(43);
@@ -74,4 +74,23 @@ test('a fresh production world accepts its authorized native participant before 
   assert.equal((await call('project',{form:'orb',position:{x:3,y:1,z:3}})).ok,false);
   assert.equal(runtime.room.sequence,sequence);assert.equal(humanReads,0);
  }finally{runtime.close();await f.close();rmSync(directory,{recursive:true,force:true});}
+});
+
+test('native review ownership is bound to the same verified being and exact pin',async()=>{
+ const pin={kind:'artifact_review',adapter:'interactive_3d',tableId:'table',reviewId:'model',revision:'exact'};
+ let result={schema:'holodeck.review-ownership/v1',beingRef:being,pin,owned:true};
+ const f=await fixture(()=>({ok:true,result}));
+ try{
+  const authorize=createNativeReviewAuthority(f.path);
+  assert.equal(await authorize(verified.actor,pin),true);
+  assert.deepEqual(f.requests,[{operation:'review-ownership',beingRef:being,pin}]);
+  result={...result,owned:false};
+  assert.equal(await authorize(verified.actor,pin),false);
+  result={...result,beingRef:other,owned:true};
+  await assert.rejects(authorize(verified.actor,pin),/requested edition/);
+  result={...result,beingRef:being,pin:{...pin,revision:'different'}};
+  await assert.rejects(authorize(verified.actor,pin),/requested edition/);
+  assert.equal(await authorize(verified.actor,{...pin,adapter:'video'}),false);
+  assert.equal(f.requests.length,4);
+ }finally{await f.close();}
 });

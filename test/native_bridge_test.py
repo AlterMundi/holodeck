@@ -38,6 +38,22 @@ class Provider:
         return ref,next(data for data,stored in self.uploads if stored['sha256']==ref['sha256'])
 
 class BridgeContracts(unittest.TestCase):
+    def test_review_ownership_uses_only_the_configured_exact_reader(self):
+        being = 'dm:being:v1:' + 'a' * 43
+        pin = {'kind':'artifact_review','adapter':'interactive_3d',
+               'tableId':'table','reviewId':'review','revision':'edition'}
+        request = {'operation':'review-ownership','beingRef':being,'pin':pin}
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch(request)
+        bridge = module.NativeBridge(self.provider,lambda:PAIR,
+            review_ownership_reader=lambda owner,selected: owner==being and selected==pin)
+        self.assertEqual(bridge.dispatch(request),{
+            'schema':'holodeck.review-ownership/v1','beingRef':being,'pin':pin,'owned':True})
+        self.assertFalse(bridge.dispatch({**request,'pin':{**pin,'revision':'other'}})['owned'])
+        self.assertFalse(bridge.dispatch({**request,'beingRef':'dm:being:v1:'+'b'*43})['owned'])
+        with self.assertRaises(module.BridgeError):
+            bridge.dispatch({**request,'binding':'caller-selected'})
+
     def test_shared_surface_uses_only_the_registered_paired_home_entrance(self):
         with self.assertRaises(module.BridgeError):self.bridge.surface(self.actor)
         pair=copy.deepcopy(PAIR);pair['applications']=[{'capability':'interaction','url':'https://fixture.test/interaction/'}]

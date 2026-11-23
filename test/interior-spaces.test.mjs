@@ -59,7 +59,7 @@ test('HTTP, real geometry upgrades and native observation share active room and 
   const stateDir=mkdtempSync(join(tmpdir(),'holodeck-spaces-')),socketPath=join(stateDir,'native.sock'),foreignSocket=join(stateDir,'foreign.sock');
   const foreignBeing='dm:being:v1:'+'z'.repeat(43);
   new RoomStore(join(stateDir,'houses')).save({schema:'holodeck.houses/v1',houses:[house],receipts:[]});
-  let allowed=true,nativeAllowed=true,foyerAccess=true,editionAccess=false,runtime,listener;
+  let allowed=true,nativeAllowed=true,foyerAccess=true,editionAccess=false,ownerEdition=false,reviewGate=null,proofCalls=0,runtime,listener;
   const clients=[],peers=[];
   async function start(){
     const fetchHTTP=globalThis.fetch;
@@ -77,6 +77,11 @@ test('HTTP, real geometry upgrades and native observation share active room and 
       interiorGuestAccess:(actor,room)=>actor.id==='human:viewer'||(allowed&&(room!=='foyer'||foyerAccess)),
       worldPorts:[{socket:socketPath,beingRef:owner},{socket:foreignSocket,beingRef:foreignBeing}],nativeFactory:()=>({availability:async()=>({available:false}),authorizeWorldRequest(){throw Error('test');}}),
       ownNative:true,nativeRoomAuthority:async()=>nativeAllowed?['observe','edit','project']:[],
+      nativeReviewAuthority:async(actor,pin)=>{
+        proofCalls++;
+        if(reviewGate)await reviewGate();
+        return actor.id===owner&&ownerEdition&&pin.revision==='version-2';
+      },
       identityResolver:async req=>{
         const id=req.headers.cookie?.match(/(?:^|; )home=(guest|viewer|foreign|owner)/)?.[1];
         return id?{id:id==='owner'?owner:'human:'+id,kind:id==='owner'?'daimon':'human',rights:['observe'],name:id}:null;
@@ -221,8 +226,31 @@ test('HTTP, real geometry upgrades and native observation share active room and 
     const secondPin={...firstPin,revision:'version-2'};
     runtime.room.nodes[sourceId]={...runtime.room.nodes[sourceId],revision:2,result:{pin:secondPin}};
     assert.deepEqual((await visit()).visits[0].pin,firstPin);
-    const update={...place,id:'receipt-fixture-two',sourceRevision:2,expectedRevision:1};
+    const update={type:'exhibit.put',room:'gallery',id:'receipt-fixture-two',pin:secondPin,expectedRevision:1};
+    assert.equal((await native('act',update,foreignSocket)).ok,false);
+    assert.equal(proofCalls,0);
+    assert.equal((await native('act',update)).ok,false,'source reading does not establish ownership');
+    ownerEdition=true;
+    const planned=(await native('act',{...update,type:'exhibit.preview'})).result;
+    assert.deepEqual(planned.pin,secondPin);
+    assert.equal((await native('act',inspect)).result.exhibit.revision,1);
+    let arrived,release;
+    const authorizationStarted=new Promise(resolve=>{arrived=resolve;});
+    const allowFinish=new Promise(resolve=>{release=resolve;});
+    reviewGate=()=>{arrived();return allowFinish;};
+    const traveling=native('act',update);
+    await authorizationStarted;
+    try{assert.equal((await native('act',{type:'space.move',from:'gallery',to:'foyer'})).ok,true);}
+    finally{release();reviewGate=null;}
+    assert.equal((await traveling).ok,false,'an in-flight proof cannot publish into a room the owner left');
+    assert.equal((await native('act',{type:'space.move',from:'foyer',to:'gallery'})).ok,true);
+    const count=Object.keys(runtime.room.nodes).length;
     const secondExhibit=(await native('act',update)).result;
+    assert.deepEqual(secondExhibit,planned);
+    assert.equal(Object.keys(runtime.room.nodes).length,count);
+    assert.equal(runtime.room.nodes[secondExhibit.source],undefined);
+    ownerEdition=false;
+    assert.deepEqual((await native('act',update)).result,secondExhibit,'an exact replay returns the observed receipt');
     assert.equal(secondExhibit.revision,2);
     assert.deepEqual(secondExhibit.pin,secondPin);
     assert.equal((await native('act',{...update,id:'receipt-stale-command'})).ok,false);
