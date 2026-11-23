@@ -113,6 +113,19 @@ body:has(#conversation-panel:not([hidden])) #house-door,body:has(#creator:not([h
 .room-map-destinations button{display:flex;align-items:center;gap:10px;padding:7px 10px;font-size:14px;line-height:1.25;overflow-wrap:anywhere}
 .room-map-destinations button::before{content:'';flex:0 0 10px;height:10px}
 .room-map-destinations button[aria-pressed=true]{border-color:var(--gold);background:#245153}
+#door-guidance{position:fixed;z-index:23;right:22px;top:74px;display:grid;grid-template-columns:28px minmax(0,1fr) 44px;align-items:center;gap:8px;max-width:min(264px,calc(100vw - 24px));padding-left:10px;border-radius:14px}
+.door-guide-arrow{color:var(--gold);font:24px/1 system-ui;text-align:center;rotate:var(--door-direction)}
+.door-guide-title{display:block;font-size:14px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.door-guide-distance{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+#door-guidance button{width:44px;height:44px;padding:0;border:0;border-radius:0 14px 14px 0;background:transparent;box-shadow:none;font-size:20px}
+#door-guidance button:hover{background:#245153}
+#space-travel[open]+#door-guidance,.room-transition #door-guidance,body:has(#conversation-panel:not([hidden])) #door-guidance,body:has(#content-visit:not([hidden]):not(.is-walking)) #door-guidance,body:has(#signal-editor:not([hidden])) #door-guidance{display:none}
+body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-near{top:128px}
+@media(max-width:740px){
+  #door-guidance{right:12px;top:116px}
+  body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-near{top:172px}
+  body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #indoor-garden{top:max(172px,calc(env(safe-area-inset-top) + 104px))}
+}
 .inside-house #space-travel nav:not(:empty){margin-top:8px}
 .room-transition #space-travel,body:has(#conversation-panel:not([hidden])) #space-travel,body:has(#content-visit:not([hidden]):not(.is-walking)) #space-travel{visibility:hidden;pointer-events:none}
 .room-transition canvas{visibility:hidden}
@@ -175,7 +188,8 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
 </form></dialog>
 <div id="world-tools"><aside id="help"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> moverte · arrastrá para mirar · espacio para saltar</aside><button id="garden-create" class="glass" type="button" hidden>Crear jardín</button><button id="activity-open" class="glass" type="button" aria-haspopup="dialog" disabled>Actividad</button></div>
 <button id="house-door" type="button" class="primary" hidden>Entrar</button>
-<details id="space-travel" class="glass" hidden><summary>Mapa</summary><section class="room-map" aria-label="Mapa de la sala" hidden><div class="room-map-plot" aria-hidden="true"></div><p class="room-map-hint">Señalá una salida en el mapa.</p><div class="room-map-destinations" role="group" aria-label="Salidas"></div></section><nav aria-label="Regreso al exterior"></nav></details>
+<details id="space-travel" class="glass" hidden><summary>Mapa</summary><section class="room-map" aria-label="Mapa de la sala" hidden><div class="room-map-plot" aria-hidden="true"></div><p class="room-map-hint">Marcá una salida y cerrá el mapa para seguir la flecha.</p><div class="room-map-destinations" role="group" aria-label="Salidas"></div></section><nav aria-label="Regreso al exterior"></nav></details>
+<aside id="door-guidance" class="glass" aria-label="Salida marcada" hidden><span class="door-guide-arrow" aria-hidden="true">↑</span><span><span class="door-guide-title"></span><span class="door-guide-distance"></span></span><button type="button" aria-label="Quitar salida marcada">×</button></aside>
 <div id="companion-status" class="glass" role="status">Exploración compartida</div>
 <div id="notice" class="glass" role="status"></div>
 <div id="room-passage"><span class="passage-arch" aria-hidden="true"></span><p id="room-passage-message" role="status"></p></div>

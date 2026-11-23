@@ -54,10 +54,15 @@ test('the tower portal warms near the gallery stair without offering the wrong a
 test('the room map follows the actor and only highlights authorized physical doors',()=>{
   const dom=new JSDOM(`<details id="space-travel"><summary></summary>
     <section class="room-map" hidden><div class="room-map-plot"></div><div class="room-map-destinations"></div></section>
-    <nav></nav></details><button id="house-door" hidden></button>`);
+    <nav></nav></details><aside id="door-guidance" hidden><span class="door-guide-title"></span>
+    <span class="door-guide-distance"></span><button></button></aside><button id="house-door" hidden></button>`);
   const prior=globalThis.document;
   globalThis.document=dom.window.document;
   const travel=document.querySelector('details');
+  const guide=document.querySelector('#door-guidance');
+  const north=()=>({x:0,y:0,z:0,w:1});
+  const east=()=>({x:0,y:-Math.SQRT1_2,z:0,w:Math.SQRT1_2});
+  const far={x:-3,y:.1,z:0};
   const show=space=>showSpaceLinks(space,{onError:assert.fail});
   const mapButtons=()=>[...travel.querySelectorAll('.room-map-destinations button')];
   const portal={to:'tower',title:'Torre',kind:'portal',door:{x:3,y:.11,z:-4.81}};
@@ -69,11 +74,31 @@ test('the room map follows the actor and only highlights authorized physical doo
     mapButtons()[0].click();
     assert.equal(mapButtons()[0].getAttribute('aria-pressed'),'true');
     assert.equal(travel.querySelector('.room-map-pin[data-selected]').style.left,'75%');
-    update({x:-3,y:.1,z:0},()=>({x:0,y:0,z:0,w:1}));
+    update(far,north);
     assert.equal(travel.querySelector('.room-map-player').style.left,'25%');
     assert.equal(travel.querySelector('.room-map-player').style.getPropertyValue('--map-heading'),'0deg');
     assert.equal(document.querySelector('#house-door').hidden,true,'selection does not activate a crossing');
+    assert.equal(guide.hidden,true);
+    travel.open=false;
+    update(far,north);
+    assert.equal(guide.hidden,false);
+    assert.equal(guide.querySelector('.door-guide-distance').textContent,'8 m');
+    assert.equal(guide.style.getPropertyValue('--door-direction'),'50deg');
+    update(far,east);
+    assert.equal(guide.style.getPropertyValue('--door-direction'),'-40deg');
+    update({x:3,y:.1,z:-4.81},east);
+    assert.equal(guide.hidden,true);
+    assert.equal(document.querySelector('#house-door').hidden,false);
+    update(far,east);
+    guide.querySelector('button').click();
+    assert.equal(guide.hidden,true);
+    assert.equal(mapButtons()[0].getAttribute('aria-pressed'),'false');
+    mapButtons()[0].click();
+    update(far,north);
+    assert.equal(guide.hidden,false);
     update.suspend();
+    assert.equal(guide.hidden,true);
+    assert.equal(guide.querySelector('.door-guide-title').textContent,'');
     assert.equal(travel.open,false);
     assert.equal(travel.hidden,true);
     assert.equal(mapButtons().length,0);

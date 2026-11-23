@@ -98,7 +98,6 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
   document.addEventListener('keydown',hotkey);
   const update=(position,rotation)=>{
     if(suspended)return;
-    map?.update(position,rotation);
     let closest=null,distance=DOOR_RANGE,nearby=null,prefetchDistance=3.75;
     if(position)for(const destination of doors){
       if(!destination.door)continue;
@@ -111,6 +110,7 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
       const reach=stair?STAIR_RANGE:destination.kind==='portal'?PORTAL_RANGE:DOOR_RANGE;
       if(gap<distance&&gap<reach){closest=destination;distance=gap;}
     }
+    map?.update(position,rotation,closest);
     if(nearby)onNear?.(nearby.to);
     if(closest===near)return;
     near=closest;button.hidden=!near;

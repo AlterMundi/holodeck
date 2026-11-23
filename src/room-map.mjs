@@ -11,12 +11,20 @@ export function showRoomMap(travel,doors){
   const plot=view.querySelector('.room-map-plot');
   const destinations=view.querySelector('.room-map-destinations');
   const hint=view.querySelector('.room-map-hint');
+  const guide=travel.ownerDocument.querySelector('#door-guidance');
+  const guideTitle=guide.querySelector('.door-guide-title');
+  const guideDistance=guide.querySelector('.door-guide-distance');
+  const dismiss=guide.querySelector('button');
   const element=tag=>travel.ownerDocument.createElement(tag);
   const pins=[];
   let selected=null,player,position;
 
   function select(pin){
     selected=pin;
+    guide.hidden=true;
+    guideTitle.textContent=pin?.door.mapTitle??'';
+    guideDistance.textContent='';
+    guide.style.removeProperty('--door-direction');
     for(const entry of pins){
       const active=entry===pin;
       entry.button.setAttribute('aria-pressed',String(active));
@@ -25,33 +33,48 @@ export function showRoomMap(travel,doors){
   }
 
   function clear(){
-    pins.length=0;selected=null;position=null;player=null;
+    pins.length=0;select(null);position=null;player=null;
+    dismiss.onclick=null;
     plot.replaceChildren();
     destinations.replaceChildren();
     view.hidden=true;
   }
 
-  function update(next,rotation){
-    if(!player||!travel.open)return;
+  function update(next,rotation,nearest){
+    if(!player||(!travel.open&&!selected))return;
     const known=Number.isFinite(next?.x)&&Number.isFinite(next?.z);
+    const facing=known&&rotation?.();
+    const yaw=facing?Math.atan2(-2*(facing.x*facing.z+facing.w*facing.y),
+      1-2*(facing.x*facing.x+facing.y*facing.y)):NaN;
+    if(selected){
+      const target=selected.door.door;
+      const dx=target.x-next?.x,dz=target.z-next?.z;
+      const bearing=Math.atan2(dx,-dz)-yaw;
+      const hidden=travel.open||nearest?.to===selected.door.to||!known||!Number.isFinite(bearing);
+      if(guide.hidden!==hidden)guide.hidden=hidden;
+      if(!hidden){
+        const angle=Math.round(bearing*180/Math.PI/5)*5+'deg';
+        if(guide.style.getPropertyValue('--door-direction')!==angle)guide.style.setProperty('--door-direction',angle);
+        const distance=Math.max(1,Math.round(Math.hypot(dx,dz)))+' m';
+        if(guideDistance.textContent!==distance)guideDistance.textContent=distance;
+      }
+    }
+    if(!travel.open)return;
     if(player.hidden===known)player.hidden=!known;
     if(!known){position=null;return;}
     const x=coordinate(next.x),z=coordinate(next.z);
-    let yaw=null;
-    if(rotation){
-      const {x,y,z,w}=rotation();
-      yaw=Math.round(Math.atan2(-2*(x*z+w*y),1-2*(x*x+y*y))*180/Math.PI/5)*5;
-    }
-    const stamp=x+':'+z+':'+yaw;
+    const heading=Number.isFinite(yaw)?Math.round(yaw*180/Math.PI/5)*5:null;
+    const stamp=x+':'+z+':'+heading;
     if(stamp===position)return;
     position=stamp;
     place(player,next);
-    player.style.setProperty('--map-heading',yaw===null?'0deg':yaw+'deg');
-    player.toggleAttribute('data-heading',yaw!==null);
+    player.style.setProperty('--map-heading',heading===null?'0deg':heading+'deg');
+    player.toggleAttribute('data-heading',heading!==null);
   }
 
   function show(){
     clear();
+    dismiss.onclick=()=>select(null);
     player=element('span');player.className='room-map-player';player.hidden=true;
     plot.append(player);
     for(const door of doors){
@@ -70,7 +93,7 @@ export function showRoomMap(travel,doors){
       button.setAttribute('aria-label','Señalar '+door.mapTitle+detail);
       button.dataset.kind=marker.dataset.kind;
       button.setAttribute('aria-pressed','false');
-      const pin={marker,button};
+      const pin={marker,button,door};
       button.onclick=()=>select(selected===pin?null:pin);
       pins.push(pin);destinations.append(button);
     }
