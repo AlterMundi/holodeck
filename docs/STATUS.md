@@ -44,8 +44,10 @@ the exact panel script through its real Node and Python routes with a
 simulated launcher. One explicit Weaver click created one matching job and
 the interface opened after readiness. A response containing an older
 Spatializer job showed that the receiver was busy and created no new job.
-The deployed panel served matching static files and health; the live device
-and human interaction evidence remains separate.
+The combined trial opened the exact panel from the Weaver bench in the
+compatible preceding Holodeck package. Both cases closed the panel and
+returned to the same room, document and position. The deployed panel served
+matching static files and health. Live device and human use remain open.
 
 Source `edf991b`, package `7191104b0306`, retains the Cycles-lit foyer from
 source `5040075` and compacts generated server whitespace. The package drops
