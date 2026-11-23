@@ -29,11 +29,11 @@ const PARCEL_TERRAIN=Object.freeze({asset:'parcel-terrace.glb',
 const PARCEL_GARDEN=Object.freeze({asset:'parcel-garden.glb',
   revision:'bc6d9755145d2ea5969e8c07abf2e643026867d718e75d62e0a004f3e6d22ac0'});
 const GALLERY_ISLAND=Object.freeze({asset:'gallery-island.glb',
-  revision:'b1eab19de3c578ac4276a1ce9279bcbc13bcb9e1723dcb69afbe3d883380a3c1'});
+  revision:'e4a1b6521035306fe44fb2078915a9c3746562e7389e528c7ed5a8ebc0d3460a'});
 const MIRADOR=Object.freeze({asset:'mirador.glb',
   revision:'613c83a5c2a052d22c5868ef7a49c62619ef0f3d546f58178391d1d4f3f0d7b4'});
 const SURROUNDINGS_ASSET='island-scenery-atelier.glb';
-const SURROUNDINGS_REVISION='38ba825c17b367780440ada804b6d07468d1559d47e6ebd3f43c2214c7d62ac8';
+const SURROUNDINGS_REVISION='c2816b18bd97fbe50ef89575e271d4cfd385c93774fe037894ea6724f517809b';
 const OUTDOOR_SKY=Object.freeze({asset:'coastal-sky.jpg',
   revision:'2e9a63bbb5eb0e3a60e6144cff155e753211e093ee2870efda480129a01baae8'});
 const COASTAL_RIDGES=Object.freeze({asset:'coastal-ridges.glb',

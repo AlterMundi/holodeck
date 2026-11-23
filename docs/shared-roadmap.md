@@ -166,6 +166,10 @@ state left the crossing physically interrupted in the same renderer. The
 bridge into the playable meadow and an oak arbor. Its raised scenery stays
 outside the existing creation rectangle. The native readback retained the
 published Signal Garden rules, targets and location. The
+[west gallery court](../art/compaii-house/redesign/gallery-island.md)
+replaces the inherited plaza paving with a flush limestone court and adds a
+seaward oak seat beyond the creation rectangle. The inherited island bodies
+remain open for Blender replacement. The
 [foyer joinery](../art/compaii-house/redesign/foyer-joinery.md) adds a wall-edge
 bench and a relief of the vestibule route in the existing table. The visitor
 trial checked the room-scoped model, the gallery door in both directions and

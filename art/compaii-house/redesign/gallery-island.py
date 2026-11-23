@@ -1,4 +1,5 @@
-"""Author the west promenade landing and the outdoor presentation pavilion."""
+"""Author the west promenade landing, gallery court and presentation pavilion."""
+from hashlib import sha256
 from math import cos, pi, sin
 from pathlib import Path
 from random import Random
@@ -7,7 +8,8 @@ import sys
 import bpy
 from mathutils import Vector
 
-output = Path(sys.argv[sys.argv.index("--") + 1])
+args = sys.argv[sys.argv.index("--") + 1:]
+output = Path(args[0])
 output.mkdir(exist_ok=True, parents=True)
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.context.scene.unit_settings.system = "METRIC"
@@ -102,6 +104,41 @@ for z in (-1.26, 1.08):
     for x in (-14.78, -15.25, -15.72):
         block("Sawn sill at bridge head", (x, .119, z), (.43, .058, .14), basalt, .010)
 
+# Low joints run from the bridge toward the open court. Leave the western
+# presentation nodes and the reserved creation rectangle clear of fixed props.
+court_left, court_right = -25.73, -20.50
+block("Weathered court mortar", (-23.115, .076, -.82),
+      (5.23, .014, 4.62), basalt)
+for band in range(9):
+    z = -2.87 + .514 * band
+    span = court_right - court_left
+    widths = [rng.uniform(.57,.84) for _ in range(8)]
+    x = court_left
+    for number, width in enumerate(widths):
+        length = span * width / sum(widths)
+        block("Hand-set gallery court flags", (x + length / 2, .088, z),
+              (length - .017, .022, .496), limestone[(band + 3*number + rng.randrange(2)) % 4], .007)
+        x += length
+for z in (-3.16, 1.55):
+    block("Basalt court stringcourse", (-23.115, .087, z), (5.48, .026, .15), basalt, .008)
+    block("Bronze court inlay", (-23.115, .102, z), (5.24, .007, .018), bronze)
+block("Western boundary of the gallery court", (-25.83, .087, -.805),
+      (.17, .026, 4.72), basalt, .008)
+
+# The quiet seaward seat is beyond the authored creation rectangle. Its simple
+# collision envelope is registered with the atelier. The oak is warm beside
+# the court's cooler stone and avoids a tall barrier on the coastal sightline.
+for x in (-23.39, -21.41):
+    block("Basalt foot of seaward seat", (x,.260,-5.85), (.32,.33,.56), basalt,.029)
+for z in (-6.02,-5.85,-5.68):
+    block("Oak seaward seat slat", (-22.40,.468,z), (2.48,.078,.153),oak,.019)
+for x in (-23.39, -21.41):
+    block("Bronze tie under seaward seat", (x,.438,-5.85), (.38,.023,.526), bronze,.004)
+for row in range(3):
+    for i in range(5):
+        block("Rim seat flag", (-23.62+i*.61,.082,-5.33-row*.41),
+              (.595,.023,.397), limestone[(row + i) % 4], .006)
+
 # A stone apron widens the arrival route into a semicircular viewing terrace.
 # Its paving stays flush so the installation never consumes an authoring slot.
 walk_x, walk_z = -22, 2.98
@@ -186,3 +223,27 @@ pieces[0].name = "West gallery island pavilion and limestone approach"
 assert not pieces[0].data.validate(verbose=True), "Invalid merged pavilion mesh"
 bpy.ops.export_scene.gltf(filepath=str(output / "gallery-island.glb"), export_format="GLB",
                          use_selection=True, export_cameras=False, export_lights=False)
+
+if len(args) > 1:
+    # The previous GLB contains authored water and foliage in addition to the
+    # inherited top layers. Drop only the four exact western paving streams.
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from coastal_water import pack_glb, parse_glb
+
+    inherited = Path(args[1]).read_bytes()
+    assert sha256(inherited).hexdigest() == "38ba825c17b367780440ada804b6d07468d1559d47e6ebd3f43c2214c7d62ac8"
+    doc, payload = parse_glb(inherited)
+    mesh, = doc["meshes"]
+    removed = {"stone":336,"copper":1032,"path":144,"gold":108}
+    kept, dropped = [], {}
+    for primitive in mesh["primitives"]:
+        name = doc["materials"][primitive["material"]]["name"]
+        if name not in removed:
+            kept.append(primitive)
+            continue
+        positions = doc["accessors"][primitive["attributes"]["POSITION"]]
+        assert -27 < positions["min"][0] < positions["max"][0] < -14
+        dropped[name] = positions["count"]
+    assert dropped == removed
+    mesh["primitives"] = kept
+    (output / "island-scenery-atelier.glb").write_bytes(pack_glb(doc, payload))
