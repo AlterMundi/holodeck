@@ -79,6 +79,11 @@ invalid proof, a changed turn and terminal receipt recovery. The producer
 passed the isolated Telecodex HTTP fixture with explicit destinations,
 held admission, rebind, termination and fan-out. The routed proof remains
 a source candidate until the owning native and bridge receivers adopt it.
+Current receiving preflight found the local owner bridge and seven remote
+bridges. Delta-only candidates passed the focused bridge tests. The local
+candidate also constructed its existing Provider, Home and Nexus readers
+under the actual service interpreter. Per-receiver remote qualification and
+the native owner selection are still outstanding.
 [DaimonApp PR #1005](https://github.com/AlterMundi/DaimonApp/pull/1005)
 
 Source `23de47f`, package `faae992dce4e`, established the HUD input correction. The exterior reference card passes
