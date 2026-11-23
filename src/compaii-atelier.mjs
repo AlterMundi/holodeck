@@ -29,7 +29,7 @@ const PARCEL_TERRAIN=Object.freeze({asset:'parcel-terrace.glb',
 const PARCEL_GARDEN=Object.freeze({asset:'parcel-garden.glb',
   revision:'bc6d9755145d2ea5969e8c07abf2e643026867d718e75d62e0a004f3e6d22ac0'});
 const GALLERY_ISLAND=Object.freeze({asset:'gallery-island.glb',
-  revision:'e4a1b6521035306fe44fb2078915a9c3746562e7389e528c7ed5a8ebc0d3460a'});
+  revision:'9784e4c260acfee3c46277db85445401f5c4f91e7a9cb6a9e58912ea8a596240'});
 const MIRADOR=Object.freeze({asset:'mirador.glb',
   revision:'613c83a5c2a052d22c5868ef7a49c62619ef0f3d546f58178391d1d4f3f0d7b4'});
 const SURROUNDINGS_ASSET='island-scenery-atelier.glb';
@@ -84,6 +84,7 @@ const commonsVisual={asset:COMMONS_ASSET,revision:COMMONS_REVISION,wayfinding:WA
       {x:side*2.32,y:.31,z:-17.815,w:.52,h:.42,d:1.825},
       {x:side*1.94,y:1.20,z:-19,w:.69,h:2.20,d:.69},
     ]).map(box).join('')},colliders:[
+  {x:-22.40,y:.298,z:-5.85,w:2.48,h:.418,d:.49},
   {x:-9.11,y:1.30,z:-2.87,w:.34,h:2.45,d:.34},
   {x:-9.11,y:1.30,z:-4.50,w:.34,h:2.45,d:.34},
   {x:-8.73,y:.29,z:-3.68,w:.59,h:.43,d:1.54},

@@ -16,7 +16,7 @@ and narrow bronze inlays. The older west stone, copper, path and lantern
 batches are retired from the selected surroundings GLB. All other scenery
 primitives and the source binary buffers are retained.
 
-The Blender model uses 13,956 triangles and ten material batches. Paving sits
+The Blender model uses 14,352 triangles and ten material batches and transfers 108,067 bytes with Brotli. Paving sits
 over existing walking surfaces. The pavilion keeps the original
 presentation marker collision, nearby visit action and exact stage coordinates.
 There is room to approach from either side of the bridge. The world still owns

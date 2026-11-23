@@ -139,22 +139,27 @@ for row in range(3):
         block("Rim seat flag", (-23.62+i*.61,.082,-5.33-row*.41),
               (.595,.023,.397), limestone[(row + i) % 4], .006)
 
-# A stone apron widens the arrival route into a semicircular viewing terrace.
+# The apron opens away from the court. A short stone threshold connects the
+# two shapes without layering their paving.
 # Its paving stays flush so the installation never consumes an authoring slot.
 walk_x, walk_z = -22, 2.98
+for row in range(3):
+    for i in range(3):
+        block("Pavilion threshold flag", (-22.69+i*.69,.088,1.88+row*.429),
+              (.675,.022,.411), limestone[(row+i)%4], .006)
 for band, (inner, outer) in enumerate(((1.05,1.54), (1.56,2.03), (2.05,2.5), (2.52,2.96))):
     sectors = 19
     for i in range(sectors):
-        a = -.18 * pi + i * (1.36 * pi / sectors) + .006
-        b = -.18 * pi + (i + 1) * (1.36 * pi / sectors) - .006
+        a = -pi + i * (pi / sectors) + .006
+        b = -pi + (i + 1) * (pi / sectors) - .006
         coords = [(walk_x + r * cos(angle), .116, walk_z - r * sin(angle))
                   for r, angle in ((inner,a), (outer,a), (outer,b), (inner,b))]
         shape("Inset radial limestone voussoir", coords, [(0, 1, 2, 3)],
               limestone[(band + 2 * i + rng.randrange(2)) % len(limestone)])
 for i in range(28):
     r = 3.01
-    a = -.18 * pi + i * (1.36 * pi / 28)
-    b = -.18 * pi + (i + 1) * (1.36 * pi / 28)
+    a = -pi + i * (pi / 28)
+    b = -pi + (i + 1) * (pi / 28)
     vertices = [(walk_x + radius * cos(angle), .118, walk_z - radius * sin(angle))
                 for radius, angle in ((r,a),(r+.115,a),(r+.115,b),(r,b))]
     shape("Basalt edge to the viewing terrace", vertices, [(0, 1, 2, 3)], basalt)
