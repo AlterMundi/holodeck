@@ -6,8 +6,9 @@ const pin={tableId:'old-table',reportId:'old-report',revision:'old-edition'};
 const nextPin={tableId:'next-table',reportId:'next-report',revision:'next-edition'};
 const context={state:{dirty:false,recording:false,processing:false,playing:false},chapterId:'old-chapter'};
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};};
-function visitor(ready,request){return {frame:{},entry:{pin,node:'research-original'},visitId:'old-visit',ready,request,
- panel:{classList:{contains:()=>false}},disposed:false,lastContext:null};}
+function visitor(ready,request){return Object.assign(Object.create(ContentVisitor.prototype),
+ {frame:{},entry:{pin,node:'research-original'},visitId:'old-visit',ready,request,
+  panel:{classList:{contains:()=>false}},disposed:false,lastContext:null});}
 function replace(value){value.frame={};value.entry={pin:nextPin,node:'research-replacement'};value.visitId='next-visit';}
 
 test('a question waiting for viewer readiness never captures its replacement content',async()=>{

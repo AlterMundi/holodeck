@@ -260,7 +260,7 @@ function applySpace(next,anchor){
   document.body.classList.toggle('has-situated-conversation',inside&&next.sharedConversation===true);
   $('#hud h1').textContent=inside?next.title:'Plaza de llegada';
   $('#people').textContent=inside?(next.level===0?'Planta baja':next.level<0?`Subsuelo ${-next.level}`:`Piso ${next.level}`):'Un lugar para crear juntos';
-  if(changed){roomTopic=undefined;contentVisitor.changeRoom(inside);worldIndication.selected=null;worldIndication.removeOutline();state=null;}
+  if(changed){roomTopic=undefined;contentVisitor.changeRoom(inside,next.id);worldIndication.selected=null;worldIndication.removeOutline();state=null;}
   else if(inside)contentVisitor.catalog=contentVisitor.loadCatalog();
   if(anchor)history.replaceState(history.state,'','#'+doorLocation(anchor));
   resetDoor();
@@ -302,7 +302,7 @@ function resetDoor(){
     canLeave:()=>{
       if(moving)return false;
       if(inside)return contentVisitor.allowLeaveRoom();
-      if(contentVisitor.frame||nativeTurn||pending||preview||signalEditor.active||$('#message').value.trim()){
+      if((contentVisitor.frame&&!contentVisitor.parked)||nativeTurn||pending||preview||signalEditor.active||$('#message').value.trim()){
         say('Tenés una visita, un borrador o un envío abierto. Retomalo antes de cambiar de lugar.');
         return false;
       }
@@ -446,7 +446,7 @@ window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()
 const $=selector=>document.querySelector(selector);
 const notice=$('#notice');
 const worldNotice=new WorldNotice(notice);
-contentVisitor=new ContentVisitor({document,window,base,say,scoped:inside,onCatalog:entries=>{
+contentVisitor=new ContentVisitor({document,window,base,say,scoped:inside,roomId:hot?activeSpace.id:null,onCatalog:entries=>{
   if(remoteScene){galleryModels?.sync(entries);applyGallerySigns(remoteScene,entries);}
 }});
 worldHistory=new WorldHistory({document,window,getState:()=>state,
@@ -595,8 +595,7 @@ const sharedSurface=()=>inside?activeSpace?.sharedConversation===true:state?.nat
 const roomObjects=()=>inside?(activeSpace?.objects??[]).filter(object=>
   (object.kind==='fixture'||object.kind==='workstation')&&Number.isSafeInteger(object.revision)):[];
 function roomSubject(objects=roomObjects()){
-  const entry=contentVisitor?.readyAcknowledged&&contentVisitor.entry;
-  const station=beaconControls.reference()||(entry&&{id:entry.node,revision:entry.nodeRevision});
+  const station=beaconControls.reference()||contentVisitor?.reference();
   const selected=roomTopic===undefined?station:roomTopic;
   return selected&&objects.find(object=>object.id===selected.id&&object.revision===selected.revision);
 }

@@ -7,10 +7,11 @@ const ROOM_VISIT_REACH=2.25;
 // One retained Nexus visit. Hiding this panel never destroys media, a draft,
 // capture or native response polling. The trusted viewer owns that lifecycle.
 export class ContentVisitor{
- constructor({document,window,base,say,scoped=false,onCatalog=()=>{}}){
-  Object.assign(this,{document,window,base,say,scoped,onCatalog});this.entries=[];this.nodes=[CONTENT_NODE];this.catalogGeneration=0;this.pending=new Map();this.disposed=false;this.lastContext=null;this.catalogRenewAt=Infinity;
+ constructor({document,window,base,say,scoped=false,roomId=null,onCatalog=()=>{}}){
+  Object.assign(this,{document,window,base,say,scoped,roomId,onCatalog});this.entries=[];this.nodes=[CONTENT_NODE];this.catalogGeneration=0;this.pending=new Map();this.disposed=false;this.lastContext=null;this.catalogRenewAt=Infinity;
   this.button=document.querySelector('#visit-near');this.panel=document.querySelector('#content-visit');
   this.loading=document.querySelector('#visit-loading');this.roomGeneration=0;this.renewScopedCatalog=false;
+  this.visitRoom=null;this.parked=false;this.accessGeneration=0;
   const openEntry=selected=>{
    const exact=this.scoped?{nodeRevision:selected?.nodeRevision??null,expectedPin:selected?.pin??null}:undefined;
    return this.open(selected?.id,exact).catch(()=>say('No pude abrir esta presentación. Podés volver a intentarlo.'));
@@ -26,7 +27,7 @@ export class ContentVisitor{
    const value=event.data;if(!value||typeof value!=='object')return;
    let bytes;try{bytes=new TextEncoder().encode(JSON.stringify(value)).length;}catch{return;}if(bytes>65536)return;
    if(value.schema===`dm.holodeck-visit/ready-v${visitVersion(this.entry.pin)}`&&event.source===this.frame.contentWindow&&event.origin===this.window.location.origin&&value.visitId===this.visitId&&sameVisitPin(value.pin,this.entry.pin)){
-    if(visitVersion(this.entry.pin)>=2&&value.readiness!=='ready')return;
+    if(!this.canUseFrame()||visitVersion(this.entry.pin)>=2&&value.readiness!=='ready')return;
     if(!this.confirming){this.confirming=true;this.request('describe').then(result=>{
      if(!['describe','getContext','pauseAndFreeze','prepareClose'].every(method=>result?.capabilities?.[method]===true)||!knownVisitState(result.state)||(visitVersion(this.entry.pin)>=2&&result.readiness!=='ready')){this.confirming=false;return;}
      clearTimeout(this.readyTimer);this.readyAcknowledged=true;this.readyResolve(result);
@@ -49,13 +50,13 @@ export class ContentVisitor{
    this.nodes=this.scoped?[]:validateContentNodes(value.nodes);this.entries=Array.isArray(value.visits)?value.visits.slice(0,16).map(entry=>{const node=this.nodes.find(node=>node.id===entry.node);return {...entry,title:entry.title||node?.title,position:entry.position||node?.position};}):[];this.catalogSignature=signature;this.choices();
    this.renewScopedCatalog=this.scoped&&(value.revalidate===true||value.gallery===true||this.entries.some(entry=>entry.galleryDisplay===true));
    this.catalogRenewAt=this.renewScopedCatalog?performance.now()+20000:Infinity;
-   if(this.scoped&&this.frame&&!this.hasCurrentEntry())this.minimize();
+   this.reconcileVisitAccess();
    this.index.update(this.scoped?this.entries:[]);this.onCatalog(this.entries);return true;
   }catch{
    if(this.scoped&&!this.disposed&&generation===this.catalogGeneration){
     this.entries=[];this.nearby=null;this.choices();this.catalogRenewAt=this.renewScopedCatalog?performance.now()+20000:Infinity;this.onCatalog([]);
     this.index.update([]);
-    if(this.frame)this.minimize();
+    this.reconcileVisitAccess();
    }
    return false;
   }
@@ -72,7 +73,7 @@ export class ContentVisitor{
    const at=entry.position||CONTENT_NODE.position,next=Math.hypot(position.x-at.x,position.z-at.z,this.scoped?(position.y??at.y)-at.y:0);
    if(next<distance){distance=next;this.nearby=entry;}
   }
-  const canResume=this.frame&&(!this.scoped||this.hasCurrentEntry());
+  const canResume=this.frame&&this.canUseFrame();
   const browse=this.scoped&&this.entries.length>0&&!canResume&&!this.nearby;
   this.button.hidden=!canResume&&!this.nearby&&!browse;
   if(browse){
@@ -91,8 +92,25 @@ export class ContentVisitor{
    this.catalog=this.loadCatalog();
  }
 
- hasCurrentEntry(){
-  return this.entries.some(value=>value.id===this.entry?.id&&value.nodeRevision===this.entry.nodeRevision&&sameVisitPin(value.pin,this.entry.pin));
+ hasCurrentEntry(entry=this.entry,visitRoom=this.visitRoom){
+  return this.roomId===visitRoom&&this.entries.some(value=>value.id===entry?.id&&
+   value.nodeRevision===entry.nodeRevision&&sameVisitPin(value.pin,entry.pin));
+ }
+
+ reconcileVisitAccess(){
+  if(!this.scoped||!this.frame||this.visitRoom!==this.roomId)return;
+  const available=this.hasCurrentEntry();
+  if(!available&&!this.parked)this.accessGeneration++;
+  this.parked=this.roomId!==null&&!available;
+  if(!available)this.minimize();
+ }
+
+ canUseFrame(){
+  return !this.parked&&this.roomId===this.visitRoom&&(!this.scoped||this.hasCurrentEntry());
+ }
+
+ reference(){
+  return this.readyAcknowledged&&this.canUseFrame()?{id:this.entry.node,revision:this.entry.nodeRevision}:null;
  }
 
  async openNode(nodeId,{expectedRevision=null}={}){
@@ -158,6 +176,10 @@ export class ContentVisitor{
    return this.open(entry.id,{nodeRevision:entry.nodeRevision,expectedPin:entry.pin});
  }
  async open(selectedId,{nodeRevision=null,expectedPin=null}={}){
+  if(this.parked){
+   this.say('La visita anterior sigue guardada en este navegador. Volvé a su sala cuando recuperes el acceso.');
+   return;
+  }
   const selected=this.entries.find(entry=>entry.id===selectedId);
   if((nodeRevision!==null&&selected?.nodeRevision!==nodeRevision)||(expectedPin&&!sameVisitPin(selected?.pin,expectedPin))){this.say('Este contenido cambió de lugar o edición. Volvé a elegirlo en el mundo.');return;}
   if(!this.scoped&&this.frame&&(!selectedId||selectedId===this.entry?.id&&(!selected||sameVisitPin(selected.pin,this.entry.pin)))){this.reveal();this.frame.focus();return;}
@@ -168,6 +190,7 @@ export class ContentVisitor{
     if(!await this.loadCatalog()){if(this.frame)this.minimize();this.say('No pude confirmar tu acceso a esta exposición.');return;}
    }else await this.catalog;
    if(!current())return;
+   if(this.parked){this.say('No pude confirmar el acceso a la visita que quedó abierta.');return;}
    if(this.selector)this.selector.disabled=true;const entry=this.entries.find(value=>value.id===selectedId)||(!selectedId&&this.entries[0]);if(!entry){
     if(this.scoped&&this.frame&&!this.hasCurrentEntry())this.minimize();
     this.say('No hay contenido disponible para tu acceso en este lugar.');return;
@@ -178,7 +201,19 @@ export class ContentVisitor{
    if([descriptorURL,entryURL].some(url=>url.origin!==this.window.location.origin||!url.pathname.startsWith('/nexus/')))throw Error('Use the selected viewer');
    const response=await fetch(descriptorURL,{credentials:'same-origin',signal:AbortSignal.timeout(5000)});
    if(!current())return;
-   if(!response.ok){if(this.scoped&&this.frame)this.minimize();if(this.selector&&this.entry)this.selector.value=this.entry.id;this.say(response.status===401||response.status===403?'Este contenido necesita tu acceso a Nexus. Volvé a entrar desde Apps.':'No pude recuperar esta edición del contenido.');return;}
+   if(!response.ok){
+    const denied=response.status===401||response.status===403;
+    if(this.scoped&&this.frame){
+     if(denied&&this.roomId!==null&&entry.id===this.entry.id&&
+        entry.nodeRevision===this.entry.nodeRevision&&sameVisitPin(entry.pin,this.entry.pin)){
+      this.entries=this.entries.filter(value=>value.id!==entry.id);
+      this.reconcileVisitAccess();this.choices();this.index.update(this.entries);this.onCatalog(this.entries);
+     }else this.minimize();
+    }
+    if(this.selector&&this.entry)this.selector.value=this.entry.id;
+    this.say(denied?'Este contenido necesita tu acceso a Nexus. Volvé a entrar desde Apps.':'No pude recuperar esta edición del contenido.');
+    return;
+   }
    const descriptor=await response.json();if(!current())return;
    if(!sameVisitPin(descriptor.pin,entry.pin))throw Error('Content edition changed');
    const version=visitVersion(entry.pin);
@@ -189,20 +224,21 @@ export class ContentVisitor{
        !visitEntryMatches(descriptor.entry,entry.pin))throw Error('Selected edition unavailable');
     if(verifyScoped)entryURL=new URL(descriptor.entry,this.window.location.origin);
    }
-   if(this.scoped&&this.frame&&!this.frame.inert&&entry.id===this.entry?.id&&entry.nodeRevision===this.entry.nodeRevision&&sameVisitPin(entry.pin,this.entry.pin)){
+   if(this.parked)return;
+   if(this.scoped&&this.frame&&!this.frame.inert&&this.canUseFrame()&&entry.id===this.entry?.id&&entry.nodeRevision===this.entry.nodeRevision&&sameVisitPin(entry.pin,this.entry.pin)){
      this.reveal();this.frame.focus();return;
    }
    if(this.frame){
     if(!this.frame.inert){
-     await this.ready;if(!current())return;
-     const state=await this.request('prepareClose');if(!current())return;
+     await this.ready;if(!current()||!this.canUseFrame())return;
+     const state=await this.request('prepareClose');if(!current()||!this.canUseFrame())return;
      if(state?.canClose!==true||!knownVisitState(state.state)||Object.values(state.state).some(Boolean)){
       if(this.selector)this.selector.value=this.entry.id;this.reveal();this.say('Terminá el trabajo pendiente en esta visita antes de cambiar de contenido.');return;
      }
     }
     this.removeFrame();
    }
-   this.entry=entry;this.confirming=false;this.readyAcknowledged=false;this.lastContext=null;this.visitId=crypto.randomUUID();entryURL.searchParams.set('holodeck_visit',this.visitId);
+   this.entry=entry;this.visitRoom=this.roomId;this.confirming=false;this.readyAcknowledged=false;this.lastContext=null;this.visitId=crypto.randomUUID();entryURL.searchParams.set('holodeck_visit',this.visitId);
    if(this.selector){this.selector.value=entry.id;const option=Array.from(this.selector.options).find(value=>value.value===entry.id);if(option&&typeof descriptor.title==='string')option.textContent=entry.galleryDisplay?entry.title+' · '+descriptor.title.slice(0,75):descriptor.title.slice(0,100);}
    this.document.querySelector('#visit-title').textContent=typeof descriptor.title==='string'?descriptor.title.slice(0,160):'Contenido';
    this.reveal();
@@ -217,15 +253,20 @@ export class ContentVisitor{
    }}
   }finally{if(current()){this.opening=false;if(this.selector){this.selector.disabled=false;if(this.entry)this.selector.value=this.entry.id;}}}
  }
- changeRoom(scoped){
-  this.roomGeneration++;this.opening=false;this.removeFrame();
+ changeRoom(scoped,roomId=null){
+  this.roomGeneration++;this.opening=false;this.roomId=roomId;
+  if(this.parked)this.minimize();
+  else{
+   this.removeFrame();this.entry=null;this.visitRoom=null;this.readyAcknowledged=false;
+  }
   if(this.selector)this.selector.disabled=false;
-  this.entry=null;this.nearby=null;this.lastContext=null;this.entries=[];this.scoped=scoped;
+  this.nearby=null;this.lastContext=null;this.entries=[];this.scoped=scoped;
   this.renewScopedCatalog=false;this.catalogRenewAt=Infinity;this.onCatalog([]);
   this.index.update([]);this.button.hidden=true;this.panel.hidden=true;
   this.catalog=this.loadCatalog();
  }
  async allowLeaveRoom(){
+  if(this.parked)return true;
   if(!this.frame&&!this.opening)return true;
   if(this.frame?.inert)return true;
   if(this.readyAcknowledged&&!this.opening){
@@ -233,22 +274,27 @@ export class ContentVisitor{
     const reply=await this.request('prepareClose');
     if(reply?.canClose===true&&knownVisitState(reply.state)&&!Object.values(reply.state).some(Boolean))return true;
    }catch{/* Leave the visit in place if its work state could not be confirmed. */}
+   if(this.parked)return true;
   }
   this.say('Retomá la visita y terminá el trabajo pendiente antes de cambiar de sala.');
   return false;
  }
  async context(){
-  if(!this.frame||!this.entry||this.scoped&&!this.hasCurrentEntry())return null;
+  if(!this.frame||!this.entry||!this.canUseFrame())return null;
   const frame=this.frame,entry=this.entry,visitId=this.visitId,pin={...entry.pin},ready=this.ready,
+   generation=this.roomGeneration,accessGeneration=this.accessGeneration,scoped=this.scoped,visitRoom=this.visitRoom,
    requestedAt=Date.now(),panelVisible=!this.panel.classList.contains('is-walking');
-  const current=()=>!this.disposed&&this.frame===frame&&this.entry===entry&&this.visitId===visitId&&sameVisitPin(this.entry.pin,pin);
+  const authorized=()=>!this.disposed&&this.roomGeneration===generation&&
+   this.accessGeneration===accessGeneration&&(!scoped||this.hasCurrentEntry(entry,visitRoom));
+  const current=()=>authorized()&&this.frame===frame&&this.entry===entry&&this.visitId===visitId&&sameVisitPin(this.entry.pin,pin);
   const node=entry.node||CONTENT_NODE.id,nodeRevision=entry.nodeRevision??null;
-  const unavailable=()=>({node,nodeRevision,visitId,pin,requestedAt,contextUnavailable:true});
+  const unavailable=()=>authorized()?{node,nodeRevision,visitId,pin,requestedAt,contextUnavailable:true}:null;
   if(this.readyAcknowledged===false)return unavailable();
   let deadline;
   try{
    await ready;if(!current())return unavailable();
-   const context=await Promise.race([this.request('getContext'),new Promise((_,reject)=>{deadline=setTimeout(()=>reject(Error('Viewer context unavailable')),2500);})]);if(!current()||!knownVisitState(context?.state)||!contextVisitSnapshotMatches(context,pin))return unavailable();
+   const context=await Promise.race([this.request('getContext'),new Promise((_,reject)=>{deadline=setTimeout(()=>reject(Error('Viewer context unavailable')),2500);})]);if(!current())return unavailable();
+   if(!knownVisitState(context?.state)||!contextVisitSnapshotMatches(context,pin))return unavailable();
    const retainedContext=visitVersion(pin)===3?{pin:{...pin},context_status:'acknowledged-client-view',visit_id:context.visit_id,view_revision:context.view_revision,focus:context.focus,selection:context.selection===null?null:{kind:context.selection.kind,object_id:context.selection.object_id},state:Object.fromEntries(['dirty','recording','processing','playing'].map(key=>[key,context.state[key]]))}:context;
    const captured={node,nodeRevision,visitId,pin,requestedAt,capturedAt:Date.now(),panelVisible,context:retainedContext,evidence:visitVersion(pin)===3?'acknowledged-nexus-visit-reference; not canonical native-ingress capture or human attention':context.context_status==='playback-only'?'viewer-playback-only; no rendered-frame acknowledgment or human attention':'acknowledged-viewer-state; not human attention or shared playback'};
    if(new TextEncoder().encode(JSON.stringify(captured)).length>2200)return unavailable();

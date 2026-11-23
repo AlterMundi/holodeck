@@ -60,6 +60,16 @@ adapter's real stage dimensions. World capture separately records whether the
 visit panel is shown; an offscreen renderer acknowledgment does not claim that
 the human is looking at the presentation while walking.
 
+If the current room catalog can no longer confirm the open edition, Holodeck
+keeps that one frame and its pending work offscreen. The visitor can use doors
+and walk through the plaza. The retained frame supplies no visit context or
+automatic conversation reference during this time. A fresh catalog in the
+original room must match the exact edition and station revision before the
+visitor can resume it. Opening a different visit waits for that single retained
+frame to become available. Ordinary authorized room exits still check for
+unfinished Nexus work. This recovery holds within the running page. Nexus owns
+draft recovery after reload or browser close.
+
 Participant projections and visit entrances are not part of a creation snapshot.
 The existing GLB exporter explicitly excludes visit-only geometry and retains
 its creation-only source scope. This does not reconstruct historical playback.
