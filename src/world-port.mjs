@@ -13,11 +13,14 @@ function situatedInterior({request,verified,actor,room,conversationPlace,indoorG
     return {schema:'holodeck.space-observation/v1',run:room.run,edition:room.edition,
       observer:actor.id,space:captured};
 
-  const id=situatedGardenCommandId(verified.nativeRequest,args.id);
+  const {nativeRequest,...command}=args;
+  const commandFields=Object.keys(command).sort().join(',');
+  const id=situatedGardenCommandId(verified.nativeRequest,command.id);
   let result;
-  if(id&&operation==='act'&&args.type==='garden.signal'&&args.room===captured.id&&
-     fields==='color,expectedRevision,id,index,room,type')
-    result=indoorGarden?.(actor,{...args,id});
+  if(id&&operation==='act'&&command.type==='garden.signal'&&command.room===captured.id&&
+     commandFields==='color,expectedRevision,id,index,room,type'&&
+     (!Object.hasOwn(args,'nativeRequest')||nativeRequest===verified.nativeRequest))
+    result=indoorGarden?.(actor,{...command,id});
   else if(id&&operation==='result'&&fields==='id')
     result=indoorGarden?.(actor,{type:'garden.result',id});
   if(!result||result.room!==captured.id)throw Error('Situated garden operation unavailable');

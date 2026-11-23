@@ -129,7 +129,8 @@ test('a canonical interior source freezes its authorized place before awaits and
     admitted=false;
     assert.equal((await port('act',signal)).ok,false);
     admitted=true;
-    const acted=await port('act',signal);
+    assert.equal((await port('act',{...signal,nativeRequest:otherId})).ok,false);
+    const acted=await port('act',{...signal,nativeRequest:id});
     assert.equal(acted.ok,true);
     assert.deepEqual(acted,await port('act',signal),'exact retry preserves the first result');
     assert.equal((await port('act',{...signal,color:'amber'})).ok,false,'command ID cannot be reused');
