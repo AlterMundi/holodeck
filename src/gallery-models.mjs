@@ -93,6 +93,8 @@ export function placeGalleryModel(scene,plinth){
   const bounds=new Box3();
   scene.traverse(node=>{
     if(!node.isMesh||omit.includes(node))return;
+    node.castShadow=true;
+    node.receiveShadow=true;
     node.geometry.computeBoundingBox();
     bounds.union(node.geometry.boundingBox.clone().applyMatrix4(node.matrixWorld));
   });

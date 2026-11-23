@@ -107,6 +107,10 @@ def register_gallery(obj,stair):
              for x in (2.08,3.92)] if stair else []
     append_blocks(obj,floor+steps+rails+[
         ('Gallery entrance wall',(0,5.96,1.965),(11.84,.20,3.94),'Ivory limewash',.032),
+        ('Clerestory lower wall',(-5.79,0,1.28),(.21,11.64,2.56),'Ivory limewash',.038),
+        ('Clerestory oak sill',(-5.73,0,2.59),(.38,11.66,.13),'Dark oiled oak',.026),
+        ('Gallery limestone skirting',(-5.62,0,.19),(.13,11.66,.22),'Honed honey limestone',.022),
+        ('Collection wall oak skirting',(5.70,0,.18),(.15,11.60,.18),'Dark oiled oak',.024),
         ('Published exhibit base',(2.5,-1.25,.48),(1.24,.96,.76),'Split basalt',.055),
         ('Published exhibit top',(2.5,-1.25,.91),(1.32,1.04,.11),'Dark oiled oak',.042),
     ])
@@ -155,7 +159,7 @@ def register_beacon(obj):
 
 def bake(obj, name, mode, resolution, scratch):
     image = bpy.data.images.new(name, width=resolution, height=resolution, alpha=False)
-    image.colorspace_settings.name = 'Non-Color' if mode == 'NORMAL' else 'sRGB'
+    image.colorspace_settings.name = 'sRGB' if mode == 'DIFFUSE' else 'Non-Color'
     for mat in obj.data.materials:
         nodes = mat.node_tree.nodes
         target = nodes.new('ShaderNodeTexImage')
@@ -176,7 +180,22 @@ def bake(obj, name, mode, resolution, scratch):
     return image
 
 
-def portable_materials(obj, color, normal):
+def bake_contact(obj, cell, scratch):
+    for mat in obj.data.materials:
+        tree = mat.node_tree
+        occlusion = tree.nodes.new('ShaderNodeAmbientOcclusion')
+        occlusion.inputs['Distance'].default_value = .7
+        occlusion.only_local = True
+        emission = tree.nodes.new('ShaderNodeEmission')
+        tree.links.new(occlusion.outputs['AO'], emission.inputs['Color'])
+        tree.links.new(emission.outputs['Emission'], tree.nodes.get('Material Output').inputs['Surface'])
+    return bake(obj, cell+'-contact', 'EMIT', 512, scratch)
+
+
+def portable_materials(obj, color, normal, contact=None):
+    if contact:
+        settings = bpy.data.node_groups.new('glTF Material Output', 'ShaderNodeTree')
+        settings.interface.new_socket(name='Occlusion', in_out='INPUT', socket_type='NodeSocketFloat')
     for mat in obj.data.materials:
         nodes, links = mat.node_tree.nodes, mat.node_tree.links
         shader = nodes.get('Principled BSDF')
@@ -191,6 +210,13 @@ def portable_materials(obj, color, normal):
         decoded_normal = nodes.new('ShaderNodeNormalMap')
         links.new(normal_node.outputs['Color'], decoded_normal.inputs['Color'])
         links.new(decoded_normal.outputs['Normal'], shader.inputs['Normal'])
+        links.new(shader.outputs['BSDF'], nodes.get('Material Output').inputs['Surface'])
+        if contact:
+            contact_node = nodes.new('ShaderNodeTexImage')
+            contact_node.image = contact
+            output = nodes.new('ShaderNodeGroup')
+            output.node_tree = settings
+            links.new(contact_node.outputs['Color'], output.inputs['Occlusion'])
 
 
 def inventory(path):
@@ -223,7 +249,8 @@ if __name__ == '__main__':
     normal_size = 768 if cell == 'tower' else NORMAL_RESOLUTION
     color = bake(obj, cell+'-albedo', 'DIFFUSE', color_size, destination)
     normal = bake(obj, cell+'-normal', 'NORMAL', normal_size, destination)
-    portable_materials(obj, color, normal)
+    contact = bake_contact(obj, cell, destination) if cell in ('gallery','gallery-sealed') else None
+    portable_materials(obj, color, normal, contact)
     path = destination / (cell+'.glb')
     bpy.ops.export_scene.gltf(filepath=str(path), export_format='GLB', use_selection=True,
                               export_animations=False, export_cameras=False, export_lights=False)

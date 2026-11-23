@@ -3,7 +3,7 @@ import {RoomSceneCache} from './room-scene-cache.mjs';
 import {nearestCreationPosition} from './world-layout.mjs';
 import { Networked3dWebExperienceClient, DefaultVirtualJoystickPlugin } from '@mml-io/3d-web-experience-client';
 import { ThreeJSWorldRenderer } from '@mml-io/3d-web-threejs';
-import { DirectionalLight } from 'three';
+import { DirectionalLight, SpotLight } from 'three';
 import { WORKSHOP, workshopColour } from './workshop.mjs';
 import { saveIntent, loadIntent, archiveIntent, sameActor, nativeRetryRoute } from './client-intents.mjs';
 import { NativeAvatarLayer } from './native-avatar.mjs';
@@ -301,7 +301,15 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
     light.shadow.mapSize.set(1024,1024);
     Object.assign(light.shadow.camera,{left:-38,right:38,top:32,bottom:-32,near:.1,far:75});
     light.shadow.normalBias=.035;
-    renderer.mmlCompositionScene.group.add(light,light.target);
+    const interiorKey=new SpotLight(0xffffff,160,13,.88,.62);
+    interiorKey.visible=false;
+    interiorKey.castShadow=true;
+    interiorKey.shadow.mapSize.set(1024,1024);
+    Object.assign(interiorKey.shadow.camera,{near:.48,far:13});
+    interiorKey.shadow.bias=-.00015;
+    interiorKey.shadow.normalBias=.02;
+    renderer.mmlCompositionScene.group.add(light,light.target,interiorKey,interiorKey.target);
+    let selectedKey=null;
     geometryProbe=new AppliedGeometryProbe({document,scene:renderer.mmlCompositionScene.group,
       canvas:options.targetElement.querySelector(':scope > canvas'),expectedDocumentURL:socket('world')});
     nativeAvatarLayer=new NativeAvatarLayer({document,base,onFailure:message=>say(message)});
@@ -327,6 +335,16 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
     renderer.render=renderState=>{
       const position=client.getLocalCharacterState()?.position;
       light.visible=!inside||!activeSpace.indoorLighting;
+      const key=inside&&activeSpace.keyLight||null;
+      if(key!==selectedKey){
+        selectedKey=key;
+        interiorKey.visible=!!key;
+        if(key){
+          interiorKey.position.set(...key.position);
+          interiorKey.target.position.set(...key.target);
+          interiorKey.color.set(key.color);
+        }
+      }
       sky.update(!inside?activeSpace?.outdoorSky:null);
       nativeAvatarLayer.update();
       galleryModels.update();
@@ -338,7 +356,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       if(!inside)geometryProbe.afterRender();
       if(hot&&moving&&canFinishMove())setMoving(false);
     };
-    renderer.dispose=()=>{removeScene();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();dispose();};
+    renderer.dispose=()=>{removeScene();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(options.onInitialized);
     return renderer;
   },

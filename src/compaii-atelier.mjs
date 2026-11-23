@@ -24,8 +24,8 @@ const OUTDOOR_SKY=Object.freeze({asset:'coastal-sky.jpg',
   revision:'2e9a63bbb5eb0e3a60e6144cff155e753211e093ee2870efda480129a01baae8'});
 const dossier={
   'room-art/compaii-atelier/foyer.glb':'f0a8b2b9f63a67559024e7387036bb0592623f3170a4a9863fead7e44eab03f6',
-  'room-art/compaii-atelier/gallery.glb':'b6b72597851615355a24aa5450922a13dea581eabb1d56fc7d92d102bd088c38',
-  'room-art/compaii-atelier/gallery-sealed.glb':'53d1e89c9fc2ef4a4f79908b57c4990e23a69f6125706b1fa7144533312ca1b9',
+  'room-art/compaii-atelier/gallery.glb':'1028d39b34938571ce0385e7bd6604f61c79a4f614ed3395648244e313d0dd35',
+  'room-art/compaii-atelier/gallery-sealed.glb':'91c46b91164fd1ebfd20052cdf20d2dae59c0222126af016f16920a426dadc48',
   'room-art/compaii-atelier/beacon.glb':'0ab7546ae7d540e14dbed049a70da52a2aeb36bd575fd8f31532c94a81ef762f',
   'room-art/compaii-atelier/tower.glb':'47ba2a0964304eba1f3cbf945121e737c5d9addd7e71c1696bfa8b52ddb872de',
   ['assets/'+FACADE_ASSET]:'940aa64038396e43db8beca859e33f4f52c6ae3a84d1702457159c0af1224077',
@@ -52,6 +52,9 @@ const commonsVisual={asset:COMMONS_ASSET,revision:COMMONS_REVISION,colliders:[
   {x:6.68,y:.845,z:6.95,w:.30,h:1.55,d:.30},
 ].map(box).join('')};
 const softLight=({id,x,y,z,color,intensity,distance})=>`<m-light id="${id}" x="${x}" y="${y}" z="${z}" type="point" intensity="${intensity}" distance="${distance}" color="${color}" cast-shadows="false"></m-light>`;
+// Match the side-light opening in the Blender gallery. The key crosses the
+// room above the path and separates the exhibits from the darker oak ceiling.
+const galleryKey={position:[-4.82,3.62,.5],target:[2.45,1.05,.5],color:'#cde3ff'};
 const chamberRig='<m-light id="instrument-key" x="-.44" y="4.53" z="1.9" type="spotlight" distance="8" angle="38" intensity="105" cast-shadows="true" color="#ffd6a2"></m-light>'+[
   {id:'stair-bounce',x:-3,y:2.6,z:-4.5,distance:8,intensity:22,color:'#91b4e6'},
   {id:'spatializer-practical',x:3.79,y:2.72,z:-.8,distance:5,intensity:21,color:'#ffd6a2'},
@@ -90,8 +93,8 @@ export function selectAtelier(profile,rooms,houses){
   const foyerArt={...asset('foyer'),...floorProfile,ambient:.69,
     colliders:box({x:0,y:.352,z:.16,w:1.78,h:.504,d:2.34}),
     lightRig:softLight({id:'vestibule-practical',x:0,y:3.42,z:.8,intensity:30,distance:8,color:'#ffc382'})};
-  const galleryArt={...floorProfile,ambient:.82,colliders:galleryColliders,
-    lightRig:softLight({id:'collection-daylight',x:-3.9,y:3.91,z:1.6,intensity:24,distance:8,color:'#b9d4f5'})};
+  const galleryArt={...floorProfile,ambient:.40,colliders:galleryColliders,keyLight:galleryKey,
+    lightRig:softLight({id:'collection-warm-bounce',x:4.2,y:2.6,z:1.6,intensity:12,distance:7,color:'#ffd8ae'})};
   const labArt={...asset('beacon'),...floorProfile,authoredStairs:true,ambient:.60,
     station:interiorArt(rooms.get(lab)).station,
     controls:BEACON_CONTROLS,

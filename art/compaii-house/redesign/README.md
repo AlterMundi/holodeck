@@ -58,6 +58,13 @@ blender -b art/compaii-house/redesign/listening-tower.blend -t 8 --python-exit-c
   -P art/compaii-house/redesign/export_cells.py -- "$EXPORT_OUTPUT" tower
 ```
 
+The two gallery exports build the limestone sill, lower wall and skirting in
+the room's existing coordinates. Both bake a 512px contact map with a short
+occlusion radius, alongside their color and normal maps. The open version keeps
+the real stair opening. In Holodeck one soft shadowed key follows the
+clerestory, with weaker warm bounce and room fill. Review the player-height
+[before](review/gallery-light-before.jpg) and [after](review/gallery-light-after.jpg) views.
+
 The [listening tower](listening-tower.blend) has its own editable room-scale
 source and can be regenerated with `tower.py`. It uses a warm wall resonator
 and cool clerestory light as orientation points. The existing return portal

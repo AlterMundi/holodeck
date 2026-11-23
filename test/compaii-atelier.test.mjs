@@ -80,6 +80,9 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   await visitor.move('outside',foyer);
   const sealed=await visitor.move(foyer,gallery);
   const openPath=roomArt(open),sealedPath=roomArt(sealed);
+  assert.equal(entered.keyLight,undefined);
+  assert.deepEqual(open.keyLight,{position:[-4.82,3.62,.5],target:[2.45,1.05,.5],color:'#cde3ff'});
+  assert.deepEqual(sealed.keyLight,open.keyLight);
   assert.notEqual(openPath,sealedPath);
   assert.ok(open.exits.some(exit=>exit.to===lab));
   assert.ok(!sealed.exits.some(exit=>exit.to===lab));
@@ -88,6 +91,7 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   assert.equal((await visitor.read(openPath)).status,404);
   assert.equal((await visitor.read(sealedPath)).status,200);
   const chamber=await authorized.move(gallery,lab);
+  assert.equal(chamber.keyLight,undefined);
   assert.match(chamber.scene.markup,/type="spotlight"[^>]+cast-shadows="true"/);
   assert.deepEqual(chamber.objects.map(object=>object.id),['beacon-prototypes','beacon-spatializer','beacon-weaver']);
   assert.match(chamber.scene.markup,/id="beacon-spatializer"/);

@@ -202,6 +202,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       ...(indoorGardens.owner(view.id)?{playableInterior:true}:{}),
       ...(activity?{activity}:{}),
       ...(art?.lightRig?{indoorLighting:true}:{}),
+      ...(art?.keyLight?{keyLight:art.keyLight}:{}),
       ...(exhibit?{exhibitRevision:exhibit.revision}:{})};
     const cell=cellTransports.get(space.id);
     if(!cell)return space;
