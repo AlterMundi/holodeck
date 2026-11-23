@@ -34,7 +34,16 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`a4dd8f7`, package `13e918610edb`. An indoor garden receipt remains
+`a347c29`, package `9c74540f56f0`. The tower's authored resonator sill
+now stops the avatar before it intersects the wood. In the packaged
+Chromium trial the avatar walked to the sill and stopped at room Z 4.995,
+then returned to the gallery by the existing portal and keyboard action.
+The GLB, portal arrival and audience remain on their prior selections.
+The protected HTTPS check matched all 57 installed files and the prior
+world checkpoint. Package `13e918610edb` is the selected rollback.
+[Visual qualification](visual-play.md#tower-resonator-walk-up)
+
+Source `a4dd8f7`, package `13e918610edb`, established receipt recovery. An indoor garden receipt remains
 readable under the original native turn after canonical completion and
 source release. The packaged two-browser trial recovered the same exact
 receipt after the canonical reply. The socket integration checks also
