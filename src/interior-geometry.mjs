@@ -22,10 +22,11 @@ export function passageAt(room,link,index,destination) {
   };
 }
 
-const cube=(x,y,z,width,height,depth,color)=>
-  `<m-cube x="${x}" y="${y}" z="${z}" width="${width}" height="${height}" depth="${depth}" color="${color}"></m-cube>`;
+const cube=(x,y,z,width,height,depth,color,attributes='')=>
+  `<m-cube x="${x}" y="${y}" z="${z}" width="${width}" height="${height}" depth="${depth}" color="${color}"${attributes}></m-cube>`;
 
-export function roomFloor(passages,color) {
+export function roomFloor(passages,color,visible=true) {
+  const attributes=visible?'':' opacity="0" cast-shadows="false"';
   const holes=passages.filter(p=>p.rise<0).map(p=>{
     const s=SLOTS[p.slot], endX=s.x+s.dx*STAIR_STEPS*TREAD,endZ=s.z+s.dz*STAIR_STEPS*TREAD;
     return [s.dx?Math.min(s.x,endX):s.x-.85,s.dx?Math.max(s.x,endX):s.x+.85,
@@ -37,22 +38,23 @@ export function roomFloor(passages,color) {
   for(let i=1;i<xs.length;i++)for(let j=1;j<zs.length;j++){
     const x=(xs[i-1]+xs[i])/2,z=(zs[j-1]+zs[j])/2;
     if(!holes.some(([x1,x2,z1,z2])=>x>x1&&x<x2&&z>z1&&z<z2))
-      floor+=cube(x,0,z,xs[i]-xs[i-1],.2,zs[j]-zs[j-1],color);
+      floor+=cube(x,0,z,xs[i]-xs[i-1],.2,zs[j]-zs[j-1],color,attributes);
   }
   return floor;
 }
 
-export function passageMarkup(passage) {
+export function passageMarkup(passage,visibleSteps=true) {
   const slot=SLOTS[passage.slot],y=passage.rise*STAIR_STEPS*RISE;
   const portal=passage.kind==='portal',color=portal?'#9384bd':passage.rise?'#779491':'#d6b58c';
   const fill=portal?'#4f6a8d':passage.rise?'#3f5b5e':'#675948';
+  const attributes=visibleSteps?'':' opacity="0" cast-shadows="false"';
   let steps='';
   for(let i=0;passage.rise&&i<STAIR_STEPS;i++){
     const z=TREAD*(i+.5),top=.1+passage.rise*(STAIR_STEPS-i)*RISE;
-    steps+=cube(0,top-.07,z,1.7,.14,TREAD,fill);
+    steps+=cube(0,top-.07,z,1.7,.14,TREAD,fill,attributes);
   }
   if(passage.rise)for(const side of [-1,1])
-    steps+=cube(side*.91,.57+y/2,STAIR_STEPS*TREAD/2,.12,1.04+Math.abs(y),STAIR_STEPS*TREAD,'#7a9690');
+    steps+=cube(side*.91,.57+y/2,STAIR_STEPS*TREAD/2,.12,1.04+Math.abs(y),STAIR_STEPS*TREAD,'#7a9690',attributes);
   return `<m-group id="passage-${passage.slot}" x="${slot.x}" z="${slot.z}" ry="${slot.rotation}">
     ${steps}<m-cube y="${1.13+y}" z=".035" width="1.44" height="2.06" depth=".08" color="${color}" collide="false"></m-cube>
     <m-cube y="${1.1+y}" z=".086" width="1.22" height="1.82" depth=".025" color="${fill}" collide="false"></m-cube>

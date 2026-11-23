@@ -256,6 +256,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
     }
     renderer.render=renderState=>{
       const position=client.getLocalCharacterState()?.position;
+      light.visible=!inside||!activeSpace.indoorLighting;
       nativeAvatarLayer.update();
       if(!inside){worldIndication?.update();if(!moving)playableHUD.update(position);}
       if(!moving){contentVisitor?.update(position);updateDoor(position);}

@@ -18,6 +18,16 @@ The current published world remains the one qualified below. The new art
 requires the room-aligned asset export, actual in-game lighting and interactions,
 and shared browser/device acceptance before selection.
 
+The Blender export now produces all four self-contained, textured GLBs. The
+candidate Beacon chamber was mounted through the existing room-scoped renderer
+in isolated Chromium. The actual browser drew nine textured material batches,
+one shadow-casting light and three fills. The owner fixture crossed the
+existing stair in both directions. A separate admitted visitor reached the
+gallery and could neither enter the lab nor fetch its asset. The authorized
+session retained the existing exact prototype descriptor. This qualifies the
+local chamber integration. The commons-to-house-to-gallery route, physical
+phone performance, real station effects and human acceptance remain open.
+
 Source `5e90de1`, package `a1ec8c4e05db`, connects the authored
 Beacon workbench to the existing 54-part H.B. Guitar prototype in Nexus.
 The lab is the discovery scope; no exterior source node, artifact copy or

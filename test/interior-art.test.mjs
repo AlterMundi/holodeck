@@ -7,6 +7,7 @@ import {join} from 'node:path';
 import {once} from 'node:events';
 import {captureNativeSituation} from '../src/native-conversation.mjs';
 import {interiorArt} from '../src/interior-art.mjs';
+import {interiorDocument} from '../src/interior-spaces.mjs';
 import {houseId} from '../src/houses.mjs';
 import {RoomStore} from '../src/room-store.mjs';
 import {createHolodeck} from '../src/server.mjs';
@@ -14,6 +15,18 @@ import {createHolodeck} from '../src/server.mjs';
 const owner = 'dm:being:v1:2wG9cFk2YwACrjlcc6JFGux_lcGN_thQ5lq4WdDefKU';
 const house = houseId(owner);
 const lab = 'compaii-lab';
+
+test('authored room surfaces retain collision and the engine stair geometry',()=>{
+  const room={id:lab,title:'Laboratorio',level:-1};
+  const passages=[{kind:'stair',slot:0,rise:1,label:'Galería'}];
+  const visuals={src:'/candidate.glb',colliders:'',replacesShell:true,authoredStairs:true};
+  const markup=interiorDocument(room,passages,null,visuals);
+  assert.match(markup,/id="room-art"[^>]+collide="false"/);
+  assert.match(markup,/width="1.7" height="0.14" depth="0.45"[^>]+opacity="0" cast-shadows="false"/);
+  assert.match(markup,/height="0.2" depth="12"[^>]+opacity="0" cast-shadows="false"/);
+  assert.doesNotMatch(markup,/id="room-marker"/);
+  assert.match(interiorDocument(room,passages),/id="room-marker"/);
+});
 
 test('workshop art follows the exact house, current room grant and asset revision', async()=>{
   const definition={id:lab,house,title:'Laboratorio',level:-1,entry:false,guests:['human:guest'],

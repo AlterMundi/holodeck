@@ -25,9 +25,11 @@ import {SessionBindings,SESSION_MS,sessionKey} from './session-bindings.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
-export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess}={}){
+export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt}={}){
   if(!/^\/(?:[a-z0-9-]+\/)*$/.test(basePath))throw Error('Select a bounded absolute base path');
   if(production&&(!identityResolver||!publicOrigin||!stateDir))throw Error('Shared identity, audience and state are required in production');
+  if(typeof interiorArtwork!=='function'||production&&interiorArtwork!==interiorArt)
+    throw Error('Select checked-in interior art for production');
   const selectedContentNodes=validateContentNodes(contentNodes);
   const selectedContentVisits=validateContentVisits(contentVisits,selectedContentNodes);
   if(!Array.isArray(conversationOrigins)||conversationOrigins.length>8||new Set(conversationOrigins).size!==conversationOrigins.length)
@@ -137,8 +139,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   });
   const cellTransports=new Map();
   function renderInterior(room,passages,exhibit){
-    const art=interiorArt(room),src=art?route('api/space/art/'+art.revision):null;
-    return interiorDocument(room,passages,exhibit,art&&{src,colliders:art.colliders,station:art.station});
+    const art=interiorArtwork(room),src=art?route('api/space/art/'+art.revision):null;
+    return interiorDocument(room,passages,exhibit,art&&{...art,src});
   }
   function interiorScopeKey(actor,selected){
     return JSON.stringify([spaces.passages(actor,selected).map(link=>link.slot),exhibits.forRoom(selected.id)?.revision??0]);
@@ -156,8 +158,10 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }
   function describeSpace(actor){
     if(spaces.fenced)throw new RoomError('space-uncertain','Room placement needs recovery');
-    const view=spaces.view(actor),exhibit=exhibits.scoped(actor,view.id);
+    const view=spaces.view(actor),exhibit=exhibits.scoped(actor,view.id),
+      art=interiorArtwork(spaces.rooms.get(view.id));
     const space={...view,...(view.id===OUTSIDE?{}:{objects:roomObjects(view)}),
+      ...(art?.lightRig?{indoorLighting:true}:{}),
       ...(exhibit?{exhibitRevision:exhibit.revision}:{})};
     const cell=cellTransports.get(space.id);
     if(!cell)return space;
@@ -167,9 +171,10 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     return {...space,participants};
   }
   function roomObjects(view){
-    const station=interiorArt(spaces.rooms.get(view.id))?.station;
-    return station?[...view.objects,{id:station.id,kind:'workstation',title:station.title,
-      position:station.position,revision:station.revision}]:view.objects;
+    const art=interiorArtwork(spaces.rooms.get(view.id)),station=art?.station;
+    const objects=art?.replacesShell?[]:view.objects;
+    return station?[...objects,{id:station.id,kind:'workstation',title:station.title,
+      position:station.position,revision:station.revision}]:objects;
   }
   function conversationPlace(actor,id){
     const selected=spaces.rooms.get(id);
@@ -279,7 +284,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       onClientDisconnect(connection){connections.delete(connection);},
       onClientUserIdentityUpdate(){return false;}
     },worldConfig:{mmlDocuments:{interior:{url:'ws://'+address+'world'}},enableChat:false,enableTweakPane:false,
-      environmentConfiguration:{groundPlane:false,sun:{intensity:.9},ambientLight:{intensity:1.5}},
+      environmentConfiguration:{groundPlane:false,sun:{intensity:.9},
+        ambientLight:{intensity:interiorArtwork(spaces.rooms.get(id))?.ambient ?? 1.5}},
       avatarConfiguration:{allowCustomAvatars:false},allowCustomDisplayName:false,allowOrbitalCamera:true,
       spawnConfiguration:{spawnPosition:{x:0,y:1,z:4},spawnYRotation:180},hud:{respawnButton:false}}});
     const cell={connections,network:scopedNetwork};
@@ -370,7 +376,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }));
   app.get(route('api/space/art/:revision'),(req,res)=>{
     const id=spaces.current(req.actor);
-    const art=interiorArt(spaces.rooms.get(id));
+    const art=interiorArtwork(spaces.rooms.get(id));
     if(!art||!inScope(req.actor,id)||req.params.revision!==art.revision)return res.sendStatus(404);
     res.type('model/gltf-binary').send(art.bytes);
   });
