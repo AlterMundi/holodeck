@@ -198,7 +198,12 @@ frame pacing separately from transfer size. A 6.4 Mb/s Chromium trial with
 80 ms added latency rendered the Beacon lab in 2.92 s on first entry and
 0.92 s on revisit, saving a second 1.61 MB model response. The checked
 previous Brotli package took 2.98 s to render the revisit. Continue exact
-first-visit qualification and frame pacing across the remaining routes.
+first-visit qualification and frame pacing across the remaining routes. A
+matched Chromium software-rendering trial now verifies a 55.6% smaller
+WebGL buffer at 390 × 844 and device ratio 3, with faster first and warm
+foyer passages in the same renderer. Compare further art changes at the
+same viewport and distinguish physical-device frame pacing.
+[Frame and passage evidence](visual-play.md)
 
 ### Finish the architecture and props in the running game
 

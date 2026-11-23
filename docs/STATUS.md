@@ -10,7 +10,18 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`6c8e54c`, package `1d7b90767013`. The continuing Conversation inside a
+`a2cefb8`, package `f4c140145f21`. The 3D buffer is bounded at 2×
+density and 2.5 million pixels. At 390 × 844 CSS pixels and device ratio 3
+it uses 55.6% fewer pixels, with identical scene draw calls and HUD dimensions.
+In the matched software-rendered Chromium pair, first foyer entry took
+4.05 s versus 8.04 s, and cached re-entry took 2.42 s versus 4.54 s. The
+route stayed in the same renderer. Authenticated receiving matched the
+client and 57 installed files, with the same world and Room checkpoint.
+Package `1d7b90767013` is the compatible rollback.
+[Frame and passage measurements](visual-play.md)
+
+The previous room-topic release served source `6c8e54c`, package
+`1d7b90767013`. The continuing Conversation inside a
 room can now carry the explicitly selected fixture or workstation. The server
 matches the current authorized object and freezes its revision at intake.
 A Chromium trial using the installed Conversation client selected the listening

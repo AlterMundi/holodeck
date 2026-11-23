@@ -27,6 +27,27 @@ HUD, input coordinates and touch controls retain screen resolution. The
 pinned MML composer's window resize and the experience client's container
 resize both apply the same limit.
 
+A matched Chromium trial at a 390 × 844 CSS viewport and device ratio 3
+reduced the world buffer from 1170 × 2532 to 780 × 1688, a 55.6% reduction.
+The world used 125 draw calls on the commons and 30 in the foyer in both
+runs. These are software-WebGL observations from one loopback pair with
+12 consecutive frame intervals per scene.
+
+| Measurement | Previous | Capped |
+| --- | ---: | ---: |
+| Commons median frame interval | 1,482 ms | 638 ms |
+| Foyer median frame interval | 1,880 ms | 862 ms |
+| First entrance to movable foyer | 8.04 s | 4.05 s |
+| Return to the exterior | 10.09 s | 5.07 s |
+| Warm entrance to movable foyer | 4.54 s | 2.42 s |
+
+The route retained the renderer and used the authorized cached template on
+re-entry. A 430 × 932 resize kept the 2× backing ratio, and a 1140 × 1100
+resize produced 2,498,777 backing pixels within the budget. Separate
+movement checks used the actual emulated touch joystick and keyboard W at
+their CSS dimensions. The DPR 1 desktop retained its native resolution.
+Physical phone and GPU-backed frame pacing remain open.
+
 ## Controls
 
 - PC: WASD, drag to look, Space to jump. MML owns locomotion/collision.
