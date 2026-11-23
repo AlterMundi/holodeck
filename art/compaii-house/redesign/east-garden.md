@@ -33,3 +33,7 @@ browser loaded the exact assets and showed the existing edit restriction
 for a non-owner. The first export tinted the sandstone and oak with
 the grass layer's vertex colors. Only the meadow uses that attribute in the
 selected file.
+
+A separate Chromium run emulated a 390 px touch screen. The visitor crossed
+the bridge with the on-screen joystick and opened the game instructions by
+touch. [Touch view](review/east-garden-touch.jpg)
