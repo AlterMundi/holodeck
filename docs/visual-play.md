@@ -27,6 +27,14 @@ HUD, input coordinates and touch controls retain screen resolution. The
 pinned MML composer's window resize and the experience client's container
 resize both apply the same limit.
 
+On a primary touch display the world uses the highest permitted tier until
+four consecutive rendered intervals reach 45 ms. It then moves down through
+1.5× and 1× when the next tier reduces actual buffer size. Drops are at least
+1.6 seconds apart. A higher tier needs 120 consecutive intervals at 21 ms or
+less and at least 18 seconds since the last change. A resize, transition or
+visibility change breaks the timing streak. The renderer, world authority,
+art, lighting and layout continue through changes in buffer density.
+
 A matched Chromium trial at a 390 × 844 CSS viewport and device ratio 3
 reduced the world buffer from 1170 × 2532 to 780 × 1688, a 55.6% reduction.
 The world used 125 draw calls on the commons and 30 in the foyer in both

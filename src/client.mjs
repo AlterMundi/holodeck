@@ -116,7 +116,7 @@ function startInterior(space){
     createRenderer:options=>{
       constrainInteriorCamera(options,()=>space.id);
       const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
-      capWorldPixelRatio(renderer);
+      const frameBudget=capWorldPixelRatio(renderer,{adaptive:matchMedia('(pointer: coarse)').matches});
       galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
       galleryModels.sync(visitor.entries);
       const picker=new PublicWorldPicker({document,canvas:options.targetElement.querySelector(':scope > canvas'),
@@ -126,10 +126,11 @@ function startInterior(space){
       const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
       renderer.render=state=>{
         const position=client.getLocalCharacterState()?.position;
+        frameBudget.sample(!document.hidden&&!!position);
         galleryModels.update();visitor.refreshScopedCatalog();updateDoor(position);visitor.update(position);
         beaconControls.update(space.objects,position);render(state);
       };
-      renderer.dispose=()=>{picker.dispose();galleryModels.clear();dispose();};
+      renderer.dispose=()=>{frameBudget.dispose();picker.dispose();galleryModels.clear();dispose();};
       queueMicrotask(options.onInitialized);return renderer;
     },
     animationConfig:animations,
@@ -364,7 +365,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
   createRenderer:options=>{
     constrainInteriorCamera(options,()=>inside&&activeSpace?.id);
     const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
-    capWorldPixelRatio(renderer);
+    const frameBudget=capWorldPixelRatio(renderer,{adaptive:matchMedia('(pointer: coarse)').matches});
     galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
     const sky=new OutdoorSky(renderer.mmlCompositionScene.group.parent,base);
     const light=new DirectionalLight(0xffefd6,1.8);
@@ -411,6 +412,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
     }
     renderer.render=renderState=>{
       const position=client.getLocalCharacterState()?.position;
+      frameBudget.sample(!document.hidden&&!!position&&!moving&&!needsSync&&(!hot||networkScope===activeSpace.id));
       light.visible=!inside||!activeSpace.indoorLighting;
       const key=inside&&activeSpace.keyLight||null;
       if(key!==selectedKey){
@@ -440,7 +442,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       else keepRoomArt();
       if(hot&&moving&&canFinishMove())setMoving(false);
     };
-    renderer.dispose=()=>{removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{frameBudget.dispose();removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(options.onInitialized);
     return renderer;
   },
