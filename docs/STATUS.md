@@ -10,7 +10,16 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`aca9e1b`, package `00954ba2496a`. The east island now has an authored
+`9e9734a`, package `62b735015133`. The foyer has an inset orientation table,
+west wall bench and joinery under the existing Cycles lighting rig. A simulated
+Chromium visitor walked beside the bench, crossed the gallery door both ways
+and returned to the original public threshold in the same renderer. The
+packaged foyer model returned HTTP 404 after leaving the room. Receiving
+matched the exact decoded foyer and both gallery exports, all 57 installed
+files and the protected checkpoints. Package `00954ba2496a` is the compatible
+rollback. [Foyer source and walking-height captures](../art/compaii-house/redesign/foyer-joinery.md)
+
+The previous release served source `aca9e1b`, package `00954ba2496a`. The east island now has an authored
 meadow, sandstone arrival path, coastal planting and an oak arbor. A simulated
 Chromium visitor crossed the existing promenade, read the Signal Garden HUD,
 passed the target field and reached the arbor. Authenticated receiving

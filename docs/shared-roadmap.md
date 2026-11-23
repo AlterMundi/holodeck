@@ -165,8 +165,12 @@ state left the crossing physically interrupted in the same renderer. The
 [East Garden](../art/compaii-house/redesign/east-garden.md) extends its fixed
 bridge into the playable meadow and an oak arbor. Its raised scenery stays
 outside the existing creation rectangle. The native readback retained the
-published Signal Garden rules, targets and location. Continue interior
-furniture and cross-route finish. The
+published Signal Garden rules, targets and location. The
+[foyer joinery](../art/compaii-house/redesign/foyer-joinery.md) adds a wall-edge
+bench and a relief of the vestibule route in the existing table. The visitor
+trial checked the room-scoped model, the gallery door in both directions and
+the return to the same outside threshold. Continue interior furniture and
+cross-route finish. The
 [Beacon workshop finish](../art/compaii-house/redesign/README.md#beacon-joinery-and-workstations)
 now ties its existing stair, walls and acoustic work bays together. Continue
 the remaining furniture and room finish at walking height. The
@@ -177,7 +181,7 @@ floor variants have player-height Chromium readback. Exact source access and
 live participant evidence remain separate from the fixture exhibits.
 
 The selected archive stores 16 atelier GLBs losslessly and leaves
-7,176,192 bytes below the existing receiver limit. The matched Chromium
+7,124,992 bytes below the existing receiver limit. The matched Chromium
 route transferred 43.6% fewer bytes for selected exterior models and
 35.2% fewer for the foyer, gallery and Beacon lab. Retain the exact
 decoded GLBs, revisioned URLs, identity ranges and authorization on

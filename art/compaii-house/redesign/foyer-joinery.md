@@ -22,6 +22,13 @@ blender -b art/compaii-house/redesign/casa-compaii-redesign.blend -t 8 \
   --python-exit-code 1 -P art/compaii-house/redesign/export_cells.py -- "$ART_OUTPUT" foyer
 ```
 
+[Previous entry](review/foyer-joinery-before.jpg) ·
 [Entry](review/foyer-joinery-candidate-entrance.jpg) ·
 [Orientation table](review/foyer-joinery-candidate-map.jpg) ·
 [West wall bench](review/foyer-joinery-candidate-bench.jpg)
+
+The packaged Chromium run started at the outside door. A simulated visitor
+entered, walked past the table and beside the bench, then used the inner
+door both ways and walked back to the public exit. Return used the original
+exterior threshold in the same renderer. The exact foyer model was readable
+from the foyer and returned HTTP 404 after the visitor entered the gallery.
