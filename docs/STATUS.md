@@ -152,8 +152,20 @@ the workshop remains to be observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`68dc721`, package `17703a02cdef`, with `940a0b053757` as compatible rollback.
-Indoor garden authors can start from a two-circle solo design or a four-circle
+`4e0140b`, package `717ab15e74b7`, with `17703a02cdef` as compatible rollback.
+Manipulación de Materia uses the finished Blender revision with embedded stone,
+oak and limewash textures, dressed windows, cabinetry and wayfinding. The
+static export reduces the unbatched design from 122 to 20 render primitives
+and serves as a 103,572-byte Brotli asset. The same browser route qualified
+normal and lightweight graphics, passage return, table and cabinet clearance,
+and access denial after exit. The isolated touch fixture used the authored
+Atelier portals and rotated and restored an exact archive edition. In the
+software-rendered lightweight fixture the prior median was 133 ms per frame;
+the finished model measured 150 ms, down from 167 ms unbatched. Physical
+device performance remains unmeasured for this revision.
+[Player-height capture](../art/collection/player-height.jpg).
+
+Package `17703a02cdef` used source `68dc721`. Indoor garden authors can start from a two-circle solo design or a four-circle
 cooperative design through the owned native lane or the paired editor. The
 live native owner drafted both presets in Taller Sensorial. The browser
 fixture previewed privately, published the four-circle layout, recovered the
