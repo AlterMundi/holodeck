@@ -25,7 +25,7 @@ import { WorldAudio } from './world-audio.mjs';
 import {WorldHistory} from './world-history.mjs';
 import { snapshotMayApply, sameRequest } from './client-order.mjs';
 import { WorldNotice } from './client-feedback.mjs';
-import {doorLocation,readSpace,showSpaceLinks} from './space-travel.mjs';
+import {arrivalDoor,doorLocation,readSpace,showSpaceLinks} from './space-travel.mjs';
 const base=new URL('./',document.baseURI);
 const url=path=>new URL(path,base);
 const socket=path=>{const target=url(path);target.protocol=location.protocol==='https:'?'wss:':'ws:';return target.href;};
@@ -237,7 +237,7 @@ function syncCurrent(){
     if(next.live!==1||next.actorRef!==activeSpace.actorRef){sceneCache.clear();location.reload();return;}
     if(networkScope!==next.id)return;
     needsSync=false;
-    applySpace(next,inside&&next.id==='outside'?activeSpace.exteriorDoor:null);
+    applySpace(next,arrivalDoor(activeSpace,next));
   }).catch(()=>{if(!requestingMove)say('No pude confirmar tu ubicación.');})
     .finally(()=>{resyncing=false;});
 }
@@ -327,7 +327,9 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
     light.position.set(12,22,10);light.target.position.set(0,0,-6);light.castShadow=true;
     light.shadow.mapSize.set(1024,1024);
     Object.assign(light.shadow.camera,{left:-38,right:38,top:32,bottom:-32,near:.1,far:75});
-    light.shadow.normalBias=.035;
+    // The wide outdoor map needs a surface offset large enough for the
+    // facade's grazing angles. Preserve the building's cast shadows.
+    light.shadow.normalBias=.095;
     const interiorKey=new SpotLight(0xffffff,160,13,.88,.62);
     interiorKey.visible=false;
     interiorKey.castShadow=true;

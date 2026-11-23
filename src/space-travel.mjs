@@ -1,8 +1,8 @@
-const base=new URL('./',document.baseURI);
+const base=()=>new URL('./',document.baseURI);
 const DOOR_RANGE=1.65;
 
 export async function readSpace(){
-  const result=await fetch(new URL('api/space?live=1',base),{credentials:'same-origin'});
+  const result=await fetch(new URL('api/space?live=1',base()),{credentials:'same-origin'});
   if(!result.ok)throw Error('No pude confirmar el lugar.');
   return result.json();
 }
@@ -11,6 +11,17 @@ export async function readSpace(){
 export function doorLocation({x,y,z,facing,yaw=facing*90}) {
   const rotation=yaw*Math.PI/180, s=Math.sin(rotation/2), c=Math.cos(rotation/2);
   return [x,y,z,0,s,0,c,x-Math.sin(rotation)*2.7,y+1.7,z-Math.cos(rotation)*2.7,0,s,0,c].join(',');
+}
+
+export function arrivalDoor(from,next){
+  if(next.id===from.id)return null;
+  if(next.id==='outside')return from.exteriorDoor??null;
+  if(from.id==='outside'){
+    const door=next.exitDoor;
+    // Keep the landing inside the threshold, looking into the room.
+    return door?{x:door.x,y:door.y,z:door.z-.9,yaw:180}:null;
+  }
+  return next.exits.find(exit=>exit.to===from.id)?.door??null;
 }
 
 export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving,revision,onNear,onAccessLost,onDoorDenied}){
@@ -32,7 +43,7 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
     for(const control of list.children)control.disabled=true;
     let next;
     try{
-      const result=await fetch(new URL('api/space',base),{
+      const result=await fetch(new URL('api/space',base()),{
         method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({from:space.id,to:destination.to,...(onMoved?{live:1,cachedRevision:revision(destination.to)}:{})}),
       });
@@ -47,7 +58,7 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
       if(!next||next.id===space.id)onError('No pude confirmar el cambio de lugar.');
     }
     if(next&&next.id!==space.id){
-      const arrival=next.id==='outside'?space.exteriorDoor:next.exits.find(exit=>exit.to===space.id)?.door;
+      const arrival=arrivalDoor(space,next);
       if(onMoved&&next.live===1){onMoved(next,arrival);return;}
       const target=new URL(location.href);
       target.hash=arrival?doorLocation(arrival):'';

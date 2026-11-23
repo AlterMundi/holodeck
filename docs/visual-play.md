@@ -48,6 +48,19 @@ movement checks used the actual emulated touch joystick and keyboard W at
 their CSS dimensions. The DPR 1 desktop retained its native resolution.
 Physical phone and GPU-backed frame pacing remain open.
 
+## Exterior facade shadow finish
+
+At the shared exterior return, the real-time sun cast repeating dark
+triangles on the oak gable and limewash panels. A matched Chromium
+comparison reproduced them with the authored normal map removed. The
+pattern disappeared with either shadow reception or casting disabled
+only for the house. The outdoor light surface offset now removes that
+self-shadow pattern while keeping the 1024-square shadow map, roof shadow
+and building silhouette. In two flat facade regions at the matched
+emulated touch pose, the count of pixels at least five luma units darker
+than the receive-off comparison fell from 148 and 90 to zero. The
+interior light settings use their own controls.
+
 ## Controls
 
 - PC: WASD, drag to look, Space to jump. MML owns locomotion/collision.

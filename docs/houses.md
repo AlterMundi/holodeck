@@ -219,9 +219,10 @@ fades as soon as the destination accepts input. The effect never holds the
 room transition open, uses no extra assets, and stays still when the browser
 requests reduced motion. Longer crossings show a short status message.
 
-The exterior uses the same renderer and automatic return uses the authored
-door location. The controller releases input on the first ready rendered frame
-after the avatar arrives. A failed transition refreshes the committed location
+The exterior uses the same renderer. Arrive just inside the entrance and face
+into the room. On exit, return to the authored exterior door location. Interior
+crossings arrive at the reciprocal door or portal. The controller releases
+input on the first ready rendered frame after the avatar arrives. A failed transition refreshes the committed location
 without resending the movement. Measure from E until the destination geometry,
 avatar and input are ready. Also record the HTTP response, destination connection
 and any template/artwork transfers to locate the wait.
