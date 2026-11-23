@@ -1,4 +1,5 @@
 import {CONTENT_NODE,validateContentNodes,sameVisitPin,visitResponseMatches,knownVisitState,visitVersion,visitEntryMatches,contextVisitSnapshotMatches} from './content-visits.mjs';
+import {ExhibitionIndex} from './exhibition-index.mjs';
 import {GALLERY_STAGES} from './gallery-display.mjs';
 
 const ROOM_VISIT_REACH=2.25;
@@ -10,10 +11,14 @@ export class ContentVisitor{
   Object.assign(this,{document,window,base,say,scoped,onCatalog});this.entries=[];this.nodes=[CONTENT_NODE];this.catalogGeneration=0;this.pending=new Map();this.disposed=false;this.lastContext=null;this.catalogRenewAt=Infinity;
   this.button=document.querySelector('#visit-near');this.panel=document.querySelector('#content-visit');
   this.loading=document.querySelector('#visit-loading');this.roomGeneration=0;this.renewScopedCatalog=false;
-  this.button.onclick=()=>{
-   const selected=this.nearby||this.entry;
+  const openEntry=selected=>{
    const exact=this.scoped?{nodeRevision:selected?.nodeRevision??null,expectedPin:selected?.pin??null}:undefined;
    return this.open(selected?.id,exact).catch(()=>say('No pude abrir esta presentación. Podés volver a intentarlo.'));
+  };
+  this.index=new ExhibitionIndex(document,openEntry);
+  this.button.onclick=()=>{
+   if(this.scoped&&!this.nearby&&!(this.frame&&this.hasCurrentEntry())){this.index.open();return;}
+   return openEntry(this.nearby||this.entry);
   };
   document.querySelector('#visit-walk').onclick=()=>this.walk();
   this.receive=event=>{
@@ -45,10 +50,11 @@ export class ContentVisitor{
    this.renewScopedCatalog=this.scoped&&(value.revalidate===true||value.gallery===true||this.entries.some(entry=>entry.galleryDisplay===true));
    this.catalogRenewAt=this.renewScopedCatalog?performance.now()+20000:Infinity;
    if(this.scoped&&this.frame&&!this.hasCurrentEntry())this.minimize();
-   this.onCatalog(this.entries);return true;
+   this.index.update(this.scoped?this.entries:[]);this.onCatalog(this.entries);return true;
   }catch{
    if(this.scoped&&!this.disposed&&generation===this.catalogGeneration){
     this.entries=[];this.nearby=null;this.choices();this.catalogRenewAt=this.renewScopedCatalog?performance.now()+20000:Infinity;this.onCatalog([]);
+    this.index.update([]);
     if(this.frame)this.minimize();
    }
    return false;
@@ -67,7 +73,13 @@ export class ContentVisitor{
    if(next<distance){distance=next;this.nearby=entry;}
   }
   const canResume=this.frame&&(!this.scoped||this.hasCurrentEntry());
-  this.button.hidden=!canResume&&!this.nearby;
+  const browse=this.scoped&&this.entries.length>0&&!canResume&&!this.nearby;
+  this.button.hidden=!canResume&&!this.nearby&&!browse;
+  if(browse){
+   this.button.setAttribute('aria-haspopup','dialog');
+   this.button.textContent='Exposiciones';return;
+  }
+  this.button.removeAttribute('aria-haspopup');
   this.button.textContent=this.nearby&&this.nearby.id!==this.entry?.id
    ?(this.nearby.title?'Visitar '+this.nearby.title:'Visitar contenido')
    :this.frame&&this.nearby&&this.nearby.id===this.entry?.id&&!sameVisitPin(this.nearby.pin,this.entry.pin)?'Visitar nueva edición'
@@ -210,7 +222,7 @@ export class ContentVisitor{
   if(this.selector)this.selector.disabled=false;
   this.entry=null;this.nearby=null;this.lastContext=null;this.entries=[];this.scoped=scoped;
   this.renewScopedCatalog=false;this.catalogRenewAt=Infinity;this.onCatalog([]);
-  this.button.hidden=true;this.panel.hidden=true;
+  this.index.update([]);this.button.hidden=true;this.panel.hidden=true;
   this.catalog=this.loadCatalog();
  }
  async allowLeaveRoom(){
@@ -257,7 +269,7 @@ export class ContentVisitor{
   // Offscreen application state is never claimed to be visible to a human.
  }
  dispose(){
-  this.disposed=true;clearTimeout(this.readyTimer);this.window.removeEventListener('message',this.receive);
+  this.index.close();this.disposed=true;clearTimeout(this.readyTimer);this.window.removeEventListener('message',this.receive);
   for(const task of this.pending.values()){clearTimeout(task.timer);task.reject(Error('Visit disposed'));}this.pending.clear();
   // Browser teardown owns the final frame destruction. Ordinary return never does.
  }

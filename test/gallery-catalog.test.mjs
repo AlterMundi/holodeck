@@ -30,8 +30,8 @@ test('catalog omits a replaced edition while exact source authorization is in fl
   const rooms=new Map([['gallery',{}]]);
   const before=gallerySlots(selection,rooms).slots;
   const after=gallerySlots({...selection,draft:edition('draft-v2')},rooms).slots;
-  assert.deepEqual(await allowedGalleryVisits({entries:before,authorize:async()=>true,
-    currentEntries:()=>after}),[after[1]]);
+  assert.deepEqual(await allowedGalleryVisits({entries:before,authorize:async pin=>({editionTitle:'Title '+pin.revision}),
+    currentEntries:()=>after}),[{...after[1],editionTitle:'Title archive-v1'}]);
 });
 
 test('gallery HTTP catalog checks each source grant and rechecks active room before responding',async t=>{
@@ -53,8 +53,9 @@ test('gallery HTTP catalog checks each source grant and rechecks active room bef
       :req.headers.cookie?.includes('fixture=guest')?{id:'human:guest',kind:'human',rights:['observe']}:null,
     galleryAuthorization:async (cookie,pin)=>{
       if(hold)await hold();
-      if(cookie.includes('fixture=owner'))return true;
-      return pin.revision===published.revision&&!revoked;
+      if(cookie.includes('fixture=owner')||pin.revision===published.revision&&!revoked)
+        return {editionTitle:'Protected title '+pin.revision};
+      return false;
     },
   });
   const listener=runtime.app.listen(0,'127.0.0.1');
@@ -89,6 +90,7 @@ test('gallery HTTP catalog checks each source grant and rechecks active room bef
   assert.deepEqual(visits.map(visit=>visit.id),['house-exhibit','house-exhibit-draft','house-exhibit-archive']);
   assert.deepEqual(visits.map(visit=>visit.title),['Terminado','En proceso','Archivo']);
   assert.deepEqual(visits.map(visit=>visit.pin),[published,selection.draft,selection.archive]);
+  assert.deepEqual(visits.map(visit=>visit.editionTitle),['Protected title published-v1','Protected title draft-v1','Protected title archive-v1']);
   assert.deepEqual((await (await visitor.catalog()).json()).visits,[visits[0]]);
   revoked=true;
   assert.deepEqual(await (await visitor.catalog()).json(),{gallery:true,visits:[]});

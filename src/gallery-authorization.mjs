@@ -28,7 +28,7 @@ export function createGalleryAuthorization(origin, {request = fetch} = {}) {
   if (selected.protocol !== 'https:' || selected.origin !== origin)
     throw Error('Select the canonical HTTPS Home origin');
 
-  return async (cookie, pin) => {
+  return async (cookie, pin, {details=false}={}) => {
     if (typeof cookie !== 'string' || !cookie.trim() ||
         Buffer.byteLength(cookie) > MAX_BYTES || /[\u0000-\u001f\u007f]/.test(cookie) ||
         !validVisitPin(pin)) return false;
@@ -51,9 +51,12 @@ export function createGalleryAuthorization(origin, {request = fetch} = {}) {
       const descriptor = await readDescriptor(response);
       const version = visitVersion(pin);
       const kind = version === 2 ? pin.adapter : version === 3 ? 'context' : 'narrated_visual';
-      return descriptor?.schema === `dm.holodeck-visit/descriptor-v${version}` &&
-        descriptor.kind === kind && sameVisitPin(descriptor.pin, pin) &&
-        visitEntryMatches(descriptor.entry, pin);
+      if(descriptor?.schema!==`dm.holodeck-visit/descriptor-v${version}`||descriptor.kind!==kind||
+        !sameVisitPin(descriptor.pin,pin)||!visitEntryMatches(descriptor.entry,pin))return false;
+      if(!details)return true;
+      const editionTitle=typeof descriptor.title==='string'?
+        descriptor.title.replace(/[\u0000-\u001f\u007f]/g,' ').trim().slice(0,160):'';
+      return editionTitle?{editionTitle}:true;
     } catch {
       return false;
     }

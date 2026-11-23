@@ -26,7 +26,8 @@ test('gallery reuses the canonical descriptor with the actual visitor cookie', a
   }});
   assert.equal(await check(cookie,pin), true);
   assert.equal(await check(cookie,pin), true);
-  assert.equal(calls, 2);
+  assert.deepEqual(await check(cookie,pin,{details:true}),{editionTitle:'Authorized assembly'});
+  assert.equal(calls, 3);
 });
 
 test('gallery never requests a descriptor with an invalid cookie, pin or origin', async () => {

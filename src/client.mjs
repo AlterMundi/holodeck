@@ -65,6 +65,7 @@ function startInterior(space){
   exhibitObserver.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['data-exhibit-revision']});
   const updateDoor=showSpaceLinks(space,{canLeave:()=>visitor.allowLeaveRoom(),onError:message=>notice.show(message)});
   window.addEventListener('keydown',event=>{
+    if(event.target instanceof Element&&event.target.closest('#exhibition-index')){event.stopImmediatePropagation();return;}
     if((beaconControls.opened||visitor.frame&&!visitor.panel.classList.contains('is-walking'))&&
        ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE'].includes(event.code)){
       if(!(event.target instanceof Element&&event.target.closest('button,input,select,textarea')))event.preventDefault();
@@ -292,6 +293,7 @@ function resetDoor(){
 // MML captures document keys by default. Preserve ordinary text editing and
 // keyboard activation of the HUD without turning typed words into locomotion.
 document.addEventListener('keydown',event=>{
+  if(event.target instanceof Element&&event.target.closest('#exhibition-index')){event.stopImmediatePropagation();return;}
   if((beaconControls.opened||hot&&(moving||inside&&contentVisitor?.frame&&!contentVisitor.panel.classList.contains('is-walking')))&&
      ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE'].includes(event.code)){
     if(!(event.target instanceof Element&&event.target.closest('button,input,select,textarea')))event.preventDefault();

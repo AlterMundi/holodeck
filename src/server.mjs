@@ -527,7 +527,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       return [...placed,...gallery.slots.filter(slot=>!placed.some(entry=>sameVisitPin(entry.pin,slot.pin)))];
     };
     const visits=await allowedGalleryVisits({entries:currentEntries(),currentEntries,
-      authorize:pin=>authorizeRoomVisit?.(req.headers.cookie,pin)});
+      authorize:pin=>authorizeRoomVisit?.(req.headers.cookie,pin,{details:true})});
     if(!isGallery)return res.json({revalidate:true,visits});
     res.json({gallery:inScope(req.actor,active),visits:visits.map(entry=>{
       const display=Object.hasOwn(GALLERY_STAGES,entry.id)&&entry.pin.kind==='artifact_review'&&entry.pin.adapter==='interactive_3d';

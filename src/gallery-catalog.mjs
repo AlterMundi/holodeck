@@ -27,9 +27,13 @@ export function gallerySlots(selection, rooms) {
 
 export async function allowedGalleryVisits({entries, authorize, currentEntries}) {
   const allowed=await Promise.all(entries.map(async entry=>{
-    try{return await authorize(entry.pin)===true;}catch{return false;}
+    try{return await authorize(entry.pin);}catch{return false;}
   }));
   const current=currentEntries();
-  return entries.filter((entry,index)=>allowed[index]&&current.some(value=>
-    value.id===entry.id&&value.nodeRevision===entry.nodeRevision&&sameVisitPin(value.pin,entry.pin)));
+  return entries.flatMap((entry,index)=>{
+    const authorization=allowed[index];
+    if((authorization!==true&&typeof authorization?.editionTitle!=='string')||
+      !current.some(value=>value.id===entry.id&&value.nodeRevision===entry.nodeRevision&&sameVisitPin(value.pin,entry.pin)))return [];
+    return [authorization===true?entry:{...entry,editionTitle:authorization.editionTitle}];
+  });
 }

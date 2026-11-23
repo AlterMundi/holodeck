@@ -33,6 +33,11 @@ body:has(#signal-editor:not([hidden])) #play-near,body:has(#signal-editor:not([h
 @media(max-width:740px){#signal-editor{right:12px;top:160px;bottom:auto;max-width:calc(100vw - 24px);max-height:50dvh}}
 body:has(#content-visit:not([hidden]):not(.is-walking)) #beacon-control,body:has(#conversation-panel:not([hidden])) #beacon-control,.room-transition #beacon-control{display:none}
 @media(max-width:740px){#beacon-control{top:205px;right:12px;max-width:calc(100vw - 24px);font-size:14px}}
+#exhibition-index{box-sizing:border-box;width:min(480px,calc(100vw - 24px));max-height:min(580px,calc(100dvh - 24px));padding:18px;border:1px solid var(--line);border-radius:18px;background:#163b3f;color:var(--ink)}
+#exhibition-index::backdrop{background:#081b2480}#exhibition-index header{display:flex;gap:12px;justify-content:space-between;align-items:center}#exhibition-index h2{margin:0;font:24px Georgia,serif}#exhibition-index label{display:block;margin-block:12px 6px}
+#exhibition-search{box-sizing:border-box;width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#102d31;color:var(--ink);font:inherit}
+#exhibition-results{list-style:none;padding:0;margin:12px 0 0}#exhibition-results li+li{margin-top:8px}#exhibition-results button{width:100%;text-align:left;min-height:44px;overflow-wrap:anywhere}
+#exhibition-empty{color:var(--muted)}body:has(#exhibition-index[open]) .touch-controls{visibility:hidden;pointer-events:none}
 #content-visit{position:fixed;inset:5vh 4vw;z-index:45;display:flex;flex-direction:column;border-radius:20px;padding:12px;gap:10px;background:#163b3f}
 #content-visit header{display:flex;gap:12px;align-items:center;flex-wrap:wrap}#visit-title{flex:1;min-width:180px;font-size:22px;margin:0}#content-visit button{font-size:14px}
 #visit-loading{margin:8px 4px;color:var(--muted)}#visit-stage iframe[inert]{visibility:hidden;pointer-events:none}
@@ -108,6 +113,11 @@ body:has(#conversation-panel:not([hidden])) #house-door,body:has(#creator:not([h
   <div class="row"><button id="signal-add" type="button">Agregar señal acá</button><button id="signal-save" class="primary">Guardar jardín</button><button id="signal-cancel" type="button">Cancelar</button></div>
 </form>
 <button id="visit-near" type="button" class="primary" hidden>Visitar la presentación</button>
+<dialog id="exhibition-index" aria-labelledby="exhibition-title">
+  <header><h2 id="exhibition-title">Exposiciones</h2><form method="dialog"><button type="submit" autofocus>Cerrar</button></form></header>
+  <label for="exhibition-search">Buscar obra o etapa</label><input id="exhibition-search" type="search" maxlength="80" autocomplete="off">
+  <ul id="exhibition-results"></ul><p id="exhibition-empty" role="status" hidden>No hay obras que coincidan.</p>
+</dialog>
 <a id="beacon-control" class="primary" target="_blank" rel="noopener" hidden></a>
 <dialog id="beacon-panel" aria-labelledby="beacon-panel-title"><header><h2 id="beacon-panel-title">Laboratorio</h2><div class="row"><a target="_blank" rel="noopener">Abrir aparte</a><button type="button" autofocus>Volver al mundo</button></div></header><div class="beacon-panel-stage"></div></dialog>
 <section id="content-visit" aria-label="Contenido visitado" class="glass" hidden><header><h2 id="visit-title">Presentación</h2><button id="visit-walk" type="button" class="primary">Volver al mundo</button></header><p id="visit-loading" role="status" hidden></p><div id="visit-stage"></div></section>

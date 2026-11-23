@@ -41,10 +41,12 @@ try{
   if(url.pathname==='/api/content-visits'){res.setHeader('content-type','application/json');res.end(JSON.stringify({nodes:[CONTENT_NODE,landmark],visits:entries}));return;}
   if(url.pathname==='/api/space/content-visits'){
    res.setHeader('content-type','application/json');
-   res.end(JSON.stringify({revalidate:true,visits:roomEditionAllowed?[{...entries[1],position:landmark.position,nodeRevision:2}]:[]}));return;
+   res.end(JSON.stringify({revalidate:true,visits:roomEditionAllowed?[
+    {...entries[1],title:'Terminado',editionTitle:'Estación de escucha',position:landmark.position,nodeRevision:2},
+    {...entries[2],title:'Archivo',editionTitle:'Cuaderno de campo',position:{x:9,y:0,z:3},nodeRevision:1}]:[]}));return;
   }
   if(url.pathname.startsWith('/src/')){
-   if(!['/src/content-visitor.mjs','/src/content-visits.mjs','/src/gallery-display.mjs'].includes(url.pathname)){res.writeHead(404).end();return;}
+   if(!['/src/content-visitor.mjs','/src/content-visits.mjs','/src/gallery-display.mjs','/src/exhibition-index.mjs'].includes(url.pathname)){res.writeHead(404).end();return;}
    res.setHeader('content-type','text/javascript');res.end(await readFile(new URL('..'+url.pathname,import.meta.url)));return;
   }
   if(url.pathname.startsWith('/nexus/descriptor/')){
@@ -101,8 +103,22 @@ try{
  evidence.context={pin:fieldContext.pin,visit:fieldContext.context,wrongPinUnavailable:wrong.contextUnavailable,dirtyFrameRetained:true,draftRetained:true};
 
  await page.evaluate('visitor.changeRoom(true)');
- await page.until('visitor.entries.length===1');
- await page.evaluate('visitor.update({x:9,y:0,z:0});document.querySelector("#visit-near").click()');
+ await page.until('visitor.entries.length===2');
+ await page.evaluate('visitor.update({x:0,y:0,z:0})');
+ await page.click('#visit-near');
+ await page.until('document.querySelector("#exhibition-index").open');
+ if(!await page.evaluate('document.querySelector("#exhibition-results").children.length===2'))
+  throw Error('Room exhibitions were unavailable away from the plinth');
+ await page.click('#exhibition-search');
+ await page.cdp('Input.insertText',{text:'estacion'});
+ await page.until('document.querySelector("#exhibition-results").textContent==="Estación de escucha · Terminado"');
+ const exhibitionMobile=await page.evaluate(`(()=>{
+  const r=document.querySelector('#exhibition-index').getBoundingClientRect(),button=document.querySelector('#exhibition-results button');
+  return {withinViewport:r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight,buttonHeight:button.getBoundingClientRect().height};
+ })()`);
+ if(!exhibitionMobile.withinViewport||exhibitionMobile.buttonHeight<44)throw Error('The mobile exhibition index overflows or has a small target');
+ if(process.env.HOLODECK_EVIDENCE_DIR){const shot=await page.cdp('Page.captureScreenshot',{format:'png'});await writeFile(process.env.HOLODECK_EVIDENCE_DIR+'/exhibition-phone.png',Buffer.from(shot.data,'base64'));}
+ await page.click('#exhibition-results button');
  await page.until('!!visitor.frame?.contentWindow.fixture');
  if(!await page.evaluate("visitor.frame.inert&&new URL(visitor.frame.src).searchParams.get('artifact')==='exact-model'"))
   throw Error('Room exhibit did not follow the descriptor or wait for the exact viewer');
@@ -118,7 +134,16 @@ try{
  if(!await page.evaluate("visitor.frame===roomFrame&&visitor.panel.inert&&visitor.selector.options.length===0&&visitor.button.hidden"))
   throw Error('Revoked room edition still offered as an active visit');
  if(await page.evaluate('visitor.context()'))throw Error('Revoked room edition still projected as current context');
- evidence.roomExhibit={sameFrame:true,revokedChoiceHidden:true,revokedContextSuppressed:true};
+ roomEditionAllowed=true;
+ await page.evaluate('visitor.changeRoom(true)');
+ await page.until('visitor.entries.length===2');
+ await page.evaluate('visitor.update({x:0,y:0,z:0});document.querySelector("#visit-near").click()');
+ await page.until('document.querySelector("#exhibition-index").open');
+ roomEditionAllowed=false;
+ await page.evaluate('visitor.catalogRenewAt=performance.now();visitor.refreshScopedCatalog()');
+ await page.until('!document.querySelector("#exhibition-index").open&&document.querySelector("#exhibition-results").children.length===0');
+ evidence.roomExhibit={sameFrame:true,revokedChoiceHidden:true,revokedContextSuppressed:true,awayFromPlinth:true,
+  accentInsensitiveSearch:true,revokedIndexClosed:true,mobile:exhibitionMobile};
 
  console.log(JSON.stringify({qualification:'Actual ContentVisitor and markup; controlled Nexus protocol only, not renderer, participant or native acceptance',protectedSwitches:3,readinessTransition:'loading-to-ready',artifactContext:context,contextV3:evidence.context,actualNexusBridge:!!realBridge,evidence}));
 }finally{await page?.close();if(server){server.closeAllConnections();await new Promise(r=>server.close(r));}}

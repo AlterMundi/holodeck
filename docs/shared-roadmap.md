@@ -80,6 +80,11 @@ circulation within one renderer, exact exterior returns, edition revocation,
 foreign edit refusal and recovery across a service restart. The existing Nexus
 protocol was exercised against controlled fixture editions. Next qualify an
 independent authorized source visit and the owner catalog across stored editions.
+The room's accessible index searches only the exact editions the visitor can
+open now. The installed Nexus can resolve one known review edition and Homes
+can authorize one exact source version. The missing owner inventory is a
+paginated Nexus edition query joined to authoritative Homes resource ownership
+under the native actor. A read grant alone cannot prove authorship.
 
 ## Environment art production
 
