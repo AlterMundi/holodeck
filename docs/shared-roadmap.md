@@ -18,15 +18,22 @@ A new space can be a small game designed and published by its creators within
 the same world. Houses, underground and upper floors, internal portals, working
 controls, situated Conversation and source-pinned exhibits are part of that world.
 
-Use the existing [art-production research](research/2026-11-22-world-art-adoption.md)
-on a complete playable district. Establish continuous paths and one legible
-landmark per approach in a walkable graybox. Then author distinct silhouette,
-materials, lighting, sound and a small family of props. Review the same route
-at player height on desktop and a phone-sized viewport: arrival, approach,
-threshold, inside, and return. Walk the route to check collisions, camera,
-sign readability, movement and crossing time. Record actual player feedback
-on beauty and orientation separately from renderer and screenshot checks. The
-current island and first house are functional prototypes for this work.
+Author visual world geometry in Blender, using the existing
+[art-production research](research/2026-11-22-world-art-adoption.md) for scale,
+silhouette, materials, lighting and iterative player-height reviews. Export
+selected scene geometry and collision references to the existing MML/Three
+renderer. The earlier procedural scenery is a functional prototype. The new
+[Casa de CompAII](../art/compaii-house/README.md) study anchors the first
+district in ongoing work: the shared table, Harmonic Beacon Lab for prototype
+inspection and controls, and Sensorial for retained experiments, analysis and
+eventual live receiving. Each encountered control should act through its actual
+project owner and report its real state in the room. Initial delivery can use a
+genuine retained source while independent live feeds and operations qualify.
+
+Walk the art in the actual renderer from arrival to return. At each decision
+point verify readability, collisions, camera, player control and crossing time
+on desktop and a phone-sized viewport. Record player judgment separately from
+technical rendering. Keep the working scene and a reproducible export.
 
 Build the first creator loop with [#2](https://github.com/AlterMundi/holodeck/issues/2)
 and [#15](https://github.com/AlterMundi/holodeck/issues/15), using the existing

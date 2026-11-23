@@ -107,3 +107,15 @@ establish a coherent look, then qualify the authored assets as GLBs alongside
 their matching walkable geometry. See the
 [shared MMORPG roadmap](../shared-roadmap.md#mmorpg-experience-and-creator-loop)
 and [visual quality card](https://github.com/AlterMundi/holodeck/issues/3).
+
+
+## Blender production selected
+
+The 23 November direction selects Blender for new artistic geometry. The
+[Casa de CompAII study](../../art/compaii-house/README.md) was authored and
+rendered with Blender 5.2.2. Its first design applied the retained methods for
+metric layout, distinct project landmarks, warm and cool motivated lighting,
+and eye-height views. The editable source and exact rebuild path belong to
+the house study. The installed runtime was obtained through Blender's
+official Linux archive with its published SHA-256. In-world walkability and
+real instrument bindings remain independent implementation work.
