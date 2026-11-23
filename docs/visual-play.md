@@ -27,13 +27,15 @@ HUD, input coordinates and touch controls retain screen resolution. The
 pinned MML composer's window resize and the experience client's container
 resize both apply the same limit.
 
-On a primary touch display the world uses the highest permitted tier until
-four consecutive rendered intervals reach 45 ms. It then moves down through
-1.5× and 1× when the next tier reduces actual buffer size. Drops are at least
+All displays can reduce the world buffer when four consecutive rendered
+intervals reach 45 ms. The client skips tiers that cannot reduce the buffer.
+Touch displays start at 1×. The lowest tier uses 0.55× and omits the
+dynamic shadow pass. Lights, materials, CSS HUD and input coordinates use
+their ordinary settings. Drops are at least
 1.6 seconds apart. A higher tier needs 120 consecutive intervals at 21 ms or
 less and at least 18 seconds since the last change. A resize, transition or
 visibility change breaks the timing streak. The renderer, world authority,
-art, lighting and layout continue through changes in buffer density.
+geometry and layout continue through changes in quality.
 
 A matched Chromium trial at a 390 × 844 CSS viewport and device ratio 3
 reduced the world buffer from 1170 × 2532 to 780 × 1688, a 55.6% reduction.
@@ -379,3 +381,21 @@ The checked long name used 278 × 46 pixels after the change, compared with
 same interior and after one reconnect. Keep the label's close-range role
 in mind. Readability at greater distances and on a physical phone remains
 unverified.
+
+## Entering a room on a slow device
+
+A marked authorized room exit now has a dismissible direction and distance
+while the map is closed. The arrow follows the camera. At the doorway the
+existing travel action takes over. An access loss or room transition clears
+the local selection. [Player-height direction to the portal](../art/compaii-house/redesign/review/guided-sensorial-door.jpg).
+
+The room transition remains over the scene until the receiving scope and
+primary model are ready. Chromium held the protected room model response,
+verified that the canvas remained hidden, then released it and crossed in
+the same renderer. [Passage during the delay](../art/compaii-house/redesign/review/passage-while-room-loads.jpg).
+
+The entry shell also covers initial setup. It makes an unsuccessful initial
+location request retryable, and shows an explicit retry if the module or
+scene takes longer. Touch Chromium without the optional nameplate APIs
+showed Retry after a blocked location request and entered on an explicit tap.
+The actual phone's failure cause is still unconfirmed.

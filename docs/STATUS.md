@@ -71,7 +71,28 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`a0b714b`, package `dd19ca2d3d67`; rollback is `ad811d21a9cd`.
+`4392b8e`, package `b8270bcb062f`; rollback is `dd19ca2d3d67`.
+Only the shell and browser bundle changed. The explicit **Cerrar contenido**
+action preserves a dirty Nexus fixture and closes a clean visit from the
+world. In the packaged Chromium trial the visitor then left the lab through
+the ordinary door in the same renderer. Holding the protected room mesh kept
+the passage visible and the canvas hidden until the scene could be rendered.
+The historic workshop-to-foyer landing also matched. The marked-exit arrow
+tracked the camera and cleared when crossing.
+
+At 1600 × 900 CSS pixels, a matched SwiftShader trial reached an 880 × 495
+backing buffer and 72 draws at the lowest tier, compared with a 1600 × 900
+buffer and 146 draws in the previous package. The median of 12 frame
+intervals was 554 ms versus 686 ms. The shell recovered from a blocked
+authorized location request in 390 × 844 touch Chromium and reached the
+world after an explicit tap. It also loaded without two optional browser
+APIs. The Raspberry Pi and actual phone observations remain separate.
+All 62 installed files and 19 protected HTTPS checks matched. Tracked
+receiving checkpoints were unchanged.
+[Player-height and failure checks](visual-play.md#entering-a-room-on-a-slow-device).
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) previously served source
+`a0b714b`, package `dd19ca2d3d67`; rollback was `ad811d21a9cd`.
 The only runtime file changed is the browser bundle. The published
 client uses compact spatial nameplates for nearby peers. Two simulated
 Chromium participants saw each other's name and distinct outfit outside,

@@ -46,12 +46,12 @@ that current acknowledged visit. Missing acknowledgment stays explicit; it is
 never replaced by an invented chapter or time. Nexus's own anchored reaction
 writer remains the route for report discussion and actual source authorization.
 
-**Continue exploring** retains the same mounted iframe while its work proceeds;
-an active recording must first be ended in the visible player. **Pause and
-return** asks the viewer to freeze and refuses to hide it while protected work
-remains. Neither action destroys/recreates the frame, discards a take or draft,
-resubmits a contribution, or cancels a native request. There is at most one
-mounted visit, four bounded in-flight reads and no world-side audio copies.
+**Volver al mundo** keeps the same mounted viewer and immediately restores
+world controls. **Cerrar contenido** ends the visit from the viewer header
+or next to **Volver al contenido**, after the source viewer confirms there
+is no active work. A refused or unconfirmed close keeps the frame and
+explains what to do. There is at most one mounted visit, four bounded
+in-flight reads and no world-side audio copies.
 Browser/page teardown retains Nexus's existing unload warning and recovery.
 
 The minimized frame stays measurable offscreen, with inert controls and explicit
@@ -149,13 +149,14 @@ checks, not a real participant/media/native acceptance claim.
 
 Human22November report reproduced two actual navigation traps: an unready viewer
 held both controls behind readiness, and recording blocked walk even after ready.
-The former two exits are replaced by one `Volver al mundo` control. It immediately
+The `Volver al mundo` control immediately
 moves the same iframe offscreen and restores parent focus, without waiting for
 ready/context/freeze/close acknowledgment. Recording, dirty state, uploads, native
 work and playback are retained by Nexus; no pause/disposal/completion is claimed.
 The visitor can reopen that same frame with its current state. Playback controls
-remain inside the viewer. Safe `prepareClose` still governs replacing a content
-frame with another edition; it never governs ordinary return navigation.
+remain inside the viewer. The explicit close and edition replacement use the
+same `prepareClose` acknowledgment. A visit that never became interactive can
+be canceled directly.
 
 ## General Field contexts — additive v3
 
