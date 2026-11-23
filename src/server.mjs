@@ -1,12 +1,12 @@
-import {interiorArt} from './interior-art.mjs';
-import {packedExteriorArt,selectAtelier} from './compaii-atelier.mjs';
+import {COMPAII_HOUSE,interiorArt} from './interior-art.mjs';
+import {ATELIER_PROFILE,packedExteriorArt,selectAtelier} from './compaii-atelier.mjs';
 import {RoomExhibits,EXHIBIT_SAVE_BYTES} from './room-exhibits.mjs';
 import {InteriorSpaces, OUTSIDE, SPACE_SAVE_BYTES, interiorDocument} from './interior-spaces.mjs';
 import {InteriorLayouts,LAYOUT_SAVE_BYTES} from './interior-layouts.mjs';
 import {RoomDesigns,DESIGN_SAVE_BYTES} from './room-designs.mjs';
 import {IndoorGardens,INDOOR_GARDEN_BYTES} from './indoor-gardens.mjs';
 import {readOwnedRoomArt} from './owned-room-art.mjs';
-import {Houses, HOUSE_SAVE_BYTES} from './houses.mjs';
+import {Houses, HOUSE_SAVE_BYTES,houseId} from './houses.mjs';
 import {readActivity,ActivityError} from './activity.mjs';
 import {nodeVisits} from './content-nodes.mjs';
 import express from 'express';
@@ -20,6 +20,7 @@ import { packedClientHandler } from './packed-client.mjs';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { join } from 'node:path';
+import {isDeepStrictEqual} from 'node:util';
 import { Room, RoomError, LIMITS } from './room.mjs';
 import { RoomStore } from './room-store.mjs';
 import { homeIdentityResolver } from './home-identity.mjs';
@@ -105,7 +106,25 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const layouts=new InteriorLayouts({state:layoutStore?.load(),houses,baseDefinitions:interiorSpaces,
     persist:layoutStore?value=>layoutStore.save(value):null,
     validate:definitions=>new InteriorSpaces({definitions,houses})});
-  const spaces=new InteriorSpaces({definitions:layouts.definitions(),houses,state:spaceStore?.load(),
+  // Keep the receiving graph as the fallback for releases predating adoption.
+  // The separate checkpoint contains only the explicitly adopted Atelier plan.
+  const atelierLayoutStore=stateDir&&artProfile===ATELIER_PROFILE ?
+    new RoomStore(join(stateDir,'atelier-layout'),{maxBytes:LAYOUT_SAVE_BYTES}) : null;
+  const atelierBaseline=interiorSpaces.filter(room=>room.house===COMPAII_HOUSE);
+  const floorPlan=rooms=>rooms.map(({guests,...architecture})=>architecture);
+  const atelierLayouts=atelierLayoutStore&&new InteriorLayouts({
+    state:atelierLayoutStore.load(),houses,draftBaseline:atelierBaseline,
+    persist:value=>atelierLayoutStore.save(value),
+    validate:definitions=>!definitions.length ||
+      (isDeepStrictEqual(floorPlan(definitions),floorPlan(atelierBaseline)) &&
+        new InteriorSpaces({definitions,houses})),
+  });
+  const layoutAuthority=actor=>atelierLayouts&&houseId(actor.id)===COMPAII_HOUSE?atelierLayouts:layouts;
+  function layoutDefinitions(){
+    const adopted=new Map(atelierLayouts?.definitions().map(room=>[room.id,room]));
+    return layouts.definitions().map(room=>adopted.get(room.id)??room);
+  }
+  const spaces=new InteriorSpaces({definitions:layoutDefinitions(),houses,state:spaceStore?.load(),
     persist:spaceStore ? state=>spaceStore.save(state) : null,guestAccess:interiorGuestAccess});
   const exteriorArt=packedExteriorArt();
   const atelier=selectAtelier(artProfile,spaces.rooms,houses.directory(),exteriorArt);
@@ -315,12 +334,13 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }
   function publishLayout(actor,input){
     if(room.commitUncertain||spaces.fenced||!layoutStore)return null;
+    const authority=layoutAuthority(actor);
     try{
-      const layout=layouts.publish(actor,input,rooms=>{
+      const layout=authority.publish(actor,input,rooms=>{
         spaces.clearRestoredGuestPositions(rooms,actor.id);
       });
       if(layout){
-        spaces.rooms=new Map(layouts.definitions().map(definition=>[definition.id,definition]));
+        spaces.rooms=new Map(layoutDefinitions().map(definition=>[definition.id,definition]));
         for(const [socket,record] of sockets){
           if(!inScope(record.session.actor,record.scope)||record.projectionAllowed?.()===false)
             socket.close(1008);
@@ -328,7 +348,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       }
       return layout;
     }catch(error){
-      if(layouts.fenced)spaces.fenced=true;
+      if(authority.fenced)spaces.fenced=true;
       throw error;
     }
   }
@@ -360,10 +380,10 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   for(const selected of selectedWorldPorts)installedWorldPorts.push(await createWorldPort({socketPath:selected.socket,expectedBeingRef:selected.beingRef,room,native,describeSpace,moveSpace,conversationPlace,
     approachSpace:(actor,destination)=>room.commitUncertain?null:spaces.approach(actor,destination),
     putExhibit,exhibitResult:(actor,id)=>exhibits.result(actor,id),
-    currentLayout:actor=>layouts.current(actor),
-    draftLayout:(actor,input)=>room.commitUncertain||spaces.fenced||!layoutStore?null:layouts.draft(actor,input),
-    previewLayout:(actor,input)=>layouts.preview(actor,input),
-    publishLayout,layoutResult:(actor,id)=>layouts.result(actor,id),roomDesign,indoorGarden,
+    currentLayout:actor=>layoutAuthority(actor).current(actor),
+    draftLayout:(actor,input)=>room.commitUncertain||spaces.fenced||!layoutStore?null:layoutAuthority(actor).draft(actor,input),
+    previewLayout:(actor,input)=>layoutAuthority(actor).preview(actor,input),
+    publishLayout,layoutResult:(actor,id)=>layoutAuthority(actor).result(actor,id),roomDesign,indoorGarden,
     resolveOwnNativeRights:ownNative&&nativeRoomAuthority?async verified=>{const rights=await nativeRoomAuthority(verified);return projectionHealthy?rights:rights.filter(right=>right==='observe');}:null,resolveRights:async verified=>{
     if(nativeRoomAuthority){const rights=await nativeRoomAuthority(verified);return projectionHealthy?rights:rights.filter(right=>right==='observe');}
     // Compatibility for older receivers only. New native authority selection

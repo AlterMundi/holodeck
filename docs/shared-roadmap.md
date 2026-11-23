@@ -377,8 +377,12 @@ eligible parcel. A starter offers either an atelier with a lower workshop or a
 playroom with an upper observatory. The draft appends reciprocal passages,
 keeps existing door slots and guest lists, and returns the full revisioned
 command for explicit owner publication. This uses the same layout store and
-receipts. The paired-human authoring grant and the handoff of the deployment
-selected Casa plan remain open. [Owned plan workflow](houses.md#publish-an-owned-plan).
+receipts. The selected Casa supports exact owner adoption of its live plan,
+with the existing four-room graph and current receiving permissions. Adding
+a new room to this plan requires a fitting authored for its actual wall and
+a compatible recovery version for dependent furnishing and game saves.
+The paired-human authoring grant remains open.
+[Owned plan workflow](houses.md#publish-an-owned-plan).
 
 Oliva's [PR6](https://github.com/AlterMundi/holodeck/pull/6) is merged and selected in the shared engine. The real protected edition is associated in Nexus. [Nexus #126](https://github.com/compaii/daimon-nexus/issues/126) tracks source-Home authorization. The protected model has since rendered through the exact pinned Nexus visit in Chromium under independent CompAII access. Oliva’s own placement and the visit from the live world node are separate receiving checks. The packaged figure is an authored representation example. Declarative creation for houses and their contents remains #15.
 

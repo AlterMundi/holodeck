@@ -1,4 +1,5 @@
 import {once} from 'node:events';
+import {createConnection} from 'node:net';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
@@ -27,6 +28,81 @@ const definitions=[
   room(lab,'Laboratorio',-1,false,[['stair',gallery]],['human:lab']),
   room(tower,'Torre',2,false,[['portal',gallery]]),
 ];
+
+test('the Atelier owner adopts the exact live plan and recovers its receipt without overriding receiver access',async t=>{
+  const stateDir=mkdtempSync(join(tmpdir(),'holodeck-atelier-adopt-'));
+  t.after(()=>rmSync(stateDir,{recursive:true,force:true}));
+  const foreign='dm:being:v1:'+'z'.repeat(43);
+  new RoomStore(join(stateDir,'houses')).save({schema:'holodeck.houses/v1',receipts:[],houses:[house]});
+  let runtime,listener,base,ownerSocket,foreignSocket,boot=0;
+  async function stop(){
+    if(!listener)return;
+    runtime.close();
+    listener.closeAllConnections();
+    await new Promise(done=>listener.close(done));
+    listener=null;
+  }
+  t.after(stop);
+  async function start(interiorSpaces){
+    ownerSocket=join(stateDir,'owner-'+(++boot)+'.sock');
+    foreignSocket=join(stateDir,'foreign-'+boot+'.sock');
+    runtime=await createHolodeck({stateDir,basePath:'/holodeck/',artProfile:ATELIER_PROFILE,
+      interiorSpaces,ownNative:true,
+      worldPorts:[{socket:ownerSocket,beingRef:owner},{socket:foreignSocket,beingRef:foreign}],
+      nativeRoomAuthority:async()=>['observe','edit'],
+      nativeFactory:()=>({availability:async()=>({available:false}),authorizeWorldRequest(){throw Error('fixture');}}),
+      identityResolver:async()=>({kind:'human',id:'human:gallery',rights:['observe']})});
+    listener=runtime.app.listen(0,'127.0.0.1');
+    await once(listener,'listening');
+    base='http://127.0.0.1:'+listener.address().port+'/holodeck/';
+  }
+  async function act(args,path=ownerSocket){
+    const socket=createConnection(path);
+    await once(socket,'connect');
+    socket.write(JSON.stringify({operation:'act',ownNative:true,args})+'\n');
+    let response='';
+    for await(const chunk of socket)response+=chunk;
+    return JSON.parse(response);
+  }
+  await start(definitions);
+  const login=await fetch(base,{headers:{Accept:'application/json'}});
+  assert.equal(login.status,200);
+  const headers={Cookie:login.headers.get('set-cookie').split(';')[0],'Content-Type':'application/json'};
+  const visit=await fetch(base+'api/space',{headers,method:'POST',
+    body:JSON.stringify({from:'outside',to:foyer,live:1})});
+  assert.equal(visit.status,200);
+  const before=await visit.json();
+  const adoptedStore=new RoomStore(join(stateDir,'atelier-layout'));
+  const ordinaryStore=new RoomStore(join(stateDir,'layouts'));
+  const input={type:'layout.draft',id:'adopt-atelier-01',template:'adopt'};
+  assert.equal((await act(input,foreignSocket)).ok,false);
+  const {command,revision}=(await act(input)).result;
+  assert.equal(revision,1);
+  assert.deepEqual(command.rooms,definitions);
+  assert.equal(adoptedStore.load(),null);
+  const altered=structuredClone(command);
+  altered.rooms.find(room=>room.id===lab).guests.push('human:gallery');
+  assert.equal((await act(altered)).ok,false);
+  assert.equal((await act(command,foreignSocket)).ok,false);
+  const published=await act(command);
+  assert.deepEqual(published.result,{house:house.id,revision:1});
+  assert.equal(ordinaryStore.load(),null);
+  assert.deepEqual(adoptedStore.load().layouts[0].rooms,definitions);
+  const live=await fetch(base+'api/space?live=1',{headers}).then(response=>response.json());
+  assert.deepEqual(live.exits,before.exits);
+  assert.deepEqual(live.scene,before.scene);
+  assert.equal((await fetch(base+'api/space/scene?room='+lab,{headers})).status,404);
+
+  await stop();
+  const updated=structuredClone(definitions);
+  updated.find(room=>room.id===tower).guests=['human:lab'];
+  await start(updated);
+  assert.deepEqual((await act(command)).result,published.result);
+  assert.deepEqual((await act({type:'layout.result',id:input.id})).result,published.result);
+  assert.deepEqual((await act({type:'layout.current'})).result,
+    {house:house.id,revision:1,rooms:updated});
+  assert.deepEqual(adoptedStore.load().layouts[0].rooms,definitions);
+});
 
 test('profile is optional and uses the exact existing room graph and parcel edition',()=>{
   const source=new Map(definitions.map(item=>[item.id,item]));

@@ -1,4 +1,5 @@
 import {createHash} from 'node:crypto';
+import {isDeepStrictEqual} from 'node:util';
 import {HOUSE_PLOTS,houseId} from './houses.mjs';
 import {MAX_WORLD_REQUEST_BYTES} from './world-limits.mjs';
 
@@ -47,13 +48,14 @@ function extendsLayout(previous, rooms) {
 }
 
 export class InteriorLayouts {
-  constructor({state,houses,baseDefinitions = [],persist,validate}) {
+  constructor({state,houses,baseDefinitions = [],persist,validate,draftBaseline = []}) {
     if (!Array.isArray(baseDefinitions) || typeof validate !== 'function')
       throw Error('Select the maintained interior graph validator');
     this.houses = houses;
     this.persist = persist;
     this.validate = validate;
     this.baseDefinitions = structuredClone(baseDefinitions);
+    this.draftBaseline = structuredClone(draftBaseline);
     this.legacyHouses = new Set(this.baseDefinitions.map(room => room.house));
     this.fenced = false;
 
@@ -98,6 +100,8 @@ export class InteriorLayouts {
   }
 
   definitions() {
+    if (this.draftBaseline.length && this.state.layouts.length)
+      return structuredClone(this.draftBaseline);
     return structuredClone(this.merged(this.state.layouts));
   }
 
@@ -111,12 +115,14 @@ export class InteriorLayouts {
     if (this.fenced || !nativeEditor(actor)) return null;
     const house = houseId(actor.id);
     if (!this.owns(actor,house)) return null;
-    return structuredClone(this.state.layouts.find(layout => layout.house === house) ?? null);
+    const current = this.state.layouts.find(layout => layout.house === house);
+    return current ? structuredClone(this.draftBaseline.length ?
+      {...current,rooms:this.draftBaseline} : current) : null;
   }
 
   draft(actor, input) {
     if (this.fenced || !nativeEditor(actor) || input?.type !== 'layout.draft' ||
-        typeof input.id !== 'string' || !COMMAND.test(input.id) || !Array.isArray(input.guests))
+        typeof input.id !== 'string' || !COMMAND.test(input.id))
       return null;
     const house = houseId(actor.id);
     if (!this.owns(actor,house)) return null;
@@ -124,14 +130,17 @@ export class InteriorLayouts {
     const current = this.current(actor);
     const roomId = slug => `home-${house.slice(6,22)}-${slug}`;
     let rooms;
-    if (!current && exact(input,'guests,id,template,type')) {
+    if (!current && exact(input,'id,template,type') && input.template === 'adopt' &&
+        this.draftBaseline[0]?.house === house) {
+      rooms = this.draftBaseline;
+    } else if (!current && exact(input,'guests,id,template,type') && Array.isArray(input.guests)) {
       const plan = STARTERS.get(input.template);
       if (!plan) return null;
       rooms = plan.map(({slug,title,level,links},index)=>({
         id:roomId(slug),house,title,level,entry:index===0,guests:[...input.guests],
         links:links.map(([kind,to])=>({kind,to:roomId(to)})),
       }));
-    } else if (current && exact(input,'from,guests,id,kind,level,room,title,type')) {
+    } else if (current && exact(input,'from,guests,id,kind,level,room,title,type') && Array.isArray(input.guests)) {
       if (typeof input.room !== 'string' || !ROOM_SLUG.test(input.room)) return null;
       rooms = current.rooms;
       const from = rooms.find(room=>room.id===input.from);
@@ -163,6 +172,8 @@ export class InteriorLayouts {
   prepare(actor, input, fingerprint) {
     const previous = this.state.layouts.find(layout => layout.house === input.house);
     if ((previous?.revision ?? null) !== input.expectedRevision) return null;
+    if (this.draftBaseline.length && (previous || !isDeepStrictEqual(input.rooms,this.draftBaseline)))
+      return null;
     const layout = {house:input.house,revision:(previous?.revision ?? 0)+1,
       rooms:structuredClone(input.rooms)};
     if (!revision(layout.revision)) return null;

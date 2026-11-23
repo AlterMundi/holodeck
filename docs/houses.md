@@ -119,6 +119,14 @@ that they may enter.
   The tool appends both passage ends and preserves existing doors and guest
   lists. It uses the current revision, so a conflicting publication requires
   a fresh draft. Seeded deployment plans retain their existing protection.
+- The selected Casa de CompAII can adopt its exact deployed plan with
+  `{"type":"layout.draft","id":"adopt-atelier-01","template":"adopt"}` on the
+  owner's native route. Publish the returned command to retain revision 1
+  and its receipt. The receiving configuration still owns the access lists
+  for its four authored rooms. The adoption keeps their ordered links,
+  positions, Blender assets and exhibit/prototype bindings. An authored
+  expansion fitting and compatible rollback reader are required to open
+  another room from this plan.
 - `layout.preview` accepts `id`, `house`, `expectedRevision` and `rooms` in
   addition to `type`. Use `null` for the first plan and the current revision
   for an extension. It returns the proposed `house`, `revision` and `rooms`

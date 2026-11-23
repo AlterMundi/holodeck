@@ -26,7 +26,14 @@ variants travel through the existing room-scoped asset route. Files under
 `public/room-art` are outside the application's static asset mount. Each
 selected export is verified against its packaged hash at startup. The profile
 writes no Room checkpoint. Omit the selector to use the existing world art
-with the same data and route permissions. The optional gallery source pins
+with the same data and route permissions. The selected owner can explicitly
+adopt the original plan through the native world port. Its bounded
+`atelier-layout` checkpoint is separate from ordinary plans, and the
+receiving graph remains the compatible fallback. A rollback predating
+adoption continues to serve those same four rooms and leaves the adopted
+plan and receipt on disk. Reinstating an adoption-capable package reads the
+receipt again. Current receiving access lists still govern these rooms.
+The optional gallery source pins
 are independent of the art profile. The gallery and tower meshes contain
 passive portal fittings. Each live scene adds the destination plaque and
 light only for links in that actor's current passage list. The static mesh
