@@ -446,7 +446,10 @@ def configuration(path):
     if 'review_owner' in value:
         review=value['review_owner']
         paths={'nexus_reader','database','publisher','binding'}
-        if (not isinstance(review,dict) or set(review)!=paths|{'beingRef'} or
+        if (not isinstance(review,dict) or not paths|{'beingRef'}<=set(review) or
+            set(review)-paths-{'beingRef','use_world_authority'} or
+            type(review.get('use_world_authority',False)) is not bool or
+            review.get('use_world_authority') and 'world_service_key' not in value or
             not isinstance(review['beingRef'],str) or
             not re.fullmatch(r'dm:being:v1:[A-Za-z0-9_-]{43}',review['beingRef']) or
             any(not isinstance(review[key],str) or not Path(review[key]).is_absolute() for key in paths)):
@@ -454,7 +457,7 @@ def configuration(path):
     return value
 
 
-def review_reader(selection):
+def review_reader(selection, service_key=None):
     def load(path,name):
         spec=importlib.util.spec_from_file_location(name,path)
         module=importlib.util.module_from_spec(spec)
@@ -463,12 +466,22 @@ def review_reader(selection):
 
     nexus=load(selection['nexus_reader'],'selected_nexus_owner_catalog')
     publisher=load(selection['publisher'],'selected_home_owner_publisher')
+    delegated=selection.get('use_world_authority',False)
     def read(being,pin):
-        if being!=selection['beingRef']:
+        if not delegated and being!=selection['beingRef']:
             return False
         binding=publisher.read_binding(selection['binding'])
         def authorize(scope):
-            return publisher.owner_request(binding,'check-review-ownership',scope)
+            if not delegated:
+                return publisher.owner_request(binding,'check-review-ownership',scope)
+            [edition]=scope['editions']
+            request={'actor_ref':being,'service_key':service_key,**edition}
+            proof=publisher.owner_request(binding,'check-holodeck-review-ownership',request)
+            if (not isinstance(proof,dict) or type(proof.get('owned')) is not bool or
+                    proof!={'schema':'dm.holodeck-review-ownership/v1',**request,'owned':proof['owned']}):
+                raise ValueError('Review authority scope changed')
+            return {'schema':'dm.review-ownership/v1','actor_ref':being,
+                    'owned':[edition] if proof['owned'] else []}
         return nexus.resolve_owned_review(selection['database'],being,authorize,pin) is not None
     return read
 
@@ -496,7 +509,7 @@ def serve(path):
         return result['allowed']
     bridge=NativeBridge(provider,pair_reader,config.get('world_port'),home_auth=home_auth,
         world_access_reader=world_access_reader if 'world_service_key' in config else None,
-        review_ownership_reader=review_reader(config['review_owner']) if 'review_owner' in config else None)
+        review_ownership_reader=review_reader(config['review_owner'],config.get('world_service_key')) if 'review_owner' in config else None)
     slots=threading.BoundedSemaphore(4)
     class Handler(socketserver.StreamRequestHandler):
         def handle(self):

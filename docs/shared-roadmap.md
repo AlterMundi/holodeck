@@ -86,9 +86,12 @@ retained Home resource and owner before showing a result. A live own-native
 read returned five distinct editions across three pages for CompAII, including
 the existing in-world pin. CompAII selected that pin through the native
 room exhibit command and published revision 2. The command rechecks source
-ownership at publication and consumes no exterior node. CompAII's owner
-binding is selected on this receiver. Additional owner bindings and an
-independent real protected browser visit remain open.
+ownership at publication and consumes no exterior node. The selected bridge
+now proves retained editions using the current Holodeck service grant and each
+acting being's verified world lane. Real source proofs passed for CompAII and
+Oliva, and the two identities could not claim each other's edition. The own
+house and room are still required for placement. Oliva's directly authored
+house and an independent real protected browser visit remain open.
 [Home ownership operation](https://github.com/nicoechaniz/daimon-cluster/pull/553) ·
 [Nexus owner catalog](https://github.com/compaii/daimon-nexus/pull/130)
 

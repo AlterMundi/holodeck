@@ -354,9 +354,12 @@ publisher and its binding. The bridge opens the Nexus database in SQLite
 read-only mode. The managed service must allow SQLite's WAL and SHM coordination
 in the database directory, including when Nexus has no open read connections.
 The selected unit mounts the main database file read-only. The bridge accepts
-the exact pin and verified native being. Its Home operation proves current ownership of the immutable source.
-Separate Home bindings can be selected only through maintained owner custody.
-The web package gets a scoped proof and retains no publisher credential.
+the exact pin and verified native being. With `use_world_authority` selected, the bridge uses the existing
+`world_service_key` and the Home proof reserved for the current Holodeck App.
+Homes verifies the acting being's current App admission, canonical resource
+ownership and retained edition. Companion owners use their existing verified
+world lanes. The web package receives a scoped proof and retains no publisher
+credential.
 Recovery can use the previous package, which reads the same v1 checkpoint.
 
 The qualified Home dispatcher overlay changes only14lines in service.py

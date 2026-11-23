@@ -20,6 +20,14 @@ authoring step. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-creat
 
 ## Selected receiving release
 
+The central bridge now checks each verified world actor against the
+current registered Holodeck App and exact retained Home source. Requests
+from the actual application UID proved CompAII's and Oliva's selected
+editions and refused both cross-owner substitutions. The same web package,
+Nexus editions, world and visitor permissions remain selected. Oliva's
+proof establishes ownership only. Her own parcel and authored room are
+still required for a real placement. [Source authority contract](deployment.md)
+
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
 `6288561`, package `4c8be4dc262a`. CompAII updated the finished gallery
 display from revision 1 to 2 directly from the same owned Nexus pin and

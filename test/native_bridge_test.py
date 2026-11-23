@@ -38,6 +38,33 @@ class Provider:
         return ref,next(data for data,stored in self.uploads if stored['sha256']==ref['sha256'])
 
 class BridgeContracts(unittest.TestCase):
+    def test_delegated_review_reader_uses_the_fixed_world_grant(self):
+        actor = 'dm:being:v1:' + 'b' * 43
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            resolver = root / 'resolver.py'
+            resolver.write_text(
+                "def resolve_owned_review(database, actor, authorize, pin):\n"
+                "    selected={'resource':'a'*32,'version':'b'*64}\n"
+                "    return next(iter(authorize({'actor_ref':actor,'editions':[selected]})['owned']),None)\n"
+            )
+            publisher = root / 'publisher.py'
+            publisher.write_text(
+                "def read_binding(path): return {'allowed':True,'source':path}\n"
+                "def owner_request(binding, op, request):\n"
+                "    assert binding['allowed'] and op=='check-holodeck-review-ownership'\n"
+                "    assert request['actor_ref']=='dm:being:v1:'+'b'*43\n"
+                "    assert request['service_key']=='s-'+'1'*24\n"
+                "    return {'schema':'dm.holodeck-review-ownership/v1',**request,'owned':True}\n"
+            )
+            selection = {'nexus_reader':str(resolver),'publisher':str(publisher),
+                         'database':str(root/'db'),'binding':str(root/'configured'),
+                         'beingRef':'dm:being:v1:'+'a'*43,'use_world_authority':True}
+            assert module.review_reader(selection,'s-'+'1'*24)(actor,{})
+            assert not module.review_reader({**selection,'use_world_authority':False})(actor,{})
+            with self.assertRaises(AssertionError):
+                module.review_reader(selection,'s-'+'2'*24)(actor,{})
+
     def test_review_ownership_uses_only_the_configured_exact_reader(self):
         being = 'dm:being:v1:' + 'a' * 43
         pin = {'kind':'artifact_review','adapter':'interactive_3d',
