@@ -25,7 +25,19 @@ Room event tail recorded joins and leaves during activation. The directly
 usable predecessor `581dbb6a09cb` retains room plans and furnishings.
 
 The [shared Home entrance](https://compaii.dmn.homes/holodeck/) now serves
-source `e30ece2`, package `4581272b06f6`, with the [Blender Commons maps](../art/compaii-house/redesign/commons-pbr.md).
+source `8c56091`, package `4232c649d9f1`, with the [Blender coastal sky](../art/compaii-house/redesign/coastal-sky.md)
+and [water materials](../art/compaii-house/redesign/coastal-water.md).
+The exact HTTPS client, sky, water and Commons assets matched the installed
+43-file inventory. The canonical run and protected state were retained.
+The previous material package `4581272b06f6` is directly available for recovery.
+Desktop and touch-emulated Chromium passed a same-document foyer-entry and
+return from fixture doorway positions. The panorama rendered outdoors, was
+removed inside and loaded once per client. The water model adds 101,312 bytes
+with the prior 3,260 triangles and 12 batches. The software-rendered passage
+measurements ranged from 1.7 to 5.7 seconds. These timings describe the fixture.
+
+The preceding source `e30ece2`, package `4581272b06f6`, selected the
+[Blender Commons maps](../art/compaii-house/redesign/commons-pbr.md).
 The receiver matched the 42 installed files, HTTPS health, client and exact
 revisioned Commons asset. The prior game package `17fbd16989d5` is retained
 for compatible recovery. Controlled WebGL compared the two assets from the
