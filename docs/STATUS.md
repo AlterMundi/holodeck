@@ -21,6 +21,24 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+`f9c9885`, package `466151c5c732`. On interruption of indoor presence,
+Holodeck suspends visit discovery and cancels stale room prefetches. With
+the grant still valid, the same room and Nexus draft can resume. If the
+world still admits the player after a room grant is withdrawn, the server
+releases the denied saved room position and returns the player outside.
+The draft stays hidden within the same page until the player deliberately
+re-enters the original room and the exact source is authorized again.
+The packaged Chromium trial observed both paths, a refusal at the former
+lab-art URL for the removed visitor, unchanged lab access for a second actor,
+and the original draft after re-entry. Nexus authorization used a
+controlled receiver. One software-rendered run exceeded its exterior
+readiness deadline. The exact package passed the repeat with background
+rendering throttled and a longer deadline. Physical device timing
+remains open. All 57 installed files and protected HTTPS matched
+the selected candidate, and protected state matched its prior bytes.
+Package `2cf1afb29358` is retained. [Visit recovery](content-visits.md#acknowledged-visit-boundary)
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
 `b3ea542`, package `2cf1afb29358`. A scoped visit can keep its unsaved
 work while the world cannot confirm access to the source. In the packaged
 Chromium trial, an authorized dirty visit prevented a normal exit. After
