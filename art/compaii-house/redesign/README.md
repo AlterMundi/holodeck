@@ -85,10 +85,19 @@ ambient fill provide moving-character light and shadows.
 See the [baked lighting in the game renderer](review/foyer-baked-light.jpg)
 from the foyer approach used for the earlier comparison.
 
+The Beacon lab uses the same export pipeline. Four area lights in Cycles
+give separate pools of light to the stair, the central instrument and the
+Spatializer and Weaver benches. The runtime uses a softer shadowed key and
+keeps the bench lights. The lighting matches the existing geometry and
+collision. See the [stair reveal before](review/beacon-light-before.jpg)
+and [after](review/beacon-light-after.jpg) in the game renderer.
+
 ```sh
 blender -b art/compaii-house/redesign/casa-compaii-redesign.blend -t 6 --python-exit-code 1 \
-  -P art/compaii-house/redesign/foyer-irradiance.py -- "$EXPORT_OUTPUT"
+  -P art/compaii-house/redesign/cell-irradiance.py -- "$EXPORT_OUTPUT" foyer
 ```
+
+Select `beacon` as the final argument for the laboratory reference.
 
 The [listening tower](listening-tower.blend) has its own editable room-scale
 source and can be regenerated with `tower.py`. It uses a warm wall resonator

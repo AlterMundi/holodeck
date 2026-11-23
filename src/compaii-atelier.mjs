@@ -26,7 +26,7 @@ const dossier={
   'room-art/compaii-atelier/foyer.glb':'eb3bd88a7dc7e288ea6335f90b4ef24880d37dcd004c008e16a936a427c8198a',
   'room-art/compaii-atelier/gallery.glb':'1028d39b34938571ce0385e7bd6604f61c79a4f614ed3395648244e313d0dd35',
   'room-art/compaii-atelier/gallery-sealed.glb':'91c46b91164fd1ebfd20052cdf20d2dae59c0222126af016f16920a426dadc48',
-  'room-art/compaii-atelier/beacon.glb':'0ab7546ae7d540e14dbed049a70da52a2aeb36bd575fd8f31532c94a81ef762f',
+  'room-art/compaii-atelier/beacon.glb':'18efdd2460c1cfff554b1a854520c15eeda9e1721ad2e8d166ef4ac2bffc2bf5',
   'room-art/compaii-atelier/tower.glb':'47ba2a0964304eba1f3cbf945121e737c5d9addd7e71c1696bfa8b52ddb872de',
   ['assets/'+FACADE_ASSET]:'940aa64038396e43db8beca859e33f4f52c6ae3a84d1702457159c0af1224077',
   ['assets/'+GARDEN_ASSET]:'ecf2f1225a065b1a1b4b067ad2cd0f3ac96bc62b5d8a31a8894dd1a50490361b',
@@ -56,10 +56,11 @@ const softLight=({id,x,y,z,color,intensity,distance})=>`<m-light id="${id}" x="$
 // room above the path and separates the exhibits from the darker oak ceiling.
 const galleryKey={position:[-4.82,3.62,.5],target:[2.45,1.05,.5],color:'#cde3ff'};
 const foyerKey={position:[4.87,3.15,1.75],target:[-2.30,.80,-2.3],color:'#ffe3bf',intensity:87};
-const chamberRig='<m-light id="instrument-key" x="-.44" y="4.53" z="1.9" type="spotlight" distance="8" angle="38" intensity="105" cast-shadows="true" color="#ffd6a2"></m-light>'+[
-  {id:'stair-bounce',x:-3,y:2.6,z:-4.5,distance:8,intensity:22,color:'#91b4e6'},
-  {id:'spatializer-practical',x:3.79,y:2.72,z:-.8,distance:5,intensity:21,color:'#ffd6a2'},
-  {id:'weaver-practical',x:-3.76,y:2.72,z:2.67,distance:5,intensity:21,color:'#ffd6a2'},
+const chamberKey={position:[-.44,4.35,1.9],target:[-.44,1.07,1.9],color:'#ffe0b6',intensity:68};
+const chamberRig=[
+  {id:'stair-bounce',x:-3,y:2.6,z:-4.5,distance:8,intensity:13,color:'#a2c2f6'},
+  {id:'spatializer-practical',x:3.79,y:2.72,z:-.8,distance:5,intensity:15,color:'#ffd6a2'},
+  {id:'weaver-practical',x:-3.76,y:2.72,z:2.67,distance:5,intensity:15,color:'#ffd6a2'},
 ].map(softLight).join('');
 const galleryColliders=[
   {x:2.5,y:.529,z:1.25,w:1.32,h:.858,d:1.04},
@@ -96,7 +97,7 @@ export function selectAtelier(profile,rooms,houses){
     lightRig:softLight({id:'vestibule-practical',x:-2.83,y:1.78,z:-1.42,intensity:13,distance:6,color:'#ffbb75'})};
   const galleryArt={...floorProfile,ambient:.40,colliders:galleryColliders,keyLight:galleryKey,
     lightRig:softLight({id:'collection-warm-bounce',x:4.2,y:2.6,z:1.6,intensity:12,distance:7,color:'#ffd8ae'})};
-  const labArt={...asset('beacon'),...floorProfile,authoredStairs:true,ambient:.60,
+  const labArt={...asset('beacon'),...floorProfile,authoredStairs:true,ambient:.27,keyLight:chamberKey,
     station:interiorArt(rooms.get(lab)).station,
     controls:BEACON_CONTROLS,
     colliders:'<m-cylinder x="-.44" y=".315" z="1.9" radius="1.62" height=".43" opacity="0" cast-shadows="false"></m-cylinder>'+

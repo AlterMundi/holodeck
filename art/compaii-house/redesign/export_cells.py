@@ -319,10 +319,10 @@ if __name__ == '__main__':
     color = bake(obj, cell+'-albedo', 'DIFFUSE', color_size, destination)
     normal = bake(obj, cell+'-normal', 'NORMAL', normal_size, destination)
     bounce = None
-    if cell == 'foyer':
-        lighting = runpy.run_path(str(Path(__file__).with_name('foyer-irradiance.py')))
-        bounce = lighting['portable_bounce'](obj,destination/'foyer-albedo.png',color_size,destination)
-    contact = bake_contact(obj, cell, destination) if cell in ('foyer','gallery','gallery-sealed') else None
+    if cell in ('foyer','beacon'):
+        lighting = runpy.run_path(str(Path(__file__).with_name('cell-irradiance.py')))
+        bounce = lighting['portable_bounce'](obj,cell,destination/(cell+'-albedo.png'),color_size,destination)
+    contact = bake_contact(obj, cell, destination) if cell in ('foyer','beacon','gallery','gallery-sealed') else None
     portable_materials(obj, color, normal, contact, bounce)
     path = destination / (cell+'.glb')
     bpy.ops.export_scene.gltf(filepath=str(path), export_format='GLB', use_selection=True,

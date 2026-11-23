@@ -107,8 +107,9 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   assert.equal((await visitor.read(openPath)).status,404);
   assert.equal((await visitor.read(sealedPath)).status,200);
   const chamber=await authorized.move(gallery,lab);
-  assert.equal(chamber.keyLight,undefined);
-  assert.match(chamber.scene.markup,/type="spotlight"[^>]+cast-shadows="true"/);
+  assert.deepEqual(chamber.keyLight,{position:[-.44,4.35,1.9],target:[-.44,1.07,1.9],color:'#ffe0b6',intensity:68});
+  assert.match(chamber.scene.markup,/id="spatializer-practical"/);
+  assert.match(chamber.scene.markup,/id="weaver-practical"/);
   assert.deepEqual(chamber.objects.map(object=>object.id),['beacon-prototypes','beacon-spatializer','beacon-weaver']);
   assert.match(chamber.scene.markup,/id="beacon-spatializer"/);
   assert.match(chamber.scene.markup,/id="beacon-weaver"/);
