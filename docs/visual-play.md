@@ -97,6 +97,25 @@ The small sample does not establish a general movement improvement.
 Those runs still requested the previous 1.82 MB compressed house facade. Early location and terrain preload experiments were
 slower in this fixture and were discarded.
 
+## Progressive exterior arrival
+
+On the first exterior load, the arrival projection supplies the normal
+terrain, colliders, signs, viewpoint and semantic objects. The facade and
+two garden models are decorative and have separate colliders. The client
+asks for the facade first after the avatar is present, then the remaining
+models at least 350 ms apart. The ordinary exterior stream keeps all
+sources active for an earlier client and for the return from a house. Both
+streams project the same world state and pass the same membership and
+room checks.
+
+In fresh desktop Chromium with SwiftShader, 6.4 Mb/s and 80 ms latency,
+the earlier package reached an observed WASD displacement of at least
+15 cm at 11.48 s. The two selected-package runs took 9.87 and 9.50 s.
+They showed the avatar at floor height at 6.70 and 6.97 s, compared
+with 8.67 s. All three deferred models were confirmed by 10.71 and
+11.89 s. The transfer size is unchanged. These runs measure when
+the player can start. Physical-device pacing remains separate.
+
 ## Spawn on the arrival terrace
 
 The first exterior spawn is 1 mm above the runtime terrace collider top.

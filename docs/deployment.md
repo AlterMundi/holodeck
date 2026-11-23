@@ -135,6 +135,14 @@ retain the existing `no-store` policy. The room route applies the current
 actor, room, passage and revision checks before serving either representation.
 Development and rollback packages may use the original uncompressed exports.
 
+The atelier exposes an arrival variant on the existing exterior world socket
+with `dressing=arrival`. It has the same authenticated scope and world state.
+Only the source attributes of the facade, miniature if present and garden
+dressing differ. The current client requests those models after the local
+avatar exists. Earlier clients and the return from an interior use the
+ordinary projection. No receiving selection or state migration is needed.
+
+
 
 The archive remains below the existing 32 MiB limit and its declared unpacked
 inventory below 128 MiB. Validate the exact archive using the maintained receiving

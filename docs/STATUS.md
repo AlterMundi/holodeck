@@ -71,6 +71,16 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves
+source `d9e2f14`, package `bcac0a232755`. The facade and two garden
+models load after the initial exterior is playable. The staged stream
+retains the same scope and topology. Packaged browsers verified first
+movement on touch and desktop, entry and return at the house, and the
+previous client against this server. In network-limited software Chromium,
+first movement measured 9.50–9.87 s versus 11.48 s before. Protected HTTPS,
+59 installed files and the retained world digests matched. Rollback is
+`b7539eba9652`. [Arrival measurements](visual-play.md#progressive-exterior-arrival).
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) previously served
 source `0ef7d80`, package `b7539eba9652`. The exterior avatar spawns
 at the terrace surface. Packaged Chromium verified the grounded
 first frame, movement with WASD and emulated touch, and the house
