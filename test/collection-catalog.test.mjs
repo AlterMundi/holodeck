@@ -122,6 +122,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
         body:JSON.stringify({resource,version})}),
       prepare:(worktable,id=randomUUID())=>fetch(base+'api/conversation-contexts',{headers,method:'POST',
         body:JSON.stringify({id,binding,view:{spaceId:'matter',worktable}})}),
+      events:()=>fetch(base+'api/space/collection/events',{headers}),
       catalog:()=>fetch(base+'api/space/collection',{headers}),
       share:(resource,revision)=>fetch(base+'api/space/collection',{headers,method:'POST',body:JSON.stringify({resource,revision})}),
       art:path=>fetch(new URL(path,base),{headers}),
@@ -129,6 +130,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
   }
   const [author,visitor]=await Promise.all([session('owner'),session('guest')]);
   assert.equal((await visitor.catalog()).status,404);
+  assert.equal((await visitor.events()).status,404);
   assert.equal((await visitor.art(thumbnail)).status,404);
   assert.equal(requests.length,0);
   const entered=await author.move('outside','matter');
@@ -154,7 +156,25 @@ test('collection projects stay grouped and editions follow each visitor and thei
   assert.deepEqual(await response.json(),{room:'matter',projects:[guitar(main,component)],archive:{...archive,canRestore:true},worktable:table(0,null,true)});
   assert.deepEqual(await (await visitor.catalog()).json(),{room:'matter',projects:[guitar(main)],archive,worktable:table(0,null)});
   assert.equal((await visitor.share(main,0)).status,403);
+  const events=await visitor.events();
+  assert.match(events.headers.get('content-type'),/^text\/event-stream/);
+  const stream=events.body.getReader();
+  t.after(()=>stream.cancel().catch(()=>{}));
+  let eventBuffer='';
+  const readEvent=async()=>{
+    while(!eventBuffer.includes('\n\n')){
+      const {value,done}=await stream.read();
+      assert.equal(done,false);
+      eventBuffer+=Buffer.from(value).toString();
+    }
+    const end=eventBuffer.indexOf('\n\n')+2;
+    const event=eventBuffer.slice(0,end);
+    eventBuffer=eventBuffer.slice(end);
+    return event;
+  };
+  assert.equal(await readEvent(),': ready\n\n');
   assert.equal((await author.share(component,0)).status,204);
+  assert.equal(await readEvent(),'event: refresh\ndata: {}\n\n');
   assert.deepEqual((await (await author.catalog()).json()).worktable,table(1,component,true));
   assert.deepEqual((await (await visitor.catalog()).json()).worktable,table(1,null));
   assert.equal((await author.share(main,0)).status,409);
@@ -227,6 +247,10 @@ test('collection projects stay grouped and editions follow each visitor and thei
   finally{release();}
   assert.equal((await racing).status,404);
   assert.equal((await visitor.art(asset)).status,404);
+  assert.equal(await readEvent(),'event: refresh\ndata: {}\n\n');
+  assert.equal(await readEvent(),'event: refresh\ndata: {}\n\n');
+  assert.equal((await stream.read()).done,true);
+  assert.equal((await visitor.events()).status,404);
 
   const authStarted=new Promise(resolve=>{started=resolve;});
   const authWait=new Promise(resolve=>{release=resolve;});

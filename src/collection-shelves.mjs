@@ -50,6 +50,18 @@ export class CollectionShelves {
       this.room=room;this.root=root;
     }
     if(!room||!root||!player)return;
+    if(!this.events){
+      const stream=new EventSource(new URL('api/space/collection/events',this.base));
+      this.events=stream;
+      let opened=false;
+      stream.onopen=()=>{
+        if(opened&&this.events===stream)this.refreshAt=0;
+        opened=true;
+      };
+      stream.addEventListener('refresh',()=>{
+        if(this.events===stream)this.refreshAt=0;
+      });
+    }
     const now=performance.now();
     if(!this.flight&&now>=(this.refreshAt??0))this.refresh();
     const nearest=[...this.items.values()].map(item=>({item,distance:distance(player,item.project.anchor)}))
@@ -156,6 +168,7 @@ export class CollectionShelves {
   }
 
   clear(){
+    this.events?.close();this.events=null;
     this.flight?.abort();this.flight=null;
     for(const item of this.items.values())this.remove(item);
     this.links([]);this.archive.clear();this.worktable.clear();

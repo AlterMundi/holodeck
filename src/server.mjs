@@ -167,6 +167,14 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     new RoomStore(join(stateDir,'collection-placement'),{maxBytes:2048}):null;
   const heldArchive=archiveStore?.load();
   const pinKey=entry=>entry.resource+':'+entry.version;
+  const collectionStreams=new Map();
+  function invalidateCollection(){
+    for(const [res,session] of collectionStreams){
+      if(inScope(session.actor,collection.room)&&Date.now()-session.created<SESSION_MS)
+        res.write('event: refresh\ndata: {}\n\n');
+      else res.end();
+    }
+  }
   const archiveKeys=new Set(collection?.archive?.map(pinKey));
   const shelfCount=matterArt?.shelves.length??0;
   const baseShelves=collection?.projects.length??0;
@@ -233,6 +241,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   function closeOutOfScope(actor){
     for(const [socket,{session,scope}] of sockets)
       if(session.actor.id===actor.id&&!inScope(actor,scope))socket.close(1008);
+    for(const [res,session] of collectionStreams)
+      if(session.actor.id===actor.id&&!inScope(actor,collection.room))res.end();
   }
   async function checkSocket(socket,record){
     if(record.checking)return record.checking;
@@ -630,7 +640,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(session.times.length>=4)return res.status(429).json({message:'Esperá un momento antes de intentar otra acción.'});
       session.times.push(now);
     }
-    const spaceRoute=['/space','/space/content-visits','/space/collection','/space/collection/archive','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
+    const spaceRoute=['/space','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
       req.path==='/appearance'||req.path==='/conversation-surface'||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
@@ -757,6 +767,18 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     res.json({room:collection.room,projects:[...projects,...restored],...(worktable?{worktable}:{}),
       ...(collection.archive&&art?.archive?{archive:{anchor:art.archive,editions:archive,...(canRestore?{canRestore}:{})}}:{})});
   }));
+  // This stream carries only a refresh hint. The catalog and geometry still
+  // require their own current, actor-scoped authorization on every read.
+  app.get(route('api/space/collection/events'),(req,res)=>{
+    if(!collection?.art||!inScope(req.actor,collection.room))return res.sendStatus(404);
+    if(collectionStreams.size>=LIMITS.sessions)return res.sendStatus(503);
+    res.set({'Content-Type':'text/event-stream','X-Accel-Buffering':'no'});
+    res.flushHeaders();
+    res.write(': ready\n\n');
+    const timer=setTimeout(()=>res.end(),25000);
+    collectionStreams.set(res,req.holodeckSession);
+    res.on('close',()=>{clearTimeout(timer);collectionStreams.delete(res);});
+  });
   app.post(route('api/space/collection'),asyncRoute(async(req,res)=>{
     if(!collection?.art||!inScope(req.actor,collection.room))return res.sendStatus(404);
     if(!req.actor.rights.includes('edit'))return res.sendStatus(403);
@@ -783,6 +805,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
         return res.sendStatus(503);
       }
       table=next;
+      invalidateCollection();
     }
     res.sendStatus(204);
   }));
@@ -812,6 +835,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       return res.sendStatus(503);
     }
     placed=next;
+    invalidateCollection();
     res.sendStatus(204);
   }));
   app.get(route('api/space/collection-model/:resource/:version'),asyncRoute(async(req,res)=>{
@@ -956,7 +980,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const known=error instanceof RoomError;
     res.status(known?409:error.type==='entity.too.large'?413:503).json({message:known?'El mundo cambió o esa acción no está disponible. Revisá el lugar antes de intentarlo de nuevo.':'No pude completar esa acción. Conservé los cambios que ya estaban confirmados.'});
   });
-  return {app,room,native,spaces,close(){if(authorizationTimer)clearInterval(authorizationTimer);for(const socket of sockets.keys())socket.close(1001);for(const port of installedWorldPorts)port.close();network.dispose();document.dispose();arrivalDocument?.dispose();for(const cell of cellTransports.values()){cell.network.dispose();}}};
+  return {app,room,native,spaces,close(){for(const res of collectionStreams.keys())res.end();if(authorizationTimer)clearInterval(authorizationTimer);for(const socket of sockets.keys())socket.close(1001);for(const port of installedWorldPorts)port.close();network.dispose();document.dispose();arrivalDocument?.dispose();for(const cell of cellTransports.values()){cell.network.dispose();}}};
 }
 
 export function validateWorldPorts({worldSocket=null,worldSocketBeingRef=null,worldPorts=[],nativeRoutes=null}={}){

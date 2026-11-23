@@ -113,7 +113,12 @@ the validated scene-index digest. Movement or admission change cancels the
 projection. The response uses `no-store`, and the source requests have a
 shared deadline and byte bounds. The compatible configuration can remain
 unselected while a room or thumbnail preparation is ongoing. The selected room exposes the worktable and archive controls when their
-source editions are available.
+source editions are available. The same room exposes a bounded event stream
+that signals table and shelf changes without sending project details or
+geometry. The browser uses the normal authenticated catalog to resolve a
+refresh. The 12-second catalog refresh also picks up saved Home editions and
+recovers missed notifications. Streams close on room departure and expire
+after 25 seconds so each open visitor periodically reauthorizes.
 
 The Matter worktable can pass a selected model or part to the existing
 Conversation surface. The preparation checks the room, the current speaker
