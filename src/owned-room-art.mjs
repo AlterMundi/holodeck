@@ -12,7 +12,7 @@ const colliders=furniture.map(({position:{x,y,z},width,height,depth})=>
   `<m-cube x="${x}" y="${y}" z="${z}" width="${width}" height="${height}" depth="${depth}" opacity="0" cast-shadows="false"></m-cube>`).join('');
 
 // Install the receiving build before selecting the new kit on a live plan.
-const SENSORIAL_KIT_AVAILABLE=false;
+const SENSORIAL_KIT_AVAILABLE=true;
 const SENSORIAL_DIGEST='61e33fd589d9b9c00a7d2e502a41053a6defed336fbcc216114fbd29dbaf1279';
 export const OWNED_PACKED_ART_REVISIONS=Object.freeze({
   'room-art/owned-sensorial-workshop.glb':SENSORIAL_DIGEST,
