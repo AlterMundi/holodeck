@@ -214,8 +214,8 @@ room-local bounds. Keep Blender area lights and camera setups in the source.
 | Parcel facade | 2,836,316 | 19,712 | 9 |
 | Foyer | 1,536,588 | 6,700 | 7 |
 | Beacon laboratory | 2,644,700 | 28,416 | 9 |
-| Gallery with stair | 2,926,652 | 26,392 | 10 |
-| Gallery with continuous floor | 2,247,352 | 14,328 | 9 |
+| Gallery with stair | 3,196,296 | 31,652 | 11 |
+| Gallery with continuous floor | 2,510,800 | 19,588 | 10 |
 | Listening tower | 1,983,396 | 26,056 | 10 |
 | Arrival commons | 582,668 | 14,880 | 10 |
 
@@ -335,8 +335,19 @@ the floor number. The authored fittings sit inside the existing gallery
 envelope. The stair and rails retain their original collision surfaces
 and the door retains its original route and activation point. The existing
 continuous-floor asset contains no laboratory door or sign. The stair
-edition transfers in 1,482,647 bytes with Brotli.
+edition shown here transferred in 1,482,647 bytes with Brotli.
 [View from the stair landing in Chromium](review/gallery-laboratory-door.jpg).
+
+### Gallery return to the foyer
+
+Both gallery editions have a limestone surround, oak door, recessed
+gunmetal panels and brass fittings at the existing foyer passage. The
+ivory sign identifies **Vestíbulo · Planta baja** from the player path.
+Each browser fixture walked to the door with WASD, pressed E and returned
+to the exact approach in the same document. The continuous-floor visitor
+received no laboratory route or model. The updated gallery assets transfer
+in 1,490,289 and 1,471,814 bytes with Brotli.
+[Door from the gallery approach](review/gallery-foyer-door.jpg).
 
 The supported first control handoff is the authenticated
 [Harmonic Lab panel](https://compaii.dmn.homes/harmonic_lab/). Walk toward

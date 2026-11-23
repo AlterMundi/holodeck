@@ -173,6 +173,11 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   assert.notEqual(openPath,sealedPath);
   assert.ok(open.exits.some(exit=>exit.to===lab));
   assert.ok(!sealed.exits.some(exit=>exit.to===lab));
+  for(const galleryView of [open,sealed]){
+    assert.deepEqual(galleryView.exits.find(exit=>exit.to===foyer)?.door,{x:-3,y:.11,z:-4.81,yaw:180});
+    assert.match(galleryView.scene.markup,/<m-group id="passage-0" x="-3" z="-5\.86" ry="0"><\/m-group>/);
+    assert.match(galleryView.scene.markup,/id="passage-2"[^>]*>\s*<m-cube/);
+  }
   const stairMarkup=open.scene.markup.match(/<m-group id="passage-1"[^>]*>(.*?)<\/m-group>/s)?.[1];
   assert.equal(stairMarkup?.match(/opacity="0" cast-shadows="false"/g)?.length,8);
   assert.doesNotMatch(stairMarkup,/<m-label|collide="false"/);
@@ -193,6 +198,12 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   assert.equal((await visitor.read(openPath)).status,404);
   const sealedModel=await readGalleryModel(visitor,sealedPath);
   assert.ok(!sealedModel.materials.some(material=>material.name==='Laboratory sign ivory'));
+  for(const model of [openModel,sealedModel]){
+    const sign=model.materials.find(material=>material.name==='Foyer sign ivory');
+    assert.ok(sign);
+    assert.equal(sign.pbrMetallicRoughness.baseColorTexture,undefined);
+    assert.ok(sign.emissiveFactor.every(channel=>channel>0));
+  }
   const chamber=await authorized.move(gallery,lab);
   assert.deepEqual(chamber.keyLight,{position:[-.44,4.35,1.9],target:[-.44,1.07,1.9],color:'#ffe0b6',intensity:68});
   assert.match(chamber.scene.markup,/id="spatializer-practical"/);

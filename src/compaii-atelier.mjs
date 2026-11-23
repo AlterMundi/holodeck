@@ -41,8 +41,8 @@ const COASTAL_RIDGES=Object.freeze({asset:'coastal-ridges.glb',
 const COASTAL_FOG=Object.freeze({fogNear:24,fogFar:124,fogColor:{r:.716,g:.776,b:.784}});
 export const ATELIER_ASSET_REVISIONS=Object.freeze({
   'room-art/compaii-atelier/foyer.glb':'7816835b65ffbf025ae295dee37d0db978bede7a9dbc83f66e44d53d052ede59',
-  'room-art/compaii-atelier/gallery.glb':'720bf4fbc6ebd9c94fb6fd1cb70bd66494e69a2ee2adb97837fc60dc028b071a',
-  'room-art/compaii-atelier/gallery-sealed.glb':'c3ad63c7eb978a724751a8d90c2ee8739ac1431e53b4c53c1be8927cbbfe72ed',
+  'room-art/compaii-atelier/gallery.glb':'1aa239e905e9f9e5e7869175914f4aa648b9ec507595b00dba0d5b9dfd726776',
+  'room-art/compaii-atelier/gallery-sealed.glb':'84317f7627b64d360f7dc8f9fe37a6a5b79160b591878c144de4dd58d151867e',
   'room-art/compaii-atelier/beacon.glb':'881d86774a6e92aefb9ff224c3a5ac60544a44fa6a2ff14f7fd05bb34b8e96c7',
   'room-art/compaii-atelier/tower.glb':'47ba2a0964304eba1f3cbf945121e737c5d9addd7e71c1696bfa8b52ddb872de',
   ['assets/'+FACADE_ASSET]:'1cc4b093c2452d8871daaeee0148f876137296525d9d3c55c59399a9afe408e1',
@@ -199,7 +199,7 @@ export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt())
       if(room.id!==gallery)return null;
       const hasLabStair=passages.some(link=>link.kind==='stair'&&link.to===lab);
       return {...galleryArt,...asset(hasLabStair?'gallery':'gallery-sealed'),
-        authoredStairs:hasLabStair,authoredStairDoor:hasLabStair};
+        authoredStairs:hasLabStair,authoredPassages:hasLabStair?[0,1]:[0]};
     },
   };
 }

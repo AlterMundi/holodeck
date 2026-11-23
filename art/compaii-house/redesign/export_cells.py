@@ -24,6 +24,7 @@ NORMAL_RESOLUTION = 1024
 MAX_BYTES = 4 * 1024 * 1024
 MAX_TRIANGLES = 64_000
 LAB_LETTERING = 'Laboratory sign ivory'
+FOYER_LETTERING = 'Foyer sign ivory'
 BEACON_STAIRS = ('Descending stair tread', 'Stair rail', 'Stone wall at stair')
 FOYER_EXTERIOR = ('Stone plinth','Warm entrance floor','Entrance step','CASA DE COMPAII',
                   'Clerestory smoked glass','Vertical recessed window','Amber window sill',
@@ -235,18 +236,40 @@ def gallery_stair():
     return pieces
 
 
-def letter_gallery_lab_sign(obj):
+def gallery_foyer_door():
+    stone, oak, basalt = 'Honed honey limestone', 'Dark oiled oak', 'Split basalt'
+    brass, iron = 'Satin brass', 'Blue gunmetal'
+    # Slot zero is across the entrance wall from the stair. Keep the parts
+    # shallow against the wall, outside the existing walking approach.
+    return [
+        ('Foyer door limestone surround',(-3,5.806,1.193),(1.67,.16,2.20),stone,.026),
+        ('Foyer door oak lining',(-3,5.703,1.152),(1.49,.118,2.10),oak,.022),
+        ('Foyer door oak leaf',(-3,5.632,1.142),(1.33,.068,1.99),oak,.017),
+        ('Foyer door lower recessed panel',(-3,5.591,.622),(.961,.028,.627),iron,.019),
+        ('Foyer door upper recessed panel',(-3,5.591,1.491),(.961,.028,.825),iron,.019),
+        ('Foyer door lower brass bead',(-3,5.570,.925),(.927,.014,.020),brass,.003),
+        ('Foyer door upper brass bead',(-3,5.570,1.886),(.927,.014,.020),brass,.003),
+        ('Foyer door basalt foot',(-3,5.582,.201),(1.234,.021,.16),basalt,.008),
+        ('Foyer door brass backplate',(-2.570,5.564,1.077),(.091,.028,.234),brass,.009),
+        ('Foyer door lever',(-2.639,5.530,1.128),(.173,.054,.035),brass,.010),
+        ('Foyer sign oak plaque',(-3,5.801,3.075),(2.03,.108,.473),oak,.029),
+        ('Foyer sign bronze-dark face',(-3,5.737,3.075),(1.899,.040,.367),iron,.015),
+        ('Foyer sign brass sill',(-3,5.712,2.902),(1.800,.017,.018),brass,.004),
+    ]
+
+
+def letter_gallery_sign(obj, x, material, lines):
     parts = [obj]
     ivory = bpy.data.materials['Ivory lettering'].copy()
-    ivory.name = LAB_LETTERING
+    ivory.name = material
     surface = ivory.node_tree.nodes.get('Principled BSDF')
     surface.inputs['Emission Color'].default_value = (.84,.72,.53,1)
     surface.inputs['Emission Strength'].default_value = .12
-    for body, height, size in [('LABORATORIO', 2.194, .247), ('NIVEL -1', 2.061, .107)]:
+    for body, height, size in lines:
         text = bpy.data.curves.new(body, 'FONT')
         text.body, text.align_x, text.size, text.extrude = body, 'CENTER', size, .001
         letters = bpy.data.objects.new(body, text)
-        letters.location = (3,5.714,height)
+        letters.location = (x,5.714,height)
         letters.rotation_euler.x = pi/2
         text.materials.append(ivory)
         bpy.context.collection.objects.link(letters)
@@ -330,10 +353,13 @@ def register_gallery(obj,stair):
             ('Plinth recessed face',(plinth_x,y,face_height),(.026,.559,.322),oak,.012),
             ('Plinth bronze edge',(plinth_x-.015,y,face_height-.13),(.009,.440,.019),brass,.003),
         ])
-    append_blocks(obj,floor+finish+(gallery_stair() if stair else []))
+    append_blocks(obj,floor+finish+gallery_foyer_door()+(gallery_stair() if stair else []))
     close_gallery_gables(obj)
+    letter_gallery_sign(obj, -3, FOYER_LETTERING,
+                       [('VESTÍBULO', 3.071, .246), ('PLANTA BAJA', 2.939, .113)])
     if stair:
-        letter_gallery_lab_sign(obj)
+        letter_gallery_sign(obj, 3, LAB_LETTERING,
+                           [('LABORATORIO', 2.194, .247), ('NIVEL -1', 2.061, .107)])
 
 
 def register_beacon(obj):
@@ -454,7 +480,7 @@ def portable_materials(obj, color, normal, contact=None, bounce=None):
             if node not in (shader, nodes.get('Material Output')):
                 nodes.remove(node)
         # Tiny bevels and glyph faces stay crisp in their solid sign material.
-        if mat.name == LAB_LETTERING:
+        if mat.name in (LAB_LETTERING, FOYER_LETTERING):
             links.new(shader.outputs['BSDF'], nodes.get('Material Output').inputs['Surface'])
             continue
         color_node = nodes.new('ShaderNodeTexImage')
