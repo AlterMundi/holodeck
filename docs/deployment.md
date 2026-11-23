@@ -27,7 +27,10 @@ variants travel through the existing room-scoped asset route. Files under
 selected export is verified against its packaged hash at startup. The profile
 writes no Room checkpoint. Omit the selector to use the existing world art
 with the same data and route permissions. The optional gallery source pins
-are independent of the art profile.
+are independent of the art profile. The gallery and tower meshes contain
+passive portal fittings. Each live scene adds the destination plaque and
+light only for links in that actor's current passage list. The static mesh
+can remain mounted after a destination is revoked.
 
 The atelier profile includes Spatializer and Weaver bench handoffs to the
 existing same-origin `/harmonic_lab/` App. Select the owning panel build

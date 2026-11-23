@@ -1,6 +1,6 @@
 """Bake the authored cells into self-contained core glTF for runtime review."""
 import json
-from math import pi
+from math import cos, pi, sin
 import runpy
 import struct
 import sys
@@ -341,8 +341,6 @@ def register_gallery(obj,stair):
         # The roof slot remains open to the cool light between these headers.
         ('Clerestory outer oak header',(-3.96,0,4.55),(.13,11.54,.18),oak,.018),
         ('Clerestory inner oak header',(-2.98,0,4.62),(.13,11.54,.18),oak,.018),
-        ('Collection basalt wall foot',(5.55,.03,.19),(.095,11.31,.177),basalt,.014),
-        ('Collection oak dado rail',(5.55,.03,.601),(.115,11.30,.078),oak,.013),
         ('Collection oak eave moulding',(5.55,.03,3.615),(.19,11.30,.185),oak,.021),
         ('Collection sign oak backing',(0,-5.641,2.695),(3.47,.042,.585),oak,.008),
         ('Collection wash light track',(2.10,-.12,3.571),(.146,8.04,.09),iron,.015),
@@ -350,6 +348,12 @@ def register_gallery(obj,stair):
         ('Entrance wall oak plate',(0,5.788,3.875),(11.78,.23,.19),oak,.028),
         ('Collection wall oak plate',(0,-5.632,3.875),(11.78,.19,.19),oak,.028),
     ]
+    for start,end in [(-5.62,1.71),(4.29,5.68)]:
+        middle, length = (start+end)/2, end-start
+        finish.extend([
+            ('Collection basalt wall foot',(5.55,middle,.19),(.095,length,.177),basalt,.014),
+            ('Collection oak dado rail',(5.55,middle,.601),(.115,length,.078),oak,.013),
+        ])
     for y in (-5.55,-3.69,-1.84,0,1.84,3.69,5.55):
         finish.append(('Clerestory oak divider',(-3.47,y,4.586),(1.03,.07,.112),oak,.012))
     for y in (-2.163,.998):
@@ -367,12 +371,69 @@ def register_gallery(obj,stair):
             ('Gallery lamp glass',(2.10,y,3.431),(.154,.158,.021),'Honey lamp glass',.005),
         ])
     append_blocks(obj,floor+finish+gallery_furniture()+gallery_foyer_door()+(gallery_stair() if stair else []))
+    gallery_portal_recess(obj)
     close_gallery_gables(obj)
     letter_room_sign(obj, -3, 5.714, FOYER_LETTERING,
                        [('VESTÍBULO', 3.071, .246), ('PLANTA BAJA', 2.939, .113)])
     if stair:
         letter_room_sign(obj, 3, 5.714, LAB_LETTERING,
                            [('LABORATORIO', 2.194, .247), ('NIVEL -1', 2.061, .107)])
+
+
+def gallery_portal_recess(obj):
+    """Build a neutral basalt and bronze recess at the existing east slot."""
+    basalt, brass, iron = 'Split basalt', 'Satin brass', 'Blue gunmetal'
+    center, spring = 3, 1.82
+    # Coordinates before glTF conversion. The back stays in front of the
+    # limewash wall; the stone frame is outside the walkable portal landing.
+    specs = [
+        ('Recess threshold', (5.482,center,.122), (.16,2.51,.059), basalt,.013),
+        ('Recess center bronze seam', (5.479,center,1.36), (.041,.047,1.80), brass,.007),
+        ('Recess sign holder', (5.486,center,3.31), (.114,1.74,.324), iron,.023),
+    ]
+    for side in (-1,1):
+        specs.extend([
+            ('Recess basalt jamb', (5.485,center+side*1.163,.976), (.194,.218,1.728), basalt,.032),
+            ('Recess bronze inlay', (5.387,center+side*1.064,.980), (.019,.048,1.69), brass,.007),
+        ])
+    append_blocks(obj,specs)
+
+    def arc(radius,depth):
+        return [(depth,center+radius*cos(pi*i/32),spring+radius*sin(pi*i/32)) for i in range(33)]
+
+    shapes = [obj]
+
+    def add(name, material, vertices, faces):
+        mesh = bpy.data.meshes.new(name)
+        mesh.from_pydata(vertices,[],faces)
+        mesh.update()
+        part = bpy.data.objects.new(name,mesh)
+        bpy.context.collection.objects.link(part)
+        mesh.materials.append(bpy.data.materials[material])
+        shapes.append(part)
+
+    panel = [(5.518,center-1.073,.154),(5.518,center+1.073,.154)] + arc(1.073,5.518)
+    add('Recess dark field', iron, panel, [tuple(reversed(range(len(panel))))])
+
+    # Four sampled edges describe the front and back of each closed crown.
+    spans = 32
+    n = spans+1
+    for name, material, inner, outer, front, back in [
+        ('Recess basalt crown', basalt, 1.054, 1.27, 5.389, 5.58),
+        ('Recess bronze crown', brass, 1.041, 1.086, 5.377, 5.397),
+    ]:
+        vertices = arc(inner,front)+arc(outer,front)+arc(inner,back)+arc(outer,back)
+        faces = [(0,n,3*n,2*n), (spans,2*n+spans,3*n+spans,n+spans)]
+        for i in range(spans):
+            fi, fo, bi, bo = i, n+i, 2*n+i, 3*n+i
+            faces.extend([
+                (fi,fi+1,fo+1,fo), (bi,bo,bo+1,bi+1),
+                (fi,bi,bi+1,fi+1), (fo,fo+1,bo+1,bo),
+            ])
+        add(name, material, vertices, faces)
+    select(shapes)
+    bpy.ops.object.join()
+
 
 
 def gallery_furniture():

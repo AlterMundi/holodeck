@@ -197,9 +197,15 @@ Select `beacon` as the final argument for the laboratory reference.
 
 The [listening tower](listening-tower.blend) has its own editable room-scale
 source and can be regenerated with `tower.py`. It uses a warm wall resonator
-and cool clerestory light as orientation points. The existing return portal
-retains its address in the shared world. [Approach](review/tower-approach.jpg) ·
-[Return](review/tower-return.jpg).
+and cool clerestory light as orientation points. The gallery's east wall
+and the tower's return wall share a dark stone arch, bronze trim and a
+recessed plaque. The Gallery fitting sits forward of the plaster that
+previously hid the portal marker. The Blender models carry the passive
+recess. The scene adds the destination and a blue point light only while
+the actor has passage access. Both portal landings retain their addresses.
+[Gallery approach](review/gallery-tower-approach.jpg) ·
+[Return from the tower](review/tower-gallery-return.jpg) ·
+[Approach to the tower resonator](review/tower-approach.jpg).
 
 The [arrival commons](holodeck-commons.blend) can be regenerated with
 `commons.py`. It replaces the main terrace and both connecting decks in
@@ -226,9 +232,9 @@ room-local bounds. Keep Blender area lights and camera setups in the source.
 | Foyer with gallery sign | 2,749,896 | 22,852 | 9 |
 | Beacon laboratory, emergency exit only | 3,666,048 | 43,800 | 9 |
 | Beacon laboratory, gallery return | 3,925,492 | 48,460 | 10 |
-| Gallery with stair | 3,196,296 | 31,652 | 11 |
-| Gallery with continuous floor | 2,510,800 | 19,588 | 10 |
-| Listening tower | 1,983,396 | 26,056 | 10 |
+| Gallery with stair | 3,526,312 | 37,281 | 11 |
+| Gallery with continuous floor | 2,865,704 | 25,217 | 10 |
+| Listening tower | 1,938,568 | 25,100 | 10 |
 | Arrival commons | 582,668 | 14,880 | 10 |
 
 The laboratory export registers the authored chamber to the existing room.

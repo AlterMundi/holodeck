@@ -242,9 +242,8 @@ for depth, line_radius, finish in [(5.70, .071, basalt), (5.605, .028, brass)]:
     line("Rounded stair portal crown", [(portal_x + radius * math.cos(math.pi * i / 42),
          depth, spring + radius * math.sin(math.pi * i / 42)) for i in range(43)],
          line_radius, finish)
-block("Portal light slit", (portal_x, 5.750, 1.44), (.057, .020, 1.17), resonance, .011)
+block("Portal return bronze inlay", (portal_x, 5.750, 1.44), (.057, .020, 1.17), brass, .011)
 block("Portal destination plaque", (portal_x, 5.74, 3.31), (1.61, .10, .28), iron, .022)
-lettering("GALERÍA", (portal_x, 5.677, 3.31), .154, ivory)
 anchor("gallery.portal_surface", (portal_x, portal_wall, .10))
 anchor("gallery.portal_activation", (portal_x, 4.81, .11))
 anchor("gallery.entry_clearance_end", (portal_x, 1.58, .11))

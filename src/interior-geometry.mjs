@@ -43,7 +43,7 @@ export function roomFloor(passages,color,visible=true) {
   return floor;
 }
 
-export function passageMarkup(passage,{visibleSteps=true,authoredPortal=false,authoredDoor=false,authoredPassages=[]}={}) {
+export function passageMarkup(passage,{visibleSteps=true,authoredPortal=null,authoredDoor=false,authoredPassages=[]}={}) {
   const slot=SLOTS[passage.slot],y=passage.rise*STAIR_STEPS*RISE;
   const portal=passage.kind==='portal',color=portal?'#9384bd':passage.rise?'#779491':'#d6b58c';
   const fill=portal?'#4f6a8d':passage.rise?'#3f5b5e':'#675948';
@@ -55,8 +55,13 @@ export function passageMarkup(passage,{visibleSteps=true,authoredPortal=false,au
   }
   if(passage.rise)for(const side of [-1,1])
     steps+=cube(side*.91,.57+y/2,STAIR_STEPS*TREAD/2,.12,1.04+Math.abs(y),STAIR_STEPS*TREAD,'#7a9690',attributes);
-  if(portal&&authoredPortal)
-    return `<m-group id="passage-${passage.slot}" x="${slot.x}" z="${slot.z}" ry="${slot.rotation}"></m-group>`;
+  if(portal&&authoredPortal){
+    const {plaque,light}=authoredPortal;
+    return `<m-group id="passage-${passage.slot}" x="${slot.x}" z="${slot.z}" ry="${slot.rotation}">
+    <m-label y="3.31" z="${plaque}" width="1.55" height=".25" padding="4" font-size="17" alignment="center" color="#0a1821" font-color="#f4dfb8" content="${passage.label}" collide="false"></m-label>
+    <m-light y="1.85" z="${light}" type="point" intensity="9" distance="3.4" color="#93d3dc" cast-shadows="false"></m-light>
+  </m-group>`;
+  }
   // Authored fittings replace only the visible marker at the selected slot.
   if(authoredPassages.includes(passage.slot))
     return `<m-group id="passage-${passage.slot}" x="${slot.x}" z="${slot.z}" ry="${slot.rotation}">${steps}</m-group>`;

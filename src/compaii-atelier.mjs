@@ -42,11 +42,11 @@ const COASTAL_FOG=Object.freeze({fogNear:24,fogFar:124,fogColor:{r:.716,g:.776,b
 export const ATELIER_ASSET_REVISIONS=Object.freeze({
   'room-art/compaii-atelier/foyer.glb':'7816835b65ffbf025ae295dee37d0db978bede7a9dbc83f66e44d53d052ede59',
   'room-art/compaii-atelier/foyer-gallery.glb':'7a742175fc530b774e50b4e0917bf50eea60dfdca0124285d742a92c4996c27b',
-  'room-art/compaii-atelier/gallery.glb':'a88c1610a401c78b0fbb19e655312920100fab41862040aac3097f18efee8c83',
-  'room-art/compaii-atelier/gallery-sealed.glb':'c27c9c92fa1cf472d85a1123d685ceef967af9e642aa8ae1a1636c9f54c43c06',
+  'room-art/compaii-atelier/gallery.glb':'a014d251eaf7ef33f6ba66fc696ecf4ad946177c6fccf8f64a0b75546118e3ba',
+  'room-art/compaii-atelier/gallery-sealed.glb':'b1aa5cc6341904430aba821ba4b23e17776fff43e8e8acf4d0468c1c2ab3decc',
   'room-art/compaii-atelier/beacon.glb':'881d86774a6e92aefb9ff224c3a5ac60544a44fa6a2ff14f7fd05bb34b8e96c7',
   'room-art/compaii-atelier/beacon-return.glb':'897636fc8a9229a867742fe7d4d2d5ba84c1c607fbb542916aecf39e08279798',
-  'room-art/compaii-atelier/tower.glb':'47ba2a0964304eba1f3cbf945121e737c5d9addd7e71c1696bfa8b52ddb872de',
+  'room-art/compaii-atelier/tower.glb':'ce6d7f438909e938814266b8ef9901c5d7b738a85be81cacfed270eb7b65b2e7',
   ['assets/'+FACADE_ASSET]:'1cc4b093c2452d8871daaeee0148f876137296525d9d3c55c59399a9afe408e1',
   ['assets/'+GARDEN_ASSET]:GARDEN_REVISION,
   ['assets/'+COMMONS_ASSET]:COMMONS_REVISION,
@@ -112,6 +112,7 @@ const galleryColliders=[
   {x:2.5,y:.529,z:1.25,w:1.32,h:.858,d:1.04},
   {x:3.39,y:.554,z:-.35,w:2.9,h:.908,d:1.38},
   {x:3.39,y:.71,z:3.68,w:2.9,h:1.22,d:1.38},
+  ...[-4.163,-1.837].map(z=>({x:5.485,y:.976,z,w:.194,h:1.728,d:.218})),
 ].map(box).join('');
 
 function readAsset(path,revision){
@@ -161,6 +162,7 @@ export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt())
     ].map(box).join(''),
     lightRig:softLight({id:'vestibule-practical',x:-2.83,y:1.78,z:-1.42,intensity:13,distance:6,color:'#ffbb75'})};
   const galleryArt={...floorProfile,ambient:.40,colliders:galleryColliders,keyLight:galleryKey,
+    authoredPortal:{plaque:.438,light:.64},
     fixtures:[fixture('gallery','gallery-finished-plinth','Expositor central',2.5,.965,1.25),
       fixture('gallery','gallery-work-plinth','Expositor de trabajo',3.3945,1.1075,-.34944),
       fixture('gallery','gallery-archive-plinth','Expositor de archivo',3.3945,1.4075,3.67744)],
@@ -174,7 +176,7 @@ export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt())
      box({x:3.802,y:.643,z:-.791,w:2.332,h:1.085,d:.886})+
      box({x:-3.758,y:.643,z:2.659,w:2.068,h:1.085,d:.886}),
     lightRig:chamberRig};
-  const towerArt={...asset('tower'),replacesShell:true,authoredPortal:true,ambient:.64,
+  const towerArt={...asset('tower'),replacesShell:true,authoredPortal:{plaque:.181,light:.35},ambient:.64,
     // The east clerestory is an open aperture in the Blender model.
     outdoorSky:OUTDOOR_SKY,
     fixtures:[fixture('tower','tower-resonator','Resonador de la torre',.54,2.42,5.46)],
@@ -187,7 +189,7 @@ export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt())
     lightRig:[
       {id:'tower-clarity',x:5.28,y:3.82,z:1,intensity:39,distance:11,color:'#b1d1ff'},
       {id:'tower-resonator',x:.54,y:3.9,z:4.7,intensity:29,distance:7,color:'#ffe2ac'},
-      {id:'tower-return',x:-3,y:3.6,z:-4.88,intensity:22,distance:6,color:'#ffcb86'},
+      {id:'tower-return',x:-3,y:3.84,z:-4.15,intensity:8,distance:5,color:'#ffcb86'},
     ].map(softLight).join('')};
   return {
     sceneryAsset:SURROUNDINGS_ASSET,sceneryRevision:SURROUNDINGS_REVISION,outdoorSky:OUTDOOR_SKY,

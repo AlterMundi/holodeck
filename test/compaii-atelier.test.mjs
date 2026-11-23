@@ -103,10 +103,11 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   const expected={schema:'holodeck.houses/v1',receipts:[],houses:[house]};
   store.save(expected);
   let prototypeAccess=true;
-  let galleryAccess=true;
+  let galleryAccess=true,towerAccess=true,towerReturnAccess=true;
   const runtime=await createHolodeck({stateDir,basePath:'/holodeck/',artProfile:ATELIER_PROFILE,
     interiorSpaces:definitions,
-    interiorGuestAccess:(actor,room)=>actor.id!=='human:lab'||room!==gallery||galleryAccess,
+    interiorGuestAccess:(actor,room)=>actor.id==='human:lab'?room!==gallery||galleryAccess:
+      (room!==tower||towerAccess)&&(room!==gallery||towerReturnAccess),
     galleryAuthorization:async (cookie,pin)=>prototypeAccess&&cookie.includes('fixture=lab')&&
       pin.revision==='published-935e6262-organic-head',
     identityResolver:async req=>{
@@ -127,9 +128,10 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
     assert.equal(login.status,200);
     const headers={Cookie:'fixture='+role+'; '+login.headers.get('set-cookie').split(';')[0],
       'Content-Type':'application/json'};
-    return {read:path=>fetch(origin+path,{headers}),
+    const postMove=(from,to)=>fetch(base+'api/space',{headers,method:'POST',body:JSON.stringify({from,to,live:1})});
+    return {read:path=>fetch(origin+path,{headers}),postMove,
       move:async(from,to)=>{
-        const result=await fetch(base+'api/space',{headers,method:'POST',body:JSON.stringify({from,to,live:1})});
+        const result=await postMove(from,to);
         assert.equal(result.status,200);
         return result.json();
       }};
@@ -195,7 +197,11 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   for(const galleryView of [open,sealed]){
     assert.deepEqual(galleryView.exits.find(exit=>exit.to===foyer)?.door,{x:-3,y:.11,z:-4.81,yaw:180});
     assert.match(galleryView.scene.markup,/<m-group id="passage-0" x="-3" z="-5\.86" ry="0"><\/m-group>/);
-    assert.match(galleryView.scene.markup,/id="passage-2"[^>]*>\s*<m-cube/);
+    assert.deepEqual(galleryView.exits.find(exit=>exit.to===tower)?.door,{x:4.81,y:.11,z:-3,yaw:90});
+    const portal=galleryView.scene.markup.match(/<m-group id="passage-2"[^>]*>(.*?)<\/m-group>/s)?.[1];
+    assert.match(portal,/<m-label[^>]*z="0.438"[^>]*content="Torre"/);
+    assert.match(portal,/<m-light[^>]*type="point"/);
+    assert.doesNotMatch(portal,/<m-cube/);
   }
   const stairMarkup=open.scene.markup.match(/<m-group id="passage-1"[^>]*>(.*?)<\/m-group>/s)?.[1];
   assert.equal(stairMarkup?.match(/opacity="0" cast-shadows="false"/g)?.length,8);
@@ -278,19 +284,37 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   assert.match(bytes.headers.get('Cache-Control'),/no-store/);
   assert.equal((await visitor.read(roomArt(chamber))).status,404);
   assert.equal((await visitor.read('/holodeck/assets/compaii-atelier/beacon.glb')).status,404);
+  towerAccess=false;
+  const withoutTower=await liveLocation(visitor);
+  assert.equal(roomArt(withoutTower),sealedPath);
+  assert.ok(!withoutTower.exits.some(exit=>exit.to===tower));
+  assert.doesNotMatch(withoutTower.scene.markup,/id="passage-2"|content="Torre"/);
+  assert.equal((await visitor.postMove(gallery,tower)).status,409);
+  assert.equal((await visitor.read('/holodeck/api/space/scene?room='+tower)).status,404);
+  towerAccess=true;
   const upper=await visitor.move(gallery,tower);
   assert.deepEqual(upper.outdoorSky,exteriorSky);
   assert.deepEqual((await liveLocation(visitor)).outdoorSky,exteriorSky);
   assert.equal((await liveLocation(authorized)).outdoorSky,undefined);
   assert.match(upper.scene.markup,/tower-resonator/);
   assert.match(upper.scene.markup,/<m-cube x="0.54" y="0.65" z="5.6" width="5.63" height="0.2" depth="0.31" opacity="0" cast-shadows="false">/);
-  assert.match(upper.scene.markup,/id="passage-0"[^>]*><\/m-group>/);
+  assert.match(upper.scene.markup,/<m-group id="passage-0"[^>]*>\s*<m-label[^>]*z="0.181"[^>]*content="Galería"/);
   assert.deepEqual(upper.exits[0].door,{x:-3,y:.11,z:-4.81,yaw:180});
   const towerPath=roomArt(upper);
   assert.equal((await visitor.read(towerPath)).status,200);
   assert.equal((await authorized.read(towerPath)).status,404);
-  assert.equal((await visitor.move(tower,gallery)).outdoorSky,undefined);
-  assert.equal((await liveLocation(visitor)).outdoorSky,undefined);
-  assert.equal((await visitor.read(towerPath)).status,404);
+  towerReturnAccess=false;
+  const closedReturn=await liveLocation(visitor);
+  assert.equal(roomArt(closedReturn),towerPath);
+  assert.equal(closedReturn.emergencyExit,true);
+  assert.deepEqual(closedReturn.exits,[]);
+  assert.doesNotMatch(closedReturn.scene.markup,/id="passage-0"|content="Galería"/);
+  const reconnected=await actor('gallery');
+  assert.equal((await liveLocation(reconnected)).id,tower);
+  assert.equal((await reconnected.postMove(tower,gallery)).status,409);
+  towerReturnAccess=true;
+  assert.equal((await reconnected.move(tower,gallery)).outdoorSky,undefined);
+  assert.equal((await liveLocation(reconnected)).outdoorSky,undefined);
+  assert.equal((await reconnected.read(towerPath)).status,404);
   assert.deepEqual(new RoomStore(join(stateDir,'houses')).load(),expected);
 });
