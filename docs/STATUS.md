@@ -55,7 +55,24 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`23de47f`, package `faae992dce4e`. The exterior reference card passes
+`f168f96`, package `9a6e34467ee7`. The scoped room observation now offers
+typed arguments for the next permitted passage and playable garden signal.
+The combined packaged trial used the actual isolated owner and an actual
+Codex model. The model followed the live observations without consulting
+source or documentation, filled the missing signal once and retrieved the
+same receipt. Both simulated browsers and canonical reply publication
+agreed. The protected HTTPS check matched all 57 installed files and the
+prior world checkpoint. Package `faae992dce4e` is the selected rollback.
+
+The world consumer also rechecks a selected routed execution immediately
+before mutation. Socket and bridge tests cover the old owner, missing or
+invalid proof, a changed turn and terminal receipt recovery. The producer
+passed the isolated Telecodex HTTP fixture with explicit destinations,
+held admission, rebind, termination and fan-out. The routed proof remains
+a source candidate until the owning native and bridge receivers adopt it.
+[DaimonApp PR #1005](https://github.com/AlterMundi/DaimonApp/pull/1005)
+
+Source `23de47f`, package `faae992dce4e`, established the HUD input correction. The exterior reference card passes
 pointer input through its inactive margins while its action buttons
 remain interactive. In Chromium the margin no longer consumed the
 pointer aimed at the next world object after a confirmed indication.
