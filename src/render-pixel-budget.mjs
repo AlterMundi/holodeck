@@ -6,7 +6,12 @@ const FAST_MS=21;
 const STEP_INTERVAL_MS=1600;
 const RECOVER_MS=18000;
 
-export function capWorldPixelRatio(renderer,{adaptive=false,startAtNative=false,clock=()=>performance.now(),visibility=globalThis.document}={}){
+export function usesLightGraphics(search){
+  return new URLSearchParams(search).get('graficos')==='livianos';
+}
+
+export function capWorldPixelRatio(renderer,{adaptive=false,startAtNative=false,lightweight=false,
+  clock=()=>performance.now(),visibility=globalThis.document}={}){
   // Both pinned MML resize paths use this Three.js renderer, which reallocates
   // the drawing buffer without changing CSS layout when its ratio changes.
   const webgl=renderer.composer?.renderer;
@@ -14,7 +19,9 @@ export function capWorldPixelRatio(renderer,{adaptive=false,startAtNative=false,
   const setPixelRatio=webgl.setPixelRatio.bind(webgl);
   const shadowMap=webgl.shadowMap;
   const shadowsEnabled=shadowMap?.enabled===true;
-  let requested=1,width=0,height=0,tier=adaptive&&startAtNative?TIERS.indexOf(1):0;
+  const lowest=TIERS.length-1;
+  const adjust=adaptive&&!lightweight;
+  let requested=1,width=0,height=0,tier=lightweight?lowest:adjust&&startAtNative?TIERS.indexOf(1):0;
   let previousFrame=null,slow=0,fast=0;
   let nextStep=0,recoverAfter=tier>0?clock()+RECOVER_MS:0;
 
@@ -30,7 +37,7 @@ export function capWorldPixelRatio(renderer,{adaptive=false,startAtNative=false,
     if(ratio!==webgl.getPixelRatio())setPixelRatio(ratio);
     // The lowest tier also saves the scene's extra shadow pass. Keep all
     // materials, lights, navigation and HUD at their ordinary settings.
-    if(adaptive&&shadowsEnabled)shadowMap.enabled=tier<TIERS.length-1;
+    if(shadowsEnabled)shadowMap.enabled=tier<lowest;
   };
   webgl.setPixelRatio=value=>{
     const parent=webgl.domElement.parentElement;
@@ -39,10 +46,10 @@ export function capWorldPixelRatio(renderer,{adaptive=false,startAtNative=false,
     requested=value;width=nextWidth;height=nextHeight;applyRatio();
   };
   renderer.fitContainer();
-  if(adaptive)visibility?.addEventListener('visibilitychange',resetSamples);
+  if(adjust)visibility?.addEventListener('visibilitychange',resetSamples);
 
   function sample(ready){
-    if(!adaptive)return;
+    if(!adjust)return;
     if(!ready){resetSamples();return;}
     const now=clock(),interval=previousFrame===null?0:now-previousFrame;
     previousFrame=now;
@@ -63,7 +70,7 @@ export function capWorldPixelRatio(renderer,{adaptive=false,startAtNative=false,
     recoverAfter=now+RECOVER_MS;
   }
   return {sample,dispose(){
-    if(adaptive)visibility?.removeEventListener('visibilitychange',resetSamples);
-    if(adaptive&&shadowsEnabled)shadowMap.enabled=true;
+    if(adjust)visibility?.removeEventListener('visibilitychange',resetSamples);
+    if(shadowsEnabled)shadowMap.enabled=true;
   }};
 }

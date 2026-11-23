@@ -147,13 +147,17 @@ const avatarRendering={
       return await this.loadFromBuffer(processedBuffer, fileUrl);`],
         ['      const processedBuffer = await this.workerPool.processGLTF(',
           '      this.workerPool ??= new GLTFLoadingWorkerPool();\n      const processedBuffer = await this.workerPool.processGLTF('],
+        ['      antialias: true\n    });',
+          '      antialias: !usesLightGraphics(window.location.search)\n    });'],
       ];
       for(const [before,after] of replacements){
         if(source.split(before).length!==2)throw Error('Pinned MML avatar source no longer matches');
         source=source.replace(before,after);
       }
       const nameplateModule=fileURLToPath(new URL('../src/player-nameplate.mjs',import.meta.url));
+      const graphicsModule=fileURLToPath(new URL('../src/render-pixel-budget.mjs',import.meta.url));
       const prelude=`import { playerNameplate } from ${JSON.stringify(nameplateModule)};
+import { usesLightGraphics } from ${JSON.stringify(graphicsModule)};
 const holodeckAvatarFiles = new Set(${JSON.stringify(avatarModelFiles)});
 function fallbackAvatarModel(fileUrl) {
   if (fileUrl === lowPolyLoDModelURL) return true;

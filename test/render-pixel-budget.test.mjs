@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {capWorldPixelRatio} from '../src/render-pixel-budget.mjs';
+import {capWorldPixelRatio,usesLightGraphics} from '../src/render-pixel-budget.mjs';
 
-function display({adaptive=true,dpr=3,startAtNative=false}={}){
+function display({adaptive=true,dpr=3,startAtNative=false,lightweight=false}={}){
   let now=0,ratio=1;
   const parent={clientWidth:390,clientHeight:844};
   const allocations=[];
@@ -11,7 +11,7 @@ function display({adaptive=true,dpr=3,startAtNative=false}={}){
   }};
   const renderer={composer:{renderer:webgl},fitContainer:()=>webgl.setPixelRatio(dpr)};
   const visibility=new EventTarget();
-  const {sample,dispose}=capWorldPixelRatio(renderer,{adaptive,startAtNative,clock:()=>now,visibility});
+  const {sample,dispose}=capWorldPixelRatio(renderer,{adaptive,startAtNative,lightweight,clock:()=>now,visibility});
   return {webgl,allocations,parent,renderer,sample,dispose,visibility,
     frames(interval,count,ready=true){for(let index=0;index<count;index++){now+=interval;sample(ready);}}};
 }
@@ -79,6 +79,21 @@ test('a touch display can start with a modest buffer and sharpen after sustained
   assert.equal(view.webgl.getPixelRatio(),1);
   view.frames(16,1100);
   assert.equal(view.webgl.getPixelRatio(),1.5);
+});
+
+test('the explicit light profile starts at its lowest quality and stays there after fast frames',()=>{
+  assert.equal(usesLightGraphics('?graficos=livianos'),true);
+  assert.equal(usesLightGraphics('?other=livianos'),false);
+  assert.equal(usesLightGraphics('?graficos=automaticos'),false);
+  const view=display({dpr:1,startAtNative:true,lightweight:true});
+  assert.deepEqual(view.allocations,[.55]);
+  assert.equal(view.webgl.shadowMap.enabled,false);
+  view.frames(16,2000);
+  Object.assign(view.parent,{clientWidth:1280,clientHeight:720});
+  view.renderer.fitContainer();
+  assert.deepEqual(view.allocations,[.55]);
+  view.dispose();
+  assert.equal(view.webgl.shadowMap.enabled,true);
 });
 
 test('desktop keeps native density subject to the existing pixel ceiling',()=>{

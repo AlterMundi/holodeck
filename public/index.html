@@ -179,10 +179,11 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
 #world-entry{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px;background:#183d42}
 .world-entry-card{width:min(360px,100%);border:1px solid var(--line);border-radius:20px;padding:26px;background:#102d31}
 .world-entry-card h1{margin-bottom:12px}.world-entry-card p{margin-bottom:0}.world-entry-card button{margin-top:18px}
+.world-entry-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.world-entry-actions button{margin:0}
 </style></head><body>
 <section id="world-entry" aria-labelledby="world-entry-title"><div class="world-entry-card">
   <h1 id="world-entry-title">Holodeck</h1><p id="world-entry-status" role="status">Abriendo el mundo…</p>
-  <button id="world-entry-retry" class="primary" type="button" hidden>Volver a intentar</button>
+  <div class="world-entry-actions"><button id="world-entry-retry" class="primary" type="button" hidden>Volver a intentar</button><button id="world-entry-graphics" type="button" hidden>Entrar con gráficos livianos</button></div>
   <noscript><p>Activá JavaScript para entrar al mundo.</p></noscript>
 </div></section>
 <header id="hud" class="glass"><span class="brand-mark" aria-hidden="true"></span><div><small>Holodeck</small><h1>Plaza de llegada</h1><div id="people">Entrando a la plaza…</div></div><button id="sound" type="button" aria-pressed="false" aria-label="Activar sonido del mundo">Sonido</button></header>
@@ -244,6 +245,16 @@ window.SESSION_TOKEN="SESSION.TOKEN.PLACEHOLDER";
   const entry=document.querySelector('#world-entry');
   const status=document.querySelector('#world-entry-status');
   const retry=document.querySelector('#world-entry-retry');
+  const graphics=document.querySelector('#world-entry-graphics');
+  const light=new URLSearchParams(location.search).get('graficos')==='livianos';
+  graphics.textContent=light?'Usar gráficos automáticos':'Entrar con gráficos livianos';
+  graphics.hidden=false;
+  graphics.onclick=()=>{
+    const next=new URL(location.href);
+    if(light)next.searchParams.delete('graficos');
+    else next.searchParams.set('graficos','livianos');
+    location.replace(next);
+  };
   function showRetry(text){if(!entry.hidden){status.textContent=text;retry.hidden=false;}}
   const deadline=setTimeout(()=>showRetry('La entrada está tardando más de lo esperado.'),25000);
   window.addEventListener('holodeck:entered',()=>{clearTimeout(deadline);entry.hidden=true;},{once:true});

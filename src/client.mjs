@@ -1,7 +1,7 @@
 import {RemoteDocumentWrapper} from '@mml-io/mml-web';
 import {RoomSceneCache} from './room-scene-cache.mjs';
 import {constrainInteriorCamera} from './interior-camera.mjs';
-import {capWorldPixelRatio} from './render-pixel-budget.mjs';
+import {capWorldPixelRatio,usesLightGraphics} from './render-pixel-budget.mjs';
 import {nearestCreationPosition} from './world-layout.mjs';
 import { Networked3dWebExperienceClient, DefaultVirtualJoystickPlugin } from '@mml-io/3d-web-experience-client';
 import { ThreeJSWorldRenderer } from '@mml-io/3d-web-threejs';
@@ -85,6 +85,9 @@ function worldEntered(){
   window.dispatchEvent(new Event('holodeck:entered'));
 }
 
+const rendererBudget={adaptive:true,startAtNative:matchMedia('(pointer: coarse)').matches,
+  lightweight:usesLightGraphics(location.search)};
+
 function entryRoomReady(root,model=root?.querySelector('m-model#room-art[src]')){
   return root?.isConnected===true&&(!model||model.modelGraphics?.hasLoadedModel()===true);
 }
@@ -131,7 +134,7 @@ function startInterior(space){
     createRenderer:options=>{
       constrainInteriorCamera(options,()=>space.id);
       const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
-      const frameBudget=capWorldPixelRatio(renderer,{adaptive:true,startAtNative:matchMedia('(pointer: coarse)').matches});
+      const frameBudget=capWorldPixelRatio(renderer,rendererBudget);
       galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
       galleryModels.sync(visitor.entries);
       const picker=new PublicWorldPicker({document,canvas:options.targetElement.querySelector(':scope > canvas'),
@@ -296,7 +299,11 @@ function applySpace(next,anchor){
   $('#people').textContent=inside?(next.level===0?'Planta baja':next.level<0?`Subsuelo ${-next.level}`:`Piso ${next.level}`):'Un lugar para crear juntos';
   if(changed){roomTopic=undefined;contentVisitor.changeRoom(inside,next.id);worldIndication.selected=null;worldIndication.removeOutline();state=null;}
   else if(inside)contentVisitor.confirmRoom();
-  if(anchor)history.replaceState(history.state,'','#'+doorLocation(anchor));
+  if(anchor){
+    const destination=new URL(location.href);
+    destination.hash=doorLocation(anchor);
+    history.replaceState(history.state,'',destination);
+  }
   resetDoor();
   if(!mountScene()){sceneCache.clear();location.reload();}
   updateNativeAvailability();
@@ -407,7 +414,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
   createRenderer:options=>{
     constrainInteriorCamera(options,()=>inside&&activeSpace?.id);
     const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
-    const frameBudget=capWorldPixelRatio(renderer,{adaptive:true,startAtNative:matchMedia('(pointer: coarse)').matches});
+    const frameBudget=capWorldPixelRatio(renderer,rendererBudget);
     galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
     const sky=new OutdoorSky(renderer.mmlCompositionScene.group.parent,base);
     const light=new DirectionalLight(0xffefd6,1.8);
