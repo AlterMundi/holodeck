@@ -194,8 +194,10 @@ now has a paved landing and an open pavilion at the existing presentation
 anchor. A simulated visitor crossed from the plaza, opened a pinned fixture
 report and returned at the same position. The [North Mirador](../art/compaii-house/redesign/mirador.md)
 now frames the horizon with a copper arch, a limestone walk and two seating
-wings. The existing bridge passed a WASD round trip when raised. Its lowered
-state left the crossing physically interrupted in the same renderer. The
+wings. The new limestone apron and oak-and-copper bridge join the two
+landings visually. Both states were checked in the existing shared
+renderer. WASD crossed in both directions when raised, and lowering
+restored the gap. The
 [East Garden](../art/compaii-house/redesign/east-garden.md) extends its fixed
 bridge into the playable meadow and an oak arbor. Its raised scenery stays
 outside the existing creation rectangle. The native readback retained the

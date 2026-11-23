@@ -71,6 +71,15 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves
+source `64fecdc`, package `ed35282aa7c8`. The north approach and raised
+bridge use the Blender-authored limestone, basalt, oak and copper
+finishes. The browser fixture verified both model responses and the
+physical crossing in both directions. Lowering removed the raised finish
+and left the gap open. Protected HTTPS, all 60 installed files and
+retained world digests matched. Rollback is `bcac0a232755`.
+[Player-height comparisons](../art/compaii-house/redesign/mirador.md#finished-movable-crossing).
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) previously served
 source `d9e2f14`, package `bcac0a232755`. The facade and two garden
 models load after the initial exterior is playable. The staged stream
 retains the same scope and topology. Packaged browsers verified first
