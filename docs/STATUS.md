@@ -10,7 +10,19 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`3203c0a`, package `0b49c7c4393b`. Blender-authored limestone with brick
+`a663055`, package `b3bd76b892a1`. A Blender-authored coastal meadow and
+basalt strata carry the existing house terrace down to the sea. Small stone
+markers replace the flat parcel plates while the eight parcel positions,
+their dimensions and the original walking surfaces are preserved. The new
+57,768-byte asset uses one material and one 128 px map. Packaged Chromium
+walked the public approach into the foyer, returned on the same page at
+the exact exterior anchor, and reached the west verge at the unchanged
+ground height. Authenticated HTTPS served the exact GLB. All 54 runtime
+files and observed protected checkpoints matched. Package `0b49c7c4393b`
+remains available for rollback.
+[Editable scene and WebGL views](../art/compaii-house/redesign/parcel-terrace.md)
+
+The preceding release served source `3203c0a`, package `0b49c7c4393b`. Blender-authored limestone with brick
 and basalt edging connects the plaza approach to the existing parcels.
 The first west branch reaches the Casa de CompAII doorway. Packaged
 Chromium walked from ordinary spawn across the new paving, entered and

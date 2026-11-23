@@ -15,6 +15,19 @@ The durable parcel envelopes, house walk and doorway remain spatially aligned.
 The editable parts merge into one 57,768-byte material batch with vertex colours,
 an original packed 128 px terrain-grain JPEG and no extra shadow passes.
 
+## Player-height and shoreline review
+
+[House approach at walking height](review/parcel-terrace-candidate-junction.jpg) ·
+[Previous shore](review/parcel-terrace-before-shore.jpg) ·
+[Revised shore](review/parcel-terrace-candidate-shore.jpg)
+
+A loopback Chromium participant walked from normal spawn, entered the foyer
+with E, returned to its exterior anchor and continued on foot to the west
+verge. Its grounded height there was Y=.1. The final two views use a raised
+review camera to inspect the shoreline. The candidate decoded the 128 px map
+and rendered the same asset bytes as the receiving release. These captures
+use software WebGL.
+
 To regenerate, pass a task-owned output directory to Blender 5.2.2.
 
 ```sh

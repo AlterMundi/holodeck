@@ -147,9 +147,20 @@ now give the existing plaza a readable first turn. Packaged desktop and
 touch-emulated players took the east promenade into the garden. The
 [authored house walk](../art/compaii-house/redesign/house-walk.md) now
 makes the turn from the public aisle to the Casa threshold legible.
-Continue the foreground terrain and workshop finish pass on the same
-player-height route, especially the flat terrace perimeter and the floor
-and wall joints.
+The [parcel terrace](../art/compaii-house/redesign/parcel-terrace.md)
+carries the neighborhood's visible perimeter to the waterline. Chromium
+walked the public approach, used the foyer door in both directions and
+reached the west verge at the existing floor height. Continue the terrain
+surface and workshop finish pass on the same route, particularly adjoining
+islands, the house yard and workshop floor and wall joints.
+
+The parcel-terrace archive leaves 18,432 bytes under the receiving
+32 MiB bound. Test lossless precompression against the existing asset
+delivery contract before the next larger furniture or terrain pass.
+An offline Brotli sample of the existing house walk, façade, foyer and
+Beacon geometry saved 3,038,053 bytes in total. Preserve exact decoded GLBs,
+revisioned paths, cache policy, range support where applicable and current
+authorization on both room and public-world asset routes.
 
 ### Finish the architecture and props in the running game
 
