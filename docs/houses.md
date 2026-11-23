@@ -114,6 +114,61 @@ Read-only status and confirmed control effects are separate. System-backed
 objects need an existing authorized integration before they can show live state
 or exercise controls.
 
+## The Collection
+
+The Collection is the spatial interface to the existing 3D Viewer projects.
+The first complete installation belongs in Casa de CompAII and uses the same
+projection for subsequent houses. A project occupies one stable physical
+position and is represented by a recognizable small model of its principal
+object or assembly. A project can appear in more than one house by reference.
+
+Calculate coverage against the reader-filtered 3D Viewer catalog: current
+Home resources marked for interactive 3D review. Confirm the house's selected
+project relationship, room access, and current source access independently.
+For each eligible resource, bind the chosen current Home publication and
+representative scene to its display object. An exact Nexus review can point to
+that same edition when available. Use the exact Home edition when the Viewer
+can open a project that Nexus has not imported. Neither presence in the room
+nor having read a past edition authorizes a new read. A permission change
+removes the object, label, thumbnail and pick target together.
+
+The active projects live on shelves. The bench can present the latest work
+authorized for that room, with a physical link to its project on the shelf.
+Closed archive drawers reveal older published editions and archived projects
+on request, with their original dates, state and author. Their geometry is
+loaded only while open. Use publisher-selected lifecycle state, never infer
+archive status from age or reinterpret an old pin as a new current edition.
+Opening an object opens the same 3D Viewer at exactly the displayed scene and
+edition. Closing it restores the player's position, view and controls. Use
+stable IDs for shelves and drawered content as the collection grows.
+
+Produce the representative alongside each saved review edition in the existing
+publisher workflow. An authored substitute is appropriate for assemblies with
+a poor automatic silhouette. Derive an exact-version reference and hash from
+the emitted bytes. Reuse qualified snapshots where possible. Target a small
+static GLB with bounded triangle, primitive and byte budgets, sane scale and
+simple materials. The viewer retains the full review. Generate or reuse the
+derivative before selecting a new shelf edition, and retain the previous
+usable representative with its exact edition if generation fails. Never
+retag an old model as the new edition. Backfill authorized existing resources
+through the ordinary producer route, with edition identity and audiences
+preserved. Show an honest metadata marker for a confirmed accessible project
+whose miniature has yet to be made.
+
+Validate catalog-to-shelf coverage under the same identity as the Viewer,
+independent room and source denial, an exact-version revision swap, archived
+drawer open/close and inspection return. Measure arrival and walking on wide
+and touch layouts. Proximity bounds simultaneous model loads. Close or leave
+the room to release its model resources. Retention of the derivative follows
+the existing per-project publication budget.
+
+On 23 November a read under CompAII's supported Home identity found three
+distinct resources marked for the Viewer on this Home. All three resolved an
+exact current review manifest. One exposes a scene index. The manifests do
+not declare a shelf representative. This count describes that one identity,
+not the whole tribe. The current gallery's three fixed exhibition editions
+are an existing interaction path and can coexist during migration.
+
 ## Configure and verify the first map
 
 The protected receiving configuration may select `interiorSpaces`. It defaults

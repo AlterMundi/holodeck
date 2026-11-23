@@ -71,7 +71,19 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`3db4981`, package `15a8b042040a`; rollback is `ad5230b3c7b1`.
+`aa7fa49`, package `6efba4f288ac`; rollback is `15a8b042040a`.
+The prior bundle reproduced “Room connection changed” when desktop and touch
+Chromium used separate sessions of the same authorized identity in the foyer.
+The current bundle renders both in the room with the same persistent actor
+identity and separate sockets. The room counts one semantic participant. An
+induced real cross-identity handshake rejection showed the localized retry
+and recovered the same room after the simulated fault cleared. The qualified
+bundle matched all 62 receiving files and protected HTTPS checks. The physical
+phone has not been retested. Nicolás reported that lightweight graphics improve
+his Raspberry Pi experience, without a measured frame rate.
+
+The preceding release was source `3db4981`, package `15a8b042040a`;
+its rollback was `ad5230b3c7b1`.
 The entry screen and canonical URL can select lightweight graphics before the
 first rendered world frame. Touch Chromium measured a 214 × 464 backing buffer
 on a 390 × 844 CSS viewport, with multisampling and dynamic shadows disabled.
