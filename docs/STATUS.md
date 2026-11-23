@@ -55,12 +55,20 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`98dddef`, package `dd6628e86392`. The controlled avatar's own nameplate
-no longer covers the view. Independent desktop and touch-emulated browsers
+`72b060f`, package `d92d749ca0bd`. The foyer has a Blender-authored gallery
+plaque that reads from the approach past the pier. Chromium crossed with WASD
+and E and returned to the same foyer landing in one document. A visitor
+without gallery access kept the unsigned foyer and was refused the passage
+and gallery-sign asset. Installed artwork, client and world digests matched.
+The selected rollback is `dd6628e86392`.
+[Foyer departure at player height](../art/compaii-house/redesign/README.md#foyer-entrance-to-the-gallery)
+
+Source `98dddef`, package `dd6628e86392`, cleared the controlled avatar's
+own nameplate from the view. Independent desktop and touch-emulated browsers
 retained each other's labels and appearances outdoors, indoors and after
 one visitor reconnected. The local chat bubble rendered above the avatar.
 The protected client and installed inventory matched and the world checkpoint
-kept its digests. The selected rollback is `7baeee4a660c`.
+kept its digests.
 [Player-height comparison](visual-play.md#the-controlled-avatars-sightline)
 
 Source `faedbdf`, package `7baeee4a660c`, gave the Beacon stair an authored
@@ -1188,6 +1196,16 @@ contribution and matched native response are still unobserved. See
   from another source; a new human-visible conversational loop is still untested.
 
 ## Technical qualification and recovery
+
+On 23 November, the exact predecessor `dd6628e86392` passed two isolated
+creator journeys. Two Chromium visitors used keyboard/mouse and touch to
+complete, edit and restore a native-authored signal garden in eight matching
+browser and native checkpoints. A separate journey placed and revised
+result nodes through the native CLI, kept the first edition and draft open,
+denied a private visit and matched the exact result receipt after the edit.
+The tests used explicit fixture identities, grants and an emulated touch
+device. [Game evidence](playable-creations.md#packaged-two-player-game-check) ·
+[Result visit evidence](co-creation.md#packaged-result-node-visit-and-revision-check)
 
 On 23 November, the current foyer-release package and the installed
 Conversation web assets passed an additional [situated return qualification](shared-conversation.md#return-to-the-same-conversation).

@@ -64,6 +64,8 @@ async function choose(v,id){
 try{
  await mkdir(directory,{recursive:true});
  runtime=await createHolodeck({stateDir,publicOrigin:httpOrigin,ownNative:true,worldSocket:socketPath,worldSocketBeingRef:being,
+  // Treat room-gallery authorization separately from the loopback result viewer below.
+  galleryAuthorization:async()=>false,
   identityResolver:async req=>who(req)?{id:'human:runtime-fixture-'+who(req),ref:'human:runtime-fixture-'+who(req),kind:'human',rights:['observe','edit','project']}:null,
   nativeRoomAuthority:async verified=>{authorityReads++;if(verified.actor?.ref!==being)throw Error('Wrong synthetic receiving being');return ['observe','edit','project'];},
   nativeFactory:async()=>({availability:async()=>({available:false}),authorizeWorldRequest:async()=>{originalLookups++;throw Error('Own creation must not inspect a human original');}})});
@@ -91,7 +93,10 @@ try{
  const first=await act('node.place',firstId,null,nodeArgs('Primer portal','portal',{x:-1,z:4},firstPin));
  const second=await act('node.place',secondId,null,nodeArgs('Creación vinculada','pedestal',{x:2,z:3.5},secondPin,[{id:firstId,revision:1}]));
  const before=await native('observe');if(before.observer!==being||!before.nodes[firstId]?.declaredResultPin)throw Error('Native creator cannot inspect its declared pin');
- for(const v of visitors)await until(()=>v.evaluate('!document.querySelector("#visit-near").hidden&&document.querySelector("#visit-near").textContent.includes("Primer portal")'),20000,'live discovery without reload '+v.who);
+ for(const v of visitors){
+  await v.call('Page.bringToFront');
+  await until(()=>v.evaluate('!document.querySelector("#visit-near").hidden&&document.querySelector("#visit-near").textContent.includes("Primer portal")'),20000,'live discovery without reload '+v.who);
+ }
  const initialGeometry=[];for(const v of visitors){const g=await geometry(v,{firstRevision:1,secondRevision:1,firstTitle:'Primer portal',link:true});assertGeometry(g,true);initialGeometry.push({who:v.who,geometry:g});}
  const initialStates=await Promise.all(visitors.map(state));for(const value of initialStates)if(value.nodes[secondId].links[0].status!=='current'||value.nodes[firstId].id!==firstId)throw Error('Independent observers disagree on initial links');
  for(const v of visitors){const c=await catalog(v);if(JSON.stringify(c.find(entry=>entry.id===firstId)?.pin)!==JSON.stringify(before.nodes[firstId].declaredResultPin))throw Error('Native/human declared pointer discovery diverged');}

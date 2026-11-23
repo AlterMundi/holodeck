@@ -138,3 +138,14 @@ The separate checkpoint caps room games at 24 and exact receipts at 64.
 Each current, prior or staging file is limited to 64 KiB. The predecessor
 continues to serve the same rooms and ignores this checkpoint. Returning
 to a game-capable runtime restores the recipe and last shared signals.
+
+## Packaged two-player game check
+
+Release `dd6628e86392` passed the fixture with two independent Chromium
+visitors. One used WASD and a mouse and one used the touch joystick and
+touch controls. The own-native lane published the garden's two-signal
+recipe. The visitors completed the activity together and independently
+invalidated and restored completion through a light edit and the bridge
+control. Both browsers and the own-native observer matched the same
+progress across eight checkpoints. The fixture used isolated state,
+synthetic access grants and an emulated touch device.

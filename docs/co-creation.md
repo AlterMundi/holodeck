@@ -167,3 +167,17 @@ during opening refuse the stale selection instead of following another edition.
 The existing protected descriptor and retained ContentVisitor own the actual
 source access and iframe. **Volver al mundo** keeps that same frame, drafts and
 processing; selecting an unavailable result preserves the previous visit.
+
+## Packaged result-node visit and revision check
+
+Release `dd6628e86392` passed the isolated runtime creation journey using
+the current package bytes, the existing own-native CLI and two independent
+Chromium visitors. The creator placed and revised result nodes and their
+links in the running room. Both visitors discovered the declared edition,
+and the second visitor's separate private-edition request was denied.
+Updating the node preserved the first visitor's open edition and draft.
+An explicit visit opened the selected successor, and returning to the world
+preserved its iframe. The native observer and browsers agreed on the
+updated node, link and indication. The earlier native edit returned the
+same exact receipt. The trial used synthetic authority and Nexus fixtures.
+Protected production visits remain a separate observation.

@@ -266,6 +266,8 @@ uses the same architectural vocabulary. Beacon serves that door and sign only
 while the viewer can use the gallery stair.
 The [return to the foyer](../art/compaii-house/redesign/README.md#gallery-return-to-the-foyer)
 now has a matching oak threshold and floor sign for visitors in either variant.
+The [foyer's gallery entrance](../art/compaii-house/redesign/README.md#foyer-entrance-to-the-gallery)
+now carries its own matching plaque in the authorized view.
 The tower has a player-height coastal view through its authored east
 clerestory, and the resonator sill collision matches the visible wood.
 Continue the finish pass through the miniature, exterior paths, gallery and
