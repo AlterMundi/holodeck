@@ -146,13 +146,25 @@ The export rebakes albedo, normals, contact and static diffuse light with the
 existing Cycles rig. The room's Brotli payload is 1,602,320 bytes, compared
 with 1,612,132 bytes for the preceding edition.
 
-The next revision gives each instrument a distinct use and silhouette.
+The instrument revision gives each station a distinct use and silhouette.
 Spatializer has two nearfield monitors and an inset listening field with
 three brass source markers. Weaver has a vertical patch matrix,
 curved patch leads and a lower row of gesture keys. These modeled components
 represent the tools in their idle state. The nearby world action opens the
 existing authenticated panel for actual control. Both worktops still use
 their original envelopes.
+
+The room stays at nine glTF material batches. Its geometry grows from
+34,004 to 42,128 triangles, with the same bounds. The scoped Brotli
+response grows from 1,602,320 to 1,669,254 bytes. At the matched bench
+viewpoints Chromium reported 33 draw calls before and 33–34 in the
+finished build, including the existing shadows. Physical device frame
+pacing remains a separate measurement.
+
+| Bench | Before | Finished |
+| --- | --- | --- |
+| Spatializer | [Previous console](review/beacon-instruments-prior-audio.jpg) | [Listening console](review/beacon-instruments-final-audio.jpg) |
+| Weaver | [Previous console](review/beacon-instruments-prior-body.jpg) | [Movement console](review/beacon-instruments-final-body.jpg) |
 
 Rebuild the editable scene without rerendering its review cameras using
 `house.py -- "$ART_OUTPUT" --scene-only`, then run the Beacon export above.

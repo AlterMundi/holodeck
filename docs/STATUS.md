@@ -21,6 +21,19 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+`81a26e5`, package `690d2406031c`. The Beacon lab has separate
+Blender-authored instruments for Spatializer and Weaver, with legible
+nearby actions. Two matched Chromium packages preserved the stair both
+ways, the original bench positions and renderer, and the two exact panel
+routes. The final touch fixture walked to both benches, opened the
+existing panel frontend against controlled readiness data, and returned
+to the same positions. The existing device authorization still applies.
+HTTPS, 57 installed files and the installed decoded Beacon mesh matched
+the package. Semantic state remained byte-for-byte equal. The exact
+predecessor `0f4587163293` is retained and passed the matched route in
+isolation. [Player-height comparisons](../art/compaii-house/redesign/README.md#beacon-joinery-and-workstations)
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
 `9a7880a`, package `0f4587163293`. Each human can save or reset their own
 avatar appearance from the plaza or inside a house. Chromium with two
 independent identities verified distinct automatic appearances, a live
