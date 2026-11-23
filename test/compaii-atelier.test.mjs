@@ -143,7 +143,7 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   assert.equal(entered.outdoorSky,undefined);
   assert.match(entered.scene.markup,/vestibule-practical/);
   assert.match(entered.scene.markup,/<m-cube x="-5\.13" y="0\.341" z="1\.18" width="0\.88" height="0\.482" depth="2\.91" opacity="0" cast-shadows="false">/);
-  assert.match(entered.scene.markup,/id="passage-0" x="-3" z="-5.86"[^>]*>\s*<m-label[^>]*content="Galería"/);
+  assert.match(entered.scene.markup,/<m-group id="passage-0" x="-3" z="-5\.86" ry="0"><\/m-group>/);
   assert.deepEqual(entered.exits[0].door,{x:-3,y:.11,z:-4.81,yaw:180});
   const foyerResponse=await authorized.read(roomArt(entered));
   assert.equal(foyerResponse.status,200);
@@ -152,7 +152,10 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   const lamp=document.materials.find(material=>material.name==='Honey lamp glass');
   assert.ok(lamp.extensions.KHR_materials_emissive_strength.emissiveStrength>2);
   assert.equal(lamp.emissiveTexture,undefined);
-  const baked=document.materials.filter(material=>material!==lamp);
+  const galleryEntrySign=document.materials.find(material=>material.name==='Gallery entry sign ivory');
+  assert.ok(galleryEntrySign?.emissiveFactor.every(channel=>channel>0));
+  assert.equal(galleryEntrySign.pbrMetallicRoughness.baseColorTexture,undefined);
+  const baked=document.materials.filter(material=>material!==lamp&&material!==galleryEntrySign);
   const atlases=new Set(baked.map(material=>{
     const {index,texCoord=0}=material.emissiveTexture;
     assert.equal(texCoord,material.pbrMetallicRoughness.baseColorTexture.texCoord??0);
@@ -160,6 +163,20 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   }));
   assert.equal(atlases.size,1);
   assert.equal(document.images[atlases.values().next().value].mimeType,'image/jpeg');
+  galleryAccess=false;
+  const foyerWithoutGallery=await liveLocation(authorized);
+  assert.equal(foyerWithoutGallery.id,foyer);
+  assert.deepEqual(foyerWithoutGallery.exitDoor,entered.exitDoor);
+  assert.deepEqual(foyerWithoutGallery.exits,[]);
+  assert.doesNotMatch(foyerWithoutGallery.scene.markup,/id="passage-0"|Galería/);
+  assert.notEqual(roomArt(foyerWithoutGallery),roomArt(entered));
+  assert.equal((await authorized.read(roomArt(entered))).status,404);
+  const baseFoyer=await authorized.read(roomArt(foyerWithoutGallery));
+  assert.equal(baseFoyer.status,200);
+  const baseBytes=Buffer.from(await baseFoyer.arrayBuffer());
+  const baseDocument=JSON.parse(baseBytes.toString('utf8',20,20+baseBytes.readUInt32LE(12)));
+  assert.ok(!baseDocument.materials.some(material=>material.name==='Gallery entry sign ivory'));
+  galleryAccess=true;
   const open=await authorized.move(foyer,gallery);
   assert.equal((await authorized.read(roomArt(entered))).status,404);
   await visitor.move('outside',foyer);

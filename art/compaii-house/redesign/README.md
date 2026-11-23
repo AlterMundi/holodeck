@@ -213,6 +213,7 @@ room-local bounds. Keep Blender area lights and camera setups in the source.
 | Garden | 1,747,624 | 15,728 | 11 |
 | Parcel facade | 2,836,316 | 19,712 | 9 |
 | Foyer | 1,536,588 | 6,700 | 7 |
+| Foyer with gallery sign | 2,749,896 | 22,852 | 9 |
 | Beacon laboratory, emergency exit only | 3,666,048 | 43,800 | 9 |
 | Beacon laboratory, gallery return | 3,925,492 | 48,460 | 10 |
 | Gallery with stair | 3,196,296 | 31,652 | 11 |
@@ -349,6 +350,15 @@ to the exact approach in the same document. The continuous-floor visitor
 received no laboratory route or model. The updated gallery assets transfer
 in 1,490,289 and 1,471,814 bytes with Brotli.
 [Door from the gallery approach](review/gallery-foyer-door.jpg).
+
+### Foyer entrance to the gallery
+
+The foyer's gallery threshold retains its oak door, latch and route marker,
+with an authored gunmetal and oak **Galería · Planta baja** plaque above it.
+Viewers who can enter the gallery receive the signed foyer model. The
+original foyer model serves visitors without that passage and keeps the
+physical exit. The signed asset transfers in 1,501,069 bytes with Brotli.
+[Plaque from the foyer approach](review/foyer-gallery-entry.jpg).
 
 ### Laboratory return to the gallery
 

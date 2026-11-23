@@ -14,6 +14,7 @@ CELLS = {
     'house': ('VIS · House', (0, 0, 0)),
     'facade': ('VIS · House', (0, 0, 0)),
     'foyer': ('VIS · House', (0, 0, 0)),
+    'foyer-gallery': ('VIS · House', (0, 0, 0)),
     'beacon': ('VIS · Beacon chamber', (-25, 9.4, 0)),
     'beacon-return': ('VIS · Beacon chamber', (-25, 9.4, 0)),
     'gallery': ('VIS · Collection gallery', (25, 7, 0)),
@@ -26,6 +27,7 @@ MAX_BYTES = 4 * 1024 * 1024
 MAX_TRIANGLES = 64_000
 LAB_LETTERING = 'Laboratory sign ivory'
 FOYER_LETTERING = 'Foyer sign ivory'
+GALLERY_ENTRY_LETTERING = 'Gallery entry sign ivory'
 RETURN_LETTERING = 'Gallery return sign ivory'
 BEACON_STAIRS = ('Descending stair tread', 'Stair rail', 'Stone wall at stair')
 FOYER_EXTERIOR = ('Stone plinth','Warm entrance floor','Entrance step','CASA DE COMPAII',
@@ -125,6 +127,19 @@ def register_foyer(obj):
     append_foyer_path(obj)
 
 
+def register_foyer_gallery(obj):
+    # Keep the existing oak door and route, and set the wayfinding into the
+    # same wall. This variant is served only for the authorized gallery link.
+    oak, iron, brass = 'Dark oiled oak', 'Blue gunmetal', 'Satin brass'
+    append_blocks(obj, [
+        ('Gallery entry sign oak frame',(-3,5.560,3.033),(2.03,.115,.465),oak,.027),
+        ('Gallery entry sign gunmetal face',(-3,5.492,3.033),(1.90,.042,.368),iron,.013),
+        ('Gallery entry sign brass sill',(-3,5.466,2.859),(1.796,.020,.018),brass,.004),
+    ])
+    letter_room_sign(obj, -3, 5.466, GALLERY_ENTRY_LETTERING,
+                     [('GALERÍA', 3.029, .254), ('PLANTA BAJA', 2.908, .111)])
+
+
 def foyer_joinery():
     oak, stone, brass = 'Dark oiled oak', 'Honed honey limestone', 'Satin brass'
     basalt, ivory, iron = 'Split basalt', 'Ivory limewash', 'Blue gunmetal'
@@ -163,6 +178,7 @@ def mesh_for(collection, origin, cell):
     scope = bpy.data.collections[collection]
     scope.hide_render = False
     exclusions = {'beacon':BEACON_STAIRS, 'beacon-return':BEACON_STAIRS, 'foyer':FOYER_EXTERIOR,
+                  'foyer-gallery':FOYER_EXTERIOR,
                   'gallery':GALLERY_FLOOR,'gallery-sealed':GALLERY_FLOOR}.get(cell, ())
     objects = [obj for obj in scope.objects if not obj.name.startswith(exclusions)]
     if cell in ('gallery','gallery-sealed'):
@@ -187,8 +203,10 @@ def mesh_for(collection, origin, cell):
         # approved west-parcel facade is 3.15 × 1.5 × 2.65 in world space.
         obj.data.transform(Matrix.Translation((0,-1.195,0)) @
                            Matrix.Diagonal((.153,.320,.391,1)))
-    if cell=='foyer':
+    if cell in ('foyer','foyer-gallery'):
         register_foyer(obj)
+    if cell=='foyer-gallery':
+        register_foyer_gallery(obj)
     if cell in ('gallery','gallery-sealed'):
         register_gallery(obj,stair=cell=='gallery')
     bpy.ops.object.mode_set(mode='EDIT')
@@ -509,7 +527,7 @@ def portable_materials(obj, color, normal, contact=None, bounce=None):
             if node not in (shader, nodes.get('Material Output')):
                 nodes.remove(node)
         # Tiny bevels and glyph faces stay crisp in their solid sign material.
-        if mat.name in (LAB_LETTERING, FOYER_LETTERING, RETURN_LETTERING):
+        if mat.name in (LAB_LETTERING, FOYER_LETTERING, GALLERY_ENTRY_LETTERING, RETURN_LETTERING):
             links.new(shader.outputs['BSDF'], nodes.get('Material Output').inputs['Surface'])
             continue
         color_node = nodes.new('ShaderNodeTexImage')
@@ -561,11 +579,11 @@ if __name__ == '__main__':
     # This smaller cell keeps its look with a 768px atlas and fits the
     # existing package budget alongside both permissioned gallery variants.
     color_size = 768 if cell == 'tower' else ALBEDO_RESOLUTION
-    normal_size = {'tower':768,'foyer':896}.get(cell,NORMAL_RESOLUTION)
+    lit_room = {'beacon-return':'beacon','foyer-gallery':'foyer'}.get(cell,cell)
+    normal_size = {'tower':768,'foyer':896}.get(lit_room,NORMAL_RESOLUTION)
     color = bake(obj, cell+'-albedo', 'DIFFUSE', color_size, destination)
     normal = bake(obj, cell+'-normal', 'NORMAL', normal_size, destination)
     bounce = None
-    lit_room = 'beacon' if cell=='beacon-return' else cell
     if lit_room in ('foyer','beacon','gallery','gallery-sealed'):
         lighting = runpy.run_path(str(Path(__file__).with_name('cell-irradiance.py')))
         bounce = lighting['portable_bounce'](obj,lit_room,destination/(cell+'-albedo.png'),color_size,destination)
