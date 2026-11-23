@@ -84,9 +84,11 @@ The room's accessible index searches the exact editions the visitor can open
 now. The source catalog reads existing Nexus review rows and proves the exact
 retained Home resource and owner before showing a result. A live own-native
 read returned five distinct editions across three pages for CompAII, including
-the existing in-world pin. The next authoring step is to select a catalog pin
-directly for a room exhibit and recheck the source owner at publication without
-creating an exterior world node.
+the existing in-world pin. CompAII selected that pin through the native
+room exhibit command and published revision 2. The command rechecks source
+ownership at publication and consumes no exterior node. CompAII's owner
+binding is selected on this receiver. Additional owner bindings and an
+independent real protected browser visit remain open.
 [Home ownership operation](https://github.com/nicoechaniz/daimon-cluster/pull/553) ·
 [Nexus owner catalog](https://github.com/compaii/daimon-nexus/pull/130)
 

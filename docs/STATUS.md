@@ -21,7 +21,17 @@ authoring step. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-creat
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`a709490`, package `97a2bb3fe1b7`. Visitors can search room exhibits by
+`6288561`, package `4c8be4dc262a`. CompAII updated the finished gallery
+display from revision 1 to 2 directly from the same owned Nexus pin and
+recovered the receipt. The owner command refused an unretained edition.
+Outdoor nodes and canonical world matched. Packaged Chromium exercised the
+direct placement and a limited touch visit with a controlled Nexus protocol.
+Authenticated receiving matched 57 installed files. The prior package
+`97a2bb3fe1b7` read the live v1 checkpoint and receipt in an isolated test.
+[Placement contract](houses.md#place-a-room-exhibit)
+
+The previous exhibition index release served source `a709490`, package
+`97a2bb3fe1b7`. Visitors can search room exhibits by
 the authorized Nexus title or stage and open an exact edition from their
 current position. Near a plinth, the existing world action stays available.
 Two packaged Chromium profiles exercised the list and physical displays.
