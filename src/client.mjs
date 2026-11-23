@@ -124,9 +124,11 @@ function startInterior(space){
         gallery:()=>visitor.galleryTargets(galleryModels,document,client.getLocalCharacterState()?.position),
         onPick:({entry})=>visitor.openGallery(entry).catch(()=>notice.show('No pude abrir esta edición.'))});
       const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
+      const draw=renderer.composer.render.bind(renderer.composer);
+      renderer.composer.render=()=>{if(!visitor.isOpeningOverWorld())draw();};
       renderer.render=state=>{
         const position=client.getLocalCharacterState()?.position;
-        frameBudget.sample(!document.hidden&&!!position);
+        frameBudget.sample(!document.hidden&&!!position&&!visitor.isOpeningOverWorld());
         galleryModels.update();visitor.refreshScopedCatalog();updateDoor(position);visitor.update(position);
         beaconControls.update(space.objects,position);render(state);
       };
@@ -406,6 +408,11 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       clear:record=>action('focus.clear',null,{},record.sequence),edit:editLight,
       visit:record=>contentVisitor.openNode(record.target,{expectedRevision:record.revision}).catch(()=>say('No pude abrir este contenido. Conservé la visita anterior.'))});
     const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
+    const draw=renderer.composer.render.bind(renderer.composer);
+    let drawWorld=true;
+    // The renderer and room stay mounted. Do not contend for the same frame
+    // budget while an opaque, still-inert Nexus visit starts its renderer.
+    renderer.composer.render=()=>{if(drawWorld)draw();};
     const exteriorAddress=socket('world');
     const arrivalAddress=socket('world?dressing=arrival');
     let coldExterior=hot&&!inside;
@@ -425,7 +432,8 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
     let nextDressing=0;
     renderer.render=renderState=>{
       const position=client.getLocalCharacterState()?.position;
-      frameBudget.sample(!document.hidden&&!!position&&!moving&&!needsSync&&(!hot||networkScope===activeSpace.id));
+      drawWorld=!contentVisitor?.isOpeningOverWorld();
+      frameBudget.sample(drawWorld&&!document.hidden&&!!position&&!moving&&!needsSync&&(!hot||networkScope===activeSpace.id));
       light.visible=!inside||!activeSpace.indoorLighting;
       const key=inside&&activeSpace.keyLight||null;
       if(key!==selectedKey){
@@ -451,8 +459,8 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       if(!moving){if(inside)contentVisitor?.refreshScopedCatalog();contentVisitor?.update(position);updateDoor(position);}
       beaconControls.update(inside&&!moving&&remoteScene?activeSpace.objects:null,position);
       render(renderState);
-      if(!inside)geometryProbe.afterRender();
-      else keepRoomArt();
+      if(!inside&&drawWorld)geometryProbe.afterRender();
+      else if(inside)keepRoomArt();
       if(hot&&moving&&canFinishMove())setMoving(false);
       const now=performance.now();
       if(coldExterior&&position&&!inside&&!moving&&!needsSync&&networkScope===activeSpace.id&&now>=nextDressing){

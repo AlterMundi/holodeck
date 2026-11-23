@@ -318,6 +318,9 @@ export class ContentVisitor{
    this.lastContext=captured;return captured;
   }catch{return unavailable();}finally{clearTimeout(deadline);}
  }
+ isOpeningOverWorld(){
+  return this.opening&&this.frame?.inert===true&&!this.panel.classList.contains('is-walking');
+ }
  walk(){
   if(!this.frame)return;
   // Returning is navigation, not disposal. Never trap the visitor behind a

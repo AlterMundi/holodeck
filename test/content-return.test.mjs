@@ -24,3 +24,19 @@ test('an unready retained visit cannot stall a new situated Conversation origina
  const result=await visitor.context();assert.equal(result.contextUnavailable,true);assert.equal(result.node,'node-result');assert.equal(result.nodeRevision,3);
  assert.equal(result.pin.revision,'r1');
 });
+
+test('the world can draw while a retained visit loads offscreen, completes or fails',()=>{
+ const visitor=Object.assign(Object.create(ContentVisitor.prototype),{
+  opening:true,frame:{inert:true},panel:{classList:new Set()},
+ });
+ visitor.panel.classList.contains=visitor.panel.classList.has;
+ assert.equal(visitor.isOpeningOverWorld(),true);
+ visitor.panel.classList.add('is-walking');
+ assert.equal(visitor.isOpeningOverWorld(),false);
+ visitor.panel.classList.clear();
+ visitor.frame.inert=false;
+ assert.equal(visitor.isOpeningOverWorld(),false);
+ visitor.frame.inert=true;
+ visitor.opening=false;
+ assert.equal(visitor.isOpeningOverWorld(),false);
+});

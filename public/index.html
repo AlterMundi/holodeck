@@ -42,9 +42,9 @@ body:has(#content-visit:not([hidden]):not(.is-walking)) #beacon-control,body:has
 #exhibition-empty{color:var(--muted)}body:has(#exhibition-index[open]) .touch-controls{visibility:hidden;pointer-events:none}
 #content-visit{position:fixed;inset:5vh 4vw;z-index:45;display:flex;flex-direction:column;border-radius:20px;padding:12px;gap:10px;background:#163b3f}
 #content-visit header{display:flex;gap:12px;align-items:center;flex-wrap:wrap}#visit-title{flex:1;min-width:180px;font-size:22px;margin:0}#content-visit button{font-size:14px}
-#visit-loading{margin:8px 4px;color:var(--muted)}#visit-stage iframe[inert]{visibility:hidden;pointer-events:none}
+#visit-loading{margin:8px 4px;color:var(--muted)}#visit-stage iframe[inert]{pointer-events:none}#visit-stage:has(iframe[inert]):after{content:"";position:absolute;inset:0;z-index:2;background:#102d31;pointer-events:none}
 #visit-title{overflow-wrap:anywhere}#content-visit header label{display:flex;gap:6px;align-items:center;min-width:0;max-width:100%}#content-visit header select{width:250px;min-width:0;max-width:100%;min-height:44px;padding:4px 8px;border:1px solid var(--line);border-radius:10px;background:#102d31;color:var(--ink);font:inherit}
-#visit-stage{flex:1;min-height:0;border-radius:12px;overflow:hidden;background:#102d31}#visit-stage iframe{width:100%;height:100%;border:0;display:block}
+#visit-stage{position:relative;flex:1;min-height:0;border-radius:12px;overflow:hidden;background:#102d31}#visit-stage iframe{width:100%;height:100%;border:0;display:block}
 body:has(#content-visit:not([hidden]):not(.is-walking)) .touch-controls{visibility:hidden;pointer-events:none}
 #content-visit.is-walking{inset:auto;left:-200vw;top:0;width:92vw;height:90vh;visibility:hidden;pointer-events:none}
 @media(max-width:740px){#visit-near{top:148px;right:12px;max-width:calc(100vw - 24px);font-size:14px}#content-visit{inset:max(8px,env(safe-area-inset-top)) 8px max(8px,env(safe-area-inset-bottom));padding:8px;border-radius:14px}#visit-title{font-size:19px;flex-basis:100%}#content-visit header{gap:6px}#content-visit button{padding:8px 12px}}
