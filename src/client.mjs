@@ -85,6 +85,14 @@ function worldEntered(){
   window.dispatchEvent(new Event('holodeck:entered'));
 }
 
+class HolodeckExperienceClient extends Networked3dWebExperienceClient {
+  disposeWithError(message){
+    this.dispose();
+    console.error('Holodeck connection ended',message);
+    window.dispatchEvent(new Event('holodeck:entry-failed'));
+  }
+}
+
 const rendererBudget={adaptive:true,startAtNative:matchMedia('(pointer: coarse)').matches,
   lightweight:usesLightGraphics(location.search)};
 
@@ -128,7 +136,7 @@ function startInterior(space){
       event.stopImmediatePropagation();
     }
   },true);
-  const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
+  const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
     sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket(`spaces/${space.id}/network`),waitForWorldConfig:true,
     enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
     createRenderer:options=>{
@@ -406,7 +414,7 @@ document.addEventListener('keydown',event=>{
 },true);
 const playableHUD=new PlayableHUD(document);
 let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,galleryModels=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null,worldHistory=null;
-const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
+const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
   sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket(hot?'active/network':'network'),waitForWorldConfig:true,
   enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
   // Upstream's default sun allocates an 8192² shadow map. This small world uses

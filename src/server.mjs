@@ -273,6 +273,13 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     return {...space,live:1,actorRef:actor.id,
       sharedConversation:!!(native?.contexts&&native?.conversationSurface),scene:visitScene(actor,space.id,cachedRevision)};
   }
+  function roomParticipants(id){
+    const seen=new Map();
+    for(const {actor} of cellTransports.get(id)?.connections.values()??[]){
+      if(inScope(actor,id))seen.set(actor.id,{actor:actor.id,kind:actor.kind,name:actor.name||'Explorador'});
+    }
+    return [...seen.values()];
+  }
   function describeSpace(actor,includeSky=false){
     if(spaces.fenced)throw new RoomError('space-uncertain','Room placement needs recovery');
     const view=spaces.view(actor),exhibit=exhibits.scoped(actor,view.id),
@@ -289,10 +296,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       ...(exhibit?{exhibitRevision:exhibit.revision}:{})};
     const cell=cellTransports.get(space.id);
     if(!cell)return space;
-    const participants=[...cell.connections.values()]
-      .filter(({actor:peer})=>inScope(peer,space.id))
-      .map(({actor:peer})=>({actor:peer.id,kind:peer.kind,name:peer.name||'Explorador'}));
-    return {...space,participants};
+    return {...space,participants:roomParticipants(space.id)};
   }
   function roomObjects(view){
     const art=artForRoom(spaces.rooms.get(view.id),view.exits ?? []);
@@ -311,9 +315,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       objects:view.id===id?roomObjects(view):[],
       ...(activity?{activity}:{}),
       ...(exhibit?{exhibitRevision:exhibit.revision}:{}),
-      participants:[...(cellTransports.get(id)?.connections.values()??[])]
-        .filter(({actor:peer})=>inScope(peer,id))
-        .map(({actor:peer})=>({actor:peer.id,kind:peer.kind,name:peer.name||'Explorador'}))};
+      participants:roomParticipants(id)};
   }
   async function allowInteriorSource(actor,beingRef,id){
     const recipient={id:beingRef,ref:beingRef,kind:'daimon'};
@@ -435,8 +437,10 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       const actor=identityResolver?await identityResolver(req):{id:`local-${localBoot}-${nextId+1}`,kind:'human',name:`Explorador ${nextId+1}`,rights:['observe','edit','project']};
       if(!actor)return null;
       const next=new Map(sessions);
-      for(const [key,s]of next)if(Date.now()-s.created>=SESSION_MS&&s.connection===null)next.delete(key);
-      if(next.size>=LIMITS.sessions){const inactive=[...next].find(([,s])=>s.connection===null);if(inactive)next.delete(inactive[0]);else return null;}
+      const connected=new Set([...sockets.values()].flatMap(record=>[record.session,record.presenceSession]));
+      const inactive=s=>s.connection===null&&!connected.has(s);
+      for(const [key,s]of next)if(Date.now()-s.created>=SESSION_MS&&inactive(s))next.delete(key);
+      if(next.size>=LIMITS.sessions){const idle=[...next].find(([,s])=>inactive(s));if(idle)next.delete(idle[0]);else return null;}
       const token=randomBytes(20).toString('hex'),id=++nextId;
       next.set(sessionKey(token),{id,actor,created:Date.now(),times:[],connection:null,sourceCookie:req.headers.cookie});
       sessionBindings?.save(next);
@@ -459,7 +463,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(s.connection!==null||sessionFor(token)!==s||socket.readyState!==1||!sockets.has(socket))return new Error('Room connection changed');
       s.connection=connection;
       room.atomic(()=>room.event(actor,'participant.joined',{name:actor.name||'Explorador'}));
-      return {userId:actor.id,username:actor.name||`Explorador ${s.id}`,characterDescription:avatarProfile(actor),colors:null};
+      return {userId:actor.id,connectionKey:`session:${s.id}`,username:actor.name||`Explorador ${s.id}`,characterDescription:avatarProfile(actor),colors:null};
     },
     onClientDisconnect(connection){for(const s of sessions.values())if(s.connection===connection){s.connection=null;if(!room.commitUncertain)room.atomic(()=>room.event(s.actor,'participant.left',{}));}},
     onClientUserIdentityUpdate(){return false;}
@@ -478,10 +482,11 @@ export async function createHolodeck({basePath='/',production=false,identityReso
           return new Error('Room identity does not match this connection');
         const actor=await currentActor({method:'GET',headers:{cookie:record.session.sourceCookie}},session);
         if(!inScope(actor,id)||socket.readyState!==1||sockets.get(socket)!==record||sessionFor(token)!==session||
-            [...connections.values()].some(peer=>peer.actor.id===actor.id))
+            [...connections.values()].some(peer=>peer.session===session))
           return new Error('Room connection changed');
-        connections.set(connection,{actor});
-        return {userId:actor.id,username:actor.name||'Explorador',
+        record.presenceSession=session;
+        connections.set(connection,{actor,session});
+        return {userId:actor.id,connectionKey:`session:${session.id}`,username:actor.name||'Explorador',
           characterDescription:avatarProfile(actor),colors:null};
       },
       onClientDisconnect(connection){connections.delete(connection);},

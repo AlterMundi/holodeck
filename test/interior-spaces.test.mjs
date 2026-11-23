@@ -114,7 +114,7 @@ test('HTTP, real geometry upgrades and native observation share active room and 
         token:(await response.json()).sessionToken};
     }
     const headers=Cookie=>({Cookie,Origin:'https://world.test','Content-Type':'application/json'});
-    const personAuth=await auth('guest'),viewerAuth=await auth('viewer');
+    const personAuth=await auth('guest'),phoneAuth=await auth('guest'),viewerAuth=await auth('viewer');
     const person=personAuth.cookie,viewer=viewerAuth.cookie,foreign=(await auth('foreign')).cookie;
     const read=(cookie,path='space')=>fetch(base+'api/'+path,{headers:headers(cookie)});
     const move=(cookie,from,to)=>fetch(base+'api/space',{method:'POST',headers:headers(cookie),body:JSON.stringify({from,to})});
@@ -163,6 +163,14 @@ test('HTTP, real geometry upgrades and native observation share active room and 
     await until(()=>first.identity&&second.identity&&first.users.has(second.identity)&&second.users.has(first.identity),
       'both real MML clients should see the same-room peer');
     assert.equal(first.error||second.error,undefined);
+    const phone=presence('foyer',phoneAuth);
+    await until(()=>phone.identity&&phone.users.has(first.identity)&&second.users.has(phone.identity),
+      'a second authenticated session from the same actor should receive the room and appear to its peers');
+    assert.equal(phone.error,undefined);
+    assert.notEqual(phone.identity,first.identity);
+    const {participants}=await (await read(viewer)).json();
+    assert.equal(participants.filter(participant=>participant.actor==='human:guest').length,1);
+
     assert.equal((await read(person,'state')).status,409);
     assert.equal((await read(foreign,'state')).status,200);
     const prepared=await (await fetch(base+'api/space/scene?room=gallery',{headers:headers(person)})).json();

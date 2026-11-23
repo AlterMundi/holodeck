@@ -77,6 +77,43 @@ An open connection is closed after the current room or admission changes.
 Home admission is rechecked at most every two seconds while sockets are open,
 with the existing Home timeout if the authority is slow.
 
+## Represent ongoing work and its results
+
+Use each house to orient visitors in its owner's work and give collaborators a
+place to resume it. The owner selects what each room represents and where
+objects belong. Keep the house legible from the foyer, with a few landmarks and
+short routes back. Give neighboring houses their own architecture and tools.
+They can refer to the same project without copying it or its permissions.
+
+- **Work in progress** belongs at a bench or station. Put the active prototype,
+  last verified change and next unresolved decision within reach of the tool
+  used there. Make a Conversation about that object carry its room, object and
+  version. An authorized collaborator can resume the work at the same spot.
+- **Published results** belong in galleries or wherever they can be used.
+  Exhibits refer to exact Nexus editions and retain creator and date. Let a
+  visitor inspect the model and return to the same place. Give drafts,
+  published versions and the archive distinct places within the 3D gallery.
+- **Live systems** belong where people operate or observe them. Show the source,
+  freshness and last verified observation. If a source stops responding, keep
+  the last confirmed reading with its age. Gate controls separately from viewing.
+
+For Casa de CompAII, the Beacon lab is the place to see a prototype and reach
+authorized Spatializer and Weaver tools. Sensorial is the place for runs,
+readings and analysis as those bindings become available. In the 3D gallery,
+a workbench, an adjoining exhibit and an archive can carry the same artifact
+through its different states. A house elsewhere can show a different use of
+that artifact, reaching the same Nexus edition.
+
+Represent the work through stable references to the owning systems and a
+bounded room projection of the relevant state. Keep details and older results
+available through navigation, with few active objects loaded in each room.
+The house owner chooses placement and visibility. Every resource resolves the
+visitor's current permission through its own authority, including on return or
+after reconnect. Restricted projects and observations remain undisclosed.
+Read-only status and confirmed control effects are separate. System-backed
+objects need an existing authorized integration before they can show live state
+or exercise controls.
+
 ## Configure and verify the first map
 
 The protected receiving configuration may select `interiorSpaces`. It defaults

@@ -2,8 +2,9 @@
  * Bounded compatibility adaptation for MIT @mml-io 0.28.0 server packages.
  * Upstream: https://github.com/mml-io/3d-web-experience
  * Forward the actual server-side connection socket through the existing auth
- * callbacks. Existing three-argument consumers remain compatible. No protocol,
- * identity, transport or license content is replaced.
+ * callbacks and allow a server-selected session key for duplicate detection.
+ * Consumers without a session key keep upstream behavior. The replicated user
+ * ID stays canonical across devices and the key stays on the server.
  *
  * Whole-file pins intentionally refuse an unknown dependency composition.
  */
@@ -19,13 +20,26 @@ const FILES=[
     "package": "@mml-io/3d-web-user-networking",
     "file": "build/index.js",
     "original": "10686fcb9ec029c83409c73f141e189c96aaa79d1f2715d4b60a08a622adf8b6",
-    "adapted": "b51ab0e07778e94023963491e3ba0873e063fdb481aea40c28f64f47ccb6353e",
+    "adapted": "9dcf6da57f2b576b8f56ed50848ea98a6de361ef66ff538d29647a9ac78045f0",
     "replacements": [
       [
         "await this.options.onClientConnect(connectionId, sessionToken, userIdentity);",
         "await this.options.onClientConnect(connectionId, sessionToken, userIdentity, webSocket);"
+      ],
+      [
+        "this.connectionIdByUserId.delete(client.authenticatedUser.userId);",
+        "this.connectionIdByUserId.delete(client.authenticatedUser.connectionKey ?? client.authenticatedUser.userId);"
+      ],
+      [
+        "this.connectionIdByUserId.has(onClientConnectReturn.userId)",
+        "this.connectionIdByUserId.has(onClientConnectReturn.connectionKey ?? onClientConnectReturn.userId)"
+      ],
+      [
+        "this.connectionIdByUserId.set(authenticatedUser.userId, connectionId);",
+        "this.connectionIdByUserId.set(authenticatedUser.connectionKey ?? authenticatedUser.userId, connectionId);"
       ]
-    ]
+    ],
+    "previous": "b51ab0e07778e94023963491e3ba0873e063fdb481aea40c28f64f47ccb6353e"
   },
   {
     "package": "@mml-io/3d-web-experience-server",
@@ -81,10 +95,11 @@ export function ensureMmlServerAuthContext({root=projectRoot,check=false}={}){
     if(!info.isFile()||info.size>262144)throw Error('Unexpected MML adaptation input: '+item.package+'/'+item.file);
     const bytes=readFileSync(path),actual=digest(bytes);
     if(actual===item.adapted){prepared.push({item,path,bytes,changed:false});continue;}
-    if(actual!==item.original)throw Error('Unknown MML bytes; refusing auth adaptation: '+item.package+'/'+item.file);
+    if(actual!==item.original&&actual!==item.previous)throw Error('Unknown MML bytes; refusing auth adaptation: '+item.package+'/'+item.file);
     if(check)throw Error('MML connection auth context is not installed: '+item.package+'/'+item.file);
     let source=bytes.toString('utf8');
-    for(const [before,after]of item.replacements){
+    const replacements=actual===item.previous?item.replacements.slice(1):item.replacements;
+    for(const [before,after]of replacements){
       if(source.split(before).length!==2)throw Error('Pinned MML auth callsite no longer matches');
       source=source.replace(before,after);
     }

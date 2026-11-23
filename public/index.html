@@ -259,7 +259,10 @@ window.SESSION_TOKEN="SESSION.TOKEN.PLACEHOLDER";
   const deadline=setTimeout(()=>showRetry('La entrada está tardando más de lo esperado.'),25000);
   window.addEventListener('holodeck:entered',()=>{clearTimeout(deadline);entry.hidden=true;},{once:true});
   window.addEventListener('holodeck:entry-failed',()=>{
-    clearTimeout(deadline);showRetry('No se pudo abrir el mundo.');
+    clearTimeout(deadline);
+    const hadEntered=entry.hidden;
+    entry.hidden=false;
+    showRetry(hadEntered?'Se interrumpió la conexión con el mundo.':'No se pudo abrir el mundo.');
   },{once:true});
   retry.onclick=()=>location.reload();
 }
