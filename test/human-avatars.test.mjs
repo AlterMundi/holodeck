@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import {once} from 'node:events';
-import {readFileSync} from 'node:fs';
+import {mkdirSync,mkdtempSync,readFileSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {test} from 'node:test';
 import {HumanAvatarProfiles,humanWardrobeAssets} from '../src/human-avatars.mjs';
 import {createHolodeck} from '../src/server.mjs';
@@ -72,4 +74,27 @@ test('MML can fetch self-contained wardrobe GLBs at the deployed base path',asyn
     assert.deepEqual(Buffer.from(await response.arrayBuffer()),buffer);
   }
   assert.equal((await fetch(address+'avatar-wardrobe-v1-5.glb')).status,404);
+});
+
+test('a failed cosmetic save leaves protected room admission available',async t=>{
+  const stateDir=mkdtempSync(join(tmpdir(),'holodeck-avatar-write-'));
+  const runtime=await createHolodeck({production:true,basePath:'/holodeck/',stateDir,
+    publicOrigin:'https://world.test',identityResolver:async()=>({id:'human:wardrobe-test',ref:'human:wardrobe-test',
+      kind:'human',name:'Fixture',rights:['observe']})});
+  // A directory here makes the existing atomic writer fail its open.
+  mkdirSync(join(stateDir,'human-avatars','room.stage.json'));
+  const server=runtime.app.listen(0,'127.0.0.1');
+  await once(server,'listening');
+  t.after(async()=>{
+    runtime.close();server.closeAllConnections();
+    await new Promise(resolve=>server.close(resolve));
+    rmSync(stateDir,{recursive:true,force:true});
+  });
+  const base=`http://127.0.0.1:${server.address().port}/holodeck/`;
+  const login=await fetch(base);
+  assert.equal(login.status,200);
+  assert.match(login.headers.get('set-cookie'),/holodeck_session=[a-f0-9]{40}/);
+  const state=await fetch(base+'api/state',{headers:{Cookie:login.headers.get('set-cookie').split(';')[0]}});
+  assert.equal(state.status,200);
+  assert.equal((await state.json()).actorRef,'human:wardrobe-test');
 });
