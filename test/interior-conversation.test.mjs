@@ -16,7 +16,7 @@ test('a canonical interior source freezes its authorized place before awaits and
   const being='dm:being:v1:'+'a'.repeat(43),house=houseId(being),user='human:test';
   const binding='b'.repeat(64),socket=join(dir,'world.sock');
   const frozen={actorRef:user,beingRef:being,binding,entry:[1,{},2,'fixture']};
-  let grant=true,canEdit=true,admitted=true,uploads=[],inspectEntered,releaseInspect,runtime,listener;
+  let grant=true,canEdit=true,admitted=true,phase='working',uploads=[],inspectEntered,releaseInspect,runtime,listener;
   const entered=new Promise(resolve=>{inspectEntered=resolve;});
   const parked=new Promise(resolve=>{releaseInspect=resolve;});
   new RoomStore(join(dir,'houses')).save({schema:'holodeck.houses/v1',houses:[{
@@ -38,7 +38,7 @@ test('a canonical interior source freezes its authorized place before awaits and
               entry_binding:req.frozen.entry,observation_id:req.observation.id,work_admitted:false,
               file:{file_id:randomUUID(),sha256:'d'.repeat(64),name:'holodeck-situation.json',mime:'application/json',size:2000}};
           },
-          status:async()=>({phase:'working',retainedOriginal:true,tracking:true,nativeAcceptance:admitted?'observed':'unavailable'}),
+          status:async()=>({phase,retainedOriginal:true,tracking:true,nativeAcceptance:admitted?'observed':'unavailable'}),
         };
         const contexts=await createConversationContexts({room,stateDir:join(stateDir,'context'),transport,allowInteriorSource});
         return {contexts,conversationSurface:async()=>({schema:'holodeck.conversation-surface/v1',
@@ -55,7 +55,10 @@ test('a canonical interior source freezes its authorized place before awaits and
       return JSON.parse(value);
     }
     const layout={type:'layout.publish',id:'fixture-layout-1',house,expectedRevision:null,
-      rooms:[{id:'foyer',house,title:'Vestíbulo',level:0,entry:true,guests:[user],links:[]}]};
+      rooms:[
+        {id:'foyer',house,title:'Vestíbulo',level:0,entry:true,guests:[user],links:[{kind:'door',to:'side-room'}]},
+        {id:'side-room',house,title:'Otro cuarto',level:0,entry:false,guests:[user],links:[{kind:'door',to:'foyer'}]},
+      ]};
     const game={type:'garden.put',id:'fixture-garden-1',room:'foyer',title:'Jardín situado',expectedRevision:null,
       play:{schema:'signal-garden/v1',minContributors:2,targets:[
         {x:0,z:2,radius:.45,color:'mint'},{x:0,z:.8,radius:.45,color:'amber'}]}};
@@ -113,12 +116,14 @@ test('a canonical interior source freezes its authorized place before awaits and
     assert.equal(observed.result.space.activity.title,'Nuevo jardín');
     assert.ok(observed.result.space.objects.some(object=>object.id==='left-bench'&&object.title==='Mesa de consulta'&&object.revision===2));
     assert.equal(observed.result.space.activity.canPlay,false);
+    assert.deepEqual(observed.result.approach,{from:'outside',to:'foyer'});
     assert.equal((await port('observe',{},true)).result.space.id,'outside');
     assert.equal((await port('act',{type:'garden.signal',room:'foyer',expectedRevision:2,
       id:'fixture-outside-signal',index:0,color:'mint'},true)).ok,false);
     assert.equal(uploads[0].place.activity.revision,1);
     assert.equal((await port('project')).ok,false);
-    assert.equal((await port('act',{type:'space.move',from:'outside',to:'foyer'})).ok,false);
+    const step={type:'space.move',...observed.result.approach};
+    assert.equal((await port('act',{...step,to:'lab'})).ok,false);
     const signal={type:'garden.signal',room:'foyer',expectedRevision:2,
       id:'fixture-native-signal',index:0,color:'mint'};
     assert.equal((await port('act',signal)).ok,false,'room reference does not move the daimon');
@@ -129,7 +134,20 @@ test('a canonical interior source freezes its authorized place before awaits and
     assert.equal(uploads[1].referredRoomObject,undefined,'stale topic must not be silently retargeted');
     const humanSignal=await post('space/garden',{...signal,id:'fixture-human-signal',index:1,color:'amber'});
     assert.equal(humanSignal.status,200);
-    assert.equal((await port('act',{type:'space.move',from:'outside',to:'foyer'},true)).ok,true);
+    canEdit=false;
+    assert.equal((await port('observe')).result.approach,undefined);
+    assert.equal((await port('act',step)).ok,false);
+    canEdit=true;
+    phase='completed';
+    assert.equal((await port('observe')).result.approach,undefined);
+    assert.equal((await port('act',step)).ok,false);
+    phase='working';
+    assert.equal((await port('act',{...step,nativeRequest:otherId})).ok,false);
+    assert.deepEqual(await port('act',step),{ok:true,result:{from:'outside',to:'foyer'}});
+    assert.equal((await port('act',step)).ok,false,'an advanced place refuses the old passage');
+    assert.equal((await port('observe')).result.approach,undefined);
+    assert.equal((await port('act',{type:'space.move',from:'foyer',to:'side-room'})).ok,false,
+      'the turn cannot use an unrelated passage, even with permission to enter that room');
     assert.equal((await port('act',{...signal,room:'outside'})).ok,false);
     assert.equal((await port('act',{...signal,expectedRevision:1})).ok,false);
     canEdit=false;

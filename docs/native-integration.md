@@ -199,8 +199,22 @@ installed owner CLI/bridge and direct world socket; additional paired routes are
 being qualified. A real human-triggered round trip and native world actions have now begun; see
 STATUS.md for their exact trial evidence and the remaining conversational return
 loop. Contract fixtures alone do not establish that participation.
-Navigation goals and richer perceptual
-queries remain to be implemented against the selected runtime.
+During an admitted working indoor Conversation, the world observation can
+include the next permitted passage toward the room retained in the original.
+Use the returned `approach.from` and `approach.to` with an explicit
+`space.move`. Each step uses existing movement and current room permissions.
+After an uncertain outcome, observe the current position before issuing
+another move. There is no separate movement receipt. The existing garden
+action retains its exact original-scoped receipt.
+
+```sh
+holodeck-world --interaction "$ORIGINAL_ID" observe
+holodeck-world --interaction "$ORIGINAL_ID" act --json '{"type":"space.move","from":"outside","to":"workshop-entry"}'
+```
+
+Replace the sample endpoints with the observed passage endpoints. This
+updates the daimon's room membership through the world port. Avatar
+locomotion and richer perceptual queries remain separate work.
 
 Inspected current owning app implementation (2026-11-17):
 

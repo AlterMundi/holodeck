@@ -4,22 +4,32 @@ import { chmodSync,lstatSync } from 'node:fs';
 import { DaimonPort } from './daimon-port.mjs';
 import {situatedGardenCommandId} from './indoor-gardens.mjs';
 
-function situatedInterior({request,verified,actor,room,conversationPlace,indoorGarden}){
+function situatedInterior({request,verified,actor,room,conversationPlace,indoorGarden,approachSpace,moveSpace}){
   const {operation,args}=request;
   const captured=conversationPlace?.(actor,verified.capturedSpace);
   if(!captured)throw Error('The current being has no access to that room');
   const fields=Object.keys(args).sort().join(',');
-  if(operation==='observe'&&!fields)
+  const next=()=>verified.working&&actor.rights.includes('edit')?approachSpace?.(actor,captured.id):null;
+  if(operation==='observe'&&!fields){
+    const approach=next();
     return {schema:'holodeck.space-observation/v1',run:room.run,edition:room.edition,
-      observer:actor.id,space:captured};
-
+      observer:actor.id,space:captured,...(approach?{approach}:{})};
+  }
   const {nativeRequest,...command}=args;
   const commandFields=Object.keys(command).sort().join(',');
+  const currentOriginal=!Object.hasOwn(args,'nativeRequest')||nativeRequest===verified.nativeRequest;
+  if(operation==='act'&&command.type==='space.move'&&commandFields==='from,to,type'&&currentOriginal){
+    const step=next();
+    if(!step||step.from!==command.from||step.to!==command.to)throw Error('The admitted room approach changed');
+    const arrived=moveSpace?.(actor,step);
+    if(!arrived||arrived.id!==step.to)throw Error('The admitted room move could not be confirmed');
+    return {from:step.from,to:arrived.id};
+  }
+
   const id=situatedGardenCommandId(verified.nativeRequest,command.id);
   let result;
   if(id&&operation==='act'&&command.type==='garden.signal'&&command.room===captured.id&&
-     commandFields==='color,expectedRevision,id,index,room,type'&&
-     (!Object.hasOwn(args,'nativeRequest')||nativeRequest===verified.nativeRequest))
+     commandFields==='color,expectedRevision,id,index,room,type'&&currentOriginal)
     result=indoorGarden?.(actor,{...command,id});
   else if(id&&operation==='result'&&fields==='id')
     result=indoorGarden?.(actor,{type:'garden.result',id});
@@ -29,7 +39,7 @@ function situatedInterior({request,verified,actor,room,conversationPlace,indoorG
 
 // The receiving operator owns the directory/socket filesystem capability.
 // Native identity and current room rights are independently rechecked per request.
-export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,conversationPlace,putExhibit,exhibitResult,currentLayout,previewLayout,publishLayout,layoutResult,roomDesign,indoorGarden}){
+export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,approachSpace,conversationPlace,putExhibit,exhibitResult,currentLayout,previewLayout,publishLayout,layoutResult,roomDesign,indoorGarden}){
   if(!socketPath?.startsWith('/')||!native?.authorizeWorldRequest||typeof resolveRights!=='function')
     throw Error('Select the installed native world port and authority resolver');
   let active=0;
@@ -72,7 +82,7 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
         let result;
         const savedExhibit=own&&request.operation==='result'?exhibitResult?.(actor,request.args.id):null;
         if(verified.capturedSpace){
-          result=situatedInterior({request,verified,actor,room,conversationPlace,indoorGarden});
+          result=situatedInterior({request,verified,actor,room,conversationPlace,indoorGarden,approachSpace,moveSpace});
         }else if(request.operation==='act'&&request.args.type==='layout.current'){
           if(!own||!rights.includes('edit')||Object.keys(request.args).length!==1)throw Error('Reading the draft base requires an own-native editor route');
           result=currentLayout?.(actor)??null;

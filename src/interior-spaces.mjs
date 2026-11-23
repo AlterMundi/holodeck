@@ -101,6 +101,26 @@ export class InteriorSpaces {
       this.savePositions(this.positions.filter(entry=>entry!==saved));
   }
 
+  approach(actor,destination) {
+    const target=this.rooms.get(destination),from=this.current(actor);
+    if(this.fenced||!target||from===destination||!this.allows(actor,destination))return null;
+    const seen=new Set([from]),queue=[{id:from,first:null}];
+    for(const {id,first} of queue){
+      if(id===destination)return {from,to:first};
+      const room=this.rooms.get(id);
+      const adjacent=this.view(actor,id);
+      const neighbors=room?[
+        ...adjacent.exits.map(exit=>exit.to),
+        ...(adjacent.exitDoor||adjacent.emergencyExit?[OUTSIDE]:[]),
+      ]:adjacent.entrances.filter(entry=>this.rooms.get(entry.id).house===target.house).map(entry=>entry.id);
+      for(const next of neighbors){
+        if(seen.has(next))continue;
+        seen.add(next);queue.push({id:next,first:first??next});
+      }
+    }
+    return null;
+  }
+
   canMove(actor,request) {
     if (this.fenced || !exact(request,'from,to') || !allowedActor(actor?.id) ||
         typeof request.to!=='string' || this.current(actor)!==request.from ||

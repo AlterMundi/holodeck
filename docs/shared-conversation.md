@@ -177,9 +177,18 @@ daimon is currently there and holds its own edit grant. Use the current recipe
 revision and a command ID. `result` with that same ID and interaction recovers
 the exact receipt, including after departure while access still holds. The
 server separates command IDs by interaction, so a sibling turn cannot read
-or replay that command's receipt. Other indoor mutations and movement use the
-existing own-native routes. Exterior edits and projections are unavailable
-from an indoor turn.
+or replay that command's receipt.
+
+If the daimon starts elsewhere, `observe` can include `approach` with the
+next permitted `from` and `to` on the route to the captured room. This
+requires a currently working turn, fresh room access and the daimon's edit
+grant. The daimon may explicitly pass those two fields to `act` with
+`type: "space.move"`. Each call moves through one existing passage and
+returns only its endpoints. Observe again to confirm the current position
+and obtain the next passage. The route ends at the captured room and
+offers no approach after the turn finishes. The human's location and
+retained original are independent. Other indoor mutations still use the
+own-native routes. Exterior edits and projections remain outside this turn.
 
 ### Return to the same Conversation
 
@@ -189,8 +198,9 @@ the real Holodeck context ledger and world socket, and synthetic I/O for the
 canonical writer, admission and final messages. Two independent Chromium
 actors contribute to the scenario. One uses the touch controls to set the
 first signal. The other submits through Conversation and continues moving
-while the original's machine attachment is held. The actual CLI applies the
-second signal under that exact admitted fixture interaction. Both browsers
+while the original's machine attachment is held. The actual CLI follows
+two authorized passages and applies the second signal under that exact
+admitted fixture interaction. Both browsers
 see completion. The original action receipt is recoverable with the same ID
 and unavailable to the sibling interaction.
 

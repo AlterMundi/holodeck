@@ -30,11 +30,16 @@ test('room links, scoped discovery, durable moves and uncertain saves',()=>{
   let saved,clock=123,fail=false,allowed=true;
   const spaces=new InteriorSpaces({houses,definitions,clock:()=>clock,guestAccess:()=>allowed,
     persist:state=>{saved=state;if(fail)throw new RoomCommitUncertain(Error('sync'));}});
+  assert.deepEqual(spaces.approach(guest,'gallery'),{from:'outside',to:'foyer'});
+  assert.equal(spaces.approach(guest,'lab'),null);
+  assert.equal(saved,undefined,'planning does not write a position');
   assert.equal(spaces.move(guest,{from:'outside',to:'lab'}),null);
   const entrance=spaces.view(guest).entrances[0];
   assert.deepEqual(entrance,{id:'foyer',title:house.facade.title,door:exteriorDoor(house)});
   assert.deepEqual(entrance.door,{x:-2.65,y:.11,z:15.5,facing:-1});
   assert.equal(spaces.move(guest,{from:'outside',to:'foyer'}).id,'foyer');
+  assert.deepEqual(spaces.approach(guest,'gallery'),{from:'foyer',to:'gallery'});
+  assert.equal(spaces.approach(guest,'foyer'),null);
   assert.equal(spaces.view(guest).exitDoor.z,4.9);
   assert.deepEqual(spaces.view(guest).exteriorDoor,entrance.door);
   assert.deepEqual(spaces.view(guest).exits.map(edge=>edge.to),['gallery']);

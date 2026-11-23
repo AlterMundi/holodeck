@@ -151,7 +151,12 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     listener=runtime.app.listen(0,'127.0.0.1');await once(listener,'listening');
     const base='http://127.0.0.1:'+listener.address().port+'/holodeck/';
     worldOrigin=new URL(base).origin;
-    const definitions=[{id:'owned-foyer',house,title:'Sala de prueba',level:0,entry:true,guests:[guest,'human:player'],links:[]}];
+    const definitions=[
+      {id:'owned-entry',house,title:'Entrada de prueba',level:0,entry:true,guests:[guest,'human:player'],
+        links:[{kind:'door',to:'owned-foyer'}]},
+      {id:'owned-foyer',house,title:'Sala de prueba',level:0,entry:false,guests:[guest,'human:player'],
+        links:[{kind:'door',to:'owned-entry'}]},
+    ];
     assert.equal((await act({type:'layout.publish',id:'trial-layout-01',house,expectedRevision:null,rooms:definitions})).ok,true);
     const publication={type:'design.put',id:'trial-design-01',room:'owned-foyer',kit:'listening-workshop',expectedRevision:null};
     assert.equal((await act(publication)).ok,true);
@@ -175,11 +180,15 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
       const page=await context.newPage();
       page.on('pageerror',e=>errors.push(e.message));
       await page.goto(base,{waitUntil:'domcontentloaded'});
-      assert.equal(await page.evaluate(async()=>{
-        const response=await fetch('api/space',{method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({from:'outside',to:'owned-foyer',live:1})});
-        return response.status;
-      }),200);
+      assert.deepEqual(await page.evaluate(async()=>{
+        const moves=[];
+        for(const [from,to] of [['outside','owned-entry'],['owned-entry','owned-foyer']]){
+          const response=await fetch('api/space',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({from,to,live:1})});
+          moves.push(response.status);
+        }
+        return moves;
+      }),[200,200]);
       await page.reload({waitUntil:'domcontentloaded'});
       await page.bringToFront();
       await page.waitForFunction(()=>document.querySelector('#hud h1')?.textContent==='Sala de prueba'&&
@@ -246,7 +255,16 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     releaseContext();
     for(let attempt=0;!originals.length&&attempt<100;attempt++)await new Promise(r=>setTimeout(r,100));
     assert.equal(originals.length,1);
-    assert.equal((await act({type:'space.move',from:'outside',to:'owned-foyer'})).ok,true);
+    const nativeApproach=[];
+    for(const expected of [{from:'outside',to:'owned-entry'},{from:'owned-entry',to:'owned-foyer'}]){
+      const observation=await worldRequest('observe',{},original.id);
+      assert.equal(observation.result.space.activity.canPlay,false);
+      assert.deepEqual(observation.result.approach,expected);
+      const moved=await worldRequest('act',{type:'space.move',...expected},original.id);
+      assert.deepEqual(moved,{ok:true,result:expected});
+      nativeApproach.push(moved.result);
+    }
+    assert.equal((await worldRequest('observe',{},original.id)).result.space.activity.canPlay,true);
     const whileWalking=await keyboard.evaluate(()=>document.querySelector('#shared-conversation iframe')!==null&&
       document.querySelector('#conversation-panel').hidden);
     assert.equal(whileWalking,true);
@@ -313,7 +331,8 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     final(original.id,primaryText);
     await keyboard.locator('#talk').click();
     await waitForAnswer(primaryText);
-    assert.equal(await topic.inputValue(),'right-bench');
+    const nextRoomTopic=await topic.inputValue();
+    assert.equal(nextRoomTopic,'right-bench');
     assert.equal(original.capture.referredRoomObject.id,'left-bench');
     assert.equal(await answer(primaryText).count(),1);
     assert.equal(await answer(siblingText).count(),1);
@@ -343,13 +362,14 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     assert.equal(originals.length,2);
     assert.equal(uploads,2);
     assert.equal(canonicalPosts,1);
+    console.error('The admitted original reached the garden through its two authorized passages');
     await touch.screenshot({path:join(HOLODECK_EVIDENCE_DIR,'reconnected-game.png')});
     assert.deepEqual(errors,[]);
     const evidence={simulatedActors:true,actualModel:false,touchActions:true,keyboardMovement:true,matchingProgress:true,
-      retainedRoomTopic:original.capture.referredRoomObject.id,nextRoomTopic:await topic.inputValue(),
+      retainedRoomTopic:original.capture.referredRoomObject.id,nextRoomTopic,
       situatedRoom:original.capture.place.id,initialContributors:original.capture.place.activity.progress.contributors,
       canonicalOriginals:originals.length,canonicalPosts,machineAttachments:uploads,replyRenderedOnce:true,siblingCompletedFirst:true,
-      sameConversationFrame:true,foreignReceiptDenied:true,worldReceipt:effect.result,recoveredComplete:recovered.progress.complete};
+      sameConversationFrame:true,foreignReceiptDenied:true,nativeApproach,worldReceipt:effect.result,recoveredComplete:recovered.progress.complete};
     writeFileSync(join(HOLODECK_EVIDENCE_DIR,'result.json'),JSON.stringify(evidence,null,2)+'\n');
     console.log(JSON.stringify(evidence));
   }finally{

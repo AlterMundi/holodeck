@@ -146,7 +146,9 @@ export async function createConversationContexts({room,stateDir,transport,allowI
       const final=await transport.inspect(record.actorRef);
       if(encode(final)!==encode(record.frozen))throw fail('binding','The pair or Conversation changed during canonical observation');
       return {actor:{id:current.beingRef,ref:current.beingRef,kind:'daimon'},humanRef:record.actorRef,nativeRequest:record.id,
-        ...(record.observation.scope==='structured-interior-room'?{capturedSpace:record.observation.place.id}:{})};
+        ...(record.observation.scope==='structured-interior-room'?{
+          capturedSpace:record.observation.place.id,working:status.phase==='working',
+        }:{})};
     },
     async release(actor,id){
       const record=owned(actor,id);if(fenced||record.phase!=='prepared')return {released:false};
