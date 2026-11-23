@@ -78,3 +78,41 @@ Walking with the hybrid reached 2,100 ms median and 5,367 ms p95. These
 software-renderer samples describe the cost in this fixture. Target GPU,
 peak VRAM and physical Raspberry Pi performance were outside this trial.
 The splat remains an experiment. The live room still uses its Blender GLB.
+
+## Direct UV material proof
+
+Nicolás selected a reusable workflow from neutral Blender volumes and ImageGen
+references, with a pure-splat physical Raspberry Pi trial, a splat-and-mesh
+interaction trial and a texture-on-mesh trial. This first texture proof uses
+the exact existing Matter floor and fixed room fixtures; it does not yet
+produce a complete skin from a new neutral blockout.
+
+Using the built-in ImageGen tool, request an orthographic square of honed
+honey limestone using the approved Matter room view for style. Ask for a
+seamless diffuse base-color swatch, one approximately 1.2-meter slab, with
+neutral lighting and no shadows, grout, crop or perspective. Then run:
+
+```sh
+blender --background art/collection/matter-workshop.blend --python-exit-code 1 \
+  --python art/collection/appearance-study/floor-skin.py -- \
+  LIMESTONE_BASE_COLOR.png OUTPUT_DIRECTORY
+```
+
+The script maps the stone and regular joints at room scale. Cycles bakes
+diffuse illumination from the existing fixtures onto the same floor UVs.
+The generated PNG is the editable baked atlas and the JPEG derivative is
+embedded in the floor-only glTF. Two Blender camera renders use identical
+geometry. The JPEG export was read back as one primitive, one UV channel and
+one embedded image, totaling 69,136 bytes.
+
+For a second ImageGen pass, use the complete baked atlas as the square edit
+target and the scene image only as style reference. Request the existing ten
+rows and columns, no crop, and exact pixels for every grout line and the
+bench and cabinet shadows. Request only grain and palette changes on the
+existing texels. Apply that image to the same UVs for the second comparison.
+In this run the 18 interior grid lines differed by at most one pixel after
+resampling both atlases to 512 × 512. The direct ImageGen pass deepened the
+cabinet shadow and some local tonal variation. Both variants rendered from
+the entry and a lateral camera. The 69,136-byte result describes the
+deterministic bake variant, with browser and physical-device qualification
+still open for the new texture route.
