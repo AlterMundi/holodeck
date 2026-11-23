@@ -154,13 +154,13 @@ reached the west verge at the existing floor height. Continue the terrain
 surface and workshop finish pass on the same route, particularly adjoining
 islands, the house yard and workshop floor and wall joints.
 
-The parcel-terrace archive leaves 18,432 bytes under the receiving
-32 MiB bound. Test lossless precompression against the existing asset
-delivery contract before the next larger furniture or terrain pass.
-An offline Brotli sample of the existing house walk, façade, foyer and
-Beacon geometry saved 3,038,053 bytes in total. Preserve exact decoded GLBs,
-revisioned paths, cache policy, range support where applicable and current
-authorization on both room and public-world asset routes.
+The selected archive stores the 13 atelier GLBs losslessly and leaves
+6,653,952 bytes below the existing receiver limit. The matched Chromium
+route transferred 43.6% fewer bytes for selected exterior models and
+35.2% fewer for the foyer, gallery and Beacon lab. Retain the exact
+decoded GLBs, revisioned URLs, identity ranges and authorization on
+both asset paths during the next furniture and terrain pass. Measure
+frame pacing and first-time/revisit latency separately from transfer size.
 
 ### Finish the architecture and props in the running game
 

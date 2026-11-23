@@ -10,7 +10,20 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`a663055`, package `b3bd76b892a1`. A Blender-authored coastal meadow and
+`d31150c`, package `c100bf1f9a77`. The package stores 13 pinned atelier GLBs
+once as Brotli and falls back to the exact original decoded bytes. The archive
+fell from 33,536,000 to 26,900,480 bytes. Packaged Chromium recorded 43.6% fewer
+transferred model bytes for the eight selected exterior GLBs and 35.2% fewer
+for the foyer, gallery and Beacon lab. It rendered the three rooms and returned
+to the original exterior entrance on the same page. Two simulated authorized
+actors received their own gallery variants. Foreign and revoked lab reads
+were refused, including conditional requests. Authenticated HTTPS verified
+both full encodings, exterior byte ranges and no reachable package sidecars.
+All 54 installed files and the protected world state were checked. Package
+`b3bd76b892a1` is the compatible rollback. The byte savings are measured.
+Representative travel latency and frame pacing still need separate evidence.
+
+The preceding release served source `a663055`, package `b3bd76b892a1`. A Blender-authored coastal meadow and
 basalt strata carry the existing house terrace down to the sea. Small stone
 markers replace the flat parcel plates while the eight parcel positions,
 their dimensions and the original walking surfaces are preserved. The new
