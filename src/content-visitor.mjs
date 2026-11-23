@@ -3,8 +3,8 @@ import {CONTENT_NODE,validateContentNodes,sameVisitPin,visitResponseMatches,know
 // One retained Nexus visit. Hiding this panel never destroys media, a draft,
 // capture or native response polling. The trusted viewer owns that lifecycle.
 export class ContentVisitor{
- constructor({document,window,base,say,scoped=false}){
-  Object.assign(this,{document,window,base,say,scoped});this.entries=[];this.nodes=[CONTENT_NODE];this.catalogGeneration=0;this.pending=new Map();this.disposed=false;this.lastContext=null;
+ constructor({document,window,base,say,scoped=false,onCatalog=()=>{}}){
+  Object.assign(this,{document,window,base,say,scoped,onCatalog});this.entries=[];this.nodes=[CONTENT_NODE];this.catalogGeneration=0;this.pending=new Map();this.disposed=false;this.lastContext=null;this.galleryRenewAt=Infinity;
   this.button=document.querySelector('#visit-near');this.panel=document.querySelector('#content-visit');
   this.button.onclick=()=>this.open(this.nearby?.id||this.entry?.id,
     {nodeRevision:this.scoped?(this.nearby||this.entry)?.nodeRevision??null:null}).catch(()=>say('No pude abrir esta presentación. Podés volver a intentarlo.'));
@@ -34,10 +34,14 @@ export class ContentVisitor{
    const response=await fetch(new URL(this.scoped?'api/space/content-visits':'api/content-visits',this.base),{credentials:'same-origin',signal:AbortSignal.timeout(5000)});
    if(!response.ok)throw Error('Catalog unavailable');
    const value=await response.json();if(this.disposed||generation!==this.catalogGeneration)return false;
-   this.nodes=this.scoped?[]:validateContentNodes(value.nodes);this.entries=Array.isArray(value.visits)?value.visits.slice(0,16).map(entry=>{const node=this.nodes.find(node=>node.id===entry.node);return {...entry,title:entry.title||node?.title,position:entry.position||node?.position};}):[];this.catalogSignature=signature;this.choices();return true;
+   this.nodes=this.scoped?[]:validateContentNodes(value.nodes);this.entries=Array.isArray(value.visits)?value.visits.slice(0,16).map(entry=>{const node=this.nodes.find(node=>node.id===entry.node);return {...entry,title:entry.title||node?.title,position:entry.position||node?.position};}):[];this.catalogSignature=signature;this.choices();
+   this.galleryRenewAt=this.scoped&&this.entries.some(entry=>entry.galleryDisplay===true)?performance.now()+20000:Infinity;
+   if(this.scoped&&this.frame&&!this.hasCurrentEntry())this.minimize();
+   this.onCatalog(this.entries);return true;
   }catch{
    if(this.scoped&&!this.disposed&&generation===this.catalogGeneration){
-    this.entries=[];this.nearby=null;this.choices();
+    this.entries=[];this.nearby=null;this.choices();this.galleryRenewAt=Infinity;this.onCatalog([]);
+    if(this.frame)this.minimize();
    }
    return false;
   }
@@ -60,6 +64,11 @@ export class ContentVisitor{
    ?(this.nearby.title?'Visitar '+this.nearby.title:'Visitar contenido')
    :this.frame&&this.nearby&&this.nearby.id===this.entry?.id&&!sameVisitPin(this.nearby.pin,this.entry.pin)?'Visitar nueva edición'
    :canResume?'Volver al contenido':'Visitar contenido';
+ }
+
+ refreshGallery(){
+  if(!this.disposed&&!this.catalogFlight&&performance.now()>=this.galleryRenewAt)
+   this.catalog=this.loadCatalog();
  }
 
  hasCurrentEntry(){
@@ -144,6 +153,7 @@ export class ContentVisitor{
    this.pending.clear();this.frame.remove();this.frame=null;
   }
   this.entry=null;this.nearby=null;this.lastContext=null;this.entries=[];this.scoped=scoped;
+  this.galleryRenewAt=Infinity;this.onCatalog([]);
   this.button.hidden=true;this.panel.hidden=true;
   this.catalog=this.loadCatalog();
  }

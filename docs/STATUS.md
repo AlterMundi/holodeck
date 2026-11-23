@@ -45,8 +45,16 @@ historical manifest. HTTP fixtures exercised distinct visitor scopes,
 revocation and room departure while a descriptor was in flight. Chromium
 with a controlled Nexus server verified that returning to an available
 edition reused its viewer and a revoked edition no longer appeared as a
-resume action or current world reference. Authenticated gallery traversal
-against published Nexus content and the in-world object displays remain open.
+resume action or current world reference. The renderer now mounts the exact
+authorized original GLB over each authored pedestal. It verifies the Nexus
+edition and Homes publication and checks the snapshot checksum. It fits the
+geometry after excluding only the original horizon-water material, leaving
+the published file intact. The actual WebGL client rendered the sealed
+gallery with three displays for an admitted owner fixture and one for an
+independent visitor fixture, which made no draft or archive model request.
+All three test slots used the verified 1,500,604-byte published snapshot.
+The three distinct live sources, physical mobile performance, and human
+inspection and return remain unverified.
 
 Isolated Chromium walked from the normal exterior spawn to the east garden,
 past the miniature, through the original house entrance and into the foyer,

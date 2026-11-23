@@ -95,9 +95,12 @@ meters. The draft and archive anchors are at `(3.3945, .1, -.34944)` and
 `(3.3945, .1, 3.67744)`. They use the exact review pins selected in the
 protected receiving configuration. The published anchor preserves the
 existing owner placement. Holodeck checks each source through Nexus before
-offering to open it at its pedestal. This connects the viewer action at each
-anchor. Direct rendering of each authorized model at its pedestal is a
-separate implementation step.
+offering to open it at its pedestal. The renderer fits the existing
+protected snapshot inside the authored case, above the plinth top. It omits
+the horizon water from the display, matching the existing review export. The
+immutable source, normal Nexus controls and publication audiences remain
+authoritative. Scenes without a supported static snapshot still have their
+ordinary versioned opening action when authorized.
 
 For the connected local candidate, generate the retained scenery around the
 new eastern garden with `tools/create-island-scenery.mjs --east-replaced`.

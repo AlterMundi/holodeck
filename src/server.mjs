@@ -401,7 +401,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     };
     const visits=await allowedGalleryVisits({entries:currentEntries(),currentEntries,
       authorize:pin=>authorizeGallery(req.headers.cookie,pin)});
-    res.json({visits});
+    res.json({visits:visits.map(entry=>({...entry,galleryDisplay:
+      entry.pin.kind==='artifact_review'&&entry.pin.adapter==='interactive_3d'}))});
   }));
   app.get(route('api/space'),(req,res)=>{
     if(spaces.fenced||room.commitUncertain)return res.status(503).json({message:'No pude confirmar tu ubicación.'});

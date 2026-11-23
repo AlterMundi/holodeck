@@ -33,6 +33,16 @@ pointer. A move or edition change during the check invalidates that result.
 Responses use `no-store`; the browser rechecks the catalog on open or resume.
 The same-origin viewer still performs its own access checks.
 
+The in-room 3D display reads the exact Nexus manifest and the authorized
+Homes version's `creation.json` and `snapshot.glb` through that same
+visitor's session. It checks the returned version headers and the snapshot's
+SHA-256 before loading. This display accepts the existing Holodeck static
+snapshot format, capped at 4 MiB per GLB and three active displays. The
+ordinary Nexus viewer remains the action for other asset formats. Displays
+renew their catalog authorization every 20 seconds while the gallery is
+active, expire after 30 seconds, and are removed on access loss or departure.
+No protected GLB goes into the deployable package or room preload cache.
+
 Caddy's maintained service writer preserves `/holodeck/` on both HTTP and
 WebSocket requests. Its forward-auth checks the selected current service audience
 before proxying; incoming identity headers and Authorization are stripped.

@@ -9,6 +9,7 @@ import { saveIntent, loadIntent, archiveIntent, sameActor, nativeRetryRoute } fr
 import { NativeAvatarLayer } from './native-avatar.mjs';
 import {PublicWorldPicker,WorldIndication} from './world-indication.mjs';
 import { ContentVisitor } from './content-visitor.mjs';
+import { GalleryModels } from './gallery-models.mjs';
 import {pickedRepresentationVisit} from './node-representations.mjs';
 import { PlayableHUD } from './playable-hud.mjs';
 import { AppliedGeometryProbe } from './applied-geometry.mjs';
@@ -42,7 +43,9 @@ function startInterior(space){
   document.querySelector('#people').textContent=space.level===0?'Planta baja':
     space.level<0?`Subsuelo ${-space.level}`:`Piso ${space.level}`;
   const notice=new WorldNotice(document.querySelector('#notice'));
+  let galleryModels;
   const visitor=new ContentVisitor({document,window,base,scoped:true,
+    onCatalog:entries=>galleryModels?.sync(entries),
     say:(message,options)=>notice.show(message,options)});
   let exhibitRevision=space.exhibitRevision===undefined?null:String(space.exhibitRevision);
   const exhibitObserver=new MutationObserver(()=>{
@@ -65,11 +68,14 @@ function startInterior(space){
     enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
     createRenderer:options=>{
       const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
-      const render=renderer.render.bind(renderer);
+      galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
+      galleryModels.sync(visitor.entries);
+      const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
       renderer.render=state=>{
         const position=client.getLocalCharacterState()?.position;
-        updateDoor(position);visitor.update(position);render(state);
+        galleryModels.update();visitor.refreshGallery();updateDoor(position);visitor.update(position);render(state);
       };
+      renderer.dispose=()=>{galleryModels.clear();dispose();};
       queueMicrotask(options.onInitialized);return renderer;
     },
     animationConfig:animations,
@@ -95,7 +101,7 @@ const setMoving=value=>{
   }
   if(!value){clearTimeout(moveDeadline);moveDeadline=null;}
 };
-const removeScene=()=>{remoteScene?.remove();remoteScene=null;};
+const removeScene=()=>{galleryModels?.clear();remoteScene?.remove();remoteScene=null;};
 function mountScene(){
   removeScene();
   if(!inside)return true;
@@ -107,6 +113,7 @@ function mountScene(){
   remoteScene=wrapper.remoteDocument;
   remoteScene.append(stored.template.content.cloneNode(true));
   renderer.mmlTargetElement.append(remoteScene);
+  if(!contentVisitor?.catalogFlight)galleryModels?.sync(contentVisitor?.entries??[]);
   return true;
 }
 function onNear(destination){
@@ -218,7 +225,7 @@ document.addEventListener('keydown',event=>{
   }
 },true);
 const playableHUD=new PlayableHUD(document);
-let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null,worldHistory=null;
+let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,galleryModels=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null,worldHistory=null;
 const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
   sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket(hot?'active/network':'network'),waitForWorldConfig:true,
   enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
@@ -226,6 +233,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
   // the public renderer factory and a bounded 1024² light instead, on all clients.
   createRenderer:options=>{
     const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
+    galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
     const light=new DirectionalLight(0xffefd6,1.8);
     light.position.set(12,22,10);light.target.position.set(0,0,-6);light.castShadow=true;
     light.shadow.mapSize.set(1024,1024);
@@ -258,8 +266,9 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       const position=client.getLocalCharacterState()?.position;
       light.visible=!inside||!activeSpace.indoorLighting;
       nativeAvatarLayer.update();
+      galleryModels.update();
       if(!inside){worldIndication?.update();if(!moving)playableHUD.update(position);}
-      if(!moving){contentVisitor?.update(position);updateDoor(position);}
+      if(!moving){if(inside)contentVisitor?.refreshGallery();contentVisitor?.update(position);updateDoor(position);}
       render(renderState);
       if(!inside)geometryProbe.afterRender();
       if(hot&&moving&&canFinishMove())setMoving(false);
@@ -279,7 +288,9 @@ window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()
 const $=selector=>document.querySelector(selector);
 const notice=$('#notice');
 const worldNotice=new WorldNotice(notice);
-contentVisitor=new ContentVisitor({document,window,base,say,scoped:inside});
+contentVisitor=new ContentVisitor({document,window,base,say,scoped:inside,onCatalog:entries=>{
+  if(remoteScene)galleryModels?.sync(entries);
+}});
 worldHistory=new WorldHistory({document,window,getState:()=>state,
   load:(query,{signal})=>api('activity?'+new URLSearchParams(query),undefined,{signal}),
   resumeWorld:()=>{document.activeElement?.blur();window.focus();},onDiscuss:()=>openConversation(true),
