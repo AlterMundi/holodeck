@@ -189,16 +189,18 @@ def register_beacon(obj):
     stone = bpy.data.materials['Honed honey limestone']
     oak = bpy.data.materials['Dark oiled oak']
     brass = bpy.data.materials['Satin brass']
+    basalt = bpy.data.materials['Split basalt']
+    iron = bpy.data.materials['Blue gunmetal']
     pieces = [obj]
 
-    def piece(name, at, size, mat, tilt=0):
+    def piece(name, at, size, mat, tilt=0, bevel=.015, segments=3):
         bpy.ops.mesh.primitive_cube_add(size=1, location=at)
         part = bpy.context.object
         part.name, part.dimensions = name, size
         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
         part.rotation_euler.x = tilt
         border = part.modifiers.new('Dressed edges', 'BEVEL')
-        border.width, border.segments = .015, 3
+        border.width, border.segments = bevel, segments
         part.data.materials.append(mat)
         pieces.append(part)
 
@@ -216,6 +218,35 @@ def register_beacon(obj):
         piece('Limestone landing wall',(x,5.86,2.799),(width,.16,5.398),stone)
     piece('Stair portal architrave',(-3,5.84,3.55),(1.76,.19,.17),oak)
     piece('Upper landing lintel',(-3,5.86,4.59),(1.74,.16,1.82),stone)
+
+    # Stop the skirting at the stair opening and keep both rail sweeps clear.
+    # Wall and hardware details sit on the existing shell or occupied benches.
+    for side in (-1,1):
+        piece('Basalt wall foot',(side*5.586,.28,.176),(.130,10.99,.152),basalt)
+        piece('Limestone skirting cap',(side*5.583,.28,.259),(.142,10.99,.033),stone,bevel=.007,segments=1)
+        piece('Workshop oak wainscot',(side*5.586,.28,.582),(.103,10.97,.643),oak)
+        piece('Dressed oak chair rail',(side*5.560,.28,.922),(.146,10.97,.073),oak)
+        piece('Vault side wall plate',(side*5.573,.28,5.210),(.159,10.97,.202),oak)
+    piece('Rear basalt wall foot',(0,-5.232,.175),(11.18,.145,.152),basalt)
+    piece('Rear limestone skirting cap',(0,-5.232,.258),(11.18,.152,.034),stone,bevel=.007,segments=1)
+    for x,width in [(-4.89,1.94),(1.83,7.84)]:
+        piece('Landing wall foot',(x,5.733,.177),(width,.135,.154),basalt)
+        piece('Landing limestone cap',(x,5.729,.260),(width,.14,.034),stone,bevel=.007,segments=1)
+    piece('Stair landing stone',(-3,2.10,.097),(1.81,2.104,.020),stone,bevel=.004)
+    for x in (-3.82,-2.18):
+        piece('Landing bronze edge',(x,2.10,.109),(.017,2.08,.005),brass,bevel=.0015,segments=1)
+
+    for side,y,x in [(1,.791,3.802),(-1,-2.659,-3.758)]:
+        piece('Acoustic bay oak frame',(side*5.572,y,1.945),(.101,2.56,1.53),oak)
+        piece('Acoustic bay dark backing',(side*5.510,y,1.945),(.036,2.375,1.345),iron)
+        for offset in (-.97,-.73,-.49,-.25,0,.25,.49,.73,.97):
+            piece('Acoustic oak blade',(side*5.482,y+offset,1.945),(.048,.076,1.305),oak,bevel=.008,segments=1)
+        for height in (1.238,2.652):
+            piece('Acoustic bay brass bead',(side*5.509,y,height),(.024,2.398,.020),brass,bevel=.004,segments=1)
+        piece('Bench instrument drawers',(x,y,.634),(1.20,.50,.415),iron)
+        for height in (.531,.729):
+            piece('Rebated oak drawer front',(x,y+.250,height),(1.23,.044,.179),oak,bevel=.009)
+            piece('Brass drawer pull',(x,y+.280,height),(.205,.031,.035),brass,bevel=.006,segments=1)
     select(pieces)
     bpy.ops.object.convert(target='MESH')
     bpy.ops.object.join()

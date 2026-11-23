@@ -94,6 +94,27 @@ keeps the bench lights. The lighting matches the existing geometry and
 collision. See the [stair reveal before](review/beacon-light-before.jpg)
 and [after](review/beacon-light-after.jpg) in the game renderer.
 
+### Beacon joinery and workstations
+
+At the stair foot, dressed limestone and bronze edging set the landing apart
+from the basalt floor. A continuous basalt and oak base ties the vault to the
+walls. Each bench has an oak acoustic bay and recessed instrument drawers.
+The existing stair, walkable floor and bench envelopes govern collision.
+Both bench actions still refer to the established Spatializer and Weaver panel
+routes. The packaged trial checked these handoffs in the game UI.
+
+[Previous stair view](review/beacon-finish-before-reveal.jpg) ·
+[Finished stair view](review/beacon-finish-candidate-reveal.jpg) ·
+[Spatializer bench](review/beacon-finish-candidate-audio.jpg) ·
+[Weaver bench](review/beacon-finish-candidate-body.jpg)
+
+The editable chamber source and the named joinery in
+[`register_beacon()`](export_cells.py) produce the same nine material batches.
+The export rebakes albedo, normals, contact and static diffuse light with the
+existing Cycles rig. The room's Brotli payload is 1,602,320 bytes, compared
+with 1,612,132 bytes for the preceding edition.
+
+
 ```sh
 blender -b art/compaii-house/redesign/casa-compaii-redesign.blend -t 6 --python-exit-code 1 \
   -P art/compaii-house/redesign/cell-irradiance.py -- "$EXPORT_OUTPUT" foyer
