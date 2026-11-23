@@ -343,6 +343,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
           interiorKey.position.set(...key.position);
           interiorKey.target.position.set(...key.target);
           interiorKey.color.set(key.color);
+          interiorKey.intensity=key.intensity??160;
         }
       }
       sky.update(!inside?activeSpace?.outdoorSky:null);

@@ -1,5 +1,6 @@
 """Bake the authored cells into self-contained core glTF for runtime review."""
 import json
+import runpy
 import struct
 import sys
 from pathlib import Path
@@ -255,7 +256,7 @@ def bake_contact(obj, cell, scratch):
     return bake(obj, cell+'-contact', 'EMIT', 512, scratch)
 
 
-def portable_materials(obj, color, normal, contact=None):
+def portable_materials(obj, color, normal, contact=None, bounce=None):
     if contact:
         settings = bpy.data.node_groups.new('glTF Material Output', 'ShaderNodeTree')
         settings.interface.new_socket(name='Occlusion', in_out='INPUT', socket_type='NodeSocketFloat')
@@ -280,6 +281,11 @@ def portable_materials(obj, color, normal, contact=None):
             output = nodes.new('ShaderNodeGroup')
             output.node_tree = settings
             links.new(contact_node.outputs['Color'], output.inputs['Occlusion'])
+        if bounce and shader.inputs['Emission Strength'].default_value == 0:
+            radiance = nodes.new('ShaderNodeTexImage')
+            radiance.image = bounce
+            links.new(radiance.outputs['Color'], shader.inputs['Emission Color'])
+            shader.inputs['Emission Strength'].default_value = 1-shader.inputs['Metallic'].default_value
 
 
 def inventory(path):
@@ -312,8 +318,12 @@ if __name__ == '__main__':
     normal_size = {'tower':768,'foyer':896}.get(cell,NORMAL_RESOLUTION)
     color = bake(obj, cell+'-albedo', 'DIFFUSE', color_size, destination)
     normal = bake(obj, cell+'-normal', 'NORMAL', normal_size, destination)
+    bounce = None
+    if cell == 'foyer':
+        lighting = runpy.run_path(str(Path(__file__).with_name('foyer-irradiance.py')))
+        bounce = lighting['portable_bounce'](obj,destination/'foyer-albedo.png',color_size,destination)
     contact = bake_contact(obj, cell, destination) if cell in ('foyer','gallery','gallery-sealed') else None
-    portable_materials(obj, color, normal, contact)
+    portable_materials(obj, color, normal, contact, bounce)
     path = destination / (cell+'.glb')
     bpy.ops.export_scene.gltf(filepath=str(path), export_format='GLB', use_selection=True,
                               export_animations=False, export_cameras=False, export_lights=False)

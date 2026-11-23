@@ -93,14 +93,15 @@ first thing a player sees. Keep each route simple enough to learn after one
 walk. Reserve expansion edges for later rooms and link distant floors with the
 existing internal portals.
 
-Use Cycles to light the authored environments and bake indirect diffuse
-illumination for static surfaces. Carry that into the existing Three.js
-renderer in linear light with a separate light-map UV channel. Preserve
-physically based material response, reflections and the bounded real-time
+Use Cycles to light the authored environments and bake diffuse illumination
+for static surfaces. Mix the bake and material color in linear light.
+The foyer carries the static diffuse result as an embedded glTF atlas
+registered to its existing UVs, which the current Three.js renderer reads.
+Preserve physically based material response, reflections and the bounded real-time
 lights that make moving characters and tools belong in the scene. Calibrate
 ambient fill against the baked contribution so the combination retains depth.
 Set exposure from the actual garden-to-workshop route. The foyer is the first
-comparison for baked indirect light, playable lighting and frame cost.
+comparison for baked light, playable lighting and frame cost.
 Progressive path tracing is an option for stationary reference and inspection.
 
 | Release area | Build and verify in the existing world |

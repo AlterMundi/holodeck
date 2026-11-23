@@ -77,12 +77,26 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   assert.match(entered.scene.markup,/vestibule-practical/);
   assert.match(entered.scene.markup,/id="passage-0" x="-3" z="-5.86"[^>]*>\s*<m-label[^>]*content="Galería"/);
   assert.deepEqual(entered.exits[0].door,{x:-3,y:.11,z:-4.81,yaw:180});
-  assert.equal((await authorized.read(roomArt(entered))).status,200);
+  const foyerResponse=await authorized.read(roomArt(entered));
+  assert.equal(foyerResponse.status,200);
+  const foyerBytes=Buffer.from(await foyerResponse.arrayBuffer());
+  const document=JSON.parse(foyerBytes.toString('utf8',20,20+foyerBytes.readUInt32LE(12)));
+  const lamp=document.materials.find(material=>material.name==='Honey lamp glass');
+  assert.ok(lamp.extensions.KHR_materials_emissive_strength.emissiveStrength>2);
+  assert.equal(lamp.emissiveTexture,undefined);
+  const baked=document.materials.filter(material=>material!==lamp);
+  const atlases=new Set(baked.map(material=>{
+    const {index,texCoord=0}=material.emissiveTexture;
+    assert.equal(texCoord,material.pbrMetallicRoughness.baseColorTexture.texCoord??0);
+    return document.textures[index].source;
+  }));
+  assert.equal(atlases.size,1);
+  assert.equal(document.images[atlases.values().next().value].mimeType,'image/jpeg');
   const open=await authorized.move(foyer,gallery);
   await visitor.move('outside',foyer);
   const sealed=await visitor.move(foyer,gallery);
   const openPath=roomArt(open),sealedPath=roomArt(sealed);
-  assert.deepEqual(entered.keyLight,{position:[4.87,3.15,1.75],target:[-2.30,.80,-2.3],color:'#ffe3bf'});
+  assert.deepEqual(entered.keyLight,{position:[4.87,3.15,1.75],target:[-2.30,.80,-2.3],color:'#ffe3bf',intensity:87});
   assert.deepEqual(open.keyLight,{position:[-4.82,3.62,.5],target:[2.45,1.05,.5],color:'#cde3ff'});
   assert.deepEqual(sealed.keyLight,open.keyLight);
   assert.notEqual(openPath,sealedPath);
