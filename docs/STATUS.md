@@ -139,16 +139,23 @@ browser fixture opened the restored edition and removed only that historical
 model after source access was revoked. The real Home owner separately confirmed
 four current resources and two exact historical editions. Touch Chromium also
 verified the two distinct portals and Matter round trip in an isolated copy
-of the authored Atelier graph. Live human
-Conversation delivery from the new workshop remains to be observed.
+of the authored Atelier graph. A further desktop-and-touch fixture restored
+the historical Support Study, rendered its complete 197,642 triangles for both
+actors, and prepared an exact selected part in the existing Conversation
+protocol. Revoking historical permission removed the model only for the
+affected actor, who could still receive the current 34,000-triangle edition
+when it was shared. The Conversation receiver and Home access decisions in
+this two-browser test were fixtures. Live human Conversation delivery from
+the workshop remains to be observed.
 [Room and source contract](houses.md#the-collection)
 
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`75f202b`, package `0bd9b4649d4e`, with `7581493a9cfd` as compatible rollback.
-It retains the selected Matter room and adds its bounded placement refresh
-stream. Receiver readback matched 64 installed payloads, 20 protected HTTPS
+`43b3d6e`, package `7bec67084ea3`, with `0bd9b4649d4e` as compatible rollback.
+The selected Matter room can inspect, share and refer to its restored exact
+editions. The compatible prior package used source `75f202b`; it added
+the bounded placement refresh stream. Receiver readback matched 64 installed payloads, 20 protected HTTPS
 responses and eight scope denials, including the new stream outside room
 authority. The two-browser refresh timing was measured in the isolated fixture.
 
