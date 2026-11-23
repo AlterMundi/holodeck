@@ -10,7 +10,23 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`9e9734a`, package `62b735015133`. The foyer has an inset orientation table,
+`25258be`, package `c968b95c4d77`. Both Harmonic Beacon workstations now
+open the existing authenticated Harmonic Lab panel in the world, focused on
+the selected tool. Closing it restores control at the same position in the
+same renderer. The panel mounts only on request and detaches when dismissed
+or when the workstation leaves scope. Its own access checks, service status
+and explicit start are retained. The device interfaces still open on the
+selected workstation through the panel's existing links.
+
+Chromium walked to both benches and opened and closed them in desktop and
+touch-emulated layouts using the exact panel frontend. One explicit Weaver
+start received its matching simulated job and enabled the device link only
+after readiness. Opening or closing a panel submitted no start. Receiving
+matched all 57 installed files, the authenticated HTTPS client and the exact
+world and room checkpoints. The panel's live access remains restricted to
+its existing recipient. Package `62b735015133` is the compatible rollback.
+
+The previous release served source `9e9734a`, package `62b735015133`. The foyer has an inset orientation table,
 west wall bench and joinery under the existing Cycles lighting rig. A simulated
 Chromium visitor walked beside the bench, crossed the gallery door both ways
 and returned to the original public threshold in the same renderer. The
