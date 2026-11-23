@@ -85,7 +85,8 @@ body:has(#content-visit:not([hidden]):not(.is-walking)) .touch-controls{visibili
 @media(min-width:741px) and (max-height:540px){
  #conversation-panel.shared-conversation{
   top:max(8px,env(safe-area-inset-top));bottom:max(8px,env(safe-area-inset-bottom));
-  width:min(540px,62vw);padding:10px
+  width:min(760px,calc(100vw - max(20px,env(safe-area-inset-left)) - max(20px,env(safe-area-inset-right))));
+  max-width:none;padding:8px;gap:6px
  }
 }
 #play-near{position:fixed;z-index:21;right:22px;top:148px;width:310px;max-width:calc(100vw - 44px);padding:12px 15px;border-radius:15px;font-size:14px}#play-near summary{cursor:pointer;min-height:44px;align-content:center;color:var(--gold)}#play-near summary strong{color:var(--ink)}#play-progress{display:block;margin:3px 0 0;color:var(--mint)}#play-instruction{margin:10px 0 0;color:var(--ink)}body:has(#content-visit:not([hidden]):not(.is-walking)) #play-near,body:has(#creator:not([hidden])) #play-near,body:has(#conversation-panel:not([hidden])) #play-near,body:has(#pointing:not([hidden])) #play-near{display:none}@media(max-width:740px){#play-near{top:205px;right:12px;width:calc(100vw - 24px);max-width:none;padding:10px 13px}body:has(#visit-near[hidden]) #play-near{top:148px}}
