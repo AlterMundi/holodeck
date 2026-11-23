@@ -51,6 +51,23 @@ def ident(value):
     return value
 
 
+def routed_execution(route):
+    """Accept only the owner's active observation for this exact instruction."""
+    proof=route.get('active_execution')
+    instruction=route.get('instruction')
+    if (route.get('native_acceptance') is not True or route.get('target_available') is not True
+        or route.get('transport_phase')!='accepted' or not isinstance(proof,dict)
+        or proof.get('status')!='running' or proof.get('instruction')!=instruction
+        or type(proof.get('local_turn')) is not int or proof['local_turn']<=0
+        or not isinstance(instruction,str)):
+        return None
+    try:
+        if str(uuid.UUID(instruction))!=instruction:return None
+    except ValueError:
+        return None
+    return {'status':'running','instruction':instruction,'local_turn':proof['local_turn']}
+
+
 class NativeBridge:
     def __init__(self,provider,pair_reader,world_port=None,home_auth=None,world_access_reader=None,review_ownership_reader=None):
         self.provider=provider
@@ -291,6 +308,10 @@ class NativeBridge:
             # A general-entry acknowledgment is not a routed work result. Read
             # only the owning trace's current, original-associated results.
             original_phase=result['phase'];states=[]
+            evidence=[route for route in routes if route.get('active_execution') is not None]
+            selected=evidence[0] if len(evidence)==1 else None
+            running=routed_execution(selected) if selected is not None else None
+            running_state=None
             for route in routes:
                 state={'instruction':route.get('instruction'),'phase':'queued'}
                 if (route.get('target_available') is not True or route.get('transport_phase') in
@@ -316,11 +337,19 @@ class NativeBridge:
                         result['message']=text
                     state['phase']='completed'
                     break
+                if route is selected and running and state['phase']=='queued':
+                    running_state=state
                 states.append(state)
             result['routes']=states
             result['tracking']=any(state['phase']=='queued' for state in states)
             if original_phase not in ('problem','unknown'):
-                result['phase']='problem' if any(state['phase']=='problem' for state in states) else 'queued' if result['tracking'] else 'completed'
+                if any(state['phase']=='problem' for state in states):
+                    result['phase']='problem'
+                elif running_state is not None:
+                    running_state['phase']=result['phase']='working'
+                    result['activeExecution']=running
+                else:
+                    result['phase']='queued' if result['tracking'] else 'completed'
             self.authorize(actor,frozen,current=context_file is not None)
             return result
         local=value.get('local_turn')

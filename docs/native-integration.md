@@ -114,7 +114,10 @@ action, use `holodeck-world --interaction <original> result '{"id":"<command-id>
 This also recovers recent receipts after the original completes and its
 prepared source is released, while the current pair and room grants still hold.
 See the [indoor source contract](shared-conversation.md#indoor-source-contract)
-for retention. This capability starts no background
+for retention. For a working indoor turn, `observe --json '{}'` provides
+`actions` with the operation and the current arguments for the next permitted
+passage or a garden signal. Supply a new command ID when asked and observe
+again after each passage. This capability starts no background
 attention, inference or provider session. Source tests and callback wiring do not
 establish receiving deployment or an actual creator action.
 

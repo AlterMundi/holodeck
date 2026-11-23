@@ -183,8 +183,13 @@ export async function createConversationContexts({room,stateDir,transport,allowI
       if(encode(final)!==encode(source.frozen))throw fail('binding','The pair or Conversation changed during canonical observation');
       if(fenced||(records[id]??receipts[id])!==source||(receipt?.run??record?.observation.run)!==room.run)
         throw fail('native-scope','The retained room source changed');
+      const execution=status.activeExecution;
+      const activeExecution=execution?.status==='running'&&uuid(execution.instruction)&&
+        Number.isSafeInteger(execution.local_turn)&&execution.local_turn>0?execution:null;
+      const working=status.phase==='working'&&(!Object.hasOwn(status,'activeExecution')||!!activeExecution);
       return {actor:{id:current.beingRef,ref:current.beingRef,kind:'daimon'},humanRef:source.actorRef,nativeRequest:id,
-        ...(capturedSpace?{capturedSpace,working:status.phase==='working',receiptOnly:!!receipt}: {})};
+        ...(capturedSpace?{capturedSpace,working,receiptOnly:!!receipt,
+          ...(working&&activeExecution?{activeExecution}:{})}: {})};
     },
     async release(actor,id){
       const previous=receipts[id];

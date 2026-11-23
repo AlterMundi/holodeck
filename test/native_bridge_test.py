@@ -313,6 +313,72 @@ class BridgeContracts(unittest.TestCase):
             'declared':True,'current':True,'correction_pending':False,'text_excerpt':'Actual routed fixture result','text_bounded':False}]
         result=self.bridge.status(self.actor,self.frozen,ident)
         self.assertEqual(result['phase'],'completed');self.assertEqual(result['message'],'Actual routed fixture result')
+    def test_exact_routed_execution_is_working_until_proof_absent_or_result_completed(self):
+        original=str(uuid.uuid4());instruction=str(uuid.uuid4())
+        proof={'status':'running','instruction':instruction,'local_turn':12}
+        route={'instruction':instruction,'target_available':True,'native_acceptance':True,
+               'transport_phase':'accepted','results':[]}
+        self.provider.routes=[route]
+        def status():return self.bridge.status(self.actor,self.frozen,original)
+        self.assertEqual(status()['phase'],'queued')
+        route['active_execution']={**proof,'native_turn':'private-fixture'}
+        active=status()
+        self.assertEqual(active['phase'],'working')
+        self.assertTrue(active['tracking'])
+        self.assertEqual(active['activeExecution'],proof)
+        self.assertEqual(active['routes'],[{'instruction':instruction,'phase':'working'}])
+        route.pop('active_execution')
+        self.assertEqual(status()['phase'],'queued')
+        self.assertNotIn('activeExecution',status())
+        route['active_execution']=proof
+        route['results']=[{'source':'delivery:fixture','revision':'b'*64,'instruction_covered':True,
+            'declared':True,'current':True,'correction_pending':False,'text_excerpt':'Routed result'}]
+        completed=status()
+        self.assertEqual(completed['phase'],'completed')
+        self.assertFalse(completed['tracking'])
+        self.assertNotIn('activeExecution',completed)
+
+    def test_invalid_routed_execution_cannot_promote_admission_to_working(self):
+        original=str(uuid.uuid4());instruction=str(uuid.uuid4())
+        proof={'status':'running','instruction':instruction,'local_turn':12}
+        route={'instruction':instruction,'target_available':True,'native_acceptance':True,
+               'transport_phase':'accepted','active_execution':proof,'results':[]}
+        for change in ({'active_execution':None},{'active_execution':'running'},
+                       {'active_execution':{**proof,'instruction':str(uuid.uuid4())}},
+                       {'active_execution':{**proof,'local_turn':True}},
+                       {'active_execution':{**proof,'local_turn':0}},
+                       {'active_execution':{**proof,'status':'completed'}},
+                       {'instruction':'bad','active_execution':{**proof,'instruction':'bad'}},
+                       {'native_acceptance':False},{'transport_phase':'queued'}):
+            with self.subTest(change=change):
+                self.provider.routes=[{**route,**change}]
+                result=self.bridge.status(self.actor,self.frozen,original)
+                self.assertEqual(result['phase'],'queued')
+                self.assertNotIn('activeExecution',result)
+        for change in ({'target_available':False},{'transport_phase':'retired'}):
+            with self.subTest(change=change):
+                self.provider.routes=[{**route,**change}]
+                result=self.bridge.status(self.actor,self.frozen,original)
+                self.assertEqual(result['phase'],'problem')
+                self.assertNotIn('activeExecution',result)
+
+    def test_routed_working_proof_is_unique_and_preserves_original_problem(self):
+        original=str(uuid.uuid4());instruction=str(uuid.uuid4());other=str(uuid.uuid4())
+        route={'instruction':instruction,'target_available':True,'native_acceptance':True,
+               'transport_phase':'accepted','results':[],
+               'active_execution':{'status':'running','instruction':instruction,'local_turn':12}}
+        sibling={**route,'instruction':other,'active_execution':None}
+        self.provider.routes=[route,sibling]
+        def status():return self.bridge.status(self.actor,self.frozen,original)
+        self.assertEqual(status()['phase'],'working')
+        sibling['active_execution']={'status':'running','instruction':other,'local_turn':13}
+        self.assertEqual(status()['phase'],'queued')
+        self.assertNotIn('activeExecution',status())
+        sibling.pop('active_execution')
+        self.provider.phase='failed'
+        self.assertEqual(status()['phase'],'problem')
+        self.assertNotIn('activeExecution',status())
+
     def test_situated_reply_settles_without_completing_umbrella_context_work(self):
         ident=str(uuid.uuid4())
         answer={'source':'delivery:covered-fixture','revision':'b'*64,'instruction_covered':True,

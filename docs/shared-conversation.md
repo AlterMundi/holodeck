@@ -194,7 +194,14 @@ grant. The daimon may explicitly pass those two fields to `act` with
 `type: "space.move"`. Each call moves through one existing passage and
 returns only its endpoints. Observe again to confirm the current position
 and obtain the next passage. The route ends at the captured room and
-offers no approach after the turn finishes. The human's location and
+offers no approach after the turn finishes. The same observation carries
+`actions` with currently available typed command arguments. For a passage,
+pass its `args` to the named `operation`. For a signal, add a fresh `id`
+when the entry requests it. The observation suggests unfilled targets or
+the available targets when the round still needs a contributor. Observe
+again after moving or changing the garden. These are suggestions from
+current scoped state, and the receiving writer still checks admission,
+room access and revision. The human's location and
 retained original are independent. Other indoor mutations still use the
 own-native routes. Exterior edits and projections remain outside this turn.
 
@@ -264,19 +271,16 @@ python3 tools/check-canonical-conversation-owner.py \
   --telecodex-source "$TELECODEX_SOURCE" --telecodex-binary "$TELECODEX_BINARY"
 ```
 
-The separate routed path still reports transport-accepted work as queued
-until a covering result appears. A route admission alone cannot authorize
-a situated write. Support for writing from an active routed worker needs
-an active-execution observation tied to the exact instruction, selected
-target and current local and physical native turn. See the owning
-Telecodex `input trace` and read-only `routing::session_inputs` path
-for the live run and binding checks. An accept or a persisted running row
-alone cannot grant the write. A fan-out with no selected target keeps its
-queued authority. Recheck the exact active execution immediately before
-mutation. Keep the canonical direct-owner path and terminal receipt
-recovery independently qualified. The in-room world observation provides
-passage and garden state. The model used the typed command contract to
-choose the appropriate interaction.
+An earlier owner reports transport-accepted routed work as queued until
+a covering result appears. The new optional `active_execution` observation
+links the exact instruction, explicitly selected target and live native
+execution. The bridge accepts a single valid proof and carries its local
+turn to Holodeck. Before a situated write the world checks that the exact
+instruction and turn are still running, after reading the current app
+grant. This is a fresh observation between services. It preserves the
+direct path and read-only terminal receipt recovery. An unselected fan-out,
+stale proof or transport acceptance alone leaves the turn without write
+authority.
 
 Use the existing package stage and installed Conversation/Playwright assets.
 Select a task-owned evidence directory and a short-lived loopback certificate

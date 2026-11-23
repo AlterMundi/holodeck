@@ -12,9 +12,21 @@ function situatedInterior({request,verified,actor,room,conversationPlace,indoorG
   const next=()=>verified.working&&actor.rights.includes('edit')?approachSpace?.(actor,captured.id):null;
   if(verified.receiptOnly&&operation!=='result')throw Error('The completed turn only supports receipt recovery');
   if(operation==='observe'&&!fields){
-    const approach=next();
+    const approach=next(),activity=captured.activity;
+    const actions=[];
+    if(approach)actions.push({operation:'act',args:{type:'space.move',...approach}});
+    if(verified.working&&activity?.canPlay&&!activity.progress.complete){
+      // An incomplete garden with all targets matched still needs another
+      // contributor. The live writer checks the supplied command and revision.
+      const allFilled=activity.progress.filledTargets===activity.progress.totalTargets;
+      for(const {index,entity} of activity.progress.targets){
+        if(allFilled||entity===null)actions.push({operation:'act',
+          args:{type:'garden.signal',room:captured.id,expectedRevision:activity.revision,index,color:activity.targets[index].color},
+          required:['id']});
+      }
+    }
     return {schema:'holodeck.space-observation/v1',run:room.run,edition:room.edition,
-      observer:actor.id,space:captured,...(approach?{approach}:{})};
+      observer:actor.id,space:captured,actions,...(approach?{approach}:{})};
   }
   const {nativeRequest,...command}=args;
   const commandFields=Object.keys(command).sort().join(',');
@@ -77,6 +89,17 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
         }
         if(expectedBeingRef!==null&&verified.actor?.ref!==expectedBeingRef)throw Error('Native return lane identity changed');
         if(!rights?.includes('observe'))throw Error('Room admission expired');
+        if(!own&&verified.capturedSpace&&verified.activeExecution&&request.operation==='act'){
+          const original=verified;
+          const current=await native.authorizeWorldRequest(request.interactionId,expectedBeingRef);
+          if(!current.working||current.receiptOnly||current.actor?.ref!==original.actor.ref||
+            current.nativeRequest!==original.nativeRequest||current.humanRef!==original.humanRef||
+            current.capturedSpace!==original.capturedSpace||
+            current.activeExecution?.instruction!==original.activeExecution.instruction||
+            current.activeExecution?.local_turn!==original.activeExecution.local_turn)
+            throw Error('The selected routed execution changed');
+          verified=current;
+        }
         const actor={...verified.actor,rights};
         const port=new DaimonPort(room,async()=>actor);
         const space=verified.capturedSpace?null:describeSpace?.(actor);

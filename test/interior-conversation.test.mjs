@@ -17,6 +17,7 @@ test('a canonical interior source freezes its authorized place before awaits and
   const binding='b'.repeat(64),socket=join(dir,'world.sock');
   const frozen={actorRef:user,beingRef:being,binding,entry:[1,{},2,'fixture']};
   let grant=true,canEdit=true,admitted=true,phase='working',uploads=[],openContexts,inspectEntered,releaseInspect,runtime,listener;
+  const statusTrace=[];
   const entered=new Promise(resolve=>{inspectEntered=resolve;});
   const parked=new Promise(resolve=>{releaseInspect=resolve;});
   new RoomStore(join(dir,'houses')).save({schema:'holodeck.houses/v1',houses:[{
@@ -38,7 +39,8 @@ test('a canonical interior source freezes its authorized place before awaits and
               entry_binding:req.frozen.entry,observation_id:req.observation.id,work_admitted:false,
               file:{file_id:randomUUID(),sha256:'d'.repeat(64),name:'holodeck-situation.json',mime:'application/json',size:2000}};
           },
-          status:async()=>({phase,retainedOriginal:true,tracking:phase==='working',nativeAcceptance:admitted?'observed':'unavailable'}),
+          status:async()=>({phase,retainedOriginal:true,tracking:phase==='working',
+            nativeAcceptance:admitted?'observed':'unavailable',...statusTrace.shift()}),
         };
         openContexts=()=>createConversationContexts({room,stateDir:join(stateDir,'context'),transport,allowInteriorSource});
         let contexts=await openContexts();
@@ -118,6 +120,7 @@ test('a canonical interior source freezes its authorized place before awaits and
     assert.ok(observed.result.space.objects.some(object=>object.id==='left-bench'&&object.title==='Mesa de consulta'&&object.revision===2));
     assert.equal(observed.result.space.activity.canPlay,false);
     assert.deepEqual(observed.result.approach,{from:'outside',to:'foyer'});
+    assert.deepEqual(observed.result.actions,[{operation:'act',args:{type:'space.move',from:'outside',to:'foyer'}}]);
     assert.equal((await port('observe',{},true)).result.space.id,'outside');
     assert.equal((await port('act',{type:'garden.signal',room:'foyer',expectedRevision:2,
       id:'fixture-outside-signal',index:0,color:'mint'},true)).ok,false);
@@ -140,13 +143,24 @@ test('a canonical interior source freezes its authorized place before awaits and
     assert.equal((await port('act',step)).ok,false);
     canEdit=true;
     phase='completed';
-    assert.equal((await port('observe')).result.approach,undefined);
+    const completedObservation=(await port('observe')).result;
+    assert.equal(completedObservation.approach,undefined);
+    assert.deepEqual(completedObservation.actions,[]);
     assert.equal((await port('act',step)).ok,false);
     phase='working';
     assert.equal((await port('act',{...step,nativeRequest:otherId})).ok,false);
     assert.deepEqual(await port('act',step),{ok:true,result:{from:'outside',to:'foyer'}});
     assert.equal((await port('act',step)).ok,false,'an advanced place refuses the old passage');
-    assert.equal((await port('observe')).result.approach,undefined);
+    const arrivedObservation=(await port('observe')).result;
+    assert.equal(arrivedObservation.approach,undefined);
+    const signalArgs={type:signal.type,room:signal.room,expectedRevision:signal.expectedRevision,index:signal.index,color:signal.color};
+    assert.deepEqual(arrivedObservation.actions,[{operation:'act',args:signalArgs,required:['id']}]);
+    const extraHumanSignal=await post('space/garden',{...signal,id:'fixture-one-contributor'});
+    assert.equal(extraHumanSignal.status,200);
+    const needsContributor=(await port('observe')).result;
+    assert.equal(needsContributor.space.activity.progress.filledTargets,2);
+    assert.equal(needsContributor.space.activity.progress.complete,false);
+    assert.deepEqual(needsContributor.actions.map(action=>action.args.index),[0,1]);
     assert.equal((await port('act',{type:'space.move',from:'foyer',to:'side-room'})).ok,false,
       'the turn cannot use an unrelated passage, even with permission to enter that room');
     assert.equal((await port('act',{...signal,room:'outside'})).ok,false);
@@ -158,6 +172,17 @@ test('a canonical interior source freezes its authorized place before awaits and
     assert.equal((await port('act',signal)).ok,false);
     admitted=true;
     assert.equal((await port('act',{...signal,nativeRequest:otherId})).ok,false);
+    const execution={status:'running',instruction:randomUUID(),local_turn:9};
+    statusTrace.push({phase:'queued',tracking:true});
+    assert.equal((await port('act',signal)).ok,false,'admitted without a running turn cannot write');
+    statusTrace.push({activeExecution:{...execution,local_turn:0}});
+    assert.equal((await port('act',signal)).ok,false,'an invalid route proof cannot use direct authority');
+    statusTrace.push({activeExecution:execution},{phase:'queued',tracking:true});
+    assert.equal((await port('act',signal)).ok,false,'routed execution ended before the write');
+    statusTrace.push({activeExecution:execution},{activeExecution:{...execution,local_turn:10}});
+    assert.equal((await port('act',signal)).ok,false,'a newer execution cannot replace the selected turn');
+    assert.equal((await port('result',{id:signal.id})).ok,false,'refused attempts left no result to replay');
+    statusTrace.push({activeExecution:execution},{activeExecution:execution});
     const acted=await port('act',{...signal,nativeRequest:id});
     assert.equal(acted.ok,true);
     assert.deepEqual(acted,await port('act',signal),'exact retry preserves the first result');
@@ -168,10 +193,12 @@ test('a canonical interior source freezes its authorized place before awaits and
     assert.equal(latest.sequence,acted.result.sequence);
     assert.equal(latest.progress.contributors,2);
     assert.equal(latest.progress.complete,true);
+    assert.deepEqual((await port('observe')).result.actions,[]);
     assert.equal((await port('act',{type:'space.move',from:'foyer',to:'outside'},true)).ok,true);
     assert.deepEqual(await port('result',{id:signal.id}),acted,'receipt survives leaving the room');
     phase='completed';
     assert.equal((await port('act',signal)).ok,false,'completed commands use the receipt reader');
+    headers=await browserHeaders();
     const release=await post('conversation-contexts/'+id+'/release',{});
     assert.deepEqual(await release.json(),{released:true,canonicalOriginalPreserved:true});
     const ledger=JSON.parse(readFileSync(join(dir,'context','conversation-contexts.json'),'utf8'));

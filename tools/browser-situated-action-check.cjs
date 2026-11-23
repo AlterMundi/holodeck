@@ -380,11 +380,20 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
       const observation=await worldRequest('observe',{},original.id);
       assert.equal(observation.result.space.activity.canPlay,false);
       assert.deepEqual(observation.result.approach,expected);
-      const moved=await worldRequest('act',{type:'space.move',...expected},original.id);
+      assert.deepEqual(observation.result.actions,[{operation:'act',args:{type:'space.move',...expected}}]);
+      const move=observation.result.actions[0];
+      const moved=await worldRequest(move.operation,move.args,original.id);
       assert.deepEqual(moved,{ok:true,result:expected});
       nativeApproach.push(moved.result);
     }
-    if(!modelHandoff)assert.equal((await worldRequest('observe',{},original.id)).result.space.activity.canPlay,true);
+    let offeredSignal=null;
+    if(!modelHandoff){
+      const current=(await worldRequest('observe',{},original.id)).result;
+      assert.equal(current.space.activity.canPlay,true);
+      assert.deepEqual(current.actions,[{operation:'act',
+        args:{type:'garden.signal',room:'owned-foyer',expectedRevision:1,index:0,color:'mint'},required:['id']}]);
+      offeredSignal=current.actions[0];
+    }
     const whileWalking=await keyboard.evaluate(()=>document.querySelector('#shared-conversation iframe')!==null&&
       document.querySelector('#conversation-panel').hidden);
     assert.equal(whileWalking,true);
@@ -406,13 +415,16 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
       ...(admission?{canonicalAdmission:{file:admission.file,localTurn:admission.localTurn,nativeTurn:admission.nativeTurn},
         worldInterface:admission.worldInterface}:{}),
     }):null;
-    const command={type:'garden.signal',id:modelAnswer?.commandId??'readable-native-signal',room:'owned-foyer',expectedRevision:1,index:0,color:'mint'};
-    const effect=modelAnswer?await worldRequest('result',{id:command.id},original.id):await worldRequest('act',command,original.id);
+    const command={...(offeredSignal?.args??{type:'garden.signal',room:'owned-foyer',expectedRevision:1,index:0,color:'mint'}),
+      id:modelAnswer?.commandId??'readable-native-signal'};
+    const effect=modelAnswer?await worldRequest('result',{id:command.id},original.id):await worldRequest(offeredSignal.operation,command,original.id);
     assert.equal(effect.ok,true);
     assert.deepEqual(await worldRequest('result',{id:command.id},original.id),effect);
     if(!modelAnswer)assert.deepEqual(await worldRequest('act',command,original.id),effect);
     assert.equal((await worldRequest('result',{id:command.id},sibling)).ok,false);
-    assert.equal((await worldRequest('observe',{},original.id)).result.space.activity.progress.complete,true);
+    const solved=(await worldRequest('observe',{},original.id)).result;
+    assert.equal(solved.space.activity.progress.complete,true);
+    assert.deepEqual(solved.actions,[]);
     await progress(keyboard,'¡Jardín completado!');
     await touch.bringToFront();
     await progress(touch,'¡Jardín completado!');
