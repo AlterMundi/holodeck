@@ -1,4 +1,5 @@
 import {interiorArt} from './interior-art.mjs';
+import {selectAtelier} from './compaii-atelier.mjs';
 import {RoomExhibits,EXHIBIT_SAVE_BYTES} from './room-exhibits.mjs';
 import {InteriorSpaces, OUTSIDE, SPACE_SAVE_BYTES, interiorDocument} from './interior-spaces.mjs';
 import {Houses, HOUSE_SAVE_BYTES} from './houses.mjs';
@@ -27,7 +28,7 @@ import {SessionBindings,SESSION_MS,sessionKey} from './session-bindings.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
-export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt,houseVisual,gardenVisual,gallerySelection,galleryAuthorization}={}){
+export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt,houseVisual,gardenVisual,gallerySelection,galleryAuthorization,artProfile}={}){
   if(!/^\/(?:[a-z0-9-]+\/)*$/.test(basePath))throw Error('Select a bounded absolute base path');
   if(production&&(!identityResolver||!publicOrigin||!stateDir))throw Error('Shared identity, audience and state are required in production');
   if(typeof interiorArtwork!=='function'||production&&(interiorArtwork!==interiorArt||houseVisual||gardenVisual))
@@ -66,6 +67,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const spaceStore=stateDir ? new RoomStore(join(stateDir,'spaces'),{maxBytes:SPACE_SAVE_BYTES}) : null;
   const spaces=new InteriorSpaces({definitions:interiorSpaces,houses,state:spaceStore?.load(),
     persist:spaceStore ? state=>spaceStore.save(state) : null,guestAccess:interiorGuestAccess});
+  const atelier=selectAtelier(artProfile,spaces.rooms,houses.directory());
+  const artForRoom=atelier?.interiorArtwork??interiorArtwork;
   const gallery=gallerySlots(gallerySelection,spaces.rooms);
   const authorizeGallery=gallery&&(galleryAuthorization??createGalleryAuthorization(publicOrigin));
   const exhibitStore=stateDir?new RoomStore(join(stateDir,'exhibits'),{maxBytes:EXHIBIT_SAVE_BYTES}):null;
@@ -81,7 +84,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     try{while(projectionQueued){projectionQueued=false;
       await Promise.all([...sockets].map(([socket,record])=>checkSocket(socket,record)));
       if(room.commitUncertain){projectionHealthy=false;return;}
-      await document.load(worldDocument(room,{basePath,houseVisual,gardenVisual}));projectionHealthy=true;
+      await document.load(worldDocument(room,{basePath,houseVisual:atelier?.houseVisual??houseVisual,
+        gardenVisual:atelier?.gardenVisual??gardenVisual,sceneryAsset:atelier?.sceneryAsset}));projectionHealthy=true;
     }}catch{projectionHealthy=false;}finally{projectionRunning=false;}
   };
   await project();if(!projectionHealthy){document.dispose();throw Error('The initial world representation could not load');}room.on('change',project);
@@ -145,7 +149,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   });
   const cellTransports=new Map();
   function renderInterior(room,passages,exhibit){
-    const art=interiorArtwork(room,passages),src=art?route('api/space/art/'+art.revision):null;
+    const art=artForRoom(room,passages),src=art?route('api/space/art/'+art.revision):null;
     return interiorDocument(room,passages,exhibit,art&&{...art,src});
   }
   function interiorScopeKey(actor,selected){
@@ -165,7 +169,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   function describeSpace(actor){
     if(spaces.fenced)throw new RoomError('space-uncertain','Room placement needs recovery');
     const view=spaces.view(actor),exhibit=exhibits.scoped(actor,view.id),
-      art=interiorArtwork(spaces.rooms.get(view.id),view.exits ?? []);
+      art=artForRoom(spaces.rooms.get(view.id),view.exits ?? []);
     const space={...view,...(view.id===OUTSIDE?{}:{objects:roomObjects(view)}),
       ...(art?.lightRig?{indoorLighting:true}:{}),
       ...(exhibit?{exhibitRevision:exhibit.revision}:{})};
@@ -177,7 +181,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     return {...space,participants};
   }
   function roomObjects(view){
-    const art=interiorArtwork(spaces.rooms.get(view.id),view.exits ?? []),station=art?.station;
+    const art=artForRoom(spaces.rooms.get(view.id),view.exits ?? []),station=art?.station;
     const objects=art?.replacesShell?[]:view.objects;
     return station?[...objects,{id:station.id,kind:'workstation',title:station.title,
       position:station.position,revision:station.revision}]:objects;
@@ -291,7 +295,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       onClientUserIdentityUpdate(){return false;}
     },worldConfig:{mmlDocuments:{interior:{url:'ws://'+address+'world'}},enableChat:false,enableTweakPane:false,
       environmentConfiguration:{groundPlane:false,sun:{intensity:.9},
-        ambientLight:{intensity:interiorArtwork(spaces.rooms.get(id))?.ambient ?? 1.5}},
+        ambientLight:{intensity:artForRoom(spaces.rooms.get(id))?.ambient ?? 1.5}},
       avatarConfiguration:{allowCustomAvatars:false},allowCustomDisplayName:false,allowOrbitalCamera:true,
       spawnConfiguration:{spawnPosition:{x:0,y:1,z:4},spawnYRotation:180},hud:{respawnButton:false}}});
     const cell={connections,network:scopedNetwork};
@@ -384,7 +388,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const id=spaces.current(req.actor);
     const selected=spaces.rooms.get(id);
     if(!selected||!inScope(req.actor,id))return res.sendStatus(404);
-    const art=interiorArtwork(selected,spaces.passages(req.actor,selected));
+    const art=artForRoom(selected,spaces.passages(req.actor,selected));
     if(!art||req.params.revision!==art.revision)return res.sendStatus(404);
     res.type('model/gltf-binary').send(art.bytes);
   });
@@ -543,7 +547,7 @@ export async function main(){
   }
   validateWorldPorts({...receiving});
   const nativeRoomAuthority=receiving&&Object.hasOwn(receiving,'authoritySocket')?createNativeRoomAuthority(receiving.authoritySocket):null;
-  const runtime=await createHolodeck({production,stateDir,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,contentVisits:receiving?.contentVisits,contentNodes:receiving?.contentNodes,nativeRoomAuthority,conversationOrigins:receiving?.conversationOrigins||[],ownNative:receiving?.ownNative??false,interiorSpaces:receiving?.interiorSpaces??[],gallerySelection:receiving?.gallery});
+  const runtime=await createHolodeck({production,stateDir,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,contentVisits:receiving?.contentVisits,contentNodes:receiving?.contentNodes,nativeRoomAuthority,conversationOrigins:receiving?.conversationOrigins||[],ownNative:receiving?.ownNative??false,interiorSpaces:receiving?.interiorSpaces??[],gallerySelection:receiving?.gallery,artProfile:receiving?.artProfile});
   const port=Number(process.env.PORT||18940);
   if(!Number.isInteger(port)||port<1024||port>65535)throw Error('Select a valid loopback port');
   if(process.env.HOST&&process.env.HOST!=='127.0.0.1')throw Error('Use the existing loopback gateway');

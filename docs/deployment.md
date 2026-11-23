@@ -17,6 +17,17 @@ native/world Unix sockets. `authoritySocket` selects the existing central native
 permission bridge; `contentVisits` selects at most eight protected report or artifact entrances.
 It carries route metadata and private content references, not credentials.
 
+The optional `artProfile: "compaii-atelier-v1"` selects the packaged
+Blender garden, facade, foyer, gallery and Beacon chamber. It binds to the
+existing west parcel and exact ordered room graph. Gallery art follows the
+visitor's current lab passage permission. The lab and both gallery
+variants travel through the existing room-scoped asset route. Files under
+`public/room-art` are outside the application's static asset mount. Each
+selected export is verified against its packaged hash at startup. The profile
+writes no Room checkpoint. Omit the selector to use the existing world art
+with the same data and route permissions. The optional gallery source pins
+are independent of the art profile.
+
 The optional `gallery` receiving selection names an existing interior
 `room` and two distinct exact `artifact_review` pins (`draft` and `archive`,
 both with adapter `interactive_3d`). The finished edition continues to come

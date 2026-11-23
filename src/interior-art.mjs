@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 
 // The artwork belongs to this exact authored house and room. Its GLB lives
 // outside the ordinary asset directory and can only be read through the room.
-const HOUSE = 'house-0ff5a86d4833282efce28513783adb442b93b619991a13d75a536a2711df8cb9';
+export const COMPAII_HOUSE = 'house-0ff5a86d4833282efce28513783adb442b93b619991a13d75a536a2711df8cb9';
 const BEACON_ART = readFileSync(new URL('../public/room-art/beacon-workshop.glb', import.meta.url));
 const BEACON_REVISION = createHash('sha256').update(BEACON_ART).digest('hex') + '.glb';
 const BEACON_STATION = Object.freeze({
@@ -18,6 +18,6 @@ const COLLIDERS = [
 ].join('');
 
 export function interiorArt(room) {
-  if(room?.id !== 'compaii-lab' || room.house !== HOUSE) return null;
+  if(room?.id !== 'compaii-lab' || room.house !== COMPAII_HOUSE) return null;
   return { bytes: BEACON_ART, revision: BEACON_REVISION, colliders: COLLIDERS, station: BEACON_STATION };
 }

@@ -106,7 +106,11 @@ For the connected local candidate, generate the retained scenery around the
 new eastern garden with `tools/create-island-scenery.mjs --east-replaced`.
 This removes the superseded eastern planting and dressing while keeping the
 original land base, measuring the replacement against the existing walkable
-terrace. The original released scenery remains the normal build input.
+terrace. The checked-in exports are selected by
+`compaii-atelier-v1` in [the receiving configuration](../../../docs/deployment.md#receiving-contracts).
+The server verifies the asset hashes and exact room layout before enabling
+this profile. The current scenery is also packaged for use without the
+selector.
 
 The [garden](review/connected-garden.jpg), [facade](review/connected-facade.jpg),
 [foyer](review/connected-foyer.jpg) and [gallery](review/connected-gallery.jpg)

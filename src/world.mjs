@@ -81,12 +81,13 @@ function housingDocument(houses, prefix, houseVisual) {
   return markup;
 }
 
-export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=true,houseVisual,gardenVisual}={}){
+export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=true,houseVisual,gardenVisual,sceneryAsset='island-scenery.glb'}={}){
+  if(!assetFile(sceneryAsset))throw Error('Select a packaged scenery asset');
   const prefix=basePath.endsWith('/')?basePath:basePath+'/';
   const projection=workshopProjection(room.entities),manifest=JSON.stringify(room.entities);
   if(manifest.length>16384)throw Error('Geometry manifest exceeds bound');
   let out=`<m-group id="workshop" data-run="${attribute(room.run)}" data-edition="${attribute(room.edition)}" data-semantic-sequence="${room.sequence}" data-layout-version="${LAYOUT_VERSION}" data-geometry-state="${attribute(manifest)}">`;
-  out+=`<m-model id="island-scenery" src="${attribute(prefix)}assets/island-scenery.glb?layout=${LAYOUT_VERSION}" collide="false"></m-model>`;
+  out+=`<m-model id="island-scenery" src="${attribute(prefix+'assets/'+sceneryAsset)}?layout=${LAYOUT_VERSION}" collide="false"></m-model>`;
   out+=gardenModel(gardenVisual,prefix);
   // Flat walking proxies keep y=.1, at most3cm above layered visual ground.
   // Invisible proxies must not cast shadows onto their visible dressing.

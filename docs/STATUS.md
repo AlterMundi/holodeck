@@ -14,9 +14,25 @@ architectural redesign with unified materials, light and composition. The
 [new Blender source](../art/compaii-house/redesign/) restarts the visible
 environment from the garden route, adjoining house and miniature, workshop
 and separate gallery. The design and rendered views are available for review.
-The current published world remains the one qualified below. The new art
-requires the room-aligned asset export, actual in-game lighting and interactions,
-and shared browser/device acceptance before selection.
+The current published world remains the one qualified below.
+
+The candidate package can select this scene through
+`compaii-atelier-v1` in the ordinary receiving configuration. The verified
+31,365,120-byte archive is inside the existing 32 MiB package limit and
+includes the previous scenery as a compatible option. No Room migration
+is required. The packaged production entry admitted a fixture identity
+over the existing Home HTTP contract and returned the authored foyer.
+Chromium walked the packaged garden, facade, foyer, gallery and lab using
+the real room IDs, then returned to the exact exterior entrance. It
+preserved the renderer, world run, entities, creation nodes and protected
+prototype pointer. An independent fixture received only the sealed gallery
+art and no lab bytes. The remaining commons and upper interior, registered
+working controls, shared device and human acceptance remain open.
+
+The package and historical retention ceilings are separate. The currently
+retained Home runtime archives exceed the 96 MiB history budget. Reconcile
+superseded generated archives through the existing version writer before
+publishing another package. Preserve the deployed current and rollback.
 
 The Blender export now produces all four self-contained, textured GLBs. The
 candidate Beacon chamber was mounted through the existing room-scoped renderer
