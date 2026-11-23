@@ -180,8 +180,8 @@ export function interiorDocument(room,passages=[],exhibit=null,art=null) {
   const walls=art?.replacesShell||art?.replacesWalls?' opacity="0" cast-shadows="false"':'';
   const station=art?.station;
   const stationMarkup=station?`<m-group id="${station.id}" x="${station.position.x}" z="${station.position.z}">
-    <m-label y="1.21" z=".52" width="2.33" height=".32" font-size="20" content="${attribute(station.title)}" collide="false"></m-label>
-    <m-label y="1.21" z="-.52" ry="180" width="2.33" height=".32" font-size="20" content="${attribute(station.title)}" collide="false"></m-label>
+    ${station.authoredSign?'':`<m-label y="1.21" z=".52" width="2.33" height=".32" font-size="20" content="${attribute(station.title)}" collide="false"></m-label>
+    <m-label y="1.21" z="-.52" ry="180" width="2.33" height=".32" font-size="20" content="${attribute(station.title)}" collide="false"></m-label>`}
   </m-group>`:'';
   // The Blender benches already carry their own physical nameplates.
   const controlAnchors=(art?.controls??[]).map(control=>

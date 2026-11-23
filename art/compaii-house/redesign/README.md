@@ -169,6 +169,13 @@ pacing remains a separate measurement.
 Rebuild the editable scene without rerendering its review cameras using
 `house.py -- "$ART_OUTPUT" --scene-only`, then run the Beacon export above.
 
+The central instrument has an enamel prototype plaque mounted on the
+stair-facing rim. Its named `prototype.inspect` anchor is the selection
+point for the existing H.B. Guitar review. The atelier advances that station
+to revision 2 with the same identity and Nexus edition. Authorized proximity,
+the scene anchor and the room reference in Conversation use the new position.
+The older profile retains its original bench and station revision.
+
 
 ```sh
 blender -b art/compaii-house/redesign/casa-compaii-redesign.blend -t 6 --python-exit-code 1 \

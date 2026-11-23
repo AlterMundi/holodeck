@@ -89,7 +89,11 @@ test('profile is optional and uses the exact existing room graph and parcel edit
       maxZ<=plot.z-plot.depth/2||minZ>=plot.z+plot.depth/2));
   }
   assert.equal(profile.interiorArtwork({...source.get(lab),house:'other'}),null);
-  assert.deepEqual(profile.interiorArtwork(source.get(lab)).station,interiorArt(source.get(lab)).station);
+  const station=profile.interiorArtwork(source.get(lab)).station;
+  assert.equal(station.id,interiorArt(source.get(lab)).station.id);
+  assert.deepEqual(station.pin,interiorArt(source.get(lab)).station.pin);
+  assert.deepEqual(station.position,{x:-.44,y:.1,z:.59});
+  assert.equal(station.revision,2);
 });
 
 test('packaged profile keeps exact gallery and lab bytes behind current room rights',async t=>{
@@ -98,8 +102,11 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   const store=new RoomStore(join(stateDir,'houses'));
   const expected={schema:'holodeck.houses/v1',receipts:[],houses:[house]};
   store.save(expected);
+  let prototypeAccess=true;
   const runtime=await createHolodeck({stateDir,basePath:'/holodeck/',artProfile:ATELIER_PROFILE,
     interiorSpaces:definitions,
+    galleryAuthorization:async (cookie,pin)=>prototypeAccess&&cookie.includes('fixture=lab')&&
+      pin.revision==='published-935e6262-organic-head',
     identityResolver:async req=>{
       const id=req.headers.cookie?.match(/(?:^|; )fixture=(lab|gallery)(?:;|$)/)?.[1];
       return id?{id:'human:'+id,kind:'human',rights:['observe']}:null;
@@ -172,13 +179,28 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   assert.deepEqual(chamber.objects.map(object=>object.id),['beacon-prototypes','beacon-spatializer','beacon-weaver']);
   assert.match(chamber.scene.markup,/id="beacon-spatializer"/);
   assert.match(chamber.scene.markup,/id="beacon-weaver"/);
+  const prototype=chamber.objects.find(object=>object.id==='beacon-prototypes');
+  assert.deepEqual(prototype,{id:'beacon-prototypes',kind:'workstation',title:'Banco de prototipos',
+    position:{x:-.44,y:.1,z:.59},revision:2});
+  assert.match(chamber.scene.markup,/<m-group id="beacon-prototypes" x="-0\.44" z="0\.59">\s*<\/m-group>/);
+  assert.doesNotMatch(chamber.scene.markup,/guitar-review|Banco de prototipos/);
+  const catalogPath='/holodeck/api/space/content-visits';
+  const [visit]=(await (await authorized.read(catalogPath)).json()).visits;
+  assert.deepEqual(visit.position,prototype.position);
+  assert.equal(visit.nodeRevision,prototype.revision);
+  assert.deepEqual(visit.pin,interiorArt(definitions.find(room=>room.id===lab)).station.pin);
+  prototypeAccess=false;
+  assert.deepEqual((await (await authorized.read(catalogPath)).json()).visits,[]);
   assert.ok(!sealed.objects.some(object=>object.id.startsWith('beacon-')));
   const interior={id:'capture-atelier',run:runtime.room.run,edition:runtime.room.edition,
     sequence:runtime.room.sequence,capturedAt:123,place:{...chamber,participants:[]}};
-  const capture=revision=>captureNativeSituation(runtime.room,{id:'human:lab'},
-    {id:'message-lab',view:{spaceId:lab,workstation:{id:'beacon-weaver',revision}}},{interior});
+  const capture=(revision,id='beacon-weaver')=>captureNativeSituation(runtime.room,{id:'human:lab'},
+    {id:'message-lab',view:{spaceId:lab,roomObject:{id,revision}}},{interior});
   assert.equal(capture(1).referredWorkstation.title,'Weaver');
   assert.equal(capture(2).referredWorkstation,undefined);
+  assert.deepEqual(capture(2,prototype.id).referredRoomObject,{...prototype,
+    evidence:'client-reported reference matched the current authorized room object'});
+  assert.equal(capture(1,prototype.id).referredWorkstation,undefined);
   assert.doesNotMatch(JSON.stringify(capture(1)),/localhost|harmonic_lab|csrf/i);
   const bytes=await authorized.read(roomArt(chamber));
   assert.equal(bytes.status,200);

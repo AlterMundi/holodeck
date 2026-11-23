@@ -136,6 +136,7 @@ def text(scope, name, at, size):
     scope.objects.link(obj)
     obj.location, obj.rotation_euler.x = at, math.pi/2
     data.materials.append(linen)
+    return obj
 
 
 def light(name, kind, at, target, watts, color, size):
@@ -316,6 +317,10 @@ anchor('lab.stair_landing',underground(.1,4.3,.02))
 cx,cy,cz=.5,11.87,2.12
 beam(lab,'Instrument basalt foot',underground(cx,cy,.03),underground(cx,cy,.41),1.84,iron,48)
 beam(lab,'Thin brass rim',underground(cx,cy,.41),underground(cx,cy,.46),1.75,brass,48)
+block(lab,'Prototype plaque foot',underground(cx,cy-1.55,.47),(1.01,.29,.18),brass,.026)
+block(lab,'Prototype enamel plaque',underground(cx,cy-1.69,.61),(1.26,.071,.25),iron,.023)
+prototype_lettering = text(lab,'BANCO DE PROTOTIPOS',underground(cx,cy-1.727,.563),.105)
+prototype_lettering.data.resolution_u = 3
 for angle in [0,math.tau/3,math.tau*2/3]:
     base=underground(cx+1.54*math.cos(angle),cy+1.54*math.sin(angle),.45)
     beam(lab,'Resonator tension strut',base,underground(cx,cy,cz),.067,brass)
@@ -332,7 +337,7 @@ beam(lab,'Instrument light shaded ring',underground(cx,cy,4.64),
      underground(cx,cy,4.49),.68,iron,48)
 beam(lab,'Instrument light lens',underground(cx,cy,4.50),
      underground(cx,cy,4.475),.59,amber,48)
-anchor('prototype.inspect',underground(cx,cy-2.12,.02))
+anchor('prototype.inspect',underground(cx,cy-1.71,0))
 
 def listening_console(x, y):
     def at(dx, dy, z):

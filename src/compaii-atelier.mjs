@@ -43,7 +43,7 @@ export const ATELIER_ASSET_REVISIONS=Object.freeze({
   'room-art/compaii-atelier/foyer.glb':'7816835b65ffbf025ae295dee37d0db978bede7a9dbc83f66e44d53d052ede59',
   'room-art/compaii-atelier/gallery.glb':'a6ef6bacab1f3278978f5a98a150d1d0cd827680fb78c96d131163b224956b17',
   'room-art/compaii-atelier/gallery-sealed.glb':'af8d86f08a5a0136c38f772b85448d445f681ea89ebc6c876799c4899ea2f583',
-  'room-art/compaii-atelier/beacon.glb':'c92cdfe063db2ad5f0d59bdf35000125880e6a39941bb6a8af1d3a1920ed98b7',
+  'room-art/compaii-atelier/beacon.glb':'61e7b36076dd716319c49300f38ac08282c7371b859a52b27dd03572b2dd5f0b',
   'room-art/compaii-atelier/tower.glb':'47ba2a0964304eba1f3cbf945121e737c5d9addd7e71c1696bfa8b52ddb872de',
   ['assets/'+FACADE_ASSET]:'940aa64038396e43db8beca859e33f4f52c6ae3a84d1702457159c0af1224077',
   ['assets/'+GARDEN_ASSET]:GARDEN_REVISION,
@@ -164,7 +164,9 @@ export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt())
       fixture('gallery','gallery-archive-plinth','Expositor de archivo',3.3945,1.4075,3.67744)],
     lightRig:softLight({id:'collection-warm-bounce',x:4.2,y:2.6,z:1.6,intensity:12,distance:7,color:'#ffd8ae'})};
   const labArt={...asset('beacon'),...floorProfile,authoredStairs:true,ambient:.27,keyLight:chamberKey,
-    station:interiorArt(rooms.get(lab)).station,
+    // The authored plaque is on the stair-facing rim of the central instrument.
+    station:{...interiorArt(rooms.get(lab)).station,
+      position:{x:-.44,y:.1,z:.59},revision:2,authoredSign:true},
     controls:BEACON_CONTROLS,
     colliders:'<m-cylinder x="-.44" y=".315" z="1.9" radius="1.62" height=".43" opacity="0" cast-shadows="false"></m-cylinder>'+
      box({x:3.802,y:.643,z:-.791,w:2.332,h:1.085,d:.886})+
