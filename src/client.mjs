@@ -406,10 +406,23 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       clear:record=>action('focus.clear',null,{},record.sequence),edit:editLight,
       visit:record=>contentVisitor.openNode(record.target,{expectedRevision:record.revision}).catch(()=>say('No pude abrir este contenido. Conservé la visita anterior.'))});
     const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
+    const exteriorAddress=socket('world');
+    const arrivalAddress=socket('world?dressing=arrival');
+    let coldExterior=hot&&!inside;
     if(hot){
       const configure=renderer.setMMLConfiguration.bind(renderer);
-      renderer.setMMLConfiguration=(configuration,token)=>configure(configuration.interior?{}:configuration,token);
+      renderer.setMMLConfiguration=(configuration,token)=>{
+        if(configuration.interior){
+          coldExterior=false;
+          geometryProbe.expectedDocumentURL=exteriorAddress;
+          return configure({},token);
+        }
+        if(!coldExterior||!configuration.workshop)return configure(configuration,token);
+        geometryProbe.expectedDocumentURL=arrivalAddress;
+        return configure({...configuration,workshop:{...configuration.workshop,url:arrivalAddress}},token);
+      };
     }
+    let nextDressing=0;
     renderer.render=renderState=>{
       const position=client.getLocalCharacterState()?.position;
       frameBudget.sample(!document.hidden&&!!position&&!moving&&!needsSync&&(!hot||networkScope===activeSpace.id));
@@ -441,6 +454,14 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       if(!inside)geometryProbe.afterRender();
       else keepRoomArt();
       if(hot&&moving&&canFinishMove())setMoving(false);
+      const now=performance.now();
+      if(coldExterior&&position&&!inside&&!moving&&!needsSync&&networkScope===activeSpace.id&&now>=nextDressing){
+        nextDressing=now+350;
+        const pending='#workshop m-model[data-deferred-src]:not([src])';
+        const model=document.querySelector(pending+'[id^="facade-"]')??document.querySelector(pending);
+        const source=model?.getAttribute('data-deferred-src');
+        if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
+      }
     };
     renderer.dispose=()=>{frameBudget.dispose();removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(options.onInitialized);

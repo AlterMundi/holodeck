@@ -23,19 +23,19 @@ const assetFile = value => typeof value === 'string' && ASSET_FILE.test(value);
 const vector = value => Array.isArray(value) && value.length === 3 &&
   [value[0],value[1],value[2]].every(Number.isFinite);
 
-function gardenModel(part, prefix) {
+function gardenModel(part, prefix, sourceAttribute) {
   if (!assetFile(part?.asset)) return '';
   const {asset,x,y,z,sx,sy,sz} = part;
   if (![x,y,z].every(Number.isFinite) ||
       ![sx,sy,sz].every(value => Number.isFinite(value) && value>0)) return '';
   const revision=/^[a-f0-9]{64}$/.test(part.revision)?'?v='+part.revision.slice(0,12):'';
-  const model=`<m-model id="authored-garden" src="${attribute(prefix+'assets/'+asset+revision)}" x="${x}" y="${y}" z="${z}" sx="${sx}" sy="${sy}" sz="${sz}" collide="false"></m-model>`;
+  const model=`<m-model id="authored-garden" ${sourceAttribute}="${attribute(prefix+'assets/'+asset+revision)}" x="${x}" y="${y}" z="${z}" sx="${sx}" sy="${sy}" sz="${sz}" collide="false"></m-model>`;
   return part.colliders?model+`<m-group id="authored-garden-colliders">${part.colliders}</m-group>`:model;
 }
 
 // Exported models are ground-registered in meters, with the entrance facing
 // +Z. Rotate this placement toward the aisle and check the measured footprint.
-function houseModel(part, plot, position, id, prefix) {
+function houseModel(part, plot, position, id, prefix, sourceAttribute) {
   if (!assetFile(part?.asset) ||
       !vector(part.bounds?.min) || !vector(part.bounds?.max) || !vector(position)) return '';
   const {min,max} = part.bounds;
@@ -45,10 +45,10 @@ function houseModel(part, plot, position, id, prefix) {
   const ends = [z+plot.side*min[0],z+plot.side*max[0]];
   if (sides.some(side => Math.abs(side)>plot.width/2) ||
       ends.some(end => Math.abs(end)>plot.depth/2)) return '';
-  return `<m-model id="${id}" src="${attribute(prefix+'assets/'+part.asset)}" x="${x}" y="${y+.1}" z="${z}" ry="${-plot.side*90}" collide="false"></m-model>`;
+  return `<m-model id="${id}" ${sourceAttribute}="${attribute(prefix+'assets/'+part.asset)}" x="${x}" y="${y+.1}" z="${z}" ry="${-plot.side*90}" collide="false"></m-model>`;
 }
 
-function housingDocument(houses, prefix, houseVisual, site) {
+function housingDocument(houses, prefix, houseVisual, site, sourceAttribute) {
   const {houseWalk:walk,parcelTerrain:terrain,parcelGarden}=site??{};
   const authoredWalk = assetFile(walk?.asset) && /^[a-f0-9]{64}$/.test(walk.revision);
   const walkSource = authoredWalk ? prefix + 'assets/' + walk.asset + '?v=' + walk.revision.slice(0,12) : '';
@@ -62,7 +62,7 @@ function housingDocument(houses, prefix, houseVisual, site) {
     markup+=`<m-model id="parcel-terrain" src="${attribute(terrainSource)}" collide="false" cast-shadows="false"></m-model>`;
     if(assetFile(parcelGarden?.asset)&&/^[a-f0-9]{64}$/.test(parcelGarden.revision)){
       const source=prefix+'assets/'+parcelGarden.asset+'?v='+parcelGarden.revision.slice(0,12);
-      markup+=`<m-model id="parcel-garden" src="${attribute(source)}" collide="false"></m-model>
+      markup+=`<m-model id="parcel-garden" ${sourceAttribute}="${attribute(source)}" collide="false"></m-model>
         <m-group id="parcel-garden-colliders">${parcelGarden.colliders}</m-group>`;
     }
   }
@@ -80,8 +80,8 @@ function housingDocument(houses, prefix, houseVisual, site) {
       const {title,width,depth,height,color} = facade;
       const doorHeight = Math.min(1.72,height-.16);
       const visual = houseVisual?.(house, plot);
-      const authored = houseModel(visual?.facade,plot,[0,0,0],`facade-${id}`,prefix);
-      const miniature = authored ? houseModel(visual?.miniature,plot,visual?.miniature?.at,`miniature-${id}`,prefix) : '';
+      const authored = houseModel(visual?.facade,plot,[0,0,0],`facade-${id}`,prefix,sourceAttribute);
+      const miniature = authored ? houseModel(visual?.miniature,plot,visual?.miniature?.at,`miniature-${id}`,prefix,sourceAttribute) : '';
       const proxy = authored ? ' opacity="0" cast-shadows="false"' : '';
       markup += `<m-group id="${id}" data-house-revision="${revision}">
         <m-cube y="${.1+height/2}" width="${width}" height="${height}" depth="${depth}" color="${attribute(color)}"${proxy}></m-cube>
@@ -99,9 +99,10 @@ function housingDocument(houses, prefix, houseVisual, site) {
   return markup;
 }
 
-export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=true,houseVisual,gardenVisual,sceneryAsset='island-scenery.glb',sceneryRevision,commonsVisual,coastalRidges}={}){
+export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=true,houseVisual,gardenVisual,sceneryAsset='island-scenery.glb',sceneryRevision,commonsVisual,coastalRidges,deferDressing=false}={}){
   if(!assetFile(sceneryAsset))throw Error('Select a packaged scenery asset');
   const prefix=basePath.endsWith('/')?basePath:basePath+'/';
+  const sourceAttribute=deferDressing?'data-deferred-src':'src';
   const projection=workshopProjection(room.entities),manifest=JSON.stringify(room.entities);
   if(manifest.length>16384)throw Error('Geometry manifest exceeds bound');
   let out=`<m-group id="workshop" data-run="${attribute(room.run)}" data-edition="${attribute(room.edition)}" data-semantic-sequence="${room.sequence}" data-layout-version="${LAYOUT_VERSION}" data-geometry-state="${attribute(manifest)}">`;
@@ -127,12 +128,12 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
         <m-group id="mirador-colliders">${mirador.colliders}</m-group>`;
     }
   }
-  out+=gardenModel(gardenVisual,prefix);
+  out+=gardenModel(gardenVisual,prefix,sourceAttribute);
   // Flat walking proxies keep y=.1, at most3cm above layered visual ground.
   // Invisible proxies must not cast shadows onto their visible dressing.
   for(const terrace of TERRACES)out+=cylinder(terrace.x,0,terrace.z,terrace.radius,2*TERRACE_TOP,'#6b987e','opacity="0" cast-shadows="false"');
   for(const p of PROMENADES)out+=`<m-cube x="${(p.minX+p.maxX)/2}" y="0" z="${(p.minZ+p.maxZ)/2}" width="${p.maxX-p.minX}" height="${2*TERRACE_TOP}" depth="${p.maxZ-p.minZ}" opacity="0" cast-shadows="false"></m-cube>`;
-  out+=housingDocument(room.houses?.directory() ?? [],prefix,houseVisual,commonsVisual);
+  out+=housingDocument(room.houses?.directory() ?? [],prefix,houseVisual,commonsVisual,sourceAttribute);
   for(const entity of projection){
     if(entity.deleted)continue;
     out+=`<m-group id="${attribute(entity.id)}" data-entity-revision="${entity.revision}">${entity.nodes.map(projectionNodeHTML).join('')}</m-group>`;

@@ -63,3 +63,17 @@ test('garden art layers over the original scene without altering gameplay topolo
     assert.equal(worldDocument(world,{basePath,gardenVisual:{...gardenVisual,...invalid}}),legacy);
   }
 });
+
+test('cold dressing delays only cosmetic source attributes', () => {
+  const world = room();
+  const art = {basePath:'/holodeck/',houseVisual:({id})=>id===west.id?{facade,miniature}:null,
+    gardenVisual:{asset:'garden.glb',x:22,y:.105,z:-2,sx:.8,sy:1,sz:.7},sceneryAsset:'island.glb',
+    commonsVisual:{asset:'commons.glb',colliders:'<m-cube id="commons-step"></m-cube>',
+      parcelGarden:{asset:'parcel-garden.glb',revision:'a'.repeat(64),colliders:'<m-cube id="garden-wall"></m-cube>'},
+      parcelTerrain:{asset:'parcel-terrain.glb',revision:'b'.repeat(64)}}};
+  const eager = worldDocument(world,art);
+  const cold = worldDocument(world,{...art,deferDressing:true});
+  assert.equal(cold.replaceAll('data-deferred-src=','src='),eager);
+  const deferred = [...cold.matchAll(/<m-model id="([^"]+)" data-deferred-src=/g)].map(([,id])=>id);
+  assert.deepEqual(deferred,['authored-garden','parcel-garden',`facade-${west.id}`,`miniature-${west.id}`]);
+});

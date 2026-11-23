@@ -149,6 +149,7 @@ test('HTTP, real geometry upgrades and native observation share active room and 
     await denied('spaces/foyer/network',foreign,'3d-web-experience-v0.1');
     assert.equal((await move(person,'outside','foyer')).status,200);
     await denied('world',person);
+    await denied('world?dressing=arrival',person);
     await denied('spaces/gallery/world',person);
     const foyer=connect('spaces/foyer/world',person);
     const [snapshot]=await once(foyer,'message');

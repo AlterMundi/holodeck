@@ -134,19 +134,26 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const room=new Room({houses,state:store?.load(),persist:store?s=>store.save(s):null,contentNodes:selectedContentNodes,
     presence:()=>[...sessions.values()].filter(s=>s.connection!==null&&Date.now()-s.created<SESSION_MS&&spaces.current(s.actor)===OUTSIDE)
       .map(s=>({actor:s.actor.id,kind:'human',name:s.actor.name||'Explorador',scope:'authenticated-room-presence',position:null}))});
-  const document=new WorldDocument('http://localhost'+route('world'));
+  const exteriorAddress='http://localhost'+route('world');
+  const document=new WorldDocument(exteriorAddress);
+  // Keep the ordinary snapshot for browsers already running an earlier client.
+  const arrivalDocument=atelier&&new WorldDocument(exteriorAddress);
   let projectionHealthy=true,projectionQueued=false,projectionRunning=false;
   const project=async()=>{
     projectionQueued=true;if(projectionRunning)return;projectionRunning=true;
     try{while(projectionQueued){projectionQueued=false;
       await Promise.all([...sockets].map(([socket,record])=>checkSocket(socket,record)));
       if(room.commitUncertain){projectionHealthy=false;return;}
-      await document.load(worldDocument(room,{basePath,houseVisual:atelier?.houseVisual??houseVisual,
+      const art={basePath,houseVisual:atelier?.houseVisual??houseVisual,
         gardenVisual:atelier?.gardenVisual??gardenVisual,sceneryAsset:atelier?.sceneryAsset,sceneryRevision:atelier?.sceneryRevision,
-        commonsVisual:atelier?.commonsVisual,coastalRidges:atelier?.coastalRidges}));projectionHealthy=true;
+        commonsVisual:atelier?.commonsVisual,coastalRidges:atelier?.coastalRidges};
+      const loads=[document.load(worldDocument(room,art))];
+      if(arrivalDocument)loads.push(arrivalDocument.load(worldDocument(room,{...art,deferDressing:true})));
+      await Promise.all(loads);
+      projectionHealthy=true;
     }}catch{projectionHealthy=false;}finally{projectionRunning=false;}
   };
-  await project();if(!projectionHealthy){document.dispose();throw Error('The initial world representation could not load');}room.on('change',project);
+  await project();if(!projectionHealthy){document.dispose();arrivalDocument?.dispose();throw Error('The initial world representation could not load');}room.on('change',project);
   const native=nativeFactory?await nativeFactory({room,stateDir,allowInteriorSource}):null;
   const installedWorldPorts=[];
   async function currentActor(req,session){
@@ -469,7 +476,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   app.ws(route('world'),(ws,req)=>{
     currentActor(req,sessionFor(cookieToken(req))).then(actor=>{
       if(!inScope(actor,OUTSIDE)||ws.readyState!==1){ws.close(1008);return;}
-      document.addWebSocket(ws);ws.on('close',()=>{if(document.hasWebSocket(ws))document.removeWebSocket(ws);});
+      const projection=req.query.dressing==='arrival'&&arrivalDocument||document;
+      projection.addWebSocket(ws);ws.on('close',()=>{if(projection.hasWebSocket(ws))projection.removeWebSocket(ws);});
     }).catch(()=>ws.close(1008));
   });
   for(const channel of ['network','world'])app.ws(route('spaces/:space/'+channel),(ws,req)=>{
@@ -697,7 +705,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const known=error instanceof RoomError;
     res.status(known?409:error.type==='entity.too.large'?413:503).json({message:known?'El mundo cambió o esa acción no está disponible. Revisá el lugar antes de intentarlo de nuevo.':'No pude completar esa acción. Conservé los cambios que ya estaban confirmados.'});
   });
-  return {app,room,native,spaces,close(){if(authorizationTimer)clearInterval(authorizationTimer);for(const socket of sockets.keys())socket.close(1001);for(const port of installedWorldPorts)port.close();network.dispose();document.dispose();for(const cell of cellTransports.values()){cell.network.dispose();}}};
+  return {app,room,native,spaces,close(){if(authorizationTimer)clearInterval(authorizationTimer);for(const socket of sockets.keys())socket.close(1001);for(const port of installedWorldPorts)port.close();network.dispose();document.dispose();arrivalDocument?.dispose();for(const cell of cellTransports.values()){cell.network.dispose();}}};
 }
 
 export function validateWorldPorts({worldSocket=null,worldSocketBeingRef=null,worldPorts=[],nativeRoutes=null}={}){
