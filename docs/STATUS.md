@@ -152,10 +152,13 @@ the workshop remains to be observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`43b3d6e`, package `7bec67084ea3`, with `0bd9b4649d4e` as compatible rollback.
-The selected Matter room can inspect, share and refer to its restored exact
-editions. The compatible prior package used source `75f202b`; it added
-the bounded placement refresh stream. Receiver readback matched 64 installed payloads, 20 protected HTTPS
+`5e44d7f`, package `940a0b053757`, with `7bec67084ea3` as compatible rollback.
+A visitor can carry the selected shelf model to their own worktable view
+and click or tap a visible part. Desktop and emulated touch Chromium carried
+an actual restored edition from the shelf, selected its full geometry and
+prepared an exact part reference with the fixture Conversation receiver.
+The prior package `7bec67084ea3` used source `43b3d6e` for historical
+inspection and sharing. Source `75f202b` added the placement refresh stream. Receiver readback matched 64 installed payloads, 20 protected HTTPS
 responses and eight scope denials, including the new stream outside room
 authority. The two-browser refresh timing was measured in the isolated fixture.
 
