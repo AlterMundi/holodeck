@@ -1,3 +1,4 @@
+import {interiorArt} from './interior-art.mjs';
 import {createHash} from 'node:crypto';
 import {contentNodeId} from './content-nodes.mjs';
 import {validVisitPin,visitRoutes} from './content-visits.mjs';
@@ -77,9 +78,17 @@ export class RoomExhibits {
   }
 
   visit(actor,room){
-    const exhibit=this.scoped(actor,room);
-    if(!exhibit)return [];
-    return [{id:'house-exhibit',node:'house-exhibit',title:EXHIBIT_LABEL,position:EXHIBIT_POSITION,
-      nodeRevision:exhibit.revision,pin:structuredClone(exhibit.pin),...visitRoutes(exhibit.pin)}];
+    if(this.spaces.current(actor)!==room)return [];
+    const station=interiorArt(this.spaces.rooms.get(room))?.station;
+    const exhibit=this.forRoom(room);
+    const localStation=station?{
+      id:station.id,node:station.id,title:station.title,position:station.position,
+      nodeRevision:station.revision,pin:structuredClone(station.pin),...visitRoutes(station.pin),
+    }:null;
+    const authoredExhibit=exhibit?{
+      id:'house-exhibit',node:'house-exhibit',title:EXHIBIT_LABEL,position:EXHIBIT_POSITION,
+      nodeRevision:exhibit.revision,pin:structuredClone(exhibit.pin),...visitRoutes(exhibit.pin),
+    }:null;
+    return [localStation,authoredExhibit].filter(Boolean);
   }
 }

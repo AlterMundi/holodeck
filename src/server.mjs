@@ -138,7 +138,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const cellTransports=new Map();
   function renderInterior(room,passages,exhibit){
     const art=interiorArt(room),src=art?route('api/space/art/'+art.revision):null;
-    return interiorDocument(room,passages,exhibit,art&&{src,colliders:art.colliders});
+    return interiorDocument(room,passages,exhibit,art&&{src,colliders:art.colliders,station:art.station});
   }
   function interiorScopeKey(actor,selected){
     return JSON.stringify([spaces.passages(actor,selected).map(link=>link.slot),exhibits.forRoom(selected.id)?.revision??0]);
@@ -157,12 +157,19 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   function describeSpace(actor){
     if(spaces.fenced)throw new RoomError('space-uncertain','Room placement needs recovery');
     const view=spaces.view(actor),exhibit=exhibits.scoped(actor,view.id);
-    const space=exhibit?{...view,exhibitRevision:exhibit.revision}:view,cell=cellTransports.get(space.id);
+    const space={...view,...(view.id===OUTSIDE?{}:{objects:roomObjects(view)}),
+      ...(exhibit?{exhibitRevision:exhibit.revision}:{})};
+    const cell=cellTransports.get(space.id);
     if(!cell)return space;
     const participants=[...cell.connections.values()]
       .filter(({actor:peer})=>inScope(peer,space.id))
       .map(({actor:peer})=>({actor:peer.id,kind:peer.kind,name:peer.name||'Explorador'}));
     return {...space,participants};
+  }
+  function roomObjects(view){
+    const station=interiorArt(spaces.rooms.get(view.id))?.station;
+    return station?[...view.objects,{id:station.id,kind:'workstation',title:station.title,
+      position:station.position,revision:station.revision}]:view.objects;
   }
   function conversationPlace(actor,id){
     const selected=spaces.rooms.get(id);
@@ -170,7 +177,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const view=spaces.view(actor,id);
     const exhibit=exhibits.scoped(actor,id);
     return {id,title:selected.title,level:selected.level,house:selected.house,
-      objects:view.id===id?view.objects:[],
+      objects:view.id===id?roomObjects(view):[],
       ...(exhibit?{exhibitRevision:exhibit.revision}:{}),
       participants:[...(cellTransports.get(id)?.connections.values()??[])]
         .filter(({actor:peer})=>inScope(peer,id))

@@ -5,6 +5,7 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {once} from 'node:events';
+import {captureNativeSituation} from '../src/native-conversation.mjs';
 import {interiorArt} from '../src/interior-art.mjs';
 import {houseId} from '../src/houses.mjs';
 import {RoomStore} from '../src/room-store.mjs';
@@ -51,8 +52,29 @@ test('workshop art follows the exact house, current room grant and asset revisio
     const prepared=await (await read('api/space/scene?room='+lab)).json();
     assert.match(prepared.markup,/id="room-art"/);
     assert.equal((await read(model)).status,404);
+    assert.equal((await read('api/space/content-visits')).status,200);
+    assert.deepEqual(await (await read('api/space/content-visits')).json(),{visits:[]});
     const entered=await (await move('vestibulo',lab)).json();
     assert.equal(entered.id,lab);
+    const station=entered.objects.find(item=>item.id==='beacon-prototypes');
+    assert.deepEqual(station,{id:'beacon-prototypes',kind:'workstation',title:'Banco de prototipos',
+      position:{x:1.5,y:.1,z:2.75},revision:1});
+    assert.match(entered.scene.markup,/id="beacon-prototypes"/);
+    assert.doesNotMatch(entered.scene.markup,/guitar-review/);
+    const catalog=await (await read('api/space/content-visits')).json();
+    assert.equal(catalog.visits.length,1);
+    assert.equal(catalog.visits[0].node,station.id);
+    assert.equal(catalog.visits[0].nodeRevision,station.revision);
+    assert.deepEqual(catalog.visits[0].position,station.position);
+    const interior={id:'capture-id',run:runtime.room.run,edition:runtime.room.edition,
+      sequence:runtime.room.sequence,capturedAt:123,place:{...entered,participants:[]}};
+    const capture=(workstation)=>captureNativeSituation(runtime.room,{id:'human:guest'},
+      {id:'message-id',view:{spaceId:lab,workstation}},{interior});
+    assert.equal(capture({id:station.id,revision:station.revision}).referredWorkstation.title,station.title);
+    assert.equal(capture({id:station.id,revision:station.revision+1}).referredWorkstation,undefined);
+    assert.doesNotMatch(JSON.stringify(capture(station)),/guitar-review|published-935e6262/);
+
+    assert.match(catalog.visits[0].descriptor,/guitar-review-935e6262\/artifact-review\/hb-guitar\/published-935e6262-organic-head\/visit$/);
     assert.match(entered.scene.markup,/id="room-art"/);
     assert.equal((await read(model+'wrong')).status,404);
     const response=await read(model);
@@ -62,6 +84,7 @@ test('workshop art follows the exact house, current room grant and asset revisio
     grant=false;
     assert.equal((await read(model)).status,404);
     const after=await (await read('api/space?live=1')).json();
+    assert.equal((await read('api/space/content-visits')).status,404);
     assert.equal(after.id,'outside');
     assert.equal(after.scene,null);
   } finally {

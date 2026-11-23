@@ -24,6 +24,13 @@ export function captureNativeSituation(room,actor,request,{pairedBeing=null,pair
       throw new NativeConversationError('view','Provide a bounded client-reported view',{retained:false,knownNotSubmitted:true,retryable:true});
     const view=interior?{capturedAt:request.view.capturedAt,spaceId:interior.place.id,
       local:request.view.local?{position:request.view.local.position}:null}:structuredClone(request.view);
+    if(interior&&request.view.workstation){
+      const requested=request.view.workstation;
+      const station=interior.place.objects.find(item=>item.kind==='workstation'&&
+        item.id===requested.id&&item.revision===requested.revision);
+      if(station)extra.referredWorkstation={id:station.id,title:station.title,revision:station.revision,
+        evidence:'client-reported reference matched the current authorized room station'};
+    }
     // The exact reference is resolved below, never copied event text from a client.
     delete view.historyReference;
     extra.clientReportedView={evidence:'client-reported-at-interaction-capture',value:view,

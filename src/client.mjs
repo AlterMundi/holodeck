@@ -620,7 +620,11 @@ async function captureInteractionContext(){
   if(moving||!capturedActor)throw Error('Esperá a llegar para conversar desde este lugar.');
   if(inside){
     const position=client.getLocalCharacterState()?.position;
-    return structuredClone({capturedAt:Date.now(),spaceId:capturedSpace,local:position?{position}:null});
+    const entry=contentVisitor.readyAcknowledged&&contentVisitor.entry;
+    const workstation=entry&&activeSpace?.objects?.find(object=>object.kind==='workstation'&&
+      object.id===entry.node&&object.revision===entry.nodeRevision);
+    return structuredClone({capturedAt:Date.now(),spaceId:capturedSpace,local:position?{position}:null,
+      ...(workstation?{workstation:{id:workstation.id,revision:workstation.revision}}:{})});
   }
   const capturedRun=state?.run;
   if(!capturedRun)throw Error('No pude confirmar el mundo desde donde estás pensando.');

@@ -69,7 +69,20 @@ authorized CompAII laboratory. Its current stairs, entry/exit and situated
 room identity provide the walkable integration boundary. Simple collision
 proxies cover the prototype base and console. Scene authorization applies to
 the GLB as well as the room markup. The console and instrument remain visual
-studies pending independent, real project bindings.
+studies pending independent, real project control bindings.
+
+The **Banco de prototipos** at the authored workbench opens the existing
+54-part H.B. Guitar prototype review, published edition `935e6262`. Its
+room-local station and physical label share one identity and revision.
+The room does not add a public outdoor source node or copy the artifact.
+The visit is served by the existing protected Nexus descriptor and Home
+source, which continue to decide viewer access. The station revision
+must advance if its authored selection or position changes.
+
+A ready visit can supply a workstation reference when sending from the
+continuing Conversation. Holodeck checks the station and revision against
+the authorized room snapshot and retains the matched reference. Source
+IDs, renderer state and media stay with their existing viewer.
 
 ```sh
 blender -b "$ART_OUTPUT/Casa de CompAII - Nivel.blend"   --python-exit-code 1 -P art/compaii-house/export_beacon_room.py --   public/room-art/beacon-workshop.glb
