@@ -143,3 +143,17 @@ visit reference and lifecycle flags; graph and draft payloads are excluded.
 See [Field integration](field-integration.md) for authority, history, native
 ingress and owned-place boundaries. Implementation/receiving/human acceptance
 remain separate observations in STATUS.
+
+## Walkable gallery
+
+When close to a display, visitors can open an authorized exact review by
+clicking the model or its stage plaque, or tapping it on touch. The nearby
+visit action remains available through the HUD. A camera drag, occluding wall
+or hidden model cannot open the review. The room catalogue is refreshed
+before opening, and the selected entry must still match both the node revision
+and the complete Nexus edition pin. If the pin changed during authorization,
+the visitor chooses again from the current display.
+
+Returning from the viewer keeps the same scene and place. The normal Nexus
+authorization and viewer readiness exchange still apply, including removal of
+revoked editions from the room, the selector and resumable visits.

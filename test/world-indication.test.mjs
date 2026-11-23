@@ -37,3 +37,15 @@ test('short stationary pointer gestures select locally, while camera drag/multi-
  event('pointerdown');event('pointerup');assert.equal(f.picks.length,1);assert.equal(f.picks[0].revision,1);
  f.picker.dispose();event('pointerdown');event('pointerup');assert.equal(f.picks.length,1);
 });
+test('gallery picks require an authorized visible model or sign and respect opaque room geometry',()=>{
+ const f=fixture(),entry={id:'house-exhibit',nodeRevision:2},target=f.scene.children[0],front=f.scene.children[1];
+ f.picker.gallery=()=>new Map([[target,entry]]);
+ f.invalidate();
+ assert.equal(f.picker.pick(50.25,50.25),null);
+ front.visible=false;
+ assert.deepEqual(f.picker.pick(50.25,50.25),{kind:'gallery',entry});
+ f.picker.gallery=()=>new Map();
+ assert.equal(f.picker.pick(50.25,50.25),null);
+ assert.equal(f.unavailable,0);
+ f.picker.dispose();
+});

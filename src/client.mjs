@@ -52,7 +52,7 @@ function startInterior(space){
   const beaconControls=new BeaconControls(document.querySelector('#beacon-control'),document.querySelector('#beacon-panel'));
   let galleryModels;
   const visitor=new ContentVisitor({document,window,base,scoped:true,
-    onCatalog:entries=>galleryModels?.sync(entries),
+    onCatalog:entries=>{galleryModels?.sync(entries);applyGallerySigns(document.getElementById(space.id),entries);},
     say:(message,options)=>notice.show(message,options)});
   let exhibitRevision=space.exhibitRevision===undefined?null:String(space.exhibitRevision);
   const exhibitObserver=new MutationObserver(()=>{
@@ -78,13 +78,17 @@ function startInterior(space){
       const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
       galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
       galleryModels.sync(visitor.entries);
+      const picker=new PublicWorldPicker({document,canvas:options.targetElement.querySelector(':scope > canvas'),
+        scene:renderer.mmlCompositionScene.group,cameraState:()=>options.coreCameraManager.getCameraState(),
+        gallery:()=>visitor.galleryTargets(galleryModels,document,client.getLocalCharacterState()?.position),
+        onPick:({entry})=>visitor.openGallery(entry).catch(()=>notice.show('No pude abrir esta edición.'))});
       const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
       renderer.render=state=>{
         const position=client.getLocalCharacterState()?.position;
         galleryModels.update();visitor.refreshGallery();updateDoor(position);visitor.update(position);
         beaconControls.update(space.objects,position);render(state);
       };
-      renderer.dispose=()=>{galleryModels.clear();dispose();};
+      renderer.dispose=()=>{picker.dispose();galleryModels.clear();dispose();};
       queueMicrotask(options.onInitialized);return renderer;
     },
     animationConfig:animations,
@@ -333,8 +337,12 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       canvas:options.targetElement.querySelector(':scope > canvas'),expectedDocumentURL:socket('world')});
     nativeAvatarLayer=new NativeAvatarLayer({document,base,onFailure:message=>say(message)});
     worldPicker=new PublicWorldPicker({document,canvas:options.targetElement.querySelector(':scope > canvas'),scene:renderer.mmlCompositionScene.group,
-      cameraState:()=>options.coreCameraManager.getCameraState(),proof:()=>geometryProbe?.snapshot(),onPick:record=>{
-        if(record.kind==='content')contentVisitor?.openNode(record.node).catch(()=>say('No pude abrir este contenido. Conservé la visita anterior.'));
+      cameraState:()=>options.coreCameraManager.getCameraState(),proof:()=>geometryProbe?.snapshot(),
+      gallery:()=>inside?(moving||!remoteScene?new Map():contentVisitor.galleryTargets(galleryModels,remoteScene,
+        client.getLocalCharacterState()?.position)):null,
+      onPick:record=>{
+        if(record.kind==='gallery')contentVisitor.openGallery(record.entry).catch(()=>say('No pude abrir esta edición.'));
+        else if(record.kind==='content')contentVisitor?.openNode(record.node).catch(()=>say('No pude abrir este contenido. Conservé la visita anterior.'));
         else{
           worldIndication?.select(record);
           const visit=pickedRepresentationVisit(record,state);

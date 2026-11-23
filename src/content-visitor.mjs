@@ -1,4 +1,7 @@
 import {CONTENT_NODE,validateContentNodes,sameVisitPin,visitResponseMatches,knownVisitState,visitVersion,visitEntryMatches,contextVisitSnapshotMatches} from './content-visits.mjs';
+import {GALLERY_STAGES} from './gallery-display.mjs';
+
+const ROOM_VISIT_REACH=2.25;
 
 // One retained Nexus visit. Hiding this panel never destroys media, a draft,
 // capture or native response polling. The trusted viewer owns that lifecycle.
@@ -7,8 +10,11 @@ export class ContentVisitor{
   Object.assign(this,{document,window,base,say,scoped,onCatalog});this.entries=[];this.nodes=[CONTENT_NODE];this.catalogGeneration=0;this.pending=new Map();this.disposed=false;this.lastContext=null;this.galleryRenewAt=Infinity;
   this.button=document.querySelector('#visit-near');this.panel=document.querySelector('#content-visit');
   this.loading=document.querySelector('#visit-loading');this.roomGeneration=0;this.galleryRoom=false;
-  this.button.onclick=()=>this.open(this.nearby?.id||this.entry?.id,
-    {nodeRevision:this.scoped?(this.nearby||this.entry)?.nodeRevision??null:null}).catch(()=>say('No pude abrir esta presentación. Podés volver a intentarlo.'));
+  this.button.onclick=()=>{
+   const selected=this.nearby||this.entry;
+   const exact=this.scoped?{nodeRevision:selected?.nodeRevision??null,expectedPin:selected?.pin??null}:undefined;
+   return this.open(selected?.id,exact).catch(()=>say('No pude abrir esta presentación. Podés volver a intentarlo.'));
+  };
   document.querySelector('#visit-walk').onclick=()=>this.walk();
   this.receive=event=>{
    if(!this.frame||!this.entry)return;
@@ -55,7 +61,7 @@ export class ContentVisitor{
   if(signature!==this.catalogSignature)this.catalog=this.loadCatalog(signature);
  }
  update(position){
-  this.nearby=null;let distance=this.scoped?2.25:5;
+  this.nearby=null;let distance=this.scoped?ROOM_VISIT_REACH:5;
   if(position)for(const entry of this.entries){
    const at=entry.position||CONTENT_NODE.position,next=Math.hypot(position.x-at.x,position.z-at.z,this.scoped?(position.y??at.y)-at.y:0);
    if(next<distance){distance=next;this.nearby=entry;}
@@ -117,9 +123,31 @@ export class ContentVisitor{
   for(const task of this.pending.values()){clearTimeout(task.timer);task.reject(Error('Visit changed'));}
   this.pending.clear();this.frame?.remove();this.frame=null;this.showLoading();
  }
- async open(selectedId,{nodeRevision=null}={}){
+ galleryTargets(models,scene,position){
+  const targets=new Map();
+  if(!this.scoped||!position)return targets;
+  const displayed=models.targets();
+  for(const entry of this.entries){
+   if(entry.galleryDisplay!==true||!Object.hasOwn(GALLERY_STAGES,entry.id)||!entry.position||Math.hypot(position.x-entry.position.x,
+      (position.y??entry.position.y)-entry.position.y,position.z-entry.position.z)>=ROOM_VISIT_REACH)continue;
+   for(const [model,display] of displayed){
+    if(display.id===entry.id&&display.nodeRevision===entry.nodeRevision&&sameVisitPin(display.pin,entry.pin))
+     targets.set(model,entry);
+   }
+   for(const facing of ['front','back']){
+    const plaque=scene?.querySelector('#'+entry.id+'-sign-'+facing);
+    if(plaque?.getContainer)targets.set(plaque.getContainer(),entry);
+   }
+  }
+  return targets;
+ }
+ async openGallery(entry){
+  if(this.scoped&&entry?.galleryDisplay===true)
+   return this.open(entry.id,{nodeRevision:entry.nodeRevision,expectedPin:entry.pin});
+ }
+ async open(selectedId,{nodeRevision=null,expectedPin=null}={}){
   const selected=this.entries.find(entry=>entry.id===selectedId);
-  if(nodeRevision!==null&&selected?.nodeRevision!==nodeRevision){this.say('Este contenido cambió de lugar o edición. Volvé a elegirlo en el mundo.');return;}
+  if((nodeRevision!==null&&selected?.nodeRevision!==nodeRevision)||(expectedPin&&!sameVisitPin(selected?.pin,expectedPin))){this.say('Este contenido cambió de lugar o edición. Volvé a elegirlo en el mundo.');return;}
   if(!this.scoped&&this.frame&&(!selectedId||selectedId===this.entry?.id&&(!selected||sameVisitPin(selected.pin,this.entry.pin)))){this.reveal();this.frame.focus();return;}
   if(this.opening)return;this.opening=true;
   const generation=this.roomGeneration,current=()=>!this.disposed&&this.roomGeneration===generation;
@@ -132,7 +160,7 @@ export class ContentVisitor{
     if(this.scoped&&this.frame&&!this.hasCurrentEntry())this.minimize();
     this.say('No hay contenido disponible para tu acceso en este lugar.');return;
    }
-   if(nodeRevision!==null&&entry.nodeRevision!==nodeRevision){this.say('Este contenido cambió de lugar o edición. Volvé a elegirlo en el mundo.');return;}
+   if((nodeRevision!==null&&entry.nodeRevision!==nodeRevision)||(expectedPin&&!sameVisitPin(entry.pin,expectedPin))){this.say('Este contenido cambió de lugar o edición. Volvé a elegirlo en el mundo.');return;}
    const descriptorURL=new URL(entry.descriptor,this.window.location.origin);
    let entryURL=new URL(entry.entry,this.window.location.origin);
    if([descriptorURL,entryURL].some(url=>url.origin!==this.window.location.origin||!url.pathname.startsWith('/nexus/')))throw Error('Use the selected viewer');

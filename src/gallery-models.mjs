@@ -135,6 +135,11 @@ export class GalleryModels{
       }).catch(()=>{item.failed=true;});
   }
 
+  targets(){
+    return [...this.items.values()].filter(item=>item.model&&this.now()<item.expires)
+      .map(({model,entry})=>[model,entry]);
+  }
+
   update(){
     for(const [id,item] of this.items)if(this.now()>=item.expires)this.remove(id);
   }

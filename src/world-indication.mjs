@@ -7,8 +7,8 @@ export function selectionLabel(id,state){
   ?`${node.play?'el juego':'el contenido'} «${node.title}»`:entityLabel(id);
 }
 export class PublicWorldPicker{
- constructor({document,canvas,scene,cameraState,proof,onPick,onUnavailable=()=>{}}){
-  Object.assign(this,{document,canvas,scene,cameraState,proof,onPick,onUnavailable});this.ray=new Raycaster();this.camera=new PerspectiveCamera();this.gesture=null;
+ constructor({document,canvas,scene,cameraState,proof,onPick,onUnavailable=()=>{},gallery=()=>null}){
+  Object.assign(this,{document,canvas,scene,cameraState,proof,onPick,onUnavailable,gallery});this.ray=new Raycaster();this.camera=new PerspectiveCamera();this.gesture=null;
   this.down=e=>{this.gesture=e.isPrimary!==false&&e.button===0?{id:e.pointerId,x:e.clientX,y:e.clientY,time:performance.now()}:null;};
   this.move=e=>{if(this.gesture&&Math.hypot(e.clientX-this.gesture.x,e.clientY-this.gesture.y)>6)this.gesture=null;};
   this.cancel=()=>{this.gesture=null;};
@@ -19,13 +19,28 @@ export class PublicWorldPicker{
   };
   for(const[type,listener]of [['pointerdown',this.down],['pointermove',this.move],['pointerup',this.up],['pointercancel',this.cancel]])canvas.addEventListener(type,listener);
  }
- pick(x,y){
-  const root=this.document.querySelector('m-group#workshop'),proof=this.proof();
-  if(!root||!proof||proof.run!==root.getAttribute('data-run')||proof.edition!==root.getAttribute('data-edition')||String(proof.sequence)!==root.getAttribute('data-semantic-sequence')){this.onUnavailable();return null;}
+ hit(x,y,skip=()=>false){
   const state=this.cameraState(),rect=this.canvas.getBoundingClientRect();if(!state||!rect.width||!rect.height)return null;
   Object.assign(this.camera,{fov:state.fov,aspect:state.aspect,near:.01,far:200});this.camera.position.set(state.position.x,state.position.y,state.position.z);
   this.camera.quaternion.set(state.rotation.x,state.rotation.y,state.rotation.z,state.rotation.w);this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld(true);this.scene.updateMatrixWorld(true);
   this.ray.setFromCamera(new Vector2((x-rect.left)/rect.width*2-1,-(y-rect.top)/rect.height*2+1),this.camera);
+  return this.ray.intersectObjects(this.scene.children,true).find(hit=>
+    (hit.object.isMesh||hit.object.isSprite)&&!skip(hit.object)&&visible(hit.object)&&
+    [hit.object.material].flat().some(material=>material?.visible&&material.opacity>0))??null;
+ }
+ pick(x,y){
+  const gallery=this.gallery();
+  if(gallery){
+   if(!gallery.size)return null;
+   const hit=this.hit(x,y);
+   for(let object=hit?.object;object;object=object.parent){
+    const entry=gallery.get(object);
+    if(entry)return {kind:'gallery',entry};
+   }
+   return null;
+  }
+  const root=this.document.querySelector('m-group#workshop'),proof=this.proof();
+  if(!root||!proof||proof.run!==root.getAttribute('data-run')||proof.edition!==root.getAttribute('data-edition')||String(proof.sequence)!==root.getAttribute('data-semantic-sequence')){this.onUnavailable();return null;}
   const owners=new Map();
   for(const entity of root.querySelectorAll('m-group[data-entity-revision]')){
    if(!(entity.id==='bridge'||/^(?:garden|node)-[a-z0-9-]{1,40}$/.test(entity.id)))continue;
@@ -38,7 +53,7 @@ export class PublicWorldPicker{
   }
   const cues=new Set([...root.querySelectorAll('m-group[data-focus-target]')].map(element=>element.getContainer()));
   const communication=object=>{for(let p=object;p;p=p.parent)if(cues.has(p))return true;return false;};
-  const hit=this.ray.intersectObjects(this.scene.children,true).find(hit=>(hit.object.isMesh||hit.object.isSprite)&&!communication(hit.object)&&visible(hit.object)&&[...(Array.isArray(hit.object.material)?hit.object.material:[hit.object.material])].some(material=>material?.visible&&material.opacity>0));
+  const hit=this.hit(x,y,communication);
   if(!hit)return null;
   for(let object=hit.object;object;object=object.parent){const owner=owners.get(object);if(owner)return {...owner,run:proof.run,edition:proof.edition};}
   return null; // Visible scenery/private preview occludes objects behind it.

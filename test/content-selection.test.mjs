@@ -28,3 +28,23 @@ test('the selected runtime node requests its exact descriptor and denial preserv
  try{await value.openNode(entry.node,{expectedRevision:4});}finally{globalThis.fetch=previousFetch;}
  assert.equal(reads.length,1);assert.equal(reads[0].url,'https://world.test/nexus/api/new-visit');assert.equal(reads[0].options.credentials,'same-origin');assert.equal(value.frame,frame);assert.equal(value.entry,old);assert.equal(value.selector.value,old.id);assert.equal(messages.length,1);assert.match(messages[0],/necesita tu acceso/);
 });
+test('scoped model and plaque actions share the exact current edition and physical reach',()=>{
+ const item={...old,id:'house-exhibit',galleryDisplay:true,position:{x:2,y:.1,z:0}};
+ const {value}=visitor([item]);value.scoped=true;
+ const model={},staleModel={},plaque={};
+ const objects={targets:()=>[[model,item],[staleModel,{...item,pin:{...pin,revision:'expired'}}]]};
+ const scene={querySelector:id=>id.endsWith('-front')?{getContainer:()=>plaque}:null};
+ assert.deepEqual([...value.galleryTargets(objects,scene,{x:1,y:.1,z:0})],[[model,item],[plaque,item]]);
+ assert.equal(value.galleryTargets(objects,scene,{x:-1,y:.1,z:0}).size,0);
+ value.entries=[];
+ assert.equal(value.galleryTargets(objects,scene,{x:1,y:.1,z:0}).size,0);
+});
+test('a gallery edition changed during authorization cannot open with a previous model pin',async()=>{
+ const item={...old,id:'house-exhibit',galleryDisplay:true};
+ const {value,messages,frame}=visitor([item]);value.scoped=true;
+ value.loadCatalog=async()=>{value.entries=[{...item,pin:{...pin,revision:'other'}}];return true;};
+ await value.openGallery(item);
+ assert.equal(value.frame,frame);
+ assert.equal(value.selector.disabled,false);
+ assert.match(messages[0],/Volvé a elegirlo/);
+});
