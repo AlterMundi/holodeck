@@ -2,16 +2,16 @@ import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {capWorldPixelRatio} from '../src/render-pixel-budget.mjs';
 
-function display({adaptive=true,dpr=3}={}){
+function display({adaptive=true,dpr=3,startAtNative=false}={}){
   let now=0,ratio=1;
   const parent={clientWidth:390,clientHeight:844};
   const allocations=[];
-  const webgl={domElement:{parentElement:parent},getPixelRatio:()=>ratio,setPixelRatio(value){
+  const webgl={domElement:{parentElement:parent},shadowMap:{enabled:true},getPixelRatio:()=>ratio,setPixelRatio(value){
     ratio=value;allocations.push(value);
   }};
   const renderer={composer:{renderer:webgl},fitContainer:()=>webgl.setPixelRatio(dpr)};
   const visibility=new EventTarget();
-  const {sample,dispose}=capWorldPixelRatio(renderer,{adaptive,clock:()=>now,visibility});
+  const {sample,dispose}=capWorldPixelRatio(renderer,{adaptive,startAtNative,clock:()=>now,visibility});
   return {webgl,allocations,parent,renderer,sample,dispose,visibility,
     frames(interval,count,ready=true){for(let index=0;index<count;index++){now+=interval;sample(ready);}}};
 }
@@ -53,7 +53,32 @@ test('hidden frames, room changes and resized canvases do not count toward a dro
   const bounded=Math.sqrt(2500000/(2000*2000));
   assert.equal(view.webgl.getPixelRatio(),bounded);
   view.frames(500,20);
-  assert.equal(view.webgl.getPixelRatio(),bounded);
+  assert.equal(view.webgl.getPixelRatio(),.55);
+});
+
+test('a slow 1x desktop can lower world resolution while preserving CSS size',()=>{
+  const view=display({dpr:1});
+  Object.assign(view.parent,{clientWidth:1600,clientHeight:900});
+  view.renderer.fitContainer();
+  view.frames(60,5);
+  assert.equal(view.webgl.getPixelRatio(),.85);
+  assert.equal(view.webgl.shadowMap.enabled,true);
+  view.frames(100,40);
+  assert.equal(view.webgl.getPixelRatio(),.55);
+  assert.equal(view.webgl.shadowMap.enabled,false);
+  assert.deepEqual(view.parent,{clientWidth:1600,clientHeight:900});
+  view.frames(16,1250);
+  assert.equal(view.webgl.getPixelRatio(),.7);
+  assert.equal(view.webgl.shadowMap.enabled,true);
+});
+
+test('a touch display can start with a modest buffer and sharpen after sustained fast frames',()=>{
+  const view=display({startAtNative:true});
+  assert.equal(view.webgl.getPixelRatio(),1);
+  view.frames(16,120);
+  assert.equal(view.webgl.getPixelRatio(),1);
+  view.frames(16,1100);
+  assert.equal(view.webgl.getPixelRatio(),1.5);
 });
 
 test('desktop keeps native density subject to the existing pixel ceiling',()=>{

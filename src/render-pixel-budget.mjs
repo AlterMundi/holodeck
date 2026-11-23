@@ -1,20 +1,22 @@
 // Keep CSS dimensions and input coordinates at their original device density.
 const WORLD_PIXELS=2500000;
-const TIERS=[2,1.5,1];
+const TIERS=[2,1.5,1,.85,.7,.55];
 const SLOW_MS=45;
 const FAST_MS=21;
 const STEP_INTERVAL_MS=1600;
 const RECOVER_MS=18000;
 
-export function capWorldPixelRatio(renderer,{adaptive=false,clock=()=>performance.now(),visibility=globalThis.document}={}){
+export function capWorldPixelRatio(renderer,{adaptive=false,startAtNative=false,clock=()=>performance.now(),visibility=globalThis.document}={}){
   // Both pinned MML resize paths use this Three.js renderer, which reallocates
   // the drawing buffer without changing CSS layout when its ratio changes.
   const webgl=renderer.composer?.renderer;
   if(!webgl)return {sample(){},dispose(){}};
   const setPixelRatio=webgl.setPixelRatio.bind(webgl);
-  let requested=1,width=0,height=0,tier=0;
+  const shadowMap=webgl.shadowMap;
+  const shadowsEnabled=shadowMap?.enabled===true;
+  let requested=1,width=0,height=0,tier=adaptive&&startAtNative?TIERS.indexOf(1):0;
   let previousFrame=null,slow=0,fast=0;
-  let nextStep=0,recoverAfter=0;
+  let nextStep=0,recoverAfter=tier>0?clock()+RECOVER_MS:0;
 
   const resetSamples=()=>{
     previousFrame=null;slow=0;fast=0;
@@ -26,6 +28,9 @@ export function capWorldPixelRatio(renderer,{adaptive=false,clock=()=>performanc
   const applyRatio=()=>{
     const ratio=ratioFor(tier);
     if(ratio!==webgl.getPixelRatio())setPixelRatio(ratio);
+    // The lowest tier also saves the scene's extra shadow pass. Keep all
+    // materials, lights, navigation and HUD at their ordinary settings.
+    if(adaptive&&shadowsEnabled)shadowMap.enabled=tier<TIERS.length-1;
   };
   webgl.setPixelRatio=value=>{
     const parent=webgl.domElement.parentElement;
@@ -59,5 +64,6 @@ export function capWorldPixelRatio(renderer,{adaptive=false,clock=()=>performanc
   }
   return {sample,dispose(){
     if(adaptive)visibility?.removeEventListener('visibilitychange',resetSamples);
+    if(adaptive&&shadowsEnabled)shadowMap.enabled=true;
   }};
 }

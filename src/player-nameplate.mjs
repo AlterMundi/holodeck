@@ -4,7 +4,9 @@ const height = 46;
 const maximumWidth = 300;
 const padding = 16;
 const font = '600 25px system-ui, sans-serif';
-const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+const graphemes = typeof Intl.Segmenter === 'function'
+  ? new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+  : null;
 
 export function playerNameplate(text) {
   const canvas = document.createElement('canvas');
@@ -14,7 +16,10 @@ export function playerNameplate(text) {
   let title = text;
   if (context.measureText(title).width > available) {
     let prefix = '';
-    for (const { segment } of graphemes.segment(title)) {
+    const characters = graphemes
+      ? Array.from(graphemes.segment(title), part => part.segment)
+      : Array.from(title);
+    for (const segment of characters) {
       if (context.measureText(prefix + segment + '…').width > available) break;
       prefix += segment;
     }
@@ -24,7 +29,8 @@ export function playerNameplate(text) {
   canvas.width = Math.ceil(context.measureText(title).width) + 2 * padding;
   canvas.height = height;
   context.beginPath();
-  context.roundRect(2, 2, canvas.width - 4, height - 4, 16);
+  if (typeof context.roundRect === 'function') context.roundRect(2, 2, canvas.width - 4, height - 4, 16);
+  else context.rect(2, 2, canvas.width - 4, height - 4);
   context.fillStyle = '#163b3f';
   context.fill();
   context.strokeStyle = '#a4d3bd';

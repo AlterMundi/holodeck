@@ -5,8 +5,8 @@ const DOOR_RANGE=1.65;
 const STAIR_RANGE=.85;
 const PORTAL_RANGE=.90;
 
-export async function readSpace(){
-  const result=await fetch(new URL('api/space?live=1',base()),{credentials:'same-origin'});
+export async function readSpace(signal){
+  const result=await fetch(new URL('api/space?live=1',base()),{credentials:'same-origin',signal});
   if(!result.ok)throw Error('No pude confirmar el lugar.');
   return result.json();
 }

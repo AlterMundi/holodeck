@@ -84,7 +84,7 @@ try{
  if(!await page.evaluate('document.querySelector("#visit-stage iframe").allowFullscreen'))throw Error('Existing viewer fullscreen not enabled');
  await wait(150);if(await page.evaluate('document.querySelector("#visit-stage iframe").contentWindow.fixture.requests.length'))throw Error('Spoofed ready started handshake');
  await page.evaluate('window.retainedFrame=document.querySelector("#visit-stage iframe");true');
- if(!await page.evaluate('document.querySelector("#visit-walk").textContent.trim()==="Volver al mundo"&&!document.querySelector("#visit-close")'))throw Error('Content exit is not one clear return control');
+ if(!await page.evaluate('document.querySelector("#visit-walk").textContent.trim()==="Volver al mundo"&&document.querySelector("#visit-end").textContent.trim()==="Cerrar contenido"'))throw Error('Return and close controls are unclear');
  async function immediateReturn(label){
   const before=await page.evaluate('({identity:retainedFrame.contentWindow.fixture.identity,state:{...retainedFrame.contentWindow.fixture.state},draft:retainedFrame.contentDocument.querySelector("textarea").value,requests:retainedFrame.contentWindow.fixture.requests.length,held:retainedFrame.contentWindow.fixture.held.length})');
   await page.evaluate('retainedFrame.contentDocument.querySelector("textarea").focus();true');

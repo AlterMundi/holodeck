@@ -79,8 +79,22 @@ const touchControls={
   },
   dispose(){this.delegate?.dispose();this.holder?.remove();}
 };
-const activeSpace=await readSpace().catch(()=>null);
-if(activeSpace&&activeSpace.id!=='outside'&&activeSpace.live!==1)startInterior(activeSpace);
+let entering=true;
+function worldEntered(){
+  entering=false;
+  window.dispatchEvent(new Event('holodeck:entered'));
+}
+
+function entryRoomReady(root,model=root?.querySelector('m-model#room-art[src]')){
+  return root?.isConnected===true&&(!model||model.modelGraphics?.hasLoadedModel()===true);
+}
+
+const entryLocation=new AbortController();
+const entryDeadline=setTimeout(()=>entryLocation.abort(),12000);
+let activeSpace;
+try{activeSpace=await readSpace(entryLocation.signal);}
+finally{clearTimeout(entryDeadline);}
+if(activeSpace.id!=='outside'&&activeSpace.live!==1)startInterior(activeSpace);
 else startWorld(activeSpace);
 
 function startInterior(space){
@@ -117,7 +131,7 @@ function startInterior(space){
     createRenderer:options=>{
       constrainInteriorCamera(options,()=>space.id);
       const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
-      const frameBudget=capWorldPixelRatio(renderer,{adaptive:matchMedia('(pointer: coarse)').matches});
+      const frameBudget=capWorldPixelRatio(renderer,{adaptive:true,startAtNative:matchMedia('(pointer: coarse)').matches});
       galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
       galleryModels.sync(visitor.entries);
       const picker=new PublicWorldPicker({document,canvas:options.targetElement.querySelector(':scope > canvas'),
@@ -132,6 +146,7 @@ function startInterior(space){
         frameBudget.sample(!document.hidden&&!!position&&!visitor.isOpeningOverWorld());
         galleryModels.update();visitor.refreshScopedCatalog();updateDoor(position);visitor.update(position);
         beaconControls.update(space.objects,position);render(state);
+        if(entering&&position&&entryRoomReady(document.getElementById(space.id)))worldEntered();
       };
       renderer.dispose=()=>{frameBudget.dispose();picker.dispose();galleryModels.clear();dispose();};
       queueMicrotask(options.onInitialized);return renderer;
@@ -177,7 +192,7 @@ const hot=activeSpace?.live===1;
 const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
 let inside=hot&&activeSpace.id!=='outside';
 let updateDoor=()=>{},remoteScene=null,roomModel=null,networkScope=null,arrival=null;
-let moving=false,requestingMove=false,needsSync=false,resyncing=false,moveDeadline=null;
+let moving=false,requestingMove=false,needsSync=false,resyncing=false,moveDeadline=null,passageNotice=null;
 let roomTopic;
 let prefetched=new Set(),prefetchRequest=null,pendingRoomArt=null;
 const setMoving=value=>{
@@ -185,6 +200,12 @@ const setMoving=value=>{
     moving=value;
     document.body.classList.toggle('room-transition',value);
     $('#room-passage-message').textContent=value?'Cambiando de lugar…':'';
+    $('#room-passage-retry').hidden=true;
+    clearTimeout(passageNotice);
+    if(value)passageNotice=setTimeout(()=>{
+      $('#room-passage-message').textContent='Este lugar está tardando en cargar.';
+      $('#room-passage-retry').hidden=false;
+    },12000);
   }
   if(!value){clearTimeout(moveDeadline);moveDeadline=null;}
 };
@@ -300,13 +321,15 @@ function syncCurrent(){
 }
 function canFinishMove(){
   if(requestingMove||needsSync||networkScope!==activeSpace.id||!client.getLocalCharacterState())return false;
+  // The receiving scope is confirmed. A slow model can finish on this page.
+  clearTimeout(moveDeadline);moveDeadline=null;
+  if(inside?!entryRoomReady(remoteScene,roomModel):!geometryProbe?.snapshot())return false;
   if(arrival){
     const {x,y,z,yaw,facing}=arrival;
     client.updateConfig({spawnConfiguration:{spawnPosition:{x,y,z},spawnYRotation:-(yaw??facing*90)}});
     client.respawn();arrival=null;
     return false;
   }
-  if(inside?!remoteScene?.isConnected:!geometryProbe?.snapshot())return false;
   // Called after rendering. The respawn branch above already waits for the
   // next rendered frame, so one ready frame at the new anchor is sufficient.
   return true;
@@ -384,7 +407,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
   createRenderer:options=>{
     constrainInteriorCamera(options,()=>inside&&activeSpace?.id);
     const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
-    const frameBudget=capWorldPixelRatio(renderer,{adaptive:matchMedia('(pointer: coarse)').matches});
+    const frameBudget=capWorldPixelRatio(renderer,{adaptive:true,startAtNative:matchMedia('(pointer: coarse)').matches});
     galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
     const sky=new OutdoorSky(renderer.mmlCompositionScene.group.parent,base);
     const light=new DirectionalLight(0xffefd6,1.8);
@@ -483,6 +506,8 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
       if(!inside&&drawWorld)geometryProbe.afterRender();
       else if(inside)keepRoomArt();
       if(hot&&moving&&canFinishMove())setMoving(false);
+      if(entering&&drawWorld&&position&&!moving&&!needsSync&&
+         (inside?entryRoomReady(remoteScene,roomModel):geometryProbe?.snapshot()))worldEntered();
       const now=performance.now();
       if(coldExterior&&position&&!inside&&!moving&&!needsSync&&networkScope===activeSpace.id&&now>=nextDressing){
         nextDressing=now+350;

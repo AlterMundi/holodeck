@@ -15,7 +15,10 @@
 @media(max-width:500px){#hud{max-width:calc(100vw - 24px);gap:12px}#hud .brand-mark{display:none}}
 @media(min-width:741px) and (max-width:1040px){#help{display:none}}
 
-#visit-near{position:fixed;z-index:22;right:22px;top:90px;max-width:calc(100vw - 44px)}
+#visit-controls{position:fixed;z-index:22;right:22px;top:90px;max-width:calc(100vw - 44px);display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;pointer-events:none}
+#visit-controls button{max-width:100%;pointer-events:auto;overflow-wrap:anywhere}
+#visit-end-near{font-size:14px}
+body:has(#conversation-panel:not([hidden])) #visit-controls,.room-transition #visit-controls,body:has(#signal-editor:not([hidden])) #visit-controls{display:none}
 #beacon-station{position:fixed;z-index:22;right:22px;top:148px;max-width:min(430px,calc(100vw - 44px));display:grid;justify-items:end;gap:7px}
 #beacon-station:has(#beacon-control[hidden]){display:none}
 #beacon-station .row{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px}
@@ -55,7 +58,7 @@ body:has(#content-visit:not([hidden]):not(.is-walking)) #beacon-station,body:has
 #visit-stage{position:relative;flex:1;min-height:0;border-radius:12px;overflow:hidden;background:#102d31}#visit-stage iframe{width:100%;height:100%;border:0;display:block}
 body:has(#content-visit:not([hidden]):not(.is-walking)) .touch-controls{visibility:hidden;pointer-events:none}
 #content-visit.is-walking{inset:auto;left:-200vw;top:0;width:92vw;height:90vh;visibility:hidden;pointer-events:none}
-@media(max-width:740px){#visit-near{top:148px;right:12px;max-width:calc(100vw - 24px);font-size:14px}#content-visit{inset:max(8px,env(safe-area-inset-top)) 8px max(8px,env(safe-area-inset-bottom));padding:8px;border-radius:14px}#visit-title{font-size:19px;flex-basis:100%}#content-visit header{gap:6px}#content-visit button{padding:8px 12px}}
+@media(max-width:740px){#visit-controls{top:148px;right:12px;max-width:calc(100vw - 24px);font-size:14px}#content-visit{inset:max(8px,env(safe-area-inset-top)) 8px max(8px,env(safe-area-inset-bottom));padding:8px;border-radius:14px}#visit-title{font-size:19px;flex-basis:100%}#content-visit header{gap:6px}#content-visit button{padding:8px 12px}}
 #pointing{position:fixed;z-index:23;right:20px;bottom:105px;width:280px;max-width:calc(100vw - 40px);padding:14px;border-radius:16px;pointer-events:none}#pointing p{margin:0 0 8px;color:var(--ink)}#pointing button{font-size:14px;padding:8px 12px;pointer-events:auto}@media(max-width:740px){#pointing{top:205px;bottom:auto;right:12px;max-width:calc(100vw - 24px)}}
 #shared-conversation{flex:1;min-height:0;display:flex}
 #shared-conversation iframe{width:100%;height:100%;min-width:0;flex:1;border:0;border-radius:12px;background:#163b3f}
@@ -120,10 +123,10 @@ body:has(#conversation-panel:not([hidden])) #house-door,body:has(#creator:not([h
 #door-guidance button{width:44px;height:44px;padding:0;border:0;border-radius:0 14px 14px 0;background:transparent;box-shadow:none;font-size:20px}
 #door-guidance button:hover{background:#245153}
 #space-travel[open]+#door-guidance,.room-transition #door-guidance,body:has(#conversation-panel:not([hidden])) #door-guidance,body:has(#content-visit:not([hidden]):not(.is-walking)) #door-guidance,body:has(#signal-editor:not([hidden])) #door-guidance{display:none}
-body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-near{top:128px}
+body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-controls{top:128px}
 @media(max-width:740px){
   #door-guidance{right:12px;top:116px}
-  body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-near{top:172px}
+  body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-controls{top:172px}
   body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #indoor-garden{top:max(172px,calc(env(safe-area-inset-top) + 104px))}
 }
 .inside-house #space-travel nav:not(:empty){margin-top:8px}
@@ -150,6 +153,7 @@ body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-near{top
 @keyframes passage-light{from{opacity:.45;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
 #room-passage-message{position:absolute;top:calc(50% + min(26vw,18vh,116px) + 12px);color:var(--ink);margin:0;font-size:14px;opacity:0}
 .room-transition #room-passage-message{opacity:1;transition:opacity 160ms ease 1100ms}
+#room-passage-retry{position:absolute;top:calc(50% + min(26vw,18vh,116px) + 40px)}
 @media(prefers-reduced-motion:reduce){.room-transition .passage-arch{animation:none}}
 .inside-house #creator,.inside-house #pointing,.inside-house #play-near,.inside-house #recovery-panel{display:none!important}
 .inside-house #world-tools,.inside-house #dock,.inside-house #companion-status,.inside-house #sound{display:none}
@@ -159,7 +163,7 @@ body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-near{top
 @media(max-width:740px){
   #world-tools:has(#garden-create:not([hidden])){flex-direction:column;align-items:flex-end;gap:6px}
   body:has(#garden-create:not([hidden])) #companion-status{max-width:min(230px,calc(100vw - 166px));overflow-wrap:anywhere}
-  body:not(.inside-house):has(#garden-create:not([hidden])) #visit-near{top:205px}
+  body:not(.inside-house):has(#garden-create:not([hidden])) #visit-controls{top:205px}
   body:not(.inside-house):has(#garden-create:not([hidden])) #play-near{top:265px}
   body:not(.inside-house):has(#garden-create:not([hidden])):has(#visit-near[hidden]) #play-near{top:205px}
 }
@@ -172,7 +176,15 @@ body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-near{top
 #appearance-status:empty{display:none}
 body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-visit:not([hidden]):not(.is-walking)) #appearance-open{display:none}
 @media(max-width:740px){#appearance-open{right:12px;top:12px;bottom:auto;padding:8px 12px;font-size:14px}#hud{max-width:calc(100vw - 120px)}}
+#world-entry{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px;background:#183d42}
+.world-entry-card{width:min(360px,100%);border:1px solid var(--line);border-radius:20px;padding:26px;background:#102d31}
+.world-entry-card h1{margin-bottom:12px}.world-entry-card p{margin-bottom:0}.world-entry-card button{margin-top:18px}
 </style></head><body>
+<section id="world-entry" aria-labelledby="world-entry-title"><div class="world-entry-card">
+  <h1 id="world-entry-title">Holodeck</h1><p id="world-entry-status" role="status">Abriendo el mundo…</p>
+  <button id="world-entry-retry" class="primary" type="button" hidden>Volver a intentar</button>
+  <noscript><p>Activá JavaScript para entrar al mundo.</p></noscript>
+</div></section>
 <header id="hud" class="glass"><span class="brand-mark" aria-hidden="true"></span><div><small>Holodeck</small><h1>Plaza de llegada</h1><div id="people">Entrando a la plaza…</div></div><button id="sound" type="button" aria-pressed="false" aria-label="Activar sonido del mundo">Sonido</button></header>
 <button id="appearance-open" type="button" class="glass" aria-haspopup="dialog">Apariencia</button>
 <dialog id="appearance-dialog" aria-labelledby="appearance-title"><form id="appearance-form">
@@ -192,7 +204,7 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
 <aside id="door-guidance" class="glass" aria-label="Salida marcada" hidden><span class="door-guide-arrow" aria-hidden="true">↑</span><span><span class="door-guide-title"></span><span class="door-guide-distance"></span></span><button type="button" aria-label="Quitar salida marcada">×</button></aside>
 <div id="companion-status" class="glass" role="status">Exploración compartida</div>
 <div id="notice" class="glass" role="status"></div>
-<div id="room-passage"><span class="passage-arch" aria-hidden="true"></span><p id="room-passage-message" role="status"></p></div>
+<div id="room-passage"><span class="passage-arch" aria-hidden="true"></span><p id="room-passage-message" role="status"></p><button id="room-passage-retry" type="button" onclick="location.reload()" hidden>Reintentar</button></div>
 <nav id="dock" class="glass" aria-label="Acciones del taller"><button id="bridge" class="primary">Conectar islas</button><button id="plant">Crear luz</button><button id="talk" aria-expanded="false" aria-controls="conversation-panel">Conversar</button><button id="undo" class="icon" title="Deshacer mi último cambio" aria-label="Deshacer mi último cambio" disabled>↶</button></nav>
 <section id="pointing" class="glass" aria-label="Indicar un objeto" hidden><p id="point-label"></p><div class="row"><button id="point-visit" class="primary" type="button" hidden>Visitar contenido</button><button id="point-send" class="primary" type="button">Señalar</button><button id="point-edit" type="button" hidden>Editar luz</button><button id="point-clear" type="button">Cancelar</button></div></section>
 <details id="play-near" class="glass" hidden><summary><strong id="play-title"></strong> · Cómo jugar<span id="play-progress" role="status"></span></summary><p id="play-instruction"></p><button id="play-edit" type="button" hidden>Editar jardín</button></details>
@@ -213,7 +225,7 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
     <div class="row"><button id="signal-remove-back" type="button">Volver</button><button id="signal-remove-accept" type="button">Retirar del mundo</button></div>
   </section>
 </form>
-<button id="visit-near" type="button" class="primary" hidden>Visitar la presentación</button>
+<div id="visit-controls"><button id="visit-near" type="button" class="primary" hidden>Visitar la presentación</button><button id="visit-end-near" type="button" class="glass" hidden>Cerrar contenido</button></div>
 <dialog id="exhibition-index" aria-labelledby="exhibition-title">
   <header><h2 id="exhibition-title">Exposiciones</h2><form method="dialog"><button type="submit" autofocus>Cerrar</button></form></header>
   <label for="exhibition-search">Buscar obra o etapa</label><input id="exhibition-search" type="search" maxlength="80" autocomplete="off">
@@ -221,9 +233,29 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
 </dialog>
 <section id="beacon-station" aria-label="Controles del banco"><div class="row"><button id="beacon-status-check" type="button" class="glass" hidden>Consultar estado</button><a id="beacon-control" class="primary" target="_blank" rel="noopener" hidden></a></div><p id="beacon-status-text" class="glass" role="status"></p></section>
 <dialog id="beacon-panel" aria-labelledby="beacon-panel-title"><header><h2 id="beacon-panel-title">Laboratorio</h2><div class="row"><a target="_blank" rel="noopener">Abrir aparte</a><button type="button" autofocus>Volver al mundo</button></div></header><div class="beacon-panel-stage"></div></dialog>
-<section id="content-visit" aria-label="Contenido visitado" class="glass" hidden><header><h2 id="visit-title">Presentación</h2><button id="visit-walk" type="button" class="primary">Volver al mundo</button></header><p id="visit-loading" role="status" hidden></p><div id="visit-stage"></div></section>
+<section id="content-visit" aria-label="Contenido visitado" class="glass" hidden><header><h2 id="visit-title">Presentación</h2><button id="visit-end" type="button">Cerrar contenido</button><button id="visit-walk" type="button" class="primary">Volver al mundo</button></header><p id="visit-loading" role="status" hidden></p><div id="visit-stage"></div></section>
 <section id="creator" class="glass" aria-label="Crear una luz" hidden><h2 id="creator-title">Una luz para este lugar</h2><p id="preview-hint" role="status">La vista previa es tuya. Al plantar, aparece para todos.</p><div class="row colors" role="group" aria-label="Color de la luz"><button class="swatch" data-color="mint" style="--color:#8ce4c2" aria-label="Menta" aria-pressed="true"></button><button class="swatch" data-color="amber" style="--color:#efc87a" aria-label="Ámbar" aria-pressed="false"></button><button class="swatch" data-color="rose" style="--color:#e8a2b9" aria-label="Rosa" aria-pressed="false"></button><button class="swatch" data-color="violet" style="--color:#a77bea" aria-label="Violeta" aria-pressed="false"></button></div><div class="row"><button id="preview-move">Mover acá</button><button id="preview-accept" class="primary">Plantar</button><button id="preview-cancel">Cancelar</button></div></section>
 <section id="conversation-panel" class="glass" aria-label="Conversación situada" hidden><header><h2>Desde acá</h2><button id="history-reference-clear" type="button" hidden>Quitar tema</button><label id="room-topic" hidden>Tema <select id="room-topic-choice" aria-label="Tema de la conversación"></select></label><button id="conversation-close" class="icon" aria-label="Volver al mundo">×</button></header><p id="conversation-hint">Podés seguir recorriendo el mundo mientras transcurre mi turno.</p><div id="shared-conversation" hidden></div><div id="conversation-log" aria-live="polite"></div><form id="conversation-form"><label for="message">Hablemos de este lugar</label><textarea id="message" maxlength="2000" rows="2" placeholder="¿Qué hacemos acá juntos?"></textarea><button id="send" class="primary" type="submit" disabled>Enviar</button></form></section>
 <section id="recovery-panel" class="glass" aria-label="Envíos por confirmar" hidden><h2>Hay un envío por confirmar</h2><div id="recovery-items"></div></section>
 <dialog id="activity-dialog" aria-labelledby="activity-title"><header><div><small>Historia compartida</small><h2 id="activity-title">Actividad del mundo</h2></div><button id="activity-close" type="button">Volver al mundo</button></header><div class="activity-toolbar"><button id="activity-refresh" type="button">Ver recientes</button><span id="activity-updates" hidden>Hay cambios nuevos</span><span id="activity-count"></span></div><p id="activity-status" role="status"></p><p id="activity-gap" hidden></p><div class="activity-body"><div class="activity-index"><ol id="activity-list" aria-label="Cambios registrados"></ol><nav aria-label="Recorrer la actividad"><button id="activity-newer" type="button" disabled>Más recientes</button><button id="activity-older" type="button" disabled>Más antiguos</button></nav></div><section class="activity-inspection" aria-label="Detalle del cambio"><div id="activity-detail"><p>Elegí un cambio para verlo.</p></div><div class="activity-actions"><button id="activity-point" type="button" hidden>Señalar cómo está ahora</button><button id="activity-discuss" class="primary" type="button" hidden>Conversar sobre este cambio</button></div></section></div></dialog>
-<script>window.SESSION_TOKEN="SESSION.TOKEN.PLACEHOLDER";</script><script type="module" src="./client/client.js"></script></body></html>
+<script>
+window.SESSION_TOKEN="SESSION.TOKEN.PLACEHOLDER";
+{
+  const entry=document.querySelector('#world-entry');
+  const status=document.querySelector('#world-entry-status');
+  const retry=document.querySelector('#world-entry-retry');
+  function showRetry(text){if(!entry.hidden){status.textContent=text;retry.hidden=false;}}
+  const deadline=setTimeout(()=>showRetry('La entrada está tardando más de lo esperado.'),25000);
+  window.addEventListener('holodeck:entered',()=>{clearTimeout(deadline);entry.hidden=true;},{once:true});
+  window.addEventListener('holodeck:entry-failed',()=>{
+    clearTimeout(deadline);showRetry('No se pudo abrir el mundo.');
+  },{once:true});
+  retry.onclick=()=>location.reload();
+}
+</script>
+<script type="module">
+import('./client/client.js').catch(error=>{
+  console.error('Holodeck entry failed',error);
+  window.dispatchEvent(new Event('holodeck:entry-failed'));
+});
+</script></body></html>

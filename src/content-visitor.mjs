@@ -10,6 +10,9 @@ export class ContentVisitor{
  constructor({document,window,base,say,scoped=false,roomId=null,onCatalog=()=>{}}){
   Object.assign(this,{document,window,base,say,scoped,roomId,onCatalog});this.entries=[];this.nodes=[CONTENT_NODE];this.catalogGeneration=0;this.pending=new Map();this.disposed=false;this.lastContext=null;this.catalogRenewAt=Infinity;
   this.button=document.querySelector('#visit-near');this.panel=document.querySelector('#content-visit');
+  this.closeButtons=[document.querySelector('#visit-end'),document.querySelector('#visit-end-near')].filter(Boolean);
+  this.closing=false;
+  for(const button of this.closeButtons)button.onclick=()=>this.endVisit();
   this.loading=document.querySelector('#visit-loading');this.roomGeneration=0;this.renewScopedCatalog=false;
   this.visitRoom=null;this.parked=false;this.accessGeneration=0;this.roomSyncPending=false;
   const openEntry=selected=>{
@@ -69,6 +72,7 @@ export class ContentVisitor{
   if(signature!==this.catalogSignature)this.catalog=this.loadCatalog(signature);
  }
  update(position){
+  this.updateEndControl();
   this.nearby=null;let distance=this.scoped?ROOM_VISIT_REACH:5;
   if(position)for(const entry of this.entries){
    const at=entry.position||CONTENT_NODE.position,next=Math.hypot(position.x-at.x,position.z-at.z,this.scoped?(position.y??at.y)-at.y:0);
@@ -157,7 +161,7 @@ export class ContentVisitor{
    option.textContent=entry.title||(entry.pin.adapter==='interactive_3d'?'Modelo 3D':entry.pin.adapter==='video'?'Video':visitVersion(entry.pin)===3?'Contexto':'Presentación')+` ${index+1}`;this.selector.append(option);});
   this.choiceLabel.hidden=entries.length<2;if(this.entry)this.selector.value=this.entry.id;
  }
- reveal(){this.panel.hidden=false;this.panel.classList.remove('is-walking');this.panel.removeAttribute('aria-hidden');this.panel.inert=false;}
+ reveal(){this.panel.hidden=false;this.panel.classList.remove('is-walking');this.panel.removeAttribute('aria-hidden');this.panel.inert=false;this.updateEndControl();}
  showLoading(message=''){
   if(!this.loading)return;
   this.loading.textContent=message;
@@ -191,7 +195,7 @@ export class ContentVisitor{
    return this.open(entry.id,{nodeRevision:entry.nodeRevision,expectedPin:entry.pin});
  }
  async open(selectedId,{nodeRevision=null,expectedPin=null}={}){
-  if(this.roomSyncPending)return;
+  if(this.roomSyncPending||this.closing)return;
   if(this.parked){
    this.say('La visita anterior sigue guardada en este navegador. Volvé a su sala cuando recuperes el acceso.');
    return;
@@ -262,7 +266,7 @@ export class ContentVisitor{
    const frame=this.document.createElement('iframe');frame.title='Contenido y conversación en Nexus';frame.allow='microphone; autoplay';frame.allowFullscreen=true;frame.referrerPolicy='same-origin';
    if(verifyScoped){frame.inert=true;this.showLoading('Abriendo la edición…');}
    this.frame=frame;this.ready=new Promise((resolve,reject)=>{this.readyResolve=resolve;this.readyReject=reject;this.readyTimer=setTimeout(()=>reject(Error('Viewer did not load')),visitVersion(entry.pin)>=2?40000:15000);});
-   frame.src=entryURL.href;this.document.querySelector('#visit-stage').append(frame);
+   frame.src=entryURL.href;this.document.querySelector('#visit-stage').append(frame);this.updateEndControl();
    try{await this.ready;if(current()&&this.frame===frame&&verifyScoped&&this.hasCurrentEntry()){frame.inert=false;this.showLoading();}}
    catch{if(current()){
     if(verifyScoped)this.showLoading('No pude confirmar esta edición. Podés volver al mundo o elegir otra.');
@@ -283,13 +287,14 @@ export class ContentVisitor{
   this.confirmRoom();
  }
  async allowLeaveRoom(){
+  if(this.closing)return false;
   if(this.parked)return true;
   if(!this.frame&&!this.opening)return true;
   if(this.frame?.inert)return true;
   if(this.readyAcknowledged&&!this.opening){
    try{
     const reply=await this.request('prepareClose');
-    if(reply?.canClose===true&&knownVisitState(reply.state)&&!Object.values(reply.state).some(Boolean))return true;
+    if(this.canEnd(reply))return true;
    }catch{/* Leave the visit in place if its work state could not be confirmed. */}
    if(this.parked)return true;
   }
@@ -321,6 +326,48 @@ export class ContentVisitor{
  isOpeningOverWorld(){
   return this.opening&&this.frame?.inert===true&&!this.panel.classList.contains('is-walking');
  }
+ updateEndControl(){
+  const walking=this.panel.classList.contains('is-walking');
+  for(const button of this.closeButtons){
+   const hidden=!this.frame||(button.id==='visit-end-near'&&!walking);
+   if(button.hidden!==hidden)button.hidden=hidden;
+   if(button.disabled!==this.closing)button.disabled=this.closing;
+  }
+ }
+ canEnd(reply){
+  return reply?.canClose===true&&knownVisitState(reply.state)&&!Object.values(reply.state).some(Boolean);
+ }
+ async endVisit(){
+  const frame=this.frame;
+  if(!frame||this.closing)return;
+  this.closing=true;this.updateEndControl();
+  try{
+   if(!frame.inert){
+    if(!this.readyAcknowledged){
+     this.say('No pude confirmar que sea seguro cerrar el contenido. Podés retomarlo.');
+     return;
+    }
+    const reply=await this.request('prepareClose');
+    if(this.frame!==frame||this.disposed)return;
+    if(!this.canEnd(reply)){
+     const state=reply?.state;
+     this.say(state?.dirty?'Retomá el contenido y guardá o descartá el borrador antes de cerrarlo.':
+      state?.recording||state?.processing?'Retomá el contenido para terminar la grabación o el envío.':
+      'El contenido todavía está en uso. Retomalo antes de cerrarlo.');
+     return;
+    }
+   }
+   this.opening=false;this.removeFrame();
+   this.entry=null;this.visitRoom=null;this.parked=false;this.readyAcknowledged=false;this.lastContext=null;
+   if(this.selector)this.selector.disabled=false;
+   this.panel.hidden=true;this.minimize();
+   this.say('Contenido cerrado.',{transient:true});
+  }catch{
+   if(this.frame===frame&&!this.disposed)this.say('No pude confirmar el cierre. La visita sigue disponible.');
+  }finally{
+   this.closing=false;this.updateEndControl();
+  }
+ }
  walk(){
   if(!this.frame)return;
   // Returning is navigation, not disposal. Never trap the visitor behind a
@@ -331,6 +378,7 @@ export class ContentVisitor{
  close(){return this.walk();}
  minimize(){
   this.document.activeElement?.blur();this.window.focus?.();this.panel.classList.add('is-walking');this.panel.setAttribute('aria-hidden','true');this.panel.inert=true;
+  this.updateEndControl();
   // Keep a real layout for the existing renderer's freeze/restore contract.
   // Offscreen application state is never claimed to be visible to a human.
  }

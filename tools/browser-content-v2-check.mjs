@@ -125,6 +125,20 @@ try{
  await page.evaluate("visitor.frame.contentWindow.fixture.ready('ready')");
  await page.until('visitor.readyAcknowledged===true');
  await page.evaluate('window.roomFrame=visitor.frame;document.querySelector("#visit-walk").click()');
+ await page.evaluate('roomFrame.contentWindow.fixture.state.dirty=true');
+ await page.click('#visit-end-near');
+ await page.until('document.querySelector("#notice").textContent.includes("borrador")');
+ if(!await page.evaluate('visitor.frame===roomFrame&&roomFrame.contentDocument.querySelector("textarea").value==="Retained draft"'))
+  throw Error('Explicit close discarded pending work');
+ await page.evaluate('roomFrame.contentWindow.fixture.state.dirty=false');
+ await page.click('#visit-end-near');
+ await page.until('!visitor.frame&&document.querySelector("#content-visit").hidden&&document.querySelector("#visit-end-near").hidden');
+ if(!await page.evaluate('visitor.allowLeaveRoom()'))throw Error('Leaving room still blocked after explicit close');
+ await page.evaluate("void visitor.open('model',{nodeRevision:2})");
+ await page.until('!!visitor.frame?.contentWindow.fixture');
+ await page.evaluate("visitor.frame.contentWindow.fixture.ready('ready')");
+ await page.until('visitor.readyAcknowledged===true');
+ await page.evaluate('window.roomFrame=visitor.frame;document.querySelector("#visit-walk").click()');
  await page.evaluate("visitor.open('model',{nodeRevision:2})");
  if(!await page.evaluate("visitor.frame===roomFrame&&!visitor.panel.inert"))throw Error('Room exhibit resume replaced the viewer');
  roomEditionAllowed=false;
@@ -142,7 +156,7 @@ try{
  roomEditionAllowed=false;
  await page.evaluate('visitor.catalogRenewAt=performance.now();visitor.refreshScopedCatalog()');
  await page.until('!document.querySelector("#exhibition-index").open&&document.querySelector("#exhibition-results").children.length===0');
- evidence.roomExhibit={sameFrame:true,revokedChoiceHidden:true,revokedContextSuppressed:true,awayFromPlinth:true,
+ evidence.roomExhibit={sameFrame:true,explicitClose:true,dirtyClosePreserved:true,leaveAfterClose:true,revokedChoiceHidden:true,revokedContextSuppressed:true,awayFromPlinth:true,
   accentInsensitiveSearch:true,revokedIndexClosed:true,mobile:exhibitionMobile};
 
  console.log(JSON.stringify({qualification:'Actual ContentVisitor and markup; controlled Nexus protocol only, not renderer, participant or native acceptance',protectedSwitches:3,readinessTransition:'loading-to-ready',artifactContext:context,contextV3:evidence.context,actualNexusBridge:!!realBridge,evidence}));
