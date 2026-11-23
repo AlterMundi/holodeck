@@ -23,7 +23,7 @@ const SURROUNDINGS_REVISION='694d83c8ba05d59b062fa7cf0f816461ddb9f8bdff3609549f0
 const OUTDOOR_SKY=Object.freeze({asset:'coastal-sky.jpg',
   revision:'2e9a63bbb5eb0e3a60e6144cff155e753211e093ee2870efda480129a01baae8'});
 const dossier={
-  'room-art/compaii-atelier/foyer.glb':'f0a8b2b9f63a67559024e7387036bb0592623f3170a4a9863fead7e44eab03f6',
+  'room-art/compaii-atelier/foyer.glb':'ca4c9c4b458525ef858c69126bdd78229af668881f140461604775bd281c8c98',
   'room-art/compaii-atelier/gallery.glb':'1028d39b34938571ce0385e7bd6604f61c79a4f614ed3395648244e313d0dd35',
   'room-art/compaii-atelier/gallery-sealed.glb':'91c46b91164fd1ebfd20052cdf20d2dae59c0222126af016f16920a426dadc48',
   'room-art/compaii-atelier/beacon.glb':'0ab7546ae7d540e14dbed049a70da52a2aeb36bd575fd8f31532c94a81ef762f',
@@ -55,6 +55,7 @@ const softLight=({id,x,y,z,color,intensity,distance})=>`<m-light id="${id}" x="$
 // Match the side-light opening in the Blender gallery. The key crosses the
 // room above the path and separates the exhibits from the darker oak ceiling.
 const galleryKey={position:[-4.82,3.62,.5],target:[2.45,1.05,.5],color:'#cde3ff'};
+const foyerKey={position:[4.87,3.15,1.75],target:[-2.30,.80,-2.3],color:'#ffe3bf'};
 const chamberRig='<m-light id="instrument-key" x="-.44" y="4.53" z="1.9" type="spotlight" distance="8" angle="38" intensity="105" cast-shadows="true" color="#ffd6a2"></m-light>'+[
   {id:'stair-bounce',x:-3,y:2.6,z:-4.5,distance:8,intensity:22,color:'#91b4e6'},
   {id:'spatializer-practical',x:3.79,y:2.72,z:-.8,distance:5,intensity:21,color:'#ffd6a2'},
@@ -90,9 +91,9 @@ export function selectAtelier(profile,rooms,houses){
     if(path.startsWith('room-art/'))assets.set(path.split('/').at(-1),asset);
   }
   const asset=name=>assets.get(name+'.glb');
-  const foyerArt={...asset('foyer'),...floorProfile,ambient:.69,
+  const foyerArt={...asset('foyer'),...floorProfile,ambient:.43,keyLight:foyerKey,authoredDoor:true,
     colliders:box({x:0,y:.352,z:.16,w:1.78,h:.504,d:2.34}),
-    lightRig:softLight({id:'vestibule-practical',x:0,y:3.42,z:.8,intensity:30,distance:8,color:'#ffc382'})};
+    lightRig:softLight({id:'vestibule-practical',x:-2.83,y:1.78,z:-1.42,intensity:13,distance:6,color:'#ffbb75'})};
   const galleryArt={...floorProfile,ambient:.40,colliders:galleryColliders,keyLight:galleryKey,
     lightRig:softLight({id:'collection-warm-bounce',x:4.2,y:2.6,z:1.6,intensity:12,distance:7,color:'#ffd8ae'})};
   const labArt={...asset('beacon'),...floorProfile,authoredStairs:true,ambient:.60,

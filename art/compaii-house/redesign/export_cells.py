@@ -52,6 +52,72 @@ def append_blocks(obj, specs):
     bpy.ops.object.join()
 
 
+def append_foyer_path(obj):
+    # Blender +Y points toward the gallery. The route bends around the table
+    # and keeps clear of the arrival, masonry piers and existing door slots.
+    points = [Vector((0, -5.57)), Vector((0, -3.66)), Vector((-1.72, -1.50)),
+              Vector((-1.92, 1.42)), Vector((-2.18, 3.45)), Vector((-3, 4.66)),
+              Vector((-3, 5.75))]
+    directions = [(end-start).normalized() for start,end in zip(points,points[1:])]
+    sides = [directions[0], *((before+after).normalized() for before,after in
+              zip(directions,directions[1:])), directions[-1]]
+    pieces = [obj]
+    for name,width,height,finish in [
+        ('Basalt ribbon edges', 1.04, .107, 'Split basalt'),
+        ('Limestone gallery route', .88, .109, 'Ivory limewash'),
+    ]:
+        vertices = [(*tuple(point+Vector((-along.y,along.x))*width*side/2), height)
+                    for point,along in zip(points,sides) for side in (1,-1)]
+        faces = [(i,i+1,i+3,i+2) for i in range(0,len(vertices)-2,2)]
+        mesh = bpy.data.meshes.new(name)
+        mesh.from_pydata(vertices,[],faces)
+        mesh.update()
+        ribbon = bpy.data.objects.new(name,mesh)
+        bpy.context.collection.objects.link(ribbon)
+        ribbon.data.materials.append(bpy.data.materials[finish])
+        pieces.append(ribbon)
+    select(pieces)
+    bpy.ops.object.join()
+
+
+def register_foyer(obj):
+    obj.data.transform(Matrix.Translation((0,-5.84,-.334)) @
+                       Matrix.Diagonal((1.27,1.42,1,1)))
+    oak, stone, brass = 'Dark oiled oak', 'Honed honey limestone', 'Satin brass'
+    gunmetal, lamp = 'Blue gunmetal', 'Honey lamp glass'
+    frame = [('Foyer limestone floor',(0,0,.035),(11.76,11.76,.122),stone,0)]
+    for side in (-1,1):
+        frame.extend([
+            ('Limestone skirting',(side*5.71,0,.25),(.16,11.63,.30),stone,.025),
+            ('Oak eave beam',(side*5.69,0,3.20),(.27,11.70,.28),oak,.035),
+        ])
+    for x,y in [(-3,5.55),(0,-5.73)]:
+        for side in (-1,1):
+            frame.append(('Oak passage jamb',(x+side*.80,y,1.25),(.23,.28,2.29),oak,.033))
+        frame.extend([
+            ('Oak passage lintel',(x,y,2.47),(1.86,.29,.25),oak,.037),
+            ('Brass doorway bead',(x,y-(.16 if y>0 else -.16),2.34),(1.64,.034,.036),brass,.009),
+        ])
+    frame.extend([
+        ('Gallery oak door leaf',(-3,5.51,1.16),(1.39,.10,2.09),oak,.018),
+        ('Rebated gunmetal panel',(-3,5.445,1.19),(1.16,.047,1.82),gunmetal,.022),
+        ('Brass gallery latch',(-2.55,5.394,1.09),(.082,.074,.25),brass,.019),
+    ])
+    # An east-facing window bay gives the soft light an architectural source.
+    frame.extend([
+        ('Clerestory oak casing',(5.65,-1.75,2.80),(.26,3.05,1.03),oak,.038),
+        ('Clerestory glazed recess',(5.50,-1.75,2.81),(.032,2.72,.73),gunmetal,.012),
+        ('Clerestory upper light',(5.477,-1.75,3.05),(.027,2.57,.11),lamp,.010),
+        ('Clerestory limestone sill',(5.44,-1.75,2.35),(.35,3.08,.15),stone,.029),
+    ])
+    for y in (-3.10,-2.44,-1.75,-1.06,-.40):
+        frame.append(('Clerestory mullion',(5.445,y,2.80),(.12,.070,.78),oak,.012))
+    for y in (-4.4,-3.95,-3.5,0, .45,.90,1.35,1.80,2.25,2.70,3.15,3.60,4.05,4.50):
+        frame.append(('East wall oak batten',(5.66,y,1.42),(.13,.068,2.29),oak,.013))
+    append_blocks(obj,frame)
+    append_foyer_path(obj)
+
+
 def mesh_for(collection, origin, cell):
     scope = bpy.data.collections[collection]
     scope.hide_render = False
@@ -79,10 +145,7 @@ def mesh_for(collection, origin, cell):
         obj.data.transform(Matrix.Translation((0,-1.195,0)) @
                            Matrix.Diagonal((.153,.320,.391,1)))
     if cell=='foyer':
-        obj.data.transform(Matrix.Translation((0,-5.84,-.334)) @
-                           Matrix.Diagonal((1.27,1.42,1,1)))
-        append_blocks(obj,[('Foyer limestone floor',(0,0,.035),(11.76,11.76,.122),
-                            'Honed honey limestone',0)])
+        register_foyer(obj)
     if cell in ('gallery','gallery-sealed'):
         register_gallery(obj,stair=cell=='gallery')
     bpy.ops.object.mode_set(mode='EDIT')
@@ -246,10 +309,10 @@ if __name__ == '__main__':
     # This smaller cell keeps its look with a 768px atlas and fits the
     # existing package budget alongside both permissioned gallery variants.
     color_size = 768 if cell == 'tower' else ALBEDO_RESOLUTION
-    normal_size = 768 if cell == 'tower' else NORMAL_RESOLUTION
+    normal_size = {'tower':768,'foyer':896}.get(cell,NORMAL_RESOLUTION)
     color = bake(obj, cell+'-albedo', 'DIFFUSE', color_size, destination)
     normal = bake(obj, cell+'-normal', 'NORMAL', normal_size, destination)
-    contact = bake_contact(obj, cell, destination) if cell in ('gallery','gallery-sealed') else None
+    contact = bake_contact(obj, cell, destination) if cell in ('foyer','gallery','gallery-sealed') else None
     portable_materials(obj, color, normal, contact)
     path = destination / (cell+'.glb')
     bpy.ops.export_scene.gltf(filepath=str(path), export_format='GLB', use_selection=True,

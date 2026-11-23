@@ -75,12 +75,14 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   const [authorized,visitor]=await Promise.all([actor('lab'),actor('gallery')]);
   const entered=await authorized.move('outside',foyer);
   assert.match(entered.scene.markup,/vestibule-practical/);
+  assert.match(entered.scene.markup,/id="passage-0" x="-3" z="-5.86"[^>]*>\s*<m-label[^>]*content="Galería"/);
+  assert.deepEqual(entered.exits[0].door,{x:-3,y:.11,z:-4.81,yaw:180});
   assert.equal((await authorized.read(roomArt(entered))).status,200);
   const open=await authorized.move(foyer,gallery);
   await visitor.move('outside',foyer);
   const sealed=await visitor.move(foyer,gallery);
   const openPath=roomArt(open),sealedPath=roomArt(sealed);
-  assert.equal(entered.keyLight,undefined);
+  assert.deepEqual(entered.keyLight,{position:[4.87,3.15,1.75],target:[-2.30,.80,-2.3],color:'#ffe3bf'});
   assert.deepEqual(open.keyLight,{position:[-4.82,3.62,.5],target:[2.45,1.05,.5],color:'#cde3ff'});
   assert.deepEqual(sealed.keyLight,open.keyLight);
   assert.notEqual(openPath,sealedPath);

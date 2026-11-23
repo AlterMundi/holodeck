@@ -65,6 +65,15 @@ the real stair opening. In Holodeck one soft shadowed key follows the
 clerestory, with weaker warm bounce and room fill. Review the player-height
 [before](review/gallery-light-before.jpg) and [after](review/gallery-light-after.jpg) views.
 
+The foyer export registers the oak gallery door and clerestory against the
+existing room coordinates. An inlaid limestone route bends around the table
+to the gallery door. Its visual mesh sits flush with the engine's walkable
+floor and does not add collision. The 512px contact bake and the soft key
+connect the oak, stone and copper under the same light. Compare
+[the approach before](review/foyer-route-before.jpg),
+[the approach after](review/foyer-route-after.jpg) and
+[the gallery door from the path](review/foyer-gallery-door.jpg).
+
 The [listening tower](listening-tower.blend) has its own editable room-scale
 source and can be regenerated with `tower.py`. It uses a warm wall resonator
 and cool clerestory light as orientation points. The existing return portal
