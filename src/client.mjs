@@ -118,7 +118,7 @@ let projectedGarden=null;
 const hot=activeSpace?.live===1;
 const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
 let inside=hot&&activeSpace.id!=='outside';
-let updateDoor=()=>{},remoteScene=null,networkScope=null,arrival=null,arrivedFrames=0;
+let updateDoor=()=>{},remoteScene=null,networkScope=null,arrival=null;
 let moving=false,requestingMove=false,needsSync=false,resyncing=false,moveDeadline=null;
 let prefetched=new Set(),prefetchRequest=null;
 const setMoving=value=>{
@@ -135,6 +135,9 @@ function mountScene(){
   if(!inside)return true;
   const stored=sceneCache.remember(activeSpace.scene);
   if(!stored)return false;
+  // The move acknowledgement can arrive before the old presence connection
+  // closes. Keep the detached scene and mount it only for the new scope.
+  if(networkScope!==activeSpace.id)return true;
   const renderer=client.getRenderer();
   const wrapper=new RemoteDocumentWrapper(url('api/space/scene').href,window,
     renderer.mmlCompositionScene.mmlScene,()=>{});
@@ -179,7 +182,9 @@ function onNear(destination){
 function applySpace(next,anchor){
   if(next.actorRef!==activeSpace.actorRef){sceneCache.clear();location.reload();return;}
   const changed=next.id!==activeSpace.id;
-  activeSpace=next;inside=next.id!=='outside';arrival=anchor;arrivedFrames=0;
+  const leavingOutside=activeSpace.id==='outside'&&next.id!=='outside';
+  activeSpace=next;inside=next.id!=='outside';arrival=anchor;
+  if(leavingOutside)client.getRenderer()?.setMMLConfiguration({},window.SESSION_TOKEN);
   stateRequest++;worldAudio.breakContinuity();
   prefetched=new Set();
   prefetchRequest?.abort();prefetchRequest=null;
@@ -216,7 +221,9 @@ function canFinishMove(){
     return false;
   }
   if(inside?!remoteScene?.isConnected:!geometryProbe?.snapshot())return false;
-  return ++arrivedFrames>=2;
+  // Called after rendering. The respawn branch above already waits for the
+  // next rendered frame, so one ready frame at the new anchor is sufficient.
+  return true;
 }
 function resetDoor(){
   updateDoor.dispose?.();

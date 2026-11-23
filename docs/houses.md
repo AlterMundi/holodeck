@@ -200,8 +200,11 @@ templates in memory, each capped at 128 KiB and keyed to the current actor and
 scene revision. The server rechecks authorization and selects the canonical
 location before the client can mount a cached room. A successful warm crossing
 omits the template payload. Presence and interaction permissions come from the
-new room's subscription. Unexpected disconnects purge cached templates. The
-cache excludes live presence, visits, credentials, and embedded viewer state.
+new room's subscription. A move acknowledgement can precede that subscription.
+The template stays detached until both identify the same destination. This
+avoids downloading the room artwork while the outgoing connection is still
+being dismantled. Unexpected disconnects purge cached templates. The cache
+excludes live presence, visits, credentials, and embedded viewer state.
 
 A small illuminated arch covers the previous scene during the crossing. It
 fades as soon as the destination accepts input. The effect never holds the
@@ -209,11 +212,11 @@ room transition open, uses no extra assets, and stays still when the browser
 requests reduced motion. Longer crossings show a short status message.
 
 The exterior uses the same renderer and automatic return uses the authored
-door location. A failed transition refreshes the committed location without
-resending the movement. For timing, measure from E until the destination
-geometry, avatar and input are ready. Separately record the HTTP response and
-whether the room template was transferred, so a fast acknowledgement is not
-mistaken for a playable frame.
+door location. The controller releases input on the first ready rendered frame
+after the avatar arrives. A failed transition refreshes the committed location
+without resending the movement. Measure from E until the destination geometry,
+avatar and input are ready. Also record the HTTP response, destination connection
+and any template/artwork transfers to locate the wait.
 
 ## Place a room exhibit
 
