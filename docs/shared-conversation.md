@@ -225,6 +225,9 @@ the original's final once, and the touch browser can reconnect to the completed
 garden. After explicit source release, the original retrieves the exact
 receipt again. A sibling, a new action and a full room observation are
 refused on the completed route. The public scene exposes the game effect without exposing either reply.
+The same fixture checks that every rendered line of its short final is
+within the transcript viewport at four screen sizes, and that returning to
+the world and reopening preserves the same frame and draft.
 This covers the browser and world/Conversation handoff with synthetic
 admission and final text. In a separate Telecodex qualification,
 `foreground_capture` exercised native final-event projection through the

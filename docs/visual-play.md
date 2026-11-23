@@ -202,3 +202,18 @@ and jump. It observed movement, rotation and lift together, then settled
 after a browser touch cancel. A fresh contact moved the avatar again
 without selecting or sharing a world object. This is a touchscreen
 emulation result.
+
+## Situated Conversation panel
+
+The room topic and return control share the panel header, giving the
+canonical thread more of the height. Short portrait displays use the
+available viewport with safe-area insets and short landscape displays
+use a wider side panel. The host continues to mount the same frame when
+the player returns to the world.
+
+With a 1000 × 700 viewport, the predecessor clipped three of the seven
+rendered lines in the scripted reply after scrolling it into view. The
+candidate showed all its wrapped lines in Chromium at 1000 × 700,
+390 × 844, 375 × 667 and 844 × 430. The close control and composer stayed
+reachable. An unsent draft survived closing and opening the same frame.
+This is viewport emulation and a two-participant fixture.

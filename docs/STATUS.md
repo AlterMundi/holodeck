@@ -55,7 +55,16 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`f168f96`, package `9a6e34467ee7`. The scoped room observation now offers
+`fe60974`, package `f20f5adb9697`. The situated Conversation panel gives
+more room to the reply while keeping the current room topic and close
+button in view. The packaged Chromium trial read every line of the test
+reply on desktop, two portrait phone sizes and a short landscape screen.
+Closing and reopening preserved the same iframe and unsent draft. The
+protected readback matched all 57 installed files and the prior world
+checkpoint. Package `9a6e34467ee7` is the selected rollback.
+[Panel qualification](visual-play.md#situated-conversation-panel)
+
+Source `f168f96`, package `9a6e34467ee7`, established action discovery. The scoped room observation now offers
 typed arguments for the next permitted passage and playable garden signal.
 The combined packaged trial used the actual isolated owner and an actual
 Codex model. The model followed the live observations without consulting
