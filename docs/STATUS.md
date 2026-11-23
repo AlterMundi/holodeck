@@ -10,7 +10,17 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`f536823`, package `8af3e721d5e3`. The North Mirador now has a limestone walk,
+`aca9e1b`, package `00954ba2496a`. The east island now has an authored
+meadow, sandstone arrival path, coastal planting and an oak arbor. A simulated
+Chromium visitor crossed the existing promenade, read the Signal Garden HUD,
+passed the target field and reached the arbor. Authenticated receiving
+matched all 57 files and the exact 300,419-byte Brotli garden model, 75.6%
+smaller than its predecessor. The world and protected checkpoints matched.
+Native readback confirmed the same published Signal Garden position, revision
+and rules. Package `8af3e721d5e3` is the compatible rollback.
+[East Garden source and running-game views](../art/compaii-house/redesign/east-garden.md)
+
+The previous release served source `f536823`, package `8af3e721d5e3`. The North Mirador now has a limestone walk,
 basalt and oak seats and a seaward copper arch authored in Blender. A simulated
 Chromium participant raised the bridge from the HUD, walked both directions
 with WASD, lowered the bridge and reached the interrupted crossing. The exact
