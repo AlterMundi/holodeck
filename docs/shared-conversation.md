@@ -232,8 +232,26 @@ Conversation client. In the 23 November trial the model found the two permitted
 passages, chose the missing mint signal in the foyer and observed two
 contributors and a complete garden. Both browsers showed the effect and the
 reply was rendered once under the original. The receipt survived release.
-Canonical ingress and final-event projection through a production native
-session still require an observed end-to-end example.
+The isolated direct-owner probe then exercised canonical ingress and
+final-event projection through the actual Telecodex owner, dashboard
+Provider and Holodeck NativeBridge. The opaque attachment did not admit any
+work. The ordinary submit admitted exactly one original, preserved the
+attachment and rejected a forged hash. The owner published one final
+under that original after receiving a simulated app-server event.
+The probe uses a fixture identity and peer. The two-browser model trial and
+the real-owner probe are independent. Combining them and verifying an
+actual production round trip remain open.
+
+```sh
+python3 tools/check-canonical-conversation-owner.py   --telecodex-source "$TELECODEX_SOURCE" --telecodex-binary "$TELECODEX_BINARY"
+```
+
+The separate routed path still reports transport-accepted work as queued
+until a covering result appears. A route admission alone cannot authorize
+a situated write. Support for writing from an active routed worker needs
+a narrowly scoped running-state observation tied to its exact instruction
+and current native turn. Keep the canonical direct-owner path and terminal
+receipt recovery independently qualified.
 
 Use the existing package stage and installed Conversation/Playwright assets.
 Select a task-owned evidence directory and a short-lived loopback certificate

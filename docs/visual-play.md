@@ -168,3 +168,13 @@ collision radius. The player-height frame shows
 the sill in front of the avatar. Retreat and the existing keyboard portal
 returned to the gallery arrival at X 4.81, Z −3 in the same session.
 This is a desktop Chromium trial of the tower collision and portal.
+
+## Shared outdoor garden on desktop and touch
+
+Two independent Chromium participants moved by WASD and the emulated phone
+joystick, then planted through the visible preview and confirm controls. The
+phone raised the bridge to finish the garden. Editing the first light to violet
+invalidated the result, and restoring mint completed it again. Both views
+matched the authenticated native observation and showed the same status and
+readable instructions without a reload. The light edits used the authenticated
+command path. The phone input was Chromium touch emulation.

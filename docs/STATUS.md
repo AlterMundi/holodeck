@@ -18,6 +18,11 @@ canonical client rendered the actual model's answer once under its fixture
 original, and that original recovered the receipt after release. Canonical
 admission and final-event transport were simulated. A single production turn
 using the actual canonical writer and native final-event return remains open.
+A second local probe used the actual Telecodex owner, dashboard Provider and
+Holodeck NativeBridge with a synthetic foreground identity and native peer.
+It admitted once with the exact opaque source, observed working, rejected a
+foreign hash and published one same-original final. These checks establish
+the direct-owner path with the native event simulated.
 [Trial contract](shared-conversation.md#return-to-the-same-conversation)
 
 ## Author catalog receiving evidence
