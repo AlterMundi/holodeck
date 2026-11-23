@@ -152,8 +152,15 @@ the workshop remains to be observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`5e44d7f`, package `940a0b053757`, with `7bec67084ea3` as compatible rollback.
-A visitor can carry the selected shelf model to their own worktable view
+`68dc721`, package `17703a02cdef`, with `940a0b053757` as compatible rollback.
+Indoor garden authors can start from a two-circle solo design or a four-circle
+cooperative design through the owned native lane or the paired editor. The
+live native owner drafted both presets in Taller Sensorial. The browser
+fixture previewed privately, published the four-circle layout, recovered the
+accepted write after a lost response, and completed the round with desktop
+and touch fixture players. Existing garden saves keep their original schema.
+
+Package `940a0b053757` used source `5e44d7f`. A visitor can carry the selected shelf model to their own worktable view
 and click or tap a visible part. Desktop and emulated touch Chromium carried
 an actual restored edition from the shelf, selected its full geometry and
 prepared an exact part reference with the fixture Conversation receiver.
