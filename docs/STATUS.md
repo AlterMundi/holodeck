@@ -24,8 +24,14 @@ house, placement, exhibit, creator and native journal state matched; the
 Room event tail recorded joins and leaves during activation. The directly
 usable predecessor `581dbb6a09cb` retains room plans and furnishings.
 
-The [shared Home entrance](https://compaii.dmn.homes/holodeck/) now serves
-source `3c474c6`, package `0af62b029659`, with the [Blender coastal foliage](../art/compaii-house/redesign/coastal-trees.md)
+The [shared Home entrance](https://compaii.dmn.homes/holodeck/) serves gallery
+source `2bfc1ef`, package `75b08bb68ebc`, with all 43 installed files and
+protected HTTPS health, identity and Brotli client bytes checked. The Room
+checkpoint and bounded house, room, exhibit, receiving and native state
+matched across activation. Package `0af62b029659` is the compatible recovery.
+
+The preceding release, source `3c474c6`, package `0af62b029659`, shipped the
+[Blender coastal foliage](../art/compaii-house/redesign/coastal-trees.md)
 and scoped doorway timing correction. Both versioned foliage assets and the
 Brotli and identity client matched the installed 43-file inventory through
 the protected HTTPS route. The Room and protected checkpoints matched the
@@ -145,8 +151,17 @@ independent visitor fixture, which made no draft or archive model request.
 All three test slots used the same verified published snapshot. After
 deployment an authorized owner reader separately verified the three
 immutable source editions by their own Homes version and snapshot checksum.
-A live human gallery walk, actual physical mobile performance, and human
-inspection and return remain unverified.
+The subsequent gallery release adds readable two-sided plaques for Terminado,
+En proceso and Archivo. The packaged Chromium trial used three distinct
+GLBs and exact controlled Nexus pins. An independent restricted visitor saw
+and opened only the published model. A wrong ready message left the viewer
+hidden until the expected pin and describe response arrived. Return retained
+the viewer and avatar position. Revoking the archive removed its model,
+plaques and selector entry. These were controlled identities and editions.
+The owning Home reader still receives 401 from the live Nexus descriptor
+routes. The existing live Homes sources were separately verified, but that
+reader is not a supported substitute for a Nexus participant. No changes to
+source publication or audience were made for this qualification.
 
 The browser editor lets an authenticated creator place and edit a
 signal garden using the existing world command path. Walk to set up to four
