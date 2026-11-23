@@ -209,6 +209,7 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   assert.equal((await visitor.read('/holodeck/assets/compaii-atelier/beacon.glb')).status,404);
   const upper=await visitor.move(gallery,tower);
   assert.match(upper.scene.markup,/tower-resonator/);
+  assert.match(upper.scene.markup,/<m-cube x="0.54" y="0.65" z="5.6" width="5.63" height="0.2" depth="0.31" opacity="0" cast-shadows="false">/);
   assert.match(upper.scene.markup,/id="passage-0"[^>]*><\/m-group>/);
   assert.deepEqual(upper.exits[0].door,{x:-3,y:.11,z:-4.81,yaw:180});
   const towerPath=roomArt(upper);

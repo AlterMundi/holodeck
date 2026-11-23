@@ -174,7 +174,12 @@ export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt())
     lightRig:chamberRig};
   const towerArt={...asset('tower'),replacesShell:true,authoredPortal:true,ambient:.64,
     fixtures:[fixture('tower','tower-resonator','Resonador de la torre',.54,2.42,5.46)],
-    colliders:box({x:5.59,y:.365,z:-.12,w:.38,h:.53,d:7.8}),
+    // The baked mesh is visual only. Match the east seat and the oak sill
+    // under the resonator using the authored tower's room-space dimensions.
+    colliders:[
+      {x:5.59,y:.365,z:-.12,w:.38,h:.53,d:7.8},
+      {x:.54,y:.65,z:5.6,w:5.63,h:.20,d:.31},
+    ].map(box).join(''),
     lightRig:[
       {id:'tower-clarity',x:5.28,y:3.82,z:1,intensity:39,distance:11,color:'#b1d1ff'},
       {id:'tower-resonator',x:.54,y:3.9,z:4.7,intensity:29,distance:7,color:'#ffe2ac'},
