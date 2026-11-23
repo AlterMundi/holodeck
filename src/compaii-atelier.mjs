@@ -22,6 +22,8 @@ const WAYFINDING=Object.freeze({asset:'commons-signs.glb',
   revision:'3bdd8d437662dfbd7725805922bada9dd06cd0bbf6301c6edd2aa2acee535cab'});
 const HOUSE_WALK=Object.freeze({asset:'house-walk.glb',
   revision:'1a60872144ebff809cdf7447f45ee389e0a7aeb6b7f197f5907a87b46c1ccbcd'});
+const PARCEL_TERRAIN=Object.freeze({asset:'parcel-terrace.glb',
+  revision:'133477adceacc91d138bc025d2e72bf626b1c6abe39498c3af075976fff3372e'});
 const SURROUNDINGS_ASSET='island-scenery-atelier.glb';
 const SURROUNDINGS_REVISION='694d83c8ba05d59b062fa7cf0f816461ddb9f8bdff3609549f0f932fa28f69b0';
 const OUTDOOR_SKY=Object.freeze({asset:'coastal-sky.jpg',
@@ -40,6 +42,7 @@ const dossier={
   ['assets/'+COMMONS_ASSET]:COMMONS_REVISION,
   ['assets/'+WAYFINDING.asset]:WAYFINDING.revision,
   ['assets/'+HOUSE_WALK.asset]:HOUSE_WALK.revision,
+  ['assets/'+PARCEL_TERRAIN.asset]:PARCEL_TERRAIN.revision,
   ['assets/'+SURROUNDINGS_ASSET]:SURROUNDINGS_REVISION,
   ['assets/'+OUTDOOR_SKY.asset]:OUTDOOR_SKY.revision,
   ['assets/'+COASTAL_RIDGES.asset]:COASTAL_RIDGES.revision,
@@ -52,7 +55,7 @@ const facade={
 const gardenVisual={asset:GARDEN_ASSET,x:22,y:.102,z:-2.75,sx:.50,sy:.78,sz:.55};
 const floorProfile={replacesShell:true,authoredExhibitBase:true};
 const box=({x,y,z,w,h,d})=>`<m-cube x="${x}" y="${y}" z="${z}" width="${w}" height="${h}" depth="${d}" opacity="0" cast-shadows="false"></m-cube>`;
-const commonsVisual={asset:COMMONS_ASSET,revision:COMMONS_REVISION,wayfinding:WAYFINDING,houseWalk:HOUSE_WALK,colliders:[
+const commonsVisual={asset:COMMONS_ASSET,revision:COMMONS_REVISION,wayfinding:WAYFINDING,houseWalk:HOUSE_WALK,parcelTerrain:PARCEL_TERRAIN,colliders:[
   {x:-9.11,y:1.30,z:-2.87,w:.34,h:2.45,d:.34},
   {x:-9.11,y:1.30,z:-4.50,w:.34,h:2.45,d:.34},
   {x:-8.73,y:.29,z:-3.68,w:.59,h:.43,d:1.54},

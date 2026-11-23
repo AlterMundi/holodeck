@@ -42,8 +42,16 @@ test('profile is optional and uses the exact existing room graph and parcel edit
   const fallback=worldDocument(exterior);
   assert.match(authored,/<m-model id="house-walk" src="\/holodeck\/assets\/house-walk\.glb\?v=[a-f0-9]{12}" collide="false" cast-shadows="false">/);
   assert.doesNotMatch(fallback,/house-walk\.glb/);
-  assert.deepEqual(authored.match(/<m-cube id="house-(?:approach|commons)"[^>]+>/g),
-    fallback.match(/<m-cube id="house-(?:approach|commons)"[^>]+>/g));
+  assert.match(authored,/<m-model id="parcel-terrain" src="\/holodeck\/assets\/parcel-terrace\.glb\?v=[a-f0-9]{12}" collide="false" cast-shadows="false">/);
+  assert.doesNotMatch(fallback,/parcel-terrace\.glb/);
+  const proxies=markup=>markup.match(/<m-cube id="house-(?:approach|commons)"[^>]+>/g);
+  assert.equal(proxies(authored).length,2);
+  assert.ok(proxies(authored).every(cube=>cube.endsWith(' opacity="0" cast-shadows="false">')));
+  assert.deepEqual(proxies(authored).map(cube=>cube.replace(' opacity="0" cast-shadows="false"','')),
+    proxies(fallback));
+  const plots=markup=>markup.match(/<m-group id="parcel-(?:west|east)-[1-4]"[^>]+>/g);
+  assert.equal(plots(authored).length,8);
+  assert.deepEqual(plots(authored),plots(fallback));
   assert.equal(profile.interiorArtwork({...source.get(lab),house:'other'}),null);
   assert.deepEqual(profile.interiorArtwork(source.get(lab)).station,interiorArt(source.get(lab)).station);
 });

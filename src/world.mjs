@@ -46,12 +46,19 @@ function houseModel(part, plot, position, id, prefix) {
   return `<m-model id="${id}" src="${attribute(prefix+'assets/'+part.asset)}" x="${x}" y="${y+.1}" z="${z}" ry="${-plot.side*90}" collide="false"></m-model>`;
 }
 
-function housingDocument(houses, prefix, houseVisual, walk) {
+function housingDocument(houses, prefix, houseVisual, site) {
+  const {houseWalk:walk,parcelTerrain:terrain}=site??{};
   const authoredWalk = assetFile(walk?.asset) && /^[a-f0-9]{64}$/.test(walk.revision);
   const walkSource = authoredWalk ? prefix + 'assets/' + walk.asset + '?v=' + walk.revision.slice(0,12) : '';
+  const authoredTerrain = assetFile(terrain?.asset) && /^[a-f0-9]{64}$/.test(terrain.revision);
+  const hiddenGround = authoredTerrain ? ' opacity="0" cast-shadows="false"' : '';
   let markup = HOUSE_GROUND.map(({id,minX,maxX,minZ,maxZ}) =>
-    `<m-cube id="${id}" x="${(minX+maxX)/2}" y="0" z="${(minZ+maxZ)/2}" width="${maxX-minX}" height=".2" depth="${maxZ-minZ}" color="#6a8d7b"></m-cube>`
+    `<m-cube id="${id}" x="${(minX+maxX)/2}" y="0" z="${(minZ+maxZ)/2}" width="${maxX-minX}" height=".2" depth="${maxZ-minZ}" color="#6a8d7b"${hiddenGround}></m-cube>`
   ).join('');
+  if(authoredTerrain){
+    const terrainSource=prefix+'assets/'+terrain.asset+'?v='+terrain.revision.slice(0,12);
+    markup+=`<m-model id="parcel-terrain" src="${attribute(terrainSource)}" collide="false" cast-shadows="false"></m-model>`;
+  }
   // The visual centerline has no collider. The two solid ground pieces
   // overlap and meet the existing arrival island at the same walking height.
   markup += authoredWalk ?
@@ -60,7 +67,7 @@ function housingDocument(houses, prefix, houseVisual, walk) {
   for (const plot of HOUSE_PLOTS) {
     const house = houses.find(entry => entry.parcel === plot.id);
     markup += `<m-group id="${plot.id}" x="${plot.x}" z="${plot.z}">
-      <m-cube y=".105" width="${plot.width}" height=".01" depth="${plot.depth}" color="${house?'#82735a':'#839c81'}" collide="false"></m-cube>`;
+      ${authoredTerrain?'':`<m-cube y=".105" width="${plot.width}" height=".01" depth="${plot.depth}" color="${house?'#82735a':'#839c81'}" collide="false"></m-cube>`}`;
     if (house) {
       const {id,revision,facade} = house;
       const {title,width,depth,height,color} = facade;
@@ -112,7 +119,7 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
   // Invisible proxies must not cast shadows onto their visible dressing.
   for(const terrace of TERRACES)out+=cylinder(terrace.x,0,terrace.z,terrace.radius,.2,'#6b987e','opacity="0" cast-shadows="false"');
   for(const p of PROMENADES)out+=`<m-cube x="${(p.minX+p.maxX)/2}" y="0" z="${(p.minZ+p.maxZ)/2}" width="${p.maxX-p.minX}" height=".2" depth="${p.maxZ-p.minZ}" opacity="0" cast-shadows="false"></m-cube>`;
-  out+=housingDocument(room.houses?.directory() ?? [],prefix,houseVisual,commonsVisual?.houseWalk);
+  out+=housingDocument(room.houses?.directory() ?? [],prefix,houseVisual,commonsVisual);
   for(const entity of projection){
     if(entity.deleted)continue;
     out+=`<m-group id="${attribute(entity.id)}" data-entity-revision="${entity.revision}">${entity.nodes.map(projectionNodeHTML).join('')}</m-group>`;
