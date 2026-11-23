@@ -14,7 +14,9 @@ const resourcePlugin={name:'qualified-jsdom-sidecars',setup(api){
  api.onLoad({filter:/style-rules\.js$/},async args=>{const source=await readFile(args.path,'utf8');if((source.match(/__dirname/g)||[]).length!==1)throw Error('JSDOM stylesheet source changed');return{contents:source.replace('__dirname','process.env.HOLODECK_JSDOM_HELPERS'),loader:'js'};});
  api.onLoad({filter:/XMLHttpRequest-impl\.js$/},async args=>{const source=await readFile(args.path,'utf8');const key='require.resolve("./xhr-sync-worker.js")';if(!source.includes(key))throw Error('JSDOM XHR source changed');return{contents:source.replace(key,'process.env.HOLODECK_XHR_WORKER'),loader:'js'};});
 }};
-await build({entryPoints:{server:join(root,'src/server.mjs'),'xhr-sync-worker':join(root,'node_modules/jsdom/lib/jsdom/living/xhr/xhr-sync-worker.js')},outdir:join(stage,'src'),outExtension:{'.js':'.mjs'},bundle:true,splitting:true,format:'esm',platform:'node',target:'node24',minify:false,
+// Compact the shipped server sources without renaming identifiers used by
+// the router and dependency adapters. The generated package is not edited.
+await build({entryPoints:{server:join(root,'src/server.mjs'),'xhr-sync-worker':join(root,'node_modules/jsdom/lib/jsdom/living/xhr/xhr-sync-worker.js')},outdir:join(stage,'src'),outExtension:{'.js':'.mjs'},bundle:true,splitting:true,format:'esm',platform:'node',target:'node24',minifyWhitespace:true,
   banner:{js:"import{createRequire as __createRequire}from'node:module';const require=__createRequire(import.meta.url);"},external:['canvas'],plugins:[resourcePlugin]});
 await mkdir(join(stage,'runtime/jsdom/lib/jsdom/browser'),{recursive:true});
 await copyFile(join(root,'node_modules/jsdom/lib/jsdom/browser/default-stylesheet.css'),join(stage,'runtime/jsdom/lib/jsdom/browser/default-stylesheet.css'));

@@ -105,6 +105,9 @@ absence, and this MVP's server-authored MML does not use HTML Canvas. Browser
 WebGL/Three rendering is independent and remains available. Qualify a real server
 Canvas dependency only when a later creation needs that capability.
 
+The server build compacts whitespace while preserving identifiers. The selected
+client bundle, art payloads and runtime dependency notices follow the same inventory.
+
 The stage stores the browser bundle once at `runtime/client.js.br`. The
 existing `client/client.js` URL negotiates Brotli and streams the same
 decoded bytes for identity clients. Match served decoded bytes against
