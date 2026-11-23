@@ -25,8 +25,30 @@ one shadow-casting light and three fills. The owner fixture crossed the
 existing stair in both directions. A separate admitted visitor reached the
 gallery and could neither enter the lab nor fetch its asset. The authorized
 session retained the existing exact prototype descriptor. This qualifies the
-local chamber integration. The commons-to-house-to-gallery route, physical
-phone performance, real station effects and human acceptance remain open.
+local chamber integration. Physical phone performance, real station effects
+and human acceptance remain open.
+
+The connected art candidate now replaces the selected parcel facade and the
+visible interior shells of the foyer and gallery, alongside the authored east
+garden and Beacon chamber. The exterior door, parcel occupancy, original
+walkable ground, exhibit anchor and stair coordinates remain authoritative.
+The gallery selects open-stair or continuous-floor art with the existing
+per-visitor passage rules. Requests for the other variant's hash return 404
+even while the visitor is in the gallery. The authored gallery keeps the
+existing published exhibit discovery point. Draft and archive screens need
+their own source-authorized descriptor selection before disclosure.
+
+Isolated Chromium walked from the normal exterior spawn to the east garden,
+past the miniature, through the original house entrance and into the foyer,
+gallery and Beacon lab. It returned to the original exterior doorway with
+the same browser page, world run, edition, entities and creation nodes. The
+only world events were leaving and rejoining exterior presence. A distinct
+admitted guest received the closed-floor gallery and could fetch neither the
+open-floor asset nor the lab model. The actual prototype descriptor remained
+selectable. The browser build handled expected in-flight model cancellations
+on room change. These results qualify the isolated connected route. The
+deployed room selection, live controls, physical-device and human acceptance
+are separate.
 
 Source `5e90de1`, package `a1ec8c4e05db`, connects the authored
 Beacon workbench to the existing 54-part H.B. Guitar prototype in Nexus.

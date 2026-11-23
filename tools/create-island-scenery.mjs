@@ -2,6 +2,12 @@
 // asset; no media generation or external service. Gameplay stays in Room/MML.
 import { BoxGeometry, CylinderGeometry, ConeGeometry, DodecahedronGeometry, TorusGeometry, Matrix4, Quaternion, Euler, Vector3, Color } from 'three';
 import { writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+const args=process.argv.slice(2);
+const eastReplaced=args[0]==='--east-replaced';
+const stageRoot=resolve(new URL('../.state',import.meta.url).pathname)+'/';
+if(args.length&&(!eastReplaced||args.length!==2||!resolve(args[1]).startsWith(stageRoot)))
+  throw Error('Use --east-replaced with a task-owned .state output path');
 const palettes={rock:'#364e59',rockLight:'#536c70',grass:'#6b987e',stone:'#cbd1b6',path:'#d3c19b',copper:'#bc8355',bark:'#786551',pine:'#365f58',leaf:'#6c9985',mint:'#a8cbb0',gold:'#e5b868',water:'#86adb0'};
 const groups=new Map();
 function add(geometry,material,position=[0,0,0],scale=[1,1,1],rotation=[0,0,0]){
@@ -68,9 +74,11 @@ ring(-22,.092,0,4.25,.018,'copper');
 pathBetween(-14.4,0,-18.0,0,2.8);
 // East: deliberately keep the game lawn bare. Its actual recipe, coloured
 // targets and progress belong to Room, not to decorative static ground art.
-cylinder(14.5,.045,0,1.7,1.7,.09,'stone',20);
-pathBetween(15.2,1,18.1,3.6,2.4);
-pathBetween(18.1,3.6,22,4,2.4);
+if(!eastReplaced){
+ cylinder(14.5,.045,0,1.7,1.7,.09,'stone',20);
+ pathBetween(15.2,1,18.1,3.6,2.4);
+ pathBetween(18.1,3.6,22,4,2.4);
+}
 // Low sitting ledges stay at the edge of the arrival island, outside its axes.
 for(const x of [-5.9,5.9]){
  box(x,.32,6.1,1.9,.43,.65,'stone');
@@ -90,6 +98,7 @@ const trees=[
  [29.0,3.2,4.2],[29.1,-3.1,4.0],[25.8,-7.5,3.7],[19.0,-7.7,3.9],[15.5,5.8,3.3],[21.0,8.0,3.4]
 ];
 for(const [x,z,h] of trees){
+ if(eastReplaced&&x>=14)continue;
  cylinder(x,h*.32,z,.12,.22,h*.64,'bark',7);
  add(new ConeGeometry(h*.34,h*.7,7,1),'pine',[x,h*.64,z]);
  add(new ConeGeometry(h*.27,h*.62,7,1),'leaf',[x,h*.91,z]);
@@ -97,11 +106,13 @@ for(const [x,z,h] of trees){
 }
 // A few deliberate stone/shrub groups replace the previous dense rim scatter.
 for(const[x,z,s]of [[-8.1,4.8,.6],[8.4,4.3,.7],[-6.5,-7.3,.6],[6.6,-7,.6],[-28.1,-.4,.7],[-25,6.4,.6],[-18,-5.9,.6],[29.7,1,.8],[26.7,-7,.7],[19.4,-8.3,.7],[16,6.5,.6]]){
+ if(eastReplaced&&x>=14)continue;
  stone(x,.19,z,s);
  if(s>=.7)add(new DodecahedronGeometry(.65,0),'leaf',[x+.45,.35,z+.4],[1,.55,.8]);
 }
 // Small lanterns give scale at junctions without a row of oversized structures.
 for(const[x,z]of [[-1.7,8.0],[1.7,8.0],[-8.4,2],[8.4,2],[-16.2,1.9],[14.4,-1.9],[-1.7,-8.5],[1.7,-8.5]]){
+ if(eastReplaced&&x>=14)continue;
  cylinder(x,.58,z,.055,.075,.95,'copper',6);
  add(new DodecahedronGeometry(.13,0),'gold',[x,1.14,z]);
 }
@@ -129,5 +140,6 @@ const header=Buffer.alloc(12);header.writeUInt32LE(0x46546c67);header.writeUInt3
 const jsonHeader=Buffer.alloc(8);jsonHeader.writeUInt32LE(json.length);jsonHeader.writeUInt32LE(0x4e4f534a,4);
 const binHeader=Buffer.alloc(8);binHeader.writeUInt32LE(binary.length);binHeader.writeUInt32LE(0x004e4942,4);
 if(total>600000)throw Error('Scenery budget exceeded');
-writeFileSync(new URL('../public/assets/island-scenery.glb',import.meta.url),Buffer.concat([header,jsonHeader,json,binHeader,binary]));
+writeFileSync(eastReplaced?resolve(args[1]):new URL('../public/assets/island-scenery.glb',import.meta.url),
+ Buffer.concat([header,jsonHeader,json,binHeader,binary]));
 console.log(`Created island scenery: ${total} bytes, ${materials.length} material batches`);

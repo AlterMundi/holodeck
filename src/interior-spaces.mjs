@@ -181,8 +181,8 @@ export function interiorDocument(room,passages=[],exhibit=null,art=null) {
     <m-cube x="0" y="1.65" z="-6" width="12" height="3.3" depth=".2" color="${end}"${walls}></m-cube>
     <m-cube x="0" y="1.65" z="6" width="12" height="3.3" depth=".2" color="${end}"${walls}></m-cube>
     ${exhibit?`<m-group id="house-exhibit" data-exhibit-revision="${exhibit.revision}" x="${EXHIBIT_POSITION.x}" z="${EXHIBIT_POSITION.z}">
-      <m-cylinder y=".48" radius=".69" height=".76" color="#526b66"></m-cylinder>
-      <m-cube y="1.10" width="1.34" height=".49" depth=".77" color="#b89165"></m-cube>
+      ${art?.authoredExhibitBase?'':`<m-cylinder y=".48" radius=".69" height=".76" color="#526b66"></m-cylinder>
+      <m-cube y="1.10" width="1.34" height=".49" depth=".77" color="#b89165"></m-cube>`}
       <m-label y="1.74" z=".41" width="1.6" height=".36" font-size="20" content="${EXHIBIT_LABEL}" collide="false"></m-label>
     </m-group>`:''}
     ${passages.map(p=>passageMarkup({...p,label:attribute(p.title)},!art?.authoredStairs)).join('')}

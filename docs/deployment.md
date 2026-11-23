@@ -79,6 +79,12 @@ unknown dependency bytes refuse before any patch is written. Requalify these pin
 when updating MML. This narrow adaptation does not create another world engine,
 transport, login or source of permissions.
 
+The client build also adapts the pinned `@mml-io/mml-web-threejs@0.26.1`
+model resource. Leaving a room can unmount its last model handle and cancel
+an in-flight load. The constructor handles that request's cancellation.
+Other model errors remain observable. The build checks the dependency hash
+and exact callsites and leaves installed modules untouched.
+
 ## Resource bounds and lifecycle
 
 The selected receiver enforces a 32 MiB backing filesystem (actual usable bytes

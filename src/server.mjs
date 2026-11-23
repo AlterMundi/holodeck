@@ -25,11 +25,11 @@ import {SessionBindings,SESSION_MS,sessionKey} from './session-bindings.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
-export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt}={}){
+export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt,houseVisual,gardenVisual}={}){
   if(!/^\/(?:[a-z0-9-]+\/)*$/.test(basePath))throw Error('Select a bounded absolute base path');
   if(production&&(!identityResolver||!publicOrigin||!stateDir))throw Error('Shared identity, audience and state are required in production');
-  if(typeof interiorArtwork!=='function'||production&&interiorArtwork!==interiorArt)
-    throw Error('Select checked-in interior art for production');
+  if(typeof interiorArtwork!=='function'||production&&(interiorArtwork!==interiorArt||houseVisual||gardenVisual))
+    throw Error('Select checked-in art for production');
   const selectedContentNodes=validateContentNodes(contentNodes);
   const selectedContentVisits=validateContentVisits(contentVisits,selectedContentNodes);
   if(!Array.isArray(conversationOrigins)||conversationOrigins.length>8||new Set(conversationOrigins).size!==conversationOrigins.length)
@@ -75,7 +75,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     try{while(projectionQueued){projectionQueued=false;
       await Promise.all([...sockets].map(([socket,record])=>checkSocket(socket,record)));
       if(room.commitUncertain){projectionHealthy=false;return;}
-      await document.load(worldDocument(room,{basePath}));projectionHealthy=true;
+      await document.load(worldDocument(room,{basePath,houseVisual,gardenVisual}));projectionHealthy=true;
     }}catch{projectionHealthy=false;}finally{projectionRunning=false;}
   };
   await project();if(!projectionHealthy){document.dispose();throw Error('The initial world representation could not load');}room.on('change',project);
@@ -139,7 +139,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   });
   const cellTransports=new Map();
   function renderInterior(room,passages,exhibit){
-    const art=interiorArtwork(room),src=art?route('api/space/art/'+art.revision):null;
+    const art=interiorArtwork(room,passages),src=art?route('api/space/art/'+art.revision):null;
     return interiorDocument(room,passages,exhibit,art&&{...art,src});
   }
   function interiorScopeKey(actor,selected){
@@ -159,7 +159,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   function describeSpace(actor){
     if(spaces.fenced)throw new RoomError('space-uncertain','Room placement needs recovery');
     const view=spaces.view(actor),exhibit=exhibits.scoped(actor,view.id),
-      art=interiorArtwork(spaces.rooms.get(view.id));
+      art=interiorArtwork(spaces.rooms.get(view.id),view.exits ?? []);
     const space={...view,...(view.id===OUTSIDE?{}:{objects:roomObjects(view)}),
       ...(art?.lightRig?{indoorLighting:true}:{}),
       ...(exhibit?{exhibitRevision:exhibit.revision}:{})};
@@ -171,7 +171,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     return {...space,participants};
   }
   function roomObjects(view){
-    const art=interiorArtwork(spaces.rooms.get(view.id)),station=art?.station;
+    const art=interiorArtwork(spaces.rooms.get(view.id),view.exits ?? []),station=art?.station;
     const objects=art?.replacesShell?[]:view.objects;
     return station?[...objects,{id:station.id,kind:'workstation',title:station.title,
       position:station.position,revision:station.revision}]:objects;
@@ -376,8 +376,10 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }));
   app.get(route('api/space/art/:revision'),(req,res)=>{
     const id=spaces.current(req.actor);
-    const art=interiorArtwork(spaces.rooms.get(id));
-    if(!art||!inScope(req.actor,id)||req.params.revision!==art.revision)return res.sendStatus(404);
+    const selected=spaces.rooms.get(id);
+    if(!selected||!inScope(req.actor,id))return res.sendStatus(404);
+    const art=interiorArtwork(selected,spaces.passages(req.actor,selected));
+    if(!art||req.params.revision!==art.revision)return res.sendStatus(404);
     res.type('model/gltf-binary').send(art.bytes);
   });
   app.get(route('api/space/content-visits'),(req,res)=>{

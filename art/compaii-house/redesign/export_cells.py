@@ -10,14 +10,21 @@ from mathutils import Matrix, Vector
 CELLS = {
     'garden': ('VIS · Garden court', (0, 0, 0)),
     'house': ('VIS · House', (0, 0, 0)),
+    'facade': ('VIS · House', (0, 0, 0)),
+    'foyer': ('VIS · House', (0, 0, 0)),
     'beacon': ('VIS · Beacon chamber', (-25, 9.4, 0)),
     'gallery': ('VIS · Collection gallery', (25, 7, 0)),
+    'gallery-sealed': ('VIS · Collection gallery', (25, 7, 0)),
 }
 ALBEDO_RESOLUTION = 1024
 NORMAL_RESOLUTION = 1024
 MAX_BYTES = 4 * 1024 * 1024
 MAX_TRIANGLES = 64_000
 BEACON_STAIRS = ('Descending stair tread', 'Stair rail', 'Stone wall at stair')
+FOYER_EXTERIOR = ('Stone plinth','Warm entrance floor','Entrance step','CASA DE COMPAII',
+                  'Clerestory smoked glass','Vertical recessed window','Amber window sill',
+                  'Right wing stone rib')
+GALLERY_FLOOR = ('Limestone gallery floor','Published stone base','Published oak top')
 
 
 def select(objects):
@@ -27,10 +34,35 @@ def select(objects):
     bpy.context.view_layer.objects.active = objects[0]
 
 
+def append_blocks(obj, specs):
+    parts = [obj]
+    for name, center, size, material, bevel in specs:
+        bpy.ops.mesh.primitive_cube_add(size=1, location=center)
+        part = bpy.context.object
+        part.name, part.dimensions = name, size
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+        if bevel:
+            border = part.modifiers.new('Dressed edges', 'BEVEL')
+            border.width, border.segments = bevel, 3
+        part.data.materials.append(bpy.data.materials[material])
+        parts.append(part)
+    select(parts)
+    bpy.ops.object.convert(target='MESH')
+    bpy.ops.object.join()
+
+
 def mesh_for(collection, origin, cell):
     scope = bpy.data.collections[collection]
     scope.hide_render = False
-    objects = [obj for obj in scope.objects if cell!='beacon' or not obj.name.startswith(BEACON_STAIRS)]
+    exclusions = {'beacon':BEACON_STAIRS, 'foyer':FOYER_EXTERIOR,
+                  'gallery':GALLERY_FLOOR,'gallery-sealed':GALLERY_FLOOR}.get(cell, ())
+    objects = [obj for obj in scope.objects if not obj.name.startswith(exclusions)]
+    if cell in ('gallery','gallery-sealed'):
+        # Keep the working bench clear of the actual stair approach as well
+        # as the opening cut in the floor below it.
+        for obj in objects:
+            if obj.name.startswith(('Drafts stone base','Drafts oak top')):
+                obj.location.y += 2.98
     select(objects)
     bpy.ops.object.convert(target='MESH')
     bpy.ops.object.join()
@@ -40,11 +72,43 @@ def mesh_for(collection, origin, cell):
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     if cell=='beacon':
         register_beacon(obj)
+    if cell=='facade':
+        # Front +Z in glTF. The checked-in chamber is full size; the fixture's
+        # approved west-parcel facade is 3.15 × 1.5 × 2.65 in world space.
+        obj.data.transform(Matrix.Translation((0,-1.195,0)) @
+                           Matrix.Diagonal((.153,.320,.391,1)))
+    if cell=='foyer':
+        obj.data.transform(Matrix.Translation((0,-5.84,-.334)) @
+                           Matrix.Diagonal((1.27,1.42,1,1)))
+        append_blocks(obj,[('Foyer limestone floor',(0,0,.035),(11.76,11.76,.122),
+                            'Honed honey limestone',0)])
+    if cell in ('gallery','gallery-sealed'):
+        register_gallery(obj,stair=cell=='gallery')
     bpy.ops.object.mode_set(mode='EDIT')
     bpy.ops.mesh.select_all(action='SELECT')
     bpy.ops.uv.smart_project(angle_limit=1.13, island_margin=.008)
     bpy.ops.object.mode_set(mode='OBJECT')
     return obj
+
+
+def register_gallery(obj,stair):
+    obj.data.transform(Matrix.Translation((0,0,.10)) @
+                       Matrix.Diagonal((-1.095,-.832,1,1)))
+    # Gallery stair slot 1 uses x=3 and z in [-5.86,-3.16]. Cut the
+    # visible stone above the existing engine hole rather than sealing it.
+    bounds = [(-5.89,2.15,-5.89,5.89),(3.85,5.89,-5.89,5.89),
+              (2.15,3.85,-3.16,5.89)] if stair else [(-5.89,5.89,-5.89,5.89)]
+    floor = [('Gallery limestone floor',((x1+x2)/2,-(z1+z2)/2,.035),
+              (x2-x1,z2-z1,.122),'Honed honey limestone',0) for x1,x2,z1,z2 in bounds]
+    steps = [('Gallery stair stone',(3,5.86-.45*(index+.5),.024-.14*(6-index)),
+              (1.70,.45,.142),'Honed honey limestone',.012) for index in range(6)] if stair else []
+    rails = [('Gallery stair oak rail',(x,4.51,.53),(.12,2.72,.115),'Dark oiled oak',.015)
+             for x in (2.08,3.92)] if stair else []
+    append_blocks(obj,floor+steps+rails+[
+        ('Gallery entrance wall',(0,5.96,1.965),(11.84,.20,3.94),'Ivory limewash',.032),
+        ('Published exhibit base',(2.5,-1.25,.48),(1.24,.96,.76),'Split basalt',.055),
+        ('Published exhibit top',(2.5,-1.25,.91),(1.32,1.04,.11),'Dark oiled oak',.042),
+    ])
 
 
 def register_beacon(obj):

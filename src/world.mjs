@@ -18,7 +18,35 @@ function sign({y,text,size,width,height}) {
     `<m-label y="${y}" z="${z}" ry="${ry}" content="${attribute(text)}" font-size="${size}" width="${width}" height="${height}" color="#163b3f" font-color="#f6edda" collide="false"></m-label>`
   ).join('');
 }
-function housingDocument(houses) {
+const ASSET_FILE = /^[a-z0-9][a-z0-9._-]{0,79}\.glb$/;
+const assetFile = value => typeof value === 'string' && ASSET_FILE.test(value);
+const vector = value => Array.isArray(value) && value.length === 3 &&
+  [value[0],value[1],value[2]].every(Number.isFinite);
+
+function gardenModel(part, prefix) {
+  if (!assetFile(part?.asset)) return '';
+  const {asset,x,y,z,sx,sy,sz} = part;
+  if (![x,y,z].every(Number.isFinite) ||
+      ![sx,sy,sz].every(value => Number.isFinite(value) && value>0)) return '';
+  return `<m-model id="authored-garden" src="${attribute(prefix+'assets/'+asset)}" x="${x}" y="${y}" z="${z}" sx="${sx}" sy="${sy}" sz="${sz}" collide="false"></m-model>`;
+}
+
+// Exported models are ground-registered in meters, with the entrance facing
+// +Z. Rotate this placement toward the aisle and check the measured footprint.
+function houseModel(part, plot, position, id, prefix) {
+  if (!assetFile(part?.asset) ||
+      !vector(part.bounds?.min) || !vector(part.bounds?.max) || !vector(position)) return '';
+  const {min,max} = part.bounds;
+  if (min.some((value,index) => value >= max[index])) return '';
+  const [x,y,z] = position;
+  const sides = [x-plot.side*min[2],x-plot.side*max[2]];
+  const ends = [z+plot.side*min[0],z+plot.side*max[0]];
+  if (sides.some(side => Math.abs(side)>plot.width/2) ||
+      ends.some(end => Math.abs(end)>plot.depth/2)) return '';
+  return `<m-model id="${id}" src="${attribute(prefix+'assets/'+part.asset)}" x="${x}" y="${y+.1}" z="${z}" ry="${-plot.side*90}" collide="false"></m-model>`;
+}
+
+function housingDocument(houses, prefix, houseVisual) {
   let markup = HOUSE_GROUND.map(({id,minX,maxX,minZ,maxZ}) =>
     `<m-cube id="${id}" x="${(minX+maxX)/2}" y="0" z="${(minZ+maxZ)/2}" width="${maxX-minX}" height=".2" depth="${maxZ-minZ}" color="#6a8d7b"></m-cube>`
   ).join('');
@@ -33,15 +61,19 @@ function housingDocument(houses) {
       const {id,revision,facade} = house;
       const {title,width,depth,height,color} = facade;
       const doorHeight = Math.min(1.72,height-.16);
+      const visual = houseVisual?.(house, plot);
+      const authored = houseModel(visual?.facade,plot,[0,0,0],`facade-${id}`,prefix);
+      const miniature = authored ? houseModel(visual?.miniature,plot,visual?.miniature?.at,`miniature-${id}`,prefix) : '';
+      const proxy = authored ? ' opacity="0" cast-shadows="false"' : '';
       markup += `<m-group id="${id}" data-house-revision="${revision}">
-        <m-cube y="${.1+height/2}" width="${width}" height="${height}" depth="${depth}" color="${attribute(color)}"></m-cube>
-        <m-cube y="${.16+height}" width="${width+.16}" height=".12" depth="${depth+.16}" color="#4f4a4b"></m-cube>
+        <m-cube y="${.1+height/2}" width="${width}" height="${height}" depth="${depth}" color="${attribute(color)}"${proxy}></m-cube>
+        <m-cube y="${.16+height}" width="${width+.16}" height=".12" depth="${depth+.16}" color="#4f4a4b"${proxy}></m-cube>
         <m-group id="entrance-${id}" x="${-plot.side*(width/2+.025)}">
-          <m-cube y="${.1+doorHeight/2}" width=".035" height="${doorHeight}" depth=".76" color="#333739" collide="false"></m-cube>
+          ${authored ? '' : `<m-cube y="${.1+doorHeight/2}" width=".035" height="${doorHeight}" depth=".76" color="#333739" collide="false"></m-cube>
           <m-cube x="${-plot.side*.025}" y="${.1+doorHeight/2}" width=".022" height="${doorHeight-.08}" depth=".65" color="#e4cf99" collide="false"></m-cube>
-          <m-cube x="${-plot.side*.049}" z=".23" y="${.1+doorHeight*.47}" width=".04" height=".055" depth=".04" color="#414842" collide="false"></m-cube>
-        </m-group>
-        <m-group ry="90">${sign({y:height+.5,text:title,size:16,width:1.75,height:.42})}</m-group>
+          <m-cube x="${-plot.side*.049}" z=".23" y="${.1+doorHeight*.47}" width=".04" height=".055" depth=".04" color="#414842" collide="false"></m-cube>`}
+        </m-group>${authored}${miniature}
+        ${authored?'':`<m-group ry="90">${sign({y:height+.5,text:title,size:16,width:1.75,height:.42})}</m-group>`}
       </m-group>`;
     }
     markup += '</m-group>';
@@ -49,17 +81,18 @@ function housingDocument(houses) {
   return markup;
 }
 
-export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=true}={}){
+export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=true,houseVisual,gardenVisual}={}){
   const prefix=basePath.endsWith('/')?basePath:basePath+'/';
   const projection=workshopProjection(room.entities),manifest=JSON.stringify(room.entities);
   if(manifest.length>16384)throw Error('Geometry manifest exceeds bound');
   let out=`<m-group id="workshop" data-run="${attribute(room.run)}" data-edition="${attribute(room.edition)}" data-semantic-sequence="${room.sequence}" data-layout-version="${LAYOUT_VERSION}" data-geometry-state="${attribute(manifest)}">`;
   out+=`<m-model id="island-scenery" src="${attribute(prefix)}assets/island-scenery.glb?layout=${LAYOUT_VERSION}" collide="false"></m-model>`;
+  out+=gardenModel(gardenVisual,prefix);
   // Flat walking proxies keep y=.1, at most3cm above layered visual ground.
   // Invisible proxies must not cast shadows onto their visible dressing.
   for(const terrace of TERRACES)out+=cylinder(terrace.x,0,terrace.z,terrace.radius,.2,'#6b987e','opacity="0" cast-shadows="false"');
   for(const p of PROMENADES)out+=`<m-cube x="${(p.minX+p.maxX)/2}" y="0" z="${(p.minZ+p.maxZ)/2}" width="${p.maxX-p.minX}" height=".2" depth="${p.maxZ-p.minZ}" opacity="0" cast-shadows="false"></m-cube>`;
-  out+=housingDocument(room.houses?.directory() ?? []);
+  out+=housingDocument(room.houses?.directory() ?? [],prefix,houseVisual);
   for(const entity of projection){
     if(entity.deleted)continue;
     out+=`<m-group id="${attribute(entity.id)}" data-entity-revision="${entity.revision}">${entity.nodes.map(projectionNodeHTML).join('')}</m-group>`;
