@@ -17,9 +17,9 @@ const layout=[
 const FACADE_ASSET='compaii-atelier-facade.glb';
 const GARDEN_ASSET='compaii-atelier-garden.glb';
 const COMMONS_ASSET='compaii-atelier-commons.glb';
-const COMMONS_REVISION='9692049f367d813f055f7608923be49ffd49911aa9844da15250d450d2da6105';
+const COMMONS_REVISION='c886dceb1c58807b553b9a8bfcfb499dbcc5f105ef3a60264fcb9f6b3be06a75';
 const SURROUNDINGS_ASSET='island-scenery-atelier.glb';
-const SURROUNDINGS_REVISION='d0c5d692cbb64edb79213da7188515f126587588c94004bdec74878a53a9acb4';
+const SURROUNDINGS_REVISION='694d83c8ba05d59b062fa7cf0f816461ddb9f8bdff3609549f0f932fa28f69b0';
 const OUTDOOR_SKY=Object.freeze({asset:'coastal-sky.jpg',
   revision:'2e9a63bbb5eb0e3a60e6144cff155e753211e093ee2870efda480129a01baae8'});
 const dossier={
