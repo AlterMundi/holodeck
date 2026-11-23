@@ -25,7 +25,20 @@ Room event tail recorded joins and leaves during activation. The directly
 usable predecessor `581dbb6a09cb` retains room plans and furnishings.
 
 The [shared Home entrance](https://compaii.dmn.homes/holodeck/) serves source
-`69c712c`, package `5f19c2909409`. The gallery now has Blender-authored
+`586f9ac`, package `143361af802d`. The foyer has a flush limestone route
+around the table, an oak gallery door with the existing room label, a framed
+clerestory and a soft side light. The
+[matched game-camera views](../art/compaii-house/redesign/README.md#blender-to-webgl)
+show how the light and materials lead toward the gallery. The existing
+coordinates, collision and location rights are preserved. Chromium completed
+the route with keyboard movement and E, walking all five foyer waypoints.
+The touch-emulated trial exercised the same doors with taps. Both returned
+to the plaza in the same page. The selected installation matched all 43 files, authorized HTTPS
+and the exact world and protected checkpoints. Package `5f19c2909409`
+remains the compatible predecessor. The foyer GLB is 2,176,764 bytes and
+the package is 33,433,600 bytes.
+
+In source `69c712c`, package `5f19c2909409`, the gallery gained Blender-authored
 clerestory trim, baked contact shadows and one soft cross-light that matches
 the clerestory. Both floor variants were walked in the packaged browser
 simulation. The [matched player-height comparison](../art/compaii-house/redesign/README.md#blender-to-webgl)

@@ -80,7 +80,7 @@ and interiors. Use physically grounded materials, believable light and shadow,
 human scale and purposeful detail. Keep walkability and room transitions fluid
 in the same release. Run those comparisons with simulated players and devices.
 
-The RPG housing reference sets a quality bar for architectural composition,
+Elder Scrolls Online housing sets a quality bar for architectural composition,
 furnishing and useful play. Start visible art in a blank Blender scene and
 review one coherent design before changing the public world. Use existing
 layouts, colliders, anchors and user state as the migration contract. Design an original settlement that takes cues from
@@ -92,6 +92,16 @@ stair. Let the interior open up into an asymmetric room whose instrument is the
 first thing a player sees. Keep each route simple enough to learn after one
 walk. Reserve expansion edges for later rooms and link distant floors with the
 existing internal portals.
+
+Use Cycles to light the authored environments and bake indirect diffuse
+illumination for static surfaces. Carry that into the existing Three.js
+renderer in linear light with a separate light-map UV channel. Preserve
+physically based material response, reflections and the bounded real-time
+lights that make moving characters and tools belong in the scene. Calibrate
+ambient fill against the baked contribution so the combination retains depth.
+Set exposure from the actual garden-to-workshop route. The foyer is the first
+comparison for baked indirect light, playable lighting and frame cost.
+Progressive path tracing is an option for stationary reference and inspection.
 
 | Release area | Build and verify in the existing world |
 | --- | --- |

@@ -74,6 +74,17 @@ connect the oak, stone and copper under the same light. Compare
 [the approach after](review/foyer-route-after.jpg) and
 [the gallery door from the path](review/foyer-gallery-door.jpg).
 
+The [Cycles lighting reference](review/foyer-cycles-reference.jpg) and trial
+768px linear EXR come from the same registered foyer. The bake contains
+indirect diffuse illumination. The published world currently uses its
+color, normal and contact maps with a real-time key. Test the indirect atlas
+in the real browser before selecting a runtime encoding or exposure.
+
+```sh
+blender -b art/compaii-house/redesign/casa-compaii-redesign.blend -t 6 --python-exit-code 1 \
+  -P art/compaii-house/redesign/foyer-irradiance.py -- "$EXPORT_OUTPUT"
+```
+
 The [listening tower](listening-tower.blend) has its own editable room-scale
 source and can be regenerated with `tower.py`. It uses a warm wall resonator
 and cool clerestory light as orientation points. The existing return portal
