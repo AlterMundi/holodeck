@@ -60,7 +60,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
     interiorSpaces:[{id:'matter',house,title:'Manipulación de Materia',entry:true,level:0,guests:['human:guest'],links:[]}],
     identityResolver:async req=>{
       if(expiredSession)return null;
-      return req.headers.cookie?.includes('__Host-home=owner')?{id:owner,kind:'daimon',rights:['observe']}:
+      return req.headers.cookie?.includes('__Host-home=owner')?{id:owner,kind:'daimon',rights:['observe','edit']}:
         req.headers.cookie?.includes('__Host-home=guest')?{id:'human:guest',kind:'human',rights:['observe']}:null;
     },
     collectionSourceRequest:async (url,{headers,redirect,cache,signal})=>{
@@ -100,6 +100,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
     return {
       move:(from,to)=>fetch(base+'api/space',{headers,method:'POST',body:JSON.stringify({from,to,live:1})}),
       catalog:()=>fetch(base+'api/space/collection',{headers}),
+      share:(resource,revision)=>fetch(base+'api/space/collection',{headers,method:'POST',body:JSON.stringify({resource,revision})}),
       art:path=>fetch(new URL(path,base),{headers}),
     };
   }
@@ -126,8 +127,17 @@ test('collection projects stay grouped and editions follow each visitor and thei
   const guitar=(...resources)=>({id:'guitar',shelf:0,anchor:{x:-5.25,y:.688,z:-1.36},editions:resources.map(model)});
   const archive={anchor:{x:3.35,y:1.061,z:-3.68},
     editions:[{...model(main),version:oldVersion,label:archived[0].label}]};
-  assert.deepEqual(await response.json(),{room:'matter',projects:[guitar(main,component)],archive});
-  assert.deepEqual(await (await visitor.catalog()).json(),{room:'matter',projects:[guitar(main)],archive});
+  const table=(revision,resource,canShare=false)=>({revision,resource,canShare});
+  assert.deepEqual(await response.json(),{room:'matter',projects:[guitar(main,component)],archive,worktable:table(0,null,true)});
+  assert.deepEqual(await (await visitor.catalog()).json(),{room:'matter',projects:[guitar(main)],archive,worktable:table(0,null)});
+  assert.equal((await visitor.share(main,0)).status,403);
+  assert.equal((await author.share(component,0)).status,204);
+  assert.deepEqual((await (await author.catalog()).json()).worktable,table(1,component,true));
+  assert.deepEqual((await (await visitor.catalog()).json()).worktable,table(1,null));
+  assert.equal((await author.share(main,0)).status,409);
+  assert.equal((await author.share(main,1)).status,204);
+  assert.deepEqual((await (await visitor.catalog()).json()).worktable,table(2,main));
+  assert.deepEqual(new RoomStore(join(stateDir,'collection-worktable')).load(),{room:'matter',revision:2,resource:main});
   assert.equal((await visitor.art(archivedThumbnail)).status,200);
   historicalDenied=true;
   assert.deepEqual((await (await visitor.catalog()).json()).archive,{...archive,editions:[]});
@@ -146,7 +156,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
   mainVersion=version;
   revoked=true;
   assert.equal((await visitor.art(thumbnail)).status,404);
-  assert.deepEqual(await (await visitor.catalog()).json(),{room:'matter',projects:[],archive:{...archive,editions:[]}});
+  assert.deepEqual(await (await visitor.catalog()).json(),{room:'matter',projects:[],archive:{...archive,editions:[]},worktable:table(2,null)});
   revoked=false;
   unavailable=true;
   assert.equal((await visitor.catalog()).status,503);

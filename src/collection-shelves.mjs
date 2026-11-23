@@ -40,7 +40,9 @@ export class CollectionShelves {
     this.visibleLinks='';
     this.archive=new CollectionArchive({scene,panel:archivePanel,loader:this.loader,
       readModel:(edition,signal)=>modelBytes(base,edition,signal)});
-    this.worktable=new CollectionWorktable({base,scene,panel:worktablePanel,webgl});
+    this.worktable=new CollectionWorktable({base,scene,panel:worktablePanel,webgl,onSharedChange:()=>{
+      this.flight?.abort();this.flight=null;this.refreshAt=0;
+    }});
   }
 
   update(room,root,player,bench){
@@ -75,7 +77,7 @@ export class CollectionShelves {
       const current=data?.room===this.room?data:null;
       this.sync(current?.projects);
       this.archive.sync(current?.archive,this.root);
-      this.worktable.sync(current?.projects);
+      this.worktable.sync(current?.projects,current?.worktable);
     }catch{
       if(!controller.signal.aborted){this.sync([]);this.archive.clear();this.worktable.clear();}
     }finally{

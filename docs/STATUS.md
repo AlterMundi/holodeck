@@ -114,9 +114,17 @@ owner reader. Edition switching and revocation used a controlled gateway. A sepa
 authorized HTTPS read decoded the current Guitarra, Support Study, Harmonic
 Flow and Visor X sources with the same reader.
 
-This candidate leaves live room selection pending. Restoring an archived
-project to a shelf, explicit shared table state and the exact worktable
-Conversation reference remain open. [Room and source contract](houses.md#the-collection)
+The shared table selection is stored with the room checkpoint. A desktop actor
+shared the Support Study in Chromium and a separate touch actor saw the same
+model 11.3 seconds later on the catalog refresh. Both advanced to the next saved
+edition and kept independent rotations. Revoking only the touch actor's source
+permission removed that model for the touch actor while the desktop actor still
+saw it. The desktop actor then cleared the table. This test used distinct
+fixture identities and two retained editions from the Home reader.
+
+The Workshop candidate is pending live room selection. Restoring an archived
+project to a shelf and sharing exact parts in Conversation remain open.
+[Room and source contract](houses.md#the-collection)
 
 ## Selected receiving release
 

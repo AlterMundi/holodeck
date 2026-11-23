@@ -57,17 +57,26 @@ function options(select,rows){
 }
 
 export class CollectionWorktable{
-  constructor({base,scene,panel,webgl}){
-    Object.assign(this,{base,scene,panel,webgl,yaw:0,editions:[],hidden:new Set()});
+  constructor({base,scene,panel,webgl,onSharedChange}){
+    Object.assign(this,{base,scene,panel,webgl,onSharedChange,yaw:0,editions:[],hidden:new Set()});
     this.details=panel.querySelector('details');
     this.project=panel.querySelector('[data-project]');
     this.sceneChoice=panel.querySelector('[data-scenes]');
     this.part=panel.querySelector('[data-parts]');
-    this.status=panel.querySelector('[role=status]');
+    this.status=panel.querySelector('[role=status]:not([data-shared-status])');
+    this.sharedStatus=panel.querySelector('[data-shared-status]');
+    this.share=panel.querySelector('[data-share]');
+    this.follow=panel.querySelector('[data-follow]');
+    this.clearTable=panel.querySelector('[data-clear-table]');
+    this.share.onclick=()=>this.publish(this.resource);
+    this.clearTable.onclick=()=>this.publish(null);
+    this.follow.onclick=()=>{this.local=false;this.followShared();};
     this.section=panel.querySelector('[data-section]');
     this.visibility=panel.querySelector('[data-visibility]');
     this.controls=panel.querySelector('fieldset');
-    this.project.onchange=()=>this.choose(this.project.value);
+    this.project.onchange=()=>{
+      this.local=true;this.choose(this.project.value);this.updateSharing();
+    };
     this.sceneChoice.onchange=()=>{this.requestedScene=this.sceneChoice.value;this.load(this.requestedScene);};
     this.part.onchange=()=>this.projectModel();
     this.section.oninput=()=>this.projectModel();
@@ -90,7 +99,7 @@ export class CollectionWorktable{
 
   }
 
-  sync(projects){
+  sync(projects,shared){
     const editions=(projects??[]).flatMap(project=>project.editions);
     const signature=JSON.stringify(editions.map(edition=>[edition.resource,edition.title]));
     if(signature!==this.signature){
@@ -98,12 +107,52 @@ export class CollectionWorktable{
       options(this.project,[{id:'',title:'Elegí un proyecto'},...editions.map(edition=>({id:edition.resource,title:edition.title}))]);
     }
     this.editions=editions;
+    this.shared=shared;
+    this.followShared();
     if(!this.resource)return;
     const desired=editions.find(edition=>edition.resource===this.resource);
-    if(!desired){this.closeModel();return;}
+    if(!desired){this.closeModel();this.updateSharing();return;}
     if(this.shown&&!same(this.shown,desired))this.verifyShown();
     if(!same(this.flight?.edition,desired)&&(!same(this.shown,desired)||!this.model))
       this.load(this.requestedScene);
+  }
+
+  followShared(){
+    if(!this.local&&(this.shared?.resource??'')!==(this.resource??''))this.choose(this.shared?.resource);
+    this.updateSharing();
+  }
+
+  updateSharing(){
+    this.share.hidden=!(this.shared?.canShare&&this.resource&&this.resource!==this.shared.resource);
+    this.clearTable.hidden=!(this.shared?.canShare&&this.shared.resource);
+    this.follow.hidden=!(this.shared&&this.local);
+    this.share.disabled=this.clearTable.disabled=!!this.shareRequest;
+  }
+
+  async publish(resource){
+    if(this.shareRequest||!this.shared?.canShare)return;
+    const controller=new AbortController();
+    this.shareRequest=controller;
+    this.updateSharing();
+    this.sharedStatus.textContent='';
+    try{
+      const response=await fetch(new URL('api/space/collection',this.base),{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({resource,revision:this.shared.revision}),
+        signal:AbortSignal.any([controller.signal,AbortSignal.timeout(6500)]),
+      });
+      if(controller.signal.aborted)return;
+      if(response.ok)this.local=false;
+      else this.sharedStatus.textContent=response.status===409?'La mesa cambió. Revisá la selección y volvé a intentar.':'No pude actualizar la mesa.';
+    }catch{
+      if(!controller.signal.aborted)this.sharedStatus.textContent='No pude confirmar el cambio en la mesa.';
+    }finally{
+      if(this.shareRequest===controller){
+        this.shareRequest=null;
+        this.updateSharing();
+        this.onSharedChange();
+      }
+    }
   }
 
   choose(resource){
@@ -195,6 +244,8 @@ export class CollectionWorktable{
   }
 
   clear(){
+    this.shareRequest?.abort();this.shareRequest=null;this.local=false;
+    this.sharedStatus.textContent='';
     this.closeModel();this.sync([]);this.panel.hidden=true;this.anchor=null;
     this.details.open=!matchMedia('(max-width: 600px)').matches;
   }

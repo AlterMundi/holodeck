@@ -163,8 +163,13 @@ Wiggle Control editor can use this table and the same scoped selection.
 
 The current candidate decodes the full Home scene in a worker and brings it
 to the existing world renderer. Selecting a scene, rotating, slicing and
-hiding a part changes only the inspecting visitor's view. Exact shared part
-references and durable joint selections remain separate work.
+hiding a part changes only the inspecting visitor's view. A visitor with edit access
+can explicitly share a project or clear the table. The room keeps one current
+selection and rejects writes based on a stale selection. Each participant sees
+the model only while their own Home session can read it. They may inspect a
+different project locally and rejoin the table at any time. The shared choice
+follows the current saved review edition on the Collection's 12-second refresh.
+Exact shared part references remain separate work.
 
 Produce the representative alongside each saved review edition in the existing
 publisher workflow. An authored substitute is appropriate for assemblies with

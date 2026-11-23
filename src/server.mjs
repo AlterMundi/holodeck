@@ -158,6 +158,14 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const matterArt=collection?.art&&readMatterWorkshopArt();
   const readCollection=collection&&createCollectionReader(publicOrigin,{request:collectionSourceRequest});
   const representatives=readCollectionRepresentatives(stateDir,collection);
+  const tableStore=collection?.art&&stateDir?new RoomStore(join(stateDir,'collection-worktable'),{maxBytes:1024}):null;
+  const tableResources=new Set(collection?.projects.flatMap(project=>project.resources));
+  let table=tableStore?.load()??{room:collection?.room,revision:0,resource:null};
+  let tableUnavailable=false;
+  if(!Number.isSafeInteger(table.revision)||table.revision<0||
+     (table.resource!==null&&!/^[a-f0-9]{32}$/.test(table.resource)))
+    throw Error('Invalid worktable checkpoint');
+  if(table.room!==collection?.room)table={room:collection?.room,revision:0,resource:null};
   function artForRoom(room,passages){
     if(matterArt&&room?.id===collection.room&&!room.links.some(link=>link.kind==='stair'))return matterArt;
     if(selectedRooms.has(room?.id))return (atelier?.interiorArtwork??interiorArtwork)(room,passages);
@@ -685,15 +693,50 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(!collection||!inScope(req.actor,collection.room))return res.sendStatus(404);
     const session=req.holodeckSession;
     const projection=await readCollection(req.headers.cookie,collection);
-    if(!inScope(session.actor,collection.room)||!inScope(await currentActor(req,session),collection.room))return res.sendStatus(404);
+    const actor=await currentActor(req,session);
+    if(!inScope(actor,collection.room))return res.sendStatus(404);
     if(projection===null)return res.status(503).json({message:'La colección no está disponible en este momento.'});
     const art=artForRoom(spaces.rooms.get(collection.room));
     const projects=projection.projects.map(project=>({...project,editions:project.editions.map(withRepresentative),
       ...(art?.shelves?{anchor:art.shelves[project.shelf]}:{})}));
     const current=new Set(projects.flatMap(project=>project.editions.map(edition=>edition.resource+':'+edition.version)));
     const archive=projection.archive.filter(edition=>!current.has(edition.resource+':'+edition.version)).map(withRepresentative);
-    res.json({room:collection.room,projects,
+    const worktable=collection.art?{
+      revision:table.revision,
+      resource:projects.some(project=>project.editions.some(edition=>edition.resource===table.resource))?table.resource:null,
+      canShare:!tableUnavailable&&actor.rights.includes('edit'),
+    }:null;
+    res.json({room:collection.room,projects,...(worktable?{worktable}:{}),
       ...(collection.archive&&art?.archive?{archive:{anchor:art.archive,editions:archive}}:{})});
+  }));
+  app.post(route('api/space/collection'),asyncRoute(async(req,res)=>{
+    if(!collection?.art||!inScope(req.actor,collection.room))return res.sendStatus(404);
+    if(!req.actor.rights.includes('edit'))return res.sendStatus(403);
+    if(tableUnavailable)return res.sendStatus(503);
+    const input=req.body;
+    if(!input||Object.keys(input).sort().join(',')!=='resource,revision'||
+       !Number.isSafeInteger(input.revision)||input.revision<0||
+       (input.resource!==null&&!tableResources.has(input.resource)))return res.sendStatus(400);
+    const resource=input.resource;
+    if(resource!==null){
+      const source=await readCollection(req.headers.cookie,{projects:[{id:'worktable',resources:[resource]}]});
+      if(!source?.projects.length)return res.sendStatus(404);
+    }
+    const actor=await currentActor(req,req.holodeckSession);
+    if(!inScope(actor,collection.room))return res.sendStatus(404);
+    if(!actor.rights.includes('edit'))return res.sendStatus(403);
+    if(tableUnavailable)return res.sendStatus(503);
+    if(input.revision!==table.revision)return res.sendStatus(409);
+    if(resource!==table.resource){
+      const next={room:collection.room,revision:table.revision+1,resource};
+      try{tableStore?.save(next);}
+      catch(error){
+        if(error.commitUncertain)tableUnavailable=true;
+        return res.sendStatus(503);
+      }
+      table=next;
+    }
+    res.sendStatus(204);
   }));
   app.get(route('api/space/collection-model/:resource/:version'),asyncRoute(async(req,res)=>{
     if(!collection||!inScope(req.actor,collection.room))return res.sendStatus(404);
