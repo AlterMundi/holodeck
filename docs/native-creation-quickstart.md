@@ -57,6 +57,14 @@ creator-declared pinned result. Open viewers retain their original edition and
 unfinished work until an explicit safe replacement. A node update does not
 rewrite a published result or another creator's permissions.
 
+## Draft or extend an owned house
+
+On a claimed parcel with an eligible layout, the same `--own act` route can
+prepare a starter or add a room to the current revision. Review the complete
+command, then explicitly publish it through that route. The draft does not
+grant visitors access until it is published. See
+[templates, extensions and receipts](houses.md#publish-an-owned-plan).
+
 ## Read recent world activity
 
 ```sh

@@ -70,7 +70,20 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 
 ## Selected receiving release
 
-The [protected entrance](https://compaii.dmn.homes/holodeck/) serves
+The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+`569deeb`, package `923fc4da0bb4`; rollback is `b3bf0f8950d2`.
+An eligible owner can draft a starter home or extend one room through the
+existing native world port, then publish the returned command explicitly.
+A receiving fixture used a separate simulated visitor to traverse the added
+portal, reconnect there after a service restart and return through the same
+opening. It also verified foreign-owner refusal, access revocation and recovery
+of the original publication receipt. The deployed service passed protected
+HTTPS and installed-file verification, with retained world and authoring
+checkpoints matching through deployment. This release keeps the current
+Casa de CompAII on its deployment-selected layout.
+[Creator workflow](houses.md#publish-an-owned-plan).
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) previously served
 source `61a531c`, package `b3bf0f8950d2`. A scoped visit keeps its
 loading cover while the inert renderer starts. The world pauses its
 drawing submission during that opening and resumes on return.
