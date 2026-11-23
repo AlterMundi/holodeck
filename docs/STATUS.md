@@ -23,7 +23,7 @@ required. Gallery choices describe physical displays. The edition pin remains
 behind source access. Authenticated receiving matched the exact served client,
 57 installed files and the Room checkpoint. The previous package
 `13604226f697` is the compatible rollback.
-[Situated Conversation contract](shared-conversation.md#indoor-conversation)
+[Situated Conversation contract](shared-conversation.md#indoor-source-contract)
 
 The previous gallery-interaction release served source `c1cc8c0`, package
 `13604226f697`. Authorized gallery pieces and their
