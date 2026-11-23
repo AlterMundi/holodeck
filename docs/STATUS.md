@@ -71,6 +71,19 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+`8cfd18a`, package `7961787f8543`; rollback is `190fce2fde22`.
+The indoor map tracks the player and camera heading and highlights only
+current authorized doors. In packaged Chromium a desktop visitor marked
+the Sensorial portal, walked up to it, crossed with E and returned to the
+same anchor. A separate simulated touch visitor could mark the exterior
+threshold and saw no restricted portal. The running desktop map purged
+that destination after access was revoked. A receiver test also checked
+longer-route access loss exposes the existing emergency return without
+changing the immediate exit list. HTTPS and retained checkpoints matched.
+[Desktop](../art/compaii-house/redesign/review/room-map-desktop.jpg) ·
+[Emulated touch](../art/compaii-house/redesign/review/room-map-touch.jpg).
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) previously served source
 `edc50a1`, package `190fce2fde22`; rollback is `5238eae47181`.
 A situated original can keep the acknowledged indoor visit's exact placement
 revision alongside its room and object reference. Holodeck checks the
