@@ -55,7 +55,7 @@ was started by this integration note.
 ## Taller Sensorial receiving boundary
 
 Casa de CompAII has a furnished Taller Sensorial and an authorized foyer
-portal. The [existing bench operations record](https://github.com/AlterMundi/shared-resources-storage-retention/blob/main/docs/services/cuevanico-sensorial-bench.md)
+portal. The [existing bench operations record](https://github.com/compaii/shared-resources/blob/main/docs/services/cuevanico-sensorial-bench.md)
 describes a restricted operator terminal, with a private owner repository
 and separate institutional editorial intake. Neither path supplies a
 shared Sensorial dashboard or an existing exact Homes/Nexus edition for
