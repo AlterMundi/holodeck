@@ -55,13 +55,23 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`6baba0e`, package `ee6605739077`. The Blender-authored façade of Casa de
-CompAII frames the opening with limestone, oak, brass and two lanterns. Its
+`9c42428`, package `996fdd11d758`. The laboratory descent now has a closed
+stair well and a legible tread edge. A simulated Chromium visitor walked from
+the gallery entrance and used E to enter the laboratory and return to the
+gallery landing in the same document. A separate restricted visitor received
+the continuous floor and was denied the stair, open gallery model and lab art.
+The receiving manifest matched all 57 files, retained world digests matched,
+and protected HTTPS denied direct access to the room art. The selected rollback
+is `ee6605739077`.
+[Descent comparison](../art/compaii-house/redesign/README.md#gallery-descent)
+
+Source `6baba0e`, package `ee6605739077`, finished the opening of Casa de
+CompAII with limestone, oak, brass and two lanterns. Its
 parcel and entrance coordinates match the preceding release. A packaged
 Chromium participant walked from the plaza, entered with E and returned to
 the exact exterior anchor with the same document. Protected HTTPS served the
 exact GLB in identity and Brotli, and the checked world files kept their
-digests. The selected rollback is `f20f5adb9697`.
+digests.
 [Façade comparison](../art/compaii-house/redesign/README.md#parcel-entrance-review)
 
 Source `fe60974`, package `f20f5adb9697`, gave the situated Conversation panel

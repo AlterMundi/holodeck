@@ -295,6 +295,20 @@ without reloading the document. The new façade was also read back byte for
 byte from the protected HTTPS asset route. The original Blender file now
 includes this edition alongside the existing house cells.
 
+### Gallery descent
+
+[Previous stair](review/gallery-stair-before.jpg) and
+[released stair](review/gallery-stair-after.jpg) show the well from the
+same route, field of view and viewport. The avatar approached from a
+slightly different lateral position in each run. The new cheeks conceal
+the exterior backdrop beside the treads. The nearby Tower action appears
+in the second frame. On the steps, the visitor's E action enters the
+laboratory and the return action restores the original stair landing.
+
+An independent visitor with gallery access alone received the continuous
+floor. The open gallery and Beacon models were denied to that fixture.
+The deployed gallery model is 1,473,557 bytes with Brotli compression.
+
 The supported first control handoff is the authenticated
 [Harmonic Lab panel](https://compaii.dmn.homes/harmonic_lab/). Walk toward
 the Spatializer or Weaver bench to open its tool card inside the room view.
