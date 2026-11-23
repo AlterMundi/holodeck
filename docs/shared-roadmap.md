@@ -75,7 +75,7 @@ edition access are checked separately. The first two-creator Chromium trial
 used separate native lanes, houses, visitor profiles and kits. One workshop
 used a same-floor door and a single signal target. The other used a portal to
 an upper observation room and two signal targets. Both visitors placed a signal
-and inspected their exact chosen fixture edition. The trial verified cached
+and inspected their exact chosen fixture edition. The trial verified
 circulation within one renderer, exact exterior returns, edition revocation,
 foreign edit refusal and recovery across a service restart. The existing Nexus
 protocol was exercised against controlled fixture editions. Next qualify an

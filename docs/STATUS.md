@@ -31,7 +31,7 @@ restart their locations, signals and the two author receipts recovered.
 Foreign authoring and receipt reads were refused. Revoking exhibit access
 removed the visit option while room access remained. Authorship and Nexus
 access in this trial were controlled fixtures.
-[Shared creator workflow](shared-roadmap.md#shared-creator-workflow)
+[Shared creator workflow](shared-roadmap.md#mmorpg-experience-and-creator-loop)
 
 The previous exhibit-authoring release served source `149e8b0`, package
 `fead7d47e704`. A room owner can read or preview a
