@@ -10,6 +10,19 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+`303bd86`, package `a86bab2467ae`. Four original Blender headlands give the
+arrival view a distant shoreline. The exterior blends into horizon-coloured
+fog between 24 and 124 m. The 59,152-byte terrain asset adds four batches
+with no shadow passes or walkable geometry. Packaged Chromium captured the
+previous and revised coast, entered the foyer on the same page with fog
+disabled and returned with the exterior fog restored and the sky fetched
+only once. The world and core checkpoints matched. One expired avatar
+session released its cosmetic slot during startup. Authenticated HTTPS
+served the exact new GLB and all 51 installed files matched. The compatible
+predecessor is `f8b4039586fe`.
+[Runtime comparison and editable source](../art/compaii-house/redesign/coastal-sky.md#distant-headlands-and-fog)
+
+The preceding release served source
 `69c5351`, package `f8b4039586fe`. The eight existing concurrent world sessions
 can each have a distinct human appearance. Four rigs and four alternate
 wardrobes share the existing animation path. The server returns the same

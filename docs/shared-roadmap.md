@@ -110,9 +110,9 @@ Set exposure from the actual garden-to-workshop route. The foyer is the first
 comparison for baked light, playable lighting and frame cost.
 Progressive path tracing is an option for stationary reference and inspection.
 
-Tune the exterior distance fog, currently set to start at 45 metres and
-reach full density at 140 metres, to separate the water, coast and far
-landmarks. Match the haze to the sky at the horizon and keep nearby paths,
+The exterior distance fog now starts at 24 metres and reaches full effect
+at 124 metres. The Blender headlands separate the water, coast and far
+landmarks. Keep the haze matched to the sky at the horizon and nearby paths,
 signs and avatars clear. For the Beacon, lamp filaments and portal edges, test restrained
 glow driven by emissive materials with a high luminance threshold. Preserve the
 value contrast of plaster, bright windows and HUD text. Measure the two effects
