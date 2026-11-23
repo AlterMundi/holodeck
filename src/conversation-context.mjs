@@ -97,7 +97,6 @@ export async function createConversationContexts({room,stateDir,transport,allowI
           record.observation.place.id:interior?.place.id;
         if(indoorId&&(!allowInteriorSource||!await allowInteriorSource(actor,frozen.beingRef,indoorId)))
           throw fail('forbidden','Tu daimon necesita acceso actual a esa sala para recibir su contexto');
-        if(interior&&interior.run!==room.run)throw fail('scope-changed','El mundo cambió durante la preparación');
         if(record){
           if(encode(record.frozen)!==encode(frozen)||record.observation.run!==room.run)throw fail('binding','Preserve the source from the earlier room or binding');
           if(record.phase==='prepared')return result(record);
@@ -106,6 +105,7 @@ export async function createConversationContexts({room,stateDir,transport,allowI
           if(canonical.state!=='absent')throw fail('id-reuse','Recover the existing canonical original before preparing another source');
           if(Object.keys(records).length>=MAX_RECORDS&&!await retireConfirmed())throw fail('capacity','Prepared sources need their retained results before new admission');
           record=await transaction(async()=>{
+            if(interior&&interior.run!==room.run)throw fail('scope-changed','El mundo cambió durante la preparación');
             if(Object.keys(records).length>=MAX_RECORDS)throw fail('capacity','Context source capacity reached');
             const observation=captureNativeSituation(room,actor,request,{pairedBeing:frozen.beingRef,serverCapture:'at-machine-context-preparation',interior});
             const value={id:request.id,actorRef:ref,requestHash,frozen,observation,phase:'frozen'};records[value.id]=value;
@@ -114,6 +114,7 @@ export async function createConversationContexts({room,stateDir,transport,allowI
         }
         if(indoorId&&!await allowInteriorSource(actor,frozen.beingRef,indoorId))
           throw fail('forbidden','El acceso a la sala cambió antes de preparar el contexto');
+        if(record.observation.run!==room.run)throw fail('scope-changed','El mundo cambió antes de preparar el contexto');
         const prepared=await transport.prepareContext({actorRef:ref,frozen:record.frozen,id:record.id,observation:record.observation});
         if(prepared?.schema!=='holodeck.prepared-conversation-context/v1'||prepared.id!==record.id
           ||prepared.binding!==record.frozen.binding||encode(prepared.entry_binding)!==encode(record.frozen.entry)
