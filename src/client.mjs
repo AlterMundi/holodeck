@@ -49,7 +49,7 @@ function startInterior(space){
   document.querySelector('#people').textContent=space.level===0?'Planta baja':
     space.level<0?`Subsuelo ${-space.level}`:`Piso ${space.level}`;
   const notice=new WorldNotice(document.querySelector('#notice'));
-  const beaconControls=new BeaconControls(document.querySelector('#beacon-control'));
+  const beaconControls=new BeaconControls(document.querySelector('#beacon-control'),document.querySelector('#beacon-panel'));
   let galleryModels;
   const visitor=new ContentVisitor({document,window,base,scoped:true,
     onCatalog:entries=>galleryModels?.sync(entries),
@@ -64,7 +64,7 @@ function startInterior(space){
   exhibitObserver.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['data-exhibit-revision']});
   const updateDoor=showSpaceLinks(space,{canLeave:()=>visitor.allowLeaveRoom(),onError:message=>notice.show(message)});
   window.addEventListener('keydown',event=>{
-    if(visitor.frame&&!visitor.panel.classList.contains('is-walking')&&
+    if((beaconControls.opened||visitor.frame&&!visitor.panel.classList.contains('is-walking'))&&
        ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE'].includes(event.code)){
       if(!(event.target instanceof Element&&event.target.closest('button,input,select,textarea')))event.preventDefault();
       event.stopImmediatePropagation();
@@ -92,11 +92,11 @@ function startInterior(space){
   });
   client.update();
   window.holodeckDevelopment={client};
-  window.addEventListener('pagehide',()=>{exhibitObserver.disconnect();visitor.dispose();client.dispose();},{once:true});
+  window.addEventListener('pagehide',()=>{exhibitObserver.disconnect();beaconControls.close();visitor.dispose();client.dispose();},{once:true});
 }
 
 function startWorld(activeSpace){
-const beaconControls=new BeaconControls(document.querySelector('#beacon-control'));
+const beaconControls=new BeaconControls(document.querySelector('#beacon-control'),document.querySelector('#beacon-panel'));
 const garden=new IndoorGardenHUD({
   position:()=>client.getLocalCharacterState()?.position,
   onError:say,
@@ -285,7 +285,7 @@ function resetDoor(){
 // MML captures document keys by default. Preserve ordinary text editing and
 // keyboard activation of the HUD without turning typed words into locomotion.
 document.addEventListener('keydown',event=>{
-  if(hot&&(moving||inside&&contentVisitor?.frame&&!contentVisitor.panel.classList.contains('is-walking'))&&
+  if((beaconControls.opened||hot&&(moving||inside&&contentVisitor?.frame&&!contentVisitor.panel.classList.contains('is-walking')))&&
      ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE'].includes(event.code)){
     if(!(event.target instanceof Element&&event.target.closest('button,input,select,textarea')))event.preventDefault();
     event.stopImmediatePropagation();return;
@@ -810,7 +810,7 @@ const interval=setInterval(async()=>{
   try{await refresh();}catch{say('La conexión con el taller se interrumpió. Los cambios no se repetirán solos.');}
   finally{refreshing=false;}
 },1500);
-window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();garden.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);if(signalPreview)URL.revokeObjectURL(signalPreview);worldAudio.dispose();client.dispose();});
+window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();beaconControls.close();garden.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);if(signalPreview)URL.revokeObjectURL(signalPreview);worldAudio.dispose();client.dispose();});
 refresh().catch(()=>say('No pude conectar con el taller.'));
 resetDoor();
 if(hot){

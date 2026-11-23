@@ -21,13 +21,47 @@ export function nearbyBeaconControl(objects,position){
 }
 
 export class BeaconControls{
-  constructor(link){
-    this.link=link;this.link.onclick=()=>{this.last=this.current;};
+  constructor(link,panel){
+    this.link=link;this.panel=panel;
+    this.stage=panel.querySelector('.beacon-panel-stage');
+    this.title=panel.querySelector('h2');
+    this.external=panel.querySelector('a');
+    panel.querySelector('button').onclick=()=>this.close();
+    panel.addEventListener('cancel',event=>{event.preventDefault();this.close();});
+    this.link.onclick=event=>{
+      if(!this.current)return;
+      this.last=this.current;
+      if(event.button||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+      event.preventDefault();
+      this.open();
+    };
+  }
+
+  get opened(){return this.panel.open;}
+
+  open(){
+    if(this.opened||!this.current)return;
+    this.title.textContent=this.current.title;
+    const href=this.link.getAttribute('href');
+    this.external.href=href;
+    const frame=this.panel.ownerDocument.createElement('iframe');
+    frame.title='Panel de '+this.current.title;
+    frame.allow="camera 'none'; microphone 'none'";
+    frame.src=href;
+    this.stage.replaceChildren(frame);
+    this.panel.showModal();
+  }
+
+  close(){
+    if(!this.opened)return;
+    this.stage.replaceChildren();
+    this.panel.close();
   }
 
   update(objects,position){
     const next=nearbyBeaconControl(objects,position);
     if(next===this.current)return;
+    this.close();
     this.current=next;
     if(this.last!==next)this.last=null;
     this.link.hidden=!next;
