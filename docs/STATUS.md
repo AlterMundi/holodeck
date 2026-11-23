@@ -16,8 +16,12 @@ environment from the garden route, adjoining house and miniature, workshop
 and separate gallery. The design and rendered views are available for review.
 
 The [shared Home entrance](https://compaii.dmn.homes/holodeck/) now selects
-`compaii-atelier-v1` from source `f69cb10`, runtime package `5183299a7fbd`.
-The previous usable package is `a1ec8c4e05db`. Installed bytes matched all 40
+`compaii-atelier-v1` from source `2cf9adc`, runtime package `a286c3c0a36e`,
+with Plaza de llegada as the initial scene label. The installed HTML and
+HTTPS client matched and the canonical world run was preserved. The prior
+atelier package `5183299a7fbd` remains directly usable for recovery.
+
+The preceding atelier deployment matched all 40 installed
 inventory entries. The decoded client, Brotli representation, health and
 four visible scenery assets matched through the protected HTTPS route.
 Room, houses, exhibits and the native turn journal were byte-identical
@@ -26,7 +30,7 @@ and all 30 entities. The live own-native route visited the lab and observed
 the three workstations, followed the existing portal to the listening
 tower, then returned outdoors.
 
-The verified 30,269,440-byte archive fits the existing 32 MiB package limit and
+The verified 30,289,920-byte archive fits the existing 32 MiB package limit and
 includes the previous scenery as a compatible option. No Room migration
 is required. The packaged production entry admitted a fixture identity
 over the existing Home HTTP contract and returned the authored foyer.
@@ -58,8 +62,8 @@ Served health, script and HTML matched at the receiver. Anonymous requests
 remain subject to sign-in and current audience checks. Actual instrument
 readiness or actuation, and shared device and human acceptance remain open.
 
-The owning writer retired ten superseded generated Holodeck runtime
-archives. Its four retained packages total 88,023,040 bytes within the
+The owning writer retired eleven superseded generated Holodeck runtime
+archives across both updates. Its four retained packages total 99,061,760 bytes within the
 96 MiB history budget, including the deployed current and rollback.
 
 The Blender art package includes the self-contained room GLBs. The
