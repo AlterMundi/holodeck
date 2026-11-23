@@ -143,7 +143,12 @@ its position is shared by all visitors who can still read it. Holodeck keeps the
 placements in a dedicated 2 KiB checkpoint with the current, previous and
 bounded staging writer. The earlier receiver can serve the same room and
 preserves the placement checkpoint during rollback. Home retains the immutable
-editions and their actual publication state.
+editions and their actual publication state. A restored edition is also a
+worktable choice and can be shared as an exact pin. Both the share writer and
+the existing Conversation source preparation recheck the relevant Home
+edition and room authority. During compatible rollback, the earlier reader
+treats a pinned historical selection as an empty table and preserves the
+checkpoint for the current reader.
 
 The optional `collection-representatives/index.json` under protected state
 binds exact viewer editions to Blender shelf derivatives. The index schema is

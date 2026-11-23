@@ -88,7 +88,7 @@ export class CollectionShelves {
       const current=data?.room===this.room?data:null;
       this.sync(current?.projects);
       this.archive.sync(current?.archive,this.root);
-      this.worktable.sync(current?.projects.filter(project=>!project.restored),current?.worktable);
+      this.worktable.sync(current?.projects,current?.worktable);
     }catch{
       if(!controller.signal.aborted){this.sync([]);this.archive.clear();this.worktable.clear();}
     }finally{

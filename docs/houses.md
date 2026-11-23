@@ -172,7 +172,9 @@ the model only while their own Home session can read it. They may inspect a
 different project locally and rejoin the table at any time. The shared choice
 appears as soon as visitors receive a room refresh and pass the Home read
 check. Newly saved Home editions are picked up by the Collection's 12-second
-refresh.
+refresh. A historical edition restored from the archive appears as a distinct
+worktable choice. Sharing it keeps both visitors on that exact version, even
+when a newer edition is current in Home.
 At the worktable, choose a part and select **Conversar sobre esta pieza**.
 The Conversation header identifies the reference and lets you remove it.
 The prepared context retains the edition, scene version and part you selected,

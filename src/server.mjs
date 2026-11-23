@@ -184,8 +184,15 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     !/^[a-f0-9]{32}:[a-f0-9]{64}$/.test(key))||new Set(placed).size!==placed.length)
     throw Error('Invalid Collection placement checkpoint');
   placed=placed.filter(key=>archiveKeys.has(key));
+  function restoredPin(entry){
+    const slot=placed.indexOf(pinKey(entry));
+    if(slot<0||slot+baseShelves>=shelfCount)return null;
+    return collection.archive.find(pin=>pin.resource===entry.resource&&pin.version===entry.version)??null;
+  }
   if(!Number.isSafeInteger(table.revision)||table.revision<0||
-     (table.resource!==null&&!/^[a-f0-9]{32}$/.test(table.resource)))
+     (table.resource!==null&&!/^[a-f0-9]{32}$/.test(table.resource))||
+     (table.edition&&(table.resource!==null||!Object.hasOwn(table.edition,'resource')||
+      !Object.hasOwn(table.edition,'version')||!/^([a-f0-9]{32}):([a-f0-9]{64})$/.test(pinKey(table.edition)))))
     throw Error('Invalid worktable checkpoint');
   if(table.room!==collection?.room)table={room:collection?.room,revision:0,resource:null};
   function artForRoom(room,passages){
@@ -389,7 +396,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(request.view?.worktable!==undefined){
       const reference=structuredClone(request.view.worktable);
       if(!readTableReference||collection.room!==id||!place.objects.some(object=>object.id==='worktable')||
-        !tableResources.has(reference?.resource))
+        !(tableResources.has(reference?.resource)||reference&&restoredPin(reference)))
         throw new RoomError('scope-changed','Volvé a seleccionar el modelo en la mesa de trabajo.');
       snapshot.resolveWorktable=async()=>{
         const confirmed=await readTableReference(cookie,reference);
@@ -750,18 +757,19 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const projects=projection.projects.map(project=>({...project,editions:project.editions.map(withRepresentative),
       ...(art?.shelves?{anchor:art.shelves[project.shelf]}:{})}));
     const current=new Set(projects.flatMap(project=>project.editions.map(edition=>edition.resource+':'+edition.version)));
-    const visibleArchive=projection.archive.filter(edition=>!current.has(pinKey(edition))).map(withRepresentative);
-    const archive=visibleArchive.filter(edition=>!placed.includes(pinKey(edition)));
+    const visibleArchive=projection.archive.map(withRepresentative);
+    const archive=visibleArchive.filter(edition=>!current.has(pinKey(edition))&&!placed.includes(pinKey(edition)));
     const restored=visibleArchive.flatMap(edition=>{
       const slot=placed.indexOf(pinKey(edition));
       const shelf=slot+baseShelves,anchor=art?.shelves?.[shelf];
       if(slot<0||!anchor)return [];
       return [{id:'restored:'+slot,shelf,anchor,restored:true,editions:[{...edition,title:edition.label}]}];
     });
+    const selectedEdition=table.edition&&restored.some(project=>pinKey(project.editions[0])===pinKey(table.edition));
+    const currentResource=projects.some(project=>project.editions.some(edition=>edition.resource===table.resource));
     const worktable=collection.art?{
-      revision:table.revision,
-      resource:projects.some(project=>project.editions.some(edition=>edition.resource===table.resource))?table.resource:null,
-      canShare:!tableUnavailable&&actor.rights.includes('edit'),
+      revision:table.revision,resource:currentResource?table.resource:null,
+      ...(selectedEdition?table.edition:{}),canShare:!tableUnavailable&&actor.rights.includes('edit'),
     }:null;
     const canRestore=!!(archive.length&&mayRestore&&actor.rights.includes('edit')&&!archiveUnavailable&&placed.length+baseShelves<shelfCount);
     res.json({room:collection.room,projects:[...projects,...restored],...(worktable?{worktable}:{}),
@@ -784,21 +792,31 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(!req.actor.rights.includes('edit'))return res.sendStatus(403);
     if(tableUnavailable)return res.sendStatus(503);
     const input=req.body;
-    if(!input||Object.keys(input).sort().join(',')!=='resource,revision'||
-       !Number.isSafeInteger(input.revision)||input.revision<0||
-       (input.resource!==null&&!tableResources.has(input.resource)))return res.sendStatus(400);
-    const resource=input.resource;
+    const fields=input&&Object.keys(input).sort().join(',');
+    if(!['resource,revision','resource,revision,version'].includes(fields)||
+       !Number.isSafeInteger(input.revision)||input.revision<0)return res.sendStatus(400);
+    const {resource,version}=input;
+    const exact=fields==='resource,revision,version';
+    if(exact&&(typeof resource!=='string'||!/^[a-f0-9]{32}$/.test(resource)||typeof version!=='string'||!/^[a-f0-9]{64}$/.test(version))||
+       !exact&&resource!==null&&!tableResources.has(resource))return res.sendStatus(400);
+    const pin=exact?restoredPin(input):null;
+    if(exact&&!pin)return res.sendStatus(404);
     if(resource!==null){
-      const source=await readCollection(req.headers.cookie,{projects:[{id:'worktable',resources:[resource]}]});
-      if(!source?.projects.length)return res.sendStatus(404);
+      const selection=pin?{projects:[],archive:[pin]}:{projects:[{id:'worktable',resources:[resource]}]};
+      const source=await readCollection(req.headers.cookie,selection);
+      if(!(pin?source?.archive.length:source?.projects.length))return res.sendStatus(404);
     }
     const actor=await currentActor(req,req.holodeckSession);
     if(!inScope(actor,collection.room))return res.sendStatus(404);
     if(!actor.rights.includes('edit'))return res.sendStatus(403);
     if(tableUnavailable)return res.sendStatus(503);
     if(input.revision!==table.revision)return res.sendStatus(409);
-    if(resource!==table.resource){
-      const next={room:collection.room,revision:table.revision+1,resource};
+    const unchanged=pin?table.edition&&pinKey(table.edition)===pinKey(pin):!table.edition&&resource===table.resource;
+    if(!unchanged){
+      // Older readers see an empty table for a pinned edition and retain its
+      // checkpoint. They never silently follow the latest edition of that model.
+      const next={room:collection.room,revision:table.revision+1,resource:pin?null:resource,
+        ...(pin?{edition:{resource,version}}:{})};
       try{tableStore?.save(next);}
       catch(error){
         if(error.commitUncertain)tableUnavailable=true;

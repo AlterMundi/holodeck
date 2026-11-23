@@ -2,6 +2,8 @@ import {Box3,BufferAttribute,BufferGeometry,Group,Mesh,MeshStandardMaterial,Plan
 import {disposeModel} from './gallery-models.mjs';
 
 const key=edition=>edition.resource+':'+edition.version+':'+edition.gallerySha256;
+const selectionKey=(entry,pinned)=>entry?.resource?
+  (pinned?entry.resource+':'+entry.version:entry.resource):'';
 const same=(a,b)=>a&&b&&key(a)===key(b);
 const reviewPrefix=edition=>'/works/'+edition.resource+'/'+edition.version+'/';
 
@@ -76,7 +78,7 @@ export class CollectionWorktable{
     this.share=panel.querySelector('[data-share]');
     this.follow=panel.querySelector('[data-follow]');
     this.clearTable=panel.querySelector('[data-clear-table]');
-    this.share.onclick=()=>this.publish(this.resource);
+    this.share.onclick=()=>this.publish(this.editions.find(edition=>edition.selection===this.selection));
     this.clearTable.onclick=()=>this.publish(null);
     this.follow.onclick=()=>{this.local=false;this.followShared();};
     this.section=panel.querySelector('[data-section]');
@@ -104,22 +106,24 @@ export class CollectionWorktable{
     this.anchor=anchor;
     this.discuss.hidden=!canDiscuss;
     const near=!!(player&&anchor&&Math.hypot(player.x-anchor.x,player.z-anchor.z)<2.05);
-    this.panel.hidden=!near||(!this.editions.length&&!this.resource);
+    this.panel.hidden=!near||(!this.editions.length&&!this.selection);
 
   }
 
   sync(projects,shared){
-    const editions=(projects??[]).flatMap(project=>project.editions);
-    const signature=JSON.stringify(editions.map(edition=>[edition.resource,edition.title]));
+    const editions=(projects??[]).flatMap(project=>project.editions.map(edition=>({
+      ...edition,pinned:project.restored===true,selection:selectionKey(edition,project.restored===true),
+    })));
+    const signature=JSON.stringify(editions.map(edition=>[edition.selection,edition.title]));
     if(signature!==this.signature){
       this.signature=signature;
-      options(this.project,[{id:'',title:'Elegí un proyecto'},...editions.map(edition=>({id:edition.resource,title:edition.title}))]);
+      options(this.project,[{id:'',title:'Elegí un proyecto'},...editions.map(edition=>({id:edition.selection,title:edition.title}))]);
     }
     this.editions=editions;
     this.shared=shared;
     this.followShared();
-    if(!this.resource)return;
-    const desired=editions.find(edition=>edition.resource===this.resource);
+    if(!this.selection)return;
+    const desired=editions.find(edition=>edition.selection===this.selection);
     if(!desired){this.closeModel();this.updateSharing();return;}
     if(this.shown&&!same(this.shown,desired))this.verifyShown();
     if(!same(this.flight?.edition,desired)&&(!same(this.shown,desired)||!this.model))
@@ -127,19 +131,20 @@ export class CollectionWorktable{
   }
 
   followShared(){
-    if(!this.local&&(this.shared?.resource??'')!==(this.resource??''))this.choose(this.shared?.resource);
+    const shared=selectionKey(this.shared,!!this.shared?.version);
+    if(!this.local&&shared!==(this.selection??''))this.choose(shared);
     this.updateSharing();
   }
 
   updateSharing(){
-    this.share.hidden=!(this.shared?.canShare&&this.resource&&this.resource!==this.shared.resource);
+    this.share.hidden=!(this.shared?.canShare&&this.selection&&this.selection!==selectionKey(this.shared,!!this.shared.version));
     this.clearTable.hidden=!(this.shared?.canShare&&this.shared.resource);
     this.follow.hidden=!(this.shared&&this.local);
     this.share.disabled=this.clearTable.disabled=!!this.shareRequest;
   }
 
-  async publish(resource){
-    if(this.shareRequest||!this.shared?.canShare)return;
+  async publish(edition){
+    if(this.shareRequest||!this.shared?.canShare||edition===undefined)return;
     const controller=new AbortController();
     this.shareRequest=controller;
     this.updateSharing();
@@ -147,7 +152,8 @@ export class CollectionWorktable{
     try{
       const response=await fetch(new URL('api/space/collection',this.base),{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({resource,revision:this.shared.revision}),
+        body:JSON.stringify({resource:edition?.resource??null,revision:this.shared.revision,
+          ...(edition?.pinned?{version:edition.version}:{})}),
         signal:AbortSignal.any([controller.signal,AbortSignal.timeout(6500)]),
       });
       if(controller.signal.aborted)return;
@@ -164,10 +170,10 @@ export class CollectionWorktable{
     }
   }
 
-  choose(resource){
+  choose(selection){
     this.closeModel();
-    if(!resource)return;
-    this.resource=resource;this.project.value=resource;
+    if(!selection)return;
+    this.selection=selection;this.project.value=selection;
     this.load();
   }
 
@@ -187,7 +193,7 @@ export class CollectionWorktable{
   }
 
   async load(sceneId){
-    const edition=this.editions.find(item=>item.resource===this.resource);
+    const edition=this.editions.find(item=>item.selection===this.selection);
     if(!edition||!this.anchor)return;
     this.flight?.controller.abort();
     const controller=new AbortController(),flight={controller,edition};
@@ -247,7 +253,7 @@ export class CollectionWorktable{
     this.flight?.controller.abort();this.flight=null;
     this.lease?.abort();this.lease=null;
     this.removeModel();
-    this.resource='';this.requestedScene=null;this.project.value='';
+    this.selection='';this.requestedScene=null;this.project.value='';
     this.yaw=0;this.hidden.clear();this.section.value='100';
     this.sceneChoice.replaceChildren();this.part.replaceChildren();
     this.status.textContent='';

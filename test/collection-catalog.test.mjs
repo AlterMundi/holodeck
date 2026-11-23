@@ -124,7 +124,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
         body:JSON.stringify({id,binding,view:{spaceId:'matter',worktable}})}),
       events:()=>fetch(base+'api/space/collection/events',{headers}),
       catalog:()=>fetch(base+'api/space/collection',{headers}),
-      share:(resource,revision)=>fetch(base+'api/space/collection',{headers,method:'POST',body:JSON.stringify({resource,revision})}),
+      share:(resource,revision,version)=>fetch(base+'api/space/collection',{headers,method:'POST',body:JSON.stringify({resource,revision,version})}),
       art:path=>fetch(new URL(path,base),{headers}),
     };
   }
@@ -206,6 +206,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
   historicalDenied=false;
   const curator=await session('owner');
   assert.equal((await visitor.restore(main,oldVersion)).status,403);
+  assert.equal((await curator.share(main,2,oldVersion)).status,404);
   assert.equal((await curator.restore(main,oldVersion)).status,204);
   assert.equal((await curator.restore(main,oldVersion)).status,204);
   const restored=await (await visitor.catalog()).json();
@@ -215,8 +216,14 @@ test('collection projects stay grouped and editions follow each visitor and thei
   assert.equal((await visitor.art(archivedThumbnail)).status,200);
   assert.deepEqual(new RoomStore(join(stateDir,'collection-placement'),{maxBytes:2048}).load(),
     {room:'matter',placed:[main+':'+oldVersion]});
+  assert.equal((await curator.share(main,2,oldVersion)).status,204);
+  assert.deepEqual((await (await visitor.catalog()).json()).worktable,{...table(3,main),version:oldVersion});
+  assert.deepEqual(new RoomStore(join(stateDir,'collection-worktable')).load(),
+    {room:'matter',revision:3,resource:null,edition:{resource:main,version:oldVersion}});
   historicalDenied=true;
-  assert.equal((await (await visitor.catalog()).json()).projects.length,1);
+  const denied=await (await visitor.catalog()).json();
+  assert.equal(denied.projects.length,1);
+  assert.deepEqual(denied.worktable,table(3,null));
   assert.equal((await visitor.art(archivedThumbnail)).status,404);
   historicalDenied=false;
   const thumbnailResponse=await visitor.art(thumbnail);
@@ -231,7 +238,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
   mainVersion=version;
   revoked=true;
   assert.equal((await visitor.art(thumbnail)).status,404);
-  assert.deepEqual(await (await visitor.catalog()).json(),{room:'matter',projects:[],archive:{...archive,editions:[]},worktable:table(2,null)});
+  assert.deepEqual(await (await visitor.catalog()).json(),{room:'matter',projects:[],archive:{...archive,editions:[]},worktable:table(3,null)});
   revoked=false;
   unavailable=true;
   assert.equal((await visitor.catalog()).status,503);
@@ -247,6 +254,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
   finally{release();}
   assert.equal((await racing).status,404);
   assert.equal((await visitor.art(asset)).status,404);
+  assert.equal(await readEvent(),'event: refresh\ndata: {}\n\n');
   assert.equal(await readEvent(),'event: refresh\ndata: {}\n\n');
   assert.equal(await readEvent(),'event: refresh\ndata: {}\n\n');
   assert.equal((await stream.read()).done,true);
