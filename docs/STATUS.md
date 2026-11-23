@@ -21,6 +21,22 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+`73bda34`, package `a89de8821e78`. A working indoor Conversation can now
+return the next permitted passage to its captured room. The daimon can
+take it explicitly through the same native interaction. The package trial
+used the installed Conversation client and native world CLI with two
+independent simulated participants. The original remained bound to its
+first topic while the human walked. The native CLI used two authorized
+passages, placed the matching signal, and recovered its exact receipt.
+Both browsers saw the completed garden and the canonical client showed
+the associated fixture reply once. A real model choosing and answering
+in the same turn is still open. Tests refused off-route, stale, terminal
+and foreign-original movement. The protected runtime matched all 57
+installed files and prior world checkpoint bytes. Package
+`466151c5c732` remains available for recovery.
+[Native use](native-integration.md) · [Source and trial contract](shared-conversation.md#indoor-source-contract)
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
 `f9c9885`, package `466151c5c732`. On interruption of indoor presence,
 Holodeck suspends visit discovery and cancels stale room prefetches. With
 the grant still valid, the same room and Nexus draft can resume. If the
