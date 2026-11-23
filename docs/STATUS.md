@@ -71,6 +71,17 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves
+source `61a531c`, package `b3bf0f8950d2`. A scoped visit keeps its
+loading cover while the inert renderer starts. The world pauses its
+drawing submission during that opening and resumes on return.
+A packaged loopback trial with the real Nexus and Homes renderer and
+the exact published source verified camera control, no change of world
+position, resumed drawing and denial for another simulated identity.
+Protected HTTPS, all 60 installed files and retained world digests
+matched. Rollback is `ed35282aa7c8`. Production participant use
+remains separate. [Visit qualification](visual-play.md#opening-a-protected-3d-exhibit).
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) previously served
 source `64fecdc`, package `ed35282aa7c8`. The north approach and raised
 bridge use the Blender-authored limestone, basalt, oak and copper
 finishes. The browser fixture verified both model responses and the

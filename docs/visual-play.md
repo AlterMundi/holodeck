@@ -309,6 +309,26 @@ after a browser touch cancel. A fresh contact moved the avatar again
 without selecting or sharing a world object. This is a touchscreen
 emulation result.
 
+## Opening a protected 3D exhibit
+
+The actual Nexus frontend and isolated Home renderer can start a nested
+review from the gallery. In the SwiftShader fixture the unchanged world
+draw and hidden iframe could leave the inner renderer past its readiness
+deadline. The loading cover now conceals the inert frame while allowing
+it to render. The world pauses only its drawing submission until the
+cover lifts, the opening fails, or the visitor returns to walking.
+The room renderer, input guards, authentication and visit lifecycle
+remain in the existing session.
+
+An isolated Chromium run used the real Nexus backend, frontend and Home
+hydrator with the exact published renderer, gallery JSON and GLB. The
+visitor examined the confirmed edition and changed its camera. Returning
+kept the same world renderer and position with drawing restored. A separate
+gallery-only identity received no exhibit and was refused by the Nexus
+artifact handler. Identity and permissions were simulated. The live Home
+owner reader separately verified three retained exact snapshots.
+Production participant acceptance remains separate.
+
 ## Situated Conversation panel
 
 The room topic and return control share the panel header, giving the
