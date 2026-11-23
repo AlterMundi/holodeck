@@ -8,25 +8,31 @@ const {createHash,randomUUID}=require('node:crypto');
 const assert=require('node:assert/strict');
 const {once}=require('node:events');
 const net=require('node:net');
-const execFile=require('node:util').promisify(require('node:child_process').execFile);
+const {execFile:execFileCallback,spawn}=require('node:child_process');
+const execFile=require('node:util').promisify(execFileCallback);
+const {createInterface}=require('node:readline');
 const {tmpdir}=require('node:os');
 const {join}=require('node:path');
 const {mkdtempSync,rmSync}=require('node:fs');
 const {resolve}=require('node:path');
 const {pathToFileURL}=require('node:url');
 const root=join(__dirname,'..');
-const {HOLODECK_PLAYWRIGHT,HOLODECK_STAGE,HOLODECK_CONVERSATION_RELEASE,HOLODECK_FIXTURE_TLS,HOLODECK_EVIDENCE_DIR,HOLODECK_MODEL_HANDOFF}=process.env;
+const {HOLODECK_PLAYWRIGHT,HOLODECK_STAGE,HOLODECK_CONVERSATION_RELEASE,HOLODECK_FIXTURE_TLS,HOLODECK_EVIDENCE_DIR,HOLODECK_MODEL_HANDOFF,HOLODECK_TELECODEX_SOURCE,HOLODECK_TELECODEX_BINARY}=process.env;
 if(!HOLODECK_PLAYWRIGHT||!HOLODECK_STAGE||!HOLODECK_CONVERSATION_RELEASE||!HOLODECK_FIXTURE_TLS||!HOLODECK_EVIDENCE_DIR)
   throw Error('Select the installed browser/Conversation assets, existing package stage, local TLS and bounded evidence directory');
 const {chromium}=require(resolve(HOLODECK_PLAYWRIGHT));
 const stage=resolve(HOLODECK_STAGE);
 const modelHandoff=HOLODECK_MODEL_HANDOFF?resolve(HOLODECK_MODEL_HANDOFF):null;
+const realOwner=!!(HOLODECK_TELECODEX_SOURCE||HOLODECK_TELECODEX_BINARY);
+if(realOwner&&(!HOLODECK_TELECODEX_SOURCE||!HOLODECK_TELECODEX_BINARY))
+  throw Error('Select both the isolated Telecodex source and release binary');
 const playerText=modelHandoff?'Can you come here and complete the garden with me? Place the missing signal and tell me what happened.':'The first signal is in this room.';
 
 async function readModelAnswer(request){
   const target=join(modelHandoff,'request.json');
   writeFileSync(target+'.stage',JSON.stringify(request),{flag:'wx',mode:0o600});
   renameSync(target+'.stage',target);
+  console.error('Model handoff is ready');
   const response=join(modelHandoff,'answer.json'),deadline=Date.now()+240000;
   while(Date.now()<deadline){
     try{
@@ -43,6 +49,58 @@ async function readModelAnswer(request){
   throw Error('The model handoff ended without an answer');
 }
 
+// This child owns only the temporary Telecodex receiver and its fixture peer.
+function openCanonicalOwner(socket){
+  const child=spawn('/usr/bin/python3',[join(root,'tools/canonical-conversation-fixture.py'),
+    '--telecodex-source',resolve(HOLODECK_TELECODEX_SOURCE),
+    '--telecodex-binary',resolve(HOLODECK_TELECODEX_BINARY),'--actor','human:player','--world-socket',socket],
+    {stdio:['pipe','pipe','inherit']});
+  const ended=new Promise(resolve=>child.once('close',resolve));
+  const rows=createInterface({input:child.stdout});
+  const pending=new Map();
+  let next=0;
+  let settleReady,failReady;
+  const ready=new Promise((resolve,reject)=>{settleReady=resolve;failReady=reject;});
+  const startup=setTimeout(()=>failReady(Error('Isolated Conversation owner did not start')),40000);
+  function fail(error){
+    clearTimeout(startup);failReady(error);
+    for(const {reject,timer} of pending.values()){clearTimeout(timer);reject(error);}
+    pending.clear();
+  }
+  child.on('error',fail);
+  child.stdin.on('error',fail);
+  child.on('close',code=>fail(Error('Isolated Conversation owner exited: '+code)));
+  rows.on('line',line=>{
+    try{
+      if(Buffer.byteLength(line)>196608)throw Error('Owner response exceeds fixture bound');
+      const message=JSON.parse(line);
+      if(message.ready===true){clearTimeout(startup);settleReady(message.frozen);return;}
+      const call=pending.get(message.id);
+      if(!call)return;
+      pending.delete(message.id);clearTimeout(call.timer);
+      if(message.ok===true)call.resolve(message.result);
+      else call.reject(Error(message.error?.message||'Fixture owner refused the operation'));
+    }catch(error){fail(error);}
+  });
+  function call(operation,args={}){
+    if(child.exitCode!==null||child.stdin.destroyed||pending.size>=12)
+      return Promise.reject(Error('Isolated Conversation owner is unavailable'));
+    return new Promise((resolve,reject)=>{
+      const id=++next;
+      const payload=JSON.stringify({id,operation,args})+'\n';
+      if(Buffer.byteLength(payload)>131072){reject(Error('Owner request exceeds fixture bound'));return;}
+      const timer=setTimeout(()=>{pending.delete(id);reject(Error('Fixture owner deadline: '+operation));},30000);
+      pending.set(id,{resolve,reject,timer});
+      child.stdin.write(payload);
+    });
+  }
+  return {ready,call,async close(){
+    child.stdin.end();
+    const timer=setTimeout(()=>child.kill(),6000);
+    try{await ended;}finally{clearTimeout(timer);rows.close();}
+  }};
+}
+
 const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
 
 (async()=>{
@@ -55,15 +113,15 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
   new RoomStore(join(dir,'houses')).save({schema:'holodeck.houses/v1',houses:[{
     id:house,owner,revision:1,parcel:'parcel-west-1',facade:{title:'Casa de prueba',color:'#355b62',width:2.1,depth:1.3,height:2.15},
   }],receipts:[]});
-  let runtime,listener,conversation;
+  let runtime,listener,conversation,canonical;
   const browsers=[],originals=[],situations=[],finals=[];
   let uploads=0,canonicalPosts=0;
   const canonicalRequests=[],presentationReads=[];
-  const freeze=Object.freeze({actorRef:'human:player',beingRef:owner,homeRef:'home:'+'c'.repeat(32),
+  let freeze=Object.freeze({actorRef:'human:player',beingRef:owner,homeRef:'home:'+'c'.repeat(32),
     binding:'b'.repeat(64),entry:[1,{},1,'synthetic-native-turn']});
   let releaseContext;
   const holdContext=new Promise(resolve=>{releaseContext=resolve});
-  const binding='b'.repeat(64), home='home:'+'c'.repeat(32);
+  let binding=freeze.binding,home=freeze.homeRef;
   let frameOrigin,worldOrigin;
   const web=join(process.env.HOLODECK_CONVERSATION_RELEASE,'dashboard/web');
   const headers={'Content-Type':'application/json'};
@@ -91,7 +149,15 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
   };
   const act=args=>worldRequest('act',args);
   try{
-    conversation=createServer({key:readFileSync(join(HOLODECK_FIXTURE_TLS,'key.pem')),cert:readFileSync(join(HOLODECK_FIXTURE_TLS,'cert.pem'))},async(req,res)=>{
+    if(realOwner){
+      canonical=openCanonicalOwner(path);
+      freeze=await canonical.ready;
+      assert.equal(freeze.actorRef,'human:player');
+      assert.equal(freeze.beingRef,owner);
+      ({binding,homeRef:home}=freeze);
+      console.error('Isolated canonical Conversation owner is ready');
+    }
+    const handleConversation=async(req,res)=>{
       const url=new URL(req.url,frameOrigin);
       if(canonicalRequests.length<160)canonicalRequests.push(req.method+' '+url.pathname);
       if(url.pathname==='/'){
@@ -109,9 +175,13 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
       let result={binding,csrf:'fixture-csrf',items:[],cursor:0,newest:0,more:false,state:'available'};
       if(url.pathname==='/api/interaction/access')result={csrf:'fixture-csrf',actor_ref:'human:player',label:'Simulated player'};
       if(url.pathname==='/api/interaction'){
-        const newest={...cursor,native:finals.length};
-        if(presentationReads.length<60)presentationReads.push({direction:url.searchParams.get('direction'),count:finals.length});
-        result={...result,items:finals.map(({originalId,...card})=>card),cursor:newest,newest,
+        const pageArgs={direction:url.searchParams.get('direction')??'after'};
+        for(const key of ['delivery','native','matrix','inbox','responses','publications'])
+          if(url.searchParams.has(key))pageArgs[key]=Number(url.searchParams.get(key));
+        const nativePage=canonical?await canonical.call('presentation',pageArgs):null;
+        const newest=nativePage?.newest??{...cursor,native:finals.length};
+        if(presentationReads.length<60)presentationReads.push({direction:url.searchParams.get('direction'),count:nativePage?.items.length??finals.length});
+        result={...result,...nativePage,items:nativePage?.items??finals.map(({originalId,...card})=>card),cursor:nativePage?.cursor??newest,newest,
           can_send:true,can_speak:true,can_listen:true,activity:{state:'idle'},presentation_profile:'simple'};
       }
       if(url.pathname==='/api/interaction/inputs'&&req.method==='POST'){
@@ -126,11 +196,23 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
           console.error('Canonical fixture refused',JSON.stringify({matchedSource:!!source,fileCount:original.files?.length,actorBinding:original.binding===binding}));
           return res.writeHead(409).end();
         }
-        result={...original,phase:'accepted',received_at:new Date().toISOString(),entry:originals.length+1};
+        result=canonical?await canonical.call('submit',original):
+          {...original,phase:'accepted',received_at:new Date().toISOString(),entry:originals.length+1};
         originals.push(result);
       }
-      if(url.pathname==='/api/interaction/inputs'&&req.method==='GET')result={...result,items:originals,cursor:originals.length,newest:originals.length,routing_choices:[]};
+      if(url.pathname==='/api/interaction/inputs'&&req.method==='GET'){
+        const items=canonical?await Promise.all(originals.map(row=>canonical.call('original',{id:row.id}))):originals;
+        result={...result,items,cursor:items.length,newest:items.length,routing_choices:[]};
+      }
       res.writeHead(200,headers).end(JSON.stringify(result));
+    };
+    conversation=createServer({key:readFileSync(join(HOLODECK_FIXTURE_TLS,'key.pem')),
+      cert:readFileSync(join(HOLODECK_FIXTURE_TLS,'cert.pem'))},(req,res)=>{
+      handleConversation(req,res).catch(error=>{
+        console.error('Isolated Conversation HTTP:',error.message);
+        if(!res.headersSent)res.writeHead(500);
+        res.end();
+      });
     });
     conversation.listen(0,'127.0.0.1');await once(conversation,'listening');
     frameOrigin='https://127.0.0.1:'+conversation.address().port;
@@ -141,20 +223,24 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
         const transport={
           inspect:async actor=>{
             assert.equal(actor,freeze.actorRef);
-            return structuredClone(freeze);
+            return canonical?canonical.call('inspect',{actorRef:actor}):structuredClone(freeze);
           },
-          lookup:async({id})=>({state:originals.some(row=>row.id===id)?'observed':'absent'}),
+          lookup:async request=>canonical?canonical.call('lookup',request):({state:originals.some(row=>row.id===request.id)?'observed':'absent'}),
           prepareContext:async request=>{
             const {id,observation}=request;
             assert.equal(observation.inputAssociation.humanInputId,id);
             const bytes=Buffer.from(JSON.stringify(observation));
-            const file={file_id:randomUUID(),sha256:digest(bytes),name:'holodeck-situation.json',mime:'application/json',size:bytes.length};
-            situations.push({id,capture:observation,file});uploads++;
+            const prepared=canonical?await canonical.call('prepareContext',request):{
+              schema:'holodeck.prepared-conversation-context/v1',id,binding,entry_binding:freeze.entry,
+              observation_id:observation.id,work_admitted:false,
+              file:{file_id:randomUUID(),sha256:digest(bytes),name:'holodeck-situation.json',mime:'application/json',size:bytes.length},
+            };
+            situations.push({id,capture:observation,file:prepared.file});uploads++;
             await holdContext;
-            return {schema:'holodeck.prepared-conversation-context/v1',id,binding,entry_binding:freeze.entry,
-              observation_id:observation.id,work_admitted:false,file};
+            return prepared;
           },
           status:async request=>{
+            if(canonical)return canonical.call('status',request);
             const original=originals.find(row=>row.id===request.id), source=situations.find(row=>row.id===request.id);
             const retained=!!original&&source?.capture.id===request.observationId&&
               original.files[0].file_id===request.contextFile.file_id&&original.files[0].sha256===request.contextFile.sha256;
@@ -225,6 +311,7 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
       return page;
     };
     const touch=await open('guest',true),keyboard=await open('player',false);
+    console.error('Desktop and touch browser participants are ready');
     await touch.bringToFront();
     await touch.locator('#indoor-garden summary').tap();
     await touch.locator('#indoor-garden-colors button').filter({hasText:'ámbar'}).tap();
@@ -279,6 +366,15 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     releaseContext();
     for(let attempt=0;!originals.length&&attempt<100;attempt++)await new Promise(r=>setTimeout(r,100));
     assert.equal(originals.length,1);
+    const admission=canonical?await canonical.call('admission',{id:original.id}):null;
+    if(admission)console.error('The native turn received the exact situated original and attachment');
+    if(admission){
+      assert.equal(admission.id,original.id);
+      assert.equal(admission.text,playerText);
+      assert.deepEqual(admission.file,original.file);
+      assert.deepEqual(admission.source,original.capture);
+      assert.deepEqual(admission.worldInterface.argv_prefix,[join(root,'integrations/world_port.py'),'--socket',path,'--interaction',original.id]);
+    }
     const nativeApproach=[];
     if(!modelHandoff)for(const expected of [{from:'outside',to:'owned-entry'},{from:'owned-entry',to:'owned-foyer'}]){
       const observation=await worldRequest('observe',{},original.id);
@@ -302,18 +398,20 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     },{id:sibling,binding});
     assert.equal(siblingContext.status,200,JSON.stringify(siblingContext.body));
     assert.equal(siblingContext.body.work_admitted,false);
-    originals.push({id:sibling,binding,text:'Fixture sibling original.',files:siblingContext.body.files,
-      phase:'accepted',entry:2,received_at:new Date().toISOString()});
+    const siblingOriginal={id:sibling,binding,text:'Fixture sibling original.',files:siblingContext.body.files};
+    if(!canonical)originals.push({...siblingOriginal,phase:'accepted',entry:2,received_at:new Date().toISOString()});
     const modelAnswer=modelHandoff?await readModelAnswer({
-      original:original.id,input:originals[0].text,source:original.capture,socket:path,
+      original:original.id,input:admission?.text??originals[0].text,source:admission?.source??original.capture,socket:path,
       cli:join(root,'integrations/world_port.py'),
+      ...(admission?{canonicalAdmission:{file:admission.file,localTurn:admission.localTurn,nativeTurn:admission.nativeTurn},
+        worldInterface:admission.worldInterface}:{}),
     }):null;
     const command={type:'garden.signal',id:modelAnswer?.commandId??'readable-native-signal',room:'owned-foyer',expectedRevision:1,index:0,color:'mint'};
     const effect=modelAnswer?await worldRequest('result',{id:command.id},original.id):await worldRequest('act',command,original.id);
     assert.equal(effect.ok,true);
     assert.deepEqual(await worldRequest('result',{id:command.id},original.id),effect);
     if(!modelAnswer)assert.deepEqual(await worldRequest('act',command,original.id),effect);
-    assert.equal((await worldRequest('result',{id:command.id},originals[1].id)).ok,false);
+    assert.equal((await worldRequest('result',{id:command.id},sibling)).ok,false);
     assert.equal((await worldRequest('observe',{},original.id)).result.space.activity.progress.complete,true);
     await progress(keyboard,'¡Jardín completado!');
     await touch.bringToFront();
@@ -324,7 +422,18 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     }
     const primaryText=modelAnswer?.answer??'Fixture result: mint signal committed in the captured room. Two contributors completed the garden.';
     const siblingText='Fixture sibling result: read-only question completed.';
-    function final(originalId,text){
+    async function final(originalId,text){
+      if(canonical){
+        const completion=await canonical.call('final',{id:originalId,text});
+        const source=completion.presentation.id??completion.presentation.source;
+        assert.equal(completion.id,originalId);
+        assert.equal(completion.status.phase,'completed');
+        assert.equal(completion.presentation.preview,text);
+        const answer=completion.status.updates.find(item=>item.source===source);
+        assert.equal(answer?.sha256,digest(text));
+        if(originalId===original.id)assert.equal(answer.nativeTurn,admission.nativeTurn);
+        return {source,nativeTurn:answer.nativeTurn,nativeItem:answer.nativeItem};
+      }
       const entry=originals.find(row=>row.id===originalId);
       assert.ok(entry);
       entry.phase='completed';
@@ -333,8 +442,9 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
         native_item:'synthetic-final-'+entry.entry,label:'Controlled Conversation',preview:text,
         text_sha256:digest(text),text_characters:text.length,native_binding_current:true,current:true,
         observed_at:new Date().toISOString(),artifacts:[]});
+      return {source:'native:'+entry.entry};
     }
-    final(originals[1].id,siblingText);
+    if(!canonical)await final(sibling,siblingText);
     await keyboard.bringToFront();
     await keyboard.locator('#talk').click();
     assert.ok(await frameHandle.evaluate(frame=>frame===document.querySelector('#shared-conversation iframe')));
@@ -351,12 +461,15 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
         throw error;
       }
     }
-    await waitForAnswer(siblingText);
-    assert.equal(await answer(primaryText).count(),0,'sibling completion settled the wrong original');
-    assert.equal(originals[0].phase,'accepted');
+    if(!canonical){
+      await waitForAnswer(siblingText);
+      assert.equal(originals[0].phase,'accepted');
+    }
+    assert.equal(await answer(primaryText).count(),0,'a reply was displayed before completion');
     assert.equal(runtime.native.contexts.has(original.id),true);
     await keyboard.locator('#conversation-close').click();
-    final(original.id,primaryText);
+    const primary=await final(original.id,primaryText);
+    assert.match(primary.source,/^native:[0-9]+$/);
     assert.equal((await worldRequest('act',command,original.id)).ok,false);
     assert.deepEqual(await worldRequest('result',{id:command.id},original.id),effect);
     await keyboard.locator('#talk').click();
@@ -365,8 +478,8 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     assert.equal(nextRoomTopic,'right-bench');
     assert.equal(original.capture.referredRoomObject.id,'left-bench');
     assert.equal(await answer(primaryText).count(),1);
-    assert.equal(await answer(siblingText).count(),1);
-    const reply=compose.locator('article[data-source-id="native:'+originals[0].entry+'"]');
+    assert.equal(await answer(siblingText).count(),canonical?0:1);
+    const reply=compose.locator('article[data-source-id="'+primary.source+'"]');
     assert.equal(await reply.count(),1);
     assert.equal(await reply.locator('.reply-text').innerText(),primaryText);
     assert.equal(originals[0].text,playerText);
@@ -392,6 +505,19 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     assert.deepEqual(await worldRequest('result',{id:command.id},original.id),effect);
     assert.equal((await worldRequest('result',{id:command.id},sibling)).ok,false);
     assert.equal((await worldRequest('observe',{},original.id)).ok,false);
+    if(canonical){
+      const storedSibling=await canonical.call('submit',siblingOriginal);
+      originals.push(storedSibling);
+      await canonical.call('admission',{id:sibling});
+      assert.equal((await worldRequest('result',{id:command.id},sibling)).ok,false);
+      const second=await final(sibling,siblingText);
+      assert.notEqual(second.source,primary.source);
+      await keyboard.locator('#talk').click();
+      await waitForAnswer(siblingText);
+      assert.equal(await answer(primaryText).count(),1);
+      assert.equal(await answer(siblingText).count(),1);
+      await keyboard.locator('#conversation-close').click();
+    }
     await touch.reload({waitUntil:'domcontentloaded'});await touch.bringToFront();
     await progress(touch,'¡Jardín completado!');
     assert.equal(await touch.locator('#hud h1').textContent(),'Sala de prueba');
@@ -406,10 +532,12 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     console.error('The original garden effect and Conversation reply were verified');
     await touch.screenshot({path:join(HOLODECK_EVIDENCE_DIR,'reconnected-game.png')});
     assert.deepEqual(errors,[]);
-    const evidence={simulatedActors:true,actualModel:!!modelAnswer,canonicalTransportSimulated:true,touchActions:true,keyboardMovement:true,matchingProgress:true,
+    const evidence={simulatedActors:true,actualModel:!!modelAnswer,canonicalTransportSimulated:!canonical,canonicalNativePeerSimulated:true,canonicalAttachmentFromNativePacket:!!admission,touchActions:true,keyboardMovement:true,matchingProgress:true,
       retainedRoomTopic:original.capture.referredRoomObject.id,nextRoomTopic,
       situatedRoom:original.capture.place.id,initialContributors:original.capture.place.activity.progress.contributors,
-      canonicalOriginals:originals.length,canonicalPosts,machineAttachments:uploads,replyRenderedOnce:true,siblingCompletedFirst:true,
+      ...(admission?{canonicalLocalTurn:admission.localTurn,canonicalNativeTurn:primary.nativeTurn,canonicalNativeItem:primary.nativeItem,
+        canonicalFinalSource:primary.source,canonicalContextSha256:admission.file.sha256,canonicalReplySha256:digest(primaryText)}:{}),
+      canonicalOriginals:originals.length,canonicalPosts,machineAttachments:uploads,replyRenderedOnce:true,siblingCompletedFirst:!canonical,
       sameConversationFrame:true,foreignReceiptDenied:true,receiptRecoveredAfterRelease:true,harnessNativeApproach:modelAnswer?null:nativeApproach,worldReceipt:effect.result,recoveredComplete:recovered.progress.complete};
     writeFileSync(join(HOLODECK_EVIDENCE_DIR,'result.json'),JSON.stringify(evidence,null,2)+'\n');
     console.log(JSON.stringify(evidence));
@@ -417,6 +545,7 @@ const owner='dm:being:v1:'+'m'.repeat(43), guest='human:guest';
     conversation?.closeAllConnections();conversation?.close();
     for(const browser of browsers)await browser.close();runtime?.close();
     if(listener){listener.closeAllConnections();await new Promise(done=>listener.close(done));}
+    await canonical?.close();
     rmSync(dir,{recursive:true,force:true});
   }
 })().catch(error=>{console.error(error);process.exitCode=1});

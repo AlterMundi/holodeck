@@ -238,9 +238,26 @@ Provider and Holodeck NativeBridge. The opaque attachment did not admit any
 work. The ordinary submit admitted exactly one original, preserved the
 attachment and rejected a forged hash. The owner published one final
 under that original after receiving a simulated app-server event.
-The probe uses a fixture identity and peer. The two-browser model trial and
-the real-owner probe are independent. Combining them and verifying an
-actual production round trip remain open.
+The standalone probe uses a fixture identity and peer.
+
+The combined mode uses the same actual Telecodex owner and the installed
+Conversation web client while the browser adapter supplies temporary HTTP
+and identity. The model receives the exact fixture original and full room
+observation sourced from the retained attachment referenced by its actual
+`turn/start` packet. The adapter verifies file ID, MIME, size, hash, byte
+equality and the world CLI descriptor scoped to the original. It waits
+for observed native admission and working status. At the native event
+boundary, the isolated peer sends the model's exact answer and the owner
+publishes it. The browser reads that actual publication and the scoped
+receipt remains recoverable after release. The sibling goes through a
+separate serial turn and cannot read the first receipt.
+
+On 23 November this mode verified the same original across attachment,
+two authorized passages, the model's mint signal, the matching world
+receipt, both Chromium views and one native answer. The foreground model
+was a real Codex participant. The provider peer and its event delivery
+were simulated under the local owner. This does not qualify a production
+native provider or a physical touchscreen.
 
 ```sh
 python3 tools/check-canonical-conversation-owner.py \
@@ -250,9 +267,16 @@ python3 tools/check-canonical-conversation-owner.py \
 The separate routed path still reports transport-accepted work as queued
 until a covering result appears. A route admission alone cannot authorize
 a situated write. Support for writing from an active routed worker needs
-a narrowly scoped running-state observation tied to its exact instruction
-and current native turn. Keep the canonical direct-owner path and terminal
-receipt recovery independently qualified.
+an active-execution observation tied to the exact instruction, selected
+target and current local and physical native turn. See the owning
+Telecodex `input trace` and read-only `routing::session_inputs` path
+for the live run and binding checks. An accept or a persisted running row
+alone cannot grant the write. A fan-out with no selected target keeps its
+queued authority. Recheck the exact active execution immediately before
+mutation. Keep the canonical direct-owner path and terminal receipt
+recovery independently qualified. The in-room world observation provides
+passage and garden state. The model used the typed command contract to
+choose the appropriate interaction.
 
 Use the existing package stage and installed Conversation/Playwright assets.
 Select a task-owned evidence directory and a short-lived loopback certificate
@@ -265,6 +289,14 @@ A foreground model participant uses the scoped CLI and atomically writes
 `answer.json` with `original`, `commandId` and `answer`. The harness
 waits at most four minutes and checks the actual effect before projecting the
 reply. Remove the handoff files after retaining the scoped result.
+
+For the combined mode, also select the Telecodex source and an already built
+release binary with `HOLODECK_TELECODEX_SOURCE` and
+`HOLODECK_TELECODEX_BINARY`. The Python adapter uses the existing
+`conversation_input_control_io.Inputs` fixture to run the actual owner in a
+temporary root with synthetic Telegram, identity and app-server. Keep its
+socket local to the packaged world under test. The mode needs neither a
+provider account nor a deployed receiver configuration.
 The harness overwrites the two captures and one
 structured result in that directory on repeated checks.
 

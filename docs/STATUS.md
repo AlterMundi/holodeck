@@ -9,6 +9,22 @@ and devices, and keep direct use separately attributed when observed.
 
 ## Foreground model qualification
 
+The combined 23 November trial used the packaged world, the installed
+Conversation web client, two Chromium participants and an isolated instance
+of the actual Telecodex owner, Provider and NativeBridge. The desktop moved
+while the owner was receiving the machine attachment. The exact native
+turn/start packet carried the original's immutable foyer and bench reference.
+An independent Codex model used that attachment, crossed two authorized
+passages and filled the missing signal using the native world port. Both
+browsers saw completion. The real owner projected the model's exact answer
+once under the same original after the simulated app-server sent its final
+event. The scoped receipt survived release, and a separate real-owner turn
+could not retrieve it. This combines canonical owner and model effects in
+one isolated workflow. Pair identity, browser HTTP surface and provider
+event transport were fixtures. Production-routed execution and physical
+device evidence remain separate.
+[Combined trial](shared-conversation.md#return-to-the-same-conversation)
+
 An actual Codex model used the scoped world CLI against the isolated two-browser
 trial. It used the original's captured foyer, took two authorized passages from
 outside, and chose the missing mint signal from the live garden state. Its
