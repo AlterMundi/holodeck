@@ -26,6 +26,14 @@ matched all 57 installed files, the authenticated HTTPS client and the exact
 world and room checkpoints. The panel's live access remains restricted to
 its existing recipient. Package `62b735015133` is the compatible rollback.
 
+The instrument repositories independently passed 16 Weaver replay/runtime
+checks and 8 Spatializer preset checks. Synthetic motion produced nonzero
+control targets, a master edit reached the simulated output at the new
+revision, and pause cleared the targets. The Spatializer tests retained
+the mix when restoring a legacy preset and rejected invalid filter values
+before OSC. These are component results. A browser edit from the station
+with instrument readback remains open.
+
 The previous release served source `9e9734a`, package `62b735015133`. The foyer has an inset orientation table,
 west wall bench and joinery under the existing Cycles lighting rig. A simulated
 Chromium visitor walked beside the bench, crossed the gallery door both ways
