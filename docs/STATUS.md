@@ -10,7 +10,19 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`d31150c`, package `c100bf1f9a77`. The package stores 13 pinned atelier GLBs
+`239819d`, package `b7107ba7645e`. A session can keep parsed static art from
+up to three visited rooms. An acknowledged move and matching current presence
+scope remain necessary to show a room. In packaged Chromium with 80 ms added
+latency and 800 kB/s download, the Beacon revisit reached visible geometry in
+0.92 s, compared with 2.98 s for the previous Brotli release. The lab and foyer
+were each fetched once during the revised route. The lab's first visit reached
+visible geometry in 2.92 s. In a separate scenario on the same candidate,
+revoking lab access refused entry and art fetch and kept lab geometry out of
+the gallery. The ordinary round trip landed at the original exterior door
+without a reload. Authenticated HTTPS and exact installed-file and world checks
+passed. Package `c100bf1f9a77` remains the compatible rollback.
+
+The previous release served source `d31150c`, package `c100bf1f9a77`. The package stores 13 pinned atelier GLBs
 once as Brotli and falls back to the exact original decoded bytes. The archive
 fell from 33,536,000 to 26,900,480 bytes. Packaged Chromium recorded 43.6% fewer
 transferred model bytes for the eight selected exterior GLBs and 35.2% fewer

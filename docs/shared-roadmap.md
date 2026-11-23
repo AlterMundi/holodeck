@@ -160,7 +160,11 @@ route transferred 43.6% fewer bytes for selected exterior models and
 35.2% fewer for the foyer, gallery and Beacon lab. Retain the exact
 decoded GLBs, revisioned URLs, identity ranges and authorization on
 both asset paths during the next furniture and terrain pass. Measure
-frame pacing and first-time/revisit latency separately from transfer size.
+frame pacing separately from transfer size. A 6.4 Mb/s Chromium trial with
+80 ms added latency rendered the Beacon lab in 2.92 s on first entry and
+0.92 s on revisit, saving a second 1.61 MB model response. The checked
+previous Brotli package took 2.98 s to render the revisit. Continue exact
+first-visit qualification and frame pacing across the remaining routes.
 
 ### Finish the architecture and props in the running game
 
