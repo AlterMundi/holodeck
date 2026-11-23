@@ -113,6 +113,12 @@ Per-receiver remote qualification and native owner selection remain outstanding.
 as `d76fbd817` after all six applicable CI jobs passed. The selected master
 tree matched the tested head. The routed bridges and compatible native owner
 still require selection and receiving qualification.
+The post-merge ITACA preflight matched the running root listener and bridge
+to their recorded preimages. The qualified root listener includes the exact
+merged production edits. The owner snapshot found a live physical writer.
+Selection therefore uses the established voice fence and exact physical
+collector handoff, followed by observation of the successor collector. The
+preflight submitted no inputs and changed no goals or services.
 
 Source `23de47f`, package `faae992dce4e`, established the HUD input correction. The exterior reference card passes
 pointer input through its inactive margins while its action buttons
