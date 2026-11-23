@@ -168,8 +168,12 @@ outside the existing creation rectangle. The native readback retained the
 published Signal Garden rules, targets and location. The
 [west gallery court](../art/compaii-house/redesign/gallery-island.md)
 replaces the inherited plaza paving with a flush limestone court and adds a
-seaward oak seat beyond the creation rectangle. The inherited island bodies
-remain open for Blender replacement. The
+seaward oak seat beyond the creation rectangle. The
+[near island cliffs](../art/compaii-house/redesign/island-cliffs.md)
+replace the inherited rock and turf of the three near destinations and
+offshore skerries. Their editable surfaces use the same authored basalt and
+meadow family as the Commons. Continue the less resolved shoreline
+composition and measure pacing separately from transfer size. The
 [foyer joinery](../art/compaii-house/redesign/foyer-joinery.md) adds a wall-edge
 bench and a relief of the vestibule route in the existing table. The visitor
 trial checked the room-scoped model, the gallery door in both directions and

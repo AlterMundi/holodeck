@@ -33,7 +33,7 @@ const GALLERY_ISLAND=Object.freeze({asset:'gallery-island.glb',
 const MIRADOR=Object.freeze({asset:'mirador.glb',
   revision:'613c83a5c2a052d22c5868ef7a49c62619ef0f3d546f58178391d1d4f3f0d7b4'});
 const SURROUNDINGS_ASSET='island-scenery-atelier.glb';
-const SURROUNDINGS_REVISION='c2816b18bd97fbe50ef89575e271d4cfd385c93774fe037894ea6724f517809b';
+const SURROUNDINGS_REVISION='9f7113799760fbe5ce1d3707bd808fd0bbf9861b2d9c7de5700da1a02933e138';
 const OUTDOOR_SKY=Object.freeze({asset:'coastal-sky.jpg',
   revision:'2e9a63bbb5eb0e3a60e6144cff155e753211e093ee2870efda480129a01baae8'});
 const COASTAL_RIDGES=Object.freeze({asset:'coastal-ridges.glb',
