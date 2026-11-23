@@ -71,6 +71,19 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+`a2065ca`, package `aded7e3a47ab`; rollback is `6f8b29367e82`.
+The Spatializer and Weaver benches can each request one current service
+status from the existing Harmonic Lab panel. The response is a short,
+expiring summary selected for the current bench. Reading it sends no
+start request. Packaged Chromium verified the two tool summaries, an
+access refusal, and normal panel open/return on desktop and simulated
+touch. The controlled selected Weaver panel separately sent one start
+after explicit activation to a simulated launcher. In production the
+owning status service reported one workstation without a response, so
+physical device readiness and output remain unconfirmed. Protected HTTPS,
+runtime files and tracked world checkpoints matched.
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) previously served source
 `7ab2e36`, package `6f8b29367e82`; rollback is `7961787f8543`.
 Casa's actual owner granted the currently selected paired human garden
 editing in Taller Sensorial. The grant alone was written in production.
