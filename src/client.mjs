@@ -427,7 +427,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
     collectionShelves=new CollectionShelves({base,scene:renderer.mmlCompositionScene.group,panel:document.querySelector('#collection-shelf'),
       archivePanel:document.querySelector('#collection-archive'),worktablePanel:document.querySelector('#collection-worktable'),
-      webgl:renderer.composer.renderer,onReference:(reference,label)=>{
+      webgl:renderer.composer.renderer,onPlaced:()=>say('Modelo seleccionado. Acercate a la mesa.',{transient:true}),onReference:(reference,label)=>{
         if(moving||!inside||!sharedSurface())return;
         worktableTopic={reference,label};openConversation(true);
       }});
@@ -455,8 +455,11 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       cameraState:()=>options.coreCameraManager.getCameraState(),proof:()=>geometryProbe?.snapshot(),
       gallery:()=>inside?(moving||!remoteScene?new Map():contentVisitor.galleryTargets(galleryModels,remoteScene,
         client.getLocalCharacterState()?.position)):null,
+      collection:()=>inside&&!moving&&remoteScene&&activeSpace.collectionShelves?collectionShelves.pickTargets():null,
       onPick:record=>{
-        if(record.kind==='gallery')contentVisitor.openGallery(record.entry).catch(()=>say('No pude abrir esta edición.'));
+        if(record.kind==='collection-shelf')collectionShelves.placeOnTable(record.item,record.edition);
+        else if(record.kind==='worktable-part')collectionShelves.worktable.selectPart(record);
+        else if(record.kind==='gallery')contentVisitor.openGallery(record.entry).catch(()=>say('No pude abrir esta edición.'));
         else if(record.kind==='content')contentVisitor?.openNode(record.node).catch(()=>say('No pude abrir este contenido. Conservé la visita anterior.'));
         else{
           worldIndication?.select(record);

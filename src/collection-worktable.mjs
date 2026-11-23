@@ -84,9 +84,7 @@ export class CollectionWorktable{
     this.section=panel.querySelector('[data-section]');
     this.visibility=panel.querySelector('[data-visibility]');
     this.controls=panel.querySelector('fieldset');
-    this.project.onchange=()=>{
-      this.local=true;this.choose(this.project.value);this.updateSharing();
-    };
+    this.project.onchange=()=>this.chooseLocal(this.project.value);
     this.sceneChoice.onchange=()=>{this.requestedScene=this.sceneChoice.value;this.load(this.requestedScene);};
     this.part.onchange=()=>this.projectModel();
     this.section.oninput=()=>this.projectModel();
@@ -168,6 +166,31 @@ export class CollectionWorktable{
         this.onSharedChange();
       }
     }
+  }
+
+  chooseLocal(selection){
+    if(selection&&!this.editions.some(edition=>edition.selection===selection))return false;
+    this.local=true;
+    if(selection!==this.selection)this.choose(selection);
+    this.updateSharing();
+    return true;
+  }
+
+  fromShelf(edition,pinned){
+    return this.chooseLocal(selectionKey(edition,pinned));
+  }
+
+  partTargets(targets){
+    if(this.panel.hidden||!this.model)return;
+    for(const [id,mesh] of this.model.parts)if(mesh.visible)
+      targets.set(mesh,{kind:'worktable-part',id,mesh});
+  }
+
+  selectPart({id,mesh}){
+    if(this.panel.hidden||!mesh.visible||this.model?.parts.get(id)!==mesh)return;
+    this.details.open=true;
+    this.part.value=id;
+    this.projectModel();
   }
 
   choose(selection){

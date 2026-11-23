@@ -33,8 +33,8 @@ async function modelBytes(base,edition,signal){
 }
 
 export class CollectionShelves {
-  constructor({base,scene,panel,archivePanel,worktablePanel,webgl,onReference}){
-    Object.assign(this,{base,scene,panel,loader:new GLTFLoader()});
+  constructor({base,scene,panel,archivePanel,worktablePanel,webgl,onReference,onPlaced}){
+    Object.assign(this,{base,scene,panel,onPlaced,loader:new GLTFLoader()});
     this.items=new Map();
     this.list=panel.querySelector('ul');
     this.visibleLinks='';
@@ -71,7 +71,8 @@ export class CollectionShelves {
       if(!visible.has(item)){this.removeMesh(item);continue;}
       if(item.edition.representative&&!item.mesh&&!item.pending&&now>=(item.retryAt??0))this.load(item);
     }
-    this.links(nearest.filter(value=>value.distance<=1.85).map(value=>value.item));
+    this.nearby=nearest.filter(value=>value.distance<=1.85).map(value=>value.item);
+    this.links(this.nearby);
     this.archive.update(player);
     this.worktable.update(player,bench,canDiscuss);
   }
@@ -106,7 +107,7 @@ export class CollectionShelves {
       current.add(project.id);
       const existing=this.items.get(project.id),key=editionKey(edition);
       if(existing?.key===key&&existing.edition.title===edition.title){
-        existing.editions=editions;
+        existing.edition=edition;existing.editions=editions;
         continue;
       }
       if(existing)this.remove(existing);
@@ -139,18 +140,41 @@ export class CollectionShelves {
     finally{if(item.pending===controller)item.pending=null;}
   }
 
+  placeOnTable(item,edition){
+    if(!this.nearby?.includes(item)||this.items.get(item.project.id)!==item||
+       !item.editions.includes(edition)||!this.worktable.fromShelf(edition,item.project.restored===true))return;
+    this.onPlaced?.();
+  }
+
+  pickTargets(){
+    const targets=new Map();
+    for(const item of this.nearby??[]){
+      const target={kind:'collection-shelf',item,edition:item.edition};
+      if(item.mesh)targets.set(item.mesh,target);
+      if(item.label.isConnected)targets.set(item.label.getContainer(),target);
+    }
+    this.worktable.partTargets(targets);
+    return targets;
+  }
+
   links(items){
-    const entries=items.flatMap(item=>item.editions);
-    const signature=JSON.stringify(entries.map(edition=>[edition.resource,edition.version,edition.title]));
+    const entries=items.flatMap(item=>item.editions.map(edition=>({item,edition})));
+    const signature=JSON.stringify(entries.map(({item,edition})=>[item.project.id,edition.resource,edition.version,edition.title]));
     if(signature===this.visibleLinks)return;
     this.visibleLinks=signature;
     const doc=this.panel.ownerDocument;
-    this.list.replaceChildren(...entries.map(edition=>{
-      const row=doc.createElement('li'),link=doc.createElement('a');
+    this.list.replaceChildren(...entries.map(({item,edition})=>{
+      const row=doc.createElement('li'),link=doc.createElement('a'),button=doc.createElement('button');
       link.textContent=edition.title;
       link.href='/view/'+edition.resource+'?version='+edition.version+'&display=work';
       link.target='_blank';link.rel='noopener';
-      row.append(link);
+      button.type='button';button.textContent='A la mesa';
+      button.setAttribute('aria-label','Llevar '+edition.title+' a la mesa');
+      button.onclick=()=>{
+        const current=item.editions.find(candidate=>candidate.resource===edition.resource&&candidate.version===edition.version);
+        if(current)this.placeOnTable(item,current);
+      };
+      row.append(link,button);
       return row;
     }));
     this.panel.hidden=entries.length===0;
@@ -171,7 +195,7 @@ export class CollectionShelves {
     this.events?.close();this.events=null;
     this.flight?.abort();this.flight=null;
     for(const item of this.items.values())this.remove(item);
-    this.links([]);this.archive.clear();this.worktable.clear();
+    this.nearby=[];this.links([]);this.archive.clear();this.worktable.clear();
     this.room=null;this.root=null;this.refreshAt=0;
   }
 }

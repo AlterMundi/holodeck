@@ -175,7 +175,10 @@ check. Newly saved Home editions are picked up by the Collection's 12-second
 refresh. A historical edition restored from the archive appears as a distinct
 worktable choice. Sharing it keeps both visitors on that exact version, even
 when a newer edition is current in Home.
-At the worktable, choose a part and select **Conversar sobre esta pieza**.
+At a shelf, touch the miniature or select **A la mesa**, then walk over to
+inspect the model you chose. The review link still opens its precise Home
+edition. At the table, select the visible geometry directly or choose a
+part in the controls, then select **Conversar sobre esta pieza**.
 The Conversation header identifies the reference and lets you remove it.
 The prepared context retains the edition, scene version and part you selected,
 even if the live model changes before you send. The included Home link opens

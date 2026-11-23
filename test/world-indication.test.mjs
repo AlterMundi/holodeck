@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {Group,Mesh,SphereGeometry,BoxGeometry,MeshBasicMaterial} from 'three';
+import {Group,Mesh,SphereGeometry,BoxGeometry,MeshBasicMaterial,Plane,Vector3} from 'three';
 import {PublicWorldPicker} from '../src/world-indication.mjs';
 function fixture({content=false}={}){
  const scene=new Group(),entity=new Group(),cue=new Group();entity.position.z=-3;cue.position.z=-2;
@@ -47,5 +47,19 @@ test('gallery picks require an authorized visible model or sign and respect opaq
  f.picker.gallery=()=>new Map();
  assert.equal(f.picker.pick(50.25,50.25),null);
  assert.equal(f.unavailable,0);
+ f.picker.dispose();
+});
+
+test('a clipped worktable part gives way to the next visible part and scenery still occludes it',()=>{
+ const f=fixture(),first=f.scene.children[1].children[0],behind=f.scene.children[0].children[0];
+ const front={kind:'worktable-part',id:'front',mesh:first},back={kind:'worktable-part',id:'back',mesh:behind};
+ f.picker.collection=()=>new Map([[first,front],[behind,back]]);
+ f.invalidate();
+ assert.equal(f.picker.pick(50.25,50.25),front);
+ first.material.clippingPlanes=[new Plane(new Vector3(0,0,-1),-2.3)];
+ assert.equal(f.picker.pick(50.25,50.25),back);
+ const wall=new Mesh(new BoxGeometry(1,1,.1),new MeshBasicMaterial());
+ wall.position.z=-1;f.scene.add(wall);
+ assert.equal(f.picker.pick(50.25,50.25),null);
  f.picker.dispose();
 });

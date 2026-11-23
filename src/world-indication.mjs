@@ -7,8 +7,8 @@ export function selectionLabel(id,state){
   ?`${node.play?'el juego':'el contenido'} «${node.title}»`:entityLabel(id);
 }
 export class PublicWorldPicker{
- constructor({document,canvas,scene,cameraState,proof,onPick,onUnavailable=()=>{},gallery=()=>null}){
-  Object.assign(this,{document,canvas,scene,cameraState,proof,onPick,onUnavailable,gallery});this.ray=new Raycaster();this.camera=new PerspectiveCamera();this.gesture=null;
+ constructor({document,canvas,scene,cameraState,proof,onPick,onUnavailable=()=>{},gallery=()=>null,collection=()=>null}){
+  Object.assign(this,{document,canvas,scene,cameraState,proof,onPick,onUnavailable,gallery,collection});this.ray=new Raycaster();this.camera=new PerspectiveCamera();this.gesture=null;
   this.down=e=>{this.gesture=e.isPrimary!==false&&e.button===0?{id:e.pointerId,x:e.clientX,y:e.clientY,time:performance.now()}:null;};
   this.move=e=>{if(this.gesture&&Math.hypot(e.clientX-this.gesture.x,e.clientY-this.gesture.y)>6)this.gesture=null;};
   this.cancel=()=>{this.gesture=null;};
@@ -26,15 +26,18 @@ export class PublicWorldPicker{
   this.ray.setFromCamera(new Vector2((x-rect.left)/rect.width*2-1,-(y-rect.top)/rect.height*2+1),this.camera);
   return this.ray.intersectObjects(this.scene.children,true).find(hit=>
     (hit.object.isMesh||hit.object.isSprite)&&!skip(hit.object)&&visible(hit.object)&&
-    [hit.object.material].flat().some(material=>material?.visible&&material.opacity>0))??null;
+    [hit.object.material].flat().some(material=>material?.visible&&material.opacity>0&&
+      !material.clippingPlanes?.some(plane=>plane.distanceToPoint(hit.point)<0)))??null;
  }
  pick(x,y){
-  const gallery=this.gallery();
-  if(gallery){
-   if(!gallery.size)return null;
+  const gallery=this.gallery(),collection=this.collection();
+  if(gallery||collection){
+   if(!gallery?.size&&!collection?.size)return null;
    const hit=this.hit(x,y);
    for(let object=hit?.object;object;object=object.parent){
-    const entry=gallery.get(object);
+    const target=collection?.get(object);
+    if(target)return target;
+    const entry=gallery?.get(object);
     if(entry)return {kind:'gallery',entry};
    }
    return null;
