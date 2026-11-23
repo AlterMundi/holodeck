@@ -16,13 +16,14 @@ environment from the garden route, adjoining house and miniature, workshop
 and separate gallery. The design and rendered views are available for review.
 
 The [shared Home entrance](https://compaii.dmn.homes/holodeck/) now selects
-`compaii-atelier-v1` from source `378af4a`, runtime package `c8f4eb5a011f`,
+`compaii-atelier-v1` from source `cade668`, runtime package `27501f434aab`,
 with Plaza de llegada as the initial scene label and the signal-garden
 editor for authenticated creators. All 40 installed files and the HTTPS
 client matched. Room, houses, exhibits, receiving selection and the native
 turn journal were byte-identical across the update. The directly usable
-predecessor is `a286c3c0a36e`. A cross-version fixture verified that it reads
-gardens saved by the new release and lets participants still play them.
+predecessor is `c8f4eb5a011f`. A cross-version fixture also verified that the
+earlier `a286c3c0a36e` reads gardens saved by the editor and still lets
+participants play them.
 
 The preceding atelier deployment matched all 40 installed
 inventory entries. The decoded client, Brotli representation, health and
@@ -65,8 +66,8 @@ Served health, script and HTML matched at the receiver. Anonymous requests
 remain subject to sign-in and current audience checks. Actual instrument
 readiness or actuation, and shared device and human acceptance remain open.
 
-The owning writer retired thirteen superseded generated Holodeck runtime
-archives across these updates. Its three retained packages total 90,849,280 bytes within the
+The owning writer retired fourteen superseded generated Holodeck runtime
+archives across these updates. Its three retained packages total 90,869,760 bytes within the
 96 MiB history budget, including the deployed current and rollback.
 
 The Blender art package includes the self-contained room GLBs. The
@@ -115,7 +116,11 @@ signals, choose their colors and collaboration rule, and preview before
 publishing. The edited revision is still owned by the original actor.
 Controlled Chromium used two browser identities to verify the private
 preview, visible published and edited revisions, foreign edit exclusion and
-cancelled changes. Human co-editing on the deployed world is still open.
+cancelled changes. A 390px Chromium touch fixture moved the avatar with
+the joystick while editing, used the touch buttons, and repeated that
+create/edit/cancel flow. Hit testing at 320, 390 and 740px confirmed that the
+status badge does not cover the button. Human co-editing and a physical
+phone trial on the deployed world are still open.
 
 Isolated Chromium walked from the normal exterior spawn to the east garden,
 past the miniature, through the original house entrance and into the foyer,
