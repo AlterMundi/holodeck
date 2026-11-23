@@ -55,6 +55,20 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+`1f4a383`, package `c5bbc4efbe77`. The gallery now has an oak drafting
+bench, a stone and bronze central pedestal, and a flat-file archive. Both
+room variants retain the same display anchors, colliders and material batch
+counts. In the packaged Chromium trial, the permitted visitor walked the
+open room. A separate limited visitor walked the sealed floor and could
+not retrieve the open asset. A browser fixture then loaded the candidate
+geometry with three authorized edition models, opened an exact edition from
+its title plaque, returned to the same position and removed the archived
+item after revocation. The served assets and 59-file inventory matched.
+The retained world checkpoint kept its digests. The package is 29,992,960
+bytes. Rollback is `e0d22d459d58`.
+[Matched player-height comparison](../art/compaii-house/redesign/README.md#gallery-exhibition-bays)
+
+The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
 `ecb2082`, package `e0d22d459d58`. In the gallery each authorized display
 shows its stage and the title from the exact Nexus descriptor. Either line of
 the plaque opens the corresponding edition. Long names fit the physical plaque,
