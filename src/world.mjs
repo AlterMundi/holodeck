@@ -97,6 +97,11 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
     const revision=/^[a-f0-9]{64}$/.test(commonsVisual.revision)?'?v='+commonsVisual.revision.slice(0,12):'';
     out+=`<m-model id="authored-commons" src="${attribute(prefix+'assets/'+commonsVisual.asset+revision)}" collide="false"></m-model>`+
       commonsVisual.colliders;
+    const sign=commonsVisual.wayfinding;
+    if(assetFile(sign?.asset)&&/^[a-f0-9]{64}$/.test(sign.revision)){
+      const source=prefix+'assets/'+sign.asset+'?v='+sign.revision.slice(0,12);
+      out+=`<m-model id="commons-wayfinding" src="${attribute(source)}" collide="false" cast-shadows="false"></m-model>`;
+    }
   }
   out+=gardenModel(gardenVisual,prefix);
   // Flat walking proxies keep y=.1, at most3cm above layered visual ground.
