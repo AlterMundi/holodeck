@@ -67,8 +67,10 @@ grant visitors access until it is published. See
 
 For a shared game, the owner can [grant the currently paired human indoor
 garden authoring](playable-creations.md#design-an-interior-garden-with-the-paired-human)
-in a single eligible room. House plan and exhibit publication use their own
-authority.
+in a single eligible room. For a room you own, use
+[`garden.templates` and `garden.draft`](playable-creations.md#start-with-a-room-template)
+to start with a playable recipe. House plan and exhibit publication use their
+own authority.
 
 ## Read recent world activity
 

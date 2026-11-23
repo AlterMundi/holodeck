@@ -37,7 +37,7 @@ body:has(#beacon-panel[open]) .touch-controls{visibility:hidden;pointer-events:n
 @media(max-width:740px){#beacon-panel{width:calc(100vw - 16px);height:calc(100dvh - 16px);padding:8px;border-radius:14px}#beacon-panel h2{font-size:20px}}
 #signal-editor{position:fixed;z-index:26;right:20px;bottom:105px;width:335px;max-width:calc(100vw - 40px);max-height:min(65dvh,540px);overflow:auto;padding:16px;border-radius:16px}
 #signal-editor label{display:block;margin:8px 0}#signal-editor input:not([type=checkbox]),#signal-editor select{padding:6px;color:var(--ink);background:#102d31;border:1px solid var(--line);border-radius:8px;font:inherit}
-#signal-title{width:100%}#signal-targets{list-style:none;padding:0;margin:8px 0}#signal-targets li{display:flex;align-items:center;gap:8px;margin:4px 0}#signal-editor button,#garden-create{min-height:44px}
+#signal-template-tools[hidden]{display:none}#signal-title{width:100%}#signal-targets{list-style:none;padding:0;margin:8px 0}#signal-targets li{display:flex;align-items:center;gap:8px;margin:4px 0}#signal-editor button,#garden-create{min-height:44px}
 body:has(#signal-editor:not([hidden])) #play-near,body:has(#signal-editor:not([hidden])) #pointing{display:none}
 #indoor-design-tools{position:fixed;z-index:22;right:14px;bottom:140px;display:grid;justify-items:end;gap:6px}
 #indoor-design-tools button{min-height:44px}
@@ -251,6 +251,10 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
   <h2 id="signal-heading">Jardín de señales</h2>
   <div id="signal-fields">
     <p>Caminá hasta cada punto y agregá una señal. La vista previa es tuya hasta guardar.</p>
+    <div id="signal-template-tools" class="row" hidden>
+      <label>Diseño inicial <select id="signal-template"></select></label>
+      <button id="signal-template-apply" type="button">Usar diseño</button>
+    </div>
     <label>Nombre <input id="signal-title" maxlength="40" required></label>
     <label>Colaboradores <input id="signal-minimum" type="number" min="1" max="8" required></label>
     <label><input id="signal-bridge" type="checkbox"> Requiere conectar las islas</label>

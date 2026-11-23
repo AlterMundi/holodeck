@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import {signalGardenProgress} from './playable-creations.mjs';
 import {workshopColour} from './workshop.mjs';
-import {validIndoorGardenRecipe} from './indoor-garden-recipe.mjs';
+import {indoorGardenTemplates,validIndoorGardenRecipe} from './indoor-garden-recipe.mjs';
 
 export const INDOOR_GARDEN_BYTES=64*1024;
 const SCHEMA='holodeck.indoor-gardens/v1';
@@ -94,6 +94,19 @@ export class IndoorGardens {
     if(this.fenced||!actor?.rights?.includes('observe')||!safeId(id))return null;
     const receipt=this.state.receipts.find(entry=>entry.id===id&&entry.actor===actor.id);
     return receipt&&this.spaces.allows(actor,receipt.result.room)?structuredClone(receipt.result):null;
+  }
+
+  draft(actor,input){
+    if(this.fenced||actor?.kind!=='daimon'||!actor.rights?.includes('observe')||
+       !actor.rights.includes('edit')||this.owner(input.room)!==actor.id)return null;
+    if(input.type==='garden.templates'&&exact(input,'room,type'))
+      return {room:input.room,templates:indoorGardenTemplates()};
+    if(input.type!=='garden.draft'||!exact(input,'id,room,template,type'))return null;
+    const preset=indoorGardenTemplates().find(template=>template.id===input.template);
+    if(!preset)return null;
+    const command={type:'garden.put',id:input.id,room:input.room,expectedRevision:this.current(input.room)?.revision??null,
+      title:preset.title,play:preset.play};
+    return this.act(actor,command,{preview:true})?{command}:null;
   }
 
   act(actor,input,{preview=false,delegated=false}={}){

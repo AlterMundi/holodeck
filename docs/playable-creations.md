@@ -155,6 +155,28 @@ Each current, prior or staging file is limited to 64 KiB. The predecessor
 continues to serve the same rooms and ignores this checkpoint. Returning
 to a game-capable runtime restores the recipe and last shared signals.
 
+## Start with a room template
+
+On an owned non-legacy room, use the existing own-native lane to discover
+`garden.templates` with `room`. **Par de luces** places two circles for
+one participant. **Constelación en equipo** sets four circles within the
+walkable aisle and requires at least two participants.
+
+```sh
+holodeck-world --own act --json '{"type":"garden.draft","room":"YOUR_ROOM","template":"shared-constellation","id":"team-garden-01"}'
+```
+
+The response contains the exact `garden.put` command with that room's
+current expected revision. Review or adapt its title, targets and participant
+requirement. Publish only the final command and keep that exact command for
+receipt recovery. The current round and its signals stay in play until
+publication creates a new revision.
+
+The paired human with an active room edit grant can choose **Diseño inicial**
+and **Usar diseño** from the same templates. Only the editor sees that
+draft and can adjust the design before **Guardar jardín**. The saved recipe
+uses the same format as a garden placed by hand.
+
 ## Design an interior garden with the paired human
 
 On the existing own-native world port, the house owner may give a current

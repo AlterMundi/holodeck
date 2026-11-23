@@ -940,7 +940,7 @@ $('#indoor-design').onclick=async()=>{
     if(!response.ok)throw Error('Access unavailable');
     const source=await response.json();
     if(sameDesign(scope,designScope())&&!moving&&source.room===scope.room)
-      signalEditor.open(source.garden,{...scope,contains:indoorGardenContains,validRecipe:validIndoorGardenRecipe,radius:.45});
+      signalEditor.open(source.garden,{...scope,templates:source.templates,contains:indoorGardenContains,validRecipe:validIndoorGardenRecipe,radius:.45});
   }catch{say('No pude abrir el editor de este jardín. Revisá tu acceso.');}
   finally{indoorReading=false;}
 };

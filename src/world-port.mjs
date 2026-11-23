@@ -132,7 +132,7 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
              (request.args.type==='design.result'&&fields!=='id,type'))throw Error('Invalid room design lookup');
           result=roomDesign?.(actor,request.args);
           if(!result)throw Error('Room design unavailable');
-        }else if(request.operation==='act'&&['garden.preview','garden.put','garden.signal','garden.result',
+        }else if(request.operation==='act'&&['garden.templates','garden.draft','garden.preview','garden.put','garden.signal','garden.result',
           'garden.editor.current','garden.editor.set'].includes(request.args.type)){
           if(!own||(request.args.type==='garden.result'&&Object.keys(request.args).sort().join(',')!=='id,type'))
             throw Error('Indoor gardens require an own-native route');

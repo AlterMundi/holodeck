@@ -10,6 +10,9 @@ export class SignalGardenEditor{
     Object.assign(this,{document,position,save,remove,preview,allowed});
     const at=id=>document.getElementById(id);
     this.form=at('signal-editor');this.list=at('signal-targets');this.notice=at('signal-notice');
+    this.templateTools=at('signal-template-tools');this.template=at('signal-template');
+    this.applyTemplate=at('signal-template-apply');
+    this.applyTemplate.onclick=()=>this.useTemplate();
     this.title=at('signal-title');this.minimum=at('signal-minimum');this.bridge=at('signal-bridge');
     this.add=at('signal-add');this.publish=at('signal-save');this.cancel=at('signal-cancel');
     this.heading=at('signal-heading');this.fields=at('signal-fields');
@@ -33,6 +36,11 @@ export class SignalGardenEditor{
     const position=mode?avatar:node?.position??(avatar&&nearestCreationPosition(avatar.x,avatar.z));
     if(!position)return;
     this.draft={node,mode,position,target:node?.id??'node-'+crypto.randomUUID(),targets:structuredClone(node?.play.targets??[])};
+    const templates=mode?.templates??[];
+    this.template.replaceChildren(...templates.map(({id,title})=>{
+      const option=this.document.createElement('option');option.value=id;option.textContent=title;return option;
+    }));
+    this.templateTools.hidden=!templates.length;
     this.title.value=node?.title??'Jardín de señales';
     this.minimum.value=node?.play.minContributors??2;
     this.bridge.checked=node?.play.requiredBridgeRaised===true;
@@ -40,6 +48,18 @@ export class SignalGardenEditor{
     if(bridgeLabel)bridgeLabel.hidden=!!mode;
     this.notice.textContent='';
     this.form.hidden=false;this.render();this.title.focus();
+  }
+
+  useTemplate(){
+    const {mode,pendingId,stale,confirming}=this.draft??{};
+    if(this.saving||pendingId||stale||confirming)return;
+    const selected=mode?.templates?.find(template=>template.id===this.template.value);
+    if(!selected||!mode.validRecipe(selected.play))return;
+    this.draft.targets=structuredClone(selected.play.targets);
+    this.title.value=selected.title;
+    this.minimum.value=selected.play.minContributors;
+    this.notice.textContent='';
+    this.render();
   }
 
   recipe(){

@@ -1,3 +1,4 @@
+import {indoorGardenTemplates} from './indoor-garden-recipe.mjs';
 import {COMPAII_HOUSE,interiorArt} from './interior-art.mjs';
 import {ATELIER_EXPANSION_WRITES,ATELIER_PROFILE,matchesAtelierLayout,packedExteriorArt,selectAtelier} from './compaii-atelier.mjs';
 import {RoomExhibits,EXHIBIT_SAVE_BYTES} from './room-exhibits.mjs';
@@ -475,6 +476,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       }
       return selected;
     }
+    if(input.type==='garden.templates'||input.type==='garden.draft')return indoorGardens.draft(actor,input);
     if(input.type==='garden.result')return indoorGardens.result(actor,input.id);
     if(input.type==='garden.preview')return indoorGardens.act(actor,{...input,type:'garden.put'},{preview:true});
     try{return indoorGardens.act(actor,input,{delegated});}
@@ -719,7 +721,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const id=req.query.room;
     if(!await gardenEditor(req,id))return res.sendStatus(403);
     const current=indoorGardens.current(id);
-    res.json({room:id,garden:current?{room:id,title:current.title,revision:current.revision,play:current.play}:null});
+    res.json({room:id,garden:current?{room:id,title:current.title,revision:current.revision,play:current.play}:null,
+      templates:indoorGardenTemplates()});
   }));
   app.post(route('api/space/garden'),asyncRoute(async(req,res)=>{
     if(spaces.fenced||room.commitUncertain)return res.sendStatus(503);

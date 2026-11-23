@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import {JSDOM} from 'jsdom';
+import {indoorGardenTemplates,validIndoorGardenRecipe} from '../src/indoor-garden-recipe.mjs';
 import {SignalGardenEditor} from '../src/signal-garden-editor.mjs';
 
 const html=readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
@@ -64,4 +65,23 @@ test('retirement requires explicit confirmation and rechecks the selected revisi
   assert.deepEqual(retired,[[node.id,node.revision]]);
   editor.settle('accepted-removal','completed');
   assert.equal(at('signal-editor').hidden,true);
+});
+
+test('an indoor template seeds only the private draft and allows changes before saving',async t=>{
+  const calls=[];
+  const {editor,at}=fixture(t,{save:async (_node,args)=>calls.push(args)});
+  const templates=indoorGardenTemplates();
+  assert.ok(templates.every(template=>validIndoorGardenRecipe(template.play)));
+  editor.open(null,{templates,validRecipe:validIndoorGardenRecipe});
+  assert.equal(at('signal-template-tools').hidden,false);
+  at('signal-template').value='shared-constellation';
+  at('signal-template-apply').click();
+  assert.equal(at('signal-title').value,'Constelación en equipo');
+  assert.equal(at('signal-minimum').value,'2');
+  assert.equal(at('signal-targets').children.length,4);
+  assert.deepEqual(calls,[]);
+  at('signal-title').value='Nuestro juego';
+  await editor.submit();
+  assert.equal(calls[0].title,'Nuestro juego');
+  assert.deepEqual(calls[0].play,templates.find(template=>template.id==='shared-constellation').play);
 });

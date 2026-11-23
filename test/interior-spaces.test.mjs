@@ -471,8 +471,17 @@ test('own-native layout publication adds a live guest route and survives process
     assert.equal(newRound.result.revision,2);
     assert.equal((await request(visitor,'space/garden',{...signal,id:'stale-signal-1'})).status,409);
     assert.equal((await get(visitor,gardenPath)).progress.filledTargets,0);
-    const galleryGame={...game,id:'receive-gallery-game',room:'gallery',title:'One violet signal',
-      play:{schema:'signal-garden/v1',minContributors:1,targets:[{x:0,z:2,radius:.55,color:'violet'}]}};
+    const optionsRequest={type:'garden.templates',room:'gallery'};
+    assert.equal((await act(optionsRequest,foreignPath)).ok,false);
+    assert.deepEqual((await act(optionsRequest)).result.templates.map(template=>template.id),
+      ['light-pair','shared-constellation']);
+    const templateRequest={type:'garden.draft',id:'receive-gallery-game',room:'gallery',template:'shared-constellation'};
+    assert.equal((await act(templateRequest,foreignPath)).ok,false);
+    assert.equal((await act({...templateRequest,template:'missing'})).ok,false);
+    const {command:galleryGame}=(await act(templateRequest)).result;
+    assert.equal(galleryGame.expectedRevision,null);
+    assert.equal(galleryGame.play.targets.length,4);
+    assert.equal(galleryGame.play.minContributors,2);
     assert.equal((await act(galleryGame)).ok,true);
     assert.equal((await request(visitor,'space/garden?room=gallery')).status,404);
     assert.equal((await request(visitor,'space',{from:'foyer',to:'gallery',live:1})).status,200);
@@ -583,7 +592,10 @@ test('an explicitly granted, currently paired human publishes with their own ind
     pair='dm:being:v1:'+'p'.repeat(43);
     assert.equal((await request(granted,edit)).status,403);
     pair=owner;
-    assert.deepEqual(await (await request(granted,edit)).json(),{room:main,garden:null});
+    const editor=await (await request(granted,edit)).json();
+    assert.equal(editor.room,main);
+    assert.equal(editor.garden,null);
+    assert.equal(editor.templates[0].play.targets.length,2);
     const published=await request(granted,game,recipe);
     assert.equal(published.status,200);
     const receipt=await published.json();
