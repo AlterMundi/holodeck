@@ -152,15 +152,25 @@ Live human Conversation delivery from the workshop remains to be observed.
 In a newer isolated selected-worker trial, the native return lane received
 the exact part from the real owner fixture's original. The world accepted
 a scoped action and the installed client showed the matching final once.
-The overall check stopped on short landscape, where four of six reply
-lines were visible at once. This candidate remains unselected.
+The short landscape panel was widened after the first check clipped two
+lines. The rerun showed the whole reply at 1000×700, 390×844, 375×667 and
+844×430. The close control stayed reachable. Two distinct browser actors
+observed the action, a third actor was denied its receipt and the original
+actor recovered the completed receipt after leaving and returning. The
+existing Conversation owner and native transport ran with simulated actors
+and a scripted native worker.
 [Room and source contract](houses.md#the-collection)
 
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`4e0140b`, package `717ab15e74b7`, with `17703a02cdef` as compatible rollback.
-Manipulación de Materia uses the finished Blender revision with embedded stone,
+`372644a`, package `52e35e6d6b2a`, with `717ab15e74b7` as compatible rollback.
+The selected release includes exact worktable references on their native
+return lane and the short landscape Conversation adjustment. Readback matched
+64 installed payloads, 20 protected HTTPS responses and eight scope denials.
+The protected world checkpoints matched their pre-release hashes.
+
+Package `717ab15e74b7` used source `4e0140b`. Manipulación de Materia uses the finished Blender revision with embedded stone,
 oak and limewash textures, dressed windows, cabinetry and wayfinding. The
 static export reduces the unbatched design from 122 to 20 render primitives
 and serves as a 103,572-byte Brotli asset. The same browser route qualified

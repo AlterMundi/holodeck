@@ -357,3 +357,9 @@ edition, scene and part in the prepared attachment. Later changes to the
 table do not replace it. This observation grants no Home viewer permission
 and provides no geometry. Other originals and ordinary room observation
 do not include the speaker's reference.
+
+In a short landscape viewport, the workshop Conversation panel uses the
+available horizontal space within the display safe area. The regular
+side panel and the phone portrait rules continue to follow their respective
+layout constraints. The selected-worker browser fixture checked the full
+reply and its close control at four viewport sizes.
