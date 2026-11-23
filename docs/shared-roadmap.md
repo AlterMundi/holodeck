@@ -325,6 +325,26 @@ contract under their own source access and device authority.
 
 Spatial adjacency is not a support/contradiction relation. Knowledge graphs and source history stay with their providers. Room's recent events are not permanent knowledge history. A visible portal never grants source access. No second chat, source registry, world per daimon or master Project is required.
 
+## Blockout-led appearance study — 23 November 2026
+
+Nicolás proposed supplying a simple Blender scene and each object's visual
+references to an image generator, producing matching views from known cameras,
+and fitting a Gaussian splat for the room appearance. Evaluate a single
+walkable corner of Manipulación de Materia first, with the existing room export
+as the reference route. Keep the same room coordinates and use the same
+camera poses, depth and object masks to constrain generated detail. Generate
+an overlapping sequence around furniture and door frames and reserve views
+that the fit has never seen. Measure held-out alignment, visual stability
+while walking, cold load, frame time and peak memory. Keep room collisions,
+moving participants, review models and interactive signage on their existing
+authoritative representations. The experiment can also compare reprojecting
+the generated appearance onto Blender surfaces within the same room budget.
+
+The [original Gaussian splatting paper](https://arxiv.org/abs/2308.04079) uses
+calibrated views and sparse geometry. [ViewCrafter](https://arxiv.org/abs/2409.02048)
+demonstrates trajectory-conditioned novel-view synthesis. Neither source
+verifies a Holodeck asset or performance on the target browser.
+
 ## Delivery sequence and cards
 
 The roadmap stages retain their individual exit evidence. For Holodeck,

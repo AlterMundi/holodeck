@@ -149,6 +149,11 @@ this two-browser test were fixtures. On 23 November Nicolás reported
 using the deployed Matter room and seeing a historical item move from the
 archive to a shelf. This is direct human-reported use of that restoration.
 Live human Conversation delivery from the workshop remains to be observed.
+In a newer isolated selected-worker trial, the native return lane received
+the exact part from the real owner fixture's original. The world accepted
+a scoped action and the installed client showed the matching final once.
+The overall check stopped on short landscape, where four of six reply
+lines were visible at once. This candidate remains unselected.
 [Room and source contract](houses.md#the-collection)
 
 ## Selected receiving release
