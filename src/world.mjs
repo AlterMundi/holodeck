@@ -143,14 +143,21 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
      </m-group>`;
      continue;
     }
+    const island=commonsVisual?.galleryIsland;
+    const authored=assetFile(island?.asset)&&/^[a-f0-9]{64}$/.test(island.revision);
+    if(authored){
+      const source=prefix+'assets/'+island.asset+'?v='+island.revision.slice(0,12);
+      out+=`<m-model id="gallery-island" src="${attribute(source)}" collide="false"></m-model>`;
+    }
+    const shell=authored?' opacity="0" cast-shadows="false"':'';
     out+=`<m-group id="content-reading-room" x="${x}" y="${y}" z="${z}" data-content-node="reading-room">
-      <m-cylinder radius="1.05" height=".15" y=".08" color="#536c70"></m-cylinder>
-      <m-cylinder radius=".8" height=".06" y=".18" color="#eed19b"></m-cylinder>
-      <m-cube x="-.66" y="1.05" width=".15" height="1.7" depth=".22" color="#bc8355"></m-cube>
-      <m-cube x=".66" y="1.05" width=".15" height="1.7" depth=".22" color="#bc8355"></m-cube>
-      <m-cube y="1.85" width="1.48" height=".15" depth=".22" color="#eed19b"></m-cube>
-      <m-cube y="1.03" width="1.1" height="1.24" depth=".08" color="#8ce4c2" collide="false"></m-cube>
-      ${sign({y:2.2,text:"Sala de presentaciones",size:18,width:2.5,height:.4})}
+      <m-cylinder radius="1.05" height=".15" y=".08" color="#536c70"${shell}></m-cylinder>
+      <m-cylinder radius=".8" height=".06" y=".18" color="#eed19b"${shell}></m-cylinder>
+      <m-cube x="-.66" y="1.05" width=".15" height="1.7" depth=".22" color="#bc8355"${shell}></m-cube>
+      <m-cube x=".66" y="1.05" width=".15" height="1.7" depth=".22" color="#bc8355"${shell}></m-cube>
+      <m-cube y="1.85" width="1.48" height=".15" depth=".22" color="#eed19b"${shell}></m-cube>
+      ${authored?'':`<m-cube y="1.03" width="1.1" height="1.24" depth=".08" color="#8ce4c2" collide="false"></m-cube>
+      ${sign({y:2.2,text:"Sala de presentaciones",size:18,width:2.5,height:.4})}`}
     </m-group>`;
    }
   }

@@ -55,6 +55,12 @@ test('profile is optional and uses the exact existing room graph and parcel edit
   assert.deepEqual(plots(authored),plots(fallback));
   assert.match(authored,/<m-model id="parcel-garden" src="\/holodeck\/assets\/parcel-garden\.glb\?v=[a-f0-9]{12}" collide="false">/);
   assert.doesNotMatch(fallback,/parcel-garden\.glb/);
+  assert.match(authored,/<m-model id="gallery-island" src="\/holodeck\/assets\/gallery-island\.glb\?v=[a-f0-9]{12}" collide="false">/);
+  const visit=markup=>markup.match(/<m-group id="content-reading-room"[^>]+>[\s\S]+?<\/m-group>/)[0];
+  assert.equal(visit(authored).match(/opacity="0" cast-shadows="false"/g).length,5);
+  assert.match(visit(authored),/x="-22" y="0.1" z="3" data-content-node="reading-room"/);
+  assert.doesNotMatch(fallback,/gallery-island\.glb/);
+  assert.doesNotMatch(worldDocument(exterior,{...profile,includeVisits:false}),/gallery-island\.glb|content-reading-room/);
   const garden=authored.match(/<m-group id="parcel-garden-colliders">([^]*?)<\/m-group>/)[1];
   const obstacles=[...garden.matchAll(/<m-cube x="([^"]+)" y="[^"]+" z="([^"]+)" width="([^"]+)" height="[^"]+" depth="([^"]+)"/g)];
   assert.equal(obstacles.length,3);

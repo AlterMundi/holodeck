@@ -27,6 +27,8 @@ const PARCEL_TERRAIN=Object.freeze({asset:'parcel-terrace.glb',
   revision:'133477adceacc91d138bc025d2e72bf626b1c6abe39498c3af075976fff3372e'});
 const PARCEL_GARDEN=Object.freeze({asset:'parcel-garden.glb',
   revision:'bc6d9755145d2ea5969e8c07abf2e643026867d718e75d62e0a004f3e6d22ac0'});
+const GALLERY_ISLAND=Object.freeze({asset:'gallery-island.glb',
+  revision:'b1eab19de3c578ac4276a1ce9279bcbc13bcb9e1723dcb69afbe3d883380a3c1'});
 const SURROUNDINGS_ASSET='island-scenery-atelier.glb';
 const SURROUNDINGS_REVISION='694d83c8ba05d59b062fa7cf0f816461ddb9f8bdff3609549f0f932fa28f69b0';
 const OUTDOOR_SKY=Object.freeze({asset:'coastal-sky.jpg',
@@ -47,6 +49,7 @@ export const ATELIER_ASSET_REVISIONS=Object.freeze({
   ['assets/'+HOUSE_WALK.asset]:HOUSE_WALK.revision,
   ['assets/'+PARCEL_TERRAIN.asset]:PARCEL_TERRAIN.revision,
   ['assets/'+PARCEL_GARDEN.asset]:PARCEL_GARDEN.revision,
+  ['assets/'+GALLERY_ISLAND.asset]:GALLERY_ISLAND.revision,
   ['assets/'+SURROUNDINGS_ASSET]:SURROUNDINGS_REVISION,
   ['assets/'+OUTDOOR_SKY.asset]:OUTDOOR_SKY.revision,
   ['assets/'+COASTAL_RIDGES.asset]:COASTAL_RIDGES.revision,
@@ -64,7 +67,8 @@ const parcelGarden={...PARCEL_GARDEN,colliders:[
   {x:-7.73,y:.791,z:15.35,w:.272,h:1.382,d:.270},
   {x:-7.75,y:.732,z:21.16,w:.246,h:1.264,d:.244},
 ].map(box).join('')};
-const commonsVisual={asset:COMMONS_ASSET,revision:COMMONS_REVISION,wayfinding:WAYFINDING,houseWalk:HOUSE_WALK,parcelTerrain:PARCEL_TERRAIN,parcelGarden,colliders:[
+const commonsVisual={asset:COMMONS_ASSET,revision:COMMONS_REVISION,wayfinding:WAYFINDING,houseWalk:HOUSE_WALK,
+  parcelTerrain:PARCEL_TERRAIN,parcelGarden,galleryIsland:GALLERY_ISLAND,colliders:[
   {x:-9.11,y:1.30,z:-2.87,w:.34,h:2.45,d:.34},
   {x:-9.11,y:1.30,z:-4.50,w:.34,h:2.45,d:.34},
   {x:-8.73,y:.29,z:-3.68,w:.59,h:.43,d:1.54},

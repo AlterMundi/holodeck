@@ -14,6 +14,7 @@ The long, cooler gallery gives visitors room to look and pass one another.
 - [The walk from the plaza to the house](house-walk.md)
 - [Parcel terrace and coastline](parcel-terrace.md)
 - [West verge garden and path](parcel-garden.md)
+- [Outdoor gallery island and presentation pavilion](gallery-island.md)
 - [Harmonic Beacon workshop from the stair](review/beacon.jpg)
 - [Architecture of the collection room](review/gallery.jpg)
 
