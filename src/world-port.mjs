@@ -27,7 +27,10 @@ function situatedInterior({request,verified,actor,room,conversationPlace,indoorG
       }
     }
     return {schema:'holodeck.space-observation/v1',run:room.run,edition:room.edition,
-      observer:actor.id,space:captured,actions,...(approach?{approach}:{})};
+      observer:actor.id,space:captured,actions,...(approach?{approach}:{}),
+      // This is the selection attached to the admitted original. Ordinary room
+      // observation does not grant the participant access to a Home review.
+      ...(verified.referredWorktable?{referredWorktable:verified.referredWorktable}:{})};
   }
   const {nativeRequest,...command}=args;
   const commandFields=Object.keys(command).sort().join(',');

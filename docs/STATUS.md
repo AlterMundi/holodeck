@@ -145,8 +145,10 @@ actors, and prepared an exact selected part in the existing Conversation
 protocol. Revoking historical permission removed the model only for the
 affected actor, who could still receive the current 34,000-triangle edition
 when it was shared. The Conversation receiver and Home access decisions in
-this two-browser test were fixtures. Live human Conversation delivery from
-the workshop remains to be observed.
+this two-browser test were fixtures. On 23 November Nicolás reported
+using the deployed Matter room and seeing a historical item move from the
+archive to a shelf. This is direct human-reported use of that restoration.
+Live human Conversation delivery from the workshop remains to be observed.
 [Room and source contract](houses.md#the-collection)
 
 ## Selected receiving release

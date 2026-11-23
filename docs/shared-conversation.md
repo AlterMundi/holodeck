@@ -349,3 +349,11 @@ Room access alone does not authorize an exact protected gallery reference as
 a Conversation attachment. The visitor catalog checks Nexus with the human
 visitor's session. Sharing the edition locator with a paired being requires
 an independent check of that being's access to the exact table and version.
+
+
+A Matter worktable reference from an admitted original is available on that
+original's active native return lane as `referredWorktable`. It matches the
+edition, scene and part in the prepared attachment. Later changes to the
+table do not replace it. This observation grants no Home viewer permission
+and provides no geometry. Other originals and ordinary room observation
+do not include the speaker's reference.

@@ -1,4 +1,5 @@
 import {once} from 'node:events';
+import {createConnection} from 'node:net';
 import {mkdirSync,mkdtempSync,rmSync,writeFileSync} from 'node:fs';
 import {createHash,randomUUID} from 'node:crypto';
 import {tmpdir} from 'node:os';
@@ -60,6 +61,16 @@ test('collection projects stay grouped and editions follow each visitor and thei
   const archivedThumbnail='/api/space/collection-model/'+main+'/'+oldVersion;
   let revoked=false,unavailable=false,hold,expiredSession=false,mainVersion=version,historicalDenied=false;
   const requests=[];
+  const socket=join(stateDir,'native.sock'),otherPort=join(stateDir,'foreign.sock');
+  let admitted=true;
+  async function observe(port,id){
+    const channel=createConnection(port);
+    await once(channel,'connect');
+    channel.write(JSON.stringify({interactionId:id,operation:'observe',args:{}})+'\n');
+    let reply='';
+    for await(const chunk of channel)reply+=chunk;
+    return JSON.parse(reply);
+  }
   const runtime=await createHolodeck({
     stateDir,publicOrigin:'https://home.test',matterCollection:{...selected,art:'matter-workshop-v1',archive:archived},
     interiorSpaces:[{id:'matter',house,title:'Manipulación de Materia',entry:true,level:0,guests:['human:guest'],links:[]}],
@@ -69,10 +80,13 @@ test('collection projects stay grouped and editions follow each visitor and thei
         req.headers.cookie?.includes('__Host-home=guest')?{id:'human:guest',ref:user,kind:'human',rights:['observe']}:null;
     },
     nativeRoomAuthority:async()=>['observe'],
-    nativeFactory:async({room,stateDir,allowInteriorSource})=>({contexts:await createConversationContexts({
+    worldPorts:[{socket,beingRef:owner},{socket:otherPort,beingRef:'dm:being:v1:'+'k'.repeat(43)}],
+    nativeFactory:async({room,stateDir,allowInteriorSource})=>{
+      const contexts=await createConversationContexts({
       room,stateDir:join(stateDir,'contexts'),allowInteriorSource,transport:{
         inspect:async()=>({actorRef:user,beingRef:owner,binding,entry}),
         lookup:async()=>({state:'absent'}),
+        status:async()=>({phase:'working',nativeAcceptance:admitted?'observed':'unavailable',retainedOriginal:true}),
         prepareContext:async ({id,observation})=>{
           observations.push(observation);
           return {schema:'holodeck.prepared-conversation-context/v1',id,binding,entry_binding:entry,
@@ -80,7 +94,9 @@ test('collection projects stay grouped and editions follow each visitor and thei
             file:{file_id:randomUUID(),sha256:'0'.repeat(64),name:'holodeck-situation.json',mime:'application/json',size:512}};
         },
       },
-    })}),
+      });
+      return {contexts,authorizeWorldRequest:(...args)=>contexts.authorizeWorldRequest(...args)};
+    },
     collectionSourceRequest:async (url,{headers,redirect,cache,signal})=>{
       assert.equal(url.origin,'https://home.test');
       assert.match(headers.Cookie,/^__Host-home=(owner|guest)$/);
@@ -184,7 +200,8 @@ test('collection projects stay grouped and editions follow each visitor and thei
   assert.equal((await visitor.art(archivedThumbnail)).status,200);
   const speaker=await session('guest');
   const reference={resource:main,version:oldVersion,scene:'bench-scene',sceneVersion,part:'bridge'};
-  const first=await speaker.prepare(reference);
+  const original=randomUUID();
+  const first=await speaker.prepare(reference,original);
   assert.equal(first.status,200,await first.clone().text());
   assert.equal((await first.json()).work_admitted,false);
   assert.equal(observations.length,1);
@@ -195,6 +212,15 @@ test('collection projects stay grouped and editions follow each visitor and thei
   assert.equal(placed.sceneVersion,sceneVersion);
   assert.equal(placed.viewer,'https://home.test/view/'+main+'?version='+oldVersion+'&display=work');
   assert.equal(observations[0].clientReportedView.value.worktable,undefined);
+  const native=await observe(socket,original);
+  assert.equal(native.ok,true);
+  assert.deepEqual(native.result.referredWorktable,placed);
+  assert.equal(native.result.space.id,'matter');
+  assert.equal((await observe(otherPort,original)).ok,false);
+  assert.equal((await observe(socket,randomUUID())).ok,false);
+  admitted=false;
+  assert.equal((await observe(socket,original)).ok,false);
+  admitted=true;
   assert.equal((await speaker.prepare({...reference,part:'forged'})).status,409);
 
   historicalDenied=true;
@@ -232,6 +258,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
   assert.deepEqual(Buffer.from(await thumbnailResponse.arrayBuffer()),glb);
   mainVersion='e'.repeat(64);
   const updated=(await (await visitor.catalog()).json()).projects[0].editions[0];
+  assert.deepEqual((await observe(socket,original)).result.referredWorktable,placed);
   assert.equal(updated.version,mainVersion);
   assert.equal(updated.representative,undefined);
   assert.equal((await visitor.art(thumbnail)).status,404);

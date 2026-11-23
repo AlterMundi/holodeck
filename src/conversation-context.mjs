@@ -190,9 +190,11 @@ export async function createConversationContexts({room,stateDir,transport,allowI
       const activeExecution=execution?.status==='running'&&uuid(execution.instruction)&&
         Number.isSafeInteger(execution.local_turn)&&execution.local_turn>0?execution:null;
       const working=status.phase==='working'&&(!Object.hasOwn(status,'activeExecution')||!!activeExecution);
+      const referredWorktable=record?.observation.referredWorktable;
       return {actor:{id:current.beingRef,ref:current.beingRef,kind:'daimon'},humanRef:source.actorRef,nativeRequest:id,
         ...(capturedSpace?{capturedSpace,working,receiptOnly:!!receipt,
-          ...(working&&activeExecution?{activeExecution}:{})}: {})};
+          ...(working&&activeExecution?{activeExecution}:{}),
+          ...(working&&referredWorktable?{referredWorktable:structuredClone(referredWorktable)}:{})}: {})};
     },
     async release(actor,id){
       const previous=receipts[id];
