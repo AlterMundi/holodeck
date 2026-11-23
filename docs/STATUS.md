@@ -136,8 +136,8 @@ Per-receiver remote qualification and native owner selection remain outstanding.
 [DaimonApp PR #1005](https://github.com/AlterMundi/DaimonApp/pull/1005) merged
 as `d76fbd817` after all six applicable CI jobs passed. The selected master
 tree matched the tested head. The routed bridges and compatible native owner
-were selected for CompAII, Eko and Oliva. The other five bridges still
-require selection.
+were selected for CompAII, Eko, Oliva and Emma. Four bridges still require
+selection.
 
 The root listener's compatibility build `e71c5e12bceb` contains the exact
 merged production edits. The listener changed under the existing voice
@@ -165,6 +165,14 @@ showed an independently scheduled Matrix restart, and separate readback
 verified its exact listener, Core PID, goals and heartbeat controls. The
 initial operator result is retained. Oliva's scoped handoff completed normally.
 No new native input or model call was made.
+
+Emma selected listener `3d4c85b09be3` and bridge `fa3447e8a311` in her
+existing ITACA VM. Readback verified the same Core, goal accounting, heartbeat
+controls, canonical Conversation binding and foreign-actor denial. The native
+operator then used the existing CompAII and Emma read lanes to observe the
+same world run under distinct, registered being identities. This was a
+read-only foreground check. The four remaining receivers are on the host
+covered by the existing shutdown and service-stop hold.
 
 Source `23de47f`, package `faae992dce4e`, established the HUD input correction. The exterior reference card passes
 pointer input through its inactive margins while its action buttons
