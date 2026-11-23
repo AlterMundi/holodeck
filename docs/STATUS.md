@@ -10,7 +10,20 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`a2cefb8`, package `f4c140145f21`. The 3D buffer is bounded at 2×
+`149e8b0`, package `fead7d47e704`. A room owner can read or preview a
+pinned exhibit from the existing native route, then publish it separately.
+All room catalogs now require the visitor's own exact Nexus edition grant.
+Production-mode HTTP with controlled Nexus authorization exercised owner
+preview, independent visitor denial and revocation, foreign write refusal,
+publication and reconnect. Chromium exercised the scoped visit, exact viewer
+acknowledgment, return and revocation with a controlled Nexus protocol.
+Authenticated receiving matched the exact client and 57 installed files.
+The canonical world and protected checkpoints matched. Package
+`f4c140145f21` is the compatible rollback.
+[Owner workflow](houses.md#place-a-room-exhibit)
+
+The previous framebuffer release served source `a2cefb8`, package
+`f4c140145f21`. The 3D buffer is bounded at 2×
 density and 2.5 million pixels. At 390 × 844 CSS pixels and device ratio 3
 it uses 55.6% fewer pixels, with identical scene draw calls and HUD dimensions.
 In the matched software-rendered Chromium pair, first foyer entry took
