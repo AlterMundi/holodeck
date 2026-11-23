@@ -55,13 +55,21 @@ placement update. [Creator workflow](shared-roadmap.md#mmorpg-experience-and-cre
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`faedbdf`, package `7baeee4a660c`. The Beacon stair now has an authored
+`98dddef`, package `dd6628e86392`. The controlled avatar's own nameplate
+no longer covers the view. Independent desktop and touch-emulated browsers
+retained each other's labels and appearances outdoors, indoors and after
+one visitor reconnected. The local chat bubble rendered above the avatar.
+The protected client and installed inventory matched and the world checkpoint
+kept its digests. The selected rollback is `7baeee4a660c`.
+[Player-height comparison](visual-play.md#the-controlled-avatars-sightline)
+
+Source `faedbdf`, package `7baeee4a660c`, gave the Beacon stair an authored
 door and sign to the gallery. Chromium climbed the stair with WASD, crossed
 with E and returned to the exact gallery landing in the same document. If the
 visitor loses gallery access while still in Beacon, the server selects the
 base laboratory and emergency exit and refuses the authored return asset.
 Protected readback matched both Beacon variants, all 58 installed files
-and the retained world state. The selected rollback is `07475f3bb3dc`.
+and the retained world state.
 [Beacon return at player height](../art/compaii-house/redesign/README.md#laboratory-return-to-the-gallery)
 
 Source `d14de6d`, package `07475f3bb3dc`, finished the oak
@@ -73,8 +81,8 @@ readback matched both asset revisions, the installed inventory and retained
 world state.
 [Gallery foyer doorway](../art/compaii-house/redesign/README.md#gallery-return-to-the-foyer)
 
-Source `6045be8`, package `439002172ad6`, finished the gallery's authorized laboratory
-stair has an authored door and a legible floor sign. Chromium walked down,
+Source `6045be8`, package `439002172ad6`, gave the gallery's authorized laboratory
+stair an authored door and a legible floor sign. Chromium walked down,
 entered with E and returned to the exact gallery landing in the same document.
 A restricted visitor received the continuous floor and was denied the lab and
 its assets. Protected readback matched both models, all 57 installed files and

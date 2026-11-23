@@ -38,6 +38,13 @@ shared movement and authentication results continue to count.
 See [plan](plan.md), [current evidence](STATUS.md), [native contract](native-integration.md),
 [visual checks](visual-play.md) and the owning deployment record when available.
 
+The routed Conversation receiver is selected for CompAII, Eko, Oliva and
+Emma. The other four receivers remain under the existing host service-stop
+hold. Receiving checks verified the canonical bindings and protected native
+state. The outstanding behavior check is a production-routed original that
+keeps its room reference through an observed native action and canonical reply.
+[Current receiver evidence](STATUS.md#selected-receiving-release)
+
 The human now confirms the original light changed to violet after the companion's
 in-place edit, in addition to both participants seeing the human-created light.
 The companion's existing authored animated appearance is now selected as its
@@ -93,8 +100,10 @@ it does not declare the full world quality or original MVP goal complete.
 The explicit new work reuses Field's versioned context/perspective/iteration
 implementation through Nexus; it does not reset or close the existing MVP goal.
 See [integration and ownership](field-integration.md). The context-v3 viewer seam
-is an additive implementation increment. Owned houses, optional exclusive parcels,
-selected outward pointers and larger interior spaces are the retained next design.
-[Owned houses](https://github.com/AlterMundi/holodeck/issues/7) tracks their namespace isolation, bounded space/save model and first actual own-identity
-house publication still require implementation and receiving proof; a new shape
-or a copied graph alone would not satisfy them.
+is an additive implementation increment. The selected world now has its first
+own-authored house on a stable exclusive parcel, with bounded saves, scoped
+interiors and a working physical entrance. The existing
+[owned houses card](https://github.com/AlterMundi/holodeck/issues/7) also tracks
+reusable authoring and selected outward pointers. The
+[receiving record](deployment.md#receiving-contracts) records the original
+owned doorway and audience evidence.

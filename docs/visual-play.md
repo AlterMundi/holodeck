@@ -217,3 +217,20 @@ candidate showed all its wrapped lines in Chromium at 1000 × 700,
 390 × 844, 375 × 667 and 844 × 430. The close control and composer stayed
 reachable. An unsent draft survived closing and opening the same frame.
 This is viewport emulation and a two-participant fixture.
+
+## The controlled avatar's sightline
+
+The [previous Beacon view](../art/compaii-house/redesign/review/beacon-sightline-before.jpg)
+and the [current Beacon view](../art/compaii-house/redesign/review/beacon-sightline-after.jpg)
+show the same camera, avatar and door in Chromium. The local nameplate at
+the center of the previous view no longer covers the door. The client keeps
+the remote username sprite and separate chat bubble sprite.
+
+A packaged browser trial used independent keyboard and touch-emulated
+visitor identities. Each rendered the other visitor's visible name and
+outfit. The result persisted through entering the same room and reconnecting
+one visitor. A fixture call to the renderer drew a local chat bubble at the
+avatar. The previous package's longer
+reconnect check reached the saved room and timed out while waiting for both
+avatar meshes. The candidate passed that check. The fixture drove chat
+directly through the renderer.
