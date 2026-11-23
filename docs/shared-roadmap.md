@@ -71,8 +71,15 @@ Blender room kits with reusable furniture anchors. The remaining creator loop
 makes room tools and pinned contents as easy to place as the room art. Indoor
 signal gardens can be placed using the owner lane. The same lane can read and
 preview an exact pinned exhibit before publishing it. Room access and Nexus
-edition access are checked separately. Exercise the full loop in
-two distinct rooms with independent simulated creators and visitors.
+edition access are checked separately. The first two-creator Chromium trial
+used separate native lanes, houses, visitor profiles and kits. One workshop
+used a same-floor door and a single signal target. The other used a portal to
+an upper observation room and two signal targets. Both visitors placed a signal
+and inspected their exact chosen fixture edition. The trial verified cached
+circulation within one renderer, exact exterior returns, edition revocation,
+foreign edit refusal and recovery across a service restart. The existing Nexus
+protocol was exercised against controlled fixture editions. Next qualify an
+independent authorized source visit and the owner catalog across stored editions.
 
 ## Environment art production
 

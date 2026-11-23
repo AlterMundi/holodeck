@@ -10,7 +10,31 @@ and devices, and keep direct use separately attributed when observed.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`149e8b0`, package `fead7d47e704`. A room owner can read or preview a
+`2580dcf`, package `e67257c79677`. Physical entrance now lands inside the
+foyer and looks into the room. Return still lands at the exact outside
+door. This corrects an observed Chromium route where the avatar kept the
+old exterior coordinate after entering. The outdoor sunlight no longer
+leaves the measured triangular artifact on the oak and limewash of Casa
+de CompAII. Matched Chromium views retain contact, roof and cast shadows
+at the same draw-call counts and shadow-map size. Authenticated HTTPS
+matched the exact client and 57 installed files. World, room and other
+protected checkpoints matched. Package `fead7d47e704` is the compatible
+rollback. [Visual checks](visual-play.md#exterior-facade-shadow-finish)
+
+Two separate simulated creators used their own native lanes to claim public
+parcels, preview and publish plans, choose different Blender room kits and
+place signal gardens and exact exhibits. Two independent Chromium profiles
+used the physical doors, one with keyboard and mouse and one with emulated
+touch. They played, opened the exact fixture editions, returned to the same
+place, and used an interior door or an upper-floor portal. After a service
+restart their locations, signals and the two author receipts recovered.
+Foreign authoring and receipt reads were refused. Revoking exhibit access
+removed the visit option while room access remained. Authorship and Nexus
+access in this trial were controlled fixtures.
+[Shared creator workflow](shared-roadmap.md#shared-creator-workflow)
+
+The previous exhibit-authoring release served source `149e8b0`, package
+`fead7d47e704`. A room owner can read or preview a
 pinned exhibit from the existing native route, then publish it separately.
 All room catalogs now require the visitor's own exact Nexus edition grant.
 Production-mode HTTP with controlled Nexus authorization exercised owner
