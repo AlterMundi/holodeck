@@ -32,9 +32,12 @@ are independent of the art profile.
 The atelier profile includes Spatializer and Weaver bench handoffs to the
 existing same-origin `/harmonic_lab/` App. Select the owning panel build
 that supports `?service=audio` and `?service=body` for direct instrument
-selection. Earlier panel builds still open their overview. The navigation
-retains the world tab, and the panel's own audience and explicit device
-controls apply. Holodeck never calls the panel's status or write endpoints.
+selection. Earlier panel builds still open their overview. The active
+workstation opens the same-origin panel in a modal while keeping the world
+renderer and player position. The panel must allow same-origin embedding
+and owns its audience, readiness and explicit start controls. It links to
+the instrument on the configured workstation once ready. Holodeck does
+not proxy or call the panel's status or write endpoints.
 
 The optional `gallery` receiving selection names an existing interior
 `room` and two distinct exact `artifact_review` pins (`draft` and `archive`,

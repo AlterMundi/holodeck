@@ -31,8 +31,27 @@ checks and 8 Spatializer preset checks. Synthetic motion produced nonzero
 control targets, a master edit reached the simulated output at the new
 revision, and pause cleared the targets. The Spatializer tests retained
 the mix when restoring a legacy preset and rejected invalid filter values
-before OSC. These are component results. A browser edit from the station
-with instrument readback remains open.
+before OSC.
+
+A separate Chromium trial opened the Weaver panel from its Holodeck station,
+used the panel's readiness link and changed Intensidad general in the built
+instrument UI. The real configuration API committed revisions 2 and 3.
+With the same synthetic motion source, all six control targets had zero gain
+at revision 2. Restoring the original 0.45 brought nonzero targets back at
+revision 3. The browser then closed the instrument and returned to the
+original Holodeck view at the same coordinates. The launcher and the output
+were simulated. The trial used the exact selected Holodeck package and built
+Harmonic Weaver source `dc825ae` on loopback. Qualification on the physical
+workstation remains distinct from this result.
+
+The corresponding Spatializer station trial opened the built-in application
+from its ready instrument link. Chromium changed the master from 0.90 to
+0.89 through one real HTTP request. Both loopback OSC destinations received
+the same float32 update. The separate simulated state readback showed one
+changed value among 68. Invalid filter input returned HTTP 400 before any
+OSC write. Closing the instrument and panel retained the avatar's coordinates
+and the same renderer. Spatializer source was `94d41fe`. This trace covers
+the browser and transport through simulated receivers.
 
 The previous release served source `9e9734a`, package `62b735015133`. The foyer has an inset orientation table,
 west wall bench and joinery under the existing Cycles lighting rig. A simulated
