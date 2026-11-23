@@ -93,6 +93,12 @@ first thing a player sees. Keep each route simple enough to learn after one
 walk. Reserve expansion edges for later rooms and link distant floors with the
 existing internal portals.
 
+The independent [coastal settlement layout draft](../art/world-layout/)
+studies a walkable loop linking arrival, gardens, Casa, creator parcels and
+tower, with a quieter gallery branch. Its authored Blender source and plan
+remain draft material until their routes, sightlines and clearances can be
+reconciled against the existing durable world and surveyed from player height.
+
 Use Cycles to light the authored environments and bake diffuse illumination
 for static surfaces. Mix the bake and material color in linear light.
 The foyer carries the static diffuse result as an embedded glTF atlas

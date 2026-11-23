@@ -1,5 +1,6 @@
 import {RemoteDocumentWrapper} from '@mml-io/mml-web';
 import {RoomSceneCache} from './room-scene-cache.mjs';
+import {constrainInteriorCamera} from './interior-camera.mjs';
 import {nearestCreationPosition} from './world-layout.mjs';
 import { Networked3dWebExperienceClient, DefaultVirtualJoystickPlugin } from '@mml-io/3d-web-experience-client';
 import { ThreeJSWorldRenderer } from '@mml-io/3d-web-threejs';
@@ -73,6 +74,7 @@ function startInterior(space){
     sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket(`spaces/${space.id}/network`),waitForWorldConfig:true,
     enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
     createRenderer:options=>{
+      constrainInteriorCamera(options,()=>space.id);
       const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
       galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
       galleryModels.sync(visitor.entries);
@@ -293,6 +295,7 @@ const client=new Networked3dWebExperienceClient(Networked3dWebExperienceClient.c
   // Upstream's default sun allocates an 8192² shadow map. This small world uses
   // the public renderer factory and a bounded 1024² light instead, on all clients.
   createRenderer:options=>{
+    constrainInteriorCamera(options,()=>inside&&activeSpace?.id);
     const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
     galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
     const sky=new OutdoorSky(renderer.mmlCompositionScene.group.parent,base);
