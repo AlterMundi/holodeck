@@ -5,11 +5,15 @@ Holodeck thread. The unsatisfied MVP objective and accounting were preserved
 before editing and resuming the existing goal. The combined orbital finish is retained in
 editable Blender source and compared at the entry camera. A diagnostic GLB
 export keeps the original image maps but drops procedural material variation
-and the Cycles lighting and atmosphere. A 1,249,792-byte bake candidate now
-embeds a 1024² diffuse-light atlas, keeps the archive platform separate, and
-excludes the offline scattering volume. The isolated browser trial, runtime
-visual comparison and moving-device checks remain open. The prior live room
-remains selected.
+and the Cycles lighting and atmosphere. A separate light and albedo bake removes the obvious white artifacts in a
+matched player-height comparison. The 1,262,068-byte
+`matter-workshop-orbital-baked-v1` is a reversible candidate with unchanged
+Collection anchors and colliders. The local fixture walked around the table,
+advanced and rotated the archive, returned to the foyer and received 404 for
+the scoped art afterward. Desktop and emulated touch both passed with the
+lightweight profile. These used SwiftShader. The live room still uses its
+previously selected release. Physical device and end-to-end worktable source
+interaction remain open for the new art.
 
 Nicolás's earlier shared movement, light, house and door confirmations still
 count. The repaired content-exit route has been delivered. Use independent

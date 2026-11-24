@@ -406,11 +406,36 @@ blender --background matter-orbital-combined.blend --python-exit-code 1 \
   --python art/collection/appearance-study/orbital-runtime-bake.py -- OUTPUT_DIR
 ```
 
-The export batches static surfaces into a single unlit textured shell.
-The platform, its children, glazing and emissive fixtures retain separate
-geometry and materials. The 1024² trial GLB is 1,249,792 bytes, with 21 meshes,
-10 materials and 7 embedded images. Structural readback verified the archive
-platform and unlit atlas, and excluded the offline scattering volume.
-The atlas captures the diffuse term. The final runtime treatment still needs
-a walking comparison of specular response, glass and atmosphere in the
-interactive room. This file is an offline qualification candidate.
+Blender bakes fixed irradiance and material color independently. A bounded
+local filter suppresses isolated light spikes before combining the two
+passes, preserving the base material texture. The default export batches
+static surfaces into one unlit shell. The platform, its children, glazing
+and emissive fixtures retain separate geometry and materials. The 1024²
+GLB is 1,262,068 bytes. The protected Matter room can select it as
+`matter-workshop-orbital-baked-v1`, using the same colliders and anchors as
+both predecessor profiles.
+
+Matched software-WebGL runs at 1020 × 680 with lightweight graphics:
+
+| Room art | Cold door to rendered room | Stationary median / p95 | In-motion check |
+| --- | ---: | ---: | --- |
+| Orbital PBR predecessor | 2.56 s | 133 / 283 ms | 2.18 m; 5 retained intervals |
+| Clean diffuse bake | 2.09 s | 83 / 100 ms | 2.18 m; 6 retained intervals |
+| Diffuse bake with live specular | 2.23 s | 250 / 283 ms | 2.11 m; 1 retained interval |
+
+The measurements are single controlled runs. The sample counts do not
+support moving performance rankings. In a separate touch emulation at
+390 × 844, the clean bake loaded in 2.60 s and the real joystick moved
+the player 2.42 m. Both lightweight fixtures crossed both ways through
+the foyer, verified furniture bounds, rotated the archive and saw the
+scoped asset close after exit. The app and browser are real. The actor
+and Collection source were fixtures. Physical device performance,
+precise camera stress and a full live review on the table remain open.
+
+Use `--specular` to compare emissive baked lighting with additional
+UV-baked roughness and metalness under the existing live light rig. The
+1,380,808-byte trial GLB preserved those channels and produced visible
+reflections. It washed out the contrast and had materially higher static
+cost in the matched software fixture. It is a reproducible art candidate
+and remains outside the selected runtime profile. Next revisions should
+reduce reflected-light intensity and compare more motion before selection.

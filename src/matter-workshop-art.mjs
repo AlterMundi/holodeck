@@ -13,6 +13,13 @@ const variants=Object.freeze({
     path:'room-art/matter-workshop-orbital.glb',
     digest:'ecce3e2ea4af7b501a3f78bcc846f1e3e50908cc2f4a373b42a003f8c61ef94b',
     maxBytes:1536*1024,
+    orbital:true,
+  },
+  'matter-workshop-orbital-baked-v1':{
+    path:'room-art/matter-workshop-orbital-baked.glb',
+    digest:'0c6130f4e8b881cf17679d1370b54ab7d18092b262bec39eae203d43b505b24d',
+    maxBytes:1536*1024,
+    orbital:true,
   },
 });
 export const MATTER_ART_REVISIONS=Object.freeze(Object.fromEntries(
@@ -40,8 +47,7 @@ const position=([x,y,z])=>({x,y,z});
 
 export function readMatterWorkshopArt(profile='matter-workshop-v1'){
   if(!isMatterArtProfile(profile))throw Error('Unknown Matter workshop finish');
-  const {path,digest,maxBytes}=variants[profile];
-  const orbital=profile==='matter-workshop-orbital-v1';
+  const {path,digest,maxBytes,orbital=false}=variants[profile];
   const packed=readPackedArt(path,digest);
   const bytes=packed?.bytes??readFileSync(new URL('../public/'+path,import.meta.url));
   if(bytes.length>maxBytes||createHash('sha256').update(bytes).digest('hex')!==digest)
