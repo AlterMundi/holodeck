@@ -4,21 +4,19 @@ The complete cross-project sequence is the [reviewed shared roadmap](shared-road
 tracked in the existing [Field Project 13](https://github.com/orgs/AlterMundi/projects/13).
 The MVP coverage below remains its own unfinished acceptance record.
 
-The active goal now includes the [complete environment art production plan](shared-roadmap.md#environment-art-production). Nicolás confirmed entry to the Beacon basement and requested a full visual redesign. The commons, attractive small house exterior, expandable interior, working Beacon instruments and versioned 3D gallery are all part of the same goal, together with the existing native and multi-user acceptance checks.
+The MVP scope includes the [complete environment art production plan](shared-roadmap.md#environment-art-production). Nicolás confirmed entry to the Beacon basement and requested a full visual redesign. The commons, attractive small house exterior, expandable interior, working Beacon instruments and versioned 3D gallery are all part of the same goal, together with the existing native and multi-user acceptance checks.
 
 The selected visual endpoint is a photorealistic shared world with fluid
 locomotion and room transitions. Art increments must move the player-height
 experience toward that endpoint while keeping the full interactive roadmap.
 
-Human-authorized native goal: work through a shared, testable MVP.
-Current status: active. Nicolás directed Holodeck to continue using simulated
-participants and devices for qualification. Use those trials to ship and
-advance the roadmap. Keep their results and any later direct observations
-accurately attributed. The original product scope and accounting remain in force.
-Updated 2026-11-23. This roadmap records acceptance coverage.
-The existing native goal was resumed on the human request after real shared
-participation and visible native edits. Continue the remaining conversation,
-avatar integration, device/reconnect and content-cycle work under that objective.
+The native MVP goal is paused. The separate appearance objective is recorded in
+the [shared roadmap](shared-roadmap.md#separate-implementation-objective--room-appearance).
+As of 24 November, the Holodeck worker could inspect the paused goal, but the
+goal controller refused replacement at preparation. Automatic continuation of
+the appearance objective has not started. Preserve the existing release and all
+MVP evidence. Simulated participants and devices remain the selected route for
+qualification, with direct observations attributed separately.
 
 | Outcome | Implemented and checked | Still required |
 | --- | --- | --- |

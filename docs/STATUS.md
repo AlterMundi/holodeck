@@ -1,11 +1,17 @@
 # Current MVP work
 
-Updated 2026-11-23. The complete existing MVP goal is active. Nicolás's earlier
-shared movement, light, house and door confirmations still count. The repaired
-content-exit route has been delivered. Nicolás has selected simulated
-qualification for continued Holodeck delivery. The previous human observations
-remain valid. Qualify newer releases with independent simulated participants
-and devices, and keep direct use separately attributed when observed.
+Updated 2026-11-24. The native MVP remains paused and the separate appearance
+objective has not been activated. The combined orbital finish is retained in
+editable Blender source and compared at the entry camera. A diagnostic GLB
+export keeps the original image maps but drops procedural material variation
+and the Cycles lighting and atmosphere. The next runtime increment is to bake
+the selected surface response and static illumination for an isolated trial of
+the existing Matter room. The prior live room remains selected.
+
+Nicolás's earlier shared movement, light, house and door confirmations still
+count. The repaired content-exit route has been delivered. Use independent
+simulated participants and devices to qualify newer releases, and report direct
+observations separately.
 
 ## Foreground model qualification
 
