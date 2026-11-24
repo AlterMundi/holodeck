@@ -605,6 +605,55 @@ independently. The shell and retained worktable model stayed mounted,
 sharing and part references continued, and the other browser's material
 selection followed only its own controls.
 
+### Contact shadows for the moving Collection models
+
+The layered look enables a separate contact projection on each authored
+display pad. A small overhead camera renders the live model's visible
+triangles into a 128×128 mask. The worktable mask uses the same section
+plane as the model. The archive mask stays inside the circular pad. Both
+maps refresh as the locally viewed model changes, with a 50 ms minimum
+interval during continuous rotation. The shadow planes have no picking
+or collision. Changing looks or leaving the room releases the mask
+resources and preserves the shared edition.
+
+In the exact packed desktop browser, the full 197,642-triangle model
+covered 4,795 mask texels. Rotating the model changed the silhouette
+and covered 4,800. Moving the cut to its lowest position reduced the
+mask to 27 texels. Restoring it recovered the same turned mask. The
+second emulated-touch browser retained its separate look and local
+shadow. Clearing the worktable removed its projected silhouette.
+
+On Cuevanico two retained archive representatives produced different
+visible masks when switching editions and completing the half-turn
+(5,018 versus 2,925 occupied texels). The real pad and the second model
+reached the same half-turn. With the archive models enabled, 374 moving
+intervals measured 33.3 ms median and 50.0 ms p95. Cold entry took 9.55 s
+through the test tunnel. The camera cleared all 24 corner samples and
+the return removed the shadow mesh and closed the three scoped art URLs.
+
+### Matched runtime and Blender camera
+
+Record the browser camera position and quaternion as named components
+from `getMainCameraState()`, with `fov` in degrees, `aspect`, and the
+canvas CSS `width` and `height`. Save this as `camera.json` beside the
+PNG captured from the package. For the structural comparison, hide
+transient avatars and worktable overlays only in the test viewport.
+Then replay the same camera in the editable room:
+
+```sh
+blender --background matter-orbital-combined.blend --threads 8 \
+  --python-exit-code 1 --python art/collection/appearance-study/render-browser-camera.py -- WITNESS_DIR
+```
+
+The registered 1020×680 pair aligned the worktable, floor joints and
+vitrine. Mean display luma in the sampled work surface was 153 in
+Chromium and 151 in Blender (units out of 255). In the pool of reflected
+light on the front floor it was 88 and 171, respectively. The floor
+joints, reflected light and back glazing are visibly softer in the
+runtime. This is one equivalent chase-camera pose with different live
+and offline shading. The floor's view-dependent response is the next
+priority for matching the authored image.
+
 
 ## Orbital finish for the Matter room
 

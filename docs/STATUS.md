@@ -83,8 +83,14 @@ The retained albedo and GLB kept their exact hashes. On the physical Pi
 the refined layers applied in 2.27 s and the walking route measured
 33.3 ms median and 33.4 ms p95 with the new look active. The rotating
 archive, camera clearance, door return and art refusal after exit
-passed. Runtime shadows from moving pieces and the final fidelity
-comparison against the Blender reference remain open.
+passed. The layered look also projects live silhouettes onto the
+worktable and archive pads. The worktable mask responded to rotation,
+sectioning and clear in two browser views. On Cuevanico the archive
+switched between two retained representatives, with a different mask
+after the half-turn. That run recorded 33.3 ms median and 50.0 ms p95
+over 374 moving intervals, and passed door return and camera clearance.
+The matched Blender and browser capture identifies the missing floor
+reflection, soft joints and softer glazing as remaining visual gaps.
 
 Nicolás's earlier shared movement, light, house and door confirmations still
 count. The repaired content-exit route has been delivered. Use independent
