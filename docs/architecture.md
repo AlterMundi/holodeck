@@ -35,8 +35,9 @@ development harness only, not a source of identity or companion grants.
 
 The live renderer can reuse up to three visited-room entries bound to the
 browser session's actor and the exact server-generated scene revision. A
-retained entry holds the parsed static room model only after that model has
-loaded in the authorized room. Its handle never mounts a model by itself.
+retained entry can start loading the exact static room model after the server
+accepts entry, while presence reconnects. Its handle never mounts a model by
+itself.
 Every move still requires a current server acknowledgement and a matching
 presence scope. Changed editions, denied destinations, eviction, access loss
 and unexpected disconnects release retained handles. The cache lives in page

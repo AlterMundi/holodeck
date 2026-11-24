@@ -27,6 +27,11 @@ The latest candidate starts loading the authorized room model during presence
 reconnect. On Cuevanico, the model response started at 0.78 s instead of
 3.67 s in the paired packaged runs. Full cold readiness still took 14.51 s
 instead of 15.09 s, so room entry needs further work.
+The renderer now skips hidden interior frames while connecting and loading,
+then draws the destination before lifting the passage overlay. In the
+instrumented Cuevanico run, the first ready draw took 9.03 s and the next
+one took 11 ms. Both desktop Chromium and emulated touch passed the packed
+doorway round trip with this change.
 [Qualification details](../art/collection/appearance-study/README.md#orbital-fixed-light-bake).
 The live room still uses its previously selected release.
 

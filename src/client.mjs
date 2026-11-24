@@ -485,8 +485,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
     const draw=renderer.composer.render.bind(renderer.composer);
     let drawWorld=true;
-    // The renderer and room stay mounted. Do not contend for the same frame
-    // budget while an opaque, still-inert Nexus visit starts its renderer.
+    // Keep the frame loop and collision running behind opaque overlays. Skip
+    // drawing until Nexus yields or the destination can produce a room frame.
     renderer.composer.render=()=>{if(drawWorld)draw();};
     const exteriorAddress=socket('world');
     const arrivalAddress=socket('world?dressing=arrival');
@@ -507,7 +507,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     let nextDressing=0;
     renderer.render=renderState=>{
       const position=client.getLocalCharacterState()?.position;
-      drawWorld=!contentVisitor?.isOpeningOverWorld();
+      const waitingForRoomFrame=inside&&moving&&
+        (networkScope!==activeSpace.id||!entryRoomReady(remoteScene,roomModel));
+      drawWorld=!waitingForRoomFrame&&!contentVisitor?.isOpeningOverWorld();
       frameBudget.sample(drawWorld&&!document.hidden&&!!position&&!moving&&!needsSync&&(!hot||networkScope===activeSpace.id));
       light.visible=!inside||!activeSpace.indoorLighting;
       const key=inside&&activeSpace.keyLight||null;

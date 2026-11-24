@@ -498,3 +498,16 @@ action, versus 15.09 s with the previous load order. These measurements use
 different observation points and do not identify the cause of the remaining
 delay. Both runs returned to the foyer and confirmed 404 for the scoped model
 after exit. The test profiles and forwards were removed.
+
+### First visible interior frame
+
+The client suppresses WebGL draws behind the passage overlay until the
+authorized interior can produce a complete frame. The frame loop and
+collision processing continue. A cold physical run with the same packed
+bake and the previous draw behavior spent 12.24 s from the browser's door
+action to the overlay clearing. The candidate took 10.93 s. This pair also
+had different presence confirmation times (3.53 s and 1.79 s), so the
+end-to-end difference cannot be attributed to the draw change. In the
+candidate, the first ready call to the renderer took 9.03 s and the next
+draw took 11 ms. Model transfer had already finished at 0.83 s. The entry
+and return still worked on the Pi, desktop Chromium and emulated touch.
