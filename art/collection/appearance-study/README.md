@@ -512,6 +512,13 @@ end-to-end difference cannot be attributed to the draw change. In the
 candidate, the first ready call to the renderer took 9.03 s and the next
 draw took 11 ms. Model transfer had already finished at 0.83 s. The entry
 and return still worked on the Pi, desktop Chromium and emulated touch.
+A second instrumented Pi run reproduced the split at 9.11 s and 10.2 ms.
+None of the sampled individual WebGL compile, link, parameter, texture
+upload or draw calls exceeded the 25 ms recording threshold. The full
+composer timing localizes the delay to the first draw, and the individual
+call sample leaves its cause unresolved. Measure aggregate call time and
+the shadow and transmission passes before changing the room's lighting or
+glazing.
 
 ### Physical splat comparison
 
