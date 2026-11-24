@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  TOROIDAL_TERRAIN, TOROIDAL_PARCEL_Y, TERRAIN_EDGES, buildTerrainTile, selectTerrainTiles,
-  terrainCoordinates, terrainElevation, terrainFrame, terrainPosition, terrainTile, toroidalParcelPoint,
+  TOROIDAL_TERRAIN, TOROIDAL_PARCEL_Y, TOROIDAL_OVERLOOK, TERRAIN_EDGES, buildTerrainTile, selectTerrainTiles,
+  terrainColor, terrainCoordinates, terrainElevation, terrainFrame, terrainPosition, terrainTile, terrainTrail, toroidalParcelPoint,
 } from '../src/toroidal-terrain.mjs';
 
 const near = (a, b, tolerance = 1e-8) => assert.ok(Math.abs(a - b) < tolerance, `${a} ≠ ${b}`);
@@ -112,4 +112,15 @@ test('water edges use the same exact coarse-to-fine seam as ground', () => {
     point(fineSurface,0,j,count).forEach((value,axis)=>
       assert.equal(value,(lower[axis]+upper[axis])/2));
   }
+});
+
+test('wayfinding forms a periodic loop and rises to the inner lookout', () => {
+  assert.equal(terrainTrail(.8,.25),1);
+  assert.equal(terrainTrail(-.2,1.25),1);
+  assert.equal(terrainTrail(.8,.35),0);
+  const {u,v}=TOROIDAL_OVERLOOK;
+  assert.equal(terrainTrail(u,v),1);
+  assert.ok(terrainElevation(u,v)>40);
+  assert.deepEqual(terrainColor(0,.25,18,0),terrainColor(1,.25,18,0));
+  assert.notDeepEqual(terrainColor(.7,.23,5,0),terrainColor(.7,.23,5,.45));
 });

@@ -486,10 +486,17 @@ The first cave adds two open mouths and a connected two-chamber passage.
 The local rock shell registers the same triangles for rendering and avatar
 collision. The paired browser fixture walked through, measured the collider
 overhead and observed the other side from the independent participant.
-An accelerated fixed-step check completed one full circuit on the selected
-terrain seed, including water. The uninterrupted interactive circuit, natural
-wayfinding, performance qualification and production release remain open.
-The fixture did not supply the Collection asset selection.
+Terrain material now distinguishes the worn shoulder route, vegetated
+patches, rock and shore. An inland spur reaches a raised inner-flank lookout
+with views into the opening and across the opposite arc. In Chromium, the
+actual character manager advanced the browser's fixed-step motion from one
+held movement input through all eight sectors and the wrapping seam. The run
+drew 43 checkpoints, including 21 in water. Simulation time was accelerated
+between those renders. The separate normal-speed software measurements used
+two browsers on one host and are not a hardware performance claim.
+The fixture did not supply the Collection asset selection. A cinematic
+rendering pass, physical performance comparison and production release
+remain open.
 
 
 ## Delivery sequence and cards
