@@ -1,3 +1,4 @@
+import {TOROIDAL_TERRAIN, TOROIDAL_PARCEL_Y} from './toroidal-terrain.mjs';
 import {HOUSE_GROUND,HOUSE_PLOTS} from './houses.mjs';
 import {VALLEY_LAYOUT,VALLEY_GROUND,VALLEY_DRESSING} from './continuous-valley.mjs';
 import {LAYOUT_VERSION,TERRACE_TOP,TERRACES,PROMENADES} from './world-layout.mjs';
@@ -222,19 +223,23 @@ function workshopExterior(room,{prefix,sourceAttribute,includeVisits,includeCues
   return out;
 }
 
-export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=true,houseVisual,gardenVisual,sceneryAsset='island-scenery.glb',sceneryRevision,commonsVisual,coastalRidges,deferDressing=false,valleyHouse}={}){
+export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=true,houseVisual,gardenVisual,sceneryAsset='island-scenery.glb',sceneryRevision,commonsVisual,coastalRidges,deferDressing=false,valleyHouse,toroidalHouse}={}){
   if(!assetFile(sceneryAsset))throw Error('Select a packaged scenery asset');
   const prefix=basePath.endsWith('/')?basePath:basePath+'/';
   const sourceAttribute=deferDressing?'data-deferred-src':'src';
-  const layout=valleyHouse?VALLEY_LAYOUT:LAYOUT_VERSION;
-  const manifest=JSON.stringify(valleyHouse?{}:room.entities);
+  const layout=toroidalHouse?TOROIDAL_TERRAIN.id:valleyHouse?VALLEY_LAYOUT:LAYOUT_VERSION;
+  const manifest=JSON.stringify(valleyHouse||toroidalHouse?{}:room.entities);
   if(manifest.length>16384)throw Error('Geometry manifest exceeds bound');
   let out=`<m-group id="workshop" data-run="${attribute(room.run)}" data-edition="${attribute(room.edition)}" data-semantic-sequence="${room.sequence}" data-layout-version="${layout}" data-geometry-state="${attribute(manifest)}">`;
-  if(valleyHouse)out+=valleyMarkup(prefix,valleyHouse,houseVisual,sourceAttribute,
+  if(toroidalHouse){
+    const house=room.houses?.directory().filter(entry=>entry.id===toroidalHouse)??[];
+    out+=`<m-group id="ring-house" x="${TOROIDAL_TERRAIN.majorRadius}" y="${TOROIDAL_PARCEL_Y}">`+
+      housingDocument(house,prefix,houseVisual,null,sourceAttribute,toroidalHouse)+'</m-group>';
+  } else if(valleyHouse)out+=valleyMarkup(prefix,valleyHouse,houseVisual,sourceAttribute,
     room.houses?.directory()??[]);
   else out+=workshopExterior(room,{prefix,sourceAttribute,includeVisits,includeCues,
     houseVisual,gardenVisual,sceneryAsset,sceneryRevision,commonsVisual,coastalRidges});
-  for(const p of room.projections.values()){
+  for(const p of toroidalHouse?[]:room.projections.values()){
     const{x,y,z}=p.position;
     const id=`projection-${p.actor.replace(/[^\w-]/g,'')}`,appearance=p.form==='avatar'?avatarForActor({id:p.actor,kind:p.kind}):null;
     out+=`<m-group id="${id}" x="${x}" y="${y}" z="${z}"${appearance?` data-holodeck-avatar="${appearance}" data-avatar-being="${attribute(p.actor)}"`:''}><m-group id="${id}-fallback">${sphere(0,0,0,.28,'#9de6e5')}${p.form==='beacon'||appearance?cylinder(0,-.5,0,.07,.7,'#e9dcaf'):''}</m-group></m-group>`;

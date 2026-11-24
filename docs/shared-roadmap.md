@@ -458,10 +458,17 @@ fewer vertices per tile. The fixed-step radial walking surface and the
 MML input, camera and avatar orientation adapter passed an isolated browser
 seam crossing. One Chromium instance used the native MML keyboard and
 camera on the underside of the ring. A separate instance reconstructed the
-avatar's up axis from the emitted position and tangent yaw. The fixture
-transferred that packet directly and exercised planar fallback. The normal
-world selection, network transport, cave and house collisions, portals and
-shared route verification remain open.
+avatar's up axis from the emitted position and tangent yaw. A second run
+selected the toroidal edition on the Holodeck server. Two Chromium
+participants loaded the terrain worker and used authenticated fixture
+identities over the actual multiplayer sockets. One walked across the seam
+on the underside and the other received its new position. The server
+projected one house, exposed only the Matter entrance and refused a request
+to enter the saved second house. The first participant passed through the
+Matter door in both directions and returned to the marked exterior
+position. This fixture did not supply the Collection asset selection.
+Cave and water traversal, reconnect, the full circuit, qualified appearance
+and the production release remain open.
 
 
 ## Delivery sequence and cards

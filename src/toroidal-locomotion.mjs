@@ -11,6 +11,7 @@ const JUMP_SPEED = 5.8;
 const WALK_SPEED = 5;
 const RUN_SPEED = 8;
 const wrap = turns => ((turns % 1) + 1) % 1;
+const wrapYaw = radians => Math.atan2(Math.sin(radians), Math.cos(radians));
 
 const basis = new Matrix4();
 const tangentYaw = new Quaternion();
@@ -41,7 +42,7 @@ export class ToroidalLocomotion {
     const floor = ground(this.u, this.v, terrain);
     this.height = Math.max(floor, height ?? floor);
     this.grounded = this.height === floor;
-    this.yaw = yaw;
+    this.yaw = wrapYaw(yaw);
     this.ringSpeed = 0;
     this.crossSpeed = 0;
     this.radialSpeed = 0;
@@ -57,7 +58,7 @@ export class ToroidalLocomotion {
     const sine = Math.sin(yaw), cosine = Math.cos(yaw);
     const ringTarget = (right * cosine + forward * sine) * speed;
     const crossTarget = (forward * cosine - right * sine) * speed;
-    this.yaw = yaw;
+    this.yaw = wrapYaw(yaw);
     if (jump && !this.jumpHeld) this.jumpQueued = true;
     this.jumpHeld = jump;
     this.accumulated += Math.min(seconds, MAX_FRAME);
@@ -107,6 +108,14 @@ export class ToroidalLocomotion {
     }
     this.u = nextU;
     this.v = nextV;
+  }
+
+  applyCollision(point) {
+    const {u, v, height} = terrainCoordinates([point.x, point.y, point.z], this.terrain);
+    this.u = u;
+    this.v = v;
+    this.height = Math.max(height, this.ground(u, v, this.terrain));
+    if (this.height > height || this.grounded) this.radialSpeed = 0;
   }
 
   pose() {

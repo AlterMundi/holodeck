@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  TOROIDAL_TERRAIN, TERRAIN_EDGES, buildTerrainTile, selectTerrainTiles,
-  terrainCoordinates, terrainElevation, terrainFrame, terrainPosition, terrainTile,
+  TOROIDAL_TERRAIN, TOROIDAL_PARCEL_Y, TERRAIN_EDGES, buildTerrainTile, selectTerrainTiles,
+  terrainCoordinates, terrainElevation, terrainFrame, terrainPosition, terrainTile, toroidalParcelPoint,
 } from '../src/toroidal-terrain.mjs';
 
 const near = (a, b, tolerance = 1e-8) => assert.ok(Math.abs(a - b) < tolerance, `${a} ≠ ${b}`);
@@ -25,6 +25,18 @@ test('toroidal coordinates close in both directions and gravity points to the sl
   }
   assert.equal(terrainElevation(0, 0), terrainElevation(1, -2));
   assert.notEqual(terrainElevation(.245, .007), terrainElevation(.245, .007, {...TOROIDAL_TERRAIN, seed: 1}));
+});
+
+test('the parcel and its portals share a level strip of analytic ground', () => {
+  for (const [x,z] of [[-8,23],[8,15],[-2,0],[0,-18]]) {
+    const world=toroidalParcelPoint({x,y:.11,z,facing:1});
+    const coord=terrainCoordinates([world.x,TOROIDAL_PARCEL_Y,world.z]);
+    const surface=terrainPosition(coord.u,coord.v,terrainElevation(coord.u,coord.v));
+    near(surface[1]+.11,world.y);
+    near(surface[0],world.x);
+    near(surface[2],world.z);
+    assert.equal(world.facing,1);
+  }
 });
 
 test('a fine edge follows the adjacent coarse edge across a periodic seam', () => {

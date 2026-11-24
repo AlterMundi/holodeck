@@ -1,3 +1,6 @@
+import {TOROIDAL_TERRAIN} from './toroidal-terrain.mjs';
+import {ToroidalTerrainRenderer} from './toroidal-terrain-renderer.mjs';
+import {bindToroidalMml} from './toroidal-mml.mjs';
 import {RemoteDocumentWrapper} from '@mml-io/mml-web';
 import {RoomSceneCache,roomArtURL} from './room-scene-cache.mjs';
 import {constrainInteriorCamera} from './interior-camera.mjs';
@@ -221,6 +224,8 @@ let projectedGarden=null,signalEditor=null;
 const hot=activeSpace?.live===1;
 const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
 let inside=hot&&activeSpace.id!=='outside';
+const outsideRing=()=>!inside&&activeSpace.outdoorTerrain===TOROIDAL_TERRAIN.id;
+let outdoorReady=()=>Boolean(geometryProbe?.snapshot());
 let updateDoor=()=>{},remoteScene=null,roomModel=null,networkScope=null,arrival=null;
 let releaseLightweightGlazing=null;
 let matterStyleScope=null,selectedMatterStyle=null;
@@ -445,7 +450,7 @@ function canFinishMove(){
   if(requestingMove||needsSync||networkScope!==activeSpace.id||!client.getLocalCharacterState())return false;
   // The receiving scope is confirmed. A slow model can finish on this page.
   clearTimeout(moveDeadline);moveDeadline=null;
-  if(inside?!entryRoomReady(remoteScene,roomModel):!geometryProbe?.snapshot())return false;
+  if(inside?!entryRoomReady(remoteScene,roomModel):!outdoorReady())return false;
   if(arrival){
     const {x,y,z,yaw,facing}=arrival;
     client.updateConfig({spawnConfiguration:{spawnPosition:{x,y,z},spawnYRotation:-(yaw??facing*90)}});
@@ -529,7 +534,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
   createRenderer:options=>{
     constrainInteriorCamera(options,()=>{
       if(inside)return activeSpace?.id;
-      if(!activeSpace?.outdoorTerrain)return null;
+      if(activeSpace?.outdoorTerrain!==true)return null;
       const position=client.getLocalCharacterState()?.position;
       return position&&position.x>21&&position.x<32&&position.z<-6&&position.z>-26?'valley-cave':null;
     });
@@ -612,9 +617,19 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         return configure({...configuration,workshop:{...configuration.workshop,url:arrivalAddress}},token);
       };
     }
-    let nextDressing=0;
+    let nextDressing=0, ring=null, releaseRadialMovement=null;
+    outdoorReady=()=>outsideRing()?
+      ring?.group.children.length>0&&Boolean(document.querySelector('#workshop #ring-house')?.isConnected):
+      Boolean(geometryProbe?.snapshot());
     renderer.render=renderState=>{
       const position=client.getLocalCharacterState()?.position;
+      if(outsideRing()){
+        ring??=new ToroidalTerrainRenderer(renderer.mmlCompositionScene.group,base);
+        if(position)ring.update(position,rendererBudget.lightweight);
+      }else if(ring){
+        ring.dispose();
+        ring=null;
+      }
       const roomReady=inside&&networkScope===activeSpace.id&&entryRoomReady(remoteScene,roomModel);
       const waitingForRoomFrame=inside&&moving&&!roomReady;
       if(roomReady&&roomModel&&activeSpace.matterFloorSplat&&!floorSplatScope)void mountFloorSplat();
@@ -673,7 +688,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       else if(inside)keepRoomArt();
       if(hot&&moving&&canFinishMove())setMoving(false);
       if(entering&&drawWorld&&position&&!moving&&!needsSync&&
-         (inside?entryRoomReady(remoteScene,roomModel):geometryProbe?.snapshot()))worldEntered();
+         (inside?entryRoomReady(remoteScene,roomModel):outdoorReady()))worldEntered();
       const now=performance.now();
       if(coldExterior&&position&&!inside&&!moving&&!needsSync&&networkScope===activeSpace.id&&now>=nextDressing){
         nextDressing=now+350;
@@ -683,8 +698,11 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
       }
     };
-    renderer.dispose=()=>{frameBudget.dispose();removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
-    queueMicrotask(options.onInitialized);
+    renderer.dispose=()=>{releaseRadialMovement?.();ring?.dispose();frameBudget.dispose();removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
+    queueMicrotask(()=>{
+      releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing);
+      options.onInitialized();
+    });
     return renderer;
   },
   animationConfig:animations,

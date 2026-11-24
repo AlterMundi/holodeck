@@ -348,6 +348,16 @@ once a compatible predecessor is selected. Runtime code independently retains cu
 predecessor/candidate. Qualification copies are disposable after exact receiving
 readback; preserve source, unfinished work, current state and the actual rollback.
 
+## Toroidal world qualification
+
+The explicit `worldTerrain: "toroidal-terrain@1"` receiving selection mounts
+the procedural exterior and sets the eligible room graph to the established
+Matter room in CompAII's house. It preserves the authored graph in storage
+so a code rollback or selection change can restore it. The terrain edition
+selects its own coordinate origin, entry pose and lighting distance.
+The setting is currently used in an isolated test receiver. The protected
+release still selects the previously qualified exterior.
+
 ## Selected shared release
 
 Manipulación de Materia selects package `2009ff26ca7b` with

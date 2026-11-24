@@ -16,6 +16,14 @@ export const TOROIDAL_TERRAIN = Object.freeze({
   maxLevel: 7,
 });
 
+export const TOROIDAL_PARCEL_Y = TOROIDAL_TERRAIN.tubeRadius + 18;
+
+export function toroidalParcelPoint(point) {
+  return {...point, x: point.x + TOROIDAL_TERRAIN.majorRadius, y: point.y + TOROIDAL_PARCEL_Y};
+}
+
+export const TOROIDAL_SPAWN = Object.freeze(toroidalParcelPoint({x:0,y:.15,z:11}));
+
 function wrap(value, period = 1) {
   const remainder = value % period;
   return remainder < 0 ? remainder + period : remainder + 0;
@@ -78,7 +86,12 @@ export function terrainElevation(u, v, terrain = TOROIDAL_TERRAIN) {
   const foothills = periodicNoise(u, v, 96, 24, seed ^ 0x42d31f);
   const detail = periodicNoise(u, v, 256, 64, seed ^ 0xe31aac);
   const grit = periodicNoise(u, v, 1024, 256, seed ^ 0x8034bc);
-  return 52 * landform + 15 * foothills + 5 * detail + 1.25 * grit;
+  const elevation = 52 * landform + 15 * foothills + 5 * detail + 1.25 * grit;
+  const distance = Math.hypot(wrappedDistance(u, 0) * TAU * terrain.majorRadius,
+    wrappedDistance(v, .25) * TAU * terrain.tubeRadius);
+  if (distance >= 76) return elevation;
+  const pavedGrade = (terrain.tubeRadius + 18) / Math.sin(wrap(v) * TAU) - terrain.tubeRadius;
+  return mix(pavedGrade, elevation, fade(Math.max(0, distance - 32) / 44));
 }
 
 export function terrainTile(level, column, row, terrain = TOROIDAL_TERRAIN) {

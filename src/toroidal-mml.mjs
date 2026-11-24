@@ -1,6 +1,6 @@
-import {Quaternion, Vector3} from 'three';
+import {Line3, Quaternion, Vector3} from 'three';
 import {ToroidalLocomotion, toroidalRotation} from './toroidal-locomotion.mjs';
-import {terrainCoordinates, terrainElevation} from './toroidal-terrain.mjs';
+import {TOROIDAL_SPAWN, terrainCoordinates, terrainElevation} from './toroidal-terrain.mjs';
 
 // The MML host still owns input, network cadence, interpolation, avatar
 // animation and the orbit camera. Only the selected exterior uses a radial
@@ -11,6 +11,9 @@ export function bindToroidalMml(manager, camera, enabled) {
   const rotation = new Quaternion();
   const viewRotation = new Quaternion();
   const viewOffset = new Vector3();
+  const radialAxis = new Vector3();
+  const capsule = new Line3();
+  const originalStart = new Vector3();
   let motion, lastLocal, lastPosition;
 
   function walk(controller, seconds) {
@@ -18,14 +21,32 @@ export function bindToroidalMml(manager, camera, enabled) {
     const control = keyInputManager.getOutput() || additionalInputProvider?.getOutput() || null;
     if (lastLocal !== controller || !lastPosition ||
         Math.hypot(position.x - lastPosition.x, position.y - lastPosition.y, position.z - lastPosition.z) > .001) {
-      const start = terrainCoordinates([position.x, position.y, position.z]);
+      let start = terrainCoordinates([position.x, position.y, position.z]);
+      // A cell handoff can leave one planar pose before exterior spawn.
+      // The toroidal chart excludes the symmetry axis and tube center.
+      if (!Number.isFinite(start.height) || Math.abs(start.height) > 180) {
+        start = terrainCoordinates([TOROIDAL_SPAWN.x, TOROIDAL_SPAWN.y, TOROIDAL_SPAWN.z]);
+      }
       motion = new ToroidalLocomotion({...start, yaw: 2 * Math.atan2(quaternion.y, quaternion.w)});
     }
     lastLocal = controller;
     const moving = Number.isFinite(control?.direction);
     const yaw = moving ? Math.PI / 2 - camera.theta + control.direction : motion.yaw;
     motion.update(seconds, {forward: moving ? 1 : 0, yaw, sprint: control?.isSprinting, jump: control?.jump});
-    const state = motion.pose();
+    let state = motion.pose();
+    const radius = controller.capsuleInfo.radius;
+    const height = controller.capsuleInfo.segment.end.y;
+    const point = state.position;
+    radialAxis.set(0, 1, 0).applyQuaternion(toroidalRotation(point, 0, rotation));
+    capsule.start.set(point.x, point.y, point.z).addScaledVector(radialAxis, radius);
+    capsule.end.copy(capsule.start).addScaledVector(radialAxis, height);
+    originalStart.copy(capsule.start);
+    controller.config.collisionsManager.setCharacterPosition(point);
+    controller.config.collisionsManager.applyColliders(capsule, radius);
+    if (capsule.start.distanceToSquared(originalStart) > 1e-10) {
+      motion.applyCollision(capsule.start.addScaledVector(radialAxis, -radius));
+      state = motion.pose();
+    }
     lastPosition = state.position;
     position.set(lastPosition.x, lastPosition.y, lastPosition.z);
     const facing = toroidalRotation(lastPosition, state.rotation.eulerY, rotation);
