@@ -11,7 +11,7 @@ const variants=Object.freeze({
   },
   'matter-workshop-orbital-v1':{
     path:'room-art/matter-workshop-orbital.glb',
-    digest:'c1580238b943f827478c1ac488a77914cf5e2c3f13cdd26e70ee5f084c973abd',
+    digest:'ecce3e2ea4af7b501a3f78bcc846f1e3e50908cc2f4a373b42a003f8c61ef94b',
     maxBytes:1536*1024,
   },
 });

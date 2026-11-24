@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import sys
 import bpy
+import numpy as np
 from mathutils import Vector
 
 materials, output = map(Path, sys.argv[sys.argv.index('--') + 1:])
@@ -171,15 +172,30 @@ bpy.ops.object.mode_set(mode='OBJECT')
 for obj in batch:
     obj.data.uv_layers[0].active_render = True
 originals = [obj for sources in groups.values() for obj in sources]
-prior_visibility = [obj.hide_render for obj in originals]
+prior_visibility = [(obj.hide_render, obj.hide_get()) for obj in originals]
 for obj in originals:
     obj.hide_render = True
-scene.cycles.samples = 12
+    obj.hide_set(True)
+bpy.context.view_layer.update()
+scene.cycles.samples = 28
 scene.render.threads_mode = 'FIXED'
 scene.render.threads = 8
 bpy.ops.object.bake(type='AO', uv_layer='Orbital AO', use_clear=True, margin=4)
-for obj, hidden in zip(originals, prior_visibility):
-    obj.hide_render = hidden
+for obj, (hidden_render, hidden_viewport) in zip(originals, prior_visibility):
+    obj.hide_render = hidden_render
+    obj.hide_set(hidden_viewport)
+# Cycles AO reductions are noisy at atlas resolution. Smooth only the
+# lighting term and bound its strength, leaving material detail intact.
+pixels = np.empty(1024*1024*4, dtype=np.float32)
+occlusion.pixels.foreach_get(pixels)
+rgba = pixels.reshape(1024, 1024, 4)
+value = rgba[:, :, 0].copy()
+for axis in (0, 1):
+    value = (.4*value + .24*(np.roll(value, -1, axis)+np.roll(value, 1, axis))
+             + .06*(np.roll(value, -2, axis)+np.roll(value, 2, axis)))
+rgba[:, :, :3] = (.55 + .45*value.clip(0, 1))[:, :, None]
+rgba[:, :, 3] = 1
+occlusion.pixels.foreach_set(pixels)
 occlusion.filepath_raw = str((output/'orbital-occlusion.jpg').resolve())
 occlusion.file_format = 'JPEG'
 occlusion.save(quality=88)
