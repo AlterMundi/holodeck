@@ -685,6 +685,33 @@ The independent desktop and emulated-touch worktable fixture retained
 its shared edition, local cuts, rotation, part references and
 revocation. The shared service selection was unchanged.
 
+### Orbital glazing
+
+The layered look shades the two named glazing materials in a transparent
+pass over the live depth. The reflected view ray intersects oriented
+rectangles from the editable light rig. The windows receive the pendant
+and broad entrance panel. The archive receives the pendant and canopy.
+Switching away restores the native optical materials or the existing
+lightweight fallback for that client. The look uses the same art files.
+
+The initial custom vertex projection drew a glass fragment under the
+worktable. A pane-only visibility comparison confirmed the affected
+pixels. The corrected shader uses the engine's projection chunk and the
+matching instance transforms for the reflected ray. Toggling only the
+panes then changed zero pixels by more than four RGB levels in the
+previously affected crop, in both registered views. In the selected window
+reflection crops, mean absolute RGB error to Blender fell from 53.7 to
+45.8 levels in the center and from 56.4 to 46.3 laterally. Glazing
+color and reflection softness still differ from the offline render.
+
+On Cuevanico the aligned package showed the retained archive model
+through the glass after the edition switch and half-turn. The walk
+measured 33.3 ms median and 50.0 ms p95 over 371 moving intervals.
+Cold entry took 9.76 s and selecting the layered look took 2.58 s through
+the test tunnel. The corner, portal and asset-scope checks passed.
+Desktop and emulated touch switched the glazing independently while
+keeping the shared worktable model, cuts and part references in use.
+
 
 ## Orbital finish for the Matter room
 

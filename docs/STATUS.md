@@ -96,9 +96,14 @@ grout and recovers the pendant reflection in the layered look. Across
 two matched camera positions, the reflection shifted 122 pixels in
 both Chromium and Blender. The complete packaged Pi run kept
 33.3 ms median and 50.0 ms p95 while walking, turned the archive, and
-returned to the foyer. Glazing and secondary floor reflections still
-differ from Blender. The protected room continues to use its existing
-selection.
+returned to the foyer. The next qualified fixture adds oriented
+fixture reflections to the service windows and the archive glass.
+The fitted window crops moved closer to Blender from both registered
+cameras. Cuevanico showed the selected model behind the glass, kept
+33.3 ms median and 50.0 ms p95 over 371 moving intervals, and returned
+through the door. The remaining visual differences include softness of
+glazing and the secondary floor reflections. The protected room
+continues to use its existing selection.
 
 Nicolás's earlier shared movement, light, house and door confirmations still
 count. The repaired content-exit route has been delivered. Use independent
