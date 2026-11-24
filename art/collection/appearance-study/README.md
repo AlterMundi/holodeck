@@ -360,7 +360,12 @@ spherical harmonics through degree 3. Chromium loaded the 2,089,169-byte
 SPZ and drew all eight held-out views. At the wide view of the worktable,
 panel seams, hard edges and glazing reflections are visibly softer than
 the reference. The observed browser path was a software-rendered loopback
-preview. The fit is retained as a full-room control for further comparisons.
+preview. The same SPZ was then loaded by hardware-accelerated Chromium on
+Cuevanico (Broadcom V3D). Fetch and decode took 1.73 s through the fixture
+tunnel. In an isolated 960×640 canvas, a camera move between two held-out
+poses measured 100 ms median and 116.7 ms p95 over 90 post-warmup frame
+intervals. This preview exercised camera motion only. The fit is retained
+as a full-room control for further comparisons.
 
 `view-overlap.py CAPTURE_DIR CONTROL_DIR` reads the nine calibrated depth
 captures, their ImageGen edits and the control rerenders of a single static
@@ -407,6 +412,30 @@ the same opaque surface. Its recommendation was a coherent baked/PBR mesh
 as base and a learned, surface-bound splat where close-up evidence justifies
 the extra representation. These are Claude's design recommendations. This
 run did not execute, inspect images from, or modify the Blender project.
+
+In a second text review, Fable 5.2 at high effort recommended replacing
+the hardcoded orbital/amber atlas swap with a versioned look manifest,
+then loading both looks through one path. Surface roles and stable scene
+IDs select material channels, texel density, decals and look-level light
+and environment settings. The authored sources stay editable and atlases
+are derived outputs. Fable recommended separating static indirect light
+from base color, excluding moving doors and the archive from fixed
+occlusion, and lighting moving parts from probes and local shadows.
+A two-state door lightmap blend is an unverified candidate. It recommended
+keeping the full-room learned splat as a comparison control and deferring
+local splats until their added visual detail justifies their frame cost.
+
+Use one authoring contract for the two existing looks before generalizing
+selectors. Keep structural geometry, collisions and native interaction
+references invariant. The look can add disposable visual relief in a
+declared, bounded slot. A silhouette or passage change that affects
+occlusion, picking or traversal needs a compatible structural revision.
+Recompile one material role independently and compare the same reserved
+cameras, joints and glazing against Blender. Include new door and archive
+poses, identical native interaction tests and moving-frame median and p95
+on the physical Pi. These checks are proposed acceptance evidence for the
+shared contract. The comparison measured so far used the room-specific
+bindings and fixed-light maps.
 
 For Holodeck, keep the native Room, Collection and passage authorities.
 Export stable object and surface-slot IDs with Blender geometry, and bind
