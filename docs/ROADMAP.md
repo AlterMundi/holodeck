@@ -10,13 +10,12 @@ The selected visual endpoint is a photorealistic shared world with fluid
 locomotion and room transitions. Art increments must move the player-height
 experience toward that endpoint while keeping the full interactive roadmap.
 
-The native MVP goal is paused. The separate appearance objective is recorded in
-the [shared roadmap](shared-roadmap.md#separate-implementation-objective--room-appearance).
-As of 24 November, the Holodeck worker could inspect the paused goal, but the
-goal controller refused replacement at preparation. Automatic continuation of
-the appearance objective has not started. Preserve the existing release and all
-MVP evidence. Simulated participants and devices remain the selected route for
-qualification, with direct observations attributed separately.
+The separate [appearance objective](shared-roadmap.md#separate-implementation-objective--room-appearance)
+is now active in the native Holodeck thread. On 24 November, the original paused
+MVP objective and accounting were retained before editing and resuming the same
+native goal for appearance. The MVP scope below remains pending. Simulated
+participants and devices remain the selected qualification route, with direct
+observations attributed separately.
 
 | Outcome | Implemented and checked | Still required |
 | --- | --- | --- |

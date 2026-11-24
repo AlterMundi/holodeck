@@ -1,12 +1,15 @@
 # Current MVP work
 
-Updated 2026-11-24. The native MVP remains paused and the separate appearance
-objective has not been activated. The combined orbital finish is retained in
+Updated 2026-11-24. The separate appearance objective is active in the native
+Holodeck thread. The unsatisfied MVP objective and accounting were preserved
+before editing and resuming the existing goal. The combined orbital finish is retained in
 editable Blender source and compared at the entry camera. A diagnostic GLB
 export keeps the original image maps but drops procedural material variation
-and the Cycles lighting and atmosphere. The next runtime increment is to bake
-the selected surface response and static illumination for an isolated trial of
-the existing Matter room. The prior live room remains selected.
+and the Cycles lighting and atmosphere. A 1,249,792-byte bake candidate now
+embeds a 1024² diffuse-light atlas, keeps the archive platform separate, and
+excludes the offline scattering volume. The isolated browser trial, runtime
+visual comparison and moving-device checks remain open. The prior live room
+remains selected.
 
 Nicolás's earlier shared movement, light, house and door confirmations still
 count. The repaired content-exit route has been delivered. Use independent

@@ -395,3 +395,22 @@ shows finer material variation and less conspicuous reflections in the
 windows. This grade was evaluated in Blender at the entry view. Live movement,
 interaction and physical-device performance need a real-time validation
 before using it as the room appearance.
+
+### Orbital fixed-light bake
+
+Open the editable combined-finish scene and bake its fixed diffuse light and
+procedural base color to a secondary UV atlas:
+
+```sh
+blender --background matter-orbital-combined.blend --python-exit-code 1 \
+  --python art/collection/appearance-study/orbital-runtime-bake.py -- OUTPUT_DIR
+```
+
+The export batches static surfaces into a single unlit textured shell.
+The platform, its children, glazing and emissive fixtures retain separate
+geometry and materials. The 1024² trial GLB is 1,249,792 bytes, with 21 meshes,
+10 materials and 7 embedded images. Structural readback verified the archive
+platform and unlit atlas, and excluded the offline scattering volume.
+The atlas captures the diffuse term. The final runtime treatment still needs
+a walking comparison of specular response, glass and atmosphere in the
+interactive room. This file is an offline qualification candidate.
