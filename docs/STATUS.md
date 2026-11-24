@@ -276,7 +276,14 @@ and a scripted native worker.
 
 ## Selected receiving release
 
-The current protected release is `2563afe48a8d` at source `cc04977`.
+The current protected release is `f46d93f436be` at source `f975275`.
+The chamber collision shell includes the ceiling. A controlled Chromium
+orbit kept the camera inside Matter at full requested zoom. A strong
+upward movement stopped the avatar capsule at 3.98 m under the 4.01 m
+ceiling. Separate browser flight stopped at the cave roof. The protected
+readback matched the package and retained `2563afe48a8d` for rollback.
+
+The preceding protected release was `2563afe48a8d` at source `cc04977`.
 Conversation keeps its canonical web page inside a movable Three.js frame.
 The controlled browser verified drag, resize, the minimizing animation,
 draft retention and viewport clamping. A separate controlled run verified

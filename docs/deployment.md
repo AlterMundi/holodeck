@@ -364,7 +364,13 @@ bounded copies of the receiving checkpoints with native lanes disabled.
 
 ## Selected shared release
 
-The protected service selects package `2563afe48a8d`, source
+The protected service selects `f46d93f436be` at source `f975275`, with
+`2563afe48a8d` as the immediate rollback. The 33,443,840-byte package
+adds the ceiling and camera collision correction. All 78 installed
+payloads, protected HTTPS health, client and terrain worker matched.
+The receiving configuration and native run and edition matched.
+
+The preceding protected service selected package `2563afe48a8d`, source
 `cc04977`, with `74f574592917` as its immediate rollback. The release
 adds the movable Three.js Conversation display, mouse sensitivity,
 continuous mouse orbit, exterior flight and the minimap tool. All 78
