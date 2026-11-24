@@ -359,14 +359,22 @@ The configured gallery editions and room-design, garden and editor
 checkpoints still validate against the authored room graph. Their normal
 reads and writes use the active graph. This keeps hidden rooms unavailable
 in the toroidal edition while allowing those checkpoints to be read on
-rollback. A bounded copy of the actual receiving checkpoints booted with
-the toroidal selection and native lanes disabled. The protected release
-still selects the previously qualified exterior.
+rollback. The exact toroidal candidate and its rollback both booted against
+bounded copies of the receiving checkpoints with native lanes disabled.
 
 ## Selected shared release
 
-Manipulación de Materia selects package `2009ff26ca7b` with
-`d65e90d37ca9` as the immediate code-only rollback. The 32,348,160-byte
+The protected Holodeck now selects the toroidal terrain in package
+`68d4eadaa3da` at source `943ca63`. The 33,198,080-byte archive passed the
+installed receiver validator. All 78 payloads, the HTTPS health response,
+the packed client and the terrain worker matched the qualified release.
+The same authenticated native run and edition remained readable. Removing
+`worldTerrain` recovers the authored layout on a compatible build. The
+immediate code rollback `2009ff26ca7b` ignores the optional selector and
+continues to read the same checkpoints.
+
+The preceding Manipulación de Materia release used package `2009ff26ca7b` with
+`d65e90d37ca9` as its immediate code-only rollback. The 32,348,160-byte
 archive adds fine material detail, Collection distance tiers and the opaque
 shell infill. It retains the deployed exterior and uses the existing
 `matterAppearance` selector. The receiving host matched all 75 installed

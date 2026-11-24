@@ -531,8 +531,12 @@ adjacent slopes through an asymmetric outer shell with angled rock bedding.
 The tunnel retains its two open entrances and two connected chambers. The
 packed browser fixture passed the same shared navigation and access checks
 with the revised cave. Its physical Pi run arrived in 6.54 s and measured
-20.7 ms p95 lightweight and 25.8 ms p95 automatic during motion. Production
-selection remains open.
+20.7 ms p95 lightweight and 25.8 ms p95 automatic during motion. The
+protected release selected the packed toroidal edition after the full
+route and exact receiver checks. A signed-in production visit remains
+unobserved. Proyección has documented the Three.js A2UI worktable contract
+and a receiving harness. Mounting that surface on the actual Matter
+worktable remains open.
 
 
 ## Delivery sequence and cards

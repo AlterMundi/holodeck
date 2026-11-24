@@ -276,9 +276,21 @@ and a scripted native worker.
 
 ## Selected receiving release
 
-The [protected entrance](https://compaii.dmn.homes/holodeck/) serves package
-`2009ff26ca7b` with `d65e90d37ca9` as the immediate code-only rollback.
-This release adds fine material detail, Collection distance tiers and the
+The [protected entrance](https://compaii.dmn.homes/holodeck/) serves the
+continuous toroidal world in package `68d4eadaa3da`, source `943ca63`.
+Package `2009ff26ca7b` is the immediate compatible rollback. The selected
+world has CompAII's house and Manipulador de Materia as its only active room.
+All 78 installed payloads matched. Protected HTTPS served the exact packed
+client and terrain worker, and reported healthy. The technical reader was
+denied access to the human world entry and three room-scoped endpoints.
+The native read returned the pre-deployment run and edition. Controlled
+browsers completed the eight-sector circuit with 43 rendered checkpoints,
+including 21 in water. Separate paired browsers qualified reconnect, the
+cave, room entry and return, and Collection access. The physical Pi and
+positive browser admission were qualified on the controlled receiver.
+A signed-in participant's use of the production edition remains unobserved.
+
+The preceding shared package `2009ff26ca7b` added fine material detail, Collection distance tiers and the
 opaque shell infill to the selected Matter appearance. The exterior,
 receiving configuration and room run were preserved. All 75 installed
 payloads matched. Protected HTTPS health and exact client bytes passed,
