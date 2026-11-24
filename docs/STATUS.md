@@ -66,7 +66,7 @@ The hybrid's archive turned, and the orbital view showed detailed light
 and visible breakup at thin edges. This check used the comparison viewer,
 while the live doorway and worktable evidence above used the baked mesh.
 [Qualification details](../art/collection/appearance-study/README.md#orbital-fixed-light-bake).
-The live room still uses its previously selected release.
+These isolated comparisons preceded the room-only rollout below.
 
 The isolated focused-room package now reads Orbital and Amber from the
 same versioned look manifest. It passed independent desktop and
@@ -107,7 +107,10 @@ floor reflection, narrowing the difference in the selected Blender
 crops. The compacted candidate archive fits the 32 MiB receiving
 limit. The installed validator, Node 24 protected admission/revocation,
 paired worktable and physical Pi route passed on the exact candidate.
-The protected room continues to use its existing selection.
+The orbital package is now selected for Manipulación de Materia on the
+existing protected entrance. The exterior continues to use the deployed
+Atelier layout. See the selected receiving release below for the exact
+artifact and rollback.
 
 Nicolás's earlier shared movement, light, house and door confirmations still
 count. The repaired content-exit route has been delivered. Use independent
@@ -271,7 +274,27 @@ and a scripted native worker.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
-`a7d556b`, package `2f68982b6294`, with `52e35e6d6b2a` as compatible rollback.
+`5ec63ee`, package `d65e90d37ca9`, with `2f68982b6294` as compatible
+rollback. This release applies the optional room-bound Matter appearance
+selection. The continuous valley and independent house drafts remain in
+their owning worktree. The deployed Atelier exterior, existing room
+layout, Collection placements and representative index, avatar choices
+and native-turn checkpoint were preserved. The world run, edition,
+entities and nodes matched the immediate predecessor checkpoint.
+
+Readback matched all 73 installed payloads and the protected HTTPS
+health and client responses. Four scope denials passed. The actual
+predecessor package booted against the same optional configuration in
+the protected Node 24 fixture and served its original Matter GLB.
+The exact selected package concurrently passed desktop and emulated
+touch worktable use and the physical Cuevanico route. Cuevanico had
+33.3 ms median and 50.0 ms p95 across 382 walking intervals, confirmed
+archive rotation, 24 camera checks and the foyer return. The browser
+trials used controlled identities. An authenticated human visit to the
+served release remains a separate observation.
+
+The preceding source `a7d556b` served package `2f68982b6294`, with
+`52e35e6d6b2a` as its rollback.
 Manipulación de Materia now uses the Blender pass inspired by the appearance
 study. Warm fixture bounce and contact shading are embedded in the limestone
 floor texture. Bulbs, windows and oak define the cool-to-warm contrast.

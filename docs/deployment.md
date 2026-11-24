@@ -280,8 +280,9 @@ validator accepted the exact USTAR. Node 24.21.0 booted the packed entry,
 admitted a controlled Home-authorized HTTP actor, and refused the same
 session after revocation. The standalone MML check verified two presence
 and two Networked DOM clients, a projected mutation and exact retry.
-The compacted archive is a staged candidate. The selected deployment
-and its predecessor remain the entries recorded below.
+The staged comparison included the separate continuous-valley work.
+The appearance-only build excludes that change and retains the
+deployed exterior, with its own qualification and package selection.
 
 The pinned MML0.28 server adaptation in
 `tools/mml-server-auth-context.mjs` forwards the actual server-side WebSocket
@@ -349,7 +350,19 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
-The Beacon prototype workbench is selected at source `5e90de1`,
+Manipulación de Materia uses source `5ec63ee`, package `d65e90d37ca9`,
+with `2f68982b6294` as the immediate compatible predecessor. The
+room-only package stays below the archive limit at 32,061,440 bytes.
+It preserves the prior exterior and selects
+`matter-workshop-orbital-focused-v1` through `matterAppearance`.
+The previous exact package accepted the same configuration and served
+its original room GLB on Node 24. The live receiver returned the new
+client by HTTPS, while the retained layout, Collection and native state
+matched the pre-activation checks. Use the ordinary code-only rollback
+with the pinned predecessor. Its reader ignores the optional appearance
+selector.
+
+The earlier Beacon prototype workbench was selected at source `5e90de1`,
 package `a1ec8c4e05db`, with `538da75a94c9` as the immediate predecessor.
 All 31 runtime files and authenticated HTTPS asset hashes matched. The
 station reuses the existing exact Nexus/Home review. The receiving
