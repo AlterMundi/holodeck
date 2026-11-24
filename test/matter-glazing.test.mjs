@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Group, Mesh, MeshPhysicalMaterial} from 'three';
-import {useLightweightMatterGlazing} from '../src/matter-glazing.mjs';
+import {bindOrbitalMatterGlazing,useLightweightMatterGlazing} from '../src/matter-glazing.mjs';
 
 test('lightweight glazing shares local replacements without changing cached or unrelated materials',()=>{
   const glass=new MeshPhysicalMaterial({name:'Clear archive glazing',transmission:.99});
@@ -24,4 +24,30 @@ test('lightweight glazing shares local replacements without changing cached or u
   glass.addEventListener('dispose',()=>assert.fail('Cached material was disposed'));
   release();
   assert.equal(disposals,1);
+});
+
+test('orbital panes switch locally and restore the selected graphics fallback',()=>{
+  const archive=new MeshPhysicalMaterial({name:'Clear archive glazing',transmission:.99});
+  const service=new MeshPhysicalMaterial({name:'Clear laminate, service windows',transmission:.98});
+  const unrelated=new MeshPhysicalMaterial({name:'Other'});
+  const shared=new Mesh(undefined,service);
+  const mixed=new Mesh(undefined,[archive,unrelated,service]);
+  const scene=new Group().add(mixed);
+  const releaseFallback=useLightweightMatterGlazing(scene);
+  const fallback=mixed.material;
+  const binding=bindOrbitalMatterGlazing(scene);
+  binding.apply(true);
+  const [pane,other,window]=mixed.material;
+  assert.equal(other,unrelated);
+  assert.equal(shared.material,service);
+  assert.equal(pane.depthWrite,false);
+  assert.equal(pane.uniforms.servicePane.value,false);
+  assert.equal(window.uniforms.servicePane.value,true);
+  assert.match(window.fragmentShader,/reflect\(-view,normal\)/);
+  binding.apply(false);
+  assert.equal(mixed.material,fallback);
+  binding.apply(true);
+  binding.dispose();
+  assert.equal(mixed.material,fallback);
+  releaseFallback();
 });

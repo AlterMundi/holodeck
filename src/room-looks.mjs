@@ -33,6 +33,8 @@ export function compileRoomLooks(manifest,readAsset){
       throw Error('Invalid room look entry');
     if(look.contactShadows!==undefined&&typeof look.contactShadows!=='boolean')
       throw Error('Invalid room contact shadow setting');
+    if(look.orbitalGlazing!==undefined&&typeof look.orbitalGlazing!=='boolean')
+      throw Error('Invalid room glazing setting');
     ids.add(look.id);
     for(const [role,channels] of Object.entries(look.materials)){
       if(!Object.hasOwn(surfaces,role)||!record(channels))throw Error('Unknown room look surface role');

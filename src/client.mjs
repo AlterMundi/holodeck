@@ -2,7 +2,7 @@ import {RemoteDocumentWrapper} from '@mml-io/mml-web';
 import {RoomSceneCache,roomArtURL} from './room-scene-cache.mjs';
 import {constrainInteriorCamera} from './interior-camera.mjs';
 import {capWorldPixelRatio,usesLightGraphics} from './render-pixel-budget.mjs';
-import {useLightweightMatterGlazing} from './matter-glazing.mjs';
+import {bindOrbitalMatterGlazing,useLightweightMatterGlazing} from './matter-glazing.mjs';
 import {bindMatterStyle,loadMatterStyleImages} from './matter-style.mjs';
 import {projectRoomSurface} from '../art/collection/appearance-study/viewer/surface-projection.mjs';
 import {nearestCreationPosition} from './world-layout.mjs';
@@ -228,6 +228,7 @@ async function applyMatterStyle(style){
     ]));
     if(matterStyleScope!==current)return;
     current.binding.apply(style,current.images);
+    current.glazing.apply(style.orbitalGlazing===true);
     current.style=style;
     selectedMatterStyle=style.id;
     roomStyleChoice.value=style.id;
@@ -268,6 +269,7 @@ const removeScene=()=>{
   if(matterStyleScope){
     matterStyleScope.controller?.abort();
     matterStyleScope.binding.dispose();
+    matterStyleScope.glazing.dispose();
     for(const image of matterStyleScope.images.values())image.close();
     matterStyleScope=null;
   }
@@ -588,19 +590,20 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const roomReady=inside&&networkScope===activeSpace.id&&entryRoomReady(remoteScene,roomModel);
       const waitingForRoomFrame=inside&&moving&&!roomReady;
       if(roomReady&&roomModel&&activeSpace.matterFloorSplat&&!floorSplatScope)void mountFloorSplat();
+      if(roomReady&&roomModel&&rendererBudget.lightweight&&activeSpace.collectionShelves&&!releaseLightweightGlazing)
+        releaseLightweightGlazing=useLightweightMatterGlazing(roomModel.getContainer());
       if(roomReady&&roomModel&&activeSpace.matterStyles&&!matterStyleScope){
         const catalog=activeSpace.matterStyles;
         const defaultLook=catalog.looks.find(({id})=>id===catalog.default);
         const preferred=catalog.looks.find(({id})=>id===selectedMatterStyle)??defaultLook;
-        matterStyleScope={catalog,binding:bindMatterStyle(roomModel.getContainer(),catalog),
+        const group=roomModel.getContainer();
+        matterStyleScope={catalog,binding:bindMatterStyle(group,catalog),glazing:bindOrbitalMatterGlazing(group),
           style:defaultLook,images:new Map()};
         roomStyleChoice.replaceChildren(...catalog.looks.map(({id,label})=>new Option(label,id)));
         roomStyleChoice.value=defaultLook.id;
         roomStyle.hidden=false;
         void applyMatterStyle(preferred);
       }
-      if(roomReady&&roomModel&&rendererBudget.lightweight&&activeSpace.collectionShelves&&!releaseLightweightGlazing)
-        releaseLightweightGlazing=useLightweightMatterGlazing(roomModel.getContainer());
       drawWorld=!waitingForRoomFrame&&!contentVisitor?.isOpeningOverWorld();
       frameBudget.sample(drawWorld&&!document.hidden&&!!position&&!moving&&!needsSync&&(!hot||networkScope===activeSpace.id));
       light.visible=!inside||!activeSpace.indoorLighting;
