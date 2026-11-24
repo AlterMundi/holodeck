@@ -712,6 +712,31 @@ the test tunnel. The corner, portal and asset-scope checks passed.
 Desktop and emulated touch switched the glazing independently while
 keeping the shared worktable model, cuts and part references in use.
 
+### Secondary fixture reflections on the floor
+
+The look describes three oriented rectangles from the movable-camera
+lighting reference. The canopy and workshop side fill supplement the
+pendant. Their sizes and orientations come from the editable lights. The
+surface spread and radiance are tuned approximations for this material.
+All three reflections use the same world-space deck and respect the
+stone–grout response.
+
+Measured mean display luma in the matched floor crops (0–255):
+
+| Camera and reflection | Prior look | Three fixtures | Blender |
+| --- | ---: | ---: | ---: |
+| Center, archive canopy | 75.9 | 121.8 | 122.5 |
+| Center, side fill | 51.4 | 97.9 | 110.9 |
+| Lateral, archive canopy | 71.5 | 120.6 | 122.1 |
+
+The center pendant crop stayed at 160.4. On the exact compacted
+Node 24 package, Cuevanico reached the room in 9.42 s cold and selected
+the layered look in 2.64 s through the qualification tunnel. The moving
+route measured 33.3 ms median and 50.0 ms p95 over 343 intervals. The
+archive turn, 24 corner clearances, foyer return and asset refusal
+passed. The two-browser desktop and emulated-touch trial kept the
+shared worktable, local cuts, shadows and edition revocation.
+
 
 ## Orbital finish for the Matter room
 

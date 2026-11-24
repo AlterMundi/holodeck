@@ -230,8 +230,9 @@ absence, and this MVP's server-authored MML does not use HTML Canvas. Browser
 WebGL/Three rendering is independent and remains available. Qualify a real server
 Canvas dependency only when a later creation needs that capability.
 
-The server build compacts whitespace while preserving identifiers. The selected
-client bundle, art payloads and runtime dependency notices follow the same inventory.
+The server build compacts identifiers, syntax and whitespace and preserves
+runtime function and class names. The selected client bundle, art payloads
+and runtime dependency notices follow the same inventory.
 
 The stage stores the browser bundle once at `runtime/client.js.br`. The
 existing `client/client.js` URL negotiates Brotli and streams the same
@@ -265,6 +266,15 @@ package verifier before publication. Publish the package as one stable private
 operator artifact, not an App card; deploy it through the ordinary owner command.
 Every release reuses the existing App/resource/URL and retains actual predecessor
 and pending request identity. Never rerun an uncertain deployment with a new ID.
+
+The orbital reflection candidate's compacted archive is 32,890,880 bytes,
+with 76 regular files including the manifest. The installed receiver
+validator accepted the exact USTAR. Node 24.21.0 booted the packed entry,
+admitted a controlled Home-authorized HTTP actor, and refused the same
+session after revocation. The standalone MML check verified two presence
+and two Networked DOM clients, a projected mutation and exact retry.
+The compacted archive is a staged candidate. The selected deployment
+and its predecessor remain the entries recorded below.
 
 The pinned MML0.28 server adaptation in
 `tools/mml-server-auth-context.mjs` forwards the actual server-side WebSocket

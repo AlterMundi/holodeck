@@ -102,8 +102,12 @@ The fitted window crops moved closer to Blender from both registered
 cameras. Cuevanico showed the selected model behind the glass, kept
 33.3 ms median and 50.0 ms p95 over 371 moving intervals, and returned
 through the door. The remaining visual differences include softness of
-glazing and the secondary floor reflections. The protected room
-continues to use its existing selection.
+glazing. The archive canopy and side fill now participate in the layered
+floor reflection, narrowing the difference in the selected Blender
+crops. The compacted candidate archive fits the 32 MiB receiving
+limit. The installed validator, Node 24 protected admission/revocation,
+paired worktable and physical Pi route passed on the exact candidate.
+The protected room continues to use its existing selection.
 
 Nicolás's earlier shared movement, light, house and door confirmations still
 count. The repaired content-exit route has been delivered. Use independent
