@@ -142,7 +142,8 @@ graphics caps the drawing buffer at 260,000 pixels with antialiasing
 disabled. Chromium under the scoped artifact sandbox rendered all three
 views, preserved the camera across mode changes, moved using keyboard
 and emulated touch, and rotated the archive platform in the hybrid.
-Physical Raspberry Pi load time and frame rate remain unmeasured.
+The later [Cuevanico run](#physical-splat-comparison) covers physical
+Raspberry Pi load time and frame pacing.
 
 ## Orbital art direction and floor A/B
 
@@ -511,3 +512,25 @@ end-to-end difference cannot be attributed to the draw change. In the
 candidate, the first ready call to the renderer took 9.03 s and the next
 draw took 11 ms. Model transfer had already finished at 0.83 s. The entry
 and return still worked on the Pi, desktop Chromium and emulated touch.
+
+### Physical splat comparison
+
+The existing artifact viewer ran on Cuevanico with headless Chromium 154,
+Broadcom V3D, a 1020 × 680 viewport, the lightweight setting and the
+sandboxed iframe reproduced on loopback. A held forward key moved the camera
+with each tested appearance, and the screenshots confirmed that the view
+changed. The first pure view took 14.38 s from navigation until the viewer
+reported ready. It produced 66 animation-frame intervals with a 33.4 ms
+median and 50.1 ms p95 during the held-input sample. The nine-view orbital
+splat took 10.69 s to switch from the already loaded pure view, with 48
+intervals at 50.0 ms median and 66.7 ms p95. These timings cover separate
+entry points and do not establish equivalent cold loads. From the same entry
+camera the orbital fit retained richer reflected light and fixture detail.
+It showed visible breakup along thin shelf and ceiling edges.
+The initial hybrid reused the loaded lightweight splat and took 7.20 s to
+switch, including loading its interactive mesh. Its 63 intervals had a
+50.0 ms median and 50.1 ms p95, and rotating the archive changed the rendered
+view. This verifies the comparator's controls on hardware. The hybrid uses
+the lightweight fit, and the fixture does not include the live shared
+worktable or door traversal. All three views used the same browser profile
+and the profile and forwarding connections were cleaned up afterward.

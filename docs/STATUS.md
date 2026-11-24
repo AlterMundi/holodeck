@@ -32,6 +32,12 @@ then draws the destination before lifting the passage overlay. In the
 instrumented Cuevanico run, the first ready draw took 9.03 s and the next
 one took 11 ms. Both desktop Chromium and emulated touch passed the packed
 doorway round trip with this change.
+The separate appearance viewer also passed a moving hardware check on
+Cuevanico. The lightweight pure, detailed orbital pure and lightweight
+hybrid took 33.4 ms, 50.0 ms and 50.0 ms respectively at the median.
+The hybrid's archive turned, and the orbital view showed detailed light
+and visible breakup at thin edges. This check used the comparison viewer,
+while the live doorway and worktable evidence above used the baked mesh.
 [Qualification details](../art/collection/appearance-study/README.md#orbital-fixed-light-bake).
 The live room still uses its previously selected release.
 
