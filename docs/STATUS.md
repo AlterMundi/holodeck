@@ -40,6 +40,13 @@ used the new treatment in lightweight mode. Both passed the door round trip.
 On a separate physical run with the packed lightweight candidate, the archive
 turned, all 24 corner samples cleared the walls and 418 moving intervals
 measured 33.3 ms median and 33.4 ms p95.
+The separate `matter-workshop-orbital-focused-v1` selection adds responsive
+roughness and metalness to the tabletop and archive rear panel, with the
+fixed-light atlas on the rest of the room. On Cuevanico it measured 33.2 ms
+median and 33.4 ms p95 while moving. Its 9.69 s cold door was slower than the
+last diffuse-only movement run. The desktop and touch worktable fixture both
+loaded the exact focused export, shared the retained edition, selected a
+part and cleared the table. The focused selection is available in builds.
 The separate appearance viewer also passed a moving hardware check on
 Cuevanico. The lightweight pure, detailed orbital pure and lightweight
 hybrid took 33.4 ms, 50.0 ms and 50.0 ms respectively at the median.

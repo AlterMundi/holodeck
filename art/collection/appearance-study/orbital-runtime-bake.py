@@ -98,7 +98,8 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('output', type=Path)
 parser.add_argument('--size', type=int, choices=(512, 1024, 2048), default=1024)
 parser.add_argument('--samples', type=int, default=48)
-parser.add_argument('--specular', action='store_true', help='Preserve a live, UV-baked roughness and metalness response')
+parser.add_argument('--specular', nargs='?', const='whole', choices=('whole', 'focused'),
+                    help='Use UV-baked roughness and metalness on the whole shell or selected work surfaces')
 args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
 if not 4 <= args.samples <= 64:
     parser.error('--samples must be between 4 and 64')
@@ -118,10 +119,15 @@ assert all(obj.type == 'MESH' for obj in static)
 
 graph = bpy.context.evaluated_depsgraph_get()
 shell_parts = []
+focused_objects = {'Bevelled worktable profile', 'Inset model handling pad', 'Archive rear panel'}
+response_attribute = 'Orbital local reflections'
 for obj in static:
     mesh = bpy.data.meshes.new_from_object(
         obj.evaluated_get(graph), preserve_all_data_layers=True, depsgraph=graph,
     )
+    if args.specular == 'focused':
+        response = mesh.attributes.new(response_attribute, 'INT', 'FACE')
+        response.data.foreach_set('value', np.full(len(mesh.polygons), obj.name in focused_objects, np.int32))
     copy = bpy.data.objects.new(obj.name + ' (bake)', mesh)
     scene.collection.objects.link(copy)
     copy.matrix_world = obj.matrix_world
@@ -191,22 +197,33 @@ if args.specular:
     orm.save()
     orm.pack()
 
-material = bpy.data.materials.new('Orbital static diffuse')
-material.use_nodes = True
-nodes = material.node_tree.nodes
-nodes.clear()
-texture = nodes.new('ShaderNodeTexImage')
-texture.image = atlas
-texture.extension = 'EXTEND'
-uv = nodes.new('ShaderNodeUVMap')
-uv.uv_map = atlas_uv_name
-surface = nodes.new('ShaderNodeOutputMaterial')
-links = material.node_tree.links
-links.new(uv.outputs['UV'], texture.inputs['Vector'])
-if args.specular:
+def room_material(name, response=None):
+    material = bpy.data.materials.new(name)
+    material.use_nodes = True
+    nodes = material.node_tree.nodes
+    nodes.clear()
+    texture = nodes.new('ShaderNodeTexImage')
+    texture.image = atlas
+    texture.extension = 'EXTEND'
+    uv = nodes.new('ShaderNodeUVMap')
+    uv.uv_map = atlas_uv_name
+    surface = nodes.new('ShaderNodeOutputMaterial')
+    links = material.node_tree.links
+    links.new(uv.outputs['UV'], texture.inputs['Vector'])
+    if response is None:
+        unlit = nodes.new('ShaderNodeBackground')
+        links.new(texture.outputs['Color'], unlit.inputs['Color'])
+        links.new(unlit.outputs['Background'], surface.inputs['Surface'])
+        return material
+
     shader = nodes.new('ShaderNodeBsdfPrincipled')
-    shader.inputs['Base Color'].default_value = (.070, .075, .084, 1)
-    shader.inputs['Emission Strength'].default_value = .96
+    if response == 'focused':
+        shader.inputs['Base Color'].default_value = (.018, .019, .023, 1)
+        shader.inputs['Specular IOR Level'].default_value = .16
+        shader.inputs['Emission Strength'].default_value = 1
+    else:
+        shader.inputs['Base Color'].default_value = (.070, .075, .084, 1)
+        shader.inputs['Emission Strength'].default_value = .96
     texture_channels = nodes.new('ShaderNodeTexImage')
     texture_channels.image = orm
     texture_channels.extension = 'EXTEND'
@@ -217,14 +234,23 @@ if args.specular:
     links.new(channels.outputs['Blue'], shader.inputs['Metallic'])
     links.new(texture.outputs['Color'], shader.inputs['Emission Color'])
     links.new(shader.outputs[0], surface.inputs['Surface'])
-else:
-    unlit = nodes.new('ShaderNodeBackground')
-    links.new(texture.outputs['Color'], unlit.inputs['Color'])
-    links.new(unlit.outputs['Background'], surface.inputs['Surface'])
+    return material
+
+
 shell.data.materials.clear()
-shell.data.materials.append(material)
-for polygon in shell.data.polygons:
-    polygon.material_index = 0
+shell.data.materials.append(room_material('Orbital static diffuse', 'whole' if args.specular == 'whole' else None))
+if args.specular == 'focused':
+    selected_faces = shell.data.attributes[response_attribute]
+    indices = np.empty(len(shell.data.polygons), np.int32)
+    selected_faces.data.foreach_get('value', indices)
+    if not 0 < indices.sum() < len(indices):
+        raise RuntimeError('Expected both fixed-light and responsive faces in the orbital shell')
+    shell.data.attributes.remove(selected_faces)
+    shell.data.materials.append(room_material('Orbital focused material response', 'focused'))
+    shell.data.polygons.foreach_set('material_index', indices)
+else:
+    for polygon in shell.data.polygons:
+        polygon.material_index = 0
 for layer in list(shell.data.uv_layers):
     if layer.name != atlas_uv_name:
         shell.data.uv_layers.remove(layer)

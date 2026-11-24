@@ -441,6 +441,35 @@ cost in the matched software fixture. It is a reproducible art candidate
 and remains outside the selected runtime profile. Next revisions should
 reduce reflected-light intensity and compare more motion before selection.
 
+The `--specular focused` export keeps the fixed-light atlas on 11,948
+triangles and applies a weaker live response to the 196 triangles of the
+worktable rim, model pad and archive rear panel. The same atlas supplies
+emission in those surfaces, alongside the baked roughness and metalness.
+The export stays at 1,381,860 bytes and is selectable as
+`matter-workshop-orbital-focused-v1`. It uses the same anchors and moving
+archive mesh and neither replaces nor edits the diffuse export. Rebuild
+from the editable combined finish with the same command above, appending
+`--specular focused` to the arguments after the output directory.
+
+On the matched SwiftShader route with lightweight graphics, 124 moving
+intervals for the diffuse bake measured 66.7 ms median and 133.3 ms p95.
+The retuned whole-shell response measured 166.6 ms and 333.4 ms over 54
+intervals. The focused response measured 83.3 ms and 133.4 ms over 111.
+Matched player-height captures show the focused reflections on the blue
+tabletop and archive panel with the existing warmth retained on the floor.
+The physical Pi run of the focused GLB entered cold in 9.69 s through the
+fixture tunnel. It walked around the bench, turned the archive, cleared
+24 sampled camera centers and returned through the door. The 445 moving
+intervals measured 33.2 ms median and 33.4 ms p95. The earlier diffuse
+movement run through this tunnel took 8.57 s to enter. These single runs
+demonstrate the paths and do not establish a stable latency difference.
+Two independent browsers with desktop writer and emulated-touch reader
+then exercised the real retained worktable sample with the exact focused
+GLB. They restored the 197,642-triangle edition, retained independent
+rotation, prepared the exact part reference, enforced edition revocation
+and shared and cleared the 34,000-triangle edition. Access identities,
+decisions and native delivery were controlled fixtures.
+
 The exact clean bake also ran under the packaged Holodeck client with a real
 retained Support Study on the table. Two independent fixture browsers decoded
 197,642 triangles from the pinned historical edition. Their table rotations

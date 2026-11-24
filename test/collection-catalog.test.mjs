@@ -26,16 +26,25 @@ test('collection positions reject missing rooms and ambiguous resource placement
   const original=readMatterWorkshopArt();
   const orbital=readMatterWorkshopArt('matter-workshop-orbital-v1');
   const baked=readMatterWorkshopArt('matter-workshop-orbital-baked-v1');
-  assert.equal(new Set([original.revision,orbital.revision,baked.revision]).size,3);
+  const focused=readMatterWorkshopArt('matter-workshop-orbital-focused-v1');
+  assert.equal(new Set([original,orbital,baked,focused].map(art=>art.revision)).size,4);
   for(const field of ['archive','shelves','fixtures','colliders']){
     assert.deepEqual(orbital[field],original[field]);
     assert.deepEqual(baked[field],original[field]);
+    assert.deepEqual(focused[field],original[field]);
   }
   const jsonBytes=baked.bytes.readUInt32LE(12);
   const gltf=JSON.parse(baked.bytes.toString('utf8',20,20+jsonBytes));
   assert.ok(gltf.nodes.some(node=>node.name==='archive_turntable_platform'));
   assert.ok(gltf.materials.some(material=>material.name==='Orbital static diffuse'&&
     material.extensions.KHR_materials_unlit&&material.pbrMetallicRoughness.baseColorTexture));
+  const focusedGLTF=JSON.parse(focused.bytes.toString('utf8',20,20+focused.bytes.readUInt32LE(12)));
+  assert.ok(focusedGLTF.nodes.some(node=>node.name==='archive_turntable_platform'));
+  assert.ok(focusedGLTF.materials.some(material=>material.name==='Orbital static diffuse'&&
+    material.extensions.KHR_materials_unlit&&material.pbrMetallicRoughness.baseColorTexture));
+  assert.ok(focusedGLTF.materials.some(material=>material.name==='Orbital focused material response'&&
+    material.emissiveTexture&&material.pbrMetallicRoughness.metallicRoughnessTexture&&
+    material.extensions.KHR_materials_specular));
   assert.throws(()=>collectionSelection({...selected,art:'matter-workshop-v1'},
     new Map([['matter',{links:[{kind:'stair'}]}]])),/without stairs/);
   assert.throws(()=>collectionSelection({...selected,room:'other'},rooms),/existing Collection room/);

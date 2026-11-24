@@ -21,6 +21,12 @@ const variants=Object.freeze({
     maxBytes:1536*1024,
     orbital:true,
   },
+  'matter-workshop-orbital-focused-v1':{
+    path:'room-art/matter-workshop-orbital-focused.glb',
+    digest:'d103aa73cf5213fa0fb3852b518cfc7e306bfe36f93f290195e7e0d47c6ef249',
+    maxBytes:1536*1024,
+    orbital:true,
+  },
 });
 export const MATTER_ART_REVISIONS=Object.freeze(Object.fromEntries(
   Object.values(variants).map(({path,digest})=>[path,digest])));
