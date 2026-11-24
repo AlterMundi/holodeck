@@ -23,6 +23,10 @@ round trip in lightweight mode. The 371 moving frame intervals measured
 33.3 ms median and 50 ms p95. The orbital PBR predecessor recorded
 33.4 ms median and 66.6 ms p95 in a matched run. The clean bake took 12.93 s
 to enter cold through the test tunnel, versus 9.86 s for the predecessor.
+The latest candidate starts loading the authorized room model during presence
+reconnect. On Cuevanico, the model response started at 0.78 s instead of
+3.67 s in the paired packaged runs. Full cold readiness still took 14.51 s
+instead of 15.09 s, so room entry needs further work.
 [Qualification details](../art/collection/appearance-study/README.md#orbital-fixed-light-bake).
 The live room still uses its previously selected release.
 

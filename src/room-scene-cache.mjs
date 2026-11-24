@@ -1,3 +1,11 @@
+// Room documents point at an exact same-origin art revision. Reject all
+// other model addresses before a detached scene can acquire a loader handle.
+export function roomArtURL(source,scope){
+  if(typeof source!=='string'||!source.startsWith(scope.pathname))return null;
+  if(!/^[a-f0-9]{64}\.glb$/.test(source.slice(scope.pathname.length)))return null;
+  return new URL(source,scope).href;
+}
+
 // Detached static room markup and its resource handles. A cache hit does
 // not authorize a mount. The caller must confirm the current room and scope.
 export class RoomSceneCache {

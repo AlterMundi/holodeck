@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {RoomSceneCache} from '../src/room-scene-cache.mjs';
+import {RoomSceneCache,roomArtURL} from '../src/room-scene-cache.mjs';
 
 test('detached scene cache rejects different actors and revisions and evicts least recently used',()=>{
   globalThis.document={createElement:name=>({name})};
@@ -34,4 +34,14 @@ test('detached scene cache rejects different actors and revisions and evicts lea
     assert.deepEqual(removed,['gallery','foyer','revised foyer','tower']);
     assert.equal(cache.remember(hit),null);
   }finally{delete globalThis.document;}
+});
+
+
+test('detached art can acquire only the exact room-scoped model URL',()=>{
+  const scope=new URL('https://holodeck.example/holodeck/api/space/art/');
+  const path=scope.pathname+'a'.repeat(64)+'.glb';
+  assert.equal(roomArtURL(path,scope),scope.origin+path);
+  for(const source of [null,path+'?download=1',path+'#other','//foreign.example'+path,
+    'https://holodeck.example'+path,scope.pathname+'../'+path,scope.pathname+'unretained.glb'])
+    assert.equal(roomArtURL(source,scope),null);
 });

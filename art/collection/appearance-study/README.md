@@ -482,3 +482,19 @@ This isolates only part of the entry delay. In this pair, the clean bake
 had better frame pacing while moving and a slower cold doorway. Qualify
 the phases across repeated loads before attributing the difference to art
 decode, connection handoff or the tunnel.
+
+### Cold doorway with concurrent art loading
+
+The client now starts fetching and parsing the exact scoped GLB after the
+server accepts entry, while presence reconnects. It mounts the scene once the
+presence scope matches. In one cold run per configuration on the same physical
+Pi through the same tunnel, the packed model response moved from 3.67 s to
+0.78 s after crossing. The optimized client made one model request and its
+654,542-byte encoded body finished about 0.97 s after the browser recorded
+the crossing. The DOM first observed both the room mount and model readiness
+about 6.30 s after that browser timestamp. The separate browser-automation
+check for full readiness finished at 14.51 s, up from the start of the door
+action, versus 15.09 s with the previous load order. These measurements use
+different observation points and do not identify the cause of the remaining
+delay. Both runs returned to the foyer and confirmed 404 for the scoped model
+after exit. The test profiles and forwards were removed.

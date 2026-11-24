@@ -1,5 +1,5 @@
 import {RemoteDocumentWrapper} from '@mml-io/mml-web';
-import {RoomSceneCache} from './room-scene-cache.mjs';
+import {RoomSceneCache,roomArtURL} from './room-scene-cache.mjs';
 import {constrainInteriorCamera} from './interior-camera.mjs';
 import {capWorldPixelRatio,usesLightGraphics} from './render-pixel-budget.mjs';
 import {nearestCreationPosition} from './world-layout.mjs';
@@ -230,21 +230,27 @@ function mountScene(){
   if(!inside)return true;
   const stored=sceneCache.remember(activeSpace.scene);
   if(stored?.id!==activeSpace.id)return false;
-  // The move acknowledgement can arrive before the old presence connection
-  // closes. Keep the detached scene and mount it only for the new scope.
-  if(networkScope!==activeSpace.id)return true;
   const renderer=client.getRenderer();
+  const artScope=url('api/space/art/');
+  // An accepted room move authorizes its art endpoint immediately. Overlap
+  // decoding with presence reconnect, but defer mounting and collision until
+  // the room's presence scope has actually arrived.
+  if(networkScope!==activeSpace.id){
+    const source=roomArtURL(stored.template.content.querySelector('m-model#room-art[src]')?.getAttribute('src'),artScope);
+    if(!needsSync&&source&&renderer){
+      const resources=renderer.mmlCompositionScene.mmlScene.getGraphicsAdapter().getResourceManager();
+      sceneCache.keepArt(stored,()=>resources.loadModel(source));
+    }
+    return true;
+  }
   const wrapper=new RemoteDocumentWrapper(url('api/space/scene').href,window,
     renderer.mmlCompositionScene.mmlScene,()=>{});
   remoteScene=wrapper.remoteDocument;
   remoteScene.append(stored.template.content.cloneNode(true));
   renderer.mmlTargetElement.append(remoteScene);
   roomModel=remoteScene.querySelector('m-model#room-art[src]');
-  const source=roomModel?.getAttribute('src');
-  const prefix=url('api/space/art/').pathname;
-  if(!stored.art&&source?.startsWith(prefix)&&/^[a-f0-9]{64}\.glb$/.test(source.slice(prefix.length))){
-    pendingRoomArt={stored,model:roomModel,source};
-  }
+  const source=roomArtURL(roomModel?.getAttribute('src'),artScope);
+  if(!stored.art&&source)pendingRoomArt={stored,model:roomModel,source};
   if(!contentVisitor?.catalogFlight){
     const entries=contentVisitor?.entries??[];
     galleryModels?.sync(entries);
@@ -252,14 +258,13 @@ function mountScene(){
   }
   return true;
 }
-// Keep one unattached loader handle only after the authorized model has loaded.
+// Keep a loaded room available for a warm return if it mounted directly.
 function keepRoomArt(){
   if(!pendingRoomArt||needsSync||networkScope!==activeSpace.id)return;
   const {stored,model,source}=pendingRoomArt;
   if(!model.modelGraphics?.hasLoadedModel())return;
   pendingRoomArt=null;
-  const address=model.contentSrcToContentAddress(source);
-  sceneCache.keepArt(stored,()=>model.getScene().getGraphicsAdapter().getResourceManager().loadModel(address));
+  sceneCache.keepArt(stored,()=>model.getScene().getGraphicsAdapter().getResourceManager().loadModel(source));
 }
 // Cosmetic, non-colliding projection of the current server-authorized room.
 function gardenMarkers(){
