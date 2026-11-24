@@ -1,5 +1,6 @@
 """Fit surface-registered Gaussian splats from the calibrated Matter captures."""
 from pathlib import Path
+from hashlib import sha256
 import json
 import math
 import subprocess
@@ -39,14 +40,25 @@ def soften(pixels, radius):
 def normalized(vector):
     return vector / np.linalg.norm(vector, axis=-1, keepdims=True).clip(1e-8)
 
-records, all_samples = [], []
+records, all_samples, all_surfaces = [], [], []
+surface_catalog = None
 for name in views:
     camera = np.load(root/f'{name}.npz')
     samples = camera['view']
     h, w = samples.shape[:2]
     if samples.shape != ((384, 576, 7) if detail else (256, 384, 7)) or not np.isfinite(samples).all():
         raise ValueError(f'Capture {name} has invalid samples')
-    all_samples.append(samples[samples[:,:,6] > .10, :])
+    visible = samples[:,:,6] > .10
+    surfaces = camera['surface'] if 'surface' in camera else None
+    if surfaces is not None:
+        if surface_catalog is None:
+            surface_catalog = sha256((root/'surfaces.json').read_bytes()).hexdigest()
+        if str(camera['surface_catalog']) != surface_catalog:
+            raise ValueError(f'Capture {name} does not match the selected surface catalog')
+        if surfaces.shape != (h,w) or not np.issubdtype(surfaces.dtype, np.unsignedinteger) or not surfaces[visible].all():
+            raise ValueError(f'Capture {name} has invalid surface IDs')
+        all_surfaces.append(surfaces[visible])
+    all_samples.append(samples[visible])
     base = rgb(root/f'{name}.png', w, h)
     generated = name in generated_views
     raw = rgb(root/f'{name}-style.png', w, h) if generated else base
@@ -65,14 +77,26 @@ for name in views:
         edge = np.max(abs(base - soften(base, 2)), axis=2, keepdims=True)
         detail_weight = np.clip(1 - edge / 35, .18, .85)
         grade = np.clip(soften(raw, 1) + (raw - soften(raw, 1)) * detail_weight, 0, 255)
-    records.append((name, samples, camera['position'], camera['target'], float(camera['fov']),
-                    base, raw, grade, generated))
+    if 'intrinsics' in camera:
+        intrinsics = camera['intrinsics'] / 2
+    else:
+        focal = h / 2 / math.tan(math.radians(float(camera['fov'])) / 2)
+        intrinsics = focal, focal, w / 2, h / 2
+    records.append((name, samples, camera['position'], camera['target'], intrinsics,
+                    base, raw, grade, generated, surfaces))
 
 merged = np.concatenate(all_samples)
-cells = np.unique(np.rint(merged[:,:3]/spacing).astype(np.int32), axis=0, return_inverse=True)[1]
+if all_surfaces and len(all_surfaces) != len(views):
+    raise ValueError('Capture set mixes different generations of surface masks')
+surface_ids = np.concatenate(all_surfaces) if len(all_surfaces) == len(views) else None
+voxels = np.rint(merged[:,:3]/spacing).astype(np.int32)
+if surface_ids is not None:
+    voxels = np.column_stack((voxels, surface_ids.astype(np.int32)))
+cells = np.unique(voxels, axis=0, return_inverse=True)[1]
 ordered = np.lexsort((-merged[:,6], cells))
 keep = ordered[np.r_[True, np.diff(cells[ordered])!=0]]
 selected = merged[keep]
+point_surfaces = surface_ids[keep] if surface_ids is not None else None
 xyz = selected[:,:3].copy()
 normals = normalized(selected[:,3:6])
 weights = np.zeros(len(xyz), np.float32)
@@ -80,7 +104,8 @@ sums = np.zeros((3, len(xyz), 3), np.float32)
 observations = np.zeros(len(xyz), np.int8)
 styled = np.zeros(len(xyz), bool)
 view_matches = {}
-for name, grid, blender_pos, target, fov, base, raw, grade, generated in records:
+surface_rejections = {}
+for name, grid, blender_pos, target, intrinsics, base, raw, grade, generated, surfaces in records:
     pos = blender_pos[[0,2,1]] * (1,1,-1)
     goal = target[[0,2,1]] * (1,1,-1)
     front = normalized(goal-pos)
@@ -89,15 +114,19 @@ for name, grid, blender_pos, target, fov, base, raw, grade, generated in records
     displacement = xyz-pos
     depth = displacement @ front
     h, w = grid.shape[:2]
-    focal = h / 2 / math.tan(math.radians(fov)/2)
-    xs = np.rint((displacement @ right) * focal / depth.clip(.03) + w / 2 - .25).astype(int)
-    ys = np.rint(-(displacement @ up) * focal / depth.clip(.03) + h / 2 - .25).astype(int)
+    fx, fy, cx, cy = intrinsics
+    xs = np.rint((displacement @ right) * fx / depth.clip(.03) + cx - .25).astype(int)
+    ys = np.rint(-(displacement @ up) * fy / depth.clip(.03) + cy - .25).astype(int)
     valid = np.flatnonzero((depth > .06) & (xs>=0) & (xs<w) & (ys>=0) & (ys<h))
     row,col = ys[valid],xs[valid]
     seen = grid[row,col]
     distances = np.linalg.norm(xyz[valid]-seen[:,:3], axis=1)
     accepted = (distances <= np.minimum(.075, .012 + depth[valid]*.008)) & (
         np.einsum('ij,ij->i', normals[valid], seen[:,3:6]) > .85)
+    if point_surfaces is not None:
+        same_surface = surfaces[row,col] == point_surfaces[valid]
+        surface_rejections[name] = int(np.count_nonzero(accepted & ~same_surface))
+        accepted &= same_surface
     choice = valid[accepted]
     row, col = row[accepted], col[accepted]
     if orbital:
@@ -157,6 +186,8 @@ stats = dict(spacingMeters=spacing, splats=len(packed), bytes=compact.nbytes if 
              multiView=float(np.mean(observations[retained]>1)),
              generatedCoverage=float(np.mean(styled[retained])),
              viewMatches=view_matches,
-             fittedViews=list(views), generatedViews=[r[0] for r in records if r[-1]], heldOut='held')
+             fittedViews=list(views), generatedViews=[name for name in views if name in generated_views], heldOut='held')
+if surface_ids is not None:
+    stats['differentSurfaceRejections'] = surface_rejections
 (root/f'fit{suffix}.json').write_text(json.dumps(stats,indent=2)+'\n')
 print(json.dumps(stats))

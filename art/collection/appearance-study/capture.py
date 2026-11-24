@@ -1,5 +1,7 @@
 """Export known player-height cameras, reference renders, and visible surfaces."""
 from pathlib import Path
+from hashlib import sha256
+import json
 import math
 import sys
 
@@ -49,6 +51,18 @@ if fine:
         'bench': ((-2.73, .60, 2.20), (.00, .43, .68)),
     })
 w, h = scene.render.resolution_x, scene.render.resolution_y
+surface_labels = {
+    obj.name: str(obj.get('holodeck_surface_id') or obj.name)
+    for obj in scene.objects if obj.type in ('MESH', 'CURVE', 'SURFACE', 'FONT', 'META')
+}
+if len(set(surface_labels.values())) != len(surface_labels):
+    raise ValueError('Capture surface IDs must be unique in this scene')
+labels = sorted(surface_labels.values())
+label_indices = {label: index for index, label in enumerate(labels, 1)}
+surface_indices = {name: label_indices[label] for name, label in surface_labels.items()}
+catalog = (json.dumps([None, *labels], indent=2) + '\n').encode()
+(out / 'surfaces.json').write_bytes(catalog)
+surface_catalog = sha256(catalog).hexdigest()
 for name in (arguments or views):
     position, target = views[name]
     camera.location = position
@@ -61,11 +75,14 @@ for name in (arguments or views):
     graph = bpy.context.evaluated_depsgraph_get()
     origin = camera.matrix_world.translation
     rotation = camera.matrix_world.to_quaternion()
+    forward = rotation @ Vector((0, 0, -1))
     frame = camera.data.view_frame(scene=scene)
     x0, x1 = min(v.x for v in frame), max(v.x for v in frame)
     y0, y1 = min(v.y for v in frame), max(v.y for v in frame)
     z = frame[0].z
     grid = np.zeros((h//2, w//2, 7), dtype=np.float32)
+    surfaces = np.zeros((h//2, w//2), dtype=np.uint32)
+    depth = np.zeros(surfaces.shape, dtype=np.float32)
     for y in range(0, h, 2):
         for x in range(0, w, 2):
             ray = rotation @ Vector((x0 + (x1-x0)*(x+.5)/w, y1 - (y1-y0)*(y+.5)/h, z)).normalized()
@@ -80,5 +97,10 @@ for name in (arguments or views):
                     point.x, point.z, -point.y, normal.x, normal.z, -normal.y,
                     max(.05, -ray.dot(normal)),
                 )
+                surfaces[y//2, x//2] = surface_indices[obj.name]
+                depth[y//2, x//2] = (point - origin).dot(forward)
     np.savez_compressed(out / f'{name}.npz', view=grid, position=position,
-                        target=target, fov=math.degrees(2*math.atan((y1-y0)/(-2*z))))
+                        target=target, fov=math.degrees(2*math.atan((y1-y0)/(-2*z))),
+                        surface=surfaces, surface_catalog=surface_catalog,
+                        depth=depth, camera_to_world=np.array(camera.matrix_world),
+                        intrinsics=np.array((-z*w/(x1-x0), -z*h/(y1-y0), -x0*w/(x1-x0), y1*h/(y1-y0))))

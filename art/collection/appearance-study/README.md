@@ -45,6 +45,30 @@ positions. Reuse a single bounded capture directory. Keep selected image
 masters and the outcome evidence. Rebuild disposable geometry and bundle
 derivatives from these inputs for another pass.
 
+New calibrated captures also save camera-space metric depth and a visible
+surface index alongside the existing world-position/normal grid. The index
+resolves through `surfaces.json`; set `holodeck_surface_id` on authored Blender
+objects whose identity must survive a rename. Indices are local to the
+catalog and zero marks a miss. The capture stores Blender camera-to-world
+and full-resolution pixel intrinsics `fx, fy, cx, cy`. The half-resolution
+grids sample at full-image coordinates `(2*x + .5, 2*y + .5)`.
+
+With these masks the fitter keeps distinct surfaces in the same voxel and
+rejects a cross-view color sample from a different surface, even when depth
+and normals agree. The camera set must agree on the surface catalog. Legacy
+captures without masks still exercise the original fit. Object identity
+helps avoid projection bleed across authored boundaries. It cannot correct
+detail that a generated view depicts in the wrong place on a valid surface.
+An entry/east calibration check reprojected 195,051 visible samples to within
+0.0002 source pixels and recovered 64 shared surface IDs. In the six-view
+control with Blender RGB in every view, identity withheld 1,043 color votes
+that passed depth and normal checks. Keeping separate samples at shared voxel
+boundaries increased the lightweight fit from 123,392 to 126,002 splats.
+The legacy fit regenerated the exact previous bytes from those same views
+with the new fields removed. This is a correspondence test using coherent
+renders. It leaves style coherence and the visual benefit of the extra
+boundary samples to be verified on generated inputs.
+
 ## 23 November 2026 result
 
 Spark 2.4.0 and the app shared the same Three.js instance in a loopback
