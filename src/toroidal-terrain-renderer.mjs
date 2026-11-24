@@ -13,17 +13,30 @@ function tileKey(tile, segments) {
   return `${tile.key}:${tile.coarseEdges ?? 0}:${segments}`;
 }
 
-function createTile(data, material) {
+function meshFor(data, material) {
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new BufferAttribute(data.positions, 3));
   geometry.setAttribute('normal', new BufferAttribute(data.normals, 3));
   geometry.setIndex(new BufferAttribute(data.indices, 1));
   geometry.computeBoundingSphere();
-  const mesh = new Mesh(geometry, material);
+  return new Mesh(geometry,material);
+}
+
+function createTile(data, material, waterMaterial) {
+  const mesh = meshFor(data,material);
+  if(data.water){
+    const water=meshFor(data.water,waterMaterial);
+    water.name='Water surface';
+    mesh.add(water);
+  }
   mesh.position.fromArray(data.origin);
   mesh.matrixAutoUpdate = false;
   mesh.updateMatrix();
   return mesh;
+}
+
+function releaseTile(tile) {
+  tile.traverse(mesh=>mesh.geometry?.dispose());
 }
 
 function viewerKey(viewer, profile) {
@@ -37,6 +50,7 @@ export class ToroidalTerrainRenderer {
     this.group = new Group();
     this.group.name = 'Toroidal terrain';
     this.material = new MeshStandardMaterial({color: 0x819361, roughness: .96});
+    this.waterMaterial = new MeshStandardMaterial({color:0x138583,roughness:.26,metalness:.18});
     this.active = new Map();
     this.target = null;
     this.requested = null;
@@ -45,7 +59,7 @@ export class ToroidalTerrainRenderer {
     this.disposed = false;
     for (let column = 0; column < TOROIDAL_TERRAIN.rootColumns; column += 1) {
       const tile = terrainTile(0, column, 0);
-      const mesh = createTile(buildTerrainTile(tile, ROOT_SEGMENTS), this.material);
+      const mesh = createTile(buildTerrainTile(tile, ROOT_SEGMENTS), this.material, this.waterMaterial);
       this.active.set(tileKey(tile, ROOT_SEGMENTS), mesh);
       this.group.add(mesh);
     }
@@ -106,7 +120,7 @@ export class ToroidalTerrainRenderer {
       const missing = entries.filter(({key}) => !this.active.has(key));
       this.target = {key: job.request.key, entries, missing, segments, received: new Map()};
     } else if (job.kind === 'mesh' && job.target === this.target && job.target.key === this.requested.key) {
-      job.target.received.set(job.key, createTile(data.mesh, this.material));
+      job.target.received.set(job.key, createTile(data.mesh, this.material, this.waterMaterial));
     }
     this.pump();
   }
@@ -123,7 +137,7 @@ export class ToroidalTerrainRenderer {
     for (const [key, mesh] of this.active) {
       if (next.has(key)) continue;
       this.group.remove(mesh);
-      mesh.geometry.dispose();
+      releaseTile(mesh);
     }
     this.active = next;
     this.selectedKey = target.key;
@@ -131,7 +145,7 @@ export class ToroidalTerrainRenderer {
   }
 
   discardTarget() {
-    for (const mesh of this.target?.received.values() ?? []) mesh.geometry.dispose();
+    for (const mesh of this.target?.received.values() ?? []) releaseTile(mesh);
     this.target = null;
   }
 
@@ -146,13 +160,14 @@ export class ToroidalTerrainRenderer {
     if (this.disposed) return;
     this.disposed = true;
     this.stopWorker();
-    for (const mesh of this.active.values()) mesh.geometry.dispose();
+    for (const mesh of this.active.values()) releaseTile(mesh);
     this.active.clear();
     this.selectedKey = null;
     this.requested = null;
     this.group.clear();
     this.group.removeFromParent();
     this.material.dispose();
+    this.waterMaterial.dispose();
   }
 
   status() {

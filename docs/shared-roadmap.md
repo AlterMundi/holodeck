@@ -478,9 +478,13 @@ position. With both clients connected, the test then cut one actual multiplayer
 WebSocket on the underside of the ring and cleared the URL pose. After fresh
 scope confirmation, the interrupted client recovered the last rendered
 position and heading, and its peer received that position over the new socket.
-The fixture did not supply the Collection asset selection. Cave and water
-traversal, the full circuit, qualified appearance and production release
-remain open.
+A seeded water basin near the house now streams its surface with the same
+balanced tiles. The water and ground agree on the radial level, including edge
+stitching. The paired browser trial walked from a dry bank into deep water,
+confirmed the avatar was supported near the surface, and walked back out.
+The fixture did not supply the Collection asset selection. Cave traversal,
+the full circuit, performance qualification on the new terrain and production
+release remain open.
 
 
 ## Delivery sequence and cards

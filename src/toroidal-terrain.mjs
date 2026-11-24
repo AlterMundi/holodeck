@@ -94,6 +94,10 @@ export function terrainElevation(u, v, terrain = TOROIDAL_TERRAIN) {
   return mix(pavedGrade, elevation, fade(Math.max(0, distance - 32) / 44));
 }
 
+export function terrainWaterDepth(u, v, terrain = TOROIDAL_TERRAIN) {
+  return Math.max(0, terrain.waterLevel - terrainElevation(u, v, terrain));
+}
+
 export function terrainTile(level, column, row, terrain = TOROIDAL_TERRAIN) {
   if (!Number.isInteger(level) || level < 0 || level > terrain.maxLevel ||
       !Number.isInteger(column) || !Number.isInteger(row)) {
@@ -122,25 +126,31 @@ export function buildTerrainTile(tile, segmentCount, coarseEdges = 0, terrain = 
   const positions = new Float32Array(width * width * 3);
   const normals = new Float32Array(positions.length);
   const indices = new Uint16Array(segmentCount * segmentCount * 6);
+  const waterLevel = terrain.waterLevel;
+  const elevations = new Float64Array(width * width);
   const terrainSample = (u, v) => terrainPosition(u, v, terrainElevation(u, v, terrain), terrain);
-  const sample = (i, j) => quantizeMeshPoint(terrainSample(
-    (column + i / segmentCount) / columns, (row + j / segmentCount) / rows,
-  ));
+  const coordinates = (i, j) => [(column + i / segmentCount) / columns, (row + j / segmentCount) / rows];
+  const sample = (i, j) => quantizeMeshPoint(terrainSample(...coordinates(i,j)));
   const midpoint = (a, b) => a.map((value, axis) => (value + b[axis]) / 2);
+  const stitch = (samplePoint,i,j) => {
+    const coarseVertical = (i === 0 && (coarseEdges & TERRAIN_EDGES.west)) ||
+      (i === segmentCount && (coarseEdges & TERRAIN_EDGES.east));
+    const coarseHorizontal = (j === 0 && (coarseEdges & TERRAIN_EDGES.south)) ||
+      (j === segmentCount && (coarseEdges & TERRAIN_EDGES.north));
+    // Edge endpoints stay at the canonical samples while odd vertices use
+    // their enclosing coarse edge. Apply the same rule to both surfaces.
+    if (coarseVertical && j % 2) return midpoint(samplePoint(i,j-1),samplePoint(i,j+1));
+    if (coarseHorizontal && i % 2) return midpoint(samplePoint(i-1,j),samplePoint(i+1,j));
+    return samplePoint(i,j);
+  };
   for (let j = 0; j < width; j += 1) {
     for (let i = 0; i < width; i += 1) {
       const index = (j * width + i) * 3;
-      const westOrEast = (i === 0 && (coarseEdges & TERRAIN_EDGES.west)) ||
-        (i === segmentCount && (coarseEdges & TERRAIN_EDGES.east));
-      const southOrNorth = (j === 0 && (coarseEdges & TERRAIN_EDGES.south)) ||
-        (j === segmentCount && (coarseEdges & TERRAIN_EDGES.north));
-      let point = sample(i, j);
-      // Each edge's endpoints stay identical to the canonical field samples.
-      if (westOrEast && j % 2) point = midpoint(sample(i, j - 1), sample(i, j + 1));
-      if (southOrNorth && i % 2) point = midpoint(sample(i - 1, j), sample(i + 1, j));
+      const point = stitch(sample,i,j);
       for (let axis = 0; axis < 3; axis += 1) positions[index + axis] = point[axis] - origin[axis];
 
-      const u = (column + i / segmentCount) / columns, v = (row + j / segmentCount) / rows;
+      const [u,v] = coordinates(i,j);
+      elevations[j * width + i] = terrainCoordinates(point,terrain).height;
       const du = 1 / 8192, dv = 1 / 2048;
       const west = terrainSample(u - du, v), east = terrainSample(u + du, v);
       const south = terrainSample(u, v - dv), north = terrainSample(u, v + dv);
@@ -155,7 +165,33 @@ export function buildTerrainTile(tile, segmentCount, coarseEdges = 0, terrain = 
       }
     }
   }
-  return { origin, positions, normals, indices };
+  const waterIndices = [];
+  if (Number.isFinite(waterLevel)) {
+    for (let index = 0; index < indices.length; index += 3) {
+      const a = indices[index], b = indices[index + 1], c = indices[index + 2];
+      if (Math.min(elevations[a], elevations[b], elevations[c]) < waterLevel + .002)
+        waterIndices.push(a,b,c);
+    }
+  }
+  let water = null;
+  if (waterIndices.length) {
+    const waterPositions = new Float32Array(positions.length);
+    const waterNormals = new Float32Array(normals.length);
+    const waterSample = (i,j) => quantizeMeshPoint(terrainPosition(...coordinates(i,j),waterLevel,terrain));
+    for (let j = 0; j < width; j += 1) {
+      for (let i = 0; i < width; i += 1) {
+        const index = (j * width + i) * 3;
+        const point = stitch(waterSample,i,j);
+        const {up} = terrainFrame(...coordinates(i,j),terrain);
+        for (let axis = 0; axis < 3; axis += 1) {
+          waterPositions[index + axis] = point[axis] - origin[axis];
+          waterNormals[index + axis] = up[axis];
+        }
+      }
+    }
+    water = {positions:waterPositions,normals:waterNormals,indices:new Uint16Array(waterIndices)};
+  }
+  return {origin, positions, normals, indices, water};
 }
 
 const neighbors = [

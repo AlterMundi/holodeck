@@ -10,6 +10,8 @@ const GRAVITY = 19.6;
 const JUMP_SPEED = 5.8;
 const WALK_SPEED = 5;
 const RUN_SPEED = 8;
+const FLOAT_DRAFT = .96;
+const WADE_DEPTH = .18;
 const wrap = turns => ((turns % 1) + 1) % 1;
 const wrapYaw = radians => Math.atan2(Math.sin(radians), Math.cos(radians));
 
@@ -39,7 +41,8 @@ export class ToroidalLocomotion {
     this.ground = ground;
     this.u = wrap(u);
     this.v = wrap(v);
-    const floor = ground(this.u, this.v, terrain);
+    this.waterLevel = terrain.waterLevel ?? -Infinity;
+    const floor = this.supportAt(this.u,this.v);
     this.height = Math.max(floor, height ?? floor);
     this.grounded = this.height === floor;
     this.yaw = wrapYaw(yaw);
@@ -68,22 +71,28 @@ export class ToroidalLocomotion {
     }
   }
 
+  supportAt(u,v) {
+    return Math.max(this.ground(u,v,this.terrain),this.waterLevel-FLOAT_DRAFT);
+  }
+
   step(ringTarget, crossTarget) {
+    const immersion = Math.max(0, Math.min(1,(this.waterLevel-this.height-WADE_DEPTH)/(FLOAT_DRAFT-WADE_DEPTH)));
+    const speedFactor = 1 - .56 * immersion;
     const response = this.grounded ? .18 : .065;
-    this.ringSpeed += (ringTarget - this.ringSpeed) * response;
-    this.crossSpeed += (crossTarget - this.crossSpeed) * response;
+    this.ringSpeed += (ringTarget * speedFactor - this.ringSpeed) * response;
+    this.crossSpeed += (crossTarget * speedFactor - this.crossSpeed) * response;
     const {tubeRadius, majorRadius} = this.terrain;
     const tubeDistance = tubeRadius + this.height;
     const ringDistance = majorRadius + tubeDistance * Math.cos(this.v * TAU);
     const nextU = wrap(this.u + this.ringSpeed * STEP / (ringDistance * TAU));
     const nextV = wrap(this.v + this.crossSpeed * STEP / (tubeDistance * TAU));
-    const currentGround = this.ground(this.u, this.v, this.terrain);
-    const nextGround = this.ground(nextU, nextV, this.terrain);
+    const currentGround = this.supportAt(this.u,this.v);
+    const nextGround = this.supportAt(nextU,nextV);
     const groundDelta = nextGround - currentGround;
     const distance = Math.hypot(this.ringSpeed, this.crossSpeed) * STEP;
 
     if (this.jumpQueued && this.grounded) {
-      this.radialSpeed = JUMP_SPEED;
+      this.radialSpeed = JUMP_SPEED * (1-.7*immersion);
       this.grounded = false;
     }
     this.jumpQueued = false;
@@ -114,7 +123,7 @@ export class ToroidalLocomotion {
     const {u, v, height} = terrainCoordinates([point.x, point.y, point.z], this.terrain);
     this.u = u;
     this.v = v;
-    this.height = Math.max(height, this.ground(u, v, this.terrain));
+    this.height = Math.max(height,this.supportAt(u,v));
     if (this.height > height || this.grounded) this.radialSpeed = 0;
   }
 

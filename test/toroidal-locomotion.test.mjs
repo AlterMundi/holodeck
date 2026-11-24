@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {Quaternion, Vector3} from 'three';
 import {ToroidalLocomotion, toroidalRotation} from '../src/toroidal-locomotion.mjs';
-import {terrainElevation, terrainFrame} from '../src/toroidal-terrain.mjs';
+import {TOROIDAL_TERRAIN, terrainElevation, terrainFrame, terrainWaterDepth} from '../src/toroidal-terrain.mjs';
 
 const EPS = 1e-9;
 
@@ -30,7 +30,7 @@ test('matched inputs at 30 and 120 Hz produce the same grounded pose', () => {
 
 test('jump rises along the local up axis and lands at the same point on every face', () => {
   for (const v of [0, .25, .5, .75]) {
-    const motion = new ToroidalLocomotion({u: .42, v});
+    const motion = new ToroidalLocomotion({u: .42, v, ground: () => 6});
     const start = motion.pose();
     const {position, grounded} = simulate(motion, .2, 60, {jump: true});
     assert.equal(grounded, false);
@@ -74,4 +74,25 @@ test('radial motion can complete a lap around the ring on a level reference surf
   assert.ok(motion.u > .02 && motion.u < .04);
   assert.equal(motion.v, .75);
   assert.equal(motion.height, 0);
+});
+
+test('the seeded shore supports wading, a deep crossing and return to dry land', () => {
+  const motion = new ToroidalLocomotion({u: .0155,v: .237});
+  const seen = new Set();
+  for (let frame = 0; frame < 55 * 60; frame += 1) {
+    motion.update(1/60,{forward:1,sprint:true});
+    const depth=terrainWaterDepth(motion.u,motion.v);
+    if (depth===0) seen.add('dry');
+    else if (depth<.8) seen.add('wading');
+    else if (depth>2&&motion.grounded) {
+      seen.add('floating');
+      assert.ok(motion.height > terrainElevation(motion.u,motion.v) + 1);
+      assert.ok(motion.height > TOROIDAL_TERRAIN.waterLevel - 1);
+      assert.ok(motion.crossSpeed < 4);
+    }
+    if(seen.has('floating')&&depth===0&&motion.v>.27)break;
+  }
+  assert.deepEqual([...seen],['dry','wading','floating']);
+  assert.equal(terrainWaterDepth(motion.u,motion.v),0);
+  assert.ok(motion.v>.27);
 });

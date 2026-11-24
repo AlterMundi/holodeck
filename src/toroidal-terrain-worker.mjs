@@ -8,7 +8,9 @@ self.onmessage = ({data}) => {
     }
     const {tile, segments} = data;
     const mesh = buildTerrainTile(tile, segments, tile.coarseEdges);
-    self.postMessage({mesh}, [mesh.positions.buffer, mesh.normals.buffer, mesh.indices.buffer]);
+    const arrays=[mesh.positions,mesh.normals,mesh.indices];
+    if(mesh.water)arrays.push(mesh.water.positions,mesh.water.normals,mesh.water.indices);
+    self.postMessage({mesh}, arrays.map(array=>array.buffer));
   } catch {
     self.postMessage({failed: true});
   }

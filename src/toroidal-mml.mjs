@@ -1,6 +1,6 @@
 import {Line3, Quaternion, Vector3} from 'three';
 import {ToroidalLocomotion, toroidalRotation} from './toroidal-locomotion.mjs';
-import {TOROIDAL_SPAWN, terrainCoordinates, terrainElevation} from './toroidal-terrain.mjs';
+import {TOROIDAL_SPAWN, terrainCoordinates} from './toroidal-terrain.mjs';
 
 // The MML host still owns input, network cadence, interpolation, avatar
 // animation and the orbit camera. Only the selected exterior uses a radial
@@ -53,7 +53,7 @@ export function bindToroidalMml(manager, camera, enabled) {
     quaternion.set(facing.x, facing.y, facing.z, facing.w);
     controller.controlState = control;
     controller.characterOnGround = state.grounded;
-    controller.currentHeight = motion.height - terrainElevation(motion.u, motion.v);
+    controller.currentHeight = motion.height - motion.supportAt(motion.u,motion.v);
     controller.characterVelocity.set(0, motion.radialSpeed, 0);
     controller.networkState = {
       position: state.position, rotation: state.rotation, state: controller.getTargetAnimation(),

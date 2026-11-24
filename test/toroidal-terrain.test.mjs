@@ -88,3 +88,28 @@ test('terrain selection partitions both axes under the tile budget and balances 
     }
   }
 });
+
+test('wet terrain emits bounded geometry at the shared radial water level', () => {
+  const dry = buildTerrainTile(terrainTile(7, 0, 32),16);
+  assert.equal(dry.water,null);
+  const wet = buildTerrainTile(terrainTile(7, 9, 32),16);
+  assert.ok(wet.water?.indices.length>0 && wet.water.indices.length<=wet.indices.length);
+  const i=wet.water.indices[0]*3;
+  const p=wet.origin.map((value,axis)=>value+wet.water.positions[i+axis]);
+  near(terrainCoordinates(p).height,TOROIDAL_TERRAIN.waterLevel,.001);
+});
+
+test('water edges use the same exact coarse-to-fine seam as ground', () => {
+  const allWet={...TOROIDAL_TERRAIN,waterLevel:80};
+  const count=16;
+  const coarse=buildTerrainTile(terrainTile(3,-1,2),count,0,allWet);
+  const fine=buildTerrainTile(terrainTile(4,0,4),count,TERRAIN_EDGES.west,allWet);
+  const coarseSurface={origin:coarse.origin,positions:coarse.water.positions};
+  const fineSurface={origin:fine.origin,positions:fine.water.positions};
+  for(let j=0;j<=count;j++){
+    const lower=point(coarseSurface,count,Math.floor(j/2),count);
+    const upper=point(coarseSurface,count,Math.ceil(j/2),count);
+    point(fineSurface,0,j,count).forEach((value,axis)=>
+      assert.equal(value,(lower[axis]+upper[axis])/2));
+  }
+});
