@@ -1,8 +1,11 @@
 # Current MVP work
 
-Updated 2026-11-24. The separate appearance objective is active in the native
-Holodeck thread. The unsatisfied MVP objective and accounting were preserved
-before editing and resuming the existing goal. The combined orbital finish is retained in
+Updated 2026-11-24. The native Holodeck goal now selects the giant continuous
+toroidal terrain. The prior appearance verification is preserved below and its
+remaining work is tracked in the shared roadmap. The earlier MVP objective and
+accounting were preserved before editing the existing goal.
+
+The combined orbital finish is retained in
 editable Blender source and compared at the entry camera. A diagnostic GLB
 export keeps the original image maps but drops procedural material variation
 and the Cycles lighting and atmosphere. A separate light and albedo bake removes the obvious white artifacts in a

@@ -386,6 +386,55 @@ release follows the verified result. The paused Holodeck MVP and its draft
 work remain available for resumption.
 
 
+### Appearance follow-up
+
+The retained workflow is editable space and objects, calibrated appearance
+references, and a versioned runtime export with separate material and fixed
+lighting data where appropriate. The new bench rail exercised reauthoring and
+both Orbital and Amber bakes. Browser validation of the revised object in both
+styles and the selected release's readback remain open. Keep the staged
+appearance and video controls available for qualification. Future appearance
+iterations can extend material fidelity and close the physical lightweight
+device gaps using the same comparison route.
+
+## First production world — continuous torus
+
+Build a shared seeded landscape for traversal. Both angular terrain coordinates
+wrap. The radial field pulls toward the centerline of the tube, so players walk
+on its outer skin, including the flank facing the central opening. The first
+release has one CompAII house opening into Manipulación de Materia. Locate
+arrival where players can see the opposite arc and find the house, a water
+basin, a traversable cave and a route around the ring from recognizable
+landmarks. Leave earlier island experiments out of this release.
+
+1. Use one periodic sampler and terrain edition for render, physics and world
+   semantics. Refine by projected scale, balance neighboring tile levels and
+   constrain their shared edges across both wrapping axes. Reuse unchanged
+   meshes, generate replacements off the render thread and cap CPU, memory,
+   and GPU work on every frame. Keep a distant silhouette while detail loads.
+2. Keep small-scale water and volumetric cave data in bounded tiles. Match cave
+   mouths to the surface and use the same opened geometry for traversal.
+   Integrate radial locomotion, camera and avatar orientation with existing
+   shared presence and map/portal adapters. Preserve the existing Matter room
+   using its own local frame on either side of the door.
+3. Verify an uninterrupted seam crossing and a complete lap, both water and
+   cave routes, both directions through the house door, two independent
+   participants walking with local up, shared reconnect positions, cold
+   readiness and moving frame time on desktop and the lightweight profile.
+   Install through the existing protected release with an exact rollback.
+
+Use the resonant toroidal neural work as an investigation rather than a source
+of unverified mechanics. The two periodic axes provide natural coordinates for
+standing patterns and wayfinding cues. Consider local activation, phase and
+coupling only after checking the original formulation and testing whether a
+person can perceive and use the result during exploration.
+
+The initial core shares periodic seeded samples, radial coordinate frames and
+bounded balanced mesh selection. Local coordinate and seam tests demonstrate
+the sampling and topology. Browser streaming, collision and world release
+remain open.
+
+
 ## Delivery sequence and cards
 
 The roadmap stages retain their individual exit evidence. For Holodeck,
