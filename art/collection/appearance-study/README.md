@@ -361,6 +361,33 @@ do not set universal acceptance thresholds. Any first-frame shader change
 needs a physical repeat because queuing screen shaders alone already failed
 to reduce the first-draw cost.
 
+The focused Matter export now exposes **Apariencia → Estilo de la sala** in
+the live-room client. The authored orbital look is the default. **Luz ámbar**
+applies separate color factors to the fixed-light shell and the emissive
+work surfaces. The renderer binds the rules to the exact material slots
+from this export and clones those materials per mounted room. Both styles
+reuse the same textured geometry and exact art revision. The control is
+local to the current page and stays independent of the saved avatar choice.
+This increment establishes local style selection and reversibility. Its
+rules are color grades over the existing bake, with no new detail maps or
+recomputed lighting.
+
+In a packed application fixture, one desktop writer and one emulated-touch
+reader each changed style independently. The room node and the original
+197,642-triangle model stayed mounted, and the shared worktable revision
+did not change. Switching back restored the exact original material
+factors. The same two clients then rotated the model independently,
+prepared an exact part reference and verified edition revocation and
+table clear. The part source was retained Home geometry; identities and
+decisions were fixtures.
+
+On Cuevanico, the packed room fetched its art once. The browser then
+applied amber and restored orbital without fetching again or remounting
+the room. The operator clicked the foyer door and the old scoped art
+request returned 404 after exit. Attempting the E hotkey immediately
+after dismissing Appearance did not move: keyboard focus was still on
+the Appearance button. The verified round trip used the door control.
+
 
 ## Orbital finish for the Matter room
 

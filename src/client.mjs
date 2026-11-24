@@ -3,6 +3,7 @@ import {RoomSceneCache,roomArtURL} from './room-scene-cache.mjs';
 import {constrainInteriorCamera} from './interior-camera.mjs';
 import {capWorldPixelRatio,usesLightGraphics} from './render-pixel-budget.mjs';
 import {useLightweightMatterGlazing} from './matter-glazing.mjs';
+import {bindMatterStyle,matterStyles} from './matter-style.mjs';
 import {nearestCreationPosition} from './world-layout.mjs';
 import { Networked3dWebExperienceClient, DefaultVirtualJoystickPlugin } from '@mml-io/3d-web-experience-client';
 import { ThreeJSWorldRenderer } from '@mml-io/3d-web-threejs';
@@ -206,6 +207,16 @@ const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
 let inside=hot&&activeSpace.id!=='outside';
 let updateDoor=()=>{},remoteScene=null,roomModel=null,networkScope=null,arrival=null;
 let releaseLightweightGlazing=null;
+let matterStyleBinding=null,selectedMatterStyle=matterStyles[0];
+const roomStyle=document.querySelector('#room-style'), roomStyleChoice=document.querySelector('#room-style-choice');
+roomStyleChoice.replaceChildren(...matterStyles.map(({id,label})=>new Option(label,id)));
+roomStyleChoice.onchange=()=>{
+  const style=matterStyles.find(({id})=>id===roomStyleChoice.value);
+  if(matterStyleBinding&&style){
+    selectedMatterStyle=style;
+    matterStyleBinding.apply(style);
+  }
+};
 let moving=false,requestingMove=false,needsSync=false,resyncing=false,moveDeadline=null,passageNotice=null;
 let roomTopic,worktableTopic;
 let prefetched=new Set(),prefetchRequest=null,pendingRoomArt=null;
@@ -225,6 +236,7 @@ const setMoving=value=>{
 };
 const removeScene=()=>{
   if(signalEditor?.draft?.mode)signalEditor.dismiss();
+  matterStyleBinding?.dispose();matterStyleBinding=null;roomStyle.hidden=true;
   releaseLightweightGlazing?.();releaseLightweightGlazing=null;
   pendingRoomArt=null;projectedGarden=null;beaconControls.clear();galleryModels?.clear();collectionShelves?.clear();remoteScene?.remove();remoteScene=roomModel=null;
 };
@@ -512,6 +524,12 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const position=client.getLocalCharacterState()?.position;
       const roomReady=inside&&networkScope===activeSpace.id&&entryRoomReady(remoteScene,roomModel);
       const waitingForRoomFrame=inside&&moving&&!roomReady;
+      if(roomReady&&roomModel&&activeSpace.matterStyles&&!matterStyleBinding){
+        matterStyleBinding=bindMatterStyle(roomModel.getContainer());
+        matterStyleBinding.apply(selectedMatterStyle);
+        roomStyleChoice.value=selectedMatterStyle.id;
+        roomStyle.hidden=false;
+      }
       if(roomReady&&roomModel&&rendererBudget.lightweight&&activeSpace.collectionShelves&&!releaseLightweightGlazing)
         releaseLightweightGlazing=useLightweightMatterGlazing(roomModel.getContainer());
       drawWorld=!waitingForRoomFrame&&!contentVisitor?.isOpeningOverWorld();

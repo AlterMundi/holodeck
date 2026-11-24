@@ -47,6 +47,9 @@ median and 33.4 ms p95 while moving. Its 9.69 s cold door was slower than the
 last diffuse-only movement run. The desktop and touch worktable fixture both
 loaded the exact focused export, shared the retained edition, selected a
 part and cleared the table. The focused selection is available in builds.
+Its room-style control now switches the local visitor between orbital and
+amber color grades without reloading the shell or shared worktable model.
+Desktop and emulated touch selected different looks on the same edition.
 The separate appearance viewer also passed a moving hardware check on
 Cuevanico. The lightweight pure, detailed orbital pure and lightweight
 hybrid took 33.4 ms, 50.0 ms and 50.0 ms respectively at the median.

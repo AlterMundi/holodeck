@@ -26,6 +26,7 @@ const variants=Object.freeze({
     digest:'d103aa73cf5213fa0fb3852b518cfc7e306bfe36f93f290195e7e0d47c6ef249',
     maxBytes:1536*1024,
     orbital:true,
+    visualStyles:true,
   },
 });
 export const MATTER_ART_REVISIONS=Object.freeze(Object.fromEntries(
@@ -53,12 +54,12 @@ const position=([x,y,z])=>({x,y,z});
 
 export function readMatterWorkshopArt(profile='matter-workshop-v1'){
   if(!isMatterArtProfile(profile))throw Error('Unknown Matter workshop finish');
-  const {path,digest,maxBytes,orbital=false}=variants[profile];
+  const {path,digest,maxBytes,orbital=false,visualStyles=false}=variants[profile];
   const packed=readPackedArt(path,digest);
   const bytes=packed?.bytes??readFileSync(new URL('../public/'+path,import.meta.url));
   if(bytes.length>maxBytes||createHash('sha256').update(bytes).digest('hex')!==digest)
     throw Error('Matter workshop does not match the qualified Blender export');
-  return {...packed,bytes,revision:digest+'.glb',replacesShell:true,colliders,lightRig:orbital?orbitalLightRig:lightRig,ambient:orbital?.44:.34,
+  return {...packed,bytes,revision:digest+'.glb',replacesShell:true,colliders,visualStyles,lightRig:orbital?orbitalLightRig:lightRig,ambient:orbital?.44:.34,
     keyLight:{position:[-.48,2.36,-.43],target:[0,1,-.43],color:orbital?'#dcecff':'#ffdbad',intensity:orbital?70:53},
     archive:position(anchors['archive-model']),
     shelves:Array.from({length:6},(_,index)=>position(anchors['shelf-'+index])),

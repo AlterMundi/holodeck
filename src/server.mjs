@@ -329,6 +329,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   function liveSpace(actor,cachedRevision){
     const space=describeSpace(actor,true);
     return {...space,live:1,actorRef:actor.id,
+      ...(space.collectionShelves&&matterArt?.visualStyles?{matterStyles:true}:{}),
       sharedConversation:!!(native?.contexts&&native?.conversationSurface),scene:visitScene(actor,space.id,cachedRevision)};
   }
   function roomParticipants(id){
