@@ -330,3 +330,15 @@ The method uses one 3D surface material as the authority across views.
 learn these materials jointly across views. The current builder is
 a selected art direction and deterministic PBR authoring pipeline, not
 a reproduction or a measured ranking of either paper's generator.
+
+The candidate and original GLBs have identical sets of 7,717 world-space
+triangles at 0.1 mm quantization. The orbital GLB is 1.21 MiB. In a controlled
+test of the full packaged Holodeck runtime, Chrome on Intel UHD rendered
+the selected model, entered from the foyer, respected both furniture
+collision bounds, moved around the table, advanced an archive edition
+and turned the mounted platform, and returned to the foyer. The served model
+became inaccessible on exit. At 1020×680, the stationary 31-frame sample
+had 16.7 ms median and 16.8 ms p95 frame intervals. The city-scale rendering,
+physical mobile devices, sustained moving frame-time and visual parity
+with top published work are separate acceptance questions. The orbital
+selector remains a release candidate.
