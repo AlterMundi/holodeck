@@ -600,7 +600,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     webClientServing:{indexUrl:basePath,indexContent:index,clientBuildDir:new URL('../build',import.meta.url).pathname,clientUrl:route('client/')},
     assetServing:{assetsDir:new URL('../public/assets',import.meta.url).pathname,assetsUrl:route('assets/')},
     worldConfig:{mmlDocuments:{workshop:{url:'ws://'+route('world')}},enableChat:false,enableTweakPane:false,
-      environmentConfiguration:{groundPlane:false,sun:{intensity:1.4},ambientLight:{intensity:1.2},
+      environmentConfiguration:{groundPlane:false,sun:{intensity:1.4},ambientLight:{intensity:toroidal?.85:1.2},
         fog:toroidal?{fogNear:500,fogFar:5100,fogColor:{r:.67,g:.78,b:.79}}:valley?{fogNear:36,fogFar:106,fogColor:{r:.716,g:.776,b:.784}}:
           {fogNear:45,fogFar:140,fogColor:{r:.67,g:.78,b:.79}}},
       avatarConfiguration:{allowCustomAvatars:false},allowCustomDisplayName:false,allowOrbitalCamera:true,

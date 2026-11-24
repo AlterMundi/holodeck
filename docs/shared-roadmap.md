@@ -505,8 +505,17 @@ measured 16.7 ms median and 18.1 ms p95, and automatic measured 16.9 ms and
 The first exterior fixture omitted the Collection assets. A follow-up
 selected the existing Collection representatives and verified that the
 browser inside Matter received them while the other browser remained
-outside and was refused. A cinematic rendering pass, comparison on the
-selected visual candidate and production release remain open.
+outside and was refused. Claude Fable 5.2 supplied a radial light and aerial
+perspective pass. The integrated candidate uses that lighting for terrain and
+water, with a matching radial sky and close-range rock grain and water detail.
+Registered views of the house, shoreline, cave entrance and inner lookout
+were checked against the previous look. A repeat two-browser run passed
+seam crossing, reconnect, the Matter door and Collection boundary, cave and
+water traversal, and the low-angle camera check. On the physical Pi, the
+combined candidate recorded 16.6 ms median and 20.0 ms p95 in the lightweight
+profile, and 20.8 ms and 28.3 ms in automatic graphics, over 141 moving
+intervals per profile. Lightweight entry took 6.37 s on that tunnel run.
+Further visual polish and the production release remain open.
 
 
 ## Delivery sequence and cards

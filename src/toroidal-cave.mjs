@@ -1,3 +1,4 @@
+import {useToroidalRockDetail} from './toroidal-surface-detail.mjs';
 import {BufferAttribute, BufferGeometry, Mesh, MeshStandardMaterial} from 'three';
 import {TOROIDAL_TERRAIN, terrainElevation, terrainPosition} from './toroidal-terrain.mjs';
 
@@ -79,6 +80,7 @@ export class ToroidalCave {
     geometry.setIndex(new BufferAttribute(indices,1));
     geometry.computeVertexNormals();
     const material = new MeshStandardMaterial({vertexColors:true,roughness:.96});
+    useToroidalRockDetail(material);
     this.mesh = new Mesh(geometry,material);
     this.mesh.name = 'Connected rock passage';
     this.mesh.position.fromArray(origin);

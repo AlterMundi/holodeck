@@ -1,6 +1,7 @@
+import {ToroidalAtmosphere} from './toroidal-atmosphere.mjs';
 import {ToroidalCave} from './toroidal-cave.mjs';
 import {TOROIDAL_TERRAIN} from './toroidal-terrain.mjs';
-import {ToroidalTerrainRenderer} from './toroidal-terrain-renderer.mjs';
+import {TOROIDAL_SUN,ToroidalTerrainRenderer,toroidalSunDirection} from './toroidal-terrain-renderer.mjs';
 import {bindToroidalMml} from './toroidal-mml.mjs';
 import {RemoteDocumentWrapper} from '@mml-io/mml-web';
 import {RoomSceneCache,roomArtURL} from './room-scene-cache.mjs';
@@ -625,7 +626,31 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         return configure({...configuration,workshop:{...configuration.workshop,url:arrivalAddress}},token);
       };
     }
-    let nextDressing=0, ring=null, cave=null, releaseRadialMovement=null;
+    let nextDressing=0, ring=null, cave=null, atmosphere=null, releaseRadialMovement=null, ringSun=null;
+    // On the ring the sun keeps one direction in the traveler's radial frame,
+    // matching the terrain's own per-place sunlight. It moves in 4 m steps so
+    // shadow edges stay still between steps. Lightweight graphics keep the
+    // shadow volume at the ring's empty centre and pay for no casters.
+    const aimSun=position=>{
+      const onRing=outsideRing();
+      // Keep the last aim while the ring is shown without a confirmed position.
+      if(onRing&&!(position&&[position.x,position.y,position.z].every(Number.isFinite)))return;
+      const step=value=>Math.round(value/4)*4;
+      const near=onRing?{x:step(position.x),y:step(position.y),z:step(position.z)}:null;
+      const key=near?`${near.x}:${near.y}:${near.z}:${rendererBudget.lightweight}`:null;
+      if(key===ringSun)return;
+      ringSun=key;
+      if(!near){
+        light.color.setHex(0xffefd6);light.intensity=1.8;
+        light.position.set(12,22,10);light.target.position.set(0,0,-6);
+        return;
+      }
+      const [x,y,z]=toroidalSunDirection(near);
+      const anchor=rendererBudget.lightweight?{x:0,y:0,z:0}:near;
+      light.color.setHex(TOROIDAL_SUN.color);light.intensity=TOROIDAL_SUN.intensity;
+      light.target.position.set(anchor.x,anchor.y,anchor.z);
+      light.position.set(anchor.x+x*40,anchor.y+y*40,anchor.z+z*40);
+    };
     outdoorReady=()=>outsideRing()?
       ring?.group.children.length>0&&Boolean(document.querySelector('#workshop #ring-house')?.isConnected):
       Boolean(geometryProbe?.snapshot());
@@ -671,6 +696,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       drawWorld=!waitingForRoomFrame&&!contentVisitor?.isOpeningOverWorld();
       frameBudget.sample(drawWorld&&!document.hidden&&!!position&&!moving&&!needsSync&&(!hot||networkScope===activeSpace.id));
       light.visible=!inside||!activeSpace.indoorLighting;
+      aimSun(position);
       const key=inside&&activeSpace.keyLight||null;
       if(key!==selectedKey){
         selectedKey=key;
@@ -687,7 +713,14 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       // authored apertures. Disconnect removes the scene and clears this view.
       const roomSkyReady=skySelection&&networkScope===activeSpace.id&&remoteScene?.isConnected&&
         roomModel?.modelGraphics?.hasLoadedModel();
-      sky.update(!inside||roomSkyReady?skySelection:null);
+      sky.update(!outsideRing()&&(!inside||roomSkyReady)?skySelection:null);
+      if(outsideRing()&&position){
+        atmosphere??=new ToroidalAtmosphere(renderer.mmlCompositionScene.group.parent);
+        atmosphere.update(options.coreCameraManager.getCameraState().position,position);
+      }else if(atmosphere){
+        atmosphere.dispose();
+        atmosphere=null;
+      }
       nativeAvatarLayer.update();
       galleryModels.update();
       const collectionRoom=inside&&!moving&&activeSpace.collectionShelves?activeSpace.id:null;
@@ -718,7 +751,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
       }
     };
-    renderer.dispose=()=>{releaseRadialMovement?.();ring?.dispose();cave?.dispose();frameBudget.dispose();removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{releaseRadialMovement?.();ring?.dispose();cave?.dispose();atmosphere?.dispose();frameBudget.dispose();removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
       releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing);
       options.onInitialized();
