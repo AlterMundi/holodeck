@@ -62,6 +62,7 @@
             "receiverHeight": 0.1,
             "detail": "orbital-deck-detail",
             "tilesPerMeter": 0.88,
+            "diffuseFill": 0.03,
             "emitters": [
               {
                 "center": [

@@ -21,6 +21,7 @@ const floorReflection=/* glsl */`
   uniform int roomEmitterCount;
   uniform sampler2D roomDeckDetail;
   uniform float roomDeckTileScale;
+  uniform float roomFloorDiffuseFill;
 
   vec3 roomFloorFinish(vec3 diffuse){
     vec3 position = roomSurfacePosition;
@@ -29,6 +30,10 @@ const floorReflection=/* glsl */`
     vec3 tile = texture2D(roomDeckDetail, deckUV).rgb;
     float luminance = dot(tile, vec3(0.2126, 0.7152, 0.0722));
     float stone = smoothstep(0.052, 0.133, luminance);
+    // Keep the extra diffuse contribution in the shadows and apply the same
+    // tile response to it as to the baked light.
+    float diffuseLuma = dot(diffuse, vec3(0.2126, 0.7152, 0.0722));
+    diffuse += roomFloorDiffuseFill * (1.0 - smoothstep(0.025, 0.32, diffuseLuma));
     diffuse *= mix(0.76, 1.06, stone) * clamp(0.90 + 0.8 * luminance, 0.90, 1.16);
     vec3 view = normalize(cameraPosition - position);
     if (view.y <= 0.02) return diffuse;
@@ -60,6 +65,7 @@ function diffuseLayers(material){
     roomEmitters:{value:[]},
     roomDeckDetail:{value:null},
     roomDeckTileScale:{value:1},
+    roomFloorDiffuseFill:{value:0},
   };
   material.customProgramCacheKey=()=>channel
     ?'room-diffuse-layers:'+channel+(reflectionEnabled?':reflection':''):'';
@@ -102,6 +108,7 @@ function diffuseLayers(material){
       });
       reflection.roomDeckDetail.value=detail;
       reflection.roomDeckTileScale.value=finish.tilesPerMeter;
+      reflection.roomFloorDiffuseFill.value=finish.diffuseFill??0;
     }
     if(next!==channel||reflectionEnabled!==!!finish){
       channel=next;

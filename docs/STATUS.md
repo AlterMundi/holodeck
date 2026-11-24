@@ -358,6 +358,32 @@ dimensions, with JPEG capture outside the timed replay. This measures
 camera rendering and sorting only. The previous physical interaction
 measurements used the normal room runtime and locomotion.
 
+The next Orbital candidate adds a small, bounded shadow-fill term to the
+floor diffuse light through the existing room-look manifest. It fades
+toward illuminated stone and shares the baked floor's grout response.
+The three reflection emitters and the geometry and maps are unchanged.
+The term is optional and absent in older manifests.
+
+On the eight walking poses the floor luminance error dropped from 15.59
+to 7.21 levels and the dark-pixel bias moved from −19.33 to +0.53.
+The error in frame-to-frame changes improved from 5.14 to 4.73. Four
+additional cameras from the sides, doorway end and worktable end used
+Cycles references and a Blender ray mask for visible floor pixels.
+The mask excludes the volume boundary while the color reference keeps
+the authored atmosphere. The candidate improved all four views and
+reduced the combined floor error from 22.60 to 12.61 levels. A stronger
+test fill over-brightened shadows by 12.36 levels. The selected fill
+limits that bias to +1.18 while the brightest held-out pixels still
+average 15.03 levels below the reference.
+
+The isolated 32,061,440-byte package `b9e0387b42bf` passed the physical
+Cuevanico door, rotating archive and 24 camera-clearance checks. It took
+10.10 s to enter cold through the test tunnel and measured 33.3 ms median
+and 49.9 ms p95 over 396 walking intervals. The pendant reflection still
+moved in the expected direction over eight samples, with a 3.6 px
+median horizontal error against the geometric projection. The deployed
+package remains `d65e90d37ca9`.
+
 The preceding source `a7d556b` served package `2f68982b6294`, with
 `52e35e6d6b2a` as its rollback.
 Manipulación de Materia now uses the Blender pass inspired by the appearance
