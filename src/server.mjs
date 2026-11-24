@@ -328,11 +328,10 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }
   function liveSpace(actor,cachedRevision){
     const space=describeSpace(actor,true);
-    const maps=space.collectionShelves&&matterArt?.amberMaps;
+    const roomLooks=space.collectionShelves&&matterArt?.roomLooks;
     const splat=space.collectionShelves&&matterArt?.floorSplat;
     return {...space,live:1,actorRef:actor.id,
-      ...(maps?{matterStyles:{amber:Object.fromEntries(Object.entries(maps)
-        .map(([role,map])=>[role,route('api/space/art/'+map.revision)]))}}:{}),
+      ...(roomLooks?{matterStyles:roomLooks.describe(revision=>route('api/space/art/'+revision))}:{}),
       ...(splat?{matterFloorSplat:{src:route('api/space/art/'+splat.revision),target:splat.target,radius:splat.radius}}:{}),
       sharedConversation:!!(native?.contexts&&native?.conversationSurface),scene:visitScene(actor,space.id,cachedRevision)};
   }
@@ -707,7 +706,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const main=artForRoom(selected,passages);
     if(main?.floorSplat?.revision===req.params.revision)
       return res.type('application/octet-stream').send(main.floorSplat.bytes);
-    const map=main?.amberMaps&&Object.values(main.amberMaps).find(({revision})=>revision===req.params.revision);
+    const map=main?.roomLooks?.files.get(req.params.revision);
     if(map)return res.type(map.type).send(map.bytes);
     const art=main?.revision===req.params.revision ? main :
       passages.map(passage=>atelier?.passageFitting(selected,passage))

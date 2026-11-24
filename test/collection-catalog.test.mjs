@@ -102,7 +102,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
     return JSON.parse(reply);
   }
   const runtime=await createHolodeck({
-    stateDir,publicOrigin:'https://home.test',matterCollection:{...selected,art:'matter-workshop-orbital-v1',archive:archived},
+    stateDir,publicOrigin:'https://home.test',matterCollection:{...selected,art:'matter-workshop-orbital-focused-v1',archive:archived},
     interiorSpaces:[{id:'matter',house,title:'Manipulación de Materia',entry:true,level:0,guests:['human:guest'],links:[]}],
     identityResolver:async req=>{
       if(expiredSession)return null;
@@ -188,7 +188,17 @@ test('collection projects stay grouped and editions follow each visitor and thei
   assert.equal((await visitor.art(asset)).status,404);
   const delivered=await author.art(asset);
   assert.equal(delivered.status,200);
-  assert.deepEqual(Buffer.from(await delivered.arrayBuffer()),readMatterWorkshopArt('matter-workshop-orbital-v1').bytes);
+  assert.deepEqual(Buffer.from(await delivered.arrayBuffer()),readMatterWorkshopArt('matter-workshop-orbital-focused-v1').bytes);
+  assert.equal(scene.matterStyles.default,'orbital');
+  for(const path of Object.values(scene.matterStyles.assets)){
+    assert.match(path,/^\/api\/space\/art\/[a-f0-9]{64}\.(jpg|png)$/);
+    assert.equal((await visitor.art(path)).status,404);
+    const response=await author.art(path);
+    assert.equal(response.status,200);
+    assert.equal(response.headers.get('cache-control'),'no-store');
+    const bytes=Buffer.from(await response.arrayBuffer());
+    assert.equal(createHash('sha256').update(bytes).digest('hex'),path.split('/').at(-1).split('.')[0]);
+  }
   assert.equal((await visitor.move('outside','matter')).status,200);
 
   const response=await author.catalog();

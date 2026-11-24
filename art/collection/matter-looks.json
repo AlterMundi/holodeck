@@ -1,0 +1,37 @@
+{
+  "schema": "holodeck.room-looks/v1",
+  "default": "orbital",
+  "surfaces": {
+    "fixed-light-shell": "Orbital static diffuse",
+    "responsive-work-surfaces": "Orbital focused material response"
+  },
+  "assets": {
+    "amber-diffuse": {
+      "file": "amber-fixed-light.jpg",
+      "sha256": "060388f829a24adc7b6ebcfad5715128de8d1d360d31f7908aa4fad0b2129b95"
+    },
+    "amber-response": {
+      "file": "amber-material-response.png",
+      "sha256": "cc20a0589c45f9d15c51813979b07c19f0570cdca64c1a8bc68bf7bad51177ea"
+    }
+  },
+  "looks": [
+    {
+      "id": "orbital",
+      "label": "Laboratorio orbital",
+      "materials": {}
+    },
+    {
+      "id": "amber",
+      "label": "Luz ámbar",
+      "materials": {
+        "fixed-light-shell": {"map": "amber-diffuse"},
+        "responsive-work-surfaces": {
+          "emissiveMap": "amber-diffuse",
+          "roughnessMap": "amber-response",
+          "metalnessMap": "amber-response"
+        }
+      }
+    }
+  ]
+}

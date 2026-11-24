@@ -1,6 +1,8 @@
 import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {readPackedArt} from './packed-art.mjs';
+import {compileRoomLooks} from './room-looks.mjs';
+import looks from '../art/collection/matter-looks.json' with {type:'json'};
 import anchors from '../art/collection/anchors.json' with {type:'json'};
 
 const originalWorkshop={
@@ -43,19 +45,6 @@ function readFloorSplat(){
   return {bytes,revision:digest+'.bin',target:'Surface · Honed limestone floor with fixture bounce',radius:.033};
 }
 
-function readAmberMaps(){
-  const maps={
-    diffuse:['amber-fixed-light.jpg','060388f829a24adc7b6ebcfad5715128de8d1d360d31f7908aa4fad0b2129b95','image/jpeg'],
-    response:['amber-material-response.png','cc20a0589c45f9d15c51813979b07c19f0570cdca64c1a8bc68bf7bad51177ea','image/png'],
-  };
-  return Object.fromEntries(Object.entries(maps).map(([role,[name,digest,type]])=>{
-    const bytes=readFileSync(new URL('../public/room-art/matter-style/'+name,import.meta.url));
-    if(bytes.length>1024*1024||createHash('sha256').update(bytes).digest('hex')!==digest)
-      throw Error('Matter style map does not match the qualified bake');
-    return [role,{bytes,type,revision:digest+name.slice(name.lastIndexOf('.'))}];
-  }));
-}
-
 // Coordinates refer to the meters in the Blender shell and the existing
 // invisible 12 meter room. Only the furniture needs its own collision.
 const furniture=[
@@ -84,7 +73,8 @@ export function readMatterWorkshopArt(profile='matter-workshop-v1'){
     throw Error('Matter workshop does not match the qualified Blender export');
   return {...packed,bytes,revision:digest+'.glb',replacesShell:true,colliders,
     floorSplat:splatFloor?readFloorSplat():null,
-    amberMaps:visualStyles?readAmberMaps():null,lightRig:orbital?orbitalLightRig:lightRig,ambient:orbital?.44:.34,
+    roomLooks:visualStyles?compileRoomLooks(looks,file=>
+      readFileSync(new URL('../public/room-art/matter-style/'+file,import.meta.url))):null,lightRig:orbital?orbitalLightRig:lightRig,ambient:orbital?.44:.34,
     keyLight:{position:[-.48,2.36,-.43],target:[0,1,-.43],color:orbital?'#dcecff':'#ffdbad',intensity:orbital?70:53},
     archive:position(anchors['archive-model']),
     shelves:Array.from({length:6},(_,index)=>position(anchors['shelf-'+index])),

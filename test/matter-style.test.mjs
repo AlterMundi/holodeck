@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Group,Mesh,MeshBasicMaterial,MeshStandardMaterial,Texture} from 'three';
 import {bindMatterStyle} from '../src/matter-style.mjs';
+import {compileRoomLooks} from '../src/room-looks.mjs';
+import {createHash} from 'node:crypto';
+import authored from '../art/collection/matter-looks.json' with {type:'json'};
 
 test('room style replaces only local authored maps and can restore the original textures',()=>{
   const diffuse=new Texture({width:1024}),response=new Texture({width:512});
@@ -11,22 +14,52 @@ test('room style replaces only local authored maps and can restore the original 
   const untreated=new MeshBasicMaterial();
   const shared=new Mesh(undefined,shell);
   const shellMesh=new Mesh(undefined,shell),workMesh=new Mesh(undefined,[work,untreated]);
-  const style=bindMatterStyle(new Group().add(shellMesh,workMesh));
-  const images={diffuse:{width:2048},response:{width:1024}};
-  style.apply(images);
+  const [orbital,amber]=authored.looks;
+  const workOnly={id:'work-only',materials:{
+    ...amber.materials,
+    'responsive-work-surfaces':{...amber.materials['responsive-work-surfaces'],emissiveMap:'work-diffuse'},
+  }};
+  const catalog={...authored,looks:[...authored.looks,workOnly]};
+  const style=bindMatterStyle(new Group().add(shellMesh,workMesh),catalog);
+  const images=new Map([
+    ['amber-diffuse',{width:2048}],['amber-response',{width:1024}],['work-diffuse',{width:2048}],
+  ]);
+  style.apply(amber,images);
   const replacement=shellMesh.material.map;
-  assert.equal(replacement.image,images.diffuse);
+  assert.equal(replacement.image,images.get('amber-diffuse'));
   assert.equal(workMesh.material[0].emissiveMap,replacement);
-  assert.equal(workMesh.material[0].roughnessMap.image,images.response);
+  assert.equal(workMesh.material[0].roughnessMap.image,images.get('amber-response'));
   assert.equal(workMesh.material[0].metalnessMap,workMesh.material[0].roughnessMap);
   assert.equal(shared.material.map,diffuse);
   assert.equal(diffuse.image.width,1024);
   assert.equal(workMesh.material[1],untreated);
-  style.apply();
+  style.apply(workOnly,images);
+  assert.equal(shellMesh.material.map,replacement);
+  assert.equal(workMesh.material[0].emissiveMap.image,images.get('work-diffuse'));
+  assert.equal(workMesh.material[0].roughnessMap.image,images.get('amber-response'));
+  style.apply(orbital,images);
   assert.equal(shellMesh.material.map,diffuse);
   assert.equal(workMesh.material[0].emissiveMap,diffuse);
   assert.equal(workMesh.material[0].roughnessMap,response);
-  style.apply(images);
+  style.apply(amber,images);
   assert.equal(shellMesh.material.map,replacement);
   style.dispose();
+});
+
+
+test('room look compiler scopes immutable assets and rejects invalid bindings',()=>{
+  const manifest=structuredClone(authored);
+  const files=new Map(Object.values(manifest.assets).map(asset=>{
+    const bytes=Buffer.from(asset.file);
+    asset.sha256=createHash('sha256').update(bytes).digest('hex');
+    return [asset.file,bytes];
+  }));
+  const compiled=compileRoomLooks(manifest,name=>files.get(name));
+  const result=compiled.describe(revision=>'/api/space/art/'+revision);
+  assert.deepEqual(result.looks,authored.looks);
+  assert.equal(result.default,'orbital');
+  assert.equal(compiled.files.get(result.assets['amber-diffuse'].split('/').at(-1)).type,'image/jpeg');
+  assert.throws(()=>compileRoomLooks(manifest,()=>Buffer.from('changed')),/does not match/);
+  manifest.looks[1].materials['fixed-light-shell'].map='missing-asset';
+  assert.throws(()=>compileRoomLooks(manifest,()=>assert.fail('Missing asset was resolved')),/channel or asset/);
 });

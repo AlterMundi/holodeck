@@ -3,7 +3,7 @@ import {RoomSceneCache,roomArtURL} from './room-scene-cache.mjs';
 import {constrainInteriorCamera} from './interior-camera.mjs';
 import {capWorldPixelRatio,usesLightGraphics} from './render-pixel-budget.mjs';
 import {useLightweightMatterGlazing} from './matter-glazing.mjs';
-import {bindMatterStyle,loadMatterStyleImages,matterStyles} from './matter-style.mjs';
+import {bindMatterStyle,loadMatterStyleImages} from './matter-style.mjs';
 import {projectRoomSurface} from '../art/collection/appearance-study/viewer/surface-projection.mjs';
 import {nearestCreationPosition} from './world-layout.mjs';
 import { Networked3dWebExperienceClient, DefaultVirtualJoystickPlugin } from '@mml-io/3d-web-experience-client';
@@ -208,11 +208,10 @@ const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
 let inside=hot&&activeSpace.id!=='outside';
 let updateDoor=()=>{},remoteScene=null,roomModel=null,networkScope=null,arrival=null;
 let releaseLightweightGlazing=null;
-let matterStyleScope=null,selectedMatterStyle=matterStyles[0];
+let matterStyleScope=null,selectedMatterStyle=null;
 let floorSplatScope=null;
 const roomStyle=document.querySelector('#room-style'), roomStyleChoice=document.querySelector('#room-style-choice');
 const roomStyleStatus=document.querySelector('#room-style-status');
-roomStyleChoice.replaceChildren(...matterStyles.map(({id,label})=>new Option(label,id)));
 function styleStatus(message){
   roomStyleStatus.textContent=message;
   roomStyleStatus.hidden=!message;
@@ -220,36 +219,31 @@ function styleStatus(message){
 async function applyMatterStyle(style){
   const current=matterStyleScope;
   if(!current||current.controller)return;
-  const paths=style.id==='amber'?activeSpace.matterStyles.amber:null;
-  if(paths&&!current.images){
-    current.controller=new AbortController();
-    roomStyleChoice.disabled=true;styleStatus('Cargando acabado…');
-    try{
-      current.images=await loadMatterStyleImages(paths,AbortSignal.any([
-        current.controller.signal,AbortSignal.timeout(12000)
-      ]));
-      if(matterStyleScope!==current){
-        for(const image of Object.values(current.images))image.close();
-        return;
-      }
-    }catch{
-      if(matterStyleScope===current){
-        roomStyleChoice.value=current.style.id;
-        styleStatus('No pude cargar este acabado.');
-      }
-      return;
-    }finally{
-      current.controller=null;
-      if(matterStyleScope===current)roomStyleChoice.disabled=false;
+  current.controller=new AbortController();
+  roomStyleChoice.disabled=true;
+  if(style.id!==current.style.id)styleStatus('Cargando acabado…');
+  try{
+    await loadMatterStyleImages(current.catalog,style,current.images,AbortSignal.any([
+      current.controller.signal,AbortSignal.timeout(12000)
+    ]));
+    if(matterStyleScope!==current)return;
+    current.binding.apply(style,current.images);
+    current.style=style;
+    selectedMatterStyle=style.id;
+    roomStyleChoice.value=style.id;
+    styleStatus('');
+  }catch{
+    if(matterStyleScope===current){
+      roomStyleChoice.value=current.style.id;
+      styleStatus('No pude cargar este acabado.');
     }
+  }finally{
+    current.controller=null;
+    if(matterStyleScope===current)roomStyleChoice.disabled=false;
   }
-  current.binding.apply(paths?current.images:null);
-  current.style=selectedMatterStyle=style;
-  roomStyleChoice.value=style.id;
-  styleStatus('');
 }
 roomStyleChoice.onchange=()=>{
-  const style=matterStyles.find(({id})=>id===roomStyleChoice.value);
+  const style=matterStyleScope?.catalog.looks.find(({id})=>id===roomStyleChoice.value);
   if(style)void applyMatterStyle(style);
 };
 let moving=false,requestingMove=false,needsSync=false,resyncing=false,moveDeadline=null,passageNotice=null;
@@ -274,7 +268,7 @@ const removeScene=()=>{
   if(matterStyleScope){
     matterStyleScope.controller?.abort();
     matterStyleScope.binding.dispose();
-    for(const image of Object.values(matterStyleScope.images??{}))image.close();
+    for(const image of matterStyleScope.images.values())image.close();
     matterStyleScope=null;
   }
   roomStyle.hidden=true;
@@ -595,11 +589,15 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const waitingForRoomFrame=inside&&moving&&!roomReady;
       if(roomReady&&roomModel&&activeSpace.matterFloorSplat&&!floorSplatScope)void mountFloorSplat();
       if(roomReady&&roomModel&&activeSpace.matterStyles&&!matterStyleScope){
-        matterStyleScope={binding:bindMatterStyle(roomModel.getContainer()),style:matterStyles[0]};
-        roomStyleChoice.disabled=false;
-        roomStyleChoice.value=matterStyles[0].id;
+        const catalog=activeSpace.matterStyles;
+        const defaultLook=catalog.looks.find(({id})=>id===catalog.default);
+        const preferred=catalog.looks.find(({id})=>id===selectedMatterStyle)??defaultLook;
+        matterStyleScope={catalog,binding:bindMatterStyle(roomModel.getContainer(),catalog),
+          style:defaultLook,images:new Map()};
+        roomStyleChoice.replaceChildren(...catalog.looks.map(({id,label})=>new Option(label,id)));
+        roomStyleChoice.value=defaultLook.id;
         roomStyle.hidden=false;
-        void applyMatterStyle(selectedMatterStyle);
+        void applyMatterStyle(preferred);
       }
       if(roomReady&&roomModel&&rendererBudget.lightweight&&activeSpace.collectionShelves&&!releaseLightweightGlazing)
         releaseLightweightGlazing=useLightweightMatterGlazing(roomModel.getContainer());

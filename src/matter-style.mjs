@@ -1,65 +1,69 @@
 import {Source} from 'three';
 
-// Bind authored style maps to the matching material slots in the fixed UV layout.
-const surfaces={
-  'Orbital static diffuse':{map:'diffuse'},
-  'Orbital focused material response':{emissiveMap:'diffuse',roughnessMap:'response',metalnessMap:'response'},
-};
-
-export const matterStyles=[
-  {id:'orbital',label:'Laboratorio orbital'},
-  {id:'amber',label:'Luz ámbar'},
-];
-
-export function bindMatterStyle(group){
+export function bindMatterStyle(group,catalog){
+  const roles=new Map(Object.entries(catalog.surfaces).map(([role,name])=>[name,role]));
+  const channelsByRole=new Map();
+  for(const {materials} of catalog.looks){
+    for(const [role,channels] of Object.entries(materials)){
+      if(!channelsByRole.has(role))channelsByRole.set(role,new Set());
+      for(const channel of Object.keys(channels))channelsByRole.get(role).add(channel);
+    }
+  }
   const materials=new Map();
   const textures=new Map();
   const variant=(source,image)=>{
     if(!source||!image)return source;
-    if(!textures.has(source)){
+    if(!textures.has(source))textures.set(source,new Map());
+    const variants=textures.get(source);
+    if(!variants.has(image)){
       const texture=source.clone();
       texture.source=new Source(image);
       texture.needsUpdate=true;
-      textures.set(source,texture);
+      variants.set(image,texture);
     }
-    return textures.get(source);
+    return variants.get(image);
   };
   const bind=source=>{
-    if(!source||!Object.hasOwn(surfaces,source.name))return source;
-    if(!materials.has(source)){
-      materials.set(source,source.clone());
-    }
-    return materials.get(source);
+    const role=roles.get(source?.name);
+    const channels=channelsByRole.get(role);
+    if(!channels)return source;
+    if(!materials.has(source))materials.set(source,{material:source.clone(),role,channels});
+    return materials.get(source).material;
   };
   group.traverse(object=>{
     if(object.isMesh)
       object.material=Array.isArray(object.material)?object.material.map(bind):bind(object.material);
   });
   return {
-    apply(images){
-      for(const [source,material] of materials)
-        for(const [channel,imageKey] of Object.entries(surfaces[source.name]))
-          material[channel]=variant(source[channel],images?.[imageKey]);
+    apply(style,images){
+      for(const [source,{material,role,channels}] of materials){
+        const overrides=style.materials[role];
+        for(const channel of channels)
+          material[channel]=variant(source[channel],images?.get(overrides?.[channel]));
+      }
     },
     dispose(){
-      for(const material of materials.values())material.dispose();
-      for(const texture of textures.values())texture.dispose();
+      for(const {material} of materials.values())material.dispose();
+      for(const variants of textures.values())
+        for(const texture of variants.values())texture.dispose();
     },
   };
 }
 
-
-export async function loadMatterStyleImages(paths,signal){
-  const results=await Promise.allSettled(['diffuse','response'].map(async key=>{
-    const res=await fetch(paths[key],{signal});
+export async function loadMatterStyleImages(catalog,style,images,signal){
+  const assets=new Set(Object.values(style.materials).flatMap(Object.values));
+  const missing=Array.from(assets).filter(id=>!images.has(id));
+  if(!missing.length)return;
+  const results=await Promise.allSettled(missing.map(async id=>{
+    const res=await fetch(catalog.assets[id],{signal});
     if(!res.ok)throw Error('Room style map unavailable');
     const image=await createImageBitmap(await res.blob(),{colorSpaceConversion:'none',premultiplyAlpha:'none'});
-    return [key,image];
+    return [id,image];
   }));
-  const images=Object.fromEntries(results.filter(result=>result.status==='fulfilled').map(({value})=>value));
-  if(Object.keys(images).length!==2||signal.aborted){
-    for(const image of Object.values(images))image.close();
+  const loaded=results.filter(result=>result.status==='fulfilled').map(({value})=>value);
+  if(loaded.length!==missing.length||signal.aborted){
+    for(const [,image] of loaded)image.close();
     throw Error('Room style maps did not load');
   }
-  return images;
+  for(const [id,image] of loaded)images.set(id,image);
 }
