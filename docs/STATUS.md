@@ -469,6 +469,12 @@ as a pending code-only update. The activation guard found open ingress
 connections and stopped before any service effect. The live package
 remains `d65e90d37ca9` with `2f68982b6294` as its current rollback.
 
+The pending package also passed the emulated touch round trip with
+actual door taps and virtual-stick input. A desktop writer and an
+emulated-touch reader shared the exact worktable edition, kept
+independent rotation and appearance, and verified the part reference,
+clear and actor-specific revocation using controlled identities.
+
 The preceding source `a7d556b` served package `2f68982b6294`, with
 `52e35e6d6b2a` as its rollback.
 Manipulación de Materia now uses the Blender pass inspired by the appearance
@@ -2130,3 +2136,15 @@ session's A2UI live and action routes. Acceptance must compare the applied
 revision and state to an independent Lab control read, restore the reversible
 change at the current revision, and preserve the player's location and inputs.
 [Proyección Weaver host contract](https://github.com/AlterMundi/proyeccion/blob/1496887ee9e7fe118e839307210f0a3a3304c9a5/docs/conformance.md#weaver-host-contract).
+
+The room look also selects the HUD palette in the host document. Apply
+the palette only after the room's material selection succeeds, update
+mounted controls in place and clear it when leaving the room. The
+existing Matter worktable uses that palette. A Proyección surface
+mounted in the same document can inherit the catalog's existing
+`--a2ui-color-primary` property. The A2UI application mount and its live
+action round trip remain separate from this presentation change.
+The isolated `65537195d52c` package verified three distinct Matter HUD
+palettes, local selection on two browser contexts, unchanged shared
+worktable state, and palette reset on tactile exit. This package stays
+local while the previously qualified appearance package remains staged.

@@ -231,6 +231,7 @@ async function applyMatterStyle(style){
     current.glazing.apply(style.orbitalGlazing===true);
     current.style=style;
     selectedMatterStyle=style.id;
+    document.body.dataset.roomLook=style.id;
     roomStyleChoice.value=style.id;
     styleStatus('');
   }catch{
@@ -273,6 +274,7 @@ const removeScene=()=>{
     for(const image of matterStyleScope.images.values())image.close();
     matterStyleScope=null;
   }
+  delete document.body.dataset.roomLook;
   roomStyle.hidden=true;
   if(floorSplatScope){
     floorSplatScope.controller.abort();
@@ -599,6 +601,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         const group=roomModel.getContainer();
         matterStyleScope={catalog,binding:bindMatterStyle(group,catalog),glazing:bindOrbitalMatterGlazing(group),
           style:defaultLook,images:new Map()};
+        document.body.dataset.roomLook=defaultLook.id;
         roomStyleChoice.replaceChildren(...catalog.looks.map(({id,label})=>new Option(label,id)));
         roomStyleChoice.value=defaultLook.id;
         roomStyle.hidden=false;
