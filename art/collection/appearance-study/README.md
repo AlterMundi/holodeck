@@ -369,3 +369,29 @@ bench and return cameras are outside the concept view and show how the light,
 materials and secondary geometry behave as the camera moves. Keep this
 rendering reference available to the calibrated capture pipeline. The
 interactive profile has its own real-time light budget and release evidence.
+
+### Second artist pass
+
+Claude Code (Fable 5.2, high effort) received the selected concept, Blender
+entry and bench renders, and the authoring script. Its pass adds broken
+specular response to the worn floor, brushed ceiling metal and more focused
+key lighting. The entry comparison showed a more convincing floor and
+ceiling, with darker walking lanes and stronger blue reflections.
+
+Apply the combined treatment to the editable reference scene. It keeps the
+surface response, restores fill and softens the blue and orange highlights.
+Use absolute output paths for repeatable renders.
+
+```sh
+blender --background OUTPUT_DIR/matter-orbital-reference.blend --python-exit-code 1 \
+  --python art/collection/appearance-study/orbital-combined-finish.py \
+  --render-output /absolute/output/combined-entry- --render-frame 1
+```
+
+The comparison used the same 18 mm camera and 1152 × 768 Cycles settings for
+both variants. It checked the transforms of all 229 non-light, non-camera
+objects, including the archive platform and worktable. The reference still
+shows finer material variation and less conspicuous reflections in the
+windows. This grade was evaluated in Blender at the entry view. Live movement,
+interaction and physical-device performance need a real-time validation
+before using it as the room appearance.
