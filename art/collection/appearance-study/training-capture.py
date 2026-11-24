@@ -66,22 +66,30 @@ parser.add_argument('room', type=Path)
 parser.add_argument('seed', type=Path)
 parser.add_argument('output', type=Path)
 parser.add_argument('--train', type=int, default=40)
+parser.add_argument('--samples', type=int, help='Override Cycles samples per view')
 args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
 if not 12 <= args.train <= 200:
     parser.error('--train must be between 12 and 200')
+if args.samples is not None and not 4 <= args.samples <= 64:
+    parser.error('--samples must be between 4 and 64')
 output = args.output.resolve()
 output.mkdir(parents=True, exist_ok=True)
 images = output / 'images'
 images.mkdir(exist_ok=True)
-bpy.ops.wm.read_factory_settings(use_empty=True)
-bpy.ops.import_scene.gltf(filepath=str(args.room.resolve()))
+editable = args.room.suffix.lower() == '.blend'
+if editable:
+    bpy.ops.wm.open_mainfile(filepath=str(args.room.resolve()))
+else:
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.ops.import_scene.gltf(filepath=str(args.room.resolve()))
 scene = bpy.context.scene
 scene.render.engine = 'CYCLES'
-scene.cycles.samples = 4
+scene.cycles.samples = args.samples or (12 if editable else 4)
 scene.cycles.use_denoising = True
 scene.render.threads_mode = 'FIXED'
 scene.render.threads = 8
-scene.view_settings.view_transform = 'Standard'
+if not editable:
+    scene.view_settings.view_transform = 'Standard'
 scene.render.image_settings.file_format = 'JPEG'
 scene.render.image_settings.quality = 94
 width, height = 768, 512
@@ -117,5 +125,8 @@ meta = {
 (output / 'transforms.json').write_text(json.dumps(meta, indent=2) + '\n')
 (output / 'capture-receipt.json').write_text(json.dumps({
     'sourceSha256': hashlib.sha256(args.room.read_bytes()).hexdigest(), 'seedPoints': seed_count,
+    'seedSha256': hashlib.sha256(args.seed.read_bytes()).hexdigest(),
+    'sourceFormat': 'blend' if editable else 'gltf', 'samples': scene.cycles.samples,
+    'viewTransform': scene.view_settings.view_transform,
     'train': len(train), 'heldOut': len(test), 'images': hashes,
 }, indent=2) + '\n')

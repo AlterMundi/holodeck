@@ -318,9 +318,9 @@ measure disagreement on measured co-visible surfaces. They do not rank
 artistic style, and physically valid camera-dependent highlights can also
 contribute to the photo error.
 
-`training-capture.py` produces a bounded synthetic dataset from one orbital
-room asset and the neutralized geometry seed. Use the normal Blender build
-and NumPy:
+`training-capture.py` produces a bounded synthetic dataset from an orbital
+GLB or an editable Blender scene and the neutralized geometry seed. Use
+the normal Blender build and NumPy:
 
 ```sh
 blender --background --python-exit-code 1 \
@@ -330,7 +330,10 @@ blender --background --python-exit-code 1 \
 
 The output contains calibrated 768×512 JPEGs, metric camera-to-world poses,
 40 train images and eight held-out images, explicit split lists and a neutral
-PLY. For Brush 0.3.0, create a separate working dataset with the same image
+PLY. An editable Blender source preserves its view transform and lights.
+Use `--samples` to control Cycles samples per view. The receipt records
+the source and seed hashes, view transform, sample count and image hashes.
+For Brush 0.3.0, create a separate working dataset with the same image
 and seed files. Split the frames of `transforms.json` into
 `transforms_train.json` and `transforms_test.json` using their explicit lists,
 copying the common intrinsic and seed fields. Brush selects transforms by
@@ -346,6 +349,18 @@ completed within the designated short allocation. These numbers qualify
 training and held-out view rendering on a single scene with mostly baked
 color. They do not validate detail from independent AI edits, material
 relighting, runtime load on mobile or a full published splat.
+
+The editable glossy orbital source was captured with AgX at eight Cycles
+samples per camera. A new fit used the same Brush compute settings and a
+neutral 68,991-point seed. On its own eight held-out cameras, mean RGB
+PSNR was 19.96 dB after 550 steps and 21.68 dB after 1,100 steps, using
+sRGB pixels and a Lanczos resize to 512×341. The reference images differ
+from the earlier GLB pilot. The final fit contains 133,645 Gaussians with
+spherical harmonics through degree 3. Chromium loaded the 2,089,169-byte
+SPZ and drew all eight held-out views. At the wide view of the worktable,
+panel seams, hard edges and glazing reflections are visibly softer than
+the reference. The observed browser path was a software-rendered loopback
+preview. The fit is retained as a full-room control for further comparisons.
 
 `view-overlap.py CAPTURE_DIR CONTROL_DIR` reads the nine calibrated depth
 captures, their ImageGen edits and the control rerenders of a single static
