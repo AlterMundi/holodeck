@@ -1,5 +1,5 @@
-import {Group} from 'three';
 import {disposeModel,placeGalleryModel} from './gallery-models.mjs';
+import {staticModelLevels,wantsDetailedModel} from './static-model-lod.mjs';
 
 const identity=edition=>edition.resource+':'+edition.version;
 const fullKey=edition=>identity(edition)+':'+(edition.representative?.sha256??'');
@@ -18,6 +18,10 @@ export class CollectionArchive{
     this.next=panel.querySelector('[data-next]');
     this.previous.onclick=()=>this.step(-1);
     this.next.onclick=()=>this.step(1);
+  }
+
+  get shadowModel(){
+    return this.levels?.low?.visible?this.levels.low:this.levels?.detail;
   }
 
   sync(data,root){
@@ -103,12 +107,13 @@ export class CollectionArchive{
     this.select(this.entries[(index+direction+this.entries.length)%this.entries.length]);
   }
 
-  update(player){
+  update(player,camera,pixels){
     if(!this.edition||!player)return;
     const distance=Math.hypot(player.x-this.anchor.x,player.z-this.anchor.z);
     this.panel.hidden=distance>2.15;
-    if(distance>5.8)this.removeModel();
-    else if(this.edition.representative&&!this.mesh&&!this.pending&&performance.now()>=(this.retryAt??0))this.load();
+    const near=wantsDetailedModel({anchor:this.anchor,diameter:.88,distance,camera,pixels,near:this.levels?.near});
+    this.levels?.setNear(near);
+    if(this.edition.representative&&!this.mesh&&!this.pending&&performance.now()>=(this.retryAt??0))this.load(near);
     if(this.turn){
       const duration=matchMedia('(prefers-reduced-motion: reduce)').matches?1:620;
       const progress=Math.min(1,(performance.now()-this.turn.start)/duration);
@@ -121,7 +126,7 @@ export class CollectionArchive{
     }
   }
 
-  async load(){
+  async load(near){
     const controller=new AbortController(),edition=this.edition;
     this.pending=controller;
     try{
@@ -130,11 +135,12 @@ export class CollectionArchive{
       const {scene}=await this.loader.parseAsync(payload,'');
       if(signal.aborted){disposeModel(scene);return;}
       const model=placeGalleryModel(scene,{x:0,y:0,z:0},{width:.88,depth:.88,height:.62});
-      const mesh=new Group();
+      this.levels=staticModelLevels(model,near);
+      const mesh=this.levels.group;
       mesh.name='collection-archive-model';
       mesh.position.set(this.anchor.x,this.anchor.y,this.anchor.z);
       mesh.rotation.y=this.angle;
-      mesh.add(model);this.scene.add(mesh);this.mesh=mesh;
+      this.scene.add(mesh);this.mesh=mesh;
     }catch{
       if(!controller.signal.aborted)this.retryAt=performance.now()+12000;
     }finally{
@@ -144,7 +150,7 @@ export class CollectionArchive{
 
   removeModel(){
     this.pending?.abort();this.pending=null;this.retryAt=0;
-    if(this.mesh){disposeModel(this.mesh);this.mesh=null;}
+    if(this.mesh){disposeModel(this.mesh);this.mesh=null;this.levels=null;}
   }
 
   clear(){

@@ -605,6 +605,30 @@ independently. The shell and retained worktable model stayed mounted,
 sharing and part references continued, and the other browser's material
 selection followed only its own controls.
 
+### Surface detail at physical scale
+
+The turntable still uses its original per-material maps. The merged
+shell carries a separate material-role map on the same 1024 UV layout as
+the fixed-light bake. It records bulkhead, navy, orange, steel and
+graphite before they are merged. The deck keeps its own detail map.
+
+```sh
+blender --background matter-orbital-combined.blend --python-exit-code 1 \
+  --python art/collection/appearance-study/orbital-runtime-bake.py -- OUTPUT_DIR \
+  --size 1024 --layout-size 1024 --specular focused --material-roles-only
+python3 art/collection/appearance-study/pack-surface-detail.py \
+  SOURCE_MATERIAL_MAPS OUTPUT_DIR/orbital-surface-tiles.png
+```
+
+The tile pack derives high-frequency color and tonal relief from the
+authored albedo and normal maps. The shader projects those tiles at the
+authored meter scale, samples the role map with nearest filtering and
+fades detail with pixel footprint. The separate irradiance still
+provides large-scale shadows and color. Interpolated role edges fall
+back to the fixed-light result. Repeat gutters and the footprint fade
+bound the mip levels at which tile sampling can bleed into neighbors.
+The two textures are scoped to the room and apply in the layered look.
+
 ### Contact shadows for the moving Collection models
 
 The layered look enables a separate contact projection on each authored

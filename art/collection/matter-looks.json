@@ -25,6 +25,14 @@
     "orbital-deck-detail": {
       "file": "orbital-deck-detail.jpg",
       "sha256": "e1eb484f4ca1cd57dd48aa4e5210048fc78cc4d9a14750cf144a7e0910483a62"
+    },
+    "orbital-surface-roles": {
+      "file": "orbital-surface-roles.png",
+      "sha256": "9e8103a8b20a7db1884e97b38995051c9b320277db495f30be98db43f20d09a0"
+    },
+    "orbital-surface-tiles": {
+      "file": "orbital-surface-tiles.png",
+      "sha256": "b9f9e03c6ed15ecccc4dd7c12f9e6b01f997cd76946ce9246ef3329fc177440d"
     }
   },
   "looks": [
@@ -215,12 +223,20 @@
                 ]
               }
             ]
+          },
+          "surfaceDetail": {
+            "roles": "orbital-surface-roles",
+            "tiles": "orbital-surface-tiles"
           }
         },
         "responsive-work-surfaces": {
           "channel": "emissiveMap",
           "albedo": "orbital-albedo",
-          "irradiance": "orbital-irradiance"
+          "irradiance": "orbital-irradiance",
+          "surfaceDetail": {
+            "roles": "orbital-surface-roles",
+            "tiles": "orbital-surface-tiles"
+          }
         }
       }
     }

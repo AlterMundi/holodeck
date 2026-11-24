@@ -73,6 +73,15 @@ export function compileRoomLooks(manifest,readAsset){
           throw Error('Invalid room diffuse reflection');
         used.add(light.detail);
       }
+      if(layers.surfaceDetail!==undefined){
+        const detail=layers.surfaceDetail;
+        if(!record(detail)||detail.roles===detail.tiles||
+           ![detail.roles,detail.tiles].every(id=>identifier(id)&&Object.hasOwn(manifest.assets,id)&&
+             typeof manifest.assets[id]?.file==='string'&&manifest.assets[id].file.endsWith('.png')))
+          throw Error('Invalid room surface detail');
+        used.add(detail.roles);
+        used.add(detail.tiles);
+      }
       used.add(albedo);
       used.add(irradiance);
     }

@@ -629,7 +629,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const collectionRoom=inside&&!moving&&activeSpace.collectionShelves?activeSpace.id:null;
       collectionShelves.update(collectionRoom,collectionRoom?remoteScene:null,position,
         collectionRoom?activeSpace.objects.find(object=>object.id==='worktable')?.position:null,
-        activeSpace?.sharedConversation===true,matterStyleScope?.style.contactShadows===true);
+        activeSpace?.sharedConversation===true,matterStyleScope?.style.contactShadows===true,
+        options.coreCameraManager.getCameraState(),renderer.composer.renderer.domElement.clientHeight);
       garden.update(inside&&!moving&&activeSpace.playableInterior?activeSpace.id:null);gardenMarkers();
       if(!inside){worldIndication?.update();if(!moving)playableHUD.update(position);}
       if(!moving){

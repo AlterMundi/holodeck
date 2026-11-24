@@ -3,6 +3,7 @@ import {disposeModel,placeGalleryModel} from './gallery-models.mjs';
 import {CollectionArchive} from './collection-archive.mjs';
 import {CollectionWorktable} from './collection-worktable.mjs';
 import {CollectionContactShadow} from './collection-contact-shadow.mjs';
+import {staticModelLevels,wantsDetailedModel} from './static-model-lod.mjs';
 
 const REFRESH_MS=12000;
 const MODEL_LIMIT=384*1024;
@@ -45,7 +46,7 @@ export class CollectionShelves {
     this.worktable=new CollectionWorktable({base,scene,panel:worktablePanel,webgl,onReference,onSharedChange:refreshSoon});
   }
 
-  update(room,root,player,bench,canDiscuss,contactShadows){
+  update(room,root,player,bench,canDiscuss,contactShadows,camera,pixels){
     if(this.room!==room||this.root!==root){
       this.clear();
       this.room=room;this.root=root;
@@ -66,20 +67,26 @@ export class CollectionShelves {
     const now=performance.now();
     if(!this.flight&&now>=(this.refreshAt??0))this.refresh();
     const nearest=[...this.items.values()].map(item=>({item,distance:distance(player,item.project.anchor)}))
-      .filter(value=>value.distance<=5.8).sort((a,b)=>a.distance-b.distance);
-    const visible=new Set(nearest.slice(0,3).map(value=>value.item));
-    for(const item of this.items.values()){
-      if(!visible.has(item)){this.removeMesh(item);continue;}
-      if(item.edition.representative&&!item.mesh&&!item.pending&&now>=(item.retryAt??0))this.load(item);
+      .sort((a,b)=>a.distance-b.distance);
+    const detailed=nearest.filter(({item,distance})=>wantsDetailedModel({
+      anchor:item.project.anchor,diameter:.85,distance,camera,pixels,near:item.levels?.near,
+    })).slice(0,3);
+    const detailItems=new Set(detailed.map(({item})=>item));
+    for(const {item} of nearest)item.levels?.setNear(detailItems.has(item));
+    // Admit one shelf fetch/decode at a time. Loaded representatives remain
+    // qualified in this room and change tier without another network request.
+    if(!nearest.some(({item})=>item.pending)){
+      const next=nearest.find(({item})=>item.edition.representative&&!item.mesh&&now>=(item.retryAt??0));
+      if(next)this.load(next.item,detailItems.has(next.item));
     }
     this.nearby=nearest.filter(value=>value.distance<=1.85).map(value=>value.item);
     this.links(this.nearby);
-    this.archive.update(player);
+    this.archive.update(player,camera,pixels);
     this.worktable.update(player,bench,canDiscuss);
     if(contactShadows){
       const casters=[
         ['worktable',this.worktable.model?.group,bench,this.worktable.model?.shadowRevision],
-        ['archive',this.archive.mesh,this.archive.anchor,this.archive.angle],
+        ['archive',this.archive.shadowModel,this.archive.anchor,this.archive.angle],
       ];
       for(const [fixture,model,anchor,revision] of casters){
         const fields=this.shadows??=new Map();
@@ -138,7 +145,7 @@ export class CollectionShelves {
     for(const [id,item] of this.items)if(!current.has(id))this.remove(item);
   }
 
-  async load(item){
+  async load(item,near){
     const controller=new AbortController();
     item.pending=controller;
     try{
@@ -146,7 +153,8 @@ export class CollectionShelves {
       const payload=await modelBytes(this.base,item.edition,signal);
       const {scene}=await this.loader.parseAsync(payload,'');
       if(signal.aborted){disposeModel(scene);return;}
-      item.mesh=placeGalleryModel(scene,item.project.anchor,{width:.64,depth:1.13,height:.47});
+      item.levels=staticModelLevels(placeGalleryModel(scene,item.project.anchor,{width:.64,depth:1.13,height:.47}),near);
+      item.mesh=item.levels.group;
       item.mesh.name='collection-'+item.project.id;
       this.scene.add(item.mesh);
     }catch{item.retryAt=performance.now()+REFRESH_MS;}
@@ -195,7 +203,7 @@ export class CollectionShelves {
 
   removeMesh(item){
     item.pending?.abort();item.pending=null;
-    if(item.mesh){disposeModel(item.mesh);item.mesh=null;}
+    if(item.mesh){disposeModel(item.mesh);item.mesh=null;item.levels=null;}
   }
 
   remove(item){

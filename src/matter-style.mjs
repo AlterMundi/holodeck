@@ -1,4 +1,4 @@
-import {NoColorSpace,RepeatWrapping,ShaderChunk,Source,Vector2,Vector3} from 'three';
+import {NearestFilter,NoColorSpace,RepeatWrapping,ShaderChunk,Source,Vector2,Vector3} from 'three';
 
 const diffuseSamples={
   map:{chunk:'map_fragment',sampler:'map',uv:'vMapUv'},
@@ -6,7 +6,6 @@ const diffuseSamples={
 };
 
 const floorReflection=/* glsl */`
-  varying vec3 roomSurfacePosition;
   uniform float roomReceiverHeight;
   struct RoomEmitter {
     vec3 center;
@@ -55,10 +54,40 @@ const floorReflection=/* glsl */`
   }
 `;
 
+const materialDetail=/* glsl */`
+  varying vec3 roomSurfaceNormal;
+  uniform sampler2D roomSurfaceRoles;
+  uniform sampler2D roomSurfaceTiles;
+
+  vec3 roomDetail(vec3 diffuse, vec2 atlasUv) {
+    float encoded = texture2D(roomSurfaceRoles, atlasUv).r * (255.0 / 32.0);
+    float role = floor(encoded + 0.5);
+    vec3 normal = abs(roomSurfaceNormal);
+    vec2 meters = normal.x >= max(normal.y, normal.z) ? vec2(-roomSurfacePosition.z, roomSurfacePosition.y)
+      : normal.z >= normal.y ? roomSurfacePosition.xy : vec2(roomSurfacePosition.x, -roomSurfacePosition.z);
+    float scale = role == 1.0 ? 0.78 : role == 2.0 ? 0.92 : role == 3.0 ? 1.2 : 1.1;
+    vec2 projected = meters * scale;
+    vec2 dx = dFdx(projected);
+    vec2 dy = dFdy(projected);
+    float footprint = 248.0 * max(length(dx), length(dy));
+    float strength = (1.0 - smoothstep(4.0, 11.0, footprint)) *
+      step(1.0, role) * step(role, 5.0) * (1.0 - step(0.12, abs(role - encoded)));
+    if (strength == 0.0) return diffuse;
+    float tile = role - 1.0;
+    vec2 cell = vec2(mod(tile, 3.0), floor(tile / 3.0));
+    vec2 atlasSize = vec2(768.0, 512.0);
+    vec2 uv = (cell * 256.0 + 4.0 + fract(projected) * 248.0) / atlasSize;
+    float variation = textureGrad(roomSurfaceTiles, uv, dx * 248.0 / atlasSize, dy * 248.0 / atlasSize).r;
+    return diffuse * (1.0 + strength * 0.95 * (2.0 * variation - 1.0));
+  }
+`;
+
 function diffuseLayers(material){
   let channel;
   const irradiance={value:null};
   let reflectionEnabled=false;
+  let detailEnabled=false;
+  const surfaceDetail={roomSurfaceRoles:{value:null},roomSurfaceTiles:{value:null}};
   const reflection={
     roomReceiverHeight:{value:0},
     roomEmitterCount:{value:0},
@@ -68,32 +97,40 @@ function diffuseLayers(material){
     roomFloorDiffuseFill:{value:0},
   };
   material.customProgramCacheKey=()=>channel
-    ?'room-diffuse-layers:'+channel+(reflectionEnabled?':reflection':''):'';
+    ?'room-diffuse-layers:'+channel+(reflectionEnabled?':reflection':'')+(detailEnabled?':detail':''):'';
   material.onBeforeCompile=shader=>{
     if(!channel)return;
     const {chunk,sampler,uv}=diffuseSamples[channel];
     const sample=`texture2D( ${sampler}, ${uv} )`;
     shader.uniforms.roomIrradiance=irradiance;
-    if(reflectionEnabled){
-      Object.assign(shader.uniforms,reflection);
+    if(reflectionEnabled)Object.assign(shader.uniforms,reflection);
+    if(detailEnabled)Object.assign(shader.uniforms,surfaceDetail);
+    if(reflectionEnabled||detailEnabled){
       shader.vertexShader='varying vec3 roomSurfacePosition;\n'+shader.vertexShader.replace(
         '#include <project_vertex>',`#include <project_vertex>
-        roomSurfacePosition = (modelMatrix * vec4(transformed, 1.0)).xyz;`);
+        roomSurfacePosition = (modelMatrix * vec4(transformed, 1.0)).xyz;
+        ${detailEnabled?'roomSurfaceNormal = mat3(modelMatrix) * normal;':''}`);
+      if(detailEnabled)shader.vertexShader='varying vec3 roomSurfaceNormal;\n'+shader.vertexShader;
     }
     shader.fragmentShader=`
       uniform sampler2D roomIrradiance;
+      ${reflectionEnabled||detailEnabled?'varying vec3 roomSurfacePosition;':''}
       ${reflectionEnabled?floorReflection:''}
+      ${detailEnabled?materialDetail:''}
       vec3 roomLitDiffuse(vec3 albedo, vec2 uv) {
         vec3 light = exp2(6.0 * texture2D(roomIrradiance, uv).rgb) - 1.0;
         vec3 color = albedo * (1.40 * light + 0.063);
         vec3 diffuse = color / (1.0 + 0.33 * max(max(color.r, color.g), color.b));
+        ${detailEnabled?'diffuse = roomDetail(diffuse, uv);':''}
         return ${reflectionEnabled?'roomFloorFinish(diffuse)':'diffuse'};
       }
     `+shader.fragmentShader.replace(`#include <${chunk}>`,
       ShaderChunk[chunk].replace(sample,`vec4(roomLitDiffuse(${sample}.rgb, ${uv}), 1.0)`));
   };
-  return (next,texture,finish,detail)=>{
+  return (next,texture,finish,detail,roles,tiles)=>{
     irradiance.value=texture;
+    surfaceDetail.roomSurfaceRoles.value=roles;
+    surfaceDetail.roomSurfaceTiles.value=tiles;
     if(finish){
       reflection.roomReceiverHeight.value=finish.receiverHeight;
       reflection.roomEmitterCount.value=finish.emitters.length;
@@ -110,9 +147,11 @@ function diffuseLayers(material){
       reflection.roomDeckTileScale.value=finish.tilesPerMeter;
       reflection.roomFloorDiffuseFill.value=finish.diffuseFill??0;
     }
-    if(next!==channel||reflectionEnabled!==!!finish){
+    const hasDetail=!!(roles&&tiles);
+    if(next!==channel||reflectionEnabled!==!!finish||detailEnabled!==hasDetail){
       channel=next;
       reflectionEnabled=!!finish;
+      detailEnabled=hasDetail;
       material.needsUpdate=true;
     }
   };
@@ -132,7 +171,7 @@ export function bindMatterStyle(group,catalog){
     }
   }
   const materials=new Map();
-  const textures={color:new Map(),data:new Map(),tile:new Map()};
+  const textures={color:new Map(),data:new Map(),tile:new Map(),roles:new Map()};
   const variant=(source,image,mode='color')=>{
     if(!source||!image)return source;
     const cache=textures[mode];
@@ -142,6 +181,11 @@ export function bindMatterStyle(group,catalog){
       const texture=source.clone();
       texture.source=new Source(image);
       if(mode==='data')texture.colorSpace=NoColorSpace;
+      if(mode==='roles'){
+        texture.colorSpace=NoColorSpace;
+        texture.generateMipmaps=false;
+        texture.minFilter=texture.magFilter=NearestFilter;
+      }
       if(mode==='tile')texture.wrapS=texture.wrapT=RepeatWrapping;
       texture.needsUpdate=true;
       variants.set(image,texture);
@@ -169,7 +213,12 @@ export function bindMatterStyle(group,catalog){
         const light=layers?variant(source[layers.channel],images?.get(layers.irradiance),'data'):null;
         const reflection=light?layers.reflection:undefined;
         const detail=reflection?variant(source[layers.channel],images?.get(reflection.detail),'tile'):null;
-        setLayers(light?layers.channel:undefined,light,reflection,detail);
+        const authored=light&&layers.surfaceDetail;
+        const roleImage=authored&&images?.get(authored.roles);
+        const tileImage=authored&&images?.get(authored.tiles);
+        const roles=roleImage?variant(source[layers.channel],roleImage,'roles'):null;
+        const tiles=tileImage?variant(source[layers.channel],tileImage,'data'):null;
+        setLayers(light?layers.channel:undefined,light,reflection,detail,roles,tiles);
         const overrides=style.materials[role];
         for(const channel of channels){
           const asset=layers?.channel===channel?layers.albedo:overrides?.[channel];
@@ -188,10 +237,14 @@ export function bindMatterStyle(group,catalog){
 
 export async function loadMatterStyleImages(catalog,style,images,signal){
   const assets=new Set(Object.values(style.materials).flatMap(Object.values));
-  for(const {albedo,irradiance,reflection} of Object.values(style.diffuseLayers??{})){
+  for(const {albedo,irradiance,reflection,surfaceDetail} of Object.values(style.diffuseLayers??{})){
     assets.add(albedo);
     assets.add(irradiance);
     if(reflection)assets.add(reflection.detail);
+    if(surfaceDetail){
+      assets.add(surfaceDetail.roles);
+      assets.add(surfaceDetail.tiles);
+    }
   }
   const missing=Array.from(assets).filter(id=>!images.has(id));
   if(!missing.length)return;

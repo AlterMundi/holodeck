@@ -415,6 +415,40 @@ reference renders a solid threshold there. In the tested room
 projection, the actual passage back to the foyer is on the opposite
 wall. This is a visual continuity gap in the shell.
 
+Human review on Legion confirmed the current room appearance and called
+out both the granular turntable as the material benchmark and object
+disappearance on approach. The old shelf client discarded representatives
+beyond 5.8 m or outside the nearest three. The archive used the same
+distance cutoff. The candidate keeps a geometry tier on the mounted
+Collection shelves and archive, and promotes detail based on projected
+screen size, proximity and a hysteresis band. It processes one shelf fetch
+at a time and releases both tiers at room exit or an edition change.
+Existing edition authorization, anchors and interaction distances are
+unchanged. The archive's contact shadow follows the visible mesh tier.
+
+Fable 5.2 at high effort reviewed this approach and recommended generating
+source-digest-pinned far meshes offline when project representatives are
+published. The current fallback derives its one-draw reduced mesh once
+from the authorized representative, so already-published projects can use
+it. Offline generation and the budget for other display types remain
+separate from this Collection change.
+
+The layered Orbital look restores the source material's small-scale
+variation on the merged case, shelving, wall and work surfaces using
+authored role IDs, meter-scale tiles and a footprint fade. The authored
+albedo and normal sources supply the detail; the original lighting and
+turntable textures remain intact. The two room-scoped textures total
+276,969 transferred bytes. Registered close captures show a material
+difference on the blue case and gray shelves, with variation by surface.
+The candidate archive is 32,348,160 bytes and remains below the 32 MiB limit.
+
+Cuevanico verified the 4,189-triangle test representative at both mounts.
+Each far mesh drew 117 triangles. Approaching restored the full geometry;
+backing away restored the reduced mesh with zero repeat model requests.
+The final package entered cold in 9.96 s and measured 33.3 ms median and
+50.0 ms p95 over 321 moving intervals. The served version is still the
+previous package, with the new stage retained for scoped activation.
+
 The preceding source `a7d556b` served package `2f68982b6294`, with
 `52e35e6d6b2a` as its rollback.
 Manipulación de Materia now uses the Blender pass inspired by the appearance

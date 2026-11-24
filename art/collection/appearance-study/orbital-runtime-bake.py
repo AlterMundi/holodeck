@@ -85,7 +85,7 @@ def set_bake_image(materials, image):
         target.select = True
 
 
-def bake_material_input(materials, image, channel, uv_layer, margin):
+def bake_material_input(materials, image, channel, uv_layer, margin, colors=None):
     saved = []
     for material in materials:
         tree = material.node_tree
@@ -95,7 +95,9 @@ def bake_material_input(materials, image, channel, uv_layer, margin):
         previous = surface.links[0].from_socket
         emission = tree.nodes.new('ShaderNodeEmission')
         color = shader.inputs[channel]
-        if color.is_linked:
+        if colors is not None:
+            emission.inputs['Color'].default_value = colors[material.name]
+        elif color.is_linked:
             tree.links.new(color.links[0].from_socket, emission.inputs['Color'])
         else:
             value = color.default_value
@@ -121,6 +123,8 @@ parser.add_argument('--specular', nargs='?', const='whole', choices=('whole', 'f
                     help='Use UV-baked roughness and metalness on the whole shell or selected work surfaces')
 parser.add_argument('--separate-light', action='store_true',
                     help='Retain linear albedo and fixed-light atlases with moving archive geometry excluded from the light bake')
+parser.add_argument('--material-roles-only', action='store_true',
+                    help='Bake the authored surface roles on the same UV layout without rebaking light')
 args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
 if not 4 <= args.samples <= 64:
     parser.error('--samples must be between 4 and 64')
@@ -171,6 +175,19 @@ bpy.ops.uv.smart_project(island_margin=margin, margin_method='FRACTION')
 bpy.ops.object.mode_set(mode='OBJECT')
 
 materials = {slot.material for slot in shell.material_slots}
+if args.material_roles_only:
+    role_ids = {name: index for index, name in enumerate(
+        ('panel', 'navy', 'orange', 'steel', 'graphite'), start=1)}
+    role_map = bpy.data.images.new('Orbital surface roles', args.size, args.size, alpha=False)
+    role_map.colorspace_settings.name = 'Non-Color'
+    colors = {material.name: (role_ids.get(material.name.removeprefix('Orbital '), 0) * 32 / 255, 0, 0, 1)
+              for material in materials}
+    scene.cycles.samples = 1
+    bake_material_input(materials, role_map, 'Base Color', atlas_uv_name, margin=5, colors=colors)
+    role_map.filepath_raw = str(output / 'orbital-surface-roles.png')
+    role_map.file_format = 'PNG'
+    role_map.save()
+    sys.exit(0)
 irradiance = bpy.data.images.new('Orbital irradiance', args.size, args.size, alpha=False, float_buffer=True)
 albedo = bpy.data.images.new('Orbital albedo', args.size, args.size, alpha=False, float_buffer=True)
 set_bake_image(materials, irradiance)
