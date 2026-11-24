@@ -210,3 +210,86 @@ materials and meshes. The older two-material floor comparison remains
 available under **Piso A/B**. Keep one bounded working directory and
 retain the previous published comparator through the existing history
 policy.
+
+## Geometry and appearance research, November 2026
+
+The selected objective is a stable, editable room and object hierarchy with
+replaceable appearance. Collisions, semantics, links, transforms and moving
+assemblies stay on the Blender-derived scene. An appearance revision can
+supply PBR materials, lighting and optional radiance-field assets associated
+with stable object IDs. The fixed projection in the browser is a pretraining
+baseline. It does not learn Gaussian centers, scales, rotations, opacity or
+view-dependent color.
+
+### Local evidence
+
+A depth and normal reprojection on the nine independently styled images
+matched 233,079 samples across 36 camera pairs. The average per-channel
+absolute RGB differences were 28.63/255 for the generated images and
+1.48/255 for a coherent rerender of one static UV scene at the same cameras.
+Occlusions and most silhouette samples were excluded. The two methods
+measure disagreement on measured co-visible surfaces. They do not rank
+artistic style, and physically valid camera-dependent highlights can also
+contribute to the photo error.
+
+`training-capture.py` produces a bounded synthetic dataset from one orbital
+room asset and the neutralized geometry seed. Use the normal Blender build
+and NumPy:
+
+```sh
+blender --background --python-exit-code 1 \
+  --python art/collection/appearance-study/training-capture.py -- \
+  orbital-room.glb orbital-detail.bin DATASET_DIR
+```
+
+The output contains calibrated 768×512 JPEGs, metric camera-to-world poses,
+40 train images and eight held-out images, explicit split lists and a neutral
+PLY. For Brush 0.3.0, create a separate working dataset with the same image
+and seed files. Split the frames of `transforms.json` into
+`transforms_train.json` and `transforms_test.json` using their explicit lists,
+copying the common intrinsic and seed fields. Brush selects transforms by
+filename, so do not include the unsplit JSON in its input. For controlled
+coverage comparisons, retain one camera manifest and choose nested training
+subsets. Keep the evaluation frames and training settings fixed.
+
+First Brush pilot used 512 px maximum resolution, 160,000 maximum splats,
+100-step refinement, SH degree 3, and 1,100 training steps. The matched
+eight-view average PSNR was 24.08 dB at 550 steps and 26.69 dB at 1,100 steps
+against the resized source images. The last PLY was retained. The GPU run
+completed within the designated short allocation. These numbers qualify
+training and held-out view rendering on a single scene with mostly baked
+color. They do not validate detail from independent AI edits, material
+relighting, runtime load on mobile or a full published splat.
+
+`view-overlap.py CAPTURE_DIR CONTROL_DIR` reads the nine calibrated depth
+captures, their ImageGen edits and the control rerenders of a single static
+scene with the same camera calibration. Its counts and differences can be
+used as one part of judging a new generation method.
+
+### Research and independent review
+
+- [WorldMesh, ECCV 2026](https://mschneider456.github.io/world-mesh/) is a close
+  geometry-first precedent. It stabilizes appearance across views by
+  accumulating texture on the scaffold and using it for subsequent
+  generation, then demonstrates the 3DGS reconstruction. Its public CLI's
+  complete pipeline also generates layout and reconstructs objects.
+  Test its texture propagation on existing geometry before adopting that
+  broader pipeline.
+- [CustomTex, CVPR 2026](https://chenweilinx.github.io/CustomTex/) uses concrete
+  per-object references, depth and instance masks to optimize shared scene
+  UV textures. It is a useful benchmark for the editable material route.
+- [DiffStyle3D, ICML 2026](https://proceedings.mlr.press/v306/yang26cd.html)
+  integrates geometric correspondences in latent attention for styling an
+  existing 3DGS model. It is relevant for an experimental residual layer,
+  rather than evidence that an arbitrary room can be newly generated
+  from pixel edits without side effects.
+
+Claude Code returned a successful review with Claude Fable 5.2 at high
+effort. It independently selected shared UV/PBR as the primary appearance
+representation, and proposed testing both joint multiview generation
+followed by 3DGS, and local radiance-field detail attached to object IDs.
+It flagged that training on the unlit atlas is only a reconstruction
+control. To test view-dependent highlights, use a coherent scene with
+specular material and light. Record held-out close-up detail, projection
+consistency, geometric and semantic masks, local style changes and
+object motions before selecting a representation for production.
