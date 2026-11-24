@@ -136,6 +136,55 @@ for name, sources in groups.items():
         bpy.ops.object.join()
     copies[0].name = 'Surface · '+name
     batch.append(copies[0])
+# Bake static contact occlusion into a shared second UV atlas. Live room
+# lights, moving models and the glass still use their regular material paths.
+bpy.ops.object.select_all(action='DESELECT')
+occlusion = bpy.data.images.new('Orbital static occlusion', 1024, 1024, alpha=False)
+occlusion.colorspace_settings.name = 'Non-Color'
+output_group = bpy.data.node_groups.new('glTF Material Output', 'ShaderNodeTree')
+output_group.interface.new_socket(name='Occlusion', in_out='INPUT', socket_type='NodeSocketFloat')
+for obj in batch:
+    obj.select_set(True)
+    obj.data.uv_layers.active = obj.data.uv_layers.new(name='Orbital AO')
+    source_material = obj.data.materials[0]
+    material = source_material.copy()
+    material.name = source_material.name + ' static'
+    obj.data.materials[0] = material
+    nodes = material.node_tree.nodes
+    links = material.node_tree.links
+    uv = nodes.new('ShaderNodeUVMap')
+    uv.uv_map = 'Orbital AO'
+    target = nodes.new('ShaderNodeTexImage')
+    target.image = occlusion
+    target.extension = 'EXTEND'
+    links.new(uv.outputs['UV'], target.inputs['Vector'])
+    nodes.active = target
+    target.select = True
+    gltf = nodes.new('ShaderNodeGroup')
+    gltf.node_tree = output_group
+    links.new(target.outputs['Color'], gltf.inputs['Occlusion'])
+bpy.context.view_layer.objects.active = batch[0]
+bpy.ops.object.mode_set(mode='EDIT')
+bpy.ops.mesh.select_all(action='SELECT')
+bpy.ops.uv.smart_project(island_margin=.004, margin_method='FRACTION')
+bpy.ops.object.mode_set(mode='OBJECT')
+for obj in batch:
+    obj.data.uv_layers[0].active_render = True
+originals = [obj for sources in groups.values() for obj in sources]
+prior_visibility = [obj.hide_render for obj in originals]
+for obj in originals:
+    obj.hide_render = True
+scene.cycles.samples = 12
+scene.render.threads_mode = 'FIXED'
+scene.render.threads = 8
+bpy.ops.object.bake(type='AO', uv_layer='Orbital AO', use_clear=True, margin=4)
+for obj, hidden in zip(originals, prior_visibility):
+    obj.hide_render = hidden
+occlusion.filepath_raw = str((output/'orbital-occlusion.jpg').resolve())
+occlusion.file_format = 'JPEG'
+occlusion.save(quality=88)
+occlusion.pack()
+
 bpy.ops.object.select_all(action='DESELECT')
 for obj in batch + independent:
     obj.select_set(True)

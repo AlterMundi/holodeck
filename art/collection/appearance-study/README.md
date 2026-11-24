@@ -314,7 +314,8 @@ blender --background art/collection/matter-workshop.blend --python-exit-code 1 \
 ```
 
 The exporter writes an editable styled blend, a standalone managed GLB
-with embedded textures, per-object material assignments, and three exact
+with embedded textures and a Cycles static occlusion UV atlas, per-object
+material assignments, and three exact
 camera renders. It batches static geometry by material and keeps glass,
 lettering, and the rotating archive parts separate. Its result is selected
 by the room's normal `matterCollection.art` configuration. The existing
