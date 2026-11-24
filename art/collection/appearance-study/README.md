@@ -342,3 +342,30 @@ had 16.7 ms median and 16.8 ms p95 frame intervals. The city-scale rendering,
 physical mobile devices, sustained moving frame-time and visual parity
 with top published work are separate acceptance questions. The orbital
 selector remains a release candidate.
+
+### Reference-matched Blender scene
+
+The [chosen concept](../orbital-concept.jpg) is a shot reference for construction and illumination,
+including the area-emitter dimensions, the contrast between the cool service
+bay and the warm entrance, reflected structures in the glazing, and the
+contact shadow under the bench. The reference finish models a service bay
+behind the existing apertures, hardware on the worktable and archive, tangent
+material response, transmission in the glazing, and a thin scattering layer.
+A Cycles scene and a restrained optical glow pass produce the reference
+renders. The editable objects and semantic anchors of the original room
+remain the layout authority. The new detailing belongs to its own collection.
+
+Starting from the editable `matter-orbital.blend` produced above, run this
+with Blender 5.2.2:
+
+```sh
+blender --background matter-orbital.blend --python-exit-code 1 \
+  --python art/collection/appearance-study/orbital-reference-finish.py -- OUTPUT_DIR
+```
+
+The output contains an editable reference scene and three calibrated renders.
+The entry camera supplies the direct comparison against the concept. The
+bench and return cameras are outside the concept view and show how the light,
+materials and secondary geometry behave as the camera moves. Keep this
+rendering reference available to the calibrated capture pipeline. The
+interactive profile has its own real-time light budget and release evidence.
