@@ -1,4 +1,5 @@
 import {HOUSE_GROUND,HOUSE_PLOTS} from './houses.mjs';
+import {VALLEY_LAYOUT,VALLEY_GROUND,VALLEY_DRESSING} from './continuous-valley.mjs';
 import {LAYOUT_VERSION,TERRACE_TOP,TERRACES,PROMENADES} from './world-layout.mjs';
 import {signalColourName} from './playable-creations.mjs';
 // One-way projection of Room semantics. Static original art is a merged GLB;
@@ -48,13 +49,13 @@ function houseModel(part, plot, position, id, prefix, sourceAttribute) {
   return `<m-model id="${id}" ${sourceAttribute}="${attribute(prefix+'assets/'+part.asset)}" x="${x}" y="${y+.1}" z="${z}" ry="${-plot.side*90}" collide="false"></m-model>`;
 }
 
-function housingDocument(houses, prefix, houseVisual, site, sourceAttribute) {
+function housingDocument(houses, prefix, houseVisual, site, sourceAttribute, onlyHouse) {
   const {houseWalk:walk,parcelTerrain:terrain,parcelGarden}=site??{};
   const authoredWalk = assetFile(walk?.asset) && /^[a-f0-9]{64}$/.test(walk.revision);
   const walkSource = authoredWalk ? prefix + 'assets/' + walk.asset + '?v=' + walk.revision.slice(0,12) : '';
   const authoredTerrain = assetFile(terrain?.asset) && /^[a-f0-9]{64}$/.test(terrain.revision);
   const hiddenGround = authoredTerrain ? ' opacity="0" cast-shadows="false"' : '';
-  let markup = HOUSE_GROUND.map(({id,minX,maxX,minZ,maxZ}) =>
+  let markup = (onlyHouse ? [] : HOUSE_GROUND).map(({id,minX,maxX,minZ,maxZ}) =>
     `<m-cube id="${id}" x="${(minX+maxX)/2}" y="0" z="${(minZ+maxZ)/2}" width="${maxX-minX}" height=".2" depth="${maxZ-minZ}" color="#6a8d7b"${hiddenGround}></m-cube>`
   ).join('');
   if(authoredTerrain){
@@ -68,13 +69,14 @@ function housingDocument(houses, prefix, houseVisual, site, sourceAttribute) {
   }
   // The visual centerline has no collider. The two solid ground pieces
   // overlap and meet the existing arrival island at the same walking height.
-  markup += authoredWalk ?
+  if(!onlyHouse)markup += authoredWalk ?
     `<m-model id="house-walk" src="${attribute(walkSource)}" collide="false" cast-shadows="false"></m-model>` :
     '<m-cube x="0" y=".101" z="17.42" width="2.8" height=".006" depth="15.24" color="#c8b695" collide="false"></m-cube>';
   for (const plot of HOUSE_PLOTS) {
     const house = houses.find(entry => entry.parcel === plot.id);
+    if(onlyHouse&&house?.id!==onlyHouse)continue;
     markup += `<m-group id="${plot.id}" x="${plot.x}" z="${plot.z}">
-      ${authoredTerrain?'':`<m-cube y=".105" width="${plot.width}" height=".01" depth="${plot.depth}" color="${house?'#82735a':'#839c81'}" collide="false"></m-cube>`}`;
+      ${authoredTerrain||onlyHouse?'':`<m-cube y=".105" width="${plot.width}" height=".01" depth="${plot.depth}" color="${house?'#82735a':'#839c81'}" collide="false"></m-cube>`}`;
     if (house) {
       const {id,revision,facade} = house;
       const {title,width,depth,height,color} = facade;
@@ -99,13 +101,17 @@ function housingDocument(houses, prefix, houseVisual, site, sourceAttribute) {
   return markup;
 }
 
-export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=true,houseVisual,gardenVisual,sceneryAsset='island-scenery.glb',sceneryRevision,commonsVisual,coastalRidges,deferDressing=false}={}){
-  if(!assetFile(sceneryAsset))throw Error('Select a packaged scenery asset');
-  const prefix=basePath.endsWith('/')?basePath:basePath+'/';
-  const sourceAttribute=deferDressing?'data-deferred-src':'src';
-  const projection=workshopProjection(room.entities),manifest=JSON.stringify(room.entities);
-  if(manifest.length>16384)throw Error('Geometry manifest exceeds bound');
-  let out=`<m-group id="workshop" data-run="${attribute(room.run)}" data-edition="${attribute(room.edition)}" data-semantic-sequence="${room.sequence}" data-layout-version="${LAYOUT_VERSION}" data-geometry-state="${attribute(manifest)}">`;
+function valleyMarkup(prefix, house, houseVisual, sourceAttribute, houses){
+  const source=({asset,revision})=>attribute(prefix+'assets/'+asset+'?v='+revision.slice(0,12));
+  return `<m-model id="valley-ground" src="${source(VALLEY_GROUND)}" collide="true"></m-model>`+
+    `<m-model id="valley-dressing" ${sourceAttribute}="${source(VALLEY_DRESSING)}" collide="false"></m-model>`+
+    housingDocument(houses,prefix,houseVisual,null,sourceAttribute,house);
+}
+
+function workshopExterior(room,{prefix,sourceAttribute,includeVisits,includeCues,
+  houseVisual,gardenVisual,sceneryAsset,sceneryRevision,commonsVisual,coastalRidges}){
+  const projection=workshopProjection(room.entities);
+  let out='';
   const sceneryQuery='?layout='+LAYOUT_VERSION+(/^[a-f0-9]{64}$/.test(sceneryRevision)?'&v='+sceneryRevision.slice(0,12):'');
   out+=`<m-model id="island-scenery" src="${attribute(prefix+'assets/'+sceneryAsset+sceneryQuery)}" collide="false"></m-model>`;
   if(assetFile(coastalRidges?.asset)&&/^[a-f0-9]{64}$/.test(coastalRidges.revision)){
@@ -213,6 +219,21 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
         ${sign({y:.5,text:label,size:18,width:1.8,height:.24})}</m-group>`;
     }
   }
+  return out;
+}
+
+export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=true,houseVisual,gardenVisual,sceneryAsset='island-scenery.glb',sceneryRevision,commonsVisual,coastalRidges,deferDressing=false,valleyHouse}={}){
+  if(!assetFile(sceneryAsset))throw Error('Select a packaged scenery asset');
+  const prefix=basePath.endsWith('/')?basePath:basePath+'/';
+  const sourceAttribute=deferDressing?'data-deferred-src':'src';
+  const layout=valleyHouse?VALLEY_LAYOUT:LAYOUT_VERSION;
+  const manifest=JSON.stringify(valleyHouse?{}:room.entities);
+  if(manifest.length>16384)throw Error('Geometry manifest exceeds bound');
+  let out=`<m-group id="workshop" data-run="${attribute(room.run)}" data-edition="${attribute(room.edition)}" data-semantic-sequence="${room.sequence}" data-layout-version="${layout}" data-geometry-state="${attribute(manifest)}">`;
+  if(valleyHouse)out+=valleyMarkup(prefix,valleyHouse,houseVisual,sourceAttribute,
+    room.houses?.directory()??[]);
+  else out+=workshopExterior(room,{prefix,sourceAttribute,includeVisits,includeCues,
+    houseVisual,gardenVisual,sceneryAsset,sceneryRevision,commonsVisual,coastalRidges});
   for(const p of room.projections.values()){
     const{x,y,z}=p.position;
     const id=`projection-${p.actor.replace(/[^\w-]/g,'')}`,appearance=p.form==='avatar'?avatarForActor({id:p.actor,kind:p.kind}):null;

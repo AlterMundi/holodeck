@@ -1,6 +1,7 @@
 // Narrow client evidence: applied MML primitive geometry in the Three scene graph
 // after a renderer call returned. This is not a GPU fence, pixel/frame receipt,
 // visibility/frustum/occlusion test, human attention or trusted server authority.
+import {VALLEY_LAYOUT} from './continuous-valley.mjs';
 import {workshopProjection} from './workshop-projection.mjs';
 const near=(a,b)=>Number.isFinite(a)&&Math.abs(a-b)<1e-4;
 const attached=(object,scene)=>{for(let n=object,depth=0;n&&depth<64;n=n.parent,depth++)if(n===scene)return true;return false;};
@@ -39,9 +40,11 @@ export function verifyWorkshopGeometry(root,scene,{expectedDocumentURL}={}){
     if(!run||run.length>80||!edition||edition.length>128||!/^\d+$/.test(rawSequence||''))return null;
     const sequence=Number(rawSequence);if(!Number.isSafeInteger(sequence))return null;
     const manifest=root.getAttribute('data-geometry-state');if(!manifest||manifest.length>16384)return null;
-    const entities=workshopProjection(JSON.parse(manifest));
+    const valley=root.getAttribute('data-layout-version')===VALLEY_LAYOUT;
+    if(valley&&manifest!=='{}')return null;
+    const entities=valley?[]:workshopProjection(JSON.parse(manifest));
     const commons=find(root,'authored-commons');
-    const sceneryModels=[find(root,'island-scenery'),...(commons?[commons]:[])];
+    const sceneryModels=[find(root,valley?'valley-ground':'island-scenery'),...(commons&&!valley?[commons]:[])];
     for(const scenery of sceneryModels){
       if(!live(scenery,scene)||scenery.modelGraphics?.hasLoadedModel?.()!==true||!scenery.getContentBounds?.())return null;
       let sceneryMeshes=0;

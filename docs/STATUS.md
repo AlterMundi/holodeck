@@ -1809,3 +1809,27 @@ the keyboard participant walked to the mint circle, and both saw the two
 lights and the same completed round. The packaged receiving test also checked
 layout isolation, native readback, stale recipe denial, restart recovery and
 two rooms with distinct recipes. These were simulated participants and devices.
+
+### Continuous exterior and Weaver integration
+
+The Atelier continuous-valley candidate replaces the island exterior with
+authored terrain, a pond basin, ridgelines and a walkable cave. It retains Casa
+de CompAII and its existing interior identifiers. Old outdoor fixtures and
+trial houses leave the selected projection. Historical saves remain recoverable.
+The editable terrain and two exports live in `art/world-layout` and the
+existing exterior asset contract. The local lightweight Chromium trial walked
+down the cave ramp and under the roof, returned to the surface, then walked
+the trail into the original house and exited to the same exterior threshold.
+The actual render showed the avatar inside the cave after the exterior camera
+clearance was extended there. The scene and package passed local qualification.
+The live service still uses its previously selected release. Touch and physical
+device tests remain separate.
+
+For Proyección's actual Weaver acceptance, the Holodeck station still launches
+the existing Harmonic Lab control panel. The standalone A2UI/WebSocket loopback
+qualification and the Legion accepting session are separate. The next bridge
+mounts the pinned renderer at the Weaver station using the selected Lab
+session's A2UI live and action routes. Acceptance must compare the applied
+revision and state to an independent Lab control read, restore the reversible
+change at the current revision, and preserve the player's location and inputs.
+[Proyección Weaver host contract](https://github.com/AlterMundi/proyeccion/blob/1496887ee9e7fe118e839307210f0a3a3304c9a5/docs/conformance.md#weaver-host-contract).

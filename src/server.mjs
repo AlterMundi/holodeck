@@ -26,6 +26,7 @@ import { Room, RoomError, LIMITS } from './room.mjs';
 import { RoomStore } from './room-store.mjs';
 import { homeIdentityResolver } from './home-identity.mjs';
 import { worldDocument } from './world.mjs';
+import { VALLEY_ASSET_REVISIONS,VALLEY_LAYOUT } from './continuous-valley.mjs';
 import { TERRACE_TOP } from './world-layout.mjs';
 import { createWorldPort } from './world-port.mjs';
 import {sameVisitPin,validateContentNodes,validateContentVisits,visitsForActor} from './content-visits.mjs';
@@ -139,7 +140,12 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     persist:spaceStore ? state=>spaceStore.save(state) : null,guestAccess:interiorGuestAccess});
   const exteriorArt=packedExteriorArt();
   const atelier=selectAtelier(artProfile,spaces.rooms,houses.directory(),exteriorArt);
-  for(const [path,revision] of Object.entries(ANIMATION_ASSET_REVISIONS)){
+  const valley=Boolean(atelier);
+  const outdoorHouse=house=>!valley||house.id===COMPAII_HOUSE;
+  const exteriorEntrances=actor=>spaces.view(actor,OUTSIDE).entrances.filter(
+    entrance=>!valley||spaces.rooms.get(entrance.id)?.house===COMPAII_HOUSE);
+  const publicWorld=valley?VALLEY_LAYOUT:'island-workshop';
+  for(const [path,revision] of Object.entries({...ANIMATION_ASSET_REVISIONS,...(valley?VALLEY_ASSET_REVISIONS:{})})){
     const asset=readPackedArt(path,revision);
     if(asset)exteriorArt.set(path,asset);
   }
@@ -227,7 +233,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(room.commitUncertain){projectionHealthy=false;return;}
       const art={basePath,houseVisual:atelier?.houseVisual??houseVisual,
         gardenVisual:atelier?.gardenVisual??gardenVisual,sceneryAsset:atelier?.sceneryAsset,sceneryRevision:atelier?.sceneryRevision,
-        commonsVisual:atelier?.commonsVisual,coastalRidges:atelier?.coastalRidges};
+        commonsVisual:atelier?.commonsVisual,coastalRidges:atelier?.coastalRidges,
+        valleyHouse:valley?COMPAII_HOUSE:undefined};
       const loads=[document.load(worldDocument(room,art))];
       if(arrivalDocument)loads.push(arrivalDocument.load(worldDocument(room,{...art,deferDressing:true})));
       await Promise.all(loads);
@@ -337,7 +344,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       art=artForRoom(spaces.rooms.get(view.id),view.exits ?? []);
     const activity=indoorGardens.view(actor,view.id);
     const outdoorSky=includeSky?(view.id===OUTSIDE?atelier?.outdoorSky:art?.outdoorSky):null;
-    const space={...view,...(view.id===OUTSIDE?{}:{objects:roomObjects(view)}),
+    const space={...view,...(view.id===OUTSIDE?{entrances:exteriorEntrances(actor),...(valley?{title:'Valle de llegada',outdoorTerrain:true}:{})}:{objects:roomObjects(view)}),
       ...(indoorGardens.owner(view.id)?{playableInterior:true}:{}),
       ...(gardenEditors.grant(actor,view.id)?{canDesignGarden:true}:{}),
       ...(activity?{activity}:{}),
@@ -413,6 +420,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }
   function moveSpace(actor,request){
     if(room.commitUncertain||!actor.rights?.includes('observe'))return null;
+    if(valley&&request.from===OUTSIDE&&spaces.rooms.get(request.to)?.house!==COMPAII_HOUSE)return null;
     const moved=spaces.move(actor,request);
     if(!moved)return null;
     closeOutOfScope(actor);
@@ -573,7 +581,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     assetServing:{assetsDir:new URL('../public/assets',import.meta.url).pathname,assetsUrl:route('assets/')},
     worldConfig:{mmlDocuments:{workshop:{url:'ws://'+route('world')}},enableChat:false,enableTweakPane:false,
       environmentConfiguration:{groundPlane:false,sun:{intensity:1.4},ambientLight:{intensity:1.2},
-        fog:atelier?.coastalFog??{fogNear:45,fogFar:140,fogColor:{r:.67,g:.78,b:.79}}},
+        fog:valley?{fogNear:36,fogFar:106,fogColor:{r:.716,g:.776,b:.784}}:
+          {fogNear:45,fogFar:140,fogColor:{r:.67,g:.78,b:.79}}},
       avatarConfiguration:{allowCustomAvatars:false},allowCustomDisplayName:false,allowOrbitalCamera:true,
       spawnConfiguration:{spawnPosition:{x:0,y:TERRACE_TOP+.001,z:6},spawnYRotation:180},hud:{respawnButton:false}}
   });
@@ -916,26 +925,26 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   app.get(route('api/state'),asyncRoute(async(req,res)=>{
     if(room.commitUncertain||spaces.fenced)return res.status(503).json({message:'Holodeck necesita recuperar su último cambio antes de continuar.'});
     const canEdit=projectionHealthy&&['observe','edit'].every(right=>req.actor.rights?.includes(right));
-    res.json({run:room.run,edition:room.edition,sequence:room.sequence,actorRef:req.actor.id,canEdit,entities:room.entities,focus:room.focusState(),nodes:room.nodeState(),
-      entrances:spaces.view(req.actor).entrances,
+    res.json({run:room.run,edition:room.edition,sequence:room.sequence,actorRef:req.actor.id,canEdit:!valley&&canEdit,layout:publicWorld,entities:valley?{}:room.entities,
+      focus:valley?[]:room.focusState(),nodes:valley?{}:room.nodeState(),entrances:exteriorEntrances(req.actor),
       native:native?{...await native.availability(req.actor),sharedConversation:!!native.contexts}:{available:false}});
   }));
   app.get(route('api/places'),(req,res)=>{
     if(room.commitUncertain)return res.status(503).json({message:'El taller necesita recuperar su último cambio.'});
-    res.json({world:'island-workshop',houses:room.houses.directory()});
+    res.json({world:publicWorld,houses:room.houses.directory().filter(outdoorHouse)});
   });
   app.get(route('api/places/:id'),(req,res)=>{
     if(room.commitUncertain)return res.status(503).json({message:'El taller necesita recuperar su último cambio.'});
-    const house=room.houses.directory().find(place=>place.id===req.params.id);
+    const house=room.houses.directory().find(place=>place.id===req.params.id&&outdoorHouse(place));
     if(!house)return res.status(404).json({message:'No encontré esa casa.'});
-    res.json({world:'island-workshop',house});
+    res.json({world:publicWorld,house});
   });
   app.get(route('api/activity'),(req,res)=>{
     try{res.json(readActivity(room,req.actor,req.query));}
     catch(error){if(!(error instanceof ActivityError))throw error;
       res.status(error.status).json({code:error.code,message:error.message,...(error.code==='stale-run'?{run:room.run}:{})});}
   });
-  app.get(route('api/content-visits'),(req,res)=>res.json({nodes:selectedContentNodes,visits:[...visitsForActor(selectedContentVisits,req.actor),...nodeVisits(room.nodes,req.actor)]}));
+  app.get(route('api/content-visits'),(req,res)=>res.json(valley?{nodes:[],visits:[]}:{nodes:selectedContentNodes,visits:[...visitsForActor(selectedContentVisits,req.actor),...nodeVisits(room.nodes,req.actor)]}));
   app.get(route('api/conversation-surface'),asyncRoute(async(req,res)=>{
     if(!native?.contexts||!native?.conversationSurface)return res.status(503).json({message:'La conversación compartida todavía no está disponible en este mundo.'});
     const value=await native.conversationSurface(req.actor);

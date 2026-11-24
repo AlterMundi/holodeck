@@ -304,7 +304,7 @@ function applySpace(next,anchor){
   prefetchRequest?.abort();prefetchRequest=null;
   document.body.classList.toggle('inside-house',inside);
   document.body.classList.toggle('has-situated-conversation',inside&&next.sharedConversation===true);
-  $('#hud h1').textContent=inside?next.title:'Plaza de llegada';
+  $('#hud h1').textContent=next.title??'Plaza de llegada';
   $('#people').textContent=inside?(next.level===0?'Planta baja':next.level<0?`Subsuelo ${-next.level}`:`Piso ${next.level}`):'Un lugar para crear juntos';
   if(changed){roomTopic=undefined;worktableTopic=undefined;contentVisitor.changeRoom(inside,next.id);worldIndication.selected=null;worldIndication.removeOutline();state=null;}
   else if(inside)contentVisitor.confirmRoom();
@@ -421,7 +421,12 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
   // Upstream's default sun allocates an 8192² shadow map. This small world uses
   // the public renderer factory and a bounded 1024² light instead, on all clients.
   createRenderer:options=>{
-    constrainInteriorCamera(options,()=>inside&&activeSpace?.id);
+    constrainInteriorCamera(options,()=>{
+      if(inside)return activeSpace?.id;
+      if(!activeSpace?.outdoorTerrain)return null;
+      const position=client.getLocalCharacterState()?.position;
+      return position&&position.x>21&&position.x<32&&position.z<-6&&position.z>-26?'valley-cave':null;
+    });
     const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
     const frameBudget=capWorldPixelRatio(renderer,rendererBudget);
     galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
@@ -770,8 +775,13 @@ async function refresh(){
   const count=client.getCharacterStates().size;
   $('#people').textContent=count>1?`${count} exploradores en el taller`:'Un lugar para crear juntos';
   const compact=window.matchMedia('(max-width:740px)').matches;
-  $('#bridge').textContent=state.entities.bridge.raised?(compact?'Separar':'Separar islas'):(compact?'Unir islas':'Conectar islas');
-  $('#bridge').setAttribute('aria-label',state.entities.bridge.raised?'Separar las islas':'Conectar las islas');
+  const bridge=state.entities.bridge;
+  if(!bridge&&activeSpace?.title)$('#hud h1').textContent=activeSpace.title;
+  $('#bridge').hidden=!bridge;
+  $('#plant').hidden=!bridge;
+  $('#undo').hidden=!bridge;
+  if(bridge)$('#bridge').textContent=bridge.raised?(compact?'Separar':'Separar islas'):(compact?'Unir islas':'Conectar islas');
+  if(bridge)$('#bridge').setAttribute('aria-label',bridge.raised?'Separar las islas':'Conectar las islas');
   $('#undo').disabled=!lastChange||!!pending;
   if(!nativeTurn&&state.native?.active?.id&&!archivedNativeIds.has(state.native.active.id)){nativeTurn={id:state.native.active.id,actorRef:state.actorRef,retained:true,recovered:true};try{saveIntent(sessionStorage,turnKey,nativeTurn);}catch{}}
   updateNativeAvailability();

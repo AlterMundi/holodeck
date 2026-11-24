@@ -15,3 +15,30 @@ test('the same expanded regions admit shared creation while gaps and water refus
 test('wide promenade ends overlap their terrace surfaces across their full width',()=>{
  for(const p of PROMENADES)for(const x of [p.minX,p.maxX])for(const z of [p.minZ,p.maxZ])assert.ok(TERRACES.some(t=>Math.hypot(x-t.x,z-t.z)<=t.radius),`${p.id} must not have an unsupported edge at ${x},${z}`);
 });
+
+test('the continuous valley keeps only the selected house in its exterior document', async()=>{
+ const {worldDocument}=await import('../src/world.mjs');
+ const {Houses,houseId}=await import('../src/houses.mjs');
+ const {VALLEY_GROUND,VALLEY_DRESSING}=await import('../src/continuous-valley.mjs');
+ const {createHash}=await import('node:crypto');
+ const house=(owner,parcel)=>({id:houseId(owner),owner,revision:1,parcel,
+   facade:{title:'Casa',color:'#4a746f',width:2,depth:1.5,height:2.65}});
+ const retained=house(native.id,'parcel-west-1');
+ const retired=house('dm:being:v1:'+'j'.repeat(43),'parcel-east-1');
+ const houses=new Houses({state:{schema:'holodeck.houses/v1',houses:[retained,retired],receipts:[]}});
+ const room=new Room({houses});
+ assert.equal(act(room,'garden.place','garden-retained',{x:19,z:-1,color:'violet'}).status,'completed');
+ const exterior=worldDocument(room,{basePath:'/holodeck/',valleyHouse:retained.id,deferDressing:true});
+ assert.match(exterior,/data-layout-version="continuous-valley@1"/);
+ assert.match(exterior,/id="valley-ground" src="[^"]+continuous-valley\.glb\?v=\w+" collide="true"/);
+ assert.match(exterior,/id="valley-dressing" data-deferred-src="[^"]+valley-water-and-pines\.glb\?v=\w+" collide="false"/);
+ assert.ok(exterior.includes(retained.id));
+ for(const artifact of [retired.id,'garden-retained','bridge-control','content-reading-room','island-scenery'])
+  assert.ok(!exterior.includes(artifact),artifact);
+ assert.ok(room.entities['garden-retained']);
+ assert.equal(room.houses.directory().length,2);
+ for(const {asset,revision} of [VALLEY_GROUND,VALLEY_DRESSING]){
+  const bytes=readFileSync(new URL('../public/assets/'+asset,import.meta.url));
+  assert.equal(createHash('sha256').update(bytes).digest('hex'),revision);
+ }
+});
