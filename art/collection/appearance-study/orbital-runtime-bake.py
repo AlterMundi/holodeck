@@ -35,6 +35,23 @@ def image_pixels(image):
     return pixels.reshape(height, width, 4)
 
 
+def save_linear_atlas(title, rgb, destination):
+    height, width, _ = rgb.shape
+    image = bpy.data.images.new(title, width, height, alpha=False, float_buffer=True)
+    try:
+        # Save the linear numeric channels verbatim, without Blender's
+        # display transfer on export. Consumers interpret the data as linear.
+        image.colorspace_settings.name = 'Non-Color'
+        pixels = np.ones((height, width, 4), dtype=np.float32)
+        pixels[..., :3] = rgb
+        image.pixels.foreach_set(pixels.ravel())
+        image.filepath_raw = str(destination)
+        image.file_format = 'OPEN_EXR'
+        image.save()
+    finally:
+        bpy.data.images.remove(image)
+
+
 def clean_irradiance(rgb):
     # Reject isolated high radiance from indirect rays. The color atlas is
     # composed afterward, so this filter never softens material detail.
@@ -102,6 +119,8 @@ parser.add_argument('--layout-size', type=int, choices=(512, 1024, 2048),
 parser.add_argument('--samples', type=int, default=48)
 parser.add_argument('--specular', nargs='?', const='whole', choices=('whole', 'focused'),
                     help='Use UV-baked roughness and metalness on the whole shell or selected work surfaces')
+parser.add_argument('--separate-light', action='store_true',
+                    help='Retain linear albedo and fixed-light atlases with moving archive geometry excluded from the light bake')
 args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
 if not 4 <= args.samples <= 64:
     parser.error('--samples must be between 4 and 64')
@@ -160,14 +179,27 @@ scene.cycles.sample_clamp_direct = 6
 scene.cycles.sample_clamp_indirect = 2
 scene.render.threads_mode = 'FIXED'
 scene.render.threads = 8
-bpy.ops.object.bake(
-    type='DIFFUSE', pass_filter={'DIRECT', 'INDIRECT'},
-    uv_layer=atlas_uv_name, use_clear=True, margin=5,
-)
+movers = [platform, *platform.children_recursive] if args.separate_light else []
+render_states = [(obj, obj.hide_render) for obj in movers]
+try:
+    for obj in movers:
+        obj.hide_render = True
+    bpy.context.view_layer.update()
+    bpy.ops.object.bake(
+        type='DIFFUSE', pass_filter={'DIRECT', 'INDIRECT'},
+        uv_layer=atlas_uv_name, use_clear=True, margin=5,
+    )
+finally:
+    for obj, hidden in render_states:
+        obj.hide_render = hidden
+    bpy.context.view_layer.update()
 bake_material_input(materials, albedo, 'Base Color', atlas_uv_name, margin=5)
 light = clean_irradiance(image_pixels(irradiance)[..., :3])
-base = image_pixels(albedo)
-rgb = np.maximum(base[..., :3], 0) * (1.40 * light + .063)
+base = np.maximum(image_pixels(albedo)[..., :3], 0)
+if args.separate_light:
+    save_linear_atlas('Orbital UV albedo', base, output / 'orbital-albedo.exr')
+    save_linear_atlas('Orbital static irradiance', light, output / 'orbital-irradiance.exr')
+rgb = base * (1.40 * light + .063)
 rgb /= 1 + .33 * rgb.max(axis=-1, keepdims=True)
 atlas = bpy.data.images.new('Orbital static diffuse', args.size, args.size, alpha=False, float_buffer=True)
 pixels = np.ones((args.size, args.size, 4), np.float32)

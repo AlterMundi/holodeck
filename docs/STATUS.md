@@ -68,6 +68,17 @@ while the live doorway and worktable evidence above used the baked mesh.
 [Qualification details](../art/collection/appearance-study/README.md#orbital-fixed-light-bake).
 The live room still uses its previously selected release.
 
+The isolated focused-room package now reads Orbital and Amber from the
+same versioned look manifest. It passed independent desktop and
+emulated-touch selection on a shared worktable, a browser retry after
+one deliberately failed map, and room-scoped asset refusal after exit.
+With Amber active, the exact package ran on Cuevanico at 33.3 ms median
+and 33.4 ms p95 while moving. The camera clearance, rotating archive and
+door return passed. Blender also exported independent albedo and static
+irradiance on the existing UV layout, with the archive platform excluded
+from the light bake. The split maps are authoring data. Their runtime
+composition and lighting of moving objects still need qualification.
+
 Nicolás's earlier shared movement, light, house and door confirmations still
 count. The repaired content-exit route has been delivered. Use independent
 simulated participants and devices to qualify newer releases, and report direct

@@ -533,6 +533,43 @@ sampled corner positions. A desktop fixture forced one atlas request to
 fail. The room kept its orbital appearance and a voluntary retry loaded
 both amber maps.
 
+### Shared look contract
+
+The focused room compiles [matter-looks.json](../matter-looks.json) into
+a scoped catalog. Both selections are data. The small surface-role table
+binds the current GLB's material slots to logical names. The default uses
+embedded maps. Other looks reference source images by ID and replace
+selected channels on the existing texture layout. Unspecified channels
+come from the embedded material. A change to the responsive work-surface
+channel can keep the shell, roughness, metalness and all geometry in place.
+The v1 bindings require an existing texture in each replaced channel to
+preserve that texture's UV set, sampling and color space.
+
+The server validates the catalog, limits it to eight looks and eight map
+descriptors, and verifies each map's content hash. A scoped client receives
+revision URLs through the room's existing art endpoint. Map assignment
+waits for all needed images, and leaving the room releases the decoded
+maps. The exact packed build kept independent desktop and emulated-touch
+looks on the same worktable revision, including separate rotation, exact
+part context, edition revocation and clearing the table. An injected map
+failure kept the previous look, and the retry succeeded. The GLB and both
+maps returned 404 after leaving. Cuevanico with amber active took 10.14 s
+to enter cold through the qualification tunnel and walked the route at
+33.3 ms median and 33.4 ms p95 (435 moving intervals). The archive turned
+and all 24 sampled corner camera positions cleared the room.
+
+### Separate diffuse color and static lighting
+
+Add `--separate-light` to the Blender bake command to produce two
+numerically linear EXR source maps on the same atlas UVs. The static
+light pass excludes the archive platform and its descendants, then
+restores them for the GLB export. The GLB still uses a composed diffuse
+fallback. The two high-precision files are authoring inputs for the next
+rendering candidate. At 1024², all 88 geometry and UV buffers matched the
+existing focused export byte for byte. Recombining the decoded linear
+files and applying sRGB yielded a mean absolute error of 0.93/255 against
+the fallback JPEG. The separate files carry no runtime bindings yet.
+
 
 ## Orbital finish for the Matter room
 
