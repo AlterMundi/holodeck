@@ -11,9 +11,20 @@ matched player-height comparison. The 1,262,068-byte
 Collection anchors and colliders. The local fixture walked around the table,
 advanced and rotated the archive, returned to the foyer and received 404 for
 the scoped art afterward. Desktop and emulated touch both passed with the
-lightweight profile. These used SwiftShader. The live room still uses its
-previously selected release. Physical device and end-to-end worktable source
-interaction remain open for the new art.
+lightweight profile. A two-browser trial of the exact baked package also
+restored the full 197,642-triangle Support Study, shared it, kept independent
+rotation, prepared an exact part reference and honored edition-specific
+revocation for the affected actor. The current 34,000-triangle edition still
+shared and cleared normally. The geometry bytes are retained Home originals;
+browser identities, gateway decisions and the Conversation receiver were
+fixtures. On the physical Raspberry Pi 5, the cleaned candidate rendered
+with Broadcom V3D and passed movement, archive rotation and the doorway
+round trip in lightweight mode. The 371 moving frame intervals measured
+33.3 ms median and 50 ms p95. The orbital PBR predecessor recorded
+33.4 ms median and 66.6 ms p95 in a matched run. The clean bake took 12.93 s
+to enter cold through the test tunnel, versus 9.86 s for the predecessor.
+[Qualification details](../art/collection/appearance-study/README.md#orbital-fixed-light-bake).
+The live room still uses its previously selected release.
 
 Nicolás's earlier shared movement, light, house and door confirmations still
 count. The repaired content-exit route has been delivered. Use independent

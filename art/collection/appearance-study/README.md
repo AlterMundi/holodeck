@@ -439,3 +439,46 @@ reflections. It washed out the contrast and had materially higher static
 cost in the matched software fixture. It is a reproducible art candidate
 and remains outside the selected runtime profile. Next revisions should
 reduce reflected-light intensity and compare more motion before selection.
+
+The exact clean bake also ran under the packaged Holodeck client with a real
+retained Support Study on the table. Two independent fixture browsers decoded
+197,642 triangles from the pinned historical edition. Their table rotations
+stayed independent. The conversation context fixture received the exact
+edition, scene and part. The test then revoked that edition for one visitor,
+shared the still-readable 34,000-triangle current edition and cleared the
+table for both. The controlled local gateway used retained original Home
+files. This validates the scoped interaction without acting on the live table.
+
+A separate, longer SwiftShader route recorded 83 moving frame intervals in
+the clean bake, with a 100 ms median and 150 ms p95 at 1020 × 680 in lightweight
+graphics. The same browser script sampled the main camera 24 times while
+orbiting and changing zoom near one room corner. All sampled camera centers
+stayed inside the room envelope. These results describe one software-rendered
+fixture route and the sampled centers, not physical-device frame pacing or
+complete near-plane coverage.
+
+In the same longer SwiftShader fixture route, the orbital PBR predecessor
+recorded 59 moving intervals at 150 ms median and 317 ms p95. Both variants
+passed the 24 sampled corner camera centers. The six-figure worktable sample
+used the separate two-client qualification above.
+
+A physical Raspberry Pi 5 ran the exact clean bake through Chromium 154 with
+the Broadcom V3D OpenGL ES renderer at 1020 × 680 in lightweight mode. Over
+371 moving intervals it measured 33.3 ms median and 50 ms p95. While stationary
+it measured 16.8 ms median and 33.4 ms p95. The browser crossed the door in
+both directions, advanced and rotated the archive, sampled 24 camera centers
+inside the room envelope and received 404 for the art after leaving. Cold door
+entry was 12.93 s, including a 0.91 s transfer of the 1,262,068-byte GLB. The
+fixture server ran through a scoped loopback SSH tunnel, so these timings
+do not establish the production delivery path's latency. The browser profile
+and both forwards were closed. No physical touch or full worktable trial on
+the Pi was performed in that run.
+
+On the same Pi and route, the orbital PBR predecessor recorded 271 moving
+intervals at 33.4 ms median and 66.6 ms p95, and its cold doorway took 9.86 s.
+Its move response arrived at 0.49 s, the new presence socket was created at
+2.40 s and the art response arrived at 5.29 s. The GLB transfer took 1.07 s.
+This isolates only part of the entry delay. In this pair, the clean bake
+had better frame pacing while moving and a slower cold doorway. Qualify
+the phases across repeated loads before attributing the difference to art
+decode, connection handoff or the tunnel.
