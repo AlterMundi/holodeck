@@ -13,6 +13,14 @@
     "amber-response": {
       "file": "amber-material-response.png",
       "sha256": "cc20a0589c45f9d15c51813979b07c19f0570cdca64c1a8bc68bf7bad51177ea"
+    },
+    "orbital-albedo": {
+      "file": "orbital-albedo.png",
+      "sha256": "359211a94abff91b213a68cfc9974c3e459820aff0fa9dbf52c1ef21ddcd1735"
+    },
+    "orbital-irradiance": {
+      "file": "orbital-irradiance.png",
+      "sha256": "4260fdf05661c6067053fe9625bdf6ca338e7e1c095736fd05017644dd2bed1d"
     }
   },
   "looks": [
@@ -25,11 +33,30 @@
       "id": "amber",
       "label": "Luz ámbar",
       "materials": {
-        "fixed-light-shell": {"map": "amber-diffuse"},
+        "fixed-light-shell": {
+          "map": "amber-diffuse"
+        },
         "responsive-work-surfaces": {
           "emissiveMap": "amber-diffuse",
           "roughnessMap": "amber-response",
           "metalnessMap": "amber-response"
+        }
+      }
+    },
+    {
+      "id": "orbital-layered",
+      "label": "Orbital · luz por capas",
+      "materials": {},
+      "diffuseLayers": {
+        "fixed-light-shell": {
+          "channel": "map",
+          "albedo": "orbital-albedo",
+          "irradiance": "orbital-irradiance"
+        },
+        "responsive-work-surfaces": {
+          "channel": "emissiveMap",
+          "albedo": "orbital-albedo",
+          "irradiance": "orbital-irradiance"
         }
       }
     }

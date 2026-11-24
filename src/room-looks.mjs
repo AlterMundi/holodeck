@@ -37,9 +37,22 @@ export function compileRoomLooks(manifest,readAsset){
         used.add(asset);
       }
     }
+    if(look.diffuseLayers!==undefined&&!record(look.diffuseLayers))
+      throw Error('Invalid room diffuse layers');
+    for(const [role,layers] of Object.entries(look.diffuseLayers??{})){
+      if(!record(layers))throw Error('Invalid room diffuse layer binding');
+      const {channel,albedo,irradiance}=layers;
+      if(!Object.hasOwn(surfaces,role)||!['map','emissiveMap'].includes(channel)||
+        Object.hasOwn(look.materials[role]??{},channel)||albedo===irradiance||
+        ![albedo,irradiance].every(id=>identifier(id)&&Object.hasOwn(manifest.assets,id)&&
+          typeof manifest.assets[id]?.file==='string'&&manifest.assets[id].file.endsWith('.png')))
+        throw Error('Invalid room diffuse layer binding');
+      used.add(albedo);
+      used.add(irradiance);
+    }
   }
   const fallback=looks.find(({id})=>id===manifest.default);
-  if(!fallback||Object.keys(fallback.materials).length)
+  if(!fallback||Object.keys(fallback.materials).length||Object.keys(fallback.diffuseLayers??{}).length)
     throw Error('Default room look must use embedded assets');
   for(const [key,asset] of Object.entries(manifest.assets)){
     const extension=/^[a-z0-9][a-z0-9-]*\.(jpg|png)$/.exec(asset?.file)?.[1];

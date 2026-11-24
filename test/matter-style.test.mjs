@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Group,Mesh,MeshBasicMaterial,MeshStandardMaterial,Texture} from 'three';
+import {Group,Mesh,MeshBasicMaterial,MeshStandardMaterial,NoColorSpace,SRGBColorSpace,Texture} from 'three';
 import {bindMatterStyle} from '../src/matter-style.mjs';
 import {compileRoomLooks} from '../src/room-looks.mjs';
 import {createHash} from 'node:crypto';
@@ -62,4 +62,36 @@ test('room look compiler scopes immutable assets and rejects invalid bindings',(
   assert.throws(()=>compileRoomLooks(manifest,()=>Buffer.from('changed')),/does not match/);
   manifest.looks[1].materials['fixed-light-shell'].map='missing-asset';
   assert.throws(()=>compileRoomLooks(manifest,()=>assert.fail('Missing asset was resolved')),/channel or asset/);
+});
+
+test('layered diffuse uses linear light data and restores both material programs',()=>{
+  const source=new Texture({width:1024});
+  source.colorSpace=SRGBColorSpace;
+  const shell=new Mesh(undefined,new MeshBasicMaterial({name:authored.surfaces['fixed-light-shell'],map:source}));
+  const work=new Mesh(undefined,new MeshStandardMaterial({
+    name:authored.surfaces['responsive-work-surfaces'],emissiveMap:source,
+  }));
+  const style=bindMatterStyle(new Group().add(shell,work),authored);
+  const albedo={width:1024},irradiance={width:1024};
+  const layered=authored.looks.find(({id})=>id==='orbital-layered');
+  style.apply(layered,new Map([['orbital-albedo',albedo],['orbital-irradiance',irradiance]]));
+  for(const [material,channel,chunk] of [
+    [shell.material,'map','map_fragment'],[work.material,'emissiveMap','emissivemap_fragment'],
+  ]){
+    const shader={uniforms:{},fragmentShader:`#include <${chunk}>`};
+    material.onBeforeCompile(shader);
+    assert.match(shader.fragmentShader,/vec4\(roomLitDiffuse\(texture2D/);
+    const light=shader.uniforms.roomIrradiance.value;
+    assert.equal(light.image,irradiance);
+    assert.equal(light.colorSpace,NoColorSpace);
+    assert.equal(material[channel].image,albedo);
+    assert.equal(material[channel].colorSpace,SRGBColorSpace);
+    assert.equal(material.customProgramCacheKey(),'room-diffuse-layers:'+channel);
+  }
+  style.apply(authored.looks[0],new Map());
+  assert.equal(shell.material.map,source);
+  assert.equal(work.material.emissiveMap,source);
+  assert.equal(shell.material.customProgramCacheKey(),'');
+  assert.equal(work.material.customProgramCacheKey(),'');
+  style.dispose();
 });
