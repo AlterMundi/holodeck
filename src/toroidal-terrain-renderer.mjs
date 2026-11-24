@@ -17,6 +17,7 @@ function meshFor(data, material) {
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new BufferAttribute(data.positions, 3));
   geometry.setAttribute('normal', new BufferAttribute(data.normals, 3));
+  if(data.colors)geometry.setAttribute('color',new BufferAttribute(data.colors,3));
   geometry.setIndex(new BufferAttribute(data.indices, 1));
   geometry.computeBoundingSphere();
   return new Mesh(geometry,material);
@@ -49,7 +50,7 @@ export class ToroidalTerrainRenderer {
   constructor(scene, base, WorkerType = globalThis.Worker) {
     this.group = new Group();
     this.group.name = 'Toroidal terrain';
-    this.material = new MeshStandardMaterial({color: 0x819361, roughness: .96});
+    this.material = new MeshStandardMaterial({vertexColors:true,roughness:.96});
     this.waterMaterial = new MeshStandardMaterial({color:0x138583,roughness:.26,metalness:.18});
     this.active = new Map();
     this.target = null;

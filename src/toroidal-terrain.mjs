@@ -79,6 +79,31 @@ function periodicNoise(u, v, columns, rows, seed) {
   );
 }
 
+export const TOROIDAL_OVERLOOK = Object.freeze({u:.007,v:.49});
+
+// Widely spaced ridges break up the opposite arc and give the traveler
+// landmarks on both sides of its opening. Their relief is part of the
+// terrain sampler, so the silhouette and traversal share the same shape.
+const ridges = [
+  {...TOROIDAL_OVERLOOK,along:61,across:63,lift:22},
+  {u:.023,v:.465,along:46,across:110,lift:24},
+  {u:.24,v:.488,along:110,across:49,lift:40},
+  {u:.52,v:.466,along:82,across:75,lift:37},
+  {u:.79,v:.48,along:105,across:70,lift:44},
+];
+function ridgeRelief(u,v,terrain) {
+  let lift=0;
+  for(const ridge of ridges){
+    const cross=wrappedDistance(v,ridge.v)*TAU*terrain.tubeRadius;
+    if(cross>=ridge.across)continue;
+    const along=wrappedDistance(u,ridge.u)*TAU*
+      (terrain.majorRadius+terrain.tubeRadius*Math.cos(ridge.v*TAU));
+    const distance=Math.hypot(along/ridge.along,cross/ridge.across);
+    if(distance<1)lift+=ridge.lift*(1-fade(distance));
+  }
+  return lift;
+}
+
 // Broad basins and ridges use the same global samples at every tile level.
 export function terrainElevation(u, v, terrain = TOROIDAL_TERRAIN) {
   const { seed } = terrain;
@@ -86,12 +111,52 @@ export function terrainElevation(u, v, terrain = TOROIDAL_TERRAIN) {
   const foothills = periodicNoise(u, v, 96, 24, seed ^ 0x42d31f);
   const detail = periodicNoise(u, v, 256, 64, seed ^ 0xe31aac);
   const grit = periodicNoise(u, v, 1024, 256, seed ^ 0x8034bc);
-  const elevation = 52 * landform + 15 * foothills + 5 * detail + 1.25 * grit;
+  const elevation = 52 * landform + 15 * foothills + 5 * detail + 1.25 * grit + ridgeRelief(u,v,terrain);
   const distance = Math.hypot(wrappedDistance(u, 0) * TAU * terrain.majorRadius,
     wrappedDistance(v, .25) * TAU * terrain.tubeRadius);
   if (distance >= 76) return elevation;
   const pavedGrade = (terrain.tubeRadius + 18) / Math.sin(wrap(v) * TAU) - terrain.tubeRadius;
   return mix(pavedGrade, elevation, fade(Math.max(0, distance - 32) / 44));
+}
+
+// The low-contrast worn route wraps around the broad shoulder. A spur
+// leads from the house past the cave and toward the inner-ring overlook.
+export function terrainTrail(u,v,terrain = TOROIDAL_TERRAIN) {
+  const mainDistance=wrappedDistance(v,.25) * TAU * terrain.tubeRadius;
+  const spurLatitude=Math.max(.25,Math.min(wrap(v),TOROIDAL_OVERLOOK.v));
+  const spurLongitude=TOROIDAL_OVERLOOK.u + .003 * Math.sin(
+    (spurLatitude-.25)/(TOROIDAL_OVERLOOK.v-.25) * Math.PI);
+  const ringMeters=wrappedDistance(u,spurLongitude) * TAU *
+    (terrain.majorRadius + terrain.tubeRadius * Math.cos(spurLatitude*TAU));
+  const crossMeters=wrappedDistance(v,spurLatitude) * TAU * terrain.tubeRadius;
+  const distance=Math.min(mainDistance,Math.hypot(ringMeters,crossMeters));
+  return 1-fade(Math.max(0,Math.min(1,(distance-1.2)/2.4)));
+}
+
+const groundColors={
+  moss:[.16,.238,.102], grass:[.236,.287,.127], heather:[.29,.222,.147],
+  scree:[.291,.264,.227], highStone:[.367,.348,.294], wetSand:[.28,.239,.172],
+  sediment:[.136,.16,.12], trail:[.423,.344,.214],
+};
+
+export function terrainColor(u,v,height,slope,terrain = TOROIDAL_TERRAIN) {
+  const cover=(periodicNoise(u,v,128,48,terrain.seed^0xac5127)+1)/2;
+  const patch=(periodicNoise(u,v,512,192,terrain.seed^0x412da5)+1)/2;
+  const rock=fade(Math.max(0,Math.min(1,(slope-.08)/.32)));
+  const crest=fade(Math.max(0,Math.min(1,(height-23)/34)));
+  const shore=Number.isFinite(terrain.waterLevel)?
+    fade(Math.max(0,1-Math.abs(height-terrain.waterLevel)/4.8)):0;
+  const submerged=Number.isFinite(terrain.waterLevel)?
+    fade(Math.max(0,Math.min(1,(terrain.waterLevel-height)/9))):0;
+  const trail=terrainTrail(u,v,terrain)*(1-submerged)*.72;
+  const soil=groundColors;
+  return soil.grass.map((value,axis)=>{
+    const vegetation=mix(soil.moss[axis],mix(value,soil.heather[axis],cover**2),cover);
+    const stone=mix(soil.scree[axis],soil.highStone[axis],crest);
+    const dry=mix(vegetation,stone,Math.max(rock,crest*.86));
+    const shoreColor=mix(mix(dry,soil.wetSand[axis],shore*.85),soil.sediment[axis],submerged);
+    return mix(shoreColor,soil.trail[axis],trail) * (.87+.23*patch);
+  });
 }
 
 export function terrainWaterDepth(u, v, terrain = TOROIDAL_TERRAIN) {
@@ -125,6 +190,7 @@ export function buildTerrainTile(tile, segmentCount, coarseEdges = 0, terrain = 
   const origin = quantizeMeshPoint(terrainPosition((column + .5) / columns, (row + .5) / rows, 0, terrain));
   const positions = new Float32Array(width * width * 3);
   const normals = new Float32Array(positions.length);
+  const colors = new Float32Array(positions.length);
   const indices = new Uint16Array(segmentCount * segmentCount * 6);
   const waterLevel = terrain.waterLevel;
   const elevations = new Float64Array(width * width);
@@ -158,7 +224,14 @@ export function buildTerrainTile(tile, segmentCount, coarseEdges = 0, terrain = 
       const [bx, by, bz] = east.map((value, axis) => value - west[axis]);
       const normal = [ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx];
       const length = Math.hypot(...normal);
-      normal.forEach((value, axis) => { normals[index + axis] = value / length; });
+      const {up}=terrainFrame(u,v,terrain);
+      let alignment=0;
+      normal.forEach((value, axis) => {
+        const normalized=value/length;
+        normals[index + axis] = normalized;
+        alignment+=normalized*up[axis];
+      });
+      colors.set(terrainColor(u,v,elevations[j*width+i],1-alignment,terrain),index);
       if (i < segmentCount && j < segmentCount) {
         const a = j * width + i, b = a + 1, c = a + width, d = c + 1;
         indices.set([a, c, b, b, c, d], (j * segmentCount + i) * 6);
@@ -191,7 +264,7 @@ export function buildTerrainTile(tile, segmentCount, coarseEdges = 0, terrain = 
     }
     water = {positions:waterPositions,normals:waterNormals,indices:new Uint16Array(waterIndices)};
   }
-  return {origin, positions, normals, indices, water};
+  return {origin, positions, normals, colors, indices, water};
 }
 
 const neighbors = [
