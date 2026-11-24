@@ -319,6 +319,48 @@ specular material and light. Record held-out close-up detail, projection
 consistency, geometric and semantic masks, local style changes and
 object motions before selecting a representation for production.
 
+### Constructive review of the spatial style architecture
+
+In the 24 November follow-up, Claude Fable 5.2 at high effort completed a
+text-only analysis of the provided implementation and measurements after
+the image-based review and its follow-up timed out. It proposed a compiled
+style cascade, with per-surface material roles and optional node-local
+Gaussian layers. It singled out two gaps in the current hybrid: a coordinate
+box to exclude the archive platform and two visible representations drawing
+the same opaque surface. Its recommendation was a coherent baked/PBR mesh
+as base and a learned, surface-bound splat where close-up evidence justifies
+the extra representation. These are Claude's design recommendations. This
+run did not execute, inspect images from, or modify the Blender project.
+
+For Holodeck, keep the native Room, Collection and passage authorities.
+Export stable object and surface-slot IDs with Blender geometry, and bind
+style independently of those IDs and their transforms. A reusable look
+defines choices by material role, object class and surface slot, with room
+and object overrides. Resolve those choices before shipping tier-specific
+materials, fine-detail maps, lightmaps and optional splat chunks through
+the existing scoped art path. Mesh and splat candidates must use the same
+piece of structure, with one visible base representation per surface.
+Record which visual assets were selected so a changed theme or object can
+invalidate its own material outputs and the lighting that actually depends
+on it. The material binding and inheritance ideas have a production
+precedent in [UsdShade](https://openusd.org/release/wp_usdshade.html); the
+compiled browser artifact can remain glTF without adopting USD as the
+runtime format.
+
+Prove the split first on Matter's work surface and archive with two visibly
+different styles at the same camera positions. Exercise a material override,
+an object move and a door change while retaining IDs and exact worktable
+references. Compare generated close-up detail and occlusion from reserved
+views, then compare PBR and surface-bound splats on one eligible object in
+the same runtime. Coherent geometry-conditioned video is a source candidate;
+the demonstrated object pipeline in [Ink3D](https://github.com/YueHan99/Ink3D.TextureGen)
+does not establish room-level camera or depth consistency. Measure lighting
+invalidation against a full rebake after each edit. The prior co-visible
+error and single-route Pi frame time are comparison baselines; their values
+do not set universal acceptance thresholds. Any first-frame shader change
+needs a physical repeat because queuing screen shaders alone already failed
+to reduce the first-draw cost.
+
 
 ## Orbital finish for the Matter room
 
