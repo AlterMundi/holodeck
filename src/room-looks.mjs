@@ -10,6 +10,15 @@ const record=value=>value&&typeof value==='object'&&!Array.isArray(value);
 const bounded=(value,low,high)=>Number.isFinite(value)&&value>=low&&value<=high;
 const vector=(value,size,low,high)=>Array.isArray(value)&&value.length===size&&
   value.every(item=>bounded(item,low,high));
+function validEmitter(emitter,receiverHeight){
+  if(!record(emitter)||!vector(emitter.center,3,-24,24)||emitter.center[1]<=receiverHeight||
+    !vector(emitter.size,2,.05,8)||!vector(emitter.spread,2,.05,4)||
+    !vector(emitter.radiance,3,0,2)||!vector(emitter.right,3,-1,1)||!vector(emitter.up,3,-1,1))
+    return false;
+  const {right,up}=emitter;
+  return Math.abs(Math.hypot(...right)-1)<.001&&Math.abs(Math.hypot(...up)-1)<.001&&
+    Math.abs(right.reduce((sum,value,i)=>sum+value*up[i],0))<.001;
+}
 
 // Resolve authored asset names once against immutable bytes. Only the scoped
 // room endpoint exposes URLs. Browser selections never write room state.
@@ -57,9 +66,8 @@ export function compileRoomLooks(manifest,readAsset){
       if(layers.reflection!==undefined){
         const light=layers.reflection;
         if(channel!=='map'||!record(light)||!bounded(light.receiverHeight,-2,8)||
-          !vector(light.center,3,-24,24)||light.center[1]<=light.receiverHeight||
-          !vector(light.size,2,.05,8)||!vector(light.spread,2,.05,4)||
-          !vector(light.radiance,3,0,2)||!identifier(light.detail)||
+          !Array.isArray(light.emitters)||light.emitters.length<1||light.emitters.length>3||
+          !light.emitters.every(emitter=>validEmitter(emitter,light.receiverHeight))||!identifier(light.detail)||
           !Object.hasOwn(manifest.assets,light.detail)||!bounded(light.tilesPerMeter,.1,8))
           throw Error('Invalid room diffuse reflection');
         used.add(light.detail);

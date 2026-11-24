@@ -90,13 +90,15 @@ test('layered diffuse uses linear light data and restores both material programs
       assert.match(shader.vertexShader,/modelMatrix \* vec4\(transformed/);
       assert.match(shader.fragmentShader,/reflect\(-view/);
       assert.equal(shader.uniforms.roomReceiverHeight.value,.1);
-      assert.deepEqual(shader.uniforms.roomEmitterCenter.value.toArray(),[0,2.353,-.43]);
+      assert.deepEqual(shader.uniforms.roomEmitters.value[0].center.toArray(),[0,2.353,-.43]);
+      assert.equal(shader.uniforms.roomEmitterCount.value,3);
+      assert.deepEqual(shader.uniforms.roomEmitters.value[1].center.toArray(),[3.35,2.225,-3.69]);
       assert.equal(shader.uniforms.roomDeckDetail.value.image,tile);
       assert.equal(shader.uniforms.roomDeckDetail.value.wrapS,RepeatWrapping);
       assert.equal(shader.uniforms.roomDeckTileScale.value,.88);
       assert.equal(material.customProgramCacheKey(),'room-diffuse-layers:map:reflection');
     }else{
-      assert.equal(shader.uniforms.roomEmitterCenter,undefined);
+      assert.equal(shader.uniforms.roomEmitters,undefined);
       assert.equal(material.customProgramCacheKey(),'room-diffuse-layers:emissiveMap');
     }
   }

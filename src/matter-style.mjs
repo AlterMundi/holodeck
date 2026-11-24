@@ -8,10 +8,17 @@ const diffuseSamples={
 const floorReflection=/* glsl */`
   varying vec3 roomSurfacePosition;
   uniform float roomReceiverHeight;
-  uniform vec3 roomEmitterCenter;
-  uniform vec2 roomEmitterHalfSize;
-  uniform vec2 roomEmitterSpread;
-  uniform vec3 roomEmitterRadiance;
+  struct RoomEmitter {
+    vec3 center;
+    vec3 right;
+    vec3 up;
+    vec3 normal;
+    vec2 halfSize;
+    vec2 spread;
+    vec3 radiance;
+  };
+  uniform RoomEmitter roomEmitters[3];
+  uniform int roomEmitterCount;
   uniform sampler2D roomDeckDetail;
   uniform float roomDeckTileScale;
 
@@ -26,11 +33,20 @@ const floorReflection=/* glsl */`
     vec3 view = normalize(cameraPosition - position);
     if (view.y <= 0.02) return diffuse;
     vec3 ray = reflect(-view, vec3(0.0, 1.0, 0.0));
-    vec2 hit = position.xz + ray.xz * ((roomEmitterCenter.y - position.y) / ray.y);
-    vec2 outsideEmitter = max(abs(hit - roomEmitterCenter.xz) - roomEmitterHalfSize * 0.75, 0.0);
-    vec2 falloff = outsideEmitter / roomEmitterSpread;
-    float coverage = exp(-dot(falloff, falloff));
-    return diffuse + roomEmitterRadiance * (coverage * mix(0.30, 1.0, stone));
+    vec3 reflected = vec3(0.0);
+    for(int i=0; i<3; ++i){
+      if(i>=roomEmitterCount) break;
+      RoomEmitter emitter = roomEmitters[i];
+      float angle = dot(ray, emitter.normal);
+      if(abs(angle)<0.001) continue;
+      float distance = dot(emitter.center-position,emitter.normal)/angle;
+      if(distance<=0.0 || distance>16.0) continue;
+      vec3 hit = position + ray*distance - emitter.center;
+      vec2 panel = vec2(dot(hit, emitter.right),dot(hit, emitter.up));
+      vec2 falloff = max(abs(panel)-emitter.halfSize*0.75,0.0)/emitter.spread;
+      reflected += emitter.radiance * exp(-dot(falloff,falloff));
+    }
+    return diffuse + reflected * mix(0.30, 1.0, stone);
   }
 `;
 
@@ -40,10 +56,8 @@ function diffuseLayers(material){
   let reflectionEnabled=false;
   const reflection={
     roomReceiverHeight:{value:0},
-    roomEmitterCenter:{value:new Vector3()},
-    roomEmitterHalfSize:{value:new Vector2()},
-    roomEmitterSpread:{value:new Vector2()},
-    roomEmitterRadiance:{value:new Vector3()},
+    roomEmitterCount:{value:0},
+    roomEmitters:{value:[]},
     roomDeckDetail:{value:null},
     roomDeckTileScale:{value:1},
   };
@@ -72,20 +86,26 @@ function diffuseLayers(material){
     `+shader.fragmentShader.replace(`#include <${chunk}>`,
       ShaderChunk[chunk].replace(sample,`vec4(roomLitDiffuse(${sample}.rgb, ${uv}), 1.0)`));
   };
-  return (next,texture,emitter,detail)=>{
+  return (next,texture,finish,detail)=>{
     irradiance.value=texture;
-    if(emitter){
-      reflection.roomReceiverHeight.value=emitter.receiverHeight;
-      reflection.roomEmitterCenter.value.fromArray(emitter.center);
-      reflection.roomEmitterHalfSize.value.fromArray(emitter.size).multiplyScalar(.5);
-      reflection.roomEmitterSpread.value.fromArray(emitter.spread);
-      reflection.roomEmitterRadiance.value.fromArray(emitter.radiance);
+    if(finish){
+      reflection.roomReceiverHeight.value=finish.receiverHeight;
+      reflection.roomEmitterCount.value=finish.emitters.length;
+      reflection.roomEmitters.value=Array.from({length:3},(_,i)=>{
+        const emitter=finish.emitters[i]??finish.emitters[0];
+        const right=new Vector3().fromArray(emitter.right),up=new Vector3().fromArray(emitter.up);
+        return {
+          center:new Vector3().fromArray(emitter.center),right,up,normal:new Vector3().crossVectors(right,up),
+          halfSize:new Vector2().fromArray(emitter.size).multiplyScalar(.5),
+          spread:new Vector2().fromArray(emitter.spread),radiance:new Vector3().fromArray(emitter.radiance),
+        };
+      });
       reflection.roomDeckDetail.value=detail;
-      reflection.roomDeckTileScale.value=emitter.tilesPerMeter;
+      reflection.roomDeckTileScale.value=finish.tilesPerMeter;
     }
-    if(next!==channel||reflectionEnabled!==!!emitter){
+    if(next!==channel||reflectionEnabled!==!!finish){
       channel=next;
-      reflectionEnabled=!!emitter;
+      reflectionEnabled=!!finish;
       material.needsUpdate=true;
     }
   };
