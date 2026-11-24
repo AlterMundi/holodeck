@@ -23,6 +23,7 @@ import {PublicWorldPicker,WorldIndication} from './world-indication.mjs';
 import { ContentVisitor } from './content-visitor.mjs';
 import { GalleryModels } from './gallery-models.mjs';
 import { CollectionShelves } from './collection-shelves.mjs';
+import { MatterWorktableHud } from './matter-worktable-hud.mjs';
 import {applyGallerySigns} from './gallery-display.mjs';
 import { BeaconControls } from './beacon-controls.mjs';
 import {pickedRepresentationVisit} from './node-representations.mjs';
@@ -86,9 +87,13 @@ const touchControls={
     this.holder=document.createElement('div');this.holder.className='touch-controls';container.append(this.holder);
     this.delegate=new DefaultVirtualJoystickPlugin({radius:58,innerRadius:19});
     this.delegate.mount(this.holder,experience);
+    this.experience=experience;
     for(const button of this.holder.querySelectorAll('button')){button.textContent='Saltar';button.setAttribute('aria-label','Saltar');}
   },
-  dispose(){this.delegate?.dispose();this.holder?.remove();}
+  pause(paused){
+    if(this.delegate)this.experience?.setAdditionalInputProvider(paused?null:this.delegate.joystick);
+  },
+  dispose(){this.delegate?.dispose();this.holder?.remove();this.experience=null;}
 };
 let entering=true;
 function worldEntered(){
@@ -512,6 +517,8 @@ function resetDoor(){
 // MML captures document keys by default. Preserve ordinary text editing and
 // keyboard activation of the HUD without turning typed words into locomotion.
 document.addEventListener('keydown',event=>{
+  if(matterHud?.key(event)){event.preventDefault();event.stopImmediatePropagation();return;}
+  if(matterHud?.ownsAccessibleInput(event.target))return;
   if(event.target instanceof Element&&event.target.closest('#exhibition-index')){event.stopImmediatePropagation();return;}
   if((beaconControls.opened||hot&&(moving||inside&&contentVisitor?.frame&&!contentVisitor.panel.classList.contains('is-walking')))&&
      ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE'].includes(event.code)){
@@ -535,7 +542,7 @@ document.addEventListener('keydown',event=>{
   }
 },true);
 const playableHUD=new PlayableHUD(document);
-let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,galleryModels=null,collectionShelves=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null,worldHistory=null;
+let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,galleryModels=null,collectionShelves=null,matterHud=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null,worldHistory=null;
 const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
   sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket(hot?'active/network':'network'),waitForWorldConfig:true,
   enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
@@ -557,6 +564,14 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(moving||!inside||!sharedSurface())return;
         worktableTopic={reference,label};openConversation(true);
       }});
+    matterHud=new MatterWorktableHud({document,webgl:renderer.composer.renderer,table:collectionShelves.worktable,
+      onActive:active=>{
+        document.body.classList.toggle('is-operating-matter',active);
+        touchControls.pause(active);
+        if(active)client.keyInputManager?.handleUnfocus();
+      },
+      onError:()=>say('No pude mostrar los controles de la mesa. Volvé a abrirla.',{transient:true}),
+    });
     const sky=new OutdoorSky(renderer.mmlCompositionScene.group.parent,base);
     const light=new DirectionalLight(0xffefd6,1.8);
     light.position.set(12,22,10);light.target.position.set(0,0,-6);light.castShadow=true;
@@ -583,8 +598,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         client.getLocalCharacterState()?.position)):null,
       collection:()=>inside&&!moving&&remoteScene&&activeSpace.collectionShelves?collectionShelves.pickTargets():null,
       onPick:record=>{
+        if(matterHud.active&&record.kind!=='worktable-part')return;
         if(record.kind==='collection-shelf')collectionShelves.placeOnTable(record.item,record.edition);
-        else if(record.kind==='worktable-part')collectionShelves.worktable.selectPart(record);
+        else if(record.kind==='worktable-part'&&matterHud.active)collectionShelves.worktable.selectPart(record);
         else if(record.kind==='gallery')contentVisitor.openGallery(record.entry).catch(()=>say('No pude abrir esta edición.'));
         else if(record.kind==='content')contentVisitor?.openNode(record.node).catch(()=>say('No pude abrir este contenido. Conservé la visita anterior.'));
         else{
@@ -610,6 +626,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         floorSplatScope.projection.sort(camera,false);
       }
       draw();
+      matterHud.draw();
     };
     const exteriorAddress=socket('world');
     const arrivalAddress=socket('world?dressing=arrival');
@@ -741,6 +758,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         collectionRoom?activeSpace.objects.find(object=>object.id==='worktable')?.position:null,
         activeSpace?.sharedConversation===true,matterStyleScope?.style.contactShadows===true,
         options.coreCameraManager.getCameraState(),renderer.composer.renderer.domElement.clientHeight);
+      matterHud.update(!collectionRoom||!document.querySelector('#conversation-panel').hidden||
+        contentVisitor?.frame&&!contentVisitor.panel.classList.contains('is-walking')||
+        Boolean(document.querySelector('dialog[open]')));
       garden.update(inside&&!moving&&activeSpace.playableInterior?activeSpace.id:null);gardenMarkers();
       if(!inside){worldIndication?.update();if(!moving)playableHUD.update(position);}
       if(!moving){
@@ -764,7 +784,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
       }
     };
-    renderer.dispose=()=>{releaseRadialMovement?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{releaseRadialMovement?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();matterHud.dispose();removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
       releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing);
       options.onInitialized();

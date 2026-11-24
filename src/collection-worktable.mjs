@@ -60,19 +60,13 @@ function options(select,rows){
 
 export class CollectionWorktable{
   constructor({base,scene,panel,webgl,onSharedChange,onReference}){
-    Object.assign(this,{base,scene,panel,webgl,onSharedChange,yaw:0,editions:[],hidden:new Set()});
+    Object.assign(this,{base,scene,panel,webgl,onSharedChange,onReference,yaw:0,editions:[],hidden:new Set()});
     this.details=panel.querySelector('details');
     this.project=panel.querySelector('[data-project]');
     this.sceneChoice=panel.querySelector('[data-scenes]');
     this.part=panel.querySelector('[data-parts]');
     this.discuss=panel.querySelector('[data-discuss]');
-    this.discuss.onclick=()=>{
-      const review=this.review,edition=this.shown;
-      if(!review||!edition)return;
-      const part=review.parts.find(item=>item.id===this.part.value);
-      onReference?.({resource:edition.resource,version:edition.version,scene:review.id,
-        sceneVersion:review.version,part:part?.id??null},part?.label??review.title);
-    };
+    this.discuss.onclick=()=>this.discussSelection();
     this.status=panel.querySelector('[role=status]:not([data-shared-status])');
     this.sharedStatus=panel.querySelector('[data-shared-status]');
     this.share=panel.querySelector('[data-share]');
@@ -80,31 +74,89 @@ export class CollectionWorktable{
     this.clearTable=panel.querySelector('[data-clear-table]');
     this.share.onclick=()=>this.publish(this.editions.find(edition=>edition.selection===this.selection));
     this.clearTable.onclick=()=>this.publish(null);
-    this.follow.onclick=()=>{this.local=false;this.followShared();};
+    this.follow.onclick=()=>this.followTable();
     this.section=panel.querySelector('[data-section]');
     this.visibility=panel.querySelector('[data-visibility]');
     this.controls=panel.querySelector('fieldset');
     this.project.onchange=()=>this.chooseLocal(this.project.value);
-    this.sceneChoice.onchange=()=>{this.requestedScene=this.sceneChoice.value;this.load(this.requestedScene);};
+    this.sceneChoice.onchange=()=>this.chooseScene(this.sceneChoice.value);
     this.part.onchange=()=>this.projectModel();
     this.section.oninput=()=>this.projectModel();
-    this.visibility.onclick=()=>{
-      const id=this.part.value;
-      if(!id)return;
-      if(this.hidden.has(id))this.hidden.delete(id);else this.hidden.add(id);
-      this.projectModel();
+    this.visibility.onclick=()=>this.toggleVisibility();
+    for(const button of panel.querySelectorAll('[data-turn]'))
+      button.onclick=()=>this.turn(Number(button.dataset.turn));
+  }
+
+  discussSelection(){
+    const review=this.review,edition=this.shown;
+    if(this.discuss.hidden||!review||!edition)return;
+    const part=review.parts.find(item=>item.id===this.part.value);
+    this.onReference?.({resource:edition.resource,version:edition.version,scene:review.id,
+      sceneVersion:review.version,part:part?.id??null},part?.label??review.title);
+  }
+
+  followTable(){this.local=false;this.followShared();}
+
+  chooseScene(id){
+    if(!this.review?.choices.some(choice=>choice.id===id))return;
+    this.requestedScene=id;
+    this.load(id);
+  }
+
+  choosePart(id){
+    if(id!==''&&!this.model?.parts.has(id))return;
+    this.part.value=id;
+    this.projectModel();
+  }
+
+  setSection(fraction){
+    if(!Number.isFinite(fraction)||fraction<0||fraction>100)return;
+    this.section.value=String(Math.round(fraction));
+    this.projectModel();
+  }
+
+  turn(direction){
+    if(direction!==-1&&direction!==1)return;
+    this.yaw+=direction*Math.PI/8;
+    this.projectModel();
+  }
+
+  toggleVisibility(){
+    const id=this.part.value;
+    if(!id)return;
+    if(this.hidden.has(id))this.hidden.delete(id);else this.hidden.add(id);
+    this.projectModel();
+  }
+
+  hudState(){
+    const choices=select=>Array.from(select.options,option=>({id:option.value,label:option.textContent}));
+    const status=this.sharedStatus.textContent||this.status.textContent||
+      (this.shareRequest?'Actualizando mesa…':this.local?'Inspección local':'Siguiendo la mesa');
+    return {
+      projects:choices(this.project),project:this.project.value,scenes:choices(this.sceneChoice),scene:this.review?.id??'',
+      parts:choices(this.part),part:this.part.value,section:Number(this.section.value),
+      ready:!!this.model,hasPart:!!this.part.value,visibility:this.visibility.textContent,
+      canShare:!this.share.hidden,canClear:!this.clearTable.hidden,canFollow:!this.follow.hidden,
+      canDiscuss:!!this.model&&!this.discuss.hidden,discuss:this.discuss.textContent,
+      busy:!!this.shareRequest,status,revision:this.shared?.revision??null,
     };
-    for(const button of panel.querySelectorAll('[data-turn]'))button.onclick=()=>{
-      this.yaw+=Number(button.dataset.turn)*Math.PI/8;
-      this.projectModel();
-    };
+  }
+
+  publishSelection(revision,selection){
+    if(this.shared?.revision!==revision||selection!==null&&this.selection!==selection){
+      this.sharedStatus.textContent='La mesa cambió. Revisá la selección y volvé a intentar.';
+      return;
+    }
+    if(selection===null&&!this.clearTable.hidden)return this.publish(null);
+    if(selection!==null&&!this.share.hidden)return this.publish(this.editions.find(edition=>edition.selection===selection));
   }
 
   update(player,anchor,canDiscuss){
     this.anchor=anchor;
     this.discuss.hidden=!canDiscuss;
     const near=!!(player&&anchor&&Math.hypot(player.x-anchor.x,player.z-anchor.z)<2.05);
-    this.panel.hidden=!near||(!this.editions.length&&!this.selection);
+    this.available=near&&!!(this.editions.length||this.selection);
+    this.panel.hidden=!this.available||this.panel.hasAttribute('data-spatial');
 
   }
 
@@ -181,13 +233,13 @@ export class CollectionWorktable{
   }
 
   partTargets(targets){
-    if(this.panel.hidden||!this.model)return;
+    if(!this.available||!this.model)return;
     for(const [id,mesh] of this.model.parts)if(mesh.visible)
       targets.set(mesh,{kind:'worktable-part',id,mesh});
   }
 
   selectPart({id,mesh}){
-    if(this.panel.hidden||!mesh.visible||this.model?.parts.get(id)!==mesh)return;
+    if(!this.available||!mesh.visible||this.model?.parts.get(id)!==mesh)return;
     this.details.open=true;
     this.part.value=id;
     this.projectModel();
@@ -286,7 +338,7 @@ export class CollectionWorktable{
   clear(){
     this.shareRequest?.abort();this.shareRequest=null;this.local=false;
     this.sharedStatus.textContent='';
-    this.closeModel();this.sync([]);this.panel.hidden=true;this.anchor=null;
+    this.closeModel();this.sync([]);this.panel.hidden=true;this.available=false;this.anchor=null;
     this.details.open=!matchMedia('(max-width: 600px)').matches;
   }
 }

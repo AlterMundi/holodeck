@@ -155,6 +155,20 @@ have an explicit room effect. Conversation about the object captures the exact
 edition, scene and part when pointing or sending. The next draft leaves
 that reference usable.
 
+Near the worktable, **Usar mesa de trabajo** opens the in-world A2UI
+operation controls. The mesh HUD uses the installed Proyección spatial
+catalog and the room's confirmed look. It keeps the player and the model in
+the same scene. **Salir de la mesa** and Escape return movement and focus
+to the room. The renderer exposes the same controls through the browser's
+accessibility tree.
+
+The HUD projects the existing Collection Worktable state, with local
+project, scene, part, section, rotation and visibility controls. Share and
+clear submit through the existing revision-checked Collection endpoint.
+Sharing carries the selection and revision shown by the visitor. The
+current worktable read and refresh stream confirm the result. Opening the
+conversation control prepares the usual exact scene or part reference.
+
 An open worktable follows its authorized project's saved review stream.
 Stage and validate each exact model before committing it to the same table.
 Carry camera and selected parts while stable IDs and geometry allow it.
