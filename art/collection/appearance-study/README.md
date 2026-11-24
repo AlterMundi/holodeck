@@ -568,7 +568,42 @@ fallback. The two high-precision files are authoring inputs for the next
 rendering candidate. At 1024², all 88 geometry and UV buffers matched the
 existing focused export byte for byte. Recombining the decoded linear
 files and applying sRGB yielded a mean absolute error of 0.93/255 against
-the fallback JPEG. The separate files carry no runtime bindings yet.
+the fallback JPEG.
+
+`pack-diffuse-layers.py BAKE_DIR OUTPUT_DIR` encodes albedo as sRGB PNG
+and irradiance as an RGB data PNG using `log2(1 + light) / 6`. The look
+catalog binds the two files and a destination channel per surface role.
+The browser samples both atlases at the existing material UVs and
+composes the fixed diffuse term before output transfer. The responsive
+surface keeps its separate live material response. Selecting the original
+orbital style restores the embedded maps and shader. The initial maps'
+encoding error at occupied texels averaged 0.77 of 255 in the composed
+sRGB result before interpolation.
+
+The refined atlas uses 64 Cycles samples per texel. This edit replaces only
+the irradiance asset and its hash in the catalog. The albedo and packed
+mesh hashes are unchanged. Among 138,964 occupied atlas texels with
+locally uniform source color in both bakes, the p95 difference between the
+center and the mean of its four adjacent irradiance luminances fell from
+0.0624 to 0.0417 scene-linear units. This is a local smoothness measure.
+The matched-height Pi captures show less mottling in the floor. The
+current browser ceiling, glazing and illumination response still need
+comparison with the detailed Blender reference.
+
+On Cuevanico the refined packed candidate reached the visible default
+room 9.84 s after cold entry through the qualification tunnel. The
+optional layered look applied in 2.27 s and transferred 646,870 PNG
+bytes. With the look enabled, 393 moving intervals measured 33.3 ms
+median and 33.4 ms p95. The rotating archive, all 24 corner camera poses
+and the door return passed. The shell and both layer URLs returned 404
+after exit. The receiver cleanup was observed. These are physical Pi
+results with controlled identities and lightweight graphics.
+
+The refined build also ran in desktop automatic mode alongside an
+emulated-touch visitor. Each browser selected the layered look
+independently. The shell and retained worktable model stayed mounted,
+sharing and part references continued, and the other browser's material
+selection followed only its own controls.
 
 
 ## Orbital finish for the Matter room

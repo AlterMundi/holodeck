@@ -76,8 +76,15 @@ With Amber active, the exact package ran on Cuevanico at 33.3 ms median
 and 33.4 ms p95 while moving. The camera clearance, rotating archive and
 door return passed. Blender also exported independent albedo and static
 irradiance on the existing UV layout, with the archive platform excluded
-from the light bake. The split maps are authoring data. Their runtime
-composition and lighting of moving objects still need qualification.
+from the light bake. The isolated package now exposes the optional
+layered orbital look on the same mesh. Increasing the bake samples
+reduced mottling in the floor and replaced only the irradiance texture.
+The retained albedo and GLB kept their exact hashes. On the physical Pi
+the refined layers applied in 2.27 s and the walking route measured
+33.3 ms median and 33.4 ms p95 with the new look active. The rotating
+archive, camera clearance, door return and art refusal after exit
+passed. Runtime shadows from moving pieces and the final fidelity
+comparison against the Blender reference remain open.
 
 Nicolás's earlier shared movement, light, house and door confirmations still
 count. The repaired content-exit route has been delivered. Use independent
