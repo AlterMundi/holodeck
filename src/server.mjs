@@ -149,9 +149,10 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const spaces=new InteriorSpaces({definitions:layoutDefinitions(),houses,state:spaceStore?.load(),
     persist:spaceStore ? state=>spaceStore.save(state) : null,guestAccess:interiorGuestAccess});
   const exteriorArt=packedExteriorArt();
-  const artRooms=toroidal&&artProfile?
-    new Map(authoredLayout().map(room=>[room.id,room])):spaces.rooms;
-  const atelier=selectAtelier(artProfile,artRooms,houses.directory(),exteriorArt);
+  // A selected terrain can hide rooms while their authored checkpoints remain
+  // valid for the normal edition. Access and writes still use spaces.rooms.
+  const authoredRooms=()=>toroidal?new Map(authoredLayout().map(room=>[room.id,room])):spaces.rooms;
+  const atelier=selectAtelier(artProfile,authoredRooms(),houses.directory(),exteriorArt);
   const valley=Boolean(atelier)&&!toroidal;
   const singleHouse=valley||toroidal;
   const outdoorHouse=house=>!singleHouse||house.id===COMPAII_HOUSE;
@@ -165,14 +166,15 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }
   const selectedRooms=new Set(interiorSpaces.map(item=>item.id));
   const gardenStore=stateDir?new RoomStore(join(stateDir,'indoor-gardens'),{maxBytes:INDOOR_GARDEN_BYTES}):null;
-  const indoorGardens=new IndoorGardens({state:gardenStore?.load(),spaces,houses,legacyRooms:selectedRooms,
+  const indoorGardens=new IndoorGardens({state:gardenStore?.load(),spaces,houses,legacyRooms:selectedRooms,authoredRooms,
     persist:gardenStore?value=>gardenStore.save(value):null});
   const editorStore=stateDir?new RoomStore(join(stateDir,'garden-editors'),{maxBytes:16*1024}):null;
   const gardenEditors=new GardenEditors({state:editorStore?.load(),owner:id=>indoorGardens.owner(id),
+    authoredOwner:id=>indoorGardens.owner(id,authoredRooms()),
     allows:(actor,id)=>spaces.allows(actor,id),persist:editorStore?value=>editorStore.save(value):null});
   const kits=readOwnedRoomArt();
   const designStore=stateDir?new RoomStore(join(stateDir,'room-designs'),{maxBytes:DESIGN_SAVE_BYTES}):null;
-  const designs=new RoomDesigns({state:designStore?.load(),spaces,houses,legacyRooms:selectedRooms,kits,
+  const designs=new RoomDesigns({state:designStore?.load(),spaces,houses,legacyRooms:selectedRooms,kits,authoredRooms,
     persist:designStore?value=>designStore.save(value):null});
   const collection=collectionSelection(matterCollection,spaces.rooms);
   if(collection&&!publicOrigin)throw Error('Collection requires the existing Home origin');
@@ -222,7 +224,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const design=designs.forRoom(room?.id);
     return design?{...kits.get(design.kit),designRevision:design.revision}:null;
   }
-  const gallery=gallerySlots(gallerySelection,spaces.rooms);
+  const authoredGallery=gallerySlots(gallerySelection,authoredRooms());
+  const gallery=spaces.rooms.has(authoredGallery?.room)?authoredGallery:null;
   const authorizeRoomVisit=galleryAuthorization??(publicOrigin?createGalleryAuthorization(publicOrigin):null);
   const exhibitStore=stateDir?new RoomStore(join(stateDir,'exhibits'),{maxBytes:EXHIBIT_SAVE_BYTES}):null;
   const exhibits=new RoomExhibits({state:exhibitStore?.load(),spaces,houses,artForRoom,

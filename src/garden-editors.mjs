@@ -5,14 +5,14 @@ const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&
   Object.keys(value).sort().join(',')===keys;
 
 export class GardenEditors {
-  constructor({state,owner,allows,persist}){
+  constructor({state,owner,allows,persist,authoredOwner=owner}){
     Object.assign(this,{owner,allows,persist});
     this.fenced=false;
     const value=state??{schema:SCHEMA,grants:[]};
     if(!exact(value,'grants,schema')||value.schema!==SCHEMA||!Array.isArray(value.grants)||
       value.grants.length>24||new Set(value.grants.map(entry=>entry?.room)).size!==value.grants.length||
       !value.grants.every(entry=>exact(entry,'human,revision,room')&&typeof entry.room==='string'&&
-        ROOM.test(entry.room)&&owner(entry.room)&&Number.isSafeInteger(entry.revision)&&entry.revision>0&&
+        ROOM.test(entry.room)&&authoredOwner(entry.room)&&Number.isSafeInteger(entry.revision)&&entry.revision>0&&
         (entry.human===null||typeof entry.human==='string'&&HUMAN.test(entry.human))))
       throw Error('Invalid indoor garden editor checkpoint');
     this.grants=new Map(value.grants.map(entry=>[entry.room,Object.freeze({...entry})]));

@@ -12,8 +12,9 @@ const revision=value=>Number.isSafeInteger(value)&&value>0;
 const textMatches=(value,pattern)=>typeof value==='string'&&pattern.test(value);
 
 export class RoomDesigns {
-  constructor({state,spaces,houses,legacyRooms,kits,persist}){
+  constructor({state,spaces,houses,legacyRooms,kits,persist,authoredRooms=()=>spaces.rooms}){
     this.spaces=spaces;
+    this.authoredRooms=authoredRooms;
     this.houses=houses;
     this.legacyRooms=legacyRooms;
     this.kits=kits;
@@ -33,15 +34,15 @@ export class RoomDesigns {
       throw Error('Invalid room design checkpoint');
   }
 
-  owner(room){
-    const cell=this.spaces.rooms.get(room);
+  owner(room,rooms=this.spaces.rooms){
+    const cell=rooms.get(room);
     if(!cell||this.legacyRooms.has(room))return null;
     return this.houses.directory().find(house=>house.id===cell.house)?.owner??null;
   }
 
   validDesign(value){
     return exact(value,'kit,owner,revision,room')&&textMatches(value.owner,BEING)&&
-      typeof value.room==='string'&&this.owner(value.room)===value.owner&&
+      typeof value.room==='string'&&this.owner(value.room,this.authoredRooms())===value.owner&&
       this.kits.has(value.kit)&&revision(value.revision);
   }
 

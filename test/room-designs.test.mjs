@@ -27,6 +27,11 @@ test('an uncertain design write fences the session and recovers its exact receip
     assert.deepEqual(recovered.result(owner,original.id),accepted);
     assert.deepEqual(recovered.result(owner,update.id),{owner:owner.id,room:'foyer',kit:'second',revision:2});
     assert.deepEqual(recovered.put(owner,update),recovered.result(owner,update.id));
+    const hidden=new RoomDesigns({...options,state:store.load(),spaces:{rooms:new Map()},
+      authoredRooms:()=>options.spaces.rooms});
+    assert.deepEqual(hidden.result(owner,update.id),recovered.result(owner,update.id));
+    assert.equal(hidden.inspect(owner,'foyer'),null);
+    assert.equal(hidden.put(owner,update),null);
     assert.equal(recovered.put(owner,{...update,kit:'first'}),null);
     const readerKits=new Map([['first',{title:'First'}],['second',{title:'Second',publishable:false}]]);
     const predecessor=new RoomDesigns({...options,state:store.load(),kits:readerKits});

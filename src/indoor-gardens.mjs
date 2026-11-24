@@ -25,8 +25,8 @@ export function situatedGardenCommandId(interactionId,id){
 }
 
 export class IndoorGardens {
-  constructor({state,spaces,houses,legacyRooms,persist}){
-    this.spaces=spaces;this.houses=houses;this.legacyRooms=legacyRooms;this.persist=persist;this.fenced=false;
+  constructor({state,spaces,houses,legacyRooms,persist,authoredRooms=()=>spaces.rooms}){
+    this.spaces=spaces;this.authoredRooms=authoredRooms;this.houses=houses;this.legacyRooms=legacyRooms;this.persist=persist;this.fenced=false;
     this.state=state??{schema:SCHEMA,gardens:[],receipts:[]};
     const {gardens,receipts}=this.state;
     if(!exact(this.state,'gardens,receipts,schema')||this.state.schema!==SCHEMA||
@@ -39,13 +39,13 @@ export class IndoorGardens {
       throw Error('Invalid indoor garden checkpoint');
   }
 
-  owner(room){
-    const cell=this.spaces.rooms.get(room);
+  owner(room,rooms=this.spaces.rooms){
+    const cell=rooms.get(room);
     return cell&&!this.legacyRooms.has(room)?this.houses.directory().find(house=>house.id===cell.house)?.owner:null;
   }
 
   validGarden(value){
-    return exact(value,'play,revision,room,sequence,signals,title')&&this.owner(value.room)&&
+    return exact(value,'play,revision,room,sequence,signals,title')&&this.owner(value.room,this.authoredRooms())&&
       title(value.title)&&validIndoorGardenRecipe(value.play)&&stamp(value.revision)&&
       Number.isSafeInteger(value.sequence)&&value.sequence>=0&&Array.isArray(value.signals)&&
       value.signals.length===value.play.targets.length&&value.signals.every(signal=>validSignal(signal)&&

@@ -355,8 +355,13 @@ the procedural exterior and sets the eligible room graph to the established
 Matter room in CompAII's house. It preserves the authored graph in storage
 so a code rollback or selection change can restore it. The terrain edition
 selects its own coordinate origin, entry pose and lighting distance.
-The setting is currently used in an isolated test receiver. The protected
-release still selects the previously qualified exterior.
+The configured gallery editions and room-design, garden and editor
+checkpoints still validate against the authored room graph. Their normal
+reads and writes use the active graph. This keeps hidden rooms unavailable
+in the toroidal edition while allowing those checkpoints to be read on
+rollback. A bounded copy of the actual receiving checkpoints booted with
+the toroidal selection and native lanes disabled. The protected release
+still selects the previously qualified exterior.
 
 ## Selected shared release
 

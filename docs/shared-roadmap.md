@@ -526,8 +526,13 @@ cut the JavaScript transfer from 4.93 MB to 1.21 MB, and the browser measured
 0.89 s for that request instead of 8.92 s over the same tunnel. Cold arrival
 took 5.86 s. Over 141 moving intervals per graphics mode, the medians were
 16.6 ms lightweight and 21.5 ms automatic, with p95 of 22.0 and 32.6 ms.
-This was a controlled receiver; further visual polish and production selection remain
-open.
+This was a controlled receiver. The cave mouths now blend into the
+adjacent slopes through an asymmetric outer shell with angled rock bedding.
+The tunnel retains its two open entrances and two connected chambers. The
+packed browser fixture passed the same shared navigation and access checks
+with the revised cave. Its physical Pi run arrived in 6.54 s and measured
+20.7 ms p95 lightweight and 25.8 ms p95 automatic during motion. Production
+selection remains open.
 
 
 ## Delivery sequence and cards
