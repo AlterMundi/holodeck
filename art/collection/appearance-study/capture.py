@@ -8,12 +8,15 @@ from mathutils import Vector
 import numpy as np
 
 arguments = sys.argv[sys.argv.index('--') + 1:]
-out = Path(arguments[0])
+out = Path(arguments.pop(0))
+fine = '--fine' in arguments
+if fine:
+    arguments.remove('--fine')
 out.mkdir(parents=True, exist_ok=True)
 scene = bpy.context.scene
 camera = scene.camera
-scene.render.resolution_x = 768
-scene.render.resolution_y = 512
+scene.render.resolution_x = 1152 if fine else 768
+scene.render.resolution_y = 768 if fine else 512
 scene.render.resolution_percentage = 100
 scene.render.image_settings.file_format = 'PNG'
 scene.cycles.samples = 12
@@ -39,8 +42,14 @@ views = {
     'shelf': ((-4.60, 2.15, 1.66), (-1.05, -.2, 1.18)),
     'held': ((.96, -2.55, 1.66), (.05, 2.8, 1.15)),
 }
+if fine:
+    views.update({
+        'threshold': ((-4.25, -5.00, 1.62), (3.8, -3.00, 1.45)),
+        'archive': ((4.65, .50, 1.70), (3.35, 3.69, 1.60)),
+        'bench': ((-2.73, .60, 2.20), (.00, .43, .68)),
+    })
 w, h = scene.render.resolution_x, scene.render.resolution_y
-for name in (arguments[1:] or views):
+for name in (arguments or views):
     position, target = views[name]
     camera.location = position
     camera.rotation_euler = (Vector(target) - camera.location).to_track_quat('-Z', 'Y').to_euler()

@@ -6,23 +6,40 @@ import {
 const textureWidth = 1024;
 const buckets = 1024;
 
-export function createSplats(bytes) {
-  const count = bytes.byteLength / 32;
-  if (!Number.isInteger(count) || count < 1 || count > 260000) throw Error('Invalid splat catalog');
+export function createSplats(bytes, compact = false) {
+  const stride = compact ? 12 : 32;
+  const count = bytes.byteLength / stride;
+  if (!Number.isInteger(count) || count < 1 || count > (compact ? 720000 : 260000)) {
+    throw Error('Invalid splat catalog');
+  }
   const rows = Math.ceil(count * 3 / textureWidth);
   const data = new Float32Array(rows * textureWidth * 4);
   const source = new DataView(bytes);
   const fixed = new Uint32Array(count);
   for (let i = 0; i < count; i++) {
-    const p = i * 32, o = i * 12;
-    for (let axis = 0; axis < 6; axis++) data[o + axis] = source.getFloat32(p + axis * 4, true);
-    for (let axis = 0; axis < 4; axis++) data[o + 6 + axis] = source.getUint8(p + 28 + axis) / 128 - 1;
-    // Keep the base view and hybrid registration together. Suppress the
-    // few samples that could occlude the actual moving archive platform.
-    const [x,y,z] = data.subarray(o,o+3);
-    if (!(Math.hypot(x-3.35,z+3.68) < .72 && y > .99 && y < 1.16)) fixed[i] = 1;
-    data[o + 10] = source.getUint32(p + 24, true) & 0xffffff;
-    data[o + 11] = source.getUint8(p + 27) / 255;
+    const p = i * stride, o = i * 12;
+    if (compact) {
+      for (let axis = 0; axis < 3; axis++) data[o + axis] = source.getInt16(p + axis * 2, true) / 4096;
+      data[o + 3] = data[o + 4] = .022;
+      data[o + 5] = .0032;
+      const nx = source.getInt8(p + 9), ny = source.getInt8(p + 10), nz = source.getInt8(p + 11);
+      const length = Math.hypot(nx, ny, nz);
+      const w = length + nz;
+      const qLength = Math.hypot(w, ny, nx);
+      data[o + 6] = qLength ? w / qLength : 0;
+      data[o + 7] = qLength ? -ny / qLength : 1;
+      data[o + 8] = qLength ? nx / qLength : 0;
+      data[o + 10] = source.getUint8(p + 6) | source.getUint8(p + 7) << 8 | source.getUint8(p + 8) << 16;
+      data[o + 11] = .94;
+    } else {
+      for (let axis = 0; axis < 6; axis++) data[o + axis] = source.getFloat32(p + axis * 4, true);
+      for (let axis = 0; axis < 4; axis++) data[o + 6 + axis] = source.getUint8(p + 28 + axis) / 128 - 1;
+      data[o + 10] = source.getUint32(p + 24, true) & 0xffffff;
+      data[o + 11] = source.getUint8(p + 27) / 255;
+    }
+    // Suppress samples around the moving archive platform in hybrid mode.
+    const x = data[o], y = data[o + 1], z = data[o + 2];
+    if (!(Math.hypot(x - 3.35, z + 3.68) < .72 && y > .99 && y < 1.16)) fixed[i] = 1;
   }
   const texture = new DataTexture(data, textureWidth, rows, RGBAFormat, FloatType);
   texture.needsUpdate = true;
@@ -87,23 +104,41 @@ export function createSplats(bytes) {
   mesh.renderOrder=1;
   const depths=new Uint16Array(count), sizes=new Uint32Array(buckets), cursor=new Uint32Array(buckets);
   let prior=[];
-  function sort(camera, hybrid) {
+  function sort(camera, hybrid, reduced = false) {
     camera.updateMatrixWorld();
-    const e=camera.matrixWorldInverse.elements, pose=[e[2],e[6],e[10],e[14],hybrid];
+    const e = camera.matrixWorldInverse.elements;
+    const projection = camera.projectionMatrix.elements;
+    const pose = compact ? [...e, projection[0], projection[5], reduced] : [e[2], e[6], e[10], e[14], hybrid];
     if(pose.every((value,i)=>value===prior[i])) return;
     prior=pose;
     sizes.fill(0);
-    for(let i=0;i<count;i++){
-      const j=i*12;
-      if(hybrid&&!fixed[i]) continue;
-      const depth=-(e[2]*data[j]+e[6]*data[j+1]+e[10]*data[j+2]+e[14]);
+    const step = compact && reduced ? 2 : 1;
+    const outside = 65535;
+    for (let i = 0; i < count; i += step) {
+      const j = i * 12;
+      const x = data[j], y = data[j + 1], z = data[j + 2];
+      const depth = -(e[2]*x + e[6]*y + e[10]*z + e[14]);
+      if (compact) {
+        // Cull comfortably beyond the splat footprint before uploading indices.
+        const eyeX = e[0]*x + e[4]*y + e[8]*z + e[12];
+        const eyeY = e[1]*x + e[5]*y + e[9]*z + e[13];
+        if (depth < .28 || Math.abs(eyeX) > depth / projection[0] + .35 ||
+            Math.abs(eyeY) > depth / projection[5] + .35) {
+          depths[i] = outside;
+          continue;
+        }
+      }
+      if (hybrid && !fixed[i]) {
+        depths[i] = outside;
+        continue;
+      }
       const bin=Math.min(buckets-1,Math.max(0,Math.floor(depth*(buckets/24))));
       depths[i]=bin;
       sizes[bin]++;
     }
     let total=0;
     for(let bin=buckets-1;bin>=0;bin--){cursor[bin]=total;total+=sizes[bin];}
-    for(let i=0;i<count;i++) if(!hybrid||fixed[i]) ids[cursor[depths[i]]++]=i;
+    for (let i = 0; i < count; i += step) if (depths[i] !== outside) ids[cursor[depths[i]]++] = i;
     geometry.instanceCount=total;
     index.needsUpdate=true;
   }

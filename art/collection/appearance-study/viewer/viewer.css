@@ -25,3 +25,9 @@ canvas{touch-action:none;cursor:grab}
 #movement button:nth-child(2){grid-column:1}
 #description,.hint{margin:0}
 .hint{color:#bdd3cd;font-size:.9rem}
+details{margin-top:1.2rem}
+summary{padding:.5rem 0;color:var(--accent);cursor:pointer}
+.source-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:.8rem}
+.source-grid figure{margin:0}
+.source-grid img{display:block;width:100%;height:auto;border-radius:.45rem}
+.source-grid figcaption{padding:.3rem 0;color:#bdd3cd}

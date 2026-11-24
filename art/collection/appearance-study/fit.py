@@ -10,20 +10,23 @@ import numpy as np
 root = Path(sys.argv[1])
 views = ('entry', 'east', 'west', 'reverse', 'side', 'shelf')
 arguments = sys.argv[2:]
-if arguments not in ([], ['--light'], ['--orbital']):
-    raise SystemExit('Usage: fit.py CAPTURE_DIRECTORY [--light | --orbital]')
+if arguments not in ([], ['--light'], ['--orbital'], ['--detail']):
+    raise SystemExit('Usage: fit.py CAPTURE_DIRECTORY [--light | --orbital | --detail]')
 light = arguments == ['--light']
-orbital = arguments == ['--orbital']
-spacing = .055 if light else .04 if orbital else .027
-suffix = '-light' if light else '-orbital' if orbital else ''
+detail = arguments == ['--detail']
+orbital = arguments == ['--orbital'] or detail
+if detail:
+    views += ('threshold', 'archive', 'bench')
+spacing = .024 if detail else .055 if light else .04 if orbital else .027
+suffix = '-detail' if detail else '-light' if light else '-orbital' if orbital else ''
 generated_views = set(views) if orbital else {'entry', 'east', 'reverse'}
 
-def rgb(path):
+def rgb(path, w, h):
     bytes_ = subprocess.check_output([
         'ffmpeg', '-v', 'error', '-threads', '1', '-i', str(path), '-vf',
-        'scale=384:256:flags=area', '-frames:v', '1', '-threads:v', '1',
+        f'scale={w}:{h}:flags=area', '-frames:v', '1', '-threads:v', '1',
         '-pix_fmt', 'rgb24', '-f', 'rawvideo', 'pipe:1'])
-    return np.frombuffer(bytes_, np.uint8).reshape(256, 384, 3).astype(np.float32)
+    return np.frombuffer(bytes_, np.uint8).reshape(h, w, 3).astype(np.float32)
 
 def soften(pixels, radius):
     height, width = pixels.shape[:2]
@@ -40,12 +43,13 @@ records, all_samples = [], []
 for name in views:
     camera = np.load(root/f'{name}.npz')
     samples = camera['view']
-    if samples.shape != (256, 384, 7) or not np.isfinite(samples).all():
+    h, w = samples.shape[:2]
+    if samples.shape != ((384, 576, 7) if detail else (256, 384, 7)) or not np.isfinite(samples).all():
         raise ValueError(f'Capture {name} has invalid samples')
     all_samples.append(samples[samples[:,:,6] > .10, :])
-    base = rgb(root/f'{name}.png')
+    base = rgb(root/f'{name}.png', w, h)
     generated = name in generated_views
-    raw = rgb(root/f'{name}-style.png') if generated else base
+    raw = rgb(root/f'{name}-style.png', w, h) if generated else base
     # Bound appearance shifts where the generator displaces a contour.
     basic = soften(base, 4)
     generated_low = soften(raw, 4)
@@ -84,10 +88,11 @@ for name, grid, blender_pos, target, fov, base, raw, grade, generated in records
     up = np.cross(right, front)
     displacement = xyz-pos
     depth = displacement @ front
-    focal = 128 / math.tan(math.radians(fov)/2)
-    xs = np.rint((displacement @ right) * focal / depth.clip(.03) + 191.75).astype(int)
-    ys = np.rint(-(displacement @ up) * focal / depth.clip(.03) + 127.75).astype(int)
-    valid = np.flatnonzero((depth > .06) & (xs>=0) & (xs<384) & (ys>=0) & (ys<256))
+    h, w = grid.shape[:2]
+    focal = h / 2 / math.tan(math.radians(fov)/2)
+    xs = np.rint((displacement @ right) * focal / depth.clip(.03) + w / 2 - .25).astype(int)
+    ys = np.rint(-(displacement @ up) * focal / depth.clip(.03) + h / 2 - .25).astype(int)
+    valid = np.flatnonzero((depth > .06) & (xs>=0) & (xs<w) & (ys>=0) & (ys<h))
     row,col = ys[valid],xs[valid]
     seen = grid[row,col]
     distances = np.linalg.norm(xyz[valid]-seen[:,:3], axis=1)
@@ -97,6 +102,8 @@ for name, grid, blender_pos, target, fov, base, raw, grade, generated in records
     row, col = row[accepted], col[accepted]
     if orbital:
         weight = (.08 + seen[accepted,6]**3) / (1 + depth[choice]*.33)**2
+        if detail:
+            weight **= 1.75
     else:
         weight = (.06 + seen[accepted,6]**2) / (1 + depth[choice]*.19)
     if generated:
@@ -110,7 +117,7 @@ for name, grid, blender_pos, target, fov, base, raw, grade, generated in records
 
 retained = weights > 0
 count = int(np.count_nonzero(retained))
-if not 0 < count <= 420_000:
+if not 0 < count <= (720_000 if detail else 420_000):
     raise ValueError(f'Unexpected fitted point count: {count}')
 xyz, normals = xyz[retained], normals[retained]
 angles = np.zeros((len(normals),4), np.float32)
@@ -130,10 +137,23 @@ radius = spacing * .96 if light or orbital else .026
 packed['scale'] = (radius, radius, .0055)
 packed['rgba'][:,3] = 230
 packed['rotation'] = (angles*128+128).clip(0,255).astype(np.uint8)
-for index,name in enumerate(('blender','raw','guided')):
-    packed['rgba'][:,:3] = (sums[index,retained]/weights[retained,None]).clip(0,255).astype(np.uint8)
-    packed.tofile(root/f'{name}{suffix}.splat')
-stats = dict(spacingMeters=spacing, splats=len(packed), bytes=packed.nbytes,
+if detail:
+    # 12-byte records keep the more detailed room within the viewer's asset
+    # budget. Positions use 1/4096 m and both Gaussian radii are uniform.
+    compact = np.empty(count, dtype=np.dtype([
+        ('position', '<i2', (3,)), ('rgb', 'u1', (3,)), ('normal', 'i1', (3,))]))
+    quantized = np.rint(xyz * 4096)
+    if np.max(np.abs(quantized)) >= 32767:
+        raise ValueError('Detail vertices out of bounds')
+    compact['position'] = quantized.astype(np.int16)
+    compact['rgb'] = np.clip(sums[2, retained] / weights[retained, None], 0, 255)
+    compact['normal'] = np.rint(normals * 127)
+    compact.tofile(root / 'orbital-detail.bin')
+else:
+    for index,name in enumerate(('blender','raw','guided')):
+        packed['rgba'][:,:3] = (sums[index,retained]/weights[retained,None]).clip(0,255).astype(np.uint8)
+        packed.tofile(root/f'{name}{suffix}.splat')
+stats = dict(spacingMeters=spacing, splats=len(packed), bytes=compact.nbytes if detail else packed.nbytes,
              multiView=float(np.mean(observations[retained]>1)),
              generatedCoverage=float(np.mean(styled[retained])),
              viewMatches=view_matches,

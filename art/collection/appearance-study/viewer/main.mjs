@@ -10,7 +10,8 @@ const canvas=$('scene'), status=$('status'), movement=$('movement');
 const options=[...document.querySelectorAll('[data-mode]')];
 const descriptions={
   splat:'Toda la apariencia sale del splat. La vitrina forma parte de la imagen.',
-  orbital:'Laboratorio orbital con materiales de ImageGen y luces cian y ámbar. Podés recorrerlo desde cualquier ángulo.',
+  orbital:'Laboratorio reconstruido con gaussianas a partir de nueve vistas de ImageGen. El modo liviano usa la mitad de los puntos.',
+  'uv-room':'La luz y los materiales orbitales se proyectan sobre la geometría de toda la sala. La vitrina conserva su plato giratorio.',
   mixed:'El splat da el acabado sobre la malla. El plato de la vitrina sigue siendo un objeto que podés girar.',
   uv:'Alterná el material original y el piso generado con sombras horneadas. La cámara y el resto de la sala conservan su posición y su aspecto.',
 };
@@ -19,7 +20,7 @@ const obstacles=[
 ];
 const initial=new Vector3(-.72,1.66,4.38), desk=new Vector3(0,1.05,-.43);
 const front=new Vector3(), right=new Vector3();
-const hints={splat:'Cargando el splat…',orbital:'Cargando el laboratorio orbital…',mixed:'Cargando la vitrina…',uv:'Cargando la sala y su textura…'};
+const hints={splat:'Cargando el splat…',orbital:'Cargando el laboratorio orbital…','uv-room':'Cargando la sala orbital texturizada…',mixed:'Cargando la vitrina…',uv:'Cargando la sala y su textura…'};
 const scene=new Scene();
 scene.background=new Color('#332b24');
 const camera=new PerspectiveCamera(67.38,1,.06,28);
@@ -32,7 +33,8 @@ const lamp=new PointLight('#ffd59b',18,7,2);
 lamp.position.set(0,2.35,-.43);
 scene.add(new AmbientLight('#e6ebf3',1.16),key,windowLamp,lamp);
 
-let renderer, room, floor, uvFloor, turntable;
+let renderer, room, floor, uvFloor, orbitalRoom;
+const archivePivots = new Map();
 const splatAssets = new Map();
 const floorOptions = [...document.querySelectorAll('[data-floor]')];
 let floorStyle = 'baked';
@@ -56,9 +58,9 @@ async function loadModel(path) {
 function getSplat(name) {
   if (!splatAssets.has(name)) {
     const load = (async () => {
-      const asset = await fetch(name === 'orbital' ? 'orbital.splat' : 'matter.splat', {credentials:'omit'});
+      const asset = await fetch(name === 'orbital' ? 'orbital-detail.bin' : 'matter.splat', {credentials:'omit'});
       if (!asset.ok) throw Error('Splat unavailable');
-      const splat = createSplats(await asset.arrayBuffer());
+      const splat = createSplats(await asset.arrayBuffer(), name === 'orbital');
       splat.mesh.visible = false;
       scene.add(splat.mesh);
       return splat;
@@ -85,12 +87,28 @@ function getRoom() {
     room=(await loadModel('room.glb')).scene;
     floor=room.getObjectByName('Surface__Honed_limestone_floor_with_fixture_bounce') ??
       room.children.find(item=>item.isMesh&&item.material?.name.includes('floor with fixture bounce'));
-    turntable=room.getObjectByName('archive_turntable_platform');
-    if(!floor||!turntable)throw Error('Room objects unavailable');
-    turnAngle=turntable.rotation.y;
+    const turntable = room.getObjectByName('archive_turntable_platform');
+    if (!floor || !turntable) throw Error('Room objects unavailable');
+    archivePivots.set(room, [turntable, turntable.rotation.y]);
     room.visible=false;
     scene.add(room);
   })().catch(error=>{getRoom.ready=null;throw error;});
+}
+function getOrbitalRoom() {
+  return getOrbitalRoom.ready ??= (async () => {
+    const candidate = (await loadModel('orbital-room.glb')).scene;
+    const turntable = candidate.getObjectByName('archive_turntable_platform');
+    candidate.traverse(object => {
+      if (object.material?.name === 'Orbital image projection' && object.material.map) {
+        object.material.map.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+      }
+    });
+    if (!turntable) throw Error('Archive unavailable');
+    archivePivots.set(candidate, [turntable, turntable.rotation.y]);
+    candidate.visible = false;
+    scene.add(candidate);
+    orbitalRoom = candidate;
+  })().catch(error => { getOrbitalRoom.ready = null; throw error; });
 }
 function getFloor() {
   return getFloor.ready??=(async()=>{
@@ -114,6 +132,8 @@ async function choose(next) {
     let splat;
     if (next === 'uv') {
       await Promise.all([getRoom(), getFloor()]);
+    } else if (next === 'uv-room') {
+      await getOrbitalRoom();
     } else {
       const selected = getSplat(next === 'orbital' ? 'orbital' : 'original');
       splat = next === 'mixed' ? (await Promise.all([selected, getRoom()]))[0] : await selected;
@@ -124,8 +144,9 @@ async function choose(next) {
     visibleSplat = splat;
     mode = next;
     if (room) room.visible = next === 'mixed' || next === 'uv';
+    if (orbitalRoom) orbitalRoom.visible = next === 'uv-room';
     showFloor();
-    $('turn').disabled = !room?.visible;
+    $('turn').disabled = !(room?.visible || orbitalRoom?.visible);
     setStatus('');
     frameDirty=true;
     viewReady=true;
@@ -136,7 +157,7 @@ async function choose(next) {
     if(viewReady){
       for(const button of options)button.setAttribute('aria-pressed',String(button.dataset.mode===mode));
       $('description').textContent=descriptions[mode];
-      $('turn').disabled = !room?.visible;
+      $('turn').disabled = !(room?.visible || orbitalRoom?.visible);
     }
     setStatus('Esta vista no cargó. Volvé a elegirla para reintentar.');
   }
@@ -237,14 +258,18 @@ try{
     previous=now;
     if(layoutDirty)layout();
     move(dt);
-    if(turntable&&room.visible&&Math.abs(turntable.rotation.y-turnAngle)>.001){
-      const step=Math.min(1,dt*10);
-      turntable.rotation.y+=(turnAngle-turntable.rotation.y)*step;
-      frameDirty=true;
+    const pivot = archivePivots.get(mode === 'uv-room' ? orbitalRoom : room);
+    if (pivot && (mode === 'uv-room' || room?.visible)) {
+      const [turntable, initialAngle] = pivot;
+      const delta = initialAngle + turnAngle - turntable.rotation.y;
+      if (Math.abs(delta) > .001) {
+        turntable.rotation.y += delta * Math.min(1, dt * 10);
+        frameDirty = true;
+      }
     }
     if(!frameDirty||!viewReady)return;
     frameDirty=false;
-    visibleSplat?.sort(camera, mode === 'mixed');
+    visibleSplat?.sort(camera, mode === 'mixed', reduced.checked);
     renderer.render(scene,camera);
     if(!painted){$('still').hidden=true;painted=true;}
   }

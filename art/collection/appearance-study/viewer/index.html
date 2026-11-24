@@ -17,7 +17,8 @@
         <button data-mode="splat" aria-pressed="true">Splat puro</button>
         <button data-mode="orbital" aria-pressed="false">Splat orbital</button>
         <button data-mode="mixed" aria-pressed="false">Splat interactivo</button>
-        <button data-mode="uv" aria-pressed="false">Textura UV</button>
+        <button data-mode="uv" aria-pressed="false">Piso A/B</button>
+        <button data-mode="uv-room" aria-pressed="false">Sala orbital UV</button>
       </nav>
       <div class="actions" id="floor-options" role="group" aria-label="Comparar el piso" hidden>
         <button id="floor-view">Mirar el piso</button>
@@ -46,6 +47,15 @@
       <p id="description">La sala se ve como una nube de gaussianas. La vitrina es parte de la imagen.</p>
       <p class="hint">Arrastrá para mirar. Usá WASD o las flechas en pantalla para moverte.</p>
     </footer>
+    <details id="sources">
+      <summary>Imágenes de ImageGen usadas como fuente</summary>
+      <div class="source-grid">
+        <figure><img src="source-fixtures.jpg" width="840" height="560" loading="lazy" alt="Diseño orbital de la mesa, la vitrina, la lámpara y los estantes desde varios ángulos"><figcaption>Hoja de diseño de los objetos</figcaption></figure>
+        <figure><img src="source-entry.jpg" width="840" height="560" loading="lazy" alt="Vista generada desde la entrada"><figcaption>Entrada · imagen fuente</figcaption></figure>
+        <figure><img src="source-bench.jpg" width="840" height="560" loading="lazy" alt="Vista generada por encima de la mesa de trabajo"><figcaption>Mesa · imagen fuente</figcaption></figure>
+        <figure><img src="source-archive.jpg" width="840" height="560" loading="lazy" alt="Vista generada cerca de la vitrina"><figcaption>Vitrina · imagen fuente</figcaption></figure>
+      </div>
+    </details>
   </main>
 </body>
 </html>

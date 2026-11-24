@@ -171,3 +171,42 @@ camera comparison. Switching **Material original** and **ImageGen +
 sombras** swaps the two floor meshes in place, preserving the camera, room,
 and interaction state. The generated result changes both the limestone
 appearance and the baked light contribution.
+
+## Nine-view detail comparison and full-room UV
+
+Run the capture command with `CAPTURE_DIRECTORY --fine` for 1152 × 768
+references. The mode includes the six established cameras plus the threshold,
+archive and bench cameras. The three new edits use the exact corresponding
+Blender render first, the established entry and a second matching orbital
+render as the appearance references, and the fixture sheet for recurring
+object details. The matching file stems are `threshold`, `archive` and
+`bench`. Retain the nine selected ImageGen masters and the object sheet.
+The reference images exposed in the viewer are resized JPEG derivatives.
+
+Run `fit.py CAPTURE_DIRECTORY --detail` to fit 626,496 oriented Gaussians at
+2.4 cm spacing. The compact file stores 12 bytes per point and is projected
+from the same nine output images. Stage `orbital-detail.bin` in place of the
+earlier `orbital.splat`. The viewer culls points outside the camera and
+subsamples the detail fit for its lightweight mode. The mesh scaffolding
+calibrates color projection with first-hit depth and normals. Independent
+image edits can still place edges and reflections differently, which
+limits sharpness even when more positions receive color.
+
+Run the following with Blender 5.2.2, its NumPy distribution and FFmpeg:
+
+```sh
+blender --background --python-exit-code 1 \
+  --python art/collection/appearance-study/surface-bake.py -- \
+  public/room-art/matter-workshop.glb CAPTURE_DIRECTORY OUTPUT_DIRECTORY
+```
+
+Stage `orbital-room.glb` with the viewer. The script unwraps all opaque
+room surfaces into an original 2048 × 2048 atlas. For each texel it
+selects visible source projections using depth and face direction. The
+existing geometry therefore defines edges and openings even when source
+views disagree. Hidden, occluded and out-of-frame portions use a matching
+material palette. The archive glass and rotary display retain separate
+materials and meshes. The older two-material floor comparison remains
+available under **Piso A/B**. Keep one bounded working directory and
+retain the previous published comparator through the existing history
+policy.
