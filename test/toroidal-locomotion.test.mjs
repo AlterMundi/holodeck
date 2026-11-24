@@ -96,3 +96,21 @@ test('the seeded shore supports wading, a deep crossing and return to dry land',
   assert.equal(terrainWaterDepth(motion.u,motion.v),0);
   assert.ok(motion.v>.27);
 });
+
+test('a continuous route completes the ring on the production seed', () => {
+  const motion = new ToroidalLocomotion({u:0,v:.25});
+  let crossed=false;
+  let traversedWater=false;
+  for(let frame=0;frame<45*60*10;frame++){
+    const previous=motion.u;
+    motion.update(.1,{right:1,sprint:true});
+    traversedWater ||= terrainWaterDepth(motion.u,motion.v)>2;
+    if(motion.u<previous){
+      crossed=true;
+      break;
+    }
+  }
+  assert.equal(crossed,true);
+  assert.equal(traversedWater,true);
+  assert.equal(motion.v,.25);
+});

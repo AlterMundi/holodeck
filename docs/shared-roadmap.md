@@ -482,9 +482,14 @@ A seeded water basin near the house now streams its surface with the same
 balanced tiles. The water and ground agree on the radial level, including edge
 stitching. The paired browser trial walked from a dry bank into deep water,
 confirmed the avatar was supported near the surface, and walked back out.
-The fixture did not supply the Collection asset selection. Cave traversal,
-the full circuit, performance qualification on the new terrain and production
-release remain open.
+The first cave adds two open mouths and a connected two-chamber passage.
+The local rock shell registers the same triangles for rendering and avatar
+collision. The paired browser fixture walked through, measured the collider
+overhead and observed the other side from the independent participant.
+An accelerated fixed-step check completed one full circuit on the selected
+terrain seed, including water. The uninterrupted interactive circuit, natural
+wayfinding, performance qualification and production release remain open.
+The fixture did not supply the Collection asset selection.
 
 
 ## Delivery sequence and cards

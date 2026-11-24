@@ -1,3 +1,4 @@
+import {ToroidalCave} from './toroidal-cave.mjs';
 import {TOROIDAL_TERRAIN} from './toroidal-terrain.mjs';
 import {ToroidalTerrainRenderer} from './toroidal-terrain-renderer.mjs';
 import {bindToroidalMml} from './toroidal-mml.mjs';
@@ -624,7 +625,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         return configure({...configuration,workshop:{...configuration.workshop,url:arrivalAddress}},token);
       };
     }
-    let nextDressing=0, ring=null, releaseRadialMovement=null;
+    let nextDressing=0, ring=null, cave=null, releaseRadialMovement=null;
     outdoorReady=()=>outsideRing()?
       ring?.group.children.length>0&&Boolean(document.querySelector('#workshop #ring-house')?.isConnected):
       Boolean(geometryProbe?.snapshot());
@@ -632,7 +633,11 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const position=client.getLocalCharacterState()?.position;
       if(outsideRing()){
         ring??=new ToroidalTerrainRenderer(renderer.mmlCompositionScene.group,base);
-        if(position)ring.update(position,rendererBudget.lightweight);
+        if(position){
+          ring.update(position,rendererBudget.lightweight);
+          cave??=new ToroidalCave(renderer.mmlCompositionScene.group,renderer.mmlCompositionScene.mmlScene);
+          cave.update(position);
+        }
         if(position&&!moving&&!needsSync&&networkScope===activeSpace.id&&activeSpace.terrainRun){
           const yaw=client.getCharacterManager().localController?.networkState.rotation.eulerY;
           if(Number.isFinite(yaw)&&[position.x,position.y,position.z].every(Number.isFinite)){
@@ -642,7 +647,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         }
       }else if(ring){
         ring.dispose();
-        ring=null;
+        cave?.dispose();
+        ring=cave=null;
       }
       const roomReady=inside&&networkScope===activeSpace.id&&entryRoomReady(remoteScene,roomModel);
       const waitingForRoomFrame=inside&&moving&&!roomReady;
@@ -712,7 +718,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
       }
     };
-    renderer.dispose=()=>{releaseRadialMovement?.();ring?.dispose();frameBudget.dispose();removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{releaseRadialMovement?.();ring?.dispose();cave?.dispose();frameBudget.dispose();removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
       releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing);
       options.onInitialized();
