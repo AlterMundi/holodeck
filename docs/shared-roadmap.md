@@ -494,9 +494,14 @@ held movement input through all eight sectors and the wrapping seam. The run
 drew 43 checkpoints, including 21 in water. Simulation time was accelerated
 between those renders. The separate normal-speed software measurements used
 two browsers on one host and are not a hardware performance claim.
+The single-browser Raspberry Pi 5 baseline used Broadcom V3D. It reached
+the exterior in 8.05 s with the lightweight profile over the test tunnel.
+Over 141 moving intervals per profile at 660 × 445 pixels, lightweight
+measured 16.7 ms median and 18.1 ms p95, and automatic measured 16.9 ms and
+21.7 ms. This short route is a rendering baseline for the visual pass.
 The fixture did not supply the Collection asset selection. A cinematic
-rendering pass, physical performance comparison and production release
-remain open.
+rendering pass, comparison on the selected visual candidate and production
+release remain open.
 
 
 ## Delivery sequence and cards
