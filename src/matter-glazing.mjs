@@ -6,6 +6,7 @@ const opticalMaterials=new Set(['Clear archive glazing','Clear laminate, service
 
 export function useLightweightMatterGlazing(group){
   const alternatives=new Map();
+  const originals=new Map();
   const replace=material=>{
     if(!opticalMaterials.has(material?.name)||!(material.transmission>0))return material;
     if(!alternatives.has(material)){
@@ -21,9 +22,17 @@ export function useLightweightMatterGlazing(group){
   };
   group.traverse(object=>{
     if(!object.isMesh)return;
-    object.material=Array.isArray(object.material)?object.material.map(replace):replace(object.material);
+    const original=object.material;
+    const candidate=Array.isArray(original)?original.map(replace):replace(original);
+    if(Array.isArray(original)?candidate.some((material,index)=>material!==original[index]):candidate!==original){
+      originals.set(object,original);
+      object.material=candidate;
+    }
   });
-  return ()=>{for(const material of alternatives.values())material.dispose();};
+  return ()=>{
+    for(const [object,original] of originals)object.material=original;
+    for(const material of alternatives.values())material.dispose();
+  };
 }
 
 function orbitalPane(name){

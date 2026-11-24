@@ -11,10 +11,24 @@ function display({adaptive=true,dpr=3,startAtNative=false,lightweight=false}={})
   }};
   const renderer={composer:{renderer:webgl},fitContainer:()=>webgl.setPixelRatio(dpr)};
   const visibility=new EventTarget();
-  const {sample,dispose}=capWorldPixelRatio(renderer,{adaptive,startAtNative,lightweight,clock:()=>now,visibility});
-  return {webgl,allocations,parent,renderer,sample,dispose,visibility,
+  const {sample,setLightweight,dispose}=capWorldPixelRatio(renderer,{adaptive,startAtNative,lightweight,clock:()=>now,visibility});
+  return {webgl,allocations,parent,renderer,sample,setLightweight,dispose,visibility,
     frames(interval,count,ready=true){for(let index=0;index<count;index++){now+=interval;sample(ready);}}};
 }
+
+test('changing graphics in place reduces the buffer and resumes automatic sampling',()=>{
+  const view=display({dpr:2});
+  view.setLightweight(true);
+  assert.equal(view.webgl.getPixelRatio(),.55);
+  assert.equal(view.webgl.shadowMap.enabled,false);
+  view.frames(16,1600);
+  assert.equal(view.webgl.getPixelRatio(),.55);
+  view.setLightweight(false);
+  assert.equal(view.webgl.getPixelRatio(),2);
+  assert.equal(view.webgl.shadowMap.enabled,true);
+  view.frames(60,5);
+  assert.equal(view.webgl.getPixelRatio(),1.5);
+});
 
 test('sustained slow touch frames lower density and reserve recovery for stable headroom',()=>{
   const view=display();

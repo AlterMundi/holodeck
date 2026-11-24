@@ -15,13 +15,14 @@ export function capWorldPixelRatio(renderer,{adaptive=false,startAtNative=false,
   // Both pinned MML resize paths use this Three.js renderer, which reallocates
   // the drawing buffer without changing CSS layout when its ratio changes.
   const webgl=renderer.composer?.renderer;
-  if(!webgl)return {sample(){},dispose(){}};
+  if(!webgl)return {sample(){},setLightweight(){},dispose(){}};
   const setPixelRatio=webgl.setPixelRatio.bind(webgl);
   const shadowMap=webgl.shadowMap;
   const shadowsEnabled=shadowMap?.enabled===true;
   const lowest=TIERS.length-1;
-  const adjust=adaptive&&!lightweight;
-  let requested=1,width=0,height=0,tier=lightweight?lowest:adjust&&startAtNative?TIERS.indexOf(1):0;
+  let adjust=adaptive&&!lightweight;
+  const initialTier=()=>lightweight?lowest:adjust&&startAtNative?TIERS.indexOf(1):0;
+  let requested=1,width=0,height=0,tier=initialTier();
   let previousFrame=null,slow=0,fast=0;
   let nextStep=0,recoverAfter=tier>0?clock()+RECOVER_MS:0;
 
@@ -46,7 +47,7 @@ export function capWorldPixelRatio(renderer,{adaptive=false,startAtNative=false,
     requested=value;width=nextWidth;height=nextHeight;applyRatio();
   };
   renderer.fitContainer();
-  if(adjust)visibility?.addEventListener('visibilitychange',resetSamples);
+  if(adaptive)visibility?.addEventListener('visibilitychange',resetSamples);
 
   function sample(ready){
     if(!adjust)return;
@@ -69,8 +70,17 @@ export function capWorldPixelRatio(renderer,{adaptive=false,startAtNative=false,
     nextStep=now+STEP_INTERVAL_MS;
     recoverAfter=now+RECOVER_MS;
   }
-  return {sample,dispose(){
-    if(adjust)visibility?.removeEventListener('visibilitychange',resetSamples);
+  return {sample,setLightweight(value){
+    if(lightweight===value)return;
+    lightweight=value;
+    adjust=adaptive&&!lightweight;
+    tier=initialTier();
+    resetSamples();
+    nextStep=0;
+    recoverAfter=tier>0?clock()+RECOVER_MS:0;
+    applyRatio();
+  },dispose(){
+    if(adaptive)visibility?.removeEventListener('visibilitychange',resetSamples);
     if(shadowsEnabled)shadowMap.enabled=true;
   }};
 }

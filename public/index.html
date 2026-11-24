@@ -207,15 +207,22 @@ body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-controls
   body:not(.inside-house):has(#garden-create:not([hidden])) #play-near{top:265px}
   body:not(.inside-house):has(#garden-create:not([hidden])):has(#visit-near[hidden]) #play-near{top:205px}
 }
-#appearance-open{position:fixed;right:22px;bottom:max(24px,env(safe-area-inset-bottom));z-index:20;min-height:44px}
-#appearance-dialog{width:min(390px,calc(100vw - 24px));box-sizing:border-box;color:var(--ink);background:#173339;border-radius:18px;padding:22px;border:1px solid var(--line)}
-#appearance-dialog::backdrop{background:#07181bbb}
+#view-tools{position:fixed;right:22px;bottom:max(24px,env(safe-area-inset-bottom));z-index:20;display:flex;gap:8px}
+#video-open{display:grid;place-items:center;width:44px;padding:0}
+.video-icon{display:block;width:20px;height:14px;border:1.5px solid currentColor;border-radius:3px;position:relative}
+.video-icon::after{content:'';position:absolute;inset:auto 5px -4px;border-bottom:1px solid currentColor}
+#video-dialog,#appearance-dialog{width:min(390px,calc(100vw - 24px));box-sizing:border-box;color:var(--ink);background:var(--control-fill,#173339);border-radius:18px;padding:22px;border:1px solid var(--line)}
+#video-dialog::backdrop,#appearance-dialog::backdrop{background:#07181bbb}
+#video-dialog label,#video-dialog select{display:block}
+#video-dialog select{width:100%;min-height:44px;margin:6px 0 16px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);font:inherit}
+#video-dialog kbd{display:inline-block;margin:8px 0 12px;color:var(--muted)}
+#video-status:empty{display:none}
 #appearance-dialog h2{margin:0 0 18px}
 #appearance-dialog label,#appearance-dialog select{display:block}
 #appearance-dialog select{box-sizing:border-box;width:100%;min-height:44px;margin:6px 0 16px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:#10272c;color:var(--ink);font:inherit}
 #appearance-status:empty{display:none}
-body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-visit:not([hidden]):not(.is-walking)) #appearance-open{display:none}
-@media(max-width:740px){#appearance-open{right:12px;top:12px;bottom:auto;padding:8px 12px;font-size:14px}#hud{max-width:calc(100vw - 120px)}}
+body:has(#conversation-panel:not([hidden])) #view-tools,body:has(#content-visit:not([hidden]):not(.is-walking)) #view-tools{display:none}
+@media(max-width:740px){#view-tools{right:12px;top:12px;bottom:auto}#appearance-open{padding:8px 12px;font-size:14px}#hud{max-width:calc(100vw - 168px)}}
 #world-entry{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px;background:#183d42}
 .world-entry-card{width:min(360px,100%);border:1px solid var(--line);border-radius:20px;padding:26px;background:#102d31}
 .world-entry-card h1{margin-bottom:12px}.world-entry-card p{margin-bottom:0}.world-entry-card button{margin-top:18px}
@@ -227,7 +234,19 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
   <noscript><p>Activá JavaScript para entrar al mundo.</p></noscript>
 </div></section>
 <header id="hud" class="glass"><span class="brand-mark" aria-hidden="true"></span><div><small>Holodeck</small><h1>Plaza de llegada</h1><div id="people">Entrando a la plaza…</div></div><button id="sound" type="button" aria-pressed="false" aria-label="Activar sonido del mundo">Sonido</button></header>
-<button id="appearance-open" type="button" class="glass" aria-haspopup="dialog">Apariencia</button>
+<div id="view-tools">
+  <button id="appearance-open" type="button" class="glass" aria-haspopup="dialog">Apariencia</button>
+  <button id="video-open" type="button" class="glass" aria-label="Video" title="Video" aria-haspopup="dialog"><span class="video-icon" aria-hidden="true"></span></button>
+</div>
+<dialog id="video-dialog" aria-labelledby="video-title">
+  <h2 id="video-title">Video</h2>
+  <label for="video-quality">Gráficos</label>
+  <select id="video-quality"><option value="auto">Automáticos</option><option value="light">Livianos</option></select>
+  <button id="video-fullscreen" type="button" aria-pressed="false" aria-keyshortcuts="Control+Alt+F">Pantalla completa</button>
+  <div><kbd>Ctrl + Alt + F</kbd></div>
+  <p id="video-status" role="status"></p>
+  <button id="video-close" type="button">Cerrar</button>
+</dialog>
 <dialog id="appearance-dialog" aria-labelledby="appearance-title">
   <h2 id="appearance-title">Apariencia</h2>
   <div id="room-style" hidden>
@@ -299,12 +318,14 @@ window.SESSION_TOKEN="SESSION.TOKEN.PLACEHOLDER";
   const status=document.querySelector('#world-entry-status');
   const retry=document.querySelector('#world-entry-retry');
   const graphics=document.querySelector('#world-entry-graphics');
-  const light=new URLSearchParams(location.search).get('graficos')==='livianos';
-  graphics.textContent=light?'Usar gráficos automáticos':'Entrar con gráficos livianos';
+  const light=()=>new URLSearchParams(location.search).get('graficos')==='livianos';
+  const showGraphicsChoice=()=>{graphics.textContent=light()?'Usar gráficos automáticos':'Entrar con gráficos livianos';};
+  showGraphicsChoice();
+  window.addEventListener('holodeck:graphics-changed',showGraphicsChoice);
   graphics.hidden=false;
   graphics.onclick=()=>{
     const next=new URL(location.href);
-    if(light)next.searchParams.delete('graficos');
+    if(light())next.searchParams.delete('graficos');
     else next.searchParams.set('graficos','livianos');
     location.replace(next);
   };

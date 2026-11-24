@@ -24,6 +24,8 @@ test('lightweight glazing shares local replacements without changing cached or u
   glass.addEventListener('dispose',()=>assert.fail('Cached material was disposed'));
   release();
   assert.equal(disposals,1);
+  assert.equal(first.material,glass);
+  assert.deepEqual(second.material,[other,glass]);
 });
 
 test('orbital panes switch locally and restore the selected graphics fallback',()=>{
@@ -50,4 +52,5 @@ test('orbital panes switch locally and restore the selected graphics fallback',(
   binding.dispose();
   assert.equal(mixed.material,fallback);
   releaseFallback();
+  assert.deepEqual(mixed.material,[archive,unrelated,service]);
 });

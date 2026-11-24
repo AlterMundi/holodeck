@@ -2,6 +2,7 @@ import {RemoteDocumentWrapper} from '@mml-io/mml-web';
 import {RoomSceneCache,roomArtURL} from './room-scene-cache.mjs';
 import {constrainInteriorCamera} from './interior-camera.mjs';
 import {capWorldPixelRatio,usesLightGraphics} from './render-pixel-budget.mjs';
+import {bindVideoSettings} from './video-settings.mjs';
 import {bindOrbitalMatterGlazing,useLightweightMatterGlazing} from './matter-glazing.mjs';
 import {bindMatterStyle,loadMatterStyleImages} from './matter-style.mjs';
 import {projectRoomSurface} from '../art/collection/appearance-study/viewer/surface-projection.mjs';
@@ -99,6 +100,20 @@ class HolodeckExperienceClient extends Networked3dWebExperienceClient {
 
 const rendererBudget={adaptive:true,startAtNative:matchMedia('(pointer: coarse)').matches,
   lightweight:usesLightGraphics(location.search)};
+let videoFrameBudget,updateRoomGlazing=()=>{};
+function createFrameBudget(renderer){
+  return videoFrameBudget=capWorldPixelRatio(renderer,rendererBudget);
+}
+bindVideoSettings({document,window,lightweight:rendererBudget.lightweight,onGraphics:lightweight=>{
+  rendererBudget.lightweight=lightweight;
+  videoFrameBudget?.setLightweight(lightweight);
+  updateRoomGlazing();
+  const page=new URL(location.href);
+  if(lightweight)page.searchParams.set('graficos','livianos');
+  else page.searchParams.delete('graficos');
+  history.replaceState(history.state,'',page);
+  window.dispatchEvent(new Event('holodeck:graphics-changed'));
+}});
 
 function entryRoomReady(root,model=root?.querySelector('m-model#room-art[src]')){
   return root?.isConnected===true&&(!model||model.modelGraphics?.hasLoadedModel()===true);
@@ -146,7 +161,7 @@ function startInterior(space){
     createRenderer:options=>{
       constrainInteriorCamera(options,()=>space.id);
       const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
-      const frameBudget=capWorldPixelRatio(renderer,rendererBudget);
+      const frameBudget=createFrameBudget(renderer);
       galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
       galleryModels.sync(visitor.entries);
       const picker=new PublicWorldPicker({document,canvas:options.targetElement.querySelector(':scope > canvas'),
@@ -210,6 +225,17 @@ let updateDoor=()=>{},remoteScene=null,roomModel=null,networkScope=null,arrival=
 let releaseLightweightGlazing=null;
 let matterStyleScope=null,selectedMatterStyle=null;
 let floorSplatScope=null;
+updateRoomGlazing=()=>{
+  if(!roomModel?.modelGraphics?.hasLoadedModel()||!activeSpace?.collectionShelves)return;
+  const group=roomModel.getContainer();
+  matterStyleScope?.glazing.dispose();
+  releaseLightweightGlazing?.();
+  releaseLightweightGlazing=rendererBudget.lightweight?useLightweightMatterGlazing(group):null;
+  if(matterStyleScope){
+    matterStyleScope.glazing=bindOrbitalMatterGlazing(group);
+    matterStyleScope.glazing.apply(matterStyleScope.style.orbitalGlazing===true);
+  }
+};
 const roomStyle=document.querySelector('#room-style'), roomStyleChoice=document.querySelector('#room-style-choice');
 const roomStyleStatus=document.querySelector('#room-style-status');
 function styleStatus(message){
@@ -508,7 +534,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       return position&&position.x>21&&position.x<32&&position.z<-6&&position.z>-26?'valley-cave':null;
     });
     const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
-    const frameBudget=capWorldPixelRatio(renderer,rendererBudget);
+    const frameBudget=createFrameBudget(renderer);
     galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
     collectionShelves=new CollectionShelves({base,scene:renderer.mmlCompositionScene.group,panel:document.querySelector('#collection-shelf'),
       archivePanel:document.querySelector('#collection-archive'),worktablePanel:document.querySelector('#collection-worktable'),
