@@ -416,6 +416,14 @@ contract for later rooms, objects and outdoor places.
    retained results after leaving and returning. Verify the access boundary
    with an authorized and an unauthorized visitor.
 
+3. Add a replay of a bounded workday. Show simultaneous work avatars, station
+   changes and artifacts appearing at their historical revisions. Let the same
+   timeline drive the web work map and selected inputs for Bitácora and
+   reviewed memory consolidation. Preserve seekable snapshots and source events
+   so replay works when nobody watched the live session. Later align authorized
+   sensory observations to the spatial timeline. See the
+   [initial research and experiment](research/2026-11-24-work-projection-replay.md).
+
 ## First production world — continuous torus
 
 Build a shared seeded landscape for traversal. Both angular terrain coordinates

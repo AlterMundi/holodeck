@@ -80,3 +80,12 @@ App selection, seven CLI/bridge selections and actual model/human use are separa
 states; the current deployment evidence is in STATUS and the owning operations
 record. No claim of physical-device or human shared acceptance follows from a
 controlled browser or transport check.
+
+## Planned temporal work projections
+
+The bounded Room journal above records observed world changes and explicitly
+reports eviction and run breaks. The planned day player also needs attributed
+task and pinned artifact revisions plus a reconstructible spatial projection.
+The [architecture](architecture.md#the-same-work-through-time) and
+[research](research/2026-11-24-work-projection-replay.md) describe the extension.
+The current activity dialog does not provide day replay.

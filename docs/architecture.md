@@ -111,6 +111,24 @@ events, and each scene may render independently from the same projection. A
 stale or unavailable session keeps its last confirmed work visible within its
 scope and offers a clear unavailable state for conversation.
 
+### The same work through time
+
+Live, timeline and playback views derive from the same authorized state changes.
+Retain a bounded sequence of confirmed task, place and artifact changes with
+source order, revisions and preserved scene references. Checkpoints plus
+subsequent changes let a viewer seek to a time and reconstruct the work in
+either 3D or the web work map. Temporal ordering must account for concurrent
+tasks and source clock uncertainty. Rendered reconstructions distinguish
+verified state, explicitly recorded views and inferred movement between work
+locations. Unknown or unretained states remain visible as gaps.
+
+A day replay can feed a selected Bitácora story or propose an evidence-backed
+episode for reviewed memory consolidation, including the spatial projection
+then available to a human. Preserve observation provenance and audience
+restrictions. The future sensory layer can place an authorized physical
+observation on the same timeline with its own resource, time, frame and evidence
+type. See [work projection replay research](research/2026-11-24-work-projection-replay.md).
+
 ## Transport authentication context
 
 The pinned upstream server callbacks now forward their actual WebSocket context.
