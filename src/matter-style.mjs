@@ -1,4 +1,4 @@
-import {NoColorSpace,ShaderChunk,Source,Vector2,Vector3} from 'three';
+import {NoColorSpace,RepeatWrapping,ShaderChunk,Source,Vector2,Vector3} from 'three';
 
 const diffuseSamples={
   map:{chunk:'map_fragment',sampler:'map',uv:'vMapUv'},
@@ -12,18 +12,25 @@ const floorReflection=/* glsl */`
   uniform vec2 roomEmitterHalfSize;
   uniform vec2 roomEmitterSpread;
   uniform vec3 roomEmitterRadiance;
+  uniform sampler2D roomDeckDetail;
+  uniform float roomDeckTileScale;
 
-  vec3 roomFloorReflection(){
+  vec3 roomFloorFinish(vec3 diffuse){
     vec3 position = roomSurfacePosition;
-    if (abs(position.y - roomReceiverHeight) > 0.006) return vec3(0.0);
+    if (abs(position.y - roomReceiverHeight) > 0.006) return diffuse;
+    vec2 deckUV = vec2(position.x, -position.z) * roomDeckTileScale;
+    vec3 tile = texture2D(roomDeckDetail, deckUV).rgb;
+    float luminance = dot(tile, vec3(0.2126, 0.7152, 0.0722));
+    float stone = smoothstep(0.052, 0.133, luminance);
+    diffuse *= mix(0.76, 1.06, stone) * clamp(0.90 + 0.8 * luminance, 0.90, 1.16);
     vec3 view = normalize(cameraPosition - position);
-    if (view.y <= 0.02) return vec3(0.0);
+    if (view.y <= 0.02) return diffuse;
     vec3 ray = reflect(-view, vec3(0.0, 1.0, 0.0));
     vec2 hit = position.xz + ray.xz * ((roomEmitterCenter.y - position.y) / ray.y);
     vec2 outsideEmitter = max(abs(hit - roomEmitterCenter.xz) - roomEmitterHalfSize * 0.75, 0.0);
     vec2 falloff = outsideEmitter / roomEmitterSpread;
     float coverage = exp(-dot(falloff, falloff));
-    return roomEmitterRadiance * coverage;
+    return diffuse + roomEmitterRadiance * (coverage * mix(0.30, 1.0, stone));
   }
 `;
 
@@ -37,6 +44,8 @@ function diffuseLayers(material){
     roomEmitterHalfSize:{value:new Vector2()},
     roomEmitterSpread:{value:new Vector2()},
     roomEmitterRadiance:{value:new Vector3()},
+    roomDeckDetail:{value:null},
+    roomDeckTileScale:{value:1},
   };
   material.customProgramCacheKey=()=>channel
     ?'room-diffuse-layers:'+channel+(reflectionEnabled?':reflection':''):'';
@@ -58,12 +67,12 @@ function diffuseLayers(material){
         vec3 light = exp2(6.0 * texture2D(roomIrradiance, uv).rgb) - 1.0;
         vec3 color = albedo * (1.40 * light + 0.063);
         vec3 diffuse = color / (1.0 + 0.33 * max(max(color.r, color.g), color.b));
-        return diffuse${reflectionEnabled?' + roomFloorReflection()':''};
+        return ${reflectionEnabled?'roomFloorFinish(diffuse)':'diffuse'};
       }
     `+shader.fragmentShader.replace(`#include <${chunk}>`,
       ShaderChunk[chunk].replace(sample,`vec4(roomLitDiffuse(${sample}.rgb, ${uv}), 1.0)`));
   };
-  return (next,texture,emitter)=>{
+  return (next,texture,emitter,detail)=>{
     irradiance.value=texture;
     if(emitter){
       reflection.roomReceiverHeight.value=emitter.receiverHeight;
@@ -71,6 +80,8 @@ function diffuseLayers(material){
       reflection.roomEmitterHalfSize.value.fromArray(emitter.size).multiplyScalar(.5);
       reflection.roomEmitterSpread.value.fromArray(emitter.spread);
       reflection.roomEmitterRadiance.value.fromArray(emitter.radiance);
+      reflection.roomDeckDetail.value=detail;
+      reflection.roomDeckTileScale.value=emitter.tilesPerMeter;
     }
     if(next!==channel||reflectionEnabled!==!!emitter){
       channel=next;
@@ -94,17 +105,17 @@ export function bindMatterStyle(group,catalog){
     }
   }
   const materials=new Map();
-  const textures=new Map();
-  const dataTextures=new Map();
-  const variant=(source,image,data=false)=>{
+  const textures={color:new Map(),data:new Map(),tile:new Map()};
+  const variant=(source,image,mode='color')=>{
     if(!source||!image)return source;
-    const cache=data?dataTextures:textures;
+    const cache=textures[mode];
     if(!cache.has(source))cache.set(source,new Map());
     const variants=cache.get(source);
     if(!variants.has(image)){
       const texture=source.clone();
       texture.source=new Source(image);
-      if(data)texture.colorSpace=NoColorSpace;
+      if(mode==='data')texture.colorSpace=NoColorSpace;
+      if(mode==='tile')texture.wrapS=texture.wrapT=RepeatWrapping;
       texture.needsUpdate=true;
       variants.set(image,texture);
     }
@@ -128,8 +139,10 @@ export function bindMatterStyle(group,catalog){
     apply(style,images){
       for(const [source,{material,role,channels,setLayers}] of materials){
         const layers=style.diffuseLayers?.[role];
-        const light=layers?variant(source[layers.channel],images?.get(layers.irradiance),true):null;
-        setLayers(light?layers.channel:undefined,light,light?layers.reflection:undefined);
+        const light=layers?variant(source[layers.channel],images?.get(layers.irradiance),'data'):null;
+        const reflection=light?layers.reflection:undefined;
+        const detail=reflection?variant(source[layers.channel],images?.get(reflection.detail),'tile'):null;
+        setLayers(light?layers.channel:undefined,light,reflection,detail);
         const overrides=style.materials[role];
         for(const channel of channels){
           const asset=layers?.channel===channel?layers.albedo:overrides?.[channel];
@@ -139,17 +152,19 @@ export function bindMatterStyle(group,catalog){
     },
     dispose(){
       for(const {material} of materials.values())material.dispose();
-      for(const variants of [...textures.values(),...dataTextures.values()])
-        for(const texture of variants.values())texture.dispose();
+      for(const cache of Object.values(textures))
+        for(const variants of cache.values())
+          for(const texture of variants.values())texture.dispose();
     },
   };
 }
 
 export async function loadMatterStyleImages(catalog,style,images,signal){
   const assets=new Set(Object.values(style.materials).flatMap(Object.values));
-  for(const {albedo,irradiance} of Object.values(style.diffuseLayers??{})){
+  for(const {albedo,irradiance,reflection} of Object.values(style.diffuseLayers??{})){
     assets.add(albedo);
     assets.add(irradiance);
+    if(reflection)assets.add(reflection.detail);
   }
   const missing=Array.from(assets).filter(id=>!images.has(id));
   if(!missing.length)return;

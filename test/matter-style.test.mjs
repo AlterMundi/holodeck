@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Group,Mesh,MeshBasicMaterial,MeshStandardMaterial,NoColorSpace,SRGBColorSpace,Texture} from 'three';
+import {Group,Mesh,MeshBasicMaterial,MeshStandardMaterial,NoColorSpace,RepeatWrapping,SRGBColorSpace,Texture} from 'three';
 import {bindMatterStyle} from '../src/matter-style.mjs';
 import {compileRoomLooks} from '../src/room-looks.mjs';
 import {createHash} from 'node:crypto';
@@ -72,9 +72,9 @@ test('layered diffuse uses linear light data and restores both material programs
     name:authored.surfaces['responsive-work-surfaces'],emissiveMap:source,
   }));
   const style=bindMatterStyle(new Group().add(shell,work),authored);
-  const albedo={width:1024},irradiance={width:1024};
+  const albedo={width:1024},irradiance={width:1024},tile={width:512};
   const layered=authored.looks.find(({id})=>id==='orbital-layered');
-  style.apply(layered,new Map([['orbital-albedo',albedo],['orbital-irradiance',irradiance]]));
+  style.apply(layered,new Map([['orbital-albedo',albedo],['orbital-irradiance',irradiance],['orbital-deck-detail',tile]]));
   for(const [material,channel,chunk] of [
     [shell.material,'map','map_fragment'],[work.material,'emissiveMap','emissivemap_fragment'],
   ]){
@@ -91,6 +91,9 @@ test('layered diffuse uses linear light data and restores both material programs
       assert.match(shader.fragmentShader,/reflect\(-view/);
       assert.equal(shader.uniforms.roomReceiverHeight.value,.1);
       assert.deepEqual(shader.uniforms.roomEmitterCenter.value.toArray(),[0,2.353,-.43]);
+      assert.equal(shader.uniforms.roomDeckDetail.value.image,tile);
+      assert.equal(shader.uniforms.roomDeckDetail.value.wrapS,RepeatWrapping);
+      assert.equal(shader.uniforms.roomDeckTileScale.value,.88);
       assert.equal(material.customProgramCacheKey(),'room-diffuse-layers:map:reflection');
     }else{
       assert.equal(shader.uniforms.roomEmitterCenter,undefined);

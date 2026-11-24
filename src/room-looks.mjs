@@ -57,8 +57,10 @@ export function compileRoomLooks(manifest,readAsset){
         if(channel!=='map'||!record(light)||!bounded(light.receiverHeight,-2,8)||
           !vector(light.center,3,-24,24)||light.center[1]<=light.receiverHeight||
           !vector(light.size,2,.05,8)||!vector(light.spread,2,.05,4)||
-          !vector(light.radiance,3,0,2))
+          !vector(light.radiance,3,0,2)||!identifier(light.detail)||
+          !Object.hasOwn(manifest.assets,light.detail)||!bounded(light.tilesPerMeter,.1,8))
           throw Error('Invalid room diffuse reflection');
+        used.add(light.detail);
       }
       used.add(albedo);
       used.add(irradiance);

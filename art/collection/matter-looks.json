@@ -21,6 +21,10 @@
     "orbital-irradiance": {
       "file": "orbital-irradiance.png",
       "sha256": "27114ec357213294efd7fe0d8f5ebccbc229257064e20f83571b5e7b5806cee2"
+    },
+    "orbital-deck-detail": {
+      "file": "orbital-deck-detail.jpg",
+      "sha256": "e1eb484f4ca1cd57dd48aa4e5210048fc78cc4d9a14750cf144a7e0910483a62"
     }
   },
   "looks": [
@@ -55,10 +59,26 @@
           "irradiance": "orbital-irradiance",
           "reflection": {
             "receiverHeight": 0.1,
-            "center": [0, 2.353, -0.43],
-            "size": [2.38, 0.2],
-            "spread": [0.63, 1.13],
-            "radiance": [0.36, 0.35, 0.33]
+            "center": [
+              0,
+              2.353,
+              -0.43
+            ],
+            "size": [
+              2.38,
+              0.2
+            ],
+            "spread": [
+              0.63,
+              1.13
+            ],
+            "radiance": [
+              0.36,
+              0.35,
+              0.33
+            ],
+            "detail": "orbital-deck-detail",
+            "tilesPerMeter": 0.88
           }
         },
         "responsive-work-surfaces": {
