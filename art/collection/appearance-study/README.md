@@ -116,3 +116,30 @@ cabinet shadow and some local tonal variation. Both variants rendered from
 the entry and a lateral camera. The 69,136-byte result describes the
 deterministic bake variant, with browser and physical-device qualification
 still open for the new texture route.
+
+## Playable three-way comparison
+
+The paired [Manipulación de Materia viewer](https://compaii.dmn.homes/access/sso/start?return=%2Fview%2F399b24e2533949bd9dadfc5b5ecc7695%3Fdisplay%3Dwork)
+keeps the same camera and navigation across the pure splat, the hybrid with a
+rotating archive platform, and the UV-mesh mode. The pure and hybrid views
+use the same lightweight guided fit. The UV result in this viewer is the
+ImageGen limestone with Blender-baked illumination, applied to the floor
+only. The static comparison image shows the two UV baking approaches.
+
+To reproduce the published package, copy the HTML and CSS from `viewer/`
+into a fresh staging directory and bundle `viewer/main.mjs` using the
+repository's pinned esbuild with `--bundle --minify --format=iife`, saving
+the output as `viewer.js`. Stage the workshop GLB from
+`public/room-art/matter-workshop.glb` as `room.glb`, the lightweight
+guided fit as `matter.splat`, the floor-only GLB as `floor.glb`, the
+UV comparison plate as `comparison.jpg`, and Three's license as
+`three-license.txt`. Retain at most the current and previous published
+derivatives and keep the capture and bake sources under their existing study.
+
+This comparison uses WebGL2 and sorts the Gaussian instances by camera
+depth. It needs no embedded workers or WASM in the Homes sandbox. Reduced
+graphics caps the drawing buffer at 260,000 pixels with antialiasing
+disabled. Chromium under the scoped artifact sandbox rendered all three
+views, preserved the camera across mode changes, moved using keyboard
+and emulated touch, and rotated the archive platform in the hybrid.
+Physical Raspberry Pi load time and frame rate remain unmeasured.

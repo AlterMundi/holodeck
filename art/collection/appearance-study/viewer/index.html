@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Manipulación de Materia · Holodeck</title>
+  <link rel="stylesheet" href="viewer.css">
+  <script defer src="viewer.js"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="location">Holodeck</p>
+      <h1>Manipulación de Materia</h1>
+      <nav aria-label="Representación de la sala">
+        <button data-mode="splat" aria-pressed="true">Splat puro</button>
+        <button data-mode="mixed" aria-pressed="false">Splat interactivo</button>
+        <button data-mode="uv" aria-pressed="false">Textura UV</button>
+      </nav>
+    </header>
+    <section id="view" aria-label="Sala 3D">
+      <canvas id="scene" aria-label="Vista 3D de Manipulación de Materia"></canvas>
+      <img id="still" src="comparison.jpg" alt="Comparación del piso con las dos texturas generadas">
+      <p id="status" role="status">Cargando la sala…</p>
+      <div id="movement" aria-label="Movimiento" hidden>
+        <button data-step="w" aria-label="Avanzar">↑</button>
+        <button data-step="a" aria-label="Izquierda">←</button>
+        <button data-step="s" aria-label="Retroceder">↓</button>
+        <button data-step="d" aria-label="Derecha">→</button>
+      </div>
+    </section>
+    <footer>
+      <div class="actions">
+        <button id="reset" disabled>Volver al inicio</button>
+        <button id="table" disabled>Mirar la mesa</button>
+        <button id="turn" disabled>Girar la vitrina</button>
+        <label><input id="light" type="checkbox"> Gráficos livianos</label>
+      </div>
+      <p id="description">La sala se ve como una nube de gaussianas. La vitrina es parte de la imagen.</p>
+      <p class="hint">Arrastrá para mirar. Usá WASD o las flechas en pantalla para moverte.</p>
+    </footer>
+  </main>
+</body>
+</html>
