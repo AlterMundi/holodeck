@@ -397,6 +397,25 @@ staged rail and video controls available for their remaining qualification. Futu
 iterations can extend material fidelity and close the physical lightweight
 device gaps using the same comparison route.
 
+## Live work and conversations in the world
+
+See [Live work in shared spaces](architecture.md#live-work-in-shared-spaces).
+Use Manipulador de Materia as the first integration site, with the A2UI
+operation surface developed with Proyección. Keep the same state and identity
+contract for later rooms, objects and outdoor places.
+
+1. Bind an actual running task to a spatial object or station and project its
+   progress plus approved artifact revisions from the owning application.
+   Show those updates with low latency in Holodeck and in a web view of the
+   same place. Close both views, advance the task, and verify that reopening
+   either shows the latest state before it resumes updates.
+2. Put the main avatar in the world and connect speaking to it with our
+   general Conversation. Show task avatars at the places where their work is
+   happening, and open the exact corresponding native session on interaction.
+   Verify two simultaneous tasks, their distinct conversation targets, and
+   retained results after leaving and returning. Verify the access boundary
+   with an authorized and an unauthorized visitor.
+
 ## First production world — continuous torus
 
 Build a shared seeded landscape for traversal. Both angular terrain coordinates

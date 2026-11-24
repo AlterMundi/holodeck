@@ -80,6 +80,37 @@ For physical perception and augmentation, reuse the human-selected
 [Daimon Integrators boundary](sensory-integration.md). Device-use status, sensor
 samples, derived world facts and model perception are distinct observations.
 
+## Live work in shared spaces
+
+A room, outdoor place or individual object can present the current work and
+retained results of an authorized task. Keep a stable place and subject
+reference, the originating task/session binding, and a revision of the
+projected state. The owning application or task publisher advances that
+state as work changes, including when no visitor is present. Retain enough
+state to open the latest projection after an absence, then subscribe to
+incremental updates with a fresh snapshot on a gap. Work can publish changes
+through its existing write path without starting another model turn.
+
+Use the same authorized projection behind the spatial renderer and a web view
+of the same places. A2UI carries incremental surfaces and actions for both
+where applicable. The underlying application validates each action and
+publishes the resulting state. Expensive drawing and asset loading belong to
+visitors who are looking at the surface. Unseen work still advances and can
+appear as soon as someone opens either view. Project only the audience-selected
+progress, artifacts and meaningful state. Conversation content and other private
+work data retain their own access control.
+
+The principal CompAII avatar opens our general Conversation through the
+canonical owner. A work avatar is another spatial representation of CompAII
+associated with a specific ongoing task and its native session. Approaching it
+and choosing to talk opens that exact conversation, with the current place,
+object and observed revision attached where relevant. The conversation owner
+resolves the audience and the exact receiving session. Several work avatars
+can coexist. Their visible activity comes from confirmed task and artifact
+events, and each scene may render independently from the same projection. A
+stale or unavailable session keeps its last confirmed work visible within its
+scope and offers a clear unavailable state for conversation.
+
 ## Transport authentication context
 
 The pinned upstream server callbacks now forward their actual WebSocket context.
