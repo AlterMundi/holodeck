@@ -350,27 +350,16 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 
 ## Selected shared release
 
-Manipulación de Materia uses source `5ec63ee`, package `d65e90d37ca9`,
-with `2f68982b6294` as the immediate compatible predecessor. The
-room-only package stays below the archive limit at 32,061,440 bytes.
-It preserves the prior exterior and selects
-`matter-workshop-orbital-focused-v1` through `matterAppearance`.
-The previous exact package accepted the same configuration and served
-its original room GLB on Node 24. The live receiver returned the new
-client by HTTPS, while the retained layout, Collection and native state
-matched the pre-activation checks. Use the ordinary code-only rollback
-with the pinned predecessor. Its reader ignores the optional appearance
-selector.
-
-Pending Matter update `2009ff26ca7b` contains the qualified material
-detail, Collection distance tiers and opaque shell infill. Its exact
-private package and deployment request are retained with the originating
-test receipts. It uses the existing `matterAppearance` configuration.
-Its request pins `d65e90d37ca9` as predecessor. The foreground code-only
-activation checks the serving listener and active room work before
-calling the Home service writer, then verifies installed bytes, the
-protected HTTPS route and preserved room state. An open connection left
-the request staged and the original service running.
+Manipulación de Materia selects package `2009ff26ca7b` with
+`d65e90d37ca9` as the immediate code-only rollback. The 32,348,160-byte
+archive adds fine material detail, Collection distance tiers and the opaque
+shell infill. It retains the deployed exterior and uses the existing
+`matterAppearance` selector. The receiving host matched all 75 installed
+payloads. Protected HTTPS served the exact client bytes, health passed,
+and all four restricted-resource reads were denied outside their scope.
+The world run, receiving configuration and monitored room checkpoints
+were verified after activation. The compatible predecessor remains
+available on the same state contract.
 
 The earlier Beacon prototype workbench was selected at source `5e90de1`,
 package `a1ec8c4e05db`, with `538da75a94c9` as the immediate predecessor.

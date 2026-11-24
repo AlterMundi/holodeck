@@ -276,7 +276,24 @@ and a scripted native worker.
 
 ## Selected receiving release
 
-The [protected entrance](https://compaii.dmn.homes/holodeck/) serves source
+The [protected entrance](https://compaii.dmn.homes/holodeck/) serves package
+`2009ff26ca7b` with `d65e90d37ca9` as the immediate code-only rollback.
+This release adds fine material detail, Collection distance tiers and the
+opaque shell infill to the selected Matter appearance. The exterior,
+receiving configuration and room run were preserved. All 75 installed
+payloads matched. Protected HTTPS health and exact client bytes passed,
+with four scope denials outside the relevant room or actor scope.
+
+Cuevanico qualified the same package before activation. The browser entered
+cold in 9.53 s and measured 33.3 ms median and 50.0 ms p95 during 357 walking
+intervals. Archive rotation, camera clearance and foyer return passed.
+The desktop and emulated-touch worktable tests used controlled identities.
+An authenticated human visit to the newly serving version remains a
+separate observation.
+
+## Predecessor release and appearance qualification
+
+The preceding selected release used source
 `5ec63ee`, package `d65e90d37ca9`, with `2f68982b6294` as compatible
 rollback. This release applies the optional room-bound Matter appearance
 selection. The continuous valley and independent house drafts remain in
@@ -384,8 +401,8 @@ Cuevanico door, rotating archive and 24 camera-clearance checks. It took
 10.10 s to enter cold through the test tunnel and measured 33.3 ms median
 and 49.9 ms p95 over 396 walking intervals. The pendant reflection still
 moved in the expected direction over eight samples, with a 3.6 px
-median horizontal error against the geometric projection. The deployed
-package remains `d65e90d37ca9`.
+median horizontal error against the geometric projection. At that comparison, the deployed
+package was `d65e90d37ca9`.
 
 The next candidate adds the warm entry light and ceiling soft return to
 the view-dependent floor reflection. Their positions, orientations and
@@ -449,8 +466,7 @@ Cuevanico verified the 4,189-triangle test representative at both mounts.
 Each far mesh drew 117 triangles. Approaching restored the full geometry;
 backing away restored the reduced mesh with zero repeat model requests.
 The final package entered cold in 9.96 s and measured 33.3 ms median and
-50.0 ms p95 over 321 moving intervals. The served version is still the
-previous package, with the new stage retained for scoped activation.
+50.0 ms p95 over 321 moving intervals. At that check, the candidate was still awaiting scoped activation.
 
 The authored rear opening and the two corner seams now have a separate
 opaque infill in the focused appearance. Blender and the room projection
@@ -467,12 +483,10 @@ Cuevanico verified the exact combined package with the infill, detail
 tiles and Collection reductions. Cold entry took 9.53 s. The 357 walking
 intervals measured 33.3 ms median and 50.0 ms p95. The reduced models,
 archive turn, camera clearance and return passed. The 32,348,160-byte
-archive `2009ff26ca7b` is published in the existing private runtime slot
-as a pending code-only update. The activation guard found open ingress
-connections and stopped before any service effect. The live package
-remains `d65e90d37ca9` with `2f68982b6294` as its current rollback.
+archive `2009ff26ca7b` was later activated in the existing protected service.
+See the selected receiving release for the exact production readback and rollback.
 
-The pending package also passed the emulated touch round trip with
+The same package also passed the emulated touch round trip with
 actual door taps and virtual-stick input. A desktop writer and an
 emulated-touch reader shared the exact worktable edition, kept
 independent rotation and appearance, and verified the part reference,

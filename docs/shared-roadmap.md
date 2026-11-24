@@ -391,9 +391,9 @@ work remain available for resumption.
 The retained workflow is editable space and objects, calibrated appearance
 references, and a versioned runtime export with separate material and fixed
 lighting data where appropriate. The new bench rail exercised reauthoring and
-both Orbital and Amber bakes. Browser validation of the revised object in both
-styles and the selected release's readback remain open. Keep the staged
-appearance and video controls available for qualification. Future appearance
+both Orbital and Amber bakes. Browser validation of the revised object in both styles remains open. The
+separately qualified high-detail materials release has been deployed. Keep the
+staged rail and video controls available for their remaining qualification. Future appearance
 iterations can extend material fidelity and close the physical lightweight
 device gaps using the same comparison route.
 
@@ -402,7 +402,8 @@ device gaps using the same comparison route.
 Build a shared seeded landscape for traversal. Both angular terrain coordinates
 wrap. The radial field pulls toward the centerline of the tube, so players walk
 on its outer skin, including the flank facing the central opening. The first
-release has one CompAII house opening into Manipulación de Materia. Locate
+release has exactly one building, CompAII’s house. Its only room and app
+is Manipulador de Materia. Locate
 arrival where players can see the opposite arc and find the house, a water
 basin, a traversable cave and a route around the ring from recognizable
 landmarks. Leave earlier island experiments out of this release.
