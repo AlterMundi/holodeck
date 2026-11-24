@@ -66,7 +66,7 @@ export function compileRoomLooks(manifest,readAsset){
       if(layers.reflection!==undefined){
         const light=layers.reflection;
         if(channel!=='map'||!record(light)||!bounded(light.receiverHeight,-2,8)||
-          !Array.isArray(light.emitters)||light.emitters.length<1||light.emitters.length>3||
+          !Array.isArray(light.emitters)||light.emitters.length<1||light.emitters.length>5||
           !light.emitters.every(emitter=>validEmitter(emitter,light.receiverHeight))||!identifier(light.detail)||
           !Object.hasOwn(manifest.assets,light.detail)||!bounded(light.tilesPerMeter,.1,8)||
           (light.diffuseFill!==undefined&&!bounded(light.diffuseFill,0,.1)))

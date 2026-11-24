@@ -61,6 +61,9 @@ test('room look compiler scopes immutable assets and rejects invalid bindings',(
   assert.equal(compiled.files.get(result.assets['amber-diffuse'].split('/').at(-1)).type,'image/jpeg');
   assert.throws(()=>compileRoomLooks(manifest,()=>Buffer.from('changed')),/does not match/);
   const floor=manifest.looks.find(({id})=>id==='orbital-layered').diffuseLayers['fixed-light-shell'].reflection;
+  floor.emitters.push(floor.emitters[0]);
+  assert.throws(()=>compileRoomLooks(manifest,()=>assert.fail('Invalid look was resolved')),/diffuse reflection/);
+  floor.emitters.pop();
   floor.diffuseFill=-.01;
   assert.throws(()=>compileRoomLooks(manifest,()=>assert.fail('Invalid look was resolved')),/diffuse reflection/);
   delete floor.diffuseFill;
@@ -97,8 +100,9 @@ test('layered diffuse uses linear light data and restores both material programs
       assert.match(shader.fragmentShader,/reflect\(-view/);
       assert.equal(shader.uniforms.roomReceiverHeight.value,.1);
       assert.deepEqual(shader.uniforms.roomEmitters.value[0].center.toArray(),[0,2.353,-.43]);
-      assert.equal(shader.uniforms.roomEmitterCount.value,3);
+      assert.equal(shader.uniforms.roomEmitterCount.value,5);
       assert.deepEqual(shader.uniforms.roomEmitters.value[1].center.toArray(),[3.35,2.225,-3.69]);
+      assert.deepEqual(shader.uniforms.roomEmitters.value[4].center.toArray(),[2.13,3.63,1.19]);
       assert.equal(shader.uniforms.roomDeckDetail.value.image,tile);
       assert.equal(shader.uniforms.roomDeckDetail.value.wrapS,RepeatWrapping);
       assert.equal(shader.uniforms.roomDeckTileScale.value,.88);

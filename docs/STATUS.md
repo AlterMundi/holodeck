@@ -384,6 +384,37 @@ moved in the expected direction over eight samples, with a 3.6 px
 median horizontal error against the geometric projection. The deployed
 package remains `d65e90d37ca9`.
 
+The next candidate adds the warm entry light and ceiling soft return to
+the view-dependent floor reflection. Their positions, orientations and
+sizes come from the editable Blender scene. Ray projection of the previous
+three sources found that 2,608 severely underexposed reference highlights
+lay outside their main footprints. The entry and ceiling sources covered
+62% and 36% of those pixels respectively at the same lobe threshold.
+The five-source look improved the masked four-camera floor error from
+12.61 to 10.76 and the bright-pixel bias from −15.03 to −7.59. On the
+eight walking-camera poses, the foreground error was 7.15 and the error
+in successive luma changes was 4.72.
+
+The rebuilt `1a8ab781ac35` package matches the tested stage byte for byte
+and retains the 32,061,440-byte archive size. Cuevanico entered cold in
+9.64 s and measured 33.3 ms median and 50.0 ms p95 over 380 walking
+intervals. Seven samples tracked the pendant reflection with a 3.3 px
+median horizontal error. The archive turn, all 24 corner checks and
+the foyer return passed. A desktop writer and emulated-touch visitor
+also kept independent appearance and rotation on the shared exact
+worktable edition, including the part reference, clear and actor-specific
+revocation. Open connections on the served room deferred activation
+during the proposed Legion trial. The current and rollback packages both
+remain available.
+
+A reverse-facing reference camera exposed a bright void through an
+opening in the authored shell. In the served runtime, the ray at the
+white center intersects the transparent collision surface and then
+`SkyShader`, with no visible surface between them. The authoring
+reference renders a solid threshold there. In the tested room
+projection, the actual passage back to the foyer is on the opposite
+wall. This is a visual continuity gap in the shell.
+
 The preceding source `a7d556b` served package `2f68982b6294`, with
 `52e35e6d6b2a` as its rollback.
 Manipulación de Materia now uses the Blender pass inspired by the appearance

@@ -17,7 +17,7 @@ const floorReflection=/* glsl */`
     vec2 spread;
     vec3 radiance;
   };
-  uniform RoomEmitter roomEmitters[3];
+  uniform RoomEmitter roomEmitters[5];
   uniform int roomEmitterCount;
   uniform sampler2D roomDeckDetail;
   uniform float roomDeckTileScale;
@@ -39,7 +39,7 @@ const floorReflection=/* glsl */`
     if (view.y <= 0.02) return diffuse;
     vec3 ray = reflect(-view, vec3(0.0, 1.0, 0.0));
     vec3 reflected = vec3(0.0);
-    for(int i=0; i<3; ++i){
+    for(int i=0; i<5; ++i){
       if(i>=roomEmitterCount) break;
       RoomEmitter emitter = roomEmitters[i];
       float angle = dot(ray, emitter.normal);
@@ -97,7 +97,7 @@ function diffuseLayers(material){
     if(finish){
       reflection.roomReceiverHeight.value=finish.receiverHeight;
       reflection.roomEmitterCount.value=finish.emitters.length;
-      reflection.roomEmitters.value=Array.from({length:3},(_,i)=>{
+      reflection.roomEmitters.value=Array.from({length:5},(_,i)=>{
         const emitter=finish.emitters[i]??finish.emitters[0];
         const right=new Vector3().fromArray(emitter.right),up=new Vector3().fromArray(emitter.up);
         return {
