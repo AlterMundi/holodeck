@@ -499,9 +499,11 @@ the exterior in 8.05 s with the lightweight profile over the test tunnel.
 Over 141 moving intervals per profile at 660 × 445 pixels, lightweight
 measured 16.7 ms median and 18.1 ms p95, and automatic measured 16.9 ms and
 21.7 ms. This short route is a rendering baseline for the visual pass.
-The fixture did not supply the Collection asset selection. A cinematic
-rendering pass, comparison on the selected visual candidate and production
-release remain open.
+The first exterior fixture omitted the Collection assets. A follow-up
+selected the existing Collection representatives and verified that the
+browser inside Matter received them while the other browser remained
+outside and was refused. A cinematic rendering pass, comparison on the
+selected visual candidate and production release remain open.
 
 
 ## Delivery sequence and cards
