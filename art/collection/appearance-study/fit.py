@@ -1,21 +1,32 @@
 """Fit surface-registered Gaussian splats from the calibrated Matter captures."""
+import argparse
 from pathlib import Path
 from hashlib import sha256
 import json
 import math
 import subprocess
-import sys
 
 import numpy as np
 
-root = Path(sys.argv[1])
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('capture', type=Path)
+modes = parser.add_mutually_exclusive_group()
+modes.add_argument('--light', action='store_true')
+modes.add_argument('--orbital', action='store_true')
+modes.add_argument('--detail', action='store_true')
+parser.add_argument('--surface', action='append', help='Fit only these exact calibrated surface IDs')
+args = parser.parse_args()
+root = args.capture
 views = ('entry', 'east', 'west', 'reverse', 'side', 'shelf')
-arguments = sys.argv[2:]
-if arguments not in ([], ['--light'], ['--orbital'], ['--detail']):
-    raise SystemExit('Usage: fit.py CAPTURE_DIRECTORY [--light | --orbital | --detail]')
-light = arguments == ['--light']
-detail = arguments == ['--detail']
-orbital = arguments == ['--orbital'] or detail
+light, detail = args.light, args.detail
+orbital = args.orbital or detail
+selected_surfaces = None
+if args.surface:
+    labels = json.loads((root/'surfaces.json').read_text())
+    missing = sorted(set(args.surface) - set(labels))
+    if missing:
+        parser.error(f'Unknown capture surface IDs: {missing}')
+    selected_surfaces = [labels.index(label) for label in args.surface]
 if detail:
     views += ('threshold', 'archive', 'bench')
 spacing = .024 if detail else .055 if light else .04 if orbital else .027
@@ -57,7 +68,11 @@ for name in views:
             raise ValueError(f'Capture {name} does not match the selected surface catalog')
         if surfaces.shape != (h,w) or not np.issubdtype(surfaces.dtype, np.unsignedinteger) or not surfaces[visible].all():
             raise ValueError(f'Capture {name} has invalid surface IDs')
+        if selected_surfaces is not None:
+            visible &= np.isin(surfaces, selected_surfaces)
         all_surfaces.append(surfaces[visible])
+    elif selected_surfaces is not None:
+        raise ValueError(f'Capture {name} has no surface IDs')
     all_samples.append(samples[visible])
     base = rgb(root/f'{name}.png', w, h)
     generated = name in generated_views
@@ -189,5 +204,7 @@ stats = dict(spacingMeters=spacing, splats=len(packed), bytes=compact.nbytes if 
              fittedViews=list(views), generatedViews=[name for name in views if name in generated_views], heldOut='held')
 if surface_ids is not None:
     stats['differentSurfaceRejections'] = surface_rejections
+if args.surface:
+    stats['selectedSurfaces'] = args.surface
 (root/f'fit{suffix}.json').write_text(json.dumps(stats,indent=2)+'\n')
 print(json.dumps(stats))

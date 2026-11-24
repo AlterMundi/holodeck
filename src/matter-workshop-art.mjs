@@ -3,12 +3,14 @@ import {readFileSync} from 'node:fs';
 import {readPackedArt} from './packed-art.mjs';
 import anchors from '../art/collection/anchors.json' with {type:'json'};
 
+const originalWorkshop={
+  path:'room-art/matter-workshop.glb',
+  digest:'d9cf9ab31f3fb5bd7ac40d7f7d7bbbd78f3c7a1748b131262a716a780be68aa7',
+  maxBytes:512*1024,
+};
 const variants=Object.freeze({
-  'matter-workshop-v1':{
-    path:'room-art/matter-workshop.glb',
-    digest:'d9cf9ab31f3fb5bd7ac40d7f7d7bbbd78f3c7a1748b131262a716a780be68aa7',
-    maxBytes:512*1024,
-  },
+  'matter-workshop-v1':originalWorkshop,
+  'matter-workshop-floor-splat-v1':{...originalWorkshop,splatFloor:true},
   'matter-workshop-orbital-v1':{
     path:'room-art/matter-workshop-orbital.glb',
     digest:'ecce3e2ea4af7b501a3f78bcc846f1e3e50908cc2f4a373b42a003f8c61ef94b',
@@ -32,6 +34,14 @@ const variants=Object.freeze({
 export const MATTER_ART_REVISIONS=Object.freeze(Object.fromEntries(
   Object.values(variants).map(({path,digest})=>[path,digest])));
 export const isMatterArtProfile=profile=>typeof profile==='string'&&Object.hasOwn(variants,profile);
+
+function readFloorSplat(){
+  const digest='c69ff6bbe19f83a2bbf146828b2f5bdb6252f1bfbc3cb685c83e81f66a9e2be7';
+  const bytes=readFileSync(new URL('../public/room-art/matter-style/orbital-floor.bin',import.meta.url));
+  if(bytes.length>2*1024*1024||createHash('sha256').update(bytes).digest('hex')!==digest)
+    throw Error('Matter splat does not match its qualified floor capture');
+  return {bytes,revision:digest+'.bin',target:'Surface · Honed limestone floor with fixture bounce',radius:.033};
+}
 
 function readAmberMaps(){
   const maps={
@@ -67,12 +77,13 @@ const position=([x,y,z])=>({x,y,z});
 
 export function readMatterWorkshopArt(profile='matter-workshop-v1'){
   if(!isMatterArtProfile(profile))throw Error('Unknown Matter workshop finish');
-  const {path,digest,maxBytes,orbital=false,visualStyles=false}=variants[profile];
+  const {path,digest,maxBytes,orbital=false,visualStyles=false,splatFloor=false}=variants[profile];
   const packed=readPackedArt(path,digest);
   const bytes=packed?.bytes??readFileSync(new URL('../public/'+path,import.meta.url));
   if(bytes.length>maxBytes||createHash('sha256').update(bytes).digest('hex')!==digest)
     throw Error('Matter workshop does not match the qualified Blender export');
   return {...packed,bytes,revision:digest+'.glb',replacesShell:true,colliders,
+    floorSplat:splatFloor?readFloorSplat():null,
     amberMaps:visualStyles?readAmberMaps():null,lightRig:orbital?orbitalLightRig:lightRig,ambient:orbital?.44:.34,
     keyLight:{position:[-.48,2.36,-.43],target:[0,1,-.43],color:orbital?'#dcecff':'#ffdbad',intensity:orbital?70:53},
     archive:position(anchors['archive-model']),

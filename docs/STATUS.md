@@ -53,6 +53,12 @@ Desktop and emulated touch selected different looks on the same edition.
 On Cuevanico, applying the two amber images for the first time took 1.79 s
 through the test tunnel. The browser restored orbital and returned through
 the door. The GLB and both atlas URLs were refused after exit.
+The separate floor-splat profile now replaces only the visible floor of the
+original Matter GLB in the packaged room. On the physical Pi, the regular
+70,224-point fit closed the large perimeter holes in the matched view and
+ran at 50.0 ms median and 66.7 ms p95 while moving. The matched mesh run
+recorded 33.3 ms / 50.0 ms. Both routes retained the rotating archive and
+door passage. The floor-splat profile is a trial selection.
 The separate appearance viewer also passed a moving hardware check on
 Cuevanico. The lightweight pure, detailed orbital pure and lightweight
 hybrid took 33.4 ms, 50.0 ms and 50.0 ms respectively at the median.

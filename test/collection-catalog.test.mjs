@@ -24,11 +24,18 @@ test('collection positions reject missing rooms and ambiguous resource placement
   const rooms=new Map([['matter',{}]]);
   assert.deepEqual(collectionSelection(selected,rooms),selected);
   const original=readMatterWorkshopArt();
+  const hybrid=readMatterWorkshopArt('matter-workshop-floor-splat-v1');
   const orbital=readMatterWorkshopArt('matter-workshop-orbital-v1');
   const baked=readMatterWorkshopArt('matter-workshop-orbital-baked-v1');
   const focused=readMatterWorkshopArt('matter-workshop-orbital-focused-v1');
+  assert.equal(hybrid.revision,original.revision);
+  assert.equal(original.floorSplat,null);
+  assert.equal(hybrid.floorSplat.bytes.length/12,70224);
+  assert.ok(JSON.parse(original.bytes.toString('utf8',20,20+original.bytes.readUInt32LE(12)))
+    .nodes.some(node=>node.name===hybrid.floorSplat.target));
   assert.equal(new Set([original,orbital,baked,focused].map(art=>art.revision)).size,4);
   for(const field of ['archive','shelves','fixtures','colliders']){
+    assert.deepEqual(hybrid[field],original[field]);
     assert.deepEqual(orbital[field],original[field]);
     assert.deepEqual(baked[field],original[field]);
     assert.deepEqual(focused[field],original[field]);

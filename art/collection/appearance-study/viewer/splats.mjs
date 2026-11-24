@@ -1,12 +1,12 @@
 import {
   DataTexture, FloatType, GLSL3, InstancedBufferAttribute, InstancedBufferGeometry,
-  Mesh, RGBAFormat, ShaderMaterial, BufferAttribute,
+  Mesh, RGBAFormat, ShaderMaterial, BufferAttribute, DynamicDrawUsage,
 } from 'three';
 
 const textureWidth = 1024;
 const buckets = 1024;
 
-export function createSplats(bytes, compact = false) {
+export function createSplats(bytes, compact = false, compactRadius = .022) {
   const stride = compact ? 12 : 32;
   const count = bytes.byteLength / stride;
   if (!Number.isInteger(count) || count < 1 || count > (compact ? 720000 : 260000)) {
@@ -20,7 +20,7 @@ export function createSplats(bytes, compact = false) {
     const p = i * stride, o = i * 12;
     if (compact) {
       for (let axis = 0; axis < 3; axis++) data[o + axis] = source.getInt16(p + axis * 2, true) / 4096;
-      data[o + 3] = data[o + 4] = .022;
+      data[o + 3] = data[o + 4] = compactRadius;
       data[o + 5] = .0032;
       const nx = source.getInt8(p + 9), ny = source.getInt8(p + 10), nz = source.getInt8(p + 11);
       const length = Math.hypot(nx, ny, nz);
@@ -44,7 +44,7 @@ export function createSplats(bytes, compact = false) {
   const texture = new DataTexture(data, textureWidth, rows, RGBAFormat, FloatType);
   texture.needsUpdate = true;
   const ids = new Float32Array(count);
-  const index = new InstancedBufferAttribute(ids, 1);
+  const index = new InstancedBufferAttribute(ids, 1).setUsage(DynamicDrawUsage);
   const geometry = new InstancedBufferGeometry();
   geometry.setAttribute('position', new BufferAttribute(new Float32Array([
     -1,-1,0, 1,-1,0, 1,1,0, -1,1,0,
@@ -140,7 +140,16 @@ export function createSplats(bytes, compact = false) {
     for(let bin=buckets-1;bin>=0;bin--){cursor[bin]=total;total+=sizes[bin];}
     for (let i = 0; i < count; i += step) if (depths[i] !== outside) ids[cursor[depths[i]]++] = i;
     geometry.instanceCount=total;
-    index.needsUpdate=true;
+    if(total){
+      index.clearUpdateRanges();
+      index.addUpdateRange(0,total);
+      index.needsUpdate=true;
+    }
   }
-  return {mesh,sort};
+  return {mesh,sort,dispose(){
+    mesh.removeFromParent();
+    geometry.dispose();
+    material.dispose();
+    texture.dispose();
+  }};
 }

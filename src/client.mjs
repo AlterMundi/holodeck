@@ -4,6 +4,7 @@ import {constrainInteriorCamera} from './interior-camera.mjs';
 import {capWorldPixelRatio,usesLightGraphics} from './render-pixel-budget.mjs';
 import {useLightweightMatterGlazing} from './matter-glazing.mjs';
 import {bindMatterStyle,loadMatterStyleImages,matterStyles} from './matter-style.mjs';
+import {projectRoomSurface} from '../art/collection/appearance-study/viewer/surface-projection.mjs';
 import {nearestCreationPosition} from './world-layout.mjs';
 import { Networked3dWebExperienceClient, DefaultVirtualJoystickPlugin } from '@mml-io/3d-web-experience-client';
 import { ThreeJSWorldRenderer } from '@mml-io/3d-web-threejs';
@@ -208,6 +209,7 @@ let inside=hot&&activeSpace.id!=='outside';
 let updateDoor=()=>{},remoteScene=null,roomModel=null,networkScope=null,arrival=null;
 let releaseLightweightGlazing=null;
 let matterStyleScope=null,selectedMatterStyle=matterStyles[0];
+let floorSplatScope=null;
 const roomStyle=document.querySelector('#room-style'), roomStyleChoice=document.querySelector('#room-style-choice');
 const roomStyleStatus=document.querySelector('#room-style-status');
 roomStyleChoice.replaceChildren(...matterStyles.map(({id,label})=>new Option(label,id)));
@@ -276,9 +278,30 @@ const removeScene=()=>{
     matterStyleScope=null;
   }
   roomStyle.hidden=true;
+  if(floorSplatScope){
+    floorSplatScope.controller.abort();
+    floorSplatScope.projection?.dispose();
+    floorSplatScope=null;
+  }
   releaseLightweightGlazing?.();releaseLightweightGlazing=null;
   pendingRoomArt=null;projectedGarden=null;beaconControls.clear();galleryModels?.clear();collectionShelves?.clear();remoteScene?.remove();remoteScene=roomModel=null;
 };
+async function mountFloorSplat(){
+  const {src,target,radius}=activeSpace.matterFloorSplat;
+  const scope={controller:new AbortController()},model=roomModel,room=remoteScene;
+  floorSplatScope=scope;
+  try{
+    const response=await fetch(src,{signal:AbortSignal.any([
+      scope.controller.signal,AbortSignal.timeout(12000),
+    ])});
+    if(!response.ok)return;
+    const bytes=await response.arrayBuffer();
+    if(floorSplatScope!==scope||!room.isConnected||needsSync)return;
+    scope.projection=projectRoomSurface({room,model,bytes,target,radius});
+  }catch{
+    // If the alternate art is unavailable, the original floor stays visible.
+  }
+}
 function mountScene(){
   removeScene();
   if(!inside)return true;
@@ -541,7 +564,14 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     let drawWorld=true;
     // Keep the frame loop and collision running behind opaque overlays. Skip
     // drawing until Nexus yields or the destination can produce a room frame.
-    renderer.composer.render=()=>{if(drawWorld)draw();};
+    renderer.composer.render=()=>{
+      if(!drawWorld)return;
+      if(floorSplatScope?.projection){
+        const camera=roomModel.getScene().getGraphicsAdapter().getCamera();
+        floorSplatScope.projection.sort(camera,false);
+      }
+      draw();
+    };
     const exteriorAddress=socket('world');
     const arrivalAddress=socket('world?dressing=arrival');
     let coldExterior=hot&&!inside;
@@ -563,6 +593,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const position=client.getLocalCharacterState()?.position;
       const roomReady=inside&&networkScope===activeSpace.id&&entryRoomReady(remoteScene,roomModel);
       const waitingForRoomFrame=inside&&moving&&!roomReady;
+      if(roomReady&&roomModel&&activeSpace.matterFloorSplat&&!floorSplatScope)void mountFloorSplat();
       if(roomReady&&roomModel&&activeSpace.matterStyles&&!matterStyleScope){
         matterStyleScope={binding:bindMatterStyle(roomModel.getContainer()),style:matterStyles[0]};
         roomStyleChoice.disabled=false;

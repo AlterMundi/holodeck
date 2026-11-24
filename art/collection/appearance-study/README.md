@@ -103,6 +103,67 @@ software-renderer samples describe the cost in this fixture. Target GPU,
 peak VRAM and physical Raspberry Pi performance were outside this trial.
 The splat remains an experiment. The live room still uses its Blender GLB.
 
+### Single-surface hybrid in the packaged room
+
+The trial profile `matter-workshop-floor-splat-v1` shares the exact GLB,
+colliders, Collection anchors and transforms of `matter-workshop-v1`.
+It loads an actor-scoped compact splat through the existing room art route,
+then replaces only the named visible floor mesh. The furniture and actual
+rotating archive stay in the existing scene. The client retires the splat
+on exit and restores the floor when no splat is mounted. A withheld
+binary test left the original mesh usable.
+
+Reuse the nine approved generated views from the orbital study. Recapture
+the same nine cameras from the editable workshop using `capture.py --fine`
+to get the exact depth, pose and surface masks. Build the floor-only fit and
+regularize it using the measured floor bounds:
+
+```sh
+python3 art/collection/appearance-study/fit.py CAPTURE_DIRECTORY \
+  --detail --surface 'Full room walking surface'
+python3 art/collection/appearance-study/planar-splats.py \
+  CAPTURE_DIRECTORY/orbital-detail.bin OUTPUT.bin \
+  --bounds -5.94 5.94 -5.98 5.98 --spacing .045
+```
+
+The planar resample requires SciPy. It rejects nonhorizontal input instead
+of stretching positions across physical surfaces. It makes 70,224 points
+from a measured 149,903-point fit. 8,503 cells are farther than one grid
+step from a fitted observation. These colors are extrapolated, with the
+largest gap under occluded geometry about 1.10 m from an observed sample.
+The renderer uses a 33 mm Gaussian radius and uploads the visible slice of
+the sorted index buffer. The full-room masked fit, retained separately,
+produced 630,215 points. It excludes the held-out camera and remains
+an analytic point fit, with no learned radiance or view-dependent color.
+
+On Cuevanico in lightweight mode, the paired packaged room runs at 1020 ×
+680 measured the following moving intervals. All three ran with the real
+Pi renderer and scoped loopback tunnel, with fixture identities and room
+data.
+
+| Floor appearance | Moving samples | Median | p95 |
+| --- | ---: | ---: | ---: |
+| Existing mesh | 334 | 33.3 ms | 50.0 ms |
+| Irregular fitted splats | 172 | 66.6 ms | 100.0 ms |
+| Regularized splats | 231 | 50.0 ms | 66.7 ms |
+
+The comparison at the same player-height view shows the bright holes along
+the walls disappearing with the resample. Its floor remains visibly softer
+than the generated reference and differs from the rest of the base room.
+The regularized run turned the archive, cleared 24 corner camera samples
+and returned through the doorway. Both the GLB and the splat URL refused
+reads after exit. The matched mesh remains the practical lightweight choice.
+In a separate two-context run on the physical Pi, the desktop writer and
+emulated-touch reader both mounted the regularized layer. They shared the
+retained 197,642-triangle edition, rotated independently, prepared an exact
+part reference, enforced edition-specific revocation, and shared and cleared
+the 34,000-triangle edition. Following the large edition took 7.37 s in that
+run. The actor identities and Conversation receiver were fixtures.
+The regularized standalone-desktop-client route also passed the door,
+archive and sampled corner checks on SwiftShader, but moving frame pacing
+was poor (733 ms median, 1,550 ms p95 over 11 intervals). Two-context
+SwiftShader entry for the earlier, irregular layer timed out.
+
 ## Direct UV material proof
 
 Nicolás selected a reusable workflow from neutral Blender volumes and ImageGen
