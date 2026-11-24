@@ -364,7 +364,14 @@ bounded copies of the receiving checkpoints with native lanes disabled.
 
 ## Selected shared release
 
-The protected Holodeck now selects the toroidal terrain in package
+The protected Holodeck selects the toroidal terrain with the Matter
+worktable's A2UI HUD in package `74f574592917`, source `98a2a61`.
+Its immediate rollback is `68d4eadaa3da`. The 33,433,600-byte archive kept
+the complete receiving configuration. All 78 payloads, exact HTTPS health,
+packed client and terrain worker matched the release. The native read still
+returned the same run and edition.
+
+The first protected toroidal release used package
 `68d4eadaa3da` at source `943ca63`. The 33,198,080-byte archive passed the
 installed receiver validator. All 78 payloads, the HTTPS health response,
 the packed client and the terrain worker matched the qualified release.

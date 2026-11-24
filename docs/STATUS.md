@@ -277,9 +277,24 @@ and a scripted native worker.
 ## Selected receiving release
 
 The [protected entrance](https://compaii.dmn.homes/holodeck/) serves the
-continuous toroidal world in package `68d4eadaa3da`, source `943ca63`.
-Package `2009ff26ca7b` is the immediate compatible rollback. The selected
-world has CompAII's house and Manipulador de Materia as its only active room.
+continuous toroidal world and the Matter worktable's Proyección A2UI HUD
+in package `74f574592917`, source `98a2a61`. Package `68d4eadaa3da` is its
+immediate compatible rollback. The selected world has CompAII's house and
+Manipulador de Materia as its only active room. Near the worktable, the
+visitor explicitly enters and exits app mode in the same 3D scene.
+The exact packed worktable test paired a desktop writer with a Raspberry
+Pi reader using touch input. It passed confirmed sharing, independent
+inspection, access denial and revocation, movement restoration, keyboard
+focus restoration and the Orbital-to-Amber HUD palette change. A separate
+run with both software renderers on one host logged a startup connection
+timeout. The cross-device package run finished without a page error.
+The same packed client requalified the exterior on the Raspberry Pi at
+6.09 s for cold entry over the test tunnel. The 141 moving intervals in
+lightweight mode were 16.7 ms median and 23.9 ms p95. Automatic mode was
+19.8 ms median and 26.1 ms p95 over another 141 intervals.
+
+For the first toroidal package (`68d4eadaa3da`, source `943ca63`),
+`2009ff26ca7b` remains a verified historical code rollback.
 All 78 installed payloads matched. Protected HTTPS served the exact packed
 client and terrain worker, and reported healthy. The technical reader was
 denied access to the human world entry and three room-scoped endpoints.

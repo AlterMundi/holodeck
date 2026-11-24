@@ -533,10 +533,13 @@ packed browser fixture passed the same shared navigation and access checks
 with the revised cave. Its physical Pi run arrived in 6.54 s and measured
 20.7 ms p95 lightweight and 25.8 ms p95 automatic during motion. The
 protected release selected the packed toroidal edition after the full
-route and exact receiver checks. A signed-in production visit remains
-unobserved. Proyección has documented the Three.js A2UI worktable contract
-and a receiving harness. Mounting that surface on the actual Matter
-worktable remains open.
+route and exact receiver checks. The next protected package mounts the
+Proyección Three.js A2UI surface on the Matter worktable. In the packed
+fixture, a desktop writer used the visible HUD to share and a read-only
+Raspberry Pi client received the confirmed model. The fixture exercised
+local inspection, access revocation, focus restoration and the confirmed
+room palette. Direct participant experience on the protected entrance is
+tracked separately from these technical checks.
 
 
 ## Delivery sequence and cards
