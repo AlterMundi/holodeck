@@ -474,9 +474,13 @@ on the underside and the other received its new position. The server
 projected one house, exposed only the Matter entrance and refused a request
 to enter the saved second house. The first participant passed through the
 Matter door in both directions and returned to the marked exterior
-position. This fixture did not supply the Collection asset selection.
-Cave and water traversal, reconnect, the full circuit, qualified appearance
-and the production release remain open.
+position. With both clients connected, the test then cut one actual multiplayer
+WebSocket on the underside of the ring and cleared the URL pose. After fresh
+scope confirmation, the interrupted client recovered the last rendered
+position and heading, and its peer received that position over the new socket.
+The fixture did not supply the Collection asset selection. Cave and water
+traversal, the full circuit, qualified appearance and production release
+remain open.
 
 
 ## Delivery sequence and cards

@@ -226,6 +226,7 @@ const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
 let inside=hot&&activeSpace.id!=='outside';
 const outsideRing=()=>!inside&&activeSpace.outdoorTerrain===TOROIDAL_TERRAIN.id;
 let outdoorReady=()=>Boolean(geometryProbe?.snapshot());
+let confirmedRingPose=null;
 let updateDoor=()=>{},remoteScene=null,roomModel=null,networkScope=null,arrival=null;
 let releaseLightweightGlazing=null;
 let matterStyleScope=null,selectedMatterStyle=null;
@@ -419,7 +420,7 @@ function applySpace(next,anchor){
   $('#people').textContent=inside?(next.level===0?'Planta baja':next.level<0?`Subsuelo ${-next.level}`:`Piso ${next.level}`):'Un lugar para crear juntos';
   if(changed){roomTopic=undefined;worktableTopic=undefined;contentVisitor.changeRoom(inside,next.id);worldIndication.selected=null;worldIndication.removeOutline();state=null;}
   else if(inside)contentVisitor.confirmRoom();
-  if(anchor){
+  if(anchor&&!anchor.resumeExterior){
     const destination=new URL(location.href);
     destination.hash=doorLocation(anchor);
     history.replaceState(history.state,'',destination);
@@ -440,7 +441,11 @@ function syncCurrent(){
     needsSync=false;
     const returnedOutside=inside&&next.id==='outside';
     if(next.id!==activeSpace.id)contentVisitor.suspendRoom();
-    applySpace(next,arrivalDoor(activeSpace,next));
+    const saved=confirmedRingPose;
+    confirmedRingPose=null;
+    const resume=next.id==='outside'&&activeSpace.id==='outside'&&next.outdoorTerrain===TOROIDAL_TERRAIN.id&&
+      next.terrainRun&&saved?.run===next.terrainRun&&saved.actor===next.actorRef?saved.anchor:null;
+    applySpace(next,resume??arrivalDoor(activeSpace,next));
     if(returnedOutside)say(contentVisitor.parked?'Volviste al exterior. Tu visita sigue guardada en esta pestaña.':
       'Volviste al exterior.',{transient:true});
   }).catch(()=>{if(!requestingMove)say('No pude confirmar tu ubicación.');})
@@ -453,7 +458,8 @@ function canFinishMove(){
   if(inside?!entryRoomReady(remoteScene,roomModel):!outdoorReady())return false;
   if(arrival){
     const {x,y,z,yaw,facing}=arrival;
-    client.updateConfig({spawnConfiguration:{spawnPosition:{x,y,z},spawnYRotation:-(yaw??facing*90)}});
+    client.updateConfig({spawnConfiguration:{spawnPosition:{x,y,z},spawnYRotation:-(yaw??facing*90),
+      ...(outsideRing()?{respawnTrigger:{minY:-2500}}:{})}});
     client.respawn();arrival=null;
     return false;
   }
@@ -492,6 +498,7 @@ function resetDoor(){
       },
       onMoved:(next,anchor)=>{
         requestingMove=false;needsSync=false;
+        confirmedRingPose=null;
         applySpace(next,anchor);
         // Recovery reads the location already committed, without sending the move again.
         moveDeadline=setTimeout(()=>location.reload(),8000);
@@ -626,6 +633,13 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       if(outsideRing()){
         ring??=new ToroidalTerrainRenderer(renderer.mmlCompositionScene.group,base);
         if(position)ring.update(position,rendererBudget.lightweight);
+        if(position&&!moving&&!needsSync&&networkScope===activeSpace.id&&activeSpace.terrainRun){
+          const yaw=client.getCharacterManager().localController?.networkState.rotation.eulerY;
+          if(Number.isFinite(yaw)&&[position.x,position.y,position.z].every(Number.isFinite)){
+            confirmedRingPose={run:activeSpace.terrainRun,actor:activeSpace.actorRef,
+              anchor:{...position,yaw:yaw*180/Math.PI,resumeExterior:true}};
+          }
+        }
       }else if(ring){
         ring.dispose();
         ring=null;

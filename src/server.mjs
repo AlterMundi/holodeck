@@ -362,7 +362,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       art=artForRoom(spaces.rooms.get(view.id),view.exits ?? []);
     const activity=indoorGardens.view(actor,view.id);
     const outdoorSky=includeSky?(view.id===OUTSIDE?atelier?.outdoorSky:art?.outdoorSky):null;
-    const space={...view,...(view.id===OUTSIDE?{entrances:exteriorEntrances(actor),...(toroidal?{title:'Holodeck',outdoorTerrain:TOROIDAL_TERRAIN.id}:
+    const space={...view,...(view.id===OUTSIDE?{entrances:exteriorEntrances(actor),...(toroidal?{title:'Holodeck',outdoorTerrain:TOROIDAL_TERRAIN.id,terrainRun:room.run}:
         valley?{title:'Valle de llegada',outdoorTerrain:true}:{})}:{objects:roomObjects(view),
         ...(toroidal&&view.exteriorDoor?{exteriorDoor:toroidalParcelPoint(view.exteriorDoor)}:{})}),
       ...(indoorGardens.owner(view.id)?{playableInterior:true}:{}),
