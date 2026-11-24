@@ -6,6 +6,18 @@ const VERSION=/^[a-f0-9]{64}$/;
 const PROJECT=/^[a-z0-9][a-z0-9-]{0,39}$/;
 const SOURCE_PREFIX='dm:resource:v1:';
 
+// Keep the fallback art readable by the preceding service package. Only
+// this reader interprets the separate, room-bound appearance selection.
+export function selectMatterAppearance(receiving){
+  const base=receiving?.matterCollection;
+  const overlay=receiving?.matterAppearance;
+  if(overlay===undefined)return base;
+  if(!base||!overlay||Object.keys(overlay).sort().join(',')!=='profile,room'||
+    overlay.room!==base.room||!isMatterArtProfile(overlay.profile))
+    throw Error('Select a qualified appearance for the existing Matter room');
+  return {...base,art:overlay.profile};
+}
+
 export function collectionSelection(selection,rooms){
   if(selection===undefined)return null;
   if(!selection||!['projects,room','art,projects,room','archive,projects,room','archive,art,projects,room'].includes(Object.keys(selection).sort().join(','))||!rooms.has(selection.room)||

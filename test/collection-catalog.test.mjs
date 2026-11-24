@@ -7,7 +7,7 @@ import {join} from 'node:path';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {readMatterWorkshopArt} from '../src/matter-workshop-art.mjs';
-import {collectionSelection} from '../src/collection-catalog.mjs';
+import {collectionSelection,selectMatterAppearance} from '../src/collection-catalog.mjs';
 import {createConversationContexts} from '../src/conversation-context.mjs';
 import {houseId} from '../src/houses.mjs';
 import {RoomStore} from '../src/room-store.mjs';
@@ -19,6 +19,17 @@ const selected={room:'matter',projects:[
   {id:'guitar',resources:[main,component]},
   {id:'lenses',resources:[lenses]},
 ]};
+
+test('receiving appearance selection preserves the preceding package fallback',()=>{
+  const base={...selected,art:'matter-workshop-v1'};
+  const overlay={room:'matter',profile:'matter-workshop-orbital-focused-v1'};
+  assert.equal(selectMatterAppearance({matterCollection:base}),base);
+  assert.deepEqual(selectMatterAppearance({matterCollection:base,matterAppearance:overlay}),
+    {...base,art:overlay.profile});
+  assert.equal(base.art,'matter-workshop-v1');
+  assert.throws(()=>selectMatterAppearance({matterCollection:base,
+    matterAppearance:{...overlay,room:'outside'}}),/existing Matter room/);
+});
 
 test('collection positions reject missing rooms and ambiguous resource placements',()=>{
   const rooms=new Map([['matter',{}]]);

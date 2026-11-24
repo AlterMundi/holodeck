@@ -107,6 +107,13 @@ configuration. Rooms with stairs keep their ordinary art. The room art
 endpoint serves the selected exact GLB only during authorized room presence.
 To restore the original appearance, select `matter-workshop-v1`.
 
+For an appearance-only rollout, the optional root-level
+`matterAppearance` names the existing Collection room and a qualified
+`profile`. The receiver applies it to that room while preserving the
+original `matterCollection.art` field. The preceding package ignores
+the optional root field and loads its existing art. This allows code
+rollback without changing the durable layout, world state or archive.
+
 `GET api/space/collection` uses the current visitor's Home session on the
 same HTTPS origin. It intersects the selected project resources with Home's
 current authorized 3D Viewer catalog. For each visible resource it requires
