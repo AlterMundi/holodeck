@@ -1,33 +1,80 @@
-import {NoColorSpace,ShaderChunk,Source} from 'three';
+import {NoColorSpace,ShaderChunk,Source,Vector2,Vector3} from 'three';
 
 const diffuseSamples={
   map:{chunk:'map_fragment',sampler:'map',uv:'vMapUv'},
   emissiveMap:{chunk:'emissivemap_fragment',sampler:'emissiveMap',uv:'vEmissiveMapUv'},
 };
 
+const floorReflection=/* glsl */`
+  varying vec3 roomSurfacePosition;
+  uniform float roomReceiverHeight;
+  uniform vec3 roomEmitterCenter;
+  uniform vec2 roomEmitterHalfSize;
+  uniform vec2 roomEmitterSpread;
+  uniform vec3 roomEmitterRadiance;
+
+  vec3 roomFloorReflection(){
+    vec3 position = roomSurfacePosition;
+    if (abs(position.y - roomReceiverHeight) > 0.006) return vec3(0.0);
+    vec3 view = normalize(cameraPosition - position);
+    if (view.y <= 0.02) return vec3(0.0);
+    vec3 ray = reflect(-view, vec3(0.0, 1.0, 0.0));
+    vec2 hit = position.xz + ray.xz * ((roomEmitterCenter.y - position.y) / ray.y);
+    vec2 outsideEmitter = max(abs(hit - roomEmitterCenter.xz) - roomEmitterHalfSize * 0.75, 0.0);
+    vec2 falloff = outsideEmitter / roomEmitterSpread;
+    float coverage = exp(-dot(falloff, falloff));
+    return roomEmitterRadiance * coverage;
+  }
+`;
+
 function diffuseLayers(material){
   let channel;
   const irradiance={value:null};
-  material.customProgramCacheKey=()=>channel?'room-diffuse-layers:'+channel:'';
+  let reflectionEnabled=false;
+  const reflection={
+    roomReceiverHeight:{value:0},
+    roomEmitterCenter:{value:new Vector3()},
+    roomEmitterHalfSize:{value:new Vector2()},
+    roomEmitterSpread:{value:new Vector2()},
+    roomEmitterRadiance:{value:new Vector3()},
+  };
+  material.customProgramCacheKey=()=>channel
+    ?'room-diffuse-layers:'+channel+(reflectionEnabled?':reflection':''):'';
   material.onBeforeCompile=shader=>{
     if(!channel)return;
     const {chunk,sampler,uv}=diffuseSamples[channel];
     const sample=`texture2D( ${sampler}, ${uv} )`;
     shader.uniforms.roomIrradiance=irradiance;
+    if(reflectionEnabled){
+      Object.assign(shader.uniforms,reflection);
+      shader.vertexShader='varying vec3 roomSurfacePosition;\n'+shader.vertexShader.replace(
+        '#include <project_vertex>',`#include <project_vertex>
+        roomSurfacePosition = (modelMatrix * vec4(transformed, 1.0)).xyz;`);
+    }
     shader.fragmentShader=`
       uniform sampler2D roomIrradiance;
+      ${reflectionEnabled?floorReflection:''}
       vec3 roomLitDiffuse(vec3 albedo, vec2 uv) {
         vec3 light = exp2(6.0 * texture2D(roomIrradiance, uv).rgb) - 1.0;
         vec3 color = albedo * (1.40 * light + 0.063);
-        return color / (1.0 + 0.33 * max(max(color.r, color.g), color.b));
+        vec3 diffuse = color / (1.0 + 0.33 * max(max(color.r, color.g), color.b));
+        return diffuse${reflectionEnabled?' + roomFloorReflection()':''};
       }
     `+shader.fragmentShader.replace(`#include <${chunk}>`,
       ShaderChunk[chunk].replace(sample,`vec4(roomLitDiffuse(${sample}.rgb, ${uv}), 1.0)`));
   };
-  return (next,texture)=>{
+  return (next,texture,emitter)=>{
     irradiance.value=texture;
-    if(next!==channel){
+    if(emitter){
+      reflection.roomReceiverHeight.value=emitter.receiverHeight;
+      reflection.roomEmitterCenter.value.fromArray(emitter.center);
+      reflection.roomEmitterHalfSize.value.fromArray(emitter.size).multiplyScalar(.5);
+      reflection.roomEmitterSpread.value.fromArray(emitter.spread);
+      reflection.roomEmitterRadiance.value.fromArray(emitter.radiance);
+    }
+    if(next!==channel||reflectionEnabled!==!!emitter){
       channel=next;
+      reflectionEnabled=!!emitter;
       material.needsUpdate=true;
     }
   };
@@ -82,7 +129,7 @@ export function bindMatterStyle(group,catalog){
       for(const [source,{material,role,channels,setLayers}] of materials){
         const layers=style.diffuseLayers?.[role];
         const light=layers?variant(source[layers.channel],images?.get(layers.irradiance),true):null;
-        setLayers(light?layers.channel:undefined,light);
+        setLayers(light?layers.channel:undefined,light,light?layers.reflection:undefined);
         const overrides=style.materials[role];
         for(const channel of channels){
           const asset=layers?.channel===channel?layers.albedo:overrides?.[channel];

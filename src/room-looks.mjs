@@ -7,6 +7,9 @@ const materialChannels=new Set([
   'map','normalMap','aoMap','lightMap','emissiveMap','roughnessMap','metalnessMap',
 ]);
 const record=value=>value&&typeof value==='object'&&!Array.isArray(value);
+const bounded=(value,low,high)=>Number.isFinite(value)&&value>=low&&value<=high;
+const vector=(value,size,low,high)=>Array.isArray(value)&&value.length===size&&
+  value.every(item=>bounded(item,low,high));
 
 // Resolve authored asset names once against immutable bytes. Only the scoped
 // room endpoint exposes URLs. Browser selections never write room state.
@@ -49,6 +52,14 @@ export function compileRoomLooks(manifest,readAsset){
         ![albedo,irradiance].every(id=>identifier(id)&&Object.hasOwn(manifest.assets,id)&&
           typeof manifest.assets[id]?.file==='string'&&manifest.assets[id].file.endsWith('.png')))
         throw Error('Invalid room diffuse layer binding');
+      if(layers.reflection!==undefined){
+        const light=layers.reflection;
+        if(channel!=='map'||!record(light)||!bounded(light.receiverHeight,-2,8)||
+          !vector(light.center,3,-24,24)||light.center[1]<=light.receiverHeight||
+          !vector(light.size,2,.05,8)||!vector(light.spread,2,.05,4)||
+          !vector(light.radiance,3,0,2))
+          throw Error('Invalid room diffuse reflection');
+      }
       used.add(albedo);
       used.add(irradiance);
     }

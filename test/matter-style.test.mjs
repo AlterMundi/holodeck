@@ -78,7 +78,7 @@ test('layered diffuse uses linear light data and restores both material programs
   for(const [material,channel,chunk] of [
     [shell.material,'map','map_fragment'],[work.material,'emissiveMap','emissivemap_fragment'],
   ]){
-    const shader={uniforms:{},fragmentShader:`#include <${chunk}>`};
+    const shader={uniforms:{},fragmentShader:`#include <${chunk}>`,vertexShader:'#include <project_vertex>'};
     material.onBeforeCompile(shader);
     assert.match(shader.fragmentShader,/vec4\(roomLitDiffuse\(texture2D/);
     const light=shader.uniforms.roomIrradiance.value;
@@ -86,7 +86,16 @@ test('layered diffuse uses linear light data and restores both material programs
     assert.equal(light.colorSpace,NoColorSpace);
     assert.equal(material[channel].image,albedo);
     assert.equal(material[channel].colorSpace,SRGBColorSpace);
-    assert.equal(material.customProgramCacheKey(),'room-diffuse-layers:'+channel);
+    if(channel==='map'){
+      assert.match(shader.vertexShader,/modelMatrix \* vec4\(transformed/);
+      assert.match(shader.fragmentShader,/reflect\(-view/);
+      assert.equal(shader.uniforms.roomReceiverHeight.value,.1);
+      assert.deepEqual(shader.uniforms.roomEmitterCenter.value.toArray(),[0,2.353,-.43]);
+      assert.equal(material.customProgramCacheKey(),'room-diffuse-layers:map:reflection');
+    }else{
+      assert.equal(shader.uniforms.roomEmitterCenter,undefined);
+      assert.equal(material.customProgramCacheKey(),'room-diffuse-layers:emissiveMap');
+    }
   }
   style.apply(authored.looks[0],new Map());
   assert.equal(shell.material.map,source);
