@@ -276,7 +276,15 @@ and a scripted native worker.
 
 ## Selected receiving release
 
-The [protected entrance](https://compaii.dmn.homes/holodeck/) serves the
+The current protected release is `2563afe48a8d` at source `cc04977`.
+Conversation keeps its canonical web page inside a movable Three.js frame.
+The controlled browser verified drag, resize, the minimizing animation,
+draft retention and viewport clamping. A separate controlled run verified
+mouse sensitivity, a turn beyond one full revolution, the minimap and
+double-Space exterior flight. The exact package and protected readback
+passed with `74f574592917` retained for rollback.
+
+The previous [protected release](https://compaii.dmn.homes/holodeck/) served the
 continuous toroidal world and the Matter worktable's Proyección A2UI HUD
 in package `74f574592917`, source `98a2a61`. Package `68d4eadaa3da` is its
 immediate compatible rollback. The selected world has CompAII's house and

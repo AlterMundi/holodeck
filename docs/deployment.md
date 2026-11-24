@@ -364,7 +364,15 @@ bounded copies of the receiving checkpoints with native lanes disabled.
 
 ## Selected shared release
 
-The protected Holodeck selects the toroidal terrain with the Matter
+The protected service selects package `2563afe48a8d`, source
+`cc04977`, with `74f574592917` as its immediate rollback. The release
+adds the movable Three.js Conversation display, mouse sensitivity,
+continuous mouse orbit, exterior flight and the minimap tool. All 78
+installed payloads and the exact protected client, terrain worker and
+health response matched. The configuration, native run and edition
+matched the previous release.
+
+The preceding protected package selected the toroidal terrain with the Matter
 worktable's A2UI HUD in package `74f574592917`, source `98a2a61`.
 Its immediate rollback is `68d4eadaa3da`. The 33,433,600-byte archive kept
 the complete receiving configuration. All 78 payloads, exact HTTPS health,
