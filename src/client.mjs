@@ -1,3 +1,4 @@
+import {ToroidalScenery} from './toroidal-scenery.mjs';
 import {ToroidalAtmosphere} from './toroidal-atmosphere.mjs';
 import {ToroidalCave} from './toroidal-cave.mjs';
 import {TOROIDAL_TERRAIN} from './toroidal-terrain.mjs';
@@ -626,7 +627,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         return configure({...configuration,workshop:{...configuration.workshop,url:arrivalAddress}},token);
       };
     }
-    let nextDressing=0, ring=null, cave=null, atmosphere=null, releaseRadialMovement=null, ringSun=null;
+    let nextDressing=0, ring=null, cave=null, scenery=null, atmosphere=null, releaseRadialMovement=null, ringSun=null;
+    let sceneryAfter=null;
     // On the ring the sun keeps one direction in the traveler's radial frame,
     // matching the terrain's own per-place sunlight. It moves in 4 m steps so
     // shadow edges stay still between steps. Lightweight graphics keep the
@@ -662,6 +664,15 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
           ring.update(position,rendererBudget.lightweight);
           cave??=new ToroidalCave(renderer.mmlCompositionScene.group,renderer.mmlCompositionScene.mmlScene);
           cave.update(position);
+          if(!entering&&!moving){
+            // Let arrival paint and accept input before compiling optional scenery.
+            const now=performance.now();
+            sceneryAfter??=now+240;
+            if(now>=sceneryAfter){
+              scenery??=new ToroidalScenery(renderer.mmlCompositionScene.group);
+              scenery.update(position,rendererBudget.lightweight);
+            }
+          }
         }
         if(position&&!moving&&!needsSync&&networkScope===activeSpace.id&&activeSpace.terrainRun){
           const yaw=client.getCharacterManager().localController?.networkState.rotation.eulerY;
@@ -673,7 +684,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       }else if(ring){
         ring.dispose();
         cave?.dispose();
-        ring=cave=null;
+        scenery?.dispose();
+        sceneryAfter=null;
+        ring=cave=scenery=null;
       }
       const roomReady=inside&&networkScope===activeSpace.id&&entryRoomReady(remoteScene,roomModel);
       const waitingForRoomFrame=inside&&moving&&!roomReady;
@@ -751,7 +764,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
       }
     };
-    renderer.dispose=()=>{releaseRadialMovement?.();ring?.dispose();cave?.dispose();atmosphere?.dispose();frameBudget.dispose();removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{releaseRadialMovement?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
       releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing);
       options.onInitialized();

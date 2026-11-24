@@ -262,7 +262,10 @@ export function buildTerrainTile(tile, segmentCount, coarseEdges = 0, terrain = 
         }
       }
     }
-    water = {positions:waterPositions,normals:waterNormals,indices:new Uint16Array(waterIndices)};
+    // Interpolate signed vertex depths to shade the shoreline where the river
+    // or lake meets the rendered terrain.
+    const depth = Float32Array.from(elevations, height => waterLevel - height);
+    water = {positions:waterPositions,normals:waterNormals,depth,indices:new Uint16Array(waterIndices)};
   }
   return {origin, positions, normals, colors, indices, water};
 }

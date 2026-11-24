@@ -515,7 +515,19 @@ water traversal, and the low-angle camera check. On the physical Pi, the
 combined candidate recorded 16.6 ms median and 20.0 ms p95 in the lightweight
 profile, and 20.8 ms and 28.3 ms in automatic graphics, over 141 moving
 intervals per profile. Lightweight entry took 6.37 s on that tunnel run.
-Further visual polish and the production release remain open.
+The next pass adds seed-stable stones and vegetation in two bounded
+instance batches near the player. The nearby footpath, house approach, cave
+mouth and flooded ground remain clear. Water tiles carry signed depths from
+their terrain mesh to distinguish shallow water from the lake interior.
+The same four browser views and the two-client navigation and access check
+passed again. Optional scenery starts after arrival. In the physical Pi
+fixture, serving the same build through the protected release's Brotli path
+cut the JavaScript transfer from 4.93 MB to 1.21 MB, and the browser measured
+0.89 s for that request instead of 8.92 s over the same tunnel. Cold arrival
+took 5.86 s. Over 141 moving intervals per graphics mode, the medians were
+16.6 ms lightweight and 21.5 ms automatic, with p95 of 22.0 and 32.6 ms.
+This was a controlled receiver; further visual polish and production selection remain
+open.
 
 
 ## Delivery sequence and cards

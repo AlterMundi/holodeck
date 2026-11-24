@@ -102,6 +102,8 @@ const waterShading = {
     float holoFresnel = pow(1.0 - clamp(dot(normal, holoView), 0.0, 1.0), 4.0);
     outgoingLight = mix(outgoingLight - totalSpecular, vec3(0.55, 0.66, 0.74),
       0.06 + 0.8 * holoFresnel) + totalSpecular;
+    outgoingLight = mix(outgoingLight, vec3(.30, .49, .47),
+      .38 * holoShallow * (1.0 - .8*holoFresnel));
     ${aerialPerspective}
   `,
 };
@@ -134,6 +136,7 @@ function meshFor(data, material) {
   geometry.setAttribute('position', new BufferAttribute(data.positions, 3));
   geometry.setAttribute('normal', new BufferAttribute(data.normals, 3));
   if(data.colors)geometry.setAttribute('color',new BufferAttribute(data.colors,3));
+  if(data.depth)geometry.setAttribute('shoreDepth',new BufferAttribute(data.depth,1));
   geometry.setIndex(new BufferAttribute(data.indices, 1));
   geometry.computeBoundingSphere();
   return new Mesh(geometry,material);

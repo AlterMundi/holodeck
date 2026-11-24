@@ -58,13 +58,18 @@ export function useToroidalWaterDetail(material) {
   material.customProgramCacheKey = () => 'toroidal-water-ripples';
   material.onBeforeCompile = shader => {
     useWorldPosition(shader);
+    const depthVarying = 'varying float toroidalShoreDepth;';
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute float shoreDepth;\n' + depthVarying)
+      .replace('#include <project_vertex>', '#include <project_vertex>\ntoroidalShoreDepth = shoreDepth;');
     shader.uniforms.toroidalSeconds = clock;
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float toroidalSeconds;')
+      .replace('#include <common>', '#include <common>\nuniform float toroidalSeconds;\n' + depthVarying)
       .replace('#include <normal_fragment_maps>',`
         #include <normal_fragment_maps>
         vec3 p = toroidalWorld;
         float distanceToWater = length(vViewPosition);
+        float holoShallow = 1.0 - smoothstep(0.0, 2.8, abs(toroidalShoreDepth));
         float waveFade = 1.0 - smoothstep(28.0, 110.0, distanceToWater);
         if (waveFade > 0.001) {
           vec2 uv = ringTextureCoords(p);
@@ -73,7 +78,8 @@ export function useToroidalWaterDetail(material) {
           float a = ringNoise(uv*3.2 + drift + eddies*2.8) - .5;
           float b = ringNoise(vec2(uv.y,-uv.x)*4.4 - drift*.77 + eddies*4.1) - .5;
           normal = normalize(normal + mat3(viewMatrix) * vec3(a, (a+b)*.4, b) * waveFade * .052);
-          diffuseColor.rgb *= 1.0 + (eddies-.5)*waveFade*.055;
+          float shallows = holoShallow * waveFade;
+          diffuseColor.rgb *= 1.0 + (eddies-.5)*waveFade*.055 + shallows*(.13 + .16*a);
         }
       `);
   };

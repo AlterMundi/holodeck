@@ -97,6 +97,12 @@ test('wet terrain emits bounded geometry at the shared radial water level', () =
   const i=wet.water.indices[0]*3;
   const p=wet.origin.map((value,axis)=>value+wet.water.positions[i+axis]);
   near(terrainCoordinates(p).height,TOROIDAL_TERRAIN.waterLevel,.001);
+  assert.equal(wet.water.depth.length, wet.positions.length/3);
+  assert.ok(wet.water.depth.some(depth => depth>0));
+  for(let vertex=0;vertex<wet.water.depth.length;vertex++){
+    const terrainPoint=wet.origin.map((value,axis)=>value+wet.positions[vertex*3+axis]);
+    near(wet.water.depth[vertex], TOROIDAL_TERRAIN.waterLevel-terrainCoordinates(terrainPoint).height,.001);
+  }
 });
 
 test('water edges use the same exact coarse-to-fine seam as ground', () => {
