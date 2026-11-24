@@ -63,7 +63,12 @@ The canonical surface uses the registered paired Home entry with
 `view=conversation&client=standalone&surface=holodeck`, exact `surface_parent`
 and a random `surface_visit`. It retains relative APIs, CSRF, shared Home login,
 microphone and recovery. Holodeck creates one iframe lazily on Conversar and keeps
-it mounted when returning to the world. Only exact selected Conversation origins
+it mounted when minimized. In the live scene, Three.js draws the display
+frame and screen rim underneath the untransformed web surface. Drag the
+title or resize from the corner to change the local placement. The same
+grips accept arrow keys when focused. Minimize folds the frame toward
+Conversar, with an immediate hide when reduced motion is enabled. Reopening
+retains the conversation, draft and local placement. Only exact selected Conversation origins
 receive microphone/autoplay delegation; the ordinary world sound switch still
 controls world audio, not the recorder or voice playback.
 

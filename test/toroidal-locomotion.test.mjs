@@ -114,3 +114,22 @@ test('a continuous route completes the ring on the production seed', () => {
   assert.equal(traversedWater,true);
   assert.equal(motion.v,.25);
 });
+
+
+test('flight climbs, hovers, descends and returns to the seeded surface',()=>{
+  const pilot=new ToroidalLocomotion({u:.013,v:.26});
+  const base=pilot.height;
+  const advance=(frames,controls)=>{
+    for(let i=0;i<frames;i++)pilot.update(1/60,controls);
+  };
+  advance(60,{flight:true,vertical:1});
+  assert.ok(pilot.height>base+4.8);
+  const hover=pilot.height;
+  advance(60,{flight:true});
+  assert.equal(pilot.height,hover);
+  advance(30,{flight:true,vertical:-1});
+  assert.ok(pilot.height<hover-2.4);
+  advance(120,{});
+  assert.equal(pilot.height,base);
+  assert.equal(pilot.grounded,true);
+});

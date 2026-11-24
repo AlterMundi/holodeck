@@ -1,9 +1,11 @@
-export function bindVideoSettings({document,window,lightweight,onGraphics}){
+export function bindVideoSettings({document,window,lightweight,onGraphics,onSensitivity}){
   const dialog=document.querySelector('#video-dialog');
   const open=document.querySelector('#video-open');
   const close=document.querySelector('#video-close');
   const toggle=document.querySelector('#video-fullscreen');
   const quality=document.querySelector('#video-quality');
+  const mouse=document.querySelector('#mouse-sensitivity');
+  const mouseValue=document.querySelector('#mouse-sensitivity-value');
   const status=document.querySelector('#video-status');
   const root=document.documentElement;
   const available=()=>document.fullscreenEnabled&&typeof root.requestFullscreen==='function';
@@ -33,6 +35,20 @@ export function bindVideoSettings({document,window,lightweight,onGraphics}){
     }
   }
 
+  if(mouse){
+    try{
+      const saved=window.localStorage.getItem('holodeck.mouseSensitivity');
+      if(saved!==null)mouse.value=saved;
+    }catch{}
+    const sync=()=>{
+      const value=mouse.valueAsNumber;
+      mouseValue.textContent=value+' %';
+      onSensitivity?.(value/100);
+      try{window.localStorage.setItem('holodeck.mouseSensitivity',String(value));}catch{}
+    };
+    mouse.oninput=sync;
+    sync();
+  }
   quality.value=lightweight?'light':'auto';
   quality.onchange=()=>onGraphics(quality.value==='light');
   open.onclick=()=>{if(!dialog.open)dialog.showModal();};

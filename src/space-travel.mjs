@@ -80,7 +80,9 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
   if(space.emergencyExit)links.push({to:'outside',title:'Volver al exterior'});
   const summary=travel.querySelector('summary');
   if(summary)summary.textContent=links.length?'Mapa y regreso':'Mapa';
-  travel.hidden=!map&&!links.length;
+  travel.hidden=!map&&!links.length&&typeof space.outdoorTerrain!=='string';
+  const mapTool=document.querySelector('#map-tool');
+  if(mapTool)mapTool.disabled=travel.hidden;
   for(const destination of links){
     const control=document.createElement('button');
     control.type='button';control.textContent=destination.title;

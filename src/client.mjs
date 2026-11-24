@@ -24,6 +24,10 @@ import { ContentVisitor } from './content-visitor.mjs';
 import { GalleryModels } from './gallery-models.mjs';
 import { CollectionShelves } from './collection-shelves.mjs';
 import { MatterWorktableHud } from './matter-worktable-hud.mjs';
+import { ConversationDisplay } from './conversation-display.mjs';
+import { bindHudPanelWindow } from './hud-panel-window.mjs';
+import { bindWorldOrbitInput } from './world-orbit-input.mjs';
+import { bindToroidalMinimap } from './toroidal-minimap.mjs';
 import {applyGallerySigns} from './gallery-display.mjs';
 import { BeaconControls } from './beacon-controls.mjs';
 import {pickedRepresentationVisit} from './node-representations.mjs';
@@ -111,11 +115,11 @@ class HolodeckExperienceClient extends Networked3dWebExperienceClient {
 
 const rendererBudget={adaptive:true,startAtNative:matchMedia('(pointer: coarse)').matches,
   lightweight:usesLightGraphics(location.search)};
-let videoFrameBudget,updateRoomGlazing=()=>{};
+let videoFrameBudget,mouseSensitivity=1,updateRoomGlazing=()=>{};
 function createFrameBudget(renderer){
   return videoFrameBudget=capWorldPixelRatio(renderer,rendererBudget);
 }
-bindVideoSettings({document,window,lightweight:rendererBudget.lightweight,onGraphics:lightweight=>{
+bindVideoSettings({document,window,lightweight:rendererBudget.lightweight,onSensitivity:value=>{mouseSensitivity=value;},onGraphics:lightweight=>{
   rendererBudget.lightweight=lightweight;
   videoFrameBudget?.setLightweight(lightweight);
   updateRoomGlazing();
@@ -233,6 +237,19 @@ const hot=activeSpace?.live===1;
 const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
 let inside=hot&&activeSpace.id!=='outside';
 const outsideRing=()=>!inside&&activeSpace.outdoorTerrain===TOROIDAL_TERRAIN.id;
+let flightEnabled=false,previousSpacePress=null;
+function doubleSpace(event){
+  if(event.code!=='Space'||event.repeat||event.altKey||event.ctrlKey||event.metaKey||
+     !outsideRing()||entering||moving||!document.querySelector('#conversation-panel').hidden||
+     document.querySelector('dialog[open]')||event.target?.closest?.('button,input,select,textarea,[contenteditable]'))return;
+  const now=performance.now();
+  if(previousSpacePress!==null&&now-previousSpacePress<340){
+    flightEnabled=!flightEnabled;
+    previousSpacePress=null;
+    say(flightEnabled?'Vuelo activo · Espacio para subir, Mayús para bajar.':'Volvés a caminar.',{transient:true});
+  }else previousSpacePress=now;
+}
+
 let outdoorReady=()=>Boolean(geometryProbe?.snapshot());
 let confirmedRingPose=null;
 let updateDoor=()=>{},remoteScene=null,roomModel=null,networkScope=null,arrival=null;
@@ -519,6 +536,7 @@ function resetDoor(){
 document.addEventListener('keydown',event=>{
   if(matterHud?.key(event)){event.preventDefault();event.stopImmediatePropagation();return;}
   if(matterHud?.ownsAccessibleInput(event.target))return;
+  doubleSpace(event);
   if(event.target instanceof Element&&event.target.closest('#exhibition-index')){event.stopImmediatePropagation();return;}
   if((beaconControls.opened||hot&&(moving||inside&&contentVisitor?.frame&&!contentVisitor.panel.classList.contains('is-walking')))&&
      ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE'].includes(event.code)){
@@ -533,7 +551,7 @@ document.addEventListener('keydown',event=>{
     if(event.key==='Escape'){
       event.preventDefault();
       if(event.target.closest('#space-travel')){
-        $('#space-travel').open=false;$('#space-travel summary').focus();
+        $('#space-travel').open=false;$('#map-tool').focus();
       }
       else if(event.target.closest('#creator')){closePreview();say('La vista previa quedó descartada.',{transient:true});}
       else openConversation(false);
@@ -542,7 +560,7 @@ document.addEventListener('keydown',event=>{
   }
 },true);
 const playableHUD=new PlayableHUD(document);
-let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,galleryModels=null,collectionShelves=null,matterHud=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null,worldHistory=null;
+let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,galleryModels=null,collectionShelves=null,matterHud=null,conversationDisplay=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null,worldHistory=null;
 const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
   sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket(hot?'active/network':'network'),waitForWorldConfig:true,
   enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
@@ -556,6 +574,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       return position&&position.x>21&&position.x<32&&position.z<-6&&position.z>-26?'valley-cave':null;
     });
     const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
+    const releaseOrbit=bindWorldOrbitInput(options.coreCameraManager,renderer.composer.renderer.domElement,()=>mouseSensitivity);
+    const minimap=bindToroidalMinimap(document.querySelector('#space-travel'));
     const frameBudget=createFrameBudget(renderer);
     galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
     collectionShelves=new CollectionShelves({base,scene:renderer.mmlCompositionScene.group,panel:document.querySelector('#collection-shelf'),
@@ -614,6 +634,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       set:record=>action('focus.set',record.target,{},record.revision,{selection:record}),
       clear:record=>action('focus.clear',null,{},record.sequence),edit:editLight,
       visit:record=>contentVisitor.openNode(record.target,{expectedRevision:record.revision}).catch(()=>say('No pude abrir este contenido. Conservé la visita anterior.'))});
+    const display=new ConversationDisplay(renderer.composer.renderer,document.querySelector('#conversation-panel'));
+    conversationDisplay=display;
     const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
     const draw=renderer.composer.render.bind(renderer.composer);
     let drawWorld=true;
@@ -627,6 +649,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       }
       draw();
       matterHud.draw();
+      display.draw();
     };
     const exteriorAddress=socket('world');
     const arrivalAddress=socket('world?dressing=arrival');
@@ -674,7 +697,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       ring?.group.children.length>0&&Boolean(document.querySelector('#workshop #ring-house')?.isConnected):
       Boolean(geometryProbe?.snapshot());
     renderer.render=renderState=>{
-      const position=client.getLocalCharacterState()?.position;
+      const character=client.getLocalCharacterState(),position=character?.position;
+      minimap(outsideRing()?position:null,character?.rotation?.eulerY,activeSpace.entrances);
       if(outsideRing()){
         ring??=new ToroidalTerrainRenderer(renderer.mmlCompositionScene.group,base);
         if(position){
@@ -699,6 +723,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
           }
         }
       }else if(ring){
+        flightEnabled=false;
+        previousSpacePress=null;
         ring.dispose();
         cave?.dispose();
         scenery?.dispose();
@@ -784,9 +810,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
       }
     };
-    renderer.dispose=()=>{releaseRadialMovement?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();matterHud.dispose();removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{releaseRadialMovement?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
-      releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing);
+      releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing,()=>flightEnabled);
       options.onInitialized();
     });
     return renderer;
@@ -1248,17 +1274,28 @@ $('#undo').onclick=async()=>{
   else if(change.type==='garden.update'&&change.previous)await action('garden.update',change.target,{x:change.previous.x,z:change.previous.z,color:change.previous.color},entity.revision,{undo:true});
 };
 function openConversation(open){
-  const panel=$('#conversation-panel');panel.hidden=!open;$('#talk').setAttribute('aria-expanded',String(open));
-  if(open)updateNativeAvailability();
+  const panel=$('#conversation-panel'),talk=$('#talk');
+  if(!open&&!panel.hidden)conversationDisplay?.minimize(talk);
+  panel.hidden=!open;
+  talk.setAttribute('aria-expanded',String(open));
+  if(open){$('#space-travel').open=false;updateNativeAvailability();}
   if(open&&sharedSurface()){
     if(!sharedConversation)sharedConversation=new SharedConversationHost({window,document,container:$('#shared-conversation'),api,
       capture:captureInteractionContext,currentActor:()=>activeSpace?.actorRef??state?.actorRef,
       onStatus:({phase,busy})=>{$('#companion-status').textContent=phases[phase]||(busy?'La conversación está procesando tu intervención.':'Tu intervención quedó en la conversación.');},onError:say});
     sharedConversation.mount().catch(()=>say('No pude abrir tu conversación. Volvé a tocar Conversar para intentarlo.'));
   }else if(open)$('#message').focus();
-  else if(panel.contains(document.activeElement)){document.activeElement.blur();window.focus();}
+  else if(panel.contains(document.activeElement))$('#talk').focus({preventScroll:true});
 }
+bindHudPanelWindow($('#conversation-panel'),{move:$('#conversation-move'),resize:$('#conversation-resize')});
 $('#talk').onclick=()=>openConversation($('#conversation-panel').hidden);
+const mapPanel=$('#space-travel'),mapTool=$('#map-tool');
+mapTool.onclick=()=>{
+  if(!$('#conversation-panel').hidden)openConversation(false);
+  if(!mapPanel.hidden)mapPanel.open=!mapPanel.open;
+};
+mapPanel.addEventListener('toggle',()=>mapTool.setAttribute('aria-expanded',String(mapPanel.open)));
+
 $('#conversation-close').onclick=()=>openConversation(false);
 $('#worktable-reference-clear').onclick=()=>{worktableTopic=undefined;updateNativeAvailability();};
 function boundConversation(){

@@ -7,6 +7,8 @@ const TAU = 2 * Math.PI;
 const STEP = 1 / 90;
 const MAX_FRAME = 9 * STEP;
 const GRAVITY = 19.6;
+const FLIGHT_CEILING = 70;
+const FLIGHT_VERTICAL_SPEED = 5;
 const JUMP_SPEED = 5.8;
 const WALK_SPEED = 5;
 const RUN_SPEED = 8;
@@ -54,7 +56,7 @@ export class ToroidalLocomotion {
     this.jumpQueued = false;
   }
 
-  update(seconds, {right = 0, forward = 0, yaw = this.yaw, sprint = false, jump = false} = {}) {
+  update(seconds, {right = 0, forward = 0, yaw = this.yaw, sprint = false, jump = false, flight = false, vertical = 0} = {}) {
     if (!Number.isFinite(seconds) || seconds <= 0 || ![right, forward, yaw].every(Number.isFinite)) return;
     const inputLength = Math.max(1, Math.hypot(right, forward));
     const speed = (sprint ? RUN_SPEED : WALK_SPEED) / inputLength;
@@ -66,7 +68,7 @@ export class ToroidalLocomotion {
     this.jumpHeld = jump;
     this.accumulated += Math.min(seconds, MAX_FRAME);
     while (this.accumulated + 1e-10 >= STEP) {
-      this.step(ringTarget, crossTarget);
+      this.step(ringTarget, crossTarget, flight,vertical);
       this.accumulated = Math.max(0, this.accumulated - STEP);
     }
   }
@@ -75,10 +77,10 @@ export class ToroidalLocomotion {
     return Math.max(this.ground(u,v,this.terrain),this.waterLevel-FLOAT_DRAFT);
   }
 
-  step(ringTarget, crossTarget) {
+  step(ringTarget, crossTarget, flight,vertical) {
     const immersion = Math.max(0, Math.min(1,(this.waterLevel-this.height-WADE_DEPTH)/(FLOAT_DRAFT-WADE_DEPTH)));
-    const speedFactor = 1 - .56 * immersion;
-    const response = this.grounded ? .18 : .065;
+    const speedFactor = flight?1:1 - .56 * immersion;
+    const response = this.grounded||flight ? .18 : .065;
     this.ringSpeed += (ringTarget * speedFactor - this.ringSpeed) * response;
     this.crossSpeed += (crossTarget * speedFactor - this.crossSpeed) * response;
     const {tubeRadius, majorRadius} = this.terrain;
@@ -88,6 +90,15 @@ export class ToroidalLocomotion {
     const nextV = wrap(this.v + this.crossSpeed * STEP / (tubeDistance * TAU));
     const currentGround = this.supportAt(this.u,this.v);
     const nextGround = this.supportAt(nextU,nextV);
+    if(flight){
+      this.u=nextU;this.v=nextV;
+      const speed=Math.min(1,Math.max(-1,vertical))*FLIGHT_VERTICAL_SPEED;
+      this.height=Math.max(nextGround,Math.min(nextGround+FLIGHT_CEILING,this.height+speed*STEP));
+      this.radialSpeed=0;
+      this.grounded=this.height===nextGround;
+      this.jumpQueued=false;
+      return;
+    }
     const groundDelta = nextGround - currentGround;
     const distance = Math.hypot(this.ringSpeed, this.crossSpeed) * STEP;
 

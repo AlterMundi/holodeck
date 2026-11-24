@@ -451,6 +451,13 @@ landmarks. Leave earlier island experiments out of this release.
    readiness and moving frame time on desktop and the lightweight profile.
    Install through the existing protected release with an exact rollback.
 
+The tool strip opens the local exterior minimap or the room map. The
+worktable swaps in its operating controls while keeping Conversation
+available to an authorized visitor. Use the right mouse button to turn
+continuously and set mouse sensitivity under Video. In the toroidal
+exterior, double-tap Space to toggle flight. Space climbs, Shift descends,
+and another double-tap returns to walking with normal radial gravity.
+
 Use the resonant toroidal neural work as an investigation rather than a source
 of unverified mechanics. The two periodic axes provide natural coordinates for
 standing patterns and wayfinding cues. Consider local activation, phase and
