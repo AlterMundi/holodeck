@@ -12,6 +12,7 @@ import {createConversationContexts} from '../src/conversation-context.mjs';
 import {houseId} from '../src/houses.mjs';
 import {RoomStore} from '../src/room-store.mjs';
 import {createHolodeck} from '../src/server.mjs';
+import {interiorDocument} from '../src/interior-spaces.mjs';
 
 const main='1'.repeat(32),component='2'.repeat(32),lenses='3'.repeat(32),foreign='4'.repeat(32);
 const version='a'.repeat(64),oldVersion='f'.repeat(64);
@@ -51,6 +52,12 @@ test('collection positions reject missing rooms and ambiguous resource placement
     assert.deepEqual(baked[field],original[field]);
     assert.deepEqual(focused[field],original[field]);
   }
+  const room={id:'matter',entry:false,level:0,title:'Manipulación de Materia'};
+  const returnLink={slot:0,kind:'door',rise:0,title:'Vestíbulo'};
+  const markup=art=>interiorDocument(room,[returnLink],null,{...art,src:'/art.glb'});
+  assert.match(markup(focused),/<m-cube id="bulkhead-panel"[^>]*collide="false"/);
+  assert.doesNotMatch(markup(original),/id="bulkhead-panel"/);
+  assert.match(markup(focused),/id="passage-0" x="-3" z="-5.86"/);
   const jsonBytes=baked.bytes.readUInt32LE(12);
   const gltf=JSON.parse(baked.bytes.toString('utf8',20,20+jsonBytes));
   assert.ok(gltf.nodes.some(node=>node.name==='archive_turntable_platform'));

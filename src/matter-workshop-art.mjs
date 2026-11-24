@@ -4,6 +4,7 @@ import {readPackedArt} from './packed-art.mjs';
 import {compileRoomLooks} from './room-looks.mjs';
 import looks from '../art/collection/matter-looks.json' with {type:'json'};
 import anchors from '../art/collection/anchors.json' with {type:'json'};
+import entryInfill from '../art/collection/orbital-entry-infill.json' with {type:'json'};
 
 const originalWorkshop={
   path:'room-art/matter-workshop.glb',
@@ -54,6 +55,8 @@ const furniture=[
 ];
 const colliders=furniture.map(({x,y,z,width,height,depth})=>
   `<m-cube x="${x}" y="${y}" z="${z}" width="${width}" height="${height}" depth="${depth}" opacity="0" cast-shadows="false"></m-cube>`).join('');
+const orbitalDressing=entryInfill.map(({id,center:[x,y,z],size:[width,height,depth],color})=>
+  `<m-cube id="${id}" x="${x}" y="${y}" z="${z}" width="${width}" height="${height}" depth="${depth}" color="${color}" collide="false" cast-shadows="false"></m-cube>`).join('');
 const lightRig='<m-light x="3.35" y="2.235" z="-3.68" type="point" intensity="13" distance="4" color="#ffd097" cast-shadows="false"></m-light>'+
   '<m-light x="-1.5" y="2.8" z="-5.4" type="point" intensity="7" distance="7" color="#bfd6ff" cast-shadows="false"></m-light>'+
   '<m-light x="-2.55" y="2.9" z="1.85" type="point" intensity="12" distance="7" color="#ffdfaf" cast-shadows="false"></m-light>';
@@ -72,6 +75,7 @@ export function readMatterWorkshopArt(profile='matter-workshop-v1'){
   if(bytes.length>maxBytes||createHash('sha256').update(bytes).digest('hex')!==digest)
     throw Error('Matter workshop does not match the qualified Blender export');
   return {...packed,bytes,revision:digest+'.glb',replacesShell:true,colliders,
+    dressing:visualStyles?orbitalDressing:'',
     floorSplat:splatFloor?readFloorSplat():null,
     roomLooks:visualStyles?compileRoomLooks(looks,file=>
       readFileSync(new URL('../public/room-art/matter-style/'+file,import.meta.url))):null,lightRig:orbital?orbitalLightRig:lightRig,ambient:orbital?.44:.34,

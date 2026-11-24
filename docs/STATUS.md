@@ -449,6 +449,26 @@ The final package entered cold in 9.96 s and measured 33.3 ms median and
 50.0 ms p95 over 321 moving intervals. The served version is still the
 previous package, with the new stage retained for scoped activation.
 
+The authored rear opening and the two corner seams now have a separate
+opaque infill in the focused appearance. Blender and the room projection
+read the same part dimensions and palette. The projected parts are
+noncolliding, and the passage remains on the opposite wall. At the
+original reverse camera, the center of the white opening measured 234.9
+display luma before the change, 50.8 with the panel and 46.5 in Blender.
+Both seams also darkened. The browser rays through the aperture first
+hit the new opaque dressing. The browser fixture returned through the
+actual foyer door and verified that the five scoped appearance maps
+were unavailable outside the room.
+
+Cuevanico verified the exact combined package with the infill, detail
+tiles and Collection reductions. Cold entry took 9.53 s. The 357 walking
+intervals measured 33.3 ms median and 50.0 ms p95. The reduced models,
+archive turn, camera clearance and return passed. The 32,348,160-byte
+archive `2009ff26ca7b` is published in the existing private runtime slot
+as a pending code-only update. The activation guard found open ingress
+connections and stopped before any service effect. The live package
+remains `d65e90d37ca9` with `2f68982b6294` as its current rollback.
+
 The preceding source `a7d556b` served package `2f68982b6294`, with
 `52e35e6d6b2a` as its rollback.
 Manipulación de Materia now uses the Blender pass inspired by the appearance

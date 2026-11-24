@@ -220,7 +220,8 @@ export function interiorDocument(room,passages=[],exhibit=null,art=null,passageA
   return `<m-group id="${room.id}">
     ${roomFloor(passages,art&&!art.palette?'#746d61':floor,!art?.replacesShell)}
     ${stationMarkup}${controlAnchors}
-    ${art?'<m-model id="room-art" src="'+attribute(art.src)+'" collide="false"></m-model>'+art.colliders+(art.lightRig??''):''}
+    ${art?'<m-model id="room-art" src="'+attribute(art.src)+'" collide="false"></m-model>'+art.colliders+
+      (art.dressing??'')+(art.lightRig??''):''}
     <m-cube x="-6" y="1.65" z="0" width=".2" height="3.3" depth="12" color="${wall}"${walls}></m-cube>
     <m-cube x="6" y="1.65" z="0" width=".2" height="3.3" depth="12" color="${wall}"${walls}></m-cube>
     <m-cube x="0" y="1.65" z="-6" width="12" height="3.3" depth=".2" color="${end}"${walls}></m-cube>

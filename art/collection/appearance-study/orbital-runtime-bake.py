@@ -136,7 +136,7 @@ scene.objects['Cleanroom scattering volume'].hide_render = True
 
 live, static = [], []
 for obj in scene.objects:
-    if obj.type not in {'MESH', 'FONT'} or obj.hide_render:
+    if obj.type not in {'MESH', 'FONT'} or obj.hide_render or obj.get('holodeck_runtime_overlay'):
         continue
     (live if is_live_object(obj, platform) else static).append(obj)
 assert static and platform in live

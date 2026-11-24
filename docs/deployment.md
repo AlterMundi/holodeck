@@ -362,6 +362,16 @@ matched the pre-activation checks. Use the ordinary code-only rollback
 with the pinned predecessor. Its reader ignores the optional appearance
 selector.
 
+Pending Matter update `2009ff26ca7b` contains the qualified material
+detail, Collection distance tiers and opaque shell infill. Its exact
+private package and deployment request are retained with the originating
+test receipts. It uses the existing `matterAppearance` configuration.
+Its request pins `d65e90d37ca9` as predecessor. The foreground code-only
+activation checks the serving listener and active room work before
+calling the Home service writer, then verifies installed bytes, the
+protected HTTPS route and preserved room state. An open connection left
+the request staged and the original service running.
+
 The earlier Beacon prototype workbench was selected at source `5e90de1`,
 package `a1ec8c4e05db`, with `538da75a94c9` as the immediate predecessor.
 All 31 runtime files and authenticated HTTPS asset hashes matched. The

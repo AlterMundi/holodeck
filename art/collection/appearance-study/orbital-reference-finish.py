@@ -1,5 +1,6 @@
 """Match lighting and secondary construction to the orbital reference in Blender."""
 import argparse
+import json
 from math import ceil
 from pathlib import Path
 import sys
@@ -9,7 +10,7 @@ from mathutils import Vector
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('output', type=Path)
-parser.add_argument('--frames', choices=('entry', 'entry,bench,return'), default='entry,bench,return')
+parser.add_argument('--frames', choices=('none', 'entry', 'entry,bench,return'), default='entry,bench,return')
 args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
 out = args.output.resolve()
 out.mkdir(parents=True, exist_ok=True)
@@ -83,6 +84,19 @@ cast = finish('Orbital passage dark alloy', (.037, .064, .100), .36, .67)
 rubber = finish('Pressure gasket', (.018, .023, .025), .55)
 cyan = finish('Recess strip cyan', (.065, .25, .71), .24, emission=1.30)
 amber = finish('Indicator amber', (1., .34, .065), .26, emission=1.45)
+
+
+# These pieces close the original blockout's non-traversable positive-Z wall.
+# They are drawn separately from the existing UV bake in the packaged room.
+infill = Path(__file__).resolve().parents[1] / 'orbital-entry-infill.json'
+for part in json.loads(infill.read_text()):
+    x, y, z = part['center']
+    width, height, depth = part['size']
+    # MML's cube material interprets these components in linear light.
+    linear_color = [int(part['color'][index:index+2], 16) / 255 for index in (1, 3, 5)]
+    material = finish(part['id'], linear_color, .62)
+    piece = box(part['id'], (x, -z, y), (width, depth, height), material)
+    piece['holodeck_runtime_overlay'] = True
 
 for name in ('panel', 'deck', 'steel', 'navy', 'orange'):
     material = bpy.data.materials['Orbital ' + name]
@@ -219,7 +233,7 @@ camera.location, target = poses['entry']
 aim(camera,target)
 scene.render.filepath = '//entry.png'
 bpy.ops.wm.save_as_mainfile(filepath=str(out/'matter-orbital-reference.blend'), compress=True)
-for frame in args.frames.split(','):
+for frame in ([] if args.frames == 'none' else args.frames.split(',')):
     camera.location, target = poses[frame]
     aim(camera,target)
     scene.render.filepath = str(out/f'{frame}.png')
