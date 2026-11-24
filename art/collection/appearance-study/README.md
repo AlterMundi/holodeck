@@ -293,3 +293,39 @@ control. To test view-dependent highlights, use a coherent scene with
 specular material and light. Record held-out close-up detail, projection
 consistency, geometric and semantic masks, local style changes and
 object motions before selecting a representation for production.
+
+
+## Orbital finish for the Matter room
+
+The room-owned Blender file is the editable geometry. The selected design
+keeps that layout and assigns a replaceable material pack over the authored
+objects. The generated, reusable albedo pack is
+[`orbital-materials.jpg`](../orbital-materials.jpg). Its six square swatches
+are bulkhead, navy anti-static surface, deck, orange enamel, brushed steel
+and graphite. Seam blending and derived micro-normals are generated from
+the same source at texture build time. Blender owns roughness, metallic
+response, normals and lighting. The pack embeds no camera-dependent colors.
+
+```sh
+python3 art/collection/appearance-study/pack-materials.py \
+  art/collection/orbital-materials.jpg TEXTURE_DIR
+blender --background art/collection/matter-workshop.blend --python-exit-code 1 \
+  --python art/collection/appearance-study/orbital-finish.py -- TEXTURE_DIR OUTPUT_DIR
+```
+
+The exporter writes an editable styled blend, a standalone managed GLB
+with embedded textures, per-object material assignments, and three exact
+camera renders. It batches static geometry by material and keeps glass,
+lettering, and the rotating archive parts separate. Its result is selected
+by the room's normal `matterCollection.art` configuration. The existing
+MML room route, selection and interaction semantics remain authoritative.
+Keep the generated concept and albedo master in the project source store.
+Reproduce disposable maps and comparison renders in one bounded staging
+directory. See the shared deployment guide for the exact profile names.
+
+The method uses one 3D surface material as the authority across views.
+[CustomTex](https://chenweilinx.github.io/CustomTex/) and
+[SceneHI](https://arxiv.org/abs/2609.10363) represent further routes to
+learn these materials jointly across views. The current builder is
+a selected art direction and deterministic PBR authoring pipeline, not
+a reproduction or a measured ranking of either paper's generator.

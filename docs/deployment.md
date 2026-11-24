@@ -98,11 +98,14 @@ The optional `matterCollection` receiving selection names one existing interior
 `room` and up to six ordered shelf `projects`. Each project has a stable
 `id` and one to three distinct Home `resources`. A project can group
 complementary 3D reviews without copying their editions. The optional
-`art: "matter-workshop-v1"` mounts the qualified Blender shell on that room.
-Use the existing room permission and compatible room graph. Rooms with
-descending or ascending stairs keep the ordinary art because the workshop
-floor is continuous. The ordinary cell art endpoint serves the shell only
-during authorized room presence.
+`art: "matter-workshop-v1"` mounts the original qualified Blender shell.
+`art: "matter-workshop-orbital-v1"` selects its orbital PBR materials and
+compatible light rig on the same shell. Both profiles use the same authored
+door openings, collision volumes, shelf and table anchors, archive platform,
+and room permissions. Select the profile only in the protected receiving
+configuration. Rooms with stairs keep their ordinary art. The room art
+endpoint serves the selected exact GLB only during authorized room presence.
+To restore the original appearance, select `matter-workshop-v1`.
 
 `GET api/space/collection` uses the current visitor's Home session on the
 same HTTPS origin. It intersects the selected project resources with Home's

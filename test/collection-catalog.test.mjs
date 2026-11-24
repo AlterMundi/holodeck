@@ -6,6 +6,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
+import {readMatterWorkshopArt} from '../src/matter-workshop-art.mjs';
 import {collectionSelection} from '../src/collection-catalog.mjs';
 import {createConversationContexts} from '../src/conversation-context.mjs';
 import {houseId} from '../src/houses.mjs';
@@ -22,6 +23,11 @@ const selected={room:'matter',projects:[
 test('collection positions reject missing rooms and ambiguous resource placements',()=>{
   const rooms=new Map([['matter',{}]]);
   assert.deepEqual(collectionSelection(selected,rooms),selected);
+  const original=readMatterWorkshopArt();
+  const orbital=readMatterWorkshopArt('matter-workshop-orbital-v1');
+  assert.notEqual(orbital.revision,original.revision);
+  for(const field of ['archive','shelves','fixtures','colliders'])
+    assert.deepEqual(orbital[field],original[field]);
   assert.throws(()=>collectionSelection({...selected,art:'matter-workshop-v1'},
     new Map([['matter',{links:[{kind:'stair'}]}]])),/without stairs/);
   assert.throws(()=>collectionSelection({...selected,room:'other'},rooms),/existing Collection room/);
@@ -72,7 +78,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
     return JSON.parse(reply);
   }
   const runtime=await createHolodeck({
-    stateDir,publicOrigin:'https://home.test',matterCollection:{...selected,art:'matter-workshop-v1',archive:archived},
+    stateDir,publicOrigin:'https://home.test',matterCollection:{...selected,art:'matter-workshop-orbital-v1',archive:archived},
     interiorSpaces:[{id:'matter',house,title:'Manipulación de Materia',entry:true,level:0,guests:['human:guest'],links:[]}],
     identityResolver:async req=>{
       if(expiredSession)return null;
@@ -158,7 +164,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
   assert.equal((await visitor.art(asset)).status,404);
   const delivered=await author.art(asset);
   assert.equal(delivered.status,200);
-  assert.equal(Buffer.from(await delivered.arrayBuffer()).subarray(0,4).toString(),'glTF');
+  assert.deepEqual(Buffer.from(await delivered.arrayBuffer()),readMatterWorkshopArt('matter-workshop-orbital-v1').bytes);
   assert.equal((await visitor.move('outside','matter')).status,200);
 
   const response=await author.catalog();

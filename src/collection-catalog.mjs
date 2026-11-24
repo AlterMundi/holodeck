@@ -1,4 +1,5 @@
 import {readWorktableReference} from './collection-review.mjs';
+import {isMatterArtProfile} from './matter-workshop-art.mjs';
 
 const RESOURCE=/^[a-f0-9]{32}$/;
 const VERSION=/^[a-f0-9]{64}$/;
@@ -10,7 +11,7 @@ export function collectionSelection(selection,rooms){
   if(!selection||!['projects,room','art,projects,room','archive,projects,room','archive,art,projects,room'].includes(Object.keys(selection).sort().join(','))||!rooms.has(selection.room)||
      !Array.isArray(selection.projects)||selection.projects.length<1||selection.projects.length>6)
     throw Error('Select an existing Collection room and one to six shelf projects');
-  if(selection.art!==undefined&&(selection.art!=='matter-workshop-v1'||
+  if(selection.art!==undefined&&(!isMatterArtProfile(selection.art)||
      rooms.get(selection.room).links?.some(link=>link.kind==='stair')))
     throw Error('Select the Matter workshop shell on a room without stairs');
   const ids=new Set(),selected=new Set();

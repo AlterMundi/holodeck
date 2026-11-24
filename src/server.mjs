@@ -156,7 +156,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     persist:designStore?value=>designStore.save(value):null});
   const collection=collectionSelection(matterCollection,spaces.rooms);
   if(collection&&!publicOrigin)throw Error('Collection requires the existing Home origin');
-  const matterArt=collection?.art&&readMatterWorkshopArt();
+  const matterArt=collection?.art&&readMatterWorkshopArt(collection.art);
   const readCollection=collection&&createCollectionReader(publicOrigin,{request:collectionSourceRequest});
   const readTableReference=collection?.art&&createCollectionReferenceReader(publicOrigin,readCollection,{request:collectionSourceRequest});
   const representatives=readCollectionRepresentatives(stateDir,collection);
