@@ -7,6 +7,11 @@ const CLEARANCE=.07;
 // frame after orbit/zoom, including the corners of the rendered near plane.
 export function constrainInteriorCamera({coreCameraManager:camera,collisionsManager},getRoom){
   const update=camera.update.bind(camera);
+  const adjust=camera.adjustCameraPosition;
+  if(adjust)camera.adjustCameraPosition=function(...args){
+    if(getRoom())this.targetDistance=this.desiredDistance;
+    else adjust.apply(this,args);
+  };
   const rotation=new Quaternion();
   const back=new Vector3(),right=new Vector3(),up=new Vector3(),focus=new Vector3();
   const ray=new Ray(),destination=new Vector3();
@@ -22,21 +27,20 @@ export function constrainInteriorCamera({coreCameraManager:camera,collisionsMana
     }
     const {position,rotation:q,fov,aspect}=camera.getMainCameraState();
     const boom=camera.distance;
-    if(!Number.isFinite(boom)||boom<=NEAR||!Number.isFinite(aspect)||aspect<=0)return;
+    if(!Number.isFinite(boom)||boom<=0||!Number.isFinite(aspect)||aspect<=0)return;
     rotation.set(q.x,q.y,q.z,q.w);
     back.set(0,0,1).applyQuaternion(rotation);
     right.set(1,0,0).applyQuaternion(rotation);
     up.set(0,1,0).applyQuaternion(rotation);
-    focus.set(position.x,position.y,position.z).addScaledVector(back,-boom);
-    ray.origin.copy(focus);
+    if(camera.target)focus.copy(camera.target);
+    else focus.set(position.x,position.y,position.z).addScaledVector(back,-boom);
     const halfHeight=NEAR*Math.tan(fov*Math.PI/360);
     let limit=boom;
     for(const [x,y] of samples){
-      const length=destination.copy(back).multiplyScalar(boom)
-        .addScaledVector(right,x*halfHeight*aspect).addScaledVector(up,y*halfHeight).length();
-      ray.direction.copy(destination).multiplyScalar(1/length);
-      const hit=collisionsManager.raycastFirst(ray,length+CLEARANCE);
-      if(hit)limit=Math.min(limit,Math.max(NEAR,(hit[0]-CLEARANCE)*boom/length));
+      destination.copy(focus).addScaledVector(right,x*halfHeight*aspect).addScaledVector(up,y*halfHeight);
+      ray.set(destination,back);
+      const hit=collisionsManager.raycastFirst(ray,boom+CLEARANCE);
+      if(hit)limit=Math.min(limit,Math.max(0,hit[0]-CLEARANCE));
     }
     if(room!==lastRoom||lastDistance===undefined||limit<=lastDistance)lastDistance=limit;
     else lastDistance=Math.min(limit,lastDistance+.18);

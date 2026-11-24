@@ -373,6 +373,12 @@ a way out. Door proximity in the browser provides a spatial cue. The server
 enforces room authorization independently of browser position. A visitor's
 geometry connection receives only the passages they can use, including only
 those floor openings and stair colliders. Presence stays shared by room.
+The room document closes its collision shell at the ceiling. Authored
+Matter uses its plaster ceiling height of 4.01 m. The orbit camera checks
+the current boom and near-plane corners against the shell on every
+frame. The player sweeps the capsule crown before an upward step.
+The exterior uses the same crown check in the toroidal frame against
+cave and other registered colliders.
 Changing a passage grant closes the stale geometry connection.
 
 An open source frame or Conversation draft in the exterior stays in place

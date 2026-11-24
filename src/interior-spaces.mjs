@@ -205,6 +205,7 @@ export class InteriorSpaces {
 export function interiorDocument(room,passages=[],exhibit=null,art=null,passageAsset=()=>null) {
   const {id,position:{x,y,z},radius,height}=ROOM_MARKER;
   const walls=art?.replacesShell||art?.replacesWalls?' opacity="0" cast-shadows="false"':'';
+  const ceiling=art?.ceiling??3.3,wallCenter=ceiling/2;
   const station=art?.station;
   const stationMarkup=station?`<m-group id="${station.id}" x="${station.position.x}" z="${station.position.z}">
     ${station.authoredSign?'':`<m-label y="1.21" z=".52" width="2.33" height=".32" font-size="20" content="${attribute(station.title)}" collide="false"></m-label>
@@ -222,10 +223,11 @@ export function interiorDocument(room,passages=[],exhibit=null,art=null,passageA
     ${stationMarkup}${controlAnchors}
     ${art?'<m-model id="room-art" src="'+attribute(art.src)+'" collide="false"></m-model>'+art.colliders+
       (art.dressing??'')+(art.lightRig??''):''}
-    <m-cube x="-6" y="1.65" z="0" width=".2" height="3.3" depth="12" color="${wall}"${walls}></m-cube>
-    <m-cube x="6" y="1.65" z="0" width=".2" height="3.3" depth="12" color="${wall}"${walls}></m-cube>
-    <m-cube x="0" y="1.65" z="-6" width="12" height="3.3" depth=".2" color="${end}"${walls}></m-cube>
-    <m-cube x="0" y="1.65" z="6" width="12" height="3.3" depth=".2" color="${end}"${walls}></m-cube>
+    <m-cube x="-6" y="${wallCenter}" z="0" width=".2" height="${ceiling}" depth="12" color="${wall}"${walls}></m-cube>
+    <m-cube x="6" y="${wallCenter}" z="0" width=".2" height="${ceiling}" depth="12" color="${wall}"${walls}></m-cube>
+    <m-cube x="0" y="${wallCenter}" z="-6" width="12" height="${ceiling}" depth=".2" color="${end}"${walls}></m-cube>
+    <m-cube x="0" y="${wallCenter}" z="6" width="12" height="${ceiling}" depth=".2" color="${end}"${walls}></m-cube>
+    <m-cube id="room-ceiling-collider" y="${ceiling+.1}" width="12.2" height=".2" depth="12.2" opacity="0" cast-shadows="false"></m-cube>
     ${exhibit?`<m-group id="house-exhibit" data-exhibit-revision="${exhibit.revision}" x="${EXHIBIT_POSITION.x}" z="${EXHIBIT_POSITION.z}">
       ${art?.authoredExhibitBase?'':`<m-cylinder y=".48" radius=".69" height=".76" color="#526b66"></m-cylinder>
       <m-cube y="1.10" width="1.34" height=".49" depth=".77" color="#b89165"></m-cube>`}

@@ -1,4 +1,5 @@
 import {Line3, Quaternion, Vector3} from 'three';
+import {createAvatarHeadroom} from './avatar-headroom.mjs';
 import {createToroidalCameraClearance} from './toroidal-camera-clearance.mjs';
 import {ToroidalLocomotion, toroidalRotation} from './toroidal-locomotion.mjs';
 import {TOROIDAL_SPAWN, terrainCoordinates} from './toroidal-terrain.mjs';
@@ -14,7 +15,8 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false) {
   const rotation = new Quaternion();
   const viewRotation = new Quaternion();
   const viewOffset = new Vector3();
-  const radialAxis = new Vector3();
+  const radialAxis = new Vector3(),right=new Vector3(),side=new Vector3(),feet=new Vector3();
+  const headroom=createAvatarHeadroom();
   const capsule = new Line3();
   const originalStart = new Vector3();
   let motion, lastLocal, lastPosition;
@@ -37,13 +39,27 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false) {
     const yaw = moving ? Math.PI / 2 - camera.theta + control.direction : motion.yaw;
     const flying=flight();
     const vertical=flying?(Number(keyInputManager.getJump())-Number(keyInputManager.getRun())):0;
+    const previousHeight=motion.height;
     motion.update(seconds, {forward: moving ? 1 : 0, yaw, sprint: !flying&&control?.isSprinting,
       jump: !flying&&control?.jump,flight:flying,vertical});
     let state = motion.pose();
     const radius = controller.capsuleInfo.radius;
     const height = controller.capsuleInfo.segment.end.y;
-    const point = state.position;
-    radialAxis.set(0, 1, 0).applyQuaternion(toroidalRotation(point, 0, rotation));
+    let point = state.position;
+    toroidalRotation(point,0,rotation);
+    radialAxis.set(0,1,0).applyQuaternion(rotation);
+    right.set(1,0,0).applyQuaternion(rotation);
+    side.set(0,0,1).applyQuaternion(rotation);
+    controller.config.collisionsManager.setCharacterPosition(point);
+    feet.set(point.x,point.y,point.z);
+    const rise=motion.height-previousHeight;
+    const allowed=headroom(feet,rise,controller.capsuleInfo,controller.config.collisionsManager,radialAxis,right,side);
+    if(allowed<rise){
+      motion.applyCollision(feet.addScaledVector(radialAxis,allowed-rise));
+      motion.radialSpeed=0;
+      state=motion.pose();
+      point=state.position;
+    }
     capsule.start.set(point.x, point.y, point.z).addScaledVector(radialAxis, radius);
     capsule.end.copy(capsule.start).addScaledVector(radialAxis, height);
     originalStart.copy(capsule.start);

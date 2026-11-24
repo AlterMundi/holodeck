@@ -74,7 +74,7 @@ export function readMatterWorkshopArt(profile='matter-workshop-v1'){
   const bytes=packed?.bytes??readFileSync(new URL('../public/'+path,import.meta.url));
   if(bytes.length>maxBytes||createHash('sha256').update(bytes).digest('hex')!==digest)
     throw Error('Matter workshop does not match the qualified Blender export');
-  return {...packed,bytes,revision:digest+'.glb',replacesShell:true,colliders,
+  return {...packed,bytes,revision:digest+'.glb',replacesShell:true,ceiling:4.01,colliders,
     dressing:visualStyles?orbitalDressing:'',
     floorSplat:splatFloor?readFloorSplat():null,
     roomLooks:visualStyles?compileRoomLooks(looks,file=>

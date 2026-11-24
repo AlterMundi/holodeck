@@ -6,6 +6,7 @@ import {TOROIDAL_SUN,ToroidalTerrainRenderer,toroidalSunDirection} from './toroi
 import {bindToroidalMml} from './toroidal-mml.mjs';
 import {RemoteDocumentWrapper} from '@mml-io/mml-web';
 import {RoomSceneCache,roomArtURL} from './room-scene-cache.mjs';
+import {bindInteriorHeadroom} from './avatar-headroom.mjs';
 import {constrainInteriorCamera} from './interior-camera.mjs';
 import {capWorldPixelRatio,usesLightGraphics} from './render-pixel-budget.mjs';
 import {bindVideoSettings} from './video-settings.mjs';
@@ -193,8 +194,13 @@ function startInterior(space){
         beaconControls.update(space.objects,position);render(state);
         if(entering&&position&&entryRoomReady(document.getElementById(space.id)))worldEntered();
       };
-      renderer.dispose=()=>{frameBudget.dispose();picker.dispose();galleryModels.clear();dispose();};
-      queueMicrotask(options.onInitialized);return renderer;
+      let releaseHeadroom;
+      renderer.dispose=()=>{releaseHeadroom?.();frameBudget.dispose();picker.dispose();galleryModels.clear();dispose();};
+      queueMicrotask(()=>{
+        releaseHeadroom=bindInteriorHeadroom(client.getCharacterManager(),()=>true);
+        options.onInitialized();
+      });
+      return renderer;
     },
     animationConfig:animations,
     loadingScreen:{title:space.title,background:'#20464c',color:'#f4e8cd'}
@@ -667,7 +673,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         return configure({...configuration,workshop:{...configuration.workshop,url:arrivalAddress}},token);
       };
     }
-    let nextDressing=0, ring=null, cave=null, scenery=null, atmosphere=null, releaseRadialMovement=null, ringSun=null;
+    let nextDressing=0, ring=null, cave=null, scenery=null, atmosphere=null, releaseRadialMovement=null, releaseHeadroom=null, ringSun=null;
     let sceneryAfter=null;
     // On the ring the sun keeps one direction in the traveler's radial frame,
     // matching the terrain's own per-place sunlight. It moves in 4 m steps so
@@ -810,8 +816,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
       }
     };
-    renderer.dispose=()=>{releaseRadialMovement?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
+      releaseHeadroom=bindInteriorHeadroom(client.getCharacterManager(),()=>inside);
       releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing,()=>flightEnabled);
       options.onInitialized();
     });
