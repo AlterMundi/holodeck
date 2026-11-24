@@ -293,6 +293,35 @@ archive rotation, 24 camera checks and the foyer return. The browser
 trials used controlled identities. An authenticated human visit to the
 served release remains a separate observation.
 
+A follow-up used the same package to track the pendant reflection during
+a continuous sideways walk with the room and Collection models mounted.
+Each sample pairs the rendered pixels with the camera position and
+quaternion from that draw. The reference is the pendant center reflected
+across the floor plane and projected into the actual 561 × 374 drawing
+buffer. The measured position is the weighted centroid of the bright,
+near-neutral pixels in that floor region.
+
+On physical Cuevanico, all eight samples tracked the highlight across
+1.86 m of lateral camera travel. It moved 78.8 px horizontally against
+79.8 px predicted, with 3.2 px median absolute horizontal error and no
+reversal in the sampled direction. The desktop Chromium software renderer
+tracked four samples over 1.74 m, with 72.2 px observed against 73.6 px
+predicted and 3.4 px median error. Both routes returned through the foyer
+and verified that the scoped art became inaccessible outside the room.
+Cuevanico's separate uninstrumented walk measured 33.3 ms median and
+50.0 ms p95 across 388 intervals. Capture overhead was outside that
+measurement.
+
+In the emulated touch viewport, tapping the doors and using the actual
+virtual stick also completed the round trip. The visible highlight moved
+in the expected direction across six samples. At the end of the walk the
+projected center crossed the left edge of the 214 × 464 buffer. The visible
+crop still contained the right side of the highlight, so its centroid was
+not a measurement of the full highlight at those poses. These tracks
+qualify the pendant reflection at specific camera poses. Whole-room
+temporal stability and physical mobile fidelity still need separate
+evidence.
+
 The preceding source `a7d556b` served package `2f68982b6294`, with
 `52e35e6d6b2a` as its rollback.
 Manipulación de Materia now uses the Blender pass inspired by the appearance
