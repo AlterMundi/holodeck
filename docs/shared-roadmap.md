@@ -488,7 +488,10 @@ collision. The paired browser fixture walked through, measured the collider
 overhead and observed the other side from the independent participant.
 Terrain material now distinguishes the worn shoulder route, vegetated
 patches, rock and shore. An inland spur reaches a raised inner-flank lookout
-with views into the opening and across the opposite arc. In Chromium, the
+with views into the opening and across the opposite arc. The exterior
+camera tests the terrain and cave/house colliders in the local frame before
+placing its near plane. An intentionally low angle at the lookout retained
+0.155 m of radial terrain clearance in Chromium. In Chromium, the
 actual character manager advanced the browser's fixed-step motion from one
 held movement input through all eight sectors and the wrapping seam. The run
 drew 43 checkpoints, including 21 in water. Simulation time was accelerated

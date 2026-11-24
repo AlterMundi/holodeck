@@ -1,4 +1,5 @@
 import {Line3, Quaternion, Vector3} from 'three';
+import {createToroidalCameraClearance} from './toroidal-camera-clearance.mjs';
 import {ToroidalLocomotion, toroidalRotation} from './toroidal-locomotion.mjs';
 import {TOROIDAL_SPAWN, terrainCoordinates} from './toroidal-terrain.mjs';
 
@@ -8,6 +9,8 @@ import {TOROIDAL_SPAWN, terrainCoordinates} from './toroidal-terrain.mjs';
 export function bindToroidalMml(manager, camera, enabled) {
   const updateCharacters = manager.update;
   const updateCamera = camera.update;
+  const adjustCamera = camera.adjustCameraPosition;
+  const clearance = createToroidalCameraClearance();
   const rotation = new Quaternion();
   const viewRotation = new Quaternion();
   const viewOffset = new Vector3();
@@ -64,6 +67,7 @@ export function bindToroidalMml(manager, camera, enabled) {
     const local = this.localController;
     if (!enabled()) {
       motion = lastLocal = lastPosition = null;
+      clearance.reset();
       return updateCharacters.apply(this, args);
     }
 
@@ -97,15 +101,23 @@ export function bindToroidalMml(manager, camera, enabled) {
     toroidalRotation(lastPosition, 0, rotation);
     viewOffset.set(state.position.x - target.x, state.position.y - target.y, state.position.z - target.z)
       .applyQuaternion(rotation);
-    state.position.set(target.x + viewOffset.x, target.y + viewOffset.y, target.z + viewOffset.z);
     viewRotation.set(state.rotation.x, state.rotation.y, state.rotation.z, state.rotation.w).premultiply(rotation);
+    clearance.constrain(target,viewOffset,viewRotation,state.fov,state.aspect,this.collisionsManager);
+    state.position.set(target.x + viewOffset.x, target.y + viewOffset.y, target.z + viewOffset.z);
     state.rotation.set(viewRotation.x, viewRotation.y, viewRotation.z, viewRotation.w);
   }
 
+  function adjustInFrame(...args) {
+    if (enabled() && lastPosition) this.targetDistance=this.desiredDistance;
+    else adjustCamera.apply(this,args);
+  }
+
   manager.update = characterUpdate;
+  camera.adjustCameraPosition=adjustInFrame;
   camera.update = cameraUpdate;
   return () => {
     if (manager.update === characterUpdate) manager.update = updateCharacters;
     if (camera.update === cameraUpdate) camera.update = updateCamera;
+    if (camera.adjustCameraPosition === adjustInFrame) camera.adjustCameraPosition = adjustCamera;
   };
 }
