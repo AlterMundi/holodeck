@@ -322,6 +322,42 @@ qualify the pendant reflection at specific camera poses. Whole-room
 temporal stability and physical mobile fidelity still need separate
 evidence.
 
+The three appearance alternatives were then compared at those same eight
+camera poses and 561 × 374 pixels. The Cycles target uses the editable
+combined Blender finish and the exact camera transforms. The browser
+fixture verified the composed camera for the served UV/PBR appearance,
+the older live floor-splat hybrid and its identical-shell mesh control.
+The learned full-room splat used the same projection in its standalone
+renderer. The hybrid and its control each turned the mounted archive,
+returned through the foyer and lost access to their scoped art. The
+hybrid drew 46,089–48,655 floor instances at these poses from its
+70,224-point asset. Replacing the floor changed mean absolute display
+luma by 37.9 levels in the foreground floor crop and by 0.02 in the
+sampled back-wall strip of the same shell.
+
+| Appearance | Floor luma error | Error in frame-to-frame luma change |
+| --- | ---: | ---: |
+| Served layered Orbital UV/PBR | 15.59 | 5.14 |
+| Learned full-room splat | 22.42 | 8.89 |
+| Older mesh control of the hybrid | 25.40 | 9.44 |
+| Live floor-splat hybrid | 47.45 | 11.56 |
+
+Both columns report mean absolute differences from the Cycles floor crop
+on a 0–255 scale. The second compares successive image differences at
+the recorded poses. It includes brightness and highlight placement and
+does not measure high-frequency shimmer. The hybrid uses a different room
+finish, which is why its same-shell control is retained. The new numbers
+measure the foreground floor, rather than the entire scene. Within that
+crop the served finish is too dark, particularly in the reference pixels
+below luma 80, where it averages 19.3 levels below Cycles. Test the floor's
+diffuse shadow response before increasing specular intensity.
+
+Cuevanico independently replayed the path in the pure-splat viewer at
+66.7 ms median and 83.4 ms p95 across 90 intervals at the same buffer
+dimensions, with JPEG capture outside the timed replay. This measures
+camera rendering and sorting only. The previous physical interaction
+measurements used the normal room runtime and locomotion.
+
 The preceding source `a7d556b` served package `2f68982b6294`, with
 `52e35e6d6b2a` as its rollback.
 Manipulación de Materia now uses the Blender pass inspired by the appearance
