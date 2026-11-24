@@ -32,6 +32,14 @@ then draws the destination before lifting the passage overlay. In the
 instrumented Cuevanico run, the first ready draw took 9.03 s and the next
 one took 11 ms. Both desktop Chromium and emulated touch passed the packed
 doorway round trip with this change.
+On the physical Pi the packed lightweight candidate then reduced the
+first draw from 9.18 s to 5.33 s after simplifying the two optical materials.
+The fully visible passage went from 10.85 s to 7.46 s in the paired runs.
+Desktop automatic kept the original physical glass and emulated touch
+used the new treatment in lightweight mode. Both passed the door round trip.
+On a separate physical run with the packed lightweight candidate, the archive
+turned, all 24 corner samples cleared the walls and 418 moving intervals
+measured 33.3 ms median and 33.4 ms p95.
 The separate appearance viewer also passed a moving hardware check on
 Cuevanico. The lightweight pure, detailed orbital pure and lightweight
 hybrid took 33.4 ms, 50.0 ms and 50.0 ms respectively at the median.

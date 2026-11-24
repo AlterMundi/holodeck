@@ -515,10 +515,39 @@ and return still worked on the Pi, desktop Chromium and emulated touch.
 A second instrumented Pi run reproduced the split at 9.11 s and 10.2 ms.
 None of the sampled individual WebGL compile, link, parameter, texture
 upload or draw calls exceeded the 25 ms recording threshold. The full
-composer timing localizes the delay to the first draw, and the individual
-call sample leaves its cause unresolved. Measure aggregate call time and
-the shadow and transmission passes before changing the room's lighting or
-glazing.
+composer timing localized the delay to the first draw. The aggregate trace
+then measured 8.89 s across 17 WebGL program-info queries in a 9.18 s draw.
+The queries waited for first-use shader preparation. The lightweight
+profile already skipped shadows. A trial that queued the main-scene shader
+programs first took 9.48 s to prepare and draw, with 17 program-info
+queries still on the draw path. That experiment was discarded.
+
+Replacing the workshop window and archive glazing with single-pass
+translucency in a room fixture removed the offscreen transmission pass.
+The same Pi and packed baked model then recorded 8 program-info queries
+and a 5.41 s first draw. The matched player-height desktop images show
+slightly brighter, flatter glass and readable fixtures behind it. The
+runtime candidate applies this treatment only in Matter's lightweight
+graphics profile. It clones only the active scene's glazing materials,
+including all panes that share an original, and disposes the clones when
+the scene leaves. The automatic profile and the authored Blender/glTF
+materials retain physical transmission.
+
+The packed runtime reproduced the fixture result without browser-side
+substitution. Chromium on the physical Pi measured 5.33 s for its first
+draw, 5 ms for the next draw and 7.46 s to finish the doorway. The earlier
+packed profile with transmission took 9.18 s for its first draw and 10.85 s
+for the doorway. Both runs used the loopback tunnel, one model fetch and the
+same baked GLB, and verified that the model endpoint refused reads after
+exit. Desktop automatic and emulated touch lightweight each passed the
+doorway and the expected glazing treatment.
+
+In a separate physical movement run with that package, cold passage took
+8.57 s, the archive turned and all 24 sampled corner camera centers cleared.
+The 418 moving intervals measured 33.3 ms median and 33.4 ms p95. The
+packing, fixed viewport and lightweight setting match the physical checks
+above. One successful route per package is insufficient to infer a stable
+p95 difference between packages.
 
 ### Physical splat comparison
 

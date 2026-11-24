@@ -2,6 +2,7 @@ import {RemoteDocumentWrapper} from '@mml-io/mml-web';
 import {RoomSceneCache,roomArtURL} from './room-scene-cache.mjs';
 import {constrainInteriorCamera} from './interior-camera.mjs';
 import {capWorldPixelRatio,usesLightGraphics} from './render-pixel-budget.mjs';
+import {useLightweightMatterGlazing} from './matter-glazing.mjs';
 import {nearestCreationPosition} from './world-layout.mjs';
 import { Networked3dWebExperienceClient, DefaultVirtualJoystickPlugin } from '@mml-io/3d-web-experience-client';
 import { ThreeJSWorldRenderer } from '@mml-io/3d-web-threejs';
@@ -204,6 +205,7 @@ const hot=activeSpace?.live===1;
 const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
 let inside=hot&&activeSpace.id!=='outside';
 let updateDoor=()=>{},remoteScene=null,roomModel=null,networkScope=null,arrival=null;
+let releaseLightweightGlazing=null;
 let moving=false,requestingMove=false,needsSync=false,resyncing=false,moveDeadline=null,passageNotice=null;
 let roomTopic,worktableTopic;
 let prefetched=new Set(),prefetchRequest=null,pendingRoomArt=null;
@@ -223,6 +225,7 @@ const setMoving=value=>{
 };
 const removeScene=()=>{
   if(signalEditor?.draft?.mode)signalEditor.dismiss();
+  releaseLightweightGlazing?.();releaseLightweightGlazing=null;
   pendingRoomArt=null;projectedGarden=null;beaconControls.clear();galleryModels?.clear();collectionShelves?.clear();remoteScene?.remove();remoteScene=roomModel=null;
 };
 function mountScene(){
@@ -507,8 +510,10 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     let nextDressing=0;
     renderer.render=renderState=>{
       const position=client.getLocalCharacterState()?.position;
-      const waitingForRoomFrame=inside&&moving&&
-        (networkScope!==activeSpace.id||!entryRoomReady(remoteScene,roomModel));
+      const roomReady=inside&&networkScope===activeSpace.id&&entryRoomReady(remoteScene,roomModel);
+      const waitingForRoomFrame=inside&&moving&&!roomReady;
+      if(roomReady&&roomModel&&rendererBudget.lightweight&&activeSpace.collectionShelves&&!releaseLightweightGlazing)
+        releaseLightweightGlazing=useLightweightMatterGlazing(roomModel.getContainer());
       drawWorld=!waitingForRoomFrame&&!contentVisitor?.isOpeningOverWorld();
       frameBudget.sample(drawWorld&&!document.hidden&&!!position&&!moving&&!needsSync&&(!hot||networkScope===activeSpace.id));
       light.visible=!inside||!activeSpace.indoorLighting;
