@@ -32,8 +32,19 @@ function useWorldPosition(shader) {
     '#include <common>\n' + worldPosition + surfaceNoise);
 }
 
-export function useToroidalRockDetail(material) {
-  material.customProgramCacheKey = () => 'toroidal-rock-grain';
+export function useToroidalRockDetail(material, {bedding=false} = {}) {
+  const strata = bedding ? `
+        // Strata have a fixed world-space dip, with abrasion at exposed edges.
+        float plane = dot(p, vec3(.14,.53,-.08)) + .32*ringNoise(uv*.65);
+        float band = abs(fract(plane)-.5);
+        float joint = 1.0-smoothstep(.028,.125,band);
+        float iron = smoothstep(.44,.70,ringNoise(uv*.58 + floor(plane)*.44));
+        diffuseColor.rgb *= mix(vec3(1.0),
+          (1.0-.32*joint)*mix(vec3(.89,.94,1.04),vec3(1.30,1.05,.79),iron),
+          detailFade);
+        roughnessFactor = clamp(roughnessFactor + detailFade*(.13*joint-.10*iron),.22,1.0);
+  ` : '';
+  material.customProgramCacheKey = () => bedding ? 'toroidal-rock-strata' : 'toroidal-rock-grain';
   material.onBeforeCompile = shader => {
     useWorldPosition(shader);
     shader.fragmentShader = shader.fragmentShader.replace('#include <roughnessmap_fragment>',`
@@ -48,6 +59,7 @@ export function useToroidalRockDetail(material) {
         float grain = .33*scaleColor + .20*chips + .11*sand;
         diffuseColor.rgb *= 1.0 + grain * detailFade;
         roughnessFactor = clamp(roughnessFactor + chips * detailFade * .13, .2, 1.0);
+        ${strata}
       }
     `);
   };

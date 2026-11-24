@@ -29,19 +29,30 @@ export function buildToroidalCave(terrain = TOROIDAL_TERRAIN) {
     for (let arch = 0; arch <= ARCH_SEGMENTS; arch += 1) {
       const radialAngle = Math.PI * arch / ARCH_SEGMENTS;
       const roughness = .34 * Math.sin(23 * t + .7 * arch) + .17 * Math.sin(51 * t - 1.8 * arch);
-      const shade = .80 + .20 * Math.sin(18 * t + .65 * arch);
+      const mouth = Math.max(0, 1 - 7 * Math.min(t, 1 - t)) ** 2;
+      const transverse = Math.cos(radialAngle);
+      const lift = Math.sin(radialAngle);
+      // Recede at the crown and advance the scattered feet into the slope.
+      // Leave the walkable inner arch on its original, clear route.
+      const mouthOffset = (t < .5 ? 1 : -1) * mouth *
+        (1.75 * lift - 2.7 * transverse ** 2 + .75 * Math.cos(6 * radialAngle));
+      const bedding = Math.sin(9 * radialAngle + 3 * t) + .46 * Math.sin(19 * radialAngle - 11 * t);
+      const shade = .83 + .08 * Math.sin(18 * t + .65 * arch) + .07 * bedding;
       for (let skin = 0; skin < 2; skin += 1) {
         const outer = skin === 0;
-        const metersAcross = Math.cos(radialAngle) * (tunnelWidth + (outer ? walls + roughness : .25 * roughness));
+        const skirt = mouth * (1 - lift) * (2.1 + .6 * bedding);
+        const metersAcross = transverse * (tunnelWidth + (outer ? walls + roughness + skirt : .25 * roughness));
         const v = center + metersAcross / (TAU * terrain.tubeRadius);
-        const floor = terrainElevation(u, v, terrain);
-        const height = floor - 1.1 + Math.sin(radialAngle) *
-          (ceiling + 1.1 + (outer ? walls + roughness * 2 : roughness * .2));
-        const p = terrainPosition(u,v,height,terrain);
+        const longitude = outer ? u + mouthOffset / (TAU * terrain.majorRadius) : u;
+        const floor = terrainElevation(longitude, v, terrain);
+        const shell = walls + roughness * 2 + (.45 + .55 * mouth) * bedding;
+        const height = floor - 1.1 + lift * (ceiling + 1.1 + (outer ? shell : roughness * .2));
+        const p = terrainPosition(longitude,v,height,terrain);
         const index = (skin * stride + section * width + arch) * 3;
-        const brightness = shade * (outer ? .82 : .40);
+        const brightness = shade * (outer ? .85 : .45);
+        const mineral = outer ? bedding * .035 : 0;
         for (let axis = 0; axis < 3; axis += 1) positions[index + axis] = p[axis] - origin[axis];
-        colors.set([.41 * brightness,.28 * brightness,.18 * brightness],index);
+        colors.set([(.34 + mineral) * brightness,.265 * brightness,(.201 - .4 * mineral) * brightness],index);
       }
 
       if (arch < ARCH_SEGMENTS && section < SECTION_COUNT) {
@@ -80,7 +91,7 @@ export class ToroidalCave {
     geometry.setIndex(new BufferAttribute(indices,1));
     geometry.computeVertexNormals();
     const material = new MeshStandardMaterial({vertexColors:true,roughness:.96});
-    useToroidalRockDetail(material);
+    useToroidalRockDetail(material,{bedding:true});
     this.mesh = new Mesh(geometry,material);
     this.mesh.name = 'Connected rock passage';
     this.mesh.position.fromArray(origin);
