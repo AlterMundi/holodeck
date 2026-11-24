@@ -435,8 +435,14 @@ An isolated Chromium WebGL fixture generated balanced tiles in a dedicated
 worker and retained the visible terrain until each replacement cover was
 ready. It crossed both wrapping seams in 36 drawn frames with continuous
 ground ray hits. The lightweight profile uses a smaller tile budget and
-fewer vertices per tile. Collision, radial locomotion, house integration
-and verification on the actual shared route remain open.
+fewer vertices per tile. The fixed-step radial walking surface and the
+MML input, camera and avatar orientation adapter passed an isolated browser
+seam crossing. One Chromium instance used the native MML keyboard and
+camera on the underside of the ring. A separate instance reconstructed the
+avatar's up axis from the emitted position and tangent yaw. The fixture
+transferred that packet directly and exercised planar fallback. The normal
+world selection, network transport, cave and house collisions, portals and
+shared route verification remain open.
 
 
 ## Delivery sequence and cards
