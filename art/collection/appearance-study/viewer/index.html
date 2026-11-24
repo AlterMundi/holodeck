@@ -15,9 +15,15 @@
       <h1>Manipulación de Materia</h1>
       <nav aria-label="Representación de la sala">
         <button data-mode="splat" aria-pressed="true">Splat puro</button>
+        <button data-mode="orbital" aria-pressed="false">Splat orbital</button>
         <button data-mode="mixed" aria-pressed="false">Splat interactivo</button>
         <button data-mode="uv" aria-pressed="false">Textura UV</button>
       </nav>
+      <div class="actions" id="floor-options" role="group" aria-label="Comparar el piso" hidden>
+        <button id="floor-view">Mirar el piso</button>
+        <button data-floor="original" aria-pressed="false">Material original</button>
+        <button data-floor="baked" aria-pressed="true">ImageGen + sombras</button>
+      </div>
     </header>
     <section id="view" aria-label="Sala 3D">
       <canvas id="scene" aria-label="Vista 3D de Manipulación de Materia"></canvas>

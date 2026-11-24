@@ -9,11 +9,14 @@ import numpy as np
 
 root = Path(sys.argv[1])
 views = ('entry', 'east', 'west', 'reverse', 'side', 'shelf')
-light = sys.argv[2:] == ['--light']
-if sys.argv[2:] and not light:
-    raise SystemExit('Usage: fit.py CAPTURE_DIRECTORY [--light]')
-spacing = .055 if light else .027
-suffix = '-light' if light else ''
+arguments = sys.argv[2:]
+if arguments not in ([], ['--light'], ['--orbital']):
+    raise SystemExit('Usage: fit.py CAPTURE_DIRECTORY [--light | --orbital]')
+light = arguments == ['--light']
+orbital = arguments == ['--orbital']
+spacing = .055 if light else .04 if orbital else .027
+suffix = '-light' if light else '-orbital' if orbital else ''
+generated_views = set(views) if orbital else {'entry', 'east', 'reverse'}
 
 def rgb(path):
     bytes_ = subprocess.check_output([
@@ -41,7 +44,7 @@ for name in views:
         raise ValueError(f'Capture {name} has invalid samples')
     all_samples.append(samples[samples[:,:,6] > .10, :])
     base = rgb(root/f'{name}.png')
-    generated = name in {'entry', 'east', 'reverse'}
+    generated = name in generated_views
     raw = rgb(root/f'{name}-style.png') if generated else base
     # Bound appearance shifts where the generator displaces a contour.
     basic = soften(base, 4)
@@ -52,6 +55,12 @@ for name in views:
     good_detail = np.clip(1 - np.max(abs(fine-base_detail), axis=2, keepdims=True)/24, 0, 1)
     correction = np.clip(gain, .68, 1.58) ** .87
     grade = np.clip(base * correction + good_detail * (fine-base_detail) * .45, 0, 255)
+    if orbital:
+        # Preserve the new palette. Keep high-frequency detail only away
+        # from geometry contours, where divergent edits create ghosts.
+        edge = np.max(abs(base - soften(base, 2)), axis=2, keepdims=True)
+        detail_weight = np.clip(1 - edge / 35, .18, .85)
+        grade = np.clip(soften(raw, 1) + (raw - soften(raw, 1)) * detail_weight, 0, 255)
     records.append((name, samples, camera['position'], camera['target'], float(camera['fov']),
                     base, raw, grade, generated))
 
@@ -86,7 +95,10 @@ for name, grid, blender_pos, target, fov, base, raw, grade, generated in records
         np.einsum('ij,ij->i', normals[valid], seen[:,3:6]) > .85)
     choice = valid[accepted]
     row, col = row[accepted], col[accepted]
-    weight = (.06 + seen[accepted,6]**2) / (1 + depth[choice]*.19)
+    if orbital:
+        weight = (.08 + seen[accepted,6]**3) / (1 + depth[choice]*.33)**2
+    else:
+        weight = (.06 + seen[accepted,6]**2) / (1 + depth[choice]*.19)
     if generated:
         weight *= 1.30
         styled[choice] = True
@@ -114,7 +126,7 @@ packed = np.empty(len(xyz),dtype=dtype)
 # the surface normal direction so the GLB can fill missed rays.
 packed['position'] = xyz + normals*.018 if light else xyz
 # Two broad surface axes and a narrow thickness along the ray-cast normal.
-radius = spacing*.96 if light else .026
+radius = spacing * .96 if light or orbital else .026
 packed['scale'] = (radius, radius, .0055)
 packed['rgba'][:,3] = 230
 packed['rotation'] = (angles*128+128).clip(0,255).astype(np.uint8)

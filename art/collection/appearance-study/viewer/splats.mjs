@@ -8,7 +8,7 @@ const buckets = 1024;
 
 export function createSplats(bytes) {
   const count = bytes.byteLength / 32;
-  if (!Number.isInteger(count) || count < 1 || count > 160000) throw Error('Invalid splat catalog');
+  if (!Number.isInteger(count) || count < 1 || count > 260000) throw Error('Invalid splat catalog');
   const rows = Math.ceil(count * 3 / textureWidth);
   const data = new Float32Array(rows * textureWidth * 4);
   const source = new DataView(bytes);

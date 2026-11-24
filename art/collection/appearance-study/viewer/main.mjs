@@ -10,15 +10,16 @@ const canvas=$('scene'), status=$('status'), movement=$('movement');
 const options=[...document.querySelectorAll('[data-mode]')];
 const descriptions={
   splat:'Toda la apariencia sale del splat. La vitrina forma parte de la imagen.',
+  orbital:'Laboratorio orbital con materiales de ImageGen y luces cian y ámbar. Podés recorrerlo desde cualquier ángulo.',
   mixed:'El splat da el acabado sobre la malla. El plato de la vitrina sigue siendo un objeto que podés girar.',
-  uv:'La malla usa piedra generada con ImageGen y sombras horneadas en el piso. El resto de la sala conserva sus materiales de Blender.',
+  uv:'Alterná el material original y el piso generado con sombras horneadas. La cámara y el resto de la sala conservan su posición y su aspecto.',
 };
 const obstacles=[
   [-1.58,1.58,-1.44,.58], [1.84,4.85,-4.60,-2.76], [-5.78,-4.78,-2.47,1.63],
 ];
 const initial=new Vector3(-.72,1.66,4.38), desk=new Vector3(0,1.05,-.43);
 const front=new Vector3(), right=new Vector3();
-const hints={splat:'Cargando el splat…',mixed:'Cargando la vitrina…',uv:'Cargando la sala y su textura…'};
+const hints={splat:'Cargando el splat…',orbital:'Cargando el laboratorio orbital…',mixed:'Cargando la vitrina…',uv:'Cargando la sala y su textura…'};
 const scene=new Scene();
 scene.background=new Color('#332b24');
 const camera=new PerspectiveCamera(67.38,1,.06,28);
@@ -31,7 +32,10 @@ const lamp=new PointLight('#ffd59b',18,7,2);
 lamp.position.set(0,2.35,-.43);
 scene.add(new AmbientLight('#e6ebf3',1.16),key,windowLamp,lamp);
 
-let renderer, splats, room, floor, uvFloor, turntable;
+let renderer, room, floor, uvFloor, turntable;
+const splatAssets = new Map();
+const floorOptions = [...document.querySelectorAll('[data-floor]')];
+let floorStyle = 'baked';
 let mode='splat', moving=new Set(), painted=false, dragging=null;
 let layoutDirty=true, frameDirty=true, viewReady=false, modeTicket=0;
 let turnAngle=0;
@@ -49,14 +53,32 @@ async function loadModel(path) {
   if(!response.ok) throw Error('Model unavailable');
   return gltf.parseAsync(await response.arrayBuffer(),new URL('.',location.href).href);
 }
-function getSplat() {
-  return getSplat.ready??=(async()=>{
-    const asset=await fetch('matter.splat',{credentials:'omit'});
-    if(!asset.ok)throw Error('Splat unavailable');
-    splats=createSplats(await asset.arrayBuffer());
-    splats.mesh.visible=false;
-    scene.add(splats.mesh);
-  })().catch(error=>{getSplat.ready=null;throw error;});
+function getSplat(name) {
+  if (!splatAssets.has(name)) {
+    const load = (async () => {
+      const asset = await fetch(name === 'orbital' ? 'orbital.splat' : 'matter.splat', {credentials:'omit'});
+      if (!asset.ok) throw Error('Splat unavailable');
+      const splat = createSplats(await asset.arrayBuffer());
+      splat.mesh.visible = false;
+      scene.add(splat.mesh);
+      return splat;
+    })().catch(error => {
+      splatAssets.delete(name);
+      throw error;
+    });
+    splatAssets.set(name, load);
+  }
+  return splatAssets.get(name);
+}
+let visibleSplat;
+function showFloor() {
+  if (floor) floor.visible = mode !== 'uv' || floorStyle === 'original';
+  if (uvFloor) uvFloor.visible = mode === 'uv' && floorStyle === 'baked';
+  $('floor-options').hidden = mode !== 'uv';
+  for (const button of floorOptions) {
+    button.setAttribute('aria-pressed', String(button.dataset.floor === floorStyle));
+  }
+  frameDirty = true;
 }
 function getRoom() {
   return getRoom.ready??=(async()=>{
@@ -89,16 +111,21 @@ async function choose(next) {
   $('description').textContent=descriptions[next];
   $('turn').disabled=true;
   try{
-    if(next==='splat') await getSplat();
-    if(next==='mixed') await Promise.all([getRoom(),getSplat()]);
-    if(next==='uv') await Promise.all([getRoom(),getFloor()]);
-    if(request!==modeTicket)return;
-    mode=next;
-    if(splats)splats.mesh.visible=next!=='uv';
-    if(room)room.visible=next!=='splat';
-    if(floor)floor.visible=next!=='uv';
-    if(uvFloor)uvFloor.visible=next==='uv';
-    $('turn').disabled=next==='splat';
+    let splat;
+    if (next === 'uv') {
+      await Promise.all([getRoom(), getFloor()]);
+    } else {
+      const selected = getSplat(next === 'orbital' ? 'orbital' : 'original');
+      splat = next === 'mixed' ? (await Promise.all([selected, getRoom()]))[0] : await selected;
+    }
+    if (request !== modeTicket) return;
+    if (visibleSplat) visibleSplat.mesh.visible = false;
+    if (splat) splat.mesh.visible = true;
+    visibleSplat = splat;
+    mode = next;
+    if (room) room.visible = next === 'mixed' || next === 'uv';
+    showFloor();
+    $('turn').disabled = !room?.visible;
     setStatus('');
     frameDirty=true;
     viewReady=true;
@@ -109,7 +136,7 @@ async function choose(next) {
     if(viewReady){
       for(const button of options)button.setAttribute('aria-pressed',String(button.dataset.mode===mode));
       $('description').textContent=descriptions[mode];
-      $('turn').disabled=mode==='splat';
+      $('turn').disabled = !room?.visible;
     }
     setStatus('Esta vista no cargó. Volvé a elegirla para reintentar.');
   }
@@ -192,6 +219,10 @@ for(const button of options)button.onclick=()=>void choose(button.dataset.mode);
 $('reset').onclick=()=>setCamera(initial,new Vector3(0,1.23,-2.79));
 $('table').onclick=()=>setCamera(new Vector3(2.8,1.66,.85),desk);
 $('turn').onclick=()=>{turnAngle+=Math.PI/2;};
+$('floor-view').onclick = () => setCamera(new Vector3(1.9, 1.66, 1.8), new Vector3(0, 0, .9));
+for (const button of floorOptions) {
+  button.onclick = () => { floorStyle = button.dataset.floor; showFloor(); };
+}
 reduced.onchange=()=>{layoutDirty=true;};
 new ResizeObserver(()=>{layoutDirty=true;}).observe(canvas);
 
@@ -213,7 +244,7 @@ try{
     }
     if(!frameDirty||!viewReady)return;
     frameDirty=false;
-    if(mode!=='uv')splats.sort(camera,mode==='mixed');
+    visibleSplat?.sort(camera, mode === 'mixed');
     renderer.render(scene,camera);
     if(!painted){$('still').hidden=true;painted=true;}
   }

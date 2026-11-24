@@ -143,3 +143,31 @@ disabled. Chromium under the scoped artifact sandbox rendered all three
 views, preserved the camera across mode changes, moved using keyboard
 and emulated touch, and rotated the archive platform in the hybrid.
 Physical Raspberry Pi load time and frame rate remain unmeasured.
+
+## Orbital art direction and floor A/B
+
+The orbital draft uses a multiview design sheet for the worktable, archive
+cabinet, pendant lamp, and shelves. First edit the entry capture with that
+sheet to establish the cabin's titanium, graphite, orange, amber and cyan
+materials. Then edit the east, west, reverse, side and shelf captures, with
+the entry result as the material reference and the sheet as the object
+reference. In each edit the camera, large silhouettes and occlusion come
+from the matching Blender capture. The camera calibration stays in Blender
+coordinates across every view.
+
+Stage the six results as `NAME-style.png` beside the matching captures.
+Run `fit.py CAPTURE_DIRECTORY --orbital` and stage `guided-orbital.splat`
+as `orbital.splat` alongside the existing comparison assets. The 4 cm fit
+uses all six edited views and contains 220,650 Gaussians. A point needs a
+depth and surface-normal match to receive color. Closer, more face-on
+views receive greater weight. The seventh capture remains outside the fit.
+ImageGen views remain approximate near silhouettes. The browser result has
+fixed projected light and surface color, and can show softened or doubled
+edges from close angles. Keep the inputs in one bounded study workspace and
+replace disposable fitted outputs when repeating the trial.
+
+In the viewer, select **Textura UV** and **Mirar el piso** for a matched
+camera comparison. Switching **Material original** and **ImageGen +
+sombras** swaps the two floor meshes in place, preserving the camera, room,
+and interaction state. The generated result changes both the limestone
+appearance and the baked light contribution.
