@@ -1,6 +1,10 @@
 // Versioned shared coordinates. u circles the ring and v circles its tube;
 // both use turns. Positions and radial heights are in metres.
 const TAU = 2 * Math.PI;
+// A common binary grid keeps duplicated borders bit-exact after Float32
+// quantization in different tile-local origins. Leave one bit for edge midpoints.
+const MESH_GRID = 1024;
+const quantizeMeshPoint = point => point.map(value => Math.round(value * MESH_GRID) / MESH_GRID);
 
 export const TOROIDAL_TERRAIN = Object.freeze({
   id: 'toroidal-terrain@1',
@@ -101,12 +105,14 @@ export function buildTerrainTile(tile, segmentCount, coarseEdges = 0, terrain = 
   }
   const { column, row, columns, rows } = tile;
   const width = segmentCount + 1;
-  const origin = terrainPosition((column + .5) / columns, (row + .5) / rows, 0, terrain);
+  const origin = quantizeMeshPoint(terrainPosition((column + .5) / columns, (row + .5) / rows, 0, terrain));
   const positions = new Float32Array(width * width * 3);
   const normals = new Float32Array(positions.length);
   const indices = new Uint16Array(segmentCount * segmentCount * 6);
   const terrainSample = (u, v) => terrainPosition(u, v, terrainElevation(u, v, terrain), terrain);
-  const sample = (i, j) => terrainSample((column + i / segmentCount) / columns, (row + j / segmentCount) / rows);
+  const sample = (i, j) => quantizeMeshPoint(terrainSample(
+    (column + i / segmentCount) / columns, (row + j / segmentCount) / rows,
+  ));
   const midpoint = (a, b) => a.map((value, axis) => (value + b[axis]) / 2);
   for (let j = 0; j < width; j += 1) {
     for (let i = 0; i < width; i += 1) {

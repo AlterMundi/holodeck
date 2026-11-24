@@ -430,10 +430,13 @@ standing patterns and wayfinding cues. Consider local activation, phase and
 coupling only after checking the original formulation and testing whether a
 person can perceive and use the result during exploration.
 
-The initial core shares periodic seeded samples, radial coordinate frames and
-bounded balanced mesh selection. Local coordinate and seam tests demonstrate
-the sampling and topology. Browser streaming, collision and world release
-remain open.
+The terrain core shares periodic seeded samples and radial coordinate frames.
+An isolated Chromium WebGL fixture generated balanced tiles in a dedicated
+worker and retained the visible terrain until each replacement cover was
+ready. It crossed both wrapping seams in 36 drawn frames with continuous
+ground ray hits. The lightweight profile uses a smaller tile budget and
+fewer vertices per tile. Collision, radial locomotion, house integration
+and verification on the actual shared route remain open.
 
 
 ## Delivery sequence and cards

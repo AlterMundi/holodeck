@@ -35,7 +35,7 @@ test('a fine edge follows the adjacent coarse edge across a periodic seam', () =
     const lower = point(coarse, count, Math.floor(j / 2), count);
     const upper = point(coarse, count, Math.ceil(j / 2), count);
     const vertex = point(fine, 0, j, count);
-    vertex.forEach((value, axis) => near(value, (lower[axis] + upper[axis]) / 2, .0001));
+    vertex.forEach((value, axis) => assert.equal(value, (lower[axis] + upper[axis]) / 2));
   }
   const southern = buildTerrainTile(terrainTile(3, 3, -1), count);
   const northern = buildTerrainTile(terrainTile(4, 6, 0), count, TERRAIN_EDGES.south);
@@ -43,7 +43,7 @@ test('a fine edge follows the adjacent coarse edge across a periodic seam', () =
     const lower = point(southern, Math.floor(i / 2), count, count);
     const upper = point(southern, Math.ceil(i / 2), count, count);
     point(northern, i, 0, count).forEach((value, axis) =>
-      near(value, (lower[axis] + upper[axis]) / 2, .0001));
+      assert.equal(value, (lower[axis] + upper[axis]) / 2));
   }
 });
 

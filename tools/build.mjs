@@ -178,3 +178,6 @@ await build({entryPoints:['src/client.mjs'],outfile:'build/client.js',bundle:tru
 
 await build({entryPoints:['src/collection-review-worker.mjs'],outfile:'build/collection-review-worker.js',
   bundle:true,format:'esm',platform:'browser',target:'es2022',minify:true});
+
+await build({entryPoints:['src/toroidal-terrain-worker.mjs'],outfile:'build/toroidal-terrain-worker.js',
+  bundle:true,format:'esm',platform:'browser',target:'es2022',minify:true});
