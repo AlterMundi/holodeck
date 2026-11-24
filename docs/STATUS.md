@@ -91,6 +91,14 @@ after the half-turn. That run recorded 33.3 ms median and 50.0 ms p95
 over 374 moving intervals, and passed door return and camera clearance.
 The matched Blender and browser capture identifies the missing floor
 reflection, soft joints and softer glazing as remaining visual gaps.
+The follow-up floor treatment restores the authored deck grain and
+grout and recovers the pendant reflection in the layered look. Across
+two matched camera positions, the reflection shifted 122 pixels in
+both Chromium and Blender. The complete packaged Pi run kept
+33.3 ms median and 50.0 ms p95 while walking, turned the archive, and
+returned to the foyer. Glazing and secondary floor reflections still
+differ from Blender. The protected room continues to use its existing
+selection.
 
 Nicolás's earlier shared movement, light, house and door confirmations still
 count. The repaired content-exit route has been delivered. Use independent

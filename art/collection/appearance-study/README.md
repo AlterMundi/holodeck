@@ -654,6 +654,37 @@ runtime. This is one equivalent chase-camera pose with different live
 and offline shading. The floor's view-dependent response is the next
 priority for matching the authored image.
 
+### View-dependent floor finish
+
+The layered shell now evaluates the reflected view ray from the walking
+plane against the authored rectangular pendant. A finite soft falloff
+approximates the spread on the rough stone. The original tiled deck
+image is sampled at the Blender scale of 0.88 tiles per meter in world
+coordinates. It restores joint contrast and reduces the reflected
+contribution in the darker grout. The same GLB, layered color,
+irradiance and Collection state remain compatible with the other looks.
+
+In the registered center camera, mean display luma in the selected
+floor reflection rectangle went from 87.7 to 160.1 (171.3 in Blender).
+The lateral camera 1.5 m away measured 158.6 (172.5 in Blender).
+Across those two cameras the hot spot shifted 121.7 screen pixels
+horizontally in the browser and 122.4 in Blender. The centroid used
+pixels above display luma 145 in the captured floor crop. This checks
+the sampled pendant reflection and its parallax. It leaves secondary
+floor reflections and glazing as separate visual differences.
+
+The packed candidate keeps the 51,931-byte authored deck texture
+alongside the two scoped diffuse layers. Cuevanico applied them in
+1.45 s through the qualification tunnel. Cold entry took 9.66 s.
+With lightweight graphics and the finish active, 374 moving intervals
+measured 33.3 ms median and 50.0 ms p95. Both archived representatives
+and their different contact masks worked during the turntable switch.
+All 24 sampled camera corners cleared, the return reached the foyer,
+and the GLB and three scoped texture URLs refused access afterward.
+The independent desktop and emulated-touch worktable fixture retained
+its shared edition, local cuts, rotation, part references and
+revocation. The shared service selection was unchanged.
+
 
 ## Orbital finish for the Matter room
 
