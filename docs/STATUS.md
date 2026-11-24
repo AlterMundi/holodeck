@@ -48,8 +48,11 @@ last diffuse-only movement run. The desktop and touch worktable fixture both
 loaded the exact focused export, shared the retained edition, selected a
 part and cleared the table. The focused selection is available in builds.
 Its room-style control now switches the local visitor between orbital and
-amber color grades without reloading the shell or shared worktable model.
+amber material/light atlases without reloading the shell or shared model.
 Desktop and emulated touch selected different looks on the same edition.
+On Cuevanico, applying the two amber images for the first time took 1.79 s
+through the test tunnel. The browser restored orbital and returned through
+the door. The GLB and both atlas URLs were refused after exit.
 The separate appearance viewer also passed a moving hardware check on
 Cuevanico. The lightweight pure, detailed orbital pure and lightweight
 hybrid took 33.4 ms, 50.0 ms and 50.0 ms respectively at the median.

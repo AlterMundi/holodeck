@@ -328,8 +328,10 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }
   function liveSpace(actor,cachedRevision){
     const space=describeSpace(actor,true);
+    const maps=space.collectionShelves&&matterArt?.amberMaps;
     return {...space,live:1,actorRef:actor.id,
-      ...(space.collectionShelves&&matterArt?.visualStyles?{matterStyles:true}:{}),
+      ...(maps?{matterStyles:{amber:Object.fromEntries(Object.entries(maps)
+        .map(([role,map])=>[role,route('api/space/art/'+map.revision)]))}}:{}),
       sharedConversation:!!(native?.contexts&&native?.conversationSurface),scene:visitScene(actor,space.id,cachedRevision)};
   }
   function roomParticipants(id){
@@ -701,6 +703,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(!selected||!inScope(req.actor,id))return res.sendStatus(404);
     const passages=spaces.passages(req.actor,selected);
     const main=artForRoom(selected,passages);
+    const map=main?.amberMaps&&Object.values(main.amberMaps).find(({revision})=>revision===req.params.revision);
+    if(map)return res.type(map.type).send(map.bytes);
     const art=main?.revision===req.params.revision ? main :
       passages.map(passage=>atelier?.passageFitting(selected,passage))
         .find(fitting=>fitting?.revision===req.params.revision);

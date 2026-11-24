@@ -97,6 +97,8 @@ def bake_material_input(materials, image, channel, uv_layer, margin):
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('output', type=Path)
 parser.add_argument('--size', type=int, choices=(512, 1024, 2048), default=1024)
+parser.add_argument('--layout-size', type=int, choices=(512, 1024, 2048),
+                    help='Reuse the UV layout of another atlas size')
 parser.add_argument('--samples', type=int, default=48)
 parser.add_argument('--specular', nargs='?', const='whole', choices=('whole', 'focused'),
                     help='Use UV-baked roughness and metalness on the whole shell or selected work surfaces')
@@ -145,7 +147,7 @@ atlas_uv_name = 'Orbital diffuse atlas'
 shell.data.uv_layers.active = shell.data.uv_layers.new(name=atlas_uv_name)
 bpy.ops.object.mode_set(mode='EDIT')
 bpy.ops.mesh.select_all(action='SELECT')
-margin = 8 / args.size
+margin = 8 / (args.layout_size or args.size)
 bpy.ops.uv.smart_project(island_margin=margin, margin_method='FRACTION')
 bpy.ops.object.mode_set(mode='OBJECT')
 

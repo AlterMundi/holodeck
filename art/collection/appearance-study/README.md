@@ -361,7 +361,7 @@ do not set universal acceptance thresholds. Any first-frame shader change
 needs a physical repeat because queuing screen shaders alone already failed
 to reduce the first-draw cost.
 
-The focused Matter export now exposes **Apariencia → Estilo de la sala** in
+The focused Matter export introduced **Apariencia → Estilo de la sala** in
 the live-room client. The authored orbital look is the default. **Luz ámbar**
 applies separate color factors to the fixed-light shell and the emissive
 work surfaces. The renderer binds the rules to the exact material slots
@@ -387,6 +387,46 @@ the room. The operator clicked the foyer door and the old scoped art
 request returned 404 after exit. Attempting the E hotkey immediately
 after dismissing Appearance did not move: keyboard focus was still on
 the Appearance button. The verified round trip used the door control.
+
+### Authored amber materials on the same structure
+
+The amber selection now loads its own baked light and material-response
+atlases. The editable recipe gives the deck warm stone variation, the
+fixtures a green patina, and the work zones separately authored light pools.
+It builds on the combined orbital source with identical object transforms.
+To reproduce it, open that source and run:
+
+```sh
+blender --background matter-orbital-combined.blend --python-exit-code 1 \
+  --python art/collection/appearance-study/orbital-amber-look.py \
+  --python art/collection/appearance-study/orbital-runtime-bake.py -- OUTPUT_DIR \
+  --specular focused --size 2048 --layout-size 1024
+```
+
+The 2048 diffuse/light atlas and 1024 packed roughness/metalness atlas come
+from the export. The amber and orbital GLBs generated for comparison have
+byte-identical positions, indices, normals and UV attributes for both
+styled material batches. Ship only the amber maps. The existing 1024 UV
+layout stays bound to base geometry, so changing style swaps maps at the
+material slots without rebuilding geometry or reloading the Collection.
+The GLB and both image revisions use the same scene authorization and
+are readable only while the visitor can occupy the selected room.
+
+The packed desktop and emulated-touch browsers selected the new maps
+independently while sharing the 197,642-triangle worktable model. The
+mounted shell, displayed model and exact worktable revision stayed in
+place. The active view restored the orbital maps on selection and the
+shared part reference and revoke/clear flow still worked.
+On the physical Pi, in lightweight mode through the fixture tunnel, the
+first amber choice took 1.79 s to fetch, decode and apply the two atlases
+(415,034 and 651,883 transferred body bytes). It reused the mounted GLB.
+Switching back to orbital restored its original maps, and after returning
+to the foyer the GLB and both atlas endpoints refused access.
+A separate Pi run with amber active retained 387 moving intervals
+at 33.3 ms median and 33.5 ms p95, turned the archive and cleared all 24
+sampled corner positions. A desktop fixture forced one atlas request to
+fail. The room kept its orbital appearance and a voluntary retry loaded
+both amber maps.
 
 
 ## Orbital finish for the Matter room
