@@ -47,6 +47,7 @@
       "id": "orbital-layered",
       "label": "Orbital · luz por capas",
       "materials": {},
+      "contactShadows": true,
       "diffuseLayers": {
         "fixed-light-shell": {
           "channel": "map",

@@ -2,6 +2,7 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {disposeModel,placeGalleryModel} from './gallery-models.mjs';
 import {CollectionArchive} from './collection-archive.mjs';
 import {CollectionWorktable} from './collection-worktable.mjs';
+import {CollectionContactShadow} from './collection-contact-shadow.mjs';
 
 const REFRESH_MS=12000;
 const MODEL_LIMIT=384*1024;
@@ -34,7 +35,7 @@ async function modelBytes(base,edition,signal){
 
 export class CollectionShelves {
   constructor({base,scene,panel,archivePanel,worktablePanel,webgl,onReference,onPlaced}){
-    Object.assign(this,{base,scene,panel,onPlaced,loader:new GLTFLoader()});
+    Object.assign(this,{base,scene,panel,onPlaced,webgl,loader:new GLTFLoader()});
     this.items=new Map();
     this.list=panel.querySelector('ul');
     this.visibleLinks='';
@@ -44,7 +45,7 @@ export class CollectionShelves {
     this.worktable=new CollectionWorktable({base,scene,panel:worktablePanel,webgl,onReference,onSharedChange:refreshSoon});
   }
 
-  update(room,root,player,bench,canDiscuss){
+  update(room,root,player,bench,canDiscuss,contactShadows){
     if(this.room!==room||this.root!==root){
       this.clear();
       this.room=room;this.root=root;
@@ -75,6 +76,18 @@ export class CollectionShelves {
     this.links(this.nearby);
     this.archive.update(player);
     this.worktable.update(player,bench,canDiscuss);
+    if(contactShadows){
+      const casters=[
+        ['worktable',this.worktable.model?.group,bench,this.worktable.model?.shadowRevision],
+        ['archive',this.archive.mesh,this.archive.anchor,this.archive.angle],
+      ];
+      for(const [fixture,model,anchor,revision] of casters){
+        const fields=this.shadows??=new Map();
+        if(model&&!fields.has(fixture))
+          fields.set(fixture,new CollectionContactShadow(this.webgl,this.scene,fixture));
+        fields.get(fixture)?.update(model,anchor,revision,now);
+      }
+    }else this.clearShadows();
   }
 
   async refresh(){
@@ -191,7 +204,13 @@ export class CollectionShelves {
     this.items.delete(item.project.id);
   }
 
+  clearShadows(){
+    for(const shadow of this.shadows?.values()??[])shadow.dispose();
+    this.shadows=null;
+  }
+
   clear(){
+    this.clearShadows();
     this.events?.close();this.events=null;
     this.flight?.abort();this.flight=null;
     for(const item of this.items.values())this.remove(item);

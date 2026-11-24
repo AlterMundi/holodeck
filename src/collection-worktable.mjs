@@ -250,6 +250,7 @@ export class CollectionWorktable{
   projectModel(){
     if(!this.model)return;
     const {group,parts,height}=this.model;
+    this.model.shadowRevision=(this.model.shadowRevision??0)+1;
     group.rotation.y=this.yaw;
     const fraction=Number(this.section.value)/100;
     const clipping=fraction<1;

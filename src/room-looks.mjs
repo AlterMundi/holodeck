@@ -28,6 +28,8 @@ export function compileRoomLooks(manifest,readAsset){
     if(!look||!identifier(look.id)||ids.has(look.id)||typeof look.label!=='string'||
       !look.label.trim()||!record(look.materials))
       throw Error('Invalid room look entry');
+    if(look.contactShadows!==undefined&&typeof look.contactShadows!=='boolean')
+      throw Error('Invalid room contact shadow setting');
     ids.add(look.id);
     for(const [role,channels] of Object.entries(look.materials)){
       if(!Object.hasOwn(surfaces,role)||!record(channels))throw Error('Unknown room look surface role');
