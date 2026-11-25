@@ -2,6 +2,15 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `1a7546680e81fd8698ea60d0e669fb000d644590` gives the desktop web
+HUD room for the full pose and note labels. Archive
+`fc7ae738b86348b179099ed0f7966a24087fba583d2666f293f12a05f926951b`
+matched all 87 payloads. Only the browser bundle changed from the combined
+Lab candidate. At 1200 × 800 Chromium painted the full text of all five
+pose and note actions. The two fixture browsers also passed the exact
+ground and flight frame, held comparison, draft recovery and access
+checks. Holodeck passed 417 tests with two skips.
+
 Source `4a2173ddd6588506c115dfc796c6bb365c0b5b51` adds the live humanoid
 ground transition to the Character worktable and web studio. The candidate
 archive `ba17d1dd30629d5ac241d68a1ccf7dab4095a7d7342d5ca846dc899fb558f9a0`
