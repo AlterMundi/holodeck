@@ -13,7 +13,7 @@ const components=[
     children:['heading','map','navigation','pagination','exit']},
   row('heading',['title','close']),
   label('title','Mapa'),button('close','Cerrar',{},scope()),
-  {id:'map',component:'HudMap',label:'Mapa y posición actual',marks:path('marks'),viewer:path('viewer'),
+  {id:'map',component:'HudMap',label:path('mapLabel'),marks:path('marks'),viewer:path('viewer'),
     selected:path('selected'),bounds:path('bounds')},
   button('navigation',path('destinationLabel'),{
     visible:path('hasDestinations'),pressed:path('destinationSelected'),
@@ -73,7 +73,9 @@ export class WorldMapHud{
     const count=destinations.length;
     this.index=Math.min(this.index,Math.max(0,count-1));
     const current=destinations[this.index];
-    const value={scope:this.scope,marks:map?.marks??[],viewer:map?.viewer??null,selected:map?.selected??'',
+    this.raster=!map&&!this.panel.querySelector('#world-minimap').hidden;
+    const mapLabel=this.raster?'Mapa del terreno. Línea continua hacia el mirador y línea punteada en el cruce a nado.':'Mapa y posición actual';
+    const value={scope:this.scope,mapLabel,marks:map?.marks??[],viewer:map?.viewer??null,selected:map?.selected??'',
       bounds:{minX:-6,maxX:6,minZ:-6,maxZ:6},destination:current?.id??'',
       destinationLabel:current?.title??'',destinationSelected:!!current&&map.selected===current.id,
       hasDestinations:count>0,hasPages:count>1,page:count?String(this.index+1)+' / '+count:'',
@@ -83,7 +85,6 @@ export class WorldMapHud{
       this.signature=signature;
       this.message('updateDataModel',{value});
     }
-    this.raster=!map&&!this.panel.querySelector('#world-minimap').hidden;
   }
 
   decoration(){

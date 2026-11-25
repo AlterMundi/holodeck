@@ -232,6 +232,14 @@ export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
     ctx.strokeStyle='#eee3c7';ctx.lineWidth=2;
     ctx.beginPath();ctx.moveTo(16,367);ctx.lineTo(16+scaleLength,367);ctx.stroke();
     ctx.fillStyle='#eee3c7';ctx.font='600 23px system-ui';ctx.fillText('50 m',16,362);
+    if(paths.some(path=>path.water)){
+      ctx.fillStyle='#132327e6';ctx.fillRect(248,335,128,41);
+      ctx.strokeStyle='#a2e1ed';ctx.lineWidth=3;
+      ctx.setLineDash([5,4]);
+      ctx.beginPath();ctx.moveTo(258,356);ctx.lineTo(278,356);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#d9f5fb';ctx.font='600 21px system-ui';ctx.fillText('A nado',286,363);
+    }
     ctx.restore();
     return true;
   };
