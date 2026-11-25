@@ -7,6 +7,7 @@ import {bindHumanoidCrouch} from './humanoid-crouch.mjs';
 
 const limbNames=['upperarm_l','upperarm_r','lowerarm_l','lowerarm_r','thigh_l','thigh_r','calf_l','calf_r'];
 const pitchAxis=new Vector3(1,0,0);
+const yawAxis=new Vector3(0,1,0),rollAxis=new Vector3(0,0,1);
 const bindings=new WeakMap();
 
 export function bindFlightAvatarAnimation(manager,context,{clock}={}){
@@ -17,6 +18,29 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
   const angles=new Euler(),turn=new Quaternion(),pitch=new Quaternion();
   const displacement=new Vector3(),up=new Vector3(),right=new Vector3(),localAxis=new Vector3();
   const bodyFacing=new Quaternion(),boneFacing=new Quaternion(),bend=new Quaternion();
+  const facing=new Vector3(),cross=new Vector3();
+  const yaw=new Quaternion(),roll=new Quaternion();
+
+  function followAirHeading(entry,rotation,step,descending,bankScale){
+    facing.copy(rollAxis).applyQuaternion(rotation);
+    // Compare headings on the same radial tangent plane. A changing up
+    // direction alone should not look like a steering input.
+    entry.heading.addScaledVector(up,-entry.heading.dot(up));
+    if(entry.heading.lengthSq()<.01){
+      entry.heading.copy(facing);
+      entry.bank=0;
+      return 0;
+    }
+    entry.heading.normalize();
+    cross.crossVectors(entry.heading,facing);
+    const residual=Math.atan2(up.dot(cross),entry.heading.dot(facing));
+    const advance=residual*(1-Math.exp(-step*(descending?22:11)));
+    entry.heading.applyAxisAngle(up,advance);
+    const steering=advance/Math.max(step,.001);
+    const bank=-Math.max(-.18,Math.min(.18,steering*.042))*bankScale;
+    entry.bank+=(bank-entry.bank)*(1-Math.exp(-step*13));
+    return advance-residual;
+  }
   function restore(entry){
     entry.glance?.restore();
     for(const [bone,neutral] of entry.modified)bone.quaternion.copy(neutral);
@@ -29,6 +53,8 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
     Object.assign(entry,{weight:0,hoverWeight:0,lowWeight:0,planarSpeed:0,airWeight:0,
       lowerWeight:0,airTime:0,rise:0,flightAge:0,pitch:0,phase:0,poseTime:0,observedFlight:false,
       mode:null,poseMode:null});
+    entry.heading.set(0,0,0);
+    entry.bank=0;
     entry.airRig?.reset();
   }
   function animatedUpdate(state,dt){
@@ -49,7 +75,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       if(entry?.mesh!==mesh){
         entry={mesh,last:new Vector3().copy(position),modified:new Map(),
           airRig:bindHumanoidFlightRig(mesh),crouchRig:bindHumanoidCrouch(mesh),
-          unpitched:new Quaternion(),applied:new Quaternion(),
+          unpitched:new Quaternion(),applied:new Quaternion(),heading:new Vector3(),
           limbs:limbNames.map(name=>mesh.getObjectByName(name))};
         resetMotion(entry);
         actors.set(id,entry);
@@ -97,6 +123,18 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       if(mode!==entry.mode){entry.mode=mode;entry.airTime=0;}
       else entry.airTime+=step;
       const active=mode!==null;
+      const steering=glanceMotion&&grounded!==true&&
+        (atTable||outdoor&&(mode==='lift'||mode==='hover'||mode==='descend'));
+      let airYaw=0;
+      if(steering){
+        const descending=mode==='descend';
+        const bankScale=atTable ? .6 : (descending ? .35 : 1);
+        airYaw=followAirHeading(entry,character.quaternion,step,descending,bankScale);
+      }else{
+        // Supported poses keep the mixer heading so the feet do not pivot.
+        entry.heading.set(0,0,0);
+        entry.bank=0;
+      }
       const low=!active&&(isLocal?crouch:peerPose==='crouch'&&grounded);
       entry.planarSpeed+=(speed-entry.planarSpeed)*fade;
       const target=(mode==='hover'||mode==='swim')?Math.min(1,Math.max(0,(entry.planarSpeed-.14)/1.8)):0;
@@ -107,7 +145,8 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       entry.airWeight+=(airWeight-entry.airWeight)*(1-Math.exp(-step*(active?9:13)));
       const lowerTarget=mode==='land'||!active?0:airWeight;
       entry.lowerWeight+=(lowerTarget-entry.lowerWeight)*(1-Math.exp(-step*(lowerTarget?9:24)));
-      if(entry.weight<.01&&entry.hoverWeight<.01&&entry.lowWeight<.01&&entry.airWeight<.01&&entry.lowerWeight<.01&&Math.abs(entry.pitch)<.01){
+      if(entry.weight<.01&&entry.hoverWeight<.01&&entry.lowWeight<.01&&entry.airWeight<.01&&entry.lowerWeight<.01&&Math.abs(entry.pitch)<.01&&
+         Math.abs(entry.bank)<.001&&Math.abs(airYaw)<.001){
         entry.modified.clear();
         entry.glance?.apply(character,entry.head,isLocal&&table&&glanceMotion?gaze:null,dt);
         continue;
@@ -125,11 +164,13 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       pitch.setFromAxisAngle(pitchAxis,entry.pitch);
       entry.rotation=character.quaternion;
       entry.unpitched.copy(entry.rotation);
+      if(airYaw)entry.rotation.multiply(yaw.setFromAxisAngle(yawAxis,airYaw));
       if(entry.lowWeight>0||entry.hoverWeight>0||w>0){
         character.getWorldQuaternion(bodyFacing);
         right.copy(pitchAxis).applyQuaternion(bodyFacing);
       }
       entry.rotation.multiply(pitch);
+      if(entry.bank)entry.rotation.multiply(roll.setFromAxisAngle(rollAxis,entry.bank));
       entry.applied.copy(entry.rotation);
       if(entry.airRig&&Math.max(entry.airWeight,entry.lowerWeight)>.01){
         const time=mode==='lift'?entry.airTime/.44:mode==='descend'?entry.airTime/.38:mode==='land'?entry.airTime/.32:

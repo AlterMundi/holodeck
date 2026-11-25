@@ -187,3 +187,56 @@ test('a peer follows scoped crouch and flight cues and releases them on the base
   assert.ok(arm.quaternion.equals(stockArm));
   release();
 });
+
+test('airborne humanoid eases heading changes on a radial frame and releases bank at contact',()=>{
+  const {root,mesh}=avatar('avatar-1-bodyA-skin01.glb');
+  root.getMesh=()=>mesh;
+  const actor={position:new Vector3(1800,498.8,11),animationState:4};
+  const state={characters:new Map([[1,actor]]),localCharacterId:1};
+  const controls={outdoor:true,grounded:false,flying:true,glanceMotion:true};
+  const radial=new Quaternion().setFromAxisAngle(new Vector3(0,0,1),.63);
+  const along=new Vector3(0,0,1),vertical=new Vector3(0,1,0),lateral=new Vector3(1,0,0);
+  const desired=new Quaternion(),stock=new Quaternion();
+  const manager={loadedCharacters:new Map([[1,{character:root}]]),update(){root.quaternion.copy(stock);}};
+  const release=bindFlightAvatarAnimation(manager,()=>controls);
+  const frame=(yaw,dt=1/60)=>{
+    stock.copy(radial).multiply(desired.setFromAxisAngle(vertical,yaw));
+    manager.update(state,dt);
+    return radial.clone().invert().multiply(root.quaternion);
+  };
+  const angle=q=>{
+    const forward=along.clone().applyQuaternion(q);
+    return Math.atan2(forward.x,forward.z);
+  };
+  const bank=q=>{
+    const heading=new Quaternion().setFromAxisAngle(vertical,angle(q));
+    return vertical.clone().applyQuaternion(q).dot(lateral.clone().applyQuaternion(heading));
+  };
+  frame(0);
+  const right=frame(Math.PI/2);
+  assert.ok(angle(right)>.10&&angle(right)<.40);
+  assert.ok(bank(right)>.02&&bank(right)<.18);
+  let stable;
+  for(let i=0;i<70;i++)stable=frame(Math.PI/2);
+  assert.ok(Math.abs(angle(stable)-Math.PI/2)<.002);
+  assert.ok(Math.abs(bank(stable))<.002);
+  const left=frame(0);
+  assert.ok(angle(left)>.9&&bank(left)<-.02);
+
+  controls.glanceMotion=false;
+  const quiet=frame(-.4);
+  assert.ok(Math.abs(bank(quiet))<.001&&Math.abs(angle(quiet)+.4)<.001);
+  controls.glanceMotion=true;
+  actor.position.z+=20;
+  const afterJump=frame(.9);
+  assert.ok(Math.abs(angle(afterJump)-.9)<.001&&Math.abs(bank(afterJump))<.001);
+  frame(Math.PI-.04,.5);
+  const across=frame(-Math.PI+.04);
+  assert.ok(angle(across)>Math.PI-.04&&bank(across)>0);
+  frame(0);
+  Object.assign(controls,{grounded:true,flying:false});
+  const ground=frame(0);
+  assert.ok(Math.abs(angle(ground))<.001&&Math.abs(bank(ground))<.001);
+  release();
+  assert.ok(root.quaternion.angleTo(stock)<.001);
+});
