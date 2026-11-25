@@ -19,7 +19,7 @@ const notice=(width,count)=>[
   ...Array.from({length:count},(_,i)=>text('line'+i,{label:path('lines/'+i)})),
 ];
 
-function wrapNotice(message,measure,maxWidth){
+export function wrapNotice(message,measure,maxWidth){
   const lines=[];
   for(const paragraph of message.split('\n')){
     let line='';

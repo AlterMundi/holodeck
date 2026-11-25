@@ -38,9 +38,14 @@ ws.on('message',raw=>{const m=JSON.parse(raw);if(pending.has(m.id)){const t=pend
 function cdp(method,params={}){return new Promise((r,j)=>{const i=++id,t=setTimeout(()=>{pending.delete(i);j(Error('Timed out: '+method))},20000);pending.set(i,{r:v=>{clearTimeout(t);r(v)},j:e=>{clearTimeout(t);j(e)}});ws.send(JSON.stringify({id:i,method,params}))})}
 async function evaluate(expression){const r=await cdp('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||'Evaluation error');return r.result.value}
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
-async function until(expression,ms=10000){const start=Date.now();while(Date.now()-start<ms){if(await evaluate(expression))return;await wait(250)}throw Error('Condition failed: '+expression)}
+async function until(expression,ms=15000){
+ const start=Date.now();while(Date.now()-start<ms){if(await evaluate(expression))return;await wait(250)}
+ const observed=await evaluate('({errors:checkErrors,panel:document.querySelector("#recovery-panel")?.textContent,ready:Boolean(window.holodeckDevelopment?.client.getLocalCharacterState())})');
+ throw Error('Condition failed: '+expression+' '+JSON.stringify(observed));
+}
 async function stats(){return(await fetch('http://127.0.0.1:18944/fixture/stats')).json()}
  await cdp('Page.enable');await cdp('Page.addScriptToEvaluateOnNewDocument',{source:'window.checkErrors=[];addEventListener("error",e=>checkErrors.push(e.message));addEventListener("unhandledrejection",e=>checkErrors.push(String(e.reason)))'});
+ await cdp('Emulation.setDeviceMetricsOverride',{width:1100,height:860,deviceScaleFactor:1.5,mobile:false});
  await cdp('Fetch.enable',{patterns:[{urlPattern:'http://127.0.0.1:18944/api/commands',requestStage:'Request'},{urlPattern:'http://127.0.0.1:18944/api/interactions',requestStage:'Request'}]});
  await cdp('Page.navigate',{url:'http://127.0.0.1:18944/'});
  await until('!!window.holodeckDevelopment?.client.getLocalCharacterState()&&!document.querySelector("#send").disabled');
@@ -50,7 +55,11 @@ async function stats(){return(await fetch('http://127.0.0.1:18944/fixture/stats'
  if((await stats()).outcomes.length)throw Error('Lost command reached the fixture');
  await cdp('Page.reload');await until('!!document.querySelector(".recovery-item[data-kind=command] button[data-action=retry]")&&!document.querySelector(".recovery-item[data-kind=command] button[data-action=retry]").disabled');
  if(requests.filter(r=>r.kind==='command').length!==1)throw Error('Reload automatically resubmitted command');
- await evaluate('document.querySelector(".recovery-item[data-kind=command] button[data-action=retry]").click()');
+ const hud='[data-spatial-hud-accessibility] [aria-label="Envíos por confirmar"]';
+ const hudButton=label=>`${hud} button[aria-label="${label}"]`;
+ const presented='document.querySelector("#recovery-panel").hasAttribute("data-native-recovery")';
+ await until(presented);
+ await evaluate(`document.querySelector(${JSON.stringify(hudButton('Reintentar'))}).click()`);
  await until('!document.querySelector(".recovery-item[data-kind=command]")');
  if(!(await stats()).bridge.raised)throw Error('Explicit retry did not update world');
  const commandRequests=requests.filter(r=>r.kind==='command');
@@ -62,21 +71,35 @@ async function stats(){return(await fetch('http://127.0.0.1:18944/fixture/stats'
  if((await stats()).accepted.length)throw Error('Lost native request reached fixture');
  await cdp('Page.reload');await until('!!document.querySelector(".recovery-item[data-kind=native] button[data-action=retry]")&&!document.querySelector(".recovery-item[data-kind=native] button[data-action=retry]").disabled');
  if(requests.filter(r=>r.kind==='native').length!==1)throw Error('Reload automatically resubmitted native original');
+ await until(presented);
+ if(await evaluate(`document.querySelector(${JSON.stringify(hud)}).textContent.includes('fixture original')`))
+   throw Error('Private original appeared in the spatial accessibility tree');
+ await evaluate(`document.querySelector(${JSON.stringify(hudButton('Ver original'))}).click()`);
+ await until(`!(${presented})&&Boolean(document.querySelector('#recovery-panel details[open]'))`);
  await evaluate('document.querySelector(".recovery-item[data-kind=native] button[data-action=retry]").click()');
  await until('!document.querySelector(".recovery-item[data-kind=native]")&&!document.querySelector("#send").disabled');
  const accepted=(await stats()).accepted;
  if(accepted.length!==1||JSON.stringify(accepted[0])!==JSON.stringify(turn.body)||accepted[0].text!==text)throw Error('Native retry replaced original/capture/ID');
  failCommand=true;await evaluate('document.querySelector("#bridge").click()');
  await until('!!document.querySelector(".recovery-item[data-kind=command]")');
+ await cdp('Emulation.setDeviceMetricsOverride',{width:360,height:580,deviceScaleFactor:2,mobile:true});
+ await until(`!(${presented})&&document.querySelector("#recovery-panel").getClientRects().length>0`);
  const discarded=await evaluate('JSON.parse(sessionStorage.getItem("holodeck.pending:/"))');
  await evaluate('document.querySelector(".recovery-item[data-kind=command] button[data-action=close]").click()');
  const warning=await evaluate('document.querySelector(".recovery-warning").textContent');
- if(!warning.includes('no cancela ni deshace'))throw Error('Closing tracking misrepresented cancellation');
+ if(!warning.includes('solo al seguimiento')||!warning.includes('contenido disponible'))
+   throw Error('Closing tracking misrepresented its scope or what is preserved');
  await evaluate('document.querySelector(".recovery-item[data-kind=command] button[data-action=close]").click()');
+ if(await evaluate('!!document.querySelector("button[data-action=confirm]")||Boolean(sessionStorage.getItem("holodeck.closed-intents:/"))'))
+   throw Error('Repeat on the first control closed tracking instead of leaving it open');
+ await evaluate('document.querySelector(".recovery-item[data-kind=command] button[data-action=close]").click()');
+ await evaluate('document.querySelector(".recovery-item[data-kind=command] button[data-action=confirm]").click()');
  await until('!document.querySelector(".recovery-item[data-kind=command]")');
  const archived=await evaluate('JSON.parse(sessionStorage.getItem("holodeck.closed-intents:/"))');
  if(archived[0].command.id!==discarded.command.id||(await stats()).bridge.raised!==true)throw Error('Close lost original or cancelled world effect');
- await evaluate('document.querySelector("#bridge").click()');await until('document.querySelector("#bridge").textContent.includes("Conectar")');
+ await evaluate('document.querySelector("#bridge").click()');
+ await until('document.querySelector("#bridge").getAttribute("aria-label")==="Conectar las islas"');
+ if((await stats()).bridge.raised!==false)throw Error('The new action did not update the world');
  const evidence={commandInitialNeverArrived:true,reloadDidNotAutoResend:true,explicitCommandRetryExact:true,nativeInitialNeverArrived:true,explicitNativeRetryExactOriginalAndView:true,capturedAtUnchanged:accepted[0].view.capturedAt===turn.body.view.capturedAt,closeTrackingPreservedOriginal:true,closeTrackingDidNotCancel:true,newActionUnlocked:true,errors:await evaluate('checkErrors'),nativeProvider:'fixture only; no real provider/session input'};
  console.log(JSON.stringify(evidence));
 }finally{

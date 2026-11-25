@@ -129,7 +129,7 @@ export class ConversationChrome{
       if(hint||history||worktable){
         children.push('reference');
         const controls=[];
-        if(hint){controls.push('hint');entries.push(label('hint',path('hint'),{weight:2.1}));}
+        if(hint){controls.push('hint');entries.push(label('hint',path('hint'),{weight:2.1,lines:2,style:'body'}));}
         if(history){
           controls.push('clearHistory');
           entries.push(button('clearHistory','Quitar tema',{weight:1.1},{source:path('history')}));
@@ -142,7 +142,8 @@ export class ConversationChrome{
       }
       if(!this.groups.has(header))this.receive(header,'createSurface',{catalogId:spatialHudCatalog.id});
       this.receive(header,'updateComponents',{components:[panelRoot((rect.width-42)/unit,children),...entries]});
-      this.panel.style.setProperty('--conversation-header-height',Math.ceil((children.length*.18+(children.length-1)*.015)*unit)+'px');
+      const headerHeight=children.length*.18+(children.length-1)*.015+(hint ? .053 : 0);
+      this.panel.style.setProperty('--conversation-header-height',Math.ceil(headerHeight*unit)+'px');
     }
     const data=JSON.stringify(state);
     if(data!==this.data){

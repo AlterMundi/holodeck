@@ -708,3 +708,21 @@ camera height for that fixture, with a 3.958 m interior capsule peak and
 2.279 m of cave flight headroom. This exercised the installed package bytes
 with controlled local identities and does not claim physical-device or
 multi-visitor performance.
+
+## Multiline HUD and recovery
+
+The host pins Proyección `6e6facd563a146874476e0ddd6b4e89f2a5f8b02` with
+archive integrity in the lockfile. The Matter status and Conversation
+reference reserve two lines, including names with composed characters.
+The same A2UI layer presents recovery actions. The original held input is
+shown only on explicit reveal in the browser. The fallback keeps the
+recovery controls available on narrow layouts. Closing tracking requires
+separate confirmation and preserves the original without cancelling a
+possibly accepted operation.
+
+The exact source build passed 326 tests with two skips. Controlled
+Chromium verified A2UI retry, narrow-screen fallback, original and
+captured-view identity, reload without resubmission, and a new command
+after closing local tracking. These are fixture checks with no native
+provider calls. Package `73659b794b51` is 33,515,520 bytes. Actual
+authenticated two-visitor acceptance remains open.

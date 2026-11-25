@@ -4,6 +4,7 @@ import {WorldMapHud,worldMapId,worldBearingId} from './world-map-hud.mjs';
 import {DoorPromptHud,doorPromptId,doorPromptWidth} from './door-prompt-hud.mjs';
 import {CollectionHud,collectionHudId,collectionHudWidth} from './collection-hud.mjs';
 import {WorldStatusHud,worldHeaderId,worldNoticeId,worldHeaderWidth} from './world-status-hud.mjs';
+import {RecoveryHud,recoveryHudId} from './recovery-hud.mjs';
 import {SettingsHud,settingsId} from './settings-hud.mjs';
 import {HudRenderLayer} from './hud-render-layer.mjs';
 import {WorldActivityHud,activityHudId,activityHudWidth} from './world-activity-hud.mjs';
@@ -80,7 +81,7 @@ const work=[
   button('left','Girar izq.'),button('visibility',path('visibility'),{visible:path('hasPart'),weight:1.6}),
   button('right','Girar der.'),
   button('discuss',path('discuss'),{visible:path('canDiscuss')}),
-  text('status',path('status'),{style:'status'}),
+  text('status',path('status'),{style:'status',lines:2}),
 ];
 const movement=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE']);
 
@@ -94,6 +95,7 @@ export class MatterWorktableHud{
       this.collection?.presented(false);
       this.status?.present(true,false);
       this.status?.present(false,false);
+      this.recovery?.clear();
       this.activity?.present(false,false);
       this.visit?.present({painted:false});
       if(this.hud)this.syncMovement(false);
@@ -145,6 +147,9 @@ export class MatterWorktableHud{
       focusSound:()=>this.hud.focusAccessibleControl(worldHeaderId,'sound'),
       focusWorld:()=>this.focusTool('map')||this.focusTool('talk'),
       hasSoundFocus:()=>this.ownsAccessibleInput(this.document.activeElement)&&this.hud.currentFocus()?.surfaceId===worldHeaderId});
+    this.recovery=new RecoveryHud({document,send:(type,content,id)=>this.send(type,content,id),
+      focus:name=>this.hud.focusAccessibleControl(recoveryHudId,name),invalidate:this.layer.invalidate,
+      isFocused:()=>this.ownsAccessibleInput(this.document.activeElement)&&this.hud.currentFocus()?.surfaceId===recoveryHudId});
     this.settings=new SettingsHud({document,send:(type,content,id)=>this.send(type,content,id),
       focusControl:name=>this.hud.focusAccessibleControl(settingsId,name),focusLauncher:name=>this.focusTool(name),
       onSurfaceChange:()=>this.syncSettingsInput()});
@@ -166,6 +171,7 @@ export class MatterWorktableHud{
         else if(id===visitHudId)this.visit.viewerGroup=group;
         else if(id===worldHeaderId)this.status.headerGroup=group;
         else if(id===worldNoticeId)this.status.noticeGroup=group;
+        else if(id===recoveryHudId)this.recovery.group=group;
         else if(id===movementStick||id===movementJump)this.movementGroups.set(id,group);
         else this.group=group;
       },
@@ -180,6 +186,7 @@ export class MatterWorktableHud{
         else if(requested.surfaceId===activityHudId)this.activity.activate(requested);
         else if([exhibitionHudId,visitHudId].includes(requested.surfaceId))this.visit.activate(requested);
         else if(requested.surfaceId===worldHeaderId)this.status.activate(requested);
+        else if(requested.surfaceId===recoveryHudId)this.recovery.activate(requested);
         else this.handleAction(requested);
       },onTransportError:onError,
     });
@@ -205,7 +212,7 @@ export class MatterWorktableHud{
   }
 
   rayForPointer(event){
-    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.status.headerGroup&&!this.movementGroups.size)return;
+    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.status.headerGroup&&!this.recovery.group&&!this.movementGroups.size)return;
     const rect=this.canvas.getBoundingClientRect();
     if(!rect.width||!rect.height)return;
     this.pointerPosition.set((event.clientX-rect.left)*2/rect.width-1,1-(event.clientY-rect.top)*2/rect.height);
@@ -534,13 +541,20 @@ export class MatterWorktableHud{
   draw(additional){
     this.windows.begin();
     this.activity.update();this.visit.update();this.syncSettingsInput();
-    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.status.headerGroup&&!this.status.noticeGroup&&!this.movementGroups.size&&!additional){
+    const {clientWidth:width,clientHeight:height}=this.canvas;
+    const {left,right,top,bottom}=this.toolInsets();
+    const recoveryTop=Math.max(top+100,width<700?146:152);
+    const recoveryReserve=bottom+Math.max(88,(this.toolLayout?.height??0)*toolScale+20);
+    const outside=!this.document.body.classList.contains('inside-house')&&!this.document.body.classList.contains('room-transition');
+    const screenClear=!this.webgl.getContext().isContextLost()&&!this.modalScope&&!this.active&&!this.collection.group&&!this.map.group&&
+      !this.document.querySelector('dialog[open],#creator:not([hidden]),#conversation-panel:not([hidden])');
+    this.recovery.update({visible:outside&&screenClear,width:width-left-right-36,maxHeight:height-recoveryTop-recoveryReserve});
+    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.status.headerGroup&&!this.status.noticeGroup&&!this.recovery.group&&!this.movementGroups.size&&!additional){
       this.releaseHudOverrides();
       this.windows.end();
       this.layer.hide();
       return;
     }
-    const {clientWidth:width,clientHeight:height}=this.canvas;
     if(!width||!height){this.releaseHudOverrides();this.windows.end();return;}
     const viewport={width,height};
     if(this.cockpit&&this.camera.aspect!==width/height){
@@ -550,6 +564,10 @@ export class MatterWorktableHud{
     }
     const scale=Math.min(170,(width-24)/2.2,(height-124)/1.9);
     this.place(this.group,'workPlacement',viewport,width-14-scale*1.10,height<520?54:95,scale);
+    if(this.recovery.group){
+      const {scale,width:panelWidth}=this.recovery.placement;
+      this.place(this.recovery.group,'recoveryPlacement',viewport,left+18+panelWidth*scale/2,recoveryTop,scale);
+    }
     if(this.toolGroup){
       const {left,right,bottom}=this.toolInsets();
       const dockClearance=this.usesCockpitDocks(viewport)?21:0;
@@ -673,6 +691,7 @@ export class MatterWorktableHud{
       this.collection.presented(Boolean(painted&&this.collection.group&&this.hud.getSurfaceBounds(collectionHudId)));
       this.status.present(true,Boolean(painted&&this.status.headerGroup&&this.hud.getSurfaceBounds(worldHeaderId)));
       this.status.present(false,Boolean(painted&&this.status.noticeGroup&&this.hud.getSurfaceBounds(worldNoticeId)));
+      this.recovery.present(Boolean(painted&&this.recovery.group&&this.hud.getSurfaceBounds(recoveryHudId)));
       this.activity.present(painted,Boolean(!this.activity.owner()?.opened&&this.toolGroup&&
         this.toolLayout?.rows.some(row=>row.ids.includes('activity'))));
       this.visit.present({painted,index:Boolean(this.visit.indexGroup&&this.hud.getSurfaceBounds(exhibitionHudId)),launcher:this.visit.indexActive||Boolean(this.toolGroup&&this.toolLayout?.rows.some(row=>
@@ -698,6 +717,7 @@ export class MatterWorktableHud{
     this.door.update(false);
     this.collection.reset();
     this.status.dispose();
+    this.recovery.clear();
     this.syncMovement(false);
     this.settings.close(false);
     this.activity.present(false,false);

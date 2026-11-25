@@ -1104,52 +1104,84 @@ function noteRecovery(kind,result={}){
     expired:result.expired===true||result.code==='expired'||!!expiredCommand};
   renderRecovery();
 }
-function clearRecovery(kind){recovery[kind]=null;if(closingRecovery===kind)closingRecovery=null;renderRecovery();}
+function clearRecovery(kind){recovery[kind]=null;if(closingRecovery?.kind===kind)closingRecovery=null;renderRecovery();}
+function recoveryRecord(kind){return kind==='command'?pendingMetadata:nativeTurn;}
+function recoveryRequestId(kind){return (kind==='command'?pending:nativeTurn)?.id;}
+function recoverySelectionCurrent(selection){
+  const {kind,id,record,info,actorRef,run}=selection;
+  return recoveryRecord(kind)===record&&recoveryRequestId(kind)===id&&recovery[kind]===info&&
+    state?.actorRef===actorRef&&state?.run===run;
+}
+function canRetryRecovery(kind,info,record){
+  const ownerMatches=sameActor(record,state?.actorRef);
+  const legacyRetained=kind==='native'&&!record.body&&info.retained===true&&(!record.actorRef||ownerMatches);
+  const run=record.run??record.command?.run;
+  const runChanged=!!run&&!!state?.run&&run!==state.run;
+  return !(recoveryBusy||info.expired||!info.retryable||runChanged||(!ownerMatches&&!legacyRetained));
+}
 function renderRecovery(){
-  const panel=$('#recovery-panel'),items=$('#recovery-items');items.replaceChildren();
+  const panel=$('#recovery-panel'),items=$('#recovery-items'),focused=document.activeElement;
+  const previousFocus=items.contains(focused)?focused.closest('.recovery-item'):null;
+  const openDetails=items.querySelector('details[open]')?.parentElement.dataset.request;
+  let restoreFocus;
+  if(closingRecovery&&!recoverySelectionCurrent(closingRecovery))closingRecovery=null;
+  items.replaceChildren();
   for(const kind of ['command','native']){
-    const info=recovery[kind],record=kind==='command'?pendingMetadata:nativeTurn;
-    if(!info||!record)continue;
-    const card=document.createElement('div');card.className='recovery-item';card.dataset.kind=kind;
+    const info=recovery[kind],record=recoveryRecord(kind),id=recoveryRequestId(kind);
+    if(!info||!record||!id)continue;
+    const selection={kind,id,record,info,actorRef:state?.actorRef,run:state?.run};
+    const current=()=>!recoveryBusy&&recoverySelectionCurrent(selection);
+    const armed=closingRecovery?.kind===kind&&closingRecovery.id===id;
+    const card=document.createElement('div');card.className='recovery-item';card.dataset.kind=kind;card.dataset.request=id;
     const title=document.createElement('p');title.className='recovery-title';title.textContent=kind==='command'?'Tu cambio en el mundo':'Tu mensaje';card.append(title);
     const description=document.createElement('p');
     description.textContent=info.expired?'Este envío ya venció. Podemos revisar cómo quedó el mundo y cerrar su seguimiento.':info.knownNotSubmitted?'Este intento no llegó a completarse. Podés volver a enviar el mismo contenido.':'Todavía no hay una confirmación. Comprobar no vuelve a enviar nada.';
     if(info.tracking)description.textContent='Una parte del turno sigue en curso. Podés comprobarla o dejar de seguirla, sin cancelarla.';
     if(kind==='native'&&!record.body&&info.retained===false)description.textContent='La referencia se conservó, pero esta pestaña no tiene el texto original. Podés cerrar el seguimiento y escribir otro mensaje.';
     card.append(description);
-    if(kind==='native'&&record.body?.text&&sameActor(record,state?.actorRef)){const details=document.createElement('details'),summary=document.createElement('summary'),original=document.createElement('p');summary.textContent='Ver mensaje conservado';original.textContent=record.body.text;original.style.whiteSpace='pre-wrap';details.append(summary,original);card.append(details);}
+    if(kind==='native'&&record.body?.text&&sameActor(record,state?.actorRef)){const details=document.createElement('details'),summary=document.createElement('summary'),original=document.createElement('p');details.open=openDetails===id;summary.textContent='Ver mensaje conservado';original.textContent=record.body.text;original.style.whiteSpace='pre-wrap';details.append(summary,original);card.append(details);}
     if(record.actorRef&&state?.actorRef&&record.actorRef!==state.actorRef){const warning=document.createElement('p');warning.textContent='Este envío pertenece a otra identidad. No se reenviará desde esta sesión.';card.append(warning);}
     if(record.run&&state?.run&&record.run!==state.run){const warning=document.createElement('p');warning.textContent='Este envío pertenece a una visita anterior. Comprobalo o cerrá su seguimiento antes de iniciar otro.';card.append(warning);}
     const actions=document.createElement('div');actions.className='row';
-    const check=document.createElement('button');check.textContent='Comprobar';check.dataset.action='check';check.disabled=recoveryBusy;check.onclick=()=>recoveryAction(kind,'check');actions.append(check);
+    const check=document.createElement('button');check.textContent='Comprobar';check.dataset.action='check';check.disabled=recoveryBusy;check.onclick=()=>{if(current())void recoveryAction(selection,'check');};actions.append(check);
     const retry=document.createElement('button');retry.textContent=kind==='command'?'Reintentar cambio':'Reintentar mensaje';retry.dataset.action='retry';
-    const ownerMatches=sameActor(record,state?.actorRef);
-    const legacyRetained=kind==='native'&&!record.body&&info.retained===true&&(!record.actorRef||ownerMatches);
-    const runChanged=!!record.run&&!!state?.run&&record.run!==state.run;
-    retry.disabled=recoveryBusy||info.expired||!info.retryable||runChanged||(!ownerMatches&&!legacyRetained);
-    retry.onclick=()=>recoveryAction(kind,'retry');actions.append(retry);
-    const close=document.createElement('button');close.textContent=closingRecovery===kind?'Conservar y cerrar':'Dejar seguimiento';close.dataset.action='close';close.disabled=recoveryBusy;
-    close.onclick=()=>{if(closingRecovery!==kind){closingRecovery=kind;renderRecovery();}else closeTracking(kind);};actions.append(close);
+    retry.disabled=!canRetryRecovery(kind,info,record);
+    retry.onclick=()=>{if(current()&&canRetryRecovery(kind,info,record))void recoveryAction(selection,'retry');};actions.append(retry);
+    const close=document.createElement('button');close.textContent=armed?'Volver':'Dejar seguimiento';close.dataset.action='close';close.disabled=recoveryBusy;
+    close.onclick=()=>{if(current()){closingRecovery=armed?null:selection;renderRecovery();}};actions.append(close);
     card.append(actions);
-    if(closingRecovery===kind){const warning=document.createElement('p');warning.className='recovery-warning';warning.textContent='Esto no cancela ni deshace el envío. Conservaremos la referencia y su contenido en esta pestaña; podrás iniciar otro.';card.append(warning);}
+    if(armed){
+      const warning=document.createElement('p');warning.className='recovery-warning';warning.id='recovery-warning-'+kind;warning.textContent='El cierre afecta solo al seguimiento en esta pestaña. Se conserva la referencia y el contenido disponible.';card.append(warning);
+      const confirm=document.createElement('button');confirm.textContent='Conservar y cerrar';confirm.dataset.action='confirm';confirm.disabled=recoveryBusy;
+      confirm.setAttribute('aria-describedby',warning.id);
+      const armedSelection=closingRecovery;
+      confirm.onclick=()=>closeTracking(armedSelection);card.append(confirm);
+    }
+    if(previousFocus?.dataset.kind===kind&&previousFocus.dataset.request===id){
+      restoreFocus=Array.from(card.querySelectorAll('button,summary')).find(control=>
+        !control.disabled&&control.tagName===focused.tagName&&control.dataset.action===focused.dataset.action);
+    }
     items.append(card);
   }
   panel.hidden=!items.children.length;
+  restoreFocus?.focus({preventScroll:true});
 }
-function closeTracking(kind){
-  const record=kind==='command'?pendingMetadata:nativeTurn;
-  try{archiveIntent(sessionStorage,archiveKey,{kind,...record});}
+function closeTracking(selection){
+  if(recoveryBusy||selection!==closingRecovery||!recoverySelectionCurrent(selection))return;
+  const {kind,id,record}=selection;
+  try{archiveIntent(sessionStorage,archiveKey,{...record,kind});}
   catch{say('Esta pestaña ya conserva varios envíos sin confirmar. Comprobá alguno antes de cerrar otro seguimiento.');return;}
   if(kind==='command'){
-    signalEditor.untrack(pending.id);pending=null;pendingMetadata=null;sessionStorage.removeItem(pendingKey);
+    signalEditor.untrack(id);pending=null;pendingMetadata=null;sessionStorage.removeItem(pendingKey);
   }
-  else{archivedNativeIds.add(nativeTurn.id);nativeTurn=null;sessionStorage.removeItem(turnKey);updateNativeAvailability();}
+  else{archivedNativeIds.add(id);nativeTurn=null;sessionStorage.removeItem(turnKey);updateNativeAvailability();}
   clearRecovery(kind);say('Cerramos el seguimiento. El envío anterior no se canceló ni se deshizo.');
 }
-async function recoveryAction(kind,action){
-  if(recoveryBusy)return;recoveryBusy=true;renderRecovery();
-  const id=(kind==='command'?pending:nativeTurn)?.id;
-  const current=()=>sameRequest(kind==='command'?pending:nativeTurn,id);
+async function recoveryAction(selection,action){
+  if(recoveryBusy||!recoverySelectionCurrent(selection))return;
+  recoveryBusy=true;renderRecovery();
+  const {kind,id,actorRef,run}=selection;
+  const current=()=>recoveryRequestId(kind)===id&&state?.actorRef===actorRef&&state?.run===run;
   try{
     if(action==='check'){if(kind==='command')await recoverCommand();else await readTurn();return;}
     if(kind==='command'){
