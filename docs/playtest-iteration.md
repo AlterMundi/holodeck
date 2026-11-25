@@ -363,6 +363,17 @@ acceptance and the rest of the iteration remain open.
 
 ### HUD art direction
 
+The additional November 25 visual reference (instruction `77d43c71`)
+pairs a fixed minimap and bearing above the main view with a compact
+action strip below it and short hints near the relevant target. Use that
+division in Cabina and the other looks for actual navigation and Matter
+actions. The selected room, worktable controls and current destination
+give the design its content. Keep the center available for exploration
+and inspection, and show contextual hints only while their action is
+available. At touch widths, verify that a displayed map or modal cannot
+intercept an unrelated movement gesture or expose an underlying action.
+
+
 The cockpit preview (`hud-look=cabina`) applies the November 25 visual
 reference to actual Holodeck surfaces. The desktop toolbelt recedes from
 eye level, the location panel turns inward, and the material housings have
