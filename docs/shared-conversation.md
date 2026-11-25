@@ -145,9 +145,13 @@ read the original receipt after a native world descriptor change.
 digest and current pair and world grant. It reads sealed evidence from the
 owner journal and checks the canonical result. File-based authority cannot
 select a machine-journal original. These operations are available to the
-specified owner's transport. The supported browser path still needs protocol
-selection and preparation freeze for this route, live room revalidation at
-native submission, archival of settled machine bytes and baseline integration.
+specified owner's transport. The integration candidate negotiates the protocol
+and freezes preparation before dispatch. The native receiver revalidates room
+authority and selects full, unchanged or delta delivery against an acknowledged
+baseline. The owner can archive settled, verified bytes under a separate quota
+in the same private journal. Controlled text and voice retained the exact
+receipt and reused an archived baseline. Live composition of the compatible
+browser, bridge, provider and native writer remains open.
 
 The current DaimonApp dashboard dispatches text through
 `dashboard/provider.py` and ordinary voice through its voice submit provider.
