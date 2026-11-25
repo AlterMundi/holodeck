@@ -1,4 +1,5 @@
 import {OrthographicCamera,Raycaster,Scene,Vector2} from 'three';
+import {HudRenderLayer} from './hud-render-layer.mjs';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
 
 const surfaceId='matter-worktable';
@@ -37,6 +38,11 @@ export class MatterWorktableHud{
   constructor({document,webgl,table,onActive,onError}){
     Object.assign(this,{document,webgl,table,onActive,scope:0,mode:null,blocked:false});
     this.canvas=webgl.domElement;
+    this.layer=new HudRenderLayer(webgl);
+    this.events=new AbortController();
+    for(const event of ['pointerdown','pointermove','pointerup','pointercancel','keydown','focusin','focusout','input','click']){
+      document.addEventListener(event,this.layer.invalidate,{capture:true,signal:this.events.signal});
+    }
     this.scene=new Scene();
     this.camera=new OrthographicCamera(-1,1,1,-1,.1,12);
     this.camera.position.z=4;
@@ -66,7 +72,10 @@ export class MatterWorktableHud{
 
   ownsAccessibleInput(target){return this.hud.ownsAccessibleInput(target);}
 
-  send(type,content){this.hud.receive({version:'1.0',[type]:{surfaceId,...content}});}
+  send(type,content){
+    this.hud.receive({version:'1.0',[type]:{surfaceId,...content}});
+    this.layer.invalidate();
+  }
 
   setMode(mode){
     if(this.mode===mode)return;
@@ -140,6 +149,7 @@ export class MatterWorktableHud{
     const look=this.document.body.dataset.roomLook;
     if(this.look!==look){
       this.look=look;
+      this.layer.invalidate();
       if(!look)this.hud.setPalette();
       else{
         const css=this.document.defaultView.getComputedStyle(this.document.body);
@@ -164,30 +174,31 @@ export class MatterWorktableHud{
   }
 
   draw(){
-    if(!this.mode||!this.group)return;
+    if(!this.mode||!this.group){this.layer.hide();return;}
     const width=this.canvas.clientWidth,height=this.canvas.clientHeight;
     if(!width||!height)return;
     const active=this.active;
     const scale=active?Math.min(170,(width-24)/2.2,(height-124)/1.9):165;
     if(scale<=0)return;
-    const x=active?width-14-scale*1.10:width-16-scale*.65;
-    const y=active?(height<520?54:95):height-153;
-    const size=width+':'+height;
+    const x=active?width-14-scale*1.10:width/2;
+    const dockTop=this.document.querySelector('#dock')?.getBoundingClientRect().top??height;
+    const y=active?(height<520?54:95):Math.min(height-104,dockTop-56);
+    const size=[width,height,x,y,scale].join(':');
     if(this.placedGroup!==this.group||this.placedSize!==size){
       placeHudInViewport(this.group,this.camera,{width,height,x,y,pixelsPerUnit:scale,depth:1});
       this.placedGroup=this.group;
       this.placedSize=size;
+      this.layer.invalidate();
     }
     this.hud.update();
-    const auto=this.webgl.autoClear;
-    this.webgl.autoClear=false;
-    try{this.webgl.clearDepth();this.webgl.render(this.scene,this.camera);}
-    finally{this.webgl.autoClear=auto;}
+    this.layer.draw(this.scene,this.camera);
   }
 
   dispose(){
     if(this.active)this.onActive(false);
     this.unbind();
+    this.events.abort();
+    this.layer.dispose();
     this.hud.dispose();
     this.a11y.remove();
     this.table.panel.removeAttribute('data-spatial');

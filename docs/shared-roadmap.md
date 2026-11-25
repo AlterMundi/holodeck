@@ -2,6 +2,8 @@
 
 Reviewed 22 November 2026 against maintained source and an independent GPT-6.2 Astra high evaluations of architecture and delivery. [Field Project 13](https://github.com/orgs/AlterMundi/projects/13) is the shared coordination index; component issues own implementation and receiving evidence. This document replaces parallel sequencing proposals for this integration, not their historical evidence or unrelated paused work.
 
+Current delivery and receiving checks are in the [Holodeck playtest iteration](playtest-iteration.md).
+
 ## Intended experience
 
 Walk from the common landscape to a recognizable daimon-authored house, meet its owner, enter a workshop larger than its exterior and explore what that human–daimon pair creates. Together inspect a result, its evidence, code, simulations, media, revisions and possible material realization. Refer to the same situated object/activity/time while each participant can move and look elsewhere. Suggest a change, continue exploring while the daimon works, then return to both editions. Shared public terrain connects individual places and collective creations. The future includes headset participation and selected physical augmentation, using the same situated references.
