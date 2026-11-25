@@ -73,8 +73,19 @@ edge of the takeoff row selected frame 22, which stayed selected at 390 ×
 suite passed 405 tests with two skips. The overlay covers the lower controls
 until a choice or dismissal.
 
-The protected world serves `b4031531fdfd`. Holodeck's release selection
-and the visit with two independently signed-in visitors remain open.
+The same exact archive also passed cross-surface Chromium checks for the
+square and circular minimap by keyboard and touch, Matter entry and exit,
+shared table writes, conditional clear and visitor-local model selection.
+The Conversations fixture exercised the mounted iframe, draft retention,
+focus and movement in portrait and landscape. It substituted the iframe
+content. The map capture still shows the world dock wrapping in portrait.
+
+The protected world serves `b4031531fdfd`. The candidate booted on a
+temporary copy of the selected house, Atelier and active-space checkpoints.
+The reciprocal studio doors resolved and the room rule admitted one
+configured human guest and the house owner's daimon identity. This check
+used the copied layout and omitted Home sign-in. Holodeck's release
+selection and the protected two-session trial remain open.
 
 ## November 25 Atelier return thresholds
 

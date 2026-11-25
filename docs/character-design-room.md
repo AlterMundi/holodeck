@@ -104,6 +104,21 @@ Retries of the same actor's submission are idempotent. Notes remain stored
 across editions. Reading historical notes needs the corresponding edition
 to be selected by the application.
 
+## Protected receiving trial
+
+In the existing protected Holodeck, use the admitted human guest and the
+house owner's authenticated identity. Both enter through the foyer.
+The owner shows the humanoid landing frame and the guest opens the
+shared pose. Compare the rig, clip, edition and frame on both sides
+while each visitor adjusts their own camera. The guest adds an agreed
+note. The owner reopens that exact frame, reads the attributed note
+and checks that returning to the foyer leaves the review out of scope.
+
+Record the installed package digest and the observed room entry and
+readback. Keep fixture identities and temporary copies in technical
+qualification. The receiving trial uses the existing Home audience
+and room guest list.
+
 ## Shared session and authored motion
 
 Track the [Character Design Room #24](https://github.com/AlterMundi/holodeck/issues/24)
