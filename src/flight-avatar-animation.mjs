@@ -65,7 +65,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
     // Remove last frame's extra limb rotations before the base mixer runs.
     for(const entry of actors.values())restore(entry);
     const result=update.call(this,state,dt);
-    const {outdoor,flying,grounded:localGrounded,table,crouch,gaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null}=context();
+    const {outdoor,flying,grounded:localGrounded,table,crouch,gaze,peerGaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null}=context();
     const now=clock?.();
     const elapsed=now!==undefined&&previousTime!==undefined?(now-previousTime)/1000:dt;
     previousTime=now;
@@ -91,14 +91,15 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
         entry.mouth?.apply(microphoneLevel,step);
       }else entry.mouth?.reset();
       if(!glanceMotion)entry.glance?.reset();
-      if(isLocal&&glanceMotion&&table&&gaze&&!entry.glance){
-        entry.glance??=new TabletopGlance();
-        entry.head??=mesh.getObjectByName('head');
-      }
       const coordinate=outdoor?terrainCoordinates([position.x,position.y,position.z]):null;
       const waterLine=entry.mode==='swim'?.78:.92;
       const underwater=coordinate&&coordinate.height<TOROIDAL_TERRAIN.waterLevel-waterLine&&terrainWaterDepth(coordinate.u,coordinate.v)>.18;
       const atTable=isLocal?table:tabletopPlayers.has?.(id)||tabletopPlayers.includes?.(id);
+      const glanceTarget=atTable&&glanceMotion?(isLocal?gaze:peerGaze?.get(id)):null;
+      if(glanceTarget&&!entry.glance){
+        entry.glance=new TabletopGlance();
+        entry.head=mesh.getObjectByName('head');
+      }
       const peerPose=isLocal?null:peerPoses?.get(id);
       const grounded=isLocal?localGrounded:actor.animationState>=0&&actor.animationState<=2||actor.animationState===5;
       const explicitFlight=Boolean(isLocal?outdoor&&flying:peerPose==='fly');
@@ -165,7 +166,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       entry.idleTime=resting||entry.idleWeight>.001?entry.idleTime+step:0;
       if(settled){
         if(entry.idleWeight>.001)entry.idleRig.apply(character,entry.idleTime+entry.idlePhase,entry.idleWeight);
-        entry.glance?.apply(character,entry.head,isLocal&&table&&glanceMotion?gaze:null,dt);
+        entry.glance?.apply(character,entry.head,glanceTarget,dt);
         continue;
       }
       entry.phase=(entry.phase+step*(underwater?4.4:2.1))%(2*Math.PI);
@@ -197,7 +198,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
           forward:entry.weight,weight:entry.airWeight,lowerWeight:entry.lowerWeight,step});
       }
       if(entry.idleWeight>.001)entry.idleRig.apply(character,entry.idleTime+entry.idlePhase,entry.idleWeight);
-      entry.glance?.apply(character,entry.head,isLocal&&table&&glanceMotion?gaze:null,dt,1-w*.8);
+      entry.glance?.apply(character,entry.head,glanceTarget,dt,1-w*.8);
       const airSwing=entry.airRig?0:w,hoverSwing=entry.airRig?0:entry.hoverWeight;
       if(entry.airRig&&entry.crouchRig)continue;
       const strokeAmplitude=underwater?.58:.16;

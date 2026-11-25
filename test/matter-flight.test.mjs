@@ -86,3 +86,24 @@ test('crouch bends a horizontal-axis humanoid rig into the sagittal plane',()=>{
   release();
   assert.ok(Math.abs(ankle.getWorldPosition(new Vector3()).z)<1e-6);
 });
+
+test('a miniature peer turns its head for a shared pointing cue and settles again',()=>{
+  const character=new Group(),root=new Group(),head=new Bone();
+  head.name='head';
+  character.add(root);root.add(head);
+  character.getMesh=()=>root;
+  const manager={loadedCharacters:new Map([[8,{character}]]),update(){}};
+  const tabletopPlayers=new Set([8]),peerGaze=new Map();
+  let glanceMotion=true;
+  const release=bindFlightAvatarAnimation(manager,()=>({tabletopPlayers,peerGaze,glanceMotion}));
+  const state={localCharacterId:1,characters:new Map([[8,{position:new Vector3(),animationState:0}]])};
+  const step=()=>{for(let i=0;i<75;i++)manager.update(state,1/60);};
+  peerGaze.set(8,new Vector3(1,0,3));
+  step();
+  assert.ok(head.quaternion.y>.1);
+  peerGaze.clear();step();
+  assert.ok(Math.abs(head.quaternion.y)<.01);
+  glanceMotion=false;peerGaze.set(8,new Vector3(1,0,3));step();
+  assert.equal(head.quaternion.y,0);
+  release();
+});

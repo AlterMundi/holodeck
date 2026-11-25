@@ -36,7 +36,7 @@ async function modelBytes(base,edition,signal){
 }
 
 export class CollectionShelves {
-  constructor({base,scene,panel,archivePanel,worktablePanel,webgl,onReference,onPlaced,onTabletop}){
+  constructor({base,scene,panel,archivePanel,worktablePanel,webgl,onReference,onPlaced,onTabletop,onPoint}){
     Object.assign(this,{base,scene,panel,onPlaced,onTabletop,webgl,loader:new GLTFLoader()});
     this.items=new Map();
     this.list=panel.querySelector('ul');
@@ -51,7 +51,7 @@ export class CollectionShelves {
     const refreshSoon=this.refreshSoon=()=>{this.flight?.abort();this.flight=null;this.refreshAt=0;};
     this.archive=new CollectionArchive({base,scene,panel:archivePanel,loader:this.loader,
       readModel:(edition,signal)=>modelBytes(base,edition,signal),onRestored:refreshSoon});
-    this.worktable=new CollectionWorktable({base,scene,panel:worktablePanel,webgl,onReference,onSharedChange:refreshSoon});
+    this.worktable=new CollectionWorktable({base,scene,panel:worktablePanel,webgl,onReference,onPoint,onSharedChange:refreshSoon});
   }
 
   update(room,root,player,bench,canDiscuss,contactShadows,camera,pixels,inspectionMix=0){

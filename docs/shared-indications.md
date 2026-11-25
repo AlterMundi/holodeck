@@ -43,6 +43,25 @@ time, activity, participants, public entities and events. Selecting locally
 without pressing Señalar creates no shared statement or native attention.
 Client/server capture times and the exact human original remain distinct.
 
+## Worktable pointing
+
+Visitors in miniature can use **Señalar esta pieza** on the selected part of
+the shared model. The cue is independent of private selection, hover, section,
+rotation and the published table state. It is a five-second presence signal.
+Holodeck validates the connection proof, the current table revision and the
+exact source edition, scene and part. Each miniature recipient is independently
+authorized against Home and the exact edition before it receives the signal.
+A read-only visitor can point using the same scope. The room journal, table
+checkpoint and native Conversation stay independent of this gesture.
+
+A matching, visible part receives a thin gold outline in the receiving view.
+The sending miniature turns its head toward that view's part bounds. The
+viewer keeps their own rotation, scene, section and hidden parts. The outline
+follows a partial horizontal section and disappears when the remaining bounds
+are empty. With reduced motion the outline remains available. Changing the
+table edition, leaving its scope or reconnecting drops the cue. Late arrivals
+receive no replay.
+
 ## Capture and export bounds
 
 The completed native observation is checked after its input association and

@@ -1,3 +1,4 @@
+import {pointingBounds} from './tabletop-point-view.mjs';
 import {Box3,BufferAttribute,BufferGeometry,DoubleSide,Group,Mesh,MeshStandardMaterial,Plane,Vector3} from 'three';
 import {disposeModel} from './gallery-models.mjs';
 
@@ -59,8 +60,8 @@ function options(select,rows){
 }
 
 export class CollectionWorktable{
-  constructor({base,scene,panel,webgl,onSharedChange,onReference}){
-    Object.assign(this,{base,scene,panel,webgl,onSharedChange,onReference,yaw:0,editions:[],hidden:new Set()});
+  constructor({base,scene,panel,webgl,onSharedChange,onReference,onPoint}){
+    Object.assign(this,{base,scene,panel,webgl,onSharedChange,onReference,onPoint,yaw:0,editions:[],hidden:new Set()});
     this.details=panel.querySelector('details');
     this.project=panel.querySelector('[data-project]');
     this.sceneChoice=panel.querySelector('[data-scenes]');
@@ -87,12 +88,35 @@ export class CollectionWorktable{
       button.onclick=()=>this.turn(Number(button.dataset.turn));
   }
 
+  referenceFor(part){
+    const {review,shown}=this;
+    return review&&shown?{resource:shown.resource,version:shown.version,scene:review.id,
+      sceneVersion:review.version,part}:null;
+  }
+
   discussSelection(){
-    const review=this.review,edition=this.shown;
-    if(this.discuss.hidden||!review||!edition)return;
-    const part=review.parts.find(item=>item.id===this.part.value);
-    this.onReference?.({resource:edition.resource,version:edition.version,scene:review.id,
-      sceneVersion:review.version,part:part?.id??null},part?.label??review.title);
+    const part=this.review?.parts.find(item=>item.id===this.part.value);
+    const reference=this.referenceFor(part?.id??null);
+    if(!this.discuss.hidden&&reference)this.onReference?.(reference,part?.label??this.review.title);
+  }
+
+  pointingTarget(reference,revision){
+    if(!reference||this.local||!this.available||this.shared?.revision!==revision||
+       reference.resource!==this.shared.resource||
+       (this.shared.version&&reference.version!==this.shared.version))return null;
+    const current=this.referenceFor(reference.part);
+    if(!current||Object.keys(current).some(key=>current[key]!==reference[key]))return null;
+    return this.model?.parts.get(reference.part)??null;
+  }
+
+  canPoint(reference,revision){
+    return !!pointingBounds(this.pointingTarget(reference,revision),this.pointBounds??=new Box3());
+  }
+
+  pointSelection(){
+    const reference=this.referenceFor(this.part.value);
+    const revision=this.shared?.revision;
+    if(!this.pointingPending&&this.canPoint(reference,revision))this.onPoint?.(reference,revision);
   }
 
   followTable(){this.local=false;this.followShared();}
@@ -132,7 +156,9 @@ export class CollectionWorktable{
     const choices=select=>Array.from(select.options,option=>({id:option.value,label:option.textContent}));
     const status=this.sharedStatus.textContent||this.status.textContent||
       (this.shareRequest?'Actualizando mesa…':this.local?'Inspección local':'Siguiendo la mesa');
+    const reference=this.referenceFor(this.part.value);
     return {
+      pointDisabled:this.pointingPending===true||!this.canPoint(reference,this.shared?.revision),
       projects:choices(this.project),project:this.project.value,scenes:choices(this.sceneChoice),scene:this.review?.id??'',
       parts:choices(this.part),part:this.part.value,section:Number(this.section.value),
       ready:!!this.model,hasPart:!!this.part.value,visibility:this.visibility.textContent,

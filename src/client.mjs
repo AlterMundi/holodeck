@@ -1,4 +1,6 @@
-import {AvatarPosePresence} from './avatar-pose-presence.mjs';
+import {AvatarPosePresence,signAvatarPresence} from './avatar-pose-presence.mjs';
+import {tabletopPointBroadcast,tabletopPointProofMessage} from './tabletop-pointing.mjs';
+import {TabletopPointView} from './tabletop-point-view.mjs';
 import {bindHudAppearance} from './hud-appearance.mjs';
 import {selectedHudLook} from './hud-look-preview.mjs';
 import {ToroidalScenery} from './toroidal-scenery.mjs';
@@ -692,9 +694,13 @@ document.addEventListener('keydown',event=>{
 const playableHUD=new PlayableHUD(document);
 let geometryProbe=null,companionAvatar=null,nativeAvatarLayer=null,contentVisitor=null,galleryModels=null,collectionShelves=null,matterHud=null,matterFlight=null,conversationDisplay=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null,worldHistory=null;
 const poses=new AvatarPosePresence(base,window.SESSION_TOKEN);
+let pointView=null;
 const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
   sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket(hot?'active/network':'network'),waitForWorldConfig:true,
-  onServerBroadcast:message=>poses.receive(message),
+  onServerBroadcast:message=>{
+    poses.receive(message);
+    pointView?.receive(message,activeSpace.id,client.getWorldConnection());
+  },
   enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
   // Upstream's default sun allocates an 8192² shadow map. This small world uses
   // the public renderer factory and a bounded 1024² light instead, on all clients.
@@ -716,13 +722,52 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const minimap=bindToroidalMinimap(mapPanel);
     const frameBudget=createFrameBudget(renderer);
     galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
+    const points=new TabletopPointView(renderer.mmlCompositionScene.group,(local,connection)=>{
+      const profile=client.getUserProfile(connection);
+      const ownTab=profile?.userId&&profile.userId===client.getLocalCharacterState()?.userId;
+      const message=local?'Señalaste esta pieza.':ownTab?'Señalaste una pieza desde otra vista.':
+        profile?.username?profile.username+' señaló una pieza de la mesa.':'Te señalaron una pieza de la mesa.';
+      say(message,{transient:true});
+    });
+    pointView=points;
+    let pointSequence=0,pointRequest=null;
+    const abortHiddenPoint=()=>{if(document.hidden)pointRequest?.controller.abort();};
+    document.addEventListener('visibilitychange',abortHiddenPoint);
+    async function pointAtPart(reference,revision){
+      const world=client.getWorldConnection(),scope=activeSpace.id;
+      const connection=world?.getConnectionId(),table=collectionShelves.worktable;
+      const allowed=()=>matterHud.active&&tableFlight.active&&!moving&&!entering&&!document.hidden&&
+        activeSpace.id===scope&&client.getWorldConnection()===world&&world?.isConnected()&&
+        world.getConnectionId()===connection&&table.canPoint(reference,revision);
+      if(pointRequest||!poses.key||!Number.isSafeInteger(connection)||!allowed())return;
+      const payload={connection,reference,revision,sequence:++pointSequence};
+      const controller=new AbortController();
+      pointRequest={controller,allowed};
+      table.pointingPending=true;
+      try{
+        const key=await poses.key;
+        if(!key)return;
+        const proof=await signAvatarPresence(key,tabletopPointProofMessage(scope,payload));
+        if(!allowed())return;
+        const response=await fetch(new URL('api/space/collection/pointing',base),{
+          method:'POST',redirect:'error',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(12000)]),
+          headers:{'Content-Type':'application/json','X-Holodeck-Pose-Proof':proof},body:JSON.stringify(payload),
+        });
+        if(!allowed())return;
+        if(response.ok)points.receive({broadcastType:tabletopPointBroadcast,payload:{...payload,space:scope}},scope,world,true);
+        else say(response.status===429?'Esperá un momento para volver a señalar.':
+          'No pude señalar esta pieza. Revisá la mesa y volvé a intentar.',{transient:true});
+      }catch{
+        if(!controller.signal.aborted&&allowed())say('No pude confirmar el gesto.',{transient:true});
+      }finally{pointRequest=null;table.pointingPending=false;}
+    }
     collectionShelves=new CollectionShelves({base,scene:renderer.mmlCompositionScene.group,panel:document.querySelector('#collection-shelf'),
       archivePanel:document.querySelector('#collection-archive'),worktablePanel:document.querySelector('#collection-worktable'),
       onTabletop:players=>{
         const id=client.getLocalCharacterState()?.connectionId;
         if(Number.isSafeInteger(id)&&players.has(id)!==tableFlight.active)void shareTabletopMode(tableFlight.active);
       },
-      webgl:renderer.composer.renderer,onPlaced:()=>say('Modelo seleccionado. Acercate a la mesa.',{transient:true}),onReference:(reference,label)=>{
+      webgl:renderer.composer.renderer,onPlaced:()=>say('Modelo seleccionado. Acercate a la mesa.',{transient:true}),onPoint:pointAtPart,onReference:(reference,label)=>{
         if(moving||!inside||!sharedSurface())return;
         worktableTopic={reference,label};openConversation(true);
       }});
@@ -790,7 +835,10 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         tableFlight.enter(client.getCharacterManager().localController,collectionShelves.worktable.anchor),
       onActive:active=>{
         document.body.classList.toggle('is-operating-matter',active);
-        if(!active)tableFlight.exit(client.getCharacterManager().localController);
+        if(!active){
+          pointRequest?.controller.abort();
+          tableFlight.exit(client.getCharacterManager().localController);
+        }
         void shareTabletopMode(active);
         client.keyInputManager?.handleUnfocus();
       },
@@ -914,7 +962,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     let tableGaze=null;
     const releaseFlightAnimation=bindFlightAvatarAnimation(renderer.characterManager,()=>({
       outdoor:outsideRing(),flying:flightEnabled,grounded:client.getCharacterManager().localController?.characterOnGround,table:tableFlight.active,tabletopPlayers:collectionShelves.tabletopPlayers,
-      peerPoses:poses.peers,gaze:tableGaze,glanceMotion:!companion.motion.matches&&!document.hidden,
+      peerPoses:poses.peers,peerGaze:points.gazes,gaze:tableGaze,glanceMotion:!companion.motion.matches&&!document.hidden,
       microphoneLevel:sharedConversation&&!moving&&!entering&&sharedSurface()?sharedConversation.microphoneLevel():null,
       crouch:!moving&&client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt'),
     }),{clock:()=>performance.now()});
@@ -1076,9 +1124,15 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         atmosphere=null;
       }
       nativeAvatarLayer.update();
-      tableGaze=tableAttention.sample(performance.now());
+      if(pointRequest&&!pointRequest.allowed())pointRequest.controller.abort();
+      const tableNow=performance.now(),tableWorld=client.getWorldConnection();
+      const tableConnection=tableWorld?.getConnectionId();
+      const atTable=tableFlight.active&&!moving&&!entering&&!document.hidden;
+      points.update(activeSpace.id,tableWorld,table,collectionShelves.tabletopPlayers,tableNow,atTable?tableConnection:null);
+      const pointed=atTable?points.gazes.get(tableConnection):null;
+      tableGaze=pointed??tableAttention.sample(tableNow);
       companion.update({position,yaw,outdoor:outsideRing(),table:tableFlight,gaze:tableGaze,
-        gazeMesh:tableAttention.part(),eye:tableFlight.active?options.coreCameraManager.getCameraState().position:null,
+        gazeMesh:pointed?points.cues.get(tableConnection)?.mesh:tableAttention.part(),eye:tableFlight.active?options.coreCameraManager.getCameraState().position:null,
         explicitFlight:flightEnabled,grounded:!flightEnabled&&client.getCharacterManager().localController?.characterOnGround===true,
         visible:!entering&&!moving&&drawWorld,seconds:renderState.deltaTimeSeconds});
       galleryModels.update();
@@ -1139,7 +1193,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
       }
     };
-    renderer.dispose=()=>{poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();tableAttention.dispose();display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();tableAttention.dispose();pointRequest?.controller.abort();document.removeEventListener('visibilitychange',abortHiddenPoint);points.dispose();if(pointView===points)pointView=null;display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
       if(client.keyInputManager){
         const keys=client.keyInputManager,shouldCapture=keys.shouldCaptureKeyPress;

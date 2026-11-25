@@ -73,7 +73,7 @@ function toolComponents({width,rows,compact}){
 }
 const work=[
   {id:'root',component:'HudPanel',label:'Mesa de trabajo',width:2.20,
-    children:['heading','project','sharing','inspection','discuss','status']},
+    children:['heading','project','sharing','inspection','attention','status']},
   row('heading',['title','close']),
   text('title','Mesa de trabajo',{style:'title'}),button('close',path('closeLabel')),
   choice('project','Proyecto','projects','project'),
@@ -88,6 +88,8 @@ const work=[
   row('rotation',['left','visibility','right']),
   button('left','Girar izq.'),button('visibility',path('visibility'),{visible:path('hasPart'),weight:1.6}),
   button('right','Girar der.'),
+  row('attention',['point','discuss'],{visible:path('ready')}),
+  button('point','Señalar esta pieza',{disabled:path('pointDisabled')}),
   button('discuss',path('discuss'),{visible:path('canDiscuss')}),
   text('status',path('status'),{style:'status',lines:2}),
 ];
@@ -320,7 +322,7 @@ export class MatterWorktableHud{
       scene:()=>table.chooseScene(value),part:()=>table.choosePart(value),section:()=>table.setSection(value),
       left:()=>table.turn(-1),right:()=>table.turn(1),visibility:()=>table.toggleVisibility(),
       follow:()=>table.followTable(),share:()=>table.publishSelection(revision,project),
-      clear:()=>table.publishSelection(revision,null),discuss:()=>table.discussSelection(),
+      clear:()=>table.publishSelection(revision,null),point:()=>table.pointSelection(),discuss:()=>table.discussSelection(),
     };
     if(Object.hasOwn(local,name)){this.lookPreview.hit(surfaceId);local[name]();}
   }

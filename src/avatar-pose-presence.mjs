@@ -6,10 +6,12 @@ export const poseProofMessage=({space,connection,pose,revision})=>JSON.stringify
 
 const text=new TextEncoder();
 
-export async function avatarPoseProof(key,payload){
-  const signature=await crypto.subtle.sign('HMAC',key,text.encode(poseProofMessage(payload)));
+export async function signAvatarPresence(key,message){
+  const signature=await crypto.subtle.sign('HMAC',key,text.encode(message));
   return Array.from(new Uint8Array(signature),byte=>byte.toString(16).padStart(2,'0')).join('');
 }
+
+export const avatarPoseProof=(key,payload)=>signAvatarPresence(key,poseProofMessage(payload));
 
 // Pose is ephemeral rendering metadata. MML still owns position, movement
 // and the base animation, including for clients from earlier releases.

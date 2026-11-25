@@ -16,6 +16,7 @@ import express from 'express';
 import { Networked3dWebExperienceServer } from '@mml-io/3d-web-experience-server';
 import { NetworkedDOM } from '@mml-io/networked-dom-server';
 import {avatarPoseBroadcast,avatarPoseModes,poseConnection,poseKeyMaterial,poseProofMessage} from './avatar-pose-presence.mjs';
+import {tabletopPointBroadcast,tabletopPointDuration,tabletopPointProofMessage,validTabletopPoint} from './tabletop-pointing.mjs';
 import {FROM_SERVER_BROADCAST_MESSAGE_TYPE,handleExperienceWebsocketSubprotocol,serializeServerBroadcastMessage} from '@mml-io/3d-web-experience-protocol';
 import enableWs from 'express-ws';
 import { existsSync, readFileSync } from 'node:fs';
@@ -637,7 +638,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
             [...connections.values()].some(peer=>peer.session===session))
           return new Error('Room connection changed');
         record.presenceSession=session;
-        connections.set(connection,{actor,session,poseKey:createHash('sha256').update(poseKeyMaterial(token)).digest()});
+        connections.set(connection,{actor,session,accessSession:record.session,poseKey:createHash('sha256').update(poseKeyMaterial(token)).digest()});
         return {userId:actor.id,connectionKey:`session:${session.id}`,username:actor.name||'Explorador',
           characterDescription:avatarProfile(actor),colors:null};
       },
@@ -677,6 +678,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     res.set('Permissions-Policy','microphone='+selected+', autoplay='+selected);next();
   });
   app.use(route('api/space/avatar-pose'),express.json({limit:'256b',strict:true}));
+  app.use(route('api/space/collection/pointing'),express.json({limit:'2kb',strict:true}));
   app.use(express.json({limit:'48kb',strict:true}));
   const packedClient=new URL('../runtime/client.js.br',import.meta.url);
   if(existsSync(packedClient))
@@ -737,12 +739,13 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(req.method==='POST'){
       const expectedOrigin=publicOrigin||`http://${req.headers.host}`;
       if((production||req.headers.origin)&&req.headers.origin!==expectedOrigin)return res.status(403).json({message:'Abrí esta acción desde el taller.'});
-      const budget=req.path==='/space/avatar-pose'?'poseTimes':'times';
+      const pointing=req.path==='/space/collection/pointing';
+      const budget=pointing?'pointTimes':req.path==='/space/avatar-pose'?'poseTimes':'times';
       const now=Date.now();session[budget]=(session[budget]??[]).filter(time=>now-time<1000);
-      if(session[budget].length>=4)return res.status(429).json({message:'Esperá un momento antes de intentar otra acción.'});
+      if(session[budget].length>=(pointing?1:4))return res.status(429).json({message:'Esperá un momento antes de intentar otra acción.'});
       session[budget].push(now);
     }
-    const spaceRoute=['/space','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/avatar-pose','/space/collection/tabletop-presence','/space/matter-look','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
+    const spaceRoute=['/space','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/avatar-pose','/space/collection/tabletop-presence','/space/collection/pointing','/space/matter-look','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
       req.path==='/appearance'||req.path==='/conversation-surface'||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
@@ -952,6 +955,64 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     }
     res.status(204).end();
   });
+  app.post(route('api/space/collection/pointing'),asyncRoute(async(req,res)=>{
+    const scope=collection?.room;
+    if(!collection?.art||!inScope(req.actor,scope))return res.sendStatus(404);
+    const input=req.body;
+    if(!input||Object.keys(input).sort().join(',')!=='connection,reference,revision,sequence'||
+       !validTabletopPoint(input))return res.sendStatus(400);
+    const {connection,reference,revision,sequence}=input;
+    const peers=posePeers(scope),peer=peers?.get(connection),proof=req.get('X-Holodeck-Pose-Proof');
+    const currentTable=table;
+    const matches=()=>!tableUnavailable&&table===currentTable&&revision===table.revision&&
+      (table.edition?pinKey(table.edition)===pinKey(reference)&&!!restoredPin(reference):
+        table.resource===reference.resource&&tableResources.has(reference.resource));
+    const senderCurrent=()=>peers?.get(connection)===peer&&peer?.tabletop&&
+      peer.session.actor.id===req.actor.id&&canReadPose(peer,scope);
+    if(!senderCurrent()||!matches()||!proof||!/^[a-f0-9]{64}$/.test(proof))return res.sendStatus(409);
+    const expected=createHmac('sha256',peer.poseKey).update(tabletopPointProofMessage(scope,input)).digest();
+    if(!timingSafeEqual(expected,Buffer.from(proof,'hex')))return res.sendStatus(409);
+    if(sequence<=(peer.pointSequence??0))return res.sendStatus(409);
+    // Home reads are bounded to one in-flight indication per connection.
+    if(peer.pointPending)return res.sendStatus(429);
+    peer.pointPending=true;
+    try{
+      peer.pointSequence=sequence;
+      const senderStillCurrent=()=>senderCurrent()&&matches()&&peer.pointSequence===sequence;
+      const selection=table.edition?{projects:[],archive:[table.edition]}:
+        {projects:[{id:'worktable',resources:[reference.resource]}]};
+      async function hasEdition(cookie){
+        const visible=await readCollection(cookie,selection);
+        const edition=currentTable.edition?visible?.archive[0]:visible?.projects[0]?.editions[0];
+        return edition?.resource===reference.resource&&edition.version===reference.version;
+      }
+      const confirmed=await readTableReference(req.headers.cookie,reference,{current:!currentTable.edition});
+      if(!confirmed)return res.sendStatus(404);
+      const actor=await currentActor(req,req.holodeckSession);
+      if(res.destroyed||!inScope(actor,scope)||!senderStillCurrent())return res.sendStatus(409);
+      const deadline=Date.now()+tabletopPointDuration;
+      // Table admission alone never grants a reader access to an artifact.
+      const payload={connection,reference,revision,sequence,space:scope};
+      const message=serializeServerBroadcastMessage({broadcastType:tabletopPointBroadcast,payload});
+      const transport=poseNetwork(scope)?.userNetworkingServer;
+      let delivered=false;
+      await Promise.all([...peers].map(async ([id,recipient])=>{
+        const session=recipient.accessSession;
+        const eligible=()=>recipient.tabletop&&peers.get(id)===recipient&&
+          Date.now()-recipient.session.created<SESSION_MS&&canReadPose({session},scope);
+        if(id===connection||!eligible())return;
+        const reader=await currentActor({method:'GET',headers:{cookie:session.sourceCookie}},session).catch(()=>null);
+        if(!inScope(reader,scope)||!eligible()||!await hasEdition(session.sourceCookie))return;
+        if(res.destroyed||Date.now()>=deadline||!senderStillCurrent()||!eligible())return;
+        try{
+          transport?.sendCustomMessageToClient(id,FROM_SERVER_BROADCAST_MESSAGE_TYPE,message);
+          delivered=true;
+        }catch{/* The presence socket may have closed during delivery. */}
+      }));
+      if(!delivered&&!senderStillCurrent())return res.sendStatus(409);
+      res.status(204).end();
+    }finally{peer.pointPending=false;}
+  }));
   app.post(route('api/space/collection'),asyncRoute(async(req,res)=>{
     if(!collection?.art||!inScope(req.actor,collection.room))return res.sendStatus(404);
     if(!req.actor.rights.includes('edit'))return res.sendStatus(403);

@@ -1,11 +1,17 @@
 import {once} from 'node:events';
 import {createConnection} from 'node:net';
 import {mkdirSync,mkdtempSync,rmSync,writeFileSync} from 'node:fs';
-import {createHash,randomUUID} from 'node:crypto';
+import {createHash,createHmac,randomUUID} from 'node:crypto';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
+import WebSocket from 'ws';
+import {UserNetworkingClient} from '@mml-io/3d-web-user-networking';
+import {experienceClientSubProtocols,experienceProtocolToDeltaNetSubProtocol,
+  FROM_SERVER_BROADCAST_MESSAGE_TYPE,parseServerBroadcastMessage} from '@mml-io/3d-web-experience-protocol';
+import {poseKeyMaterial} from '../src/avatar-pose-presence.mjs';
+import {tabletopPointBroadcast,tabletopPointProofMessage} from '../src/tabletop-pointing.mjs';
 import {readMatterWorkshopArt} from '../src/matter-workshop-art.mjs';
 import {collectionSelection,selectMatterAppearance} from '../src/collection-catalog.mjs';
 import {createConversationContexts} from '../src/conversation-context.mjs';
@@ -180,7 +186,9 @@ test('collection projects stay grouped and editions follow each visitor and thei
     const admission=await fetch(base,{headers:{Cookie:cookie,Accept:'application/json'}});
     const headers={Cookie:cookie+'; '+admission.headers.get('set-cookie').split(';')[0],
       Origin:'https://home.test','Content-Type':'application/json'};
+    const token=(await admission.json()).sessionToken;
     return {
+      token,headers,
       move:(from,to)=>fetch(base+'api/space',{headers,method:'POST',body:JSON.stringify({from,to,live:1})}),
       restore:(resource,version)=>fetch(base+'api/space/collection/archive',{headers,method:'POST',
         body:JSON.stringify({resource,version})}),
@@ -256,10 +264,72 @@ test('collection projects stay grouped and editions follow each visitor and thei
   assert.equal(await readEvent(),'event: refresh\ndata: {}\n\n');
   assert.deepEqual((await (await author.catalog()).json()).worktable,table(1,component,true));
   assert.deepEqual((await (await visitor.catalog()).json()).worktable,table(1,null));
+  async function tabletopPeer(session){
+    const received=[];
+    let assign,reject;
+    const identity=new Promise((resolve,fail)=>{assign=resolve;reject=fail;});
+    const url=base.replace(/^http:/,'ws:')+'spaces/matter/network';
+    const client=new UserNetworkingClient({url,sessionToken:session.token,
+      websocketFactory:()=>new WebSocket(url,[...experienceClientSubProtocols],{headers:session.headers}),
+      statusUpdateCallback(){},onUpdate(){},
+      assignedIdentity:assign,onServerError:error=>reject(new Error(error.message)),
+      resolveProtocol:experienceProtocolToDeltaNetSubProtocol,
+      onCustomMessage(type,contents){
+        if(type!==FROM_SERVER_BROADCAST_MESSAGE_TYPE)return;
+        const message=parseServerBroadcastMessage(contents);
+        if(message.broadcastType===tabletopPointBroadcast)received.push(message.payload);
+      },
+    },undefined,{position:{x:0,y:1,z:2},rotation:{eulerY:0},state:0});
+    t.after(()=>client.stop());
+    const connection=await identity;
+    return {connection,received};
+  }
+  const [pointer,receiver]=await Promise.all([tabletopPeer(author),tabletopPeer(visitor)]);
+  await new Promise(resolve=>setTimeout(resolve,1020));
+  const setOnTable=(session,connection,active,revision)=>fetch(base+'api/space/collection/tabletop-presence',{
+    method:'POST',headers:session.headers,body:JSON.stringify({active,connection,revision}),
+  });
+  assert.equal((await setOnTable(author,pointer.connection,true,1)).status,204);
+  assert.equal(await readEvent(),'event: tabletop\ndata: '+JSON.stringify([pointer.connection])+'\n\n');
+  assert.equal((await setOnTable(visitor,receiver.connection,true,1)).status,204);
+  const activeEvent=await readEvent();
+  assert.match(activeEvent,/^event: tabletop/);
+  assert.deepEqual(new Set(JSON.parse(activeEvent.split('data: ')[1])),new Set([pointer.connection,receiver.connection]));
+  const signal=(resource,revision,sequence)=>({connection:pointer.connection,sequence,revision,reference:{
+    resource,version,scene:'bench-scene',sceneVersion,part:'bridge',
+  }});
+  const sendPoint=(session,input,key=author.token)=>fetch(base+'api/space/collection/pointing',{
+    method:'POST',headers:{...session.headers,'X-Holodeck-Pose-Proof':createHmac('sha256',
+      createHash('sha256').update(poseKeyMaterial(key)).digest()).update(tabletopPointProofMessage('matter',input)).digest('hex')},
+    body:JSON.stringify(input),
+  });
+  const beforePoint=runtime.room.sequence;
+  assert.equal((await sendPoint(author,signal(component,1,1))).status,204);
+  assert.equal((await sendPoint(visitor,signal(component,1,2))).status,409,'another actor cannot use the pointing connection');
+  assert.equal(receiver.received.length,0,'an unauthorized source edition never travels over the presence transport');
+  assert.equal(runtime.room.sequence,beforePoint);
+
   assert.equal((await author.share(main,0)).status,409);
   assert.equal((await author.share(main,1)).status,204);
   assert.deepEqual((await (await visitor.catalog()).json()).worktable,table(2,main));
   assert.deepEqual(new RoomStore(join(stateDir,'collection-worktable')).load(),{room:'matter',revision:2,resource:main});
+  await new Promise(resolve=>setTimeout(resolve,1020));
+  const visiblePoint=signal(main,2,2);
+  assert.equal((await sendPoint(author,visiblePoint)).status,204);
+  for(let attempt=0;attempt<20&&!receiver.received.length;++attempt)
+    await new Promise(resolve=>setTimeout(resolve,10));
+  assert.deepEqual(receiver.received,[{...visiblePoint,space:'matter'}]);
+  assert.deepEqual(pointer.received,[]);
+  const otherTab=await session('owner');
+  assert.equal((await sendPoint(otherTab,signal(main,2,3),otherTab.token)).status,409,
+    'the same actor in another tab cannot originate a point for this connection');
+  await new Promise(resolve=>setTimeout(resolve,1020));
+  assert.equal((await sendPoint(author,visiblePoint)).status,409,'a replay does not confirm a new gesture');
+  assert.deepEqual(receiver.received,[{...visiblePoint,space:'matter'}]);
+  assert.equal(await readEvent(),'event: refresh\ndata: {}\n\n');
+  assert.equal((await setOnTable(visitor,receiver.connection,false,2)).status,204);
+  assert.equal(await readEvent(),'event: tabletop\ndata: '+JSON.stringify([pointer.connection])+'\n\n');
+  assert.equal(runtime.room.sequence,beforePoint);
   assert.equal((await visitor.art(archivedThumbnail)).status,200);
   const speaker=await session('guest');
   const reference={resource:main,version:oldVersion,scene:'bench-scene',sceneVersion,part:'bridge'};
