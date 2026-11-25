@@ -1,5 +1,21 @@
 # Current MVP work
 
+## November 25 woodland across the inner arc
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `0981468421fe`
+from `b086c86`. Six seeded inner stands add 334 rooted conifers.
+One opaque canopy batch uses the sky's daylight palette at range.
+The same roots become detailed trees with trunk colliders up close.
+The terrain worker uses the same footprint for the forest floor.
+
+The west overlook and near-grove daylight views show the new canopy on
+RTX 2060 Normal and Raspberry Pi 5 Livianos. The two fixed overlook
+headings held p95 at 16.7–16.8 ms with one additional draw and 6,680
+triangles. The final near-grove shot used adaptive resolution on RTX.
+These were controlled browser views. The suite passed 415 checks.
+The live client and terrain worker matched, access and world sequence
+435 were preserved, and `251ab9f928e8` is the immediate rollback.
+
 ## November 25 evergreen woodland along the arrival meadow
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `251ab9f928e8`
