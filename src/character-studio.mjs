@@ -39,9 +39,10 @@ const sectionControls={
   Notas:['presentation','accessStatus','checkReviewAccess','noteTarget','note','archive','reviewNotes','reviewText'],
 };
 const sectionIds=Object.keys(sectionControls);
+const widePanelWidth=2.60;
 const compactControls=new Set(sectionIds.flatMap(id=>sectionControls[id]));
 const controls=[
-  {id:'root',component:'HudPanel',label:'Revisión de movimiento',width:1.85,gap:.025,
+  {id:'root',component:'HudPanel',label:'Revisión de movimiento',width:widePanelWidth,gap:.025,
     children:['sections','title','rig','clip','clock','heldPose','chapter','playback','playOptions','comparison','views','presentation','accessStatus','checkReviewAccess','noteTarget','note','archive','reviewNotes','reviewText','status']},
   {...row('sections',sectionIds),visible:path('compact')},
   ...sectionIds.map(id=>({...button(id,id),pressed:path('selectedSection/'+id),weight:id==='Comparar'?1.36:1})),
@@ -208,7 +209,7 @@ export function openCharacterStudio(document,table=null){
   let view=Object.hasOwn(viewAngles,url.searchParams.get('vista'))?url.searchParams.get('vista'):'angle';
   let figure,playback,rig,clip,frame=0,playing=false,revision='',note='',message='',showedAt=-Infinity;
   let sequence=0,elapsed=0,previous=0,visible=true,loop=true,speed='1';
-  let compact=Boolean(table),section='Pose',panelWidth=table?2.20:1.85;
+  let compact=Boolean(table),section='Pose',panelWidth=table?2.20:widePanelWidth;
   let primary=null,reference=null,showingReference=false,referenceRequest=0;
   let canReview=null,checkingAccess=false,review=null,selectedNote='',readingReview=false,savingNote=false,pendingNote,draftPose,noteReplaced=false,presentationBusy=false;
   const projected=table?null:webStudioProjection(document,scene,dispatch,dispose);
@@ -787,7 +788,7 @@ function webStudioProjection(document,scene,dispatch,close){
       const shortHud=compact&&height<680;
       hud.setChoicePageSize(surfaceId,shortHud?(height<500?1:2):undefined);
       hud.setChoicePresentation(surfaceId,shortHud?'overlay':undefined);
-      const nextPanelWidth=compact?Math.min(1.10,Math.max(.5,availableWidth/300-.12)):1.85;
+      const nextPanelWidth=compact?Math.min(1.10,Math.max(.5,availableWidth/300-.12)):widePanelWidth;
       onResize(compact,nextPanelWidth);
       renderer.setSize(width,height,false);
       camera.setViewOffset(width,height,Math.round(width*(compact&&portrait?0:.19)),
@@ -802,7 +803,7 @@ function webStudioProjection(document,scene,dispatch,close){
       const panelHeight=bounds.top-bounds.bottom;
       const panelSpan=bounds.right-bounds.left;
       const scale=compact?Math.min(300,Math.max(1,availableWidth)/panelSpan,Math.max(1,height-76)/panelHeight):
-        Math.min(169,width*.36/panelSpan,height*.75/panelHeight);
+        Math.min(169,width*.39/panelSpan,height*.75/panelHeight);
       const top=compact?Math.max(66,height-panelHeight*scale-14):height*.18;
       const x=!compact?width*.77:portrait?width/2:width-12-panelSpan*scale/2;
       hud.setTextDensity(surfaceId,{cssPixelsPerUnit:Math.round(scale),pixelRatio:renderer.getPixelRatio()});

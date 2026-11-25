@@ -77,6 +77,10 @@ the turn cue and the first ground contact. These bookmarks come from the
 sampled control and contact state. Selecting one pauses playback and seeks
 to its exact recorded frame.
 
+The full desktop web panel reserves room for the complete pose and note
+action labels alongside the rig. The table and compact displays keep
+their sectioned controls.
+
 ## Studio on compact displays
 
 The compact HUD groups controls into **Pose**, **Clips**, **Comparar** and
