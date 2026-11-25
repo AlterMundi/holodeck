@@ -31,8 +31,9 @@ GALLERY_ENTRY_LETTERING = 'Gallery entry sign ivory'
 RETURN_LETTERING = 'Gallery return sign ivory'
 BEACON_LETTERING = 'Beacon plaque ivory'
 BEACON_TRACE = 'Beacon interference light'
+BEACON_INLAY = 'Beacon interference inlay'
 SOLID_SURFACES = (LAB_LETTERING, FOYER_LETTERING, GALLERY_ENTRY_LETTERING,
-                  RETURN_LETTERING, BEACON_LETTERING, BEACON_TRACE)
+                  RETURN_LETTERING, BEACON_LETTERING, BEACON_TRACE, BEACON_INLAY)
 BEACON_STAIRS = ('Descending stair tread', 'Stair rail', 'Stone wall at stair')
 BEACON_VAULT = ('Smoked oak vault rib', 'Rib brass mounting shoe')
 FOYER_EXTERIOR = ('Stone plinth','Warm entrance floor','Entrance step','CASA DE COMPAII',
@@ -213,7 +214,7 @@ def mesh_for(collection, origin, cell):
         shader.inputs['Metallic'].default_value = 0
         shader.inputs['Roughness'].default_value = .92
         for panel in objects:
-            if panel.name.startswith(('Stone chamber side', 'Rear limestone wall', 'Acoustic roof lining')):
+            if panel.name.startswith(('Stone chamber side', 'Rear limestone wall', 'Acoustic roof lining', 'Rear oak panelling')):
                 panel.data.materials[0] = felt
     select(objects)
     bpy.ops.object.convert(target='MESH')
@@ -544,6 +545,44 @@ def beacon_vault(collection):
             objects.append(rib)
     return objects
 
+def beacon_floor(collection):
+    # Stylized interference fringes. Pull the center toward the approach
+    # so the pattern remains visible in front of the Beacon plinth.
+    finish = bpy.data.materials['Ivory lettering'].copy()
+    finish.name = BEACON_INLAY
+    shader = finish.node_tree.nodes.get('Principled BSDF')
+    shader.inputs['Base Color'].default_value = (.012, .136, .132, 1)
+    shader.inputs['Emission Color'].default_value = (.025, .26, .22, 1)
+    shader.inputs['Emission Strength'].default_value = .24
+    shader.inputs['Roughness'].default_value = .49
+
+    vertices, faces = [], []
+    focus = 1.86
+    samples = 64
+    for direction in (-1, 1):
+        for difference in (.53, 1.01, 1.39):
+            reach = (focus**2 - difference**2) ** .5
+            start = len(vertices)
+            for index in range(samples + 1):
+                step = index / samples
+                y = -2.05 + 4.10 * step
+                x = -.44 + direction * difference * (1 + (y / reach)**2) ** .5
+                taper = sin(pi * step)**.6
+                width = .003 + .034 * taper
+                vertices.extend(((x - width/2, y - 1.34, .113),
+                                 (x + width/2, y - 1.34, .113)))
+            faces.extend((start+i, start+i+1, start+i+3, start+i+2)
+                         for i in range(0, 2 * samples, 2))
+
+    mesh = bpy.data.meshes.new('Two-source floor inlay')
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    mesh.materials.append(finish)
+    field = bpy.data.objects.new(mesh.name, mesh)
+    collection.objects.link(field)
+    return field
+
+
 def register_beacon(obj):
     # Preserve the existing 12m cell and the west stair passage. The rendered
     # chamber extends south from the stair and leaves the original steps free.
@@ -555,7 +594,8 @@ def register_beacon(obj):
     brass = bpy.data.materials['Satin brass']
     basalt = bpy.data.materials['Split basalt']
     iron = bpy.data.materials['Blue gunmetal']
-    pieces = [obj, *beacon_vault(obj.users_collection[0])]
+    collection = obj.users_collection[0]
+    pieces = [obj, *beacon_vault(collection), beacon_floor(collection)]
 
     def piece(name, at, size, mat, tilt=0, bevel=.015, segments=3):
         bpy.ops.mesh.primitive_cube_add(size=1, location=at)
@@ -579,7 +619,8 @@ def register_beacon(obj):
             piece('Bronze stair spindle',(x,y,z+.43),(.055,.058,.86),brass)
         piece('Oiled oak handrail',(x,4.49,1.45),(.09,2.62,.088),oak,.285)
     for x,width in [(-4.89,2.02),(1.86,8.00)]:
-        piece('Limestone landing wall',(x,5.86,2.799),(width,.16,5.398),stone)
+        piece('Acoustic landing wall',(x,5.86,2.799),(width,.16,5.398),
+              bpy.data.materials['Beacon acoustic felt'])
     piece('Stair portal architrave',(-3,5.84,3.55),(1.76,.19,.17),oak)
     piece('Upper landing lintel',(-3,5.86,4.59),(1.74,.16,1.82),stone)
 

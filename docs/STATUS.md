@@ -260,6 +260,45 @@ installed release `1c78c31a2b82`. Reciprocal studio doors resolved. The room
 rule admitted one configured human guest and the house owner's daimon
 identity. The copy omitted Home sign-in. The protected release still needs
 selection of the candidate and a two-session receiving trial.
+## November 25 Harmonic Lab floor and return lighting
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `179364d0f9fc`
+from `d26bd46`. Six turquoise interference lines mark the floor near the
+Beacon. Dark acoustic surfaces continue to the stairs, where the lighter
+treads and lit doorway distinguish the return to the foyer. Both permission
+variants use this finish and retain the existing stair and station geometry.
+
+Controlled browsers completed the foyer–laboratory round trip on RTX 2060
+Normal and Pi 5 V3D Livianos. The scoped art returned 404 after leaving.
+Matched stationary frame samples retained a 16.7 ms median on both and p95
+values of 16.7 and 33.4 ms respectively. Both GLBs add 768 triangles and the
+full package is 102,400 bytes smaller. The Holodeck suite passed 411 tests
+with two skips. Receiving matched 86 files, the existing access and
+configuration, and world sequence 433. Immediate rollback is `d7b3b73478fa`.
+
+The [next two station placements and their owning panel routes](shared-roadmap.md#harmonic-lab-as-a-playable-resonant-volume)
+remain a candidate. Physical phone and participant use remain unverified.
+
+## November 25 HIT-inspired Harmonic Lab vault
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `d7b3b73478fa` from `d4a6a52`. Dark acoustic surfaces and
+suspended brass loops with turquoise traces frame the Beacon in both room
+variants. The artwork follows the [HIT cover](https://hit.altermundi.net/tapa2.jpg);
+the existing stair, benches and scoped prototype review retain their roles.
+
+The exact fixture walked from the foyer into the chamber on RTX 2060 Normal
+and Pi 5 V3D Livianos. In 90-frame stationary samples at the same pose,
+the median was 16.7 ms on each, with p95 16.7 ms and 33.4 ms respectively
+(versus 16.8 ms and 33.4 ms). Both exports kept four embedded images and
+grew by 1,748 triangles each. The package is 143,360 bytes smaller.
+The suite passed 411 tests with two skips. Protected readback matched all
+86 installed files, the same access and receiving configuration, and
+world sequence 433. Immediate rollback is `8772912dd7ed`.
+
+The four-station composition remains an offline study. Guitar and Shaper
+need their authenticated instrument targets in the owning panel before
+their tables enter the room. Participant and phone validation remain open.
 
 ## November 25 world-anchored nearby action labels
 
