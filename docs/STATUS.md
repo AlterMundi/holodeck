@@ -12,7 +12,10 @@ The reproducible archive is `556bf35ea62f` with 86 payload files. Its
 desktop and touch Chromium runs used two fixture actors to reproduce a
 revision-bound pose, show it from independent cameras, share a note at
 the same frame and deny read and write outside the studio. The Node 24
-suite passed 403 tests with two optional skips.
+suite passed 403 tests with two optional skips. The immutable Proyección
+pin `fee3570c516dacb890160a0ff0c1f18630f65559` matched the checked-out
+sources and passed all 720 renderer tests, including the Chromium
+golden transcripts and spatial HUD cases.
 
 Earlier integrated archive `8006b8cf1480` at `b1af25131d4b` qualified the
 dock, map, Matter controls and Conversation surround alongside the studio.
