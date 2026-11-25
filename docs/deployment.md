@@ -747,10 +747,18 @@ session storage were preserved; served Apps metadata is retained but hidden.
 
 ## Recovery
 
+The [meadow banks release](STATUS.md#november-25-meadow-banks)
+`2a4ff7ba1da6` changes only the packed client bundle. Restore
+`0878bc6c67fc` for immediate code-only rollback or `38a43c533c2e`
+for older published recovery. The preceding conversation input archive
+`7a466b1ca447` was retired from publication after exact archive
+verification. Published history uses 100,638,720 bytes.
+
+
 The [meadow material release](STATUS.md#november-25-meadow-material)
-`0878bc6c67fc` changes only the packed client bundle. Restore
-`38a43c533c2e` for immediate code-only rollback or `7a466b1ca447` for
-the older published recovery. The previous pointing archive
+`0878bc6c67fc` changed only the packed client bundle. Its prior recovery
+record selected `38a43c533c2e` and `7a466b1ca447` as the compatible
+published versions at that time. The previous pointing archive
 `41508709635f` was retired from publication after checking the exact
 archive remains recoverable locally. Published history totals
 100,546,560 bytes.

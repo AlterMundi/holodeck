@@ -1834,3 +1834,52 @@ health and terrain worker matched. The App and audience remained the
 same. The native world stayed at sequence 403 with 30 entities and four
 nodes. The technical reader was revoked. Acceptance with independently
 authenticated participants remains open.
+
+
+## Rooted meadow banks around the shared route
+
+The continuous torus adds five authored banks of feathered tussocks and
+low lavender and cream wildflowers. Each bank uses seven lobe centers,
+with an irregular edge and clear space between banks. Meshes root against
+the unchanged terrain sampler. Placement rejects a ring of samples
+around the entire swept canopy near the route, and a wider corridor
+protects the approach and frontage. The lowest stem center is 1.62 m
+before subtracting the 0.82 m canopy check radius. The last bank ends
+before 70 m on the local trail axis, short of the cave.
+
+Normal contains 366 plants and 21,342 triangles. Livianos retains 191
+matching positions, simplifies the blades and uses 4,911 triangles.
+Each has up to ten frustum-culled batches. Normal uses height-weighted
+wind in the vertex shader around fixed roots, with no motion under the
+reduced motion preference. The banks stay mounted from 124 to 142 m
+during approach and departure to avoid repeated switches at the boundary.
+The art lives in the local renderer and adds no downloads, authoritative
+world state, collision or entrance changes.
+
+The clean archive `2a4ff7ba1da6` from `7b1bcf1` occupies 33,546,240
+bytes and has 84 payloads. Only the browser bundle differs from the
+previous selection. The source suite passed 366 tests with two optional
+skips. A further test asserts every swept canopy stays clear of the seam
+and the cave reach. Fable High reviewed placement and budgets. Opus 5.5
+High identified scatter density and center-only trail tests. The final
+package uses tighter lobes, a full perimeter check and a fixed wind
+phase in world space.
+
+The RTX 2060 ran the exact package at 1200 × 740 in daylight and dusk,
+with an ordinary walk through the protected fixture door into Matter.
+The exterior banks disappeared from the scene on room entry. The Pi 5
+rendered the same five banks in Livianos at 363 × 244 and passed the
+daylight walk. Each fixed view measured 120 full compositor samples.
+On the Pi, arrival GPU median was 10.78 → 10.82 ms and meadow view
+10.83 → 10.86 ms. The arrival p95 was 12.50 → 14.34 ms and the meadow
+p95 was 14.44 → 13.76 ms. Median browser frame intervals stayed at
+16.6–16.7 ms. RTX medians for the selected build were about 2.0 ms
+across the four views. These short samples use fixture actors.
+
+A second RTX run walked 12 m and exercised four live quality changes
+through the existing graphics setting. Each change left one profile
+visible. Protected deployment verified all 84 installed files, the
+browser and art URLs, the existing audience and the same native run
+at sequence 403. Immediate compatible rollback is `0878bc6c67fc`.
+The technical reader was revoked. Broader plant coverage, a strong
+distant landmark and independently authenticated visits remain open.

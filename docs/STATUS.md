@@ -1,9 +1,23 @@
 # Current MVP work
 
+## November 25 meadow banks
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `2a4ff7ba1da6` from `7b1bcf1`. Five rooted banks of feathered
+tussocks and wildflowers bring depth to the landscape around the house.
+Both graphics profiles retain the same bank locations. Normal uses finer
+blades and visible movement with a reduced-motion option.
+
+The exact bundle passed daylight, dusk and walking screens on the RTX
+2060 and a Livianos screen on the Pi 5. The protected package, shared
+access and live world matched. Immediate rollback is `0878bc6c67fc`.
+See the [vegetation evidence](playtest-iteration.md#rooted-meadow-banks-around-the-shared-route).
+
+
 ## November 25 meadow material
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
-serves `0878bc6c67fc` from `9fc06a6`. The shallow meadow beside the house
+selected `0878bc6c67fc` from `9fc06a6` for this update. The shallow meadow beside the house
 has filtered green and straw patches in both graphics profiles. The
 world path and apron retain their surfaces and route. No assets were
 added. [Matched physical comparisons](playtest-iteration.md#meadow-material-around-the-house)
