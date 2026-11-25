@@ -47,6 +47,19 @@ The swim viewport rendered frame 94. Browser-local notes remain separate.
 The two-fixture test concerns pose links. Independent signed-in reviews,
 synchronized presenters and the final quality of in-game motion remain open.
 
+## Comparing motion in the viewer
+
+The optical controls provide local orbit and zoom, playback speed and loop,
+and a reference clip from the selected rig. Compare A and B against the same
+primary timeline. A shorter reference holds its last pose. Links and notes
+refer to the visible clip or study, its exact edition and its displayed frame.
+Switching clips restores the rig's neutral channels and resets the waterline
+before the other playback owns them. Camera angles remain local.
+The flight study adds a **Fase** selector for support, takeoff, hover,
+the turn cue and the first ground contact. These bookmarks come from the
+sampled control and contact state. Selecting one pauses playback and seeks
+to its exact recorded frame.
+
 ## Shared session and authored motion
 
 Track the [Character Design Room #24](https://github.com/AlterMundi/holodeck/issues/24)
