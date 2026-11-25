@@ -18,7 +18,7 @@ test('the lookout collider remains active while analytical plants wait for detai
     cover.update(position,false,null,1,false);
     assert.ok(scene.getObjectByName('Inner ring overlook'));
     assert.ok(colliders.has(scene.getObjectByName('Lookout masonry and seating collision')));
-    assert.ok(cover.group.children.every(mesh=>mesh.count===0));
+    assert.ok(cover.group.children.every(mesh=>!mesh.visible&&mesh.count===0));
     assert.equal(cover.meadow.group.visible,false);
     cover.update(position,false);
     assert.ok(cover.group.children.some(mesh=>mesh.count>0));
