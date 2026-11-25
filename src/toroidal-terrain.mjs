@@ -80,6 +80,24 @@ function periodicNoise(u, v, columns, rows, seed) {
 }
 
 export const TOROIDAL_OVERLOOK = Object.freeze({u:.007,v:.49});
+const overlookHeight=44.29;
+const overlookRingScale=TAU*(TOROIDAL_TERRAIN.majorRadius+
+  (TOROIDAL_TERRAIN.tubeRadius+overlookHeight)*Math.cos(TOROIDAL_OVERLOOK.v*TAU));
+const overlookTubeScale=TAU*(TOROIDAL_TERRAIN.tubeRadius+overlookHeight);
+
+export function overlookCoordinates(x,z){
+  return {u:TOROIDAL_OVERLOOK.u+x/overlookRingScale,v:TOROIDAL_OVERLOOK.v+z/overlookTubeScale};
+}
+
+function overlookGrade(u,v,elevation){
+  const z=(wrap(v-TOROIDAL_OVERLOOK.v+.5)-.5)*overlookTubeScale;
+  if(Math.abs(z)>=25)return elevation;
+  const x=wrappedDistance(u,TOROIDAL_OVERLOOK.u)*overlookRingScale;
+  if(x>=14)return elevation;
+  const weight=(1-fade(Math.max(0,(x-4.4)/9.6)))*
+    (1-fade(Math.max(0,(Math.abs(z)-8)/17)));
+  return mix(elevation,overlookHeight+.025*z,weight);
+}
 
 // Widely spaced ridges break up the opposite arc and give the traveler
 // landmarks on both sides of its opening. Their relief is part of the
@@ -114,7 +132,7 @@ export function terrainElevation(u, v, terrain = TOROIDAL_TERRAIN) {
   const elevation = 52 * landform + 15 * foothills + 5 * detail + 1.25 * grit + ridgeRelief(u,v,terrain);
   const distance = Math.hypot(wrappedDistance(u, 0) * TAU * terrain.majorRadius,
     wrappedDistance(v, .25) * TAU * terrain.tubeRadius);
-  if (distance >= 76) return elevation;
+  if (distance >= 76) return terrain.id===TOROIDAL_TERRAIN.id?overlookGrade(u,v,elevation):elevation;
   const pavedGrade = (terrain.tubeRadius + 18) / Math.sin(wrap(v) * TAU) - terrain.tubeRadius;
   return mix(pavedGrade, elevation, fade(Math.max(0, distance - 32) / 44));
 }

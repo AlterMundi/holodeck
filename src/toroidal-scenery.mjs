@@ -1,4 +1,5 @@
 import {approachCoordinates,Sand3DTrail} from './sand3d-trail.mjs';
+import {ToroidalOverlook} from './toroidal-overlook.mjs';
 import {ToroidalMeadowBanks} from './toroidal-meadow-banks.mjs';
 import {
   BufferGeometry, Color, DodecahedronGeometry, DoubleSide, Float32BufferAttribute, Group,
@@ -7,7 +8,7 @@ import {
 import {CAVE} from './toroidal-cave.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
 import {
-  TOROIDAL_TERRAIN, terrainCoordinates, terrainElevation, terrainPosition, terrainTile, terrainTrail,
+  overlookCoordinates, TOROIDAL_TERRAIN, terrainCoordinates, terrainElevation, terrainPosition, terrainTile, terrainTrail,
 } from './toroidal-terrain.mjs';
 
 const LEVEL=7;
@@ -16,6 +17,8 @@ const CANDIDATES=12;
 const INSTANCE_LIMIT=(2*RANGE+1)**2*CANDIDATES;
 const GRASSES=[0x849552,0x758549,0x939968,0xb5a66b,0x9a843f];
 const STONES=[0x74664f,0x7d7d70,0x8b7860,0x66635c,0x9f8a73];
+const overlookStart=overlookCoordinates(-4.1,-8);
+const overlookEnd=overlookCoordinates(4.1,7.4);
 
 function random(cell,index,salt) {
   let n=Math.imul(cell.column + 1,73856093)^Math.imul(cell.row+1,19349663)^
@@ -31,6 +34,7 @@ export function sceneryForCell(cell,count=CANDIDATES) {
     const pick=salt=>random(cell,i,salt);
     const u=(cell.column+pick(17))/cell.columns;
     const v=(cell.row+pick(41))/cell.rows;
+    if(u>overlookStart.u&&u<overlookEnd.u&&v>overlookStart.v&&v<overlookEnd.v)continue;
     const h=terrainElevation(u,v);
     if(h<TOROIDAL_TERRAIN.waterLevel+.22||terrainTrail(u,v)>.22)continue;
     const distanceFromHouse=Math.hypot(Math.min(u,1-u)*TOROIDAL_TERRAIN.majorRadius,
@@ -134,7 +138,7 @@ function useSceneryDaylight(material, daylight) {
 }
 
 export class ToroidalScenery {
-  constructor(scene,base) {
+  constructor(scene,base,colliders) {
     this.group=new Group();
     this.group.name='Toroidal ground cover';
     this.stones=new InstancedMesh(new DodecahedronGeometry(1,0),new MeshStandardMaterial({roughness:.94}),INSTANCE_LIMIT);
@@ -149,6 +153,7 @@ export class ToroidalScenery {
     this.daylight={value:1};
     this.detail=base?new Sand3DTrail(scene,base,approach,useSceneryDaylight,this.daylight):null;
     this.meadow=new ToroidalMeadowBanks(scene,useSceneryDaylight,this.daylight);
+    this.overlook=new ToroidalOverlook(scene,colliders);
     this.ribbonGrass.name='Trail-side tufts';
     this.blooms.name='Trail-edge wildflowers';
     this.stones.name='Weathered stone';
@@ -170,6 +175,7 @@ export class ToroidalScenery {
 
   update(position,lightweight,door,daylight=1) {
     this.daylight.value=daylight;
+    this.overlook.update(position);
     this.detail?.update(position,lightweight,door);
     const {u,v}=terrainCoordinates([position.x,position.y,position.z]);
     if(![u,v].every(Number.isFinite))return;
@@ -230,6 +236,7 @@ export class ToroidalScenery {
   dispose() {
     this.detail?.dispose();
     this.meadow.dispose();
+    this.overlook.dispose();
     for(const mesh of this.meshes){
       mesh.geometry.dispose();
       mesh.material.dispose();
