@@ -171,6 +171,12 @@ viewpoints Chromium reported 33 draw calls before and 33–34 in the
 finished build, including the existing shadows. Physical device frame
 pacing remains a separate measurement.
 
+The Beacon title and both bench plaques use a dedicated solid ivory
+material with low emission. The exporter offsets the letters from their
+gunmetal plates before registration and excludes their material from the
+room's color, normal and occlusion atlases. Both Beacon variants keep
+their prior triangle count, material count and four embedded images.
+
 | Bench | Before | Finished |
 | --- | --- | --- |
 | Spatializer | [Previous console](review/beacon-instruments-prior-audio.jpg) | [Listening console](review/beacon-instruments-final-audio.jpg) |

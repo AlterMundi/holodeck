@@ -29,6 +29,8 @@ LAB_LETTERING = 'Laboratory sign ivory'
 FOYER_LETTERING = 'Foyer sign ivory'
 GALLERY_ENTRY_LETTERING = 'Gallery entry sign ivory'
 RETURN_LETTERING = 'Gallery return sign ivory'
+BEACON_LETTERING = 'Beacon plaque ivory'
+SOLID_LETTERING = (LAB_LETTERING, FOYER_LETTERING, GALLERY_ENTRY_LETTERING, RETURN_LETTERING, BEACON_LETTERING)
 BEACON_STAIRS = ('Descending stair tread', 'Stair rail', 'Stone wall at stair')
 FOYER_EXTERIOR = ('Stone plinth','Warm entrance floor','Entrance step','CASA DE COMPAII',
                   'Clerestory smoked glass','Vertical recessed window','Amber window sill',
@@ -176,6 +178,20 @@ def foyer_joinery():
     return specs
 
 
+def prepare_beacon_lettering(objects):
+    bodies = {'HARMONIC BEACON', 'Spatializer', 'Weaver'}
+    signs = [obj for obj in objects if obj.type == 'FONT' and obj.data.body in bodies]
+    assert len(signs) == len(bodies) and {obj.data.body for obj in signs} == bodies
+    ivory = bpy.data.materials['Ivory lettering'].copy()
+    ivory.name = BEACON_LETTERING
+    ivory.node_tree.nodes.get('Principled BSDF').inputs['Emission Strength'].default_value = .38
+    # The front of the upright plaque is on the negative Y side of the
+    # authoring scene. Separate the entire letter from the iron face.
+    for sign in signs:
+        sign.location.y -= .010
+        sign.data.materials[0] = ivory
+
+
 def mesh_for(collection, origin, cell):
     scope = bpy.data.collections[collection]
     scope.hide_render = False
@@ -184,6 +200,8 @@ def mesh_for(collection, origin, cell):
                   'foyer-gallery':FOYER_EXTERIOR + FOYER_REMOVED_PIERS,
                   'gallery':GALLERY_BASE,'gallery-sealed':GALLERY_BASE}.get(cell, ())
     objects = [obj for obj in scope.objects if not obj.name.startswith(exclusions)]
+    if cell in ('beacon', 'beacon-return'):
+        prepare_beacon_lettering(objects)
     select(objects)
     bpy.ops.object.convert(target='MESH')
     bpy.ops.object.join()
@@ -626,7 +644,7 @@ def portable_materials(obj, color, normal, contact=None, bounce=None):
             if node not in (shader, nodes.get('Material Output')):
                 nodes.remove(node)
         # Tiny bevels and glyph faces stay crisp in their solid sign material.
-        if mat.name in (LAB_LETTERING, FOYER_LETTERING, GALLERY_ENTRY_LETTERING, RETURN_LETTERING):
+        if mat.name in SOLID_LETTERING:
             links.new(shader.outputs['BSDF'], nodes.get('Material Output').inputs['Surface'])
             continue
         color_node = nodes.new('ShaderNodeTexImage')
@@ -687,7 +705,8 @@ if __name__ == '__main__':
     bounce = None
     if lit_room in ('foyer','beacon','gallery','gallery-sealed'):
         lighting = runpy.run_path(str(Path(__file__).with_name('cell-irradiance.py')))
-        bounce = lighting['portable_bounce'](obj,lit_room,destination/(cell+'-albedo.png'),color_size,destination)
+        bounce = lighting['portable_bounce'](obj,lit_room,destination/(cell+'-albedo.png'),
+                                            color_size,destination/(cell+'-bounce.jpg'))
     contact = bake_contact(obj, cell, destination) if lit_room in ('foyer','beacon','gallery','gallery-sealed') else None
     portable_materials(obj, color, normal, contact, bounce)
     path = destination / (cell+'.glb')

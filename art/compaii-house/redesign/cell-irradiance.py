@@ -78,7 +78,7 @@ def diffuse_light(room, size, *, direct=False):
     return image, daylight
 
 
-def portable_bounce(room, cell, albedo, size, destination):
+def portable_bounce(room, cell, albedo, size, path):
     import numpy as np
 
     select_lighting(room, cell)
@@ -94,7 +94,6 @@ def portable_bounce(room, cell, albedo, size, destination):
     bounce = bounce.reshape(size//2,2,size//2,2,3).mean(axis=(1,3))
     bounce = np.where(bounce<=.78,bounce,1-.22*np.exp(-np.maximum(bounce-.78,0)/.22))
     encoded = np.where(bounce <= .0031308, 12.92*bounce, 1.055*bounce**(1/2.4)-.055)
-    path = destination/(cell+'-bounce.jpg')
     subprocess.run(['ffmpeg','-v','error','-y','-f','rawvideo','-pixel_format','rgb24',
                     '-video_size',f'{size//2}x{size//2}','-i','pipe:0','-frames:v','1',
                     '-pix_fmt','yuvj444p','-q:v','3',str(path)],

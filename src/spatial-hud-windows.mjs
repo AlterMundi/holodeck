@@ -5,20 +5,27 @@ const pad=8;
 const clamp=(value,min,max)=>Math.max(min,Math.min(Math.max(min,max),value));
 const directions={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
 
-const fitScale=(view,bounds)=>Math.max(1,Math.min(
-  (view.width-2*pad)/(bounds.right-bounds.left),(view.height-2*pad)/(bounds.top-bounds.bottom)));
+const edges=({width,height,insets={}})=>({
+  left:(insets.left??0)+pad,right:width-(insets.right??0)-pad,
+  top:(insets.top??0)+pad,bottom:height-(insets.bottom??0)-pad,
+});
+const fitScale=(view,bounds)=>{
+  const {left,right,top,bottom}=edges(view);
+  return Math.max(1,Math.min((right-left)/(bounds.right-bounds.left),(bottom-top)/(bounds.top-bounds.bottom)));
+};
 export function placeHudWindow(view,bounds,requested){
+  const {left,right,top,bottom}=edges(view);
   const limit=fitScale(view,bounds);
   const scale=clamp(requested.scale,Math.min(65,limit),limit);
   return {
-    scale,x:clamp(requested.x,pad-bounds.left*scale,view.width-pad-bounds.right*scale),
-    y:clamp(requested.y,pad+bounds.top*scale,view.height-pad+bounds.bottom*scale),
+    scale,x:clamp(requested.x,left-bounds.left*scale,right-bounds.right*scale),
+    y:clamp(requested.y,top+bounds.top*scale,bottom+bounds.bottom*scale),
   };
 }
 
 export class SpatialHudWindows{
-  constructor({canvas,scene,camera,hit,invalidate}){
-    Object.assign(this,{canvas,scene,camera,hit,invalidate,panels:new Map(),geometry:new Map()});
+  constructor({canvas,scene,camera,hit,dismissChoice,invalidate}){
+    Object.assign(this,{canvas,scene,camera,hit,dismissChoice,invalidate,panels:new Map(),geometry:new Map()});
     this.events=new AbortController();
     this.marks=new Map();
     const options={capture:true,passive:false,signal:this.events.signal};
@@ -29,13 +36,14 @@ export class SpatialHudWindows{
   begin(){this.geometry.clear();}
   place(id,view,bounds,placement,resizable){
     if(!bounds||view.width<=2*pad||view.height<=2*pad)return placement;
-    const saved=this.panels.get(id);
+    const placementKey=view.insets?id+':insets':id;
+    const saved=this.panels.get(placementKey);
     const requested=saved?{x:saved.x*view.width,y:saved.y*view.height,scale:saved.scale}:placement;
     const actual=placeHudWindow(view,bounds,requested);
     const {x,y,scale}=actual;
     const rect={left:x+bounds.left*scale,right:x+bounds.right*scale,
       top:y-bounds.top*scale,bottom:y-bounds.bottom*scale};
-    this.geometry.set(id,{view,bounds,actual,rect,resizable});
+    this.geometry.set(id,{view,bounds,actual,rect,resizable,placementKey});
     if(resizable){
       const mark=this.marks.get(id)??this.resizeMark(id);
       const signature=[view.width,view.height,rect.right,rect.bottom].join(':');
@@ -82,13 +90,14 @@ export class SpatialHudWindows{
     const box=this.canvas.getBoundingClientRect(),x=event.clientX-box.left,y=event.clientY-box.top;
     const hit=this.hit(event);
     // Actionable targets keep ownership of their own press, including disabled controls.
-    if(hit?.includes(':'))return;
+    if(typeof hit==='string'&&hit.includes(':'))return;
     for(const [id,info] of [...this.geometry].reverse()){
       const {rect,resizable}=info;
       if(x<rect.left||x>rect.right||y<rect.top||y>rect.bottom)continue;
       const resizing=resizable&&x>=rect.right-26&&y>=rect.bottom-26;
       if(!resizing&&y>rect.top+26)return;
-      this.drag={id,pointer:event.pointerId,x:event.clientX,y:event.clientY,info,resizing};
+      const dismissed=this.dismissChoice?.(id)===true;
+      this.drag={id,pointer:event.pointerId,x:event.clientX,y:event.clientY,info,resizing,dismissed};
       this.canvas.setPointerCapture(event.pointerId);
       event.preventDefault();event.stopImmediatePropagation();
       return;
@@ -98,6 +107,8 @@ export class SpatialHudWindows{
   pointermove(event){
     const drag=this.drag;
     if(!drag||drag.pointer!==event.pointerId)return;
+    event.preventDefault();event.stopImmediatePropagation();
+    if(drag.dismissed)return;
     const {view,bounds,actual}=drag.info;
     const dx=event.clientX-drag.x,dy=event.clientY-drag.y;
     let requested={...actual,x:actual.x+dx,y:actual.y+dy};
@@ -108,7 +119,6 @@ export class SpatialHudWindows{
       requested={scale,x:actual.x+bounds.left*(actual.scale-scale),y:actual.y-bounds.top*(actual.scale-scale)};
     }
     this.save(drag.id,drag.info,requested);
-    event.preventDefault();event.stopImmediatePropagation();
   }
 
   pointerup(event){
@@ -140,7 +150,7 @@ export class SpatialHudWindows{
   save(id,info,requested){
     const {view,bounds}=info;
     const {x,y,scale}=placeHudWindow(view,bounds,requested);
-    this.panels.set(id,{x:x/view.width,y:y/view.height,scale});
+    this.panels.set(info.placementKey,{x:x/view.width,y:y/view.height,scale});
     this.invalidate();
   }
 

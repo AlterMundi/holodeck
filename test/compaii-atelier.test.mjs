@@ -374,11 +374,15 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   assert.equal(stairMarkup?.match(/opacity="0" cast-shadows="false"/g)?.length,8);
   assert.doesNotMatch(stairMarkup,/<m-label|collide="false"/);
   assert.doesNotMatch(sealed.scene.markup,/id="passage-1"|Laboratorio/);
+  const roomBuffers=new WeakMap();
   const readRoomModel=async (actor,path)=>{
     const result=await actor.read(path);
     assert.equal(result.status,200);
     const bytes=Buffer.from(await result.arrayBuffer());
-    return JSON.parse(bytes.toString('utf8',20,20+bytes.readUInt32LE(12)));
+    const chunkSize=bytes.readUInt32LE(12);
+    const model=JSON.parse(bytes.toString('utf8',20,20+chunkSize));
+    roomBuffers.set(model,bytes.subarray(28+chunkSize));
+    return model;
   };
   const openModel=await readRoomModel(authorized,openPath);
   const lettering=openModel.materials.find(material=>material.name==='Laboratory sign ivory');
@@ -415,6 +419,21 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   assert.notEqual(roomArt(emergency),chamberPath);
   const emergencyModel=await readRoomModel(authorized,roomArt(emergency));
   assert.ok(!emergencyModel.materials.some(material=>material.name==='Gallery return sign ivory'));
+  for(const model of [returnModel,emergencyModel]){
+    const plaque=model.materials.find(material=>material.name==='Beacon plaque ivory');
+    assert.ok(plaque?.emissiveFactor.every(channel=>channel>.18));
+    assert.equal(plaque.pbrMetallicRoughness.baseColorTexture,undefined);
+    assert.equal(plaque.occlusionTexture,undefined);
+    assert.equal(plaque.normalTexture,undefined);
+    assert.equal(plaque.emissiveTexture,undefined);
+  }
+  const bounce=model=>{
+    const {emissiveTexture}=model.materials.find(material=>material.name==='Honed honey limestone');
+    const image=model.images[model.textures[emissiveTexture.index].source];
+    const {byteOffset=0,byteLength}=model.bufferViews[image.bufferView];
+    return roomBuffers.get(model).subarray(byteOffset,byteOffset+byteLength);
+  };
+  assert.notDeepEqual(bounce(returnModel),bounce(emergencyModel));
   assert.equal((await authorized.read(chamberPath)).status,404);
   galleryAccess=true;
   assert.deepEqual(chamber.keyLight,{position:[-.44,4.35,1.9],target:[-.44,1.07,1.9],color:'#ffe0b6',intensity:68});
