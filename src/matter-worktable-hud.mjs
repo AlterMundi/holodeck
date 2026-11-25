@@ -729,7 +729,7 @@ export class MatterWorktableHud{
       const promptWidth=promptCompact?compactDoorPromptWidth:doorPromptWidth;
       const promptScale=Math.min(promptCompact?dockScale:200,(width-left-right)/(promptWidth+toolPadding));
       const promptPlate=(promptWidth+toolPadding)*promptScale;
-      const beside=compact&&promptCompact&&this.toolLayout.rows.length===1&&
+      const beside=this.door.group&&compact&&promptCompact&&this.toolLayout.rows.length===1&&
         dockWidth+promptPlate+8<=width-left-right;
       let barCenter=Number.isFinite(sideEdge)?(left+sideEdge)/2:
         beside?width-right-dockWidth/2:(width+left-right)/2;
