@@ -136,11 +136,13 @@ that a late PCM callback cannot revive the former capture's signal.
 
 The [facial rig candidate](playtest-iteration.md#humanoid-mouth-aperture)
 adds a `jawOpen` shape to both licensed human rigs and their four skins.
-The selected browser does not yet request the microphone signal. Bind it
-to the local rig with short sample expiry and qualify a physical microphone
-in the protected Conversation surface. Ordinary capture without live PCM
-and the continuous voice engines are outside the producer candidate. Any
-peer rendering follows the audience of the existing authorized voice path.
+The [local consumer candidate](playtest-iteration.md#local-microphone-animation)
+negotiates the signal and applies it only to the active local avatar.
+Production still uses the previous browser and producer. Qualify a physical
+microphone in the protected Conversation surface after compatible adoption.
+Ordinary capture without live PCM and the continuous voice engines are
+outside the producer candidate. Any peer rendering follows the audience
+of the existing authorized voice path.
 
 ### Canonical writer integration
 

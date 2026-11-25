@@ -1502,8 +1502,31 @@ retained it while moving with W and returned exactly to neutral. That
 controlled test uses an assigned weight, without audio or native dispatch.
 
 The archive is a candidate. Production continues on `326890e44863`.
-The local capture consumer, physical microphone, additional facial poses
-and any authorized peer voice presentation remain open.
+The [local microphone candidate](#local-microphone-animation) adds the
+consumer. Physical capture, additional facial poses and any authorized
+peer voice presentation remain open.
+
+## Local microphone animation
+
+Source `c3a5b84` negotiates the optional signal from
+[DaimonApp PR #1035](https://github.com/AlterMundi/DaimonApp/pull/1035).
+The host accepts the same framed actor, visit, origin, channel and binding
+as the rest of Conversation, with a seven-field envelope and quarter-step
+level. Silence eases the jaw closed. Samples expire after 300 ms. The local
+render binding clears on hidden, reduced motion, exit from the supported
+view or loss of the bound frame. It restores the stock shape before the
+mixer and adds no room state or peer presence.
+
+The receiving verifier unpacked archive `8260b7fcf577` with 80 payloads and
+33,443,840 bytes. The exact-source suite passed 357 tests with two optional
+skips. In Chromium, the exact world package used the actual Conversation
+frame and meter scripts from `b1d2fd0b` on a second origin. Chromium's
+synthetic capture device played a generated tone and silence. The local
+jaw opened to a measured weight of 0.75 and returned to zero after silence,
+a stalled publisher, reduced motion and capture stop. A separate Chromium
+process with a different fixture identity saw the same actor at weight zero
+while the local jaw was open. This is controlled browser/media evidence.
+The protected two-release composition and physical microphone remain open.
 
 ## Authored flight and swimming poses
 
