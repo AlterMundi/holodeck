@@ -432,7 +432,7 @@ export class MatterWorktableHud{
     const maxWidth=available*toolScale/scale-toolPadding*toolScale;
     this.document.body.toggleAttribute('data-native-settings-available',maxWidth>=150);
     if(maxWidth<150)return;
-    const layout=layoutTools(tools,Math.min(this.lookPreview.stylesDock?640:590,maxWidth),compact);
+    const layout=layoutTools(tools,Math.min(this.lookPreview.stylesDock?720:670,maxWidth),compact);
     if(!this.toolGroup)this.send('createSurface',{catalogId:spatialHudCatalog.id},toolbeltId);
     const layoutKey=JSON.stringify(layout);
     if(this.toolLayoutKey!==layoutKey){

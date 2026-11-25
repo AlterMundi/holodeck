@@ -95,9 +95,12 @@ export class WorldMapHud{
       this.mesh.visible=this.raster;
       this.invalidate();
     }
-    if(!this.raster||!this.group)return;
+    if(!this.group)return;
     const frame=this.group.getObjectByName('map');
     if(!frame)return;
+    const background=frame.getObjectByName('hud-map-plot');
+    if(background)background.visible=!this.raster||!this.circular;
+    if(!this.raster)return;
     if(!this.texture){
       this.texture=new CanvasTexture(this.panel.querySelector('#world-minimap'));
       this.texture.colorSpace=SRGBColorSpace;
