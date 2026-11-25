@@ -932,6 +932,10 @@ authored palettes and recognizable silhouettes for distinct regions.
 Keep clear routes and landmarks, irregular forest edges, transitions
 between communities, and reasons to visit both open and enclosed spaces.
 
+The first part is live: the same periodic moisture field controls meadow
+ground color and grass distribution from dry ridges to sheltered folds.
+The woodland and distant canopy are still ahead.
+
 - **Near** — instance actual trunks and understory silhouettes, low-poly
   grass and alpha-cutout cards for leaves and small plants. Keep large,
   collidable objects tied to world geometry.
