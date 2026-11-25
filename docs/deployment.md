@@ -747,6 +747,13 @@ session storage were preserved; served Apps metadata is retained but hidden.
 
 ## Recovery
 
+The [tabletop companion release](STATUS.md#november-25-tabletop-companion-attention)
+`0425dd6d7c67` changed only the browser bundle. Use `8260b7fcf577` for the
+immediate code-only rollback, with `326890e44863` as the older published
+recovery. Preserve the current native room and Conversation deployment.
+The `873ae82b51f6` package described below remains available as a local
+verified archive.
+
 The [selected mouth rig and consumer](STATUS.md#november-25-humanoid-mouth-rigs-and-local-microphone-consumer)
 `8260b7fcf577` retains `326890e44863` as the immediate code-only rollback
 and `873ae82b51f6` as compatible older recovery. Either world bundle remains

@@ -988,8 +988,16 @@ collection fixture and aimed the pointer at its exposed upper surface.
 The companion turned toward it, shifted about 1.5 cm to the side, stayed
 within the tabletop bounds through small pointer movements, then released
 its focus when the cursor left the piece. The visual check covers that
-one desktop camera and fixture. Physical-device, live peer and production
-selection checks remain open.
+one desktop camera and fixture. Chrome on Legion's physical RTX 2060
+exercised that same fixture in Normal and Livianos. Both runs moved about
+25 cm in table coordinates, held the perch through pointer jitter and
+released the look on exit. With reduced motion the companion turned
+without translating. This measures behavior at that camera and part.
+
+The rebuilt browser bundle matched the decoded archive byte for byte.
+Holodeck selected `0425dd6d7c67` and served the verified browser bundle
+over protected HTTPS. Independent authenticated observers still need to
+try it with their own avatars and workpiece selections.
 
 Nicolas's selected view showed the companion larger than the human avatar and
 opaque while the human was translucent. The companion had a separate .33

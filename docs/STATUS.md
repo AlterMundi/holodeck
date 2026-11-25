@@ -1,5 +1,24 @@
 # Current MVP work
 
+## November 25 tabletop companion attention
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves release `0425dd6d7c67` from source `8f77817`. The miniature companion
+looks at a settled piece and moves gradually to a bounded position beside
+it. [Normal, Livianos and reduced motion on Legion](playtest-iteration.md#looking-beside-the-selected-piece)
+passed with the same mounted fixture. Independent authenticated tabletop
+visits remain open.
+
+All 80 current payloads and the installed predecessor were verified.
+Protected HTTPS matched the exact client bundle, five avatar assets,
+terrain worker and health. The App, audience and deployment configuration
+were preserved. The temporary technical reader was revoked. The native
+run retained 30 entities, four nodes and sequence 403. Twenty-two state
+files matched byte for byte and observations rotated the room checkpoints.
+Recovery retains `8260b7fcf577` and `326890e44863`. The three published
+archives total 100,218,880 bytes. The superseded `873ae82b51f6` publication
+was retired after its local archive was verified.
+
 ## November 25 humanoid mouth rigs and local microphone consumer
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/) serves
