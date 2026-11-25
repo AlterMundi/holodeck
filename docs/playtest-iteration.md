@@ -2162,6 +2162,15 @@ stale-action checks and restored movement on exit. The canonical Conversation
 mount passed focus and touch movement tests with a local Conversation fixture.
 The visual sample included the existing portal and the earlier touch journey.
 
+The topographic HUD candidate differentiates index contours from minor
+contours, gives the player arrow a high-contrast outline and adds distinct
+square and circular rims. Both layouts use the same terrain samples,
+destinations and 50 m scale. Switching format repaints the marks over the
+cached elevation raster. The exact archive `745798604d13` passed keyboard and
+canvas-touch opening, format switching and closing in local Chromium, with
+the live terrain raster and original navigation actions. The loopback fixture's
+favicon returned 404. Source and capture receipts accompany the candidate.
+
 The early software render timings cover short fixture runs. The latest host
 also changed atmosphere, so those timings do not isolate HUD cost. Use one
 physical device and matching atmosphere for the final comparison. Reconcile

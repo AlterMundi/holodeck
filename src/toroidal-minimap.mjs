@@ -51,16 +51,17 @@ export function paintToroidalRelief(chart,rgba,terrain=TOROIDAL_TERRAIN){
     const relief=clamp((se-nw)*2.9,-18,19);
     const contourLevel=Math.round(height/INTERVAL)*INTERVAL;
     const lines=contourLevel>=low&&contourLevel<=high&&high-low>.025;
-    const contour=lines?(contourLevel%(INTERVAL*3)===0?-32:-18):0;
+    const index=lines&&contourLevel%(INTERVAL*3)===0;
+    const contour=lines?(index?19:-24):0;
     const water=((nw<terrain.waterLevel)+(ne<terrain.waterLevel)+(sw<terrain.waterLevel)+(se<terrain.waterLevel))*.25;
     const depth=clamp(terrain.waterLevel-height,0,30);
     const trail=clamp((trails[a]+trails[b]+trails[c]+trails[d])*.29,0,.95)*(1-water);
     const shore=water>0&&water<1?24:0;
     const shade=elevation+relief+contour;
     const i=(y*SIZE+x)*4;
-    rgba[i]=((82+shade)*(1-trail)+178*trail)*(1-water)+(38-depth*.38)*water+shore;
-    rgba[i+1]=((106+shade)*(1-trail)+151*trail)*(1-water)+(86-depth*.65)*water+shore;
-    rgba[i+2]=((80+shade)*(1-trail)+102*trail)*(1-water)+(101-depth*.54)*water+shore;
+    rgba[i]=((57+shade+(index?17:0))*(1-trail)+186*trail)*(1-water)+(24-depth*.38)*water+shore;
+    rgba[i+1]=((91+shade)*(1-trail)+155*trail)*(1-water)+(62-depth*.65)*water+shore;
+    rgba[i+2]=((76+shade-(index?12:0))*(1-trail)+100*trail)*(1-water)+(83-depth*.54)*water+shore;
     rgba[i+3]=255;
   }
 }
@@ -176,6 +177,26 @@ function drawSpurMark(ctx,point,label,water,legend,circular){
   drawMapLabel(ctx,label,x,y,circular);
 }
 
+function drawChartRim(ctx,circular){
+  const margin=5,half=DISPLAY/2;
+  ctx.lineWidth=2;
+  if(circular){
+    for(const [ink,start] of [['#edc797',Math.PI],['#79c1c4',0]]){
+      ctx.strokeStyle=ink;
+      ctx.beginPath();
+      ctx.arc(half,half,half-margin,start,start+Math.PI);
+      ctx.stroke();
+    }
+    return;
+  }
+  for(const [edge,ink] of [[margin,'#edc797'],[DISPLAY-margin,'#79c1c4']]){
+    ctx.strokeStyle=ink;
+    ctx.beginPath();
+    ctx.moveTo(margin,edge);ctx.lineTo(DISPLAY-margin,edge);
+    ctx.stroke();
+  }
+}
+
 export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
   const canvas=panel.querySelector('#world-minimap'),ctx=canvas?.getContext('2d',{alpha:false});
   if(!ctx)return ()=>{};
@@ -220,6 +241,7 @@ export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
     ctx.drawImage(raster,0,0,width,height);
     ctx.save();
     ctx.scale(width/DISPLAY,height/DISPLAY);
+    drawChartRim(ctx,circular);
     drawSpur(ctx,paths);
     for(const shore of guide.shores)
       drawSpurMark(ctx,toroidalMapPoint(chart,shore),'Orilla',true,waterVisible,circular);
@@ -236,14 +258,17 @@ export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
     ctx.save();
     ctx.translate(x*DISPLAY,y*DISPLAY);
     ctx.rotate(heading);
-    ctx.beginPath();ctx.moveTo(0,-12);ctx.lineTo(8,10);ctx.lineTo(0,6);ctx.lineTo(-8,10);ctx.closePath();
-    ctx.fillStyle='#fff4cd';ctx.strokeStyle='#182e34';ctx.lineWidth=2;ctx.stroke();ctx.fill();
+    ctx.beginPath();ctx.moveTo(0,-16);ctx.lineTo(10,11);ctx.lineTo(0,6);ctx.lineTo(-10,11);ctx.closePath();
+    ctx.fillStyle='#fff4cd';ctx.strokeStyle='#14292f';ctx.lineWidth=5;ctx.stroke();ctx.fill();
     ctx.restore();
     const scaleLength=DISPLAY*50/SPAN;
     const scaleX=circular?(DISPLAY-scaleLength)/2:16, scaleY=circular?325:335;
     ctx.fillStyle='#132327d9';ctx.fillRect(scaleX-8,scaleY,scaleLength+16,41);
     ctx.strokeStyle='#eee3c7';ctx.lineWidth=2;
-    ctx.beginPath();ctx.moveTo(scaleX,scaleY+32);ctx.lineTo(scaleX+scaleLength,scaleY+32);ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(scaleX,scaleY+29);ctx.lineTo(scaleX,scaleY+34);
+    ctx.lineTo(scaleX+scaleLength,scaleY+34);ctx.lineTo(scaleX+scaleLength,scaleY+29);
+    ctx.stroke();
     ctx.fillStyle='#eee3c7';ctx.font='600 23px system-ui';ctx.fillText('50 m',scaleX,scaleY+27);
     if(waterVisible){
       const legendX=circular?128:248, legendY=circular?281:335;
