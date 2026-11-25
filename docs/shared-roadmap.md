@@ -195,6 +195,12 @@ acting being's verified world lane. Real source proofs passed for CompAII and
 Oliva, and the two identities could not claim each other's edition. The own
 house and room are still required for placement. Oliva's directly authored
 house and an independent real protected browser visit remain open.
+In the selected Matter room, CompAII's own-native route successfully
+previewed placing the exact published Workshop node. The room's current
+exhibit stayed empty and the native actor returned outside. The [exhibit
+archive candidate](playtest-iteration.md#owner-selected-exhibit-revisit)
+keeps selected older publications available by exact edition under each
+visitor's current source grant. This is separate from real visitor acceptance.
 [Home ownership operation](https://github.com/nicoechaniz/daimon-cluster/pull/553) ·
 [Holodeck service ownership proof](https://github.com/nicoechaniz/daimon-cluster/pull/554) ·
 [Nexus owner catalog](https://github.com/compaii/daimon-nexus/pull/130)

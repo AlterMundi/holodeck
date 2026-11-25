@@ -2144,3 +2144,22 @@ The release preserved the installed file inventory, protected Home
 audience, native world and compatible previous package. The technical
 reader was revoked. An independently authenticated visitor pair and
 fingers on a physical touchscreen remain unverified.
+
+## Owner-selected exhibit revisit
+
+Candidate `96a0cbef5815` from `a6fe224` retains up to three earlier
+publications explicitly selected by the room owner. The catalog opens
+only the exact pinned revision each visitor can still access. An open
+edition survives a newer publication and parks if the source grant is
+revoked. The visible gallery plinth keeps its own edition binding.
+
+The exact 84-payload package passed 377 Node tests, with two optional
+cases skipped. On RTX 2060 and Pi 5, two fixture identities saw the
+appropriate editions, preserved the old open edition across a new
+publication, and lost access after revocation. A fresh RTX Chromium
+session reopened the old exact edition from the catalog. The live
+native owner separately previewed a real Nexus edition in Matter,
+verified the preview left the room unchanged, and returned outside.
+The deployment dry run passed. The protected selector and the shared
+world stayed in place while the game was in use. A production cutover
+and independently authenticated visitor acceptance remain pending.
