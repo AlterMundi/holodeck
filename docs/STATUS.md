@@ -23,7 +23,7 @@ The same archive also qualified a continuous browser journey from ground
 movement and stopping into the room and an exact landing-frame link.
 The ground and cross-surface evidence remains with that archive.
 
-Holodeck now serves `fdc871f47841` from `bcb1606`. The updated studio
+The previous world release was `fdc871f47841` from `bcb1606`. Its studio
 candidate `f55760561eff` includes that terrain startup fix. Its 86 payloads
 match archive `40cb1ccc7ddec872c5dbf46200d2844cf4e2d2cd142a2ee473b6470459add678`.
 The same pinned renderer and 403 passing Holodeck tests are retained
@@ -35,11 +35,23 @@ room with an exact pose link. The initial larger-viewport run did not
 register sufficient movement. The successful 660 px run explicitly focused
 the world before pressing the movement key.
 
-The 390 px touch capture also shows clipped action labels and much smaller
-targets than the dock. The studio needs a mobile control layout that keeps
-those actions legible and reachable alongside the viewport. The package is
-a candidate. Post-install acceptance with two independently signed-in
-visitors remains open.
+The earlier 390 px capture showed clipped labels and small targets. Source
+`b7fd5867aa25` now uses four compact studio sections while retaining the
+current live world's terrain and overlook fixes from `064d4c0`. It pins
+Proyección `ea859f16992e2c5f04f7ba733c0cac9d64769a06`, which passed 21
+spatial HUD tests. Candidate archive
+`a78bea6370f6e88dbeb4d274a6d35119d5df09990697a874f3b81f5d540279cb`
+matches all 86 payloads and passed 404 Holodeck tests with two optional
+skips. Desktop and touch Chromium replayed the two-actor review. The 390
+px fixture opened Notes by touching the visible canvas, switched sections
+and rotated without losing its draft, then sent the note explicitly.
+The same archive replayed ground movement and stopping, room entry and
+the exact landing frame. Captures cover portrait, short landscape and
+desktop. Visual review confirmed complete action labels on the portrait
+Notes row. Expanded menus still fit to available height.
+
+The protected world serves `b3cb2d08a6cc`. Holodeck's release selection
+and the visit with two independently signed-in visitors remain open.
 
 ## November 25 terrain-first ground cover
 
