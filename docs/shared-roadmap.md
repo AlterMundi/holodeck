@@ -558,8 +558,8 @@ screened the 14-instance verge cluster on the RTX 2060 in both profiles
 by day and at dusk. The [flagstone approach candidate](playtest-iteration.md#flagstone-approach-to-the-authored-house)
 joins the trail to the existing facade and frames it with current plant
 assets. The exact candidate passed the controlled lightweight route
-and frame screen on a Raspberry Pi 5. Improve the prompt and dock
-placement at short viewport heights in #16. A later Sand3D integration
+and frame screen on a Raspberry Pi 5. The [short landscape HUD candidate](playtest-iteration.md#short-landscape-entrance-and-dock)
+addresses the prompt and dock overlap in #16. A later Sand3D integration
 still needs its own exact packed-size and device checks. The real shared
 workshop visit remains open.
 

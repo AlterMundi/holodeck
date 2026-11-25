@@ -1349,6 +1349,41 @@ both the return anchor and a distinct return heading.
 A protected visitor pair remains open. Production stays on
 `20726f08a3e0`. The Sand3D imports remain an optional art trial.
 
+## Short landscape entrance and dock
+
+[Holodeck #16](https://github.com/AlterMundi/holodeck/issues/16) tracks
+the doorway prompt and dock on short landscape viewports. At 660 × 445
+with five exterior actions, the small prompt occupies its own place at the
+left of the dock. The dock keeps its position as proximity changes. On
+touch layouts with less spare room, the prompt sits on the left above the
+movement input. Touch-capable compact layouts keep the nominal 44 CSS px
+interactive height. The compact typography leaves room for the standard
+action names and the keyboard shortcut. Longer destinations can ellipsize
+on the canvas while the accessible button retains the complete name.
+
+Fable High proposed a fixed one-row arrangement when space permits.
+Opus 5.5 High found that an optional look can shift the final dock left
+and that layout switches can shorten the touch clearance. The final
+placement checks actual available space after the optional shift, uses
+the prompt's current layout width and retains the touch clearance.
+A resize band avoids repeatedly switching at a boundary.
+
+The default look rendered the complete dock labels on a physical
+Raspberry Pi 5 at 660 × 445 in lightweight. A mouse click entered the
+Matter room and E returned to the same outside anchor. Chromium with
+emulated touch activated the stacked control by tap. The measured
+routes each sent one request per crossing. Desktop keyboard action,
+the full accessible title of a long destination, and focus through a
+short-to-tall resize round trip were checked in controlled Chromium.
+The last typography adjustments were made after the Pi run. The
+installed owner validator accepted the 33,320,960-byte archive
+`873ae82b51f66274a798b3d1daae776fe2e4b8f06aa6cd7497c2df4b76518c72`
+from `9dbe660` with 80 inventory payloads. The unpacked archive painted
+all six complete labels including the compact E shortcut in controlled
+Chromium, with the same single crossing per activation. The controlled
+visitor used a stand-in collection. Production remains on `20726f08a3e0`
+and the signed-in visitor pair is still open.
+
 ## Authored flight and swimming poses
 
 The four registered human models share two bind rigs. The flight and swim
