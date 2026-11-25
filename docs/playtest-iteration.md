@@ -1182,3 +1182,31 @@ the warm room variation, the retained Conversation frame and draft, and a
 separate browser profile without the preference. A delayed passage recovered
 keyboard focus and its committed destination after overlay WebGL loss, with
 one move POST. The candidate remains staged.
+
+## Planted local crouch
+
+The Alt crouch lowers the hips and inclines the torso on both shipped
+human rigs. It solves the legs against the standing or walking animation's
+current ankle positions and orientations. The forward knee pole is
+derived before moving the hips and blended near standing. Leg lengths
+come from the actual posed joints in world space. The local input,
+collision, camera and network pose contract are unchanged.
+
+Fable High reviewed the IK and animation ownership. Opus 5.5 High found
+the stale knee-pole origin, the ease near straight legs and residual root
+pitch. The correction uses the stock leg axis, a scaled reach tolerance
+and a depth that eases from zero. It delays ground pose weight while the
+flight tilt visibly settles. The unit checks apply the pose to all four
+models on rotated, translated and scaled bodies. They verify knee
+direction, ankle position and orientation, duplicate-apply safety and
+release through flight and ground contact.
+
+The staged archive `767a588fd4ef` is 33,320,960 bytes. The package source
+suite passed 350 tests with two optional gallery checks skipped. In
+controlled Chromium, holding Alt while standing lowered the hip by
+21.8 cm, with 0.6 cm or less vertical ankle movement in that capture.
+The previous build lifted both ankles by roughly 10 cm. Alt walking,
+release, ordinary exterior takeoff, hover/glide and landing passed on
+the exact candidate with software rendering. MML 0.28.0 currently transmits seven base animation states and has no crouch
+state. This slice fixes the player's local pose. The peer rendition,
+complete grounded clip set and physical-device acceptance remain open.

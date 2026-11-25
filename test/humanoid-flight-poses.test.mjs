@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import {Bone,Group,Matrix4,Quaternion,Skeleton,SkinnedMesh,Vector3} from 'three';
+import {bindHumanoidCrouch} from '../src/humanoid-crouch.mjs';
 import {bindFlightAvatarAnimation} from '../src/flight-avatar-animation.mjs';
 import {bindHumanoidFlightRig} from '../src/humanoid-flight-poses.mjs';
 
@@ -59,6 +60,56 @@ for(const file of ['avatar-1-bodyA-skin01.glb','avatar-2-bodyB-skin03.glb','avat
       assert.ok(foot.position.equals(ankle));
     }
   });
+  test('crouch retains scaled and rotated stock ankle positions for '+file,()=>{
+    const {root,mesh}=avatar(file);
+    root.rotateZ(.31);
+    root.rotateY(1.29);
+    root.position.set(1800,20,513);
+    const rig=bindHumanoidCrouch(mesh);
+    assert.ok(rig);
+    const get=name=>mesh.getObjectByName(name);
+    const feet=['foot_l','foot_r'].map(get);
+    const thighs=['thigh_l','thigh_r'].map(get);
+    const knees=['calf_l','calf_r'].map(get);
+    const thighRest=thighs.map(thigh=>thigh.quaternion.clone());
+    const lateral=new Vector3(1,0,0).applyQuaternion(root.quaternion);
+    const forward=new Vector3(0,0,1).applyQuaternion(root.quaternion);
+    const pelvis=get('pelvis');
+    const up=new Vector3(0,1,0).applyQuaternion(root.quaternion);
+    for(const scale of [.5,1,2]){
+      root.scale.setScalar(scale);
+      for(const stride of [0,.22,-.19]){
+        thighs.forEach((thigh,side)=>{
+          thigh.quaternion.copy(thighRest[side]);
+          const local=lateral.clone().applyQuaternion(thigh.getWorldQuaternion(new Quaternion()).invert());
+          thigh.rotateOnAxis(local,side?-stride:stride);
+        });
+        const ankles=feet.map(foot=>foot.getWorldPosition(new Vector3()));
+        const orientations=feet.map(foot=>foot.getWorldQuaternion(new Quaternion()));
+        const stockHip=pelvis.getWorldPosition(new Vector3());
+        for(const weight of [.06,.12,.35,.6,1]){
+          rig.apply(root,weight);
+          const lower=stockHip.clone().sub(pelvis.getWorldPosition(new Vector3())).dot(up);
+          assert.ok(lower>.12*scale*weight*weight);
+          feet.forEach((foot,side)=>{
+            assert.ok(foot.getWorldPosition(new Vector3()).distanceTo(ankles[side])<.001*scale);
+            assert.ok(foot.getWorldQuaternion(new Quaternion()).angleTo(orientations[side])<.001);
+          });
+          if(weight>=.35)knees.forEach((knee,side)=>{
+            const hip=thighs[side].getWorldPosition(new Vector3());
+            const axis=ankles[side].clone().sub(hip).normalize();
+            const pole=knee.getWorldPosition(new Vector3()).sub(hip);
+            pole.addScaledVector(axis,-pole.dot(axis));
+            assert.ok(pole.dot(forward)>0);
+          });
+          rig.apply(root,weight);
+          rig.restore();
+          assert.ok(pelvis.getWorldPosition(new Vector3()).distanceTo(stockHip)<1e-6);
+        }
+      }
+    }
+  });
+
 }
 
 test('flight exit holds a descent until contact, then gives the feet back to the ground mixer',()=>{
@@ -71,6 +122,13 @@ test('flight exit holds a descent until contact, then gives the feet back to the
   const release=bindFlightAvatarAnimation(manager,()=>controls);
   assert.equal(bindFlightAvatarAnimation(manager,()=>controls),release);
   const leg=mesh.getObjectByName('calf_l'),arm=mesh.getObjectByName('upperarm_l');
+  const pelvis=mesh.getObjectByName('pelvis'),ankle=mesh.getObjectByName('foot_l');
+  const hipHeight=()=>pelvis.getWorldPosition(new Vector3()).y;
+  const standingHip=hipHeight(),standingAnkle=ankle.getWorldPosition(new Vector3());
+  const assertPlanted=()=>{
+    assert.ok(standingHip-hipHeight()>.18);
+    assert.ok(ankle.getWorldPosition(new Vector3()).distanceTo(standingAnkle)<.001);
+  };
   const stockLeg=leg.quaternion.clone(),stockArm=arm.quaternion.clone();
   const render=(frames,delta=0)=>{
     for(let i=0;i<frames;i++){
@@ -78,8 +136,10 @@ test('flight exit holds a descent until contact, then gives the feet back to the
       manager.update(state,1/60);
     }
   };
-  render(10);
-  Object.assign(controls,{flying:true,grounded:false});
+  controls.crouch=true;
+  render(65);
+  assertPlanted();
+  Object.assign(controls,{flying:true,grounded:false,crouch:false});
   render(45,.03);
   assert.ok(arm.quaternion.angleTo(stockArm)>.05,JSON.stringify([arm.quaternion.toArray(),stockArm.toArray()]));
   controls.flying=false;
@@ -92,5 +152,9 @@ test('flight exit holds a descent until contact, then gives the feet back to the
   assert.ok(leg.quaternion.angleTo(stockLeg)<.04);
   render(80);
   assert.ok(arm.quaternion.equals(stockArm));
+  controls.crouch=true;
+  render(100);
+  assertPlanted();
   release();
+  assert.ok(Math.abs(hipHeight()-standingHip)<1e-6);
 });

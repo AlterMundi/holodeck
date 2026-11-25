@@ -3,6 +3,7 @@ import {TOROIDAL_TERRAIN,terrainCoordinates,terrainWaterDepth} from './toroidal-
 import {matterAvatarScale} from './matter-flight.mjs';
 import {TabletopGlance} from './tabletop-attention.mjs';
 import {bindHumanoidFlightRig} from './humanoid-flight-poses.mjs';
+import {bindHumanoidCrouch} from './humanoid-crouch.mjs';
 
 const limbNames=['upperarm_l','upperarm_r','lowerarm_l','lowerarm_r','thigh_l','thigh_r','calf_l','calf_r'];
 const pitchAxis=new Vector3(1,0,0);
@@ -21,6 +22,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
     for(const [bone,neutral] of entry.modified)bone.quaternion.copy(neutral);
     entry.modified.clear();
     entry.airRig?.restore();
+    entry.crouchRig?.restore();
     if(entry.rotation?.equals(entry.applied))entry.rotation.copy(entry.unpitched);
   }
   function resetMotion(entry){
@@ -46,7 +48,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const position=actor.position;
       if(entry?.mesh!==mesh){
         entry={mesh,last:new Vector3().copy(position),modified:new Map(),
-          airRig:bindHumanoidFlightRig(mesh),
+          airRig:bindHumanoidFlightRig(mesh),crouchRig:bindHumanoidCrouch(mesh),
           unpitched:new Quaternion(),applied:new Quaternion(),
           limbs:limbNames.map(name=>mesh.getObjectByName(name))};
         resetMotion(entry);
@@ -111,8 +113,13 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       entry.phase=(entry.phase+step*(underwater?4.4:2.1))%(2*Math.PI);
       const stroke=Math.sin(entry.phase),counter=Math.cos(entry.phase);
       const w=entry.weight;
-      const lean=(underwater?1.04:atTable?.56:.57)*w+.13*entry.lowWeight;
+      const crouchWeight=entry.lowWeight*(1-entry.lowerWeight);
+      const lean=(underwater?1.04:atTable?.56:.57)*w+(entry.crouchRig?0:.13*entry.lowWeight);
       entry.pitch+=(lean-entry.pitch)*fade;
+      // Wait for the root tilt from flight to settle before committing the
+      // ground pose. This avoids turning its planted feet with the air pose.
+      const groundBlend=Math.max(0,1-Math.abs(entry.pitch)/.025);
+      entry.crouchRig?.apply(character,crouchWeight*groundBlend);
       pitch.setFromAxisAngle(pitchAxis,entry.pitch);
       entry.rotation=character.quaternion;
       entry.unpitched.copy(entry.rotation);
@@ -131,7 +138,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       }
       entry.glance?.apply(character,entry.head,isLocal&&table&&glanceMotion?gaze:null,dt,1-w*.8);
       const airSwing=entry.airRig?0:w,hoverSwing=entry.airRig?0:entry.hoverWeight;
-      const crouchWeight=entry.lowWeight*(1-entry.lowerWeight);
+      if(entry.airRig&&entry.crouchRig)continue;
       const strokeAmplitude=underwater?.58:.16;
       const kickAmplitude=underwater?.27:.075;
       for(let index=0;index<entry.limbs.length;index++){
@@ -153,7 +160,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
         }else{
           // These rigs have mirrored leg bones along local X. Bend around
           // the character's lateral axis, not around each bone's length.
-          const crouchBend=(index<6?-.42:.64)*crouchWeight;
+          const crouchBend=entry.crouchRig?0:(index<6?-.42:.64)*crouchWeight;
           bone.getWorldQuaternion(boneFacing);
           localAxis.copy(right).applyQuaternion(boneFacing.invert());
           bone.quaternion.multiply(bend.setFromAxisAngle(localAxis,motionBend+crouchBend));
