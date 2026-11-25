@@ -94,6 +94,17 @@ keyboard route passed. The embedded Conversation fixture retained its
 draft and locomotion in both orientations. Holodeck passed 405 tests
 with two optional skips.
 
+Candidate `50764fbfe82c` also draws distinct, full-size jump, ascend
+and descend glyphs on the world touch controls while retaining their
+accessible labels. Its archive
+`2374cc0d7a8dee629ea3a3aae8c97e629449421024d189489197e88183bd6c90`
+matched 87 payloads. Chromium touch at 360 × 640 observed a ground
+jump, in-flight ascent and in-flight descent through independent
+pointer holds. The short touch flight notice fit above the controls.
+The loopback world recovered after one initial socket timeout.
+Proyección `3d7bdf0ef93dd349b07e35da673b423294c97f3f` passed 721 tests,
+and Holodeck passed 405 with two optional skips.
+
 The protected world serves `b4031531fdfd`. The candidate booted on a
 temporary copy of the selected house, Atelier and active-space checkpoints.
 The reciprocal studio doors resolved and the room rule admitted one
