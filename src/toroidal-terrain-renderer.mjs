@@ -81,9 +81,37 @@ const terrainShading = {
     float holoApproachSkylight = 0.0;
     vec2 approach = vHoloWorld.xz - vec2(${glsl(TOROIDAL_TERRAIN.majorRadius)},0.0);
     vec2 flagFootprint = fwidth(approach)/vec2(.51,.63);
+    float edge = abs(length(vHoloWorld.xz) - ${glsl(TOROIDAL_TERRAIN.majorRadius)});
+    // Paint the walkable meadow in local XZ metres. The old rock projection
+    // compresses one axis on this horizontal shoulder, stretching its grain.
+    float meadowFootprint = max(length(dFdx(approach)),length(dFdy(approach)));
+    float meadowSlope = dot(normalize(vNormal),normalize(vHoloUp));
+    float holoMeadow = (1.0-smoothstep(32.0,76.0,length(approach)))
+      * smoothstep(.87,.98,meadowSlope)
+      * smoothstep(2.55,5.0,edge)
+      * smoothstep(4.0,12.0,vHoloHeight)
+      * step(0.0,vHoloWorld.y);
+    float holoMeadowRoughness = .96;
+    if (holoMeadow > .001) {
+      vec2 field = mat2(.94,.34,-.34,.94)*approach;
+      float patchWeight = 1.0-smoothstep(.38,.72,.47*meadowFootprint);
+      float patch = patchWeight > .001 ? (ringNoise(field*.47+vec2(9.4,21.8))-.5)*patchWeight : 0.0;
+      float broadWeight = 1.0-smoothstep(.38,.72,.105*meadowFootprint);
+      float broad = ringNoise(field*vec2(.105,.078)+vec2(31.2,8.8)+patch*.32)-.5;
+      float seedHeads = smoothstep(.01,.39,broad*broadWeight+patch*.23);
+      float fresh = smoothstep(-.39,.08,broad*broadWeight+patch*.36);
+      vec3 meadowColor = mix(vec3(.113,.210,.061),vec3(.192,.314,.084),fresh);
+      meadowColor = mix(meadowColor,vec3(.337,.281,.103),seedHeads*.87);
+      meadowColor *= 1.0 + patch*.14;
+      float grainWeight = 1.0-smoothstep(.32,.62,6.8*meadowFootprint);
+      if (holodeckMeadowGrain > .5 && grainWeight > .001) {
+        meadowColor *= 1.0 + (ringNoise(field*6.8+vec2(5.8,17.0))-.5)*grainWeight*.25;
+      }
+      diffuseColor.rgb = mix(diffuseColor.rgb,meadowColor,holoMeadow);
+      holoMeadowRoughness = mix(.91,.99,seedHeads);
+    }
     if (holodeckApproachArt > .5 && abs(approach.x) < 14.0 &&
         approach.y > 6.0 && approach.y < 51.0 && vHoloWorld.y > 0.0) {
-      float edge = abs(length(vHoloWorld.xz) - ${glsl(TOROIDAL_TERRAIN.majorRadius)});
       float endFade = smoothstep(6.0,10.0,approach.y)*(1.0-smoothstep(37.0,51.0,approach.y));
       float edgeNoise = ringNoise(approach*.89)-.5;
       float mask = (1.0-smoothstep(1.57,2.72,edge+edgeNoise*.66))*endFade;
@@ -182,6 +210,10 @@ function artDirect(material, name, shading, environment) {
     shader.uniforms.holodeckApproachArt=environment.approach;
     shader.uniforms.holodeckSill=environment.sill;
     fragment=after(fragment,'common','uniform float holodeckWaterViewDepth; uniform float holodeckDaylight; uniform float holodeckApproachArt; uniform vec3 holodeckSill;');
+    if(name==='terrain'){
+      shader.uniforms.holodeckMeadowGrain=environment.meadowGrain;
+      fragment=after(fragment,'common','uniform float holodeckMeadowGrain;');
+    }
     shader.fragmentShader=before(fragment,'opaque_fragment',shading.output+`
       if (holodeckWaterViewDepth > .014) {
         float scatter = 1.0 - exp(-length(vViewPosition) * (.055 + .006*min(12.0,holodeckWaterViewDepth)));
@@ -240,8 +272,8 @@ export class ToroidalTerrainRenderer {
     this.material = new MeshStandardMaterial({vertexColors:true,roughness:.96});
     this.waterMaterial = new MeshStandardMaterial({color:0x19606f,roughness:.34,metalness:0,side:DoubleSide});
     this.environment={water:{value:0},sun:{value:new Vector3(...SUN_LOCAL)},daylight:{value:1},
-      approach:{value:1},sill:{value:new Vector3()}};
-    useToroidalRockDetail(this.material);
+      approach:{value:1},sill:{value:new Vector3()},meadowGrain:{value:1}};
+    useToroidalRockDetail(this.material,{meadow:true});
     this.updateWaterTime=useToroidalWaterDetail(this.waterMaterial);
     artDirect(this.material,'terrain',terrainShading,this.environment);
     artDirect(this.waterMaterial,'water',waterShading,this.environment);
@@ -290,6 +322,7 @@ export class ToroidalTerrainRenderer {
   }
 
   update(position, lightweight = false) {
+    this.environment.meadowGrain.value=lightweight?0:1;
     if (!this.worker || ![position.x, position.y, position.z].every(Number.isFinite)) return;
     const viewer = terrainCoordinates([position.x, position.y, position.z]);
     const profile = lightweight ? 'light' : 'normal';

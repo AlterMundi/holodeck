@@ -32,7 +32,7 @@ function useWorldPosition(shader) {
     '#include <common>\n' + worldPosition + surfaceNoise);
 }
 
-export function useToroidalRockDetail(material, {bedding=false} = {}) {
+export function useToroidalRockDetail(material, {bedding=false,meadow=false} = {}) {
   const strata = bedding ? `
         // Strata have a fixed world-space dip, with abrasion at exposed edges.
         float plane = dot(p, vec3(.14,.53,-.08)) + .32*ringNoise(uv*.65);
@@ -49,7 +49,7 @@ export function useToroidalRockDetail(material, {bedding=false} = {}) {
     useWorldPosition(shader);
     shader.fragmentShader = shader.fragmentShader.replace('#include <roughnessmap_fragment>',`
       #include <roughnessmap_fragment>
-      float detailFade = 1.0 - smoothstep(14.0, 80.0, length(vViewPosition));
+      float detailFade = (1.0 - smoothstep(14.0, 80.0, length(vViewPosition)))${meadow ? ' * (1.0 - holoMeadow)' : ''};
       if (detailFade > 0.001) {
         vec3 p = toroidalWorld;
         vec2 uv = ringTextureCoords(p);
@@ -61,6 +61,7 @@ export function useToroidalRockDetail(material, {bedding=false} = {}) {
         roughnessFactor = clamp(roughnessFactor + chips * detailFade * .13, .2, 1.0);
         ${strata}
       }
+      ${meadow ? 'roughnessFactor = mix(roughnessFactor, holoMeadowRoughness, holoMeadow);' : ''}
     `);
   };
 }
