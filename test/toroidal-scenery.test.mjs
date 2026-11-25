@@ -24,3 +24,19 @@ test('trail-edge planting preserves the clear route and keeps the same flowers i
   cover.dispose();
   assert.equal(scene.children.length,0);
 });
+
+test('the permitted entrance anchors bounded approach planting without filling the passage',()=>{
+  const door={x:1797.925,y:498.11,z:15.5,facing:-1};
+  const light=approachCover(true,door),normal=approachCover(false,door);
+  assert.notDeepEqual(light,approachCover(true));
+  assert.deepEqual(light.filter(p=>p.kind==='bloom'),normal.filter(p=>p.kind==='bloom'));
+  const localArc=plant=>plant.u*2*Math.PI*TOROIDAL_TERRAIN.majorRadius;
+  assert.ok(normal.every(plant=>plant.v<.25 || Math.abs(localArc(plant)-door.z)>=1.9));
+  const scene=new Scene(),cover=new ToroidalScenery(scene);
+  const position=new Vector3(TOROIDAL_SPAWN.x,TOROIDAL_SPAWN.y,TOROIDAL_SPAWN.z);
+  cover.update(position,false,door);
+  assert.equal(cover.ribbonGrass.count,normal.filter(p=>p.kind==='grass').length);
+  cover.update(position,false);
+  assert.equal(cover.ribbonGrass.count,approachCover(false).filter(p=>p.kind==='grass').length);
+  cover.dispose();
+});

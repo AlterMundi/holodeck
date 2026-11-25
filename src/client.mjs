@@ -963,6 +963,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const paintedRaster=minimap(outsideRing()?position:null,yaw,activeSpace.entrances);
       if(outsideRing()){
         ring??=new ToroidalTerrainRenderer(renderer.mmlCompositionScene.group,base);
+        const door=activeSpace.entrances?.[0]?.door;
+        ring.setEntrance(door);
         if(position){
           ring.update(position,rendererBudget.lightweight);
           cave??=new ToroidalCave(renderer.mmlCompositionScene.group,renderer.mmlCompositionScene.mmlScene);
@@ -973,7 +975,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
             sceneryAfter??=now+240;
             if(now>=sceneryAfter){
               scenery??=new ToroidalScenery(renderer.mmlCompositionScene.group);
-              scenery.update(position,rendererBudget.lightweight,activeSpace.entrances?.[0]?.door,solar?.daylight);
+              scenery.update(position,rendererBudget.lightweight,door,solar?.daylight);
             }
           }
         }

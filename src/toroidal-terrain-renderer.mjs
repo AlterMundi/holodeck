@@ -1,7 +1,7 @@
 import {useToroidalRockDetail,useToroidalWaterDetail} from './toroidal-surface-detail.mjs';
 import {BufferAttribute, BufferGeometry, DoubleSide, Group, Mesh, MeshStandardMaterial, ShaderChunk, Vector3} from 'three';
 import {
-  TOROIDAL_TERRAIN, buildTerrainTile, terrainCoordinates, terrainFrame, terrainTile,
+  TOROIDAL_PARCEL_Y, TOROIDAL_TERRAIN, buildTerrainTile, terrainCoordinates, terrainFrame, terrainTile,
 } from './toroidal-terrain.mjs';
 
 const profiles = Object.freeze({
@@ -80,6 +80,7 @@ const terrainShading = {
     // material follows the fixed parcel through terrain LOD transitions.
     float holoApproachSkylight = 0.0;
     vec2 approach = vHoloWorld.xz - vec2(${glsl(TOROIDAL_TERRAIN.majorRadius)},0.0);
+    vec2 flagFootprint = fwidth(approach)/vec2(.51,.63);
     if (holodeckApproachArt > .5 && abs(approach.x) < 14.0 &&
         approach.y > 6.0 && approach.y < 51.0 && vHoloWorld.y > 0.0) {
       float edge = abs(length(vHoloWorld.xz) - ${glsl(TOROIDAL_TERRAIN.majorRadius)});
@@ -93,6 +94,36 @@ const terrainShading = {
       vec3 packedEarth = mix(vec3(.35,.236,.127),vec3(.52,.389,.224),.38+.36*edgeNoise+.25*pebble);
       diffuseColor.rgb = mix(diffuseColor.rgb,packedEarth,mask*.88);
       diffuseColor.rgb = mix(diffuseColor.rgb,vec3(.114,.191,.068)*(.88+.42*edgeNoise),shoulder*.61);
+
+      // Join the path to the sill in the entrance's cross-path frame.
+      vec3 door = holodeckSill;
+      vec2 apron = vec2((approach.x-door.x)*door.z,approach.y-door.y);
+      if (abs(door.z) > .5 && abs(apron.y) < 2.8 && apron.x > -4.8 && apron.x < 1.25) {
+        float towardPath = 1.0-smoothstep(-2.5,.12,apron.x);
+        float curve = -.94*towardPath*towardPath;
+        float width = mix(.74,1.42,towardPath);
+        float end = smoothstep(-3.8,-2.55,apron.x)*(1.0-smoothstep(.97,1.24,apron.x));
+        float apronMask = (1.0-smoothstep(width-.15,width+.18,abs(apron.y-curve)+edgeNoise*.18))*end;
+        float flags = smoothstep(-1.27,-.62,apron.x)*apronMask;
+        vec2 paving = apron/vec2(.51,.63);
+        paving.x += .47*mod(floor(paving.y),2.0);
+        paving += .17*vec2(ringNoise(apron*6.1),ringNoise(apron.yx*7.2+4.0));
+        vec2 cell = floor(paving);
+        vec2 rim = .5-abs(fract(paving)-.5);
+        float joint = min(rim.x,rim.y);
+        float footprint = max(flagFootprint.x,flagFootprint.y);
+        float aa = clamp(footprint,.012,.095);
+        float slab = smoothstep(.025-aa,.049+aa,joint);
+        float tint = ringNoise(cell*.71+vec2(17.0,4.0));
+        vec3 stone = mix(vec3(.173,.144,.108),vec3(.375,.331,.247),tint);
+        stone *= .90+.20*ringNoise(apron*11.0);
+        vec3 flagstone = mix(vec3(.117,.097,.068),stone,slab);
+        flagstone = mix(flagstone,vec3(.237,.204,.151),smoothstep(.35,.9,footprint));
+        vec3 apronEarth = mix(packedEarth,vec3(.273,.198,.122),.53);
+        diffuseColor.rgb = mix(diffuseColor.rgb,apronEarth,apronMask*.83);
+        diffuseColor.rgb = mix(diffuseColor.rgb,flagstone,flags*.95);
+        holoApproachSkylight = max(holoApproachSkylight,apronMask*.85);
+      }
     }
 
   `,
@@ -149,7 +180,8 @@ function artDirect(material, name, shading, environment) {
     shader.uniforms.holodeckDaylight=environment.daylight;
     shader.uniforms.holodeckWaterViewDepth=environment.water;
     shader.uniforms.holodeckApproachArt=environment.approach;
-    fragment=after(fragment,'common','uniform float holodeckWaterViewDepth; uniform float holodeckDaylight; uniform float holodeckApproachArt;');
+    shader.uniforms.holodeckSill=environment.sill;
+    fragment=after(fragment,'common','uniform float holodeckWaterViewDepth; uniform float holodeckDaylight; uniform float holodeckApproachArt; uniform vec3 holodeckSill;');
     shader.fragmentShader=before(fragment,'opaque_fragment',shading.output+`
       if (holodeckWaterViewDepth > .014) {
         float scatter = 1.0 - exp(-length(vViewPosition) * (.055 + .006*min(12.0,holodeckWaterViewDepth)));
@@ -207,7 +239,8 @@ export class ToroidalTerrainRenderer {
     this.group.name = 'Toroidal terrain';
     this.material = new MeshStandardMaterial({vertexColors:true,roughness:.96});
     this.waterMaterial = new MeshStandardMaterial({color:0x19606f,roughness:.34,metalness:0,side:DoubleSide});
-    this.environment={water:{value:0},sun:{value:new Vector3(...SUN_LOCAL)},daylight:{value:1},approach:{value:1}};
+    this.environment={water:{value:0},sun:{value:new Vector3(...SUN_LOCAL)},daylight:{value:1},
+      approach:{value:1},sill:{value:new Vector3()}};
     useToroidalRockDetail(this.material);
     this.updateWaterTime=useToroidalWaterDetail(this.waterMaterial);
     artDirect(this.material,'terrain',terrainShading,this.environment);
@@ -235,6 +268,18 @@ export class ToroidalTerrainRenderer {
     } catch {
       this.stopWorker();
     }
+  }
+
+  setEntrance(door){
+    const sill=this.environment.sill.value;
+    if(!door){sill.set(0,0,0);return;}
+    const x=door.x-TOROIDAL_TERRAIN.majorRadius;
+    if(![x,door.y,door.z].every(Number.isFinite)||Math.abs(x)>8||
+       Math.abs(door.y-TOROIDAL_PARCEL_Y)>2||door.z<8||door.z>37||Math.abs(door.facing)!==1){
+      sill.set(0,0,0);
+      return;
+    }
+    sill.set(x,door.z,door.facing);
   }
 
   setWaterViewDepth(depth){this.environment.water.value=depth;}

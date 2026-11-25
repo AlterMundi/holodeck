@@ -91,12 +91,12 @@ const approachCoordinates=(x,z)=>({
 const center=approachCoordinates(0,23);
 const approach=terrainPosition(center.u,center.v,terrainElevation(center.u,center.v));
 
-export function approachCover(lightweight,{z:doorZ=15.5,facing=-1}={}) {
+export function approachCover(lightweight,{x:doorX,z:doorZ=15.5,facing=-1}={}) {
   const plants=[];
-  const place=(x,z,styling)=>{
+  const place=(x,z,styling,atFacade=false)=>{
     const {u,v}=approachCoordinates(x,z);
     // Keep the facade and the aisle connecting its door to the route clear.
-    if((Math.abs(z-doorZ)<1.9&&x*facing>0)||terrainTrail(u,v)>.22)return;
+    if((Math.abs(z-doorZ)<1.9&&x*facing>0)||(!atFacade&&terrainTrail(u,v)>.22))return;
     plants.push({u,v,h:terrainElevation(u,v),...styling});
   };
   for(let station=0;station<20;station++)for(const side of [-1,1]){
@@ -111,6 +111,17 @@ export function approachCover(lightweight,{z:doorZ=15.5,facing=-1}={}) {
       place(x+side*(.45+pick(97)),z+.65,{yaw:pick(327)*TAU,kind:'grass',
         size:.18+pick(515)*.23,color:ribbonPalette[Math.floor(pick(107)*4)]});
     }
+  }
+  if(Number.isFinite(doorX)&&Math.abs(facing)===1){
+    // The entrance anchor is .85 m out from the facade. Keep the clusters
+    // between it and the wall plane, outside the walking lane.
+    const localX=doorX-TOROIDAL_TERRAIN.majorRadius;
+    for(const [forward,along,kind,size,color,yaw] of [
+      [.54,-2.15,'grass',.49,0x597744,1.1],
+      [.29,-2.00,'bloom',.38,0xffefd1,2.8],
+      [.48,2.04,'grass',.39,0x718c49,3.2],
+      [.54,2.01,'bloom',.29,0xffefd1,4.5],
+    ])place(localX+facing*forward,doorZ+along,{kind,size,color,yaw},true);
   }
   return plants;
 }
@@ -163,7 +174,7 @@ export class ToroidalScenery {
     if(![u,v].every(Number.isFinite))return;
     const rows=2**LEVEL, columns=rows*TOROIDAL_TERRAIN.rootColumns;
     const cell=terrainTile(LEVEL,Math.floor(u*columns),Math.floor(v*rows));
-    const doorKey=(door?.z??15.5)+':'+(door?.facing??-1);
+    const doorKey=(door?.x??'')+':'+(door?.z??15.5)+':'+(door?.facing??-1);
     const nearTrail=this.approach.distanceToSquared(position)<105**2;
     const key=cell.key+':'+lightweight+':'+nearTrail+':'+doorKey;
     if(key===this.key)return;
