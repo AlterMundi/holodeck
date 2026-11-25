@@ -73,35 +73,48 @@ export class CollectionArchive{
     this.name.textContent=edition.label;
     const index=this.entries.findIndex(item=>identity(item)===identity(edition));
     this.count.value=(index+1)+' / '+this.entries.length;
-    this.previous.disabled=this.next.disabled=this.entries.length<2;
+    this.previous.disabled=this.next.disabled=this.entries.length<2||!!this.restoring;
     this.inspect.href='/view/'+edition.resource+'?version='+edition.version+'&display=work';
+  }
+
+  hudState(){
+    if(this.panel.hidden||!this.edition)return null;
+    const id=identity(this.edition);
+    return {id,label:this.edition.label,page:this.count.value,
+      canStep:this.entries.length>1&&!this.restoring,canRestore:this.canRestore,busy:!!this.restoring,status:this.status.textContent};
+  }
+
+  viewerPath(id){
+    if(this.panel.hidden||!this.edition||identity(this.edition)!==id)return null;
+    return this.inspect.getAttribute('href');
   }
 
   async returnToShelf(){
     if(this.panel.hidden||!this.canRestore||!this.edition||this.restoring)return;
-    const {resource,version}=this.edition;
+    const {resource,version}=this.edition,id=identity(this.edition);
+    const stillSelected=()=>this.edition&&identity(this.edition)===id;
     const controller=new AbortController();
-    this.restoring=controller;this.restore.disabled=true;this.status.textContent='';
+    this.restoring=controller;this.controls();this.status.textContent='';
     try{
       const response=await fetch(new URL('api/space/collection/archive',this.base),{
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({resource,version}),
         signal:AbortSignal.any([controller.signal,AbortSignal.timeout(8500)]),
       });
-      if(controller.signal.aborted)return;
+      if(controller.signal.aborted||!stillSelected())return;
       this.status.textContent=response.ok?'La edición volvió a la repisa.':'No pude devolver esta edición a la repisa.';
     }catch{
-      if(!controller.signal.aborted)this.status.textContent='No pude confirmar el cambio. Podés comprobarlo en la repisa.';
+      if(!controller.signal.aborted&&stillSelected())this.status.textContent='No pude confirmar el cambio. Podés comprobarlo en la repisa.';
     }finally{
       if(this.restoring===controller){
-        this.restoring=null;this.restore.disabled=false;
+        this.restoring=null;this.controls();
         this.onRestored();
       }
     }
   }
 
   step(direction){
-    if(this.panel.hidden||!this.edition||this.entries.length<2)return;
+    if(this.panel.hidden||!this.edition||this.entries.length<2||this.restoring)return;
     const index=this.entries.findIndex(item=>identity(item)===identity(this.edition));
     this.turn={start:performance.now(),from:this.angle,direction};
     this.select(this.entries[(index+direction+this.entries.length)%this.entries.length]);

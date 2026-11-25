@@ -9,6 +9,7 @@ const REFRESH_MS=12000;
 const MODEL_LIMIT=384*1024;
 const hex=(value,length)=>typeof value==='string'&&value.length===length&&/^[a-f0-9]+$/.test(value);
 const distance=(point,anchor)=>Math.hypot(point.x-anchor.x,point.z-anchor.z);
+const shelfIdentity=({item,edition})=>JSON.stringify([item.project.id,edition.resource,edition.version]);
 const editionKey=edition=>edition.resource+':'+edition.version+':'+(edition.representative?.sha256??'');
 
 async function modelBytes(base,edition,signal){
@@ -40,6 +41,8 @@ export class CollectionShelves {
     this.items=new Map();
     this.list=panel.querySelector('ul');
     this.visibleLinks='';
+    this.shelfEntries=[];
+    this.hudShelfOptions=[];
     const refreshSoon=()=>{this.flight?.abort();this.flight=null;this.refreshAt=0;};
     this.archive=new CollectionArchive({base,scene,panel:archivePanel,loader:this.loader,
       readModel:(edition,signal)=>modelBytes(base,edition,signal),onRestored:refreshSoon});
@@ -167,6 +170,24 @@ export class CollectionShelves {
     this.onPlaced?.();
   }
 
+  hudCollection(){
+    if(!this.room||!this.root)return null;
+    return {room:this.room,entries:this.hudShelfOptions,archive:this.archive.hudState()};
+  }
+
+  placeShelfEdition(id){
+    if(!this.room||!this.root)return;
+    const entry=this.shelfEntries.find(item=>shelfIdentity(item)===id);
+    if(entry)this.placeOnTable(entry.item,entry.edition);
+  }
+
+  shelfViewerPath(id){
+    const entry=this.shelfEntries.find(item=>shelfIdentity(item)===id);
+    if(!this.room||!entry||!this.nearby.includes(entry.item))return null;
+    const {resource,version}=entry.edition;
+    return '/view/'+resource+'?version='+version+'&display=work';
+  }
+
   pickTargets(){
     const targets=new Map();
     for(const item of this.nearby??[]){
@@ -180,9 +201,11 @@ export class CollectionShelves {
 
   links(items){
     const entries=items.flatMap(item=>item.editions.map(edition=>({item,edition})));
+    this.shelfEntries=entries;
     const signature=JSON.stringify(entries.map(({item,edition})=>[item.project.id,edition.resource,edition.version,edition.title]));
     if(signature===this.visibleLinks)return;
     this.visibleLinks=signature;
+    this.hudShelfOptions=entries.map(entry=>({id:shelfIdentity(entry),label:entry.edition.title}));
     const doc=this.panel.ownerDocument;
     this.list.replaceChildren(...entries.map(({item,edition})=>{
       const row=doc.createElement('li'),link=doc.createElement('a'),button=doc.createElement('button');

@@ -1,6 +1,7 @@
 import {OrthographicCamera,Raycaster,Scene,Vector2} from 'three';
 import {WorldMapHud,worldMapId,worldBearingId} from './world-map-hud.mjs';
 import {DoorPromptHud,doorPromptId,doorPromptWidth} from './door-prompt-hud.mjs';
+import {CollectionHud,collectionHudId,collectionHudWidth} from './collection-hud.mjs';
 import {SettingsHud,settingsId} from './settings-hud.mjs';
 import {HudRenderLayer} from './hud-render-layer.mjs';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
@@ -69,12 +70,13 @@ const work=[
 const movement=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE']);
 
 export class MatterWorktableHud{
-  constructor({document,webgl,table,onActive,canEnter=()=>true,onError,readTools,activateTool,navigation}){
+  constructor({document,webgl,table,collection,onActive,canEnter=()=>true,onError,readTools,activateTool,navigation}){
     Object.assign(this,{document,webgl,table,onActive,canEnter,readTools,activateTool,scope:0,toolScope:0,mode:null,blocked:false});
     this.canvas=webgl.domElement;
     const releaseHudOverrides=()=>{
       this.map?.markBearingPresented(false);
       this.door?.presented(false);
+      this.collection?.presented(false);
     };
     this.releaseHudOverrides=releaseHudOverrides;
     this.layer=new HudRenderLayer(webgl,{onLoss:releaseHudOverrides});
@@ -103,6 +105,20 @@ export class MatterWorktableHud{
       focusControl:name=>this.hud.focusAccessibleControl(doorPromptId,name),
       hasFocus:()=>this.ownsAccessibleInput(this.document.activeElement)&&this.hud.currentFocus()?.surfaceId===doorPromptId,
       finePointer:()=>finePointer.matches});
+    this.collection=new CollectionHud({owner:collection,send:(type,content,id)=>this.send(type,content,id),
+      openViewer:path=>{
+        const viewer=this.document.defaultView.open('','_blank');
+        if(!viewer)return false;
+        try{viewer.opener=null;viewer.location.replace(path);return true;}
+        catch{viewer.close();return false;}
+      },
+      focusLauncher:()=>this.focusTool('map')||this.focusTool('talk'),
+      focusControl:name=>this.hud.focusAccessibleControl(collectionHudId,name),
+      currentFocus:()=>{
+        if(!this.ownsAccessibleInput(this.document.activeElement))return;
+        const focus=this.hud.currentFocus();
+        if(focus?.surfaceId===collectionHudId)return focus.instanceId;
+      }});
     this.settings=new SettingsHud({document,send:(type,content,id)=>this.send(type,content,id),
       focusControl:name=>this.hud.focusAccessibleControl(settingsId,name),focusLauncher:name=>this.focusTool(name),
       onSurfaceChange:()=>this.syncSettingsInput()});
@@ -112,6 +128,7 @@ export class MatterWorktableHud{
         else if(id===worldMapId)this.map.group=group;
         else if(id===worldBearingId)this.map.bearingGroup=group;
         else if(id===doorPromptId)this.door.group=group;
+        else if(id===collectionHudId)this.collection.group=group;
         else if(id===settingsId)this.settings.group=group;
         else this.group=group;
       },
@@ -121,6 +138,7 @@ export class MatterWorktableHud{
         else if(requested.surfaceId===worldMapId)this.map.activate(requested);
         else if(requested.surfaceId===worldBearingId)this.map.activateBearing(requested);
         else if(requested.surfaceId===doorPromptId)this.door.activate(requested);
+        else if(requested.surfaceId===collectionHudId)this.collection.activate(requested);
         else if(requested.surfaceId===settingsId)this.settings.activate(requested);
         else this.handleAction(requested);
       },onTransportError:onError,
@@ -139,7 +157,7 @@ export class MatterWorktableHud{
   }
 
   rayForPointer(event){
-    if(!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.settings.group)return;
+    if(!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group)return;
     const rect=this.canvas.getBoundingClientRect();
     if(!rect.width||!rect.height)return;
     this.pointerPosition.set((event.clientX-rect.left)*2/rect.width-1,1-(event.clientY-rect.top)*2/rect.height);
@@ -398,7 +416,7 @@ export class MatterWorktableHud{
   }
 
   draw(additional){
-    if(!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.settings.group&&!additional){
+    if(!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!additional){
       this.releaseHudOverrides();
       this.layer.hide();
       return;
@@ -435,6 +453,13 @@ export class MatterWorktableHud{
       const scale=Math.min(170,(width-left-right)/2.12);
       this.place(this.map.bearingGroup,'bearingPlacement',viewport,width-right-scale*1.06,width<700?116:74,scale);
     }
+    if(this.collection.group){
+      const {left,right,bottom}=this.toolInsets();
+      const top=height<510?105:width<620?166:137;
+      const reserve=bottom+(this.toolLayout?.height??0)*toolScale+60;
+      const scale=Math.min(185,(width-left-right)/(collectionHudWidth+.12),Math.max(70,height-top-reserve)/1.42);
+      this.place(this.collection.group,'collectionPlacement',viewport,left+scale*(collectionHudWidth+.06)/2,top,scale);
+    }
     if(this.settings.group){
       const {left,right,bottom}=this.toolInsets();
       const top=height<500?54:92;
@@ -454,6 +479,7 @@ export class MatterWorktableHud{
     finally{
       this.map.markBearingPresented(Boolean(painted&&this.map.bearingGroup&&this.hud.getSurfaceBounds(worldBearingId)));
       this.door.presented(Boolean(painted&&this.door.group&&this.toolGroup&&this.hud.getSurfaceBounds(doorPromptId)));
+      this.collection.presented(Boolean(painted&&this.collection.group&&this.hud.getSurfaceBounds(collectionHudId)));
     }
     if(this.toolGroup)this.document.body.dataset.a2uiToolbelt='';
   }
@@ -465,6 +491,7 @@ export class MatterWorktableHud{
     this.layer.dispose();
     this.map.dispose();
     this.door.update(false);
+    this.collection.reset();
     this.settings.close(false);
     this.hud.dispose();
     this.a11y.remove();

@@ -621,7 +621,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       pressed:element.getAttribute('aria-expanded')==='true',
     }]));
     let settingsInputCaptured=false;
-    matterHud=new MatterWorktableHud({document,webgl:renderer.composer.renderer,table:collectionShelves.worktable,
+    matterHud=new MatterWorktableHud({document,webgl:renderer.composer.renderer,table:collectionShelves.worktable,collection:collectionShelves,
       readTools,activateTool:id=>tools[id]?.click(),
       navigation:{panel:mapPanel,mapState:()=>updateDoor.navigation?.()??{
         scope:activeSpace.id,canExit:false,busy:false,map:null,
@@ -868,6 +868,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       matterHud.map.update(navigationVisible,paintedRaster);
       matterHud.updateBearing(navigationVisible&&!matterHud.active);
       matterHud.door.update(navigationVisible&&!matterHud.active&&Boolean(matterHud.toolGroup)&&!signalEditor.active);
+      matterHud.collection.update(navigationVisible&&!matterHud.active&&!mapPanel.open&&!signalEditor.active);
       beaconControls.update(inside&&!moving&&remoteScene?activeSpace.objects:null,position);
       render(renderState);
       if(!inside&&drawWorld)geometryProbe.afterRender();
