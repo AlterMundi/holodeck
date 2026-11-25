@@ -312,3 +312,45 @@ test('standing idle animates supported humanoids and releases without moving eit
     assert.ok(head.quaternion.equals(stockHead));
   }
 });
+
+test('microphone affects only the local jaw and restores old skins or disabled motion',()=>{
+  function model(){
+    const {root,mesh}=avatar('avatar-1-bodyA-skin01.glb');
+    mesh.morphTargetDictionary={jawOpen:0};
+    mesh.morphTargetInfluences=[0];
+    const faceGroup=new Group();
+    faceGroup.add(new SkinnedMesh(),mesh);
+    root.add(faceGroup);
+    root.getMesh=()=>faceGroup;
+    return {root,mesh};
+  }
+  const local=model(),peer=model(),replacement=model();
+  const actors=new Map([local,peer].map((_,id)=>[id,{position:new Vector3(),animationState:0}]));
+  const state={characters:actors,localCharacterId:0};
+  const controls={grounded:true,microphoneLevel:.75};
+  const manager={loadedCharacters:new Map([[0,{character:local.root}],[1,{character:peer.root}]]),
+    update(){assert.equal(local.mesh.morphTargetInfluences[0],0);}};
+  const unbind=bindFlightAvatarAnimation(manager,()=>controls);
+  const frames=count=>{for(let i=0;i<count;i++)manager.update(state,1/60);};
+  frames(12);
+  assert.ok(local.mesh.morphTargetInfluences[0]>.5);
+  assert.equal(peer.mesh.morphTargetInfluences[0],0);
+  controls.microphoneLevel=0;
+  frames(1);
+  assert.ok(local.mesh.morphTargetInfluences[0]>.4&&local.mesh.morphTargetInfluences[0]<.585);
+  frames(45);
+  assert.equal(local.mesh.morphTargetInfluences[0],0);
+  controls.microphoneLevel=.75;
+  frames(12);
+  manager.loadedCharacters.set(0,{character:replacement.root});
+  frames(12);
+  assert.equal(local.mesh.morphTargetInfluences[0],0);
+  assert.ok(replacement.mesh.morphTargetInfluences[0]>.5);
+  controls.glanceMotion=false;
+  frames(1);
+  assert.equal(replacement.mesh.morphTargetInfluences[0],0);
+  controls.glanceMotion=true;
+  frames(12);
+  unbind();
+  assert.equal(replacement.mesh.morphTargetInfluences[0],0);
+});

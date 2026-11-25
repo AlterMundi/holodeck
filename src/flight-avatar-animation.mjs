@@ -5,6 +5,7 @@ import {TabletopGlance} from './tabletop-attention.mjs';
 import {bindHumanoidFlightRig} from './humanoid-flight-poses.mjs';
 import {bindHumanoidCrouch} from './humanoid-crouch.mjs';
 import {bindHumanoidStandingIdle} from './humanoid-standing-idle.mjs';
+import {bindHumanoidMicrophoneMouth} from './humanoid-microphone-mouth.mjs';
 
 const limbNames=['upperarm_l','upperarm_r','lowerarm_l','lowerarm_r','thigh_l','thigh_r','calf_l','calf_r'];
 const pitchAxis=new Vector3(1,0,0);
@@ -44,6 +45,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
   }
   function restore(entry){
     entry.glance?.restore();
+    entry.mouth?.restore();
     entry.idleRig?.restore();
     for(const [bone,neutral] of entry.modified)bone.quaternion.copy(neutral);
     entry.modified.clear();
@@ -63,7 +65,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
     // Remove last frame's extra limb rotations before the base mixer runs.
     for(const entry of actors.values())restore(entry);
     const result=update.call(this,state,dt);
-    const {outdoor,flying,grounded:localGrounded,table,crouch,gaze,peerPoses,glanceMotion=true,tabletopPlayers=[]}=context();
+    const {outdoor,flying,grounded:localGrounded,table,crouch,gaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null}=context();
     const now=clock?.();
     const elapsed=now!==undefined&&previousTime!==undefined?(now-previousTime)/1000:dt;
     previousTime=now;
@@ -84,6 +86,10 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
         actors.set(id,entry);
       }
       const isLocal=id===state.localCharacterId;
+      if(isLocal&&glanceMotion&&microphoneLevel!==null){
+        if(entry.mouth===undefined&&microphoneLevel>0)entry.mouth=bindHumanoidMicrophoneMouth(mesh);
+        entry.mouth?.apply(microphoneLevel,step);
+      }else entry.mouth?.reset();
       if(!glanceMotion)entry.glance?.reset();
       if(isLocal&&glanceMotion&&table&&gaze&&!entry.glance){
         entry.glance??=new TabletopGlance();

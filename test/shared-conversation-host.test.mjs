@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {SharedConversationHost} from '../src/shared-conversation-host.mjs';
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
-function fixture({mode}={}){
- const sent=[],calls=[],frames=[],statuses=[],speech=[];let actor='human:fixture',position=1,unblock;
+function fixture({mode,avatarMicrophone}={}){
+ const sent=[],calls=[],frames=[],statuses=[],speech=[];let actor='human:fixture',position=1,unblock,now=0;const dom={};
  const binding='b'.repeat(64),file={file_id:randomUUID(),sha256:'c'.repeat(64),name:'holodeck-situation.json',mime:'application/json',size:2000};
- const window={location:{origin:'https://world.test'},crypto:{randomUUID},addEventListener(){},removeEventListener(){}};
- const document={createElement:()=>({contentWindow:{postMessage:(d,o)=>sent.push({d,o})},remove(){this.removed=true;}})};
- const host=new SharedConversationHost({window,document,container:{append:f=>frames.push(f)},currentActor:()=>actor,
+ const window={location:{origin:'https://world.test'},crypto:{randomUUID},performance:{now:()=>now},addEventListener(){},removeEventListener(){}};
+ const document={hidden:false,addEventListener:(name,handler)=>dom[name]=handler,removeEventListener:name=>delete dom[name],createElement:()=>({contentWindow:{postMessage:(d,o)=>sent.push({d,o})},remove(){this.removed=true;}})};
+ const host=new SharedConversationHost({window,document,avatarMicrophone,container:{append:f=>frames.push(f)},currentActor:()=>actor,
   api:async(path,body)=>{calls.push({path,body});if(path==='conversation-surface')return {schema:'holodeck.conversation-surface/v1',actorRef:actor,binding,url:'https://conversation.test/interaction/',machineSource:mode};
    if(path==='conversation-contexts')return body.mode
      ?{id:body.id,binding,files:[],machine_source:file.file_id,work_admitted:false}
@@ -16,7 +16,7 @@ function fixture({mode}={}){
   capture:async()=>{const view={local:{position:{x:position}}};await new Promise(resolve=>unblock=resolve);return view;},onStatus:value=>statuses.push(value),onSpeechLevel:value=>speech.push(value)});
  const envelope=(type,rest={})=>({schema:'conversation.surface/v1',visit:host.visit,channel:randomUUID(),actor:'human:fixture',binding,type,...rest});
  const receive=d=>host.receive({source:host.frame.contentWindow,origin:host.origin,data:d});
- return {host,sent,calls,frames,statuses,speech,envelope,receive,move:x=>position=x,unblock:()=>unblock(),rebind:()=>actor='human:other'};
+ return {host,sent,calls,frames,statuses,speech,envelope,receive,advance:ms=>now+=ms,visible:value=>{document.hidden=!value;dom.visibilitychange?.();},move:x=>position=x,unblock:()=>unblock(),rebind:()=>actor='human:other'};
 }
 test('actual frame origin actor visit binding and channel bound the handshake and all context work',async()=>{
  const f=fixture();await f.host.mount();assert.equal(f.frames.length,1);await f.host.mount();assert.equal(f.frames.length,1);
@@ -68,4 +68,42 @@ test('prepared receipt preserves every attachment slot and stays on the negotiat
  assert.equal(f.sent.at(-1).d.type,'error','a new channel cannot force its old negotiated mode');
  assert.equal(f.calls.filter(x=>x.path==='conversation-contexts').length,1);
  f.host.dispose();
+});
+
+test('optional microphone levels expire and remain on the negotiated current frame',async()=>{
+ const f=fixture({avatarMicrophone:true});
+ await f.host.mount();
+ const legacy=f.envelope('ready');
+ f.receive(legacy);
+ assert.equal(f.sent.at(-1).d.features.avatarMicrophone,undefined);
+ f.receive({...legacy,type:'avatar-microphone',level:.75});
+ assert.equal(f.host.microphoneLevel(),null);
+ const ready=f.envelope('ready',{features:{avatarMicrophone:true}});
+ f.receive(ready);
+ assert.equal(f.sent.at(-1).d.features.avatarMicrophone,true);
+ const level=f.envelope('avatar-microphone',{channel:ready.channel,level:.75});
+ f.receive({...level,channel:legacy.channel});
+ f.receive({...level,level:.7});
+ f.receive({...level,source:'remote'});
+ f.host.receive({source:{},origin:f.host.origin,data:level});
+ assert.equal(f.host.microphoneLevel(),0);
+ f.receive(level);
+ assert.equal(f.host.microphoneLevel(),.75);
+ f.advance(300);
+ assert.equal(f.host.microphoneLevel(),0);
+ f.receive(level);
+ f.visible(false);
+ f.receive(level);
+ assert.equal(f.host.microphoneLevel(),null);
+ f.visible(true);
+ assert.equal(f.host.microphoneLevel(),0);
+ f.receive(level);
+ f.receive({...level,level:0});
+ assert.equal(f.host.microphoneLevel(),0);
+ f.receive(level);
+ f.rebind();
+ assert.equal(f.host.microphoneLevel(),null);
+ f.host.dispose();
+ assert.equal(f.host.microphoneLevel(),null);
+ assert.equal(f.calls.length,1,'No level reaches the server');
 });
