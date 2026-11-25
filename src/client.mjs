@@ -334,7 +334,7 @@ let inside=hot&&activeSpace.id!=='outside';
 const outsideRing=()=>!inside&&activeSpace.outdoorTerrain===TOROIDAL_TERRAIN.id;
 // Capture the fresh entry before MML initializes or writes a location hash.
 let firstExteriorDoor=outsideRing()&&!location.hash&&activeSpace.entrances?.length===1?activeSpace.entrances[0].door:null;
-let flightEnabled=false,previousSpacePress=null;
+let flightEnabled=false,previousSpacePress=null,radialMovementMode='ground';
 let fitConversationWindow=()=>{};
 const resetFlightTap=()=>{previousSpacePress=null;};
 window.addEventListener('blur',resetFlightTap);
@@ -344,13 +344,13 @@ document.addEventListener('focusin',event=>{
 });
 function doubleSpace(event){
   if(event.code!=='Space'||event.repeat||event.altKey||event.ctrlKey||event.metaKey||
-     !outsideRing()||entering||moving||
+     !outsideRing()||entering||moving||radialMovementMode==='swim'||radialMovementMode==='surface'||
      document.querySelector('dialog[open]')||event.target?.closest?.('#conversation-panel,button,input,select,summary,textarea,[contenteditable]'))return;
   const now=performance.now();
   if(previousSpacePress!==null&&now-previousSpacePress<340){
     flightEnabled=!flightEnabled;
     previousSpacePress=null;
-    say(flightEnabled?'Vuelo activo · Espacio sube, Shift baja y Ctrl acelera.':'Volvés a caminar.',{transient:true});
+    say(flightEnabled?'Vuelo activo · Espacio sube, Shift baja y R acelera.':'Volvés a caminar.',{transient:true});
   }else previousSpacePress=now;
 }
 
@@ -953,6 +953,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       };
     }
     let nextDressing=0, ring=null, cave=null, scenery=null, atmosphere=null, releaseRadialMovement=null, releaseHeadroom=null, ringSun=null;
+    const verticalHelp=document.getElementById('world-vertical-help');
+    const dryHelp=verticalHelp.textContent;
+    let presentedMode='ground';
     let sceneryAfter=null,releaseTableFlight=null,releaseSearchKeys=null;
     const worldCanvas=worldPicker.canvas;
     const worldFocus=new AbortController();
@@ -1149,8 +1152,16 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         atTable?tableConnection:null,options.coreCameraManager.getCameraState(),worldCanvas.clientHeight);
       const pointed=atTable?points.gazes.get(tableConnection):null;
       tableGaze=pointed??tableAttention.sample(tableNow);
+      const mode=outsideRing()?radialMovementMode:'ground';
+      if(mode!==presentedMode){
+        presentedMode=mode;
+        verticalHelp.textContent=mode==='ground'?dryHelp:
+          mode==='flight'?' · Shift para bajar · Espacio para subir':
+            ' · Shift para sumergirte · Espacio para subir';
+      }
       companion.update({position,yaw,outdoor:outsideRing(),table:tableFlight,gaze:tableGaze,
         gazeMesh:pointed?points.cues.get(tableConnection)?.mesh:tableAttention.part(),eye:tableFlight.active?options.coreCameraManager.getCameraState().position:null,
+        water:mode==='swim'?'submerged':mode==='surface'?'surface':null,
         explicitFlight:flightEnabled,grounded:!flightEnabled&&client.getCharacterManager().localController?.characterOnGround===true,
         visible:!entering&&!moving&&drawWorld,seconds:renderState.deltaTimeSeconds});
       galleryModels.update();
@@ -1225,7 +1236,11 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         releaseSearchKeys=()=>{releaseRun();if(keys.shouldCaptureKeyPress===capture)keys.shouldCaptureKeyPress=shouldCapture;};
       }
       releaseHeadroom=bindInteriorHeadroom(client.getCharacterManager(),()=>inside);
-      releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing,()=>flightEnabled,firstExteriorDoor);
+      releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing,
+        ()=>flightEnabled,firstExteriorDoor,mode=>{
+          if(mode!==radialMovementMode)resetFlightTap();
+          radialMovementMode=mode;
+        });
       firstExteriorDoor=null;
       releaseTableFlight=bindMatterFlight(client.getCharacterManager(),options.coreCameraManager,tableFlight,tableInputAllowed,()=>matterHud.leave());
       options.onInitialized();

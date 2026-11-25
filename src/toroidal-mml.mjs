@@ -7,7 +7,7 @@ import {TOROIDAL_SPAWN, terrainCoordinates, terrainFrame} from './toroidal-terra
 // The MML host still owns input, network cadence, interpolation, avatar
 // animation and the orbit camera. Only the selected exterior uses a radial
 // surface and reconstructs the world-space orientation from tangent yaw.
-export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firstDoor=null) {
+export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firstDoor=null, onMovementMode=()=>{}) {
   const updateCharacters = manager.update;
   const updateCamera = camera.update;
   const adjustCamera = camera.adjustCameraPosition;
@@ -99,12 +99,14 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
     controller.networkState = {
       position: state.position, rotation: state.rotation, state: controller.getTargetAnimation(),
     };
+    onMovementMode(state.swimming?'swim':flying?'flight':wet?'surface':'ground');
   }
 
   function characterUpdate(...args) {
     const local = this.localController;
     if (!enabled()) {
       motion = lastLocal = lastPosition = null;
+      onMovementMode('ground');
       clearance.reset();
       return updateCharacters.apply(this, args);
     }
