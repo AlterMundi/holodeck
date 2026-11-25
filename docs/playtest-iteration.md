@@ -253,7 +253,14 @@ binding and Telegram disabled. An isolated two-version fixture reattached
 active, paused and blocked native work from the current predecessor to this
 candidate without a new turn, goal mutation or journal replay. The paired
 production Gateway still has an active native session. Its live collector
-handoff and Home proxy readback remain open.
+handoff remains open.
+
+The selected Home Interaction reverse-proxy route was read from the serving
+Caddy configuration and exercised in a loopback copy with a disposable
+upstream. It preserved the exact `X-Machine-Source` value, request body and
+Interaction prefix and stripped a spoofed actor header. The live HTTPS voice
+route refused an anonymous request with HTTP 403. Authenticated ingress and
+receipt readback through the selected Home and Gateway pair remain open.
 
 The original Holodeck codec prototype defined a planner and reducer for full,
 delta and unchanged situations. The projection keeps distinct object, station,
@@ -428,6 +435,53 @@ acceptance and the rest of the iteration remain open.
 
 
 ### HUD art direction
+
+The November 25 selection contains 13 private image references. All 13
+were opened and compared. Nicolás singled out the
+[Pageflows cockpit image](https://pageflows.com/resources/wp-content/uploads/2024/08/HUD-Design-Example-1024x576.jpg),
+also present in the staged set. Give that example priority in Cabina. The
+inward-facing side surfaces, thin stationary top edges and low instrument
+cluster establish depth while leaving the world visible. The physical map
+and compass references support treating navigation as a tool that opens
+on demand. The visor and instrument-panel samples support restrained
+edge light and solid material around frequent controls. The inventory
+examples keep the 3D object dominant and reveal its details beside it.
+The high-contrast and pixel examples show how silhouette and hierarchy
+distinguish active controls without requiring additional panels.
+
+The [Dreamstime HUD gallery](https://www.dreamstime.com/illustration/hud-game.html)
+adds useful examples of corner brackets, segmented markers and layered panel
+borders. Build those details with Holodeck's own geometry, icons and materials.
+Use brief motion on open, minimize or confirmed change. Hold text and hit
+targets steady after the transition and honor reduced-motion preferences.
+Compare the exterior toolbelt and minimap, the Matter inspection and the
+open Conversation display in the same views. Keep the toolbelt readable
+over bright terrain and the Matter piece clear while it is rotated. Verify
+the equivalent organization and touch targets at narrow widths. The staged
+images are visual references for this evaluation.
+
+[Nasty Rodent's production guide](https://nastyrodent.com/what-is-hud-in-games/)
+informs the per-control specification. The toolbelt and heading stay in the
+player's view. The doorway cue follows its actual destination in the world.
+The map opens on request, and the worktable's inspection controls stay next
+to the selected piece. Record each control's visibility rule, state owner,
+safe-area placement and keyboard and touch behavior. Use shape or labels
+alongside color for state, and inspect the active and disabled states over
+both bright outdoor and dark indoor scenery.
+
+The [Alamy instrument sheet](https://www.alamy.com/hud-touch-user-interface-futuristic-circular-panels-or-bars-and-text-boxes-hud-ui-vector-screen-with-equalizer-scales-and-smart-controls-digital-to-image454041959.html)
+uses segmented arcs, fine ticks and a contrasting active sector. Translate
+that treatment to the actual bearing and minimap markers. Tick spacing
+expresses direction and the highlighted sector follows the selected route.
+Use smaller ticks at the Matter section control only for its real cut depth.
+
+The [Coherent Labs FPS kit](https://coherent-labs.com/posts/presentation-of-a-complete-fps-interface-kit/)
+shows how a consistent family of modules can serve gameplay, navigation and
+settings. Test quiet, translucent surrounds against detailed scenes and a
+stronger backing under text. Reuse the same silhouette, focus state and
+accent roles between the toolbelt, map and settings. On touch, adapt the
+grouping to the available width while preserving the controls and their
+input targets.
 
 The additional November 25 visual reference (instruction `77d43c71`)
 pairs a fixed minimap and bearing above the main view with a compact
