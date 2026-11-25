@@ -628,6 +628,7 @@ export async function openCharacterStudio(document){
       viewportHeight=height;
       compact=nextCompact;
       stage.classList.toggle('studio-compact',compact);
+      hud.setChoicePageSize(surfaceId,compact&&height<680?(height<500?1:2):undefined);
       const nextPanelWidth=compact?Math.min(1.10,Math.max(.5,availableWidth/300-.12)):1.85;
       if(panelWidth!==nextPanelWidth){
         panelWidth=nextPanelWidth;

@@ -67,8 +67,9 @@ The compact HUD groups controls into **Pose**, **Clips**, **Comparar** and
 places them beside it. The same Three.js controls use the same playback and
 room actions across layouts. The host fits the active panel to the viewport
 and keeps its text at screen density. It keeps 46 px plates for the base
-controls on a 390 px portrait viewport. Expanded menus may scale to fit
-available height.
+controls on a 390 px portrait viewport. Short viewports show one or two
+options per menu page before the panel falls back to scaling. The active
+choice and pending highlight are retained across resize.
 
 Section selection is browser-local. Switching sections preserves an
 unpublished note and its caret. Publishing still requires the ordinary
