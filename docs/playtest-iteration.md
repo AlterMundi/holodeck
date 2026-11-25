@@ -308,3 +308,30 @@ limits for dense paragraphs. The playtest's touch jump uses the existing MML
 control and this release adds no `HudJump` surface. Retain those findings for
 the touch-control migration and the multiline cases. Physical-device
 acceptance and the rest of the iteration remain open.
+
+
+### HUD art direction
+
+Holodeck owns the surface intent, room look, and interaction state. A2UI
+describes controls and actions against the registered Proyección catalog.
+Proyección resolves those controls into Three.js visuals and the corresponding
+accessible controls. Conversation content continues to use its web renderer
+within the display.
+
+The current host can set palette, panel width, child weights, spacing, and
+raster density. Panel shape, backplate material, padding, typeface and most
+control dimensions are built into the renderer. For independently designed
+room and application styles, extend the renderer with a host-selected,
+versioned theme. The theme should define type roles, spacing, silhouettes,
+borders, material and state styles, and reference locally registered icons.
+Use explicit component roles for primary, secondary and chrome actions so
+themes can produce distinct treatments without changing the action schema.
+Keep hit areas and accessible names stable when visual chrome is reduced.
+Leave custom component drawing with the registered renderer. Compare at
+desktop and touch sizes, with both orbital and a contrasting room look.
+
+Inspiration from Asphalt is the clarity of primary actions, clean negative
+space, expressive typography and quick icon recognition. The Matter room
+should retain its own visual language.
+See the [A2UI catalog guide](https://a2ui.org/guides/defining-a-catalog/) and
+[A2UI theming guide](https://github.com/a2ui-project/a2ui/blob/main/docs/public/guides/theming.md).

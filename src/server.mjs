@@ -201,15 +201,22 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const archiveKeys=new Set(collection?.archive?.map(pinKey));
   const shelfCount=matterArt?.shelves.length??0;
   const baseShelves=collection?.projects.length??0;
-  let placed=heldArchive&&heldArchive.room===collection?.room ? heldArchive.placed : [];
+  const placed=heldArchive&&heldArchive.room===collection?.room ? heldArchive.placed : [];
   let archiveUnavailable=false;
   if(!Array.isArray(placed)||placed.length>6||placed.some(key=>typeof key!=='string'||
     !/^[a-f0-9]{32}:[a-f0-9]{64}$/.test(key))||new Set(placed).size!==placed.length)
     throw Error('Invalid Collection placement checkpoint');
-  placed=placed.filter(key=>archiveKeys.has(key));
+  const savedSlots=heldArchive?.room===collection?.room?heldArchive?.shelfSlots:undefined;
+  const slots=savedSlots??placed.map((key,index)=>index);
+  if(!Array.isArray(slots)||slots.length!==placed.length||new Set(slots).size!==slots.length||
+     slots.some(slot=>!Number.isSafeInteger(slot)||slot<0||slot>=6))
+    throw Error('Invalid Collection shelf slots');
+  let shelfSlots=new Map(placed.map((key,index)=>[key,slots[index]]).filter(([key])=>archiveKeys.has(key)));
+  const availableSlot=()=>Array.from({length:Math.max(0,shelfCount-baseShelves)},(_,index)=>index)
+    .find(slot=>![...shelfSlots.values()].includes(slot));
   function restoredPin(entry){
-    const slot=placed.indexOf(pinKey(entry));
-    if(slot<0||slot+baseShelves>=shelfCount)return null;
+    const slot=shelfSlots.get(pinKey(entry));
+    if(slot===undefined||slot+baseShelves>=shelfCount)return null;
     return collection.archive.find(pin=>pin.resource===entry.resource&&pin.version===entry.version)??null;
   }
   if(!Number.isSafeInteger(table.revision)||table.revision<0||
@@ -790,7 +797,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(!collection||!inScope(req.actor,collection.room))return res.sendStatus(404);
     const session=req.holodeckSession;
     const projection=await readCollection(req.headers.cookie,collection);
-    const mayRestore=projection?.archive.length&&placed.length+baseShelves<shelfCount&&await canRestoreCollection(req.actor);
+    const mayCurate=projection?.archive.length&&await canRestoreCollection(req.actor);
     const actor=await currentActor(req,session);
     if(!inScope(actor,collection.room))return res.sendStatus(404);
     if(projection===null)return res.status(503).json({message:'La colección no está disponible en este momento.'});
@@ -799,12 +806,14 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       ...(art?.shelves?{anchor:art.shelves[project.shelf]}:{})}));
     const current=new Set(projects.flatMap(project=>project.editions.map(edition=>edition.resource+':'+edition.version)));
     const visibleArchive=projection.archive.map(withRepresentative);
-    const archive=visibleArchive.filter(edition=>!current.has(pinKey(edition))&&!placed.includes(pinKey(edition)));
+    const archive=visibleArchive.filter(edition=>!current.has(pinKey(edition))&&!shelfSlots.has(pinKey(edition)));
     const restored=visibleArchive.flatMap(edition=>{
-      const slot=placed.indexOf(pinKey(edition));
+      const slot=shelfSlots.get(pinKey(edition));
       const shelf=slot+baseShelves,anchor=art?.shelves?.[shelf];
-      if(slot<0||!anchor)return [];
-      return [{id:'restored:'+slot,shelf,anchor,restored:true,editions:[{...edition,title:edition.label}]}];
+      if(!anchor||current.has(pinKey(edition)))return [];
+      const canArchive=mayCurate&&actor.rights.includes('edit')&&!archiveUnavailable;
+      return [{id:'restored:'+slot,shelf,anchor,restored:true,...(canArchive?{canArchive}:{}),
+        editions:[{...edition,title:edition.label}]}];
     });
     const selectedEdition=table.edition&&restored.some(project=>pinKey(project.editions[0])===pinKey(table.edition));
     const currentResource=projects.some(project=>project.editions.some(edition=>edition.resource===table.resource));
@@ -812,7 +821,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       revision:table.revision,resource:currentResource?table.resource:null,
       ...(selectedEdition?table.edition:{}),canShare:!tableUnavailable&&actor.rights.includes('edit'),
     }:null;
-    const canRestore=!!(archive.length&&mayRestore&&actor.rights.includes('edit')&&!archiveUnavailable&&placed.length+baseShelves<shelfCount);
+    const canRestore=!!(archive.length&&mayCurate&&actor.rights.includes('edit')&&!archiveUnavailable&&availableSlot()!==undefined);
     res.json({room:collection.room,projects:[...projects,...restored],...(worktable?{worktable}:{}),
       ...(collection.archive&&art?.archive?{archive:{anchor:art.archive,editions:archive,...(canRestore?{canRestore}:{})}}:{})});
   }));
@@ -852,6 +861,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(!actor.rights.includes('edit'))return res.sendStatus(403);
     if(tableUnavailable)return res.sendStatus(503);
     if(input.revision!==table.revision)return res.sendStatus(409);
+    if(pin&&!restoredPin(pin))return res.sendStatus(404);
     const unchanged=pin?table.edition&&pinKey(table.edition)===pinKey(pin):!table.edition&&resource===table.resource;
     if(!unchanged){
       // Older readers see an empty table for a pinned edition and retain its
@@ -871,7 +881,9 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   app.post(route('api/space/collection/archive'),asyncRoute(async(req,res)=>{
     if(!collection?.art||!inScope(req.actor,collection.room))return res.sendStatus(404);
     const input=req.body;
-    if(!input||Object.keys(input).sort().join(',')!=='resource,version'||
+    const fields=input&&Object.keys(input).sort().join(',');
+    const rearchive=fields==='action,resource,version'&&input.action==='rearchive';
+    if((fields!=='resource,version'&&!rearchive)||
        typeof input.resource!=='string'||typeof input.version!=='string')return res.sendStatus(400);
     const pin=collection.archive?.find(item=>item.resource===input.resource&&item.version===input.version);
     if(!pin)return res.sendStatus(404);
@@ -884,16 +896,28 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(!inScope(actor,collection.room))return res.sendStatus(404);
     if(!actor.rights.includes('edit'))return res.sendStatus(403);
     if(!projection?.archive.length)return res.sendStatus(404);
-    if(projection.projects.some(project=>project.editions.some(edition=>pinKey(edition)===key)))return res.sendStatus(409);
-    if(placed.includes(key))return res.sendStatus(204);
-    if(archiveUnavailable||placed.length+baseShelves>=shelfCount)return res.sendStatus(409);
-    const next=[...placed,key];
-    try{archiveStore.save({room:collection.room,placed:next});}
+    if(archiveUnavailable)return res.sendStatus(503);
+    const next=new Map(shelfSlots);
+    if(rearchive){
+      if(!next.has(key))return res.sendStatus(204);
+      if(tableUnavailable)return res.sendStatus(503);
+      if(table.edition&&pinKey(table.edition)===key)return res.status(409).json({reason:'shared-worktable'});
+      next.delete(key);
+    }else{
+      if(projection.projects.some(project=>project.editions.some(edition=>pinKey(edition)===key)))return res.sendStatus(409);
+      if(next.has(key))return res.sendStatus(204);
+      const free=availableSlot();
+      if(free===undefined)return res.sendStatus(409);
+      next.set(key,free);
+    }
+    const nextSlots=[...next.values()];
+    const dense=nextSlots.every((slot,index)=>slot===index);
+    try{archiveStore.save({room:collection.room,placed:[...next.keys()],...(dense?{}:{shelfSlots:nextSlots})});}
     catch(error){
       if(error.commitUncertain)archiveUnavailable=true;
       return res.sendStatus(503);
     }
-    placed=next;
+    shelfSlots=next;
     invalidateCollection();
     res.sendStatus(204);
   }));

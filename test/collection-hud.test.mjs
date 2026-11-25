@@ -4,10 +4,10 @@ import {CollectionHud} from '../src/collection-hud.mjs';
 
 test('collection actions follow the displayed edition and room',()=>{
   const panel={toggleAttribute(){},hasAttribute:()=>false};
-  const state={room:'matter',entries:[{id:'model',label:'Modelo'}],
+  const state={room:'matter',entries:[{id:'model',label:'Modelo',canArchive:true}],
     archive:{id:'first',label:'Inicial',page:'1 / 2',canStep:true,canRestore:true}};
   const actions=[];
-  const owner={panel,hudCollection:()=>state,
+  const owner={panel,hudCollection:()=>state,archiveShelfEdition:id=>actions.push(['rearchive',id]),
     placeShelfEdition:id=>actions.push(['place',id]),shelfViewerPath:id=>'/view/'+id,
     archive:{panel,step:()=>{
       actions.push(['step',state.archive.id]);
@@ -20,6 +20,9 @@ test('collection actions follow the displayed edition and room',()=>{
   const shelf={scope:hud.scope,mode:'shelf',edition:'model'};
   act('place',{...shelf,edition:'other'});
   act('viewShelf',shelf);
+  act('rearchive',shelf);
+  state.entries[0].canArchive=false;
+  act('rearchive',shelf);
   act('showArchive',shelf);
   const archive={scope:hud.scope,mode:'archive',edition:'first'};
   act('next',archive);
@@ -31,5 +34,5 @@ test('collection actions follow the displayed edition and room',()=>{
   act('restore',current);
   hud.update(false);
   act('restore',current);
-  assert.deepEqual(actions,[['view','/view/model'],['step','first'],['restore','second']]);
+  assert.deepEqual(actions,[['view','/view/model'],['rearchive','model'],['step','first'],['restore','second']]);
 });

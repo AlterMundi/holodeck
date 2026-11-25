@@ -40,10 +40,14 @@ export class CollectionShelves {
     Object.assign(this,{base,scene,panel,onPlaced,webgl,loader:new GLTFLoader()});
     this.items=new Map();
     this.list=panel.querySelector('ul');
+    this.archiveStatus=panel.ownerDocument.createElement('p');
+    this.archiveStatus.setAttribute('role','status');
+    this.archiveStatus.style.cssText='margin:0; font-size:13px';
+    panel.append(this.archiveStatus);
     this.visibleLinks='';
     this.shelfEntries=[];
     this.hudShelfOptions=[];
-    const refreshSoon=()=>{this.flight?.abort();this.flight=null;this.refreshAt=0;};
+    const refreshSoon=this.refreshSoon=()=>{this.flight?.abort();this.flight=null;this.refreshAt=0;};
     this.archive=new CollectionArchive({base,scene,panel:archivePanel,loader:this.loader,
       readModel:(edition,signal)=>modelBytes(base,edition,signal),onRestored:refreshSoon});
     this.worktable=new CollectionWorktable({base,scene,panel:worktablePanel,webgl,onReference,onSharedChange:refreshSoon});
@@ -130,7 +134,7 @@ export class CollectionShelves {
       current.add(project.id);
       const existing=this.items.get(project.id),key=editionKey(edition);
       if(existing?.key===key&&existing.edition.title===edition.title){
-        existing.edition=edition;existing.editions=editions;
+        existing.project=project;existing.edition=edition;existing.editions=editions;
         continue;
       }
       if(existing)this.remove(existing);
@@ -172,13 +176,55 @@ export class CollectionShelves {
 
   hudCollection(){
     if(!this.room||!this.root)return null;
-    return {room:this.room,entries:this.hudShelfOptions,archive:this.archive.hudState()};
+    return {room:this.room,entries:this.hudShelfOptions,archive:this.archive.hudState(),
+      shelfArchive:{busy:Boolean(this.archiveRequest),problem:this.archiveProblem}};
   }
 
   placeShelfEdition(id){
     if(!this.room||!this.root)return;
     const entry=this.shelfEntries.find(item=>shelfIdentity(item)===id);
     if(entry)this.placeOnTable(entry.item,entry.edition);
+  }
+
+  async archiveShelfEdition(id){
+    const entry=this.shelfEntries.find(item=>shelfIdentity(item)===id);
+    if(!this.room||!entry?.item.project.canArchive||this.archiveRequest)return;
+    const controller=new AbortController();
+    this.archiveRequest=controller;
+    this.setArchiveStatus(id,'');
+    this.links(this.nearby);
+    try{
+      const {resource,version}=entry.edition;
+      const response=await fetch(new URL('api/space/collection/archive',this.base),{
+        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({resource,version,action:'rearchive'}),
+        signal:AbortSignal.any([controller.signal,AbortSignal.timeout(8000)]),redirect:'error',
+      });
+      if(controller.signal.aborted)return;
+      if(response.ok){
+        if(this.items.get(entry.item.project.id)===entry.item)this.remove(entry.item);
+        this.nearby=this.nearby.filter(item=>item!==entry.item);
+        this.refreshSoon();
+      }else{
+        const detail=response.status===409?await response.json().catch(()=>null):null;
+        if(controller.signal.aborted)return;
+        this.setArchiveStatus(id,detail?.reason==='shared-worktable'
+          ?'Retirá esta edición de la mesa compartida para volver a archivarla.'
+          :'No se pudo archivar la edición. Volvé a intentar.');
+        this.refreshSoon();
+      }
+    }catch{
+      if(!controller.signal.aborted){
+        this.setArchiveStatus(id,'No se pudo confirmar el archivo. Estamos actualizando la colección.');
+        this.refreshSoon();
+      }
+    }finally{
+      if(this.archiveRequest===controller){this.archiveRequest=null;this.links(this.nearby);}
+    }
+  }
+
+  setArchiveStatus(id,message){
+    this.archiveProblem=message?{id,message}:null;
+    this.archiveStatus.textContent=message;
   }
 
   shelfViewerPath(id){
@@ -202,10 +248,15 @@ export class CollectionShelves {
   links(items){
     const entries=items.flatMap(item=>item.editions.map(edition=>({item,edition})));
     this.shelfEntries=entries;
-    const signature=JSON.stringify(entries.map(({item,edition})=>[item.project.id,edition.resource,edition.version,edition.title]));
+    if(this.archiveProblem&&!entries.some(entry=>shelfIdentity(entry)===this.archiveProblem.id&&entry.item.project.canArchive))
+      this.setArchiveStatus(null,'');
+    for(const control of this.list.querySelectorAll('[data-rearchive]'))
+      control.setAttribute('aria-disabled',String(Boolean(this.archiveRequest)));
+    const signature=JSON.stringify(entries.map(entry=>[shelfIdentity(entry),entry.edition.title,entry.item.project.canArchive===true]));
     if(signature===this.visibleLinks)return;
+    const hadFocus=this.list.contains(this.list.ownerDocument.activeElement);
     this.visibleLinks=signature;
-    this.hudShelfOptions=entries.map(entry=>({id:shelfIdentity(entry),label:entry.edition.title}));
+    this.hudShelfOptions=entries.map(entry=>({id:shelfIdentity(entry),label:entry.edition.title,canArchive:entry.item.project.canArchive===true}));
     const doc=this.panel.ownerDocument;
     this.list.replaceChildren(...entries.map(({item,edition})=>{
       const row=doc.createElement('li'),link=doc.createElement('a'),button=doc.createElement('button');
@@ -219,9 +270,18 @@ export class CollectionShelves {
         if(current)this.placeOnTable(item,current);
       };
       row.append(link,button);
+      if(item.project.canArchive){
+        const archive=doc.createElement('button');
+        archive.type='button';archive.textContent='Volver a la vitrina';
+        archive.setAttribute('data-rearchive','');
+        archive.setAttribute('aria-disabled',String(Boolean(this.archiveRequest)));
+        archive.onclick=()=>void this.archiveShelfEdition(shelfIdentity({item,edition}));
+        row.append(archive);
+      }
       return row;
     }));
     this.panel.hidden=entries.length===0;
+    if(hadFocus)(this.list.querySelector('a')??this.panel.ownerDocument.querySelector('#game-canvas'))?.focus({preventScroll:true});
   }
 
   removeMesh(item){
@@ -244,6 +304,7 @@ export class CollectionShelves {
     this.clearShadows();
     this.events?.close();this.events=null;
     this.flight?.abort();this.flight=null;
+    this.archiveRequest?.abort();this.archiveRequest=null;this.setArchiveStatus(null,'');
     for(const item of this.items.values())this.remove(item);
     this.nearby=[];this.links([]);this.archive.clear();this.worktable.clear();
     this.room=null;this.root=null;this.refreshAt=0;

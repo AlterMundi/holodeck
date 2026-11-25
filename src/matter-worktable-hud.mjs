@@ -404,7 +404,7 @@ export class MatterWorktableHud{
     if(this[key]?.group===group&&this[key].signature===signature)return;
     placeHudInViewport(group,this.camera,{...viewport,x,y,pixelsPerUnit:scale,depth:1});
     this.hud.setTextDensity(group.name,{cssPixelsPerUnit:Math.round(scale),pixelRatio,
-      fontSize:13});
+      fontSize:15});
     this[key]={group,signature,x,y,scale};
     this.layer.invalidate();
   }

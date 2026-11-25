@@ -16,12 +16,13 @@ const components=[
   row('tabs',['showShelf','showArchive'],{visible:path('both')}),
   button('showShelf','Repisa',{pressed:path('shelfOpen')}),
   button('showArchive','Archivo',{pressed:path('archiveOpen')}),
-  column('shelf',['editionChoice','shelfActions'],'shelfOpen'),
+  column('shelf',['editionChoice','shelfActions','rearchive'],'shelfOpen'),
   {id:'editionChoice',component:'HudChoice',label:'Edición',options:path('editions'),value:path('edition'),
     draft:path('editionDraft'),action:action('editionChoice',{edition:path('editionDraft')})},
   row('shelfActions',['place','viewShelf']),
   button('place','A la mesa',{action:action('place',activeEdition)}),
   button('viewShelf','Abrir en Visor 3D',{action:action('viewShelf',activeEdition)}),
+  button('rearchive','Volver a la vitrina',{visible:path('canArchive'),pressed:path('archiving'),action:action('rearchive',activeEdition)}),
   column('archive',['archiveName','browse','viewArchive','restore'],'archiveOpen'),
   text('archiveName',path('archiveName')),
   row('browse',['previous','page','next']),
@@ -69,11 +70,14 @@ export class CollectionHud{
       this.send('createSurface',{catalogId:spatialHudCatalog.id},collectionHudId);
       this.send('updateComponents',{components},collectionHudId);
     }
-    const status=this.viewerProblem||(archiveOpen?state.archive.status:'');
-    const value={scope:this.scope,mode:this.mode,edition,editions:state.entries,
+    const problem=state.shelfArchive?.problem;
+    const shelfStatus=state.shelfArchive?.busy?'Archivando…':problem?.id===edition?problem.message:'';
+    const status=this.viewerProblem||((archiveOpen?state.archive.status:shelfStatus)??'');
+    const value={scope:this.scope,mode:this.mode,edition,editions:state.entries.map(({id,label})=>({id,label})),
       title:archiveOpen?'Vitrina de archivo':'En esta repisa',both,shelfOpen:!archiveOpen,archiveOpen,
       archiveName:state.archive?.label??'',page:state.archive?.page??'',stepDisabled:!state.archive?.canStep,
-      canRestore:state.archive?.canRestore??false,busy:state.archive?.busy??false,
+      canArchive:state.entries.some(entry=>entry.id===this.edition&&entry.canArchive),
+      archiving:state.shelfArchive?.busy??false,canRestore:state.archive?.canRestore??false,busy:state.archive?.busy??false,
       status,hasStatus:Boolean(status)};
     const signature=JSON.stringify(value);
     if(signature!==this.signature){
@@ -81,6 +85,7 @@ export class CollectionHud{
       this.signature=signature;
       this.send('updateDataModel',{value},collectionHudId);
       const disabled=previous==='restore'&&(!value.canRestore||value.busy)||
+        (previous==='rearchive'&&!value.canArchive)||
         (previous==='previous'||previous==='next')&&value.stepDisabled||
         (previous==='showShelf'||previous==='showArchive')&&!both;
       if(disabled||focus&&!this.focusControl(focus))this.focusControl(archiveOpen?'viewArchive':'viewShelf');
@@ -99,6 +104,8 @@ export class CollectionHud{
     else if(this.mode==='shelf'){
       if(name==='editionChoice'&&entries.some(entry=>entry.id===context.edition))this.edition=context.edition;
       else if(context.edition===this.edition){
+        if(name==='rearchive'&&!state.shelfArchive?.busy&&entries.some(entry=>entry.id===context.edition&&entry.canArchive))
+          void this.owner.archiveShelfEdition(context.edition);
         if(name==='place')this.owner.placeShelfEdition(context.edition);
         if(name==='viewShelf')this.view(this.owner.shelfViewerPath(context.edition));
       }

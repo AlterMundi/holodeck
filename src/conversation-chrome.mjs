@@ -93,8 +93,8 @@ export class ConversationChrome{
     if(this.layout!==layout){
       this.layout=layout;
       const children=['head'];
-      const entries=[row('head',['heading','minimize']),label('heading','Conversar',{weight:1.75}),
-        button('minimize','Minimizar')];
+      const entries=[row('head',['heading','minimize']),label('heading','Conversar',{weight:4,style:'title'}),
+        button('minimize','Minimizar conversación',{icon:'minimize',weight:1})];
       if(topics){
         children.push('topics');
         entries.push(row('topics',['previous','topic','next']),
@@ -119,7 +119,7 @@ export class ConversationChrome{
       this.receive(header,'updateComponents',{components:[panelRoot((rect.width-42)/scale,children),...entries]});
       if(!this.groups.has(grip)){
         this.receive(grip,'createSurface',{catalogId:spatialHudCatalog.id});
-        this.receive(grip,'updateComponents',{components:[panelRoot(.5,['size']),label('size','Tamaño')]});
+        this.receive(grip,'updateComponents',{components:[panelRoot(.5,['size']),label('size','Cambiar tamaño',{icon:'resize'})]});
       }
       this.panel.style.setProperty('--conversation-header-height',Math.ceil((children.length*.18+(children.length-1)*.015)*scale)+'px');
     }
@@ -141,7 +141,7 @@ export class ConversationChrome{
       this.placement=placement;
       const within={width:viewport.width,height:viewport.height,pixelsPerUnit:scale,depth:1};
       for(const [id,x,y] of [[header,rect.left+rect.width/2,rect.top+11],
-        [grip,rect.right-91,rect.bottom-60]]){
+        [grip,rect.right-43,rect.bottom-52]]){
         const group=this.groups.get(id);
         if(!group)continue;
         placeHudInViewport(group,this.camera,{...within,x:x-viewport.left,y:y-viewport.top});
@@ -149,7 +149,7 @@ export class ConversationChrome{
         // mesh thickness in scene units so it stays between the clip planes.
         group.matrix.scale(depthScale);
         group.matrixWorldNeedsUpdate=true;
-        this.hud.setTextDensity(id,{cssPixelsPerUnit:scale,pixelRatio:dpr,fontSize:13});
+        this.hud.setTextDensity(id,{cssPixelsPerUnit:scale,pixelRatio:dpr,fontSize:15});
       }
       this.invalidate();
     }
