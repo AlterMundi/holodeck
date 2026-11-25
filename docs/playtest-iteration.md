@@ -218,3 +218,25 @@ WebGL overlay context loss released legacy suppression and the bearing was
 then redrawn and dismissed through the world canvas. This test lost the
 overlay context only. The source suite passed 312 tests, with two skips.
 Live remains `f46d93f436be`.
+
+## Physical doorway prompt
+
+The live-world HUD uses the existing proximity-scoped passage controller
+for its doorway button and the E shortcut. Door offers carry the current
+space and a distinct revision. The owner checks that offer again after the
+visit gate and requests the same native passage API as the browser fallback.
+The touch button sits above the joystick and jump zones.
+
+Two Opus 5.5 High reviews identified window and input races. The corrections
+recheck open overlays before travel, transfer focus when the HUD returns to
+the fallback, and reject a press if the offered door changed. In the native
+HUD, creating a new control for a new offer also invalidates the in-flight
+pointer target. The qualification checks captured the server's exact move
+responses for Matter → exterior by mesh and exterior → Matter by E.
+
+Archive `f722fd13a1eb` at `6d12af3` is 33,464,320 bytes. Exact-package
+Chromium confirmed the request and resulting room in both directions.
+Desktop used mouse and E in both normal and lightweight graphics. The
+touchscreen fixture crossed both directions by tap in lightweight. The
+suite passed 313 tests with two skips, including stale proximity, overlay,
+held Space and stale pointer regressions. Live remains `f46d93f436be`.
