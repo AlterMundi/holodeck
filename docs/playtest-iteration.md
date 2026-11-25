@@ -55,8 +55,11 @@ Chromium because source assertions alone cannot prove linking.
 The corrected archive `115bb0bf6617` is 33,536,000 bytes. In a first
 same-buffer normal-mode SwiftShader sweep, baseline and candidate both
 measured 350 ms frame p95 at 268,620 pixels and 38 median draw calls.
-Software timer-query p95 was 224.8 versus 245.9 ms, so there is no measured
-performance gain. Use an actual hardware adapter and a matched run before
+Software timer-query p95 was 224.8 versus 245.9 ms. Lightweight at the same
+buffer measured 250.0 versus 266.7 ms frame p95 and 142.8 versus 159.2 ms
+software timer-query p95. Both lightweight medians were 133.3 ms.
+There is no measured performance gain. Use an actual hardware adapter
+and a matched run before
 promoting this material correction. ITACA exposes SwiftShader and no DRM
 graphics device. The comparison therefore records the browser renderer,
 WebGL identity, device and render pixel ratios, drawing-buffer area and
