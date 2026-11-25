@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {Group,Vector3} from 'three';
+import {ToroidalWoodland,woodlandTrees} from '../src/toroidal-woodland.mjs';
 import {
   TOROIDAL_TERRAIN, TOROIDAL_PARCEL_Y, TOROIDAL_OVERLOOK, TERRAIN_EDGES, buildTerrainTile, selectTerrainTiles,
-  terrainColor, terrainCoordinates, terrainElevation, terrainFrame, terrainPosition, terrainTile, terrainTrail, toroidalParcelPoint,
+  terrainColor, terrainCoordinates, terrainElevation, terrainFrame, terrainMeadowMoisture, terrainPosition, terrainTile, terrainTrail, terrainWoodland, toroidalParcelPoint,
 } from '../src/toroidal-terrain.mjs';
 
 const near = (a, b, tolerance = 1e-8) => assert.ok(Math.abs(a - b) < tolerance, `${a} ≠ ${b}`);
@@ -25,6 +27,18 @@ test('toroidal coordinates close in both directions and gravity points to the sl
   }
   assert.equal(terrainElevation(0, 0), terrainElevation(1, -2));
   assert.notEqual(terrainElevation(.245, .007), terrainElevation(.245, .007, {...TOROIDAL_TERRAIN, seed: 1}));
+});
+
+test('meadow moisture wraps with the torus and distinguishes sheltered green from dry straw', () => {
+  const dry=[.005,.255], sheltered=[.006,.293];
+  const dryMoisture=terrainMeadowMoisture(...dry,17);
+  const shelteredMoisture=terrainMeadowMoisture(...sheltered,17);
+  assert.ok(dryMoisture<.25&&shelteredMoisture>.70);
+  near(terrainMeadowMoisture(dry[0]+1,dry[1]-1,17),dryMoisture);
+  near(terrainMeadowMoisture(sheltered[0]-1,sheltered[1]+1,17),shelteredMoisture);
+  const [dryRed,dryGreen]=terrainColor(...dry,17,.01);
+  const [wetRed,wetGreen]=terrainColor(...sheltered,17,.01);
+  assert.ok(dryRed>dryGreen&&wetGreen>wetRed&&dryRed>1.4*wetRed);
 });
 
 test('the parcel and its portals share a level strip of analytic ground', () => {
@@ -129,4 +143,40 @@ test('wayfinding forms a periodic loop and rises to the inner lookout', () => {
   assert.ok(terrainElevation(u,v)>40);
   assert.deepEqual(terrainColor(0,.25,18,0),terrainColor(1,.25,18,0));
   assert.notDeepEqual(terrainColor(.7,.23,5,0),terrainColor(.7,.23,5,.45));
+});
+
+test('woodland roots are deterministic and agree with the periodic terrain field', () => {
+  const trees=woodlandTrees();
+  assert.deepEqual(trees,woodlandTrees());
+  assert.ok(trees.length>400&&trees.length<1000);
+  assert.equal(new Set(trees.map(tree=>tree.u+':'+tree.v)).size,trees.length);
+  for(const {u,v,h} of trees){
+    near(h,terrainElevation(u,v));
+    assert.ok(terrainTrail(u,v)<.026);
+    assert.ok(terrainWoodland(u,v,h)>=.16);
+    near(terrainWoodland(u,v,h),terrainWoodland(u+1,v-1,h));
+  }
+  assert.equal(terrainWoodland(0,.25,18),0);
+});
+
+test('woodland representation changes preserve roots and release nearby trunk collision', () => {
+  const scene=new Group(),active=new Set();
+  const woodland=new ToroidalWoodland(scene,{
+    addCollider:mesh=>active.add(mesh),
+    removeCollider:mesh=>assert.ok(active.delete(mesh)),
+  },()=>{},null);
+  const root=woodlandTrees().find(tree=>tree.x>70&&tree.z>25);
+  const position=new Vector3().fromArray(terrainPosition(root.u,root.v,root.h));
+  woodland.update(position,false);
+  const nearCount=woodland.meshes[2].count;
+  const total=woodland.meshes.reduce((count,mesh)=>count+mesh.count,0);
+  const collision=Array.from(active);
+  assert.ok(nearCount>0&&collision.length>0);
+  woodland.update(position,true);
+  assert.ok(woodland.meshes[2].count<nearCount);
+  assert.equal(woodland.meshes.reduce((count,mesh)=>count+mesh.count,0),total);
+  assert.deepEqual(Array.from(active),collision);
+  woodland.dispose();
+  assert.equal(scene.children.length,0);
+  assert.equal(active.size,0);
 });

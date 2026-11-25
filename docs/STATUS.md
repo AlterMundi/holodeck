@@ -372,6 +372,19 @@ installed release `1c78c31a2b82`. Reciprocal studio doors resolved. The room
 rule admitted one configured human guest and the house owner's daimon
 identity. The copy omitted Home sign-in. The protected release still needs
 selection of the candidate and a two-session receiving trial.
+## November 25 dry ridges and sheltered meadow
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `49c78e382a09`
+from `e93d8a0`. One periodic moisture field gives the ground and grass
+the same dry or sheltered character across the torus. Terrain elevation,
+shore and trail rules, and the authored banks retain their existing paths.
+
+Matched daylight cameras at arrival, a dry ridge and a sheltered fold
+held stationary p95 at 16.7–16.8 ms before and after on RTX 2060 Normal
+and Raspberry Pi 5 Livianos. The suite passed 412 tests with two
+skips. Receiving matched 86 files and preserved permissions, configuration
+and world sequence 433. Immediate rollback is `9bfd9248797b`.
+
 ## November 25 world labels and E at Harmonic Lab worktops
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `9bfd9248797b`

@@ -1,4 +1,5 @@
 import {approachCoordinates,Sand3DTrail} from './sand3d-trail.mjs';
+import {ToroidalWoodland} from './toroidal-woodland.mjs';
 import {ToroidalOverlook} from './toroidal-overlook.mjs';
 import {ToroidalMeadowBanks} from './toroidal-meadow-banks.mjs';
 import {
@@ -8,7 +9,7 @@ import {
 import {CAVE} from './toroidal-cave.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
 import {
-  overlookCoordinates, TOROIDAL_TERRAIN, terrainCoordinates, terrainElevation, terrainPosition, terrainTile, terrainTrail,
+  overlookCoordinates, TOROIDAL_TERRAIN, terrainCoordinates, terrainElevation, terrainMeadowMoisture, terrainPosition, terrainTile, terrainTrail, terrainWoodland,
 } from './toroidal-terrain.mjs';
 
 const LEVEL=7;
@@ -21,7 +22,14 @@ const FIELD_NEAR=2;
 const FIELD_LIMIT=(2*FIELD_RANGE+1)**2*FIELD_DENSITY;
 const INSTANCE_LIMIT=(2*RANGE+1)**2*CANDIDATES;
 const GRASSES=[0x72874b,0x809154,0x667d48,0x99a35e,0xbaaa65];
+const FRESH_GRASS=[0x536f41,0x608445,0x426440,0x75964a];
+const DRY_GRASS=[0x868041,0xa39a53,0x72763c,0xb3a35d];
 const STONES=[0x74664f,0x7d7d70,0x8b7860,0x66635c,0x9f8a73];
+
+function grassColor(moisture,tint){
+  const palette=moisture>.58?FRESH_GRASS:moisture<.45?DRY_GRASS:GRASSES;
+  return palette[Math.floor(tint*palette.length)];
+}
 const overlookStart=overlookCoordinates(-4.1,-8);
 const overlookEnd=overlookCoordinates(4.1,7.4);
 
@@ -46,11 +54,12 @@ export function sceneryForCell(cell,count=CANDIDATES) {
       (v-.25)*TOROIDAL_TERRAIN.tubeRadius);
     if(distanceFromHouse<5.4)continue;
     if(u>CAVE.from-.00025&&u<CAVE.to+.00025&&Math.abs(v-CAVE.latitude)<.0029)continue;
-    const stony=h>37||h<TOROIDAL_TERRAIN.waterLevel+2.5||pick(7)<.26;
+    const moisture=terrainMeadowMoisture(u,v,h);
+    const stony=h>37||h<TOROIDAL_TERRAIN.waterLevel+2.5||pick(7)<.16+(1-moisture)*.17;
     const size=stony?.20+pick(53)**1.7*.79:.25+pick(53)**1.4*.41;
-    const palette=stony?STONES:GRASSES;
+    const tint=pick(97);
     instances.push({kind:stony?'stone':'grass',u,v,h,size,yaw:pick(29)*Math.PI*2,
-      color:palette[Math.floor(pick(97)*palette.length)]});
+      color:stony?STONES[Math.floor(tint*STONES.length)]:grassColor(moisture,tint)});
   }
   return instances;
 }
@@ -79,13 +88,12 @@ function meadowCell(cell,index,door){
   if(h<TOROIDAL_TERRAIN.waterLevel+1.4||h>51)return null;
   const fold=349*TAU*u+188*TAU*v+1.3*Math.sin(54*TAU*u-93*TAU*v);
   const pocket=287*TAU*u-420*TAU*v+.9*Math.sin(76*TAU*u+58*TAU*v);
-  const growth=.56+.21*Math.sin(fold)+.17*Math.sin(pocket);
+  const moisture=terrainMeadowMoisture(u,v,h);
+  const growth=(.47+moisture*.19+.21*Math.sin(fold)+.17*Math.sin(pocket))*(1-.40*terrainWoodland(u,v,h));
   if(pick(229)>growth)return null;
   const vigor=pick(421)**1.6;
-  const tint=pick(499);
-  const paletteIndex=growth>.66&&tint<.66?4:Math.floor(tint*4);
   return {u,v,h,yaw:pick(321)*TAU,size:.30+vigor*.51+growth*.14,
-    color:GRASSES[paletteIndex]};
+    color:grassColor(moisture,pick(499))};
 }
 
 function meadowWind(material,clock,motion){
@@ -266,6 +274,7 @@ export class ToroidalScenery {
     this.daylight={value:1};
     this.detail=base?new Sand3DTrail(scene,base,approach,useSceneryDaylight,this.daylight):null;
     this.meadow=new ToroidalMeadowBanks(scene,useSceneryDaylight,this.daylight);
+    this.woodland=new ToroidalWoodland(scene,colliders,useSceneryDaylight,this.daylight);
     this.overlook=new ToroidalOverlook(scene,colliders);
     this.ribbonGrass.name='Trail-side tufts';
     this.blooms.name='Trail-edge wildflowers';
@@ -300,6 +309,7 @@ export class ToroidalScenery {
     this.overlook.update(position);
     // Authored landmarks and their colliders are independent of ground cover.
     if(!groundCoverReady)return;
+    this.woodland.update(position,lightweight);
     this.detail?.update(position,lightweight,door);
     const {u,v}=terrainCoordinates([position.x,position.y,position.z]);
     if(![u,v].every(Number.isFinite))return;
@@ -410,6 +420,7 @@ export class ToroidalScenery {
   dispose() {
     this.detail?.dispose();
     this.meadow.dispose();
+    this.woodland.dispose();
     for(const geometry of this.fieldGeometry)geometry.dispose();
     this.field.material.dispose();
     this.field.dispose();
