@@ -440,6 +440,38 @@ staged rail and video controls available for their remaining qualification. Futu
 iterations can extend material fidelity and close the physical lightweight
 device gaps using the same comparison route.
 
+## Art-direction review of the Legion concepts
+
+The ten visual references show a readable grassland with a warm path to the
+house, an industrial door with integrated signage, a luminous portal, lit
+shelves, a glass instrument panel, and distinct idle and active worktable
+states. Use the unobstructed outdoor composition as the exploration target.
+Preserve the torus silhouette, solar cycle and existing navigable geometry.
+The concepts with combat bars and companion orders illustrate composition
+for a later game mechanic. Current HUD slots show existing abilities,
+navigation, conversation or confirmed activity.
+
+| Surface | Proposed implementation and verification |
+| --- | --- |
+| Passage | Use the existing accepted-move status for a small Three.js portal with nested lit edges and a sparse particle field. Keep retry readable, a still reduced-motion treatment and the existing pre-WebGL fallback. Fullscreen remains a player action. |
+| HUD and map | Prototype dark smoked glass within the chamfered Puente framing, with Margen's quieter labels and whitespace. Give long text and selectors a stable higher-contrast backing. Use real terrain data to derive contours and paths, preserve destination bindings and scale the chrome for touch. Reuse the A2UI controls and the canonical embedded conversation. |
+| Table, exhibits and doorway | Give inactive exhibits and the doorway their own practical lights, bevels and readable signs. Use a restrained local cyan bounce at active table entry, with independent human and companion shape, a clear focus on the inspected physical part and verified original material color. Use short emission accents for state changes. |
+| Exterior and avatars | Qualify organic texture variation and selected instanced plants along the existing path with the Sand3D comparison. Add foliage detail by distance and measured coverage. Keep the real house identity and navigation. Give the robot a glazed ceramic shell, dark joints, quiet luminous visor and textured fabric. Use material contrast and silhouettes before increasing the human avatar mesh budget. |
+| Frame budget | Use baked bounce, local contact shadows and authored material/roughness variation first. Isolate bloom to intended emitters. Qualify dynamic contact, reflections, global post-processing and volumetrics separately on a hardware adapter at matched views and input. Keep the lightweight path usable, the applied graphics profile visible in evidence, and the HUD crisp above the scene. |
+
+Fable High reinforced a consistent light language. Use cyan for active
+tools and gold for passages or selected destinations. Prefer selective
+emissive halos and existing baked contact detail to full-screen passes.
+Look at the route at dawn, noon and dusk, with the same camera for both
+builds and the terrain wrap checked on the map. Portal animation describes
+actual passage state. A loading ring can be indeterminate while a fraction
+requires a measured source.
+
+Compare the same outside path, working table, map and open Conversation
+on the existing build. Final preset selection covers a dark and a light
+variant of the chosen visual language. Private reference images are
+comparison input and stay outside the packaged assets.
+
 ## Live work and conversations in the world
 
 See [Live work in shared spaces](architecture.md#live-work-in-shared-spaces).
