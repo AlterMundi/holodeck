@@ -13,7 +13,8 @@ A separate wall between the camera and the object suppresses the prompt.
 RTX 2060 and Pi 5 controlled browser trials hit all four foyer collider
 planes, stopped the avatar short of the north wall, opened all four
 Harmonic Lab consoles with E, and returned to the foyer from the Lab
-and Materializer. The unit tests cover occlusion and exact leader
+and Materializer. Both devices also opened Character Studio from the
+foyer and returned through its own link. The unit tests cover occlusion and exact leader
 endpoints. The suite passed 415 checks with two skips. Receiving
 verified all 86 files, the same access and continuing world run
 through sequences 436–438. Immediate rollback is `0981468421fe`.
