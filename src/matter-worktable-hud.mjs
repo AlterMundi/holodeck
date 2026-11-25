@@ -51,14 +51,17 @@ function opticalRole(surface,id,component){
 }
 const toolIcons={map:'map',talk:'conversation',appearance:'appearance',video:'video',activity:'activity'};
 const compactToolPixels={map:110,talk:116,appearance:122,video:82,activity:110};
-const pixelsForTool=(id,compact)=>compact?(compactToolPixels[id]??toolPixels[id]):toolPixels[id];
+function pixelsForTool(id,{compact,iconOnly}){
+  if(iconOnly&&Object.hasOwn(toolIcons,id))return 48;
+  return compact?(compactToolPixels[id]??toolPixels[id]):toolPixels[id];
+}
 
-function layoutTools(tools,maxWidth,compact){
+function layoutTools(tools,maxWidth,appearance){
   const gap=toolGap*toolScale;
   const rows=[];
   for(const id of toolNames.filter(name=>tools[name]?.visible)){
     let row=rows.at(-1);
-    const pixels=pixelsForTool(id,compact);
+    const pixels=pixelsForTool(id,appearance);
     if(!row||row.width+gap+pixels>maxWidth){
       row={ids:[],width:0};
       rows.push(row);
@@ -67,10 +70,11 @@ function layoutTools(tools,maxWidth,compact){
     row.ids.push(id);
   }
   const width=Math.min(maxWidth,Math.max(150,...rows.map(item=>item.width)))/toolScale;
-  return {width,rows,compact,height:rows.length*toolRowHeight+Math.max(0,rows.length-1)*toolGap};
+  return {width,rows,...appearance,height:rows.length*toolRowHeight+Math.max(0,rows.length-1)*toolGap};
 }
 
-function toolComponents({width,rows,compact}){
+function toolComponents(layout){
+  const {width,rows}=layout;
   const rowIds=rows.map((_,index)=>'toolRow'+index);
   return [
     {id:'root',component:'HudPanel',label:'Herramientas de Holodeck',width,gap:toolGap,children:rowIds},
@@ -78,7 +82,7 @@ function toolComponents({width,rows,compact}){
       row(rowIds[index],ids,{gap:toolGap}),
       ...ids.map(id=>button(id,path(id+'Label'),{
         disabled:path(id+'Disabled'),...(['map','talk','appearance','video'].includes(id)?{pressed:path(id+'Pressed')}:{}),
-        weight:pixelsForTool(id,compact)/66,...(toolIcons[id]?{icon:toolIcons[id]}:{}),
+        weight:pixelsForTool(id,layout)/66,...(toolIcons[id]?{icon:toolIcons[id]}:{}),
       })),
     ]),
   ];
@@ -200,6 +204,7 @@ export class MatterWorktableHud{
         this.canvas.clientWidth>=330&&this.canvas.clientHeight>=320)});
     this.lookPreview=new HudLookPreview({document,parent:this.scene,invalidate:this.layer.invalidate});
     this.hud=createSpatialHud({parent:this.scene,document,accessibilityRoot:this.a11y,controlStyle:'optical',controlRole:opticalRole,
+      controlIconOnly:(surface,id)=>surface===toolbeltId&&this.toolLayout?.iconOnly===true&&Object.hasOwn(toolIcons,id),
       placeSurface:(group,id)=>{
         if(id===toolbeltId)this.toolGroup=group;
         else if(id===worldMapId)this.map.group=group;
@@ -432,7 +437,9 @@ export class MatterWorktableHud{
     const maxWidth=available*toolScale/scale-toolPadding*toolScale;
     this.document.body.toggleAttribute('data-native-settings-available',maxWidth>=150);
     if(maxWidth<150)return;
-    const layout=layoutTools(tools,Math.min(this.lookPreview.stylesDock?720:670,maxWidth),compact);
+    const touch=this.document.defaultView.navigator.maxTouchPoints>0;
+    const iconOnly=touch&&(compact||this.canvas.clientWidth<=600||Number.isFinite(sideEdge));
+    const layout=layoutTools(tools,Math.min(this.lookPreview.stylesDock?720:670,maxWidth),{compact,iconOnly});
     if(!this.toolGroup)this.send('createSurface',{catalogId:spatialHudCatalog.id},toolbeltId);
     const layoutKey=JSON.stringify(layout);
     if(this.toolLayoutKey!==layoutKey){
@@ -603,14 +610,14 @@ export class MatterWorktableHud{
 
   toolBounds(name){
     if(!this.toolGroup||this.toolPlacement?.group!==this.toolGroup)return null;
-    const {rows,width,compact}=this.toolLayout;
+    const {rows,width}=this.toolLayout;
     const rowIndex=rows.findIndex(({ids})=>ids.includes(name));
     if(rowIndex<0)return null;
     const {ids}=rows[rowIndex],index=ids.indexOf(name);
     const {x,y,scale}=this.toolPlacement;
     const available=width-toolGap*(ids.length-1);
-    const total=ids.reduce((sum,id)=>sum+pixelsForTool(id,compact),0);
-    const widthFor=id=>available*pixelsForTool(id,compact)/total;
+    const total=ids.reduce((sum,id)=>sum+pixelsForTool(id,this.toolLayout),0);
+    const widthFor=id=>available*pixelsForTool(id,this.toolLayout)/total;
     const xOffset=ids.slice(0,index).reduce((sum,id)=>sum+widthFor(id)+toolGap,-width/2);
     const viewport=this.canvas.getBoundingClientRect();
     const localTop=-rowIndex*(toolRowHeight+toolGap);
