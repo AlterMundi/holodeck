@@ -747,10 +747,18 @@ session storage were preserved; served Apps metadata is retained but hidden.
 
 ## Recovery
 
+The [packaged Sand3D verge](STATUS.md#november-25-sand3d-verge)
+`38a43c533c2e` changes the browser bundle and static art route and adds
+three optional compressed models plus their attribution. Restore
+`7a466b1ca447` for immediate code-only rollback or `41508709635f` for
+older published recovery. No checkpoint migration is needed. The publisher
+retired `0425dd6d7c67` after checking its exact retained local archive.
+The three published archives total 100,454,400 bytes.
+
 The [concurrent Conversation input release](STATUS.md#november-25-world-controls-alongside-conversation)
-`7a466b1ca447` changes the browser entry styles and client bundle. Restore
-`41508709635f` for immediate code-only rollback or `0425dd6d7c67` for
-older published recovery. Preserve the live room, existing access and
+`7a466b1ca447` changed the browser entry styles and client bundle. Its prior recovery record selected
+`41508709635f` for immediate code-only rollback and `0425dd6d7c67` as
+the older published recovery at that time. Preserve the live room, existing access and
 canonical Conversation. The older `8260b7fcf577` publication was retired
 after checking its exact local archive. The three published archives
 total 100,352,000 bytes.

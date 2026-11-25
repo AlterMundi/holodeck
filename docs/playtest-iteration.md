@@ -1738,3 +1738,50 @@ The exact same package passed the two-browser tabletop sequence with
 matching scale and translucency, bounded flight, reload and exact return.
 These were controlled Chromium runs with software rendering and fixture
 identities. The protected service now selects this package. See the [receiving evidence](STATUS.md#november-25-viewer-themes-and-shared-avatar-poses).
+
+
+## Packaged Sand3D verge on the flagstone approach
+
+Source `46dc397` adds irregular groups of pumice, fern and feather reed
+grass beside the existing flagstones and the actual house entrance.
+There are 14 instances, 12,916 triangles and three batches. The existing
+terrain and door approach keep their collision geometry. Normal downloads
+the three models after the world is ready and only within 42 m of the
+approach with an admitted door. The group hides past 56 m. Livianos
+uses the existing ground cover and sends no Sand3D requests. A failed
+request leaves that cover usable.
+
+Exact protected archive candidate `38a43c533c2e` weighs 33,546,240 bytes
+with 84 payloads. The three Brotli models total 84,010 bytes. Their
+decoded bytes are verified before GLB parsing. The archive records
+the [Sand3D dataset attribution](https://huggingface.co/datasets/Sandflow/sand3d-nature)
+and its CC BY 4.0 license. Apart from the four new files, only the browser
+bundle and the static art route changed in the exact inventory. The
+clean source passed 365 tests with two optional skips. The Fable High
+plan and the Opus 5.5 High code review covered load timing, distance,
+fallback, attribution and the package limit.
+
+The exact candidate and preceding selected archive use the same daylight
+entry view on the Legion RTX 2060. At the same fixed daytime spawn, each
+had a 16.7 ms median and p95 in one short browser frame interval sample.
+The candidate drew the groups by day and at dusk. The three byte-verified
+downloads returned Brotli in Normal only after the entry screen closed.
+The client kept the original cover when the model requests were aborted.
+A controlled Normal visitor walked the path, entered Matter through the
+original door and returned to the same entrance with a distinct heading.
+The new groups break up the immediate verge, while screenshots still
+show broad regions of flat distant terrain.
+
+On a Raspberry Pi 5 with V3D 7.1.7.0, the exact candidate walked into Matter
+and returned at dusk in Livianos, with no requests for the three models.
+The matched stationary lightweight samples measured 16.7 ms median on
+both archives and 16.8 → 16.7 ms p95. These are brief device screens
+using controlled fixture identities. The fixture's intentionally unavailable
+collection source does not exercise a participant's authorized exhibits.
+
+The service selected `38a43c533c2e` with `7a466b1ca447` as immediate
+rollback. The installed hashes, protected GLB representations, attribution,
+client, health, avatar assets and terrain worker matched the archive. The
+App and audience matched, the same native run stayed at sequence 403 with
+30 entities and four nodes, and the technical reader was revoked.
+Independent authenticated participant acceptance remains open.

@@ -565,9 +565,11 @@ assets. The exact candidate passed the controlled lightweight route
 and frame screen on a Raspberry Pi 5. The [short landscape HUD candidate](playtest-iteration.md#short-landscape-entrance-and-dock)
 addresses the prompt and dock overlap in #16 and is
 [selected in the protected service](STATUS.md#november-25-oriented-arrival-and-compact-hud).
-A later Sand3D integration
-still needs its own exact packed-size and device checks. The real shared
-workshop visit remains open.
+The [packaged Sand3D verge](playtest-iteration.md#packaged-sand3d-verge-on-the-flagstone-approach)
+is selected for the near approach in Normal. The exact device screens
+covered the running game, route clearance and zero model fetches
+in Livianos on Raspberry Pi 5. Distant terrain and the independent shared
+workshop visit remain open.
 
 Compare the same outside path, working table, map and open Conversation
 on the existing build. Final preset selection covers a dark and a light

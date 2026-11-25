@@ -1,9 +1,24 @@
 # Current MVP work
 
+## November 25 Sand3D verge
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `38a43c533c2e` from `46dc397`. Low groups of grass, ferns and
+pumice follow the sides of the existing flagstones. Normal loads the
+models near the authorized house after world entry. Livianos keeps the
+existing ground cover without those downloads.
+
+[Packaged verge evidence](playtest-iteration.md#packaged-sand3d-verge-on-the-flagstone-approach)
+covers the approach, Matter entry and return on Legion's RTX 2060 and
+on a Raspberry Pi 5 in Livianos. The 84 installed payloads matched,
+protected HTTPS served the exact new assets, and the App audience and
+live world run were preserved. Immediate rollback is `7a466b1ca447`.
+The real shared visit remains open.
+
 ## November 25 world controls alongside Conversation
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
-serves `7a466b1ca447` from `e9d23ce`. The same mounted Conversation can
+selected `7a466b1ca447` from `e9d23ce` for this update. The same mounted Conversation can
 stay open while using world controls. A direct world click returns keyboard
 focus to the scene. In flight, minimizing from the panel also returns it.
 On touch with enough room, the existing movement controls and dock have
