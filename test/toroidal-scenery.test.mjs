@@ -134,3 +134,29 @@ test('lightweight and distant approaches do not start optional trail downloads',
   cover.dispose();
   assert.equal(scene.children.length,0);
 });
+
+test('meadow quality switches retain deterministic instances and keep the two draws bounded',()=>{
+  const scene=new Scene(),cover=new ToroidalScenery(scene);
+  const position=new Vector3().fromArray(terrainPosition(.0118,.285,43));
+  const profile=lightweight=>{
+    cover.update(position,lightweight);
+    return [cover.field,cover.fieldFar].map(mesh=>({
+      count:mesh.count,
+      capacity:mesh.instanceMatrix.count,
+      triangles:mesh.geometry.index.count/3,
+      matrices:[...mesh.instanceMatrix.array.subarray(0,16*mesh.count)],
+    }));
+  };
+  try{
+    const normal=profile(false),light=profile(true);
+    assert.ok(normal.every(mesh=>mesh.count>0&&mesh.count<=mesh.capacity));
+    assert.ok(light[1].count>0&&light[1].count<=light[1].capacity);
+    assert.equal(light[0].count,0);
+    assert.ok(light[1].count*light[1].triangles<
+      normal.reduce((sum,mesh)=>sum+mesh.count*mesh.triangles,0));
+    assert.deepEqual(profile(false),normal);
+    assert.deepEqual(profile(true),light);
+  }finally{
+    cover.dispose();
+  }
+});

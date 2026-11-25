@@ -35,3 +35,9 @@ test('the existing house entrance leads to three reciprocal doors without granti
 test('a toroidal receiver without the Atelier keeps its direct Matter entrance',()=>{
   assert.deepEqual(houseReviewRooms([matter],house,'matter','lab'),[{...matter,entry:true}]);
 });
+
+test('a room serving as both the lab and collection keeps its direct entrance',()=>{
+  assert.deepEqual(houseReviewRooms([foyer,lab],house,'lab','lab'),[
+    {...lab,entry:true,links:[]},
+  ]);
+});

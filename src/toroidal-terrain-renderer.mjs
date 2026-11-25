@@ -99,6 +99,8 @@ const terrainShading = {
       * (1.0-smoothstep(37.0,51.0,approach.y));
     float holoMeadow = holoMeadowGround * smoothstep(1.15+arrival*.9,3.65+arrival*.7,edge);
     float holoMeadowRoughness = .96;
+    float holoTrailMask = 0.0;
+    float holoTrailRoughness = .90;
     // Continuous bands follow the seed's surface between scenery cells.
     // Three projections avoid a visible seam on the inner or lower faces.
     float fieldSlope = smoothstep(.72,.96,meadowSlope);
@@ -114,8 +116,14 @@ const terrainShading = {
         ringNoise(point.xz*.024+vec2(13.7,8.2)),
         ringNoise(point.xy*.024+vec2(4.7,31.2))));
       float green = smoothstep(.28,.69,broadField);
-      vec3 fieldColor = mix(vec3(.109,.157,.054),vec3(.205,.310,.087),green);
+      vec3 fieldColor = mix(vec3(.078,.130,.044),vec3(.156,.238,.068),green);
       fieldColor = mix(fieldColor,vec3(.288,.255,.099),smoothstep(.70,.91,broadField)*.65);
+      float mottlingWeight=(1.0-smoothstep(.24,.50,.36*meadowFootprint))*holodeckMeadowGrain;
+      if(mottlingWeight > .001){
+        vec3 mids=vec3(ringNoise(point.yz*.36+9.1),ringNoise(point.xz*.36+6.2),ringNoise(point.xy*.36+2.6));
+        float mottling=dot(weights,mids)-.5;
+        fieldColor *= 1.0+mottling*mottlingWeight*.24;
+      }
       diffuseColor.rgb = mix(diffuseColor.rgb,fieldColor,fieldMask*.76);
     }
     if (holoMeadow > .001) {
@@ -143,9 +151,17 @@ const terrainShading = {
       float mask = (1.0-smoothstep(1.57,2.72,edge+edgeNoise*.66))*endFade;
       float shoulder = smoothstep(2.15,3.12,edge)*(1.0-smoothstep(3.65,6.8,edge))*endFade;
       holoApproachSkylight = endFade*(1.0-smoothstep(2.0,9.0,edge));
-      float pebble = smoothstep(.58,.86,ringNoise(approach*4.6))
-        *(1.0-smoothstep(12.0,34.0,length(vViewPosition)));
-      vec3 packedEarth = mix(vec3(.35,.236,.127),vec3(.52,.389,.224),.38+.36*edgeNoise+.25*pebble);
+      // Grains taper below two pixels; the wider scuffs and the warm
+      // verge remain legible from a running camera and both graphics modes.
+      float grainFade=1.0-smoothstep(.24,.50,4.8*meadowFootprint);
+      float grit=grainFade>.001?ringNoise(approach*4.8):.5;
+      float chip=smoothstep(.64,.81,grit)*grainFade;
+      float hollow=(1.0-smoothstep(.26,.50,grit))*grainFade;
+      float dust=ringNoise(approach*vec2(.54,.31)+vec2(7.4,11.0));
+      vec3 packedEarth=mix(vec3(.227,.157,.089),vec3(.427,.321,.195),dust*.58+.26);
+      packedEarth += vec3(.106,.089,.066)*chip-vec3(.053,.043,.025)*hollow;
+      holoTrailMask=mask;
+      holoTrailRoughness=clamp(.87-.09*chip+.08*hollow,.73,.99);
       diffuseColor.rgb = mix(diffuseColor.rgb,packedEarth,mask*.88);
       diffuseColor.rgb = mix(diffuseColor.rgb,vec3(.114,.191,.068)*(.88+.42*edgeNoise),
         shoulder*mix(.61,.18,holoMeadowGround));
