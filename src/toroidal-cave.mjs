@@ -3,6 +3,7 @@ import {BufferAttribute, BufferGeometry, Mesh, MeshStandardMaterial} from 'three
 import {TOROIDAL_TERRAIN, terrainElevation, terrainPosition} from './toroidal-terrain.mjs';
 
 export const CAVE = Object.freeze({from: .0076, to: .0117, latitude: .265});
+export const CAVE_ENTRANCE = Object.freeze({u:CAVE.from,v:CAVE.latitude});
 const SECTION_COUNT = 36;
 const ARCH_SEGMENTS = 16;
 const TAU = 2 * Math.PI;
@@ -69,11 +70,78 @@ export function buildToroidalCave(terrain = TOROIDAL_TERRAIN) {
   return {origin,positions,colors,indices:new Uint16Array(indices)};
 }
 
+// A rock crown on the shoulders of the north mouth. All stone stays to the
+// sides of the arch, leaving the tunnel and its approach on the original grade.
+const fins=[
+  {u:.00836,v:.26249,length:3.5,width:1.53,height:14.0,turn:-.18,lean:1.82},
+  {u:.00897,v:.26898,length:2.34,width:1.48,height:8.3,turn:.39,lean:1.07},
+  {u:.00823,v:.27036,length:2.25,width:1.38,height:6.8,turn:.45,lean:.71},
+  {u:.00885,v:.26147,length:2.88,width:1.34,height:8.2,turn:-.26,lean:-.93},
+];
+const sections=[
+  [0,1.0,0],[.18,1.0,0],[.40,.92,0],[.57,.84,0],[.621,.80,1],
+  [.665,.78,1],[.79,.69,0],[.91,.56,0],[.978,.39,0],[1,.21,0],
+];
+
+export function buildCaveCrown(terrain = TOROIDAL_TERRAIN) {
+  const {u,v}=CAVE_ENTRANCE;
+  const origin=terrainPosition(u,v,terrainElevation(u,v,terrain),terrain);
+  const positions=[],colors=[],indices=[];
+  const sides=8;
+  for(const [ordinal,fin] of fins.entries()){
+    const first=positions.length/3;
+    const ringRadius=terrain.majorRadius+terrain.tubeRadius*Math.cos(fin.v*TAU);
+    const ca=Math.cos(fin.turn),sa=Math.sin(fin.turn);
+    for(const [rise,radius,vein] of sections){
+      for(let side=0;side<sides;side++){
+        const angle=TAU*(side+.28)/sides;
+        const edge=.86+.12*Math.sin(side*6.1+ordinal*2.1)+.09*Math.cos(side*3.7);
+        const along=Math.cos(angle)*fin.length*radius*edge+fin.lean*rise*rise;
+        const across=Math.sin(angle)*fin.width*radius*edge;
+        const pointU=fin.u+(along*ca-across*sa)/(TAU*ringRadius);
+        const pointV=fin.v+(across*ca+along*sa)/(TAU*terrain.tubeRadius);
+        const grade=.9*Math.cos(angle+ordinal*.72)*Math.sin(rise*Math.PI/2);
+        const height=terrainElevation(pointU,pointV,terrain)-1.65+rise*fin.height+rise*grade;
+        const point=terrainPosition(pointU,pointV,height,terrain);
+        positions.push(...point.map((value,i)=>value-origin[i]));
+        const shade=.82+rise*.24+.09*Math.sin(side*3.4+ordinal);
+        const mineral=vein&&ordinal===0&&side<5?.64:0;
+        const rose=.035*Math.sin(side+ordinal);
+        colors.push(shade*(.408+rose-mineral*.30),shade*(.227+mineral*.07),shade*(.12+mineral*.13));
+      }
+    }
+    for(let row=0;row<sections.length-1;row++){
+      for(let side=0;side<sides;side++){
+        const lower=first+row*sides+side,next=first+row*sides+(side+1)%sides;
+        indices.push(lower,lower+sides,next,next,lower+sides,next+sides);
+      }
+    }
+    const top=first+(sections.length-1)*sides;
+    for(let side=1;side<sides-1;side++){
+      indices.push(first,first+side,first+side+1,top,top+side+1,top+side);
+    }
+  }
+  return {origin,positions:new Float32Array(positions),colors:new Float32Array(colors),indices:new Uint16Array(indices)};
+}
+
+function rockMesh({origin,positions,colors,indices},material,name) {
+  const geometry=new BufferGeometry();
+  geometry.setAttribute('position',new BufferAttribute(positions,3));
+  geometry.setAttribute('color',new BufferAttribute(colors,3));
+  geometry.setIndex(new BufferAttribute(indices,1));
+  geometry.computeVertexNormals();
+  const mesh=new Mesh(geometry,material);
+  mesh.name=name;
+  mesh.position.fromArray(origin);
+  return mesh;
+}
+
 export class ToroidalCave {
   constructor(scene,colliders) {
     this.scene = scene;
     this.colliders = colliders;
     this.mesh = null;
+    this.crown = null;
     this.location = terrainPosition((CAVE.from+CAVE.to)/2,CAVE.latitude);
   }
 
@@ -84,28 +152,28 @@ export class ToroidalCave {
       return;
     }
     if (distance > 170) return;
-    const {origin,positions,colors,indices} = buildToroidalCave();
-    const geometry = new BufferGeometry();
-    geometry.setAttribute('position',new BufferAttribute(positions,3));
-    geometry.setAttribute('color',new BufferAttribute(colors,3));
-    geometry.setIndex(new BufferAttribute(indices,1));
-    geometry.computeVertexNormals();
     const material = new MeshStandardMaterial({vertexColors:true,roughness:.96});
     useToroidalRockDetail(material,{bedding:true});
-    this.mesh = new Mesh(geometry,material);
-    this.mesh.name = 'Connected rock passage';
-    this.mesh.position.fromArray(origin);
-    this.scene.add(this.mesh);
-    this.mesh.updateWorldMatrix(true,false);
-    this.colliders.addCollider(this.mesh);
+    this.mesh=rockMesh(buildToroidalCave(),material,'Connected rock passage');
+    const crownMaterial=new MeshStandardMaterial({vertexColors:true,roughness:.92,flatShading:true});
+    useToroidalRockDetail(crownMaterial,{bedding:true});
+    this.crown=rockMesh(buildCaveCrown(),crownMaterial,'Stone crown above the cave');
+    for(const mesh of [this.mesh,this.crown]){
+      this.scene.add(mesh);
+      mesh.updateWorldMatrix(true,false);
+      this.colliders.addCollider(mesh);
+    }
   }
 
   dispose() {
     if (!this.mesh) return;
-    this.colliders.removeCollider(this.mesh);
-    this.mesh.removeFromParent();
-    this.mesh.geometry.dispose();
-    this.mesh.material.dispose();
+    for(const mesh of [this.mesh,this.crown]){
+      this.colliders.removeCollider(mesh);
+      mesh.removeFromParent();
+      mesh.geometry.dispose();
+      mesh.material.dispose();
+    }
     this.mesh = null;
+    this.crown = null;
   }
 }

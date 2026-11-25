@@ -1,4 +1,5 @@
 import {TOROIDAL_TERRAIN,terrainCoordinates,terrainElevation,terrainTrail} from './toroidal-terrain.mjs';
+import {CAVE_ENTRANCE} from './toroidal-cave.mjs';
 
 const TAU=2*Math.PI;
 const SIZE=96;
@@ -72,6 +73,20 @@ function drawHouse(ctx,x,y){
   ctx.fillStyle='#f4ce94';ctx.fill();
 }
 
+function drawCave(ctx,x,y){
+  ctx.beginPath();
+  ctx.moveTo(x-10,y+6);ctx.lineTo(x-8,y-5);ctx.lineTo(x-2,y-11);
+  ctx.lineTo(x+5,y-8);ctx.lineTo(x+10,y+6);ctx.closePath();
+  ctx.strokeStyle='#261e22';ctx.lineWidth=3;ctx.stroke();
+  ctx.fillStyle='#e5a984';ctx.fill();
+  ctx.fillStyle='#352726';ctx.fillRect(x-3,y-1,6,7);
+  ctx.textAlign=x>DISPLAY-70?'right':'left';
+  ctx.font='600 19px system-ui';
+  ctx.fillStyle='#fff4dd';
+  ctx.fillText('Cueva',x+(x>DISPLAY-70?-15:15),y+6);
+  ctx.textAlign='start';
+}
+
 export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
   const canvas=panel.querySelector('#world-minimap'),ctx=canvas?.getContext('2d',{alpha:false});
   if(!ctx)return ()=>{};
@@ -112,6 +127,9 @@ export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
       const {x,y}=toroidalMapPoint(chart,terrainCoordinates([door.x,door.y,door.z]));
       if(x>0&&x<1&&y>0&&y<1)drawHouse(ctx,x*DISPLAY,y*DISPLAY);
     }
+    const cave=toroidalMapPoint(chart,CAVE_ENTRANCE);
+    if(cave.x>.032&&cave.x<.968&&cave.y>.032&&cave.y<.968)
+      drawCave(ctx,cave.x*DISPLAY,cave.y*DISPLAY);
     ctx.save();
     ctx.translate(x*DISPLAY,y*DISPLAY);
     ctx.rotate(heading);
