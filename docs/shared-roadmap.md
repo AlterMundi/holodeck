@@ -550,7 +550,11 @@ adds actual filtered and sectioned shadows. A [physical RTX 2060 screen](playtes
 compares both quality profiles at the table and the exterior spawn. The
 [protected sky and worktable update](STATUS.md#november-25-toroidal-sky-and-worktable-lighting)
 resolves the captured cloud discontinuity. Extend the physical comparison to
-the full house approach and the two-visitor workshop route.
+the full house approach and the two-visitor workshop route. The
+[oriented arrival candidate](playtest-iteration.md#arrival-aligned-with-the-existing-house-entrance)
+crossed the authored exterior door and returned in both RTX profiles using
+fixture identities. The physical Sand3D comparison and real shared workshop
+visit remain open.
 
 Compare the same outside path, working table, map and open Conversation
 on the existing build. Final preset selection covers a dark and a light

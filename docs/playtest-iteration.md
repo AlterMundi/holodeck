@@ -1185,6 +1185,43 @@ The draft is staged. Full avatar state transitions and final in-game art
 direction remain open. Production and physical GPU qualification
 are separate receiving checks.
 
+## Arrival aligned with the existing house entrance
+
+[Holodeck #12](https://github.com/AlterMundi/holodeck/issues/12) tracks
+candidate `ac73dcb`. A fresh toroidal arrival with one authorized entrance
+now aims the avatar and orbit camera at its existing exterior approach
+point. Movement still uses MML input and the existing radial frame. The
+input is captured before MML initializes, consumed on first bind, and used
+only at the actual spawn. Explicit pose links and visitors without an
+entrance retain the ordinary view. There is no new route, access state,
+collision geometry or asset.
+
+Fable High identified the need to separate avatar yaw from camera orientation.
+The first candidate's sign was wrong in Chromium. Forward input in pinned MML
+is azimuth π, and the corrected camera relation uses that convention. Opus
+5.5 High reviewed the correction, the first-target behavior and the earlier
+capture of the explicit-pose decision. Matched browser captures confirmed the fresh
+arrival frames the entrance before any movement input.
+
+In Chrome on the RTX 2060 at the same authored house site, the baseline
+placed the door 74.74° off the camera's forward axis and walking forward
+increased the approach distance from 4.96 to 8.94 m. With the exact candidate
+the door starts 5.81° off-axis. Using W through the existing terrain reduced
+the distance to 0.12 m (normal daylight) and 0.18 m (lightweight dusk).
+E reached the Matter workshop and a second E returned to the exterior door
+without repeating the cold-arrival orientation. The packaged fixture
+loaded the real house GLB, authored room graph, orbital Matter art and
+existing terrain. A separate SwiftShader fixture verified the same round
+trip. Tests with a valid 14-value explicit pose and an authorization-denied
+visitor confirmed the new orientation is inapplicable in either case.
+
+The 80-payload candidate archive is 33,320,960 bytes, SHA-256
+`1f743ff0cc898d8221abe28c5c6fb61ae7697abdc726666c49c07a6746354e45`,
+and passed 351 tests with two gallery skips. The device visits used fixture
+identities, with an empty review service stand-in. They verify the door and
+room return and do not qualify the protected collection, independent human
+visits or mobile hardware. Production remains on `20726f08a3e0`.
+
 ## House approach material and planting
 
 The toroidal arrival now has a packed-earth strip with a soft grass verge,
