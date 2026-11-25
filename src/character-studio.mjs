@@ -1,22 +1,16 @@
 import {
   ACESFilmicToneMapping,AnimationMixer,Box3,Color,CylinderGeometry,DirectionalLight,
-  Fog,GridHelper,Group,HemisphereLight,Mesh,MeshBasicMaterial,MeshStandardMaterial,OrthographicCamera,PlaneGeometry,
+  Fog,GridHelper,Group,HemisphereLight,LoopOnce,Mesh,MeshBasicMaterial,MeshStandardMaterial,OrthographicCamera,PlaneGeometry,
   PerspectiveCamera,Raycaster,Scene,Vector2,Vector3,WebGLRenderer,
 } from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {ModelLoader} from '@mml-io/model-loader';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
-import {AVATARS} from './avatar-registry.mjs';
+import {rigs} from './character-studio-rigs.mjs';
 import {createHumanMotionStudy,humanMotionStudies,motionStudyRate} from './human-motion-study.mjs';
 import {ATELIER_FOYER,CHARACTER_STUDIO} from './house-review-rooms.mjs';
 import {arrivalDoor,doorLocation,readSpace} from './space-travel.mjs';
 
-const rigs={
-  companion:{label:'Navegante',file:AVATARS['compaii-navegante-white-v1'].model},
-  humanoid:{label:'Humanoide',file:'assets/avatar-1-bodyA-skin01.glb',clips:{
-    idle:'assets/anim_idle.glb',jog:'assets/anim_jog.glb',
-    run:'assets/anim_run.glb',air:'assets/anim_air.glb',
-  }},
-};
 const names={
   idle:'Reposo',jog:'Trote',air:'En el aire',calm:'Reposo',curious:'Curiosidad',joy:'Alegría',
   sad:'Tristeza',anger:'Enojo',uncertain:'Duda',focus:'Concentración',welcome:'Saludo',
@@ -27,6 +21,8 @@ const names={
   ...Object.fromEntries(Object.entries(humanMotionStudies).map(([id,study])=>[id,study.label])),
 };
 const surfaceId='character-studio';
+const speedOptions=[{id:'0.25',label:'¼×'},{id:'0.5',label:'½×'},{id:'1',label:'1×'},{id:'2',label:'2×'}];
+const transport=new Set(['back','play','forward','loop','compare']);
 const choices=items=>Object.entries(items).map(([id,label])=>({id,label}));
 const path=key=>({'@path':'/'+key});
 const action=(name,key)=>({event:{name,...(key?{context:{value:path('draft/'+key)}}:{})}});
@@ -35,17 +31,37 @@ const row=(id,children)=>({id,component:'HudRow',children});
 const button=(id,text,key)=>({id,component:'HudButton',label:text,action:action(id,key)});
 const choice=(id,name)=>({id,component:'HudChoice',label:name,options:path(id+'Options'),
   value:path(id),draft:path('draft/'+id),action:action(id,id)});
-const controls=frameCount=>[
+const controls=[
   {id:'root',component:'HudPanel',label:'Revisión de movimiento',width:1.85,gap:.025,
-    children:['title','rig','clip','clock','playback','views','note','archive','status']},
+    children:['title','rig','clip','clock','chapter','playback','playOptions','comparison','views','presentation','note','archive','reviewNotes','reviewText','status']},
   label('title','Revisión de movimiento','title'),choice('rig','Personaje'),choice('clip','Ciclo'),
-  {id:'clock',component:'HudRange',label:'Fotograma',min:0,max:Math.max(1,frameCount),step:1,value:path('frame'),
-    draft:path('draft/frame'),action:action('clock','frame')},
-  row('playback',['back','play','forward']),button('back','−1'),button('play',path('playLabel')),button('forward','+1'),
+  {id:'clock',component:'HudRange',label:'Fotograma',min:0,max:path('lastFrame'),step:1,value:path('frame'),
+    draft:path('draft/frame'),gestureKey:path('clipEdition'),
+    action:{event:{name:'clock',context:{value:path('draft/frame'),clipEdition:path('clipEdition')}}}},
+  {...choice('chapter','Fase'),visible:path('hasChapters'),
+    action:{event:{name:'chapter',context:{value:path('draft/chapter'),clipEdition:path('clipEdition')}}}},
+  row('playback',['back','play','forward']),
+  {...button('back','−1'),icon:'previousFrame'},
+  {...button('play',path('playLabel')),icon:path('playIcon'),weight:2},
+  {...button('forward','+1'),icon:'nextFrame'},
+  row('playOptions',['speed','loop']),choice('speed','Velocidad'),
+  {...button('loop','Bucle'),icon:'loop',pressed:path('loop')},
+  row('comparison',['reference','compare']),
+  {...choice('reference','Clip B'),weight:2},
+  {...button('compare',path('compareLabel')),icon:'compare',pressed:path('showingReference'),
+    disabled:path('noReference')},
   row('views',['front','angle','side']),button('front','Frente'),button('angle','Tres cuartos'),button('side','Perfil'),
+  {...row('presentation',['present','follow']),visible:path('canReview')},
+  {...button('present','Mostrar pose'),disabled:path('presentationBusy')},
+  {...button('follow','Ver pose del Taller'),disabled:path('presentationBusy')},
   {id:'note',component:'HudTextInput',label:'Nota para este fotograma',value:path('note'),
     draft:path('draft/note'),placeholder:'Qué ves en la pose',maxLength:300,action:action('pin','note')},
-  row('archive',['pin','copy']),{...button('pin','Fijar nota','note'),submitFor:'note'},button('copy','Copiar enlace'),
+  row('archive',['pin','copy','review']),
+  {...button('pin',path('noteAction'),'note'),submitFor:'note',disabled:path('savingNote')},
+  button('copy','Copiar enlace'),
+  {...button('review',path('reviewAction')),visible:path('canReview')},
+  {...choice('reviewNotes','Notas de esta pose'),visible:path('showReviewNotes')},
+  {...label('reviewText',path('reviewText')),lines:3,visible:path('showReviewNotes')},
   {...label('status',path('status'),'status'),lines:2},
 ];
 const studioStyle=`
@@ -107,6 +123,7 @@ async function connectStudioReturn(wrapper){
     link.removeAttribute('aria-disabled');
     pending=false;
   });
+  return true;
 }
 
 function disposeFigure(figure){
@@ -162,7 +179,6 @@ export async function openCharacterStudio(document){
   renderer.toneMappingExposure=1.15;
   window.dispatchEvent(new Event('holodeck:entered'));
   const stage=buildStage(document),status=stage.querySelector('output');
-  void connectStudioReturn(stage);
   stage.prepend(renderer.domElement);
   const scene=new Scene(),hudScene=new Scene();
   scene.background=new Color(0x0b1e2a);
@@ -182,24 +198,53 @@ export async function openCharacterStudio(document){
   const viewAngles={front:0,angle:.62,side:Math.PI/2};
   let view=Object.hasOwn(viewAngles,url.searchParams.get('vista'))?url.searchParams.get('vista'):'angle';
   let figure,playback,group,rig,clip,frame=0,playing=false,revision='',note='',message='',showedAt=-Infinity;
-  let sequence=0,elapsed=0,previous=0,visible=true;
+  let sequence=0,elapsed=0,previous=0,visible=true,loop=true,speed='1',viewportWidth=0,viewportHeight=0;
+  let primary=null,reference=null,showingReference=false,referenceRequest=0;
+  let canReview=null,review=null,selectedNote='',readingReview=false,savingNote=false,pendingNote,presentationBusy=false;
+  void connectStudioReturn(stage).then(inStudio=>{canReview=Boolean(inStudio);refresh();});
   const reduce=window.matchMedia('(prefers-reduced-motion: reduce)');
 
   const hud=createSpatialHud({document,parent:hudScene,accessibilityRoot:stage.querySelector('.studio-a11y'),
-    placeSurface(value){group=value;},send:({action:requested})=>void activate(requested?.name,requested?.context?.value).catch(()=>report('No se pudo aplicar el cambio.'))});
+    controlStyle:'optical',controlRole:(_,id)=>id==='play'?'primary':transport.has(id)?'navigation':'utility',
+    placeSurface(value){group=value;},send:({action:requested})=>void activate(requested?.name,requested?.context).catch(()=>report('No se pudo aplicar el cambio.'))});
   document.body.addEventListener('focusin',event=>{
     if(playing&&hud.ownsTextInput(event.target)){playing=false;scrub(frame);}
   });
   const receive=(type,value)=>hud.receive({version:'1.0',[type]:{surfaceId,...value}});
   receive('createSurface',{catalogId:spatialHudCatalog.id});
-  receive('updateComponents',{components:controls(1)});
+  receive('updateComponents',{components:controls});
   hud.setPalette({background:'#102834e8',button:'#263e46',pressed:'#43766e',text:'#eff7f0',focus:'#ecc782',disabled:'#25353d'});
-  const unbind=bindSpatialHudPointer({element:renderer.domElement,hud,rayForPointer:event=>{
-    const {left,top,width,height}=renderer.domElement.getBoundingClientRect();
+  const canvas=renderer.domElement;
+  const inputs=new AbortController();
+  function rayForPointer(event){
+    const {left,top,width,height}=canvas.getBoundingClientRect();
+    if(!width||!height)return;
     pointer.set((event.clientX-left)/width*2-1,1-(event.clientY-top)/height*2);
     ray.setFromCamera(pointer,hudCamera);
     return {ray:ray.ray};
-  }});
+  }
+  const unbind=bindSpatialHudPointer({element:canvas,hud,rayForPointer});
+  canvas.addEventListener('wheel',event=>{
+    const projection=rayForPointer(event);
+    if(group&&projection&&hud.pointerTarget(projection.ray)!==undefined){
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  },{capture:true,passive:false,signal:inputs.signal});
+  const orbit=new OrbitControls(camera,canvas);
+  orbit.target.set(0,.78,0);
+  orbit.enablePan=false;
+  orbit.minDistance=2.2;
+  orbit.maxDistance=8;
+  orbit.maxPolarAngle=Math.PI*.56;
+  setView(view);
+
+  function setView(next){
+    view=next;
+    const angle=viewAngles[view],distance=stage.clientWidth<670?4.7:4.4;
+    camera.position.set(Math.sin(angle)*distance,1.95,Math.cos(angle)*distance);
+    orbit.update();
+  }
 
   const hex=bytes=>Array.from(bytes,n=>n.toString(16).padStart(2,'0')).join('');
 
@@ -236,6 +281,7 @@ export async function openCharacterStudio(document){
     const profile=rigs[next];
     if(!profile)return;
     playing=false;
+    ++referenceRequest;
     report('Abriendo el personaje…');
     const {model,digest}=await readAsset(profile.file);
     const root=new Group(),orientation=new Group();
@@ -248,106 +294,267 @@ export async function openCharacterStudio(document){
     playback?.stop();
     disposeFigure(figure);
     figure=nextFigure;
-    playback=null;
+    playback=primary=reference=null;
+    showingReference=false;
     waterline.visible=false;
     rig=next;
     scene.add(root);
     const options=clipOptions(profile,figure);
-    const primary=options.includes(requestedClip)?requestedClip:profile.clips?'estudio-vuelo':options[0];
-    await loadClip(primary,requestedFrame,expected,id);
+    const initialClip=options.includes(requestedClip)?requestedClip:profile.clips?'estudio-vuelo':options[0];
+    await loadClip(initialClip,requestedFrame,expected,id);
   }
 
-  async function loadClip(next,requestedFrame=0,expected=null,id=++sequence){
-    const activeFigure=figure,profile=rigs[rig];
-    if(!activeFigure||!next)return;
-    playing=false;
-    const study=profile.clips&&Object.hasOwn(humanMotionStudies,next)?humanMotionStudies[next]:null;
-    let selected=activeFigure.clips.get(next),clipDigest=activeFigure.rigDigest;
-    if(profile.clips){
-      if(!study&&!Object.hasOwn(profile.clips,next))return;
-      const loaded=await stockClip(profile,study?'idle':next,activeFigure);
-      if(figure!==activeFigure||id!==sequence)return;
+  async function preparePlayback(activeFigure,profile,name){
+    const study=profile.clips&&Object.hasOwn(humanMotionStudies,name)?humanMotionStudies[name]:null;
+    let selected=activeFigure.clips.get(name),clipDigest=activeFigure.rigDigest;
+    if(profile.clips&&(study||Object.hasOwn(profile.clips,name))){
+      const loaded=await stockClip(profile,study?'idle':name,activeFigure);
       selected=loaded.selected;
       clipDigest=loaded.digest;
     }
     if(!selected?.tracks.length||!(selected.duration>0))throw Error('Missing animation');
     if(study){
-      const signature=new TextEncoder().encode(HOLODECK_MOTION_STUDY_REVISION+' '+next+' '+clipDigest);
-      const bytes=new Uint8Array(await window.crypto.subtle.digest('SHA-256',signature));
-      if(figure!==activeFigure||id!==sequence)return;
-      clipDigest=hex(bytes);
+      const signature=new TextEncoder().encode(HOLODECK_MOTION_STUDY_REVISION+' '+name+' '+clipDigest);
+      clipDigest=hex(new Uint8Array(await window.crypto.subtle.digest('SHA-256',signature)));
     }
-    playback?.stop();
-    playback=null;
-    waterline.visible=false;
-    if(study){
-      const run=createHumanMotionStudy(activeFigure.model,selected,study);
+    const edition=activeFigure.rigDigest+'.'+clipDigest;
+    let studyRun;
+    function start(){
+      if(!study){
+        const action=activeFigure.mixer.clipAction(selected).reset().setLoop(LoopOnce,1).play();
+        action.clampWhenFinished=true;
+        action.paused=true;
+        return {draw(time){
+          action.time=time;
+          activeFigure.mixer.update(0);
+        },stop(){
+          action.stop();
+          if(profile.clips)activeFigure.mixer.uncacheClip(selected);
+        }};
+      }
+      studyRun??=createHumanMotionStudy(activeFigure.model,selected,study);
       const neutral=[];
       activeFigure.model.traverse(node=>{
         if(node===activeFigure.model||node.isBone)neutral.push([node,node.position.clone(),node.quaternion.clone()]);
       });
-      playback={duration:run.count/motionStudyRate,
-        draw(time){
-          const depth=run.apply(activeFigure.model,activeFigure.orientation,Math.round(time*motionStudyRate));
-          waterline.visible=Number.isFinite(depth);
-          if(waterline.visible)waterline.position.y=activeFigure.root.position.y+depth*activeFigure.root.scale.y;
-        },
-        stop(){
-          waterline.visible=false;
-          activeFigure.orientation.quaternion.identity();
-          for(const [node,position,rotation] of neutral){
-            node.position.copy(position);
-            node.quaternion.copy(rotation);
-          }
-        }};
-    }else{
-      const current=activeFigure.mixer.clipAction(selected).play();
-      current.paused=true;
-      playback={duration:selected.duration,draw(time){
-        current.time=time;
-        activeFigure.mixer.update(0);
+      return {draw(time){
+        const depth=studyRun.apply(activeFigure.model,activeFigure.orientation,Math.round(time*motionStudyRate));
+        waterline.visible=Number.isFinite(depth);
+        if(waterline.visible)waterline.position.y=activeFigure.root.position.y+depth*activeFigure.root.scale.y;
       },stop(){
-        current.stop();
-        if(profile.clips)activeFigure.mixer.uncacheClip(selected);
+        waterline.visible=false;
+        activeFigure.orientation.quaternion.identity();
+        for(const [node,position,rotation] of neutral){
+          node.position.copy(position);
+          node.quaternion.copy(rotation);
+        }
       }};
     }
-    revision=activeFigure.rigDigest+'.'+clipDigest;
+    return {name,edition,duration:study?Math.round(study.duration*motionStudyRate)/motionStudyRate:selected.duration,
+      get chapters(){return studyRun?.chapters??[];},start};
+  }
+
+  function displayClip(isReference){
+    playback?.stop();
+    playback=null;
+    waterline.visible=false;
+    showingReference=isReference;
+    playback=displayed().start();
+    drawPose();
+  }
+
+  async function loadClip(next,requestedFrame=0,expected=null,id=++sequence){
+    const activeFigure=figure;
+    if(!activeFigure||!next)return;
+    playing=false;
+    const prepared=await preparePlayback(activeFigure,rigs[rig],next);
+    if(figure!==activeFigure||id!==sequence)return;
+    ++referenceRequest;
+    reference=null;
+    primary=prepared;
+    revision=prepared.edition;
     clip=next;
-    receive('updateComponents',{components:controls(frameLimit())});
+    displayClip(false);
     scrub(expected&&expected!==revision?0:requestedFrame);
     report(expected&&expected!==revision?'El enlace corresponde a otra edición del movimiento.':'');
+  }
+
+  async function loadReference(name){
+    const request=++referenceRequest,activeFigure=figure,id=sequence;
+    if(typeof name!=='string'||name===clip||name===reference?.name)return;
+    const prepared=await preparePlayback(activeFigure,rigs[rig],name);
+    if(figure!==activeFigure||id!==sequence||request!==referenceRequest)return;
+    if(showingReference)displayClip(false);
+    reference=prepared;
     refresh();
   }
 
-  function frameLimit(){return playback?Math.min(1000,Math.ceil(playback.duration*motionStudyRate)):0;}
+  function displayed(){return showingReference?reference:primary;}
+  function clipEdition(){return [rig,clip,revision,displayed()?.name].join(':');}
+  function frameLimit(selected=primary){return selected?Math.ceil(selected.duration*motionStudyRate):0;}
+  function availableChapters(){
+    const limit=frameLimit();
+    return displayed()?.chapters.filter(chapter=>chapter.frame<=limit)??[];
+  }
+  function drawPose(){
+    if(playback)playback.draw(Math.min(displayed().duration,elapsed));
+  }
   function scrub(target){
     frame=Math.max(0,Math.min(Math.round(Number(target)||0),frameLimit()));
     elapsed=frame/motionStudyRate;
-    playback?.draw(Math.min(playback.duration,elapsed));
+    drawPose();
   }
   function report(text){message=text;status.textContent=text;refresh();}
   function refresh(){
     if(!figure||!clip)return;
     const options=clipOptions(rigs[rig],figure);
+    const chapters=availableChapters();
+    const chapter=chapters.find(entry=>entry.frame===frame)?.id??'';
+    const viewedReview=currentReview();
+    const notes=viewedReview?.notes??[];
+    const selected=notes.find(item=>item.id===selectedNote)??notes[0];
+    const reviewText=selected?selected.author+' · '+selected.text:'';
     receive('updateDataModel',{value:{rig,clip,rigOptions:choices(Object.fromEntries(Object.entries(rigs).map(([id,value])=>[id,value.label]))),
-      clipOptions:choices(Object.fromEntries(options.map(id=>[id,names[id]||id]))),frame,
-      playLabel:playing?'Pausar':'Reproducir',note,status:message,
-      draft:{rig,clip,frame,note}}});
+      clipOptions:options.map(id=>({id,label:names[id]||id})),frame,
+      reference:reference?.name??'',referenceOptions:options.filter(id=>id!==clip).map(id=>({id,label:names[id]||id})),
+      compareLabel:showingReference?'Ver A':'Ver B',showingReference,noReference:!reference,
+      lastFrame:frameLimit(),clipEdition:clipEdition(),speedOptions,speed,loop,
+      hasChapters:chapters.length>0,chapter,chapterOptions:chapters,
+      canReview:canReview===true,presentationBusy,noteAction:canReview?'Compartir nota':'Fijar nota',
+      savingNote:savingNote||canReview===null,reviewAction:viewedReview?'Ocultar notas':'Ver notas',
+      showReviewNotes:notes.length>0,reviewText,reviewNotes:selected?.id??'',
+      reviewNotesOptions:notes.map(item=>({id:item.id,label:item.author+' · '+item.text})),
+      playLabel:playing?'Pausar':'Reproducir',playIcon:playing?'pause':'play',note,status:message,
+      draft:{rig,clip,frame,note,speed,chapter,reference:reference?.name??'',reviewNotes:selected?.id??''}}});
+  }
+  function reviewPose(){
+    const selection=displayed();
+    return {rig,clip:selection.name,edition:selection.edition,frame:Math.min(frame,frameLimit(selection))};
+  }
+  const keyForPose=pose=>JSON.stringify(pose);
+  function currentReview(){
+    return review&&playback&&review.key===keyForPose(reviewPose())?review:null;
   }
   function exactUrl(){
-    const share=new URL(url);
-    for(const [key,value] of Object.entries({rig,clip,fotograma:frame,vista:view,edicion:revision}))share.searchParams.set(key,value);
+    const share=new URL(url),pose=reviewPose();
+    const exact={rig,clip:pose.clip,edicion:pose.edition,fotograma:pose.frame,vista:view};
+    for(const [key,value] of Object.entries(exact))share.searchParams.set(key,value);
     return share.href;
   }
-  async function activate(name,value){
+
+  async function requestReview(endpoint,submission,conflict){
+    let response;
+    try{response=await fetch(endpoint,{signal:inputs.signal,...(submission?{method:'POST',
+      headers:{'content-type':'application/json'},body:JSON.stringify(submission)}:{})});}
+    catch{throw Error('No pude confirmar el cambio. Podés volver a intentar.');}
+    if(response.status===409)throw Error(conflict);
+    if(response.status===403)throw Error('Entrá al Taller para continuar.');
+    const result=response.ok?await response.json().catch(()=>null):null;
+    if(!result)throw Error('No pude confirmar el cambio. Podés volver a intentar.');
+    return result;
+  }
+
+  async function fetchReview(pose,submission){
+    const endpoint=new URL('api/space/character-pose-review',url);
+    if(!submission)endpoint.search=new URLSearchParams(pose).toString();
+    const {notes}=await requestReview(endpoint,submission,'La edición de esta pose cambió. Volvé a abrirla.');
+    if(!Array.isArray(notes))throw Error('No pude confirmar las notas. Podés volver a intentar.');
+    return notes;
+  }
+
+  async function usePresentation(publish){
+    if(presentationBusy)return;
+    playing=false;
+    const origin=reviewPose(),key=keyForPose(origin),request=sequence;
+    const endpoint=new URL('api/space/character-presentation',url);
+    const conflict='La pose del Taller cambió. Volvé a abrirla antes de mostrar otra.';
+    presentationBusy=true;
+    refresh();
+    try{
+      const state=await requestReview(endpoint,null,conflict);
+      if(!visible)return;
+      if(publish){
+        await requestReview(endpoint,{expectedRevision:state.revision,pose:origin},conflict);
+        if(visible)report('Mostraste esta pose en el Taller.');
+        return;
+      }
+      if(!state.presentation){report('Todavía no hay una pose compartida.');return;}
+      if(!playback||request!==sequence||key!==keyForPose(reviewPose()))return;
+      const {pose,author}=state.presentation;
+      if(rig===pose.rig)await loadClip(pose.clip,pose.frame,pose.edition);
+      else await loadRig(pose.rig,pose.clip,pose.frame,pose.edition);
+      if(visible&&playback&&keyForPose(reviewPose())===keyForPose(pose))report('Pose mostrada por '+author+'.');
+    }catch(error){if(visible)report(error.message);}
+    finally{presentationBusy=false;if(visible)refresh();}
+  }
+
+  async function toggleReview(){
+    if(currentReview()){review=null;refresh();return;}
+    if(readingReview)return;
+    playing=false;
+    const pose=reviewPose(),key=keyForPose(pose);
+    readingReview=true;
+    try{
+      const notes=await fetchReview(pose);
+      if(playback&&key===keyForPose(reviewPose())){
+        review={key,notes};
+        selectedNote='';
+        report(notes.length?'':'Todavía no hay notas en esta pose.');
+      }
+    }catch(error){if(visible)report(error.message);}
+    finally{readingReview=false;if(visible)refresh();}
+  }
+
+  async function shareNote(text){
+    if(savingNote)return;
+    playing=false;
+    const pose=reviewPose(),key=keyForPose(pose);
+    if(!pendingNote||pendingNote.key!==key||pendingNote.submission.text!==text)
+      pendingNote={key,submission:{id:window.crypto.randomUUID(),pose,text}};
+    const attempt=pendingNote;
+    savingNote=true;
+    refresh();
+    try{
+      const notes=await fetchReview(pose,attempt.submission);
+      pendingNote=null;
+      note='';
+      if(playback&&keyForPose(reviewPose())===key){
+        review={key,notes};
+        selectedNote=notes.at(-1)?.id??'';
+        report('Nota compartida en el Taller.');
+      }
+    }catch(error){
+      note=text;
+      if(visible)report(error.message);
+    }finally{savingNote=false;if(visible)refresh();}
+  }
+  async function activate(name,{value,clipEdition:expectedClip}={}){
     if(!name)return;
     if(name==='rig'&&Object.hasOwn(rigs,value)&&rig!==value)return loadRig(value);
     if(name==='clip'&&typeof value==='string'&&(clip!==value||!playback))return loadClip(value);
     if(!playback)return;
-    if(name==='clock'){playing=false;scrub(value??frame);}
-    if(name==='play')playing=!playing;
+    if((name==='present'||name==='follow')&&canReview)return usePresentation(name==='present');
+    if(name==='review'&&canReview)return toggleReview();
+    if(name==='reviewNotes'&&currentReview()?.notes.some(item=>item.id===value))selectedNote=value;
+    if(name==='reference')return loadReference(value);
+    if(name==='compare'&&reference)displayClip(!showingReference);
+    if(name==='clock'){
+      if(expectedClip!==clipEdition())return;
+      playing=false;
+      scrub(value??frame);
+    }
+    if(name==='chapter'&&expectedClip===clipEdition()){
+      const chapter=availableChapters().find(entry=>entry.id===value);
+      if(chapter){playing=false;scrub(chapter.frame);}
+    }
+    if(name==='play'){
+      if(!playing&&frame===frameLimit())scrub(0);
+      playing=!playing;
+    }
+    if(name==='loop')loop=!loop;
+    if(name==='speed'&&speedOptions.some(option=>option.id===value))speed=value;
     if(name==='back'||name==='forward'){playing=false;scrub(frame+(name==='back'?-1:1));}
-    if(Object.hasOwn(viewAngles,name))view=name;
+    if(Object.hasOwn(viewAngles,name))setView(name);
     if(name==='copy'){
       await window.navigator.clipboard.writeText(exactUrl());
       report('Enlace copiado para esta edición y este fotograma.');
@@ -355,6 +562,8 @@ export async function openCharacterStudio(document){
     if(name==='pin'){
       const text=String(value||'').trim().slice(0,300);
       if(!text){report('Escribí una nota para este fotograma.');return;}
+      if(canReview)return shareNote(text);
+      if(canReview===null)return;
       const key='holodeck.characterStudio.notes';
       let notes=[];
       try{const list=JSON.parse(window.localStorage.getItem(key)||'[]');if(Array.isArray(list))notes=list;}catch{}
@@ -370,30 +579,38 @@ export async function openCharacterStudio(document){
     const dt=Math.min(.05,(now-(previous||now))/1000);
     previous=now;
     if(playing&&playback){
-      elapsed=(elapsed+dt)%playback.duration;
-      playback.draw(elapsed);
-      frame=Math.floor(elapsed*motionStudyRate);
-      if(now-showedAt>150){showedAt=now;refresh();}
+      const duration=primary.duration;
+      elapsed+=dt*Number(speed);
+      if(elapsed>=duration&&!loop){
+        playing=false;
+        scrub(frameLimit());
+        refresh();
+      }else{
+        elapsed%=duration;
+        drawPose();
+        frame=Math.floor(elapsed*motionStudyRate);
+        if(now-showedAt>150){showedAt=now;refresh();}
+      }
     }
     const width=stage.clientWidth,height=stage.clientHeight;
     if(!width||!height)return;
-    if(renderer.domElement.clientWidth!==width||renderer.domElement.clientHeight!==height||
-      camera.aspect!==width/height){
+    const compact=width<670;
+    if(viewportWidth!==width||viewportHeight!==height){
+      viewportWidth=width;
+      viewportHeight=height;
       renderer.setSize(width,height,false);
-      camera.aspect=width/height;
-      camera.updateProjectionMatrix();
+      camera.setViewOffset(width,height,compact?0:Math.round(width*.19),
+        compact?Math.round(height*.20):0,width,height);
     }
-    const compact=width<670,a=viewAngles[view],distance=compact?4.7:4.4;
-    camera.position.set(Math.sin(a)*distance,1.95,Math.cos(a)*distance);
-    camera.lookAt(0,.78,0);
-    if(compact)camera.setViewOffset(width,height,0,Math.round(height*.20),width,height);
-    else camera.setViewOffset(width,height,Math.round(width*.19),0,width,height);
     renderer.autoClear=true;
     renderer.render(scene,camera);
     hud.update();
     if(group&&figure&&clip){
+      const rows=(displayed()?.chapters[0]?.frame<=frameLimit()?2.64:2.43)+
+        (canReview?0.205:0)+(currentReview()?.notes.length?0.54:0);
       const scale=Math.min(169,(compact?width*.90:width*.36)/2.02,
-        (compact?height*.47:height*.75)/1.87);
+        (compact?height*.46:height*.75)/rows);
+      hud.setTextDensity(surfaceId,{cssPixelsPerUnit:Math.round(scale),pixelRatio:renderer.getPixelRatio()});
       placeHudInViewport(group,hudCamera,{width,height,pixelsPerUnit:scale,
         x:width*(compact?.5:.77),y:height*(compact?.53:.18),depth:1});
       renderer.autoClear=false;
@@ -408,6 +625,8 @@ export async function openCharacterStudio(document){
     sequence++;
     renderer.setAnimationLoop(null);
     unbind();
+    inputs.abort();
+    orbit.dispose();
     hud.dispose();
     playback?.stop();
     disposeFigure(figure);

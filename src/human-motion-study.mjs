@@ -7,6 +7,13 @@ import {ToroidalLocomotion,toroidalRotation} from './toroidal-locomotion.mjs';
 export const motionStudyRate=30;
 export const humanMotionStudies=Object.freeze({
   'estudio-vuelo':{label:'Despegue, giro y aterrizaje',duration:6,u:.002,v:.245,wet:false,
+    chapters:[
+      {id:'ground',label:'Apoyo en tierra',when:({frame,grounded})=>frame===0&&grounded},
+      {id:'lift',label:'Despegue',when:({input,grounded})=>input.flight&&!grounded},
+      {id:'hover',label:'Vuelo en el lugar',when:({input,grounded})=>input.flight&&!grounded&&!input.vertical&&!input.forward},
+      {id:'turn',label:'Inicio del giro',when:({input,previousInput})=>input.flight&&input.yaw!==previousInput.yaw},
+      {id:'land',label:'Contacto con el suelo',when:({input,grounded,wasGrounded})=>!input.flight&&grounded&&!wasGrounded},
+    ],
     input(time){
       const flying=time>=.72&&time<3.2;
       return {flight:flying,vertical:flying&&time<1.2?1:0,
@@ -53,11 +60,18 @@ export function createHumanMotionStudy(template,stock,scenario){
   const samples=new Float32Array((count+1)*(5+7*nodes.length));
   const rotation=new Quaternion(),dt=1/motionStudyRate;
   let offset=0;
+  const chapters=[],pending=new Set(scenario.chapters);
   try{
     for(let frame=0;frame<=count;frame++){
+      const previousInput=input,wasGrounded=motion.grounded;
       input=scenario.input(frame*dt);
       if(frame)motion.update(dt,input);
       const pose=motion.pose().position;
+      for(const chapter of pending){
+        if(!chapter.when({frame,input,previousInput,grounded:motion.grounded,wasGrounded}))continue;
+        chapters.push({id:chapter.id,label:chapter.label,frame});
+        pending.delete(chapter);
+      }
       actor.position.set(pose.x,pose.y,pose.z);
       actor.animationState=motion.grounded?0:4;
       actor.animationWeights[0]=Number(motion.grounded);
@@ -78,7 +92,7 @@ export function createHumanMotionStudy(template,stock,scenario){
     mixer.uncacheRoot(mesh);
   }
   const targets=new WeakMap();
-  return {count,apply(target,offsetTarget,frame){
+  return {count,chapters,apply(target,offsetTarget,frame){
     let destination=targets.get(target);
     if(!destination){destination=relevantNodes(target);targets.set(target,destination);}
     if(destination.length!==nodes.length)throw Error('Motion study needs the sampled rig');

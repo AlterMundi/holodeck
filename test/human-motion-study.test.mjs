@@ -15,6 +15,11 @@ test('a sampled live flight pose plays on the same rig in either direction',asyn
     return [mount.quaternion.toArray(),mesh.getObjectByName('upperarm_l').quaternion.toArray()];
   };
   assert.equal(run.count,6*motionStudyRate);
+  assert.deepEqual(run.chapters.map(chapter=>chapter.id),['ground','lift','hover','turn','land']);
+  assert.equal(run.chapters[0].frame,0);
+  assert.ok(run.chapters.every(({frame},index)=>!index||frame>run.chapters[index-1].frame));
+  assert.ok(run.chapters.at(-1).frame>3.2*motionStudyRate&&run.chapters.at(-1).frame<run.count);
+
   const airborne=snapshot(78);
   assert.notDeepEqual(airborne,snapshot(0));
   assert.notDeepEqual(airborne,snapshot(run.count));
