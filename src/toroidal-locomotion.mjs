@@ -51,6 +51,7 @@ export class ToroidalLocomotion {
     const floor = this.supportAt(this.u,this.v);
     this.height = Math.max(floor, height ?? floor);
     this.grounded = this.height === floor;
+    this.colliderGrounded = false;
     this.yaw = wrapYaw(yaw);
     this.ringSpeed = 0;
     this.crossSpeed = 0;
@@ -93,7 +94,7 @@ export class ToroidalLocomotion {
   step(ringTarget,crossTarget,flight,vertical,crouch) {
     const immersion = Math.max(0, Math.min(1,(this.waterLevel-this.height-WADE_DEPTH)/(FLOAT_DRAFT-WADE_DEPTH)));
     const speedFactor = 1 - .56 * immersion;
-    const response = this.grounded||flight ? .18 : .065;
+    const response = this.grounded||this.colliderGrounded||flight ? .18 : .065;
     this.ringSpeed += (ringTarget * speedFactor - this.ringSpeed) * response;
     this.crossSpeed += (crossTarget * speedFactor - this.crossSpeed) * response;
     const {tubeRadius, majorRadius} = this.terrain;
@@ -126,9 +127,9 @@ export class ToroidalLocomotion {
     const groundDelta = nextGround - currentGround;
     const distance = Math.hypot(this.ringSpeed, this.crossSpeed) * STEP;
 
-    if (this.jumpQueued && this.grounded) {
+    if (this.jumpQueued && (this.grounded || this.colliderGrounded)) {
       this.radialSpeed = JUMP_SPEED * (1-.7*immersion);
-      this.grounded = false;
+      this.grounded = this.colliderGrounded = false;
     }
     this.jumpQueued = false;
 
