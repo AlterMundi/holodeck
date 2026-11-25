@@ -111,11 +111,14 @@ function buildStage(document){
 }
 
 function bindStudioReturn(wrapper,space){
-  if(!space.exits?.some(exit=>exit.to===ATELIER_FOYER))return;
   const link=wrapper.querySelector('header a');
+  link.onclick=null;
+  link.removeAttribute('aria-disabled');
+  link.textContent='Volver al mundo';
+  if(!space?.exits?.some(exit=>exit.to===ATELIER_FOYER))return;
   link.textContent='Volver al vestíbulo';
   let pending=false;
-  link.addEventListener('click',async event=>{
+  link.onclick=async event=>{
     event.preventDefault();
     if(pending)return;
     pending=true;
@@ -142,7 +145,7 @@ function bindStudioReturn(wrapper,space){
     wrapper.querySelector('output').textContent='No pude abrir la puerta. Volvé a intentar.';
     link.removeAttribute('aria-disabled');
     pending=false;
-  });
+  };
 }
 
 function disposeFigure(figure){
@@ -268,7 +271,7 @@ export function openCharacterStudio(document,table=null){
       if(!visible)return;
       if(typeof space?.id!=='string'||!space.id)throw Error('Missing room');
       canReview=space.id===CHARACTER_STUDIO;
-      if(canReview&&projected)bindStudioReturn(projected.stage,space);
+      if(projected)bindStudioReturn(projected.stage,canReview?space:null);
     }catch{
       canReview=null;
     }finally{
@@ -472,7 +475,7 @@ export function openCharacterStudio(document,table=null){
     const canWriteNote=canReview===true||canSaveLocal();
     show.presentation&&=canReview===true;
     show.accessStatus&&=!canWriteNote;
-    show.checkReviewAccess&&=!canWriteNote&&!checkingAccess;
+    show.checkReviewAccess&&=canReview!==true&&!checkingAccess;
     show.note&&=canWriteNote;
     show.noteTarget&&=Boolean(draftPose&&playback&&keyForPose(draftPose)!==keyForPose(reviewPose()));
     show.reviewNotes&&=notes.length>0;
@@ -506,7 +509,7 @@ export function openCharacterStudio(document,table=null){
   }
   const keyForPose=pose=>JSON.stringify(pose);
   function currentReview(){
-    return review&&playback&&review.key===keyForPose(reviewPose())?review:null;
+    return canReview===true&&review&&playback&&review.key===keyForPose(reviewPose())?review:null;
   }
   const poseLabel=pose=>(names[pose.clip]??pose.clip)+' · fotograma '+pose.frame;
   function exactUrl(pose=reviewPose()){
@@ -523,7 +526,13 @@ export function openCharacterStudio(document,table=null){
       headers:{'content-type':'application/json'},body:JSON.stringify(submission)}:{})});}
     catch{throw Error('No pude confirmar el cambio. Podés volver a intentar.');}
     if(response.status===409)throw Error(conflict);
-    if(response.status===403)throw Error('Entrá al Taller para continuar.');
+    if(response.status===401||response.status===403){
+      canReview=null;
+      review=null;
+      selectedNote='';
+      if(projected)bindStudioReturn(projected.stage,null);
+      throw Error('Cambió el acceso al Taller. Comprobalo para continuar.');
+    }
     const result=response.ok?await response.json().catch(()=>null):null;
     if(!result)throw Error('No pude confirmar el cambio. Podés volver a intentar.');
     return result;
@@ -547,7 +556,7 @@ export function openCharacterStudio(document,table=null){
     refresh();
     try{
       const state=await requestReview(endpoint,null,conflict);
-      if(!visible)return;
+      if(!visible||canReview!==true)return;
       if(publish){
         await requestReview(endpoint,{expectedRevision:state.revision,pose:origin},conflict);
         if(visible)report('Mostraste esta pose en el Taller.');
@@ -571,7 +580,7 @@ export function openCharacterStudio(document,table=null){
     readingReview=true;
     try{
       const notes=await fetchReview(pose);
-      if(playback&&key===keyForPose(reviewPose())){
+      if(canReview===true&&playback&&key===keyForPose(reviewPose())){
         review={key,notes};
         selectedNote='';
         report(notes.length?'':'Todavía no hay notas en esta pose.');
@@ -596,7 +605,7 @@ export function openCharacterStudio(document,table=null){
       draftPose=undefined;
       note='';
       const stillViewing=playback&&keyForPose(reviewPose())===key;
-      if(stillViewing){
+      if(canReview===true&&stillViewing){
         review={key,notes};
         selectedNote=notes.at(-1)?.id??'';
       }

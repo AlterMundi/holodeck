@@ -126,8 +126,11 @@ link can be opened outside the room. Shared feedback still requires current
 room membership. After the server confirms the visitor is outside, the web
 viewer offers a browser-local note. If it cannot confirm the room, the Notes
 panel offers **Comprobar acceso** and keeps preview and link copying available.
-The physical worktable only writes shared notes. Saving a shared note never
-falls back to local storage on failure.
+The physical worktable only writes shared notes. If a room request is denied
+while a review is open, the viewer clears the loaded notes, keeps the pose
+preview and offers **Comprobar acceso**. The visitor can check again after
+returning to the room. A pending shared submission keeps its original pose
+and ID. Saving a shared note never falls back to local storage on failure.
 A draft keeps the rig, clip edition and frame where writing started.
 If the visitor changes poses, the panel shows the draft target. Following a
 new presentation keeps that target and the draft text. A shared save with
