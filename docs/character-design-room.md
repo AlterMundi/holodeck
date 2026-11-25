@@ -29,6 +29,9 @@ authentication and does not change a visitor's active in-world avatar.
 
 ## Shared session and authored motion
 
+Track the [Character Design Room #24](https://github.com/AlterMundi/holodeck/issues/24)
+and [rig-specific motion #21](https://github.com/AlterMundi/holodeck/issues/21).
+
 1. Integrate the exact current robot and humanoid motion revisions.
    Show direction, idle, anticipation, action, settling and return
    as named poses and transitions. First qualify contact in walk

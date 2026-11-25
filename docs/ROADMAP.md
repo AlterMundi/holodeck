@@ -6,14 +6,19 @@ The MVP coverage below remains its own unfinished acceptance record.
 
 The MVP scope includes the [complete environment art production plan](shared-roadmap.md#environment-art-production). Nicolás confirmed entry to the Beacon basement and requested a full visual redesign. The commons, attractive small house exterior, expandable interior, working Beacon instruments and versioned 3D gallery are all part of the same goal, together with the existing native and multi-user acceptance checks.
 
-The current active goal covers the complete shared roadmap, with
-[shared habitation](shared-roadmap.md#first-shared-habitation-iteration) as
-the first release. The selected concept studies set the quality bar for a
-children-oriented default style. The shared scene remains declarative and
-viewers may render it differently. See
-[the world and presentation boundary](shared-roadmap.md#one-declarative-world-individually-styled)
-for the asset and hybrid renderer strategy. Keep controlled results separate
-from real participant and physical-device acceptance.
+The current native goal prioritizes the aesthetic revamp until Nicolás
+changes that direction. The three concurrent fronts cover world art,
+[A2UI projection #16](https://github.com/AlterMundi/holodeck/issues/16)
+and [rig-specific motion #21](https://github.com/AlterMundi/holodeck/issues/21).
+The [Character Design Room #24](https://github.com/AlterMundi/holodeck/issues/24)
+supports joint frame review of that motion. The wider shared roadmap and
+[shared habitation](shared-roadmap.md#first-shared-habitation-iteration)
+remain the product sequence. The selected visual studies set the quality bar
+for a children-oriented default style. The shared scene stays declarative so
+other viewers can present it differently. Apply the
+[world and presentation boundary](shared-roadmap.md#one-declarative-world-individually-styled)
+when choosing generated assets, meshes, splats and hybrid techniques. Record
+controlled, physical-device and independent participant evidence distinctly.
 
 | Outcome | Implemented and checked | Still required |
 | --- | --- | --- |
