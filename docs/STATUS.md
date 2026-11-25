@@ -1,5 +1,26 @@
 # Current MVP work
 
+## November 25 legible Beacon plaques and the compact Matter workspace
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `4e3c2d60b33c` from `565ad77` and Proyección `1a1e29a`.
+Harmonic Beacon, Spatializer and Weaver use solid ivory letters offset from
+their dark plaques. Both authored chamber variants keep their original
+triangle and material counts, and use their own matching light atlases.
+
+The short touch-landscape Matter workspace divides controls into Model,
+View and Table. Choice menus page over the existing panel. The workspace
+leaves the lower touch zones clear, and Escape dismisses a choice before
+exiting the workspace. The desktop layout retains the full tool set.
+
+RTX 2060 rendered the three signs in the game and confirmed the solid
+material. Pi 5 V3D tested emulated touch at 568 × 320 and 568 × 280,
+including a part choice, rotation and a corte adjustment while holding
+ascend. Both are controlled browser fixtures. Holodeck passed 409 tests
+with two skips. Protected readback matched 86 files and the previous
+access, configuration and world sequence 431. Immediate rollback is
+`76bacef3cd52`. The HIT Laboratory composition is a separate draft.
+
 ## November 25 clear touch controls in landscape
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)

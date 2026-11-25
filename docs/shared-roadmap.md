@@ -675,6 +675,32 @@ reduced motion, the unchanged desktop concurrent Conversation flow, mic
 permission granted/refused, recording interruption and upload retry without
 duplicate send.
 
+### Harmonic Lab as a playable resonant volume
+
+Use the black field, turquoise interference traces and high-contrast ivory
+type of the [official HIT cover](https://hit.altermundi.net/tapa2.jpg) as
+the Laboratory's art direction. Design original spaces with organic
+boundaries, suspended elements, and non-orthogonal or surreal architecture.
+Retain stable landmarks and readably traversable routes. Spaces may be
+open volumes, caverns or differentiated local environments.
+
+The [Blender composition study](../art/compaii-house/redesign/lab-hit-study.py)
+places four separate instrument tables around a cyan field above the
+Beacon. It is a draft outside the running game. Preserve the existing
+Spatializer and Weaver routes. The Guitar already exists as a separate
+service card in the owning Laboratory panel. Its deep-link allowlist
+currently selects only `audio` and `body`. Shaper currently runs as part
+of the owner-side `body` service and has its own local API. Qualify an
+authenticated Guitar and Shaper entry through their owning panel before
+giving either new table a real action. Do not route raw local device
+commands through Holodeck.
+
+The Prototype Bench is a scoped portal to the existing 3D Guitar review.
+Preserve its role and authorization. In a new layout, distinguish inspection
+of a prototype from the live Guitar controls. Advance the composition
+through exact in-game placement, walkable geometry, authorizations and
+measured Normal/Livianos using [House #12](https://github.com/AlterMundi/holodeck/issues/12).
+
 ### Nearby interactions and repeatable panel launchers
 
 Use a consistent nearby interaction for authorized doors, worktables and
