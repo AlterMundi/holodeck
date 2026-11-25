@@ -1241,14 +1241,63 @@ lightweight. Software frame times were mixed. At night p95 rose from 183 to
 establish a visual and draw-cost comparison. They leave physical frame pacing
 open.
 
-A separate 14-instance Sand3D test added three draws and about 12,916 rendered
-triangles against its own exact control. That is a smaller pilot than the
-earlier 34-instance test. It remains a trial pending hardware measurements
-and an acceptance decision. Its meshes are absent from the staged runtime.
-
 Exact archive `7608545f20a1` is 33,310,720 bytes and passed 338 tests
 with two skips. The package opened and closed the native map on the real
 terrain in controlled Chromium. The release remains staged.
+
+## Physical Sand3D trail comparison
+
+[Holodeck #20](https://github.com/AlterMundi/holodeck/issues/20) tracks the
+outdoor art direction. An isolated Three.js comparison reused the current
+toroidal ground, cover, atmosphere, terrain worker and the original house
+facade at its actual plot and orientation. The 14-instance variant adds
+sensitive ferns, feather reed grass and pumice at the trail verges. The
+placement nearest the facade was moved back to leave the approach clear.
+
+Chrome 156 reported the physical RTX 2060 as its WebGL renderer. At fixed
+daylight and dusk, the fixture rendered the same 150 camera poses four times
+in off/on/on/off order. The normal buffer was 1200 × 740 and lightweight
+was 660 × 407. The WebGL2 elapsed GPU timer returned all 2,400 samples with
+zero disjoint, skipped or undrained queries.
+
+| Fixture profile | GPU median off → on | GPU p95 off → on |
+| --- | ---: | ---: |
+| Normal daylight | 1.698 → 1.752 ms | 2.332 → 2.389 ms |
+| Normal dusk | 1.701 → 1.757 ms | 2.335 → 2.382 ms |
+| Lightweight daylight | 0.966 → 1.056 ms | 2.622 → 2.520 ms |
+| Lightweight dusk | 1.023 → 1.028 ms | 2.547 → 2.619 ms |
+
+The paired cost was three draws and 12,916 triangles in 1,194 of 1,200
+poses. The other six normal-profile pairs included differences in the
+background geometry workload. After omitting those pairs and the first
+15 frames of each run, the per-repeat median of same-pose GPU differences
+was +0.055–0.057 ms in normal and +0.063–0.074 ms in lightweight. The
+observed p95 animation frame interval was 16.7 ms in each condition.
+Each condition used one ABBA block and two runs per arm. Lightweight
+control medians varied by 0.106–0.135 ms between repeats. The cluster
+stayed enabled over the measured approach. These short runs screen the visible cluster, leaving distance
+culling, full-game rendering, streaming and weaker devices to verify.
+
+The matched day approach and dusk return views show more irregular detail
+at the verges while the path and door remain readable. Some individual
+clusters still stand out on otherwise bare ground. The house entrance
+needs a composed transition from path to threshold before this reads as
+a finished exterior. Keep the three meshes available for art iteration
+and out of the default package. Compose the near-house grouping and
+threshold with the actual facade, then qualify exact package size and
+lightweight physical performance before adopting the optional cluster.
+
+Fable High advised matching camera steps and checking GPU cost and the
+archive separately. Opus 5.5 High flagged per-run drift, first-frame
+effects and tar alignment. The paired analysis above addresses the
+first two within this sample. The three GLBs total 306,436 raw bytes,
+over the 233,472-byte gross difference between the protected archive
+and its ceiling. A standalone Brotli pass at quality 11 produced 84,010
+bytes across the three files. Exact size depends on packaging only the
+compressed representation and counting inventory, tar headers,
+alignment and integration code. The existing asset manifest records
+Sandflow and CC-BY-4.0 attribution. Any distribution must carry it
+through to the release. Production stays on `20726f08a3e0`.
 
 ## Authored flight and swimming poses
 

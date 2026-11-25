@@ -553,8 +553,11 @@ resolves the captured cloud discontinuity. Extend the physical comparison to
 the full house approach and the two-visitor workshop route. The
 [oriented arrival candidate](playtest-iteration.md#arrival-aligned-with-the-existing-house-entrance)
 crossed the authored exterior door and returned in both RTX profiles using
-fixture identities. The physical Sand3D comparison and real shared workshop
-visit remain open.
+fixture identities. The [physical Sand3D trial](playtest-iteration.md#physical-sand3d-trail-comparison)
+screened the 14-instance verge cluster on the RTX 2060 in both profiles
+by day and at dusk. Compose the entrance and vegetation as one scene,
+then check exact package size and a weaker physical device before adopting
+the optional cluster. The real shared workshop visit remains open.
 
 Compare the same outside path, working table, map and open Conversation
 on the existing build. Final preset selection covers a dark and a light
