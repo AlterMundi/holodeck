@@ -400,3 +400,10 @@ sequence for selection, a fixed action row, and page/revision checks before
 applying any action. The native panel uses Proyección's paged choice and
 keeps the existing fetch boundary of up to 20 records. It retains the HTML
 dialog as the presentation fallback for loss of a usable native frame.
+
+Opus 5.5 High found that the initial native modal could open above the
+Conversation or creator forms and send their Enter/Space to an Activity
+control. The correction keeps the launcher unavailable during those forms,
+rechecks the affordance before opening, isolates the legacy DOM overlays as
+inert while Activity owns focus, and routes no external form activation
+through the native modal. Close and fallback release that ownership.
