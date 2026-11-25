@@ -225,6 +225,23 @@ installed release `1c78c31a2b82`. Reciprocal studio doors resolved. The room
 rule admitted one configured human guest and the house owner's daimon
 identity. The copy omitted Home sign-in. The protected release still needs
 selection of the candidate and a two-session receiving trial.
+
+## November 25 world-anchored nearby action labels
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `8772912dd7ed` from `9a7bda4`. A reusable Three.js world label
+shows the currently offered E action over the Materializer worktable
+or the selected interior doorway. It uses the authorized nearby action as
+its source and leaves the current keyboard and touch controls in place.
+It adapts to the light and dark HUD palettes and uses scene depth.
+
+The exact RTX 2060 fixture verified the label's placement, absence after
+entering the table, and passage with an open Conversation draft. The
+viewport regression covers off-screen anchors, depth scaling and texture
+replacement. The release passed 411 tests with two skips. Protected
+readback matched 86 files, protected access, receiving configuration and
+world sequence 433. Immediate rollback is `4e3c2d60b33c`.
+
 ## November 25 legible Beacon plaques and the compact Matter workspace
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)

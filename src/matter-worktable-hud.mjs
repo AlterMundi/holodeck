@@ -364,8 +364,14 @@ export class MatterWorktableHud{
     this.send(type,content);
   }
 
+  get nearbyTableAvailable(){return this.mode==='enter'&&!this.blocked&&this.table.available;}
+
+  get compactCharacterTable(){
+    return this.active&&this.table!==this.collectionTable&&this.compactTouch()==='landscape';
+  }
+
   enter(){
-    if(this.mode!=='enter'||this.blocked||!this.table.available||!this.canEnter())return;
+    if(!this.nearbyTableAvailable||!this.canEnter())return;
     this.previousFocus=this.document.activeElement;
     this.restoreEntryFocus=this.ownsAccessibleInput(this.previousFocus);
     this.previousFocus?.blur();
@@ -515,7 +521,7 @@ export class MatterWorktableHud{
 
   landscapeGrip(){
     const {clientWidth:width,clientHeight:height}=this.canvas;
-    const fitShortTable=this.active&&this.table===this.collectionTable?Math.max(98,(height-190)/1.21):137;
+    const fitShortTable=this.active?Math.max(98,(height-190)/1.21):137;
     return Math.min(137,Math.max(112,width*.205),fitShortTable);
   }
 
@@ -701,7 +707,7 @@ export class MatterWorktableHud{
   }
 
   useNearbyTable(event){
-    if(this.mode!=='enter'||event.code!=='KeyE'||event.repeat||event.isComposing||
+    if(!this.nearbyTableAvailable||event.code!=='KeyE'||event.repeat||event.isComposing||
       event.defaultPrevented||event.altKey||event.ctrlKey||event.metaKey||
       event.composedPath().some(target=>target.matches?.('input,textarea,button,summary,select,[contenteditable]')))return false;
     return this.enter();
@@ -720,7 +726,7 @@ export class MatterWorktableHud{
     const bounds=dock?this.hud.getSurfaceBounds(group.name):null;
     const compactText=(key==='toolPlacement'&&this.toolLayout?.compact)||
       (key==='doorPlacement'&&this.door.compact);
-    const fontSize=compactText?12:15;
+    const fontSize=key==='workPlacement'&&this.compactCharacterTable?13:compactText?12:15;
     const signature=[viewport.width,viewport.height,x,y,scale,pixelRatio,fontSize,dock?.depth,
       bounds?.left,bounds?.right,bounds?.top,bounds?.bottom].join(':');
     if(this[key]?.group===group&&this[key].signature===signature)return;
@@ -830,6 +836,11 @@ export class MatterWorktableHud{
       this.camera.updateProjectionMatrix();
       this.layer.invalidate();
     }
+    if(this.group&&this.active&&this.table!==this.collectionTable){
+      const short=this.compactCharacterTable;
+      this.hud.setChoicePresentation(surfaceId,short?'overlay':'inline');
+      this.hud.setChoicePageSize(surfaceId,short?(height<300?1:2):undefined);
+    }
     if(this.group&&this.workCompact){
       if(this.workLayoutDirty){this.hud.update();this.workLayoutDirty=false;}
       const reservedBottom=bottom+1.21*this.landscapeGrip()+6;
@@ -838,6 +849,10 @@ export class MatterWorktableHud{
         (height-top-reservedBottom-18)/(this.workLow?.86:1.06)));
       this.place(this.group,'workPlacement',{...viewport,insets},
         width-right-8-scale*(compactWorkWidth+.12)/2,top+10,scale);
+    }else if(this.group&&this.compactCharacterTable){
+      const insets={left:left+(width-left-right)*.36,right,top,bottom:bottom+1.21*this.landscapeGrip()+6};
+      const scale=Math.min(144,(width-insets.left-right-16)/2.32);
+      this.place(this.group,'workPlacement',{...viewport,insets},width-right-8-1.16*scale,top+10,scale);
     }else{
       const taller=this.lookPreview.name==='taller';
       const scale=taller?Math.min(170,(width-left-right-24)/2.46,(height-top-bottom-124)/1.9):

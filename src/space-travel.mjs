@@ -6,6 +6,17 @@ const STAIR_RANGE=.85;
 const PORTAL_RANGE=.90;
 let doorOfferRevision=0;
 
+export function indoorDoorLabelAnchor(door,kind){
+  if(!door)return null;
+  const heading=(door.yaw??0)*Math.PI/180;
+  const setback=kind==='door'?.58:0;
+  return {
+    x:door.x+Math.sin(heading)*setback,
+    y:door.y+(kind==='door'?2.18:1.75),
+    z:door.z+Math.cos(heading)*setback,
+  };
+}
+
 export async function readSpace(signal){
   const result=await fetch(new URL('api/space?live=1',base()),{credentials:'same-origin',signal});
   if(!result.ok)throw Error('No pude confirmar el lugar.');
@@ -103,7 +114,8 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
     list.append(control);
   }
   const doorOffer=()=>!suspended&&near&&!doorCovered()?
-    {scope:space.id,revision:nearRevision,title:near.title,busy}:null;
+    {scope:space.id,revision:nearRevision,title:near.title,busy,
+      anchor:inside?indoorDoorLabelAnchor(near.door,near.kind):null}:null;
   const followDoor=(scope,expectedRevision)=>{
     const offer=doorOffer();
     if(offer&&!offer.busy&&offer.scope===scope&&offer.revision===expectedRevision)return move(near,expectedRevision);

@@ -1,7 +1,17 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
-import {arrivalDoor,doorLocation,showSpaceLinks} from '../src/space-travel.mjs';
+import {arrivalDoor,doorLocation,indoorDoorLabelAnchor,showSpaceLinks} from '../src/space-travel.mjs';
+
+test('a doorway label sits forward of the approach point along the visible passage',()=>{
+  const door={x:-3,y:.11,z:-4.81,yaw:180};
+  const label=indoorDoorLabelAnchor(door,'door');
+  assert.ok(Math.abs(label.x+3)<1e-6);
+  assert.ok(Math.abs(label.z+5.39)<1e-6);
+  assert.ok(label.y>2.1);
+  const portal=indoorDoorLabelAnchor(door,'portal');
+  assert.equal(portal.z,door.z);
+});
 
 test('crossing a house threshold uses both sides of the same door',()=>{
   const exterior={id:'outside'};
