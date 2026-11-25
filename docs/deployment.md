@@ -747,10 +747,18 @@ session storage were preserved; served Apps metadata is retained but hidden.
 
 ## Recovery
 
+The [underwater feedback release](STATUS.md#november-25-underwater-controls-and-companion-posture)
+`8a2e0d75c9b4` changes the packed client and entry HTML. Use
+`2286ee700dc7` as immediate rollback or `a76e321eb728` for older
+published recovery. The superseded `2a4ff7ba1da6` archive was retired
+from publication after verification. Published history uses
+100,546,560 bytes.
+
+
 The [mapped swim crossing](STATUS.md#november-25-mapped-swim-crossing)
-`2286ee700dc7` changes the packed client and terrain worker. Use
-`a76e321eb728` for immediate rollback or `2a4ff7ba1da6` for older
-published recovery. The superseded `0878bc6c67fc` archive was retired
+`2286ee700dc7` changed the packed client and terrain worker. Its prior recovery
+record selected `a76e321eb728` and `2a4ff7ba1da6` as the
+compatible published versions at that time. The superseded `0878bc6c67fc` archive was retired
 from publication after local verification. The client uses Brotli quality
 11 and the existing receiver. Published history uses 100,587,520 bytes.
 

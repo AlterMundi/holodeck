@@ -577,9 +577,11 @@ identify the real passage from the near landscape and preserve its two
 mouths. The live [overlook guide](playtest-iteration.md#overlook-spur-shore-and-swim-crossing)
 identifies the existing shore and distinguishes the water crossing from
 the dry spur. A [continuous physical crossing](playtest-iteration.md#continuous-crossing-from-shore-to-inner-overlook)
-verified the whole water leg and dry arrival on RTX and Pi. The bare
-Mirador, underwater companion pose and key guidance, wider landscape
-coverage and the independent shared workshop visit remain open.
+verified the whole water leg and dry arrival on RTX and Pi.
+The selected [water feedback](playtest-iteration.md#underwater-controls-and-companion-posture)
+now shows the active keyboard controls and gives the companion a blended
+water posture. Touch descent, the bare Mirador, wider landscape coverage
+and the independent shared workshop visit remain open.
 
 Compare the same outside path, working table, map and open Conversation
 on the existing build. Final preset selection covers a dark and a light

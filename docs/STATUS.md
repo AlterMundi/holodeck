@@ -1,9 +1,21 @@
 # Current MVP work
 
+## November 25 underwater controls and companion posture
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `8a2e0d75c9b4` from `0b070d9`. The desktop vertical controls
+follow the actual movement mode, and the companion pitches for water
+using its existing rig. The exact package passed the water transition
+on RTX 2060 and Pi 5. Immediate rollback is `2286ee700dc7`.
+[Checks](playtest-iteration.md#underwater-controls-and-companion-posture)
+cover keyboard, surfacing and the existing shared world. Touch descent
+and independent authenticated views remain open.
+
+
 ## November 25 mapped swim crossing
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
-serves `2286ee700dc7` from `f52fef0`. The exterior map shows the
+selected `2286ee700dc7` from `f52fef0` for this update. The exterior map shows the
 existing spur as a solid trail and a dashed swim crossing, with shore
 and overlook markers. [Exact physical evidence](playtest-iteration.md#overlook-spur-shore-and-swim-crossing)
 covers RTX 2060 keyboard water entry, dive and resurfacing and Pi 5

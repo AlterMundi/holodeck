@@ -2002,3 +2002,42 @@ The route also exposed art and guidance gaps. The Mirador currently
 lands on a bare slope. In the underwater view the avatar uses the swim
 pose, the companion has no distinct water locomotion state, and the
 desktop key prompt still advertises crouch and jump.
+
+
+## Underwater controls and companion posture
+
+The toroidal motion adapter reports the same local swimming and deep
+surface state it uses for vertical input. The desktop hint now shows
+Shift to dive and Space to rise while that input is active. On land and
+in flight it shows the applicable bindings. It changes text only when
+the instruction differs, including across surface and submerged states.
+Repeated ascent taps preserve swim mode without enabling flight.
+
+The ceramic companion reuses its authored glide and hover body poses
+in water. The root pitches relative to toroidal gravity, lower at the
+surface, steeper during descent, then nearer upright as it rises and
+returns to land. Glide cadence is slower in water, and reduced motion
+keeps a static base pose. The tabletop perch retains its own pose and
+scale. The companion asset, presence protocol and collision are intact.
+
+The clean candidate `8a2e0d75c9b4` from `0b070d9` has 84 payloads
+and changes only the compressed client and entry HTML. The source suite
+passed 370 tests, with two optional skips. Fable High reviewed the
+shared mode source and pitch. Opus 5.5 High identified the flight-off
+escape, live-region deduplication, stale state on teardown and the
+reduced-motion blend. All four were corrected and verified on the
+exact candidate or in the focused pose regression.
+
+The protected `8a2e0d75c9b4` package was checked on RTX 2060 Normal
+and Raspberry Pi 5 Livianos. Both exercised keyboard ground and flight,
+deep-surface entry, descent, repeated ascent taps, surfacing and
+shore exit. Shore segments used controlled starting positions. The
+companion root pitched about 60–61° during the captured descent,
+returned to about 23° at the deep surface and was below 1° on dry
+ground. The keyboard hint was visible in the desktop capture. At
+the Pi fixture viewport its copy was read from the DOM. Touch
+descent, independent peers and shared visitor acceptance remain open.
+
+All 84 installed files, protected client bytes, access configuration
+and the native world state matched. Immediate rollback is
+`2286ee700dc7`. The temporary technical reader was revoked.
