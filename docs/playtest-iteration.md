@@ -935,6 +935,19 @@ Fable High reviewed the retirement boundary before implementation. Opus
 owner revocation, actor-scoped pending receipt access, and explicit native
 archive status. The exact package `4e578448c13c` restarts with a retained
 garden, hides light tools on desktop and emulated touch and preserves the
-minimap. The source suite reported 331 passing tests and two skips. The
-existing browser release and its established rollback remain selected until
-activation.
+minimap. The source suite reported 331 passing tests and two skips.
+The exact combined package also passed the Harmonic Lab station and viewer
+fixture on desktop and emulated touch, including browser WebGL fallback,
+preserved iframe state and clean close. The exact standalone Node24 entry
+passed two independent MML visitors, shared bridge state, projected updates
+to both and same-original command recovery.
+
+The current receiving selector is `883efcd70ed1` with `8b3d41a7410a` as
+rollback. At the activation check two human participants were connected.
+The already-published Harmonic Lab package `52dccaadf135` remains the
+operator artifact's current pending version. The combined archive is
+locally qualified. The supported archive writer protects both the
+artifact's current and immediately previous versions, so prepare a
+compatible bounded replacement or use the existing staged cutover after
+the visit ends. No production selection or archive retirement occurred in
+this pass.
