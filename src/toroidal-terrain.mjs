@@ -157,8 +157,39 @@ export function terrainTrail(u,v,terrain = TOROIDAL_TERRAIN) {
   return 1-fade(Math.max(0,Math.min(1,(distance-1.2)/2.4)));
 }
 
+// Seeded woodland belts along the arrival meadow and south ridge. Offsets
+// remain in the same parcel frame as the house and footpath.
+const woodlandBelts=[
+  [71,66,37,54], [124,106,63,60], [170,61,59,56],
+  [-61,62,32,35], [-85,105,43,49],
+  [61,-81,36,56], [117,-125,57,71], [164,-197,59,72],
+  [-81,-78,46,64], [-114,-172,67,84], [-156,-255,73,68],
+];
+
+export function woodlandCoordinates(x,z,terrain = TOROIDAL_TERRAIN) {
+  return {u:z/(TAU*terrain.majorRadius),v:.25-x/(TAU*(terrain.tubeRadius+18))};
+}
+
+export function terrainWoodland(u,v,height,terrain = TOROIDAL_TERRAIN) {
+  if(height<terrain.waterLevel+4||height>59)return 0;
+  const x=(wrap(.75-v)-.5)*TAU*(terrain.tubeRadius+18);
+  const z=(wrap(u+.5)-.5)*TAU*terrain.majorRadius;
+  if(Math.abs(x)>235||z< -323||z>170)return 0;
+  let edge=0;
+  for(const [cx,cz,width,length] of woodlandBelts){
+    const radius=((x-cx)/width)**2+((z-cz)/length)**2;
+    edge=Math.max(edge,1-radius);
+  }
+  if(edge<=0)return 0;
+  const variation=periodicNoise(u,v,416,112,terrain.seed^0xa6c738);
+  const irregular=fade(Math.max(0,Math.min(1,edge*1.85+variation*.19)));
+  const understory=fade(Math.min(1,(height-terrain.waterLevel-4)/7));
+  const treeline=fade(Math.min(1,(59-height)/12));
+  return irregular*understory*treeline*(1-terrainTrail(u,v,terrain));
+}
+
 const groundColors={
-  moss:[.077,.168,.065], grass:[.163,.256,.079], straw:[.276,.261,.107],
+  woodland:[.071,.109,.041], moss:[.077,.168,.065], grass:[.163,.256,.079], straw:[.276,.261,.107],
   scree:[.291,.264,.227], highStone:[.367,.348,.294], wetSand:[.28,.239,.172],
   sediment:[.136,.16,.12], trail:[.423,.344,.214],
 };
@@ -176,6 +207,7 @@ export function terrainMeadowMoisture(u,v,height,terrain = TOROIDAL_TERRAIN) {
 
 export function terrainColor(u,v,height,slope,terrain = TOROIDAL_TERRAIN) {
   const moisture=terrainMeadowMoisture(u,v,height,terrain);
+  const woodland=terrainWoodland(u,v,height,terrain);
   const growth=fade(Math.max(0,Math.min(1,moisture/.61)));
   const moss=fade(Math.max(0,Math.min(1,(moisture-.56)/.39)));
   const patch=(periodicNoise(u,v,512,192,terrain.seed^0x412da5)+1)/2;
@@ -188,7 +220,8 @@ export function terrainColor(u,v,height,slope,terrain = TOROIDAL_TERRAIN) {
   const trail=terrainTrail(u,v,terrain)*(1-submerged)*.72;
   const soil=groundColors;
   return soil.grass.map((value,axis)=>{
-    const vegetation=mix(mix(soil.straw[axis],value,growth),soil.moss[axis],moss);
+    const meadow=mix(mix(soil.straw[axis],value,growth),soil.moss[axis],moss);
+    const vegetation=mix(meadow,soil.woodland[axis],woodland*.60);
     const stone=mix(soil.scree[axis],soil.highStone[axis],crest);
     const dry=mix(vegetation,stone,Math.max(rock,crest*.86));
     const shoreColor=mix(mix(dry,soil.wetSand[axis],shore*.85),soil.sediment[axis],submerged);

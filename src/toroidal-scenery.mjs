@@ -1,4 +1,5 @@
 import {approachCoordinates,Sand3DTrail} from './sand3d-trail.mjs';
+import {ToroidalWoodland} from './toroidal-woodland.mjs';
 import {ToroidalOverlook} from './toroidal-overlook.mjs';
 import {ToroidalMeadowBanks} from './toroidal-meadow-banks.mjs';
 import {
@@ -8,7 +9,7 @@ import {
 import {CAVE} from './toroidal-cave.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
 import {
-  overlookCoordinates, TOROIDAL_TERRAIN, terrainCoordinates, terrainElevation, terrainMeadowMoisture, terrainPosition, terrainTile, terrainTrail,
+  overlookCoordinates, TOROIDAL_TERRAIN, terrainCoordinates, terrainElevation, terrainMeadowMoisture, terrainPosition, terrainTile, terrainTrail, terrainWoodland,
 } from './toroidal-terrain.mjs';
 
 const LEVEL=7;
@@ -88,7 +89,7 @@ function meadowCell(cell,index,door){
   const fold=349*TAU*u+188*TAU*v+1.3*Math.sin(54*TAU*u-93*TAU*v);
   const pocket=287*TAU*u-420*TAU*v+.9*Math.sin(76*TAU*u+58*TAU*v);
   const moisture=terrainMeadowMoisture(u,v,h);
-  const growth=.47+moisture*.19+.21*Math.sin(fold)+.17*Math.sin(pocket);
+  const growth=(.47+moisture*.19+.21*Math.sin(fold)+.17*Math.sin(pocket))*(1-.40*terrainWoodland(u,v,h));
   if(pick(229)>growth)return null;
   const vigor=pick(421)**1.6;
   return {u,v,h,yaw:pick(321)*TAU,size:.30+vigor*.51+growth*.14,
@@ -273,6 +274,7 @@ export class ToroidalScenery {
     this.daylight={value:1};
     this.detail=base?new Sand3DTrail(scene,base,approach,useSceneryDaylight,this.daylight):null;
     this.meadow=new ToroidalMeadowBanks(scene,useSceneryDaylight,this.daylight);
+    this.woodland=new ToroidalWoodland(scene,colliders,useSceneryDaylight,this.daylight);
     this.overlook=new ToroidalOverlook(scene,colliders);
     this.ribbonGrass.name='Trail-side tufts';
     this.blooms.name='Trail-edge wildflowers';
@@ -307,6 +309,7 @@ export class ToroidalScenery {
     this.overlook.update(position);
     // Authored landmarks and their colliders are independent of ground cover.
     if(!groundCoverReady)return;
+    this.woodland.update(position,lightweight);
     this.detail?.update(position,lightweight,door);
     const {u,v}=terrainCoordinates([position.x,position.y,position.z]);
     if(![u,v].every(Number.isFinite))return;
@@ -417,6 +420,7 @@ export class ToroidalScenery {
   dispose() {
     this.detail?.dispose();
     this.meadow.dispose();
+    this.woodland.dispose();
     for(const geometry of this.fieldGeometry)geometry.dispose();
     this.field.material.dispose();
     this.field.dispose();
