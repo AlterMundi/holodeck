@@ -202,3 +202,18 @@ the protected UI assets, audience, configuration and native world with
 30 entities and four creation nodes. Rollback is `a4bfd4f17dee`.
 Continue through the exhibit rooms and active workbench in the same
 visual language, with independent signed-in visitors still pending.
+
+### Active interior reference on the torus
+
+The exact protected package `6a7916621c6c` ran in a Chromium fixture
+from the foyer through Matter and Harmonic Lab and back. Matter's return
+has a generic projected door and a second floating “Vestíbulo” label over
+the authored lintel. Harmonic Lab's return reads as a generic blue door
+tacked on top of the stair landing. The existing Prototypes, Spatializer
+and Weaver station objects resolve in the active Lab.
+
+Use those live torus rooms for subsequent comparisons. Let the authorized
+destination own a single readable plaque integrated with its frame. Preserve
+the current passage slots, interaction prompts and collision clearance.
+Compare the instruments from the approach and at use distance before
+changing architectural fill, then review the active table and exhibits.

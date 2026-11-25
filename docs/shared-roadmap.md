@@ -643,6 +643,20 @@ from world activity, MML and other identities. Release movement on canceled
 or lost capture, focus loss and backgrounding. Without motion effects,
 ancillary chrome changes visibility directly.
 
+In short landscape layouts, put the joystick by the lower left safe edge
+and jump/vertical actions by the lower right. Keep the slim toolbelt in
+the lower center when available, without stacking it above the movement
+controls. Reflow at actual viewport and safe-area changes, including
+rotation, keyboard and fullscreen transitions. Surface the existing
+fullscreen action from the landscape HUD. Rotation can offer the action
+but browser fullscreen requires a deliberate tap. A supported Telegram
+Mini App host can use its own fullscreen and safe-area events. Keep the
+compact layout usable in Telegram's ordinary in-app browser and wherever
+fullscreen is unavailable, denied or exited. Qualify both launch routes
+before claiming the client navigation bar is hidden.
+[Web Fullscreen API](https://developer.mozilla.org/en-US/docs/Web/API/Element/requestFullscreen)
+and [Telegram Mini Apps](https://core.telegram.org/bots/webapps).
+
 Verify real Telegram Android portrait and landscape, plus desktop keyboard
 and mouse and a touch/keyboard hybrid. Compare the same world and HUD
 before and after at the same camera, including a bright background, the
