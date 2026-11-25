@@ -2,6 +2,19 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `c28bf4c896932722e9289f5f820637262259a5bb` locks Holodeck to the published Proyección alpha.14
+archive instead of the optical branch source archive. The release
+has SHA-256 `19e8824178997111b7223776f33befc989ca91051efb22ab19f856b5432e1e70`.
+All installed Proyección source files matched the previous pin.
+The combined archive
+`f662e8336f3972e098a750c13430501fa29488ce8c9af04c4485fc5520b7a906`
+matched all 87 payloads. Only the package version in the third-party
+notices changed from `beff1cc`; browser, server and art bytes matched.
+The independent host-lock probe downloaded and installed the release,
+found one Three.js instance and passed the rendered HUD, pointer,
+teardown and two-session Matter checks. Holodeck passed 416 tests
+with two skips.
+
 Source `beff1ccde88dd966ba1f3ba46e2f590e9349d594` brings the combined
 candidate onto the selected Harmonic Lab floor from `d26bd46`. The
 archive `d8c2d5efe63b45039bb56d6a48aa97cfea4cc4410f07936a78be7bfe6efb9f3d`
