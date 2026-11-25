@@ -50,6 +50,18 @@ the exact landing frame. Captures cover portrait, short landscape and
 desktop. Visual review confirmed complete action labels on the portrait
 Notes row. Expanded menus still fit to available height.
 
+Candidate `bcbc28c14ac3` carries the protected Matter and Harmonic Lab
+passages from `1c3e309` and pins Proyección
+`391a2eddcb472942ababc821ad2c2373ba1e0a57`. The renderer passed 721 tests.
+Archive `cc3cd7aa015b76630fad9ed20dfc71b34b4c8a911befae212f3f6e1e3e48effc`
+matches all 87 payloads, including the byte-identical live Atelier door
+asset. Holodeck passed 405 tests with two skips. At 780 × 390, Chromium
+touch paged to the takeoff bookmark, selected frame 22 and retained it
+on rotation to portrait. A second fixture visitor remained at frame 78.
+The open landscape menu stays on screen. Its panel still scales, so some
+surrounding labels shorten and the visible hit targets are smaller than
+in portrait.
+
 The protected world serves `b4031531fdfd`. Holodeck's release selection
 and the visit with two independently signed-in visitors remain open.
 
