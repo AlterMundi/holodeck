@@ -580,8 +580,10 @@ the dry spur. A [continuous physical crossing](playtest-iteration.md#continuous-
 verified the whole water leg and dry arrival on RTX and Pi.
 The selected [water feedback](playtest-iteration.md#underwater-controls-and-companion-posture)
 now shows the active keyboard controls and gives the companion a blended
-water posture. Touch descent, the bare Mirador, wider landscape coverage
-and the independent shared workshop visit remain open.
+water posture. [Touch swimming](playtest-iteration.md#touch-swimming-and-shore-release)
+adds independent vertical buttons with continuous joystick travel on the
+same shore. The bare Mirador, wider landscape coverage and the independent
+shared workshop visit remain open.
 
 Compare the same outside path, working table, map and open Conversation
 on the existing build. Final preset selection covers a dark and a light

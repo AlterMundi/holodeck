@@ -2041,3 +2041,29 @@ descent, independent peers and shared visitor acceptance remain open.
 All 84 installed files, protected client bytes, access configuration
 and the native world state matched. Immediate rollback is
 `2286ee700dc7`. The temporary technical reader was revoked.
+
+
+## Touch swimming and shore release
+
+Exterior movement keeps the joystick and swaps the jump surface for
+independent **Subir** and **Bajar** controls at the deep surface and
+underwater. The two fingers can move laterally and vertically together.
+The renderer invalidates vertical captures when their surface changes
+and retains the unchanged stick at the shore. Touch gestures on the
+game canvas stay with the game. Conversation and other HTML panels
+retain their browser gestures.
+
+The exact protected release `bd94dc35ba06` from `b183414` pins Proyección
+`27de258`. Its archive contains 84 payloads, with only the packed client
+and entry HTML changed. Proyección passed 719 tests. Holodeck passed
+370 with two optional skips. Both browsers held actual pointer capture
+during a stick drag with a second finger diving, stopped vertical motion
+on touch cancellation, surfaced at radial height −9.96 m and continued
+onto dry ground with the stick held. Tested in Chromium on RTX 2060
+Normal and Raspberry Pi 5 Livianos using emulated touch. Captures cover
+390×780 and 667×375. Test visitors used fixture identities.
+
+The installed files, protected HTTPS assets, audience, shared world
+and compatible previous release matched the preflight. The task-owned
+technical reader was revoked. Independent authenticated visitors and
+physical touchscreen use remain unverified.

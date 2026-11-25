@@ -1,9 +1,19 @@
 # Current MVP work
 
+## November 25 touch swimming
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `bd94dc35ba06` from `b183414`. Touch shows **Subir** and
+**Bajar** at the deep-water surface, underwater and in flight. Land
+shows **Saltar**. The joystick retains its finger through the shore
+transition. [Physical Chromium checks](playtest-iteration.md#touch-swimming-and-shore-release)
+used touch emulation on RTX 2060 and Raspberry Pi 5. Immediate
+rollback is `8a2e0d75c9b4`. Independent visitors remain to be verified.
+
 ## November 25 underwater controls and companion posture
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
-serves `8a2e0d75c9b4` from `0b070d9`. The desktop vertical controls
+selected `8a2e0d75c9b4` from `0b070d9` for this update. The desktop vertical controls
 follow the actual movement mode, and the companion pitches for water
 using its existing rig. The exact package passed the water transition
 on RTX 2060 and Pi 5. Immediate rollback is `2286ee700dc7`.

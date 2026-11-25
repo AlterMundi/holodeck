@@ -747,6 +747,12 @@ session storage were preserved; served Apps metadata is retained but hidden.
 
 ## Recovery
 
+The [touch swimming release](STATUS.md#november-25-touch-swimming)
+`bd94dc35ba06` changes the packed client and entry HTML. Immediate
+rollback is `8a2e0d75c9b4`; `2286ee700dc7` remains in published
+recovery. The verified local archive `a76e321eb728` was retired from
+published history. Published history uses 100,505,600 bytes.
+
 The [underwater feedback release](STATUS.md#november-25-underwater-controls-and-companion-posture)
 `8a2e0d75c9b4` changes the packed client and entry HTML. Use
 `2286ee700dc7` as immediate rollback or `a76e321eb728` for older
