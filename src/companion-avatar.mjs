@@ -1,8 +1,9 @@
-import {AnimationClip, AnimationMixer, Quaternion, Vector3} from 'three';
+import {AnimationClip, AnimationMixer, Quaternion, Ray, Vector3} from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {AVATARS} from './avatar-registry.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
+import {terrainCoordinates,terrainElevation,terrainFrame} from './toroidal-terrain.mjs';
 import {MatterHologram,matterAvatarScale} from './matter-flight.mjs';
 import {TabletopGlance} from './tabletop-attention.mjs';
 import {TabletopCompanionPerch} from './tabletop-companion-perch.mjs';
@@ -11,7 +12,8 @@ const appearance='compaii-navegante-white-v1';
 const localUp=new Vector3(0,1,0);
 const localRight=new Vector3(1,0,0);
 const jawTravel=12/515;
-const strideDistance=.396;
+const walkStride=.396;
+const runStride=.68;
 const followAcceleration=4.5;
 const followDeceleration=6;
 const maximumFollowSpeed=8.5;
@@ -59,6 +61,7 @@ async function loadFigure(url){
   const head=root.getObjectByName('head');
   const idle=animations.find(clip=>clip.name==='calm');
   const walk=animations.find(clip=>clip.name==='walk');
+  const run=animations.find(clip=>clip.name==='run');
   const hover=animations.find(clip=>clip.name==='hover');
   const glide=animations.find(clip=>clip.name==='glide');
   const lift=animations.find(clip=>clip.name==='lift');
@@ -68,13 +71,16 @@ async function loadFigure(url){
     dispose();
     throw Error('Invalid Navegante asset');
   }
-  const driven=new Set([walk,hover,glide,lift,landing].flatMap(clip=>clip?.tracks.map(track=>track.name)??[]));
+  const driven=new Set([walk,run,hover,glide,lift,landing].flatMap(clip=>clip?.tracks.map(track=>track.name)??[]));
   const face=new AnimationClip('calm-overlay',idle.duration,idle.tracks.filter(track=>!driven.has(track.name)));
   const body=new AnimationClip('calm-base',idle.duration,idle.tracks.filter(track=>driven.has(track.name)));
   mixer.clipAction(face).play();
   const still=body.tracks.length?mixer.clipAction(body).play():null;
-  const stride=walk?mixer.clipAction(walk).play():null;
-  if(stride)stride.setEffectiveWeight(0).paused=true;
+  const groundClips=[walk,run].map(clip=>{
+    const action=clip?mixer.clipAction(clip).play():null;
+    if(action)action.setEffectiveWeight(0).paused=true;
+    return action;
+  });
   const hovering=hover?mixer.clipAction(hover).setEffectiveWeight(0).play():null;
   const gliding=glide?mixer.clipAction(glide).setEffectiveWeight(0).play():null;
   const edges=new Map([[true,lift],[false,landing]].map(([key,clip])=>{
@@ -86,7 +92,7 @@ async function loadFigure(url){
   // The prior object-joint asset used Y-up local axes.
   const vertical=hinge.isBone?'z':'y', hingeAxis=hinge.isBone?'x':'z';
   const jawHeight=hinge.position[vertical], jawAngle=hinge.rotation[hingeAxis];
-  let walking=0,floating=0,cruising=0,phase=0,priorAir;
+  let walking=0,running=0,floating=0,cruising=0,phase=0,priorAir;
   return {root,dispose,resetGlance:()=>glance.reset(),pose(seconds,level,speed,motion,airborne,gaze,resetEdge,liftAllowed,water){
     glance.restore();
     const step=Math.min(.05,Math.max(0,seconds));
@@ -123,17 +129,20 @@ async function loadFigure(url){
     const cruisingGoal=airborneWeight*forwardFlight;
     const floatingGoal=airborneWeight*(1-forwardFlight);
     const walkGoal=motion&&!airborne&&!water?groundStride:0;
+    const runGoal=run?Math.min(1,Math.max(0,(speed-1.15)/.38)):0;
     walking+=(walkGoal-walking)*fade;
+    running+=(runGoal-running)*fade;
     floating+=(floatingGoal-floating)*fade;
     cruising+=(cruisingGoal-cruising)*fade;
     if(walking<.02&&!walkGoal)phase=0;
-    else phase=(phase+Math.min(speed,1.45)*step/strideDistance)%1;
+    else phase=(phase+Math.min(speed,2.4)*step/(walkStride+(runStride-walkStride)*running))%1;
     hovering?.setEffectiveWeight(floating*idleWeight);
     gliding?.setEffectiveWeight(cruising*idleWeight).setEffectiveTimeScale(water?.62:1);
     still?.setEffectiveWeight(Math.max(0,1-walking-floating-cruising)*idleWeight);
-    if(stride){
-      stride.setEffectiveWeight(walking*idleWeight);
-      stride.time=phase*walk.duration;
+    for(const [index,action] of groundClips.entries()){
+      if(!action)continue;
+      action.setEffectiveWeight(walking*idleWeight*(index===0?1-running:running));
+      action.time=phase*action.getClip().duration;
     }
     if(motion)mixer.update(step);
     else mixer.setTime(0);
@@ -158,6 +167,7 @@ export class CompanionAvatar{
     this.target=new Vector3();
     this.facing=new Vector3();
     this.direction=new Vector3();
+    this.groundRay=new Ray();
     this.previousHeading=new Quaternion();
     this.localHeading=new Quaternion();
     this.waterTilt=new Quaternion();
@@ -185,7 +195,7 @@ export class CompanionAvatar{
     this.speechAt=performance.now();
   }
   get object(){return this.figure?.root.visible?this.figure.root:null;}
-  update({position,yaw=0,outdoor,table,gaze,gazeMesh,eye,visible,seconds,water=null,grounded=true,explicitFlight=false}){
+  update({position,yaw=0,outdoor,table,gaze,gazeMesh,eye,visible,seconds,water=null,grounded=true,explicitFlight=false,colliders}){
     const root=this.figure?.root;
     if(!root)return;
     root.visible=Boolean(position&&visible);
@@ -193,7 +203,7 @@ export class CompanionAvatar{
     const now=performance.now();
     const small=Boolean(table?.active);
     if(!outdoor||small)water=null;
-    const wantsGround=grounded&&!small&&!water;
+    const wantsGround=(grounded||!outdoor)&&!small&&!water;
     const scale=small?matterAvatarScale:1;
     if(this.previousTable!==small){
       if(small)this.hologram.sync();
@@ -212,9 +222,7 @@ export class CompanionAvatar{
     const step=(small?1.36:1.35)*scale;
     const moving=!this.motion.matches&&!this.document.hidden;
     const samePlace=this.previous===scale&&this.previousOutdoor===outdoor;
-    this.catchup=Boolean(wantsGround&&samePlace&&moving&&
-      this.followVelocity.length()>(this.catchup?1.05:1.6));
-    const height=(water?(water==='surface'?.06:.25):wantsGround&&!this.catchup?-.037:.13)*scale;
+    const height=(water?(water==='surface'?.06:.25):wantsGround?-.037:.13)*scale;
     this.target.copy(position).add(this.relative.set(step,height,.45*step).applyQuaternion(angle));
     if(small){
       table.bounds.clampPoint(this.target,this.target);
@@ -240,7 +248,7 @@ export class CompanionAvatar{
       this.direction.addScaledVector(root.up,-vertical);
       const distance=this.direction.length();
       const deadZone=(small?.22:.25)*scale;
-      const speedLimit=small?5.2*scale:water?5.4:outdoor?maximumFollowSpeed:4;
+      const speedLimit=small?5.2*scale:water?5.4:wantsGround?2.4:outdoor?maximumFollowSpeed:4;
       const approach=Math.min(speedLimit,Math.sqrt(2*followDeceleration*Math.max(0,distance-deadZone)));
       this.wantedVelocity.copy(this.direction).setLength(approach);
       this.followVelocity.addScaledVector(root.up,-this.followVelocity.dot(root.up));
@@ -259,10 +267,24 @@ export class CompanionAvatar{
       rise=vertical*(1-Math.exp(-dt*5));
       root.position.addScaledVector(root.up,rise);
       if(small)table.bounds.clampPoint(root.position,root.position);
-      speed=Math.hypot(travel,rise*.65)/(dt*scale);
+      speed=(wantsGround?travel:Math.hypot(travel,rise*.65))/(dt*scale);
     }
-    const elevation=this.direction.subVectors(root.position,position).dot(root.up)/scale;
-    const airCandidate=!wantsGround||this.catchup||elevation>(this.visualAirborne?.045:.11);
+    if(wantsGround){
+      if(outdoor){
+        const {u,v,height:footHeight}=terrainCoordinates(root.position.toArray());
+        root.up.fromArray(terrainFrame(u,v).up);
+        const delta=terrainElevation(u,v)-footHeight;
+        if(delta>-.45&&delta<.32)root.position.addScaledVector(root.up,delta);
+      }
+      this.groundRay.origin.copy(root.position).addScaledVector(root.up,.27);
+      this.groundRay.direction.copy(root.up).negate();
+      const ground=colliders?.raycastFirst(this.groundRay,.70);
+      if(ground&&root.up.dot(ground[1])>.55){
+        root.position.addScaledVector(root.up,.267-ground[0]);
+      }
+      rise=0;
+    }
+    const airCandidate=!wantsGround;
     if(reset||!moving){
       this.visualAirborne=airCandidate;
       this.airDwell=0;
@@ -286,6 +308,10 @@ export class CompanionAvatar{
       this.facing.copy(root.position).add(this.facingDirection);
     }
     else if(speed>.25&&this.facingDirection.lengthSq()>1e-4)this.facing.copy(root.position).add(this.facingDirection);
+    if(wantsGround){
+      const vertical=this.direction.subVectors(this.facing,root.position).dot(root.up);
+      this.facing.addScaledVector(root.up,-vertical);
+    }
     if(root.position.distanceToSquared(this.facing)>.0004){
       root.lookAt(this.facing);
       if(!reset&&moving)root.quaternion.slerp(this.previousHeading,Math.exp(-Math.max(0,seconds)*5));
@@ -296,7 +322,7 @@ export class CompanionAvatar{
     if(small)this.swimPitch=0;
     root.quaternion.multiply(this.waterTilt.setFromAxisAngle(localRight,this.swimPitch));
     const level=moving&&now-(this.speechAt??-Infinity)<300?this.level:0;
-    const liftAllowed=explicitFlight||this.catchup||small||rise>.12*dt*scale;
+    const liftAllowed=explicitFlight||small||rise>.12*dt*scale;
     this.figure.pose(seconds,level,speed,moving,this.visualAirborne,small?gaze:null,reset,liftAllowed,water);
   }
   dispose(){

@@ -413,20 +413,30 @@ def clip(name, frames):
     track.mute=True
 
 
-def stride(t):
+def stride(t, running=False):
     swing=math.cos(2*math.pi*t)
-    bob=-.024+.005*(1-swing*swing)
-    pose={"arm-L":(14*swing,0,0),"arm-R":(-14*swing,0,0),
-          "elbow-L":(-9,0,0),"elbow-R":(-9,0,0),"chest":(0,0,3*swing),"cape":(3+3*swing*swing,2*swing,0)}
+    stance=.44 if running else .56
+    distance=.68 if running else .396
+    toe=distance*stance/2
+    airborne=running and (t%.5)>stance
+    bounce=.025*math.sin(math.pi*((t%.5)-stance)/(.5-stance)) if airborne else 0
+    bob=(-.054 if running else -.026)+(.014 if running else .008)*(1-swing*swing)+bounce
+    shoulder=28 if running else 19
+    lean=9 if running else 2
+    pose={"arm-L":(shoulder*swing,0,0),"arm-R":(-shoulder*swing,0,0),
+          "elbow-L":(-18-8*swing if running else -8-4*swing,0,0),
+          "elbow-R":(-18+8*swing if running else -8+4*swing,0,0),
+          "chest":(lean,2*swing,5*swing if running else 3*swing),
+          "cape":(11+6*swing*swing if running else 3+3*swing*swing,3*swing,0)}
     for direction,suffix,offset in (("left","L",0),("right","R",.5)):
         phase=(t+offset)%1
-        if phase<.5:
-            y=-.099+.396*phase
+        if phase<stance:
+            y=-toe+distance*phase
             lift=0
         else:
-            angle=math.pi*(phase-.5)*2
-            y=.099*math.cos(angle)
-            lift=.062*math.sin(angle)**2
+            arc=(phase-stance)/(1-stance)
+            y=toe*math.cos(math.pi*arc)
+            lift=(.112 if running else .065)*math.sin(math.pi*arc)**2
         hip,shin,ankle=[joints[name][0] for name in ("leg-"+direction,"shin-"+direction,"foot-"+suffix)]
         upper=(shin[1]-hip[1],hip[2]-shin[2])
         lower=(ankle[1]-shin[1],shin[2]-ankle[2])
@@ -444,6 +454,7 @@ def stride(t):
 for name,pose in poses.items():
     clip(name,[(1,{},0),(25,pose,.012 if name in ("calm","joy") else 0),(50,{},0)])
 clip("walk",[(frame+1,*stride(frame/28)) for frame in range(0,29,2)])
+clip("run",[(frame+1,*stride(frame/24,True)) for frame in range(0,25,2)])
 
 def flight_pose(t, moving):
     breath=math.sin(2*math.pi*t)

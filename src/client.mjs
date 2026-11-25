@@ -1175,6 +1175,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       companion.update({position,yaw,outdoor:outsideRing(),table:tableFlight,gaze:tableGaze,
         gazeMesh:pointed?points.cues.get(tableConnection)?.mesh:tableAttention.part(),eye:tableFlight.active?options.coreCameraManager.getCameraState().position:null,
         water:mode==='swim'?'submerged':mode==='surface'?'surface':null,
+        colliders:options.coreCameraManager.collisionsManager,
         explicitFlight:flightEnabled,grounded:!flightEnabled&&client.getCharacterManager().localController?.characterOnGround===true,
         visible:!entering&&!moving&&drawWorld,seconds:renderState.deltaTimeSeconds});
       galleryModels.update();
