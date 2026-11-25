@@ -1,0 +1,10 @@
+Sand3D Nature, by Sandflow.
+https://huggingface.co/datasets/Sandflow/sand3d-nature/tree/740f8e5971174df9652935adca632b113180302e
+Licensed under CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+
+Holodeck selected, simplified and normalized the original USD meshes and exported
+them as vertex-colored GLB files for a local trail planting composition.
+
+feather-reed-grass: nature-097b45b40b66f4ca18f2
+sensitive-fern: nature-24d1aca5995f5d421f0d
+pumice: nature-2d1852de3bd790c975a7

@@ -1,3 +1,4 @@
+import {approachCoordinates,Sand3DTrail} from './sand3d-trail.mjs';
 import {
   BufferGeometry, Color, DodecahedronGeometry, DoubleSide, Float32BufferAttribute, Group,
   InstancedMesh, MeshStandardMaterial, Object3D, TetrahedronGeometry, Vector3,
@@ -84,10 +85,6 @@ function plantGeometry(bloom=false) {
 const ribbonPalette=[0x83994b,0x608847,0x9c9e59,0xb2a967];
 const approachCell=terrainTile(LEVEL,0,2**LEVEL/4);
 const TAU=2*Math.PI;
-const approachCoordinates=(x,z)=>({
-  u:z/(TAU*TOROIDAL_TERRAIN.majorRadius),
-  v:.25-x/(TAU*(TOROIDAL_TERRAIN.tubeRadius+18)),
-});
 const center=approachCoordinates(0,23);
 const approach=terrainPosition(center.u,center.v,terrainElevation(center.u,center.v));
 
@@ -136,7 +133,7 @@ function useSceneryDaylight(material, daylight) {
 }
 
 export class ToroidalScenery {
-  constructor(scene) {
+  constructor(scene,base) {
     this.group=new Group();
     this.group.name='Toroidal ground cover';
     this.stones=new InstancedMesh(new DodecahedronGeometry(1,0),new MeshStandardMaterial({roughness:.94}),INSTANCE_LIMIT);
@@ -149,6 +146,7 @@ export class ToroidalScenery {
     }),16);
     this.meshes=[this.stones,this.grasses,this.ribbonGrass,this.blooms];
     this.daylight={value:1};
+    this.detail=base?new Sand3DTrail(scene,base,approach,useSceneryDaylight,this.daylight):null;
     this.ribbonGrass.name='Trail-side tufts';
     this.blooms.name='Trail-edge wildflowers';
     this.stones.name='Weathered stone';
@@ -170,6 +168,7 @@ export class ToroidalScenery {
 
   update(position,lightweight,door,daylight=1) {
     this.daylight.value=daylight;
+    this.detail?.update(position,lightweight,door);
     const {u,v}=terrainCoordinates([position.x,position.y,position.z]);
     if(![u,v].every(Number.isFinite))return;
     const rows=2**LEVEL, columns=rows*TOROIDAL_TERRAIN.rootColumns;
@@ -225,6 +224,7 @@ export class ToroidalScenery {
   }
 
   dispose() {
+    this.detail?.dispose();
     for(const mesh of this.meshes){
       mesh.geometry.dispose();
       mesh.material.dispose();

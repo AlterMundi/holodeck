@@ -40,3 +40,46 @@ test('the permitted entrance anchors bounded approach planting without filling t
   assert.equal(cover.ribbonGrass.count,approachCover(false).filter(p=>p.kind==='grass').length);
   cover.dispose();
 });
+
+test('Sand3D batches admit only the composed verge outside the route and flagstone apron',async()=>{
+  const {sand3dTrailPlacement}=await import('../src/sand3d-trail.mjs');
+  const door={x:1797.925,y:498.11,z:15.5,facing:-1};
+  const placed=sand3dTrailPlacement(door);
+  assert.equal(placed.length,14);
+  assert.deepEqual(sand3dTrailPlacement(null),[]);
+  assert.deepEqual(sand3dTrailPlacement(door),placed);
+  assert.equal(placed.filter(({name})=>name==='feather-reed-grass').length,6);
+  const tau=2*Math.PI;
+  for(const plant of placed){
+    assert.ok(terrainTrail(plant.u,plant.v)<=.22);
+    const x=(.25-plant.v)*tau*(TOROIDAL_TERRAIN.tubeRadius+18);
+    const z=plant.u*tau*TOROIDAL_TERRAIN.majorRadius;
+    const axial=(x-door.x+TOROIDAL_TERRAIN.majorRadius)*door.facing;
+    const clearance=plant.scale*.55;
+    assert.ok(axial<=-4.8-clearance||axial>=1.25+clearance||Math.abs(z-door.z)>=2.8+clearance);
+  }
+});
+
+test('lightweight and distant approaches do not start optional trail downloads',async()=>{
+  const {Sand3DTrail}=await import('../src/sand3d-trail.mjs');
+  const scene=new Scene(),origin=[1799,498,23],position=new Vector3(...origin);
+  const cover=new Sand3DTrail(scene,new URL('https://fixture.test/'),origin,()=>{},{value:1});
+  const door={x:1797.925,y:498.11,z:15.5,facing:-1};
+  let requests=0;
+  cover.load=()=>{requests++;};
+  cover.update(position,true,door);
+  cover.update(new Vector3(1799,498,100),false,door);
+  cover.update(position,false,null);
+  assert.equal(requests,0);
+  cover.update(position,false,door);
+  cover.update(position,false,door);
+  assert.equal(requests,1);
+  cover.update(new Vector3(1799,498,72),false,door);
+  cover.update(position,false,door);
+  assert.equal(requests,1);
+  cover.update(new Vector3(1799,498,100),false,door);
+  cover.update(position,false,door);
+  assert.equal(requests,2);
+  cover.dispose();
+  assert.equal(scene.children.length,0);
+});

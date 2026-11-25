@@ -1,3 +1,4 @@
+import {SAND3D_TRAIL_REVISIONS} from './sand3d-trail-assets.mjs';
 import {TOROIDAL_SPAWN, TOROIDAL_TERRAIN, toroidalParcelPoint} from './toroidal-terrain.mjs';
 import {indoorGardenTemplates} from './indoor-garden-recipe.mjs';
 import {COMPAII_HOUSE,interiorArt} from './interior-art.mjs';
@@ -163,7 +164,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     entrance=>!singleHouse||spaces.rooms.get(entrance.id)?.house===COMPAII_HOUSE).map(
     entrance=>toroidal?{...entrance,door:toroidalParcelPoint(entrance.door)}:entrance);
   const publicWorld=toroidal?TOROIDAL_TERRAIN.id:valley?VALLEY_LAYOUT:'island-workshop';
-  for(const [path,revision] of Object.entries({...ANIMATION_ASSET_REVISIONS,...(valley?VALLEY_ASSET_REVISIONS:{})})){
+  for(const [path,revision] of Object.entries({...ANIMATION_ASSET_REVISIONS,...(valley?VALLEY_ASSET_REVISIONS:{}),...SAND3D_TRAIL_REVISIONS})){
     const asset=readPackedArt(path,revision);
     if(asset)exteriorArt.set(path,asset);
   }
