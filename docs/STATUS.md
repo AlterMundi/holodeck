@@ -78,7 +78,21 @@ square and circular minimap by keyboard and touch, Matter entry and exit,
 shared table writes, conditional clear and visitor-local model selection.
 The Conversations fixture exercised the mounted iframe, draft retention,
 focus and movement in portrait and landscape. It substituted the iframe
-content. The map capture still shows the world dock wrapping in portrait.
+content. That map capture showed the world dock wrapping in portrait.
+
+Candidate `66698cf504fa` connects the existing Proyección icon-only
+presentation to the real world toolbelt. At 360 CSS px, the five standard
+touch launchers occupy one row and preserve their accessible names and
+existing actions. Desktop retains the labeled plates. Short landscape
+centers the row when there is no doorway prompt or side Conversation lane.
+The exact archive
+`38e5d8ab15f6326a345b9bf159c429492b69da8173cae0518297e2e201ed15ba`
+matched its 87 payloads. Chromium opened Map at the edge of its plate,
+Apariencia, Video and native Activity by touch, retained focus through
+rotation, and opened Map from the centered landscape dock. The desktop
+keyboard route passed. The embedded Conversation fixture retained its
+draft and locomotion in both orientations. Holodeck passed 405 tests
+with two optional skips.
 
 The protected world serves `b4031531fdfd`. The candidate booted on a
 temporary copy of the selected house, Atelier and active-space checkpoints.
