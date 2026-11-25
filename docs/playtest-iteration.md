@@ -98,6 +98,12 @@ a retained raster that could reopen stale and a stale/default heading at a
 scope change. The corrections preserve a fresh raster even while the HUD is
 suppressed, clear the old viewer and wait for known orientation. Tests cover
 stale destination and room events, busy exit and hidden raster painting.
+The source suite reported 305 passing tests and two skips. Exact archive
+`5f8f9ab14f38` from `3cb6bb4` remained 33,454,080 bytes; controlled Chromium
+verified exterior terrain and mesh close, interior destination selection by
+keyboard semantics and touch, and launcher focus on exit. The exterior
+run also verified sensitivity, pointer lock, continuous yaw and radial flight.
+The installed digest remains `f46d93f436be`.
 
 ## Matter inspection qualification
 
