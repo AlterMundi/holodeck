@@ -61,7 +61,7 @@ export function useToroidalRockDetail(material, {bedding=false,meadow=false} = {
         roughnessFactor = clamp(roughnessFactor + chips * detailFade * .13, .2, 1.0);
         ${strata}
       }
-      ${meadow ? 'roughnessFactor = mix(roughnessFactor, holoMeadowRoughness, holoMeadow);' : ''}
+      ${meadow ? 'roughnessFactor = mix(mix(roughnessFactor, holoMeadowRoughness, holoMeadow), holoTrailRoughness, holoTrailMask);' : ''}
     `);
   };
 }

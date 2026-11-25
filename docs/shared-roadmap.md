@@ -4,6 +4,17 @@ Reviewed 22 November 2026 against maintained source and an independent GPT-6.2 A
 
 Current delivery and receiving checks are in the [Holodeck playtest iteration](playtest-iteration.md).
 
+## Active visual scope
+
+The active slice is the Gemini-based visual revamp until Nicolás directs
+a return to the broader roadmap. Holodeck owns environment art and
+rendering, Proyección owns the native A2UI and Three.js visual system,
+and the separate Claude Code Opus 5.5 work owns authored humanoid and
+robot motion. Compare the same in-game frames, controlled movements,
+camera and hardware. The shared release needs the resulting exact
+versions together. Keep the wider creation, conversation, authoring
+and XR milestones available to resume. [Environment research and screening route](environment-art-revamp.md)
+
 ## Intended experience
 
 Walk from the common landscape to a recognizable daimon-authored house, meet its owner, enter a workshop larger than its exterior and explore what that human–daimon pair creates. Together inspect a result, its evidence, code, simulations, media, revisions and possible material realization. Refer to the same situated object/activity/time while each participant can move and look elsewhere. Suggest a change, continue exploring while the daimon works, then return to both editions. Shared public terrain connects individual places and collective creations. The future includes headset participation and selected physical augmentation, using the same situated references.
@@ -20,7 +31,7 @@ rollback and evidence by path in the [playtest record](playtest-iteration.md).
 | --- | --- |
 | HUD and approach | Holodeck [#16](https://github.com/AlterMundi/holodeck/issues/16) and [#18](https://github.com/AlterMundi/holodeck/issues/18) own placement, depth, chrome and routing. [Proyección #5](https://github.com/AlterMundi/proyeccion/issues/5) owns reusable rendering, typography and input. Use the selected visual studies as the quality bar. Compare the real map, toolbelt, Matter and Conversar in motion, on bright and dark backgrounds and with mouse, keyboard and touch. Keep the camera view readable, verify actual actions and include reachable recovery and settings controls. |
 | Avatars and motion | Holodeck [#21](https://github.com/AlterMundi/holodeck/issues/21) owns locomotion presentation, [#22](https://github.com/AlterMundi/holodeck/issues/22) owns the Blender robot, and [#17](https://github.com/AlterMundi/holodeck/issues/17) owns table interaction. [#24](https://github.com/AlterMundi/holodeck/issues/24) owns the A2UI Character Design Room and exact pose review. Verify relative scale and matching hologram material at the table, hover and glide during real movement, calm following through turns, and bounded attention to an explicit current selection. Test in two authorized views and verify separation from private selections. The augmented viewer should reuse the same model and motion semantics. |
-| House and world | Holodeck [#12](https://github.com/AlterMundi/holodeck/issues/12) owns the first house and [#20](https://github.com/AlterMundi/holodeck/issues/20) owns material and lighting performance. Walk from the toroidal trail through a legible entrance to the Matter workshop. Check the authored facade, props, room cues, material scale, day and night, and wall/roof boundaries. Retain the current world run and rollback. Final appearance needs matched views and a moving normal/lightweight pass. |
+| House and world | Holodeck [#12](https://github.com/AlterMundi/holodeck/issues/12) owns the first house and [#20](https://github.com/AlterMundi/holodeck/issues/20) owns material and lighting performance. Walk from the toroidal trail through a legible entrance to the Matter workshop. Check the authored facade, props, room cues, material scale, day and night, and wall/roof boundaries. Retain the current world run and rollback. See the [installed exterior comparison](environment-art-revamp.md#installed-landscape-hud-and-passage-pass). The [installed night threshold](environment-art-revamp.md#installed-night-lighting-at-the-atelier-threshold) verifies the move from the lit porch into the foyer. Continue the house materials, the exhibition and the active workshop. |
 | Creation inside the world | Holodeck [#3](https://github.com/AlterMundi/holodeck/issues/3) and [#15](https://github.com/AlterMundi/holodeck/issues/15) own the creator journey. Qualify one existing room or playable creation first: preview, publish, observe it as a second authorized visitor, revise and reopen the prior edition. Reuse the same authorized contracts for later house, game, space and app tools. Preserve visitor-local camera and selection. Use the existing exhibition and viewer for a published result. |
 | Situated Conversation | Holodeck [#19](https://github.com/AlterMundi/holodeck/issues/19) and [DaimonApp #1031](https://github.com/AlterMundi/DaimonApp/pull/1031) own the exact receipt and full/delta/unchanged path. The candidate passed isolated owner/native and Home proxy checks. Qualify the live composition before enabling it. [DaimonApp #1022](https://github.com/AlterMundi/DaimonApp/issues/1022) retains the separate migration of Conversation internals. |
 

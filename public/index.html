@@ -236,31 +236,73 @@ body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-controls
 .room-transition #space-travel,body:has(#conversation-panel:not([hidden])) #space-travel,body:has(#content-visit:not([hidden]):not(.is-walking)) #space-travel{visibility:hidden;pointer-events:none}
 .room-transition canvas{visibility:hidden}
 .room-transition:has(#room-passage[data-native-passage]) canvas[data-hud-render-layer]{visibility:visible}
+#room-passage,#world-entry{isolation:isolate;overflow:hidden;background:#020910}
+#room-passage::before,#world-entry::before{
+  content:'';position:absolute;z-index:-2;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 39%,#14445980,transparent 62%),
+    url('./assets/holodeck-passage.avif') center center/cover no-repeat;
+}
+#room-passage::after,#world-entry::after{
+  content:'';position:absolute;z-index:-1;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,transparent 57%,#02080e38 67%,#02080ee6 97%),
+    radial-gradient(ellipse at 50% 40%,transparent 40%,#01050b75 100%);
+}
 #room-passage{
-  position:fixed;inset:0;z-index:40;display:grid;place-items:center;
-  background:radial-gradient(ellipse at 50% 48%,#285351,#142f33 68%);
-  opacity:0;visibility:hidden;pointer-events:none;
-  transition:opacity 150ms ease-out,visibility 0s linear 150ms;
+  position:fixed;inset:0;z-index:40;opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity 180ms ease-out,visibility 0s linear 180ms;
 }
 .room-transition #room-passage{opacity:1;visibility:visible;pointer-events:auto;transition:none}
-.passage-arch{
-  position:relative;width:min(30vw,20vh,132px);aspect-ratio:3/4;
-  border:1px solid #a4d3bd7a;border-radius:50% 50% 8px 8px;
-  background:linear-gradient(180deg,#a4d3bd10,#eed19b24);box-shadow:0 0 48px #a4d3bd20;
+:where(.room-transition) #room-passage::before,#world-entry:not([hidden])::before{
+  animation:passage-current 14s ease-in-out infinite alternate;
 }
-.passage-arch::before,.passage-arch::after{
-  content:'';position:absolute;border-radius:inherit;
+@keyframes passage-current{from{transform:scale(1.015)}to{transform:scale(1.068)}}
+#room-passage .passage-energy,#world-entry .passage-energy{
+  position:absolute;z-index:-1;pointer-events:none;left:50%;top:41%;
+  width:min(34vh,50vw);aspect-ratio:1;transform:translate(-50%,-50%);
+  border-radius:50%;overflow:hidden;
+  -webkit-mask-image:radial-gradient(ellipse,#000 22%,#000a 50%,transparent 73%);
+  mask-image:radial-gradient(ellipse,#000 22%,#000a 50%,transparent 73%);
 }
-.passage-arch::before{inset:-15%;border:1px solid #a4d3bd38}
-.passage-arch::after{inset:11%;border:1px solid var(--gold);box-shadow:0 0 16px #eed19b40}
-.room-transition .passage-arch{animation:passage-light 520ms ease-out both}
-@keyframes passage-light{from{opacity:.45;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
-#room-passage-message{position:absolute;top:calc(50% + min(26vw,18vh,116px) + 12px);color:var(--ink);margin:0;font-size:14px;opacity:0}
-.room-transition #room-passage-message{opacity:1;transition:opacity 160ms ease 1100ms}
-#room-passage[data-native-passage] #room-passage-retry{display:none}
-#room-passage[data-native-passage] #room-passage-message{width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
-#room-passage-retry{position:absolute;top:min(calc(50% + min(26vw,18vh,116px) + 40px),calc(100% - 52px))}
-@media(prefers-reduced-motion:reduce){.room-transition .passage-arch{animation:none}}
+.passage-energy::before{
+  content:'';display:block;width:100%;height:100%;border-radius:inherit;opacity:.85;
+  background:radial-gradient(circle at 56% 45%,#bcf7ee50 0%,#39849329 17%,transparent 61%),
+    repeating-conic-gradient(from 30deg,transparent 0deg 19deg,#506e9020 30deg,transparent 62deg 88deg);
+  filter:blur(5px);
+}
+.room-transition .passage-energy::before,#world-entry:not([hidden]) .passage-energy::before{
+  animation:passage-orbit 16s linear infinite;
+}
+.passage-orbit{
+  display:block;margin:18px auto 0;width:28px;height:28px;border-radius:50%;
+  border:1px solid #9ce9f536;border-top-color:#f5d79d;border-right-color:#9ce9f5;
+  box-shadow:0 0 19px #42d9dc38,inset 0 0 8px #42d9dc23;pointer-events:none;
+}
+.room-transition .passage-orbit,#world-entry:not([hidden]) .passage-orbit{animation:passage-orbit 1.55s linear infinite}
+@keyframes passage-orbit{to{transform:rotate(1turn)}}
+.passage-copy,.world-entry-card{
+  position:absolute;inset-inline:0;top:72%;width:min(calc(100% - 36px),660px);margin-inline:auto;
+  text-align:center;color:#f1f8f5;text-shadow:0 2px 16px #000,0 0 24px #55d7df68;
+}
+#room-passage-message,.world-entry-card h1{
+  color:#f0f8f8;font:500 clamp(24px,4.4vw,48px)/1.08 system-ui,sans-serif;letter-spacing:.015em;margin:0;
+}
+#room-passage[data-native-passage] :is(#room-passage-retry,.passage-orbit){display:none}
+#room-passage[data-native-passage] #room-passage-message{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+#room-passage-retry{margin:14px auto 0}
+#room-passage:has(#room-passage-retry:not([hidden])) .passage-orbit,
+#world-entry:has(#world-entry-retry:not([hidden])) .passage-orbit{display:none}
+@media(max-height:480px){
+  .passage-copy,.world-entry-card{top:68%}
+  .passage-orbit{margin-top:9px;width:19px;height:19px}
+}
+@media(prefers-reduced-motion:reduce){
+  #room-passage::before,#world-entry::before,.passage-orbit,.passage-energy::before{animation:none!important}
+}
+@media(forced-colors:active){
+  #room-passage::before,#world-entry::before,#room-passage::after,#world-entry::after,.passage-energy{display:none}
+  #room-passage,#world-entry{background:Canvas}
+  .passage-copy,.world-entry-card{color:CanvasText;text-shadow:none}
+}
 .inside-house #creator,.inside-house #pointing,.inside-house #play-near,.inside-house #recovery-panel{display:none!important}
 .inside-house #world-tools,.inside-house #dock,.inside-house #companion-status,.inside-house #sound:not([aria-pressed="true"]){display:none}
 body.inside-house #dock{display:flex;left:50%;right:auto;bottom:max(24px,env(safe-area-inset-bottom));transform:translateX(-50%)}
@@ -295,13 +337,23 @@ body[data-a2ui-toolbelt] #view-tools,dialog[data-native-settings]{display:none!i
 #appearance-status:empty{display:none}
 body:has(#conversation-panel:not([hidden])) #view-tools,body:has(#content-visit:not([hidden]):not(.is-walking)) #view-tools{display:none}
 @media(max-width:740px){#view-tools{right:12px;top:12px;bottom:auto}#appearance-open{padding:8px 12px;font-size:14px}#hud{max-width:calc(100vw - 168px)}}
-#world-entry{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px;background:#183d42}
-.world-entry-card{width:min(360px,100%);border:1px solid var(--line);border-radius:20px;padding:26px;background:#102d31}
-.world-entry-card h1{margin-bottom:12px}.world-entry-card p{margin-bottom:0}.world-entry-card button{margin-top:18px}
-.world-entry-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.world-entry-actions button{margin:0}
+#world-entry{position:fixed;inset:0;z-index:100}
+.world-entry-card :is(p,h1){margin-bottom:0}
+.world-entry-card p{margin-top:7px;font:400 clamp(15px,2vw,19px)/1.4 system-ui,sans-serif}
+.world-entry-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:13px}
+:is(.world-entry-actions,#room-passage) button{
+  min-height:44px;padding:7px 15px;border:1px solid #9edfdd70;border-radius:8px;
+  color:#f6f8f4;background:#071621ec;
+}
+:is(.world-entry-actions,#room-passage) button:focus-visible{outline:2px solid #ffe2ac;outline-offset:3px}
+@media(max-height:480px){
+  .world-entry-card h1{font-size:24px}
+  .world-entry-card p{margin-top:3px;font-size:14px}
+  .world-entry-actions{margin-top:6px}
+}
 </style></head><body>
-<section id="world-entry" aria-labelledby="world-entry-title"><div class="world-entry-card">
-  <h1 id="world-entry-title">Holodeck</h1><p id="world-entry-status" role="status">Abriendo el mundo…</p>
+<section id="world-entry" aria-labelledby="world-entry-title"><span class="passage-energy" aria-hidden="true"></span><div class="world-entry-card">
+  <h1 id="world-entry-title">Holodeck</h1><p id="world-entry-status" role="status">Abriendo el mundo…</p><span class="passage-orbit" aria-hidden="true"></span>
   <div class="world-entry-actions"><button id="world-entry-retry" class="primary" type="button" hidden>Volver a intentar</button><button id="world-entry-graphics" type="button" hidden>Entrar con gráficos livianos</button></div>
   <noscript><p>Activá JavaScript para entrar al mundo.</p></noscript>
 </div></section>
@@ -352,7 +404,7 @@ body:has(#conversation-panel:not([hidden])) #view-tools,body:has(#content-visit:
 <aside id="door-guidance" class="glass" aria-label="Salida marcada" hidden><span class="door-guide-arrow" aria-hidden="true">↑</span><span><span class="door-guide-title"></span><span class="door-guide-distance"></span></span><button type="button" aria-label="Quitar salida marcada">×</button></aside>
 <div id="companion-status" class="glass" role="status">Exploración compartida</div>
 <div id="notice" class="glass" role="status"></div>
-<div id="room-passage" tabindex="-1"><span class="passage-arch" aria-hidden="true"></span><p id="room-passage-message" role="status"></p><button id="room-passage-retry" type="button" hidden>Reintentar</button></div>
+<div id="room-passage" tabindex="-1"><span class="passage-energy" aria-hidden="true"></span><div class="passage-copy"><p id="room-passage-message" role="status"></p><span class="passage-orbit" aria-hidden="true"></span><button id="room-passage-retry" type="button" hidden>Reintentar</button></div></div>
 <nav id="dock" class="glass" aria-label="Acciones del taller"><button id="bridge" class="primary">Conectar islas</button><button id="plant" hidden>Crear luz</button><button id="map-tool" type="button" aria-expanded="false" aria-controls="space-travel" disabled>Minimapa</button><button id="talk" aria-expanded="false" aria-controls="conversation-panel">Conversar</button><button id="undo" class="icon" title="Deshacer mi último cambio" aria-label="Deshacer mi último cambio" disabled>↶</button></nav>
 <section id="pointing" class="glass" aria-label="Indicar un objeto" hidden><p id="point-label"></p><div class="row"><button id="point-visit" class="primary" type="button" hidden>Visitar contenido</button><button id="point-send" class="primary" type="button">Señalar</button><button id="point-edit" type="button" hidden>Editar luz</button><button id="point-clear" type="button">Cancelar</button></div></section>
 <details id="play-near" class="glass" hidden><summary><strong id="play-title"></strong> · Cómo jugar<span id="play-progress" role="status"></span></summary><p id="play-instruction"></p><button id="play-edit" type="button" hidden>Editar jardín</button></details>

@@ -9,7 +9,7 @@ export function houseReviewRooms(rooms, house, matterId, labId) {
   const lab = find(labId);
   if (!matter) throw Error('The toroidal world requires the Matter room in CompAII’s house');
   // Other toroidal receivers can still select the original single-room edition.
-  if (!foyer || !lab) return [{...matter, entry:true, links:[]}];
+  if (!foyer || !lab || matter===foyer || matter===lab) return [{...matter, entry:true, links:[]}];
 
   const door = to => ({kind:'door', to});
   const roomsOffFoyer = [

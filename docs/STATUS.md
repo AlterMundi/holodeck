@@ -1,20 +1,55 @@
 # Current MVP work
 
-## November 25 combined optical HUD and Character Design Room candidate
+## Character Design Room review candidate on the selected world
 
-Source `b1af25131d4b` on `design/character-studio` combines the optical dock,
-map, Matter controls and Conversation surround with the reviewed studio
-controls, exact pose notes and room presentation. It pins Proyección
-`fee3570c516d`. The trail and scale use the existing terrain data. This
-candidate does not select the separate environment art branch.
+Source `4783082dc570` adds the optical studio controls, exact phase bookmarks,
+room presentation and attributed pose notes to the selected landscape and
+night-lighting base `7aa2b35`. The candidate retains the existing terrain,
+HUD, rendered lighting, audio and authority routes. It uses the same
+Proyección renderer pin as the installed HUD.
 
-The reproducible archive is `8006b8cf1480a67d` with 85 payload files.
-The exact package passed two-visitor pose review and note scoping,
-keyboard and touch map controls, the canonical Conversation mount with
-a loopback app fixture, and two-visitor Matter entry, share, follow,
-clearing and exit. The Node 24 suite passed 400 tests with two optional
-skips. This is staged evidence. The protected release still needs
-selection of this combined package and independent signed-in acceptance.
+The reproducible archive is `556bf35ea62f` with 86 payload files. Its
+desktop and touch Chromium runs used two fixture actors to reproduce a
+revision-bound pose, show it from independent cameras, share a note at
+the same frame and deny read and write outside the studio. The Node 24
+suite passed 403 tests with two optional skips.
+
+Earlier integrated archive `8006b8cf1480` at `b1af25131d4b` qualified the
+dock, map, Matter controls and Conversation surround alongside the studio.
+The same archive also qualified a continuous browser journey from ground
+movement and stopping into the room and an exact landing-frame link.
+The ground and cross-surface evidence remains with that archive.
+
+The installed control read still selects `6a7916621c6c`. The candidate
+is retained for Holodeck's release selection. Post-install acceptance
+with two independently signed-in visitors remains open.
+
+## November 25 softer night exposure and warm porch
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `6a7916621c6c` from `7aa2b35`. At night, the house and its
+approach now use cooler, lower ambient light. A warm porch light marks
+the existing door. RTX 2060 and Pi 5 completed the matched day/night
+view and entry/return. The foyer retained its authored interior exposure.
+The protected audience, world and doors matched. Rollback is `a4bfd4f17dee`.
+[Measurements](environment-art-revamp.md#installed-night-lighting-at-the-atelier-threshold)
+
+## November 25 meadow, optical HUD and animated passage
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `a4bfd4f17dee` from `c1deb83`. The exterior now draws
+curved meadow blades, a graded earth path and shared air color across
+land, water and sky. The optical HUD includes the redesigned action bar
+and circular topographic minimap. Room travel shows the animated
+portal and retains native reduced-motion and recovery controls.
+
+Matched physical movement covers RTX 2060 Normal and Pi 5 Livianos;
+RTX also renders the 23:10 ART fixture. Separate browser fixtures cover
+touch minimap, the mounted Conversation draft and the transition after
+WebGL loss. Installed inventory, protected HTTPS, audience, configuration
+and native state matched, with `3fd63da1fd1d` as immediate rollback.
+The larger visual objective and independent visitor feedback remain open.
+[Measurements](environment-art-revamp.md#installed-landscape-hud-and-passage-pass)
 
 ## November 25 grounded companion and humanoid pose studies
 
