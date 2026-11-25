@@ -194,3 +194,27 @@ fixture visitor retained a separate avatar preference. The Matter room's
 selected style applied through the native panel and restyled the HUD.
 The source suite passed 311 checks with two skips. The protected service
 still selects `f46d93f436be`. Device and live acceptance remain open.
+
+## Marked exit bearing
+
+Closing the interior minimap leaves a Three.js A2UI bearing for its selected
+exit. It displays the camera-relative heading and rounded distance, hides
+inside the matching threshold or while operating Matter, and clears the exact
+selection from its own control. The dismissal is scoped to the current map,
+room and selection. Closing the bearing returns focus to the minimap launcher.
+
+Opus 5.5 High identified that suppressing the legacy aid whenever the toolbelt
+mounted could leave neither presentation visible after a failed HUD render.
+The correction ties the legacy suppression to actual native bounds and keeps
+modal and worktable suppression explicit. A second Opus 5.5 High pass prompted
+clearing presentation on render and context failure, holding the browser
+fallback at very narrow widths, carrying focus into the HUD when it replaces
+the fallback, and invalidating actions when the target changes. Unit tests
+cover heading changes, reaching the threshold and stale or mismatched
+dismissals. Archive `a5e37c15bcb1` of `fff2fca` is 33,464,320 bytes. Controlled Chromium verified
+the selected exit, visible bearing, rounded distance, mesh dismissal by mouse
+and touch, cleared navigation, and return focus in the exact package. A real
+WebGL overlay context loss released legacy suppression and the bearing was
+then redrawn and dismissed through the world canvas. This test lost the
+overlay context only. The source suite passed 312 tests, with two skips.
+Live remains `f46d93f436be`.
