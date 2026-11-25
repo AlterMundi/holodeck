@@ -167,6 +167,16 @@ dictation recovered its original UUID and receipt from local storage and
 sent only edited text with the two existing evidence files. Existing legacy
 bytes remained readable in a separate-host rollback fixture.
 
+The receiving draft now allocates a durable reservation order in the same
+SQLite transaction as each new machine receipt. Native text may arrive
+before an older recording without changing either receipt's order. Exact
+retries keep the number, and upgrades preserve legacy receipts without
+assigning them a synthetic order. Fable 5.2 High distinguished reservation
+order, world event order and native admission. Opus 5.5 High confirmed the
+atomicity and prompted the uniqueness constraint, retry/failure tests and
+a compatibility migration fixture. A recreated reservation after expiry
+or a restored journal cannot prove the age of the original observation.
+
 The next receiving step must bind the acknowledged baseline to an actual
 native admission in the exact continuing thread and scope. Keep canonical
 retention, native admission and installation of the baseline as separate
