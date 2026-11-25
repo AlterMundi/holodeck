@@ -62,6 +62,17 @@ The open landscape menu stays on screen. Its panel still scales, so some
 surrounding labels shorten and the visible hit targets are smaller than
 in portrait.
 
+Candidate `b4f45d5e57d1` fixes that short landscape behavior with a compact
+overlay that keeps the studio controls at their existing scale. The exact
+archive is `5cf79d1c7280fb41227f634c4393d34d7d1531ef32422f535798d16fb3efc80e`;
+all 87 payloads matched the Chromium stage. At 780 × 390 the tabs were
+byte-identical before opening the menu and after paging. A touch near the
+edge of the takeoff row selected frame 22, which stayed selected at 390 ×
+780. The other fixture visitor stayed at 78. The latest immutable renderer
+`0ceb5602898f3b6bbfe48b61010f7f17148b3c24` passed 721 tests. The Holodeck
+suite passed 405 tests with two skips. The overlay covers the lower controls
+until a choice or dismissal.
+
 The protected world serves `b4031531fdfd`. Holodeck's release selection
 and the visit with two independently signed-in visitors remain open.
 
