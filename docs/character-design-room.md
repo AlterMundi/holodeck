@@ -104,8 +104,11 @@ previous presentation unavailable until someone presents a current pose.
 
 The **Ver notas** action reads the selected pose on demand. A copied pose
 link can be opened outside the room. Shared feedback still requires current
-room membership. The existing browser-local note option is available
-outside. Saving a shared note never falls back to local storage on failure.
+room membership. After the server confirms the visitor is outside, the web
+viewer offers a browser-local note. If it cannot confirm the room, the Notes
+panel offers **Comprobar acceso** and keeps preview and link copying available.
+The physical worktable only writes shared notes. Saving a shared note never
+falls back to local storage on failure.
 A draft keeps the rig, clip edition and frame where writing started.
 If the visitor changes poses, the panel shows the draft target. Following a
 new presentation keeps that target and the draft text. A shared save with

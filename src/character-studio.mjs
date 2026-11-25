@@ -36,13 +36,13 @@ const sectionControls={
   Pose:['clock','heldPose','chapter','playback','views'],
   Clips:['rig','clip','playOptions'],
   Comparar:['comparison'],
-  Notas:['presentation','noteTarget','note','archive','reviewNotes','reviewText'],
+  Notas:['presentation','accessStatus','checkReviewAccess','noteTarget','note','archive','reviewNotes','reviewText'],
 };
 const sectionIds=Object.keys(sectionControls);
 const compactControls=new Set(sectionIds.flatMap(id=>sectionControls[id]));
 const controls=[
   {id:'root',component:'HudPanel',label:'Revisión de movimiento',width:1.85,gap:.025,
-    children:['sections','title','rig','clip','clock','heldPose','chapter','playback','playOptions','comparison','views','presentation','noteTarget','note','archive','reviewNotes','reviewText','status']},
+    children:['sections','title','rig','clip','clock','heldPose','chapter','playback','playOptions','comparison','views','presentation','accessStatus','checkReviewAccess','noteTarget','note','archive','reviewNotes','reviewText','status']},
   {...row('sections',sectionIds),visible:path('compact')},
   ...sectionIds.map(id=>({...button(id,id),pressed:path('selectedSection/'+id),weight:id==='Comparar'?1.36:1})),
   label('title','Revisión de movimiento','title'),choice('rig','Personaje'),choice('clip','Ciclo'),
@@ -66,6 +66,8 @@ const controls=[
   row('presentation',['present','follow']),
   {...button('present','Mostrar pose'),disabled:path('presentationBusy')},
   {...button('follow','Ver pose del Taller'),disabled:path('presentationBusy')},
+  {...label('accessStatus',path('accessStatus'),'status'),lines:2},
+  button('checkReviewAccess','Comprobar acceso'),
   {...label('noteTarget',path('noteTarget'),'status'),lines:2},
   {id:'note',component:'HudTextInput',label:noteLabel,value:path('note'),disabled:path('savingNote'),
     draft:path('draft/note'),placeholder:'Qué ves en la pose',maxLength:300,action:action('pin','note')},
@@ -107,10 +109,8 @@ function buildStage(document){
   return wrapper;
 }
 
-async function connectStudioReturn(wrapper){
-  let space;
-  try{space=await readSpace(AbortSignal.timeout(5000));}catch{return;}
-  if(space.id!==CHARACTER_STUDIO||!space.exits.some(exit=>exit.to===ATELIER_FOYER))return;
+function bindStudioReturn(wrapper,space){
+  if(!space.exits?.some(exit=>exit.to===ATELIER_FOYER))return;
   const link=wrapper.querySelector('header a');
   link.textContent='Volver al vestíbulo';
   let pending=false;
@@ -142,7 +142,6 @@ async function connectStudioReturn(wrapper){
     link.removeAttribute('aria-disabled');
     pending=false;
   });
-  return true;
 }
 
 function disposeFigure(figure){
@@ -211,7 +210,7 @@ export function openCharacterStudio(document,table=null){
   let sequence=0,elapsed=0,previous=0,visible=true,loop=true,speed='1';
   let compact=Boolean(table),section='Pose',panelWidth=table?2.20:1.85;
   let primary=null,reference=null,showingReference=false,referenceRequest=0;
-  let canReview=null,review=null,selectedNote='',readingReview=false,savingNote=false,pendingNote,draftPose,noteReplaced=false,presentationBusy=false;
+  let canReview=null,checkingAccess=false,review=null,selectedNote='',readingReview=false,savingNote=false,pendingNote,draftPose,noteReplaced=false,presentationBusy=false;
   const projected=table?null:webStudioProjection(document,scene,dispatch,dispose);
   const ownsNoteInput=target=>target?.getAttribute?.('aria-label')===noteLabel&&
     (table??projected).ownsTextInput(target);
@@ -259,10 +258,25 @@ export function openCharacterStudio(document,table=null){
     receive('createSurface',{catalogId:spatialHudCatalog.id});
     receive('updateComponents',{components:controls});
   }
-  const membership=table?readSpace(inputs.signal).then(space=>space.id===CHARACTER_STUDIO):
-    connectStudioReturn(projected.stage);
-  void membership.then(inStudio=>{if(visible){canReview=Boolean(inStudio);refresh();}})
-    .catch(()=>{if(visible){canReview=false;refresh();}});
+  async function checkReviewAccess(){
+    if(checkingAccess||canReview===true)return;
+    checkingAccess=true;
+    refresh();
+    try{
+      const space=await readSpace(AbortSignal.any([inputs.signal,AbortSignal.timeout(5000)]));
+      if(!visible)return;
+      if(typeof space?.id!=='string'||!space.id)throw Error('Missing room');
+      canReview=space.id===CHARACTER_STUDIO;
+      if(canReview&&projected)bindStudioReturn(projected.stage,space);
+    }catch{
+      canReview=null;
+    }finally{
+      checkingAccess=false;
+      refresh();
+    }
+  }
+  const canSaveLocal=()=>canReview===false&&!table;
+  void checkReviewAccess();
   const reduce=window.matchMedia('(prefers-reduced-motion: reduce)');
   function setView(next){
     view=next;
@@ -450,7 +464,11 @@ export function openCharacterStudio(document,table=null){
     if(table){show.views=false;show.status=Boolean(message);}
     show.chapter&&=chapters.length>0;
     show.heldPose&&=frame>exactFrame;
+    const canWriteNote=canReview===true||canSaveLocal();
     show.presentation&&=canReview===true;
+    show.accessStatus&&=!canWriteNote;
+    show.checkReviewAccess&&=!canWriteNote&&!checkingAccess;
+    show.note&&=canWriteNote;
     show.noteTarget&&=Boolean(draftPose&&playback&&keyForPose(draftPose)!==keyForPose(reviewPose()));
     show.reviewNotes&&=notes.length>0;
     show.reviewText&&=notes.length>0;
@@ -463,10 +481,13 @@ export function openCharacterStudio(document,table=null){
       heldPose:show.heldPose?'Último fotograma de '+(showingReference?'B':'A')+' · '+exactFrame:'',
       chapter,chapterOptions:chapters,
       canReview:canReview===true,presentationBusy,
-      noteAction:compact?(canReview?'Compartir':'Guardar'):(canReview?'Compartir nota':'Fijar nota'),
+      accessStatus:checkingAccess?'Comprobando acceso al Taller…':
+        canReview===false?'Entrá al Taller para compartir notas.':'No pude confirmar el acceso al Taller.',
+      noteAction:compact?(canReview?'Compartir':'Guardar'):(canReview?'Compartir nota':'Guardar en este navegador'),
       copyLabel:compact?'Copiar URL':'Copiar enlace',
-      savingNote:savingNote||canReview===null,
-      canSubmitNote:!pendingNote||savingNote||noteReplaced,canRetryNote:Boolean(pendingNote&&!savingNote&&!noteReplaced),
+      savingNote,
+      canSubmitNote:canWriteNote&&(!pendingNote||savingNote||noteReplaced),
+      canRetryNote:canReview===true&&Boolean(pendingNote&&!savingNote&&!noteReplaced),
       noteTarget:show.noteTarget?'Borrador para '+poseLabel(draftPose):'',
       reviewAction:viewedReview?(compact?'Ocultar':'Ocultar notas'):'Ver notas',
       reviewText,reviewNotes:selected?.id??'',
@@ -584,6 +605,7 @@ export function openCharacterStudio(document,table=null){
   async function activate(name,{value,clipEdition:expectedClip}={}){
     if(name==='close'&&table){table.close();return;}
     if(!name)return;
+    if(name==='checkReviewAccess')return checkReviewAccess();
     if(Object.hasOwn(sectionControls,name)){section=name;refresh();return;}
     if(name==='rig'&&Object.hasOwn(rigs,value)&&rig!==value)return loadRig(value);
     if(name==='clip'&&typeof value==='string'&&(clip!==value||!playback))return loadClip(value);
@@ -622,7 +644,7 @@ export function openCharacterStudio(document,table=null){
       const text=String(value||'').trim().slice(0,300);
       if(!text){report('Escribí una nota para este fotograma.');return;}
       if(canReview)return shareNote(text);
-      if(canReview===null)return;
+      if(!canSaveLocal())return;
       const key='holodeck.characterStudio.notes';
       let notes=[];
       try{const list=JSON.parse(window.localStorage.getItem(key)||'[]');if(Array.isArray(list))notes=list;}catch{}
