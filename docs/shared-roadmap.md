@@ -26,6 +26,28 @@ rollback and evidence by path in the [playtest record](playtest-iteration.md).
 
 ### Delivery order and release evidence
 
+The current priority is a standout visual release. Lead with a coherent
+vertical slice of the actual route and HUD. Keep motion and navigation ready
+for the walkthrough. New gameplay mechanics follow their own stages.
+
+- Walk at eye height through the organic terrain and existing trail to the
+  recognizable house. Show the terrain's curves, dense near detail with
+  measured distance reduction, the Argentine day/night cycle, atmosphere
+  and legible cosmic depth. Compare a real exterior, interior threshold
+  and active workshop in the same scene and lap.
+- Compose the HUD in front of that world with readable layers and intentional
+  negative space. Compare material depth, highlights and translucency,
+  compact real icons, contrast and typography, and how controls rotate,
+  light up, enter, settle and leave. Anchor each effect to its actual
+  state. Show the toolbelt, map, movable windows, active table and open
+  Conversation on the same visual pass. Quality is judged in play on
+  bright and dark scenes, with the normal and lighter settings and a
+  reduced-motion path.
+- Apply the selected ceramic filigree atlas and engraved bronze relief to
+  their appropriate surfaces. Review them in close and gameplay views
+  with the actual lighting and expression, retaining the tactile cape
+  and clear silhouette in miniature.
+
 1. Keep a stable baseline and link the exact running build. Finish recoverable
    navigation, first-person table zoom, input ownership and collision. Prove
    exit, reconnect, access denial and independent viewpoints before replacing
