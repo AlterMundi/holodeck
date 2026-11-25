@@ -1,5 +1,5 @@
 import { build } from 'esbuild';
-import {characterPoseCatalog} from './character-pose-catalog.mjs';
+import {buildMotionStudyRevision,characterPoseCatalog} from './character-pose-catalog.mjs';
 import { createHash } from 'node:crypto';
 import { readFile,writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
@@ -174,20 +174,13 @@ function fallbackAvatarModel(fileUrl) {
     });
   }
 };
-// Review links pin the pose implementation as well as the rig and stock
-// animation bytes. HUD-only edits keep exact pose links valid.
-const motionStudyHash=createHash('sha256');
-for(const file of ['human-motion-study','flight-avatar-animation','humanoid-flight-poses',
-  'avatar-medium','avatar-motion-curves','humanoid-standing-idle','humanoid-ground-accents',
-  'humanoid-crouch','toroidal-locomotion','toroidal-terrain']){
-  motionStudyHash.update(file+'\0').update(await readFile(new URL('../src/'+file+'.mjs',import.meta.url)));
-}
-const locomotionMixer=import.meta.resolve('@mml-io/3d-web-client-core');
-motionStudyHash.update('mml-character-animation\0').update(await readFile(new URL(locomotionMixer)));
-const motionStudyRevision=motionStudyHash.digest('hex');
+// Pin the code that the sampler uses. Terrain shading and other host-only
+// changes stay outside the tree-shaken sampler bundle.
+const browserPlugins=[modelCancellation,avatarRendering];
+const motionStudyRevision=await buildMotionStudyRevision(browserPlugins);
 await build({entryPoints:['src/browser-entry.mjs'],outfile:'build/client.js',bundle:true,
   format:'esm',platform:'browser',target:'es2022',minify:true,
-  plugins:[modelCancellation,avatarRendering],
+  plugins:browserPlugins,
   define:{HOLODECK_MOTION_STUDY_REVISION:JSON.stringify(motionStudyRevision)},
   loader:{'.wasm':'file'},assetNames:'[name]-[hash]'});
 await writeFile('build/character-pose-catalog.json',JSON.stringify(await characterPoseCatalog(motionStudyRevision)));

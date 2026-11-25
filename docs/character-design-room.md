@@ -54,8 +54,13 @@ start of stride, release and settling. Sharing one of these poses pins
 both animation inputs and the sampler revision, so the web projection
 can reopen the same frame.
 
-The pose link pins the rig and a revision derived from the scenario, stock
-asset and pose implementation. Two separate fixture actors reopened the same
+The pose link pins the rig, stock animation and the browser-compiled
+sampler code. Visual-only terrain changes such as woodland shading preserve
+the edition. A change to a physical input used by the sampler, such as
+the water level, generates a new edition. The first build using this
+fingerprint assigns fresh editions to the generated studies. Use the
+selected previous build for links saved against the old fingerprint.
+Two separate fixture actors reopened the same
 flight image at frame 78. Stepping backward restored the same image again,
 and a mismatched digest reported an earlier edition and reset the frame.
 The swim viewport rendered frame 94. Browser-local notes remain separate.

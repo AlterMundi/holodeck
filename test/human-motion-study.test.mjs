@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {readFile} from 'node:fs/promises';
+import {dirname} from 'node:path';
+import {buildMotionStudyRevision} from '../tools/character-pose-catalog.mjs';
 import {Group} from 'three';
 import {createHumanMotionStudy,humanMotionStudies,motionStudyRate} from '../src/human-motion-study.mjs';
 import {humanAvatar,stockLocomotion} from '../tools/avatar-motion/rig.mjs';
@@ -59,4 +62,23 @@ test('the walking study samples the live walk blend and settles after release',a
   assert.notDeepEqual(stride,sample(ground));
   assert.notDeepEqual(stride,sample(settled));
   assert.deepEqual(sample(walk+9),stride);
+});
+
+test('pose editions stay stable across shading changes and track pose inputs',async()=>{
+  const withEdit=(filter,before,after)=>[{name:'study-source-edit',setup(build){
+    build.onLoad({filter},async({path})=>{
+      const source=await readFile(path,'utf8');
+      assert.ok(source.includes(before));
+      return {loader:'js',resolveDir:dirname(path),contents:source.replace(before,after)};
+    });
+  }}];
+  const [original,woodland,braking,water]=await Promise.all([
+    buildMotionStudyRevision(),
+    buildMotionStudyRevision(withEdit(/toroidal-terrain\.mjs$/,'woodland:[.071,.109,.041]','woodland:[.18,.11,.04]')),
+    buildMotionStudyRevision(withEdit(/human-motion-study\.mjs$/,'const walkRelease=1.9;','const walkRelease=2.1;')),
+    buildMotionStudyRevision(withEdit(/toroidal-terrain\.mjs$/,'waterLevel: -9,','waterLevel: -8,')),
+  ]);
+  assert.equal(woodland,original);
+  assert.notEqual(braking,original);
+  assert.notEqual(water,original);
 });

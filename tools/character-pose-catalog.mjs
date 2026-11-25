@@ -1,9 +1,21 @@
+import {build} from 'esbuild';
+import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 import {rigs} from '../src/character-studio-rigs.mjs';
 import {humanMotionStudies,motionStudyRate} from '../src/human-motion-study.mjs';
 
 const digest=value=>createHash('sha256').update(value).digest('hex');
+
+export async function buildMotionStudyRevision(plugins=[]){
+  const {outputFiles:[sampler]}=await build({
+    absWorkingDir:fileURLToPath(new URL('..',import.meta.url)),
+    entryPoints:['src/human-motion-study.mjs'],
+    bundle:true,write:false,format:'esm',platform:'browser',target:'es2022',
+    minify:true,legalComments:'none',plugins,
+  });
+  return digest(sampler.contents);
+}
 
 async function model(path){
   const bytes=await readFile(new URL('../public/'+path,import.meta.url));
