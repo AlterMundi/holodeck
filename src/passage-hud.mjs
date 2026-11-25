@@ -30,7 +30,7 @@ export class PassageHud {
     this.ray=new Raycaster();
     this.pointer=new Vector2();
     this.hud=createSpatialHud({
-      document,parent:this.scene,accessibilityRoot:this.mirror,
+      document,parent:this.scene,accessibilityRoot:this.mirror,controlStyle:'optical',
       placeSurface:(group,id)=>{if(id===this.surface)this.group=group;},
       send:({action})=>{
         if(this.presented&&this.canRetry()&&this.active&&action?.surfaceId===this.surface&&action.name==='retry')
@@ -67,7 +67,6 @@ export class PassageHud {
   begin(){
     if(this.active)return;
     this.active=true;
-    this.started=this.window.performance.now();
     this.surface='room-passage-'+(++this.generation);
     this.latchedFallback=false;
     this.unbind=this.bind();
@@ -77,7 +76,7 @@ export class PassageHud {
   draw(){
     if(!this.active||this.latchedFallback)return;
     const retry=this.canRetry();
-    if(!retry&&this.window.performance.now()-this.started<1100){this.layer.hide();return;}
+    if(!retry){this.layer.hide();return;}
     try{this.paint(retry);}
     catch(error){
       this.fallback(true);
@@ -110,7 +109,7 @@ export class PassageHud {
       this.key=key;
     }
     const scale=Math.min(288,(width-30)/(panelWidth+.12));
-    const top=Math.min(height-165,height/2+Math.min(width*.26,height*.18,116)+14);
+    const top=Math.min(height-116,height*.72);
     const placement=JSON.stringify([width,height,scale,top,layer.pixelRatio]);
     if(!this.group){this.fallback(true);return;}
     if(placement!==this.placement){

@@ -95,6 +95,25 @@ const terrainShading = {
       * (1.0-smoothstep(37.0,51.0,approach.y));
     float holoMeadow = holoMeadowGround * smoothstep(1.15+arrival*.9,3.65+arrival*.7,edge);
     float holoMeadowRoughness = .96;
+    // Continuous bands follow the seed's surface between scenery cells.
+    // Three projections avoid a visible seam on the inner or lower faces.
+    float fieldSlope = smoothstep(.72,.96,meadowSlope);
+    float fieldHeight = smoothstep(-7.8,-1.2,vHoloHeight)*(1.0-smoothstep(31.0,69.0,vHoloHeight));
+    float fieldMask = fieldSlope*fieldHeight*(1.0-holoMeadowGround);
+    if(fieldMask > .008){
+      vec3 normal = abs(normalize(vHoloUp));
+      vec3 weights = normalize(normal*normal);
+      weights /= dot(weights,vec3(1.0));
+      vec3 point = vHoloWorld;
+      float broadField = dot(weights,vec3(
+        ringNoise(point.yz*.024+vec2(7.7,19.2)),
+        ringNoise(point.xz*.024+vec2(13.7,8.2)),
+        ringNoise(point.xy*.024+vec2(4.7,31.2))));
+      float green = smoothstep(.28,.69,broadField);
+      vec3 fieldColor = mix(vec3(.109,.157,.054),vec3(.205,.310,.087),green);
+      fieldColor = mix(fieldColor,vec3(.288,.255,.099),smoothstep(.70,.91,broadField)*.65);
+      diffuseColor.rgb = mix(diffuseColor.rgb,fieldColor,fieldMask*.76);
+    }
     if (holoMeadow > .001) {
       vec2 field = mat2(.94,.34,-.34,.94)*approach;
       float patchWeight = 1.0-smoothstep(.38,.72,.47*meadowFootprint);

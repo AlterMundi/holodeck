@@ -193,7 +193,7 @@ export class MatterWorktableHud{
       canOpenNative:()=>Boolean(this.layer.overlay&&!this.layer.lost&&
         this.canvas.clientWidth>=330&&this.canvas.clientHeight>=320)});
     this.lookPreview=new HudLookPreview({document,parent:this.scene,invalidate:this.layer.invalidate});
-    this.hud=createSpatialHud({parent:this.scene,document,accessibilityRoot:this.a11y,
+    this.hud=createSpatialHud({parent:this.scene,document,accessibilityRoot:this.a11y,controlStyle:'optical',
       placeSurface:(group,id)=>{
         if(id===toolbeltId)this.toolGroup=group;
         else if(id===worldMapId)this.map.group=group;
