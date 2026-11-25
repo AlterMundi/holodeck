@@ -7,6 +7,7 @@ const cameraFields=['minDistance','maxDistance','distance','targetDistance','des
 export class MatterFlight{
   constructor(camera){
     this.camera=camera;
+    this.active=false;
     this.bounds=new Box3();
     this.point=new Vector3();
     this.capsule=new Line3();
