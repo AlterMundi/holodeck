@@ -10,8 +10,14 @@ matched all 87 payloads and both Lab assets in protected release
 the previous candidate. The pose catalog was byte-identical. An exact
 link from that previous archive still opened flight frame 78 in Chromium.
 Two fixture browsers and the direct app actor also passed ground, flight,
-comparison, note, local frame and room access checks. Holodeck passed 422
-tests with two skips. Protected Home acceptance remains open.
+comparison, note, local frame and room access checks. A second Chromium
+run measured independent cameras at fixed frames. The web visitor switched
+from the front to profile preset, then orbited the rig with the pointer.
+The two operations changed the local rendered preview while its confirmed
+shared presentation stayed identical. The other table retained ground
+frame 57 and its world camera transform within 0.0001 per component.
+Holodeck passed 422 tests with two skips. Protected Home acceptance remains
+open.
 
 Source `73735199e2d49b74e75fbc8bc1e018c3580f90ab` fingerprints the compiled
 motion sampler for exact editions. Shading-only changes preserved the
