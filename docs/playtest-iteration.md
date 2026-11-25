@@ -263,3 +263,29 @@ returning the exact archived edition to the shelf (HTTP 204 and a fresh
 catalog read). A second authenticated fixture visitor could open the archive
 but did not receive its restore control. The suite passed 314 tests with two
 skips. The protected service still selects `f46d93f436be`.
+
+## Place, notices and sound
+
+The main world draws the room heading, location details and status in a
+Three.js A2UI header, and draws notices above the contextual toolbelt.
+Heading and live announcement semantics remain in the accessibility tree.
+Notices wrap by measured text width and retain the browser presentation
+where their full content would exceed the HUD space. The header accounts for
+safe areas and yields to settings. Sound uses the existing world audio
+owner and requires browser activation. When activation cannot be read, the
+trusted browser button remains available.
+
+Opus 5.5 High reviewed this in two passes. The corrections preserve headings
+and announcements, improve wrapping on narrow screens, expose the mute
+control after entering a room with sound already on, and disable the
+control during passage. The original standalone interior path retains its
+browser controls.
+
+Exact archive `27b6044a6b8d` at `6e38d2e` is 33,464,320 bytes. Chromium
+verified the title and subtitle when entering Matter, audio activation and
+mute by mouse and touch, and an announced native error notice. The exact
+candidate also retained the complete notice at 320 CSS pixels and allowed
+muting after a confirmed exterior-to-Matter crossing. The compatibility
+probe masked the browser activation API and verified the original trusted
+button. The suite passed 314 tests with two skips. Live remains
+`f46d93f436be`.
