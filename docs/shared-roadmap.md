@@ -557,9 +557,11 @@ fixture identities. The [physical Sand3D trial](playtest-iteration.md#physical-s
 screened the 14-instance verge cluster on the RTX 2060 in both profiles
 by day and at dusk. The [flagstone approach candidate](playtest-iteration.md#flagstone-approach-to-the-authored-house)
 joins the trail to the existing facade and frames it with current plant
-assets. Qualify the combined exterior on weaker physical hardware and
-check exact packed size before adopting the optional Sand3D cluster.
-The real shared workshop visit remains open.
+assets. The exact candidate passed the controlled lightweight route
+and frame screen on a Raspberry Pi 5. Improve the prompt and dock
+placement at short viewport heights in #16. A later Sand3D integration
+still needs its own exact packed-size and device checks. The real shared
+workshop visit remains open.
 
 Compare the same outside path, working table, map and open Conversation
 on the existing build. Final preset selection covers a dark and a light

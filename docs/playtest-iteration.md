@@ -1319,9 +1319,34 @@ The corrected client showed the paving meeting the steps on the RTX
 2060 in normal daylight and in Chromium with SwiftShader in lightweight
 dusk. In both cases a fixture visitor walked to the house, entered Matter
 and returned through the same door. The collection used a stand-in.
-The development build and 352 tests passed with two optional skips.
-A protected visitor pair, exact release packaging and a physical
-low-end frame-time comparison remain open. Production stays on
+A clean export of `88459ee` built with the receiver's Node 24.21.0
+produced the 33,331,200-byte USTAR
+`580c330d8518521504dbbfa602fa1ea69c247be73d46cdb0ae7a11f67c79e912`.
+The installed owner validator accepted its 80 payloads. The decoded
+client matches the clean build, every packaged art file matches the
+protected control, and the server bundles match after normalizing
+generated import names. The clean suite passed 352 tests with two skips.
+The isolated packaged production entry admitted the fixture actor through
+a Home HTTP stand-in, served matching Brotli and identity JavaScript,
+refused anonymous and wrong-origin world sockets, and closed the
+admitted world socket and denied the API after authority revocation.
+
+On a Raspberry Pi 5 with the Broadcom V3D 7.1.7 renderer, a controlled
+visitor walked into Matter and returned to the same door from the
+exact archive, at dusk in lightweight. A separate lightweight timed
+walk compared the protected archive `20726f08a3e0` and the candidate at
+the same fixed pose and heading in ABBA and BAAB order. The 660 × 445
+browser viewport rendered a 363 × 244 buffer. Eight 2.35 s runs covered
+12.67–12.89 m each. The controls gave 542 intervals and the candidate
+538, with a median of 16.7 ms and p95 of 16.8 ms on both. This screens
+one route in lightweight only. The physical capture also shows the
+entry prompt and dock covering part of the landing at this height,
+tracked in [Holodeck #16](https://github.com/AlterMundi/holodeck/issues/16).
+
+One software run failed the immediate camera-heading assertion on
+return. The instrumented repeat and the physical route verified
+both the return anchor and a distinct return heading.
+A protected visitor pair remains open. Production stays on
 `20726f08a3e0`. The Sand3D imports remain an optional art trial.
 
 ## Authored flight and swimming poses
