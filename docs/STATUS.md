@@ -8,7 +8,9 @@ neutral jaw and can consume a bound local microphone envelope. CompAII's
 canonical Conversation now serves the [compatible producer](shared-conversation.md#local-avatar-microphone-motion)
 from `b1d2fd0b` after a fenced web-only activation. Three HTTPS JavaScript
 hashes matched. Native services, configuration and the World release were
-preserved. Synthetic capture and a distinct fixture observer passed in the
+preserved. The six other registered active Conversation receivers now
+serve the [compatible legacy overlay](shared-conversation.md#local-avatar-microphone-motion).
+Synthetic capture and a distinct fixture observer passed in the
 [controlled test](playtest-iteration.md#local-microphone-animation).
 Physical microphone and authenticated two-person acceptance remain open.
 

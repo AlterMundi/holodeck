@@ -147,14 +147,25 @@ The web-only selection used the actual voice-admission guard and retained
 the previous immutable web composition. The native PID, invocation,
 Core and receiver configuration matched their preimages. The owner
 dashboard and speech-rendering CI passed on the exact PR head. The broader
-text job was still running at activation.
+text job subsequently passed and PR #1035 merged as `eca802cc`.
 
-The combined candidate passed a physical-device simulation in Chromium
-with the receiving web bytes and the exact World package. A real signed-in
-microphone trial and the other registered Conversation origins are open.
-Ordinary capture without live PCM and the continuous voice engines are
-outside this integration. Any peer rendering follows the audience of the
-existing authorized voice path.
+Eko, Oliva, Pixin, Calipso, C-137 and Noodles shared a different legacy
+frame and recorder baseline. The mic-only overlay retains their attachment
+and playback contracts. The scope-specific tests passed the frame and live
+PCM callback checks on those exact bytes. All six origins returned the same
+three HTTPS hashes, `aff9a7a2c505` for the surface, `a7bd0f69c180` for the
+composer and `933484f78acd` for the recorder. Their actual voice fences
+guarded web-only activation. Each receiver retained its preceding web
+composition, native processes and configuration. At Oliva the first
+health and PID checks raced startup. The rollback hashes were reread
+before correcting the verifier to await health and confirming adoption.
+No new receiver was registered.
+
+The CompAII web composition and exact World package passed Chromium with
+a synthetic microphone and a distinct fixture observer. A real signed-in
+microphone trial remains open. Ordinary capture without live PCM and the
+continuous voice engines are outside this integration. Any peer rendering
+follows the audience of the existing authorized voice path.
 
 ### Canonical writer integration
 

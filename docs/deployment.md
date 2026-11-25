@@ -754,8 +754,11 @@ independent of the canonical Conversation provider and of live room state.
 CompAII’s compatible producer is an independent three-asset web overlay.
 Use the existing voice-admission guard when restoring the preceding
 Conversation web composition. Preserve the Gateway, Core, native state and
-the Holodeck package selectors. Verify the three served asset hashes over
-HTTPS after either change.
+the Holodeck package selectors. The six other active receivers have their
+own prior web compositions. After either change, wait for the locked web
+health response to identify the serving process and verify all three
+asset hashes over HTTPS. A service manager reporting start does not imply
+that the web listener is ready.
 
 The [selected humanoid release](STATUS.md#november-25-humanoid-standing-idle-and-airborne-turns)
 `326890e44863` changed only the browser bundle. Use `873ae82b51f6` as
