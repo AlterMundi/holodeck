@@ -12,7 +12,8 @@ The outer route and cave entrance keep their existing terrain.
 Daylight captures at four fixed views and an 11 m walk at the forest
 edge held p95 at 16.7–16.8 ms on RTX 2060 Normal and Pi 5 Livianos, in
 the same range as the prior build. The walk added three draw calls
-and about 56k–66k rendered triangles. The browser fixture used
+and about 56k–66k rendered triangles. A separate airborne hover showed
+the canopy at 16.7 ms on RTX and 16.8 ms on Pi. The browser fixtures used
 controlled identities. The suite passed 414 tests with two skips.
 Receiving matched 86 files and preserved the existing access,
 configuration and world sequence 433. Immediate rollback is
