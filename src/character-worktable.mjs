@@ -20,6 +20,7 @@ export class CharacterWorktable {
     this.viewer=null;
   }
 
+  setShortLayout(short){this.viewer?.setShortTableLayout(short);}
   action(requested){this.viewer?.dispatch(requested);}
   render(now){this.viewer?.render(now);}
 }

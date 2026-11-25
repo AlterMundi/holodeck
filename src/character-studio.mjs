@@ -707,7 +707,15 @@ export function openCharacterStudio(document,table=null){
     table?0:url.searchParams.get('fotograma'),table?null:url.searchParams.get('edicion'))
     .then(()=>{if(visible){playing=!table&&!reduce.matches&&!url.searchParams.has('fotograma');refresh();}})
     .catch(()=>report(table?'No se pudo abrir el personaje. Volvé a probar.':'No se pudo abrir el personaje. Podés volver al mundo.'));
-  return {dispatch,render,dispose};
+  function setShortTableLayout(short){
+    const width=short?3.10:2.20;
+    if(!table||width===panelWidth)return;
+    panelWidth=width;
+    tableControls[0]={...tableControls[0],width};
+    const panel=tableControls[0];
+    receive('updateComponents',{components:[playback?panel:{...panel,children:['tableHeading','status']}]});
+  }
+  return {dispatch,render,dispose,setShortTableLayout};
 }
 
 function webStudioProjection(document,scene,dispatch,close){

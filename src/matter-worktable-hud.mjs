@@ -838,6 +838,7 @@ export class MatterWorktableHud{
     }
     if(this.group&&this.active&&this.table!==this.collectionTable){
       const short=this.compactCharacterTable;
+      this.table.setShortLayout?.(short);
       this.hud.setChoicePresentation(surfaceId,short?'overlay':'inline');
       this.hud.setChoicePageSize(surfaceId,short?(height<300?1:2):undefined);
     }
@@ -851,8 +852,8 @@ export class MatterWorktableHud{
         width-right-8-scale*(compactWorkWidth+.12)/2,top+10,scale);
     }else if(this.group&&this.compactCharacterTable){
       const insets={left:left+(width-left-right)*.36,right,top,bottom:bottom+1.21*this.landscapeGrip()+6};
-      const scale=Math.min(144,(width-insets.left-right-16)/2.32);
-      this.place(this.group,'workPlacement',{...viewport,insets},width-right-8-1.16*scale,top+10,scale);
+      const center=(insets.left+width-right)/2;
+      this.place(this.group,'workPlacement',{...viewport,insets},center,top+10,144);
     }else{
       const taller=this.lookPreview.name==='taller';
       const scale=taller?Math.min(170,(width-left-right-24)/2.46,(height-top-bottom-124)/1.9):
