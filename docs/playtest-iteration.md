@@ -166,3 +166,31 @@ changes, event sanitization, bounded history, scope and generation isolation,
 out-of-order delivery and recovery after losing the baseline. The tests exercise
 the codec. Live zero-attachment delivery is still open under
 [Holodeck #19](https://github.com/AlterMundi/holodeck/issues/19).
+
+## Video and Appearance HUD
+
+The shared-world toolbelt presents Video and Appearance as Three.js A2UI
+panels. Both use the existing preference writers. Graphics mode and mouse
+sensitivity remain client-local, avatar selection uses the paired Home
+session, and Matter finishes affect the local view. Fullscreen is invoked
+synchronously from the control gesture. Settings own their keyboard focus
+and canvas input while open. A denied fullscreen request during Conversation
+leaves the draft and display open.
+
+Opus 5.5 High reviewed the implementation in two passes. The changes distinguish
+native panels from fallback browser dialogs, keep gestures and focus inside the
+visible settings surface, restore the launcher after close, and prevent a
+fullscreen failure from taking over an open Conversation. Notices are laid out
+above the shared toolbelt, including when it wraps to a second row. The legacy
+client path for standalone interiors still uses the browser settings adapter.
+The shared-world source is `c208f49`.
+
+Exact archive `17f4ea5c7a28` is 33,464,320 bytes, 90,112 bytes below the
+32 MiB ceiling. Controlled Chromium verified keyboard focus containment and
+restoration, resolution mode and sensitivity changes, the mesh fullscreen
+action on desktop, and a tap on the mesh close control on touch. A forced
+fullscreen denial preserved the open Conversation. A second authenticated
+fixture visitor retained a separate avatar preference. The Matter room's
+selected style applied through the native panel and restyled the HUD.
+The source suite passed 311 checks with two skips. The protected service
+still selects `f46d93f436be`. Device and live acceptance remain open.
