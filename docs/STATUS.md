@@ -1,5 +1,20 @@
 # Current MVP work
 
+## November 25 selected playtest update
+
+Holodeck is serving c2d4434bd2e6 after exact protected package readback.
+The deployed Conversation display uses a high-contrast minimize glyph and
+a small corner resize mark. Matter uses Orbital layered light by default and
+saves selected room looks per visitor account. The previous package
+8d2bb9df6ab7 supports returning restored editions to the cabinet and is the
+observed compatible rollback. Native world run and receiving configuration
+were preserved.
+
+The HUD theme studies and bounded Sand3D Nature comparison are available
+through the [playtest plan](playtest-iteration.md#november-25-playtest-and-next-controls).
+The software renderer measured the added geometry and draw calls only in the
+test patch. It does not establish acceptable game-device performance.
+
 Updated 2026-11-24. The native Holodeck goal now selects the giant continuous
 toroidal terrain. The prior appearance verification is preserved below and its
 remaining work is tracked in the shared roadmap. The earlier MVP objective and
