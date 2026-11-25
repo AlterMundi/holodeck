@@ -36,3 +36,7 @@ permits adaptation and redistribution. Author derivatives in Blender, preserve
 the original separately and measure the runtime mesh/material/texture cost.
 Inspect the placed result before publishing. The first worked example and asset
 intake guidance are in art/compaii-house/assets/README.md.
+
+When authoring or reviewing a scene, make object-to-surface and object-to-object
+contacts read as intentional material transitions. Check the placed result,
+including low light, using the contact guidance in docs/environment-art-revamp.md.

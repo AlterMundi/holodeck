@@ -376,6 +376,13 @@ light leaks at floor, wall, stair and roof joins. Give intentional openings a
 recognizable purpose, frame or view and keep collision aligned with the visible
 edge. Check contact shadows and surface scale after geometry changes.
 
+Apply the [surface contact policy](environment-art-revamp.md#surface-contacts)
+to new and revised assets. The reported exterior example is the base of the
+stone spires and adjacent rocks at night. Use the retained camera in the report
+to check how they sit into the ground before and after a material or placement
+change. The shared policy is documented and the pictured contacts still need
+a visual pass.
+
 Start with the [foyer](../art/compaii-house/redesign/review/foyer-baked-light.jpg)
 and [Beacon room](../art/compaii-house/redesign/review/beacon-light-after.jpg).
 The foyer now has an orientation table and a place to sit. The Beacon

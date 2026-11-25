@@ -80,6 +80,25 @@ cards or splats against equal views, motion parallax, package size and
 light response. Use physical geometry wherever visitors can cross or
 touch a surface.
 
+### Surface contacts
+
+When objects meet terrain or other objects, make the contact read as part of
+the scene. This applies indoors and outdoors, including architectural joins
+and the waterline. Preserve crisp edges where the construction or material
+calls for them, and give the actual joint believable support and lighting.
+
+Choose the treatment that fits the materials. Seat rocks into uneven ground,
+vary their base silhouette, and continue local grit, soil or vegetation at the
+foot. Use local contact shadow or baked occlusion where it helps show weight.
+Use a bevel, a fitted joint or material trim where two built surfaces meet.
+At wet edges, let depth, wetness and transparency carry the transition.
+Keep collision aligned with the visible solid surface.
+
+Review at eye height from both sides that visitors can reach and while moving
+past the object. Check daylight and dusk or night, where a dark terrain can
+hide sparse ground cover and leave an abrupt seam. Keep the matched view in
+the environment review evidence when resolving a reported example.
+
 ## Screening route
 
 Use identical graphics quality, resolution, seed, camera and solar clock
