@@ -351,8 +351,12 @@ export function openCharacterStudio(document,table=null){
       clipDigest=loaded.digest;
     }
     if(!selected?.tracks.length||!(selected.duration>0))throw Error('Missing animation');
+    const walking=study?.walking?await stockClip(profile,'jog',activeFigure):null;
+    if(walking&&!walking.selected?.tracks.length)throw Error('Missing walking animation');
     if(study){
-      const signature=new TextEncoder().encode(HOLODECK_MOTION_STUDY_REVISION+' '+name+' '+clipDigest);
+      const inputs=[HOLODECK_MOTION_STUDY_REVISION,name,clipDigest];
+      if(walking)inputs.push(walking.digest);
+      const signature=new TextEncoder().encode(inputs.join(' '));
       clipDigest=hex(new Uint8Array(await window.crypto.subtle.digest('SHA-256',signature)));
     }
     const edition=activeFigure.rigDigest+'.'+clipDigest;
@@ -370,7 +374,7 @@ export function openCharacterStudio(document,table=null){
           if(profile.clips)activeFigure.mixer.uncacheClip(selected);
         }};
       }
-      studyRun??=createHumanMotionStudy(activeFigure.model,selected,study);
+      studyRun??=createHumanMotionStudy(activeFigure.model,selected,study,walking?.selected);
       const neutral=[];
       activeFigure.model.traverse(node=>{
         if(node===activeFigure.model||node.isBone)neutral.push([node,node.position.clone(),node.quaternion.clone()]);

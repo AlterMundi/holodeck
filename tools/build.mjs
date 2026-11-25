@@ -182,6 +182,8 @@ for(const file of ['human-motion-study','flight-avatar-animation','humanoid-flig
   'humanoid-crouch','toroidal-locomotion','toroidal-terrain']){
   motionStudyHash.update(file+'\0').update(await readFile(new URL('../src/'+file+'.mjs',import.meta.url)));
 }
+const locomotionMixer=import.meta.resolve('@mml-io/3d-web-client-core');
+motionStudyHash.update('mml-character-animation\0').update(await readFile(new URL(locomotionMixer)));
 const motionStudyRevision=motionStudyHash.digest('hex');
 await build({entryPoints:['src/browser-entry.mjs'],outfile:'build/client.js',bundle:true,
   format:'esm',platform:'browser',target:'es2022',minify:true,

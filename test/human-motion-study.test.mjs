@@ -40,3 +40,23 @@ test('the swim study follows the actual water surface and revisits identical sub
   assert.equal(water(81),submerged);
   assert.deepEqual(mesh.getObjectByName('upperarm_l').quaternion.toArray(),arm);
 });
+
+test('the walking study samples the live walk blend and settles after release',async()=>{
+  const {mesh}=humanAvatar('avatar-1-bodyA-skin01.glb');
+  const {clips}=await stockLocomotion(mesh);
+  const study=humanMotionStudies['estudio-marcha'];
+  const run=createHumanMotionStudy(mesh,clips.idle.getClip(),study,clips.jog.getClip());
+  const mount=new Group();
+  const sample=frame=>{
+    assert.ok(Number.isNaN(run.apply(mesh,mount,frame)));
+    return ['thigh_l','calf_l','thigh_r','calf_r'].flatMap(name=>mesh.getObjectByName(name).quaternion.toArray());
+  };
+  assert.deepEqual(run.chapters.map(({id})=>id),['ground','walk','brake','settled']);
+  const [ground,walk,brake,settled]=run.chapters.map(({frame})=>frame);
+  assert.equal(ground,0);
+  assert.ok(walk>ground&&brake>walk&&settled>brake&&settled<run.count);
+  const stride=sample(walk+9);
+  assert.notDeepEqual(stride,sample(ground));
+  assert.notDeepEqual(stride,sample(settled));
+  assert.deepEqual(sample(walk+9),stride);
+});

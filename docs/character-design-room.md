@@ -46,6 +46,14 @@ remain separately selectable. The robot's original clips and its live planted
 gait are distinct, so the raw walk and run in the studio carry explicit clip
 labels. Inspect planted contact in the running world.
 
+The worktable candidate also includes **Marcha, frenada y reposo**. It
+samples dry-ground motion at 30 Hz using the toroidal controller, the MML
+idle/walk blend, the live stock idle and jog assets, and the humanoid
+pose adapter used in the world. **Fase** seeks to ground support, the
+start of stride, release and settling. Sharing one of these poses pins
+both animation inputs and the sampler revision, so the web projection
+can reopen the same frame.
+
 The pose link pins the rig and a revision derived from the scenario, stock
 asset and pose implementation. Two separate fixture actors reopened the same
 flight image at frame 78. Stepping backward restored the same image again,

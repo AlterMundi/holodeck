@@ -30,9 +30,12 @@ export async function characterPoseCatalog(studyRevision){
       const sample=await model(path);
       return [clip,identity(sample.digest,sample.clips[0].maxFrame)];
     })));
-    const idleDigest=stock.idle.edition.split('.')[1];
-    catalog[id]={...stock,...Object.fromEntries(Object.entries(humanMotionStudies).map(([name,study])=>
-      [name,identity(digest(studyRevision+' '+name+' '+idleDigest),Math.round(study.duration*motionStudyRate))]))};
+    const stockDigest=name=>stock[name].edition.split('.')[1];
+    catalog[id]={...stock,...Object.fromEntries(Object.entries(humanMotionStudies).map(([name,study])=>{
+      const inputs=[studyRevision,name,stockDigest('idle')];
+      if(study.walking)inputs.push(stockDigest('jog'));
+      return [name,identity(digest(inputs.join(' ')),Math.round(study.duration*motionStudyRate))];
+    }))};
   }
   return catalog;
 }
