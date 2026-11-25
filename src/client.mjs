@@ -147,25 +147,39 @@ const touchControls={
     this.holder.toggleAttribute('data-touch-paused',Boolean(this.paused));
     this.holder.toggleAttribute('data-native-locomotion',Boolean(this.native));
     this.experience=experience;
-    for(const button of this.holder.querySelectorAll('button')){button.textContent='Saltar';button.setAttribute('aria-label','Saltar');}
+    for(const button of this.holder.querySelectorAll('button')){
+      button.textContent='Saltar';
+      button.setAttribute('aria-label','Saltar');
+      button.parentElement.classList.add('touch-legacy-lane');
+    }
     experience.setAdditionalInputProvider({getOutput:()=>{
       if(this.paused)return null;
-      if(this.native)return this.native.getOutput();
-      const output=this.delegate?.joystick?.getOutput()??null;
-      if(!this.awaitLegacyRelease)return output;
-      if(!output)this.awaitLegacyRelease=false;
-      return null;
+      const output=this.readOutput();
+      if(output&&(output.direction!=null||output.jump||output.vertical))this.lastMotion=performance.now();
+      return output;
     }});
+  },
+  readOutput(){
+    if(this.native)return this.native.getOutput();
+    const output=this.delegate?.joystick?.getOutput()??null;
+    if(!this.awaitLegacyRelease)return output;
+    if(!output)this.awaitLegacyRelease=false;
+    return null;
+  },
+  moving(){
+    return !this.paused&&performance.now()-(this.lastMotion??-Infinity)<180;
   },
   pause(paused){
     if(this.paused===paused)return;
     this.paused=paused;
+    this.lastMotion=undefined;
     this.awaitLegacyRelease=true;
     this.holder?.toggleAttribute('data-touch-paused',paused);
   },
   present(native){
     if(this.native===native)return;
     this.native=native;
+    this.lastMotion=undefined;
     this.awaitLegacyRelease=true;
     this.holder?.toggleAttribute('data-native-locomotion',Boolean(native));
   },
@@ -801,7 +815,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       appearance:document.getElementById('appearance-open'),video:document.getElementById('video-open'),
       bridge:document.getElementById('bridge'),plant:document.getElementById('plant'),undo:document.getElementById('undo'),
       activity:document.getElementById('activity-open'),visit:document.getElementById('visit-near'),
-      endVisit:document.getElementById('visit-end-near')};
+      endVisit:document.getElementById('visit-end-near'),fullscreen:document.getElementById('video-fullscreen')};
     const visitAllowed=()=>!moving&&!entering&&document.getElementById('conversation-panel').hidden&&
       document.getElementById('creator').hidden&&!signalEditor?.active;
     const activityAllowed=()=>!inside&&document.getElementById('conversation-panel').hidden&&
@@ -809,12 +823,12 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const readTools=operating=>Object.fromEntries(Object.entries(tools).map(([id,element])=>[id,{
       label:id==='undo'?'Deshacer':id==='visit'&&element.textContent.startsWith('Visitar ')?'Visitar':
         element.getAttribute('aria-label')??element.textContent.trim(),
-      visible:(id==='activity'?activityAllowed():!element.hidden)&&
-        (['map','talk','appearance','video'].includes(id)||['visit','endVisit'].includes(id)&&visitAllowed()&&!operating||!inside&&!operating&&
+      visible:(id==='activity'?activityAllowed():id==='fullscreen'?element.hasAttribute('data-fullscreen-available'):!element.hidden)&&
+        (['map','talk','appearance','video','fullscreen'].includes(id)||['visit','endVisit'].includes(id)&&visitAllowed()&&!operating||!inside&&!operating&&
           !['visit','endVisit'].includes(id))
         &&(!['appearance','video'].includes(id)||document.getElementById('conversation-panel').hidden),
       disabled:element.disabled,
-      pressed:element.getAttribute('aria-expanded')==='true',
+      pressed:element.getAttribute(id==='fullscreen'?'aria-pressed':'aria-expanded')==='true',
     }]));
     let settingsInputCaptured=false;
     let tabletopRevision=0;
@@ -1204,8 +1218,11 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
           options.coreCameraManager.activePointers.clear();
         }
       }
-      matterHud.update(!collectionRoom||needsSync||!document.getElementById('conversation-panel').hidden||opaqueVisit||toolModal||settingsOpen,
-        !entering&&!moving&&drawWorld&&!opaqueVisit&&!toolModal);
+      const conversation=document.getElementById('conversation-panel');
+      const compactTouch=matterHud.compactTouch();
+      const quietTouch=Boolean(compactTouch&&conversation.hidden&&touchControls.moving());
+      matterHud.update(!collectionRoom||needsSync||!conversation.hidden||opaqueVisit||toolModal||settingsOpen,
+        !entering&&!moving&&drawWorld&&!opaqueVisit&&!toolModal,quietTouch&&!settingsOpen);
       garden.update(inside&&!moving&&activeSpace.playableInterior?activeSpace.id:null);gardenMarkers();
       if(!inside){worldIndication?.update();if(!moving)playableHUD.update(state?.lightExercise===true?position:null);}
       if(!moving){
@@ -1213,12 +1230,11 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         contentVisitor?.update(position);
         updateDoor(position,()=>options.coreCameraManager.getCameraState().rotation);
       }
-      const conversation=document.getElementById('conversation-panel');
       if(!conversation.hidden)fitConversationWindow();
       const worldToolsVisible=!entering&&!moving&&!needsSync&&drawWorld&&!opaqueVisit&&!toolModal&&!settingsOpen;
-      const navigationVisible=worldToolsVisible&&conversation.hidden;
+      const navigationVisible=worldToolsVisible&&conversation.hidden&&!quietTouch;
       matterHud.map.update(navigationVisible,paintedRaster);
-      const touchAvailable=worldToolsVisible&&(conversation.hidden||!!conversation.dataset.travelLane)&&
+      const touchAvailable=worldToolsVisible&&(conversation.hidden||!compactTouch&&!!conversation.dataset.travelLane)&&
         !mapPanel.open&&!signalEditor.active&&!document.hidden&&document.hasFocus();
       const movementLane=conversation.hidden?'':conversation.dataset.travelLane??'';
       const touchLocomotion=touchAvailable&&(!tableFlight.active||tableInputAllowed());
@@ -1226,13 +1242,13 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         movementLane,tableFlight.active||mode!=='ground');
       touchControls.pause(!touchLocomotion||!conversation.hidden&&!matterHud.movementPresented);
       matterHud.updateBearing(navigationVisible&&!matterHud.active);
-      matterHud.door.update(worldToolsVisible&&(conversation.hidden||concurrentRoomDoors())&&
+      matterHud.door.update(worldToolsVisible&&!quietTouch&&(conversation.hidden||concurrentRoomDoors())&&
         !matterHud.active&&Boolean(matterHud.toolGroup)&&!signalEditor.active,
         Boolean(matterHud.toolLayout?.compact));
       matterHud.collection.update(navigationVisible&&!matterHud.active&&!mapPanel.open&&!signalEditor.active);
       const {left:statusLeft,right:statusRight}=matterHud.toolInsets();
       matterHud.status.update({
-        headerVisible:!entering&&drawWorld&&!opaqueVisit&&!settingsOpen&&(!toolModal||worldHistory?.native)&&(inside||Boolean(navigator.userActivation)),
+        headerVisible:!entering&&drawWorld&&!opaqueVisit&&!settingsOpen&&!quietTouch&&(!toolModal||worldHistory?.native)&&(inside||Boolean(navigator.userActivation)),
         showExterior:!inside,noticeVisible:!entering&&drawWorld&&!opaqueVisit,noticeOpacity:worldNotice.opacity,
         soundBlocked:moving||needsSync,
         width:matterHud.canvas.clientWidth-statusLeft-statusRight,height:matterHud.canvas.clientHeight,
@@ -1284,7 +1300,7 @@ let soundBusy=false;
 window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()||null,audioState:()=>worldAudio.status(),avatarState:()=>nativeAvatarLayer?.status(),tableFlight:()=>({active:!!matterFlight?.active,bounds:matterFlight?.bounds}),companion:()=>companionAvatar?.object??null,flight:()=>flightEnabled,hudWindow:id=>matterHud?.windows.geometry.get(id)??null};
 const $=selector=>document.querySelector(selector);
 notifyFullscreenError=message=>{
-  if($('#conversation-panel').hidden)return false;
+  if($('#conversation-panel').hidden&&matterHud?.compactTouch()!=='landscape')return false;
   say(message,{transient:true});
   return true;
 };

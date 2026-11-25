@@ -36,6 +36,7 @@ export function bindVideoSettings({document,window,lightweight,onGraphics,onSens
     if(document.fullscreenElement!==root)releaseMovementLock();
     toggle.textContent=active?'Salir de pantalla completa':'Pantalla completa';
     toggle.setAttribute('aria-pressed',String(active));
+    toggle.toggleAttribute('data-fullscreen-available',Boolean(available()));
     toggle.disabled=changing||!available();
   }
 
