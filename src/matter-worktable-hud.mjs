@@ -975,8 +975,9 @@ export class MatterWorktableHud{
     }
     if(this.beacon.stationGroup){
       const scale=Math.min(164,(width-left-right-36)/(beaconStationWidth+.12));
+      const offset=width<700?(this.coarsePointer.matches?200:86):139;
       this.place(this.beacon.stationGroup,'beaconStationPlacement',viewport,width-right-18-beaconStationWidth*scale/2,
-        top+(width<700?200:139),scale);
+        top+offset,scale);
     }
     let beaconViewerPlaced=false;
     if(this.beacon.viewerGroup&&this.layer.overlay&&!this.layer.lost){
