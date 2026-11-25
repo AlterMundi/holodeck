@@ -1419,7 +1419,16 @@ cover one short controlled local-character run per profile. The
 lightweight fixture timed out closing its remote browser context after
 recording the landing and passing its checks. Dedicated browser cleanup
 was subsequently verified. The clean suite passed 353 tests with two optional skips.
-Deployment and confirmation with independent signed-in peers remain open.
+Two distinct fixture identities in separate Chromium processes also
+repeated the same 90° turn on dry terrain with radial up about 29° from
+world vertical. Both exact archives used the same route and wire pose
+traffic. The new archive produced peak banks of 8.5° locally and 9.4°
+on the observer, both toward the turn. The control archive
+`873ae82b51f6` showed no added bank or visual yaw offset in either view.
+The peer saw the actor settle, land and leave, and released its renderer
+entry. The verifier reconstructs XYZ base rotations from MML's public
+Euler fields before comparing them with the rendered root. Confirmation
+with independent signed-in people remains open.
 
 ## Authored flight and swimming poses
 
