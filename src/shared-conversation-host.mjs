@@ -4,8 +4,8 @@ const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const SCHEMA='conversation.surface/v1';
 const bounded=value=>{try{return JSON.stringify(value).length<=8192;}catch{return false;}};
 export class SharedConversationHost{
-  constructor({window,document,container,api,capture,currentActor,onStatus=()=>{},onError=()=>{}}){
-    Object.assign(this,{window,document,container,api,capture,currentActor,onStatus,onError});
+  constructor({window,document,container,api,capture,currentActor,onStatus=()=>{},onError=()=>{},onSpeechLevel}){
+    Object.assign(this,{window,document,container,api,capture,currentActor,onStatus,onError,onSpeechLevel});
     this.records=new Map();this.visit=window.crypto.randomUUID();this.receive=this.receive.bind(this);
     window.addEventListener('message',this.receive);
   }
@@ -42,10 +42,13 @@ export class SharedConversationHost{
     const d=event.data;
     if(d.type==='ready'){
       // A reload establishes a fresh channel; old async replies stay on the old channel.
-      this.channel=d.channel;this.send(d,'connect');return;
+      this.channel=d.channel;this.onSpeechLevel?.(0);
+      this.send(d,'connect',this.onSpeechLevel?{features:{avatarPlayback:true}}:{});return;
     }
     if(d.channel!==this.channel)return;
-    if(d.type==='prepare')this.prepare(d).catch(()=>{});
+    if(d.type==='avatar-playback'&&typeof d.level==='number'&&Number.isFinite(d.level)&&d.level>=0&&d.level<=1){
+      this.onSpeechLevel?.(d.level);
+    }else if(d.type==='prepare')this.prepare(d).catch(()=>{});
     else if(d.type==='status'&&this.records.has(d.id)&&typeof d.phase==='string'&&d.phase.length<=64&&typeof d.busy==='boolean'){
       this.onStatus({phase:d.phase,busy:d.busy});
       // This is a UI hint only. The server verifies real canonical terminal state.
@@ -85,5 +88,5 @@ export class SharedConversationHost{
       if(!record.discarded&&this.channel===d.channel)this.send(d,'error',{request:d.request,id:d.id,message:'No pude conservar el contexto de este lugar. Tu borrador sigue en la conversación.'});
     }
   }
-  dispose(){this.closed=true;this.window.removeEventListener('message',this.receive);this.frame?.remove();}
+  dispose(){this.closed=true;this.onSpeechLevel?.(0);this.window.removeEventListener('message',this.receive);this.frame?.remove();}
 }

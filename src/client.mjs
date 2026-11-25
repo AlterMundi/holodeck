@@ -1,13 +1,15 @@
 import {ToroidalScenery} from './toroidal-scenery.mjs';
-import {ToroidalAtmosphere} from './toroidal-atmosphere.mjs';
+import {ToroidalAtmosphere,toroidalViewDepth} from './toroidal-atmosphere.mjs';
+import {argentineSun} from './toroidal-solar-clock.mjs';
 import {ToroidalCave} from './toroidal-cave.mjs';
 import {TOROIDAL_TERRAIN} from './toroidal-terrain.mjs';
 import {TOROIDAL_SUN,ToroidalTerrainRenderer,toroidalSunDirection} from './toroidal-terrain-renderer.mjs';
 import {bindToroidalMml} from './toroidal-mml.mjs';
+import {bindFlightAvatarAnimation} from './flight-avatar-animation.mjs';
 import {RemoteDocumentWrapper} from '@mml-io/mml-web';
 import {RoomSceneCache,roomArtURL} from './room-scene-cache.mjs';
 import {bindInteriorHeadroom} from './avatar-headroom.mjs';
-import {MatterInspection,bindMatterInspection} from './matter-inspection.mjs';
+import {MatterFlight,bindMatterFlight,bindMatterHologram} from './matter-flight.mjs';
 import {constrainInteriorCamera} from './interior-camera.mjs';
 import {capWorldPixelRatio,usesLightGraphics} from './render-pixel-budget.mjs';
 import {bindVideoSettings} from './video-settings.mjs';
@@ -22,6 +24,7 @@ import { DirectionalLight, SpotLight } from 'three';
 import { WORKSHOP, workshopColour } from './workshop.mjs';
 import { saveIntent, loadIntent, archiveIntent, sameActor, nativeRetryRoute } from './client-intents.mjs';
 import { NativeAvatarLayer } from './native-avatar.mjs';
+import {CompanionAvatar} from './companion-avatar.mjs';
 import {PublicWorldPicker,WorldIndication} from './world-indication.mjs';
 import { ContentVisitor } from './content-visitor.mjs';
 import { GalleryModels } from './gallery-models.mjs';
@@ -94,13 +97,37 @@ const touchControls={
     this.holder=document.createElement('div');this.holder.className='touch-controls';container.append(this.holder);
     this.delegate=new DefaultVirtualJoystickPlugin({radius:58,innerRadius:19});
     this.delegate.mount(this.holder,experience);
+    this.holder.toggleAttribute('data-touch-paused',Boolean(this.paused));
+    this.holder.toggleAttribute('data-native-locomotion',Boolean(this.native));
     this.experience=experience;
     for(const button of this.holder.querySelectorAll('button')){button.textContent='Saltar';button.setAttribute('aria-label','Saltar');}
+    experience.setAdditionalInputProvider({getOutput:()=>{
+      if(this.paused)return null;
+      if(this.native)return this.native.getOutput();
+      const output=this.delegate?.joystick?.getOutput()??null;
+      if(!this.awaitLegacyRelease)return output;
+      if(!output)this.awaitLegacyRelease=false;
+      return null;
+    }});
   },
   pause(paused){
-    if(this.delegate)this.experience?.setAdditionalInputProvider(paused?null:this.delegate.joystick);
+    if(this.paused===paused)return;
+    this.paused=paused;
+    this.awaitLegacyRelease=true;
+    this.holder?.toggleAttribute('data-touch-paused',paused);
   },
-  dispose(){this.delegate?.dispose();this.holder?.remove();this.experience=null;}
+  present(native){
+    if(this.native===native)return;
+    this.native=native;
+    this.awaitLegacyRelease=true;
+    this.holder?.toggleAttribute('data-native-locomotion',Boolean(native));
+  },
+  dispose(){
+    this.experience?.setAdditionalInputProvider(null);
+    this.present(null);
+    this.delegate?.dispose();this.holder?.remove();
+    this.delegate=this.holder=this.experience=null;
+  },
 };
 let entering=true;
 function worldEntered(){
@@ -248,13 +275,13 @@ const outsideRing=()=>!inside&&activeSpace.outdoorTerrain===TOROIDAL_TERRAIN.id;
 let flightEnabled=false,previousSpacePress=null;
 function doubleSpace(event){
   if(event.code!=='Space'||event.repeat||event.altKey||event.ctrlKey||event.metaKey||
-     !outsideRing()||entering||moving||!document.querySelector('#conversation-panel').hidden||
-     document.querySelector('dialog[open]')||event.target?.closest?.('button,input,select,textarea,[contenteditable]'))return;
+     !outsideRing()||entering||moving||
+     document.querySelector('dialog[open]')||event.target?.closest?.('button,input,select,summary,textarea,[contenteditable]'))return;
   const now=performance.now();
   if(previousSpacePress!==null&&now-previousSpacePress<340){
     flightEnabled=!flightEnabled;
     previousSpacePress=null;
-    say(flightEnabled?'Vuelo activo · Espacio para subir, Mayús para bajar.':'Volvés a caminar.',{transient:true});
+    say(flightEnabled?'Vuelo activo · Espacio sube, Shift baja y Ctrl acelera.':'Volvés a caminar.',{transient:true});
   }else previousSpacePress=now;
 }
 
@@ -557,7 +584,6 @@ document.addEventListener('keydown',event=>{
     event.stopImmediatePropagation();
     return;
   }
-  if(matterInspection?.key(event)){event.preventDefault();event.stopImmediatePropagation();return;}
   if(matterHud?.key(event)){event.preventDefault();event.stopImmediatePropagation();return;}
   if(updateDoor.key?.(event)){event.stopImmediatePropagation();return;}
   if(event.target===document.getElementById('house-door')){
@@ -591,24 +617,23 @@ document.addEventListener('keydown',event=>{
   }
 },true);
 const playableHUD=new PlayableHUD(document);
-let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,galleryModels=null,collectionShelves=null,matterHud=null,matterInspection=null,conversationDisplay=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null,worldHistory=null;
+let geometryProbe=null,companionAvatar=null,nativeAvatarLayer=null,contentVisitor=null,galleryModels=null,collectionShelves=null,matterHud=null,matterFlight=null,conversationDisplay=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null,worldHistory=null;
 const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
   sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket(hot?'active/network':'network'),waitForWorldConfig:true,
   enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
   // Upstream's default sun allocates an 8192² shadow map. This small world uses
   // the public renderer factory and a bounded 1024² light instead, on all clients.
   createRenderer:options=>{
-    const inspection=new MatterInspection(options.collisionsManager);
-    matterInspection=inspection;
-    const cameraState=()=>options.coreCameraManager.getMainCameraState();
+    const tableFlight=new MatterFlight(options.coreCameraManager);
+    matterFlight=tableFlight;
     constrainInteriorCamera(options,()=>{
       if(inside)return activeSpace?.id;
       if(activeSpace?.outdoorTerrain!==true)return null;
       const position=client.getLocalCharacterState()?.position;
       return position&&position.x>21&&position.x<32&&position.z<-6&&position.z>-26?'valley-cave':null;
-    },inspection);
+    });
     const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
-    const releaseOrbit=bindWorldOrbitInput(options.coreCameraManager,renderer.composer.renderer.domElement,()=>mouseSensitivity,()=>inspection.active);
+    const releaseOrbit=bindWorldOrbitInput(options.coreCameraManager,renderer.composer.renderer.domElement,()=>mouseSensitivity);
     const mapPanel=document.querySelector('#space-travel');
     const minimap=bindToroidalMinimap(mapPanel);
     const frameBudget=createFrameBudget(renderer);
@@ -633,6 +658,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     matterHud=new MatterWorktableHud({document,webgl:renderer.composer.renderer,table:collectionShelves.worktable,collection:collectionShelves,
       toggleSound:()=>{if(!moving&&!entering&&navigator.userActivation?.isActive&&(!inside||worldAudio.status().active))void toggleWorldSound();},
       readTools,activateTool:id=>tools[id]?.click(),
+      presentMovement:provider=>touchControls.present(provider),
       navigation:{panel:mapPanel,mapState:()=>updateDoor.navigation?.()??{
         scope:activeSpace.id,canExit:false,busy:false,map:null,
       },selectDestination:id=>updateDoor.mapSelect?.(id),returnOutside:()=>updateDoor.mapExit?.(),
@@ -641,25 +667,14 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       door:{adapter:document.getElementById('house-door'),read:()=>updateDoor.doorOffer?.(),
         cross:(scope,revision)=>updateDoor.followDoor?.(scope,revision)}},
       canEnter:()=>!options.coreCameraManager.isFlyCameraOn()&&
-        inspection.enter(cameraState(),client.getLocalCharacterState()?.position,collectionShelves.worktable.anchor),
+        tableFlight.enter(client.getCharacterManager().localController,collectionShelves.worktable.anchor),
       onActive:active=>{
         document.body.classList.toggle('is-operating-matter',active);
-        touchControls.pause(active||settingsInputCaptured);
-        if(active){
-          client.keyInputManager?.handleUnfocus();
-          const canvas=renderer.composer.renderer.domElement;
-          if(document.pointerLockElement===canvas)document.exitPointerLock();
-          options.coreCameraManager.activePointers.clear();
-        }else{
-          inspectionInput.finish();
-          inspection.exit(cameraState());
-          client.keyInputManager?.handleUnfocus();
-        }
+        if(!active)tableFlight.exit(client.getCharacterManager().localController);
+        client.keyInputManager?.handleUnfocus();
       },
       onError:()=>say('No pude mostrar estos controles. Volvé a abrirlos.',{transient:true}),
     });
-    const inspectionInput=bindMatterInspection({canvas:renderer.composer.renderer.domElement,inspection,
-      picker:()=>worldPicker,overHud:event=>matterHud.overControl(event),sensitivity:()=>mouseSensitivity});
     const sky=new OutdoorSky(renderer.mmlCompositionScene.group.parent,base);
     const light=new DirectionalLight(0xffefd6,1.8);
     light.position.set(12,22,10);light.target.position.set(0,0,-6);light.castShadow=true;
@@ -680,12 +695,17 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     geometryProbe=new AppliedGeometryProbe({document,scene:renderer.mmlCompositionScene.group,
       canvas:options.targetElement.querySelector(':scope > canvas'),expectedDocumentURL:socket('world')});
     nativeAvatarLayer=new NativeAvatarLayer({document,base,onFailure:message=>say(message)});
+    const companion=new CompanionAvatar({scene:renderer.mmlCompositionScene.group,document,
+      load:appearance=>nativeAvatarLayer.source(appearance)});
+    companionAvatar=companion;
     worldPicker=new PublicWorldPicker({document,canvas:options.targetElement.querySelector(':scope > canvas'),scene:renderer.mmlCompositionScene.group,
       cameraState:()=>options.coreCameraManager.getCameraState(),proof:()=>geometryProbe?.snapshot(),
       gallery:()=>inside?(moving||!remoteScene?new Map():contentVisitor.galleryTargets(galleryModels,remoteScene,
         client.getLocalCharacterState()?.position)):null,
       collection:()=>inside&&!moving&&remoteScene&&activeSpace.collectionShelves?collectionShelves.pickTargets():null,
+      companion:()=>companion.object,
       onPick:record=>{
+        if(record.kind==='daimon-companion'){openConversation(true);return;}
         if(matterHud.active&&record.kind!=='worktable-part')return;
         if(record.kind==='collection-shelf')collectionShelves.placeOnTable(record.item,record.edition);
         else if(record.kind==='worktable-part'&&matterHud.active)collectionShelves.worktable.selectPart(record);
@@ -736,18 +756,32 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       };
     }
     let nextDressing=0, ring=null, cave=null, scenery=null, atmosphere=null, releaseRadialMovement=null, releaseHeadroom=null, ringSun=null;
-    let sceneryAfter=null;
+    let sceneryAfter=null,releaseTableFlight=null;
+    const releaseFlightAnimation=bindFlightAvatarAnimation(renderer.characterManager,()=>({
+      outdoor:outsideRing(),flying:flightEnabled,table:tableFlight.active,
+      crouch:!moving&&client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('shift'),
+    }));
+    const releaseHologram=bindMatterHologram(renderer.characterManager,tableFlight);
+    const tableInputAllowed=()=>!moving&&!entering&&!document.hidden&&!mapPanel.open&&
+      document.querySelector('#conversation-panel').hidden&&!document.querySelector('dialog[open]')&&!signalEditor?.active;
     // On the ring the sun keeps one direction in the traveler's radial frame,
     // matching the terrain's own per-place sunlight. It moves in 4 m steps so
     // shadow edges stay still between steps. Lightweight graphics keep the
     // shadow volume at the ring's empty centre and pay for no casters.
+    let solarMinute=-1,solar;
     const aimSun=position=>{
       const onRing=outsideRing();
       // Keep the last aim while the ring is shown without a confirmed position.
       if(onRing&&!(position&&[position.x,position.y,position.z].every(Number.isFinite)))return;
       const step=value=>Math.round(value/4)*4;
       const near=onRing?{x:step(position.x),y:step(position.y),z:step(position.z)}:null;
-      const key=near?`${near.x}:${near.y}:${near.z}:${rendererBudget.lightweight}`:null;
+      if(onRing){
+        const now=Date.now();
+        const minute=Math.floor(now/60000);
+        if(minute!==solarMinute){solar=argentineSun(new Date(minute*60000));solarMinute=minute;}
+        ring?.setSun(solar);
+      }
+      const key=near?`${near.x}:${near.y}:${near.z}:${rendererBudget.lightweight}:${solarMinute}`:null;
       if(key===ringSun)return;
       ringSun=key;
       if(!near){
@@ -755,9 +789,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         light.position.set(12,22,10);light.target.position.set(0,0,-6);
         return;
       }
-      const [x,y,z]=toroidalSunDirection(near);
+      const [x,y,z]=toroidalSunDirection(near,TOROIDAL_TERRAIN,solar.direction);
       const anchor=rendererBudget.lightweight?{x:0,y:0,z:0}:near;
-      light.color.setHex(TOROIDAL_SUN.color);light.intensity=TOROIDAL_SUN.intensity;
+      light.color.setHex(TOROIDAL_SUN.color);light.intensity=TOROIDAL_SUN.intensity*solar.daylight;
       light.target.position.set(anchor.x,anchor.y,anchor.z);
       light.position.set(anchor.x+x*40,anchor.y+y*40,anchor.z+z*40);
     };
@@ -766,7 +800,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       Boolean(geometryProbe?.snapshot());
     renderer.render=renderState=>{
       const character=client.getLocalCharacterState(),position=character?.position;
-      const paintedRaster=minimap(outsideRing()?position:null,character?.rotation?.eulerY,activeSpace.entrances);
+      const yaw=client.getCharacterManager().localController?.networkState.rotation?.eulerY;
+      const paintedRaster=minimap(outsideRing()?position:null,yaw,activeSpace.entrances);
       if(outsideRing()){
         ring??=new ToroidalTerrainRenderer(renderer.mmlCompositionScene.group,base);
         if(position){
@@ -839,13 +874,17 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         roomModel?.modelGraphics?.hasLoadedModel();
       sky.update(!outsideRing()&&(!inside||roomSkyReady)?skySelection:null);
       if(outsideRing()&&position){
-        atmosphere??=new ToroidalAtmosphere(renderer.mmlCompositionScene.group.parent);
-        atmosphere.update(options.coreCameraManager.getCameraState().position,position);
+        atmosphere??=new ToroidalAtmosphere(renderer.mmlCompositionScene.group.parent,base);
+        const eye=options.coreCameraManager.getCameraState().position;
+        atmosphere.update(eye,position,solar);
+        ring?.setWaterViewDepth(toroidalViewDepth(eye));
       }else if(atmosphere){
         atmosphere.dispose();
         atmosphere=null;
       }
       nativeAvatarLayer.update();
+      companion.update({position,yaw,outdoor:outsideRing(),table:tableFlight,
+        visible:!entering&&!moving&&drawWorld,seconds:renderState.deltaTimeSeconds});
       galleryModels.update();
       const collectionRoom=inside&&!moving&&activeSpace.collectionShelves?activeSpace.id:null;
       collectionShelves.update(collectionRoom,collectionRoom?remoteScene:null,position,
@@ -857,7 +896,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const toolModal=Boolean(document.querySelector('dialog[open]:not([data-native-settings])'));
       if(settingsOpen!==settingsInputCaptured){
         settingsInputCaptured=settingsOpen;
-        touchControls.pause(settingsOpen||matterHud.active);
+        touchControls.pause(settingsOpen);
         if(settingsOpen){
           client.keyInputManager?.handleUnfocus();
           if(document.pointerLockElement===matterHud.canvas)document.exitPointerLock();
@@ -876,6 +915,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const navigationVisible=!entering&&!moving&&!needsSync&&drawWorld&&!opaqueVisit&&!toolModal&&!settingsOpen&&
         document.getElementById('conversation-panel').hidden;
       matterHud.map.update(navigationVisible,paintedRaster);
+      const touchAvailable=navigationVisible&&!mapPanel.open&&!signalEditor.active&&!document.hidden;
+      touchControls.pause(!touchAvailable);
+      matterHud.syncMovement(touchAvailable&&Boolean(matterHud.toolGroup)&&navigator.maxTouchPoints>0);
       matterHud.updateBearing(navigationVisible&&!matterHud.active);
       matterHud.door.update(navigationVisible&&!matterHud.active&&Boolean(matterHud.toolGroup)&&!signalEditor.active);
       matterHud.collection.update(navigationVisible&&!matterHud.active&&!mapPanel.open&&!signalEditor.active);
@@ -901,10 +943,12 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
       }
     };
-    renderer.dispose=()=>{releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();inspectionInput.dispose();if(matterInspection===inspection)matterInspection=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
+      if(client.keyInputManager)client.keyInputManager.getRun=function(){return this.isKeyPressed('control');};
       releaseHeadroom=bindInteriorHeadroom(client.getCharacterManager(),()=>inside);
       releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing,()=>flightEnabled);
+      releaseTableFlight=bindMatterFlight(client.getCharacterManager(),options.coreCameraManager,tableFlight,tableInputAllowed,()=>matterHud.leave());
       options.onInitialized();
     });
     return renderer;
@@ -916,7 +960,7 @@ client.update();
 const worldAudio=new WorldAudio({onChange:()=>updateSoundButton()});
 let soundBusy=false;
 // Development inspection surface only. It reports actual client state.
-window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()||null,audioState:()=>worldAudio.status(),avatarState:()=>nativeAvatarLayer?.status()};
+window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()||null,audioState:()=>worldAudio.status(),avatarState:()=>nativeAvatarLayer?.status(),tableFlight:()=>({active:!!matterFlight?.active,bounds:matterFlight?.bounds}),companion:()=>companionAvatar?.object??null,flight:()=>flightEnabled,hudWindow:id=>matterHud?.windows.geometry.get(id)??null};
 const $=selector=>document.querySelector(selector);
 const notice=$('#notice');
 const worldNotice=new WorldNotice(notice);
@@ -1390,10 +1434,15 @@ function openConversation(open){
   if(open&&sharedSurface()){
     if(!sharedConversation)sharedConversation=new SharedConversationHost({window,document,container:$('#shared-conversation'),api,
       capture:captureInteractionContext,currentActor:()=>activeSpace?.actorRef??state?.actorRef,
+      onSpeechLevel:level=>companionAvatar?.setSpeechLevel(level),
       onStatus:({phase,busy})=>{$('#companion-status').textContent=phases[phase]||(busy?'La conversación está procesando tu intervención.':'Tu intervención quedó en la conversación.');},onError:say});
     sharedConversation.mount().catch(()=>say('No pude abrir tu conversación. Volvé a tocar Conversar para intentarlo.'));
-  }else if(open)$('#message').focus();
-  else if(restoreFocus&&!matterHud?.focusTool('talk'))talk.focus({preventScroll:true});
+  }else if(open&&!flightEnabled)$('#message').focus();
+  if(open&&flightEnabled&&wasHidden){
+    const canvas=client.getRenderer()?.composer.renderer.domElement;
+    if(canvas){canvas.tabIndex=-1;canvas.focus({preventScroll:true});}
+  }
+  if(restoreFocus&&!matterHud?.focusTool('talk'))talk.focus({preventScroll:true});
 }
 bindHudPanelWindow($('#conversation-panel'),{move:$('#conversation-move'),resize:$('#conversation-resize')});
 $('#talk').onclick=()=>openConversation($('#conversation-panel').hidden);

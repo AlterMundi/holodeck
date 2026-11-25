@@ -12,8 +12,11 @@ const FLIGHT_VERTICAL_SPEED = 5;
 const JUMP_SPEED = 5.8;
 const WALK_SPEED = 5;
 const RUN_SPEED = 8;
+const CROUCH_SPEED=1.65;
+const EDGE_DROP=.23;
 const FLOAT_DRAFT = .96;
 const WADE_DEPTH = .18;
+const SWIM_VERTICAL_SPEED = 2.8;
 const wrap = turns => ((turns % 1) + 1) % 1;
 const wrapYaw = radians => Math.atan2(Math.sin(radians), Math.cos(radians));
 
@@ -44,6 +47,7 @@ export class ToroidalLocomotion {
     this.u = wrap(u);
     this.v = wrap(v);
     this.waterLevel = terrain.waterLevel ?? -Infinity;
+    this.swimming = this.canDive(this.u,this.v)&&Number.isFinite(height)&&height<this.waterLevel-FLOAT_DRAFT-.05;
     const floor = this.supportAt(this.u,this.v);
     this.height = Math.max(floor, height ?? floor);
     this.grounded = this.height === floor;
@@ -56,10 +60,10 @@ export class ToroidalLocomotion {
     this.jumpQueued = false;
   }
 
-  update(seconds, {right = 0, forward = 0, yaw = this.yaw, sprint = false, jump = false, flight = false, vertical = 0} = {}) {
+  update(seconds, {right = 0, forward = 0, yaw = this.yaw, sprint = false, jump = false, flight = false, vertical = 0, crouch = false} = {}) {
     if (!Number.isFinite(seconds) || seconds <= 0 || ![right, forward, yaw].every(Number.isFinite)) return;
     const inputLength = Math.max(1, Math.hypot(right, forward));
-    const speed = (sprint ? RUN_SPEED : WALK_SPEED) / inputLength;
+    const speed = (crouch&&!flight&&!this.swimming?CROUCH_SPEED:sprint?RUN_SPEED:WALK_SPEED) / inputLength;
     const sine = Math.sin(yaw), cosine = Math.cos(yaw);
     const ringTarget = (right * cosine + forward * sine) * speed;
     const crossTarget = (forward * cosine - right * sine) * speed;
@@ -68,18 +72,27 @@ export class ToroidalLocomotion {
     this.jumpHeld = jump;
     this.accumulated += Math.min(seconds, MAX_FRAME);
     while (this.accumulated + 1e-10 >= STEP) {
-      this.step(ringTarget, crossTarget, flight,vertical);
+      this.step(ringTarget,crossTarget,flight,vertical,crouch);
       this.accumulated = Math.max(0, this.accumulated - STEP);
     }
   }
 
-  supportAt(u,v) {
-    return Math.max(this.ground(u,v,this.terrain),this.waterLevel-FLOAT_DRAFT);
+  canDive(u,v){
+    return this.ground(u,v,this.terrain)<this.waterLevel-FLOAT_DRAFT-.05;
   }
 
-  step(ringTarget, crossTarget, flight,vertical) {
+  atSwimSurface(u=this.u,v=this.v){
+    return this.canDive(u,v)&&this.height<=this.waterLevel-FLOAT_DRAFT+.0001;
+  }
+
+  supportAt(u,v) {
+    const ground=this.ground(u,v,this.terrain);
+    return this.swimming?ground:Math.max(ground,this.waterLevel-FLOAT_DRAFT);
+  }
+
+  step(ringTarget,crossTarget,flight,vertical,crouch) {
     const immersion = Math.max(0, Math.min(1,(this.waterLevel-this.height-WADE_DEPTH)/(FLOAT_DRAFT-WADE_DEPTH)));
-    const speedFactor = flight?1:1 - .56 * immersion;
+    const speedFactor = 1 - .56 * immersion;
     const response = this.grounded||flight ? .18 : .065;
     this.ringSpeed += (ringTarget * speedFactor - this.ringSpeed) * response;
     this.crossSpeed += (crossTarget * speedFactor - this.crossSpeed) * response;
@@ -88,8 +101,19 @@ export class ToroidalLocomotion {
     const ringDistance = majorRadius + tubeDistance * Math.cos(this.v * TAU);
     const nextU = wrap(this.u + this.ringSpeed * STEP / (ringDistance * TAU));
     const nextV = wrap(this.v + this.crossSpeed * STEP / (tubeDistance * TAU));
+    this.swimming=this.atSwimSurface(nextU,nextV)&&(this.swimming||vertical<0);
     const currentGround = this.supportAt(this.u,this.v);
     const nextGround = this.supportAt(nextU,nextV);
+    if(this.swimming){
+      this.u=nextU;this.v=nextV;
+      this.height=Math.max(nextGround,Math.min(this.waterLevel-FLOAT_DRAFT,this.height+
+        Math.min(1,Math.max(-1,vertical))*SWIM_VERTICAL_SPEED*STEP));
+      if(this.height>=this.waterLevel-FLOAT_DRAFT&&vertical>0)this.swimming=false;
+      this.radialSpeed=0;
+      this.grounded=false;
+      this.jumpQueued=false;
+      return;
+    }
     if(flight){
       this.u=nextU;this.v=nextV;
       const speed=Math.min(1,Math.max(-1,vertical))*FLIGHT_VERTICAL_SPEED;
@@ -108,6 +132,10 @@ export class ToroidalLocomotion {
     }
     this.jumpQueued = false;
 
+    if(crouch&&this.grounded&&groundDelta<-EDGE_DROP){
+      this.ringSpeed=this.crossSpeed=0;
+      return;
+    }
     if (this.grounded && groundDelta > .95 * distance + .025) {
       // Refuse steep uphill crossings without launching the avatar upward.
       // Let a reversing input change direction on the following step.
@@ -140,6 +168,6 @@ export class ToroidalLocomotion {
 
   pose() {
     const [x, y, z] = terrainPosition(this.u, this.v, this.height, this.terrain);
-    return {position: {x, y, z}, rotation: {eulerY: this.yaw}, grounded: this.grounded};
+    return {position: {x, y, z}, rotation: {eulerY: this.yaw}, grounded: this.grounded, swimming:this.swimming};
   }
 }

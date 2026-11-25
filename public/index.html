@@ -41,6 +41,7 @@ body:has(#conversation-panel:not([hidden])) #visit-controls,.room-transition #vi
 #beacon-panel header .row{margin-left:auto}#beacon-panel header a{color:var(--gold);min-height:44px;align-content:center;padding-inline:8px}
 #beacon-panel button{min-height:44px}.beacon-panel-stage{flex:1;min-height:0;overflow:hidden;border-radius:12px;background:#102d31}
 .beacon-panel-stage iframe{display:block;width:100%;height:100%;border:0}
+.touch-controls[data-native-locomotion],.touch-controls[data-touch-paused]{display:none!important}
 body:has(#beacon-panel[open]) .touch-controls{visibility:hidden;pointer-events:none}
 @media(max-width:740px){#beacon-panel{width:calc(100vw - 16px);height:calc(100dvh - 16px);padding:8px;border-radius:14px}#beacon-panel h2{font-size:20px}}
 #signal-editor{position:fixed;z-index:26;right:20px;bottom:105px;width:335px;max-width:calc(100vw - 40px);max-height:min(65dvh,540px);overflow:auto;padding:16px;border-radius:16px}

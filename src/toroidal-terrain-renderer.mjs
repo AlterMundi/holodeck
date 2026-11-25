@@ -1,5 +1,5 @@
 import {useToroidalRockDetail,useToroidalWaterDetail} from './toroidal-surface-detail.mjs';
-import {BufferAttribute, BufferGeometry, Group, Mesh, MeshStandardMaterial, ShaderChunk} from 'three';
+import {BufferAttribute, BufferGeometry, DoubleSide, Group, Mesh, MeshStandardMaterial, ShaderChunk, Vector3} from 'three';
 import {
   TOROIDAL_TERRAIN, buildTerrainTile, terrainCoordinates, terrainFrame, terrainTile,
 } from './toroidal-terrain.mjs';
@@ -23,11 +23,11 @@ export const TOROIDAL_SUN = Object.freeze({color: 0xffe6c2, intensity: 2.2});
 
 // World-space direction toward the sun for a point on the ring. The scene's
 // directional light follows this at the traveler so props agree with the ground.
-export function toroidalSunDirection(position, terrain = TOROIDAL_TERRAIN) {
+export function toroidalSunDirection(position, terrain = TOROIDAL_TERRAIN, local = SUN_LOCAL) {
   const {u, v} = terrainCoordinates([position.x, position.y, position.z], terrain);
   const {alongRing, up, aroundTube} = terrainFrame(u, v, terrain);
   return up.map((value, axis) =>
-    SUN_LOCAL[0] * alongRing[axis] + SUN_LOCAL[1] * value + SUN_LOCAL[2] * aroundTube[axis]);
+    local[0] * alongRing[axis] + local[1] * value + local[2] * aroundTube[axis]);
 }
 
 const glsl = value => value.toFixed(4);
@@ -42,8 +42,8 @@ const vertexFrame = `
   vec3 holoAlong = vec3(-holoRing.y, 0.0, holoRing.x);
   vec3 holoAround = vec3(-holoRing.x * holoTube.y, holoTube.x, -holoRing.y * holoTube.y);
   vHoloUp = (viewMatrix * vec4(holoUpWorld, 0.0)).xyz;
-  vHoloSun = (viewMatrix * vec4(${glsl(SUN_LOCAL[0])} * holoAlong +
-    ${glsl(SUN_LOCAL[1])} * holoUpWorld + ${glsl(SUN_LOCAL[2])} * holoAround, 0.0)).xyz;
+  vHoloSun = (viewMatrix * vec4(holodeckSunLocal.x * holoAlong +
+    holodeckSunLocal.y * holoUpWorld + holodeckSunLocal.z * holoAround, 0.0)).xyz;
   vHoloHeight = holoRadius - ${glsl(TOROIDAL_TERRAIN.tubeRadius)};
   vHoloWorld = holoWorld.xyz;
 `;
@@ -67,7 +67,8 @@ const aerialPerspective = `
   float holoHaze = (1.0 - exp(-length(vViewPosition) / 1900.0)) * 0.84;
   float holoGlow = pow(max(dot(-holoView, holoSun), 0.0), 5.0);
   vec3 holoAir = mix(vec3(0.24, 0.33, 0.44), vec3(0.50, 0.44, 0.36), holoGlow * 0.6);
-  outgoingLight = mix(outgoingLight, holoAir, holoHaze);
+  holoAir = mix(vec3(.014,.021,.048),holoAir,holodeckDaylight);
+  outgoingLight = mix(outgoingLight * mix(.32,1.0,holodeckDaylight), holoAir, holoHaze);
 `;
 const terrainShading = {
   color: `
@@ -108,7 +109,7 @@ const waterShading = {
   `,
 };
 
-function artDirect(material, name, shading) {
+function artDirect(material, name, shading, environment) {
   // The ring's own aerial perspective stands in for the scene fog.
   material.fog = false;
   const surfaceCompile = material.onBeforeCompile;
@@ -117,12 +118,24 @@ function artDirect(material, name, shading) {
     surfaceCompile(shader);
     const after = (source, chunk, code) => source.replace(`#include <${chunk}>`, match => `${match}\n${code}`);
     const before = (source, chunk, code) => source.replace(`#include <${chunk}>`, match => `${code}\n${match}`);
-    shader.vertexShader = after(after(shader.vertexShader, 'common', varyings), 'project_vertex', vertexFrame);
+    shader.vertexShader = after(after(shader.vertexShader, 'common', varyings+'uniform vec3 holodeckSunLocal;'), 'project_vertex', vertexFrame);
     let fragment = after(shader.fragmentShader, 'common',varyings);
     if (shading.color) fragment = after(fragment, 'color_fragment', shading.color);
     fragment = fragment.replace('#include <lights_fragment_begin>', () => radialSunLights);
     if (shading.fill) fragment = before(fragment, 'lights_fragment_end', shading.fill);
-    shader.fragmentShader = before(fragment, 'opaque_fragment', shading.output);
+    shader.uniforms.holodeckSunLocal=environment.sun;
+    shader.uniforms.holodeckDaylight=environment.daylight;
+    shader.uniforms.holodeckWaterViewDepth=environment.water;
+    fragment=after(fragment,'common','uniform float holodeckWaterViewDepth; uniform float holodeckDaylight;');
+    shader.fragmentShader=before(fragment,'opaque_fragment',shading.output+`
+      if (holodeckWaterViewDepth > .014) {
+        float scatter = 1.0 - exp(-length(vViewPosition) * (.055 + .006*min(12.0,holodeckWaterViewDepth)));
+        outgoingLight = mix(outgoingLight*vec3(.4,.78,.82),vec3(.025,.152,.211)*mix(.26,1.0,holodeckDaylight),scatter);
+        ${name==='water'?`if (!gl_FrontFacing) {
+          float glow = pow(clamp(abs(dot(normal,normalize(vViewPosition))),0.0,1.0),.7);
+          outgoingLight = mix(outgoingLight,vec3(.18,.42,.49)*mix(.26,1.0,holodeckDaylight),.28+.28*glow);
+        }`:''}
+      }`);
   };
   return material;
 }
@@ -170,11 +183,12 @@ export class ToroidalTerrainRenderer {
     this.group = new Group();
     this.group.name = 'Toroidal terrain';
     this.material = new MeshStandardMaterial({vertexColors:true,roughness:.96});
-    this.waterMaterial = new MeshStandardMaterial({color:0x19606f,roughness:.34,metalness:0});
+    this.waterMaterial = new MeshStandardMaterial({color:0x19606f,roughness:.34,metalness:0,side:DoubleSide});
+    this.environment={water:{value:0},sun:{value:new Vector3(...SUN_LOCAL)},daylight:{value:1}};
     useToroidalRockDetail(this.material);
     this.updateWaterTime=useToroidalWaterDetail(this.waterMaterial);
-    artDirect(this.material,'terrain',terrainShading);
-    artDirect(this.waterMaterial,'water',waterShading);
+    artDirect(this.material,'terrain',terrainShading,this.environment);
+    artDirect(this.waterMaterial,'water',waterShading,this.environment);
     this.active = new Map();
     this.target = null;
     this.requested = null;
@@ -198,6 +212,13 @@ export class ToroidalTerrainRenderer {
     } catch {
       this.stopWorker();
     }
+  }
+
+  setWaterViewDepth(depth){this.environment.water.value=depth;}
+
+  setSun(solar){
+    this.environment.sun.value.fromArray(solar.direction);
+    this.environment.daylight.value=solar.daylight;
   }
 
   update(position, lightweight = false) {

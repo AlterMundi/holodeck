@@ -133,3 +133,31 @@ test('flight climbs, hovers, descends and returns to the seeded surface',()=>{
   assert.equal(pilot.height,base);
   assert.equal(pilot.grounded,true);
 });
+
+test('descent enters the water and swimming can reach the bottom and resurface',()=>{
+  const terrain={...TOROIDAL_TERRAIN,waterLevel:-3};
+  const motion=new ToroidalLocomotion({u:.1,v:.2,terrain,ground:()=>-12});
+  assert.ok(motion.height>terrain.waterLevel-1);
+  simulate(motion,1,60,{vertical:-1});
+  assert.equal(motion.swimming,true);
+  assert.ok(motion.height<terrain.waterLevel-2);
+  simulate(motion,6,60,{vertical:-1});
+  assert.equal(motion.height,-12);
+  simulate(motion,5,60,{vertical:1});
+  assert.equal(motion.swimming,false);
+  assert.ok(motion.height>=terrain.waterLevel-1);
+});
+
+test('crouching holds the lip of a ledge instead of walking off it',()=>{
+  const terrain={...TOROIDAL_TERRAIN,waterLevel:-500};
+  const ground=(u,v)=>v<.201?0:-2;
+  const start={u:.1,v:.2009,terrain,ground};
+  const careful=new ToroidalLocomotion(start);
+  simulate(careful,2,60,{forward:1,crouch:true});
+  assert.ok(careful.v<.201);
+  assert.equal(careful.height,0);
+  const ordinary=new ToroidalLocomotion(start);
+  simulate(ordinary,2,60,{forward:1});
+  assert.ok(ordinary.v>.201);
+  assert.equal(ordinary.height,-2);
+});

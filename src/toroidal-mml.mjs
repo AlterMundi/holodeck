@@ -38,10 +38,12 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false) {
     const moving = Number.isFinite(control?.direction);
     const yaw = moving ? Math.PI / 2 - camera.theta + control.direction : motion.yaw;
     const flying=flight();
-    const vertical=flying?(Number(keyInputManager.getJump())-Number(keyInputManager.getRun())):0;
+    const wet=motion.atSwimSurface();
+    const vertical=flying||motion.swimming||wet?
+      Number(Boolean(keyInputManager.getJump()||control?.jump))-Number(keyInputManager.isKeyPressed('shift')):0;
     const previousHeight=motion.height;
-    motion.update(seconds, {forward: moving ? 1 : 0, yaw, sprint: !flying&&control?.isSprinting,
-      jump: !flying&&control?.jump,flight:flying,vertical});
+    motion.update(seconds, {forward: moving ? 1 : 0, yaw, sprint:control?.isSprinting,
+      jump: !flying&&!motion.swimming&&control?.jump,flight:flying,vertical,crouch:!flying&&!wet&&keyInputManager.isKeyPressed('shift')});
     let state = motion.pose();
     const radius = controller.capsuleInfo.radius;
     const height = controller.capsuleInfo.segment.end.y;
@@ -75,7 +77,7 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false) {
     quaternion.set(facing.x, facing.y, facing.z, facing.w);
     controller.controlState = control;
     controller.characterOnGround = state.grounded;
-    controller.currentHeight = motion.height - motion.supportAt(motion.u,motion.v);
+    controller.currentHeight = flying||state.swimming ? 2 : motion.height-motion.supportAt(motion.u,motion.v);
     controller.characterVelocity.set(0, motion.radialSpeed, 0);
     controller.networkState = {
       position: state.position, rotation: state.rotation, state: controller.getTargetAnimation(),

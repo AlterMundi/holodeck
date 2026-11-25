@@ -7,8 +7,8 @@ export function selectionLabel(id,state){
   ?`${node.play?'el juego':'el contenido'} «${node.title}»`:entityLabel(id);
 }
 export class PublicWorldPicker{
- constructor({document,canvas,scene,cameraState,proof,onPick,onUnavailable=()=>{},gallery=()=>null,collection=()=>null}){
-  Object.assign(this,{document,canvas,scene,cameraState,proof,onPick,onUnavailable,gallery,collection});this.ray=new Raycaster();this.camera=new PerspectiveCamera();this.gesture=null;
+ constructor({document,canvas,scene,cameraState,proof,onPick,onUnavailable=()=>{},gallery=()=>null,collection=()=>null,companion=()=>null}){
+  Object.assign(this,{document,canvas,scene,cameraState,proof,onPick,onUnavailable,gallery,collection,companion});this.ray=new Raycaster();this.camera=new PerspectiveCamera();this.gesture=null;
   this.down=e=>{this.gesture=e.isPrimary!==false&&e.button===0?{id:e.pointerId,x:e.clientX,y:e.clientY,time:performance.now()}:null;};
   this.move=e=>{if(this.gesture&&Math.hypot(e.clientX-this.gesture.x,e.clientY-this.gesture.y)>6)this.gesture=null;};
   this.cancel=()=>{this.gesture=null;};
@@ -30,10 +30,16 @@ export class PublicWorldPicker{
       !material.clippingPlanes?.some(plane=>plane.distanceToPoint(hit.point)<0)))??null;
  }
  pick(x,y){
+  const companion=this.companion();
+  let hit;
+  if(companion){
+    hit=this.hit(x,y);
+    for(let object=hit?.object;object;object=object.parent)if(object===companion)return {kind:'daimon-companion'};
+  }
   const gallery=this.gallery(),collection=this.collection();
   if(gallery||collection){
    if(!gallery?.size&&!collection?.size)return null;
-   const hit=this.hit(x,y);
+   hit??=this.hit(x,y);
    for(let object=hit?.object;object;object=object.parent){
     const target=collection?.get(object);
     if(target)return target;
@@ -56,7 +62,7 @@ export class PublicWorldPicker{
   }
   const cues=new Set([...root.querySelectorAll('m-group[data-focus-target]')].map(element=>element.getContainer()));
   const communication=object=>{for(let p=object;p;p=p.parent)if(cues.has(p))return true;return false;};
-  const hit=this.hit(x,y,communication);
+  hit=this.hit(x,y,communication);
   if(!hit)return null;
   for(let object=hit.object;object;object=object.parent){const owner=owners.get(object);if(owner)return {...owner,run:proof.run,edition:proof.edition};}
   return null; // Visible scenery/private preview occludes objects behind it.
