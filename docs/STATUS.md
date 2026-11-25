@@ -2,6 +2,23 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `1c8bf3620c7d9dabc089cc002cbdda7c28a5d99e` includes the
+protected world prompts from `9a7bda4` and anchors the Character
+entry offer to its own worktable. Its archive
+`6f637c5d89fa2cc760685b34c4a99ec448c52f42b350f9ff474c38f14e7a67fa`
+matched all 87 payloads. Chromium touch opened the Character table via
+the Materia route at 568 × 320 and then 568 × 280. It painted the full
+section and transport labels, and the Notes actions at the short size,
+while keeping the table above the active flight controls. Desktop
+Chromium captured the E label over the Character table, clear of the
+player, and checked that it disappeared when the table opened. The
+serial two-browser check also passed the complete flight, comparison,
+scope, note recovery and Escape sequence. An earlier parallel run
+timed out opening the web view. Holodeck passed 416 tests with two
+skips. The protected world still serves `8772912dd7ed` without the
+pose catalog. The combined deployment and two authenticated visitors
+still need to be verified.
+
 Source `7ba066becd003c6a539330e26c2952de1f1ec541` combines the Character Design Room with the protected
 Matter release `4e3c2d60b33c` from `565ad77`. The combined archive
 `26cfce32d8a0286196ac80415cec7617ee3fb35dd23dcb197ef821cad8989a5f`

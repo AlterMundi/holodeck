@@ -83,6 +83,11 @@ highlight are retained across resize. Escape dismisses a spatial choice
 without selecting it or leaving the tabletop. A separate Escape press
 can then leave the table.
 
+The physical table widens its panel on short touch-landscape screens and
+keeps the lower locomotion targets clear. The note and playback sections keep
+their original labels. The desktop scene anchors the offered E action above
+the nearby Character table and hides the label when the table opens.
+
 Section selection is browser-local. Switching sections preserves an
 unpublished note and its caret. Publishing still requires the ordinary
 explicit action in the current room. Orbit, zoom and playback selection
