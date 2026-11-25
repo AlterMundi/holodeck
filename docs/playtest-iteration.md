@@ -1299,6 +1299,31 @@ alignment and integration code. The existing asset manifest records
 Sandflow and CC-BY-4.0 attribution. Any distribution must carry it
 through to the release. Production stays on `20726f08a3e0`.
 
+## Flagstone approach to the authored house
+
+[Holodeck #20](https://github.com/AlterMundi/holodeck/issues/20) now has
+candidate `88459ee`. The approach surface flares from the dirt trail
+into a textured flagstone landing beneath the existing facade steps.
+Grass and wildflowers frame the opening with the same authored planting
+in both graphics profiles. The exterior view's permitted entrance
+sets the direction and placement. The existing MML threshold,
+collision and entry action remain the authoritative route.
+
+Fable High suggested a flared apron and stable, door-aligned paving.
+Opus 5.5 High caught a clipped edge and distant paving aliasing. The
+patch widened the fade region, softened subpixel joints and placed
+the plants in the space between the guest anchor and the facade,
+clear of the walking lane.
+
+The corrected client showed the paving meeting the steps on the RTX
+2060 in normal daylight and in Chromium with SwiftShader in lightweight
+dusk. In both cases a fixture visitor walked to the house, entered Matter
+and returned through the same door. The collection used a stand-in.
+The development build and 352 tests passed with two optional skips.
+A protected visitor pair, exact release packaging and a physical
+low-end frame-time comparison remain open. Production stays on
+`20726f08a3e0`. The Sand3D imports remain an optional art trial.
+
 ## Authored flight and swimming poses
 
 The four registered human models share two bind rigs. The flight and swim
