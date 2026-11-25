@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {BeaconControls,BEACON_CONTROLS,nearbyBeaconControl,summarizeBeaconStatus} from '../src/beacon-controls.mjs';
 
-const [spatial,weaver,guitar]=BEACON_CONTROLS;
+const [spatial,weaver,guitar,shaper]=BEACON_CONTROLS;
 const objects=BEACON_CONTROLS.map(({id,revision})=>({id,revision,kind:'workstation'}));
 
 test('a control requires a current room object and nearby player position',()=>{
@@ -12,6 +12,7 @@ test('a control requires a current room object and nearby player position',()=>{
   assert.equal(nearbyBeaconControl(objects,spatial.position),spatial);
   assert.equal(nearbyBeaconControl(objects,weaver.position),weaver);
   assert.equal(nearbyBeaconControl(objects,guitar.position),guitar);
+  assert.equal(nearbyBeaconControl(objects,shaper.position),shaper);
   assert.equal(nearbyBeaconControl(objects.filter(object=>object.id!==guitar.id),guitar.position),null);
 });
 
@@ -59,6 +60,8 @@ test('a nearby bench mounts one owner panel only on open and discards it when ac
   assert.equal(controls.reference(),null);
   controls.update(objects,guitar.position);
   assert.equal(link.href,'/harmonic_lab/?service=guitar');
+  controls.update(objects,shaper.position);
+  assert.equal(link.href,'/harmonic_lab/?service=body&view=instrumento');
   assert.deepEqual(stage.children,[]);
 });
 
