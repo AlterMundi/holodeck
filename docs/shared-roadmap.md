@@ -690,8 +690,10 @@ places four instrument tables around the Beacon. The implemented floor
 inlay sets the central approach. Keep Spatializer at (3.80, −0.79) and
 Weaver at (−3.76, 2.66) in room x/z metres. For the next visual trial,
 place Guitar near (−4.49, −0.35) to clear the west landing and Shaper
-near (3.51, 2.78) across the central aisle. Fit the collider and action
-approach to each actual worktop.
+near (3.51, 2.78) across the central aisle. Both placements now have a
+[room-scale Blender study](../art/compaii-house/redesign/README.md#four-station-harmonic-lab-study)
+and measured collider envelopes. The remaining visual and functional
+qualification includes the actual action approach at each new worktop.
 
 The selected laboratory panel has a Guitar card, but its installed link
 selector accepts only `audio` and `body`. Extend it with `guitar` through
