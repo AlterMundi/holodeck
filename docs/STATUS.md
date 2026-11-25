@@ -1,5 +1,15 @@
 # Current MVP work
 
+## November 25 native Activity
+
+The selected Holodeck release is b3aec1e9b89a with fda64cf266b7
+available for rollback. The exterior Activity launcher and its paged history
+use the Three.js A2UI HUD. The authenticated hosted browser opened Activity,
+read the existing API with HTTP 200 and closed the native panel with Escape.
+Exact asset readback matched 79 runtime files and the native world run and
+receiving configuration were preserved. Details and fallback qualification
+are in the [playtest record](playtest-iteration.md#native-activity-panel).
+
 ## November 25 compact general Conversation
 
 The protected Holodeck release is `fda64cf266b7` with `29399a048e35` retained

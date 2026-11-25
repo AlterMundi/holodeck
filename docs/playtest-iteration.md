@@ -407,3 +407,15 @@ control. The correction keeps the launcher unavailable during those forms,
 rechecks the affordance before opening, isolates the legacy DOM overlays as
 inert while Activity owns focus, and routes no external form activation
 through the native modal. Close and fallback release that ownership.
+
+The 33,536,000-byte package b3aec1e9b89a passed 316 Node tests with two skips.
+Chromium exercised authoritative history pagination, snapshot tabs, Escape
+focus restoration, and the external keyboard isolation regression in
+lightweight desktop and normal at 390 CSS pixels with an actual emulated tap.
+Desktop context loss restored the same current page in the HTML dialog.
+The protected package readback preserved the prior run and compatible
+fda64cf266b7 rollback. The authenticated hosted browser read Activity with
+HTTP 200, opened the native HUD, closed it with Escape and logged out.
+Exhibition, result navigation, creator and recovery surfaces remain under
+issue #16. The broader goal also still includes device-specific performance
+and live context deltas.
