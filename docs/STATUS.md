@@ -2,6 +2,21 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `44cfcdc3e2e40596259e16e5761588bc6728878b` combines the Character
+Design Room and native pose-review port with the selected landscape HUD
+from `33da64d`. It pins Proyección
+`dc90aab019b73b1ecd1afe8f34404971f2cceb28` from its immutable archive,
+checked against the lockfile. The combined archive
+`9a6bb2e1205bda07bd2daa19659409fe10bead5ca7805c3c4d88c9988e72bf00`
+matched all 87 payloads. The exact build passed the native restart and
+cross-channel note checks below and the two-browser tabletop check.
+Chromium at 568 × 320 checked the HUD while moving, return after touch
+cancellation, real browser fullscreen enter and exit, and rotation to
+portrait. Holodeck passed 412 tests with two skips. Proyección passed
+all 20 spatial HUD tests at the exact pin. This combined candidate awaits
+selection by the existing protected world writer and independent
+Home-authenticated review in the actual room.
+
 Source `4783082dc570` adds the optical studio controls, exact phase bookmarks,
 room presentation and attributed pose notes to the selected landscape and
 night-lighting base `7aa2b35`. The candidate retains the existing terrain,
