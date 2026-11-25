@@ -82,12 +82,17 @@ const materialDetail=/* glsl */`
     // The independent sampling domains avoid synchronizing the room-scale
     // grain and close detail. Retain the brushed orientation on steel.
     const mat2 turn = mat2(0.83867, 0.54464, -0.54464, 0.83867);
-    float coarse = roomTileBand(turn * projected * .173 + vec2(.19,.71), turn * dx * .173, turn * dy * .173, layer);
-    if (role == 4.0) return diffuse * (1.0 + .82 * primary + .13 * coarse);
+    const float coarseScale = .173;
+    if (role == 4.0) {
+      float grain = roomTileBand(projected * coarseScale + vec2(.19,.71), dx * coarseScale, dy * coarseScale, layer);
+      return diffuse * (1.0 + .82 * primary + .13 * grain);
+    }
+    float coarse = roomTileBand(turn * projected * coarseScale + vec2(.19,.71),
+      turn * dx * coarseScale, turn * dy * coarseScale, layer);
     const float microScale = 5.37;
     float micro = roomTileBand(turn * projected * microScale + vec2(.67,.23),
       turn * dx * microScale, turn * dy * microScale, layer);
-    return diffuse * (1.0 + .55 * primary + .26 * micro + .14 * coarse);
+    return diffuse * (1.0 + .64 * primary + .18 * micro + .13 * coarse);
   }
 `;
 
@@ -166,7 +171,7 @@ function diffuseLayers(material){
   };
 }
 
-function roomDetailArray(image,document){
+function roomDetailArray(image,document,anisotropy){
   const size=248,tile=256,layers=5;
   if(image.width!==3*tile||image.height!==2*tile)throw Error('Unexpected room detail atlas dimensions');
   const unpack=document.createElement('canvas');
@@ -184,6 +189,7 @@ function roomDetailArray(image,document){
   texture.minFilter=LinearMipmapLinearFilter;
   texture.magFilter=LinearFilter;
   texture.generateMipmaps=true;
+  texture.anisotropy=anisotropy;
   texture.needsUpdate=true;
   return texture;
 }
@@ -248,8 +254,13 @@ export function bindMatterStyle(group,catalog,{document=globalThis.document}={})
         const roleImage=authored&&images?.get(authored.roles);
         const tileImage=authored&&images?.get(authored.tiles);
         const roles=roleImage?variant(source[layers.channel],roleImage,'roles'):null;
-        if(tileImage&&!detailArrays.has(tileImage))detailArrays.set(tileImage,roomDetailArray(tileImage,document));
-        const tiles=tileImage?detailArrays.get(tileImage):null;
+        let tiles=null;
+        if(tileImage){
+          if(!detailArrays.has(tileImage))detailArrays.set(tileImage,new Map());
+          const arrays=detailArrays.get(tileImage),anisotropy=source[layers.channel]?.anisotropy??1;
+          if(!arrays.has(anisotropy))arrays.set(anisotropy,roomDetailArray(tileImage,document,anisotropy));
+          tiles=arrays.get(anisotropy);
+        }
         setLayers(light?layers.channel:undefined,light,reflection,detail,roles,tiles);
         const overrides=style.materials[role];
         for(const channel of channels){
@@ -260,7 +271,7 @@ export function bindMatterStyle(group,catalog,{document=globalThis.document}={})
     },
     dispose(){
       for(const {material} of materials.values())material.dispose();
-      for(const texture of detailArrays.values())texture.dispose();
+      for(const arrays of detailArrays.values())for(const texture of arrays.values())texture.dispose();
       for(const cache of Object.values(textures))
         for(const variants of cache.values())
           for(const texture of variants.values())texture.dispose();

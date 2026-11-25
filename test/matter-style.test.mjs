@@ -113,6 +113,7 @@ test('layered diffuse uses linear light data and restores both material programs
     assert.equal(array.isDataArrayTexture,true);
     assert.equal(array.generateMipmaps,true);
     assert.equal(array.wrapS,RepeatWrapping);
+    assert.equal(array.anisotropy,source.anisotropy);
     assert.equal(array.image.depth,5);
     assert.deepEqual(Array.from({length:5},(_,i)=>array.image.data[i*248*248]),[1,2,3,4,5]);
     if(channel==='map'){
