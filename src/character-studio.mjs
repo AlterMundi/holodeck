@@ -108,8 +108,8 @@ async function connectStudioReturn(wrapper){
 function disposeFigure(figure){
   if(!figure)return;
   figure.root.removeFromParent();
-  figure.mixer.stopAllAction();
-  figure.mixer.uncacheRoot(figure.root);
+  figure.mixer?.stopAllAction();
+  figure.mixer?.uncacheRoot(figure.root);
   const resources=new Set();
   figure.root.traverse(object=>{
     if(!object.isMesh)return;
