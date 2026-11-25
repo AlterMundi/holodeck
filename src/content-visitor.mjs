@@ -15,15 +15,8 @@ export class ContentVisitor{
   for(const button of this.closeButtons)button.onclick=()=>this.endVisit();
   this.loading=document.querySelector('#visit-loading');this.roomGeneration=0;this.renewScopedCatalog=false;
   this.visitRoom=null;this.parked=false;this.accessGeneration=0;this.roomSyncPending=false;
-  const openEntry=selected=>{
-   const exact=this.scoped?{nodeRevision:selected?.nodeRevision??null,expectedPin:selected?.pin??null}:undefined;
-   return this.open(selected?.id,exact).catch(()=>say('No pude abrir esta presentación. Podés volver a intentarlo.'));
-  };
-  this.index=new ExhibitionIndex(document,openEntry);
-  this.button.onclick=()=>{
-   if(this.scoped&&!this.nearby&&!(this.frame&&this.hasCurrentEntry())){this.index.open();return;}
-   return openEntry(this.nearby||this.entry);
-  };
+  this.index=new ExhibitionIndex(document,selected=>this.chooseEntry(selected,{exact:true}));
+  this.button.onclick=()=>this.launch();
   document.querySelector('#visit-walk').onclick=()=>this.walk();
   this.receive=event=>{
    if(!this.frame||!this.entry)return;
@@ -43,23 +36,32 @@ export class ContentVisitor{
   window.addEventListener('message',this.receive);
   this.catalog=this.loadCatalog();
  }
+ chooseEntry(selected,{exact=this.scoped}={}){
+  const selection=exact?{nodeRevision:selected?.nodeRevision??null,expectedPin:selected?.pin??null}:undefined;
+  return this.open(selected?.id,selection).catch(()=>this.say('No pude abrir esta presentación. Podés volver a intentarlo.'));
+ }
+ launch({native=false}={}){
+  if(this.button.hidden||this.roomSyncPending||this.closing)return;
+  if(this.scoped&&!this.nearby&&!(this.frame&&this.hasCurrentEntry())){this.index.open({native});return;}
+  return this.chooseEntry(this.nearby||this.entry);
+ }
  async loadCatalog(signature=null){
   if(this.roomSyncPending)return false;
   this.catalogFlight=true;
   const generation=++this.catalogGeneration;
   try{
    const response=await fetch(new URL(this.scoped?'api/space/content-visits':'api/content-visits',this.base),{credentials:'same-origin',signal:AbortSignal.timeout(5000)});
-   if(!response.ok)throw Error('Catalog unavailable');
+   if(!response.ok)throw Object.assign(Error('Catalog unavailable'),{status:response.status});
    const value=await response.json();if(this.disposed||generation!==this.catalogGeneration)return false;
    this.nodes=this.scoped?[]:validateContentNodes(value.nodes);this.entries=Array.isArray(value.visits)?value.visits.slice(0,16).map(entry=>{const node=this.nodes.find(node=>node.id===entry.node);return {...entry,title:entry.title||node?.title,position:entry.position||node?.position};}):[];this.catalogSignature=signature;this.choices();
    this.renewScopedCatalog=this.scoped&&(value.revalidate===true||value.gallery===true||this.entries.some(entry=>entry.galleryDisplay===true));
    this.catalogRenewAt=this.renewScopedCatalog?performance.now()+20000:Infinity;
    this.reconcileVisitAccess();
-   this.index.update(this.scoped?this.entries:[]);this.onCatalog(this.entries);return true;
-  }catch{
+   this.index.update(this.scoped||this.index.opened?this.entries:[]);this.onCatalog(this.entries);return true;
+  }catch(error){
    if(this.scoped&&!this.disposed&&generation===this.catalogGeneration){
     this.entries=[];this.nearby=null;this.choices();this.catalogRenewAt=this.renewScopedCatalog?performance.now()+20000:Infinity;this.onCatalog([]);
-    this.index.update([]);
+    this.index.update([],{invalidate:[401,403,404].includes(error?.status)});
     this.reconcileVisitAccess();
    }
    return false;
@@ -120,7 +122,7 @@ export class ContentVisitor{
   this.entries=[];this.nearby=null;this.lastContext=null;
   if(this.selector)this.selector.disabled=false;
   this.reconcileVisitAccess();
-  this.button.hidden=true;this.index.close();this.index.update([]);this.onCatalog([]);
+  this.button.hidden=true;this.index.close({resume:false});this.index.update([]);this.onCatalog([]);
  }
 
  confirmRoom(){
@@ -261,7 +263,8 @@ export class ContentVisitor{
    }
    this.entry=entry;this.visitRoom=this.roomId;this.confirming=false;this.readyAcknowledged=false;this.lastContext=null;this.visitId=crypto.randomUUID();entryURL.searchParams.set('holodeck_visit',this.visitId);
    if(this.selector){this.selector.value=entry.id;const option=Array.from(this.selector.options).find(value=>value.value===entry.id);if(option&&typeof descriptor.title==='string')option.textContent=entry.galleryDisplay?entry.title+' · '+descriptor.title.slice(0,75):descriptor.title.slice(0,100);}
-   this.document.querySelector('#visit-title').textContent=typeof descriptor.title==='string'?descriptor.title.slice(0,160):'Contenido';
+   this.title=typeof descriptor.title==='string'?descriptor.title.slice(0,160):'Contenido';
+   this.document.querySelector('#visit-title').textContent=this.title;
    this.reveal();
    const frame=this.document.createElement('iframe');frame.title='Contenido y conversación en Nexus';frame.allow='microphone; autoplay';frame.allowFullscreen=true;frame.referrerPolicy='same-origin';
    if(verifyScoped){frame.inert=true;this.showLoading('Abriendo la edición…');}
@@ -383,7 +386,7 @@ export class ContentVisitor{
   // Offscreen application state is never claimed to be visible to a human.
  }
  dispose(){
-  this.index.close();this.disposed=true;clearTimeout(this.readyTimer);this.window.removeEventListener('message',this.receive);
+  this.index.close({resume:false});this.disposed=true;clearTimeout(this.readyTimer);this.window.removeEventListener('message',this.receive);
   for(const task of this.pending.values()){clearTimeout(task.timer);task.reject(Error('Visit disposed'));}this.pending.clear();
   // Browser teardown owns the final frame destruction. Ordinary return never does.
  }

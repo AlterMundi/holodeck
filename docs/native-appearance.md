@@ -53,3 +53,20 @@ page disposal removed owned canvases/objects. Blocking the design request kept
 the actual fallback beacon visible and displayed its useful notice. The spatial
 screenshot and original renderer canvas were inspected. No JavaScript errors,
 real native provider/model turn or human/artistic acceptance was asserted.
+
+## Blender companion
+
+The following companion uses an authored Blender model based on the same selected
+Navegante. Its editable scene and generator are under `art/compaii-avatar/`. The
+rounded shells and articulated pivots retain the original contours and authored
+movement. The atlas uses a pearl palette and preserves the cyan face details.
+The generator bakes the nine authored motion clips into an embedded GLB. In
+Blender, unmute the corresponding NLA tracks to inspect each alternative pose.
+
+Holodeck plays the original calm loop for the companion. Canonical Conversation
+sends its existing bound playback level to the separate jaw pivot, which returns
+to rest when the signal stops. The browser check rendered the GLB from the
+front, side and back, exercised opening and release with injected playback
+levels, and checked reduced motion. This does not qualify spoken phoneme timing
+or a full live Conversation turn. Explicit native world markers retain their
+existing layered projection and permission checks.

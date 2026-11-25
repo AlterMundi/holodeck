@@ -579,7 +579,8 @@ function resetDoor(){
 // MML captures document keys by default. Preserve ordinary text editing and
 // keyboard activation of the HUD without turning typed words into locomotion.
 document.addEventListener('keydown',event=>{
-  if(matterHud?.settings.group||worldHistory?.native){
+  if(matterHud?.hud.ownsTextInput?.(event.target))return;
+  if(matterHud?.settings.group||worldHistory?.native||matterHud?.visit.indexActive||matterHud?.visit.viewerActive){
     if(matterHud.settingsKey(event))event.preventDefault();
     event.stopImmediatePropagation();
     return;
@@ -651,12 +652,18 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const tools={map:document.getElementById('map-tool'),talk:document.getElementById('talk'),
       appearance:document.getElementById('appearance-open'),video:document.getElementById('video-open'),
       bridge:document.getElementById('bridge'),plant:document.getElementById('plant'),undo:document.getElementById('undo'),
-      activity:document.getElementById('activity-open')};
+      activity:document.getElementById('activity-open'),visit:document.getElementById('visit-near'),
+      endVisit:document.getElementById('visit-end-near')};
+    const visitAllowed=()=>!moving&&!entering&&document.getElementById('conversation-panel').hidden&&
+      document.getElementById('creator').hidden&&!signalEditor?.active;
     const activityAllowed=()=>!inside&&document.getElementById('conversation-panel').hidden&&
       document.getElementById('creator').hidden;
     const readTools=operating=>Object.fromEntries(Object.entries(tools).map(([id,element])=>[id,{
-      label:id==='undo'?'Deshacer':element.getAttribute('aria-label')??element.textContent.trim(),
-      visible:(id==='activity'?activityAllowed():!element.hidden)&&(['map','talk','appearance','video'].includes(id)||!inside&&!operating)
+      label:id==='undo'?'Deshacer':id==='visit'&&element.textContent.startsWith('Visitar ')?'Visitar':
+        element.getAttribute('aria-label')??element.textContent.trim(),
+      visible:(id==='activity'?activityAllowed():!element.hidden)&&
+        (['map','talk','appearance','video'].includes(id)||['visit','endVisit'].includes(id)&&visitAllowed()&&!operating||!inside&&!operating&&
+          !['visit','endVisit'].includes(id))
         &&(!['appearance','video'].includes(id)||document.getElementById('conversation-panel').hidden),
       disabled:element.disabled,
       pressed:element.getAttribute('aria-expanded')==='true',
@@ -682,13 +689,15 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     }
     matterHud=new MatterWorktableHud({document,webgl:renderer.composer.renderer,table:collectionShelves.worktable,collection:collectionShelves,
       toggleSound:()=>{if(!moving&&!entering&&navigator.userActivation?.isActive&&(!inside||worldAudio.status().active))void toggleWorldSound();},
-      readTools,history:()=>worldHistory,activateTool:id=>{
-        if(id!=='activity'){tools[id]?.click();return;}
-        if(!activityAllowed())return;
+      readTools,history:()=>worldHistory,visitor:()=>contentVisitor,activateTool:id=>{
+        if(id==='endVisit'){if(visitAllowed())void contentVisitor?.endVisit();return;}
+        if(id!=='activity'&&id!=='visit'){tools[id]?.click();return;}
+        if(id==='activity'?!activityAllowed():!visitAllowed())return;
         client.keyInputManager?.handleUnfocus();touchControls.pause(true);
         if(document.pointerLockElement===matterHud.canvas)document.exitPointerLock();
         options.coreCameraManager.activePointers.clear();
-        void worldHistory?.open({native:true});
+        if(id==='visit')void contentVisitor?.launch({native:true});
+        else void worldHistory?.open({native:true});
       },
       presentMovement:provider=>touchControls.present(provider),
       navigation:{panel:mapPanel,mapState:()=>updateDoor.navigation?.()??{
@@ -728,8 +737,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     geometryProbe=new AppliedGeometryProbe({document,scene:renderer.mmlCompositionScene.group,
       canvas:options.targetElement.querySelector(':scope > canvas'),expectedDocumentURL:socket('world')});
     nativeAvatarLayer=new NativeAvatarLayer({document,base,onFailure:message=>say(message)});
-    const companion=new CompanionAvatar({scene:renderer.mmlCompositionScene.group,document,
-      load:appearance=>nativeAvatarLayer.source(appearance)});
+    const companion=new CompanionAvatar({scene:renderer.mmlCompositionScene.group,document,base});
     companionAvatar=companion;
     worldPicker=new PublicWorldPicker({document,canvas:options.targetElement.querySelector(':scope > canvas'),scene:renderer.mmlCompositionScene.group,
       cameraState:()=>options.coreCameraManager.getCameraState(),proof:()=>geometryProbe?.snapshot(),
@@ -764,7 +772,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     // Keep the frame loop and collision running behind opaque overlays. Skip
     // drawing until Nexus yields or the destination can produce a room frame.
     renderer.composer.render=()=>{
-      if(!drawWorld)return;
+      if(!drawWorld){matterHud.visit.present({painted:false});return;}
       if(floorSplatScope?.projection){
         const camera=roomModel.getScene().getGraphicsAdapter().getCamera();
         floorSplatScope.projection.sort(camera,false);
@@ -789,7 +797,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       };
     }
     let nextDressing=0, ring=null, cave=null, scenery=null, atmosphere=null, releaseRadialMovement=null, releaseHeadroom=null, ringSun=null;
-    let sceneryAfter=null,releaseTableFlight=null;
+    let sceneryAfter=null,releaseTableFlight=null,releaseSearchKeys=null;
     const releaseFlightAnimation=bindFlightAvatarAnimation(renderer.characterManager,()=>({
       outdoor:outsideRing(),flying:flightEnabled,table:tableFlight.active,
       crouch:!moving&&client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('shift'),
@@ -926,7 +934,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         options.coreCameraManager.getCameraState(),renderer.composer.renderer.domElement.clientHeight);
       const opaqueVisit=contentVisitor?.frame&&!contentVisitor.panel.classList.contains('is-walking');
       const settingsOpen=Boolean(document.querySelector('#appearance-dialog[open],#video-dialog[open]'));
-      const toolModal=Boolean(worldHistory?.opened||document.querySelector('dialog[open]:not([data-native-settings])'));
+      const toolModal=Boolean(worldHistory?.opened||contentVisitor?.index?.opened||document.querySelector('dialog[open]:not([data-native-settings])'));
       if(settingsOpen!==settingsInputCaptured){
         settingsInputCaptured=settingsOpen;
         touchControls.pause(settingsOpen);
@@ -976,9 +984,15 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
       }
     };
-    renderer.dispose=()=>{releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
-      if(client.keyInputManager)client.keyInputManager.getRun=function(){return this.isKeyPressed('control');};
+      if(client.keyInputManager){
+        const keys=client.keyInputManager,shouldCapture=keys.shouldCaptureKeyPress;
+        keys.getRun=function(){return this.isKeyPressed('control');};
+        const capture=()=>!matterHud?.hud.ownsTextInput(document.activeElement)&&shouldCapture.call(keys);
+        keys.shouldCaptureKeyPress=capture;
+        releaseSearchKeys=()=>{if(keys.shouldCaptureKeyPress===capture)keys.shouldCaptureKeyPress=shouldCapture;};
+      }
       releaseHeadroom=bindInteriorHeadroom(client.getCharacterManager(),()=>inside);
       releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing,()=>flightEnabled);
       releaseTableFlight=bindMatterFlight(client.getCharacterManager(),options.coreCameraManager,tableFlight,tableInputAllowed,()=>matterHud.leave());

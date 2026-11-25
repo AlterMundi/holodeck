@@ -419,3 +419,18 @@ HTTP 200, opened the native HUD, closed it with Escape and logged out.
 Exhibition, result navigation, creator and recovery surfaces remain under
 issue #16. The broader goal also still includes device-specific performance
 and live context deltas.
+
+## Native exhibitions and visit controls
+
+Exhibitions now share their scoped catalog, search and exact revision selection
+with the native HUD. The viewer chrome also uses the HUD. The viewer page
+retains its mounted frame, draft and existing close checks when a visitor
+temporarily returns to the world or cancels a change of edition. The standalone
+interior route still uses its compatible HTML controls.
+
+Fable reviewed component and focus ownership. Opus identified a refresh race
+that could replace the selected edition and a mismatched Search submit action.
+The implementation rechecks the exact edition and uses the same action for
+pointer and keyboard submission. Chromium qualified desktop search,
+touch return, draft retention and recovery to HTML on WebGL loss. A second
+signed-in fixture actor received only its permitted edition.

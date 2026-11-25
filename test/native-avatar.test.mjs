@@ -35,3 +35,19 @@ test('client marker admission requires an exact registered being and bounds inst
  assert.equal(avatarMarkers({querySelectorAll:()=>[marker('https://foreign/avatar','foreign'),marker('compaii-navegante-white-v1','foreign'),good]}).length,1);
  assert.equal(avatarMarkers({querySelectorAll:()=>Array(20).fill(good)}).length,8);
 });
+
+test('the Blender companion keeps all authored clips and a free playback jaw',()=>{
+ const entry=AVATARS['compaii-navegante-white-v1'];
+ const design=JSON.parse(readFileSync(new URL('../public/'+entry.design,import.meta.url)));
+ const glb=readFileSync(new URL('../public/'+entry.model,import.meta.url));
+ assert.equal(createHash('sha256').update(glb).digest('hex'),entry.modelSha256);
+ assert.equal(glb.toString('ascii',0,4),'glTF');
+ const contents=JSON.parse(glb.toString('utf8',20,20+glb.readUInt32LE(12)));
+ const jaw=contents.nodes.findIndex(node=>node.name==='anchor-mouth');
+ assert.ok(jaw>=0);
+ assert.deepEqual(contents.animations.map(animation=>animation.name),Object.keys(design.avatarModel.animations));
+ for(const {channels} of contents.animations){
+  assert.ok(channels.length>20);
+  assert.ok(channels.every(channel=>channel.target.node!==jaw));
+ }
+});

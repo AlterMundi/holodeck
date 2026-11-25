@@ -82,3 +82,17 @@ test('an interrupted open cannot mount an old viewer after reconnect',async()=>{
   assert.equal(visitor.frame,null);
   assert.equal(visitor.opening,false);
 });
+
+test('an exterior catalog selection keeps its original edition while the catalog refreshes',async()=>{
+  let refresh;
+  const visitor=Object.assign(scope(),{
+    scoped:false,frame:null,catalog:new Promise(resolve=>{refresh=resolve;}),
+    say(message){this.notice=message;},
+  });
+  const work=visitor.chooseEntry(entry,{exact:true});
+  visitor.entries=[{...entry,pin:{...pin,revision:'changed'}}];
+  refresh(true);
+  await work;
+  assert.equal(visitor.frame,null);
+  assert.match(visitor.notice,/cambió de lugar o edición/);
+});

@@ -1,9 +1,12 @@
 import {createHash} from 'node:crypto';
 import {readFileSync,statSync} from 'node:fs';
 import {brotliDecompressSync} from 'node:zlib';
+import {AVATARS} from './avatar-registry.mjs';
 
-// Bundled MML locomotion clips keep their canonical GLB bytes and URLs.
+// Keep the canonical bytes and URLs of bundled animated characters.
+const companion=AVATARS['compaii-navegante-white-v1'];
 export const ANIMATION_ASSET_REVISIONS=Object.freeze({
+  [companion.model]:companion.modelSha256,
   'assets/anim_air.glb':'370b7b800de11d66cb365ec8a147135a789c476922daee80ed664cbce9941c8f',
   'assets/anim_double_jump.glb':'a40ea3c384d4428e7a3c584f726f6a1c73adb4ea3fa3fa943447d1dcf2c05cd7',
   'assets/anim_idle.glb':'616abbfb6997bb1ebf149ce7fa272c740dbbabd75c53651214b0f52eb24e0841',
