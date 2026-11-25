@@ -679,14 +679,15 @@ duplicate send.
 
 Use the black field, turquoise interference traces and high-contrast ivory
 type of the [official HIT cover](https://hit.altermundi.net/tapa2.jpg) as
-the Laboratory's art direction. Design original spaces with organic
-boundaries, suspended elements, and non-orthogonal or surreal architecture.
-Retain stable landmarks and readably traversable routes. Spaces may be
-open volumes, caverns or differentiated local environments.
+the Laboratory's art direction. The [vault pass](../art/compaii-house/redesign/README.md)
+starts within the existing chamber, with suspended brass and turquoise
+loops above the Beacon and a dark acoustic finish. For the next room
+composition, keep the Beacon as a landmark and use the walkable layout
+to test more organic boundaries.
 
 The [Blender composition study](../art/compaii-house/redesign/lab-hit-study.py)
 places four separate instrument tables around a cyan field above the
-Beacon. It is a draft outside the running game. Preserve the existing
+Beacon. The four-table arrangement is an offline study. Preserve the existing
 Spatializer and Weaver routes. The Guitar already exists as a separate
 service card in the owning Laboratory panel. Its deep-link allowlist
 currently selects only `audio` and `body`. Shaper currently runs as part
