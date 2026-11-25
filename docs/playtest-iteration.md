@@ -335,3 +335,33 @@ space, expressive typography and quick icon recognition. The Matter room
 should retain its own visual language.
 See the [A2UI catalog guide](https://a2ui.org/guides/defining-a-catalog/) and
 [A2UI theming guide](https://github.com/a2ui-project/a2ui/blob/main/docs/public/guides/theming.md).
+
+
+### November 25 playtest and next controls
+
+The selected runtime c2d4434bd2e6 serves compact Conversation minimize and
+resize chrome. The exterior palette supplies an explicit dark control fill.
+The browser fixture exercised drag, resize, minimize, restore, draft retention
+and viewport clamping. The focused screenshot was inspected before selection.
+Matter defaults to Orbital · layered light. A per-account room preference
+survives new sessions, with the embedded Orbital material as load fallback.
+The preceding release 8d2bb9df6ab7 retained Collection rearchiving. Both
+selected packages passed protected byte and native world continuity checks.
+
+The first [HUD design comparison](https://compaii.dmn.homes/view/59b2b33b3e7a4fdcbbefee7bb8d21868?display=work)
+contains three Claude Fable 5.2 High directions in dark and light. Human
+selection precedes adoption of two presets. Keep user-specific position,
+size, readable type and appearance separable from shared application state.
+Use one shared positioning interaction for minimap, settings, Collection and
+Matter worktable panels. Provide keyboard and touch input, increase hit
+areas without increasing icon art, clamp windows on viewport change, and
+exercise overlap and dismissal with the Conversation display.
+
+The [Sand3D Nature trail comparison](https://compaii.dmn.homes/view/b1cb2de6ec714bfeab4962cc792c2e41?display=work)
+qualifies only a focused patch next to the house. It uses the existing terrain
+and ground cover, the same eye-height camera in both runs, and three additional
+instance batches for 34 objects. USDA identity and conversion details are in
+the evidence folder. SwiftShader measured 68 vs 71 median draw calls and
+46,065 vs 77,225 median rendered triangles. Frame pacing varied considerably.
+Before wider adoption, measure a culled and reduced-density variant on the
+game hardware. Retain the live baseline outside the test.
