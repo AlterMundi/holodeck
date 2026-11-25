@@ -22,13 +22,14 @@ const label = value => typeof value === 'string' && value.trim().length > 0 &&
   value.length <= 60 && !/[\u0000-\u001f\u007f]/.test(value);
 
 export class InteriorSpaces {
-  constructor({definitions = [], houses, state, persist, clock = Date.now, guestAccess}) {
+  constructor({definitions = [], houses, state, persist, clock = Date.now, guestAccess, upperLanding}) {
     if (!Array.isArray(definitions) || definitions.length > MAX_SPACES)
       throw Error('Select bounded authored interior rooms');
     this.houses = houses;
     this.persist = persist;
     this.clock = clock;
     this.guestAccess = guestAccess;
+    this.upperLanding = upperLanding;
     this.rooms = new Map();
     for (const d of definitions) {
       if (!exact(d,'entry,guests,house,id,level,links,title') ||
@@ -182,7 +183,7 @@ export class InteriorSpaces {
     return room.links.flatMap((link,index)=>{
       if(!this.allows(actor,link.to))return [];
       const destination=this.rooms.get(link.to);
-      return [{...passageAt(room,link,index,destination),title:destination.title}];
+      return [{...passageAt(room,link,index,destination,this.upperLanding?.(room,link,index)),title:destination.title}];
     });
   }
 
@@ -233,10 +234,14 @@ export function interiorDocument(room,passages=[],exhibit=null,art=null,passageA
       <m-cube y="1.10" width="1.34" height=".49" depth=".77" color="#b89165"></m-cube>`}
       ${art?.gallerySigns?'':`<m-label y="1.74" z=".41" width="1.6" height=".36" font-size="20" content="${EXHIBIT_LABEL}" collide="false"></m-label>`}
     </m-group>`:''}
-    ${passages.map(p=>passageMarkup({...p,label:attribute(p.title)},{
-      visibleSteps:!art?.authoredStairs,authoredPortal:art?.authoredPortal,
-      authoredDoor:art?.authoredDoor,authoredPassages:art?.authoredPassages,
-      portalAsset:passageAsset(p),houseDoor,existingDoor:houseDoor&&art?.authoredDoor&&p.slot===0})).join('')}
+    ${passages.map(p=>{
+      const fitting=passageAsset(p);
+      return passageMarkup({...p,label:attribute(p.title)},{
+        visibleSteps:!art?.authoredStairs,authoredPortal:art?.authoredPortal,
+        authoredDoor:art?.authoredDoor,authoredPassages:art?.authoredPassages,
+        portalAsset:fitting?.src,returnLeaf:fitting?.door?fitting:null,
+        houseDoor,existingDoor:houseDoor&&art?.authoredDoor&&p.slot===0});
+    }).join('')}
     ${room.entry?'<m-group id="house-exit"><m-cube y="1.13" z="5.86" width="1.35" height="2.06" depth=".08" color="#c8a36d" collide="false"></m-cube><m-cube x=".45" y="1.05" z="5.79" width=".06" height=".14" depth=".08" color="#343e40" collide="false"></m-cube><m-label y="2.53" z="5.81" ry="180" width="1.55" height=".37" font-size="19" content="Salida" collide="false"></m-label></m-group>':''}
     ${art&&!art.palette?'':`<m-label x="0" y="2.3" z="-5.87" width="4" height=".65" font-size="26" content="${attribute(room.title)}"${art?.palette?' color="#163b3f" font-color="#f6edda"':''} collide="false"></m-label>`}
     ${art?.replacesShell||art?.hideMarker?'':`<m-cylinder id="${id}" x="${x}" y="${y}" z="${z}" radius="${radius}" height="${height}" color="#af956a"></m-cylinder>`}

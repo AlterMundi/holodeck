@@ -2,7 +2,7 @@ import {SAND3D_TRAIL_REVISIONS} from './sand3d-trail-assets.mjs';
 import {TOROIDAL_SPAWN, TOROIDAL_TERRAIN, toroidalParcelPoint} from './toroidal-terrain.mjs';
 import {indoorGardenTemplates} from './indoor-garden-recipe.mjs';
 import {COMPAII_HOUSE,interiorArt} from './interior-art.mjs';
-import {ATELIER_EXPANSION_WRITES,ATELIER_PROFILE,ATELIER_ROOMS,matchesAtelierLayout,packedExteriorArt,selectAtelier} from './compaii-atelier.mjs';
+import {ATELIER_EXPANSION_WRITES,ATELIER_PROFILE,ATELIER_ROOMS,atelierLabReturn,matchesAtelierLayout,packedExteriorArt,selectAtelier} from './compaii-atelier.mjs';
 import {RoomExhibits,EXHIBIT_SAVE_BYTES} from './room-exhibits.mjs';
 import {ATELIER_FOYER,CHARACTER_STUDIO,houseReviewRooms} from './house-review-rooms.mjs';
 import {InteriorSpaces, OUTSIDE, SPACE_SAVE_BYTES, interiorDocument} from './interior-spaces.mjs';
@@ -150,6 +150,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     return houseReviewRooms(combined,COMPAII_HOUSE,matterCollection?.room,ATELIER_ROOMS.lab);
   };
   const spaces=new InteriorSpaces({definitions:layoutDefinitions(),houses,state:spaceStore?.load(),
+    upperLanding:toroidal&&artProfile===ATELIER_PROFILE?atelierLabReturn:undefined,
     persist:spaceStore ? state=>spaceStore.save(state) : null,guestAccess:interiorGuestAccess});
   const exteriorArt=packedExteriorArt();
   // A selected terrain can hide rooms while their authored checkpoints remain
@@ -376,8 +377,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const art=artForRoom(room,passages),src=art?route('api/space/art/'+art.revision):null;
     const gallerySigns=room.id===gallery?.room&&exhibit?.pin.kind==='artifact_review'&&exhibit.pin.adapter==='interactive_3d';
     const passageAsset=passage=>{
-      const fitting=atelier?.passageFitting(room,passage);
-      return fitting?route('api/space/art/'+fitting.revision):null;
+      const fitting=atelier?.passageFitting(room,passage,art);
+      return fitting?{src:route('api/space/art/'+fitting.revision),door:fitting.door,onLanding:fitting.onLanding}:null;
     };
     const houseDoor=spaces.rooms.has(CHARACTER_STUDIO)&&
       (room.id===ATELIER_FOYER||passages.some(p=>p.to===ATELIER_FOYER));
@@ -812,7 +813,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const map=main?.roomLooks?.files.get(req.params.revision);
     if(map)return res.type(map.type).send(map.bytes);
     const art=main?.revision===req.params.revision ? main :
-      passages.map(passage=>atelier?.passageFitting(selected,passage))
+      passages.map(passage=>atelier?.passageFitting(selected,passage,main))
         .find(fitting=>fitting?.revision===req.params.revision);
     if(!art)return res.sendStatus(404);
     if(art.packed)return sendPackedArt(req,res,art);
