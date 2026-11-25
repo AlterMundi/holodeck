@@ -2,6 +2,18 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `60503cff1b2ec3eee9b6e8618f2c5b514a74f395` integrates the room
+boundaries and object leaders from protected release `ea2efd93199d`.
+Archive `ebb75f57c3d3aa2b0161bc1533d56f7691513341f0a7a9b62693c6a872e01457`
+matched all 87 payloads, including the nine compressed room-art files
+from the installed manifest. The Character pose catalog stayed
+byte-identical. Chromium measured the leader endpoint at the actual
+Character tabletop and observed both glyph and line hide on entry.
+The packaged browser check and the full two-browser study, including
+native note readback, previous links, independent cameras and exit,
+passed with fixture identities. Holodeck passed 422 tests with two
+skips. Protected Home acceptance remains open.
+
 Source `acc978aff47fbae7a6080a63d2dab17f123f5187` combines the selected
 inner woodland from `b086c86` with Character review. Archive
 `fad627adbf5d5d7c6ce268cf47b870e626a1f340f529f0765038d397fad78231`
@@ -425,6 +437,25 @@ installed release `1c78c31a2b82`. Reciprocal studio doors resolved. The room
 rule admitted one configured human guest and the house owner's daimon
 identity. The copy omitted Home sign-in. The protected release still needs
 selection of the candidate and a two-session receiving trial.
+## November 25 visible room boundaries and object leaders
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `ea2efd93199d`
+from `2d56daf`. The foyer and gallery perimeter use the measured
+room-facing planes of the packed art. The MML cubes and cylinders reserved
+for collision participate in physics without submitting visible
+geometry. The nearby prompt now sits below normal standing eye height,
+moves beside the avatar, and draws a fine gold leader to the object.
+A separate wall between the camera and the object suppresses the prompt.
+
+RTX 2060 and Pi 5 controlled browser trials hit all four foyer collider
+planes, stopped the avatar short of the north wall, opened all four
+Harmonic Lab consoles with E, and returned to the foyer from the Lab
+and Materializer. Both devices also opened Character Studio from the
+foyer and returned through its own link. The unit tests cover occlusion and exact leader
+endpoints. The suite passed 415 checks with two skips. Receiving
+verified all 86 files, the same access and continuing world run
+through sequences 436–438. Immediate rollback is `0981468421fe`.
+
 ## November 25 woodland across the inner arc
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `0981468421fe`
