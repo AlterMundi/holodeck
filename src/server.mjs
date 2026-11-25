@@ -289,11 +289,12 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   await project();if(!projectionHealthy){document.dispose();arrivalDocument?.dispose();throw Error('The initial world representation could not load');}room.on('change',project);
   const native=nativeFactory?await nativeFactory({room,stateDir,allowInteriorSource}):null;
   const installedWorldPorts=[];
-  let poseReview;
+  let poseReview,poseCatalog;
   if(stateDir&&spaces.rooms.has(CHARACTER_STUDIO)){
     try{
       const catalog=JSON.parse(readFileSync(new URL('../build/character-pose-catalog.json',import.meta.url),'utf8'));
       poseReview=createCharacterPoseReview(new RoomStore(join(stateDir,'character-pose-review'),{maxBytes:256*1024}),catalog);
+      poseCatalog=catalog;
     }catch{console.error('Holodeck character pose review is unavailable');}
   }
   async function currentActor(req,session){
@@ -586,6 +587,11 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     draftLayout:(actor,input)=>room.commitUncertain||spaces.fenced||!layoutStore?null:layoutAuthority(actor).draft(actor,input),
     previewLayout:(actor,input)=>layoutAuthority(actor).preview(actor,input),
     publishLayout,layoutResult:(actor,id)=>layoutAuthority(actor).result(actor,id),roomDesign,indoorGarden,
+    reviewCharacter:(actor,type,input)=>{
+      const result=reviewCharacter(actor,type,input);
+      return type==='character-review.current'&&result.status===200?
+        {...result,room:CHARACTER_STUDIO,catalog:poseCatalog}:result;
+    },
     resolveOwnNativeRights:ownNative&&nativeRoomAuthority?async verified=>{const rights=await nativeRoomAuthority(verified);return projectionHealthy?rights:rights.filter(right=>right==='observe');}:null,resolveRights:async verified=>{
     if(nativeRoomAuthority){const rights=await nativeRoomAuthority(verified);return projectionHealthy?rights:rights.filter(right=>right==='observe');}
     // Compatibility for older receivers only. New native authority selection
@@ -764,20 +770,27 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       return res.status(409).json({message:'Volvé al exterior para usar esta acción.'});
     req.actor=actor;req.holodeckSession=session;next();
   }));
-  const reviewResponse=(req,res,read)=>{
-    if(!inScope(req.actor,CHARACTER_STUDIO))return res.sendStatus(403);
-    if(!poseReview)return res.sendStatus(503);
-    const {status,...result}=read();
+  function reviewCharacter(actor,type,input){
+    if(!inScope(actor,CHARACTER_STUDIO))return {status:403};
+    if(!poseReview)return {status:503};
+    if(type==='character-review.current'&&Object.keys(input).length===0)return poseReview.presented();
+    if(type==='character-review.focus')return poseReview.present(actor,input);
+    if(type==='character-review.notes'&&Object.keys(input).join(',')==='pose')return poseReview.forPose(input.pose);
+    if(type==='character-review.add-note')return poseReview.add(actor,input);
+    return {status:400};
+  }
+  function reviewResponse(req,res,type,input){
+    const {status,...result}=reviewCharacter(req.actor,type,input);
     if(status!==200)return res.sendStatus(status);
     return res.json(result);
-  };
-  app.get(route('api/space/character-pose-review'),(req,res)=>reviewResponse(req,res,()=>poseReview.forPose({
+  }
+  app.get(route('api/space/character-pose-review'),(req,res)=>reviewResponse(req,res,'character-review.notes',{pose:{
     rig:req.query.rig,clip:req.query.clip,edition:req.query.edition,
     frame:/^(0|[1-9][0-9]{0,5})$/.test(req.query.frame??'')?Number(req.query.frame):-1,
-  })));
-  app.post(route('api/space/character-pose-review'),(req,res)=>reviewResponse(req,res,()=>poseReview.add(req.actor,req.body)));
-  app.get(route('api/space/character-presentation'),(req,res)=>reviewResponse(req,res,()=>poseReview.presented()));
-  app.post(route('api/space/character-presentation'),(req,res)=>reviewResponse(req,res,()=>poseReview.present(req.actor,req.body)));
+  }}));
+  app.post(route('api/space/character-pose-review'),(req,res)=>reviewResponse(req,res,'character-review.add-note',req.body));
+  app.get(route('api/space/character-presentation'),(req,res)=>reviewResponse(req,res,'character-review.current',{}));
+  app.post(route('api/space/character-presentation'),(req,res)=>reviewResponse(req,res,'character-review.focus',req.body));
   app.post(route('api/space/matter-look'),(req,res)=>{
     const actor=req.actor;
     if(!collection?.art||!inScope(actor,collection.room))return res.sendStatus(404);

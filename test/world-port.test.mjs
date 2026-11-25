@@ -57,10 +57,10 @@ test('multi-pair receiving requires a fixed identity on every unique return path
   worldPorts:[{socket:'/tmp/b.sock',beingRef:other}],nativeRoutes:[{beingRef},{beingRef:other}]}).length,2);
 });
 
-async function ownFixture({pin='dm:being:v1:'+'a'.repeat(43),authority=true,room=new Room()}={}){
+async function ownFixture({pin='dm:being:v1:'+'a'.repeat(43),authority=true,room=new Room(),reviewCharacter}={}){
  const directory=mkdtempSync(join(tmpdir(),'holodeck-own-port-')),socketPath=join(directory,'world.sock');
  let rights=['observe','edit','project'],calls=0,fail=false;
- const port=await createWorldPort({socketPath,room,expectedBeingRef:pin,
+ const port=await createWorldPort({socketPath,room,expectedBeingRef:pin,reviewCharacter,
   native:{async authorizeWorldRequest(){throw Error('Own native access must not inspect a human original');}},
   resolveRights:async()=>{throw Error('No legacy human authority fallback');},
   resolveOwnNativeRights:authority?async verified=>{calls++;assert.deepEqual(verified,{actor:{id:pin,ref:pin,kind:'daimon'}});if(fail)throw Error('Authority unavailable');return rights;}:null});
@@ -73,6 +73,25 @@ async function ownFixture({pin='dm:being:v1:'+'a'.repeat(43),authority=true,room
   rights:value=>{rights=value;},fail:()=>{fail=true;},calls:()=>calls,
   async close(){await port.close();rmSync(directory,{recursive:true,force:true});}};
 }
+
+test('character review actions use the receiving identity and require current native write access',async()=>{
+ const selected=[];
+ const f=await ownFixture({reviewCharacter(actor,type,input){
+  selected.push({actor:actor.id,type,input});
+  return {status:200};
+ }});
+ try{
+  const pose={rig:'humanoid',clip:'estudio-vuelo',edition:'a'.repeat(64)+'.'+'b'.repeat(64),frame:22};
+  assert.equal((await f.call('act',{type:'character-review.focus',expectedRevision:0,pose})).result.status,200);
+  f.rights(['observe']);
+  assert.equal((await f.call('act',{type:'character-review.current'})).result.status,200);
+  assert.equal((await f.call('act',{type:'character-review.add-note',id:crypto.randomUUID(),pose,text:'Pose'})).ok,false);
+  assert.deepEqual(selected,[
+   {actor:f.pin,type:'character-review.focus',input:{expectedRevision:0,pose}},
+   {actor:f.pin,type:'character-review.current',input:{}},
+  ]);
+ }finally{await f.close();}
+});
 
 test('own native lane acts as its configured being without a human input and retains exact outcomes',async()=>{
  const f=await ownFixture();

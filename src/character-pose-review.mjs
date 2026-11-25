@@ -20,6 +20,8 @@ export function resolveReviewPose(input,catalog){
   return {status:200,key:[input.rig,input.clip,input.edition,input.frame].join(':')};
 }
 
+const reviewAuthor=actor=>String(actor.name??(actor.kind==='daimon'?'Daimon':'Visitante')).slice(0,96);
+
 export function createCharacterPoseReview(store,catalog){
   const checkpoint=store.load();
   let notes=checkpoint?.notes??[],presentation=checkpoint?.presentation??null,fenced=false;
@@ -72,7 +74,7 @@ export function createCharacterPoseReview(store,catalog){
         chosen.key===resolveReviewPose(presentation.pose,catalog).key)return presented();
       const revision=presentation?.revision??0;
       if(request.expectedRevision!==revision)return {status:409};
-      const author=String(actor.name??'Visitante').slice(0,96);
+      const author=reviewAuthor(actor);
       if(!save(notes,{revision:revision+1,pose:request.pose,actor:actor.id,author}))return {status:503};
       return presented();
     },
@@ -87,7 +89,7 @@ export function createCharacterPoseReview(store,catalog){
       const prior=notes.find(note=>note.actor===actor.id&&note.id===request.id);
       if(prior)return prior.pose===selection.key&&prior.text===text?forPose(request.pose):{status:409};
       if(notes.length>=noteCapacity)return {status:503};
-      const author=String(actor.name??'Visitante').slice(0,96);
+      const author=reviewAuthor(actor);
       const next=[...notes,{id:request.id,actor:actor.id,author,pose:selection.key,text}];
       if(!save(next,presentation))return {status:503};
       return forPose(request.pose);

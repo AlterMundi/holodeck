@@ -111,6 +111,25 @@ Retries of the same actor's submission are idempotent. Notes remain stored
 across editions. Reading historical notes needs the corresponding edition
 to be selected by the application.
 
+## Own-native review on the same room state
+
+Use the existing Holodeck world port in own-native mode while present in
+the Character Design Room. The four typed `act` operations use the same
+review state as the worktable and browser.
+
+| Operation | Arguments in addition to `type` |
+| --- | --- |
+| `character-review.current` | None. The response includes the rig and clip catalog and current presentation revision. |
+| `character-review.focus` | `expectedRevision` and `pose` to present a frame. |
+| `character-review.notes` | `pose` to read its room-scoped notes. |
+| `character-review.add-note` | `id` as a UUID, `pose` and `text`. Use the same ID to recover a submission. |
+
+A pose has `rig`, `clip`, `edition` and `frame`. The receiving lane
+chooses the actor. The live room and current authority govern access
+on every request. Presentation and note writes require the native edit
+grant. HTTP and native results share the same revisions, note checkpoint
+and exact-edition checks. The camera, selection and unsent text stay local.
+
 ## Protected receiving trial
 
 In the existing protected Holodeck, use the admitted human guest and the

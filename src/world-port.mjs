@@ -5,6 +5,10 @@ import { DaimonPort } from './daimon-port.mjs';
 import {situatedGardenCommandId} from './indoor-gardens.mjs';
 import {MAX_WORLD_REQUEST_BYTES} from './world-limits.mjs';
 
+const characterReviewCommands=new Set(['character-review.current','character-review.focus',
+  'character-review.notes','character-review.add-note']);
+const characterReviewWrites=new Set(['character-review.focus','character-review.add-note']);
+
 function situatedInterior({request,verified,actor,room,conversationPlace,indoorGarden,approachSpace,moveSpace}){
   const {operation,args}=request;
   const captured=conversationPlace?.(actor,verified.capturedSpace);
@@ -56,7 +60,7 @@ function situatedInterior({request,verified,actor,room,conversationPlace,indoorG
 
 // The receiving operator owns the directory/socket filesystem capability.
 // Native identity and current room rights are independently rechecked per request.
-export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,approachSpace,conversationPlace,putExhibit,exhibitResult,currentLayout,draftLayout,previewLayout,publishLayout,layoutResult,roomDesign,indoorGarden}){
+export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,approachSpace,conversationPlace,putExhibit,exhibitResult,currentLayout,draftLayout,previewLayout,publishLayout,layoutResult,roomDesign,indoorGarden,reviewCharacter}){
   if(!socketPath?.startsWith('/')||!native?.authorizeWorldRequest||typeof resolveRights!=='function')
     throw Error('Select the installed native world port and authority resolver');
   let active=0;
@@ -111,6 +115,12 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
         const savedExhibit=own&&request.operation==='result'?exhibitResult?.(actor,request.args.id):null;
         if(verified.capturedSpace){
           result=situatedInterior({request,verified,actor,room,conversationPlace,indoorGarden,approachSpace,moveSpace});
+        }else if(request.operation==='act'&&characterReviewCommands.has(request.args.type)){
+          const {type,...input}=request.args;
+          if(!own||characterReviewWrites.has(type)&&!rights.includes('edit'))
+            throw Error('Character review requires the selected own-native access');
+          result=reviewCharacter?.(actor,type,input);
+          if(!result)throw Error('Character review unavailable');
         }else if(request.operation==='act'&&request.args.type==='layout.current'){
           if(!own||!rights.includes('edit')||Object.keys(request.args).length!==1)throw Error('Reading the draft base requires an own-native editor route');
           result=currentLayout?.(actor)??null;
