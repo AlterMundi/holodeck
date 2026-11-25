@@ -18,7 +18,14 @@ wrote a note read back directly with its human fixture attribution. The
 other physical table retained its local ground frame 57. Leaving the room
 denied the native read. Both browsers also passed the ground and flight
 sequence, comparison, draft recovery and exit checks. The loopback
-fixture used assigned identities. Protected Home acceptance remains open.
+fixture used assigned identities. In a second run, a touch-emulated
+visitor entered from Matter, selected the ground release through the paged
+menu and retained frame 58 across rotation. The visitor started and paused
+playback with touchscreen events and published the held frame 61 directly
+from the compact HUD at 568 × 280. An independently identified desktop
+browser followed the same edition and revision 1. The table kept its pose
+and Escape left the visitor in the room. Protected Home acceptance remains
+open.
 
 Source `0beebcb4e062df3cb7d800adf01449f8f06ad309` combines Character
 review with the protected world label and keyboard work from `5e63550`.
