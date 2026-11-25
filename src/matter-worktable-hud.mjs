@@ -513,7 +513,7 @@ export class MatterWorktableHud{
       this.send('createSurface',{catalogId:spatialHudCatalog.id},id);
       this.send('updateComponents',{components:[
         {id:'root',component:'HudPanel',width,children:['control']},
-        {id:'control',component,label,...(axis?{vertical:axis}:{})},
+        {id:'control',component,label,...(component==='HudJump'?{iconOnly:true}:{}),...(axis?{vertical:axis}:{})},
       ]},id);
     }
   }
