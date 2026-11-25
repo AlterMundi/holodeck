@@ -100,7 +100,41 @@ async function stats(){return(await fetch('http://127.0.0.1:18944/fixture/stats'
  await evaluate('document.querySelector("#bridge").click()');
  await until('document.querySelector("#bridge").getAttribute("aria-label")==="Conectar las islas"');
  if((await stats()).bridge.raised!==false)throw Error('The new action did not update the world');
- const evidence={commandInitialNeverArrived:true,reloadDidNotAutoResend:true,explicitCommandRetryExact:true,nativeInitialNeverArrived:true,explicitNativeRetryExactOriginalAndView:true,capturedAtUnchanged:accepted[0].view.capturedAt===turn.body.view.capturedAt,closeTrackingPreservedOriginal:true,closeTrackingDidNotCancel:true,newActionUnlocked:true,errors:await evaluate('checkErrors'),nativeProvider:'fixture only; no real provider/session input'};
+ await cdp('Emulation.setDeviceMetricsOverride',{width:1100,height:860,deviceScaleFactor:1.5,mobile:false});
+ await evaluate('document.querySelector("#plant").click()');
+ const creation='[data-spatial-hud-accessibility] [aria-label="Editar luz"]';
+ const creationButton=label=>`${creation} button[aria-label="${label}"]`;
+ await until('document.querySelector("#creator").hasAttribute("data-native-creation")');
+ await evaluate(`document.querySelector(${JSON.stringify(creationButton('Cancelar'))}).focus()`);
+ await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+ await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+ await until(`document.querySelector("#creator").hidden&&!document.querySelector(${JSON.stringify(creation)})`);
+ await evaluate('document.querySelector("#plant").click()');
+ await until('document.querySelector("#creator").hasAttribute("data-native-creation")');
+ await evaluate(`document.querySelector(${JSON.stringify(creationButton('Ámbar'))}).click()`);
+ await until(`document.querySelector(${JSON.stringify(creationButton('Ámbar'))}).getAttribute("aria-pressed")==="true"`);
+ const first=await stats();
+ failCommand=true;
+ await evaluate(`document.querySelector(${JSON.stringify(creationButton('Plantar'))}).click()`);
+ await until('!!document.querySelector(".recovery-item[data-kind=command]")');
+ const lightCommand=await evaluate('JSON.parse(sessionStorage.getItem("holodeck.pending:/")).command');
+ if(lightCommand.type!=='garden.place'||lightCommand.args.color!=='amber')throw Error('Spatial action changed the preview');
+ if((await stats()).outcomes.length!==first.outcomes.length)throw Error('Dropped plant reached the server');
+ const draftKept=await evaluate(`(() => {
+   const panel=document.querySelector("#creator");
+   panel.querySelector("#preview-cancel").click();
+   panel.querySelector('[data-color="rose"]').click();
+   return !panel.hidden&&[...panel.querySelectorAll("button")].every(button=>button.disabled);
+ })()`);
+ if(!draftKept)throw Error('Pending light preview was editable or dismissible');
+ await until(presented);
+ await evaluate(`document.querySelector(${JSON.stringify(hudButton('Reintentar'))}).click()`);
+ await until('document.querySelector("#creator").hidden&&!document.querySelector(".recovery-item[data-kind=command]")');
+ const retriedLights=requests.filter(r=>r.kind==='command'&&r.body.type==='garden.place');
+ if(retriedLights.length!==2||retriedLights.some(r=>JSON.stringify(r.body)!==JSON.stringify(lightCommand)))
+   throw Error('Light recovery did not reuse the exact original');
+ if((await stats()).outcomes.length!==first.outcomes.length+1)throw Error('Light preview created the wrong number of results');
+ const evidence={commandInitialNeverArrived:true,reloadDidNotAutoResend:true,explicitCommandRetryExact:true,nativeInitialNeverArrived:true,explicitNativeRetryExactOriginalAndView:true,capturedAtUnchanged:accepted[0].view.capturedAt===turn.body.view.capturedAt,closeTrackingPreservedOriginal:true,closeTrackingDidNotCancel:true,newActionUnlocked:true,lightRecoveredExactlyOnce:true,errors:await evaluate('checkErrors'),nativeProvider:'fixture only; no real provider/session input'};
  console.log(JSON.stringify(evidence));
 }finally{
  ws?.close();

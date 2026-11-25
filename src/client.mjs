@@ -523,7 +523,10 @@ function applySpace(next,anchor){
   const changed=next.id!==activeSpace.id;
   const leavingOutside=activeSpace.id==='outside'&&next.id!=='outside';
   activeSpace=next;inside=next.id!=='outside';arrival=anchor;
-  if(leavingOutside)client.getRenderer()?.setMMLConfiguration({},window.SESSION_TOKEN);
+  if(leavingOutside){
+    closePreview({settled:true});
+    client.getRenderer()?.setMMLConfiguration({},window.SESSION_TOKEN);
+  }
   stateRequest++;worldAudio.breakContinuity();
   prefetched=new Set();
   prefetchRequest?.abort();prefetchRequest=null;
@@ -656,7 +659,7 @@ document.addEventListener('keydown',event=>{
         $('#space-travel').open=false;
         if(!matterHud?.focusTool('map'))$('#map-tool').focus();
       }
-      else if(event.target.closest('#creator')){closePreview();say('La vista previa quedó descartada.',{transient:true});}
+      else if(event.target.closest('#creator')){if(closePreview())say('La vista previa quedó descartada.',{transient:true});}
       else openConversation(false);
       event.target.blur();
     }
@@ -733,6 +736,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       }
     }
     matterHud=new MatterWorktableHud({document,webgl:renderer.composer.renderer,table:collectionShelves.worktable,collection:collectionShelves,
+      creatorContext:()=>({draft:preview,point:worldIndication?.selected,shared:worldIndication?.own()?.sequence}),
       toggleSound:()=>{if(!moving&&!entering&&navigator.userActivation?.isActive&&(!inside||worldAudio.status().active))void toggleWorldSound();},
       readTools,history:()=>worldHistory,visitor:()=>contentVisitor,activateTool:id=>{
         if(id==='endVisit'){if(visitAllowed())void contentVisitor?.endVisit();return;}
@@ -1228,6 +1232,7 @@ function closeTracking(selection){
   catch{say('Esta pestaña ya conserva varios envíos sin confirmar. Comprobá alguno antes de cerrar otro seguimiento.');return;}
   if(kind==='command'){
     signalEditor.untrack(id);pending=null;pendingMetadata=null;sessionStorage.removeItem(pendingKey);
+    if(preview?.submission===id)closePreview({settled:true});
   }
   else{archivedNativeIds.add(id);nativeTurn=null;sessionStorage.removeItem(turnKey);updateNativeAvailability();}
   clearRecovery(kind);say('Cerramos el seguimiento. El envío anterior no se canceló ni se deshizo.');
@@ -1318,7 +1323,7 @@ async function refresh(){
     throw error;
   }
   if(!snapshotMayApply(state,incoming,request,stateRequest))return;
-  state=incoming;contentVisitor.syncNodes(state.nodes);playableHUD.sync(state.nodes,state.actorRef,state.canEdit===true);
+  state=incoming;revalidateLightPreview();contentVisitor.syncNodes(state.nodes);playableHUD.sync(state.nodes,state.actorRef,state.canEdit===true);
   if(activeSpace?.id==='outside'&&Array.isArray(state.entrances)&&
     JSON.stringify(activeSpace.entrances)!==JSON.stringify(state.entrances)){
     activeSpace={...activeSpace,entrances:state.entrances};resetDoor();
@@ -1351,11 +1356,16 @@ function settleCommand(result){
   }else if(result.status==='completed'){
     const undo=pendingMetadata?.undo;
     lastChange=undo?null:{type:pending.type,target:pending.target,previous:pendingMetadata?.previous,
-      appliedRevision:pending.type==='garden.place'?1:pending.expectedRevision+1,run:pending.run};
+      appliedRevision:pending.type==='garden.place'?1:pending.expectedRevision+1,run:pending.run,edition:pending.edition};
     say(undo?'Tu cambio quedó deshecho.':'El cambio ya forma parte del mundo.',{transient:true});
   }else say('Ese lugar cambió. Mirá cómo quedó antes de intentarlo de nuevo.');
   const id=pending.id;
   pending=null;pendingMetadata=null;sessionStorage.removeItem(pendingKey);clearRecovery('command');
+  if(preview?.submission===id){
+    preview.submission=null;
+    if(result.status==='completed')closePreview({settled:true});
+    else revalidateLightPreview();
+  }
   signalEditor.settle(id,result.status);return true;
 }
 async function recoverCommand(){
@@ -1404,14 +1414,46 @@ function previewDocument(){
   if(old)URL.revokeObjectURL(old);
 }
 function movePreview(){
+  if(!state||lightPreviewBusy()||!revalidateLightPreview())return false;
   const position=client.getLocalCharacterState()?.position;
   if(!position){say('Esperá a entrar al taller para crear una luz.');return false;}
   const at=nearestCreationPosition(position.x+1,position.z);
-  preview={...preview,...at,color:preview?.color||'mint'};
+  preview={run:state.run,edition:state.edition,...preview,...at,color:preview?.color||'mint'};
   previewDocument();return true;
 }
-function closePreview(){
-  const old=preview?.blob;preview=null;client.updateConfig({mmlDocuments:worldDocuments});if(old)URL.revokeObjectURL(old);$('#creator').hidden=true;
+function lightPreviewBusy(){
+  return Boolean(preview&&(preview.submitting||preview.submission&&preview.submission===pending?.id));
+}
+function syncLightActions(){
+  const locked=lightPreviewBusy();
+  const panel=$('#creator');
+  panel.toggleAttribute('data-light-pending',locked);
+  for(const button of panel.querySelectorAll('button'))button.disabled=locked;
+}
+function currentLight(record){
+  const entity=state?.entities?.[record.target];
+  return entity&&!entity.deleted&&entity.revision===record.revision&&
+    state.run===record.run&&state.edition===record.edition?entity:null;
+}
+function revalidateLightPreview(){
+  if(preview&&!lightPreviewBusy()&&
+      (preview.run!==state?.run||preview.edition!==state?.edition||
+      preview.selection&&!currentLight(preview.selection))){
+    closePreview({settled:true});
+    say('La luz cambió. Volvé a elegirla.');
+    return false;
+  }
+  syncLightActions();
+  return true;
+}
+function closePreview({settled=false}={}){
+  if(!preview||!settled&&lightPreviewBusy())return false;
+  const old=preview.blob;preview=null;
+  client.updateConfig({mmlDocuments:worldDocuments});
+  if(old)URL.revokeObjectURL(old);
+  $('#creator').hidden=true;
+  syncLightActions();
+  return true;
 }
 function showPreview(){
   const editing=!!preview?.target;
@@ -1420,17 +1462,19 @@ function showPreview(){
   $('#preview-hint').textContent=editing?'La vista previa es tuya. Guardar cambia esta misma luz para todos.':'La vista previa es tuya. Al plantar, aparece para todos.';
   $('#preview-accept').textContent=editing?'Guardar cambios':'Plantar';
   for(const choice of document.querySelectorAll('[data-color]'))choice.setAttribute('aria-pressed',String(choice.dataset.color===preview.color));
-  worldNotice.clear();$('#creator').hidden=false;
+  worldNotice.clear();$('#creator').hidden=false;syncLightActions();
 }
 function editLight(record){
-  const entity=state?.entities?.[record.target];
-  if(pending||preparingAction){say('Primero tengo que confirmar el cambio anterior.');return;}
-  if(!entity||entity.deleted||entity.revision!==record.revision||state.run!==record.run||state.edition!==record.edition){say('La luz cambió. Volvé a elegirla.');return;}
-  closePreview();preview={target:record.target,expectedRevision:record.revision,selection:record,x:entity.x,z:entity.z,color:entity.color};
+  if(signalEditor.active){say('Guardá o descartá el jardín antes de editar una luz.');return;}
+  if(pending||preparingAction||lightPreviewBusy()){say('Primero tengo que confirmar el cambio anterior.');return;}
+  const entity=currentLight(record);
+  if(!entity){say('La luz cambió. Volvé a elegirla.');return;}
+  closePreview();preview={run:record.run,edition:record.edition,target:record.target,
+    expectedRevision:record.revision,selection:record,x:entity.x,z:entity.z,color:entity.color};
   previewDocument();showPreview();say('Podés mover esta luz o cambiar su color. Todavía no cambió para los demás.');
 }
 $('#bridge').onclick=()=>state&&action('bridge.set','bridge',{raised:!state.entities.bridge.raised},state.entities.bridge.revision);
-$('#plant').onclick=()=>{if(signalEditor.active){say('Guardá o descartá el jardín antes de crear una luz.');return;}closePreview();if(movePreview()){showPreview();say('Elegí dónde dejar esta luz. Todavía la ves solamente vos.');}};
+$('#plant').onclick=()=>{if(lightPreviewBusy()||pending||preparingAction)return;if(signalEditor.active){say('Guardá o descartá el jardín antes de crear una luz.');return;}closePreview();if(movePreview()){showPreview();say('Elegí dónde dejar esta luz. Todavía la ves solamente vos.');}};
 let signalPreview=null,signalMarkup=null;
 const indoorSaveKey='holodeck:indoor-design:'+base.pathname;
 let indoorReading=false;
@@ -1538,27 +1582,34 @@ signalEditor=new SignalGardenEditor({document,
     if(old)URL.revokeObjectURL(old);
   },
 });
-$('#garden-create').onclick=()=>{if(!signalEditor.active)signalEditor.open();};
-$('#play-edit').onclick=()=>{const node=state?.nodes?.[playableHUD.selected];if(node?.play&&!signalEditor.active)signalEditor.open(node);};
+$('#garden-create').onclick=()=>{if(!preview&&!signalEditor.active)signalEditor.open();};
+$('#play-edit').onclick=()=>{const node=state?.nodes?.[playableHUD.selected];if(node?.play&&!preview&&!signalEditor.active)signalEditor.open(node);};
 $('#preview-move').onclick=movePreview;
-$('#preview-cancel').onclick=()=>{closePreview();say('La vista previa quedó descartada.',{transient:true});};
+$('#preview-cancel').onclick=()=>{if(closePreview())say('La vista previa quedó descartada.',{transient:true});};
 $('#preview-accept').onclick=async()=>{
-  if(!preview)return;
+  if(!preview||lightPreviewBusy()||!revalidateLightPreview())return;
   const submittedPreview=preview,args={x:preview.x,z:preview.z,color:preview.color};
-  $('#preview-accept').disabled=true;
-  const result=await action(preview.target?'garden.update':'garden.place',preview.target||`garden-${crypto.randomUUID()}`,args,preview.expectedRevision??null,{selection:preview.selection??null});
-  $('#preview-accept').disabled=false;
-  if(result?.status==='completed'&&preview===submittedPreview){closePreview();say('El cambio ya forma parte del mundo.',{transient:true});}
+  submittedPreview.submitting=true;
+  syncLightActions();
+  try{
+    await action(preview.target?'garden.update':'garden.place',preview.target||`garden-${crypto.randomUUID()}`,
+      args,preview.expectedRevision??null,{selection:preview.selection??null,
+        onPending:id=>{submittedPreview.submission=id;}});
+  }finally{
+    submittedPreview.submitting=false;
+    if(preview===submittedPreview)revalidateLightPreview();
+  }
 };
 for(const button of document.querySelectorAll('[data-color]'))button.onclick=()=>{
-  if(!preview)return;preview.color=button.dataset.color;
+  if(!preview||lightPreviewBusy()||!revalidateLightPreview())return;preview.color=button.dataset.color;
   for(const choice of document.querySelectorAll('[data-color]'))choice.setAttribute('aria-pressed',String(choice===button));
   previewDocument();
 };
 $('#undo').onclick=async()=>{
   if(!lastChange||!state)return;
   const change=lastChange,entity=state.entities[change.target];
-  if(!entity||state.run!==change.run||entity.revision!==change.appliedRevision){lastChange=null;$('#undo').disabled=true;say('Este lugar volvió a cambiar. No voy a deshacer el trabajo de otra persona.');return;}
+  if(!entity||state.run!==change.run||state.edition!==change.edition||entity.revision!==change.appliedRevision){lastChange=null;$('#undo').disabled=true;say('Este lugar volvió a cambiar. No voy a deshacer el trabajo de otra persona.');return;}
+  if(preview?.target===change.target){if(!closePreview())return;}
   if(change.type==='bridge.set')await action('bridge.set','bridge',{raised:change.previous.raised},entity.revision,{undo:true});
   else if(change.type==='garden.place')await action('garden.remove',change.target,{},entity.revision,{undo:true});
   else if(change.type==='garden.update'&&change.previous)await action('garden.update',change.target,{x:change.previous.x,z:change.previous.z,color:change.previous.color},entity.revision,{undo:true});

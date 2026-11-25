@@ -813,3 +813,40 @@ enabled microphone signal. The companion's jaw continues to use actual
 Conversation playback. Apply the same pose semantics to shared 3D and AR only
 after verifying both independently. Close this milestone with transition video,
 foot contact on flat ground/slopes, remote presence and reduced-motion tests.
+
+## Room reload and exterior creator
+
+The exact MML browser dependency can report a cancelled room-art fetch as
+`TypeError: Failed to fetch`. A scoped Chromium diagnostic observed the
+resource's abort signal and zero remaining consumers when this occurred.
+Fable High and Opus 5.5 High reviewed the adaptation. It handles that
+observed cancellation only for a retired resource, while requests with
+live consumers and HTTP or model parse failures remain observable. The
+controlled two-client package `ba5f325a0dfd` passed tabletop scale and
+transparency, bounded flight, peer reload and position restoration. The
+browser captured three cancelled downloads and no page errors.
+
+The exterior light preview and world indication now have a Three.js A2UI
+surface. Their visible controls call the existing Room action owners. A
+draft belongs to its original run and edition. Accept locks its controls
+until a definitive outcome or an explicit close of tracking. An accepted
+retained outcome closes only that draft, and an uncertain original can be
+retried through the recovery HUD without substituting a new command.
+Creator and garden preview ownership are mutually exclusive. The native
+surface yields to recovery, settings, map and embedded conversation.
+
+Fable High identified draft mutation, stale edits and overlapping preview
+ownership. Opus 5.5 High additionally found recovery precedence, focus and
+Escape cases. The revised candidate keeps native recovery available, uses
+the existing tracking-close semantics and restores a meaningful focus
+target when the active card changes. The playable garden field editor and
+production receiving validation remain separate work.
+
+Controlled Chromium verified keyboard Escape and reopening in the native
+light preview, choosing Amber, a dropped publish, the draft lock and
+explicit retry from the native recovery HUD. The retry kept the exact ID
+and command and committed one light. The 331-test suite gave 329 passes
+and two skips. The exact Node24 package `883efcd70ed1` is 33,525,760 bytes.
+Its standalone shared-world fixture admitted two clients and observed the
+same mutation in both. Human-authenticated production acceptance remains
+open.
