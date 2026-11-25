@@ -21,7 +21,7 @@ const cockpitDocks={
   toolPlacement:{x:-.26,y:0,depth:1.08,anchor:0},
   headerPlacement:{x:0,y:.22,depth:1.32,anchor:-1},
 };
-const movementStick='world-move',movementJump='world-jump',conversationMovementScale=126;
+const movementStick='world-move',movementJump='world-jump',conversationMovementScale=152;
 const floatingWindows=new Map([[worldMapId,true],[surfaceId,true],[collectionHudId,false],[settingsId,false]]);
 const movementPanels=[
   [movementStick,'Moverse','HudStick',.68],
