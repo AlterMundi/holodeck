@@ -86,20 +86,22 @@ const terrainShading = {
     // compresses one axis on this horizontal shoulder, stretching its grain.
     float meadowFootprint = max(length(dFdx(approach)),length(dFdy(approach)));
     float meadowSlope = dot(normalize(vNormal),normalize(vHoloUp));
-    float holoMeadow = (1.0-smoothstep(32.0,76.0,length(approach)))
+    float holoMeadowGround = (1.0-smoothstep(32.0,76.0,length(approach)))
       * smoothstep(.87,.98,meadowSlope)
-      * smoothstep(2.55,5.0,edge)
       * smoothstep(4.0,12.0,vHoloHeight)
-      * step(0.0,vHoloWorld.y);
+      * smoothstep(370.0,460.0,vHoloWorld.y);
+    // Match the continuous worn trail outside the locally painted arrival.
+    float arrival = smoothstep(6.0,10.0,approach.y)*(1.0-smoothstep(37.0,51.0,approach.y));
+    float holoMeadow = holoMeadowGround * smoothstep(1.15+arrival*.9,3.65+arrival*.7,edge);
     float holoMeadowRoughness = .96;
     if (holoMeadow > .001) {
       vec2 field = mat2(.94,.34,-.34,.94)*approach;
       float patchWeight = 1.0-smoothstep(.38,.72,.47*meadowFootprint);
       float growth = patchWeight > .001 ? (ringNoise(field*.47+vec2(9.4,21.8))-.5)*patchWeight : 0.0;
       float broadWeight = 1.0-smoothstep(.38,.72,.105*meadowFootprint);
-      float broad = ringNoise(field*vec2(.105,.078)+vec2(31.2,8.8)+growth*.32)-.5;
-      float seedHeads = smoothstep(.01,.39,broad*broadWeight+growth*.23);
-      float fresh = smoothstep(-.39,.08,broad*broadWeight+growth*.36);
+      float broad = ringNoise(field*vec2(.105,.078)+vec2(31.2,8.8)+growth*vec2(.14,-.11))-.5;
+      float seedHeads = mix(.19,smoothstep(.01,.39,broad+growth*.23),broadWeight);
+      float fresh = mix(.74,smoothstep(-.39,.08,broad+growth*.36),broadWeight);
       vec3 meadowColor = mix(vec3(.113,.210,.061),vec3(.192,.314,.084),fresh);
       meadowColor = mix(meadowColor,vec3(.337,.281,.103),seedHeads*.87);
       meadowColor *= 1.0 + growth*.14;
@@ -112,7 +114,7 @@ const terrainShading = {
     }
     if (holodeckApproachArt > .5 && abs(approach.x) < 14.0 &&
         approach.y > 6.0 && approach.y < 51.0 && vHoloWorld.y > 0.0) {
-      float endFade = smoothstep(6.0,10.0,approach.y)*(1.0-smoothstep(37.0,51.0,approach.y));
+      float endFade = arrival;
       float edgeNoise = ringNoise(approach*.89)-.5;
       float mask = (1.0-smoothstep(1.57,2.72,edge+edgeNoise*.66))*endFade;
       float shoulder = smoothstep(2.15,3.12,edge)*(1.0-smoothstep(3.65,6.8,edge))*endFade;

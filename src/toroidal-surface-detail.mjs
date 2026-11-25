@@ -49,7 +49,7 @@ export function useToroidalRockDetail(material, {bedding=false,meadow=false} = {
     useWorldPosition(shader);
     shader.fragmentShader = shader.fragmentShader.replace('#include <roughnessmap_fragment>',`
       #include <roughnessmap_fragment>
-      float detailFade = (1.0 - smoothstep(14.0, 80.0, length(vViewPosition)))${meadow ? ' * (1.0 - holoMeadow)' : ''};
+      float detailFade = (1.0 - smoothstep(14.0, 80.0, length(vViewPosition)))${meadow ? ' * (1.0 - holoMeadowGround)' : ''};
       if (detailFade > 0.001) {
         vec3 p = toroidalWorld;
         vec2 uv = ringTextureCoords(p);
