@@ -23,7 +23,7 @@ import {projectRoomSurface} from '../art/collection/appearance-study/viewer/surf
 import {nearestCreationPosition} from './world-layout.mjs';
 import { Networked3dWebExperienceClient, DefaultVirtualJoystickPlugin } from '@mml-io/3d-web-experience-client';
 import { ThreeJSWorldRenderer } from '@mml-io/3d-web-threejs';
-import { DirectionalLight, SpotLight } from 'three';
+import { Color, DirectionalLight, SpotLight, Vector3 } from 'three';
 import { WORKSHOP, workshopColour } from './workshop.mjs';
 import { saveIntent, loadIntent, archiveIntent, sameActor, nativeRetryRoute } from './client-intents.mjs';
 import { NativeAvatarLayer } from './native-avatar.mjs';
@@ -802,7 +802,10 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     interiorKey.shadow.bias=-.00015;
     interiorKey.shadow.normalBias=.02;
     renderer.mmlCompositionScene.group.add(light,light.target,interiorKey,interiorKey.target);
-    let selectedKey=null;
+    let selectedKey=null,inspectionRoom=null,inspectionMix=0,inspectionFrame=performance.now();
+    const roomKeyColor=new Color(),inspectionKeyColor=new Color();
+    const roomKeyPosition=new Vector3(),inspectionKeyPosition=new Vector3();
+    const roomKeyTarget=new Vector3(),inspectionKeyTarget=new Vector3();
     geometryProbe=new AppliedGeometryProbe({document,scene:renderer.mmlCompositionScene.group,
       canvas:options.targetElement.querySelector(':scope > canvas'),expectedDocumentURL:socket('world')});
     nativeAvatarLayer=new NativeAvatarLayer({document,base,onFailure:message=>say(message)});
@@ -1004,15 +1007,42 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       frameBudget.sample(drawWorld&&!document.hidden&&!!position&&!moving&&!needsSync&&(!hot||networkScope===activeSpace.id));
       light.visible=!inside||!activeSpace.indoorLighting;
       aimSun(position);
+      const inspectionNow=performance.now(),inspectionElapsed=inspectionNow-inspectionFrame;
+      inspectionFrame=inspectionNow;
       const key=inside&&activeSpace.keyLight||null;
+      const keyRoom=key?activeSpace.id:null;
+      if(keyRoom!==inspectionRoom||!key?.inspection)inspectionMix=0;
+      inspectionRoom=keyRoom;
       if(key!==selectedKey){
         selectedKey=key;
         interiorKey.visible=!!key;
         if(key){
-          interiorKey.position.set(...key.position);
-          interiorKey.target.position.set(...key.target);
-          interiorKey.color.set(key.color);
-          interiorKey.intensity=key.intensity??160;
+          roomKeyPosition.set(...key.position);
+          roomKeyTarget.set(...key.target);
+          roomKeyColor.set(key.color);
+          if(key.inspection){
+            inspectionKeyPosition.set(...key.inspection.position);
+            inspectionKeyTarget.set(...key.inspection.target);
+            inspectionKeyColor.set(key.inspection.color);
+          }
+        }
+      }
+      const collectionRoom=inside&&!moving&&activeSpace.collectionShelves?activeSpace.id:null;
+      const tableInspection=Boolean(collectionRoom&&collectionShelves.room===collectionRoom&&
+        tableFlight.active&&collectionShelves.worktable.model);
+      if(key){
+        const targetMix=key.inspection&&tableInspection?1:0;
+        // MML provides a fixed simulation step here, even when frames are dropped.
+        inspectionMix=targetMix+(inspectionMix-targetMix)*Math.exp(-.007*inspectionElapsed);
+        interiorKey.position.copy(roomKeyPosition);
+        interiorKey.target.position.copy(roomKeyTarget);
+        interiorKey.color.copy(roomKeyColor);
+        interiorKey.intensity=key.intensity??160;
+        if(key.inspection&&inspectionMix>.001){
+          interiorKey.position.lerp(inspectionKeyPosition,inspectionMix);
+          interiorKey.target.position.lerp(inspectionKeyTarget,inspectionMix);
+          interiorKey.color.lerp(inspectionKeyColor,inspectionMix);
+          interiorKey.intensity+=(key.inspection.intensity-interiorKey.intensity)*inspectionMix;
         }
       }
       const skySelection=activeSpace?.outdoorSky;
@@ -1036,11 +1066,10 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         explicitFlight:flightEnabled,grounded:!flightEnabled&&client.getCharacterManager().localController?.characterOnGround===true,
         visible:!entering&&!moving&&drawWorld,seconds:renderState.deltaTimeSeconds});
       galleryModels.update();
-      const collectionRoom=inside&&!moving&&activeSpace.collectionShelves?activeSpace.id:null;
       collectionShelves.update(collectionRoom,collectionRoom?remoteScene:null,position,
         collectionRoom?activeSpace.objects.find(object=>object.id==='worktable')?.position:null,
         activeSpace?.sharedConversation===true,matterStyleScope?.style.contactShadows===true,
-        options.coreCameraManager.getCameraState(),renderer.composer.renderer.domElement.clientHeight);
+        options.coreCameraManager.getCameraState(),renderer.composer.renderer.domElement.clientHeight,inspectionMix);
       const opaqueVisit=contentVisitor?.frame&&!contentVisitor.panel.classList.contains('is-walking');
       const settingsOpen=Boolean(document.querySelector('#appearance-dialog[open],#video-dialog[open]'));
       const toolModal=Boolean(worldHistory?.opened||contentVisitor?.index?.opened||document.querySelector('dialog[open]:not([data-native-settings])'));

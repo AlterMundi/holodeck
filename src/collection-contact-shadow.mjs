@@ -27,7 +27,7 @@ export class CollectionContactShadow{
       transparent:true,depthWrite:false,toneMapped:false,polygonOffset:true,
       polygonOffsetFactor:-1,polygonOffsetUnits:-1,
       uniforms:{silhouette:{value:this.mask.texture},stepUV:{value:new Vector2(1.8/size,1.8/size)},
-        circular:{value:round}},
+        circular:{value:round},inspection:{value:0}},
       vertexShader:`
         varying vec2 contactUV;
         void main() {
@@ -39,16 +39,26 @@ export class CollectionContactShadow{
         uniform sampler2D silhouette;
         uniform vec2 stepUV;
         uniform bool circular;
+        uniform float inspection;
         varying vec2 contactUV;
         void main() {
           vec2 uv = contactUV;
-          float coverage = 0.40 * texture2D(silhouette, uv).r;
+          float centre = texture2D(silhouette, uv).r;
+          float coverage = 0.40 * centre;
           coverage += 0.15 * texture2D(silhouette, uv + vec2(stepUV.x, 0.0)).r;
           coverage += 0.15 * texture2D(silhouette, uv - vec2(stepUV.x, 0.0)).r;
           coverage += 0.15 * texture2D(silhouette, uv + vec2(0.0, stepUV.y)).r;
           coverage += 0.15 * texture2D(silhouette, uv - vec2(0.0, stepUV.y)).r;
           if (circular) coverage *= 1.0 - smoothstep(0.475, 0.5, length(uv - 0.5));
-          gl_FragColor = vec4(0.018, 0.023, 0.032, 0.32 * coverage);
+          vec2 bevel = abs(uv - 0.5);
+          float border = circular ? length(bevel) : max(bevel.x, bevel.y);
+          float inset = smoothstep(0.402, 0.467, border) * (1.0 - smoothstep(0.473, 0.497, border));
+          float spill = coverage * (1.0 - centre);
+          float glow = inspection * (0.36 * inset + 0.29 * spill);
+          float shadow = 0.32 * coverage;
+          vec3 shade = mix(vec3(0.018, 0.023, 0.032), vec3(0.055, 0.57, 0.73),
+            glow / max(0.0001, shadow + glow));
+          gl_FragColor = vec4(shade, shadow + glow);
           #include <colorspace_fragment>
         }
       `,
@@ -63,7 +73,8 @@ export class CollectionContactShadow{
     this.nextFrame=0;
   }
 
-  update(model,anchor,revision,now){
+  update(model,anchor,revision,now,inspection=0){
+    this.pad.material.uniforms.inspection.value=inspection;
     if(!model||!anchor){
       this.pad.visible=false;
       this.model=null;

@@ -54,7 +54,7 @@ export class CollectionShelves {
     this.worktable=new CollectionWorktable({base,scene,panel:worktablePanel,webgl,onReference,onSharedChange:refreshSoon});
   }
 
-  update(room,root,player,bench,canDiscuss,contactShadows,camera,pixels){
+  update(room,root,player,bench,canDiscuss,contactShadows,camera,pixels,inspectionMix=0){
     if(this.room!==room||this.root!==root){
       this.clear();
       this.room=room;this.root=root;
@@ -117,7 +117,7 @@ export class CollectionShelves {
         const fields=this.shadows??=new Map();
         if(model&&!fields.has(fixture))
           fields.set(fixture,new CollectionContactShadow(this.webgl,this.scene,fixture));
-        fields.get(fixture)?.update(model,anchor,revision,now);
+        fields.get(fixture)?.update(model,anchor,revision,now,fixture==='worktable'?inspectionMix:0);
       }
     }else this.clearShadows();
   }

@@ -70,6 +70,7 @@ const position=([x,y,z])=>({x,y,z});
 export function readMatterWorkshopArt(profile='matter-workshop-v1'){
   if(!isMatterArtProfile(profile))throw Error('Unknown Matter workshop finish');
   const {path,digest,maxBytes,orbital=false,visualStyles=false,splatFloor=false}=variants[profile];
+  const worktable=anchors['worktable-model'];
   const packed=readPackedArt(path,digest);
   const bytes=packed?.bytes??readFileSync(new URL('../public/'+path,import.meta.url));
   if(bytes.length>maxBytes||createHash('sha256').update(bytes).digest('hex')!==digest)
@@ -79,11 +80,15 @@ export function readMatterWorkshopArt(profile='matter-workshop-v1'){
     floorSplat:splatFloor?readFloorSplat():null,
     roomLooks:visualStyles?compileRoomLooks(looks,file=>
       readFileSync(new URL('../public/room-art/matter-style/'+file,import.meta.url))):null,lightRig:orbital?orbitalLightRig:lightRig,ambient:orbital?.44:.34,
-    keyLight:{position:[-.48,2.36,-.43],target:[0,1,-.43],color:orbital?'#dcecff':'#ffdbad',intensity:orbital?70:53},
+    keyLight:{
+      position:[-.48,2.36,-.43],target:[0,1,-.43],color:orbital?'#dcecff':'#ffdbad',intensity:orbital?70:53,
+      ...(visualStyles?{inspection:{position:[-.80,2.42,.06],
+        target:[worktable[0],worktable[1]+.16,worktable[2]],color:'#fff1d7',intensity:53}}:{}),
+    },
     archive:position(anchors['archive-model']),
     shelves:Array.from({length:6},(_,index)=>position(anchors['shelf-'+index])),
     fixtures:[
-      {id:'worktable',title:'Mesa de trabajo',revision:1,position:position(anchors['worktable-model']),kind:'fixture'},
+      {id:'worktable',title:'Mesa de trabajo',revision:1,position:position(worktable),kind:'fixture'},
       {id:'archive-turntable',title:'Vitrina de archivo',revision:1,position:position(anchors['archive-model']),kind:'fixture'},
     ]};
 }
