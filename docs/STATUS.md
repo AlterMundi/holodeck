@@ -1,9 +1,20 @@
 # Current MVP work
 
+## November 25 mapped swim crossing
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `2286ee700dc7` from `f52fef0`. The exterior map shows the
+existing spur as a solid trail and a dashed swim crossing, with shore
+and overlook markers. [Exact physical evidence](playtest-iteration.md#overlook-spur-shore-and-swim-crossing)
+covers RTX 2060 keyboard water entry, dive and resurfacing and Pi 5
+Livianos map use. The shared world, receiving access and rollback
+`a76e321eb728` were verified. The full swim crossing remains open.
+
+
 ## November 25 cave wayfinding
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
-serves `a76e321eb728` from `63ed7c4`. Four rust-coloured stone fins
+selected `a76e321eb728` from `63ed7c4` for this update. Four rust-coloured stone fins
 identify the existing passage from the house and the exterior map marks
 the original cave entrance. The full walk passed on RTX 2060.
 The exact candidate also drew the landmark in Livianos on Pi 5.

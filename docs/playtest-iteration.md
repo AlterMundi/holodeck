@@ -1924,3 +1924,41 @@ payloads, protected client and art bytes verified. The App, audience,
 receiving configuration and native world matched. Immediate rollback is
 `2a4ff7ba1da6`. The technical reader was revoked. Independent shared
 workshop acceptance remains open.
+
+
+## Overlook spur, shore and swim crossing
+
+The same minimap texture projects the existing toroidal trail centerline.
+A solid warm line follows land. Dashed cyan and the **A nado** key
+appear only when the current map shows part of the water crossing.
+**Orilla** labels the actual shore transitions, and **Mirador** marks
+the original inner ridge. Water starts at latitude .31188 and ends at
+.42481, spanning about 341 m along the tube. The cave and house markers
+remain in the local map. The exterior map's accessible name describes
+the visible line types through both the DOM and native A2UI. The
+guide data loads on map use and the projected runs update with the
+existing cached chart.
+
+The original route and terrain outputs matched exactly at 648 samples
+and across 16 land and water tile payloads with both segment budgets.
+The packed terrain worker changes because it shares the extracted
+centerline. No authoring state, collision or gameplay protocol changed.
+Brotli quality 11 for the client reduced the exact archive by 51,200
+bytes from the previous selection, to 33,495,040 bytes with 84 payloads.
+The clean source passed 368 tests with two optional skips. Fable High
+reviewed land/water honesty and map placement. Opus 5.5 High corrected
+dash phase, the visible accessibility description and the map join test.
+
+The exact `2286ee700dc7` archive from `f52fef0` rendered the shore,
+open water and the overlook with controlled map positions on RTX 2060
+daylight and Pi 5 Livianos dusk. **A nado** appeared at the shore and
+in open water and disappeared near the dry overlook. On the RTX an
+actual keyboard walk entered the water, Shift descended to radial
+height -13.57 m and Space returned to -9.96 m. The map fixture
+relocated between distant points. An uninterrupted crossing and
+independently authenticated visits remain open.
+
+The 84 installed payloads and the protected client and terrain worker
+read back exactly. The receiving configuration, App audience and native
+world run remained the same. Immediate rollback is `a76e321eb728`.
+The temporary technical reader was revoked.

@@ -747,10 +747,18 @@ session storage were preserved; served Apps metadata is retained but hidden.
 
 ## Recovery
 
+The [mapped swim crossing](STATUS.md#november-25-mapped-swim-crossing)
+`2286ee700dc7` changes the packed client and terrain worker. Use
+`a76e321eb728` for immediate rollback or `2a4ff7ba1da6` for older
+published recovery. The superseded `0878bc6c67fc` archive was retired
+from publication after local verification. The client uses Brotli quality
+11 and the existing receiver. Published history uses 100,587,520 bytes.
+
+
 The [cave wayfinding release](STATUS.md#november-25-cave-wayfinding)
-`a76e321eb728` changes the packed client and entry HTML. Restore
-`2a4ff7ba1da6` for immediate code-only rollback or `0878bc6c67fc`
-for older published recovery. The superseded `38a43c533c2e` archive
+`a76e321eb728` changed the packed client and entry HTML. Its prior
+recovery record selected `2a4ff7ba1da6` and `0878bc6c67fc` as the
+compatible published versions at that time. The superseded `38a43c533c2e` archive
 was retired from publication after local archive verification. Published
 history uses 100,638,720 bytes.
 
