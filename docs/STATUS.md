@@ -4,10 +4,12 @@
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/) serves
 `8260b7fcf577` from source `c3a5b84`. The four humanoid models load with a
-neutral jaw and can consume a bound local microphone envelope. The existing
-Conversation installation still serves a producer without that capability.
-The combined playback with a synthetic mic and independent fixture observer
-passed in the [controlled test](playtest-iteration.md#local-microphone-animation).
+neutral jaw and can consume a bound local microphone envelope. CompAII's
+canonical Conversation now serves the [compatible producer](shared-conversation.md#local-avatar-microphone-motion)
+from `b1d2fd0b` after a fenced web-only activation. Three HTTPS JavaScript
+hashes matched. Native services, configuration and the World release were
+preserved. Synthetic capture and a distinct fixture observer passed in the
+[controlled test](playtest-iteration.md#local-microphone-animation).
 Physical microphone and authenticated two-person acceptance remain open.
 
 The deployment changed the four humanoid GLBs, their notice and the browser

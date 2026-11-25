@@ -139,12 +139,22 @@ adds a `jawOpen` shape to both licensed human rigs and their four skins.
 The [local consumer candidate](playtest-iteration.md#local-microphone-animation)
 negotiates the signal and applies it only to the active local avatar.
 [Production Holodeck](STATUS.md#november-25-humanoid-mouth-rigs-and-local-microphone-consumer)
-selects the consumer. The served CompAII Conversation script still lacks
-the producing capability, so that path keeps the mouth neutral. Qualify a
-physical microphone in the protected Conversation surface after compatible adoption.
+selects the consumer. The CompAII web reader selects the three-asset
+producer overlay from `b1d2fd0b`. The existing composer patch was retained.
+The production HTTPS hashes are `341af0b7b464` for the surface,
+`59cc4a4cdf94` for the composer and `e5425917a810` for the recorder.
+The web-only selection used the actual voice-admission guard and retained
+the previous immutable web composition. The native PID, invocation,
+Core and receiver configuration matched their preimages. The owner
+dashboard and speech-rendering CI passed on the exact PR head. The broader
+text job was still running at activation.
+
+The combined candidate passed a physical-device simulation in Chromium
+with the receiving web bytes and the exact World package. A real signed-in
+microphone trial and the other registered Conversation origins are open.
 Ordinary capture without live PCM and the continuous voice engines are
-outside the producer candidate. Any peer rendering follows the audience
-of the existing authorized voice path.
+outside this integration. Any peer rendering follows the audience of the
+existing authorized voice path.
 
 ### Canonical writer integration
 

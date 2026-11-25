@@ -1526,7 +1526,7 @@ jaw opened to a measured weight of 0.75 and returned to zero after silence,
 a stalled publisher, reduced motion and capture stop. A separate Chromium
 process with a different fixture identity saw the same actor at weight zero
 while the local jaw was open. This is controlled browser/media evidence.
-The [protected Holodeck consumer](STATUS.md#november-25-humanoid-mouth-rigs-and-local-microphone-consumer) is selected. The protected producer composition and physical microphone remain open.
+The [protected Holodeck consumer](STATUS.md#november-25-humanoid-mouth-rigs-and-local-microphone-consumer) is selected. CompAII’s [protected web producer](shared-conversation.md#local-avatar-microphone-motion) is also selected. The receiving composition passed the synthetic two-browser fixture. A real signed-in microphone trial remains open.
 
 ## Authored flight and swimming poses
 
