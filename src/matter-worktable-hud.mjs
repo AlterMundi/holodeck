@@ -178,11 +178,14 @@ export class MatterWorktableHud{
     const width=this.canvas.clientWidth,height=this.canvas.clientHeight;
     if(!width||!height)return;
     const active=this.active;
-    const scale=active?Math.min(170,(width-24)/2.2,(height-124)/1.9):165;
+    const scale=active?Math.min(170,(width-24)/2.2,(height-124)/1.9):Math.min(165,(width-24)/1.4);
     if(scale<=0)return;
     const x=active?width-14-scale*1.10:width/2;
-    const dockTop=this.document.querySelector('#dock')?.getBoundingClientRect().top??height;
-    const y=active?(height<520?54:95):Math.min(height-104,dockTop-56);
+    const dock=this.document.querySelector('#dock')?.getBoundingClientRect();
+    const dockTop=dock?.height?dock.top-this.canvas.getBoundingClientRect().top:height;
+    const touch=this.document.defaultView.matchMedia('(pointer: coarse)').matches;
+    // Reserve the input band until the joystick and the dock share the toolbelt layout.
+    const y=active?(height<520?54:95):Math.max(12,Math.min(height-(touch?258:104),dockTop-56));
     const size=[width,height,x,y,scale].join(':');
     if(this.placedGroup!==this.group||this.placedSize!==size){
       placeHudInViewport(this.group,this.camera,{width,height,x,y,pixelsPerUnit:scale,depth:1});
