@@ -919,7 +919,7 @@ local inspection, access revocation, focus restoration and the confirmed
 room palette. Direct participant experience on the protected entrance is
 tracked separately from these technical checks.
 
-The foyer and gallery now align their collider perimeter to the room-facing planes of the packed art. For new authored rooms, specify and measure visible solid boundaries, qualify all reachable edges and passages, and keep collision-only primitives out of the render pass. Use explicit semantics for intentional pass-through surfaces. The rest of the authored rooms still need the same render/collision audit.
+The foyer, gallery, Harmonic Lab and Listening Tower now align measured solid wall faces to the packed art. The Lab landing and Tower clerestory keep their existing clearances. For new authored rooms, specify and measure visible solid boundaries, qualify all reachable edges and passages, and keep collision-only primitives out of the render pass. Use explicit semantics for intentional pass-through surfaces. The rest of the authored rooms still need the same render/collision audit.
 
 ### Connected ecosystems above and below the torus
 

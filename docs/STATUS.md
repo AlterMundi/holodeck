@@ -1,5 +1,21 @@
 # Current MVP work
 
+## November 25 Harmonic Lab and Listening Tower wall alignment
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `f647d674febf`
+from `6414e66`. Three wall planes in Harmonic Lab and three in the
+Listening Tower now use the measured room-facing lining. The existing
+Lab landing and Tower clerestory clearance keep their prior dimensions.
+The selected Matter shell and owned room kits already tracked the generic
+perimeter closely at walking height.
+
+RTX 2060 and Pi 5 controlled clients walked into all three adjusted Lab
+walls and returned to the foyer. They also entered and left the Tower
+through the original Gallery route in a separate fixture. The stationary
+Lab sample measured 16.8 ms p95 on both. The installation verified all
+86 payloads and the existing access and world run. Only the compiled
+server changed. Immediate rollback is `ea2efd93199d`.
+
 ## November 25 visible room boundaries and object leaders
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `ea2efd93199d`
