@@ -95,14 +95,14 @@ const terrainShading = {
     if (holoMeadow > .001) {
       vec2 field = mat2(.94,.34,-.34,.94)*approach;
       float patchWeight = 1.0-smoothstep(.38,.72,.47*meadowFootprint);
-      float patch = patchWeight > .001 ? (ringNoise(field*.47+vec2(9.4,21.8))-.5)*patchWeight : 0.0;
+      float growth = patchWeight > .001 ? (ringNoise(field*.47+vec2(9.4,21.8))-.5)*patchWeight : 0.0;
       float broadWeight = 1.0-smoothstep(.38,.72,.105*meadowFootprint);
-      float broad = ringNoise(field*vec2(.105,.078)+vec2(31.2,8.8)+patch*.32)-.5;
-      float seedHeads = smoothstep(.01,.39,broad*broadWeight+patch*.23);
-      float fresh = smoothstep(-.39,.08,broad*broadWeight+patch*.36);
+      float broad = ringNoise(field*vec2(.105,.078)+vec2(31.2,8.8)+growth*.32)-.5;
+      float seedHeads = smoothstep(.01,.39,broad*broadWeight+growth*.23);
+      float fresh = smoothstep(-.39,.08,broad*broadWeight+growth*.36);
       vec3 meadowColor = mix(vec3(.113,.210,.061),vec3(.192,.314,.084),fresh);
       meadowColor = mix(meadowColor,vec3(.337,.281,.103),seedHeads*.87);
-      meadowColor *= 1.0 + patch*.14;
+      meadowColor *= 1.0 + growth*.14;
       float grainWeight = 1.0-smoothstep(.32,.62,6.8*meadowFootprint);
       if (holodeckMeadowGrain > .5 && grainWeight > .001) {
         meadowColor *= 1.0 + (ringNoise(field*6.8+vec2(5.8,17.0))-.5)*grainWeight*.25;
