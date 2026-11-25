@@ -314,7 +314,7 @@ export class MatterWorktableHud{
         const scope=this.scope;
         this.table.start({close:()=>this.leave(),send:(type,content)=>{
           if(this.active&&this.scope===scope)this.sendApplication(type,content,scope);
-        }});
+        },isEditing:()=>this.hud.ownsTextInput(this.document.activeElement)});
       }else{
         this.send('updateComponents',{components:work});
         this.sync();

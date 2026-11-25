@@ -596,6 +596,11 @@ export function openCharacterStudio(document,table=null){
     if(!visible||document.hidden)return;
     const dt=Math.min(.05,(now-(previous||now))/1000);
     previous=now;
+    if(playing&&table?.isEditing()){
+      playing=false;
+      scrub(frame);
+      refresh();
+    }
     if(playing&&playback){
       const duration=primary.duration;
       elapsed+=dt*Number(speed);
