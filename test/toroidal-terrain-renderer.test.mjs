@@ -41,13 +41,17 @@ test('streamed tiles replace visible terrain together and release superseded geo
   for (let i = 0; i < 10; i += 1) worker.answer();
   assert.deepEqual(renderer.group.children, initial);
   assert.equal(renderer.status().stagedTiles, 10);
+  assert.equal(renderer.hasDetailedTerrain, false);
   while (worker.pending) worker.answer();
+  assert.equal(renderer.hasDetailedTerrain, true);
   assert.equal(renderer.status().visibleTiles, 64);
   assert.equal(renderer.status().settled, true);
 
   // Returning to the committed viewer location while a mesh is pending must
   // release the unfinished meshes without dispatching the same tile again.
   renderer.update(acrossSeam, true);
+  assert.equal(renderer.status().settled, false);
+  assert.equal(renderer.hasDetailedTerrain, true);
   worker.answer();
   worker.answer();
   const staged = renderer.target.received.values().next().value;
@@ -61,6 +65,7 @@ test('streamed tiles replace visible terrain together and release superseded geo
   assert.equal(renderer.status().stagedTiles, 0);
 
   renderer.dispose();
+  assert.equal(renderer.hasDetailedTerrain, false);
   assert.equal(worker.terminated, true);
   assert.equal(scene.children.length, 0);
   assert.equal(renderer.status().visibleTiles, 0);
@@ -71,6 +76,7 @@ test('worker failure preserves usable distant terrain and releases queued work',
   const worker = renderer.worker;
   renderer.update(position(0, 0));
   worker.onerror({preventDefault() {}});
+  assert.equal(renderer.hasDetailedTerrain, false);
   assert.equal(renderer.status().visibleTiles, 4);
   assert.equal(renderer.status().stagedTiles, 0);
   assert.equal(renderer.status().worker, false);

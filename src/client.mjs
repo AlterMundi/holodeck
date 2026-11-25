@@ -1056,10 +1056,11 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
           cave??=new ToroidalCave(renderer.mmlCompositionScene.group,renderer.mmlCompositionScene.mmlScene);
           cave.update(position);
           if(!entering&&!moving){
-            // Let arrival paint and accept input before compiling optional scenery.
+            // Let arrival paint first. Scenery roots use the detailed surface,
+            // which can still be loading after the coarse ring is traversable.
             const now=performance.now();
             sceneryAfter??=now+240;
-            if(now>=sceneryAfter){
+            if(now>=sceneryAfter&&ring.hasDetailedTerrain){
               scenery??=new ToroidalScenery(renderer.mmlCompositionScene.group,base,renderer.mmlCompositionScene.mmlScene);
               scenery.update(position,rendererBudget.lightweight,door,solar?.daylight);
             }

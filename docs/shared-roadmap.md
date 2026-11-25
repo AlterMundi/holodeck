@@ -603,6 +603,71 @@ on the existing build. Final preset selection covers a dark and a light
 variant of the chosen visual language. Private reference images are
 comparison input and stay outside the packaged assets.
 
+### Mobile play and Conversation
+
+The November 25 portrait capture in Telegram Android shows the title panel,
+an object-identification notice, square movement panels and a wrapped
+three-row dock covering much of the world. The screenshot remains in the
+source conversation. Track the design in [HUD #16](https://github.com/AlterMundi/holodeck/issues/16)
+and the canonical audio dependency in [Conversation #18](https://github.com/AlterMundi/holodeck/issues/18).
+Queue implementation after the current interior visual slice. The active
+environment and room art work proceeds independently.
+
+| Mobile state | Presentation and input |
+| --- | --- |
+| Exploring at rest | Use the small compass/minimap with the full map reachable from a one-row icon dock. Keep accessible names for Map, Conversation, Appearance, Video and Activity. Put Sound by the compact location label. Use distinct movement glyphs and at least 44 CSS px touch targets. |
+| Holding touch movement | Keep the current joystick and valid jump or vertical controls. Fade and disable ancillary chrome, including the dock and minimap, while the movement gesture is held. Restore it shortly after release (start with 500 ms). Keep the touch target and independently held vertical inputs stable. Apply the same rule to swimming, flight and miniature movement. Keyboard movement on a hybrid never triggers this layout. |
+| Reading or composing in Conversation | Hide phone movement controls and release their captured inputs as the panel takes ownership. Keep the draft, scroll and selected part through collapse, rotation and keyboard resize. Restore world controls and focus on close without restoring held input. |
+| Audio-only | Switch through Conversation to a mic and an explicit return to text, without opening the keyboard. Leave world movement available. Keep recording and stop controls visible during locomotion and mode changes. Reuse the mounted canonical capture and its interruption, upload, denial and retry behavior. Preserve a text draft on switching modes. |
+
+Start with the notice and compact dock, then derive visibility and input
+from the same form-factor, gesture-ownership and focus state. The captured
+object-identification text maps to the point-selection unavailable callback,
+which currently uses a persistent notice through `say`. Give this
+retryable hint a four-second lifetime and a brief fade in the A2UI
+projection, with a static timeout under reduced motion. A newer hint
+starts its own timer. Hints cannot displace unresolved operations or
+recovery. Leave attribution of the original gesture open.
+
+Style existing spatial controls and minimize visual area while retaining
+comfortable hit targets. Use safe-area insets and compact viewport plus
+touch capability, including Telegram WebView. Bridge reusable icon,
+layout or motion primitives through [Proyección #5](https://github.com/AlterMundi/proyeccion/issues/5)
+where the pinned catalog lacks them. Add the audio-only presentation once
+the mounted Conversation contract can select it and expose the canonical
+mic controls. The deployed microphone meter is a local animation signal
+and does not control the recorder. Track any required owner-side contract
+change in [DaimonApp #1022](https://github.com/AlterMundi/DaimonApp/issues/1022).
+Keep unsent text and recordings in the authorized Conversation, isolated
+from world activity, MML and other identities. Release movement on canceled
+or lost capture, focus loss and backgrounding. Without motion effects,
+ancillary chrome changes visibility directly.
+
+In short landscape layouts, put the joystick by the lower left safe edge
+and jump/vertical actions by the lower right. Keep the slim toolbelt in
+the lower center when available, without stacking it above the movement
+controls. Reflow at actual viewport and safe-area changes, including
+rotation, keyboard and fullscreen transitions. Surface the existing
+fullscreen action from the landscape HUD. Rotation can offer the action
+but browser fullscreen requires a deliberate tap. A supported Telegram
+Mini App host can use its own fullscreen and safe-area events. Keep the
+compact layout usable in Telegram's ordinary in-app browser and wherever
+fullscreen is unavailable, denied or exited. Qualify both launch routes
+before claiming the client navigation bar is hidden.
+[Web Fullscreen API](https://developer.mozilla.org/en-US/docs/Web/API/Element/requestFullscreen)
+and [Telegram Mini Apps](https://core.telegram.org/bots/webapps).
+
+Verify real Telegram Android portrait and landscape, plus desktop keyboard
+and mouse and a touch/keyboard hybrid. Compare the same world and HUD
+before and after at the same camera, including a bright background, the
+table, an unwrapped dock at 360 CSS px and a short viewport with the phone
+keyboard open. Check notice
+expiry and replacement, one action per tap, joystick plus ascend/descend,
+map open and close, cancellation on focus handover, inert hidden tools,
+reduced motion, the unchanged desktop concurrent Conversation flow, mic
+permission granted/refused, recording interruption and upload retry without
+duplicate send.
+
 ## One declarative world, individually styled
 
 Treat the shared semantic scene and its MML projection like a 3D DOM, with a
