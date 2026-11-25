@@ -2,6 +2,22 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `406955ff08ad29b8054ecb42f9980e776a58bdfc` recovers an open
+Character review after the visitor leaves the room. Archive
+`c047820183b0d7d18f70cb74ef7658e16f7dccf3f95d6acacce4079fcf71d038`
+matched all 87 payloads and changed only the browser bundle from the Shaper
+candidate. A separate Chromium visitor left the room with a note on ground
+frame 57. The server rejected its submission with 403. The viewer removed
+cached notes and shared actions, kept preview and copy, and saved nothing
+locally. Returning to the room and explicitly retrying used the same
+submission on frame 57 and stored one note. The same fixture passed flight,
+comparison and draft recovery. Holodeck passed 417 tests with two skips.
+
+The protected world has since selected `9bfd9248797b` from `5e63550`.
+The next receiving build needs to retain the new Lab labels and existing
+E precedence alongside the Character table anchor. The protected selection
+still lacks the Character pose catalog.
+
 Source `021a19faa66ca120556f0ac9eea30f3cd78f19d7` combines Character
 Design with the selected Shaper revision `284c3d0`. Archive
 `72ea53b4de543e2563807f30d467def1977a60a937b13905040c119c168a4b93`
