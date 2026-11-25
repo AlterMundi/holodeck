@@ -263,13 +263,29 @@ function startInterior(space){
   });
   exhibitObserver.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['data-exhibit-revision']});
   const updateDoor=showSpaceLinks(space,{mapEnabled:false,canLeave:()=>visitor.allowLeaveRoom(),onError:message=>notice.show(message)});
+  const beaconAvailable=()=>!entering&&!document.hidden&&!updateDoor.doorOffer?.()&&
+    (!visitor.frame||visitor.panel.classList.contains('is-walking'))&&!document.querySelector('dialog[open]');
   window.addEventListener('keydown',event=>{
     keepWorldTab(event);
+    if(beaconControls.opened&&!event.defaultPrevented&&!event.isComposing&&
+       (event.key==='Escape'||event.target===beaconControls.closeControl&&['Enter',' '].includes(event.key))){
+      beaconControls.close();
+      event.preventDefault();event.stopImmediatePropagation();
+      return;
+    }
     if(event.target instanceof Element&&event.target.closest('#exhibition-index')){event.stopImmediatePropagation();return;}
     if((beaconControls.opened||visitor.frame&&!visitor.panel.classList.contains('is-walking'))&&
        ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE'].includes(event.code)){
       if(!(event.target instanceof Element&&event.target.closest('button,input,select,textarea')))event.preventDefault();
       event.stopImmediatePropagation();
+      return;
+    }
+    if(event.code==='KeyE'&&beaconAvailable()&&beaconControls.useNearby(event,space.objects,
+        client.getLocalCharacterState()?.position,()=>{
+          releaseBeaconInput(client);
+          beaconControls.open();
+        })){
+      event.preventDefault();event.stopImmediatePropagation();
     }
   },true);
   const poses=new AvatarPosePresence(base,window.SESSION_TOKEN);
@@ -284,6 +300,7 @@ function startInterior(space){
       // current PCF enum for comparison sampling and per-light shadow radii.
       renderer.composer.renderer.shadowMap.type=PCFShadowMap;
       const frameBudget=createFrameBudget(renderer);
+      const actionLabel=new WorldActionLabel({scene:renderer.mmlCompositionScene.group,document});
       galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
       galleryModels.sync(visitor.entries);
       const picker=new PublicWorldPicker({document,canvas:options.targetElement.querySelector(':scope > canvas'),
@@ -299,7 +316,10 @@ function startInterior(space){
         if(position&&space.avatarPosePresence)poses.update(client.getWorldConnection(),space.id,low?'crouch':'ground');
         frameBudget.sample(!document.hidden&&!!position&&!visitor.isOpeningOverWorld());
         galleryModels.update();visitor.refreshScopedCatalog();updateDoor(position);visitor.update(position);
-        beaconControls.update(space.objects,position);render(state);
+        beaconControls.update(space.objects,position);
+        actionLabel.update(beaconAvailable()&&!matchMedia('(pointer: coarse)').matches?beaconControls.nearbyAction():null,
+          options.coreCameraManager.getCameraState(),renderer.composer.renderer.domElement.clientHeight);
+        render(state);
         if(entering&&position&&entryRoomReady(document.getElementById(space.id)))worldEntered();
       };
       let releaseHeadroom,releaseRun;
@@ -309,7 +329,7 @@ function startInterior(space){
         glanceMotion:!reducedMotion.matches&&!document.hidden,
         crouch:client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt'),
       }));
-      renderer.dispose=()=>{poses.dispose();releaseRun?.();releaseHeadroom?.();releaseAnimation();frameBudget.dispose();picker.dispose();galleryModels.clear();dispose();};
+      renderer.dispose=()=>{poses.dispose();releaseRun?.();releaseHeadroom?.();releaseAnimation();frameBudget.dispose();picker.dispose();actionLabel.dispose();galleryModels.clear();dispose();};
       queueMicrotask(()=>{
         releaseRun=bindWorldKeyShortcuts(client.keyInputManager);
         releaseHeadroom=bindInteriorHeadroom(client.getCharacterManager(),()=>true);
@@ -323,6 +343,12 @@ function startInterior(space){
   client.update();
   window.holodeckDevelopment={client};
   window.addEventListener('pagehide',()=>{updateDoor.dispose?.();exhibitObserver.disconnect();beaconControls.clear();visitor.dispose();client.dispose();},{once:true});
+}
+
+function releaseBeaconInput(client){
+  client.keyInputManager?.handleUnfocus();
+  if(document.pointerLockElement)document.exitPointerLock();
+  client.getCameraManager()?.activePointers?.clear();
 }
 
 function benchControls(){
@@ -687,6 +713,12 @@ function resetDoor(){
     }:{})
   });
 }
+function beaconWorldAvailable(){
+  return inside&&remoteScene&&!moving&&!entering&&!needsSync&&!document.hidden&&
+    !!matterHud?.nearbyBeaconAvailable&&!matterHud.nearbyTableAvailable&&!signalEditor?.active&&
+    !updateDoor.doorOffer?.()&&!client.getRenderer()?.coreCameraManager?.isFlyCameraOn();
+}
+
 // MML captures document keys by default. Preserve ordinary text editing and
 // keyboard activation of the HUD without turning typed words into locomotion.
 document.addEventListener('keydown',event=>{
@@ -700,6 +732,10 @@ document.addEventListener('keydown',event=>{
   if(matterHud?.key(event)){event.preventDefault();event.stopImmediatePropagation();return;}
   if(updateDoor.key?.(event)){event.stopImmediatePropagation();return;}
   if(matterHud?.useNearbyTable(event)){event.preventDefault();event.stopImmediatePropagation();return;}
+  if(event.code==='KeyE'&&beaconWorldAvailable()&&beaconControls.useNearby(event,activeSpace.objects,
+      client.getLocalCharacterState()?.position,()=>matterHud.beacon.openNearby())){
+    event.preventDefault();event.stopImmediatePropagation();return;
+  }
   if(event.target===document.getElementById('house-door')){
     updateDoor.buttonKey?.(event);
     event.stopImmediatePropagation();
@@ -852,7 +888,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     }
     matterHud=new MatterWorktableHud({document,webgl:renderer.composer.renderer,table:collectionShelves.worktable,collection:collectionShelves,
       creatorContext:()=>({draft:preview,point:worldIndication?.selected,shared:worldIndication?.own()?.sequence}),
-      beaconControls,onBeaconOpen:()=>client.keyInputManager?.handleUnfocus(),
+      beaconControls,onBeaconOpen:()=>releaseBeaconInput(client),
       toggleSound:()=>{if(!moving&&!entering&&navigator.userActivation?.isActive&&(!inside||worldAudio.status().active))void toggleWorldSound();},
       readTools,history:()=>worldHistory,visitor:()=>contentVisitor,activateTool:id=>{
         if(id==='endVisit'){if(visitAllowed())void contentVisitor?.endVisit();return;}
@@ -1244,6 +1280,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         movementLane,tableFlight.active||mode!=='ground');
       touchControls.pause(!touchLocomotion||!conversation.hidden&&!matterHud.movementPresented);
       matterHud.updateBearing(navigationVisible&&!matterHud.active);
+      beaconControls.update(inside&&!moving&&!needsSync&&remoteScene?activeSpace.objects:null,position);
       const passageAvailable=worldToolsVisible&&!quietTouch&&(conversation.hidden||concurrentRoomDoors())&&
         !matterHud.active&&Boolean(matterHud.toolGroup)&&!signalEditor.active;
       matterHud.door.update(passageAvailable,Boolean(matterHud.toolLayout?.compact));
@@ -1256,7 +1293,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         else if(!door&&bench&&matterHud.nearbyTableAvailable&&
             !options.coreCameraManager.isFlyCameraOn()&&client.getCharacterManager().localController){
           label={anchor:{x:bench.x,y:bench.y+.92,z:bench.z},label:'Usar mesa',key:'E'};
-        }
+        }else if(beaconWorldAvailable())label=beaconControls.nearbyAction();
       }
       actionLabel.update(label,options.coreCameraManager.getCameraState(),matterHud.canvas.clientHeight,
         {light:document.body.dataset.hudTheme==='light'});
@@ -1269,7 +1306,6 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         soundBlocked:moving||needsSync,
         width:matterHud.canvas.clientWidth-statusLeft-statusRight,height:matterHud.canvas.clientHeight,
       });
-      beaconControls.update(inside&&!moving&&remoteScene?activeSpace.objects:null,position);
       render(renderState);
       if(!inside&&drawWorld)geometryProbe.afterRender();
       else if(inside)keepRoomArt();

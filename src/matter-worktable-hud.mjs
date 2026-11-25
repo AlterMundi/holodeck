@@ -756,11 +756,15 @@ export class MatterWorktableHud{
     }
   }
 
+  get nearbyBeaconAvailable(){
+    return !this.active&&!this.map.group&&!this.settings.group&&!this.modalScope&&!this.visit.openViewer&&
+      !this.document.querySelector('dialog[open],#conversation-panel:not([hidden]),.room-transition #beacon-station');
+  }
+
   draw(additional){
     this.windows.begin();
     this.activity.update();this.visit.update();
-    this.beacon.update(!this.active&&!this.map.group&&!this.settings.group&&!this.visit.openViewer&&
-      !this.document.querySelector('dialog[open],#conversation-panel:not([hidden]),.room-transition #beacon-station'));
+    this.beacon.update(this.nearbyBeaconAvailable);
     this.syncSettingsInput();
     const {clientWidth:width,clientHeight:height}=this.canvas;
     const {left,right,top,bottom}=this.toolInsets();

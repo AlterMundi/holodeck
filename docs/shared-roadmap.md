@@ -708,11 +708,12 @@ measured Normal/Livianos using [House #12](https://github.com/AlterMundi/holodec
 
 ### Nearby interactions and repeatable panel launchers
 
-The first [world-anchored label slice](STATUS.md#november-25-world-anchored-nearby-action-labels)
-shows the existing E action over the Materializer table and interior
-doors. Use the same world label for further eligible targets once
-their offered action, placement and access are established. Keep pointer,
-keyboard and touch owned by the existing action handlers.
+The [world-anchored action label](STATUS.md#november-25-world-anchored-nearby-action-labels)
+shows E over the offered Materializer table, interior door or one of the
+four Harmonic Lab worktops. The lab shortcut rechecks the current room
+object and uses the existing Laboratory opening action. Keep pointer,
+keyboard and touch owned by their action handlers. Extend labels to
+further eligible targets as their placement and access are established.
 
 Use a consistent nearby interaction for authorized doors, worktables and
 seats. Doors are reciprocal by default. Preserve their existing passage
