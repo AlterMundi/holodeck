@@ -42,7 +42,8 @@ test('the map reuses the terrain raster while still updating its position and he
   const raster={createImageData:(width,height)=>({data:new Uint8ClampedArray(width*height*4)}),putImageData:()=>paints++};
   const view={
     drawImage:()=>composites++,save(){},scale(){},restore(){},translate(){},rotate(){},
-    beginPath(){},moveTo(){},lineTo(){},closePath(){},stroke(){},fill(){},fillRect(){},fillText(){},
+    beginPath(){},moveTo(){},lineTo(){},closePath(){},stroke(){},fill(){},fillRect(){},fillText(){},strokeText(){},
+    measureText:()=>({width:58}),
   };
   const canvas={width:384,height:384,getContext:()=>view,addEventListener:(_,callback)=>{restore=callback;},
     ownerDocument:{createElement:()=>({getContext:()=>raster,addEventListener(){}})}};

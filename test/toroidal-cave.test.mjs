@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {DoubleSide, MeshBasicMaterial, Raycaster, Scene, Vector3} from 'three';
 import {buildCaveCrown, CAVE, ToroidalCave} from '../src/toroidal-cave.mjs';
-import {terrainCoordinates, terrainElevation, terrainFrame, terrainPosition, terrainTrail} from '../src/toroidal-terrain.mjs';
+import {TOROIDAL_SPAWN, terrainCoordinates, terrainElevation, terrainFrame, terrainPosition, terrainTrail} from '../src/toroidal-terrain.mjs';
 
 const point = (u,v,offset=0) => new Vector3(...terrainPosition(u,v,terrainElevation(u,v)+offset));
 
@@ -42,16 +42,22 @@ test('the shared collision shell has two open mouths and two covered chambers', 
 test('visible crown triangles and collision share one footprint off the path and the arch',()=>{
   const {origin,positions,indices}=buildCaveCrown();
   assert.equal(indices.length/3,624);
+  const finVolume=Array(4).fill(0);
   const crownPoint=index=>new Vector3().fromArray(positions,index*3).add(new Vector3(...origin));
   for(let i=0;i<indices.length;i+=3){
     const [a,b,c]=[indices[i],indices[i+1],indices[i+2]].map(crownPoint);
-    for(const sample of [a,b,c,a.clone().add(b).add(c).divideScalar(3),a.clone().lerp(b,.5)]){
+    const anchor=new Vector3(...origin);
+    finVolume[Math.floor(i/(indices.length/4))]+=a.clone().sub(anchor)
+      .dot(b.clone().sub(anchor).cross(c.clone().sub(anchor)))/6;
+    const edges=[a.clone().lerp(b,.5),b.clone().lerp(c,.5),c.clone().lerp(a,.5)];
+    for(const sample of [a,b,c,a.clone().add(b).add(c).divideScalar(3),...edges]){
       const p=terrainCoordinates(sample.toArray());
       assert.ok(Math.abs(p.v-CAVE.latitude)>.00195);
       assert.ok(terrainTrail(p.u,p.v)<.16);
     }
   }
-  const eye=new Vector3(1801.38,499.60,8);
+  assert.ok(finVolume.every(volume=>volume>20),'each closed fin faces outwards');
+  const eye=new Vector3(TOROIDAL_SPAWN.x+1.38,TOROIDAL_SPAWN.y+1.45,TOROIDAL_SPAWN.z-3);
   const top=Array.from({length:positions.length/3},(_,i)=>crownPoint(i))
     .reduce((highest,p)=>p.y>highest.y?p:highest);
   for(let t=.04;t<1;t+=.04){
@@ -63,8 +69,8 @@ test('visible crown triangles and collision share one footprint off the path and
   cave.update(eye);
   assert.ok(colliders.has(cave.crown));
   assert.equal(cave.crown.geometry.attributes.position.array.length,positions.length);
-  const direction=top.clone().sub(eye).normalize();
-  assert.ok(new Raycaster(eye,direction,0,120).intersectObject(cave.crown,false).length);
+  const direction=top.clone().add(new Vector3(0,-.3,0)).sub(eye).normalize();
+  assert.equal(new Raycaster(eye,direction,0,120).intersectObjects([cave.mesh,cave.crown],false)[0]?.object,cave.crown);
   cave.dispose();
   assert.equal(colliders.size,0);
 });

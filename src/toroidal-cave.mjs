@@ -70,13 +70,13 @@ export function buildToroidalCave(terrain = TOROIDAL_TERRAIN) {
   return {origin,positions,colors,indices:new Uint16Array(indices)};
 }
 
-// A rock crown on the shoulders of the north mouth. All stone stays to the
-// sides of the arch, leaving the tunnel and its approach on the original grade.
+// The rock crown rises beside the arrival end of the passage, outside the
+// arch, leaving the original route and tunnel floor clear.
 const fins=[
-  {u:.00836,v:.26249,length:3.5,width:1.53,height:14.0,turn:-.18,lean:1.82},
+  {u:.00836,v:.26193,length:3.5,width:1.53,height:14.0,turn:-.18,lean:1.82},
   {u:.00897,v:.26898,length:2.34,width:1.48,height:8.3,turn:.39,lean:1.07},
   {u:.00823,v:.27036,length:2.25,width:1.38,height:6.8,turn:.45,lean:.71},
-  {u:.00885,v:.26147,length:2.88,width:1.34,height:8.2,turn:-.26,lean:-.93},
+  {u:.00885,v:.26083,length:2.88,width:1.34,height:11.6,turn:-.26,lean:-.93},
 ];
 const sections=[
   [0,1.0,0],[.18,1.0,0],[.40,.92,0],[.57,.84,0],[.621,.80,1],

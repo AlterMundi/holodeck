@@ -80,10 +80,15 @@ function drawCave(ctx,x,y){
   ctx.strokeStyle='#261e22';ctx.lineWidth=3;ctx.stroke();
   ctx.fillStyle='#e5a984';ctx.fill();
   ctx.fillStyle='#352726';ctx.fillRect(x-3,y-1,6,7);
-  ctx.textAlign=x>DISPLAY-70?'right':'left';
+  const label='Cueva';
   ctx.font='600 19px system-ui';
+  const left=x+15+ctx.measureText(label).width>DISPLAY-6;
+  const labelX=x+(left?-15:15);
+  ctx.textAlign=left?'right':'left';
+  ctx.strokeStyle='#261e22';ctx.lineWidth=3;
+  ctx.strokeText(label,labelX,y+6);
   ctx.fillStyle='#fff4dd';
-  ctx.fillText('Cueva',x+(x>DISPLAY-70?-15:15),y+6);
+  ctx.fillText(label,labelX,y+6);
   ctx.textAlign='start';
 }
 
