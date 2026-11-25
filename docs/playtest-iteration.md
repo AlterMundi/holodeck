@@ -43,7 +43,12 @@ A focused Claude Code Fable 5.2 High review completed before this implementation
 
 ## Situated Conversation context
 
-[Holodeck #19](https://github.com/AlterMundi/holodeck/issues/19) tracks the semantic projection and baseline policy. The current writer expects one immutable machine source per input. The focused high-effort Fable 5.2 review finished after the broader source-reading review timed out. It identified the distinction between prepared and acknowledged baselines, pose jitter, cumulative deltas, and separate per-input admission. Use the existing canonical receipt authority. Scope the baseline to the writer generation, actor, being, continuing Conversation and authorized world scope. Compare stable room, selection, coarse pose and work state independently of timestamps and request IDs. Acknowledge by retained canonical acceptance and confirmed baseline installation. Reuse exact frozen decisions on retry and require a fresh full snapshot after baseline loss. Enable delta and attachment omission in stages on an explicitly verified compatible receiving path. Treat unchanged, absent context and failed preparation as distinct results and always verify fresh access for a native action.
+[Holodeck #19](https://github.com/AlterMundi/holodeck/issues/19) tracks the semantic projection and baseline policy. The current site bridge retains machine provenance as one immutable file.
+The canonical text writer allows text, files and existing presentation
+references; its allowlist has no application context receipt. The current
+world-action bridge validates the exact file against native admission.
+The smaller transport therefore needs a supported canonical association
+alongside the existing per-input file route during compatibility rollout. The focused high-effort Fable 5.2 review finished after the broader source-reading review timed out. It identified the distinction between prepared and acknowledged baselines, pose jitter, cumulative deltas, and separate per-input admission. Use the existing canonical receipt authority. Scope the baseline to the writer generation, actor, being, continuing Conversation and authorized world scope. Compare stable room, selection, coarse pose and work state independently of timestamps and request IDs. Acknowledge by retained canonical acceptance and confirmed baseline installation. Reuse exact frozen decisions on retry and require a fresh full snapshot after baseline loss. Enable delta and attachment omission in stages on an explicitly verified compatible receiving path. Treat unchanged, absent context and failed preparation as distinct results and always verify fresh access for a native action.
 
 ## Qualification in progress
 
@@ -73,7 +78,9 @@ The browser fixture exposed depth clipping from scaling mesh thickness with
 CSS pixel dimensions. The correction preserves catalog depth while sizing the
 window in screen pixels. Controlled desktop and touchscreen runs verified drag,
 resize, a rendered minimize action, restore, stable iframe and draft, and
-viewport clamping. Hardware and live receiving checks remain open.
+viewport clamping. The same tests passed on exact archive `775be6260aa8`
+from `e8362e3` (33,454,080 bytes). Hardware and live receiving checks
+remain open.
 
 ## Matter inspection qualification
 
