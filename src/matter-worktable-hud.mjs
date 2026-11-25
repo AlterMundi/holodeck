@@ -41,7 +41,7 @@ const text=(id,label,fields={})=>({id,component:'HudText',label,...fields});
 const choice=(id,label,options,value)=>({id,component:'HudChoice',label,
   options:path(options),value:path(value),draft:path(id+'Draft'),action:action(id,{value:path(id+'Draft')})});
 const toolScale=286,toolGap=.035,toolRowHeight=.18,toolPadding=.12;
-const toolNames=['map','open','talk','appearance','video','bridge','plant','undo','activity','visit','endVisit'];
+const toolNames=['map','open','talk','appearance','video','bridge','plant','undo','activity','visit','endVisit','fullscreen'];
 const toolPixels={map:130,open:154,talk:134,appearance:138,video:96,bridge:153,plant:100,undo:92,activity:126,visit:124,endVisit:140};
 
 function opticalRole(surface,id,component){
@@ -49,7 +49,8 @@ function opticalRole(surface,id,component){
   if(['talk','open','share','discuss'].includes(id))return 'primary';
   if(surface===toolbeltId||component==='HudRange'||component==='HudChoice')return 'utility';
 }
-const toolIcons={map:'map',talk:'conversation',appearance:'appearance',video:'video',activity:'activity'};
+const toolIcons={map:'map',talk:'conversation',appearance:'appearance',video:'video',activity:'activity',
+  fullscreen:'resize'};
 const compactToolPixels={map:110,talk:116,appearance:122,video:82,activity:110};
 function pixelsForTool(id,{compact,iconOnly}){
   if(iconOnly&&Object.hasOwn(toolIcons,id))return 48;
@@ -81,7 +82,7 @@ function toolComponents(layout){
     ...rows.flatMap(({ids},index)=>[
       row(rowIds[index],ids,{gap:toolGap}),
       ...ids.map(id=>button(id,path(id+'Label'),{
-        disabled:path(id+'Disabled'),...(['map','talk','appearance','video'].includes(id)?{pressed:path(id+'Pressed')}:{}),
+        disabled:path(id+'Disabled'),...(['map','talk','appearance','video','fullscreen'].includes(id)?{pressed:path(id+'Pressed')}:{}),
         weight:pixelsForTool(id,layout)/66,...(toolIcons[id]?{icon:toolIcons[id]}:{}),
       })),
     ]),
@@ -155,6 +156,7 @@ export class MatterWorktableHud{
       focusBearing:()=>this.hud.focusAccessibleControl(worldBearingId,'dismiss'),
       focusLauncher:()=>this.focusTool('map'),invalidate:this.layer.invalidate});
     const finePointer=this.document.defaultView.matchMedia('(pointer: fine)');
+    this.coarsePointer=this.document.defaultView.matchMedia('(pointer: coarse)');
     this.door=new DoorPromptHud({...navigation.door,send:(type,content,id)=>this.send(type,content,id),
       focusControl:name=>this.hud.focusAccessibleControl(doorPromptId,name),
       hasFocus:()=>this.ownsAccessibleInput(this.document.activeElement)&&this.hud.currentFocus()?.surfaceId===doorPromptId,
@@ -397,7 +399,8 @@ export class MatterWorktableHud{
   }
 
   handleTool({name,context}){
-    if(!this.toolGroup||context?.scope!==this.toolScope||!toolNames.includes(name))return;
+    if(!this.toolGroup?.visible||context?.scope!==this.toolScope||!toolNames.includes(name)||
+      name==='fullscreen'&&!this.toolLayout?.shortLandscape)return;
     const selected=this.toolState()[name];
     if(!selected?.visible||selected.disabled)return;
     this.lookPreview.hit(toolbeltId);
@@ -448,8 +451,21 @@ export class MatterWorktableHud{
     return this.dockCompact;
   }
 
-  dockScale(compact){
+  compactTouch(){
+    if(!this.coarsePointer.matches||!this.document.defaultView.navigator.maxTouchPoints)return null;
+    const {clientWidth:width,clientHeight:height}=this.canvas;
+    if(width>height&&height<496)return 'landscape';
+    if(width<=480&&width<height)return 'portrait';
+    return null;
+  }
+
+  dockScale(compact,shortLandscape=false){
+    if(shortLandscape)return 246;
     return compact&&this.document.defaultView.navigator.maxTouchPoints===0?248:toolScale;
+  }
+
+  landscapeGrip(){
+    return Math.min(137,Math.max(112,this.canvas.clientWidth*.205));
   }
 
   syncToolbelt(visible){
@@ -467,16 +483,24 @@ export class MatterWorktableHud{
     }
     const tools=this.toolState();
     const {left,right}=this.toolInsets();
-    const compact=this.compactDock(),scale=this.dockScale(compact);
+    const touch=this.compactTouch(),shortLandscape=touch==='landscape'&&
+      this.document.getElementById('conversation-panel').hidden;
+    const compact=this.compactDock(),scale=this.dockScale(compact,shortLandscape);
+    tools.fullscreen.visible=shortLandscape&&tools.fullscreen.visible;
     const sideEdge=this.conversationSideEdge();
-    const available=Number.isFinite(sideEdge)?sideEdge-left-12:this.canvas.clientWidth-left-right;
+    const corners=shortLandscape?2*(.8*this.landscapeGrip()+10):0;
+    const available=Number.isFinite(sideEdge)?sideEdge-left-12:this.canvas.clientWidth-left-right-corners;
     const maxWidth=available*toolScale/scale-toolPadding*toolScale;
     this.document.body.toggleAttribute('data-native-settings-available',maxWidth>=150);
-    if(maxWidth<150)return;
-    const touch=this.document.defaultView.navigator.maxTouchPoints>0;
-    const iconOnly=touch&&(compact||this.canvas.clientWidth<=600||Number.isFinite(sideEdge));
-    const layout=layoutTools(tools,Math.min(this.lookPreview.stylesDock?720:670,maxWidth),{compact,iconOnly});
+    if(maxWidth<150){this.syncToolbelt(false);return;}
+    const touchDevice=this.document.defaultView.navigator.maxTouchPoints>0;
+    const iconOnly=Boolean(touch)||touchDevice&&(compact||this.canvas.clientWidth<=600||Number.isFinite(sideEdge));
+    const layout=layoutTools(tools,Math.min(this.lookPreview.stylesDock?720:670,maxWidth),{compact,iconOnly,shortLandscape});
     if(!this.toolGroup)this.send('createSurface',{catalogId:spatialHudCatalog.id},toolbeltId);
+    if(this.toolGroup&&this.toolGroup.visible===this.quietTouch){
+      this.toolGroup.visible=!this.quietTouch;
+      this.layer.invalidate();
+    }
     const layoutKey=JSON.stringify(layout);
     if(this.toolLayoutKey!==layoutKey){
       if(this.toolLayoutKey)this.lookPreview.redock(toolbeltId);
@@ -497,8 +521,10 @@ export class MatterWorktableHud{
     this.send('updateDataModel',{value},toolbeltId);
   }
 
-  update(blocked,toolsVisible){
+  update(blocked,toolsVisible,quietTouch=false){
     this.blocked=blocked;
+    this.quietTouch=quietTouch;
+    this.document.body.toggleAttribute('data-touch-moving',quietTouch);
     const available=!blocked&&this.table.available;
     if(!available&&this.active)this.leave();
     else if(!this.active)this.setMode(available?'enter':null);
@@ -548,7 +574,7 @@ export class MatterWorktableHud{
       if(this.movementGroups.has(id))continue;
       this.send('createSurface',{catalogId:spatialHudCatalog.id},id);
       this.send('updateComponents',{components:[
-        {id:'root',component:'HudPanel',width,children:['control']},
+        {id:'root',component:'HudPanel',width,chrome:'none',children:['control']},
         {id:'control',component,label,...(component==='HudJump'?{iconOnly:true}:{}),...(axis?{vertical:axis}:{})},
       ]},id);
     }
@@ -725,7 +751,7 @@ export class MatterWorktableHud{
       !this.document.querySelector('dialog[open],#conversation-panel:not([hidden])');
     this.recovery.update({visible:outside&&screenClear,width:width-left-right-36,maxHeight:height-recoveryTop-recoveryReserve});
     const createTop=Math.max(top+99,width<700?145:135);
-    const createClear=outside&&!this.modalScope&&!this.active&&!this.map.group&&!this.collection.group&&!this.recovery.group&&
+    const createClear=outside&&!this.quietTouch&&!this.modalScope&&!this.active&&!this.map.group&&!this.collection.group&&!this.recovery.group&&
       !this.webgl.getContext().isContextLost()&&!this.document.querySelector(
         'dialog[open],#signal-editor:not([hidden]),#conversation-panel:not([hidden]),#content-visit:not([hidden]):not(.is-walking)');
     this.creation.update({visible:createClear,width:width-left-right-40,maxHeight:height-createTop-recoveryReserve});
@@ -760,23 +786,23 @@ export class MatterWorktableHud{
     if(this.toolGroup){
       const {left,right,bottom}=this.toolInsets();
       const dockClearance=this.usesCockpitDocks(viewport)?21:0;
-      const compact=this.toolLayout.compact;
+      const {compact,shortLandscape}=this.toolLayout;
       const lane=this.movementLane;
       const sideEdge=this.conversationSideEdge();
       const dockScale=Number.isFinite(sideEdge)?
-        Math.min(this.dockScale(compact),(sideEdge-left-12)/(this.toolLayout.width+toolPadding)):
-        this.dockScale(compact);
+        Math.min(this.dockScale(compact,shortLandscape),(sideEdge-left-12)/(this.toolLayout.width+toolPadding)):
+        this.dockScale(compact,shortLandscape);
       const barTop=height-bottom-dockClearance-(this.toolLayout.height+.035)*dockScale;
       const dockWidth=(this.toolLayout.width+toolPadding)*dockScale;
       const promptCompact=this.door.group?this.door.compact:compact;
       const promptWidth=promptCompact?compactDoorPromptWidth:doorPromptWidth;
       const promptScale=Math.min(promptCompact?dockScale:200,(width-left-right)/(promptWidth+toolPadding));
       const promptPlate=(promptWidth+toolPadding)*promptScale;
-      const beside=this.door.group&&compact&&promptCompact&&this.toolLayout.rows.length===1&&
+      const beside=!shortLandscape&&this.door.group&&compact&&promptCompact&&this.toolLayout.rows.length===1&&
         dockWidth+promptPlate+8<=width-left-right;
       let barCenter=Number.isFinite(sideEdge)?(left+sideEdge)/2:
         beside?width-right-dockWidth/2:(width+left-right)/2;
-      if(lane!=='side'&&this.lookPreview.stylesDock&&additional&&width>=720&&!additional.panel.hidden){
+      if(!shortLandscape&&lane!=='side'&&this.lookPreview.stylesDock&&additional&&width>=720&&!additional.panel.hidden){
         const display=additional.panel.getBoundingClientRect(), canvasLeft=this.canvas.getBoundingClientRect().left;
         const half=dockWidth/2;
         if(display.bottom>barTop&&display.top<height-bottom){
@@ -791,7 +817,16 @@ export class MatterWorktableHud{
       const preferredScale=lane?conversationMovementScale:width<380?145:166;
       let movementScale=this.movementVertical?Math.min(preferredScale,Math.max(95,(barTop-48)/1.23)):preferredScale;
       let movementTop=Math.max(34,barTop-(this.movementVertical?1.23:.64)*movementScale-14);
-      if(this.movementGroups.size){
+      if(this.movementGroups.size&&shortLandscape){
+        const grip=this.landscapeGrip(),floor=height-bottom;
+        const stickTop=floor-.70*grip,jumpTop=floor-.57*grip;
+        const rightGrip=width-right-.34*grip;
+        movementTop=this.movementVertical?jumpTop-.64*grip:stickTop;
+        this.place(this.movementGroups.get(movementStick),'stickPlacement',viewport,left+.40*grip,stickTop,grip);
+        this.place(this.movementGroups.get(movementJump),'jumpPlacement',viewport,rightGrip,
+          this.movementVertical?movementTop:jumpTop,grip);
+        if(this.movementVertical)this.place(this.movementGroups.get(movementDown),'descendPlacement',viewport,rightGrip,jumpTop,grip);
+      }else if(this.movementGroups.size){
         let jumpCenter=lane==='side'?left+180:width-right-.34*movementScale;
         let downCenter=jumpCenter;
         let lower=this.movementVertical?.57*movementScale:0;
@@ -822,10 +857,10 @@ export class MatterWorktableHud{
         const idleGap=promptCompact
           ? (hasTouch ? 138 : .24*promptScale+8)
           : (this.door.finePointer() ? 52 : 138);
-        const promptGap=this.movementGroups.size
+        const promptGap=shortLandscape?.25*promptScale+9:this.movementGroups.size
           ? barTop-movementTop+(promptCompact ? .21*promptScale+9 : 51)
           : idleGap;
-        const promptCenter=promptCompact?left+promptPlate/2:(width+left-right)/2;
+        const promptCenter=promptCompact&&!shortLandscape?left+promptPlate/2:(width+left-right)/2;
         promptTop=besideFinal?barTop:Math.max(36,barTop-promptGap);
         this.place(this.door.group,'doorPlacement',viewport,promptCenter,promptTop,promptScale);
       }
@@ -990,6 +1025,7 @@ export class MatterWorktableHud{
     this.a11y.remove();
     this.toolInset.remove();
     delete this.document.body.dataset.a2uiToolbelt;
+    this.document.body.removeAttribute('data-touch-moving');
     this.document.body.removeAttribute('data-native-settings-available');
     this.document.body.style.removeProperty('--holodeck-notice-bottom');
     this.collectionTable.panel.removeAttribute('data-spatial');

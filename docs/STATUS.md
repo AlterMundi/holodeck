@@ -138,6 +138,23 @@ installed release `1c78c31a2b82`. Reciprocal studio doors resolved. The room
 rule admitted one configured human guest and the house owner's daimon
 identity. The copy omitted Home sign-in. The protected release still needs
 selection of the candidate and a two-session receiving trial.
+## November 25 clear touch controls in landscape
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `76bacef3cd52` from `33da64d` and Proyección `dc90aab`.
+The short landscape view uses floating bronze-rimmed movement controls
+in the lower corners and a centered strip of six icons on a fullscreen
+capable browser. Tools disappear while touch locomotion is engaged and
+return on release. Compact touch suspends movement while Conversation is
+open. The fullscreen icon invokes the existing browser action.
+
+Pi 5 V3D tested 568 × 320 touch emulation, locomotion cancellation, actual
+browser fullscreen enter and exit, and rotation back to 360 × 740.
+RTX 2060 covered desktop E, the worktable and the mounted draft on crossing
+a door. Holodeck passed 407 tests with two skips and Proyección passed all
+20 spatial HUD tests. Protected readback matched 86 files, App and audience,
+configuration and world sequence 431. Immediate rollback is `1c78c31a2b82`.
+The Redmi and Telegram WebView remain unqualified. See [HUD #16](https://github.com/AlterMundi/holodeck/issues/16).
 
 ## November 25 Atelier interaction and portrait controls
 
