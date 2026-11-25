@@ -60,6 +60,39 @@ on the specimen and avatars. The pale test specimen still has visibly hard
 shadow edges. Shadow quality, small-screen touch interaction and performance
 of the final lighting on physical GPUs remain open.
 
+## Filtered shadows and true tabletop sections
+
+[Holodeck #20](https://github.com/AlterMundi/holodeck/issues/20) tracks
+candidate `c20735c`. Packaged Chromium confirmed MML supplied legacy
+shadow enum 2 and Three r182 allocated an ordinary nearest-depth texture.
+Select the supported PCF mode at both renderer entry points. This keeps the
+current 1024² map and increases sampling from one to five comparison taps
+for each shadowed directional or spot receiver. Only the inspection key
+widens its filter radius from 1 to 2.8. Lightweight still disables dynamic
+shadow passes and retains the existing table contact and light effect.
+
+Fable High recommended a per-light radius. Opus 5.5 High identified
+missing casters when an uncapped section removes the back faces. The same
+part now clips its lit and shadow passes, casts from both sides only while
+sectioned, and restores ordinary culling at 100%. Visible surfaces retain their
+original front-facing rendering. The depth-only change passed the
+follow-up review.
+
+The exact 80-payload archive is 33,320,960 bytes, with SHA-256
+`5d38ae522df7188c5e50ab1d40b52f78ee4bd75dbbd4e73b0a99c8d7a4119b5d`.
+It passed 351 tests with two optional gallery skips. Desktop Chromium with
+software rendering checked the pale specimen at the same camera and 92%
+cut, comparison depth sampling, restore to 100%, hide, and keyboard focus
+after exit. The touch-emulated lightweight path opened and closed the panel
+with taps and kept the contact effect through the same section and restore.
+The filtered edge is visible by comparison. A shadow remains
+under retained geometry, and the pale specimen still has a high-contrast
+lighting range. A two-browser outdoor fixture confirmed crouch, flight and
+disconnect reset using the same renderer bytes. The exterior fixture used
+lightweight settings and development identities. Production remains on
+the prior release. Physical frame time, daylight and sunset quality, and
+independently authenticated visitors are open.
+
 ## Multiscale materials and lighting
 
 [Holodeck #20](https://github.com/AlterMundi/holodeck/issues/20) tracks the receiving work. Modern engines layer detail maps and world-aligned sampling, and recommend baking expensive procedural graphs when the result permits it. Randomized tiling is applicable to isotropic signals whose contrast needs to survive a blend. View-dependent stochastic filtering has a different purpose and requires temporal stability the lightweight client cannot assume.

@@ -545,8 +545,9 @@ requires a measured source.
 
 The [tabletop lighting candidate](playtest-iteration.md#active-tabletop-lighting-candidate)
 demonstrates the cyan accent and inspection key in the normal and lightweight
-browser fixtures. Carry shadow quality and device checks into the next visual
-qualification alongside the rest of the scene.
+browser fixtures. The [section and shadow candidate](playtest-iteration.md#filtered-shadows-and-true-tabletop-sections)
+adds actual filtered and sectioned shadows. Compare its cost and edge quality on
+physical hardware at the table and on the exterior route before release.
 
 Compare the same outside path, working table, map and open Conversation
 on the existing build. Final preset selection covers a dark and a light
