@@ -240,3 +240,26 @@ Desktop used mouse and E in both normal and lightweight graphics. The
 touchscreen fixture crossed both directions by tap in lightweight. The
 suite passed 313 tests with two skips, including stale proximity, overlay,
 held Space and stale pointer regressions. Live remains `f46d93f436be`.
+
+## Matter collection HUD
+
+The shelf uses the current project and edition references to select an
+edition, open the canonical 3D Viewer or place it on the worktable. The
+archive uses the same rotating catalog and authorized return writer as before.
+Both panels are Three.js A2UI surfaces and use the active room palette.
+The mounted HUD takes over from the browser controls after a successful draw.
+Distance, the map, settings and worktable operation govern availability.
+
+Two Opus 5.5 High reviews identified focus handoff, blocked Viewer popup
+feedback and archive status races. The corrections keep feedback attached to
+the selected edition, pause paging during a restore and keep the keyboard
+on a reachable control as the catalog changes. The Viewer opens the selected
+version with its opener cleared. Stale edition and room actions are rejected.
+
+Exact archive `dec1a4c04be4` at `e0ff3b5` is 33,464,320 bytes. Controlled
+Chromium verified mouse and touch activation for the canonical versioned
+Viewer, placing a shelf edition on the worktable, paging in the archive and
+returning the exact archived edition to the shelf (HTTP 204 and a fresh
+catalog read). A second authenticated fixture visitor could open the archive
+but did not receive its restore control. The suite passed 314 tests with two
+skips. The protected service still selects `f46d93f436be`.
