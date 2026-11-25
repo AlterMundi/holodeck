@@ -10,9 +10,20 @@ release and settled frames 0, 17, 57 and 63 in the room. It published
 frame 57 and a separate browser identity reopened the matching clip,
 edition and frame on the web. The same run exercised flight frames 0, 22,
 36, 65 and 110, comparison, shared notes and room access recovery. Holodeck
-passed 417 tests with two skips. The Chromium run used fixture identities.
-The protected selection `179364d0f9fc` is still the earlier package, so
-the protected room test with two Home identities remains open.
+passed 417 tests with two skips.
+
+The same archive passed the 568 × 280 Chromium touch check. Starting from
+Matter, the visitor used the room doors, entered the Character table,
+paged the phase menu without committing its previews, tapped **Soltar el
+paso** at frame 57 and advanced to 58. Rotating to portrait and back
+retained the selected frame and room. Both browser runs used fixture
+identities.
+
+The protected selection advanced from `179364d0f9fc` to `0bbaf60eb737`.
+The new protected manifest still lacks the Character catalog and carries
+different Harmonic Lab Beacon and return assets. Retain those exact
+installed assets and the selected live behavior when preparing the combined
+candidate. The protected room test with two Home identities remains open.
 
 Source `c28bf4c896932722e9289f5f820637262259a5bb` locks Holodeck to the published Proyección alpha.14
 archive instead of the optical branch source archive. The release
