@@ -364,7 +364,8 @@ function doubleSpace(event){
   if(previousSpacePress!==null&&now-previousSpacePress<340){
     flightEnabled=!flightEnabled;
     previousSpacePress=null;
-    say(flightEnabled?'Vuelo activo · Espacio sube, Shift baja y R acelera.':'Volvés a caminar.',{transient:true});
+    const flightNotice=touchControls.native?'Vuelo activo':'Vuelo activo · Espacio sube, Shift baja y R acelera.';
+    say(flightEnabled?flightNotice:'Volvés a caminar.',{transient:true});
   }else previousSpacePress=now;
 }
 
