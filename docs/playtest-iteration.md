@@ -262,6 +262,16 @@ Interaction prefix and stripped a spoofed actor header. The live HTTPS voice
 route refused an anonymous request with HTTP 403. Authenticated ingress and
 receipt readback through the selected Home and Gateway pair remain open.
 
+The Telecodex receiver check found four active physical turns with journal
+correlation. It also found that the master-based candidate lacks installed
+Nexus owner commands and `owner-action`. The installed profile has Nexus
+configured. The exact receiving branch is `receiving/itaca-claude-private-foreground`
+at `78fa4109`. A read-only merge preflight found real conflicts in the native
+and web paths. Compose the receipt delta over the effective receiving source
+and each selected web overlay. Recheck the preserved owner commands and
+current profile before selector changes. The previously qualified candidate
+remains useful isolated evidence and was left unselected.
+
 The original Holodeck codec prototype defined a planner and reducer for full,
 delta and unchanged situations. The projection keeps distinct object, station,
 visit and piece selections, coarse client-reported position and a bounded

@@ -8,6 +8,30 @@ Current delivery and receiving checks are in the [Holodeck playtest iteration](p
 
 Walk from the common landscape to a recognizable daimon-authored house, meet its owner, enter a workshop larger than its exterior and explore what that human–daimon pair creates. Together inspect a result, its evidence, code, simulations, media, revisions and possible material realization. Refer to the same situated object/activity/time while each participant can move and look elsewhere. Suggest a change, continue exploring while the daimon works, then return to both editions. Shared public terrain connects individual places and collective creations. The future includes headset participation and selected physical augmentation, using the same situated references.
 
+## First shared habitation iteration
+
+The November 25 direction brings the HUD, avatar, house and creator loop into
+one receiving experience. The milestone is an authorized visitor entering
+the existing world, navigating to the CompAII house and walking through a
+real creation and revision with a second participant. Show the selected build,
+rollback and evidence by path in the [playtest record](playtest-iteration.md).
+
+| Lane | Owner and acceptance |
+| --- | --- |
+| HUD and approach | Holodeck [#16](https://github.com/AlterMundi/holodeck/issues/16) and [#18](https://github.com/AlterMundi/holodeck/issues/18) own placement, depth, chrome and routing. [Proyección #5](https://github.com/AlterMundi/proyeccion/issues/5) owns reusable rendering, typography and input. Start with Cabina from the selected references. Compare map, toolbelt, Matter and Conversar in motion, on bright and dark backgrounds and with mouse, keyboard and touch. Keep the camera view readable, verify actual actions and include reachable recovery and settings controls. |
+| Volumetric companion | Holodeck owns a ground-up Blender robot. Use the original pose and expression studies as references. Verify silhouette, volume and an independent jaw from front, profile and rear. Test grounded gait, local playback, reduced motion, scale near the worktable and low-cost rendering before replacing the selected companion. |
+| House and world | Holodeck [#12](https://github.com/AlterMundi/holodeck/issues/12) owns the first house and [#20](https://github.com/AlterMundi/holodeck/issues/20) owns material and lighting performance. Walk from the toroidal trail through a legible entrance to the Matter workshop. Check the authored facade, props, room cues, material scale, day and night, and wall/roof boundaries. Retain the current world run and rollback. Final appearance needs matched views and a moving normal/lightweight pass. |
+| Creation inside the world | Holodeck [#3](https://github.com/AlterMundi/holodeck/issues/3) and [#15](https://github.com/AlterMundi/holodeck/issues/15) own the creator journey. Qualify one existing room or playable creation first: preview, publish, observe it as a second authorized visitor, revise and reopen the prior edition. Reuse the same authorized contracts for later house, game, space and app tools. Preserve visitor-local camera and selection. Use the existing exhibition and viewer for a published result. |
+| Situated Conversation | Holodeck [#19](https://github.com/AlterMundi/holodeck/issues/19) and [DaimonApp #1031](https://github.com/AlterMundi/DaimonApp/pull/1031) own the exact receipt and full/delta/unchanged path. The candidate passed isolated owner/native and Home proxy checks. Qualify the live composition before enabling it. [DaimonApp #1022](https://github.com/AlterMundi/DaimonApp/issues/1022) retains the separate migration of Conversation internals. |
+
+Publish each accepted slice using the owning release path. Review the actual
+implementation with Opus 5.5 High and recheck corrections. Record fixture,
+production, device and participant evidence separately. Keep hardware frame
+budget, multi-visitor isolation, replay and Wiggle input visible on their
+owning lanes. The night work uses the existing active Holodeck and Proyección
+goals. The Gateway cutover dependency uses the existing Telecodex session;
+its admission alone does not establish native execution or deployment.
+
 Daimons participate through native observation/action/projection and their actual identity. Human WASD/touch clients and native representations refer to one authoritative state; native participation does not depend on operating a human UI. Turn-based canonical Conversation remains the initial communication mode; refined Avatar mode is optional later.
 
 ## MMORPG experience and creator loop
