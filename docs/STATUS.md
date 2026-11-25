@@ -2,12 +2,12 @@
 
 ## November 25 selected playtest update
 
-Holodeck is serving c2d4434bd2e6 after exact protected package readback.
-The deployed Conversation display uses a high-contrast minimize glyph and
+Holodeck is serving 52ca23ac4a7e after exact protected package readback.
+The deployed Conversation display uses a compact high-contrast minimize glyph and
 a small corner resize mark. Matter uses Orbital layered light by default and
 saves selected room looks per visitor account. The previous package
-8d2bb9df6ab7 supports returning restored editions to the cabinet and is the
-observed compatible rollback. Native world run and receiving configuration
+c2d4434bd2e6 is the observed compatible rollback. Both packages support
+returning restored editions to the cabinet. Native world run and receiving configuration
 were preserved.
 
 The HUD theme studies and bounded Sand3D Nature comparison are available

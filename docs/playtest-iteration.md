@@ -339,13 +339,14 @@ See the [A2UI catalog guide](https://a2ui.org/guides/defining-a-catalog/) and
 
 ### November 25 playtest and next controls
 
-The selected runtime c2d4434bd2e6 serves compact Conversation minimize and
-resize chrome. The exterior palette supplies an explicit dark control fill.
+The selected runtime 52ca23ac4a7e caps the Conversation minimize glyph at
+11 CSS pixels and fades its background plate. The corner resize mark and
+pointer target are unchanged. The exterior palette supplies an explicit dark control fill.
 The browser fixture exercised drag, resize, minimize, restore, draft retention
 and viewport clamping. The focused screenshot was inspected before selection.
 Matter defaults to Orbital · layered light. A per-account room preference
 survives new sessions, with the embedded Orbital material as load fallback.
-The preceding release 8d2bb9df6ab7 retained Collection rearchiving. Both
+The preceding release c2d4434bd2e6 retained Collection rearchiving. Both
 selected packages passed protected byte and native world continuity checks.
 
 The first [HUD design comparison](https://compaii.dmn.homes/view/59b2b33b3e7a4fdcbbefee7bb8d21868?display=work)
