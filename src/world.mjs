@@ -191,7 +191,7 @@ function workshopExterior(room,{prefix,sourceAttribute,includeVisits,includeCues
         ${node.shape==='portal'?'<m-cube x="-.5" y="1" width=".12" height="1.5" depth=".14" color="#bc8355"></m-cube><m-cube x=".5" y="1" width=".12" height="1.5" depth=".14" color="#bc8355"></m-cube><m-cube y="1.75" width="1.12" height=".12" depth=".14" color="#eed19b"></m-cube>':'<m-cylinder radius=".18" height=".7" y=".6" color="#bc8355"></m-cylinder>'}
         <m-sphere y="1.1" radius=".24" color="${node.play?(node.progress.complete?'#efc87a':'#a77bea'):'#8ce4c2'}" collide="false"></m-sphere>`}
         ${sign({y:representation?2.25:2.1,text:representation&&node.title.length>24?node.title.slice(0,23)+'…':node.title,size:20,width:2.5,height:representation ? .7 : .35})}</m-group>`;
-      if(node.play){
+      if(node.play&&room.lightExercise!==false){
         node.play.targets.forEach((target,index)=>{
           const filled=node.progress.targets[index].entity!==null;
           out+=`<m-group id="play-${attribute(node.id)}-target-${index}" data-play-target="${index}" data-play-filled="${filled}" x="${target.x}" y=".14" z="${target.z}">

@@ -29,7 +29,7 @@ test('a canonical interior source freezes its authorized place before awaits and
     {owner:being,room:'foyer',source:'node-private',sourceRevision:2,revision:7,pin},
   ]});
   try{
-    runtime=await createHolodeck({basePath:'/holodeck/',publicOrigin:'https://world.test',stateDir:dir,
+    runtime=await createHolodeck({lightExercise:true,basePath:'/holodeck/',publicOrigin:'https://world.test',stateDir:dir,
       ownNative:true,
       galleryAuthorization:async(cookie,selected)=>sourceAllowed&&cookie.includes('fixture=user')&&
         JSON.stringify(selected)===JSON.stringify(pin),

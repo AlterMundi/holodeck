@@ -84,7 +84,7 @@ export class WorldIndication{
   const s=this.selected,root=this.document.querySelector('m-group#workshop');if(!s||!root)return false;
   return !!s.element?.isConnected&&root.contains(s.element)&&s.element.getContainer()===s.container&&root.getAttribute('data-run')===s.run&&root.getAttribute('data-edition')===s.edition&&root.querySelector(`[id="${s.target}"]`)?.getAttribute('data-entity-revision')===String(s.revision);
  }
- editable(){const s=this.selected,entity=this.getState()?.entities?.[s?.target];return !!this.edit&&this.current()&&s.target.startsWith('garden-')&&!!entity&&!entity.deleted&&entity.revision===s.revision;}
+ editable(){const s=this.selected,state=this.getState(),entity=state?.entities?.[s?.target];return state?.lightExercise===true&&!!this.edit&&this.current()&&s.target.startsWith('garden-')&&!!entity&&!entity.deleted&&entity.revision===s.revision;}
  visitable(){const s=this.selected,node=this.getState()?.nodes?.[s?.target];return !!this.visit&&this.current()&&!!node&&!node.deleted&&!node.play&&node.revision===s.revision;}
  update(){
   const state=this.getState(),own=this.own(),selected=this.selected,current=this.current();

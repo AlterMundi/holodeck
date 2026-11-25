@@ -47,7 +47,7 @@ test('the Atelier owner adopts the exact live plan and recovers its receipt with
   async function start(interiorSpaces,atelierLayoutWrites=false){
     ownerSocket=join(stateDir,'owner-'+(++boot)+'.sock');
     foreignSocket=join(stateDir,'foreign-'+boot+'.sock');
-    runtime=await createHolodeck({stateDir,basePath:'/holodeck/',artProfile:ATELIER_PROFILE,
+    runtime=await createHolodeck({lightExercise:true,stateDir,basePath:'/holodeck/',artProfile:ATELIER_PROFILE,
       interiorSpaces,ownNative:true,atelierLayoutWrites,
       worldPorts:[{socket:ownerSocket,beingRef:owner},{socket:foreignSocket,beingRef:foreign}],
       nativeRoomAuthority:async()=>['observe','edit'],

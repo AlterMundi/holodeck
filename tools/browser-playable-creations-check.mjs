@@ -122,7 +122,7 @@ async function checkpoint(label,expected){
 }
 try{
  await mkdir(directory,{recursive:true});
- runtime=await createHolodeck({stateDir,publicOrigin:worldOrigin,galleryAuthorization:async()=>false,ownNative:true,worldSocket:socketPath,worldSocketBeingRef:being,
+ runtime=await createHolodeck({lightExercise:true,stateDir,publicOrigin:worldOrigin,galleryAuthorization:async()=>false,ownNative:true,worldSocket:socketPath,worldSocketBeingRef:being,
   identityResolver:async req=>{const who=req.headers.cookie?.match(/(?:^|; )fixture_player=([ab])(?:;|$)/)?.[1];return who?{id:'human:play-fixture-'+who,ref:'human:play-fixture-'+who,kind:'human',rights:['observe','edit','project']}:null;},
   nativeRoomAuthority:async verified=>{authorityReads++;if(verified.actor?.ref!==being)throw Error('Wrong synthetic receiving actor');return ['observe','edit','project'];},
   nativeFactory:async()=>({availability:async()=>({available:false}),authorizeWorldRequest:async()=>{originalLookups++;throw Error('Own native creation must not require a human original');}})});

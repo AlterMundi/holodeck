@@ -1012,7 +1012,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       matterHud.update(!collectionRoom||needsSync||!document.getElementById('conversation-panel').hidden||opaqueVisit||toolModal||settingsOpen,
         !entering&&!moving&&drawWorld&&!opaqueVisit&&!toolModal);
       garden.update(inside&&!moving&&activeSpace.playableInterior?activeSpace.id:null);gardenMarkers();
-      if(!inside){worldIndication?.update();if(!moving)playableHUD.update(position);}
+      if(!inside){worldIndication?.update();if(!moving)playableHUD.update(state?.lightExercise===true?position:null);}
       if(!moving){
         if(inside)contentVisitor?.refreshScopedCatalog();
         contentVisitor?.update(position);
@@ -1324,12 +1324,19 @@ async function refresh(){
     throw error;
   }
   if(!snapshotMayApply(state,incoming,request,stateRequest))return;
-  state=incoming;revalidateLightPreview();contentVisitor.syncNodes(state.nodes);playableHUD.sync(state.nodes,state.actorRef,state.canEdit===true);
+  const closingExercise=state?.lightExercise===true&&incoming.lightExercise!==true;
+  state=incoming;
+  if(closingExercise){
+    if(lastChange?.type!=='bridge.set')lastChange=null;
+    closePreview();
+    if(signalEditor.active&&!signalEditor.draft.mode&&!signalEditor.draft.pendingId)signalEditor.close();
+  }
+  revalidateLightPreview();contentVisitor.syncNodes(state.nodes);playableHUD.sync(state.nodes,state.actorRef,state.canEdit===true);
   if(activeSpace?.id==='outside'&&Array.isArray(state.entrances)&&
     JSON.stringify(activeSpace.entrances)!==JSON.stringify(state.entrances)){
     activeSpace={...activeSpace,entrances:state.entrances};resetDoor();
   }
-  $('#garden-create').hidden=state.canEdit!==true;
+  $('#garden-create').hidden=state.lightExercise!==true||state.canEdit!==true;
   worldAudio.observe(state,{continuityVersion});worldHistory.observe(state);
   const count=client.getCharacterStates().size;
   $('#people').textContent=count>1?`${count} exploradores en el taller`:'Un lugar para crear juntos';
@@ -1337,7 +1344,7 @@ async function refresh(){
   const bridge=state.entities.bridge;
   if(!bridge&&activeSpace?.title)$('#hud h1').textContent=activeSpace.title;
   $('#bridge').hidden=!bridge;
-  $('#plant').hidden=!bridge;
+  $('#plant').hidden=state.lightExercise!==true||!bridge;
   $('#undo').hidden=!bridge;
   if(bridge)$('#bridge').textContent=bridge.raised?(compact?'Separar':'Separar islas'):(compact?'Unir islas':'Conectar islas');
   if(bridge)$('#bridge').setAttribute('aria-label',bridge.raised?'Separar las islas':'Conectar las islas');
@@ -1356,10 +1363,11 @@ function settleCommand(result){
     say(pending.type==='node.remove'?'El jardín se retiró del mundo.':'El jardín ya forma parte del mundo.',{transient:true});
   }else if(result.status==='completed'){
     const undo=pendingMetadata?.undo;
-    lastChange=undo?null:{type:pending.type,target:pending.target,previous:pendingMetadata?.previous,
+    lastChange=undo||state?.lightExercise!==true&&pending.type!=='bridge.set'?null:{type:pending.type,target:pending.target,previous:pendingMetadata?.previous,
       appliedRevision:pending.type==='garden.place'?1:pending.expectedRevision+1,run:pending.run,edition:pending.edition};
     say(undo?'Tu cambio quedó deshecho.':'El cambio ya forma parte del mundo.',{transient:true});
-  }else say('Ese lugar cambió. Mirá cómo quedó antes de intentarlo de nuevo.');
+  }else if(result.reason==='The light-planting exercise has ended')say('El ejercicio de luces terminó.');
+  else say('Ese lugar cambió. Mirá cómo quedó antes de intentarlo de nuevo.');
   const id=pending.id;
   pending=null;pendingMetadata=null;sessionStorage.removeItem(pendingKey);clearRecovery('command');
   if(preview?.submission===id){
@@ -1466,6 +1474,7 @@ function showPreview(){
   worldNotice.clear();$('#creator').hidden=false;syncLightActions();
 }
 function editLight(record){
+  if(state?.lightExercise!==true)return;
   if(signalEditor.active){say('Guardá o descartá el jardín antes de editar una luz.');return;}
   if(pending||preparingAction||lightPreviewBusy()){say('Primero tengo que confirmar el cambio anterior.');return;}
   const entity=currentLight(record);
@@ -1475,11 +1484,11 @@ function editLight(record){
   previewDocument();showPreview();say('Podés mover esta luz o cambiar su color. Todavía no cambió para los demás.');
 }
 $('#bridge').onclick=()=>state&&action('bridge.set','bridge',{raised:!state.entities.bridge.raised},state.entities.bridge.revision);
-$('#plant').onclick=()=>{if(lightPreviewBusy()||pending||preparingAction)return;if(signalEditor.active){say('Guardá o descartá el jardín antes de crear una luz.');return;}closePreview();if(movePreview()){showPreview();say('Elegí dónde dejar esta luz. Todavía la ves solamente vos.');}};
+$('#plant').onclick=()=>{if(state?.lightExercise!==true||lightPreviewBusy()||pending||preparingAction)return;if(signalEditor.active){say('Guardá o descartá el jardín antes de crear una luz.');return;}closePreview();if(movePreview()){showPreview();say('Elegí dónde dejar esta luz. Todavía la ves solamente vos.');}};
 let signalPreview=null,signalMarkup=null;
 const indoorSaveKey='holodeck:indoor-design:'+base.pathname;
 let indoorReading=false;
-const editorRoom=()=>inside&&activeSpace.playableInterior===true?
+const editorRoom=()=>inside&&(activeSpace.playableInterior===true||activeSpace.gardenReceiptRecovery===true)?
   {room:activeSpace.id,actorRef:activeSpace.actorRef}:null;
 const designScope=()=>activeSpace.canDesignGarden===true?editorRoom():null;
 const sameDesign=(a,b)=>!!a&&!!b&&a.room===b.room&&a.actorRef===b.actorRef;
@@ -1559,7 +1568,7 @@ $('#indoor-design-forget').onclick=()=>{
 };
 signalEditor=new SignalGardenEditor({document,
   position:()=>client.getLocalCharacterState()?.position,
-  allowed:(node,mode)=>mode?sameDesign(mode,designScope())&&!moving:!inside&&!preview&&state?.canEdit===true&&
+  allowed:(node,mode)=>mode?sameDesign(mode,designScope())&&!moving:!inside&&!preview&&state?.lightExercise===true&&state.canEdit===true&&
     (!node||!node.deleted&&state.nodes?.[node.id]?.revision===node.revision&&state.nodes[node.id].owner===state.actorRef),
   save:(node,args,target,onPending,mode)=>mode?saveIndoorDesign(node,args,onPending,mode):
     action(node?'node.update':'node.place',target,args,node?.revision??null,{onPending}),
@@ -1607,7 +1616,7 @@ for(const button of document.querySelectorAll('[data-color]'))button.onclick=()=
   previewDocument();
 };
 $('#undo').onclick=async()=>{
-  if(!lastChange||!state)return;
+  if(!lastChange||!state||state.lightExercise!==true&&lastChange.type!=='bridge.set')return;
   const change=lastChange,entity=state.entities[change.target];
   if(!entity||state.run!==change.run||state.edition!==change.edition||entity.revision!==change.appliedRevision){lastChange=null;$('#undo').disabled=true;say('Este lugar volvió a cambiar. No voy a deshacer el trabajo de otra persona.');return;}
   if(preview?.target===change.target){if(!closePreview())return;}

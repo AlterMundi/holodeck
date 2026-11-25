@@ -25,7 +25,7 @@ Before closing each deliverable, review its actual implementation with Claude Co
 1. [Holodeck #16](https://github.com/AlterMundi/holodeck/issues/16) owns an independent Three.js HUD layer with CSS-pixel layout, resolution from device pixels and bounded density. [Proyección #5](https://github.com/AlterMundi/proyeccion/issues/5) owns reusable text raster size, placement, focus, input and catalog behavior. Prove the bottom toolbelt with Conversar, minimap and Matter entry. Compare sharpness to a browser reference at fractional and integer DPR with both graphics presets, test touch reach and pointer lock, and measure startup and frame times against the same device baseline.
 2. [Holodeck #18](https://github.com/AlterMundi/holodeck/issues/18) owns the A2UI window system and the native Conversation surround, navigation, minimize, restore and resize. Keep the canonical iframe mounted, share one placement and animation clock, and preserve exact piece context, draft, history, device grants and session. Let Conversation and Matter coexist. [DaimonApp #1022](https://github.com/AlterMundi/DaimonApp/issues/1022) owns the A2UI projection of Conversation internals in the following iteration.
 3. [Holodeck #17](https://github.com/AlterMundi/holodeck/issues/17) owns the client-local Matter inspection camera. Snapshot locomotion and camera on entry, use a first-person pose plus bounded orbit, view-plane pan/height, tilt and cursor-anchored physical dolly. Touch pinch uses its centroid. Reuse the room collision/near-plane path and keep explicit part rotation separate. Verify restoration on exit, passage, disconnect and revocation.
-4. Cut over all native surfaces by reachable state. Inventory entry and retry, passage/recovery, title and wayfinding, toolbelt and minimap, touch movement, Appearance/video, Matter shelves/archive/table, Conversation shell, Beacon, creator/edit/garden/play, activity and exhibition, visit navigation, runtime notifications and generated results controls. For each record its state writer, A2UI component, action and test fixture. Give each deliberate web embed an owner and purpose. Detect interactive visible legacy controls with fixture coverage as each surface migrates.
+4. Cut over all native surfaces by reachable state. Inventory entry and retry, passage/recovery, title and wayfinding, toolbelt and minimap, touch movement, Appearance/video, Matter shelves/archive/table, Conversation shell, Beacon, creation and editing, activity and exhibition, visit navigation, runtime notifications and generated results controls. For each record its state writer, A2UI component, action and test fixture. Give each deliberate web embed an owner and purpose. Detect interactive visible legacy controls with fixture coverage as each surface migrates.
 5. Qualify authoritative, bidirectional state/actions, desktop and touch, normal/lightweight performance, two visitors including read-only and revocation, and native/browser boundary cases. Recheck the published torus, cave, house, wall and roof, flight and yaw, rollback, and actual served package. Record participant acceptance separately.
 
 [The shared roadmap](shared-roadmap.md) owns the subsequent Wiggle/camera, activity timeline, work-state replay and avatar work. Holodeck issues #3, #12 and #1 remain the parent experience, house integration and situated Conversation records.
@@ -140,7 +140,7 @@ receiving checks.
 | Appearance | Room style selection and author appearance form | Local style and canonical authorized appearance save. Verify theme changes on native HUD and identity-specific mutations. |
 | Matter | Generated shelf rows and reviews, archive carousel/actions, available/active bench modes, worktable status and input | Collection catalog and worktable actions; local selection, pose and inspect state. Verify owner/read-only/revoked actors, revisions, follow and room exit. |
 | Conversation shell | Persistent launcher, move/resize/minimize, room/topic/reference controls and status from the embed. The legacy native composer and recovery affordances are owned native UI wherever reachable. | Canonical Conversation, local window geometry. Verify exact selected part, draft, device permission and session across display operations. |
-| Creator and play | Point/send/edit, garden/placement preview and acceptance, recipe selectors, generated signal rows, play instructions and backstage actions | World, layout and recipe commands. Verify local draft, validated publish, owner access and another player's observed result. |
+| Creation and editing | Point and discuss, preview and confirm supported world creations, and inspect exact revisions. Light planting and signal gardens are retired playtest surfaces. | World, layout and exhibit commands. Verify local draft, validated publish, owner access and another player's observed result. |
 | Activity, exhibition and visits | History filters/paging/revisions, generated exhibit entries, generated visit selector and navigation, pointing and discussion actions | Shared world/activity and original result owner. Verify exact selected result identity, independent session layout, and no private result leaks across visitors. |
 | Beacon | In-world affordance, surrounding launch/status/close controls; authorized Harmonic Lab iframe payload when selected | Beacon owner and existing authorized route. Exercise opening and exiting within the room and preserve authorization. |
 | Embedded content | Canonical Conversation, deliberately visited Nexus content and the existing Harmonic Lab payload retain the content app renderer. All frames, navigation and host actions belong to Holodeck. | Verify origin, stable mounts where needed, native shell and browser-owned device prompts. |
@@ -615,8 +615,40 @@ Chromium at desktop, 390 and 320 CSS pixels. Hitting a control through
 software WebGL leaves physical-device GPU cost open. The shell and four
 instrument sources live in `src/hud-material-shell.mjs` and `art/hud-spatial/`.
 
-Human selection precedes preset adoption. Position, size, typography and
-appearance remain independent from shared application state.
+### Select and ship the game-wide HUD design
+
+This is an explicit acceptance item for the active playtest iteration.
+Review the six existing looks on real gameplay surfaces and let Nicolás
+select the visual direction before promoting a default. Compare each at
+arrival, with the minimap open, inside Matter around an actual part, and
+with Conversation open alongside it. The playable comparisons live on
+Holodeck in the `hud-look` variants `cabina`, `orbita`, `umbral`, `pulso`,
+`estratos`, and `taller`. Taller currently styles the worktable only.
+The linked comparison viewer is useful for the design studies.
+
+Carry the selected direction through all native HUD surfaces, overlays,
+windows and their opening, closing, focused, disabled and confirmed states.
+Build coherent dark and light presets from that direction and retain
+personal tuning. Apply the chosen materials, depth, typography, icon
+language, spacing and motion consistently. Qualify the selected package
+in the real game in bright and dark scenes, on desktop and touch, with
+both graphics presets and reduced motion. Confirm the canonical
+Conversation display still keeps the draft and its device/session access.
+Keep preview URLs opt-in until that selection and qualification.
+The [private design comparison](https://compaii.dmn.homes/view/59b2b33b3e7a4fdcbbefee7bb8d21868?display=work)
+opens with three new in-engine drafts, Puente, Margen and Anillo, on the
+same room and workpiece. Puente uses the Cabina perspective, Margen limits
+bezel geometry to working displays, and Anillo uses rounder translucent
+frames. Desktop Chromium exercised the actual toolbar, map, Matter entry,
+project selection and Conversation display for each. The embedded test
+payload shows the framing. Fable High addressed composition and text
+contrast. Opus 5.5 High checked the draft geometry and the comparison.
+Anillo's initial position encroached on the piece and was moved toward the
+edge before its final capture. These are visual drafts for selection.
+A dedicated design workshop table is a later
+project.
+
+Position, size, typography and appearance remain independent from shared application state.
 Use one shared positioning interaction for minimap, settings, Collection and
 Matter worktable panels. Provide keyboard and touch input, increase hit
 areas without increasing icon art, clamp windows on viewport change, and
@@ -885,3 +917,24 @@ Escape, preserved draft on WebGL loss and a clean close. The lab's network
 responses in these checks were controlled fixtures, with zero page errors.
 The source suite reported 329 passes and two skips. The protected service
 continues to serve the creator release while this package is staged.
+
+## Retiring the light exercise
+
+Light placement and the signal-garden exercise served as an early
+authority and shared-state proof. Production Holodeck now selects the
+retired mode in the candidate. Existing saved definitions, placed objects,
+events and receipts remain loadable. New exterior light and recipe
+mutations stop in the shared Room writer. Interior signal and recipe
+writes stop in the shared garden writer after exact actor-scoped receipt
+lookup. The browser and native surfaces stop advertising the exercise.
+The bridge, general room and exhibit authoring, and world pointing remain
+independent. Historical test cases opt into the exercise explicitly.
+
+Fable High reviewed the retirement boundary before implementation. Opus
+5.5 High reviewed the diff and prompted retained rejection outcomes,
+owner revocation, actor-scoped pending receipt access, and explicit native
+archive status. The exact package `4e578448c13c` restarts with a retained
+garden, hides light tools on desktop and emulated touch and preserves the
+minimap. The source suite reported 331 passing tests and two skips. The
+existing browser release and its established rollback remain selected until
+activation.

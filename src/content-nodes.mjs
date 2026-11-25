@@ -23,7 +23,7 @@ export function validStoredNode(node,id){
 }
 export function nodeState(nodes,actor=null,context={}){
  return Object.fromEntries(Object.entries(nodes).map(([id,node])=>[id,{id,revision:node.revision,owner:node.owner,deleted:node.deleted,title:node.title,shape:node.shape,position:{...node.position},...(node.representation?{representation:node.representation}:{}),
-  ...(node.play?(()=>{const progress={...signalGardenProgress(node.play,context),definitionRevision:node.revision};return {play:structuredClone(node.play),progress,...signalGardenInstructions(node.play,progress)};})():{
+  ...(node.play?(()=>{const progress={...signalGardenProgress(node.play,context),definitionRevision:node.revision};return {play:structuredClone(node.play),progress,...(context.lightExercise===false?{status:'Ejercicio archivado',instruction:''}:signalGardenInstructions(node.play,progress))};})():{
    ...(actor?.rights?.includes('observe')?{declaredResultPin:structuredClone(node.result.pin)}:{}),
    result:{selection:contentSelection(node.result.pin),kind:visitVersion(node.result.pin)===3?'context':visitVersion(node.result.pin)===2?'artifact_review':'report',...(visitVersion(node.result.pin)===2?{adapter:node.result.pin.adapter}:{}),verification:'creator-declared'}}),
   links:node.links.map(link=>({...link,currentRevision:nodes[link.id]?.revision??null,status:!nodes[link.id]||nodes[link.id].deleted?'deleted':nodes[link.id].revision===link.revision?'current':'revised'}))}]));

@@ -44,8 +44,9 @@ import {HumanAvatarProfiles,humanWardrobeAssets} from './human-avatars.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
-export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt,houseVisual,gardenVisual,gallerySelection,galleryAuthorization,matterCollection,collectionSourceRequest,nativeReviewAuthority=null,artProfile,worldTerrain,atelierLayoutWrites=ATELIER_EXPANSION_WRITES}={}){
+export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt,houseVisual,gardenVisual,gallerySelection,galleryAuthorization,matterCollection,collectionSourceRequest,nativeReviewAuthority=null,artProfile,worldTerrain,atelierLayoutWrites=ATELIER_EXPANSION_WRITES,lightExercise=false}={}){
   if(!/^\/(?:[a-z0-9-]+\/)*$/.test(basePath))throw Error('Select a bounded absolute base path');
+  lightExercise=lightExercise===true;
   if(production&&(!identityResolver||!publicOrigin||!stateDir))throw Error('Shared identity, audience and state are required in production');
   if(typeof interiorArtwork!=='function'||production&&(interiorArtwork!==interiorArt||houseVisual||gardenVisual))
     throw Error('Select checked-in art for production');
@@ -166,7 +167,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }
   const selectedRooms=new Set(interiorSpaces.map(item=>item.id));
   const gardenStore=stateDir?new RoomStore(join(stateDir,'indoor-gardens'),{maxBytes:INDOOR_GARDEN_BYTES}):null;
-  const indoorGardens=new IndoorGardens({state:gardenStore?.load(),spaces,houses,legacyRooms:selectedRooms,authoredRooms,
+  const indoorGardens=new IndoorGardens({state:gardenStore?.load(),spaces,houses,legacyRooms:selectedRooms,authoredRooms,lightExercise,
     persist:gardenStore?value=>gardenStore.save(value):null});
   const editorStore=stateDir?new RoomStore(join(stateDir,'garden-editors'),{maxBytes:16*1024}):null;
   const gardenEditors=new GardenEditors({state:editorStore?.load(),owner:id=>indoorGardens.owner(id),
@@ -258,7 +259,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     return id===gallery?.room?
       [...placed,...gallery.slots.filter(slot=>!placed.some(entry=>sameVisitPin(entry.pin,slot.pin)))]:placed;
   }
-  const room=new Room({houses,state:store?.load(),persist:store?s=>store.save(s):null,contentNodes:selectedContentNodes,
+  const room=new Room({houses,state:store?.load(),persist:store?s=>store.save(s):null,contentNodes:selectedContentNodes,lightExercise,
     presence:()=>[...sessions.values()].filter(s=>s.connection!==null&&Date.now()-s.created<SESSION_MS&&spaces.current(s.actor)===OUTSIDE)
       .map(s=>({actor:s.actor.id,kind:'human',name:s.actor.name||'Explorador',scope:'authenticated-room-presence',position:null}))});
   const exteriorAddress='http://localhost'+route('world');
@@ -387,13 +388,14 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(spaces.fenced)throw new RoomError('space-uncertain','Room placement needs recovery');
     const view=spaces.view(actor),exhibit=exhibits.scoped(actor,view.id),
       art=artForRoom(spaces.rooms.get(view.id),view.exits ?? []);
-    const activity=indoorGardens.view(actor,view.id);
+    const gardenRoom=Boolean(indoorGardens.owner(view.id));
+    const activity=lightExercise&&gardenRoom?indoorGardens.view(actor,view.id):null;
     const outdoorSky=includeSky?(view.id===OUTSIDE?atelier?.outdoorSky:art?.outdoorSky):null;
     const space={...view,...(view.id===OUTSIDE?{entrances:exteriorEntrances(actor),...(toroidal?{title:'Holodeck',outdoorTerrain:TOROIDAL_TERRAIN.id,terrainRun:room.run}:
         valley?{title:'Valle de llegada',outdoorTerrain:true}:{})}:{objects:roomObjects(view),
         ...(toroidal&&view.exteriorDoor?{exteriorDoor:toroidalParcelPoint(view.exteriorDoor)}:{})}),
-      ...(indoorGardens.owner(view.id)?{playableInterior:true}:{}),
-      ...(gardenEditors.grant(actor,view.id)?{canDesignGarden:true}:{}),
+      ...(gardenRoom?(lightExercise?{playableInterior:true}:{gardenReceiptRecovery:true}):{}),
+      ...(lightExercise&&gardenEditors.grant(actor,view.id)?{canDesignGarden:true}:{}),
       ...(activity?{activity}:{}),
       ...(art?.lightRig?{indoorLighting:true}:{}),
       ...(outdoorSky?{outdoorSky}:{}),
@@ -416,7 +418,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const selected=spaces.rooms.get(id);
     if(!actor.rights?.includes('observe')||!selected||spaces.fenced||room.commitUncertain||!spaces.allows(actor,id))return null;
     const view=spaces.view(actor,id);
-    const exhibit=exhibits.scoped(actor,id),activity=indoorGardens.observe(actor,id);
+    const exhibit=exhibits.scoped(actor,id),activity=lightExercise?indoorGardens.observe(actor,id):null;
     return {id,title:selected.title,level:selected.level,house:selected.house,
       objects:view.id===id?roomObjects(view):[],
       ...(activity?{activity}:{}),
@@ -524,6 +526,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   function indoorGarden(actor,input,delegated=false){
     if(room.commitUncertain||spaces.fenced||!gardenStore)return null;
     if(input.type==='garden.editor.current'||input.type==='garden.editor.set'){
+      if(!lightExercise&&input.type==='garden.editor.set'&&input.human!==null)return null;
       const selected=gardenEditors.act(actor,input);
       if(selected&&input.type==='garden.editor.set'){
         for(const [socket,record] of sockets)
@@ -531,7 +534,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       }
       return selected;
     }
-    if(input.type==='garden.templates'||input.type==='garden.draft')return indoorGardens.draft(actor,input);
+    if(input.type==='garden.templates'||input.type==='garden.draft')return lightExercise?indoorGardens.draft(actor,input):null;
     if(input.type==='garden.result')return indoorGardens.result(actor,input.id);
     if(input.type==='garden.preview')return indoorGardens.act(actor,{...input,type:'garden.put'},{preview:true});
     try{return indoorGardens.act(actor,input,{delegated});}
@@ -786,7 +789,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(spaces.fenced||room.commitUncertain)return res.sendStatus(503);
     const {room:id,result:command}=req.query;
     if(typeof id!=='string'||id===OUTSIDE||!inScope(req.actor,id))return res.sendStatus(404);
-    const value=command===undefined?indoorGardens.view(req.actor,id):indoorGardens.result(req.actor,command);
+    const value=command===undefined?(lightExercise?indoorGardens.view(req.actor,id):null):indoorGardens.result(req.actor,command);
     if(command!==undefined&&value?.room!==id)return res.sendStatus(404);
     res.json(value);
   });
@@ -803,7 +806,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }
   app.get(route('api/space/garden-editor'),asyncRoute(async(req,res)=>{
     const id=req.query.room;
-    if(!await gardenEditor(req,id))return res.sendStatus(403);
+    if(!lightExercise||!await gardenEditor(req,id))return res.sendStatus(403);
     const current=indoorGardens.current(id);
     res.json({room:id,garden:current?{room:id,title:current.title,revision:current.revision,play:current.play}:null,
       templates:indoorGardenTemplates()});
@@ -1035,7 +1038,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   app.get(route('api/state'),asyncRoute(async(req,res)=>{
     if(room.commitUncertain||spaces.fenced)return res.status(503).json({message:'Holodeck necesita recuperar su último cambio antes de continuar.'});
     const canEdit=projectionHealthy&&['observe','edit'].every(right=>req.actor.rights?.includes(right));
-    res.json({run:room.run,edition:room.edition,sequence:room.sequence,actorRef:req.actor.id,canEdit:!singleHouse&&canEdit,layout:publicWorld,entities:singleHouse?{}:room.entities,
+    res.json({run:room.run,edition:room.edition,sequence:room.sequence,actorRef:req.actor.id,canEdit:!singleHouse&&canEdit,lightExercise:lightExercise&&!singleHouse,layout:publicWorld,entities:singleHouse?{}:room.entities,
       focus:singleHouse?[]:room.focusState(),nodes:singleHouse?{}:room.nodeState(),entrances:exteriorEntrances(req.actor),
       native:native?{...await native.availability(req.actor),sharedConversation:!!native.contexts}:{available:false}});
   }));

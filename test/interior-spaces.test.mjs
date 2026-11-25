@@ -315,7 +315,7 @@ test('own-native layout publication adds a live guest route and survives process
   async function start(){
     socketPath=join(stateDir,'owner-'+(++boot)+'.sock');
     foreignPath=join(stateDir,'foreign-'+boot+'.sock');
-    runtime=await createHolodeck({production:true,basePath:'/holodeck/',publicOrigin:'https://world.test',stateDir,
+    runtime=await createHolodeck({lightExercise:true,production:true,basePath:'/holodeck/',publicOrigin:'https://world.test',stateDir,
       worldPorts:[{socket:socketPath,beingRef:owner},{socket:foreignPath,beingRef:foreign}],ownNative:true,
       nativeRoomAuthority:async()=>['observe','edit'],
       nativeFactory:()=>({availability:async()=>({available:false}),authorizeWorldRequest(){throw Error('test');}}),
@@ -543,7 +543,7 @@ test('an explicitly granted, currently paired human publishes with their own ind
   new RoomStore(join(stateDir,'houses')).save({schema:'holodeck.houses/v1',houses:[house],receipts:[]});
   let listener,runtime,pair=owner,pairGate=null;
   try{
-    runtime=await createHolodeck({production:true,basePath:'/holodeck/',publicOrigin:'https://world.test',
+    runtime=await createHolodeck({lightExercise:true,production:true,basePath:'/holodeck/',publicOrigin:'https://world.test',
       stateDir,ownNative:true,worldSocket:socketPath,worldSocketBeingRef:owner,
       nativeRoomAuthority:async()=>['observe','edit'],
       nativeFactory:()=>({authorizeWorldRequest(){throw Error('fixture');},

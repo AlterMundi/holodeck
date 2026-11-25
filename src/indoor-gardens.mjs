@@ -25,8 +25,9 @@ export function situatedGardenCommandId(interactionId,id){
 }
 
 export class IndoorGardens {
-  constructor({state,spaces,houses,legacyRooms,persist,authoredRooms=()=>spaces.rooms}){
+  constructor({state,spaces,houses,legacyRooms,persist,authoredRooms=()=>spaces.rooms,lightExercise=true}){
     this.spaces=spaces;this.authoredRooms=authoredRooms;this.houses=houses;this.legacyRooms=legacyRooms;this.persist=persist;this.fenced=false;
+    this.lightExercise=lightExercise;
     this.state=state??{schema:SCHEMA,gardens:[],receipts:[]};
     const {gardens,receipts}=this.state;
     if(!exact(this.state,'gardens,receipts,schema')||this.state.schema!==SCHEMA||
@@ -130,7 +131,7 @@ export class IndoorGardens {
       [room,expectedRevision,input.index,workshopColour(input.color)])).digest('hex');
     const prior=this.state.receipts.find(entry=>entry.id===id&&entry.actor===actor.id);
     if(prior)return !preview&&prior.fingerprint===fingerprint?structuredClone(prior.result):null;
-    if((current?.revision??null)!==expectedRevision)return null;
+    if(!this.lightExercise||(current?.revision??null)!==expectedRevision)return null;
     const sequence=(current?.sequence??0)+1;
     const next=author?{room,title:input.title,revision:(current?.revision??0)+1,sequence,
       play:structuredClone(input.play),signals:input.play.targets.map(()=>null)}:

@@ -56,11 +56,11 @@ test('browser recipe edits cannot spoof authorship, publish result pins or repla
  assert.deepEqual(restored.nodes[nativeTarget],state.nodes[nativeTarget]);
 });
 
-test('browser recipe commands use the current authenticated HTTP actor and edit grant',async t=>{
+for(const lightExercise of [false,true])test('authenticated HTTP recipe commands with exercise '+(lightExercise?'selected':'retired'),async t=>{
  const stateDir=mkdtempSync(join(tmpdir(),'holodeck-playable-http-')),publicOrigin='https://world.test';
  t.after(()=>rmSync(stateDir,{recursive:true,force:true}));
  let rights=['observe','edit'];
- const runtime=await createHolodeck({stateDir,publicOrigin,production:true,
+ const runtime=await createHolodeck({stateDir,publicOrigin,production:true,...(lightExercise?{lightExercise}:{}),
   identityResolver:async req=>req.headers.cookie?.includes('home=fixture')?{...human,rights}:null});
  const listener=runtime.app.listen(0,'127.0.0.1');
  await new Promise(resolve=>listener.once('listening',resolve));
@@ -73,14 +73,25 @@ test('browser recipe commands use the current authenticated HTTP actor and edit 
  const post=(path,body,headers={})=>fetch(base+'/api/'+path,{method:'POST',
   headers:{cookie,origin:publicOrigin,'content-type':'application/json',...headers},body:JSON.stringify(body)});
  assert.equal((await current()).canEdit,true);
+ assert.equal((await current()).lightExercise,lightExercise);
  const captured=await post('observe',{});assert.equal(captured.status,200);
  const {run,edition,id:observation}=await captured.json();
  const place={id:crypto.randomUUID(),issuedAt:Date.now(),run,edition,observation,
   type:'node.place',target:'node-http-garden',expectedRevision:null,args:nodeData(recipe)};
  assert.equal((await post('commands',place,{origin:'https://other.test'})).status,403);
  const placed=await post('commands',place);assert.equal(placed.status,200);
- assert.equal((await placed.json()).status,'completed');
- assert.equal((await current()).nodes[place.target].owner,human.id);
+ assert.equal((await placed.json()).status,lightExercise?'completed':'rejected');
+ assert.equal((await current()).nodes[place.target]?.owner,lightExercise?human.id:undefined);
+ if(!lightExercise){
+  const plant={...place,id:crypto.randomUUID(),type:'garden.place',target:'garden-retired',args:{x:2,z:1,color:'rose'}};
+  const before=runtime.room.snapshot();
+  const rejection=await (await post('commands',plant)).json();
+  assert.equal(rejection.status,'rejected');
+  assert.equal(rejection.reason,'The light-planting exercise has ended');
+  assert.deepEqual(runtime.room.snapshot().entities,before.entities);
+  assert.equal(runtime.room.sequence,before.sequence);
+  assert.deepEqual(await (await fetch(base+'/api/commands/'+plant.id,{headers:{cookie}})).json(),rejection);
+ }
  rights=['observe'];
  assert.equal((await current()).canEdit,false);
  const denied=await post('commands',{...place,id:crypto.randomUUID(),target:'node-other-garden'});
@@ -163,4 +174,20 @@ test('several canonical actors can collaborate within one target, but off-target
  act(room,native,'garden.place','garden-b',{x:.5,z:0,color:'mint'},null);assert.equal(progress(room).filledTargets,1);assert.equal(progress(room).contributors,2);assert.equal(progress(room).complete,true);
  assert.equal(signalColourName('mint'),'menta');assert.equal(signalColourName('#8CE4C2'),'menta');assert.equal(signalColourName('#123ABC'),'#123abc');
  assert.match(worldDocument(room),/content="1 · menta · lista"/);
+});
+
+test('a retired exercise preserves the exact accepted command and facade of its saved garden',()=>{
+ const selected=new Room();
+ const command=proposal(selected,human,'garden.place','garden-retained',{x:2,z:1,color:'rose'},null);
+ const accepted=selected.command(human,command);
+ assert.equal(accepted.status,'completed');
+ assert.equal(act(selected,human,'node.place','node-retained',nodeData(recipe),null).status,'completed');
+ const retired=new Room({state:selected.snapshot(),lightExercise:false});
+ assert.deepEqual(retired.snapshot(),selected.snapshot());
+ assert.deepEqual(retired.command(human,command),accepted);
+ assert.throws(()=>retired.command(human,{...command,args:{...command.args,color:'mint'}}),/different contents/);
+ assert.equal(retired.observe(human).nodes['node-retained'].status,'Ejercicio archivado');
+ const blocked=act(retired,native,'garden.place','garden-untouched',{x:2,z:1,color:'mint'},null);
+ assert.equal(blocked.reason,'The light-planting exercise has ended');
+ assert.equal(act(retired,human,'bridge.set','bridge',{raised:true},0).status,'completed');
 });

@@ -22,7 +22,7 @@ export class RoomError extends Error {
 // Semantic activity authority. Presence ticks never advance entity revisions.
 // Actors and rights come from a receiving adapter, never from command arguments.
 export class Room extends EventEmitter {
-  constructor({ clock = Date.now, edition = 'island-workshop@draft-1', persist = null, state = null, presence = ()=>[], contentNodes, houses = new Houses() } = {}) {
+  constructor({ clock = Date.now, edition = 'island-workshop@draft-1', persist = null, state = null, presence = ()=>[], contentNodes, houses = new Houses(), lightExercise = true } = {}) {
     super();
     this.clock = clock;
     this.edition = edition;
@@ -37,6 +37,7 @@ export class Room extends EventEmitter {
     this.presence = presence;
     this.contentNodes = validateContentNodes(contentNodes);
     this.houses = houses;
+    this.lightExercise = lightExercise;
     if(state)this.restore(state);
   }
 
@@ -157,7 +158,7 @@ export class Room extends EventEmitter {
     return this.event(actor, 'projection.changed', projection);
   }
 
-  nodeState(actor=null){return nodeState(this.nodes,actor,{entities:this.entities,editors:this.entityEditors,sequence:this.sequence});}
+  nodeState(actor=null){return nodeState(this.nodes,actor,{lightExercise:this.lightExercise,entities:this.entities,editors:this.entityEditors,sequence:this.sequence});}
 
   focusState(){return focusState(this.focuses,this.entities,this.nodes);}
 
@@ -212,6 +213,11 @@ export class Room extends EventEmitter {
       if (result.status === 'completed') this.changed({type:command.type, house:result.house});
       return result;
     }
+    const retiredLight=['garden.place','garden.update','garden.remove'].includes(command.type);
+    const retiredRecipe=['node.place','node.update'].includes(command.type)&&
+      (command.args?.play||typeof command.target==='string'&&Object.hasOwn(this.nodes,command.target)&&this.nodes[command.target]?.play);
+    if(!this.lightExercise&&(retiredLight||retiredRecipe))
+      return finish('rejected','The light-planting exercise has ended');
     if(['node.place','node.update','node.remove'].includes(command.type)){
       const previous=this.nodes[command.target],seen=observation.nodes?.[command.target],placing=command.type==='node.place';
       const removing=command.type==='node.remove';
