@@ -23,7 +23,7 @@ import {projectRoomSurface} from '../art/collection/appearance-study/viewer/surf
 import {nearestCreationPosition} from './world-layout.mjs';
 import { Networked3dWebExperienceClient, DefaultVirtualJoystickPlugin } from '@mml-io/3d-web-experience-client';
 import { ThreeJSWorldRenderer } from '@mml-io/3d-web-threejs';
-import { Color, DirectionalLight, SpotLight, Vector3 } from 'three';
+import { Color, DirectionalLight, PCFShadowMap, SpotLight, Vector3 } from 'three';
 import { WORKSHOP, workshopColour } from './workshop.mjs';
 import { saveIntent, loadIntent, archiveIntent, sameActor, nativeRetryRoute } from './client-intents.mjs';
 import { NativeAvatarLayer } from './native-avatar.mjs';
@@ -252,6 +252,9 @@ function startInterior(space){
     createRenderer:options=>{
       constrainInteriorCamera(options,()=>space.id);
       const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
+      // MML still selects the deprecated soft-map enum. Three r182 needs the
+      // current PCF enum for comparison sampling and per-light shadow radii.
+      renderer.composer.renderer.shadowMap.type=PCFShadowMap;
       const frameBudget=createFrameBudget(renderer);
       galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
       galleryModels.sync(visitor.entries);
@@ -701,6 +704,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       return position&&position.x>21&&position.x<32&&position.z<-6&&position.z>-26?'valley-cave':null;
     });
     const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
+    // MML still selects the deprecated soft-map enum. Three r182 needs the
+    // current PCF enum for comparison sampling and per-light shadow radii.
+    renderer.composer.renderer.shadowMap.type=PCFShadowMap;
     const releaseOrbit=bindWorldOrbitInput(options.coreCameraManager,renderer.composer.renderer.domElement,()=>mouseSensitivity);
     const mapPanel=document.querySelector('#space-travel');
     const minimap=bindToroidalMinimap(mapPanel);
@@ -1038,11 +1044,13 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         interiorKey.target.position.copy(roomKeyTarget);
         interiorKey.color.copy(roomKeyColor);
         interiorKey.intensity=key.intensity??160;
+        interiorKey.shadow.radius=1;
         if(key.inspection&&inspectionMix>.001){
           interiorKey.position.lerp(inspectionKeyPosition,inspectionMix);
           interiorKey.target.position.lerp(inspectionKeyTarget,inspectionMix);
           interiorKey.color.lerp(inspectionKeyColor,inspectionMix);
           interiorKey.intensity+=(key.inspection.intensity-interiorKey.intensity)*inspectionMix;
+          interiorKey.shadow.radius+=((key.inspection.shadowRadius??1)-1)*inspectionMix;
         }
       }
       const skySelection=activeSpace?.outdoorSky;

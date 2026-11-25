@@ -83,7 +83,7 @@ export function readMatterWorkshopArt(profile='matter-workshop-v1'){
     keyLight:{
       position:[-.48,2.36,-.43],target:[0,1,-.43],color:orbital?'#dcecff':'#ffdbad',intensity:orbital?70:53,
       ...(visualStyles?{inspection:{position:[-.80,2.42,.06],
-        target:[worktable[0],worktable[1]+.16,worktable[2]],color:'#fff1d7',intensity:53}}:{}),
+        target:[worktable[0],worktable[1]+.16,worktable[2]],color:'#fff1d7',intensity:53,shadowRadius:2.8}}:{}),
     },
     archive:position(anchors['archive-model']),
     shelves:Array.from({length:6},(_,index)=>position(anchors['shelf-'+index])),

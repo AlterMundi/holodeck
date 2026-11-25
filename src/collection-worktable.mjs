@@ -1,4 +1,4 @@
-import {Box3,BufferAttribute,BufferGeometry,Group,Mesh,MeshStandardMaterial,Plane,Vector3} from 'three';
+import {Box3,BufferAttribute,BufferGeometry,DoubleSide,Group,Mesh,MeshStandardMaterial,Plane,Vector3} from 'three';
 import {disposeModel} from './gallery-models.mjs';
 
 const key=edition=>edition.resource+':'+edition.version+':'+edition.gallerySha256;
@@ -32,7 +32,7 @@ function makeModel(review,anchor){
       geometry.setAttribute('position',new BufferAttribute(part.positions,3));
       geometry.setIndex(new BufferAttribute(part.indices,1));
       geometry.computeVertexNormals();geometry.computeBoundingBox();
-      const mesh=new Mesh(geometry,new MeshStandardMaterial({color:part.color,roughness:.54,metalness:.12}));
+      const mesh=new Mesh(geometry,new MeshStandardMaterial({color:part.color,roughness:.54,metalness:.12,clipShadows:true}));
       mesh.name=part.id;mesh.castShadow=true;mesh.receiveShadow=true;
       inside.add(mesh);parts.set(part.id,mesh);
       bounds.union(geometry.boundingBox);
@@ -314,6 +314,8 @@ export class CollectionWorktable{
       mesh.material.emissive.setHex(id===this.part.value?0x7a4f19:0);
       mesh.material.emissiveIntensity=.65;
       mesh.material.clippingPlanes=plane;
+      // The inspection cut opens the mesh. It still casts from the remaining faces.
+      mesh.material.shadowSide=clipping?DoubleSide:null;
     }
     this.discuss.textContent=this.part.value?'Conversar sobre esta pieza':'Conversar sobre este modelo';
     this.visibility.disabled=!this.part.value;
