@@ -51,7 +51,7 @@ Source `c82ebfb` introduces a separate transparent Three.js framebuffer for Matt
 
 The next toolbelt change makes the minimized Conversation and minimap actions and contextual Matter entry part of one bottom A2UI surface. The hidden legacy action handlers still own routing until their panels migrate. Claude Code confirmed `claude-opus-5-5` and returned a high-effort critique of the actual diff. Its findings drove touch-size layout, safe-area wrapping, focus restoration, separation of worktable and Conversation input, and a valid minimize target. A second focused review timed out. After corrections, controlled Chromium passed desktop and touch Matter entry, the minimap action, keyboard focus restoration, and the Conversation fixture's target, drag/resize, minimize/reopen and draft preservation. These checks do not cover every safe-area device, simultaneous visitors, or the Raspberry Pi performance budget.
 
-The captured toolbelt still compresses text horizontally in narrow controls at 1.5 DPR. The receiving evidence and requested reusable capability were posted to Proyección #5. [Proyección PR #6](https://github.com/AlterMundi/proyeccion/pull/6) supplies opt-in raster dimensions, measured ellipsis and bounded density for screen-space single-line labels. Opus 5.5 High reviewed the actual change. The correction preserves choice suffixes, the complete accessible label and the currently open menu through density changes, and bounds the raster area. All 16 spatial HUD browser tests passed. The Holodeck candidate pins the reviewed source and uses the layer's actual display ratio for its toolbelt and Matter controls. Multiline and field labels remain to migrate. Continue with density-aware lettering and the native surface cutovers. The minimap panel itself and the Conversation shell still have native HTML. Measure text, frame-time cost and context recovery. Complete desktop/Pi and multi-visitor checks on the selected package before switching the protected release.
+The captured toolbelt still compresses text horizontally in narrow controls at 1.5 DPR. The receiving evidence and requested reusable capability were posted to Proyección #5. [Proyección PR #6](https://github.com/AlterMundi/proyeccion/pull/6), merged with passing CI, supplies opt-in raster dimensions, measured ellipsis and bounded density for screen-space single-line labels. Opus 5.5 High reviewed the actual change. The correction preserves choice suffixes, the complete accessible label and the currently open menu through density changes, and bounds the raster area. All 16 spatial HUD browser tests passed. The Holodeck candidate pins the reviewed source and uses the layer's actual display ratio for its toolbelt and Matter controls. Multiline and field labels remain to migrate. Continue with density-aware lettering and the native surface cutovers. The minimap panel itself and the Conversation shell still have native HTML. Measure text, frame-time cost and context recovery. Complete desktop/Pi and multi-visitor checks on the selected package before switching the protected release.
 
 ## Matter inspection qualification
 
@@ -68,7 +68,15 @@ Claude Code Opus 5.5 High reviewed the actual inspection diff. Changes after
 review keep the cursor anchor through a pinch, bound dolly speed without
 reversing near a surface, align the orbit pivot after off-axis zoom, test
 clearance for the near-plane corners and release owned pointer/key capture.
-The candidate still needs live multi-visitor and hardware receiving checks.
+The exact archive `6d064eee1e76` at `a3f0abc` was 33,454,080 bytes.
+Receiving Chromium passed eye-height entry, physical mouse-wheel dolly,
+independent orbit, prior camera restoration, touch drag and two-finger camera
+travel. The same package passed canonical Conversation draft/geometry,
+the A2UI minimap, mouse sensitivity, pointer lock, continuous yaw, flight,
+wall and ceiling collision, and cave headroom. The source suite reported
+300 passes and two skips. The subsequent concise entry label passed its
+touch check. The candidate still needs live multi-visitor and hardware
+receiving checks.
 
 ## Native surface inventory
 

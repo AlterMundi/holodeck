@@ -186,7 +186,7 @@ export class MatterWorktableHud{
 
   toolState(){
     return {...this.readTools(this.active),
-      open:{label:'Usar mesa de trabajo',visible:this.mode==='enter',disabled:false}};
+      open:{label:'Usar mesa',visible:this.mode==='enter',disabled:false}};
   }
 
   handleTool({name,context}){
