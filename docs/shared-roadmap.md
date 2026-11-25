@@ -43,7 +43,8 @@ for the walkthrough. New gameplay mechanics follow their own stages.
   Conversation on the same visual pass. Quality is judged in play on
   bright and dark scenes, with the normal and lighter settings and a
   reduced-motion path. The [instrument glass stage](playtest-iteration.md#instrument-glass-on-the-native-hud)
-  introduces the common material on native surfaces.
+  introduces the common material on native surfaces. The
+  [viewer-local themes](playtest-iteration.md#viewer-local-light-and-dark-hud) add the separate light base.
 - Apply the selected ceramic filigree atlas and engraved bronze relief to
   their appropriate surfaces. Review them in close and gameplay views
   with the actual lighting and expression, retaining the tactile cape

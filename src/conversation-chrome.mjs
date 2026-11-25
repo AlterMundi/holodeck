@@ -31,7 +31,7 @@ function resizeMark(parent){
 
 export class ConversationChrome{
   constructor({panel,canvas,parent,camera,invalidate,readReferences}){
-    Object.assign(this,{panel,canvas,camera,invalidate,readReferences,look:null,groups:new Map()});
+    Object.assign(this,{panel,canvas,camera,invalidate,readReferences,groups:new Map()});
     const document=panel.ownerDocument;
     this.elements=Object.fromEntries(['conversation-move','conversation-resize','conversation-close',
       'room-topic','room-topic-choice','history-reference-clear','worktable-reference-clear','conversation-hint']
@@ -109,7 +109,7 @@ export class ConversationChrome{
     this.invalidate();
   }
 
-  update(rect,viewport,dpr,look){
+  update(rect,viewport,dpr,appearance,style){
     if(this.contextLost||!rect.width||!rect.height)return;
     const state=this.state();
     const {shared,topics,history,worktable,hint}=state;
@@ -150,17 +150,10 @@ export class ConversationChrome{
       this.data=data;
       this.receive(header,'updateDataModel',{value:state});
     }
-    if(this.look!==(look??'')){
-      this.look=look??'';
-      const css=this.panel.ownerDocument.defaultView.getComputedStyle(this.panel);
-      const value=name=>css.getPropertyValue(name).trim();
-      const {hudLook,roomLook}=this.panel.ownerDocument.body.dataset;
-      if(hudLook)this.hud.setPalette({background:value('--panel'),button:value('--control-fill')||'#20434b',
-        pressed:value('--control-hover')||'#305861',text:value('--ink'),focus:value('--gold')});
-      else this.hud.setPalette({background:value('--hud-panel'),button:value('--control-fill')||value('--hud-control'),
-        pressed:value('--control-hover')||value('--hud-pressed'),text:roomLook?value('--ink'):value('--hud-ink'),
-        focus:value('--hud-brass'),disabled:value('--hud-disabled')});
-      this.mark.ink.color.set(value('--gold')||'#e6f5f4');
+    if(this.appearance!==appearance){
+      this.appearance=appearance;
+      this.hud.setPalette(style.palette);
+      this.mark.ink.color.set(style.palette.focus);
       this.invalidate();
     }
     const placement=[rect.left,rect.top,rect.width,rect.height,viewport.width,viewport.height,viewport.left,viewport.top,dpr,layout].join(':');

@@ -13,7 +13,7 @@ test('the native instrument surround follows layout and reuses its noninteractiv
   const colors={'--hud-glass':'#34576a','--hud-rim':'#72cbcd','--hud-brass':'#edbd84'};
   const document={body,defaultView:{
     matchMedia:()=>({matches:true}),
-    getComputedStyle:()=>({getPropertyValue:name=>colors[name]}),
+    getComputedStyle:()=>({getPropertyValue:name=>colors[name]??" "}),
   }};
   let repaints=0;
   const look=new HudLookPreview({document,parent,invalidate:()=>repaints++});

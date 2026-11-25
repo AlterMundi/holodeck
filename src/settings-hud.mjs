@@ -27,7 +27,8 @@ const video = [
   text('status', path('status'), {style: 'status', visible: path('hasStatus')}),
 ];
 const appearance = [
-  ...panel('Apariencia', ['room', 'roomStatus', 'avatar', 'save', 'status']),
+  ...panel('Apariencia', ['theme', 'room', 'roomStatus', 'avatar', 'save', 'status']),
+  {...choice('theme', 'Tema de la interfaz'), visible: path('themeVisible')},
   {...choice('room', 'Estilo de esta sala · tu vista'), visible: path('roomVisible')},
   text('roomStatus', path('roomStatus'), {style: 'status', visible: path('hasRoomStatus')}),
   choice('avatar', 'Tu avatar'),
@@ -58,6 +59,7 @@ export class SettingsHud {
     const find = id => document.getElementById(id);
     this.dialogs = {appearance: find('appearance-dialog'), video: find('video-dialog')};
     this.launchers = {appearance: find('appearance-open'), video: find('video-open')};
+    this.theme = find('hud-theme-choice');
     this.room = find('room-style-choice');
     this.roomPanel = find('room-style');
     this.roomStatus = find('room-style-status');
@@ -109,6 +111,8 @@ export class SettingsHud {
       fullscreenDisabled: this.fullscreen.disabled, showShortcut: !this.fullscreen.disabled,
       status: this.videoStatus.textContent, hasStatus: Boolean(this.videoStatus.textContent),
     } : {
+      themeVisible: Boolean(this.theme), theme: this.theme?.value ?? 'dark',
+      themeOptions: this.theme ? options(this.theme) : [], themeDisabled: !this.theme || this.theme.disabled,
       avatar: this.avatar.value, avatarOptions: options(this.avatar, true), avatarDisabled: this.avatar.disabled,
       saveDisabled: this.save.disabled, status: this.appearanceStatus.textContent, hasStatus: Boolean(this.appearanceStatus.textContent),
       room: this.room.value, roomOptions: options(this.room), roomDisabled: this.room.disabled,
@@ -136,6 +140,7 @@ export class SettingsHud {
         change(this.sensitivity, value, 'input');
       if (name === 'fullscreen') this.fullscreen.click();
     } else {
+      if (name === 'theme' && this.theme) change(this.theme, value, 'change');
       if (name === 'room' && !this.roomPanel.hidden) change(this.room, value, 'change');
       if (name === 'avatar') change(this.avatar, value, 'change');
       if (name === 'save') this.save.click();

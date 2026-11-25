@@ -10,6 +10,13 @@ body[data-hud-look="umbral"]{--ink:#f7ebff;--muted:#d1bdda;--panel:#2c1b3cd2;--l
 body[data-hud-look="pulso"]{--ink:#fff1e8;--muted:#e2bab7;--panel:#381e31f5;--line:#efad8b85;--gold:#ffbb8f;--mint:#ff92a8;--control-fill:#44283b;--control-hover:#6e3c51}
 body[data-hud-look="estratos"]{--ink:#eefbf4;--muted:#b1d9ce;--panel:#163a3df4;--line:#8ce4ce82;--gold:#a1efda;--mint:#94d6bc;--control-fill:#254c4e;--control-hover:#38685f}
 body[data-hud-look="cabina"]{--ink:#f5f4dd;--muted:#a6c1b9;--panel:#172d31f5;--line:#8acabd85;--gold:#a4ebd1;--mint:#ebbc7c;--control-fill:#2b4244;--control-hover:#425b50}
+body[data-hud-theme="light"]{--hud-ink:#132933;--hud-panel:#edf5f3f5;--hud-control:#e0ece9;--hud-pressed:#c5e2dc;--hud-disabled:#d5dfdc;--hud-glass:#f0faf7;--hud-rim:#3e746f;--hud-brass:#79400d;--hud-frame:#e3efec}
+body[data-hud-theme="light"][data-room-look="amber"]{--hud-panel:#f8f0e5f5;--hud-control:#f0e6d7;--hud-pressed:#eadac0;--hud-disabled:#e7dfd4;--hud-glass:#fff7ea;--hud-rim:#865b49;--hud-frame:#f4e9dd}
+body[data-hud-theme="light"] :is(.glass,#appearance-dialog,#video-dialog,#conversation-panel,#collection-worktable,#exhibition-index,#content-visit,#beacon-panel,#activity-dialog){color-scheme:light;color:var(--ink);--a2ui-color-primary:var(--hud-brass);--ink:var(--hud-ink);--muted:#344e59;--panel:var(--hud-panel);--gold:var(--hud-brass);--mint:#246a5e;--line:#52777b;--control-fill:var(--hud-control);--control-hover:var(--hud-pressed)}
+body[data-hud-theme="light"] :is(#conversation-panel,#content-visit,#beacon-panel) iframe{color-scheme:dark}
+body[data-hud-theme="light"] :is(.glass,#appearance-dialog,#video-dialog,#conversation-panel,#collection-worktable) button:focus-visible{outline:2px solid var(--hud-brass);outline-offset:2px}
+body[data-hud-theme="light"] :is(#exhibition-index,#content-visit,#beacon-panel,#activity-dialog){background:var(--hud-frame)}
+body[data-hud-theme="light"] :is(#appearance-dialog,#exhibition-index,#content-visit,#room-topic) :is(select,input){background:var(--hud-control)}
 body[data-hud-look]{--a2ui-color-primary:var(--gold)}
 body[data-room-look]{--a2ui-color-primary:var(--gold)}
 body[data-room-look] button:not(.primary):not(:disabled):hover{background:var(--control-hover,#245153)}
@@ -307,6 +314,11 @@ body:has(#conversation-panel:not([hidden])) #view-tools,body:has(#content-visit:
 </dialog>
 <dialog id="appearance-dialog" aria-labelledby="appearance-title">
   <h2 id="appearance-title">Apariencia</h2>
+  <label for="hud-theme-choice">Tema de la interfaz</label>
+  <select id="hud-theme-choice" autocomplete="off">
+    <option value="dark">Oscuro</option>
+    <option value="light">Claro</option>
+  </select>
   <div id="room-style" hidden>
     <label for="room-style-choice">Estilo de la sala · solo en tu vista</label>
     <select id="room-style-choice"></select>

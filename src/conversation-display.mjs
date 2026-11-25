@@ -1,3 +1,4 @@
+import {hudAppearanceKey,readHudAppearance} from './hud-appearance.mjs';
 import {ConversationChrome} from './conversation-chrome.mjs';
 import {Group,Mesh,MeshBasicMaterial,OrthographicCamera,Scene,Shape,ShapeGeometry} from 'three';
 
@@ -106,19 +107,21 @@ export class ConversationDisplay {
       this.camera.right=viewport.width;this.camera.top=viewport.height;
       this.camera.updateProjectionMatrix();
     }
-    const {hudLook,roomLook}=panel.ownerDocument.body.dataset;
-    const look=hudLook??roomLook;
-    this.chrome.update(rect,viewport,this.layer.pixelRatio,look);
+    const appearance=hudAppearanceKey(panel.ownerDocument);
+    if(this.appearance!==appearance){
+      this.appearance=appearance;
+      this.style=readHudAppearance(panel.ownerDocument);
+    }
+    this.chrome.update(rect,viewport,this.layer.pixelRatio,appearance,this.style);
     const display=panel.querySelector('iframe');
     const screen=display?.getBoundingClientRect();
     const hasScreen=Boolean(screen?.width&&screen.height);
-    const key=[rect.width,rect.height,hasScreen?screen.width:0,hasScreen?screen.height:0,look].join(':');
+    const key=[rect.width,rect.height,hasScreen?screen.width:0,hasScreen?screen.height:0,appearance].join(':');
     if(this.key!==key){
       this.key=key;
       this.layer.invalidate();
       this.clear();
-      const css=panel.ownerDocument.defaultView.getComputedStyle(panel);
-      const edge=css.getPropertyValue('--gold').trim()||'#eed19b';
+      const edge=this.style.edge;
       const add=(width,height,radius,color,opacity)=>{
         const mesh=new Mesh(roundedPlate(width,height,radius),new MeshBasicMaterial({
           color,opacity,transparent:true,depthTest:true,depthWrite:false,toneMapped:false,
@@ -127,13 +130,11 @@ export class ConversationDisplay {
         this.plates.add(mesh);
         return mesh;
       };
-      const frame=hudLook?css.getPropertyValue('--control-fill').trim():look==='amber'?0x342322:0x12262d;
-      const glass=hudLook==='orbita'||hudLook==='umbral';
       this.back=[
         add(rect.width+14,rect.height+14,26,0x081117,.15),
         add(rect.width+8,rect.height+8,24,0x081117,.30),
         add(rect.width+2,rect.height+2,20,edge,.64),
-        add(rect.width,rect.height,19,frame,glass?.89:1),
+        add(rect.width,rect.height,19,this.style.frame,this.style.frameOpacity),
       ];
       this.rim=hasScreen?[
         add(screen.width+10,screen.height+10,16,edge,.16),

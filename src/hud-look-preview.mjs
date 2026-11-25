@@ -1,8 +1,9 @@
+import {hudAppearanceKey,readHudAppearance} from './hud-appearance.mjs';
 import {AmbientLight, Group, Matrix4} from 'three';
 import {createHudMaterialShell, createInstrumentGlass} from './hud-material-shell.mjs';
 
 const instrumentSurfaces=new Set(['matter-worktable','world-toolbelt','world-header',
-  'world-map','conversation-header']);
+  'world-map','conversation-header','world-settings']);
 
 const looks={
   taller:{frame:'#1c282b',accent:'#7d9994',radius:.11,thickness:.055,roughness:.78,
@@ -45,7 +46,13 @@ export class HudLookPreview{
   }
 
   draw(key,source,bounds){
-    if(!this.look){
+    const light=this.document.body.dataset.hudTheme==='light';
+    if(this.lightBase!==light){
+      this.clearPanels();
+      this.lightBase=light;
+      this.invalidate();
+    }
+    if(light||!this.look){
       this.drawInstrument(key,source,bounds);
       return;
     }
@@ -97,12 +104,10 @@ export class HudLookPreview{
       if(panel?.anchor.visible){panel.anchor.visible=false;this.invalidate();}
       return;
     }
-    const theme=this.document.body.dataset.roomLook??'';
+    const theme=hudAppearanceKey(this.document);
     if(this.instrumentTheme!==theme){
       this.instrumentTheme=theme;
-      const style=this.document.defaultView.getComputedStyle(this.document.body);
-      const color=name=>style.getPropertyValue(name).trim();
-      this.instrumentColors={fill:color('--hud-glass'),rim:color('--hud-rim'),brass:color('--hud-brass')};
+      this.instrumentColors=readHudAppearance(this.document).glass;
       this.invalidate();
     }
     if(!panel){
@@ -131,9 +136,13 @@ export class HudLookPreview{
     panel.animated=Boolean(pulse);
   }
 
-  dispose(){
+  clearPanels(){
     for(const {shell,anchor} of this.panels.values()){shell.dispose();anchor.removeFromParent();}
     this.panels.clear();
+  }
+
+  dispose(){
+    this.clearPanels();
     this.light?.removeFromParent();
   }
 }

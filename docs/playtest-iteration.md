@@ -1151,3 +1151,34 @@ emulated touch. The standalone package also passed independent MML peer
 and exact shared-command retry checks. Existing Home access, the native
 world run and edition and the saved lights were observed after the cutover.
 See [production readback](STATUS.md#november-25-archived-light-exercise-and-instrument-hud).
+
+## Viewer-local light and dark HUD
+
+Apariencia offers **Tema de la interfaz** through the existing native
+settings surface and its browser fallback. Dark is the initial mode.
+Light uses a pale instrument backing and darker ink, control focus and
+borders. The warm Matter room keeps its own hue. The browser preference
+is independent of room style, avatar and the shared world, and changing it
+does not remount the canonical Conversation iframe. Named look previews
+keep their placement and the dark rendition. In light mode they use the
+same light backing as other native surfaces.
+
+Fable High called out competing palette keys and a passage palette that
+only updated on surface creation. Opus 5.5 High found the fallback text
+and border contrast, the iframe color-scheme inheritance and the named
+look differences. The correction scopes the light tokens to Holodeck
+surfaces, retains the iframe's previous outer color scheme, and keys the
+shared palette on the theme, room and preview.
+
+Exact candidate `ecfa8dd033a0` is 33,320,960 bytes. The source suite passed
+346 tests with two optional gallery checks skipped. Against the nominal
+cool and warm light colours, the minimum calculated text and focus
+contrasts are 10.98:1 and 5.99:1 across their listed fills. This is a token
+comparison, with the translucent background also calculated over black.
+
+Exact Chromium desktop and emulated-touch checks verified theme persistence,
+focus and the topographic map with software rendering. Desktop also verified
+the warm room variation, the retained Conversation frame and draft, and a
+separate browser profile without the preference. A delayed passage recovered
+keyboard focus and its committed destination after overlay WebGL loss, with
+one move POST. The candidate remains staged.

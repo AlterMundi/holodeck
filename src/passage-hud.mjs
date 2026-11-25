@@ -1,3 +1,4 @@
+import {hudAppearanceKey,readHudAppearance} from './hud-appearance.mjs';
 import {OrthographicCamera,Raycaster,Scene,Vector2} from 'three';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
 
@@ -90,11 +91,14 @@ export class PassageHud {
     if(!layer.overlay||layer.lost||layer.world.getContext().isContextLost()){this.fallback(true);return;}
     const {width,height}=layer.canvas.getBoundingClientRect();
     if(width<235||height<440){this.fallback(true);return;}
+    const document=this.host.ownerDocument;
+    const appearance=hudAppearanceKey(document);
+    if(this.appearance!==appearance){
+      this.appearance=appearance;
+      this.hud.setPalette(readHudAppearance(document).palette);
+      layer.invalidate();
+    }
     if(!this.surfaceCreated){
-      const css=this.window.getComputedStyle(this.host);
-      const color=name=>css.getPropertyValue(name).trim();
-      this.hud.setPalette({background:color('--panel'),button:color('--control-fill')||'#20434b',
-        pressed:color('--control-hover')||'#305861',text:color('--ink'),focus:color('--gold')});
       this.receive('createSurface',{catalogId:spatialHudCatalog.id});
       this.surfaceCreated=true;
       this.receive('updateComponents',{components});

@@ -1,3 +1,4 @@
+import {bindHudAppearance} from './hud-appearance.mjs';
 import {selectedHudLook} from './hud-look-preview.mjs';
 import {ToroidalScenery} from './toroidal-scenery.mjs';
 import {ToroidalAtmosphere,toroidalViewDepth} from './toroidal-atmosphere.mjs';
@@ -53,6 +54,7 @@ import { WorldNotice } from './client-feedback.mjs';
 import {arrivalDoor,doorLocation,readSpace,showSpaceLinks} from './space-travel.mjs';
 const reviewedHudLook=selectedHudLook(location.href);
 if(reviewedHudLook)document.body.dataset.hudLook=reviewedHudLook;
+bindHudAppearance(document,window);
 
 const base=new URL('./',document.baseURI);
 const url=path=>new URL(path,base);

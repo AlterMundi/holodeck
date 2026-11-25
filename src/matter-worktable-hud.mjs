@@ -1,3 +1,4 @@
+import {hudAppearanceKey,readHudAppearance} from './hud-appearance.mjs';
 import {PassageHud} from './passage-hud.mjs';
 import {HudLookPreview} from './hud-look-preview.mjs';
 import {Matrix4,OrthographicCamera,PerspectiveCamera,Raycaster,Scene,Vector2,Vector3} from 'three';
@@ -415,19 +416,12 @@ export class MatterWorktableHud{
     if(!toolsVisible)this.settings.close(false);
     this.settings.sync();
     this.syncToolbelt(toolsVisible);
-    const {hudLook,roomLook}=this.document.body.dataset;
-    const look=(hudLook==='taller'?roomLook:hudLook??roomLook)??'';
-    if(this.look!==look){
-      this.look=look;
+    const appearance=hudAppearanceKey(this.document);
+    if(this.appearance!==appearance){
+      this.appearance=appearance;
+      const style=readHudAppearance(this.document);
+      this.hud.setPalette(style.defaultWorldPalette?undefined:style.palette);
       this.layer.invalidate();
-      const css=this.document.defaultView.getComputedStyle(this.document.body);
-      const color=name=>css.getPropertyValue(name).trim();
-      if(hudLook&&!look)this.hud.setPalette();
-      else if(hudLook)this.hud.setPalette({background:color('--panel'),button:color('--control-fill'),
-        pressed:color('--control-hover'),text:color('--ink'),focus:color('--gold')});
-      else this.hud.setPalette({background:color('--hud-panel'),button:color('--control-fill')||color('--hud-control'),
-        pressed:color('--control-hover')||color('--hud-pressed'),text:roomLook?color('--ink'):color('--hud-ink'),
-        focus:color('--hud-brass'),disabled:color('--hud-disabled')});
     }
   }
 
@@ -781,9 +775,10 @@ export class MatterWorktableHud{
     this.hud.update();
     this.windows.end();
     this.lookPreview.draw(worldHeaderId,this.status.headerGroup,this.hud.getSurfaceBounds(worldHeaderId));
-    if(this.cockpit||!this.lookPreview.name)this.lookPreview.draw(worldMapId,this.map.group,this.hud.getSurfaceBounds(worldMapId));
+    if(this.cockpit||!this.lookPreview.name||this.document.body.dataset.hudTheme==='light')this.lookPreview.draw(worldMapId,this.map.group,this.hud.getSurfaceBounds(worldMapId));
     this.lookPreview.draw(toolbeltId,this.toolGroup,this.hud.getSurfaceBounds(toolbeltId));
     this.lookPreview.draw(surfaceId,this.group,this.hud.getSurfaceBounds(surfaceId));
+    if(!this.lookPreview.name||this.document.body.dataset.hudTheme==='light')this.lookPreview.draw(settingsId,this.settings.group,this.hud.getSurfaceBounds(settingsId));
     this.map.decoration();
     if(this.map.group)this.map.panel.dataset.nativeMap='';
     if(Boolean(additional)!==this.composingAdditional){
