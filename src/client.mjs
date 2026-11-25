@@ -857,7 +857,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const navigationVisible=!entering&&!moving&&!needsSync&&drawWorld&&!opaqueVisit&&!toolModal&&!settingsOpen&&
         document.getElementById('conversation-panel').hidden;
       matterHud.map.update(navigationVisible,paintedRaster);
-      matterHud.map.updateBearing(navigationVisible&&!matterHud.active);
+      matterHud.updateBearing(navigationVisible&&!matterHud.active);
       beaconControls.update(inside&&!moving&&remoteScene?activeSpace.objects:null,position);
       render(renderState);
       if(!inside&&drawWorld)geometryProbe.afterRender();

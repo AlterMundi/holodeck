@@ -71,8 +71,10 @@ export class MatterWorktableHud{
   constructor({document,webgl,table,onActive,canEnter=()=>true,onError,readTools,activateTool,navigation}){
     Object.assign(this,{document,webgl,table,onActive,canEnter,readTools,activateTool,scope:0,toolScope:0,mode:null,blocked:false});
     this.canvas=webgl.domElement;
-    this.layer=new HudRenderLayer(webgl);
+    const clearBearing=()=>this.map?.markBearingPresented(false);
+    this.layer=new HudRenderLayer(webgl,{onLoss:clearBearing});
     this.events=new AbortController();
+    this.canvas.addEventListener('webglcontextlost',clearBearing,{signal:this.events.signal});
     for(const event of ['pointerdown','pointermove','pointerup','pointercancel','keydown','focusin','focusout','input','click']){
       document.addEventListener(event,this.layer.invalidate,{capture:true,signal:this.events.signal});
     }
@@ -89,6 +91,7 @@ export class MatterWorktableHud{
     this.toolInset.setAttribute('aria-hidden','true');
     document.body.append(this.a11y,this.toolInset);
     this.map=new WorldMapHud({...navigation,send:(type,content,id)=>this.send(type,content,id),
+      focusBearing:()=>this.hud.focusAccessibleControl(worldBearingId,'dismiss'),
       focusLauncher:()=>this.focusTool('map'),invalidate:this.layer.invalidate});
     this.settings=new SettingsHud({document,send:(type,content,id)=>this.send(type,content,id),
       focusControl:name=>this.hud.focusAccessibleControl(settingsId,name),focusLauncher:name=>this.focusTool(name),
@@ -312,6 +315,11 @@ export class MatterWorktableHud{
     this.hud.setInteractionScope(open?{surfaceIds:[settingsId],blockOutside:true}:undefined);
   }
 
+  updateBearing(visible){
+    const {left,right}=this.toolInsets();
+    this.map.updateBearing(visible&&this.canvas.clientWidth-left-right>=218);
+  }
+
   settingsKey(event){
     if(event.defaultPrevented)return false;
     if(event.repeat&&(event.key==='Enter'||event.key===' '))return true;
@@ -421,8 +429,9 @@ export class MatterWorktableHud{
       this.composingAdditional=Boolean(additional);
       this.layer.invalidate();
     }
-    this.layer.draw(this.scene,this.camera,additional);
-    this.map.markBearingPresented(Boolean(this.map.bearingGroup&&this.hud.getSurfaceBounds(worldBearingId)));
+    let painted=false;
+    try{painted=this.layer.draw(this.scene,this.camera,additional);}
+    finally{this.map.markBearingPresented(Boolean(painted&&this.map.bearingGroup&&this.hud.getSurfaceBounds(worldBearingId)));}
     if(this.toolGroup)this.document.body.dataset.a2uiToolbelt='';
   }
 

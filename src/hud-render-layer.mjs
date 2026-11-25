@@ -3,8 +3,9 @@ import {WebGLRenderer} from 'three';
 // CSS coordinates, hit tests and the scene renderer remain independent of the
 // HUD framebuffer. Retain the Three.js presentation if a second context fails.
 export class HudRenderLayer {
-  constructor(world) {
+  constructor(world, {onLoss} = {}) {
     this.world=world;
+    this.onLoss=onLoss;
     this.canvas=world.domElement;
     this.window=this.canvas.ownerDocument.defaultView;
     this.dirty=true;
@@ -25,7 +26,7 @@ export class HudRenderLayer {
     }
     this.overlay=canvas;
     this.renderer.setClearColor(0,0);
-    this.onLost=event=>{event.preventDefault();this.lost=true;this.hide();};
+    this.onLost=event=>{event.preventDefault();this.lost=true;this.hide();this.onLoss?.();};
     this.onRestored=()=>{this.lost=false;this.invalidate();};
     canvas.addEventListener('webglcontextlost',this.onLost);
     canvas.addEventListener('webglcontextrestored',this.onRestored);
@@ -40,6 +41,7 @@ export class HudRenderLayer {
     this.start();
     const {renderer,overlay}=this;
     if(!renderer||this.lost){
+      if(this.world.getContext().isContextLost())return false;
       const autoClear=this.world.autoClear;
       this.world.autoClear=false;
       try{
@@ -51,11 +53,11 @@ export class HudRenderLayer {
         }
       }
       finally{this.world.autoClear=autoClear;}
-      return;
+      return true;
     }
 
     const {width,height,left,top}=this.canvas.getBoundingClientRect();
-    if(!width||!height){this.hide();return;}
+    if(!width||!height){this.hide();return false;}
     const ratio=this.pixelRatio;
     const columns=Math.round((left+width)*ratio)-Math.round(left*ratio);
     const rows=Math.round((top+height)*ratio)-Math.round(top*ratio);
@@ -67,7 +69,7 @@ export class HudRenderLayer {
       this.invalidate();
     }
     if(overlay.hidden){overlay.hidden=false;this.invalidate();}
-    if(!this.dirty)return;
+    if(!this.dirty)return true;
     renderer.render(scene,camera);
     if(additional){
       const autoClear=renderer.autoClear;
@@ -78,6 +80,7 @@ export class HudRenderLayer {
       }finally{renderer.autoClear=autoClear;}
     }
     this.dirty=false;
+    return true;
   }
 
   hide() {

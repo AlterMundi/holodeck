@@ -31,8 +31,8 @@ const bearingComponents=[
 ];
 
 export class WorldMapHud{
-  constructor({send,panel,mapState,selectDestination,returnOutside,readBearing,dismissBearing,bearingAdapter,focusLauncher,invalidate}){
-    Object.assign(this,{send,panel,mapState,selectDestination,returnOutside,readBearing,dismissBearing,bearingAdapter,focusLauncher,invalidate,scope:0,bearingEpoch:0,index:0});
+  constructor({send,panel,mapState,selectDestination,returnOutside,readBearing,dismissBearing,bearingAdapter,focusBearing,focusLauncher,invalidate}){
+    Object.assign(this,{send,panel,mapState,selectDestination,returnOutside,readBearing,dismissBearing,bearingAdapter,focusBearing,focusLauncher,invalidate,scope:0,bearingEpoch:0,index:0});
   }
 
   message(type,content){
@@ -130,6 +130,10 @@ export class WorldMapHud{
     }
     if(!target)return;
     this.bearingSpace=scope;
+    if(this.bearingTarget!==target.id){
+      this.bearingTarget=target.id;
+      this.bearingEpoch++;
+    }
     if(!this.bearingGroup){
       this.send('createSurface',{catalogId:spatialHudCatalog.id},worldBearingId);
       this.send('updateComponents',{components:bearingComponents},worldBearingId);
@@ -142,7 +146,12 @@ export class WorldMapHud{
   }
 
   markBearingPresented(visible){
-    this.bearingAdapter?.toggleAttribute('data-native-bearing',visible);
+    const adapter=this.bearingAdapter;
+    if(!adapter||adapter.hasAttribute('data-native-bearing')===visible)return;
+    const hadFocus=visible&&adapter.contains(adapter.ownerDocument.activeElement);
+    adapter.toggleAttribute('data-native-bearing',visible);
+    if(hadFocus)this.focusBearing();
+
   }
 
   activateBearing({name,context}){

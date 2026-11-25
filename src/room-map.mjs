@@ -109,7 +109,7 @@ export function showRoomMap(travel,doors){
   }
 
   show();
-  return {update,clear,guide,
+  return {update,clear,
     bearing:()=>bearingState,
     dismiss(id){
       if(selected?.id!==id)return false;
