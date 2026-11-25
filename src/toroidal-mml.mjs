@@ -118,7 +118,7 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
       if (!camera.hadTarget) camera.hadTarget = true;
       updateLocal = local.update;
       local.update = seconds => walk(local, seconds);
-    }
+    } else onMovementMode('ground');
     let result;
     try {
       result = updateCharacters.apply(this, args);
@@ -156,6 +156,7 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
   camera.adjustCameraPosition=adjustInFrame;
   camera.update = cameraUpdate;
   return () => {
+    onMovementMode('ground');
     if (manager.update === characterUpdate) manager.update = updateCharacters;
     if (camera.update === cameraUpdate) camera.update = updateCamera;
     if (camera.adjustCameraPosition === adjustInFrame) camera.adjustCameraPosition = adjustCamera;

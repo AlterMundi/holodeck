@@ -335,6 +335,8 @@ const outsideRing=()=>!inside&&activeSpace.outdoorTerrain===TOROIDAL_TERRAIN.id;
 // Capture the fresh entry before MML initializes or writes a location hash.
 let firstExteriorDoor=outsideRing()&&!location.hash&&activeSpace.entrances?.length===1?activeSpace.entrances[0].door:null;
 let flightEnabled=false,previousSpacePress=null,radialMovementMode='ground';
+const verticalHelp=document.getElementById('world-vertical-help');
+const dryVerticalHelp=verticalHelp.textContent;
 let fitConversationWindow=()=>{};
 const resetFlightTap=()=>{previousSpacePress=null;};
 window.addEventListener('blur',resetFlightTap);
@@ -344,7 +346,8 @@ document.addEventListener('focusin',event=>{
 });
 function doubleSpace(event){
   if(event.code!=='Space'||event.repeat||event.altKey||event.ctrlKey||event.metaKey||
-     !outsideRing()||entering||moving||radialMovementMode==='swim'||radialMovementMode==='surface'||
+     !outsideRing()||entering||moving||
+     (!flightEnabled&&(radialMovementMode==='swim'||radialMovementMode==='surface'))||
      document.querySelector('dialog[open]')||event.target?.closest?.('#conversation-panel,button,input,select,summary,textarea,[contenteditable]'))return;
   const now=performance.now();
   if(previousSpacePress!==null&&now-previousSpacePress<340){
@@ -953,9 +956,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       };
     }
     let nextDressing=0, ring=null, cave=null, scenery=null, atmosphere=null, releaseRadialMovement=null, releaseHeadroom=null, ringSun=null;
-    const verticalHelp=document.getElementById('world-vertical-help');
-    const dryHelp=verticalHelp.textContent;
-    let presentedMode='ground';
+    let presentedHelp=verticalHelp.textContent;
     let sceneryAfter=null,releaseTableFlight=null,releaseSearchKeys=null;
     const worldCanvas=worldPicker.canvas;
     const worldFocus=new AbortController();
@@ -1153,11 +1154,11 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const pointed=atTable?points.gazes.get(tableConnection):null;
       tableGaze=pointed??tableAttention.sample(tableNow);
       const mode=outsideRing()?radialMovementMode:'ground';
-      if(mode!==presentedMode){
-        presentedMode=mode;
-        verticalHelp.textContent=mode==='ground'?dryHelp:
-          mode==='flight'?' · Shift para bajar · Espacio para subir':
-            ' · Shift para sumergirte · Espacio para subir';
+      const help=mode==='ground'?dryVerticalHelp:mode==='flight'?' · Shift para bajar · Espacio para subir':
+        ' · Shift para sumergirte · Espacio para subir';
+      if(help!==presentedHelp){
+        presentedHelp=help;
+        verticalHelp.textContent=help;
       }
       companion.update({position,yaw,outdoor:outsideRing(),table:tableFlight,gaze:tableGaze,
         gazeMesh:pointed?points.cues.get(tableConnection)?.mesh:tableAttention.part(),eye:tableFlight.active?options.coreCameraManager.getCameraState().position:null,

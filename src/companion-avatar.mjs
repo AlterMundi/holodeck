@@ -118,7 +118,7 @@ async function loadFigure(url){
     const idleWeight=1-Math.min(1,totalEdgeWeight);
     const airborneWeight=hovering&&(airborne||water)?1:0;
     const groundStride=Math.min(1,Math.max(0,(speed-.06)/.18));
-    const forwardFlight=gliding?(water?Math.min(1,.26+speed*.44):
+    const forwardFlight=gliding?(water?Math.min(1,.26+(motion?speed*.44:0)):
       motion?Math.min(1,Math.max(0,(speed-.12)/.8)):0):0;
     const cruisingGoal=airborneWeight*forwardFlight;
     const floatingGoal=airborneWeight*(1-forwardFlight);
