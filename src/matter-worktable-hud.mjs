@@ -334,8 +334,10 @@ export class MatterWorktableHud{
     if(leaving!==this.active)this.onActive(this.active);
   }
 
+  get nearbyTableAvailable(){return this.mode==='enter'&&!this.blocked&&this.table.available;}
+
   enter(){
-    if(this.mode!=='enter'||this.blocked||!this.table.available||!this.canEnter())return;
+    if(!this.nearbyTableAvailable||!this.canEnter())return;
     this.previousFocus=this.document.activeElement;
     this.restoreEntryFocus=this.ownsAccessibleInput(this.previousFocus);
     this.previousFocus?.blur();
@@ -657,7 +659,7 @@ export class MatterWorktableHud{
   }
 
   useNearbyTable(event){
-    if(this.mode!=='enter'||event.code!=='KeyE'||event.repeat||event.isComposing||
+    if(!this.nearbyTableAvailable||event.code!=='KeyE'||event.repeat||event.isComposing||
       event.defaultPrevented||event.altKey||event.ctrlKey||event.metaKey||
       event.composedPath().some(target=>target.matches?.('input,textarea,button,summary,select,[contenteditable]')))return false;
     return this.enter();
