@@ -213,6 +213,48 @@ The selected service still uses the legacy route. Qualification and
 activation of the compatible live browser, provider and owner pair
 remain open.
 
+The receiving candidate now includes current DaimonApp master `fb5875b8`.
+The real Holodeck bridge, canonical HTTP writer, private journal and
+isolated native peer exercised full source, unchanged reuse, a pose delta,
+archive readback, routed full source and reestablishment after baseline
+loss. Separate Chromium checks exercised both receipt and file protocols
+in the cross-origin Conversation frame at 1280 and 375 CSS pixels. The
+current paired Gateway executable, run in isolated fixture mode, rejects
+an unknown receipt and accepts a separate legacy original. None of these
+checks changes the production selection.
+
+The current paired bridge has its owned world binding and keeps machine
+receipts disabled. Select a compatible native writer and dashboard while
+the bridge still advertises the file protocol. Preserve the dashboard's
+selected overlay, actor binding and existing native state. Enable the
+receipt advertisement only on a verified compatible pair. To roll back,
+disable its advertisement first, then restore the dashboard and native
+writer while preserving accepted originals and journals. A stale client
+with a receipt must recover its exact original through a compatible
+receiver. The prior writer refuses unknown receipt fields. It cannot
+interpret or retry a journal-backed original as a new legacy capture.
+
+Fable 5.2 High requested explicit receiving refusals. Opus 5.5 High
+reviewed those cases and the resulting voice storage guard. The HTTP
+test exposed clip staging before the native writer rejected an invalid
+receipt. The dashboard now validates the receipt before staging media.
+Swapped, wrong-binding and expired proofs leave no new original, native
+packet or ASR request. A retained recording can retry its exact receipt,
+including after the original reservation deadline. A different receipt for
+the same recording does not stage audio. These checks passed with the real
+bridge and the candidate in DaimonApp [PR #1031](https://github.com/AlterMundi/DaimonApp/pull/1031).
+
+The optimized receiving artifact is built from `e9af42f3` with locked
+all-features dependencies and SHA-256
+`e2aeaafed1db0ad5432529cc3032ef7b1169556190bbaf434d0ab4bfa9cb581f`.
+The HTTP and bridge fixture passed against those exact bytes. A separate
+dedicated Gateway test selected those bytes with the same restored fixture
+binding and Telegram disabled. An isolated two-version fixture reattached
+active, paused and blocked native work from the current predecessor to this
+candidate without a new turn, goal mutation or journal replay. The paired
+production Gateway still has an active native session. Its live collector
+handoff and Home proxy readback remain open.
+
 The original Holodeck codec prototype defined a planner and reducer for full,
 delta and unchanged situations. The projection keeps distinct object, station,
 visit and piece selections, coarse client-reported position and a bounded
