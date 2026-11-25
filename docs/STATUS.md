@@ -1,5 +1,28 @@
 # Current MVP work
 
+## November 25 Atelier interaction and portrait controls
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `1c78c31a2b82` from `2678e38`. The foyer is clear of its two
+interior piers. Its reciprocal doors face visitors into each destination,
+and E reaches the Matter worktable and the return doorway from desktop
+world focus with Conversation open. The companion checks furniture,
+keeps a grounded target during jumps, follows an indoor sprint and
+uses a short light transfer when it falls behind or stalls.
+The portrait touch HUD uses five named icons. The unrecognized-object
+notice expires after four seconds.
+
+The RTX 2060 fixture confirmed the Matter table and reciprocal door with
+E, preserved the Conversation draft, closed Conversation from the same
+launcher, showed a forced catch-up effect, and checked separation at
+the Harmonic Lab stair arrival. The Pi 5 touch fixture confirmed the
+portrait dock, minimap activation and transient notice before the final
+landing-only adjustment. The final source passed 407 tests with two
+skipped. Protected readback matched all 86 files, the earlier run, the existing
+App and audience, unchanged configuration and the same sequence 431.
+Immediate rollback is `b4031531fdfd`. Physical Redmi acceptance remains open.
+Seat occupancy and poses remain in [seating #28](https://github.com/AlterMundi/holodeck/issues/28).
+
 ## November 25 Atelier return thresholds
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
