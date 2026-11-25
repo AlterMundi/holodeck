@@ -934,7 +934,12 @@ between communities, and reasons to visit both open and enclosed spaces.
 
 The first part is live: the same periodic moisture field controls meadow
 ground color and grass distribution from dry ridges to sheltered folds.
-The woodland and distant canopy are still ahead.
+The arrival parcel now has a rooted evergreen belt behind the house and
+along the southern ridge. The same field darkens the floor and thins the
+grass. Three opaque instanced canopy meshes preserve each root and crown
+scale across detail levels. The trunk collider uses the existing locomotion
+route. This qualifies the first meadow-to-woodland walk on both physical
+profiles. More species and the far canopy across the ring remain open.
 
 - **Near** — instance actual trunks and understory silhouettes, low-poly
   grass and alpha-cutout cards for leaves and small plants. Keep large,

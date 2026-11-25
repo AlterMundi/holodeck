@@ -1,11 +1,12 @@
 import {
   BoxGeometry, BufferGeometry, Color, Float32BufferAttribute, Group,
-  InstancedMesh, Mesh, MeshStandardMaterial, Object3D, Vector3,
+  InstancedMesh, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, Vector3,
 } from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
+import {toroidalAirColor} from './toroidal-air.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
 import {
-  TOROIDAL_TERRAIN, terrainElevation, terrainPosition, terrainTrail,
+  INNER_WOODLANDS, TOROIDAL_TERRAIN, terrainElevation, terrainPosition, terrainTrail,
   terrainWoodland, woodlandCoordinates,
 } from './toroidal-terrain.mjs';
 
@@ -15,6 +16,7 @@ const trunkDepth=.40;
 const trunkWidth=.048;
 const chunkSize=42;
 const maxRange=640;
+const skylineRange=3900;
 
 function sample(x,z,salt){
   let n=Math.imul(x,0x6d2b79f5)^Math.imul(z,0x85ebca6b)^TOROIDAL_TERRAIN.seed^salt;
@@ -42,6 +44,34 @@ export function woodlandTrees(){
     const sapling=pick(71)<.12+.47*(1-belt);
     const height=sapling?3.1+pick(84)*2.6:6.4+pick(94)**.85*6.4;
     trees.push({x,z,u,v,h,height,width:height*(.78+pick(97)*.42),yaw:pick(27)*TAU,tint:pick(21)});
+  }
+  return trees;
+}
+
+// Fixed angular cells make the far crowns and walkable trunks use the same
+// roots. Overlapping stands cover one set of cells without duplicate trees.
+export function innerWoodlandTrees(){
+  const trees=[],visited=new Set();
+  const columns=460,rows=160;
+  for(const stand of INNER_WOODLANDS){
+    const west=Math.floor((stand.u-stand.along)*columns);
+    const east=Math.ceil((stand.u+stand.along)*columns);
+    const south=Math.floor((stand.v-stand.across)*rows);
+    const north=Math.ceil((stand.v+stand.across)*rows);
+    for(let row=south;row<north;row++)for(let col=west;col<east;col++){
+      const key=row*columns+col;
+      if(visited.has(key))continue;
+      visited.add(key);
+      const pick=salt=>sample(col,row,salt^0x2b5863);
+      const u=(col+.1+.8*pick(17))/columns,v=(row+.1+.8*pick(41))/rows;
+      const h=terrainElevation(u,v),belt=terrainWoodland(u,v,h);
+      if(belt<.25||pick(708)>belt*.87)continue;
+      const riseU=terrainElevation(u+.00022,v)-terrainElevation(u-.00022,v);
+      const riseV=terrainElevation(u,v+.00060)-terrainElevation(u,v-.00060);
+      if(Math.hypot(riseU,riseV)>2.8)continue;
+      const height=6+10*pick(94)**.8;
+      trees.push({u,v,h,height,width:height*(.82+.46*pick(97)),yaw:pick(27)*TAU,tint:pick(21),inner:true});
+    }
   }
   return trees;
 }
@@ -96,6 +126,46 @@ function evergreenGeometry(detail){
   return geometry;
 }
 
+// Two closed skirt crowns retain volume when the rim is seen end-on.
+function skylineGeometry(){
+  const positions=[],colors=[];
+  for(const [height,radius,span,tint] of [[.26,.21,.57,0x3a5948],[.57,.13,.43,0x55734e]]){
+    const shade=new Color(tint);
+    for(let side=0;side<5;side++){
+      const a=side*TAU/5,b=(side+1)*TAU/5;
+      const east=[radius*Math.cos(a),height,radius*Math.sin(a)];
+      const west=[radius*Math.cos(b),height,radius*Math.sin(b)];
+      positions.push(...east,0,height+span,0,...west,...west,0,height,0,...east);
+      for(let index=0;index<6;index++){
+        const light=index<3?1:.68;
+        colors.push(shade.r*light,shade.g*light,shade.b*light);
+      }
+    }
+  }
+  const geometry=new BufferGeometry();
+  geometry.setAttribute('position',new Float32BufferAttribute(positions,3));
+  geometry.setAttribute('color',new Float32BufferAttribute(colors,3));
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function skylineMaterial(daylight){
+  const material=new MeshBasicMaterial({vertexColors:true,fog:false});
+  material.onBeforeCompile=shader=>{
+    shader.uniforms.woodlandDaylight=daylight;
+    shader.vertexShader=shader.vertexShader
+      .replace('#include <common>','#include <common>\nvarying float vWoodlandDistance;')
+      .replace('#include <project_vertex>','#include <project_vertex>\nvWoodlandDistance=length(mvPosition.xyz);');
+    shader.fragmentShader=shader.fragmentShader
+      .replace('#include <common>','#include <common>\nvarying float vWoodlandDistance;\nuniform float woodlandDaylight;'+toroidalAirColor)
+      .replace('#include <opaque_fragment>',`
+        float haze=(1.0-exp(-vWoodlandDistance/2650.0))*.56;
+        outgoingLight=mix(outgoingLight*mix(.28,.94,woodlandDaylight),toroidalAir(0.0,woodlandDaylight),haze);
+        #include <opaque_fragment>`);
+  };
+  return material;
+}
+
 function placeTree(transform,tree){
   transform.position.fromArray(terrainPosition(tree.u,tree.v,tree.h));
   toroidalRotation(transform.position,tree.yaw,transform.quaternion);
@@ -108,13 +178,14 @@ export class ToroidalWoodland{
     this.colliders=colliders;
     this.group=new Group();
     this.group.name='Rooted woodland';
-    this.geometry=[0,1,2].map(evergreenGeometry);
+    this.geometry=[...[0,1,2].map(evergreenGeometry),skylineGeometry()];
     this.material=new MeshStandardMaterial({vertexColors:true,roughness:.95});
     useDaylight(this.material,daylight);
-    const trees=woodlandTrees();
+    this.skylineMaterial=skylineMaterial(daylight);
+    const trees=[...woodlandTrees(),...innerWoodlandTrees()];
     this.meshes=this.geometry.map((geometry,index)=>{
-      const mesh=new InstancedMesh(geometry,this.material,trees.length);
-      mesh.name=['Woodland distant','Woodland middle','Woodland near'][index];
+      const mesh=new InstancedMesh(geometry,index===3?this.skylineMaterial:this.material,trees.length);
+      mesh.name=['Woodland distant','Woodland middle','Woodland near','Inner arc canopy'][index];
       mesh.count=0;
       this.group.add(mesh);
       return mesh;
@@ -122,12 +193,14 @@ export class ToroidalWoodland{
     const transform=new Object3D();
     this.chunks=new Map();
     for(const tree of trees){
-      const col=Math.floor(tree.x/chunkSize),row=Math.floor(tree.z/chunkSize);
-      const key=col+':'+row;
+      const col=Math.floor(tree.inner?tree.u*192:tree.x/chunkSize);
+      const row=Math.floor(tree.inner?tree.v*75:tree.z/chunkSize);
+      const key=[tree.inner,col,row].join(':');
       if(!this.chunks.has(key)){
-        const {u,v}=woodlandCoordinates((col+.5)*chunkSize,(row+.5)*chunkSize);
+        const {u,v}=tree.inner?{u:(col+.5)/192,v:(row+.5)/75}:
+          woodlandCoordinates((col+.5)*chunkSize,(row+.5)*chunkSize);
         const center=new Vector3().fromArray(terrainPosition(u,v,terrainElevation(u,v)));
-        this.chunks.set(key,{center,trees:[]});
+        this.chunks.set(key,{center,trees:[],inner:tree.inner});
       }
       placeTree(transform,tree);
       this.chunks.get(key).trees.push({...tree,matrix:transform.matrix.clone(),point:transform.position.clone()});
@@ -148,11 +221,12 @@ export class ToroidalWoodland{
         if(range<74**2&&!chunk.collider)this.addCollision(chunk);
         else if(range>96**2&&chunk.collider)this.removeCollision(chunk);
       }
-      if(range>(maxRange+chunkSize)**2)continue;
+      const limit=chunk.inner?skylineRange:maxRange;
+      if(range>(limit+chunkSize)**2)continue;
       for(const tree of chunk.trees){
         const distance=tree.point.distanceToSquared(position);
-        if(distance>maxRange**2)continue;
-        const level=distance<(lightweight?23:39)**2?2:distance<(lightweight?81:126)**2?1:0;
+        if(distance>limit**2)continue;
+        const level=distance>maxRange**2?3:distance<(lightweight?23:39)**2?2:distance<(lightweight?81:126)**2?1:0;
         const mesh=this.meshes[level];
         mesh.setMatrixAt(mesh.count,tree.matrix);
         const light=.85+.29*tree.tint;
@@ -198,5 +272,6 @@ export class ToroidalWoodland{
     for(const mesh of this.meshes)mesh.dispose();
     for(const geometry of this.geometry)geometry.dispose();
     this.material.dispose();
+    this.skylineMaterial.dispose();
   }
 }

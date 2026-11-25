@@ -170,15 +170,34 @@ export function woodlandCoordinates(x,z,terrain = TOROIDAL_TERRAIN) {
   return {u:z/(TAU*terrain.majorRadius),v:.25-x/(TAU*(terrain.tubeRadius+18))};
 }
 
+// Forest stands across the inner arc. The angular footprint is shared
+// with the terrain worker and measured around the existing ridge landforms.
+export const INNER_WOODLANDS = [
+  {u:.241,v:.487,across:.030,along:.020},
+  {u:.520,v:.467,across:.027,along:.019},
+  {u:.544,v:.500,across:.033,along:.020},
+  {u:.596,v:.477,across:.036,along:.018},
+  {u:.793,v:.495,across:.033,along:.023},
+  {u:.880,v:.507,across:.031,along:.019},
+];
+
 export function terrainWoodland(u,v,height,terrain = TOROIDAL_TERRAIN) {
   if(height<terrain.waterLevel+4||height>59)return 0;
-  const x=(wrap(.75-v)-.5)*TAU*(terrain.tubeRadius+18);
-  const z=(wrap(u+.5)-.5)*TAU*terrain.majorRadius;
-  if(Math.abs(x)>235||z< -323||z>170)return 0;
   let edge=0;
-  for(const [cx,cz,width,length] of woodlandBelts){
-    const radius=((x-cx)/width)**2+((z-cz)/length)**2;
-    edge=Math.max(edge,1-radius);
+  const latitude=wrap(v);
+  if(latitude>.43&&latitude<.541){
+    for(const stand of INNER_WOODLANDS){
+      const radius=(wrappedDistance(u,stand.u)/stand.along)**2+((latitude-stand.v)/stand.across)**2;
+      edge=Math.max(edge,1-radius);
+    }
+  }else{
+    const x=(wrap(.75-v)-.5)*TAU*(terrain.tubeRadius+18);
+    const z=(wrap(u+.5)-.5)*TAU*terrain.majorRadius;
+    if(Math.abs(x)>235||z< -323||z>170)return 0;
+    for(const [cx,cz,width,length] of woodlandBelts){
+      const radius=((x-cx)/width)**2+((z-cz)/length)**2;
+      edge=Math.max(edge,1-radius);
+    }
   }
   if(edge<=0)return 0;
   const variation=periodicNoise(u,v,416,112,terrain.seed^0xa6c738);
