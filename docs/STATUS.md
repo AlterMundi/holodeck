@@ -2,6 +2,24 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `6bdfc73c4c3e376c8e6e63c6ed8fff1cc460bf75` keeps the selected
+Harmonic Lab from `d4a6a52` in the combined candidate. Its archive
+`1f8c420c12b2d53a20a27d0b95a4d96423b2d5036a477d7d2d64305f34bd1f37`
+matched all 87 payloads. The two Lab asset digests match protected
+release `d7b3b73478fa`. Two separately authenticated loopback HTTP
+sessions each wrote the shared Matter table and received refresh
+events for every committed revision. A stale write returned 409, a
+revoked edit returned 403 and the room read returned 404 after
+leaving. In a separate two-browser fixture, desktop and compact-touch
+visitors both entered through the live doorway and opened the Matter
+table. Desktop published Alfa and the other visitor followed. Touch
+published Beta while the desktop kept its local Alfa, cut 64 and camera.
+**Seguir la mesa** then opened Beta for desktop. Clearing revision 3
+returned the follower to an empty table, and leaving Matter removed
+room read access. Both checks used fixture identities and review
+geometry. Holodeck passed 416 tests with two skips. The protected
+release still lacks the Character pose catalog.
+
 Source `1c8bf3620c7d9dabc089cc002cbdda7c28a5d99e` includes the
 protected world prompts from `9a7bda4` and anchors the Character
 entry offer to its own worktable. Its archive
