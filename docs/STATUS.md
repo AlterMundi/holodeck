@@ -23,9 +23,23 @@ The same archive also qualified a continuous browser journey from ground
 movement and stopping into the room and an exact landing-frame link.
 The ground and cross-surface evidence remains with that archive.
 
-Holodeck now serves `fdc871f47841` from `bcb1606`. This branch carries
-that terrain startup fix for the next studio package. Post-install
-acceptance with two independently signed-in visitors remains open.
+Holodeck now serves `fdc871f47841` from `bcb1606`. The updated studio
+candidate `f55760561eff` includes that terrain startup fix. Its 86 payloads
+match archive `40cb1ccc7ddec872c5dbf46200d2844cf4e2d2cd142a2ee473b6470459add678`.
+The same pinned renderer and 403 passing Holodeck tests are retained
+(two optional skips). Desktop and touch Chromium reproduced the shared
+pose and note with two fixture actors and independent orbit. The ground
+journey registered 4.97 m of keyboard movement and a settled stop in the
+world, then selected support, takeoff, hover, turn and landing in the
+room with an exact pose link. The initial larger-viewport run did not
+register sufficient movement. The successful 660 px run explicitly focused
+the world before pressing the movement key.
+
+The 390 px touch capture also shows clipped action labels and much smaller
+targets than the dock. The studio needs a mobile control layout that keeps
+those actions legible and reachable alongside the viewport. The package is
+a candidate. Post-install acceptance with two independently signed-in
+visitors remains open.
 
 ## November 25 terrain-first ground cover
 
