@@ -4,9 +4,9 @@ import {Euler, Quaternion, Vector3} from 'three';
 export function bindTabletopAttention({document,canvas,pick,allowed,overWorld=()=>true,current,clock=()=>performance.now()}){
   const win=document.defaultView;
   const reduced=win.matchMedia('(prefers-reduced-motion: reduce)');
-  let cursor=null, candidate=null, since=0, next=0;
+  let cursor=null, candidate=null, since=0, next=0, focused=null;
   const localPoint=new Vector3(), point=new Vector3();
-  const clear=()=>{cursor=candidate=null;next=0;};
+  const clear=()=>{cursor=candidate=focused=null;next=0;};
   const move=event=>{
     if(event.pointerType!=='mouse'||event.buttons||document.pointerLockElement){clear();return;}
     cursor={clientX:event.clientX,clientY:event.clientY,movedAt:clock()};
@@ -18,6 +18,7 @@ export function bindTabletopAttention({document,canvas,pick,allowed,overWorld=()
   for(const [target,type,listener] of events)target.addEventListener(type,listener);
   return {
     sample(now){
+      focused=null;
       if(!cursor)return null;
       if(now-cursor.movedAt>3500||reduced.matches||document.pointerLockElement||!allowed()){clear();return null;}
       if(now>=next){
@@ -29,8 +30,10 @@ export function bindTabletopAttention({document,canvas,pick,allowed,overWorld=()
       }
       if(!candidate||!current(candidate)){candidate=null;return null;}
       if(now-since<180)return null;
+      focused=candidate.mesh;
       return candidate.mesh.localToWorld(point.copy(localPoint));
     },
+    part:()=>focused,
     dispose(){for(const [target,type,listener] of events)target.removeEventListener(type,listener);clear();}
   };
 }

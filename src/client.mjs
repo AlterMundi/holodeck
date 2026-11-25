@@ -839,7 +839,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
             if(!bounds)return null;
             record.mesh.localToWorld(bounds.getCenter(point));
             return renderer.mmlCompositionScene.group.worldToLocal(point);
-          });
+          },record.mesh);
         }
         else if(record.kind==='gallery')contentVisitor.openGallery(record.entry).catch(()=>say('No pude abrir esta edición.'));
         else if(record.kind==='content')contentVisitor?.openNode(record.node).catch(()=>say('No pude abrir este contenido. Conservé la visita anterior.'));
@@ -1078,6 +1078,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       nativeAvatarLayer.update();
       tableGaze=tableAttention.sample(performance.now());
       companion.update({position,yaw,outdoor:outsideRing(),table:tableFlight,gaze:tableGaze,
+        gazeMesh:tableAttention.part(),eye:tableFlight.active?options.coreCameraManager.getCameraState().position:null,
         explicitFlight:flightEnabled,grounded:!flightEnabled&&client.getCharacterManager().localController?.characterOnGround===true,
         visible:!entering&&!moving&&drawWorld,seconds:renderState.deltaTimeSeconds});
       galleryModels.update();

@@ -5,6 +5,7 @@ import {AVATARS} from './avatar-registry.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
 import {MatterHologram,matterAvatarScale} from './matter-flight.mjs';
 import {TabletopGlance} from './tabletop-attention.mjs';
+import {TabletopCompanionPerch} from './tabletop-companion-perch.mjs';
 
 const appearance='compaii-navegante-white-v1';
 const localUp=new Vector3(0,1,0);
@@ -143,7 +144,7 @@ export class CompanionAvatar{
     this.velocityChange=new Vector3();
     this.facingDirection=new Vector3();
     this.attentionPoint=new Vector3();
-    this.attentionOffset=new Vector3();
+    this.perch=new TabletopCompanionPerch();
     this.target=new Vector3();
     this.facing=new Vector3();
     this.direction=new Vector3();
@@ -163,8 +164,8 @@ export class CompanionAvatar{
       scene.add(this.figure.root);
     }).catch(error=>{console.warn('The companion avatar could not be loaded.',error);});
   }
-  attend(resolve){
-    this.attention={resolve,until:performance.now()+4500};
+  attend(resolve,mesh){
+    this.attention={resolve,mesh,until:performance.now()+4500};
   }
 
   setSpeechLevel(level){
@@ -172,11 +173,11 @@ export class CompanionAvatar{
     this.speechAt=performance.now();
   }
   get object(){return this.figure?.root.visible?this.figure.root:null;}
-  update({position,yaw=0,outdoor,table,gaze,visible,seconds,grounded=true,explicitFlight=false}){
+  update({position,yaw=0,outdoor,table,gaze,gazeMesh,eye,visible,seconds,grounded=true,explicitFlight=false}){
     const root=this.figure?.root;
     if(!root)return;
     root.visible=Boolean(position&&visible);
-    if(!root.visible){this.previous=null;this.attention=null;this.figure.resetGlance();return;}
+    if(!root.visible){this.previous=null;this.attention=null;this.perch.clear();this.figure.resetGlance();return;}
     const now=performance.now();
     const small=Boolean(table?.active);
     const wantsGround=grounded&&!small;
@@ -185,6 +186,7 @@ export class CompanionAvatar{
       if(small)this.hologram.sync();
       else this.hologram.restore();
       this.previousTable=small;
+      this.perch.clear();
     }
     const resolve=this.attention?.resolve;
     const point=resolve&&this.attention.until>now&&resolve(this.attentionPoint);
@@ -202,17 +204,15 @@ export class CompanionAvatar{
     const height=(wantsGround&&!this.catchup?-.037:.13)*scale;
     this.target.copy(position).add(this.relative.set(step,height,.45*step).applyQuaternion(angle));
     if(small){
-      if(point&&point.distanceToSquared(position)<1.4**2){
-        this.attentionOffset.subVectors(this.target,point);
-        this.attentionOffset.y=Math.max(.04,this.attentionOffset.y);
-        this.target.copy(point).add(this.attentionOffset.setLength(.26));
-      }
       table.bounds.clampPoint(this.target,this.target);
       if(Math.hypot(this.target.x-position.x,this.target.z-position.z)<scale*.8){
         const towardCenter=(table.bounds.min.x+table.bounds.max.x)/2-position.x;
         this.target.x=position.x+(towardCenter>=0?1.16:-1.16)*scale;
         table.bounds.clampPoint(this.target,this.target);
       }
+      const focusMesh=(point&&this.attention?.mesh)||gazeMesh;
+      if(moving&&focusMesh&&samePlace)this.perch.apply(this.target,root.position,position,eye,focusMesh,table.bounds,this.scene);
+      else this.perch.clear();
     }
     let speed=0,rise=0;
     const reset=!this.previous||this.previous!==scale||this.previousOutdoor!==outdoor||root.position.distanceToSquared(this.target)>121;
@@ -235,8 +235,14 @@ export class CompanionAvatar{
       this.velocityChange.subVectors(this.wantedVelocity,this.followVelocity)
         .clampLength(0,dt*(small?scale*1.4:1)*(accelerating?followAcceleration:followDeceleration));
       this.followVelocity.add(this.velocityChange);
-      const travel=Math.min(distance,this.followVelocity.length()*dt);
-      if(travel>0)root.position.addScaledVector(this.followVelocity,travel/this.followVelocity.length());
+      let travel=Math.min(distance,this.followVelocity.length()*dt);
+      if(travel>0){
+        this.relative.copy(root.position).addScaledVector(this.followVelocity,travel/this.followVelocity.length());
+        if(small&&this.perch.blocked(root.position,this.relative)){
+          this.followVelocity.set(0,0,0);
+          travel=0;
+        }else root.position.copy(this.relative);
+      }
       rise=vertical*(1-Math.exp(-dt*5));
       root.position.addScaledVector(root.up,rise);
       if(small)table.bounds.clampPoint(root.position,root.position);
@@ -260,8 +266,9 @@ export class CompanionAvatar{
     this.previousOutdoor=outdoor;
     this.facing.copy(position).addScaledVector(root.up,height);
     this.facingDirection.copy(this.followVelocity).addScaledVector(root.up,-this.followVelocity.dot(root.up));
-    if(point){
-      this.facingDirection.subVectors(point,root.position);
+    const look=point||(small&&this.perch.ready?this.perch.center:null);
+    if(look){
+      this.facingDirection.subVectors(look,root.position);
       this.facingDirection.addScaledVector(root.up,-this.facingDirection.dot(root.up));
       this.facing.copy(root.position).add(this.facingDirection);
     }

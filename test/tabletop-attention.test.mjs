@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {Bone, Group, Mesh, MeshBasicMaterial, Plane, PlaneGeometry, Scene, Vector3} from 'three';
+import {Bone, Box3, BoxGeometry, Group, Mesh, MeshBasicMaterial, Plane, PlaneGeometry, Scene, Vector3} from 'three';
 import {PublicWorldPicker} from '../src/world-indication.mjs';
+import {TabletopCompanionPerch} from '../src/tabletop-companion-perch.mjs';
 import {bindTabletopAttention, TabletopGlance} from '../src/tabletop-attention.mjs';
 
 test('tabletop hover needs a fresh pointer and dwell on the current part',()=>{
@@ -21,8 +22,10 @@ test('tabletop hover needs a fresh pointer and dwell on the current part',()=>{
   assert.equal(attention.sample(0),null);
   assert.equal(attention.sample(179),null);
   assert.deepEqual(attention.sample(180)?.toArray(),[0,0,1]);
+  assert.equal(attention.part(),oldMesh);
   mesh=newMesh;
   assert.equal(attention.sample(181),null);
+  assert.equal(attention.part(),null);
   assert.equal(attention.sample(290),null);
   assert.deepEqual(attention.sample(480)?.toArray(),[0,0,1]);
   assert.equal(attention.sample(4000),null);
@@ -88,4 +91,42 @@ test('only visible worktable parts take gaze through the companion hologram',()=
   part.material.clippingPlanes=[new Plane(new Vector3(0,0,1),-.1)];
   assert.equal(picker.worktableHit(50,50),null);
   picker.dispose();
+});
+
+test('the tabletop companion clears a piece without oscillating between both sides',()=>{
+  const space=new Scene(),mesh=new Mesh(new BoxGeometry(.24,.2,.24));
+  mesh.position.set(0,.2,.3);space.add(mesh);
+  space.position.set(3,0,1);
+  const perch=new TabletopCompanionPerch();
+  const bounds=new Box3(new Vector3(-.9,.05,-.7),new Vector3(.9,.85,.7));
+  const player=new Vector3(.0,.28,-.36);
+  const current=new Vector3(.07,.29,-.31);
+  const formation=new Vector3(.07,.29,-.31);
+  const target=formation.clone();
+  for(const offset of [-.035,.016,-.01,.023,-.017]){
+    target.copy(formation);
+    assert.equal(perch.apply(target,current,player,new Vector3(3+offset,.31,.58),mesh,bounds,space),true);
+    assert.ok(target.x>.18&&target.distanceTo(formation)<.35);
+    assert.ok(bounds.containsPoint(target));
+    current.copy(target);
+  }
+  const tight=new Box3(new Vector3(-.12,.05,-.7),new Vector3(.12,.85,.7));
+  target.copy(formation);
+  assert.equal(perch.apply(target,formation,player,new Vector3(3,.31,.58),mesh,tight,space),false);
+  assert.ok(target.equals(formation));
+});
+
+test('the companion holds on its side when the follow path cuts through the focused piece',()=>{
+  const space=new Scene(),mesh=new Mesh(new BoxGeometry(.42,.2,.26));
+  mesh.position.set(0,.20,0);space.add(mesh);
+  const bounds=new Box3(new Vector3(-.28,.05,-.45),new Vector3(.28,.85,.45));
+  const current=new Vector3(0,.30,-.36),target=new Vector3(0,.30,.35);
+  const perch=new TabletopCompanionPerch();
+  assert.equal(perch.apply(target,current,new Vector3(.08,.4,.28),new Vector3(0,.4,.45),mesh,bounds,space),false);
+  assert.ok(target.equals(current));
+  // A part can be repositioned over a stopped avatar. In that case
+  // the next motion step can get out, with no further penetration.
+  const inside=new Vector3(.12,.30,0);
+  assert.equal(perch.blocked(inside,new Vector3(.16,.3,0)),false);
+  assert.equal(perch.blocked(inside,new Vector3(.07,.3,0)),true);
 });
