@@ -54,11 +54,11 @@ authorized against Home and the exact edition before it receives the signal.
 A read-only visitor can point using the same scope. The room journal, table
 checkpoint and native Conversation stay independent of this gesture.
 
-A matching, visible part receives a thin gold outline in the receiving view.
+A matching, visible part receives a small gold marker on a surface in the receiving view.
 The sending miniature turns its head toward that view's part bounds. The
-viewer keeps their own rotation, scene, section and hidden parts. The outline
+viewer keeps their own rotation, scene, section and hidden parts. The marker
 follows a partial horizontal section and disappears when the remaining bounds
-are empty. With reduced motion the outline remains available. Changing the
+are empty. With reduced motion the marker remains available. Changing the
 table edition, leaving its scope or reconnecting drops the cue. Late arrivals
 receive no replay.
 

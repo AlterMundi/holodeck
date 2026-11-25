@@ -1128,7 +1128,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const tableNow=performance.now(),tableWorld=client.getWorldConnection();
       const tableConnection=tableWorld?.getConnectionId();
       const atTable=tableFlight.active&&!moving&&!entering&&!document.hidden;
-      points.update(activeSpace.id,tableWorld,table,collectionShelves.tabletopPlayers,tableNow,atTable?tableConnection:null);
+      points.update(activeSpace.id,tableWorld,table,collectionShelves.tabletopPlayers,tableNow,
+        atTable?tableConnection:null,options.coreCameraManager.getCameraState(),worldCanvas.clientHeight);
       const pointed=atTable?points.gazes.get(tableConnection):null;
       tableGaze=pointed??tableAttention.sample(tableNow);
       companion.update({position,yaw,outdoor:outsideRing(),table:tableFlight,gaze:tableGaze,
