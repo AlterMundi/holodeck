@@ -218,6 +218,34 @@ the current passage slots, interaction prompts and collision clearance.
 Compare the instruments from the approach and at use distance before
 changing architectural fill, then review the active table and exhibits.
 
+### Fitted Atelier returns
+
+The source at `1c3e309` places an original Blender leaf in Matter's
+existing steel jamb and uses the baked plaque above it. Harmonic Lab
+reuses the leaf at the upper stair tread with one aligned plaque.
+The existing MML door stays a reciprocal link on the same level.
+The visible staircase now matches six solid treads and two outboard
+rails, with arrival at the upper tread. The fitted leaf has no collider
+of its own. Its revision is covered by the same room grant and passage
+list used to render it. The normal non-toroidal gallery stair remains.
+
+The editable exporter is
+[`atelier-return-leaf.py`](../art/compaii-house/redesign/atelier-return-leaf.py).
+Its original four PBR materials use no texture payload. The leaf is
+1,296 triangles in four primitives and 93,832 bytes decoded or 13,754
+bytes in the package. Total archive size is 33,525,760 bytes, with
+the previous client bundle intact.
+
+Exact package `b4031531fdfd` passed the Matter and Lab round trips on
+RTX 2060 Normal and Pi 5 Livianos. Both browsers walked from the Lab
+landing to the floor and back to 0.94 m. The fitted asset URL resolved in
+its two scoped rooms and returned 404 from the foyer and exterior.
+These used fixture identities. A separate software browser rendered both
+doors but exceeded a timed walk assertion during concurrent qualification.
+402 Node tests passed with two optional skips. Protected readback matched
+86 payload files and the original configuration and audience. The active
+world retained its identity and state. Immediate rollback is `b3cb2d08a6cc`.
+
 ### Terrain-first ground cover
 
 Holding the terrain worker's script response reproduced the reported

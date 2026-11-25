@@ -926,6 +926,13 @@ Record exact clean source, compile/test, archive digest and size, installed
 bytes, HTTPS readback and rollback. The independent art working tree stays
 outside the source used for release. See [current evidence](STATUS.md).
 
+Track the reported Legion and Redmi tab exits in
+[#27](https://github.com/AlterMundi/holodeck/issues/27). The later report
+locates one recurrence during flight. Diagnose foreground renderer/GL
+loss separately from background discard or WebView closure, and verify
+reopen from the last confirmed location before treating the report as
+resolved.
+
 | Stage | Owning cards and dependencies | Exit evidence |
 | --- | --- | --- |
 | 0. Complete the current situated encounter | Holodeck [#1](https://github.com/AlterMundi/holodeck/issues/1), [#4](https://github.com/AlterMundi/holodeck/issues/4); Nexus existing shared-participation/review work | An independently authenticated fixture opens the pinned Field view, selects an exact target, comments through canonical Conversation, keeps moving, receives the continuing reply and recovers the reference after reconnect. Earlier shared walking/light evidence is retained; do not repeat generic login trials. Housing engineering continues independently. |

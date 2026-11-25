@@ -1,5 +1,18 @@
 # Current MVP work
 
+## November 25 Atelier return thresholds
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `b4031531fdfd` from `1c3e309`. Matter uses its baked Vestibule
+plaque and a modeled inset leaf. Harmonic Lab sets the coordinated leaf,
+placard and arrival at the actual stair landing. The floor-to-landing
+walk and the Matter and Lab return loops passed in Normal RTX 2060 and
+Livianos Pi 5 fixture browsers. Protected readback matched 86 files,
+existing audience and configuration, and the same world run, with 30
+entities and four nodes while the sequence advanced 424 to 426.
+Immediate rollback is `b3cb2d08a6cc`.
+[Interior evidence](environment-art-revamp.md#fitted-atelier-returns).
+
 ## November 25 terrain-first ground cover
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
