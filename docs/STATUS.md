@@ -2,6 +2,17 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `acc978aff47fbae7a6080a63d2dab17f123f5187` combines the selected
+inner woodland from `b086c86` with Character review. Archive
+`fad627adbf5d5d7c6ce268cf47b870e626a1f340f529f0765038d397fad78231`
+matched all 87 payloads and both Lab assets in protected release
+`0981468421fe`. Only the terrain worker and browser bundle changed from
+the previous candidate. The pose catalog was byte-identical. An exact
+link from that previous archive still opened flight frame 78 in Chromium.
+Two fixture browsers and the direct app actor also passed ground, flight,
+comparison, note, local frame and room access checks. Holodeck passed 422
+tests with two skips. Protected Home acceptance remains open.
+
 Source `73735199e2d49b74e75fbc8bc1e018c3580f90ab` fingerprints the compiled
 motion sampler for exact editions. Shading-only changes preserved the
 fingerprint, while changes to braking input and physical water level moved
