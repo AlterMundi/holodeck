@@ -726,3 +726,24 @@ captured-view identity, reload without resubmission, and a new command
 after closing local tracking. These are fixture checks with no native
 provider calls. Package `73659b794b51` is 33,515,520 bytes. Actual
 authenticated two-visitor acceptance remains open.
+
+## Navegante movement follow-up
+
+After the volumetric avatar reached the live service, Nicolas reported that
+the movement still felt stiff. A fresh Opus 5.5 High review identified the
+camera-driven follow target, unbounded onset, and cadence/distance mismatch.
+The companion now keeps its selected side while the camera turns, ramps
+velocity under a speed limit and advances the walk phase by distance. Its
+follow frame still tracks the torus gravity frame. A review of the exact diff
+caught stale velocity on tab return and a potential repeated catch-up jump at
+sprint speed. The revisions reset velocity when visibility returns and use an
+acceleration that supports the existing 8 m/s sprint.
+
+Controlled Chromium exercised the same GLB and Three.js controller. A full
+standing turn translated the robot by 0 m. The stop trace reached 0 m/s, a
+hidden-tab return discarded stale velocity, and jaw movement and reduced
+motion passed. The combined archive `e77a4ddbfe87e` is 33,515,520 bytes.
+It is staged on the development host. The selected live build still serves the
+volumetric model with the previous movement controller. Authored fast
+locomotion and hovering, ground contact on slopes and stairs, and video review
+of transitions in the real world remain part of the visual acceptance.

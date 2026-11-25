@@ -6,7 +6,10 @@ import {toroidalRotation} from './toroidal-locomotion.mjs';
 const appearance='compaii-navegante-white-v1';
 const localUp=new Vector3(0,1,0);
 const jawTravel=12/515;
-const strideSpeed=.424; // 198 mm of planted travel over half a 28-frame walk cycle.
+const strideDistance=.396;
+const followAcceleration=8;
+const followDeceleration=8;
+const maximumFollowSpeed=9;
 
 async function loadFigure(url){
   const {scene:root,animations}=await new GLTFLoader().loadAsync(url.href);
@@ -51,18 +54,23 @@ async function loadFigure(url){
   mixer.clipAction(face).play();
   const still=body.tracks.length?mixer.clipAction(body).play():null;
   const stride=walk?mixer.clipAction(walk).play():null;
-  stride?.setEffectiveWeight(0);
+  if(stride)stride.setEffectiveWeight(0).paused=true;
   // The new armature keeps Blender's Z-up axes inside the Y-up GLB.
   // The prior object-joint asset used Y-up local axes.
   const vertical=hinge.isBone?'z':'y', hingeAxis=hinge.isBone?'x':'z';
   const jawHeight=hinge.position[vertical], jawAngle=hinge.rotation[hingeAxis];
-  let walking=0;
+  let walking=0,phase=0;
   return {root,dispose,pose(seconds,level,speed,motion){
     const step=Math.min(.05,Math.max(0,seconds));
-    const weight=motion?Math.min(1,Math.max(0,(speed-.12)/.7)):0;
-    walking=motion?walking+(weight-walking)*(1-Math.exp(-step*12)):0;
+    const weight=motion?Math.min(1,Math.max(0,(speed-.06)/.18)):0;
+    walking=motion?walking+(weight-walking)*(1-Math.exp(-step*14)):0;
+    if(walking<.02&&!weight)phase=0;
+    else phase=(phase+Math.min(speed,1.45)*step/strideDistance)%1;
     still?.setEffectiveWeight(1-walking);
-    stride?.setEffectiveWeight(walking).setEffectiveTimeScale(Math.max(.7,Math.min(3.4,speed/strideSpeed)));
+    if(stride){
+      stride.setEffectiveWeight(walking);
+      stride.time=phase*walk.duration;
+    }
     if(motion)mixer.update(step);
     else mixer.setTime(0);
     hinge.position[vertical]=jawHeight-jawTravel*level;
@@ -74,12 +82,19 @@ export class CompanionAvatar{
   constructor({scene,document,base}){
     Object.assign(this,{scene,document});
     this.relative=new Vector3();
+    this.followAngle=new Quaternion();
+    this.followVelocity=new Vector3();
+    this.wantedVelocity=new Vector3();
+    this.velocityChange=new Vector3();
+    this.facingDirection=new Vector3();
     this.target=new Vector3();
     this.facing=new Vector3();
     this.direction=new Vector3();
     this.previousHeading=new Quaternion();
     this.localHeading=new Quaternion();
     this.motion=document.defaultView.matchMedia('(prefers-reduced-motion: reduce)');
+    this.visibilityChanged=()=>{if(document.hidden)this.previous=null;};
+    document.addEventListener('visibilitychange',this.visibilityChanged);
     const asset=AVATARS[appearance];
     const model=new URL(asset.model,base);
     model.searchParams.set('v',asset.modelSha256);
@@ -104,7 +119,11 @@ export class CompanionAvatar{
     const small=Boolean(table?.active);
     const canWalk=grounded&&!small;
     const scale=small?.33:1;
-    const angle=outdoor?toroidalRotation(position,yaw):this.localHeading.setFromAxisAngle(localUp,yaw);
+    // Choose the side on arrival and carry it with the local terrain frame.
+    // Looking around with a stationary player must not move the companion.
+    const frame=outdoor?toroidalRotation(position,0,this.localHeading):this.localHeading.identity();
+    if(this.previous!==scale||this.previousOutdoor!==outdoor)this.followYaw=yaw;
+    const angle=this.followAngle.setFromAxisAngle(localUp,this.followYaw??yaw).premultiply(frame);
     const step=small?.3:1.12;
     const height=(canWalk?-.037:.13)*scale;
     this.target.copy(position).add(this.relative.set(step,height,.45*step).applyQuaternion(angle));
@@ -118,21 +137,37 @@ export class CompanionAvatar{
     }
     let speed=0;
     const moving=!this.motion.matches&&!this.document.hidden;
-    const reset=!this.previous||this.previous!==scale||root.position.distanceToSquared(this.target)>9;
-    root.up.copy(localUp);
-    if(outdoor)root.up.applyQuaternion(angle);
-    if(reset||!moving)root.position.copy(this.target);
-    else if(seconds>0){
-      const blend=1-Math.exp(-seconds*7);
+    const reset=!this.previous||this.previous!==scale||this.previousOutdoor!==outdoor||root.position.distanceToSquared(this.target)>36;
+    const dt=Math.min(.05,Math.max(0,seconds));
+    root.up.copy(localUp).applyQuaternion(frame);
+    if(reset||!moving){
+      root.position.copy(this.target);
+      this.followVelocity.set(0,0,0);
+    }else if(dt>0){
       this.direction.subVectors(this.target,root.position);
-      this.direction.addScaledVector(root.up,-this.direction.dot(root.up));
-      if(canWalk)speed=this.direction.length()*blend/(seconds*scale);
-      root.position.lerp(this.target,blend);
+      const vertical=this.direction.dot(root.up);
+      this.direction.addScaledVector(root.up,-vertical);
+      const distance=this.direction.length();
+      const deadZone=canWalk?.035:0;
+      const approach=Math.min(maximumFollowSpeed,Math.sqrt(2*followDeceleration*Math.max(0,distance-deadZone)));
+      this.wantedVelocity.copy(this.direction).setLength(approach);
+      this.followVelocity.addScaledVector(root.up,-this.followVelocity.dot(root.up));
+      const accelerating=this.followVelocity.dot(this.wantedVelocity)>=this.followVelocity.lengthSq();
+      this.velocityChange.subVectors(this.wantedVelocity,this.followVelocity)
+        .clampLength(0,dt*(accelerating?followAcceleration:followDeceleration));
+      this.followVelocity.add(this.velocityChange);
+      const travel=Math.min(distance,this.followVelocity.length()*dt);
+      if(travel>0)root.position.addScaledVector(this.followVelocity,travel/this.followVelocity.length());
+      root.position.addScaledVector(root.up,vertical*(1-Math.exp(-dt*8)));
+      if(small)table.bounds.clampPoint(root.position,root.position);
+      if(canWalk)speed=travel/(dt*scale);
     }
     root.scale.setScalar(scale);
     this.previous=scale;
+    this.previousOutdoor=outdoor;
     this.facing.copy(position).addScaledVector(root.up,height);
-    if(speed>.18)this.facing.copy(root.position).add(this.direction);
+    this.facingDirection.copy(this.followVelocity).addScaledVector(root.up,-this.followVelocity.dot(root.up));
+    if(speed>.18)this.facing.copy(root.position).add(this.facingDirection);
     if(root.position.distanceToSquared(this.facing)>.0004){
       this.previousHeading.copy(root.quaternion);
       root.lookAt(this.facing);
@@ -141,5 +176,9 @@ export class CompanionAvatar{
     const level=moving&&now-(this.speechAt??-Infinity)<300?this.level:0;
     this.figure.pose(seconds,level,speed,moving);
   }
-  dispose(){this.disposed=true;this.figure?.dispose();}
+  dispose(){
+    this.disposed=true;
+    this.document.removeEventListener('visibilitychange',this.visibilityChanged);
+    this.figure?.dispose();
+  }
 }
