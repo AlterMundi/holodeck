@@ -36,8 +36,8 @@ async function modelBytes(base,edition,signal){
 }
 
 export class CollectionShelves {
-  constructor({base,scene,panel,archivePanel,worktablePanel,webgl,onReference,onPlaced}){
-    Object.assign(this,{base,scene,panel,onPlaced,webgl,loader:new GLTFLoader()});
+  constructor({base,scene,panel,archivePanel,worktablePanel,webgl,onReference,onPlaced,onTabletop}){
+    Object.assign(this,{base,scene,panel,onPlaced,onTabletop,webgl,loader:new GLTFLoader()});
     this.items=new Map();
     this.list=panel.querySelector('ul');
     this.archiveStatus=panel.ownerDocument.createElement('p');
@@ -47,6 +47,7 @@ export class CollectionShelves {
     this.visibleLinks='';
     this.shelfEntries=[];
     this.hudShelfOptions=[];
+    this.tabletopPlayers=new Set();
     const refreshSoon=this.refreshSoon=()=>{this.flight?.abort();this.flight=null;this.refreshAt=0;};
     this.archive=new CollectionArchive({base,scene,panel:archivePanel,loader:this.loader,
       readModel:(edition,signal)=>modelBytes(base,edition,signal),onRestored:refreshSoon});
@@ -59,14 +60,31 @@ export class CollectionShelves {
       this.room=room;this.root=root;
     }
     if(!room||!root||!player)return;
-    if(!this.events){
+    if(!this.events&&performance.now()>=(this.nextStreamAt??0)){
       const stream=new EventSource(new URL('api/space/collection/events',this.base));
       this.events=stream;
       let opened=false;
       stream.onopen=()=>{
-        if(opened&&this.events===stream)this.refreshAt=0;
+        if(this.events!==stream)return;
+        if(opened)this.refreshAt=0;
         opened=true;
       };
+      stream.onerror=()=>{
+        if(this.events!==stream||stream.readyState!==EventSource.CLOSED)return;
+        this.events=null;
+        this.tabletopPlayers.clear();
+        this.nextStreamAt=performance.now()+3000;
+      };
+      stream.addEventListener('tabletop',event=>{
+        if(this.events!==stream)return;
+        try{
+          const players=JSON.parse(event.data);
+          if(Array.isArray(players)&&players.every(id=>Number.isSafeInteger(id)&&id>=0)){
+            this.tabletopPlayers=new Set(players);
+            this.onTabletop?.(this.tabletopPlayers);
+          }
+        }catch{}
+      });
       stream.addEventListener('refresh',()=>{
         if(this.events===stream)this.refreshAt=0;
       });
@@ -302,7 +320,7 @@ export class CollectionShelves {
 
   clear(){
     this.clearShadows();
-    this.events?.close();this.events=null;
+    this.events?.close();this.events=null;this.nextStreamAt=0;this.tabletopPlayers.clear();
     this.flight?.abort();this.flight=null;
     this.archiveRequest?.abort();this.archiveRequest=null;this.setArchiveStatus(null,'');
     for(const item of this.items.values())this.remove(item);

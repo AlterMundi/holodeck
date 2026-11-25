@@ -640,6 +640,10 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
     collectionShelves=new CollectionShelves({base,scene:renderer.mmlCompositionScene.group,panel:document.querySelector('#collection-shelf'),
       archivePanel:document.querySelector('#collection-archive'),worktablePanel:document.querySelector('#collection-worktable'),
+      onTabletop:players=>{
+        const id=client.getLocalCharacterState()?.connectionId;
+        if(Number.isSafeInteger(id)&&players.has(id)!==tableFlight.active)void shareTabletopMode(tableFlight.active);
+      },
       webgl:renderer.composer.renderer,onPlaced:()=>say('Modelo seleccionado. Acercate a la mesa.',{transient:true}),onReference:(reference,label)=>{
         if(moving||!inside||!sharedSurface())return;
         worktableTopic={reference,label};openConversation(true);
@@ -655,6 +659,24 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       pressed:element.getAttribute('aria-expanded')==='true',
     }]));
     let settingsInputCaptured=false;
+    let tabletopRevision=0;
+    async function shareTabletopMode(active){
+      const connection=client.getLocalCharacterState()?.connectionId;
+      if(!Number.isSafeInteger(connection))return;
+      const revision=++tabletopRevision;
+      const body=JSON.stringify({active,connection,revision});
+      // Newer state always wins, including when a retried request arrives late.
+      for(const delay of [0,500,1500]){
+        if(delay)await new Promise(resolve=>setTimeout(resolve,delay));
+        if(revision!==tabletopRevision||client.getLocalCharacterState()?.connectionId!==connection)return;
+        try{
+          const response=await fetch(new URL('api/space/collection/tabletop-presence',base),{
+            method:'POST',headers:{'Content-Type':'application/json'},body,signal:AbortSignal.timeout(3000),
+          });
+          if(response.status!==429&&response.status<500)return;
+        }catch{}
+      }
+    }
     matterHud=new MatterWorktableHud({document,webgl:renderer.composer.renderer,table:collectionShelves.worktable,collection:collectionShelves,
       toggleSound:()=>{if(!moving&&!entering&&navigator.userActivation?.isActive&&(!inside||worldAudio.status().active))void toggleWorldSound();},
       readTools,activateTool:id=>tools[id]?.click(),
@@ -671,6 +693,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       onActive:active=>{
         document.body.classList.toggle('is-operating-matter',active);
         if(!active)tableFlight.exit(client.getCharacterManager().localController);
+        void shareTabletopMode(active);
         client.keyInputManager?.handleUnfocus();
       },
       onError:()=>say('No pude mostrar estos controles. Volvé a abrirlos.',{transient:true}),
@@ -761,7 +784,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       outdoor:outsideRing(),flying:flightEnabled,table:tableFlight.active,
       crouch:!moving&&client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('shift'),
     }));
-    const releaseHologram=bindMatterHologram(renderer.characterManager,tableFlight);
+    const releaseHologram=bindMatterHologram(renderer.characterManager,tableFlight,()=>collectionShelves.tabletopPlayers);
     const tableInputAllowed=()=>!moving&&!entering&&!document.hidden&&!mapPanel.open&&
       document.querySelector('#conversation-panel').hidden&&!document.querySelector('dialog[open]')&&!signalEditor?.active;
     // On the ring the sun keeps one direction in the traveler's radial frame,

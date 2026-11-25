@@ -251,6 +251,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
     return event;
   };
   assert.equal(await readEvent(),': ready\n\n');
+  assert.equal(await readEvent(),'event: tabletop\ndata: []\n\n');
   assert.equal((await author.share(component,0)).status,204);
   assert.equal(await readEvent(),'event: refresh\ndata: {}\n\n');
   assert.deepEqual((await (await author.catalog()).json()).worktable,table(1,component,true));

@@ -102,27 +102,37 @@ export function bindMatterFlight(manager,camera,flight,inputAllowed,onLost){
   };
 }
 
-export function bindMatterHologram(manager,flight){
+export function bindMatterHologram(manager,flight,tabletopPlayers=()=>[]){
   const update=manager.update;
-  let saved,appearance=[];
-  const restore=()=>{
-    if(!saved)return;
-    saved.character.scale.copy(saved.scale);
+  const saved=new Map();
+
+  function restore(id){
+    const {character,scale,appearance}=saved.get(id);
+    character.scale.copy(scale);
     for(const {mesh,source,materials,shadow} of appearance){
       if(mesh.material===materials)mesh.material=source;
       mesh.castShadow=shadow;
       for(const material of Array.isArray(materials)?materials:[materials])material.dispose();
     }
-    saved=null;
-    appearance=[];
-  };
+    saved.delete(id);
+  }
+
   function draw(state,...args){
     const result=update.call(this,state,...args);
-    const character=flight.active&&manager.loadedCharacters.get(state.localCharacterId)?.character;
-    const root=character?.getMesh();
-    if(saved&&(saved.character!==character||saved.root!==root))restore();
-    if(root&&!saved){
-      saved={character,root,scale:character.scale.clone()};
+    const players=new Set(tabletopPlayers());
+    players.delete(state.localCharacterId);
+    if(flight.active)players.add(state.localCharacterId);
+    for(const [id,{character,root}] of saved){
+      const loaded=manager.loadedCharacters.get(id)?.character;
+      if(!players.has(id)||loaded!==character||loaded.getMesh()!==root)restore(id);
+    }
+    for(const id of players){
+      if(saved.has(id))continue;
+      const character=manager.loadedCharacters.get(id)?.character;
+      const root=character?.getMesh();
+      if(!root)continue;
+      const appearance=[];
+      saved.set(id,{character,root,appearance,scale:character.scale.clone()});
       character.scale.multiplyScalar(matterAvatarScale);
       root.traverse(mesh=>{
         if(!mesh.isMesh||!mesh.material)return;
@@ -143,5 +153,5 @@ export function bindMatterHologram(manager,flight){
     return result;
   }
   manager.update=draw;
-  return ()=>{restore();if(manager.update===draw)manager.update=update;};
+  return ()=>{for(const id of saved.keys())restore(id);if(manager.update===draw)manager.update=update;};
 }

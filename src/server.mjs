@@ -202,6 +202,18 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       else res.end();
     }
   }
+  function tabletopSnapshot(){
+    const connections=cellTransports.get(collection?.room)?.connections;
+    return JSON.stringify([...connections??[]].filter(([,peer])=>peer.tabletop&&inScope(peer.session.actor,collection.room))
+      .map(([connection])=>connection));
+  }
+  function broadcastTabletop(){
+    const event='event: tabletop\ndata: '+tabletopSnapshot()+'\n\n';
+    for(const [res,session] of collectionStreams){
+      if(inScope(session.actor,collection.room)&&Date.now()-session.created<SESSION_MS)res.write(event);
+      else res.end();
+    }
+  }
   const archiveKeys=new Set(collection?.archive?.map(pinKey));
   const shelfCount=matterArt?.shelves.length??0;
   const baseShelves=collection?.projects.length??0;
@@ -600,7 +612,11 @@ export async function createHolodeck({basePath='/',production=false,identityReso
         return {userId:actor.id,connectionKey:`session:${session.id}`,username:actor.name||'Explorador',
           characterDescription:avatarProfile(actor),colors:null};
       },
-      onClientDisconnect(connection){connections.delete(connection);},
+      onClientDisconnect(connection){
+        const peer=connections.get(connection);
+        connections.delete(connection);
+        if(peer?.tabletop)broadcastTabletop();
+      },
       onClientUserIdentityUpdate(){return false;}
     },worldConfig:{mmlDocuments:{interior:{url:'ws://'+address+'world'}},enableChat:false,enableTweakPane:false,
       environmentConfiguration:{groundPlane:false,sun:{intensity:.9},fog:{fogFar:0},
@@ -695,7 +711,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(session.times.length>=4)return res.status(429).json({message:'Esperá un momento antes de intentar otra acción.'});
       session.times.push(now);
     }
-    const spaceRoute=['/space','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/matter-look','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
+    const spaceRoute=['/space','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/collection/tabletop-presence','/space/matter-look','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
       req.path==='/appearance'||req.path==='/conversation-surface'||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
@@ -855,10 +871,28 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(collectionStreams.size>=LIMITS.sessions)return res.sendStatus(503);
     res.set({'Content-Type':'text/event-stream','X-Accel-Buffering':'no'});
     res.flushHeaders();
-    res.write(': ready\n\n');
+    res.write(': ready\n\nevent: tabletop\ndata: '+tabletopSnapshot()+'\n\n');
     const timer=setTimeout(()=>res.end(),25000);
     collectionStreams.set(res,req.holodeckSession);
     res.on('close',()=>{clearTimeout(timer);collectionStreams.delete(res);});
+  });
+  app.post(route('api/space/collection/tabletop-presence'),(req,res)=>{
+    if(!collection?.art||!inScope(req.actor,collection.room))return res.sendStatus(404);
+    const input=req.body;
+    if(!input||Object.keys(input).sort().join(',')!=='active,connection,revision'||
+       typeof input.active!=='boolean'||!Number.isSafeInteger(input.connection)||input.connection<0||
+       !Number.isSafeInteger(input.revision)||input.revision<1)return res.sendStatus(400);
+    const peer=cellTransports.get(collection.room)?.connections.get(input.connection);
+    // Each tab owns a socket, but all tabs of one actor share the HTTP cookie.
+    if(peer?.session.actor.id!==req.actor.id)return res.sendStatus(409);
+    if(input.revision>(peer.tabletopRevision??0)){
+      peer.tabletopRevision=input.revision;
+      if(Boolean(peer.tabletop)!==input.active){
+        peer.tabletop=input.active;
+        broadcastTabletop();
+      }
+    }
+    res.status(204).end();
   });
   app.post(route('api/space/collection'),asyncRoute(async(req,res)=>{
     if(!collection?.art||!inScope(req.actor,collection.room))return res.sendStatus(404);
