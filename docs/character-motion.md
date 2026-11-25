@@ -144,3 +144,30 @@ Open before acceptance:
 - The robot remains viewer-local. Peers do not see each other's companion.
 - Mouths follow a signal level. No phoneme shapes exist on either rig.
 - Nicolás's judgement of the motion.
+
+
+## Runtime and studio qualification
+
+The separate motion/studio candidate `3fd63da1fd1d` at source
+`4aafe28` is based on the deployed foyer. The packed archive is
+33,474,560 bytes. Higher Brotli compression of the original foyer GLB
+keeps its inflated bytes identical and does not change its URL.
+The exact source passes 397 Node 24 tests with two optional skips.
+
+The two-person Chromium fixture reproduced the same flight image at
+frame 78, reverse stepping and stale-edition handling, and reviewed
+the swim pose at frame 94. A narrow Chromium viewport exercised the
+humanoid rig, authored selection, a stock jog-cycle choice and a local
+pose note. Fable High reviewed the design and Opus 5.5 High reviewed
+the implementation. The corrections cover frame-zero timing, authored
+root offsets, rejected clip identifiers and cleanup during failed
+selection or page exit.
+
+On the RTX 2060 at Normal quality, the new companion followed 30.1 m
+alongside 31.0 m of player movement. Both fixture identities connected
+and the companion's posed ankles moved. The slower software-rendered
+two-tab fixture fell behind during its walk sample. These observations
+do not establish Pi performance, spontaneous independent visitor
+judgment, or author quality acceptance. The in-world flight and landing
+fixture needs separate qualification. The protected release remains
+`61d8ac934638`.
