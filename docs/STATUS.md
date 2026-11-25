@@ -2,6 +2,18 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `beff1ccde88dd966ba1f3ba46e2f590e9349d594` brings the combined
+candidate onto the selected Harmonic Lab floor from `d26bd46`. The
+archive `d8c2d5efe63b45039bb56d6a48aa97cfea4cc4410f07936a78be7bfe6efb9f3d`
+matched all 87 payloads. Both Lab assets matched the installed
+`179364d0f9fc` manifest. At 568 × 320 and 568 × 280, the loopback
+Chromium fixture repeated Matter inspection, moved through the foyer
+into Character Design and checked the full playback and Notes labels.
+The native review checkpoint passed room access, stale revision,
+shared note and restart checks. Holodeck passed 416 tests with two
+skips. Protected room acceptance with two actual Home participants
+remains open.
+
 Source `6bdfc73c4c3e376c8e6e63c6ed8fff1cc460bf75` keeps the selected
 Harmonic Lab from `d4a6a52` in the combined candidate. Its archive
 `1f8c420c12b2d53a20a27d0b95a4d96423b2d5036a477d7d2d64305f34bd1f37`
