@@ -1070,6 +1070,18 @@ requests the browser's permission to capture W only and releases that capture
 on exit. A bare cancelable Ctrl+W event is also handled when the browser
 delivers it to the world. Regular-window behavior still depends on the browser.
 
+For the November 25 desktop report in
+[#27](https://github.com/AlterMundi/holodeck/issues/27), headed Chromium
+156 ran the protected `b4031531fdfd` package with a fixture actor and
+granted keyboard-lock permission. The native fullscreen shortcut captured
+`KeyW`. A real X11 Ctrl+W chord reached the page and left the tab open.
+After Escape, the same chord closed the ordinary tab and left the sentinel
+tab open. A separate Normal RTX 2060 fixture flew up and around the house
+for roughly one minute without a tab close or WebGL loss, then landed.
+It retained at most 160 reported geometries and 24 textures across the 32
+flight samples. The participant identified Ctrl+W on desktop. The Redmi
+report remains open.
+
 The humanoid rigs use mirrored bone axes. The crouch correction bends about the
 body's lateral axis rather than twisting the knee along the bone. The visual
 adapter still uses the standing collision capsule. The authored animation pass

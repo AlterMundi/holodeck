@@ -927,11 +927,12 @@ bytes, HTTPS readback and rollback. The independent art working tree stays
 outside the source used for release. See [current evidence](STATUS.md).
 
 Track the reported Legion and Redmi tab exits in
-[#27](https://github.com/AlterMundi/holodeck/issues/27). The later report
-locates one recurrence during flight. Diagnose foreground renderer/GL
-loss separately from background discard or WebView closure, and verify
-reopen from the last confirmed location before treating the report as
-resolved.
+[#27](https://github.com/AlterMundi/holodeck/issues/27). The participant
+identified Ctrl+W as the desktop trigger. The protected fullscreen
+control captures that chord with browser permission, while a regular
+Chromium tab reserves it. R remains the ordinary sprint modifier. The
+Redmi exit remains unexplained. Diagnose WebView and mobile lifecycle
+behavior and verify reopen from the last confirmed location.
 
 | Stage | Owning cards and dependencies | Exit evidence |
 | --- | --- | --- |
