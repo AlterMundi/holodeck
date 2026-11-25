@@ -42,21 +42,33 @@ export class WorldHistory{
   }
   this.$('activity-updates').hidden=!this.data||!state||state.sequence<=this.data.currentThrough;
  }
+ setNative(active){
+  if(Boolean(this.native)===active)return;
+  this.native=active;
+  if(active){
+   this.inertTargets=[...this.document.querySelectorAll('#conversation-panel,#creator,#content-visit,#world-tools,#dock,#space-travel,#hud')]
+     .filter(element=>!element.inert);
+   for(const element of this.inertTargets)element.inert=true;
+  }else{
+   for(const element of this.inertTargets??[])element.inert=false;
+   this.inertTargets=null;
+  }
+ }
  async open({native=false}={}){
   if(!this.getState()||this.opened)return;
-  this.opened=true;this.native=native;
+  this.opened=true;this.setNative(native);
   if(!native)this.dialog.showModal();
   if(!this.data)await this.fetchPage({fresh:true});
  }
  fallback(){
   if(!this.native||!this.opened)return;
-  this.native=false;
+  this.setNative(false);
   this.dialog.showModal();
  }
  close(){
   if(!this.opened)return;
   const native=this.native;
-  this.opened=false;this.native=false;this.epoch++;this.request?.abort();this.request=null;
+  this.opened=false;this.setNative(false);this.epoch++;this.request?.abort();this.request=null;
   if(this.loading)this.message('');
   this.loading=false;if(this.dialog.open)this.dialog.close();
   this.controls();this.resumeWorld(native);
@@ -143,5 +155,5 @@ export class WorldHistory{
   catch(error){if(this.opened)this.message(error.userMessage||(error.httpStatus?error.message:'No pude compartir la referencia. Podés volver a intentarlo.'));}
   finally{this.pointBusy=false;this.controls();}
  }
- dispose(){this.epoch++;this.request?.abort();this.dialog.removeEventListener('cancel',this.cancel);this.launcher.onclick=null;}
+ dispose(){this.setNative(false);this.epoch++;this.request?.abort();this.dialog.removeEventListener('cancel',this.cancel);this.launcher.onclick=null;}
 }

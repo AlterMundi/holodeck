@@ -406,6 +406,11 @@ export class MatterWorktableHud{
     const history=this.activity.owner();
     const surface=history?.native?activityHudId:settingsId;
     if(event.defaultPrevented)return false;
+    if(history?.native&&!this.ownsAccessibleInput(event.target)&&
+      event.target?.closest?.('input,textarea,button,select,[contenteditable]')){
+      if(event.key==='Escape'){history.close();return true;}
+      return false;
+    }
     if(this.windows.key(surface,event))return true;
     if(event.repeat&&(event.key==='Enter'||event.key===' '))return true;
     if(event.key==='Tab'){
@@ -603,6 +608,7 @@ export class MatterWorktableHud{
     this.status.dispose();
     this.syncMovement(false);
     this.settings.close(false);
+    this.activity.present(false,false);
     this.hud.dispose();
     this.a11y.remove();
     this.toolInset.remove();

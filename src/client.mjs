@@ -652,9 +652,11 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       appearance:document.getElementById('appearance-open'),video:document.getElementById('video-open'),
       bridge:document.getElementById('bridge'),plant:document.getElementById('plant'),undo:document.getElementById('undo'),
       activity:document.getElementById('activity-open')};
+    const activityAllowed=()=>!inside&&document.getElementById('conversation-panel').hidden&&
+      document.getElementById('creator').hidden;
     const readTools=operating=>Object.fromEntries(Object.entries(tools).map(([id,element])=>[id,{
       label:id==='undo'?'Deshacer':element.getAttribute('aria-label')??element.textContent.trim(),
-      visible:(id==='activity'||!element.hidden)&&(['map','talk','appearance','video'].includes(id)||!inside&&!operating)
+      visible:(id==='activity'?activityAllowed():!element.hidden)&&(['map','talk','appearance','video'].includes(id)||!inside&&!operating)
         &&(!['appearance','video'].includes(id)||document.getElementById('conversation-panel').hidden),
       disabled:element.disabled,
       pressed:element.getAttribute('aria-expanded')==='true',
@@ -682,6 +684,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       toggleSound:()=>{if(!moving&&!entering&&navigator.userActivation?.isActive&&(!inside||worldAudio.status().active))void toggleWorldSound();},
       readTools,history:()=>worldHistory,activateTool:id=>{
         if(id!=='activity'){tools[id]?.click();return;}
+        if(!activityAllowed())return;
         client.keyInputManager?.handleUnfocus();touchControls.pause(true);
         if(document.pointerLockElement===matterHud.canvas)document.exitPointerLock();
         options.coreCameraManager.activePointers.clear();
