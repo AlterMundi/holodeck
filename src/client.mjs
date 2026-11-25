@@ -1252,7 +1252,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       matterHud.collection.update(navigationVisible&&!matterHud.active&&!mapPanel.open&&!signalEditor.active);
       const {left:statusLeft,right:statusRight}=matterHud.toolInsets();
       matterHud.status.update({
-        headerVisible:!entering&&drawWorld&&!opaqueVisit&&!settingsOpen&&!quietTouch&&(!toolModal||worldHistory?.native)&&(inside||Boolean(navigator.userActivation)),
+        headerVisible:!entering&&drawWorld&&!opaqueVisit&&!settingsOpen&&!quietTouch&&
+          !(matterHud.active&&matterHud.workCompact)&&(!toolModal||worldHistory?.native)&&(inside||Boolean(navigator.userActivation)),
         showExterior:!inside,noticeVisible:!entering&&drawWorld&&!opaqueVisit,noticeOpacity:worldNotice.opacity,
         soundBlocked:moving||needsSync,
         width:matterHud.canvas.clientWidth-statusLeft-statusRight,height:matterHud.canvas.clientHeight,

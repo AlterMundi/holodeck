@@ -110,6 +110,29 @@ const work=[
   button('discuss',path('discuss'),{visible:path('canDiscuss')}),
   text('status',path('status'),{style:'status',lines:2}),
 ];
+const compactWorkWidth=1.80;
+const workTabs=[['modelTab','Modelo'],['viewTab','Vista'],['sharedTab','Mesa']];
+const compactWork=[
+  ...work.filter(({id})=>!['root','inspection','title','close'].includes(id)),
+  {id:'root',component:'HudPanel',label:'Mesa de trabajo',width:compactWorkWidth,gap:.018,
+    children:['heading','views','modelTools','viewTools','sharedTools','status']},
+  text('title','Mesa de trabajo',{style:'title',weight:1.65}),
+  button('close',path('closeLabel'),{weight:.75}),
+  row('views',workTabs.map(([id])=>id),{gap:.025}),
+  ...workTabs.map(([id,label])=>button(id,label,{pressed:path(id+'Selected')})),
+  {id:'modelTools',component:'HudColumn',visible:path('modelTabSelected'),
+    children:['project','modelParts']},
+  row('modelParts',['scene','part'],{gap:.025,visible:path('ready')}),
+  {id:'viewTools',component:'HudColumn',visible:path('showViewTools'),children:['section','rotation']},
+  {id:'sharedTools',component:'HudColumn',visible:path('sharedTabSelected'),children:['sharing','attention']},
+];
+const lowWork=[
+  ...compactWork.filter(({id})=>!['root','views','close'].includes(id)),
+  {id:'root',component:'HudPanel',label:'Mesa de trabajo',width:compactWorkWidth,gap:.018,
+    children:['views','modelTools','viewTools','sharedTools','status']},
+  row('views',[...workTabs.map(([id])=>id),'close'],{gap:.025}),
+  button('close',path('closeLabel')),
+];
 const movement=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE']);
 
 export class MatterWorktableHud{
@@ -255,6 +278,7 @@ export class MatterWorktableHud{
     this.pointerPosition=new Vector2();
     this.windows=new SpatialHudWindows({canvas:this.canvas,scene:this.scene,camera:this.camera,
       hit:event=>{const projection=this.rayForPointer(event);return projection&&this.hud.pointerTarget(projection.ray);},
+      dismissChoice:id=>this.hud.dismissChoice(id),
       invalidate:this.layer.invalidate});
     const lostMovement=()=>this.syncMovement(false);
     const activity={signal:this.events.signal};
@@ -306,12 +330,16 @@ export class MatterWorktableHud{
     if(leaving){
       this.table.stop?.();
       this.send('deleteSurface',{});
+      this.document.body.removeAttribute('data-compact-matter');
     }
     this.mode=mode;
     this.scope++;
     this.signature=null;
     this.group=null;
     if(this.active){
+      this.workTab='modelTab';
+      this.workCompact=undefined;
+      this.workLow=undefined;
       this.send('createSurface',{catalogId:spatialHudCatalog.id});
       if(this.table.start){
         const scope=this.scope;
@@ -319,7 +347,6 @@ export class MatterWorktableHud{
           if(this.active&&this.scope===scope)this.sendApplication(type,content,scope);
         },ownsTextInput:this.hud.ownsTextInput});
       }else{
-        this.send('updateComponents',{components:work});
         this.sync();
       }
     }
@@ -363,6 +390,12 @@ export class MatterWorktableHud{
     const {name,context}=requested??{};
     if(!this.mode||this.blocked||!this.table.available||context?.scope!==this.scope)return;
     if(!this.active)return;
+    if(this.workCompact&&workTabs.some(([id])=>id===name)){
+      this.workTab=name;
+      this.lookPreview.hit(surfaceId);
+      this.sync();
+      return;
+    }
     const {value,revision,project}=context;
     const table=this.table;
     if(table.action){
@@ -382,12 +415,28 @@ export class MatterWorktableHud{
   }
 
   sync(){
-    if(this.table.start)return;
-    const compact=this.lookPreview.name==='taller'&&this.canvas.clientWidth<470;
-    const state={scope:this.scope,closeLabel:compact?'Salir':'Salir de la mesa',...(this.active?this.table.hudState():{})};
+    if(!this.active||this.table.start)return;
+    const short=this.compactTouch()==='landscape';
+    const low=short&&this.canvas.clientHeight<300;
+    if(this.workCompact!==short||this.workLow!==low){
+      this.workCompact=short;
+      this.workLow=low;
+      this.document.body.toggleAttribute('data-compact-matter',short);
+      this.hud.setChoicePresentation(surfaceId,short?'overlay':'inline');
+      this.hud.setChoicePageSize(surfaceId,low?2:short?3:undefined);
+      this.send('updateComponents',{components:low?lowWork:short?compactWork:work});
+      this.workLayoutDirty=true;
+    }
+    const state={scope:this.scope,closeLabel:short||this.lookPreview.name==='taller'&&
+      this.canvas.clientWidth<470?'Salir':'Salir de la mesa',...this.table.hudState()};
+    if(short){
+      for(const [id] of workTabs)state[id+'Selected']=this.workTab===id;
+      state.showViewTools=state.viewTabSelected&&state.ready;
+    }
     const signature=JSON.stringify(state);
     if(signature===this.signature)return;
     this.signature=signature;
+    this.workLayoutDirty=true;
     this.send('updateDataModel',{value:state});
   }
 
@@ -465,7 +514,9 @@ export class MatterWorktableHud{
   }
 
   landscapeGrip(){
-    return Math.min(137,Math.max(112,this.canvas.clientWidth*.205));
+    const {clientWidth:width,clientHeight:height}=this.canvas;
+    const fitShortTable=this.active&&this.table===this.collectionTable?Math.max(98,(height-190)/1.21):137;
+    return Math.min(137,Math.max(112,width*.205),fitShortTable);
   }
 
   syncToolbelt(visible){
@@ -779,12 +830,22 @@ export class MatterWorktableHud{
       this.camera.updateProjectionMatrix();
       this.layer.invalidate();
     }
-    const taller=this.lookPreview.name==='taller';
-    const scale=taller?Math.min(170,(width-left-right-24)/2.46,(height-top-bottom-124)/1.9):
-      Math.min(170,(width-24)/2.2,(height-124)/1.9);
-    const workRight=taller?right+12+scale*1.23:14+scale*1.10;
-    const workTop=(taller?top:0)+(height<520?54:95);
-    this.place(this.group,'workPlacement',viewport,width-workRight,workTop,scale);
+    if(this.group&&this.workCompact){
+      if(this.workLayoutDirty){this.hud.update();this.workLayoutDirty=false;}
+      const reservedBottom=bottom+1.21*this.landscapeGrip()+6;
+      const insets={left:left+(width-left-right)*.44,right,top,bottom:reservedBottom};
+      const scale=Math.max(1,Math.min(206,(width-insets.left-right-16)/(compactWorkWidth+.12),
+        (height-top-reservedBottom-18)/(this.workLow?.86:1.06)));
+      this.place(this.group,'workPlacement',{...viewport,insets},
+        width-right-8-scale*(compactWorkWidth+.12)/2,top+10,scale);
+    }else{
+      const taller=this.lookPreview.name==='taller';
+      const scale=taller?Math.min(170,(width-left-right-24)/2.46,(height-top-bottom-124)/1.9):
+        Math.min(170,(width-24)/2.2,(height-124)/1.9);
+      const workRight=taller?right+12+scale*1.23:14+scale*1.10;
+      const workTop=(taller?top:0)+(height<520?54:95);
+      this.place(this.group,'workPlacement',viewport,width-workRight,workTop,scale);
+    }
     if(this.creation.group){
       const {scale,width:panelWidth}=this.creation.placement;
       const center=width<700?(width+left-right)/2:width-right-22-panelWidth*scale/2;
@@ -1037,6 +1098,7 @@ export class MatterWorktableHud{
     this.toolInset.remove();
     delete this.document.body.dataset.a2uiToolbelt;
     this.document.body.removeAttribute('data-touch-moving');
+    this.document.body.removeAttribute('data-compact-matter');
     this.document.body.removeAttribute('data-native-settings-available');
     this.document.body.style.removeProperty('--holodeck-notice-bottom');
     this.collectionTable.panel.removeAttribute('data-spatial');

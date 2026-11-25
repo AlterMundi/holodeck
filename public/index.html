@@ -64,6 +64,7 @@ body:has(#beacon-panel[data-beacon-hud]) canvas[data-hud-render-layer]{z-index:3
 .world-interaction-canvas{touch-action:none}
 .touch-controls[data-native-locomotion],.touch-controls[data-touch-paused]{display:none!important}
 body[data-touch-moving] :is(#hud,#companion-status,#dock,#view-tools,#world-tools){display:none!important}
+body[data-compact-matter] #hud{display:none!important}
 .touch-legacy-lane button{font-size:0!important}
 .touch-legacy-lane button::before{content:"";display:inline-block;width:.85rem;height:.85rem;border:solid currentColor;border-width:2px 0 0 2px;transform:translateY(.2rem) rotate(45deg)}
 @media(pointer:coarse) and (orientation:landscape) and (max-height:495px){
