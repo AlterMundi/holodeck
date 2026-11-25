@@ -29,17 +29,23 @@ const fragmentShader = `
   uniform float daylight;
   uniform sampler2D cosmos;
   uniform bool showCosmos;
-  float cloudHash(vec3 p) {
-    p = fract(p * 0.31 + vec3(.13,.27,.41)) * 17.0;
-    return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+  // Adjacent cells must assign exactly the same value to shared corners.
+  // Hash the integer lattice before converting its 24 high bits to a float.
+  float cloudHash(highp uint h) {
+    h = (h ^ (h >> 16u)) * 0x7feb352du;
+    h = (h ^ (h >> 15u)) * 0x846ca68bu;
+    return float((h ^ (h >> 16u)) >> 8u) * (1.0 / 16777216.0);
   }
-  float cloudNoise(vec3 p) {
-    vec3 cell = floor(p), f = fract(p);
+  float cloudNoise(highp vec3 p) {
+    highp vec3 f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
-    return mix(mix(mix(cloudHash(cell),cloudHash(cell+vec3(1,0,0)),f.x),
-      mix(cloudHash(cell+vec3(0,1,0)),cloudHash(cell+vec3(1,1,0)),f.x),f.y),
-      mix(mix(cloudHash(cell+vec3(0,0,1)),cloudHash(cell+vec3(1,0,1)),f.x),
-      mix(cloudHash(cell+vec3(0,1,1)),cloudHash(cell+vec3(1,1,1)),f.x),f.y),f.z);
+    const highp uint x = 0x8da6b343u, y = 0xd8163841u, z = 0xcb1ab31fu;
+    highp uvec3 cell = uvec3(ivec3(floor(p)));
+    highp uint h = cell.x * x + cell.y * y + cell.z * z;
+    return mix(mix(mix(cloudHash(h),cloudHash(h+x),f.x),
+      mix(cloudHash(h+y),cloudHash(h+x+y),f.x),f.y),
+      mix(mix(cloudHash(h+z),cloudHash(h+x+z),f.x),
+      mix(cloudHash(h+y+z),cloudHash(h+x+y+z),f.x),f.y),f.z);
   }
   varying vec3 skyDirection;
   void main() {
