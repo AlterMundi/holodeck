@@ -190,6 +190,8 @@ test('collection projects stay grouped and editions follow each visitor and thei
         body:JSON.stringify({id,binding,view:{spaceId:'matter',worktable}})}),
       events:()=>fetch(base+'api/space/collection/events',{headers}),
       catalog:()=>fetch(base+'api/space/collection',{headers}),
+      style:style=>fetch(base+'api/space/matter-look',{method:'POST',headers,body:JSON.stringify({style})}),
+      space:()=>fetch(base+'api/space?live=1',{headers}),
       share:(resource,revision,version)=>fetch(base+'api/space/collection',{headers,method:'POST',body:JSON.stringify({resource,revision,version})}),
       art:path=>fetch(new URL(path,base),{headers}),
     };
@@ -209,7 +211,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
   const delivered=await author.art(asset);
   assert.equal(delivered.status,200);
   assert.deepEqual(Buffer.from(await delivered.arrayBuffer()),readMatterWorkshopArt('matter-workshop-orbital-focused-v1').bytes);
-  assert.equal(scene.matterStyles.default,'orbital');
+  assert.equal(scene.matterStyles.default,'orbital-layered');
   for(const path of Object.values(scene.matterStyles.assets)){
     assert.match(path,/^\/api\/space\/art\/[a-f0-9]{64}\.(jpg|png)$/);
     assert.equal((await visitor.art(path)).status,404);
@@ -327,6 +329,13 @@ test('collection projects stay grouped and editions follow each visitor and thei
     {room:'matter',projects:[guitar(main,component)],archive:{...archive,canRestore:true},worktable:table(4,null,true)});
   assert.deepEqual(new RoomStore(join(stateDir,'collection-placement'),{maxBytes:2048}).load(),
     {room:'matter',placed:[]});
+  const sceneryPreference=await session('owner');
+  assert.equal((await sceneryPreference.style('does-not-exist')).status,400);
+  assert.equal((await sceneryPreference.style('amber')).status,204);
+  const restoredPreference=await session('owner');
+  assert.equal((await (await restoredPreference.space()).json()).matterStyles.preferred,'amber');
+  assert.equal((await (await visitor.space()).json()).matterStyles.preferred,undefined);
+  assert.equal(new RoomStore(join(stateDir,'matter-room-looks'),{maxBytes:16*1024}).load()[0][1],'amber');
   const thumbnailResponse=await visitor.art(thumbnail);
   assert.equal(thumbnailResponse.status,200);
   assert.equal(thumbnailResponse.headers.get('cache-control'),'no-store');
@@ -365,10 +374,11 @@ test('collection projects stay grouped and editions follow each visitor and thei
   const authStarted=new Promise(resolve=>{started=resolve;});
   const authWait=new Promise(resolve=>{release=resolve;});
   hold=()=>{started();return authWait;};
-  const losingAdmission=author.catalog();
+  const currentlyAdmitted=await session('owner');
+  const losingAdmission=currentlyAdmitted.catalog();
   await authStarted;
   expiredSession=true;
   release();
   assert.equal((await losingAdmission).status,404);
-  assert.equal((await author.catalog()).status,401);
+  assert.equal((await currentlyAdmitted.catalog()).status,401);
 });

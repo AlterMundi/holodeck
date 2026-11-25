@@ -86,7 +86,8 @@ export function compileRoomLooks(manifest,readAsset){
       used.add(irradiance);
     }
   }
-  const fallback=looks.find(({id})=>id===manifest.default);
+  if(!looks.some(({id})=>id===manifest.default))throw Error('Unknown default room look');
+  const fallback=looks.find(({id})=>id===(manifest.fallback??manifest.default));
   if(!fallback||Object.keys(fallback.materials).length||Object.keys(fallback.diffuseLayers??{}).length)
     throw Error('Default room look must use embedded assets');
   for(const [key,asset] of Object.entries(manifest.assets)){
@@ -102,8 +103,9 @@ export function compileRoomLooks(manifest,readAsset){
   }
   return {
     files,
+    hasLook:id=>looks.some(look=>look.id===id),
     describe:artURL=>({
-      schema,default:manifest.default,surfaces,looks,
+      schema,default:manifest.default,...(manifest.fallback?{fallback:manifest.fallback}:{}),surfaces,looks,
       assets:Object.fromEntries(Array.from(assets,([id,revision])=>[id,artURL(revision)])),
     }),
   };

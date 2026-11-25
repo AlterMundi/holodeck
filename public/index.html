@@ -71,11 +71,11 @@ body:has(#content-visit:not([hidden]):not(.is-walking)) .touch-controls{visibili
 #conversation-panel[data-world-display]{background:transparent;border-color:transparent;box-shadow:none;backdrop-filter:none}
 body:has(#conversation-panel[data-hud-chrome]:not([hidden])) #hud,
 body:has(#conversation-panel[data-hud-chrome]:not([hidden])) .touch-controls{visibility:hidden;pointer-events:none}
-#conversation-panel[data-world-display][data-hud-chrome]{padding-top:10px;padding-bottom:58px}
+#conversation-panel[data-world-display][data-hud-chrome]{padding-top:10px;padding-bottom:23px}
 #conversation-panel[data-hud-chrome] header{height:var(--conversation-header-height,52px);min-height:var(--conversation-header-height,52px);flex:none}
 #conversation-panel[data-hud-chrome] header>*:not(#conversation-move),#conversation-panel[data-hud-chrome] #conversation-hint{display:none}
 #conversation-panel[data-hud-chrome] #conversation-move{position:absolute;left:18px;top:10px;width:52%;height:48px;margin:0;color:transparent;text-shadow:none}
-#conversation-panel[data-hud-chrome] #conversation-resize{width:72px;height:46px;right:7px;bottom:0}
+#conversation-panel[data-hud-chrome] #conversation-resize{width:36px;height:36px;right:0;bottom:0}
 #conversation-panel[data-hud-chrome] #conversation-resize::after{display:none}
 #conversation-panel[data-display-motion="restore"]{opacity:0;pointer-events:none}
 #conversation-move{cursor:grab;touch-action:none;user-select:none}
@@ -296,7 +296,7 @@ body:has(#conversation-panel:not([hidden])) #view-tools,body:has(#content-visit:
     <optgroup label="Presentación femenina"><option value="1">Estilo 1</option><option value="3">Estilo 2</option><option value="5">Estilo 3</option><option value="7">Estilo 4</option></optgroup>
   </select>
   <p id="appearance-status" role="status"></p>
-  <div class="row"><button id="appearance-save" class="primary" type="submit" disabled>Guardar</button><button id="appearance-close" type="button">Cerrar</button></div>
+  <div class="row"><button id="appearance-save" class="primary" type="submit" disabled>Guardar avatar</button><button id="appearance-close" type="button">Cerrar</button></div>
 </form></dialog>
 <div id="world-tools"><aside id="help"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> moverte · arrastrá para mirar · espacio para saltar</aside><button id="garden-create" class="glass" type="button" hidden>Crear jardín</button><button id="activity-open" class="glass" type="button" aria-haspopup="dialog" disabled>Actividad</button></div>
 <aside id="collection-shelf" class="glass" aria-labelledby="collection-shelf-title" hidden><h2 id="collection-shelf-title">En esta repisa</h2><ul></ul></aside>

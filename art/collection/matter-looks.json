@@ -1,6 +1,7 @@
 {
   "schema": "holodeck.room-looks/v1",
-  "default": "orbital",
+  "default": "orbital-layered",
+  "fallback": "orbital",
   "surfaces": {
     "fixed-light-shell": "Orbital static diffuse",
     "responsive-work-surfaces": "Orbital focused material response"

@@ -262,7 +262,7 @@ let outdoorReady=()=>Boolean(geometryProbe?.snapshot());
 let confirmedRingPose=null;
 let updateDoor=()=>{},remoteScene=null,roomModel=null,networkScope=null,arrival=null;
 let releaseLightweightGlazing=null;
-let matterStyleScope=null,selectedMatterStyle=null;
+let matterStyleScope=null;
 let floorSplatScope=null;
 updateRoomGlazing=()=>{
   if(!roomModel?.modelGraphics?.hasLoadedModel()||!activeSpace?.collectionShelves)return;
@@ -281,7 +281,7 @@ function styleStatus(message){
   roomStyleStatus.textContent=message;
   roomStyleStatus.hidden=!message;
 }
-async function applyMatterStyle(style){
+async function applyMatterStyle(style,{save=false}={}){
   const current=matterStyleScope;
   if(!current||current.controller)return;
   current.controller=new AbortController();
@@ -295,14 +295,23 @@ async function applyMatterStyle(style){
     current.binding.apply(style,current.images);
     current.glazing.apply(style.orbitalGlazing===true);
     current.style=style;
-    selectedMatterStyle=style.id;
     document.body.dataset.roomLook=style.id;
     roomStyleChoice.value=style.id;
-    styleStatus('');
+    if(save){
+      styleStatus('Guardando tema…');
+      const response=await fetch(url('api/space/matter-look'),{method:'POST',
+        headers:{'Content-Type':'application/json'},body:JSON.stringify({style:style.id}),
+        signal:AbortSignal.any([current.controller.signal,AbortSignal.timeout(8000)])});
+      if(!response.ok)throw Error('Preference not saved');
+      if(matterStyleScope===current){
+        current.catalog.preferred=style.id;
+        styleStatus('Tema guardado.');
+      }
+    }else styleStatus('');
   }catch{
     if(matterStyleScope===current){
       roomStyleChoice.value=current.style.id;
-      styleStatus('No pude cargar este acabado.');
+      styleStatus(save&&current.style.id===style.id?'El tema cambió en esta vista, pero no pude confirmar que se guardó.':'No pude cargar este acabado.');
     }
   }finally{
     current.controller=null;
@@ -311,7 +320,7 @@ async function applyMatterStyle(style){
 }
 roomStyleChoice.onchange=()=>{
   const style=matterStyleScope?.catalog.looks.find(({id})=>id===roomStyleChoice.value);
-  if(style)void applyMatterStyle(style);
+  if(style)void applyMatterStyle(style,{save:true});
 };
 let moving=false,requestingMove=false,needsSync=false,resyncing=false,moveDeadline=null,passageNotice=null;
 let roomTopic,worktableTopic;
@@ -797,14 +806,14 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         releaseLightweightGlazing=useLightweightMatterGlazing(roomModel.getContainer());
       if(roomReady&&roomModel&&activeSpace.matterStyles&&!matterStyleScope){
         const catalog=activeSpace.matterStyles;
-        const defaultLook=catalog.looks.find(({id})=>id===catalog.default);
-        const preferred=catalog.looks.find(({id})=>id===selectedMatterStyle)??defaultLook;
+        const fallback=catalog.looks.find(({id})=>id===(catalog.fallback??catalog.default));
+        const preferred=catalog.looks.find(({id})=>id===(catalog.preferred??catalog.default))??fallback;
         const group=roomModel.getContainer();
         matterStyleScope={catalog,binding:bindMatterStyle(group,catalog),glazing:bindOrbitalMatterGlazing(group),
-          style:defaultLook,images:new Map()};
-        document.body.dataset.roomLook=defaultLook.id;
+          style:fallback,images:new Map()};
+        document.body.dataset.roomLook=fallback.id;
         roomStyleChoice.replaceChildren(...catalog.looks.map(({id,label})=>new Option(label,id)));
-        roomStyleChoice.value=defaultLook.id;
+        roomStyleChoice.value=fallback.id;
         roomStyle.hidden=false;
         void applyMatterStyle(preferred);
       }

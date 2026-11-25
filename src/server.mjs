@@ -191,6 +191,10 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const heldArchive=archiveStore?.load();
   const pinKey=entry=>entry.resource+':'+entry.version;
   const collectionStreams=new Map();
+  const lookStore=collection?.art&&stateDir?new RoomStore(join(stateDir,'matter-room-looks'),{maxBytes:16*1024}):null;
+  let roomLookPreferences=new Map(lookStore?.load()??[]);
+  let lookPreferencesUnavailable=false;
+  const lookReaderKey=actor=>createHash('sha256').update(actor.id).digest('hex');
   function invalidateCollection(){
     for(const [res,session] of collectionStreams){
       if(inScope(session.actor,collection.room)&&Date.now()-session.created<SESSION_MS)
@@ -355,7 +359,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const roomLooks=space.collectionShelves&&matterArt?.roomLooks;
     const splat=space.collectionShelves&&matterArt?.floorSplat;
     return {...space,live:1,actorRef:actor.id,
-      ...(roomLooks?{matterStyles:roomLooks.describe(revision=>route('api/space/art/'+revision))}:{}),
+      ...(roomLooks?{matterStyles:{...roomLooks.describe(revision=>route('api/space/art/'+revision)),
+        ...(roomLookPreferences.has(lookReaderKey(actor))?{preferred:roomLookPreferences.get(lookReaderKey(actor))}:{})}}:{}),
       ...(splat?{matterFloorSplat:{src:route('api/space/art/'+splat.revision),target:splat.target,radius:splat.radius}}:{}),
       sharedConversation:!!(native?.contexts&&native?.conversationSurface),scene:visitScene(actor,space.id,cachedRevision)};
   }
@@ -690,7 +695,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(session.times.length>=4)return res.status(429).json({message:'Esperá un momento antes de intentar otra acción.'});
       session.times.push(now);
     }
-    const spaceRoute=['/space','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
+    const spaceRoute=['/space','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/matter-look','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
       req.path==='/appearance'||req.path==='/conversation-surface'||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
@@ -698,6 +703,24 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       return res.status(409).json({message:'Volvé al exterior para usar esta acción.'});
     req.actor=actor;req.holodeckSession=session;next();
   }));
+  app.post(route('api/space/matter-look'),(req,res)=>{
+    const actor=req.actor;
+    if(!collection?.art||!inScope(actor,collection.room))return res.sendStatus(404);
+    const input=req.body;
+    if(!input||Object.keys(input).join(',')!=='style'||!matterArt?.roomLooks?.hasLook(input.style))
+      return res.sendStatus(400);
+    if(lookPreferencesUnavailable)return res.sendStatus(503);
+    const key=lookReaderKey(actor);
+    if(roomLookPreferences.get(key)===input.style)return res.status(204).end();
+    const next=new Map(roomLookPreferences).set(key,input.style);
+    try{lookStore?.save([...next]);}
+    catch(error){
+      if(error.commitUncertain)lookPreferencesUnavailable=true;
+      return res.sendStatus(503);
+    }
+    roomLookPreferences=next;
+    res.status(204).end();
+  });
   app.get(route('api/appearance'),(req,res)=>{
     if(req.actor.kind!=='human')return res.sendStatus(403);
     res.json({choice:avatars.preference(req.actor)});

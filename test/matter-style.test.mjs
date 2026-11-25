@@ -57,7 +57,7 @@ test('room look compiler scopes immutable assets and rejects invalid bindings',(
   const compiled=compileRoomLooks(manifest,name=>files.get(name));
   const result=compiled.describe(revision=>'/api/space/art/'+revision);
   assert.deepEqual(result.looks,authored.looks);
-  assert.equal(result.default,'orbital');
+  assert.equal(result.default,'orbital-layered');
   assert.equal(compiled.files.get(result.assets['amber-diffuse'].split('/').at(-1)).type,'image/jpeg');
   assert.throws(()=>compileRoomLooks(manifest,()=>Buffer.from('changed')),/does not match/);
   const floor=manifest.looks.find(({id})=>id==='orbital-layered').diffuseLayers['fixed-light-shell'].reflection;
