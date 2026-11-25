@@ -856,5 +856,7 @@ tabletop sequence, with four retired GLB requests and zero page errors,
 matching .19 figure scale and confirmed return. All 80 archived files
 matched the manifest. The operator artifact received the exact archive
 under its existing private audience; HTTPS readback matched the full
-digest. Cutover is pending with shared visitors currently present. The
-protected service still selects `8b3d41a7410a` and rollback `8c485a4c8cfe`.
+digest. Cutover completed on the same request after the Home access
+authority resumed. The protected service selects `883efcd70ed1` and
+rollback `8b3d41a7410a`. Installed inventory, world continuity, and
+protected HTTPS readback are recorded in [STATUS](STATUS.md).
