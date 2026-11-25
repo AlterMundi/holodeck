@@ -5,17 +5,24 @@ import {createServer as createHttpsServer} from 'node:https';
 import {readFile,realpath,writeFile,mkdir} from 'node:fs/promises';
 import {createHash,randomUUID} from 'node:crypto';
 import {join} from 'node:path';
-import {createHolodeck} from '../src/server.mjs';
+import {pathToFileURL} from 'node:url';
+import {brotliDecompressSync} from 'node:zlib';
 const directory=process.env.HOLODECK_EVIDENCE_DIR,tls=process.env.HOLODECK_FIXTURE_TLS,conversationRelease=process.env.HOLODECK_CONVERSATION_RELEASE;
 if(!directory||!tls||!conversationRelease)throw Error('Select bounded isolated fixture evidence/TLS directories and the installed Conversation release');
+const stage=process.env.HOLODECK_STAGE?await realpath(process.env.HOLODECK_STAGE):null;
+if(stage){
+ process.env.HOLODECK_JSDOM_HELPERS=join(stage,'runtime/jsdom/lib/jsdom/living/helpers');
+ process.env.HOLODECK_XHR_WORKER=join(stage,'src/xhr-sync-worker.mjs');
+}
+const {createHolodeck}=await import(stage?pathToFileURL(join(stage,'src/server.mjs')):new URL('../src/server.mjs',import.meta.url));
 const installed=await realpath(conversationRelease),web=join(installed,'dashboard/web');
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex'),served=new Map(),wait=ms=>new Promise(r=>setTimeout(r,ms));
 const frameOrigin='https://127.0.0.1:18945',worldOrigin='http://127.0.0.1:18944',actor='human:surface-fixture',binding='b'.repeat(64),being='dm:being:v1:'+'a'.repeat(43),home='home:'+'c'.repeat(32);
 const pin={tableId:'fixture-table',reportId:'fixture-report',revision:'r1'},accepted=[],prepared=[],released=[],requests=[],fileWrites=[];
 let world,worldServer,frameServer,page,loads=0,releaseFile;
 let nextId=0,ws;const pending=new Map(),events=[];
-async function cdp(method,params={}){return new Promise((resolve,reject)=>{const id=++nextId,timer=setTimeout(()=>{pending.delete(id);reject(Error('CDP timeout '+method))},15000);pending.set(id,{resolve:v=>{clearTimeout(timer);resolve(v)},reject:e=>{clearTimeout(timer);reject(e)}});ws.send(JSON.stringify({id,method,params}));});}
-async function evaluate(expression,contextId){const value=await cdp('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true,...(contextId?{contextId}:{})});if(value.exceptionDetails)throw Error(value.exceptionDetails.exception?.description||JSON.stringify(value.exceptionDetails));return value.result.value;}
+async function cdp(method,params={},sessionId){return new Promise((resolve,reject)=>{const id=++nextId,timer=setTimeout(()=>{pending.delete(id);reject(Error('CDP timeout '+method))},15000);pending.set(id,{resolve:v=>{clearTimeout(timer);resolve(v)},reject:e=>{clearTimeout(timer);reject(e)}});ws.send(JSON.stringify({id,method,params,sessionId}));});}
+async function evaluate(expression,contextId,sessionId){const value=await cdp('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true,...(contextId?{contextId}:{})},sessionId);if(value.exceptionDetails)throw Error(value.exceptionDetails.exception?.description||JSON.stringify(value.exceptionDetails));return value.result.value;}
 async function until(fn,ms=15000,label='condition'){const start=Date.now();while(Date.now()-start<ms){if(await fn())return;await wait(100)}throw Error('Timed out: '+label);}
 async function bytes(name){const value=await readFile(join(web,name));served.set(name,digest(value));return value;}
 async function body(req,max=65536){let all=Buffer.alloc(0);for await(const chunk of req){all=Buffer.concat([all,chunk]);if(all.length>max)throw Error('Fixture body bound');}return all;}
@@ -60,7 +67,7 @@ try{
   }catch(error){res.writeHead(503,{'Content-Type':'application/json'}).end(JSON.stringify({detail:error.message}));}
  });
  await new Promise((r,j)=>{frameServer.once('error',j);frameServer.listen(18945,'127.0.0.1',r)});
- world=await createHolodeck({publicOrigin:worldOrigin,conversationOrigins:[frameOrigin],identityResolver:async()=>({id:actor,ref:actor,kind:'human',rights:['observe','edit','project']}),
+ world=await createHolodeck({publicOrigin:worldOrigin,galleryAuthorization:async()=>false,conversationOrigins:[frameOrigin],identityResolver:async()=>({id:actor,ref:actor,kind:'human',rights:['observe','edit','project']}),
   contentVisits:[{id:'fixture',node:'reading-room',entry:'/nexus/?table=fixture-table&report_revision=r1',descriptor:'/nexus/descriptor',pin,discoverActors:[actor]}],
   nativeFactory:async()=>({availability:async()=>({available:true}),conversationSurface:async()=>({schema:'holodeck.conversation-surface/v1',actorRef:actor,beingRef:being,homeRef:home,binding,url:frameOrigin+'/'}),
    contexts:{prepare:async(_actor,value)=>{prepared.push(structuredClone(value));return {id:value.id,binding,work_admitted:false,files:[{file_id:randomUUID(),sha256:'d'.repeat(64),name:'holodeck-situation.json',mime:'application/json',size:2000}]};},release:async(_actor,id)=>{released.push(id);return {released:false}},discard:async()=>({released:true})}})});
@@ -71,18 +78,35 @@ try{
  addEventListener('message',e=>{if(e.source!==parent||e.origin!==location.origin||e.data.schema!=='dm.holodeck-visit/request-v1')return;if(fixture.hold&&e.data.method==='getContext')fixture.held.push(e.data);else fixture.reply(e.data)});parent.postMessage({schema:'dm.holodeck-visit/ready-v1',visitId,pin},location.origin);
  </script>`));
  worldServer=world.app.listen(18944,'127.0.0.1');await new Promise((r,j)=>{worldServer.once('listening',r);worldServer.once('error',j)});
+ const clientResponse=await fetch(worldOrigin+'/client/client.js');
+ const expectedClient=stage?brotliDecompressSync(await readFile(join(stage,'runtime/client.js.br'))):await readFile(new URL('../build/client.js',import.meta.url));
+ const clientSHA256=digest(Buffer.from(await clientResponse.arrayBuffer()));
+ if(!clientResponse.ok||clientSHA256!==digest(expectedClient))throw Error('Fixture served a different Holodeck client');
  page=await(await fetch('http://127.0.0.1:18943/json/new?about:blank',{method:'PUT'})).json();ws=new WebSocket(page.webSocketDebuggerUrl);await new Promise((r,j)=>{ws.once('open',r);ws.once('error',j)});
- ws.on('message',raw=>{const v=JSON.parse(raw),p=pending.get(v.id);if(p){pending.delete(v.id);v.error?p.reject(Error(v.error.message)):p.resolve(v.result);}else{events.push(v);if(events.length>4000)events.shift();}});
+ const attach=(async({sessionId,targetInfo})=>{
+  if(targetInfo.type==='iframe'){
+   await cdp('Page.enable',{},sessionId);
+   await cdp('Page.addScriptToEvaluateOnNewDocument',{source:"window.checkErrors=[];addEventListener('error',e=>checkErrors.push(e.message));addEventListener('unhandledrejection',e=>checkErrors.push(String(e.reason)));"},sessionId);
+   await cdp('Runtime.enable',{},sessionId);
+  }
+  await cdp('Runtime.runIfWaitingForDebugger',{},sessionId);
+ });
+ let attachError;
+ ws.on('message',raw=>{const v=JSON.parse(raw),p=pending.get(v.id);if(p){pending.delete(v.id);v.error?p.reject(Error(v.error.message)):p.resolve(v.result);}else{events.push(v);if(events.length>4000)events.shift();if(v.method==='Target.attachedToTarget')attach(v.params).catch(error=>{attachError=error;});}});
+ await cdp('Target.setAutoAttach',{autoAttach:true,waitForDebuggerOnStart:true,flatten:true,filter:[{type:'iframe'}]});
  await cdp('Page.enable');await cdp('Runtime.enable');await cdp('Page.addScriptToEvaluateOnNewDocument',{source:`window.checkErrors=[];window.surfaceMessages=[];addEventListener('error',e=>checkErrors.push(e.message));addEventListener('unhandledrejection',e=>checkErrors.push(String(e.reason)));addEventListener('message',e=>{if(e.data?.schema==='conversation.surface/v1')surfaceMessages.push(structuredClone(e.data));if(e.data?.schema==='fixture.submit-point')window.submissionMoment={capturedAt:e.data.capturedAt,receivedAt:Date.now(),local:structuredClone(window.holodeckDevelopment?.client.getLocalCharacterState())}});`});
- await cdp('Page.navigate',{url:worldOrigin+'/'});await cdp('Page.bringToFront');await until(()=>evaluate('!!window.holodeckDevelopment?.client.getLocalCharacterState()&&!document.querySelector("#visit-near").hidden'),20000,'walkable world');
- await until(()=>evaluate('holodeckDevelopment.client.getLocalCharacterState().position.y>.05&&holodeckDevelopment.client.getLocalCharacterState().position.y<.2'),10000,'settled world');
+ await cdp('Page.navigate',{url:worldOrigin+'/'});await cdp('Page.bringToFront');
+ await until(()=>evaluate('!!window.holodeckDevelopment?.client.getLocalCharacterState()?.position'),30000,'walkable world');
+ await evaluate('(()=>{const {client}=holodeckDevelopment;client.updateConfig({spawnConfiguration:{spawnPosition:{x:-22,y:.3,z:3}}});client.respawn();return true})()');
+ await until(()=>evaluate('!document.querySelector("#visit-near").hidden'),10000,'presentation in reach');
  await evaluate('document.querySelector("#visit-near").click();true');await until(()=>evaluate('!!document.querySelector("#visit-stage iframe")?.contentWindow.fixture'),10000,'content fixture');
  await evaluate('window.retainedContent=document.querySelector("#visit-stage iframe");true');await wait(150);
  await evaluate('document.querySelector("#visit-walk").click();true');await until(()=>evaluate('document.querySelector("#content-visit").classList.contains("is-walking")'),10000,'retained content return');
  await evaluate('document.querySelector("#talk").click();true');await until(()=>evaluate('!!document.querySelector("#shared-conversation iframe")'),10000,'canonical frame');
- await until(()=>events.some(e=>e.method==='Runtime.executionContextCreated'&&e.params.context.origin===frameOrigin),10000,'canonical runtime context');
- const frameContext=events.filter(e=>e.method==='Runtime.executionContextCreated'&&e.params.context.origin===frameOrigin&&e.params.context.auxData?.isDefault).at(-1)?.params.context.id;if(!frameContext)throw Error('Canonical frame execution context absent');
- const frame=expression=>evaluate(expression,frameContext);
+ const findFrame=()=>events.findLast(e=>e.method==='Runtime.executionContextCreated'&&e.params.context.origin===frameOrigin&&e.params.context.auxData?.isDefault);
+ await until(()=>{if(attachError)throw attachError;return findFrame();},10000,'canonical runtime context');
+ const frameContext=findFrame();
+ const frame=expression=>evaluate(expression,frameContext.params.context.id,frameContext.sessionId);
  await until(()=>frame('!!window.Conversation&&!!window.ConversationSurface&&!document.querySelector("#conversation-send").disabled'),15000,'actual canonical composer');
  await until(()=>evaluate('surfaceMessages.some(m=>m.type==="ready")'),10000,'bound canonical ready');
  const ready=await evaluate('surfaceMessages.findLast(m=>m.type==="ready")');
@@ -94,8 +118,19 @@ try{
    const inner=await frame(`(()=>{const nodes=[...document.querySelectorAll('body *')].map(e=>{const r=e.getBoundingClientRect(),c=getComputedStyle(e);return{tag:e.tagName,id:e.id,classes:e.className,left:r.left,right:r.right,width:r.width,display:c.display,position:c.position,minWidth:c.minWidth,maxWidth:c.maxWidth,flex:c.flex,overflow:c.overflowX,whiteSpace:c.whiteSpace,text:e.children.length?'':e.textContent.slice(0,100)}}).filter(e=>e.width>0&&(e.right>innerWidth+.5||e.left<-.5));return{width:innerWidth,height:innerHeight,scrollWidth:document.documentElement.scrollWidth,overflow:nodes.slice(0,40)}})()`);
    observations.push({name,outer,inner});const shot=await cdp('Page.captureScreenshot',{format:'png'});await writeFile(join(directory,'layout-'+name+'.png'),Buffer.from(shot.data,'base64'));
   }
-  await writeFile(join(directory,'layout-observation.json'),JSON.stringify({observations,installed,clientSHA256:digest(await readFile(new URL('../build/client.js',import.meta.url))),assets:Object.fromEntries(served),canonicalOriginalPosts:accepted.length,contextPreparations:prepared.length},null,2));console.log(JSON.stringify({observations}));
+  await writeFile(join(directory,'layout-observation.json'),JSON.stringify({observations,installed,clientSHA256,assets:Object.fromEntries(served),canonicalOriginalPosts:accepted.length,contextPreparations:prepared.length},null,2));console.log(JSON.stringify({observations}));
  }else{
+ const position=()=>evaluate('structuredClone(holodeckDevelopment.client.getLocalCharacterState().position)');
+ const walked=(before,after)=>Math.hypot(after.x-before.x,after.z-before.z);
+ async function holdA(){
+  await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'a',code:'KeyA',text:'a',windowsVirtualKeyCode:65});
+  try{await wait(550);}finally{await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'a',code:'KeyA',windowsVirtualKeyCode:65});}
+ }
+ await frame('document.querySelector("#conversation-message").focus();true');
+ const writingFrom=await position();
+ await holdA();
+ const writingDistance=walked(writingFrom,await position());
+ if(writingDistance>.02||await frame('document.activeElement.value')!=='a')throw Error('Composer keyboard input leaked into world movement');
  const forged={...ready,type:'prepare',id:randomUUID(),request:randomUUID(),modality:'text',capacity:{files:8,bytes:40*1024*1024,context_bytes:65536}};
  for(const [label,source,origin,data]of [['wrong-source','window',frameOrigin,forged],['wrong-origin','document.querySelector("#shared-conversation iframe").contentWindow','https://foreign.test',forged],['wrong-binding','document.querySelector("#shared-conversation iframe").contentWindow',frameOrigin,{...forged,binding:'e'.repeat(64)}],['wrong-actor','document.querySelector("#shared-conversation iframe").contentWindow',frameOrigin,{...forged,actor:'human:other'}]]){
   await evaluate(`dispatchEvent(new MessageEvent('message',{source:${source},origin:${JSON.stringify(origin)},data:${JSON.stringify(data)}}));true`);await wait(50);if(prepared.length)throw Error('Forged host context admitted: '+label);
@@ -107,8 +142,11 @@ try{
  await until(()=>!!releaseFile,10000,'original file acknowledgment held');const submit=await evaluate('submissionMoment');
  await frame('document.querySelector("#conversation-message").focus();document.querySelector("#conversation-message").setSelectionRange(0,document.querySelector("#conversation-message").value.length);true');await cdp('Input.insertText',{text:'Next canonical draft retained'});
  await evaluate('window.retainedConversation=document.querySelector("#shared-conversation iframe");window.frameIdentity=retainedConversation.src;document.querySelector("#conversation-close").click();true');
- await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'a',code:'KeyA',windowsVirtualKeyCode:65});try{await wait(550);}finally{await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'a',code:'KeyA',windowsVirtualKeyCode:65});}
- const later=await evaluate('({capturedAt:Date.now(),local:structuredClone(holodeckDevelopment.client.getLocalCharacterState())})');if(Math.hypot(later.local.position.x-submit.local.position.x,later.local.position.z-submit.local.position.z)<.1)throw Error('World did not move independently during canonical preparation');
+ if(await evaluate('document.querySelector("#conversation-panel").contains(document.activeElement)'))throw Error('Closing left keyboard focus inside Conversation');
+ await holdA();
+ const later=await evaluate('({capturedAt:Date.now(),local:structuredClone(holodeckDevelopment.client.getLocalCharacterState())})');
+ const walkingDistance=walked(submit.local.position,later.local.position);
+ if(walkingDistance<.1)throw Error('World did not move independently during canonical preparation');
  await evaluate('retainedContent.contentWindow.fixture.hold=false;retainedContent.contentWindow.fixture.reply(retainedContent.contentWindow.fixture.held.shift());true');await until(()=>prepared.length===1,10000,'immutable machine context');
  if(accepted.length)throw Error('Canonical original admitted before file acknowledgment');releaseFile();await until(()=>accepted.length===1,10000,'one canonical original');
  await evaluate('document.querySelector("#talk").click();true');if(!await evaluate('retainedConversation===document.querySelector("#shared-conversation iframe")&&retainedConversation.src===frameIdentity'))throw Error('Hiding replaced canonical frame');
@@ -120,10 +158,11 @@ try{
   await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile});await wait(120);const outer=await evaluate('(()=>{const p=document.querySelector("#conversation-panel").getBoundingClientRect(),f=document.querySelector("#shared-conversation iframe").getBoundingClientRect();return{left:p.left,right:p.right,top:p.top,bottom:p.bottom,frameWidth:f.width,frameHeight:f.height}})()');
   const inner=await frame('(()=>{const e=document.querySelector("#conversation-compose").getBoundingClientRect(),s=document.querySelector("#conversation-send").getBoundingClientRect(),a=document.querySelector("#conversation-talk").getBoundingClientRect();return{audio:{left:a.left,right:a.right,top:a.top,bottom:a.bottom,width:a.width,height:a.height},width:innerWidth,height:innerHeight,scrollWidth:document.documentElement.scrollWidth,compose:{left:e.left,right:e.right,top:e.top,bottom:e.bottom},send:{left:s.left,right:s.right,top:s.top,bottom:s.bottom}}})()');
   if(outer.left<0||outer.right>width||outer.top<0||outer.bottom>height||outer.frameHeight<150||inner.scrollWidth>inner.width+1||inner.send.right>inner.width||inner.send.left<0||inner.send.top<0||inner.send.bottom>inner.height||inner.audio.width<40||inner.audio.height<40||inner.audio.left<0||inner.audio.right>inner.width||inner.audio.top<0||inner.audio.bottom>inner.height)throw Error('Canonical frame layout overflow '+JSON.stringify({name,outer,inner}));layouts.push({name,outer,inner});
+  const shot=await cdp('Page.captureScreenshot',{format:'png'});await writeFile(join(directory,'layout-'+name+'.png'),Buffer.from(shot.data,'base64'));
  }
  const errors=await evaluate('checkErrors'),frameErrors=await frame('checkErrors');if(errors.length||frameErrors.length)throw Error('Browser errors '+JSON.stringify({errors,frameErrors}));
  const evidence={schema:'holodeck.shared-conversation-browser/v1',qualification:'Actual installed canonical full shell/assets and Holodeck MML world, synthetic loopback Home/context/files/original I/O; no real human/native/model/provider input or acceptance.',canonicalRelease:installed.split('/').at(-1),canonicalAssets:Object.fromEntries(served),loads,acceptedOriginals:accepted.length,exactOriginal:true,contextFiles:1,userFiles:1,fileUploads:fileWrites.length,draftRetained:true,operationalAlerts:'Canonical quiet frame intentionally hides the ordinary launcher; not an exercised capability.',recordingControlVisibleAndFits:true,recordingCountdownSounds:'Not exercised by this text/files fixture; use separate canonical recorder qualification.',forgeriesRefused:4,retainedOneFrame:true,submit,later,captured,positionError,layouts,errors,frameErrors};
- if(loads!==1)throw Error('Canonical frame unexpectedly reloaded');await writeFile(join(directory,'evidence.json'),JSON.stringify(evidence,null,2)+'\n');console.log(JSON.stringify(evidence));
+ if(loads!==1)throw Error('Canonical frame unexpectedly reloaded');await writeFile(join(directory,'evidence.json'),JSON.stringify({...evidence,clientSHA256,writingDistance,walkingDistance},null,2)+'\n');console.log(JSON.stringify(evidence));
  }
 }catch(error){console.error('diagnostic-world',JSON.stringify(await evaluate('({body:document.body.innerText.slice(-1200),messages:window.surfaceMessages,errors:window.checkErrors})').catch(e=>({error:e.message}))));console.error('requests',JSON.stringify(requests.slice(-35)));console.error('contexts',JSON.stringify(events.filter(e=>['Runtime.executionContextCreated','Runtime.exceptionThrown'].includes(e.method)).slice(-12)));throw error;
 }finally{

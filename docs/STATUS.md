@@ -14,6 +14,23 @@ native note readback, previous links, independent cameras and exit,
 passed with fixture identities. Holodeck passed 422 tests with two
 skips. Protected Home acceptance remains open.
 
+The same archive served browser bundle
+`5f4c0c131941b4e808502887902b4f198fe595c382bb3f31bcf9b4b0739c1c97`
+in `tools/browser-shared-conversation-check.mjs` with
+`HOLODECK_STAGE` set. An isolated Chromium loaded the installed
+canonical Conversation assets from `holodeck-microphone-overlay-b1d2fd0b`
+in a cross-origin frame. The A key typed one letter in the composer
+with zero horizontal world movement. After minimizing, the same
+key moved the avatar 0.136 world units while preparation was held.
+Reopening kept one iframe and the newer draft. One accepted fixture
+original carried its own file and the world situation captured at
+submit, with zero position error. Four invalid context envelopes
+produced no preparation. The composer, microphone and send controls
+fit at 1100 by 800 and 390 by 844. The narrow capture shows the top
+world status line partly behind the Conversation header. The fixture
+used loopback identities and I/O. Live authenticated sharing and
+physical touch acceptance remain open.
+
 Source `acc978aff47fbae7a6080a63d2dab17f123f5187` combines the selected
 inner woodland from `b086c86` with Character review. Archive
 `fad627adbf5d5d7c6ce268cf47b870e626a1f340f529f0765038d397fad78231`
