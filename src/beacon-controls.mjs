@@ -70,7 +70,10 @@ export class BeaconControls{
     this.stage=panel.querySelector('.beacon-panel-stage');
     this.title=panel.querySelector('h2');
     this.external=panel.querySelector('a');
-    panel.querySelector('button').onclick=()=>this.close();
+    this.closeControl=panel.querySelector('button');
+    this.beforeFrame=panel.querySelector('[data-beacon-before-frame]');
+    this.afterFrame=panel.querySelector('[data-beacon-after-frame]');
+    this.closeControl.onclick=()=>this.close();
     panel.addEventListener('cancel',event=>{event.preventDefault();this.close();});
     this.link.onclick=event=>{
       if(!this.current)return;
@@ -110,8 +113,9 @@ export class BeaconControls{
     this.statusExpiry=setTimeout(()=>this.resetStatus(),STATUS_LIFETIME);
   }
 
-  open(){
+  open({native=false}={}){
     if(this.opened||!this.current)return;
+    this.last=this.current;
     this.title.textContent=this.current.title;
     const href=this.link.getAttribute('href');
     this.external.href=href;
@@ -119,12 +123,50 @@ export class BeaconControls{
     frame.title='Panel de '+this.current.title;
     frame.allow="camera 'none'; microphone 'none'";
     frame.src=href;
+    this.frameEvents?.abort();
+    this.frameEvents=new AbortController();
+    const {signal}=this.frameEvents;
+    frame.addEventListener?.('load',()=>{
+      try{
+        frame.contentDocument?.addEventListener('keydown',event=>{
+          if(event.key==='Escape'&&!event.defaultPrevented&&!event.isComposing&&
+              !frame.contentDocument.querySelector('dialog[open]')){
+            event.preventDefault();
+            this.close();
+          }
+        },{signal});
+      }catch{} // The lab may legitimately redirect to the identity provider.
+    },{signal});
+    this.frame=frame;
     this.stage.replaceChildren(frame);
+    this.setNative(native);
+    if(native)this.panel.show();
+    else this.panel.showModal();
+  }
+
+  setNative(native){
+    this.native=native;
+    if(this.beforeFrame)this.beforeFrame.tabIndex=native?0:-1;
+    if(this.afterFrame)this.afterFrame.tabIndex=native?0:-1;
+  }
+
+  fallback(){
+    if(!this.opened||!this.native)return;
+    const frameHadFocus=this.panel.ownerDocument.activeElement===this.frame;
+    this.setNative(false);
+    this.panel.removeAttribute('data-beacon-hud');
+    this.panel.close();
     this.panel.showModal();
+    (frameHadFocus?this.frame:this.closeControl)?.focus({preventScroll:true});
   }
 
   close(){
     if(!this.opened)return;
+    this.setNative(false);
+    this.panel.removeAttribute('data-beacon-hud');
+    this.frameEvents?.abort();
+    this.frameEvents=null;
+    this.frame=null;
     this.stage.replaceChildren();
     this.panel.close();
   }

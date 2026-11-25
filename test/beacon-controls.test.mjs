@@ -18,7 +18,7 @@ test('a nearby bench mounts one owner panel only on open and discards it when ac
   const stage={children:[],replaceChildren(...children){this.children=children;}};
   const elements={'.beacon-panel-stage':stage,h2:{},a:{},button:{}};
   const panel={open:false,querySelector:selector=>elements[selector],ownerDocument:{createElement:()=>({})},
-    showModal(){this.open=true;},close(){this.open=false;},addEventListener(type,listener){this[type]=listener;}};
+    showModal(){this.open=true;},close(){this.open=false;},removeAttribute(){},addEventListener(type,listener){this[type]=listener;}};
   const controls=new BeaconControls(link,panel);
   const click={button:0,preventDefault(){this.handled=true;}};
   controls.update(objects,spatial.position);
@@ -72,7 +72,7 @@ test('station status uses only confirmed tool states and hides host identities',
 test('the status check is explicit, deduplicated and discarded when the bench changes',async()=>{
   const link={hidden:true,removeAttribute:name=>delete link[name]};
   const elements={'.beacon-panel-stage':{},h2:{},a:{},button:{}};
-  const panel={open:false,querySelector:selector=>elements[selector],addEventListener(){}};
+  const panel={open:false,querySelector:selector=>elements[selector],addEventListener(){},removeAttribute(){}};
   const statusButton={hidden:true},statusText={};
   let release,signal,reads=0;
   const controls=new BeaconControls(link,panel,{statusButton,statusText,readStatus:incoming=>{

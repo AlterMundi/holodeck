@@ -628,7 +628,7 @@ function resetDoor(){
 document.addEventListener('keydown',event=>{
   if(matterHud?.hud.ownsTextInput?.(event.target))return;
   keepWorldTab(event);
-  if(matterHud?.settings.group||worldHistory?.native||matterHud?.visit.indexActive||matterHud?.visit.viewerActive){
+  if(matterHud?.settings.group||worldHistory?.native||matterHud?.visit.indexActive||matterHud?.visit.viewerActive||(beaconControls.opened&&beaconControls.native)){
     if(matterHud.settingsKey(event))event.preventDefault();
     event.stopImmediatePropagation();
     return;
@@ -737,6 +737,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     }
     matterHud=new MatterWorktableHud({document,webgl:renderer.composer.renderer,table:collectionShelves.worktable,collection:collectionShelves,
       creatorContext:()=>({draft:preview,point:worldIndication?.selected,shared:worldIndication?.own()?.sequence}),
+      beaconControls,onBeaconOpen:()=>client.keyInputManager?.handleUnfocus(),
       toggleSound:()=>{if(!moving&&!entering&&navigator.userActivation?.isActive&&(!inside||worldAudio.status().active))void toggleWorldSound();},
       readTools,history:()=>worldHistory,visitor:()=>contentVisitor,activateTool:id=>{
         if(id==='endVisit'){if(visitAllowed())void contentVisitor?.endVisit();return;}

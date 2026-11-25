@@ -860,3 +860,28 @@ digest. Cutover completed on the same request after the Home access
 authority resumed. The protected service selects `883efcd70ed1` and
 rollback `8b3d41a7410a`. Installed inventory, world continuity, and
 protected HTTPS readback are recorded in [STATUS](STATUS.md).
+
+## Harmonic Lab station HUD
+
+The nearby Beacon station and embedded lab window now have Three.js A2UI
+controls in the live-room client. The station uses the owner's exact object
+and revision for both launch and explicit status. The embedded Harmonic Lab
+remains the existing authorized web page. The viewer reserves space for the
+HUD and uses a narrow input scope. The standalone room retains the HTML
+station controls.
+
+Fable High identified the dialog top-layer conflict. Opus 5.5 High identified
+the pre-paint input gap, frame focus, and fallback details. The revised
+implementation clears held world keys on open, confines keyboard traversal,
+and restores the original modal chrome on loss of the HUD context without
+replacing the iframe. An Escape from a same-origin iframe returns to the world
+unless an inner dialog or composition owns it. The browser owns cross-origin
+frame key input.
+
+Archive `52dccaadf135` is 33,536,000 bytes. The exact Chromium fixtures
+passed on desktop and at 390 CSS pixels with an actual touchscreen tap.
+They exercised one explicit status request, separate-tab launch, iframe
+Escape, preserved draft on WebGL loss and a clean close. The lab's network
+responses in these checks were controlled fixtures, with zero page errors.
+The source suite reported 329 passes and two skips. The protected service
+continues to serve the creator release while this package is staged.

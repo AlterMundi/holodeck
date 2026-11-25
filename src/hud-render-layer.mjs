@@ -18,6 +18,7 @@ export class HudRenderLayer {
     const document=this.canvas.ownerDocument;
     const canvas=document.createElement('canvas');
     canvas.setAttribute('aria-hidden','true');
+    canvas.setAttribute('data-hud-render-layer','');
     Object.assign(canvas.style,{position:'fixed',zIndex:'10',pointerEvents:'none'});
     try{
       this.renderer=new WebGLRenderer({canvas,alpha:true,antialias:false});
