@@ -668,6 +668,26 @@ reduced motion, the unchanged desktop concurrent Conversation flow, mic
 permission granted/refused, recording interruption and upload retry without
 duplicate send.
 
+### Nearby interactions and repeatable panel launchers
+
+Use a consistent nearby interaction for authorized doors, worktables and
+seats. Doors are reciprocal by default. Preserve their existing passage
+permission and destination tracking. Land facing into the new room from its
+return threshold. When desktop Conversation is open, world focus can still
+use the door. Typing and touch Conversation retain input ownership.
+
+Use one action for the Matter table's visible control and E. Keep seat pose,
+clearance and occupancy tied to authored seat anchors. When a human sits,
+use a reachable free seat for the companion, with a clear adjacent floor
+pose when there is no place. Check sit, stand and room departure in a
+separate visitor's view. [Interaction and seating #28](https://github.com/AlterMundi/holodeck/issues/28).
+
+Pressing the same launcher again dismisses or minimizes its surface.
+Audit map, Conversation, Appearance, Video and Activity across the world
+and room previews. Retain focus, private drafts and confirmed device
+actions when hiding a surface. Keep the HUD ownership and regression
+tests in [#16](https://github.com/AlterMundi/holodeck/issues/16).
+
 ## One declarative world, individually styled
 
 Treat the shared semantic scene and its MML projection like a 3D DOM, with a

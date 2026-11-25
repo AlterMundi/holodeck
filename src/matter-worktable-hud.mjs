@@ -51,14 +51,14 @@ function opticalRole(surface,id,component){
 }
 const toolIcons={map:'map',talk:'conversation',appearance:'appearance',video:'video',activity:'activity'};
 const compactToolPixels={map:110,talk:116,appearance:122,video:82,activity:110};
-const pixelsForTool=(id,compact)=>compact?(compactToolPixels[id]??toolPixels[id]):toolPixels[id];
+const pixelsForTool=(id,compact,icons)=>icons&&toolIcons[id]?48:compact?(compactToolPixels[id]??toolPixels[id]):toolPixels[id];
 
-function layoutTools(tools,maxWidth,compact){
+function layoutTools(tools,maxWidth,compact,icons){
   const gap=toolGap*toolScale;
   const rows=[];
   for(const id of toolNames.filter(name=>tools[name]?.visible)){
     let row=rows.at(-1);
-    const pixels=pixelsForTool(id,compact);
+    const pixels=pixelsForTool(id,compact,icons);
     if(!row||row.width+gap+pixels>maxWidth){
       row={ids:[],width:0};
       rows.push(row);
@@ -67,10 +67,10 @@ function layoutTools(tools,maxWidth,compact){
     row.ids.push(id);
   }
   const width=Math.min(maxWidth,Math.max(150,...rows.map(item=>item.width)))/toolScale;
-  return {width,rows,compact,height:rows.length*toolRowHeight+Math.max(0,rows.length-1)*toolGap};
+  return {width,rows,compact,icons,height:rows.length*toolRowHeight+Math.max(0,rows.length-1)*toolGap};
 }
 
-function toolComponents({width,rows,compact}){
+function toolComponents({width,rows,compact,icons}){
   const rowIds=rows.map((_,index)=>'toolRow'+index);
   return [
     {id:'root',component:'HudPanel',label:'Herramientas de Holodeck',width,gap:toolGap,children:rowIds},
@@ -78,7 +78,7 @@ function toolComponents({width,rows,compact}){
       row(rowIds[index],ids,{gap:toolGap}),
       ...ids.map(id=>button(id,path(id+'Label'),{
         disabled:path(id+'Disabled'),...(['map','talk','appearance','video'].includes(id)?{pressed:path(id+'Pressed')}:{}),
-        weight:pixelsForTool(id,compact)/66,...(toolIcons[id]?{icon:toolIcons[id]}:{}),
+        weight:pixelsForTool(id,compact,icons)/66,...(toolIcons[id]?{icon:toolIcons[id]}:{}),
       })),
     ]),
   ];
@@ -170,6 +170,7 @@ export class MatterWorktableHud{
         if(focus?.surfaceId===collectionHudId)return focus.instanceId;
       }});
     this.status=new WorldStatusHud({document,toggleSound,send:(type,content,id)=>this.send(type,content,id),
+      invalidate:this.layer.invalidate,
       focusSound:()=>this.hud.focusAccessibleControl(worldHeaderId,'sound'),
       focusWorld:()=>this.focusTool('map')||this.focusTool('talk'),
       hasSoundFocus:()=>this.ownsAccessibleInput(this.document.activeElement)&&this.hud.currentFocus()?.surfaceId===worldHeaderId});
@@ -200,6 +201,7 @@ export class MatterWorktableHud{
         this.canvas.clientWidth>=330&&this.canvas.clientHeight>=320)});
     this.lookPreview=new HudLookPreview({document,parent:this.scene,invalidate:this.layer.invalidate});
     this.hud=createSpatialHud({parent:this.scene,document,accessibilityRoot:this.a11y,controlStyle:'optical',controlRole:opticalRole,
+      controlIconOnly:id=>id===toolbeltId&&this.toolLayout?.icons===true,
       placeSurface:(group,id)=>{
         if(id===toolbeltId)this.toolGroup=group;
         else if(id===worldMapId)this.map.group=group;
@@ -310,6 +312,7 @@ export class MatterWorktableHud{
     this.syncToolbelt(this.toolsVisible);
     if(this.restoreEntryFocus)this.hud.focusAccessibleControl(surfaceId,'project');
     else{this.canvas.tabIndex=-1;this.canvas.focus({preventScroll:true});}
+    return true;
   }
 
   leave(){
@@ -427,12 +430,14 @@ export class MatterWorktableHud{
     const tools=this.toolState();
     const {left,right}=this.toolInsets();
     const compact=this.compactDock(),scale=this.dockScale(compact);
+    const {clientWidth:width,clientHeight:height}=this.canvas;
+    const icons=width<=480&&width<height&&this.document.defaultView.navigator.maxTouchPoints>0;
     const sideEdge=this.conversationSideEdge();
     const available=Number.isFinite(sideEdge)?sideEdge-left-12:this.canvas.clientWidth-left-right;
     const maxWidth=available*toolScale/scale-toolPadding*toolScale;
     this.document.body.toggleAttribute('data-native-settings-available',maxWidth>=150);
     if(maxWidth<150)return;
-    const layout=layoutTools(tools,Math.min(this.lookPreview.stylesDock?720:670,maxWidth),compact);
+    const layout=layoutTools(tools,Math.min(this.lookPreview.stylesDock?720:670,maxWidth),compact,icons);
     if(!this.toolGroup)this.send('createSurface',{catalogId:spatialHudCatalog.id},toolbeltId);
     const layoutKey=JSON.stringify(layout);
     if(this.toolLayoutKey!==layoutKey){
@@ -569,6 +574,13 @@ export class MatterWorktableHud{
     return this.hud.handleKey(event,{surfaceId});
   }
 
+  useNearbyTable(event){
+    if(this.mode!=='enter'||event.code!=='KeyE'||event.repeat||event.isComposing||
+      event.defaultPrevented||event.altKey||event.ctrlKey||event.metaKey||
+      event.composedPath().some(target=>target.matches?.('input,textarea,button,summary,select,[contenteditable]')))return false;
+    return this.enter();
+  }
+
   usesCockpitDocks({width,height}){
     return Boolean(this.fineInput?.matches&&width>=900&&height>=540);
   }
@@ -603,14 +615,14 @@ export class MatterWorktableHud{
 
   toolBounds(name){
     if(!this.toolGroup||this.toolPlacement?.group!==this.toolGroup)return null;
-    const {rows,width,compact}=this.toolLayout;
+    const {rows,width,compact,icons}=this.toolLayout;
     const rowIndex=rows.findIndex(({ids})=>ids.includes(name));
     if(rowIndex<0)return null;
     const {ids}=rows[rowIndex],index=ids.indexOf(name);
     const {x,y,scale}=this.toolPlacement;
     const available=width-toolGap*(ids.length-1);
-    const total=ids.reduce((sum,id)=>sum+pixelsForTool(id,compact),0);
-    const widthFor=id=>available*pixelsForTool(id,compact)/total;
+    const total=ids.reduce((sum,id)=>sum+pixelsForTool(id,compact,icons),0);
+    const widthFor=id=>available*pixelsForTool(id,compact,icons)/total;
     const xOffset=ids.slice(0,index).reduce((sum,id)=>sum+widthFor(id)+toolGap,-width/2);
     const viewport=this.canvas.getBoundingClientRect();
     const localTop=-rowIndex*(toolRowHeight+toolGap);
