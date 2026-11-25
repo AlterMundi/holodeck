@@ -1,5 +1,25 @@
 # Current MVP work
 
+## November 25 volumetric Navegante
+
+The protected release is `8b3d41a7410a`, from `a3f4c20`. The previous
+cockpit HUD release `8c485a4c8cfe` remains the selected rollback. The new
+companion was authored in Blender with solid ceramic housings, articulated
+joints, a teal mantle and a separately driven jaw. Its 421,384-byte GLB
+contains the nine pose clips and an in-place grounded gait. Fable 5.2 High
+reviewed the design. After Opus 5.5 High's visual and movement review, the
+eyes conform to the visor, the jaw pitches around the lateral axis and the
+foot trajectories are solved from stance and swing targets.
+
+The exact Node24 package passed a two-visitor controlled shared-world check.
+Runtime Chromium loaded the avatar and exercised walking, airborne idle,
+playback-driven jaw travel and reduced motion. Protected HTTPS returned the
+exact GLB, browser bundle, terrain worker and health body, 80 installed files
+matched, and the receiving configuration and world run were preserved. The
+new recovery HUD and renderer dependency update remain separate receiving
+work. See [appearance](native-appearance.md#blender-companion) and the
+[habitation milestone](shared-roadmap.md#first-shared-habitation-iteration).
+
 ## November 25 cockpit HUD
 
 The protected release is `8c485a4c8cfe`, built from `eddd42a` on
