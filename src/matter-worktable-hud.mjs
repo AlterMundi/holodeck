@@ -3,7 +3,7 @@ import {PassageHud} from './passage-hud.mjs';
 import {HudLookPreview} from './hud-look-preview.mjs';
 import {Matrix4,OrthographicCamera,PerspectiveCamera,Raycaster,Scene,Vector2,Vector3} from 'three';
 import {WorldMapHud,worldMapId,worldBearingId} from './world-map-hud.mjs';
-import {DoorPromptHud,doorPromptId,doorPromptWidth} from './door-prompt-hud.mjs';
+import {DoorPromptHud,compactDoorPromptWidth,doorPromptId,doorPromptWidth} from './door-prompt-hud.mjs';
 import {CollectionHud,collectionHudId,collectionHudWidth} from './collection-hud.mjs';
 import {WorldStatusHud,worldHeaderId,worldNoticeId,worldHeaderWidth} from './world-status-hud.mjs';
 import {RecoveryHud,recoveryHudId} from './recovery-hud.mjs';
@@ -38,23 +38,27 @@ const toolScale=286,toolGap=.035,toolRowHeight=.18,toolPadding=.12;
 const toolNames=['map','open','talk','appearance','video','bridge','plant','undo','activity','visit','endVisit'];
 const toolPixels={map:108,open:154,talk:112,appearance:112,video:76,bridge:153,plant:100,undo:92,activity:104,visit:124,endVisit:140};
 
-function layoutTools(tools,maxWidth){
+const compactToolPixels={map:92,talk:98,appearance:108,video:66,activity:94};
+const pixelsForTool=(id,compact)=>compact?(compactToolPixels[id]??toolPixels[id]):toolPixels[id];
+
+function layoutTools(tools,maxWidth,compact){
   const gap=toolGap*toolScale;
   const rows=[];
   for(const id of toolNames.filter(name=>tools[name]?.visible)){
     let row=rows.at(-1);
-    if(!row||row.width+gap+toolPixels[id]>maxWidth){
+    const pixels=pixelsForTool(id,compact);
+    if(!row||row.width+gap+pixels>maxWidth){
       row={ids:[],width:0};
       rows.push(row);
     }
-    row.width+=(row.ids.length?gap:0)+toolPixels[id];
+    row.width+=(row.ids.length?gap:0)+pixels;
     row.ids.push(id);
   }
   const width=Math.min(maxWidth,Math.max(150,...rows.map(item=>item.width)))/toolScale;
-  return {width,rows,height:rows.length*toolRowHeight+Math.max(0,rows.length-1)*toolGap};
+  return {width,rows,compact,height:rows.length*toolRowHeight+Math.max(0,rows.length-1)*toolGap};
 }
 
-function toolComponents({width,rows}){
+function toolComponents({width,rows,compact}){
   const rowIds=rows.map((_,index)=>'toolRow'+index);
   return [
     {id:'root',component:'HudPanel',label:'Herramientas de Holodeck',width,gap:toolGap,children:rowIds},
@@ -62,7 +66,7 @@ function toolComponents({width,rows}){
       row(rowIds[index],ids,{gap:toolGap}),
       ...ids.map(id=>button(id,path(id+'Label'),{
         disabled:path(id+'Disabled'),...(['map','talk','appearance','video'].includes(id)?{pressed:path(id+'Pressed')}:{}),
-        weight:toolPixels[id]/66,
+        weight:pixelsForTool(id,compact)/66,
       })),
     ]),
   ];
@@ -367,6 +371,16 @@ export class MatterWorktableHud{
     return this.insets;
   }
 
+  compactDock(){
+    const {clientWidth:width,clientHeight:height}=this.canvas;
+    this.dockCompact=width>height&&height<(this.dockCompact?512:496);
+    return this.dockCompact;
+  }
+
+  dockScale(compact){
+    return compact&&this.document.defaultView.navigator.maxTouchPoints===0?248:toolScale;
+  }
+
   syncToolbelt(visible){
     this.toolsVisible=visible;
     if(!visible){
@@ -382,10 +396,11 @@ export class MatterWorktableHud{
     }
     const tools=this.toolState();
     const {left,right}=this.toolInsets();
-    const maxWidth=this.canvas.clientWidth-left-right-toolPadding*toolScale;
+    const compact=this.compactDock(),scale=this.dockScale(compact);
+    const maxWidth=(this.canvas.clientWidth-left-right)*toolScale/scale-toolPadding*toolScale;
     this.document.body.toggleAttribute('data-native-settings-available',maxWidth>=150);
     if(maxWidth<150)return;
-    const layout=layoutTools(tools,Math.min(this.lookPreview.stylesDock?640:590,maxWidth));
+    const layout=layoutTools(tools,Math.min(this.lookPreview.stylesDock?640:590,maxWidth),compact);
     if(!this.toolGroup)this.send('createSurface',{catalogId:spatialHudCatalog.id},toolbeltId);
     const layoutKey=JSON.stringify(layout);
     if(this.toolLayoutKey!==layoutKey){
@@ -525,7 +540,11 @@ export class MatterWorktableHud{
     const pixelRatio=this.layer.pixelRatio;
     const dock=this.usesCockpitDocks(viewport)?cockpitDocks[key]:null;
     const bounds=dock?this.hud.getSurfaceBounds(group.name):null;
-    const signature=[viewport.width,viewport.height,x,y,scale,pixelRatio,dock?.depth,bounds?.left,bounds?.right,bounds?.top,bounds?.bottom].join(':');
+    const compactText=(key==='toolPlacement'&&this.toolLayout?.compact)||
+      (key==='doorPlacement'&&this.door.compact);
+    const fontSize=compactText?12:15;
+    const signature=[viewport.width,viewport.height,x,y,scale,pixelRatio,fontSize,dock?.depth,
+      bounds?.left,bounds?.right,bounds?.top,bounds?.bottom].join(':');
     if(this[key]?.group===group&&this[key].signature===signature)return;
     placeHudInViewport(group,this.camera,{...viewport,x,y,pixelsPerUnit:scale,depth:dock?.depth??1});
     if(bounds){
@@ -537,21 +556,21 @@ export class MatterWorktableHud{
       group.matrixWorldNeedsUpdate=true;
     }
     this.hud.setTextDensity(group.name,{cssPixelsPerUnit:Math.round(scale*(bounds?1.12:1)),pixelRatio,
-      fontSize:15});
+      fontSize});
     this[key]={group,signature,x,y,scale,tilted:Boolean(bounds)};
     this.layer.invalidate();
   }
 
   toolBounds(name){
     if(!this.toolGroup||this.toolPlacement?.group!==this.toolGroup)return null;
-    const {rows,width}=this.toolLayout;
+    const {rows,width,compact}=this.toolLayout;
     const rowIndex=rows.findIndex(({ids})=>ids.includes(name));
     if(rowIndex<0)return null;
     const {ids}=rows[rowIndex],index=ids.indexOf(name);
     const {x,y,scale}=this.toolPlacement;
     const available=width-toolGap*(ids.length-1);
-    const total=ids.reduce((sum,id)=>sum+toolPixels[id],0);
-    const widthFor=id=>available*toolPixels[id]/total;
+    const total=ids.reduce((sum,id)=>sum+pixelsForTool(id,compact),0);
+    const widthFor=id=>available*pixelsForTool(id,compact)/total;
     const xOffset=ids.slice(0,index).reduce((sum,id)=>sum+widthFor(id)+toolGap,-width/2);
     const viewport=this.canvas.getBoundingClientRect();
     const localTop=-rowIndex*(toolRowHeight+toolGap);
@@ -651,11 +670,20 @@ export class MatterWorktableHud{
     if(this.toolGroup){
       const {left,right,bottom}=this.toolInsets();
       const dockClearance=this.usesCockpitDocks(viewport)?21:0;
-      const barTop=height-bottom-dockClearance-(this.toolLayout.height+.035)*toolScale;
-      let barCenter=(width+left-right)/2;
+      const compact=this.toolLayout.compact;
+      const dockScale=this.dockScale(compact);
+      const barTop=height-bottom-dockClearance-(this.toolLayout.height+.035)*dockScale;
+      const dockWidth=(this.toolLayout.width+toolPadding)*dockScale;
+      const promptCompact=this.door.group?this.door.compact:compact;
+      const promptWidth=promptCompact?compactDoorPromptWidth:doorPromptWidth;
+      const promptScale=Math.min(promptCompact?dockScale:200,(width-left-right)/(promptWidth+toolPadding));
+      const promptPlate=(promptWidth+toolPadding)*promptScale;
+      const beside=compact&&promptCompact&&this.toolLayout.rows.length===1&&
+        dockWidth+promptPlate+8<=width-left-right;
+      let barCenter=beside?width-right-dockWidth/2:(width+left-right)/2;
       if(this.lookPreview.stylesDock&&additional&&width>=720&&!additional.panel.hidden){
         const display=additional.panel.getBoundingClientRect(), canvasLeft=this.canvas.getBoundingClientRect().left;
-        const half=(this.toolLayout.width+.12)*toolScale/2;
+        const half=dockWidth/2;
         if(display.bottom>barTop&&display.top<height-bottom){
           const start=display.left-canvasLeft, end=display.right-canvasLeft;
           if(barCenter+half>start&&barCenter-half<end){
@@ -664,7 +692,7 @@ export class MatterWorktableHud{
           }
         }
       }
-      this.place(this.toolGroup,'toolPlacement',viewport,barCenter,barTop,toolScale);
+      this.place(this.toolGroup,'toolPlacement',viewport,barCenter,barTop,dockScale);
       const movementScale=width<380?145:166;
       const movementTop=Math.max(34,barTop-.64*movementScale-14);
       if(this.movementGroups.size){
@@ -672,11 +700,19 @@ export class MatterWorktableHud{
         this.place(this.movementGroups.get(movementJump),'jumpPlacement',viewport,width-right-.34*movementScale,
           movementTop+.07*movementScale,movementScale);
       }
-      const promptGap=this.movementGroups.size?barTop-movementTop+51:this.door.finePointer()?52:138;
-      const promptTop=this.door.group?Math.max(36,barTop-promptGap):barTop;
+      let promptTop=barTop;
       if(this.door.group){
-        const promptScale=Math.min(200,(width-left-right)/(doorPromptWidth+.12));
-        this.place(this.door.group,'doorPlacement',viewport,(width+left-right)/2,promptTop,promptScale);
+        const besideFinal=beside&&barCenter-dockWidth/2+.01>=left+promptPlate+8;
+        const hasTouch=this.document.defaultView.navigator.maxTouchPoints>0;
+        const idleGap=promptCompact
+          ? (hasTouch ? 138 : .24*promptScale+8)
+          : (this.door.finePointer() ? 52 : 138);
+        const promptGap=this.movementGroups.size
+          ? barTop-movementTop+(promptCompact ? .21*promptScale+9 : 51)
+          : idleGap;
+        const promptCenter=promptCompact?left+promptPlate/2:(width+left-right)/2;
+        promptTop=besideFinal?barTop:Math.max(36,barTop-promptGap);
+        this.place(this.door.group,'doorPlacement',viewport,promptCenter,promptTop,promptScale);
       }
       const noticeTop=this.movementGroups.size?Math.min(promptTop,movementTop):promptTop;
       const noticeOffset=Math.ceil(height-noticeTop+12)+'px';

@@ -3,8 +3,9 @@ import {spatialHudCatalog} from 'proyeccion/spatial-hud';
 export const doorPromptId = 'world-door';
 export const doorPromptWidth = 2.38;
 const model = key => ({'@path': '/' + key});
-const components = [
-  {id: 'root', component: 'HudPanel', label: 'Cruzar un paso', width: doorPromptWidth, children: ['cross']},
+export const compactDoorPromptWidth = .52;
+const components = width => [
+  {id: 'root', component: 'HudPanel', label: 'Cruzar un paso', width, children: ['cross']},
   {id: 'cross', component: 'HudButton', label: model('label'), disabled: model('busy'),
     action: {event: {name: 'cross', context: {scope: model('scope'), revision: model('revision')}}}},
 ];
@@ -14,13 +15,14 @@ export class DoorPromptHud {
     Object.assign(this, {adapter, send, read, cross, focusControl, hasFocus, finePointer});
   }
 
-  update(visible) {
+  update(visible, compact = false) {
     const current = visible ? this.read() : null;
     if (!current) {
       this.presented(false);
       if (this.group) this.send('deleteSurface', {}, doorPromptId);
       this.group = null;
       this.signature = null;
+      this.compact = null;
       return;
     }
     const oldOffer = this.group && this.revision !== current.revision;
@@ -32,9 +34,15 @@ export class DoorPromptHud {
     if (!this.group) {
       this.revision = current.revision;
       this.send('createSurface', {catalogId: spatialHudCatalog.id}, doorPromptId);
-      this.send('updateComponents', {components}, doorPromptId);
+      this.compact = null;
     }
-    const label = current.title + (this.finePointer() ? '   [E]' : '');
+    if (this.compact !== compact) {
+      this.compact = compact;
+      const width = compact ? compactDoorPromptWidth : doorPromptWidth;
+      this.send('updateComponents', {components: components(width)}, doorPromptId);
+    }
+    const shortcut = compact ? ' [E]' : '   [E]';
+    const label = current.title + (this.finePointer() ? shortcut : '');
     const value = {label, scope: current.scope, revision: current.revision, busy: current.busy};
     const signature = JSON.stringify(value);
     if (signature !== this.signature) {

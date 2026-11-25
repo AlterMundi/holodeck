@@ -1110,7 +1110,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       touchControls.pause(!touchAvailable);
       matterHud.syncMovement(touchAvailable&&Boolean(matterHud.toolGroup)&&navigator.maxTouchPoints>0);
       matterHud.updateBearing(navigationVisible&&!matterHud.active);
-      matterHud.door.update(navigationVisible&&!matterHud.active&&Boolean(matterHud.toolGroup)&&!signalEditor.active);
+      matterHud.door.update(navigationVisible&&!matterHud.active&&Boolean(matterHud.toolGroup)&&!signalEditor.active,
+        Boolean(matterHud.toolLayout?.compact));
       matterHud.collection.update(navigationVisible&&!matterHud.active&&!mapPanel.open&&!signalEditor.active);
       const {left:statusLeft,right:statusRight}=matterHud.toolInsets();
       matterHud.status.update({
