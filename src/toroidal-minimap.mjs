@@ -1,4 +1,4 @@
-import {TOROIDAL_TERRAIN,terrainCoordinates,terrainElevation,terrainTrail} from './toroidal-terrain.mjs';
+import {TOROIDAL_OVERLOOK,TOROIDAL_TERRAIN,terrainCoordinates,terrainElevation,terrainTrail,toroidalSpurPoint} from './toroidal-terrain.mjs';
 import {CAVE_ENTRANCE} from './toroidal-cave.mjs';
 
 const TAU=2*Math.PI;
@@ -65,6 +65,74 @@ export function paintToroidalRelief(chart,rgba,terrain=TOROIDAL_TERRAIN){
   }
 }
 
+export function toroidalSpurGuide(terrain=TOROIDAL_TERRAIN){
+  const end=TOROIDAL_OVERLOOK.v, start=.25;
+  const count=Math.ceil((end-start)*TAU*terrain.tubeRadius/3);
+  const wet=({u,v})=>terrainElevation(u,v,terrain)<terrain.waterLevel;
+  let previous=toroidalSpurPoint(start);
+  const shores=[],runs=[{water:wet(previous),points:[previous]}];
+  for(let i=1;i<=count;i++){
+    const point=toroidalSpurPoint(start+(end-start)*i/count);
+    const water=wet(point),run=runs.at(-1);
+    if(run.water!==water){
+      let low=previous.v, high=point.v;
+      for(let j=0;j<13;j++){
+        const mid=(low+high)/2;
+        if(wet(toroidalSpurPoint(mid))===water)high=mid;
+        else low=mid;
+      }
+      const shore=toroidalSpurPoint((low+high)/2);
+      run.points.push(shore);
+      shores.push(shore);
+      runs.push({water,points:[shore]});
+    }
+    runs.at(-1).points.push(point);
+    previous=point;
+  }
+  return {runs,shores};
+}
+
+export function projectToroidalSpur(chart,guide){
+  const projected=[];
+  for(const run of guide.runs){
+    let last=null,path=null,length=0;
+    for(const point of run.points){
+      const next=toroidalMapPoint(chart,point);
+      if(last){
+        const dx=next.x-last.x,dy=next.y-last.y;
+        // Opposite-side wrap discontinuities are never map segments.
+        if(Math.abs(dx)>1||Math.abs(dy)>1){last=next;path=null;continue;}
+        if(Math.max(next.x,last.x)>=0&&Math.min(next.x,last.x)<=1&&
+          Math.max(next.y,last.y)>=0&&Math.min(next.y,last.y)<=1){
+          if(!path){
+            path={water:run.water,phase:length,points:[last]};
+            projected.push(path);
+          }
+          path.points.push(next);
+        }else path=null;
+        length+=Math.hypot(dx,dy)*DISPLAY;
+      }
+      last=next;
+    }
+  }
+  return projected;
+}
+
+function drawSpur(ctx,paths){
+  for(const path of paths){
+    ctx.beginPath();
+    for(const [i,{x,y}] of path.points.entries())
+      if(i===0)ctx.moveTo(x*DISPLAY,y*DISPLAY);
+      else ctx.lineTo(x*DISPLAY,y*DISPLAY);
+    ctx.setLineDash(path.water?[7,8]:[]);
+    ctx.lineDashOffset=-path.phase;
+    ctx.strokeStyle='#152d32';ctx.lineWidth=6;ctx.stroke();
+    ctx.strokeStyle=path.water?'#a2e1ed':'#f7d7a0';ctx.lineWidth=3;ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.lineDashOffset=0;
+}
+
 function drawHouse(ctx,x,y){
   ctx.beginPath();
   ctx.moveTo(x-9,y-1);ctx.lineTo(x,y-9);ctx.lineTo(x+9,y-1);
@@ -80,7 +148,10 @@ function drawCave(ctx,x,y){
   ctx.strokeStyle='#261e22';ctx.lineWidth=3;ctx.stroke();
   ctx.fillStyle='#e5a984';ctx.fill();
   ctx.fillStyle='#352726';ctx.fillRect(x-3,y-1,6,7);
-  const label='Cueva';
+  drawMapLabel(ctx,'Cueva',x,y);
+}
+
+function drawMapLabel(ctx,label,x,y){
   ctx.font='600 19px system-ui';
   const left=x+15+ctx.measureText(label).width>DISPLAY-6;
   const labelX=x+(left?-15:15);
@@ -92,6 +163,14 @@ function drawCave(ctx,x,y){
   ctx.textAlign='start';
 }
 
+function drawSpurMark(ctx,point,label,water){
+  if(point.x<=.036||point.x>=.964||point.y<=.038||point.y>=.942)return;
+  const x=point.x*DISPLAY,y=point.y*DISPLAY;
+  ctx.fillStyle='#122831';ctx.fillRect(x-7,y-7,14,14);
+  ctx.fillStyle=water?'#a2e1ed':'#f7d7a0';ctx.fillRect(x-4,y-4,8,8);
+  drawMapLabel(ctx,label,x,y);
+}
+
 export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
   const canvas=panel.querySelector('#world-minimap'),ctx=canvas?.getContext('2d',{alpha:false});
   if(!ctx)return ()=>{};
@@ -100,6 +179,7 @@ export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
   const pixels=raster.getContext('2d');
   if(!pixels)return ()=>{};
   const image=pixels.createImageData(SIZE,SIZE);
+  let guide=null,paths=[];
   let chart=null,last=null,next=0;
   const restore=()=>{chart=null;last=null;next=0;};
   canvas.addEventListener('contextrestored',restore);
@@ -115,6 +195,8 @@ export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
       chart=toroidalMapChart(point);
       paintToroidalRelief(chart,image.data);
       pixels.putImageData(image,0,0);
+      guide??=toroidalSpurGuide();
+      paths=projectToroidalSpur(chart,guide);
       last=null;
     }
     const {x,y}=toroidalMapPoint(chart,point);
@@ -127,6 +209,10 @@ export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
     ctx.drawImage(raster,0,0,width,height);
     ctx.save();
     ctx.scale(width/DISPLAY,height/DISPLAY);
+    drawSpur(ctx,paths);
+    for(const shore of guide.shores)
+      drawSpurMark(ctx,toroidalMapPoint(chart,shore),'Orilla',true);
+    drawSpurMark(ctx,toroidalMapPoint(chart,TOROIDAL_OVERLOOK),'Mirador',false);
     for(const {door} of entrances??[]){
       if(!door)continue;
       const {x,y}=toroidalMapPoint(chart,terrainCoordinates([door.x,door.y,door.z]));

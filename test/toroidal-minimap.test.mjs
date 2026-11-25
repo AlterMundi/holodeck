@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {TOROIDAL_TERRAIN,terrainElevation,terrainPosition} from '../src/toroidal-terrain.mjs';
-import {bindToroidalMinimap,paintToroidalRelief,toroidalMapChart,toroidalMapHeading,toroidalMapPoint} from '../src/toroidal-minimap.mjs';
+import {TOROIDAL_OVERLOOK,TOROIDAL_TERRAIN,terrainElevation,terrainPosition,terrainTrail,toroidalSpurPoint} from '../src/toroidal-terrain.mjs';
+import {bindToroidalMinimap,paintToroidalRelief,projectToroidalSpur,toroidalMapChart,toroidalMapHeading,toroidalMapPoint,toroidalSpurGuide} from '../src/toroidal-minimap.mjs';
 
 test('the chart and raster stay continuous across both torus joins',()=>{
   const anchor={u:.99999,v:.99999};
@@ -37,13 +37,36 @@ test('the player arrow matches projected travel on the torus tangent',()=>{
   }
 });
 
+test('the overlook spur follows the terrain and distinguishes open water from land',()=>{
+  const guide=toroidalSpurGuide();
+  const {runs,shores}=guide;
+  assert.deepEqual(runs.map(run=>run.water),[false,true,false]);
+  assert.equal(runs[0].points.at(-1),shores[0]);
+  assert.equal(runs[1].points.at(-1),shores[1]);
+  assert.deepEqual(runs.at(-1).points.at(-1),TOROIDAL_OVERLOOK);
+  for(const {u,v} of shores)assert.ok(Math.abs(terrainElevation(u,v)-TOROIDAL_TERRAIN.waterLevel)<.001);
+  const [from,to]=shores;
+  assert.ok((to.v-from.v)*2*Math.PI*TOROIDAL_TERRAIN.tubeRadius>320);
+  for(const {water,points} of runs)
+    for(const {u,v} of points.slice(1,-1)){
+      assert.equal(terrainTrail(u,v),1);
+      assert.equal(terrainElevation(u,v)<TOROIDAL_TERRAIN.waterLevel,water);
+    }
+  const chart=toroidalMapChart(toroidalSpurPoint(.35));
+  assert.ok(projectToroidalSpur(chart,guide).every(path=>path.water));
+  const opposite=toroidalMapChart({u:.51,v:.35});
+  assert.deepEqual(projectToroidalSpur(opposite,guide),[]);
+  const nearJoin=toroidalMapChart({u:.997,v:.25});
+  assert.deepEqual(projectToroidalSpur(nearJoin,guide),projectToroidalSpur({...nearJoin,u:nearJoin.u-1},guide));
+});
+
 test('the map reuses the terrain raster while still updating its position and heading',()=>{
   let paints=0,composites=0,time=0,restore;
   const raster={createImageData:(width,height)=>({data:new Uint8ClampedArray(width*height*4)}),putImageData:()=>paints++};
   const view={
     drawImage:()=>composites++,save(){},scale(){},restore(){},translate(){},rotate(){},
     beginPath(){},moveTo(){},lineTo(){},closePath(){},stroke(){},fill(){},fillRect(){},fillText(){},strokeText(){},
-    measureText:()=>({width:58}),
+    measureText:()=>({width:58}),setLineDash(){},
   };
   const canvas={width:384,height:384,getContext:()=>view,addEventListener:(_,callback)=>{restore=callback;},
     ownerDocument:{createElement:()=>({getContext:()=>raster,addEventListener(){}})}};
