@@ -2,6 +2,19 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `7924d0ade02661c0e715c98ce931b3cb8c392bea` uses one 30 fps
+comparison timeline across both clip durations. Its archive
+`49636dbb8115b6d532d9d4e2f6443908637830a7ecc2924910cc723dcfa8e29d`
+matched all 87 payloads. In the 390 × 780 Chromium touch check, the
+worktable used the 21-frame jog clip as A and the 180-frame flight study
+as B. At time 110, A showed its held frame 21, which the independent web
+session reopened at that exact frame. Switching back to B preserved
+time 110. With 2× speed and looping off, playback stopped at B's frame
+180. A serial desktop run passed the same checks and the five flight
+chapter checkpoints. One earlier parallel desktop run timed out waiting
+for the web review button. The same build passed 412 Holodeck tests with
+two skips. The independent protected-world trial remains open.
+
 Source `7587d1f663fb35f5c6ec8af32dd8b7e025977904` keeps an unsent
 note bound to the pose where writing started. Its archive
 `fcb27abe80ab86820bf36497f93f358722d7d3219399c62b7e1c6d6c8abe0a5f`
