@@ -1,5 +1,28 @@
 # Current MVP work
 
+## November 25 Shaper worktop and Weaver Instrumento route
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `edb3654520af`
+from `284c3d0`. The Shaper console opens the existing body-service card
+in [Harmonic Lab](https://compaii.dmn.homes/harmonic_lab/), revision
+`02ed23e92610`. Its ready interface opens the existing Instrumento tab.
+The paired Legion has the exact frontend bundle `f5a270c2a337` from
+Harmonic Weaver `e94db5f`, with the previous dist retained. No instrument
+start was submitted during placement of its static build. The body service
+was idle, so its actual runtime status and human use remain unverified.
+
+Controlled RTX 2060 Normal and Pi 5 Livianos browsers verified the stair,
+Shaper collider, selected panel, explicit ready link and Instrumento view.
+They made zero start, configuration or device requests and returned to the
+same avatar position. Both exited to the foyer and received 404 for the
+departed room art. Stationary samples on both devices had a 16.7 ms median.
+The suite passed 411 tests with two skips.
+
+Receiving matched 86 Holodeck files, the existing access and configuration,
+and world sequence 433. The two service rollbacks are Holodeck
+`0bbaf60eb737` and Harmonic Lab `aab865b842c8`. Continuous movement
+among all worktops and real signed-in instrument acceptance remain open.
+
 ## November 25 Guitar worktop and focused Laboratory route
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `0bbaf60eb737`
