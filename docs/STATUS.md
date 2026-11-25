@@ -1,5 +1,26 @@
 # Current MVP work
 
+## November 25 HIT-inspired Harmonic Lab vault
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `d7b3b73478fa` from `d4a6a52`. Dark acoustic surfaces and
+suspended brass loops with turquoise traces frame the Beacon in both room
+variants. The artwork follows the [HIT cover](https://hit.altermundi.net/tapa2.jpg);
+the existing stair, benches and scoped prototype review retain their roles.
+
+The exact fixture walked from the foyer into the chamber on RTX 2060 Normal
+and Pi 5 V3D Livianos. In 90-frame stationary samples at the same pose,
+the median was 16.7 ms on each, with p95 16.7 ms and 33.4 ms respectively
+(versus 16.8 ms and 33.4 ms). Both exports kept four embedded images and
+grew by 1,748 triangles each. The package is 143,360 bytes smaller.
+The suite passed 411 tests with two skips. Protected readback matched all
+86 installed files, the same access and receiving configuration, and
+world sequence 433. Immediate rollback is `8772912dd7ed`.
+
+The four-station composition remains an offline study. Guitar and Shaper
+need their authenticated instrument targets in the owning panel before
+their tables enter the room. Participant and phone validation remain open.
+
 ## November 25 world-anchored nearby action labels
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
