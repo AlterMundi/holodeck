@@ -1,5 +1,16 @@
 # Current MVP work
 
+## November 25 compact general Conversation
+
+The protected Holodeck release is `fda64cf266b7` with `29399a048e35` retained
+as rollback. The hosted panel omits the topic picker, and the ordinary title
+strip measured 36 CSS pixels on desktop and emulated touch. The matched
+desktop baseline measured 108 pixels, and the iframe gained 72 pixels.
+The desktop fixture retained drag, resize, minimize and the current draft.
+All 79 packaged runtime files, protected assets and the unchanged world run
+and receiving configuration were verified. The iframe uses the canonical
+general-Conversation layout from DaimonApp #1029.
+
 ## November 25 selected playtest update
 
 Holodeck is serving 29399a048e35 after exact protected package readback.
