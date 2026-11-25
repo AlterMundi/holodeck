@@ -1457,9 +1457,27 @@ Chromium booted the unpacked package in both graphics profiles. During
 standing samples the character root did not translate. The rendered
 head and chest moved, walking with W moved the character and the avatar
 returned to grounded rest after release. The measured rotations include
-the stock mixer. Physical-device and separately signed-in peer validation
-for this idle slice remain open. The live service still selects the
-previous package.
+the stock mixer.
+
+On the RTX 2060, the exact package ran in normal and lightweight graphics
+with a separate Chromium process observing the same actor. Both runs
+verified the decoded client digest `78742fa9cadc` against the verified
+archive. After the SDK mixer and again after the Holodeck overlay, the
+fixture sampled the same actor and frame. The added motion peaked near
+5.0° at the head and 1.1° at the chest in both views. Its contribution
+was zero in the world positions of both feet and the pelvis. It faded
+as walking began and fell below 0.000001 radians in the reduced-motion
+control. The observer released the model when the actor left. The normal
+run recorded its checks before the CDP disconnect timed out. The corrected
+disconnect completed on lightweight, and the dedicated RTX browser exited
+cleanly with its disposable profile removed.
+
+These are instrumented pose measurements with two fixture identities.
+They do not measure GPU performance, animation phase synchronization
+or sign-in with two people. An independent Chromium pair also repeated
+the 90° airborne turn with the same archive. Bank peaked at 8.7° locally
+and 9.3° remotely, and both views returned to their ground pose. The live
+service still selects `873ae82b51f6` with `20726f08a3e0` as rollback.
 
 ## Authored flight and swimming poses
 
