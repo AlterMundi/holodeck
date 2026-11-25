@@ -2,6 +2,20 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `47be59ad60f3f08c89b365d6c91ee68bec79a899` separates a confirmed
+outside visitor from an unconfirmed room check. Its archive
+`4e09b14986d52945dceb31fa412b21f69ccc9a528cbd9e4bc57af7d9eaa63041`
+matched all 87 payloads. In desktop Chromium, injected room-check
+failures in the table and web projection both preserved preview and
+link copying, hid note writes and offered **Comprobar acceso**. The
+same sessions resumed their shared review after a successful check.
+An independent outside session saved only in its local browser and on
+the requested frame. The 390 × 780 touchscreen emulation repeated the
+same recovery after a dropped web request. The comparison, exact note
+recovery, flight checkpoints and 412 Holodeck tests passed, with two
+skips in the suite. The protected release remained `76bacef3cd52`
+without the pose catalog.
+
 Source `7924d0ade02661c0e715c98ce931b3cb8c392bea` uses one 30 fps
 comparison timeline across both clip durations. Its archive
 `49636dbb8115b6d532d9d4e2f6443908637830a7ecc2924910cc723dcfa8e29d`
