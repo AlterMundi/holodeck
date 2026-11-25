@@ -890,10 +890,10 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     });
     let tableGaze=null;
     const releaseFlightAnimation=bindFlightAvatarAnimation(renderer.characterManager,()=>({
-      outdoor:outsideRing(),flying:flightEnabled,table:tableFlight.active,tabletopPlayers:collectionShelves.tabletopPlayers,
+      outdoor:outsideRing(),flying:flightEnabled,grounded:client.getCharacterManager().localController?.characterOnGround,table:tableFlight.active,tabletopPlayers:collectionShelves.tabletopPlayers,
       gaze:tableGaze,glanceMotion:!companion.motion.matches&&!document.hidden,
       crouch:!moving&&client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt'),
-    }));
+    }),{clock:()=>performance.now()});
     const releaseHologram=bindMatterHologram(renderer.characterManager,tableFlight,()=>collectionShelves.tabletopPlayers);
     const tableInputAllowed=()=>!moving&&!entering&&!document.hidden&&!mapPanel.open&&
       document.querySelector('#conversation-panel').hidden&&!document.querySelector('dialog[open]')&&!signalEditor?.active;
@@ -1018,7 +1018,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       nativeAvatarLayer.update();
       tableGaze=tableAttention.sample(performance.now());
       companion.update({position,yaw,outdoor:outsideRing(),table:tableFlight,gaze:tableGaze,
-        grounded:!flightEnabled&&client.getCharacterManager().localController?.characterOnGround===true,
+        explicitFlight:flightEnabled,grounded:!flightEnabled&&client.getCharacterManager().localController?.characterOnGround===true,
         visible:!entering&&!moving&&drawWorld,seconds:renderState.deltaTimeSeconds});
       galleryModels.update();
       const collectionRoom=inside&&!moving&&activeSpace.collectionShelves?activeSpace.id:null;

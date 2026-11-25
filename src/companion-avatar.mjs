@@ -51,12 +51,14 @@ async function loadFigure(url){
   const walk=animations.find(clip=>clip.name==='walk');
   const hover=animations.find(clip=>clip.name==='hover');
   const glide=animations.find(clip=>clip.name==='glide');
+  const lift=animations.find(clip=>clip.name==='lift');
+  const landing=animations.find(clip=>clip.name==='landing');
   const hinge=root.getObjectByName('anchor-mouth');
   if(!idle||!hinge){
     dispose();
     throw Error('Invalid Navegante asset');
   }
-  const driven=new Set([walk,hover,glide].flatMap(clip=>clip?.tracks.map(track=>track.name)??[]));
+  const driven=new Set([walk,hover,glide,lift,landing].flatMap(clip=>clip?.tracks.map(track=>track.name)??[]));
   const face=new AnimationClip('calm-overlay',idle.duration,idle.tracks.filter(track=>!driven.has(track.name)));
   const body=new AnimationClip('calm-base',idle.duration,idle.tracks.filter(track=>driven.has(track.name)));
   mixer.clipAction(face).play();
@@ -65,32 +67,61 @@ async function loadFigure(url){
   if(stride)stride.setEffectiveWeight(0).paused=true;
   const hovering=hover?mixer.clipAction(hover).setEffectiveWeight(0).play():null;
   const gliding=glide?mixer.clipAction(glide).setEffectiveWeight(0).play():null;
+  const edges=new Map([[true,lift],[false,landing]].map(([key,clip])=>{
+    const action=clip?mixer.clipAction(clip).setEffectiveWeight(0).play():null;
+    if(action)action.paused=true;
+    return [key,{action,time:Infinity,weight:0}];
+  }));
   // The new armature keeps Blender's Z-up axes inside the Y-up GLB.
   // The prior object-joint asset used Y-up local axes.
   const vertical=hinge.isBone?'z':'y', hingeAxis=hinge.isBone?'x':'z';
   const jawHeight=hinge.position[vertical], jawAngle=hinge.rotation[hingeAxis];
-  let walking=0,floating=0,cruising=0,phase=0;
-  return {root,dispose,resetGlance:()=>glance.reset(),pose(seconds,level,speed,motion,airborne,gaze){
+  let walking=0,floating=0,cruising=0,phase=0,priorAir;
+  return {root,dispose,resetGlance:()=>glance.reset(),pose(seconds,level,speed,motion,airborne,gaze,resetEdge,liftAllowed){
     glance.restore();
     const step=Math.min(.05,Math.max(0,seconds));
     const fade=motion?1-Math.exp(-step*10):1;
+    const resetTransition=!motion||resetEdge||priorAir===undefined;
+    if(!resetTransition&&priorAir!==airborne){
+      edges.get(priorAir).time=Infinity;
+      if(!airborne||liftAllowed)edges.get(airborne).time=0;
+    }
+    priorAir=airborne;
+    let totalEdgeWeight=0;
+    for(const edge of edges.values()){
+      if(!edge.action)continue;
+      if(resetTransition){
+        edge.time=Infinity;
+        edge.weight=0;
+      }
+      const duration=edge.action.getClip().duration;
+      let targetWeight=0;
+      if(edge.time<duration){
+        targetWeight=Math.sin(Math.PI*edge.time/duration)**.75*.89;
+        edge.action.time=edge.time;
+        edge.time+=step;
+      }
+      edge.weight+=(targetWeight-edge.weight)*(1-Math.exp(-step*20));
+      totalEdgeWeight+=edge.weight;
+    }
+    for(const edge of edges.values())edge.action?.setEffectiveWeight(edge.weight/Math.max(1,totalEdgeWeight));
+    const idleWeight=1-Math.min(1,totalEdgeWeight);
     const airborneWeight=hovering&&airborne?1:0;
     const groundStride=Math.min(1,Math.max(0,(speed-.06)/.18));
-    const fastFlight=gliding?Math.min(1,Math.max(0,(speed-1.18)/.48)):0;
     const forwardFlight=motion&&gliding?Math.min(1,Math.max(0,(speed-.12)/.8)):0;
-    const cruisingGoal=airborneWeight?forwardFlight:(motion?fastFlight:0);
+    const cruisingGoal=airborneWeight*forwardFlight;
     const floatingGoal=airborneWeight*(1-forwardFlight);
-    const walkGoal=motion&&!airborne?(1-fastFlight)*groundStride:0;
+    const walkGoal=motion&&!airborne?groundStride:0;
     walking+=(walkGoal-walking)*fade;
     floating+=(floatingGoal-floating)*fade;
     cruising+=(cruisingGoal-cruising)*fade;
     if(walking<.02&&!walkGoal)phase=0;
     else phase=(phase+Math.min(speed,1.45)*step/strideDistance)%1;
-    hovering?.setEffectiveWeight(floating);
-    gliding?.setEffectiveWeight(cruising);
-    still?.setEffectiveWeight(Math.max(0,1-walking-floating-cruising));
+    hovering?.setEffectiveWeight(floating*idleWeight);
+    gliding?.setEffectiveWeight(cruising*idleWeight);
+    still?.setEffectiveWeight(Math.max(0,1-walking-floating-cruising)*idleWeight);
     if(stride){
-      stride.setEffectiveWeight(walking);
+      stride.setEffectiveWeight(walking*idleWeight);
       stride.time=phase*walk.duration;
     }
     if(motion)mixer.update(step);
@@ -141,14 +172,14 @@ export class CompanionAvatar{
     this.speechAt=performance.now();
   }
   get object(){return this.figure?.root.visible?this.figure.root:null;}
-  update({position,yaw=0,outdoor,table,gaze,visible,seconds,grounded=true}){
+  update({position,yaw=0,outdoor,table,gaze,visible,seconds,grounded=true,explicitFlight=false}){
     const root=this.figure?.root;
     if(!root)return;
     root.visible=Boolean(position&&visible);
     if(!root.visible){this.previous=null;this.attention=null;this.figure.resetGlance();return;}
     const now=performance.now();
     const small=Boolean(table?.active);
-    const canWalk=grounded&&!small;
+    const wantsGround=grounded&&!small;
     const scale=small?matterAvatarScale:1;
     if(this.previousTable!==small){
       if(small)this.hologram.sync();
@@ -164,7 +195,11 @@ export class CompanionAvatar{
     if(this.previous!==scale||this.previousOutdoor!==outdoor)this.followYaw=yaw;
     const angle=this.followAngle.setFromAxisAngle(localUp,this.followYaw??yaw).premultiply(frame);
     const step=(small?1.36:1.35)*scale;
-    const height=(canWalk?-.037:.13)*scale;
+    const moving=!this.motion.matches&&!this.document.hidden;
+    const samePlace=this.previous===scale&&this.previousOutdoor===outdoor;
+    this.catchup=Boolean(wantsGround&&samePlace&&moving&&
+      this.followVelocity.length()>(this.catchup?1.05:1.6));
+    const height=(wantsGround&&!this.catchup?-.037:.13)*scale;
     this.target.copy(position).add(this.relative.set(step,height,.45*step).applyQuaternion(angle));
     if(small){
       if(point&&point.distanceToSquared(position)<1.4**2){
@@ -179,8 +214,7 @@ export class CompanionAvatar{
         table.bounds.clampPoint(this.target,this.target);
       }
     }
-    let speed=0;
-    const moving=!this.motion.matches&&!this.document.hidden;
+    let speed=0,rise=0;
     const reset=!this.previous||this.previous!==scale||this.previousOutdoor!==outdoor||root.position.distanceToSquared(this.target)>121;
     const dt=Math.min(.05,Math.max(0,seconds));
     root.up.copy(localUp).applyQuaternion(frame);
@@ -203,10 +237,23 @@ export class CompanionAvatar{
       this.followVelocity.add(this.velocityChange);
       const travel=Math.min(distance,this.followVelocity.length()*dt);
       if(travel>0)root.position.addScaledVector(this.followVelocity,travel/this.followVelocity.length());
-      const rise=vertical*(1-Math.exp(-dt*5));
+      rise=vertical*(1-Math.exp(-dt*5));
       root.position.addScaledVector(root.up,rise);
       if(small)table.bounds.clampPoint(root.position,root.position);
       speed=Math.hypot(travel,rise*.65)/(dt*scale);
+    }
+    const elevation=this.direction.subVectors(root.position,position).dot(root.up)/scale;
+    const airCandidate=!wantsGround||this.catchup||elevation>(this.visualAirborne?.045:.11);
+    if(reset||!moving){
+      this.visualAirborne=airCandidate;
+      this.airDwell=0;
+    }else if(this.visualAirborne===airCandidate)this.airDwell=0;
+    else{
+      this.airDwell+=dt;
+      if(this.airDwell>=.10){
+        this.visualAirborne=airCandidate;
+        this.airDwell=0;
+      }
     }
     root.scale.setScalar(scale);
     this.previous=scale;
@@ -225,7 +272,8 @@ export class CompanionAvatar{
       if(!reset&&moving)root.quaternion.slerp(this.previousHeading,Math.exp(-Math.max(0,seconds)*5));
     }
     const level=moving&&now-(this.speechAt??-Infinity)<300?this.level:0;
-    this.figure.pose(seconds,level,speed,moving,!canWalk,small?gaze:null);
+    const liftAllowed=explicitFlight||this.catchup||small||rise>.12*dt*scale;
+    this.figure.pose(seconds,level,speed,moving,this.visualAirborne,small?gaze:null,reset,liftAllowed);
   }
   dispose(){
     this.disposed=true;

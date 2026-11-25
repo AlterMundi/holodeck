@@ -2,26 +2,42 @@ import {Euler,Quaternion,Vector3} from 'three';
 import {TOROIDAL_TERRAIN,terrainCoordinates,terrainWaterDepth} from './toroidal-terrain.mjs';
 import {matterAvatarScale} from './matter-flight.mjs';
 import {TabletopGlance} from './tabletop-attention.mjs';
+import {bindHumanoidFlightRig} from './humanoid-flight-poses.mjs';
 
 const limbNames=['upperarm_l','upperarm_r','lowerarm_l','lowerarm_r','thigh_l','thigh_r','calf_l','calf_r'];
 const pitchAxis=new Vector3(1,0,0);
+const bindings=new WeakMap();
 
-export function bindFlightAvatarAnimation(manager,context){
+export function bindFlightAvatarAnimation(manager,context,{clock}={}){
+  if(bindings.has(manager))return bindings.get(manager);
   const update=manager.update;
   const actors=new Map();
+  let previousTime;
   const angles=new Euler(),turn=new Quaternion(),pitch=new Quaternion();
   const displacement=new Vector3(),up=new Vector3(),right=new Vector3(),localAxis=new Vector3();
   const bodyFacing=new Quaternion(),boneFacing=new Quaternion(),bend=new Quaternion();
   function restore(entry){
     entry.glance?.restore();
     for(const [bone,neutral] of entry.modified)bone.quaternion.copy(neutral);
+    entry.modified.clear();
+    entry.airRig?.restore();
     if(entry.rotation?.equals(entry.applied))entry.rotation.copy(entry.unpitched);
+  }
+  function resetMotion(entry){
+    Object.assign(entry,{weight:0,hoverWeight:0,lowWeight:0,planarSpeed:0,airWeight:0,
+      lowerWeight:0,airTime:0,rise:0,flightAge:0,pitch:0,phase:0,poseTime:0,observedFlight:false,
+      mode:null,poseMode:null});
+    entry.airRig?.reset();
   }
   function animatedUpdate(state,dt){
     // Remove last frame's extra limb rotations before the base mixer runs.
     for(const entry of actors.values())restore(entry);
     const result=update.call(this,state,dt);
-    const {outdoor,flying,table,crouch,gaze,glanceMotion=true,tabletopPlayers=[]}=context();
+    const {outdoor,flying,grounded,table,crouch,gaze,glanceMotion=true,tabletopPlayers=[]}=context();
+    const now=clock?.();
+    const elapsed=now!==undefined&&previousTime!==undefined?(now-previousTime)/1000:dt;
+    previousTime=now;
+    const step=Math.min(.15,Math.max(0,elapsed));
     for(const [id,actor] of state.characters){
       const character=this.loadedCharacters.get(id)?.character;
       const mesh=character?.getMesh();
@@ -29,9 +45,11 @@ export function bindFlightAvatarAnimation(manager,context){
       let entry=actors.get(id);
       const position=actor.position;
       if(entry?.mesh!==mesh){
-        entry={mesh,last:new Vector3().copy(position),weight:0,hoverWeight:0,lowWeight:0,phase:0,planarSpeed:0,modified:new Map(),
+        entry={mesh,last:new Vector3().copy(position),modified:new Map(),
+          airRig:bindHumanoidFlightRig(mesh),
           unpitched:new Quaternion(),applied:new Quaternion(),
           limbs:limbNames.map(name=>mesh.getObjectByName(name))};
+        resetMotion(entry);
         actors.set(id,entry);
       }
       const isLocal=id===state.localCharacterId;
@@ -41,34 +59,61 @@ export function bindFlightAvatarAnimation(manager,context){
         entry.head??=mesh.getObjectByName('head');
       }
       const coordinate=outdoor?terrainCoordinates([position.x,position.y,position.z]):null;
-      const underwater=coordinate&&coordinate.height<TOROIDAL_TERRAIN.waterLevel-.92&&terrainWaterDepth(coordinate.u,coordinate.v)>.18;
+      const waterLine=entry.mode==='swim'?.78:.92;
+      const underwater=coordinate&&coordinate.height<TOROIDAL_TERRAIN.waterLevel-waterLine&&terrainWaterDepth(coordinate.u,coordinate.v)>.18;
       const atTable=isLocal?table:tabletopPlayers.has?.(id)||tabletopPlayers.includes?.(id);
-      const active=underwater||atTable||isLocal&&outdoor&&flying;
+      const explicitFlight=isLocal&&outdoor&&flying;
+      if(entry.table!==atTable){
+        entry.last.copy(position);
+        resetMotion(entry);
+        entry.table=atTable;
+      }
       const factor=atTable?matterAvatarScale:1;
       displacement.subVectors(position,entry.last);
       entry.last.copy(position);
       up.set(0,1,0).applyQuaternion(character.quaternion);
       const vertical=displacement.dot(up);
+      const continuous=displacement.lengthSq()<(atTable?1:5)**2&&elapsed<=.35;
       displacement.addScaledVector(up,-vertical);
       const travel=displacement.length();
       const moved=travel<(atTable?.65:3);
-      const speed=moved?Math.min(atTable?9:18,travel/Math.max(dt*factor,.001)):0;
+      const speed=moved&&continuous?Math.min(atTable?9:18,travel/Math.max(elapsed*factor,.001)):0;
+      const fade=1-Math.exp(-step*8);
+      if(!continuous)resetMotion(entry);
+      if(!outdoor||underwater)entry.observedFlight=false;
+      const touchedDown=entry.observedFlight&&!explicitFlight&&grounded===true;
+      if(explicitFlight){entry.observedFlight=true;entry.flightAge+=step;}
+      else entry.flightAge=0;
+      const recovering=entry.observedFlight&&!explicitFlight&&grounded===false;
+      if(touchedDown)entry.observedFlight=false;
+      entry.rise+=(Math.max(-7,Math.min(7,continuous?vertical/Math.max(elapsed*factor,.001):0))-entry.rise)*fade;
+      let mode=underwater?'swim':recovering?'descend':atTable||explicitFlight?'hover':null;
+      if(mode==='hover'&&!atTable&&(entry.mode==='lift'?entry.airTime<.42:entry.flightAge<.45&&entry.rise>.25))mode='lift';
+      if(mode===null&&grounded&&(touchedDown||entry.mode==='land'&&entry.airTime<.32))mode='land';
+      if(mode!==entry.mode){entry.mode=mode;entry.airTime=0;}
+      else entry.airTime+=step;
+      const active=mode!==null;
       const low=isLocal&&crouch&&!active;
-      const fade=1-Math.exp(-Math.max(0,dt)*8);
       entry.planarSpeed+=(speed-entry.planarSpeed)*fade;
-      const target=active?Math.min(1,Math.max(0,(entry.planarSpeed-.14)/1.8)):0;
+      const target=(mode==='hover'||mode==='swim')?Math.min(1,Math.max(0,(entry.planarSpeed-.14)/1.8)):0;
       entry.weight+=(target-entry.weight)*fade;
       entry.hoverWeight+=(Number(Boolean(active))*(1-target)-entry.hoverWeight)*fade;
-      entry.lowWeight+=(Number(low)-entry.lowWeight)*fade;
-      if(entry.weight<.01&&entry.hoverWeight<.01&&entry.lowWeight<.01){
+      entry.lowWeight+=(Number(Boolean(low))-entry.lowWeight)*fade;
+      const airWeight=entry.airRig&&active?(mode==='land'?Math.max(0,1-entry.airTime/.32):1):0;
+      entry.airWeight+=(airWeight-entry.airWeight)*(1-Math.exp(-step*(active?9:13)));
+      const lowerTarget=mode==='land'||!active?0:airWeight;
+      entry.lowerWeight+=(lowerTarget-entry.lowerWeight)*(1-Math.exp(-step*(lowerTarget?9:24)));
+      if(entry.weight<.01&&entry.hoverWeight<.01&&entry.lowWeight<.01&&entry.airWeight<.01&&entry.lowerWeight<.01&&Math.abs(entry.pitch)<.01){
         entry.modified.clear();
         entry.glance?.apply(character,entry.head,isLocal&&table&&glanceMotion?gaze:null,dt);
         continue;
       }
-      entry.phase=(entry.phase+dt*(underwater?4.4:2.1))%(2*Math.PI);
+      entry.phase=(entry.phase+step*(underwater?4.4:2.1))%(2*Math.PI);
       const stroke=Math.sin(entry.phase),counter=Math.cos(entry.phase);
       const w=entry.weight;
-      pitch.setFromAxisAngle(pitchAxis,(underwater?1.17:atTable?.76:.91)*w+.13*entry.lowWeight);
+      const lean=(underwater?1.04:atTable?.56:.57)*w+.13*entry.lowWeight;
+      entry.pitch+=(lean-entry.pitch)*fade;
+      pitch.setFromAxisAngle(pitchAxis,entry.pitch);
       entry.rotation=character.quaternion;
       entry.unpitched.copy(entry.rotation);
       if(entry.lowWeight>0||entry.hoverWeight>0||w>0){
@@ -77,10 +122,20 @@ export function bindFlightAvatarAnimation(manager,context){
       }
       entry.rotation.multiply(pitch);
       entry.applied.copy(entry.rotation);
+      if(entry.airRig&&Math.max(entry.airWeight,entry.lowerWeight)>.01){
+        const time=mode==='lift'?entry.airTime/.44:mode==='descend'?entry.airTime/.38:mode==='land'?entry.airTime/.32:
+          glanceMotion?entry.phase/(Math.PI*2):0;
+        if(mode){entry.poseMode=mode;entry.poseTime=time;}
+        entry.airRig.apply(character,{mode:entry.poseMode,time:entry.poseTime,
+          forward:entry.weight,weight:entry.airWeight,lowerWeight:entry.lowerWeight,step});
+      }
       entry.glance?.apply(character,entry.head,isLocal&&table&&glanceMotion?gaze:null,dt,1-w*.8);
+      const airSwing=entry.airRig?0:w,hoverSwing=entry.airRig?0:entry.hoverWeight;
+      const crouchWeight=entry.lowWeight*(1-entry.lowerWeight);
       const strokeAmplitude=underwater?.58:.16;
       const kickAmplitude=underwater?.27:.075;
       for(let index=0;index<entry.limbs.length;index++){
+        if(entry.airRig&&(index<4||crouchWeight<.001))continue;
         const bone=entry.limbs[index];
         if(!bone)continue;
         const polarity=index%2?-1:1;
@@ -91,14 +146,14 @@ export function bindFlightAvatarAnimation(manager,context){
         entry.modified.set(bone,neutral);
         const hoverBend=index<2?.22:index<4?-.32:index<6?-.24:.44;
         const hoverSpread=index<2?polarity*.23:0;
-        const motionBend=w*sweep*polarity+entry.hoverWeight*hoverBend;
+        const motionBend=airSwing*sweep*polarity+hoverSwing*hoverBend;
         if(index<4){
-          angles.set(motionBend,0,w*offset+entry.hoverWeight*hoverSpread);
+          angles.set(motionBend,0,airSwing*offset+hoverSwing*hoverSpread);
           bone.quaternion.multiply(turn.setFromEuler(angles));
         }else{
           // These rigs have mirrored leg bones along local X. Bend around
           // the character's lateral axis, not around each bone's length.
-          const crouchBend=(index<6?-.42:.64)*entry.lowWeight;
+          const crouchBend=(index<6?-.42:.64)*crouchWeight;
           bone.getWorldQuaternion(boneFacing);
           localAxis.copy(right).applyQuaternion(boneFacing.invert());
           bone.quaternion.multiply(bend.setFromAxisAngle(localAxis,motionBend+crouchBend));
@@ -109,9 +164,13 @@ export function bindFlightAvatarAnimation(manager,context){
     return result;
   }
   manager.update=animatedUpdate;
-  return ()=>{
+  const release=()=>{
+    if(bindings.get(manager)!==release)return;
+    bindings.delete(manager);
     if(manager.update===animatedUpdate)manager.update=update;
     for(const entry of actors.values())restore(entry);
     actors.clear();
   };
+  bindings.set(manager,release);
+  return release;
 }

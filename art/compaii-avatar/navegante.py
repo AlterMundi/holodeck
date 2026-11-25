@@ -465,6 +465,17 @@ def flight_pose(t, moving):
 for name,moving in (("hover",False),("glide",True)):
     clip(name,[(1+i*8,*flight_pose(i/8,moving)) for i in range(9)])
 
+# The motion controller owns altitude. These clips move only the skeleton.
+flight_rest, _ = flight_pose(0,False)
+stance = {bone:(0,0,0) for bone in flight_rest}
+brace = {**stance,"chest":(6,0,0),"head":(-4,0,0),
+         "leg-left":(-13,0,0),"leg-right":(-13,0,0),
+         "shin-left":(29,0,0),"shin-right":(29,0,0),
+         "foot-L":(-16,0,0),"foot-R":(-16,0,0),
+         "arm-L":(-10,13,0),"arm-R":(-10,-13,0),"cape":(8,0,0)}
+clip("lift",[(1,stance,0),(5,brace,-.018),(14,flight_rest,.004)])
+clip("landing",[(1,flight_rest,0),(7,brace,-.021),(16,stance,0)])
+
 for bone in rig.pose.bones:
     bone.rotation_euler=(0,0,0)
     bone.location=(0,0,0)

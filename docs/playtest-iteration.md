@@ -1079,3 +1079,37 @@ and an acceptance decision. Its meshes are absent from the staged runtime.
 Exact archive `7608545f20a1` is 33,310,720 bytes and passed 338 tests
 with two skips. The package opened and closed the native map on the real
 terrain in controlled Chromium. The release remains staged.
+
+## Authored flight and swimming poses
+
+The four registered human models share two bind rigs. The flight and swim
+poses now retarget against each model's actual inverse binds and blend over
+the SDK mixer. Hover, glide, lift, descent, landing and swim have separate
+poses. Only the local exterior pilot uses explicit flight state. Shared table
+visitors use the existing table state. The local ground contact returns
+leg control to the SDK during landing.
+
+Fable High reviewed the transition plan. Opus 5.5 High found residual
+stock limb rotations, abrupt lower-body restoration, elbow and knee
+hyperextension, and stale state after crossing the table boundary. The
+corrections use separate upper and lower blends, bind-relative hinge limits,
+and a state reset on a discontinuity. The companion's Blender rig adds
+distinct lift and landing clips. It now settles onto its own follow offset
+before resuming ground gait and softens an interrupted clip instead of
+snapping between edges. The sampled cape check covered 84 poses across
+calm, walk, hover, glide, lift and landing, with zero triangle intersections
+between the cape and limbs.
+
+Exact archive `5c287af6591d` is 33,320,960 bytes. The pinned package
+passed 343 tests with two skips and remains staged. Chromium on Node24
+verified exterior take-off, hover, glide, descent to actual ground contact,
+and a submerged dive and swim. Two independent test identities at the
+table verified the common miniature factor and translucency, bounded
+flight, peer reconnect and return to the entry position. A standalone
+browser also verified the robot's independent speech jaw, miniature gaze
+and return to its follow position. These checks used software rendering
+and controlled identities.
+
+The remaining animation work includes the grounded crouch, run and idle
+quality passes, complete facial expression and microphone lip sync across
+avatars, and independent authenticated visitor and physical GPU validation.
