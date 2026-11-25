@@ -480,7 +480,7 @@ export class MatterWorktableHud{
       return this.mode==='enter'&&!modifier&&event.key==='Tab'&&!event.shiftKey&&
         (event.target===this.document.body||event.target===this.canvas)&&this.focusTool('open');
     }
-    if(['KeyW','KeyA','KeyS','KeyD','Space','ShiftLeft','ShiftRight','ControlLeft','ControlRight'].includes(event.code))
+    if(['KeyW','KeyA','KeyS','KeyD','Space','ShiftLeft','ShiftRight','AltLeft','AltRight','ControlLeft','ControlRight','KeyR'].includes(event.code))
       return false;
     return this.hud.handleKey(event,{surfaceId});
   }

@@ -62,3 +62,27 @@ test('a peer adopts a tabletop glide at miniature speed without accumulating pit
   assert.equal(character.quaternion.x,0);
   assert.equal(arm.quaternion.x,0);
 });
+
+test('crouch bends a horizontal-axis humanoid rig into the sagittal plane',()=>{
+  const character=new Group(),root=new Group(),thigh=new Bone(),calf=new Bone(),ankle=new Bone();
+  character.add(root);
+  root.add(thigh);
+  thigh.add(calf);
+  calf.add(ankle);
+  thigh.name='thigh_l';
+  calf.name='calf_l';
+  thigh.rotation.z=-Math.PI/2;
+  calf.position.x=.44;
+  ankle.position.x=.42;
+  character.getMesh=()=>root;
+  const manager={loadedCharacters:new Map([[8,{character}]]),update(){}};
+  const release=bindFlightAvatarAnimation(manager,()=>({crouch:true}));
+  const state={localCharacterId:8,characters:new Map([[8,{position:new Vector3()}]])};
+  for(let i=0;i<120;i++)manager.update(state,1/60);
+  const knee=calf.getWorldPosition(new Vector3());
+  const foot=ankle.getWorldPosition(new Vector3());
+  assert.ok(knee.z>.08&&Math.abs(knee.x)<1e-6);
+  assert.ok(foot.z<knee.z&&Math.abs(foot.x)<1e-6);
+  release();
+  assert.ok(Math.abs(ankle.getWorldPosition(new Vector3()).z)<1e-6);
+});

@@ -773,3 +773,43 @@ two asynchronous failed reads for an aborted peer room-art request. The whole
 browser run is therefore not a clean pass. A separate controlled Chromium
 check passed scale, material restoration, expiring attention and jaw playback.
 The actual protected release still serves the previous avatar controller.
+
+## Proyección workspace comparison
+
+The referenced Proyección workspace uses the standard A2UI catalog in a CSS3D
+surface. Three.js supplies the perspective transform. The workspace applies its
+own 20 px rounded edge, 24 px inner spacing, dark neutral fill and soft shadow.
+Holodeck uses the separate `spatial-hud` catalog rendered as native Three.js
+geometry with an accessible DOM projection. The protected avatar release pinned
+`2717bf90d76c`. Holodeck's candidate incorporates the newer fitted text and
+does not inherit the workspace CSS.
+
+Fable High reviewed the selection. The optional `hud-look=taller` candidate
+adds a shallow matte surround with a restrained edge to the actual worktable
+HUD. It keeps the other surfaces on the current theme. Running Chromium with
+the candidate verified the real worktable, flight and return on desktop and
+390 CSS pixels with touch emulation. Inspection prompted a narrower surround,
+safe-area placement and a shorter narrow-screen exit label. Opus 5.5 High
+identified corner overhang and peak-tilt concerns, addressed in the revised
+geometry and motion. Wider style application and graphics budget remain open.
+
+## Avatar control and authored movement roadmap
+
+Alt is crouch on the ground. Shift remains descent during flight and swimming.
+R also runs, including when a browser reserves Ctrl+W. The fullscreen action
+requests the browser's permission to capture W only and releases that capture
+on exit. A bare cancelable Ctrl+W event is also handled when the browser
+delivers it to the world. Regular-window behavior still depends on the browser.
+
+The humanoid rigs use mirrored bone axes. The crouch correction bends about the
+body's lateral axis rather than twisting the knee along the bone. The visual
+adapter still uses the standing collision capsule. The authored animation pass
+must include planted crouch, transitions into and out of run, takeoff and
+landing, steady hover and flight, swimming, facial idle variations and speech.
+Retarget a canonical humanoid rig with per-avatar rest poses and contact
+markers. All four current humanoid GLBs lack facial bones and morph targets.
+Add face rigs and test each avatar. Human mouth movement uses an explicitly
+enabled microphone signal. The companion's jaw continues to use actual
+Conversation playback. Apply the same pose semantics to shared 3D and AR only
+after verifying both independently. Close this milestone with transition video,
+foot contact on flat ground/slopes, remote presence and reduced-motion tests.

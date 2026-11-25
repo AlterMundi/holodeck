@@ -11,10 +11,29 @@ export function bindVideoSettings({document,window,lightweight,onGraphics,onSens
   const status=document.querySelector('#video-status');
   const root=document.documentElement;
   const available=()=>document.fullscreenEnabled&&typeof root.requestFullscreen==='function';
-  let changing=false;
+  const keyboard=window.navigator?.keyboard;
+  let changing=false,requestedMovementLock=false;
+
+  function releaseMovementLock(){
+    if(!requestedMovementLock)return;
+    requestedMovementLock=false;
+    keyboard.unlock?.();
+  }
+
+  async function lockMovementKey(){
+    if(typeof keyboard?.lock!=='function'||document.fullscreenElement!==root)return;
+    requestedMovementLock=true;
+    try{
+      await keyboard.lock(['KeyW']);
+      if(document.fullscreenElement!==root)keyboard.unlock?.();
+    }catch{
+      // The world also has a sprint key that needs no browser permission.
+    }
+  }
 
   function syncFullscreen(){
     const active=!!document.fullscreenElement;
+    if(document.fullscreenElement!==root)releaseMovementLock();
     toggle.textContent=active?'Salir de pantalla completa':'Pantalla completa';
     toggle.setAttribute('aria-pressed',String(active));
     toggle.disabled=changing||!available();
@@ -27,7 +46,10 @@ export function bindVideoSettings({document,window,lightweight,onGraphics,onSens
     syncFullscreen();
     try{
       if(document.fullscreenElement)await document.exitFullscreen();
-      else await root.requestFullscreen();
+      else{
+        await root.requestFullscreen();
+        void lockMovementKey();
+      }
     }catch{
       status.textContent='No se pudo cambiar la pantalla completa.';
       if(!onFullscreenError?.(status.textContent))showSettingsDialog(dialog);
@@ -57,6 +79,7 @@ export function bindVideoSettings({document,window,lightweight,onGraphics,onSens
   close.onclick=()=>dialog.close();
   toggle.onclick=()=>void switchFullscreen();
   document.addEventListener('fullscreenchange',syncFullscreen);
+  window.addEventListener('pagehide',releaseMovementLock);
   window.addEventListener('keydown',event=>{
     const shortcut=event.code==='KeyF'&&event.ctrlKey&&event.altKey&&!event.metaKey&&!event.shiftKey&&
       !event.getModifierState('AltGraph')&&!event.target?.closest?.('input,textarea,[contenteditable]');

@@ -96,6 +96,41 @@ document.querySelector('#appearance-form').onsubmit=event=>{
 window.addEventListener('keydown',event=>{
   if(appearanceDialog.open&&!appearanceDialog.hasAttribute('data-native-settings'))event.stopImmediatePropagation();
 },true);
+// Chrome may reserve Ctrl+W itself. R remains a sprint modifier in that case.
+const physicalMoves=new Map([['KeyW','w'],['KeyA','a'],['KeyS','s'],['KeyD','d']]);
+const editorOwns=event=>event.target?.closest?.('input,textarea,select,[contenteditable]');
+function bindWorldKeyShortcuts(keys){
+  if(!keys)return;
+  const previous=keys.getRun;
+  const getRun=function(){return this.isKeyPressed('r')||this.isKeyPressed('control');};
+  keys.getRun=getRun;
+  const listen=new AbortController(),pressed=new Set();
+  document.addEventListener('keydown',event=>{
+    if(!event.altKey||event.getModifierState('AltGraph')||editorOwns(event)||!keys.shouldCaptureKeyPress())return;
+    const key=physicalMoves.get(event.code);
+    if(key){
+      // With Alt, some keyboard layouts report a symbol as event.key.
+      keys.keys.set(key,true);
+      pressed.add(key);
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }else if(['ArrowLeft','ArrowRight','Space'].includes(event.code))event.preventDefault();
+  },{capture:true,signal:listen.signal});
+  document.addEventListener('keyup',event=>{
+    const key=physicalMoves.get(event.code);
+    if(key&&(pressed.delete(key)||event.altKey))keys.keys.set(key,false);
+  },{capture:true,signal:listen.signal});
+  window.addEventListener('blur',()=>pressed.clear(),{signal:listen.signal});
+  return ()=>{
+    listen.abort();
+    for(const key of pressed)keys.keys.set(key,false);
+    if(keys.getRun===getRun)keys.getRun=previous;
+  };
+}
+function keepWorldTab(event){
+  if(event.cancelable&&event.ctrlKey&&!event.altKey&&!event.metaKey&&
+     ['KeyW','KeyR'].includes(event.code)&&!editorOwns(event))event.preventDefault();
+}
 const touchControls={
   mount(container,experience){
     this.holder=document.createElement('div');this.holder.className='touch-controls';container.append(this.holder);
@@ -197,6 +232,7 @@ function startInterior(space){
   exhibitObserver.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['data-exhibit-revision']});
   const updateDoor=showSpaceLinks(space,{mapEnabled:false,canLeave:()=>visitor.allowLeaveRoom(),onError:message=>notice.show(message)});
   window.addEventListener('keydown',event=>{
+    keepWorldTab(event);
     if(event.target instanceof Element&&event.target.closest('#exhibition-index')){event.stopImmediatePropagation();return;}
     if((beaconControls.opened||visitor.frame&&!visitor.panel.classList.contains('is-walking'))&&
        ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE'].includes(event.code)){
@@ -227,9 +263,13 @@ function startInterior(space){
         beaconControls.update(space.objects,position);render(state);
         if(entering&&position&&entryRoomReady(document.getElementById(space.id)))worldEntered();
       };
-      let releaseHeadroom;
-      renderer.dispose=()=>{releaseHeadroom?.();frameBudget.dispose();picker.dispose();galleryModels.clear();dispose();};
+      let releaseHeadroom,releaseRun;
+      const releaseAnimation=bindFlightAvatarAnimation(renderer.characterManager,()=>({
+        crouch:client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt'),
+      }));
+      renderer.dispose=()=>{releaseRun?.();releaseHeadroom?.();releaseAnimation();frameBudget.dispose();picker.dispose();galleryModels.clear();dispose();};
       queueMicrotask(()=>{
+        releaseRun=bindWorldKeyShortcuts(client.keyInputManager);
         releaseHeadroom=bindInteriorHeadroom(client.getCharacterManager(),()=>true);
         options.onInitialized();
       });
@@ -584,6 +624,7 @@ function resetDoor(){
 // keyboard activation of the HUD without turning typed words into locomotion.
 document.addEventListener('keydown',event=>{
   if(matterHud?.hud.ownsTextInput?.(event.target))return;
+  keepWorldTab(event);
   if(matterHud?.settings.group||worldHistory?.native||matterHud?.visit.indexActive||matterHud?.visit.viewerActive){
     if(matterHud.settingsKey(event))event.preventDefault();
     event.stopImmediatePropagation();
@@ -818,7 +859,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     let sceneryAfter=null,releaseTableFlight=null,releaseSearchKeys=null;
     const releaseFlightAnimation=bindFlightAvatarAnimation(renderer.characterManager,()=>({
       outdoor:outsideRing(),flying:flightEnabled,table:tableFlight.active,tabletopPlayers:collectionShelves.tabletopPlayers,
-      crouch:!moving&&client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('shift'),
+      crouch:!moving&&client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt'),
     }));
     const releaseHologram=bindMatterHologram(renderer.characterManager,tableFlight,()=>collectionShelves.tabletopPlayers);
     const tableInputAllowed=()=>!moving&&!entering&&!document.hidden&&!mapPanel.open&&
@@ -1007,10 +1048,10 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     queueMicrotask(()=>{
       if(client.keyInputManager){
         const keys=client.keyInputManager,shouldCapture=keys.shouldCaptureKeyPress;
-        keys.getRun=function(){return this.isKeyPressed('control');};
+        const releaseRun=bindWorldKeyShortcuts(keys);
         const capture=()=>!matterHud?.hud.ownsTextInput(document.activeElement)&&shouldCapture.call(keys);
         keys.shouldCaptureKeyPress=capture;
-        releaseSearchKeys=()=>{if(keys.shouldCaptureKeyPress===capture)keys.shouldCaptureKeyPress=shouldCapture;};
+        releaseSearchKeys=()=>{releaseRun();if(keys.shouldCaptureKeyPress===capture)keys.shouldCaptureKeyPress=shouldCapture;};
       }
       releaseHeadroom=bindInteriorHeadroom(client.getCharacterManager(),()=>inside);
       releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing,()=>flightEnabled);

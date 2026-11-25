@@ -43,7 +43,7 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false) {
       Number(Boolean(keyInputManager.getJump()||control?.jump))-Number(keyInputManager.isKeyPressed('shift')):0;
     const previousHeight=motion.height;
     motion.update(seconds, {forward: moving ? 1 : 0, yaw, sprint:control?.isSprinting,
-      jump: !flying&&!motion.swimming&&control?.jump,flight:flying,vertical,crouch:!flying&&!wet&&keyInputManager.isKeyPressed('shift')});
+      jump: !flying&&!motion.swimming&&control?.jump,flight:flying,vertical,crouch:!flying&&!wet&&keyInputManager.isKeyPressed('alt')});
     let state = motion.pose();
     const radius = controller.capsuleInfo.radius;
     const height = controller.capsuleInfo.segment.end.y;

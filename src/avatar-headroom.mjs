@@ -36,7 +36,7 @@ export function bindInteriorHeadroom(manager,inside){
     local.applyControls=function(...step){
       const {position,collisionsManager}=this.config;
       const before=position.y,x=position.x,z=position.z;
-      const crouch=this.characterOnGround&&this.config.keyInputManager.isKeyPressed('shift')&&
+      const crouch=this.characterOnGround&&this.config.keyInputManager.isKeyPressed('alt')&&
         !this.config.keyInputManager.getJump();
       controls.apply(this,step);
       if(crouch){

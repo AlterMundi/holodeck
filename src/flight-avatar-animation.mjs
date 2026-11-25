@@ -9,7 +9,8 @@ export function bindFlightAvatarAnimation(manager,context){
   const update=manager.update;
   const actors=new Map();
   const angles=new Euler(),turn=new Quaternion(),pitch=new Quaternion();
-  const displacement=new Vector3(),up=new Vector3();
+  const displacement=new Vector3(),up=new Vector3(),right=new Vector3(),localAxis=new Vector3();
+  const bodyFacing=new Quaternion(),boneFacing=new Quaternion(),bend=new Quaternion();
   function restore(entry){
     for(const [bone,neutral] of entry.modified)bone.quaternion.copy(neutral);
     if(entry.rotation?.equals(entry.applied))entry.rotation.copy(entry.unpitched);
@@ -59,6 +60,10 @@ export function bindFlightAvatarAnimation(manager,context){
       pitch.setFromAxisAngle(pitchAxis,(underwater?1.17:atTable?.76:.91)*w+.13*entry.lowWeight);
       entry.rotation=character.quaternion;
       entry.unpitched.copy(entry.rotation);
+      if(entry.lowWeight>0||entry.hoverWeight>0||w>0){
+        character.getWorldQuaternion(bodyFacing);
+        right.copy(pitchAxis).applyQuaternion(bodyFacing);
+      }
       entry.rotation.multiply(pitch);
       entry.applied.copy(entry.rotation);
       const strokeAmplitude=underwater?.58:.16;
@@ -72,11 +77,20 @@ export function bindFlightAvatarAnimation(manager,context){
         const neutral=entry.modified.get(bone)??new Quaternion();
         neutral.copy(bone.quaternion);
         entry.modified.set(bone,neutral);
-        const crouchSwing=index<4?0:(index<6?-.42:.64)*entry.lowWeight;
         const hoverBend=index<2?.22:index<4?-.32:index<6?-.24:.44;
         const hoverSpread=index<2?polarity*.23:0;
-        angles.set(w*sweep*polarity+entry.hoverWeight*hoverBend+crouchSwing,0,w*offset+entry.hoverWeight*hoverSpread);
-        bone.quaternion.multiply(turn.setFromEuler(angles));
+        const motionBend=w*sweep*polarity+entry.hoverWeight*hoverBend;
+        if(index<4){
+          angles.set(motionBend,0,w*offset+entry.hoverWeight*hoverSpread);
+          bone.quaternion.multiply(turn.setFromEuler(angles));
+        }else{
+          // These rigs have mirrored leg bones along local X. Bend around
+          // the character's lateral axis, not around each bone's length.
+          const crouchBend=(index<6?-.42:.64)*entry.lowWeight;
+          bone.getWorldQuaternion(boneFacing);
+          localAxis.copy(right).applyQuaternion(boneFacing.invert());
+          bone.quaternion.multiply(bend.setFromAxisAngle(localAxis,motionBend+crouchBend));
+        }
       }
     }
     for(const id of actors.keys())if(!state.characters.has(id))actors.delete(id);
