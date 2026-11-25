@@ -44,10 +44,17 @@ test('the Blender companion keeps all authored clips and a free playback jaw',()
  assert.equal(glb.toString('ascii',0,4),'glTF');
  const contents=JSON.parse(glb.toString('utf8',20,20+glb.readUInt32LE(12)));
  const jaw=contents.nodes.findIndex(node=>node.name==='anchor-mouth');
- assert.ok(jaw>=0);
- assert.deepEqual(contents.animations.map(animation=>animation.name),Object.keys(design.avatarModel.animations));
- for(const {channels} of contents.animations){
-  assert.ok(channels.length>20);
+ assert.equal(contents.skins.length,1);
+ assert.ok(contents.skins[0].joints.includes(jaw));
+ assert.ok(contents.nodes.some(node=>node.skin===0));
+ assert.deepEqual(contents.animations.map(animation=>animation.name),[...Object.keys(design.avatarModel.animations),'walk']);
+ for(const {name,channels,samplers} of contents.animations){
+  assert.ok(channels.length>0);
   assert.ok(channels.every(channel=>channel.target.node!==jaw));
+  assert.ok(channels.every(channel=>contents.skins[0].joints.includes(channel.target.node)));
+  assert.ok(samplers.every(({input})=>contents.accessors[input].min[0]===0));
+  if(name==='walk')for(const leg of ['leg-left','leg-right','shin-left','shin-right']){
+   assert.ok(channels.some(({target})=>contents.nodes[target.node].name===leg&&target.path==='rotation'));
+  }
  }
 });

@@ -925,6 +925,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       }
       nativeAvatarLayer.update();
       companion.update({position,yaw,outdoor:outsideRing(),table:tableFlight,
+        grounded:!flightEnabled&&client.getCharacterManager().localController?.characterOnGround===true,
         visible:!entering&&!moving&&drawWorld,seconds:renderState.deltaTimeSeconds});
       galleryModels.update();
       const collectionRoom=inside&&!moving&&activeSpace.collectionShelves?activeSpace.id:null;

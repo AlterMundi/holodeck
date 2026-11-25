@@ -4,6 +4,7 @@ import json
 import math
 from array import array
 from pathlib import Path
+from mathutils import Vector
 
 import bpy
 
@@ -20,6 +21,7 @@ LIMBS = {"leg": (.10, -.009), "arm": (.089, .003), "forearm": (.076, .012),
          "palm": (.055, .025), "elbow": (.032, .016), "wrist": (.034, .024),
          "eye-back": (.007, .055), "eye": (.007, .064),
          "brow-back": (.006, .056), "brow": (.007, .065)}
+KNEES = {"leg-left": (230, 584), "leg-right": (332, 584)}
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
@@ -94,7 +96,7 @@ def silhouette(node):
     return []
 
 
-def part(node, parent):
+def part(node, armature):
     polygon = silhouette(node)
     if not polygon:
         return
@@ -121,7 +123,22 @@ def part(node, parent):
     mesh.update()
     obj = bpy.data.objects.new(f"{name} geometry", mesh)
     scene.collection.objects.link(obj)
-    obj.parent = parent
+    obj.parent = armature
+    obj.location = point(ORIGIN, node["pivot"])
+    weights = obj.vertex_groups.new(name=name)
+    if name in KNEES:
+        lower = obj.vertex_groups.new(name=name.replace("leg-", "shin-"))
+        knee = point(node["pivot"], KNEES[name])[2]
+        for index, (_, _, height) in enumerate(verts):
+            flex = max(0.0, min(1.0, .5 + (knee - height) / .056))
+            if flex < 1:
+                weights.add([index], 1 - flex, "REPLACE")
+            if flex > 0:
+                lower.add([index], flex, "REPLACE")
+    else:
+        weights.add(list(range(len(verts))), 1.0, "REPLACE")
+    deformation = obj.modifiers.new("Navegante rig", "ARMATURE")
+    deformation.object = armature
     if node["type"] == "raster":
         mesh.materials.append(art)
         mesh.materials.append(shell)
@@ -141,55 +158,82 @@ def part(node, parent):
         face.use_smooth = True
 
 
-root = bpy.data.objects.new("Navegante blanco", None)
-scene.collection.objects.link(root)
+rig = bpy.data.armatures.new("Navegante skeleton")
+armature = bpy.data.objects.new("Navegante blanco", rig)
+scene.collection.objects.link(armature)
+armature.show_in_front = True
+bpy.context.view_layer.objects.active = armature
+armature.select_set(True)
 nodes = {node["id"]: node for node in MODEL["nodes"]}
-rigs = {name: bpy.data.objects.new(name, None) for name in nodes}
-for name, obj in rigs.items():
-    node = nodes[name]
-    scene.collection.objects.link(obj)
-    obj.parent = rigs.get(node.get("parent"), root)
-    obj.location = point(nodes.get(node.get("parent"), {}).get("pivot", ORIGIN), node["pivot"])
-    part(node, obj)
+bpy.ops.object.mode_set(mode="EDIT")
+for name, node in nodes.items():
+    bone = rig.edit_bones.new(name)
+    bone.head = Vector(point(ORIGIN, node["pivot"]))
+    # The +Y rest axis matches the authored planar transforms; preserve
+    # independent locations for facial movement and overlapping rigid pieces.
+    bone.tail = bone.head + Vector((0, .085, 0))
+for name, node in nodes.items():
+    if node.get("parent") in nodes:
+        rig.edit_bones[name].parent = rig.edit_bones[node["parent"]]
+for leg, pivot in KNEES.items():
+    shin = rig.edit_bones.new(leg.replace("leg-", "shin-"))
+    shin.head = Vector(point(ORIGIN, pivot))
+    shin.tail = shin.head + Vector((0, .085, 0))
+    shin.parent = rig.edit_bones[leg]
+bpy.ops.object.mode_set(mode="OBJECT")
+for node in nodes.values():
+    part(node, armature)
+for bone in armature.pose.bones:
+    bone.rotation_mode = "XYZ"
 
-# Offsets mirror the author's x/y/rotation/scale tracks. Keep each paired
-# face and body animation in one named glTF clip via matching NLA track names.
-for pose, tracks in MODEL["animations"].items():
-    animated = set()
-    channels = {"x": ("location", 0, UNIT), "y": ("location", 2, -UNIT),
-                "rotate": ("rotation_euler", 1, 1), "scaleX": ("scale", 0, 1),
-                "scaleY": ("scale", 2, 1)}
+# Reuse the authored poses on deforming bones. Rigid vertex weights preserve
+# the ceramic shells and articulated joints as the rig moves.
+animations = dict(MODEL["animations"])
+animations["walk"] = [
+    {"node": name, "channel": "swing",
+     "frames": [math.sin(i * math.tau / 8) * amplitude for i in range(8)]}
+    for name, amplitude in [("leg-left", .62), ("leg-right", -.62),
+                            ("arm-left", -.23), ("arm-right", .23)]
+] + [
+    {"node": "torso", "channel": "y", "frames": [-4, -2, 0, -2, -4, -2, 0, -2]},
+    {"node": "shin-left", "channel": "swing", "frames": [0, .12, .36, .47, .18, 0, 0, 0]},
+    {"node": "shin-right", "channel": "swing", "frames": [.18, 0, 0, 0, 0, .12, .36, .47]},
+    {"node": "elbow-fold-left", "channel": "swing", "frames": [.22, .28, .3, .25, .22, .14, .12, .16]},
+    {"node": "elbow-fold-right", "channel": "swing", "frames": [.22, .14, .12, .16, .22, .28, .3, .25]},
+]
+data = armature.animation_data_create()
+channels = {"x": ("location", 0, UNIT), "y": ("location", 2, -UNIT),
+            "rotate": ("rotation_euler", 1, 1), "swing": ("rotation_euler", 0, 1),
+            "scaleX": ("scale", 0, 1), "scaleY": ("scale", 2, 1)}
+for name, tracks in animations.items():
+    clip = bpy.data.actions.new(name)
+    data.action = clip
     for track in tracks:
-        obj = rigs[track["node"]]
+        bone = armature.pose.bones[track["node"]]
         prop, axis, factor = channels[track["channel"]]
-        component = getattr(obj, prop)
+        component = getattr(bone, prop)
         rest = component[axis]
-        animated.add(obj)
         for i, value in enumerate([*track["frames"], track["frames"][0]]):
             component[axis] = rest * value if prop == "scale" else rest + value * factor
-            obj.keyframe_insert(data_path=prop, index=axis, frame=1 + i * 4)
+            bone.keyframe_insert(data_path=prop, index=axis, frame=1 + i * (3 if name == "walk" else 4))
         component[axis] = rest
-    for obj in sorted(animated, key=lambda item: item.name):
-        data = obj.animation_data
-        action = data.action
-        action.name = f"{pose} / {obj.name}"
-        for curve in action.layers[0].strips[0].channelbag(data.action_slot).fcurves:
-            for keyframe in curve.keyframe_points:
-                keyframe.interpolation = "LINEAR"
-        nla = data.nla_tracks.new()
-        nla.name = pose
-        nla.strips.new(action.name, 1, action)
-        data.action = None
-        nla.mute = pose != "calm"
+    for curve in clip.layers[0].strips[0].channelbag(data.action_slot).fcurves:
+        for keyframe in curve.keyframe_points:
+            keyframe.interpolation = "LINEAR"
+    data.action = None
+    nla = data.nla_tracks.new()
+    nla.name = name
+    nla.strips.new(name, 1, clip)
+    nla.mute = name != "calm"
 
 scene.frame_end = 49
 scene.frame_set(1)
 bpy.context.preferences.filepaths.save_version = 0
 bpy.ops.wm.save_as_mainfile(filepath=str(Path(__file__).with_suffix(".blend")))
-for obj in rigs.values():
-    if obj.animation_data:
-        for track in obj.animation_data.nla_tracks:
-            track.mute = False
+for track in data.nla_tracks:
+    track.mute = False
 bpy.ops.export_scene.gltf(filepath=str(ASSETS / "navegante-blender.glb"), export_format="GLB",
                           export_animation_mode="NLA_TRACKS", export_frame_range=False,
-                          export_force_sampling=True, export_yup=True)
+                          export_force_sampling=True, export_optimize_animation_keep_anim_armature=False,
+                          export_anim_slide_to_zero=True,
+                          export_yup=True)
