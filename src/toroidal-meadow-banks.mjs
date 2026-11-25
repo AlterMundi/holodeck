@@ -6,11 +6,11 @@ import {terrainElevation,terrainPosition,terrainTrail,TOROIDAL_TERRAIN} from './
 // Offsets use the existing trail's local metres. Each pocket reads as one
 // bank, with a broken outline and open ground between pockets.
 const beds=[
-  {x:-12,z:22,across:4.8,along:7.0,heading:-.42,count:28},
-  {x:12,z:33,across:5.2,along:10.8,heading:.47,count:35},
-  {x:-25,z:34,across:7.0,along:12.4,heading:.63,count:43},
-  {x:-41,z:9,across:9.0,along:14.0,heading:-.52,count:40},
-  {x:-20,z:58,across:8.5,along:11.6,heading:-.57,count:38},
+  {x:-10,z:23,across:3.2,along:5.8,heading:-.42,count:63},
+  {x:11,z:31,across:4.6,along:7.8,heading:.47,count:75},
+  {x:-23,z:33,across:4.8,along:8.4,heading:.63,count:82},
+  {x:-34,z:8,across:5.5,along:9.3,heading:-.52,count:76},
+  {x:-19,z:55,across:5.8,along:10.0,heading:-.57,count:71},
 ];
 const goldenAngle=Math.PI*(3-Math.sqrt(5));
 const tint=[0xfff3d7,0xe4edd2,0xe5ebce,0xffeec4,0xf5f7de];
@@ -18,26 +18,42 @@ const tint=[0xfff3d7,0xe4edd2,0xe5ebce,0xffeec4,0xf5f7de];
 function random(bed,index,salt) {
   let key=Math.imul(index+1,0x45d9f3b)^Math.imul(bed+3,0x7feb352d)^salt;
   key=Math.imul(key^(key>>>16),0x21f0aaad);
+  key=Math.imul(key^(key>>>15),0x735a2d97);
   return ((key^(key>>>15))>>>0)/4294967296;
+}
+
+const boundary=[[0,0],...Array.from({length:8},(_,i)=>[Math.cos(i*Math.PI/4),Math.sin(i*Math.PI/4)])];
+function clearGround(x,z) {
+  // Include the whole swept canopy in the test and keep away from the
+  // authored parcel building, even when this visitor has no door access.
+  if(Math.abs(x)<6.25)return false;
+  return boundary.every(([dx,dz])=>{
+    const {u,v}=approachCoordinates(x+.82*dx,z+.82*dz);
+    return terrainTrail(u,v)<=.10;
+  });
 }
 
 export function meadowBankPlants(lightweight) {
   return beds.map(({x,z,across,along,heading,count},bed)=>{
     const plants=[];
     const s=Math.sin(heading),c=Math.cos(heading);
+    const lobes=7;
     for(let i=0;i<count;i++){
       const pick=salt=>random(bed,i,salt);
-      if(lightweight&&i>1&&pick(129)>.48)continue;
-      const angle=i*goldenAngle+pick(23)*.49;
-      const spread=Math.sqrt((i+.45)/count);
-      const edge=.80+.22*Math.cos(3*angle+heading)+.20*pick(37);
-      const a=Math.cos(angle)*spread*across*edge,b=Math.sin(angle)*spread*along*edge;
+      const lobe=i%lobes,row=Math.floor(i/lobes);
+      if(lightweight&&row&&pick(129)>.48)continue;
+      const center=lobe*goldenAngle+heading;
+      const radius=Math.sqrt(lobe/lobes)*(.76+.24*random(bed,lobe,33));
+      const angle=row*goldenAngle+pick(23)*.8;
+      const spread=Math.sqrt((row+.20)/Math.ceil(count/lobes));
+      const a=(Math.cos(center)*radius+Math.cos(angle)*spread*.33)*across;
+      const b=(Math.sin(center)*radius+Math.sin(angle)*spread*.33)*along;
       const point={x:x+a*c+b*s,z:z+b*c-a*s};
+      if(!clearGround(point.x,point.z))continue;
       const {u,v}=approachCoordinates(point.x,point.z);
       const h=terrainElevation(u,v);
-      if(terrainTrail(u,v)>.10||Math.abs(point.x)<5.4||point.z<1||
-        h<TOROIDAL_TERRAIN.waterLevel+3)continue;
-      const flowers=spread>.58&&pick(17)<.60;
+      if(h<TOROIDAL_TERRAIN.waterLevel+3)continue;
+      const flowers=spread>.48&&pick(17)<.55;
       const size=flowers?.44+.31*pick(51):(.66+.31*pick(51))*(1-.20*spread);
       plants.push({u,v,h,size,flowers,yaw:6.28319*pick(29),
         color:tint[Math.floor(pick(87)*tint.length)]});
@@ -60,9 +76,9 @@ function plantMesh(flowers,lightweight) {
   for(let i=0;i<bladeCount;i++){
     const angle=i*goldenAngle;
     const x=Math.cos(angle),z=Math.sin(angle);
-    const height=(flowers?.21:.58)+random(7,i,11)*(flowers?.14:.31);
+    const height=(flowers?.23:.57)+random(7,i,11)*(flowers?.15:.29);
     const lean=(flowers?.26:.35)+random(8,i,15)*.20;
-    const width=(lightweight?.063:.042)+random(9,i,37)*.021;
+    const width=(lightweight?.075:.052)+random(9,i,37)*.024;
     const palette=flowers?sprig:leaf;
     const point=(t,side)=>{
       const bend=.04+t*t*lean;
@@ -79,7 +95,7 @@ function plantMesh(flowers,lightweight) {
       previous=[left,right];
     }
     if(i>=(flowers?3:lightweight?1:3))continue;
-    const stemTop=(flowers?.46:.83)+random(10,i,39)*(flowers?.14:.19);
+    const stemTop=(flowers?.56:.83)+random(10,i,39)*(flowers?.15:.16);
     const span=(flowers?.21:.13)*(i+1)/3;
     const top=[span*x,stemTop,span*z];
     const root=[0,-.04,0],side=.022;
@@ -87,9 +103,9 @@ function plantMesh(flowers,lightweight) {
     if(flowers){
       for(let k=0;k<5;k++){
         const a=k*6.28319/5;
-        const petal=(offset,rise)=>[top[0]+.087*Math.cos(a+offset),stemTop+rise,top[2]+.087*Math.sin(a+offset)];
+        const petal=(offset,rise)=>[top[0]+.115*Math.cos(a+offset),stemTop+rise,top[2]+.115*Math.sin(a+offset)];
         triangle([top,petal(-.43,.018),petal(.43,.042)],
-          [0xddb46d,i===1?0xf5e9d8:0xaf8bbd,i===1?0xfff6de:0xd3b6e0]);
+          [0xddb46d,i===1?0xf5e9d8:0xa066b9,i===1?0xfff6de:0xd2a1ee]);
       }
     }else{
       const ear=.11;
@@ -135,17 +151,18 @@ export class ToroidalMeadowBanks {
     const clock=this.clock;
     if(!lightweight){
       material.customProgramCacheKey=()=> 'holodeck-meadow-breeze';
-      material.onBeforeCompile=shader=>{
-        before(shader);
+      material.onBeforeCompile=(shader,renderer)=>{
+        before.call(material,shader,renderer);
         shader.uniforms.meadowSeconds=clock;
         shader.vertexShader=shader.vertexShader
           .replace('#include <common>','#include <common>\nuniform float meadowSeconds;')
           .replace('#include <begin_vertex>',`#include <begin_vertex>
-            vec2 seed = instanceMatrix[3].xz;
+            vec2 seed = (modelMatrix*instanceMatrix[3]).xz;
             float gust = sin(meadowSeconds*1.35+dot(seed,vec2(.32,.21)));
             float bend = max(transformed.y,0.0);
-            transformed.x += .12*bend*bend*gust;
-            transformed.z += .054*bend*bend*gust;`);
+            vec3 wind = vec3(.12,0.0,.054)*bend*bend*gust;
+            transformed.x += dot(normalize(instanceMatrix[0].xyz),wind);
+            transformed.z += dot(normalize(instanceMatrix[2].xyz),wind);`);
       };
     }
     materials.push(material);

@@ -4,6 +4,7 @@ import {Scene,Vector3} from 'three';
 import {approachCover,ToroidalScenery} from '../src/toroidal-scenery.mjs';
 import {meadowBankPlants} from '../src/toroidal-meadow-banks.mjs';
 import {TOROIDAL_TERRAIN,terrainPosition,terrainTrail,TOROIDAL_SPAWN} from '../src/toroidal-terrain.mjs';
+import {approachCoordinates} from '../src/sand3d-trail.mjs';
 
 test('the meadow profiles share rooted banks outside the trail and dispose their instance buffers',()=>{
   const normal=meadowBankPlants(false),light=meadowBankPlants(true);
@@ -13,20 +14,37 @@ test('the meadow profiles share rooted banks outside the trail and dispose their
     assert.ok(plants.length>light[index].length);
     const selected=plants.filter(p=>light[index].some(q=>p.u===q.u&&p.v===q.v));
     assert.deepEqual(selected,light[index]);
-    assert.ok(plants.every(p=>terrainTrail(p.u,p.v)<=.10&&p.size<=1&&p.h>TOROIDAL_TERRAIN.waterLevel));
+    for(const plant of plants){
+      assert.ok(plant.size<=1&&plant.h>TOROIDAL_TERRAIN.waterLevel);
+      const x=(.25-plant.v)*2*Math.PI*(TOROIDAL_TERRAIN.tubeRadius+18);
+      const z=plant.u*2*Math.PI*TOROIDAL_TERRAIN.majorRadius;
+      assert.ok(Math.abs(x)>=6.25);
+      for(let i=0;i<8;i++){
+        const angle=i*Math.PI/4;
+        const {u,v}=approachCoordinates(x+.82*Math.cos(angle),z+.82*Math.sin(angle));
+        assert.ok(terrainTrail(u,v)<=.10);
+      }
+    }
   }
   const scene=new Scene(),cover=new ToroidalScenery(scene);
   const spawn=new Vector3(TOROIDAL_SPAWN.x,TOROIDAL_SPAWN.y,TOROIDAL_SPAWN.z);
   const batches=()=>cover.meadow.profiles.find(p=>p.group.visible).group.children;
   const triangleCount=()=>batches().reduce((total,batch)=>total+batch.count*batch.geometry.attributes.position.count/3,0);
   cover.update(spawn,false);
-  assert.equal(triangleCount(),10564);
+  assert.equal(triangleCount(),21342);
   assert.equal(batches().length,10);
   const original=batches()[0];
   cover.update(spawn,true);
-  assert.equal(triangleCount(),2466);
+  assert.equal(triangleCount(),4911);
   cover.update(spawn,false);
   assert.equal(batches()[0],original);
+  const threshold=spawn.clone().setZ(154);
+  cover.update(threshold,false);
+  assert.equal(cover.meadow.group.visible,true);
+  cover.update(threshold.clone().setZ(169),false);
+  assert.equal(cover.meadow.group.visible,false);
+  cover.update(threshold,false);
+  assert.equal(cover.meadow.group.visible,false);
   cover.update(new Vector3().fromArray(terrainPosition(.4,.25,25)),false);
   assert.equal(cover.meadow.group.visible,false);
   let disposed=false;

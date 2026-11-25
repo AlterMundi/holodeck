@@ -176,8 +176,9 @@ export class ToroidalScenery {
     const rows=2**LEVEL, columns=rows*TOROIDAL_TERRAIN.rootColumns;
     const cell=terrainTile(LEVEL,Math.floor(u*columns),Math.floor(v*rows));
     const doorKey=(door?.x??'')+':'+(door?.z??15.5)+':'+(door?.facing??-1);
-    const nearTrail=this.approach.distanceToSquared(position)<105**2;
-    this.meadow.update(nearTrail,Boolean(lightweight),performance.now());
+    const distance=this.approach.distanceToSquared(position);
+    const nearTrail=distance<105**2;
+    this.meadow.update(distance<(this.meadow.group.visible?142:124)**2,Boolean(lightweight),performance.now());
     const key=cell.key+':'+lightweight+':'+nearTrail+':'+doorKey;
     if(key===this.key)return;
     this.key=key;
