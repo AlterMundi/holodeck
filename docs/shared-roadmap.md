@@ -654,6 +654,13 @@ Mini App host can use its own fullscreen and safe-area events. Keep the
 compact layout usable in Telegram's ordinary in-app browser and wherever
 fullscreen is unavailable, denied or exited. Qualify both launch routes
 before claiming the client navigation bar is hidden.
+
+The deployed short landscape slice uses circular optical movement controls,
+a centered icon strip, a user-activated fullscreen shortcut and motion-based
+suppression of ancillary chrome. Compact touch suspends locomotion while
+Conversation is open. See [installed evidence](STATUS.md#november-25-clear-touch-controls-in-landscape)
+and [HUD #16](https://github.com/AlterMundi/holodeck/issues/16). Real Android
+Telegram and the canonical audio-only presentation remain open.
 [Web Fullscreen API](https://developer.mozilla.org/en-US/docs/Web/API/Element/requestFullscreen)
 and [Telegram Mini Apps](https://core.telegram.org/bots/webapps).
 
