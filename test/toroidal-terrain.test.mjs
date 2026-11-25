@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {Group,Vector3} from 'three';
-import {ToroidalWoodland,woodlandTrees} from '../src/toroidal-woodland.mjs';
+import {Group,Matrix4,Vector3} from 'three';
+import {innerWoodlandTrees,ToroidalWoodland,woodlandTrees} from '../src/toroidal-woodland.mjs';
 import {
   TOROIDAL_TERRAIN, TOROIDAL_PARCEL_Y, TOROIDAL_OVERLOOK, TERRAIN_EDGES, buildTerrainTile, selectTerrainTiles,
   terrainColor, terrainCoordinates, terrainElevation, terrainFrame, terrainMeadowMoisture, terrainPosition, terrainTile, terrainTrail, terrainWoodland, toroidalParcelPoint,
@@ -178,5 +178,39 @@ test('woodland representation changes preserve roots and release nearby trunk co
   assert.deepEqual(Array.from(active),collision);
   woodland.dispose();
   assert.equal(scene.children.length,0);
+  assert.equal(active.size,0);
+});
+
+test('a distant inner crown becomes the same rooted tree near the grove', () => {
+  const trees=innerWoodlandTrees();
+  assert.deepEqual(trees,innerWoodlandTrees());
+  assert.ok(trees.length>200&&trees.length<450);
+  assert.equal(new Set(trees.map(tree=>tree.u+':'+tree.v)).size,trees.length);
+  const sample=trees.find(({u})=>u>.52&&u<.54);
+  const point=new Vector3().fromArray(terrainPosition(sample.u,sample.v,sample.h));
+  near(terrainWoodland(sample.u,sample.v,sample.h),
+    terrainWoodland(sample.u+1,sample.v-1,sample.h));
+  const scene=new Group(),active=new Set();
+  const woodland=new ToroidalWoodland(scene,{
+    addCollider:mesh=>active.add(mesh),
+    removeCollider:mesh=>assert.ok(active.delete(mesh)),
+  },()=>{},null);
+  const matrix=new Matrix4(),root=new Vector3();
+  const find=mesh=>{
+    for(let index=0;index<mesh.count;index++){
+      mesh.getMatrixAt(index,matrix);
+      if(root.setFromMatrixPosition(matrix).distanceTo(point)<.001)return matrix.toArray();
+    }
+  };
+  const viewpoint=new Vector3().fromArray(terrainPosition(TOROIDAL_OVERLOOK.u,TOROIDAL_OVERLOOK.v,45));
+  woodland.update(viewpoint,true);
+  const far=find(woodland.meshes[3]);
+  assert.ok(far);
+  assert.equal(find(woodland.meshes[2]),undefined);
+  woodland.update(point,true);
+  assert.deepEqual(find(woodland.meshes[2]),far);
+  assert.equal(find(woodland.meshes[3]),undefined);
+  assert.ok(active.size>0);
+  woodland.dispose();
   assert.equal(active.size,0);
 });
