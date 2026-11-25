@@ -370,6 +370,11 @@ export class ToroidalTerrainRenderer {
     this.environment.daylight.value=solar.daylight;
   }
 
+  get hasDetailedTerrain() {
+    // Keep using the committed mesh while another viewer selection streams.
+    return this.selectedKey !== null;
+  }
+
   update(position, lightweight = false) {
     this.environment.meadowGrain.value=lightweight?0:1;
     if (!this.worker || ![position.x, position.y, position.z].every(Number.isFinite)) return;
