@@ -4,6 +4,7 @@ const bodyRadius=.32;
 const readings=[[.48,0],[.83,-.23],[.83,.23],[1.15,0]];
 const up=new Vector3(0,1,0);
 const detours=[Math.PI/4,-Math.PI/4,Math.PI/2,-Math.PI/2];
+const landingOffsets=[[0,1],[0,-1],[1,0],[-1,0]];
 
 // Ray queries inspect existing scene collision without changing the
 // player's collision position or emitting MML contact events.
@@ -44,26 +45,32 @@ export class CompanionRoomClearance{
     return true;
   }
 
-  chooseTarget(leader,target,colliders,grounded,fallback){
-    if(!grounded){
-      target.copy(this.hasTarget?this.lastTarget:fallback);
-      return;
+  chooseTarget(leader,target,colliders,grounded){
+    if(grounded&&this.selectSide(leader,target,colliders)){
+      this.lastTarget.copy(target);
+      this.hasTarget=true;
     }
-    this.selectSide(leader,target,colliders);
-    this.lastTarget.copy(target);
-    this.hasTarget=true;
+    if(this.hasTarget)target.copy(this.lastTarget);
+    return this.hasTarget;
   }
 
   selectSide(leader,target,colliders){
     // Compare against the actor's foot level, including on steps.
     target.y=leader.y;
-    if(this.clear(leader,target,colliders))return;
+    if(this.clear(leader,target,colliders))return true;
     this.shift.subVectors(target,leader);
     for(const angle of [-Math.PI/2,Math.PI/2,Math.PI]){
       this.candidate.copy(this.shift).applyAxisAngle(up,angle).add(leader);
-      if(this.clear(leader,this.candidate,colliders)){target.copy(this.candidate);return;}
+      if(this.clear(leader,this.candidate,colliders)){target.copy(this.candidate);return true;}
     }
-    target.copy(leader);
+    // Narrow stair landings need an offset along the steps, between the rails.
+    for(const [x,z] of landingOffsets){
+      this.candidate.copy(leader);
+      this.candidate.x+=.95*x;
+      this.candidate.z+=.95*z;
+      if(this.clear(leader,this.candidate,colliders)){target.copy(this.candidate);return true;}
+    }
+    return false;
   }
 
   step(from,next,colliders){

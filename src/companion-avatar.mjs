@@ -133,7 +133,11 @@ export class CompanionAvatar{
     const moving=!this.motion.matches&&!this.document.hidden;
     const height=(diving?.25:flying?.16:water?0:-.037)*scale;
     this.target.copy(position).add(this.relative.set(step,height,.45*step).applyQuaternion(angle));
-    if(avoidFurniture)this.roomClearance.chooseTarget(position,this.target,colliders,grounded||!samePlace,root.position);
+    if(avoidFurniture&&!this.roomClearance.chooseTarget(position,this.target,colliders,grounded||!samePlace)){
+      root.visible=false;
+      this.transfer.cancel();
+      return;
+    }
     if(small){
       table.bounds.clampPoint(this.target,this.target);
       if(Math.hypot(this.target.x-position.x,this.target.z-position.z)<scale*.8){
