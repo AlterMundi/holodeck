@@ -2,6 +2,24 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `021a19faa66ca120556f0ac9eea30f3cd78f19d7` combines Character
+Design with the selected Shaper revision `284c3d0`. Archive
+`72ea53b4de543e2563807f30d467def1977a60a937b13905040c119c168a4b93`
+matched all 87 payloads, including both compressed Lab assets from the
+protected release `edb3654520af`. In loopback Chromium the active Shaper
+station opened the focused body card and Instrumento view without starting
+the instrument or writing device state. The same visitor closed the
+panel, returned via the foyer, selected ground frame 57 in the Character
+table and left the table inside the room.
+
+The keyboard probe reproduced the same stationary stair landing with the
+exact protected archive and with the combined package on SwiftShader.
+Both recorded the W/S movement direction in the input manager while the
+controller reported no active controls. The fixture positioned the avatar
+near the station after observing that behavior. The protected predecessor
+has separate hardware evidence for stair and collision. Holodeck passed
+417 tests with two skips. Authentic shared Character review remains open.
+
 Source `1a7546680e81fd8698ea60d0e669fb000d644590` gives the desktop web
 HUD room for the full pose and note labels. Archive
 `fc7ae738b86348b179099ed0f7966a24087fba583d2666f293f12a05f926951b`
