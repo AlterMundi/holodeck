@@ -426,6 +426,16 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
     assert.equal(plaque.occlusionTexture,undefined);
     assert.equal(plaque.normalTexture,undefined);
     assert.equal(plaque.emissiveTexture,undefined);
+    const traceIndex=model.materials.findIndex(material=>material.name==='Beacon interference light');
+    assert.ok(traceIndex>=0);
+    const [red, green, blue]=model.materials[traceIndex].emissiveFactor;
+    assert.ok(green>red*4 && blue>red*4);
+    const traces=model.meshes.flatMap(mesh=>mesh.primitives).filter(primitive=>primitive.material===traceIndex);
+    assert.ok(traces.length>0);
+    for(const trace of traces){
+      const {min,max}=model.accessors[trace.attributes.POSITION];
+      assert.ok(min[1]>3.5 && max[1]<5.25);
+    }
   }
   const bounce=model=>{
     const {emissiveTexture}=model.materials.find(material=>material.name==='Honed honey limestone');

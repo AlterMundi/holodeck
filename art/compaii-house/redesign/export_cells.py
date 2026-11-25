@@ -30,8 +30,11 @@ FOYER_LETTERING = 'Foyer sign ivory'
 GALLERY_ENTRY_LETTERING = 'Gallery entry sign ivory'
 RETURN_LETTERING = 'Gallery return sign ivory'
 BEACON_LETTERING = 'Beacon plaque ivory'
-SOLID_LETTERING = (LAB_LETTERING, FOYER_LETTERING, GALLERY_ENTRY_LETTERING, RETURN_LETTERING, BEACON_LETTERING)
+BEACON_TRACE = 'Beacon interference light'
+SOLID_SURFACES = (LAB_LETTERING, FOYER_LETTERING, GALLERY_ENTRY_LETTERING,
+                  RETURN_LETTERING, BEACON_LETTERING, BEACON_TRACE)
 BEACON_STAIRS = ('Descending stair tread', 'Stair rail', 'Stone wall at stair')
+BEACON_VAULT = ('Smoked oak vault rib', 'Rib brass mounting shoe')
 FOYER_EXTERIOR = ('Stone plinth','Warm entrance floor','Entrance step','CASA DE COMPAII',
                   'Clerestory smoked glass','Vertical recessed window','Amber window sill',
                   'Right wing stone rib','Facade ')
@@ -195,13 +198,23 @@ def prepare_beacon_lettering(objects):
 def mesh_for(collection, origin, cell):
     scope = bpy.data.collections[collection]
     scope.hide_render = False
-    exclusions = {'beacon':BEACON_STAIRS, 'beacon-return':BEACON_STAIRS,
+    exclusions = {'beacon': BEACON_STAIRS + BEACON_VAULT,
+                  'beacon-return': BEACON_STAIRS + BEACON_VAULT,
                   'foyer':FOYER_EXTERIOR + FOYER_REMOVED_PIERS,
                   'foyer-gallery':FOYER_EXTERIOR + FOYER_REMOVED_PIERS,
                   'gallery':GALLERY_BASE,'gallery-sealed':GALLERY_BASE}.get(cell, ())
     objects = [obj for obj in scope.objects if not obj.name.startswith(exclusions)]
     if cell in ('beacon', 'beacon-return'):
         prepare_beacon_lettering(objects)
+        felt = bpy.data.materials['Blue gunmetal'].copy()
+        felt.name = 'Beacon acoustic felt'
+        shader = felt.node_tree.nodes.get('Principled BSDF')
+        shader.inputs['Base Color'].default_value = (.027, .057, .072, 1)
+        shader.inputs['Metallic'].default_value = 0
+        shader.inputs['Roughness'].default_value = .92
+        for panel in objects:
+            if panel.name.startswith(('Stone chamber side', 'Rear limestone wall', 'Acoustic roof lining')):
+                panel.data.materials[0] = felt
     select(objects)
     bpy.ops.object.convert(target='MESH')
     bpy.ops.object.join()
@@ -495,6 +508,42 @@ def gallery_furniture():
     return pieces
 
 
+
+def beacon_vault(collection):
+    # Two offset rings echo the instrument below. Keep the assembly
+    # above the walkable volume, including the raised entrance landing.
+    trace = bpy.data.materials['Ivory lettering'].copy()
+    trace.name = BEACON_TRACE
+    shader = trace.node_tree.nodes.get('Principled BSDF')
+    shader.inputs['Base Color'].default_value = (.05, .53, .52, 1)
+    shader.inputs['Emission Color'].default_value = (.07, .68, .67, 1)
+    shader.inputs['Emission Strength'].default_value = .72
+    brass = bpy.data.materials['Satin brass']
+    objects = []
+    for side in (-1, 1):
+        for inset, radius, material in ((0, .066, brass), (.13, .021, trace)):
+            curve = bpy.data.curves.new('Beacon interference rib', 'CURVE')
+            curve.dimensions = '3D'
+            curve.bevel_depth = radius
+            curve.bevel_resolution = 1
+            path = curve.splines.new('POLY')
+            count = 96
+            path.points.add(count - 1)
+            for index, point in enumerate(path.points):
+                phase = 2 * pi * index / count
+                point.co = (
+                    side * 1.48 + (3.34 - inset) * cos(phase),
+                    -.75 + (3.76 - inset) * sin(phase) + side * .46 * cos(phase),
+                    4.34 + .49 * cos(2 * phase + side * 1.17) + side * .12 - inset * .34,
+                    1,
+                )
+            path.use_cyclic_u = True
+            curve.materials.append(material)
+            rib = bpy.data.objects.new(curve.name, curve)
+            collection.objects.link(rib)
+            objects.append(rib)
+    return objects
+
 def register_beacon(obj):
     # Preserve the existing 12m cell and the west stair passage. The rendered
     # chamber extends south from the stair and leaves the original steps free.
@@ -506,7 +555,7 @@ def register_beacon(obj):
     brass = bpy.data.materials['Satin brass']
     basalt = bpy.data.materials['Split basalt']
     iron = bpy.data.materials['Blue gunmetal']
-    pieces = [obj]
+    pieces = [obj, *beacon_vault(obj.users_collection[0])]
 
     def piece(name, at, size, mat, tilt=0, bevel=.015, segments=3):
         bpy.ops.mesh.primitive_cube_add(size=1, location=at)
@@ -643,8 +692,8 @@ def portable_materials(obj, color, normal, contact=None, bounce=None):
         for node in list(nodes):
             if node not in (shader, nodes.get('Material Output')):
                 nodes.remove(node)
-        # Tiny bevels and glyph faces stay crisp in their solid sign material.
-        if mat.name in SOLID_LETTERING:
+        # Keep glyph faces and narrow light traces crisp in their solid materials.
+        if mat.name in SOLID_SURFACES:
             links.new(shader.outputs['BSDF'], nodes.get('Material Output').inputs['Surface'])
             continue
         color_node = nodes.new('ShaderNodeTexImage')
