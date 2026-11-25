@@ -45,7 +45,7 @@ export function bindHudPanelWindow(panel,{move,resize,readInsets=()=>({})}){
       ...dimensions,touch:coarse.matches&&window.navigator.maxTouchPoints>0&&safe.movementReady,
       visualHeight:viewport?.height??dimensions.height,zoom:viewport?.scale??1,
     },lane);
-    let nextEdge=next==='side'?240+(safe.left??12):next==='bottom'?safe.travelBottom:0;
+    let nextEdge=next==='side'?254+(safe.left??12):next==='bottom'?safe.travelBottom:0;
     if(next==='bottom'&&dimensions.height-nextEdge-Math.max(10,safe.top??0)<280||
        next==='side'&&dimensions.width-nextEdge-Math.max(8,safe.right??0)<280){
       next='';nextEdge=0;

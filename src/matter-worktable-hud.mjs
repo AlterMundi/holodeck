@@ -722,7 +722,7 @@ export class MatterWorktableHud{
       const movementScale=lane?conversationMovementScale:width<380?145:166;
       const movementTop=Math.max(34,barTop-.64*movementScale-14);
       if(this.movementGroups.size){
-        const jumpCenter=lane==='side'?left+146:width-right-.34*movementScale;
+        const jumpCenter=lane==='side'?left+180:width-right-.34*movementScale;
         this.place(this.movementGroups.get(movementStick),'stickPlacement',viewport,left+.40*movementScale,movementTop,movementScale);
         this.place(this.movementGroups.get(movementJump),'jumpPlacement',viewport,jumpCenter,
           movementTop+.07*movementScale,movementScale);
