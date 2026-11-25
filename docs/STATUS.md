@@ -1,5 +1,24 @@
 # Current MVP work
 
+## November 25 skeletal Navegante
+
+The protected release is `8e6647b2b23c`, built from `b87e1ed` on the
+previous selected source. `0f5b5c10a971` remains the rollback. The white
+Navegante now uses an editable Blender armature and a skinned GLB with 47
+joints. Its nine authored poses remain in the asset. The follower blends a
+knee-and-elbow walking cycle while moving on the ground, retains its face pose
+animation, and uses a separate playback-driven jaw bone.
+
+Opus 5.5 High caught the local jaw axis, competing animation weights, missing
+ground gating, and stale skin bounds. The corrected candidate passed 319 tests
+with two skipped. A Chromium fixture measured 23.4 mm of downward jaw travel
+at full level, opposite leg rotations while walking, and no walk swing in air.
+It also exercised voice drop-off and reduced motion. These were controlled
+playback levels, not a physical voice session. All 80 installed files and the
+protected HTTPS GLB, browser bundle, terrain worker and health body matched.
+Receiving configuration, native world run, edition and access checks remained
+valid. The HUD art comparison remains a separate private review view.
+
 ## November 25 animated Navegante and exhibitions
 
 The protected Holodeck release is `0f5b5c10a971`, built from `d3f0512`
