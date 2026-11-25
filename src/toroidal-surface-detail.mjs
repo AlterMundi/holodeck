@@ -82,8 +82,22 @@ export function useToroidalWaterDetail(material) {
         #include <normal_fragment_maps>
         vec3 p = toroidalWorld;
         float distanceToWater = length(vViewPosition);
-        float holoShallow = 1.0 - smoothstep(0.0, 2.8, abs(toroidalShoreDepth));
+        float holoShallow = 1.0 - smoothstep(0.0, 2.8, max(0.0,toroidalShoreDepth));
         float waveFade = 1.0 - smoothstep(28.0, 110.0, distanceToWater);
+        // Medium swells survive after metre-scale normal detail falls below
+        // pixel size. Filter each band in screen space at grazing angles.
+        vec2 swellUV=ringTextureCoords(p)*vec2(.074,.044);
+        vec2 driftUV=vec2(.023,-.013)*toroidalSeconds;
+        float shoreward=ringNoise(swellUV+driftUV)-.5;
+        vec2 crossing=vec2(swellUV.x*.52+swellUV.y,swellUV.y*.31-swellUV.x)*2.0;
+        float offshore=ringNoise(crossing-driftUV*.83)-.5;
+        vec2 crossingFootprint=fwidth(crossing);
+        float crossingFilter=1.0-smoothstep(.31,.84,max(crossingFootprint.x,crossingFootprint.y));
+        vec2 footprint=fwidth(swellUV);
+        float swellFilter=1.0-smoothstep(.32,.9,max(footprint.x,footprint.y));
+        float holoSwell=shoreward*swellFilter*.64+offshore*crossingFilter*.36;
+        diffuseColor.rgb*=1.0+.38*holoSwell;
+        normal=normalize(normal+mat3(viewMatrix)*vec3(holoSwell*.026,0.0,-holoSwell*.019));
         if (waveFade > 0.001) {
           vec2 uv = ringTextureCoords(p);
           float eddies = ringNoise(uv*.21);

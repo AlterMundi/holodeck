@@ -150,7 +150,7 @@ export class CompanionAvatar{
       else this.perch.clear();
     }
     let speed=0,rise=0;
-    const separated=root.position.distanceToSquared(this.target)>(flying?16:13)**2;
+    const separated=root.position.distanceToSquared(this.target)>(explicitFlight?33:flying?16:13)**2;
     if(!samePlace||!moving||small)this.transfer.cancel();
     else if(!this.transfer.active&&(separated||
         avoidFurniture&&grounded&&this.roomClearance.needsTransfer(root.position,this.target,dt)))this.transfer.begin();
@@ -163,7 +163,7 @@ export class CompanionAvatar{
     // them at every stop.
     this.direction.subVectors(position,this.lastLeader);
     this.lastLeader.copy(position);
-    if(reset||!moving||small||dt<=0||this.direction.length()>Math.max(1.5,14*dt))this.leaderVelocity.set(0,0,0);
+    if(reset||!moving||small||dt<=0||this.direction.length()>Math.max(1.5,(explicitFlight?42:14)*dt))this.leaderVelocity.set(0,0,0);
     else{
       this.direction.addScaledVector(root.up,-this.direction.dot(root.up)).divideScalar(dt);
       this.leaderVelocity.lerp(this.direction,ease(dt,6));
@@ -182,15 +182,15 @@ export class CompanionAvatar{
       const deadZone=(small?.22:.25)*scale;
       const pace=this.leaderVelocity.length();
       const speedLimit=small?5.2*scale:swimming?5.4:
-        outdoor?maximumFollowSpeed:clamp(pace+1.4,6.4,maximumFollowSpeed);
-      const deceleration=small?6:gliding?9.5:10;
+        explicitFlight?clamp(pace+4,maximumFollowSpeed,29):outdoor?maximumFollowSpeed:clamp(pace+1.4,6.4,maximumFollowSpeed);
+      const deceleration=small?6:explicitFlight?24:gliding?9.5:10;
       const approach=Math.min(speedLimit,Math.sqrt(2*deceleration*Math.max(0,distance-deadZone)));
       this.wantedVelocity.copy(this.direction).setLength(distance>1e-6?approach:0);
-      if(this.leaderVelocity.lengthSq()>.04)this.wantedVelocity.addScaledVector(this.leaderVelocity,.25).clampLength(0,speedLimit);
+      if(this.leaderVelocity.lengthSq()>.04)this.wantedVelocity.addScaledVector(this.leaderVelocity,explicitFlight?.85:.25).clampLength(0,speedLimit);
       this.followVelocity.addScaledVector(root.up,-this.followVelocity.dot(root.up));
       const accelerating=this.followVelocity.dot(this.wantedVelocity)>=this.followVelocity.lengthSq();
       this.velocityChange.subVectors(this.wantedVelocity,this.followVelocity)
-        .clampLength(0,dt*(small?scale*1.4:1)*(accelerating?(small?4.5:7.5):deceleration));
+        .clampLength(0,dt*(small?scale*1.4:1)*(accelerating?(small?4.5:explicitFlight?39:7.5):deceleration));
       this.followVelocity.add(this.velocityChange);
       let travel=this.followVelocity.length()*dt;
       if(travel>distance&&this.followVelocity.dot(this.direction)>0)travel=distance;

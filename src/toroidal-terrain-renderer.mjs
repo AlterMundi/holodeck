@@ -64,15 +64,15 @@ const radialSunLights = `
 // Aerial perspective replaces the linear scene fog on the ring: nearby ridges
 // keep their dark value against the pale sky, each farther layer turns paler
 // and bluer, and the air warms toward the sun.
-const aerialPerspective = attenuation => `
+const aerialPerspective = (attenuation,strength=1) => `
   float low = max(0.0,min(vHoloHeight,holodeckEyeHeight));
   float high = max(0.0,max(vHoloHeight,holodeckEyeHeight));
   float verticalSpan=(high-low)/136.0;
   float average=verticalSpan<.01?1.0-.5*verticalSpan:(1.0-exp(-verticalSpan))/verticalSpan;
   float holoDensity=exp(-low/136.0)*average;
-  float holoHaze=(1.0-exp(-length(vViewPosition)*holoDensity/1730.0))*.91;
+  float holoHaze=(1.0-exp(-length(vViewPosition)*holoDensity/1240.0))*.86;
   vec3 holoAir = toroidalAir(dot(-holoView,holoSun),holodeckDaylight);
-  outgoingLight = mix(outgoingLight ${attenuation}, holoAir, holoHaze);
+  outgoingLight = mix(outgoingLight ${attenuation}, holoAir, holoHaze*${strength.toFixed(2)});
 `;
 const terrainShading = {
   color: `
@@ -194,11 +194,31 @@ const waterShading = {
     vec3 holoView = normalize(vViewPosition);
     float holoFresnel = pow(1.0 - clamp(dot(normal, holoView), 0.0, 1.0), 4.0);
     vec3 reflectedAir=toroidalAir(dot(reflect(-holoView,normal),holoSun),holodeckDaylight);
-    outgoingLight=mix((outgoingLight-totalSpecular)*mix(.25,1.0,holodeckDaylight),reflectedAir,
-      .06+.8*holoFresnel)+totalSpecular;
+    vec3 depths=(outgoingLight-totalSpecular)*mix(.25,1.0,holodeckDaylight);
+    depths+=holodeckDaylight*vec3(.025,.066,.084);
+    outgoingLight=mix(depths,reflectedAir,.10+.49*holoFresnel+holoSwell*.13);
     outgoingLight = mix(outgoingLight, vec3(.30, .49, .47),
       .38*holoShallow*(1.0-.8*holoFresnel)*holodeckDaylight);
-    ${aerialPerspective('')}
+    ${aerialPerspective('',.68)}
+    outgoingLight+=totalSpecular*(.65+.48*holoSwell)*(1.0-holoHaze*.68);
+  `,
+};
+
+const shoreShading={
+  output:waterShading.output+`
+    if(gl_FrontFacing && holodeckWaterViewDepth<=.014){
+      float depth=max(0.0,toroidalShoreDepth);
+      float incident=max(.28,dot(normal,holoView));
+      float transmission=exp(-.68*depth/incident);
+      float edge=smoothstep(0.0,.075,depth);
+      float opticalOpacity=mix(1.0-transmission,.80,holoFresnel);
+      opticalOpacity=mix(max(.04,opticalOpacity),1.0,smoothstep(2.30,3.5,depth));
+      float contact=smoothstep(.026,.105,depth)*(1.0-smoothstep(.13,.39,depth));
+      float ripple=smoothstep(.07,.28,holoSwell);
+      float whitewater=contact*ripple*.24*(1.0-smoothstep(16.0,49.0,distanceToWater));
+      outgoingLight=mix(outgoingLight,vec3(.61,.75,.69)*mix(.25,1.0,holodeckDaylight),whitewater);
+      diffuseColor.a=edge*max(opticalOpacity,whitewater);
+    }
   `,
 };
 
@@ -231,7 +251,7 @@ function artDirect(material, name, shading, environment) {
       if (holodeckWaterViewDepth > .014) {
         float scatter = 1.0 - exp(-length(vViewPosition) * (.055 + .006*min(12.0,holodeckWaterViewDepth)));
         outgoingLight = mix(outgoingLight*vec3(.4,.78,.82),vec3(.025,.152,.211)*mix(.26,1.0,holodeckDaylight),scatter);
-        ${name==='water'?`if (!gl_FrontFacing) {
+        ${name.startsWith('water')?`if (!gl_FrontFacing) {
           float glow = pow(clamp(abs(dot(normal,normalize(vViewPosition))),0.0,1.0),.7);
           outgoingLight = mix(outgoingLight,vec3(.18,.42,.49)*mix(.26,1.0,holodeckDaylight),.28+.28*glow);
         }`:''}
@@ -255,10 +275,11 @@ function meshFor(data, material) {
   return new Mesh(geometry,material);
 }
 
-function createTile(data, material, waterMaterial) {
+function createTile(data, material, waterMaterial, shoreMaterial) {
   const mesh = meshFor(data,material);
   if(data.water){
-    const water=meshFor(data.water,waterMaterial);
+    const shore=data.water.depth.some(depth=>depth<3.6);
+    const water=meshFor(data.water,shore?shoreMaterial:waterMaterial);
     water.name='Water surface';
     mesh.add(water);
   }
@@ -284,12 +305,17 @@ export class ToroidalTerrainRenderer {
     this.group.name = 'Toroidal terrain';
     this.material = new MeshStandardMaterial({vertexColors:true,roughness:.96});
     this.waterMaterial = new MeshStandardMaterial({color:0x19606f,roughness:.34,metalness:0,side:DoubleSide});
+    this.shoreMaterial=this.waterMaterial.clone();
+    Object.assign(this.shoreMaterial,{transparent:true,depthWrite:false,forceSinglePass:true});
     this.environment={water:{value:0},sun:{value:new Vector3(...SUN_LOCAL)},daylight:{value:1},
       approach:{value:1},eyeHeight:{value:0},sill:{value:new Vector3()},meadowGrain:{value:1}};
     useToroidalRockDetail(this.material,{meadow:true});
-    this.updateWaterTime=useToroidalWaterDetail(this.waterMaterial);
+    const openWaterTime=useToroidalWaterDetail(this.waterMaterial);
+    const shoreTime=useToroidalWaterDetail(this.shoreMaterial);
+    this.updateWaterTime=seconds=>{openWaterTime(seconds);shoreTime(seconds);};
     artDirect(this.material,'terrain',terrainShading,this.environment);
     artDirect(this.waterMaterial,'water',waterShading,this.environment);
+    artDirect(this.shoreMaterial,'water-shore',shoreShading,this.environment);
     this.active = new Map();
     this.target = null;
     this.requested = null;
@@ -298,7 +324,7 @@ export class ToroidalTerrainRenderer {
     this.disposed = false;
     for (let column = 0; column < TOROIDAL_TERRAIN.rootColumns; column += 1) {
       const tile = terrainTile(0, column, 0);
-      const mesh = createTile(buildTerrainTile(tile, ROOT_SEGMENTS), this.material, this.waterMaterial);
+      const mesh = createTile(buildTerrainTile(tile, ROOT_SEGMENTS), this.material, this.waterMaterial, this.shoreMaterial);
       this.active.set(tileKey(tile, ROOT_SEGMENTS), mesh);
       this.group.add(mesh);
     }
@@ -388,7 +414,7 @@ export class ToroidalTerrainRenderer {
       const missing = entries.filter(({key}) => !this.active.has(key));
       this.target = {key: job.request.key, entries, missing, segments, received: new Map()};
     } else if (job.kind === 'mesh' && job.target === this.target && job.target.key === this.requested.key) {
-      job.target.received.set(job.key, createTile(data.mesh, this.material, this.waterMaterial));
+      job.target.received.set(job.key, createTile(data.mesh, this.material, this.waterMaterial, this.shoreMaterial));
     }
     this.pump();
   }
@@ -436,6 +462,7 @@ export class ToroidalTerrainRenderer {
     this.group.removeFromParent();
     this.material.dispose();
     this.waterMaterial.dispose();
+    this.shoreMaterial.dispose();
   }
 
   status() {

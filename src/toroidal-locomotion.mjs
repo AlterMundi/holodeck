@@ -12,6 +12,7 @@ const FLIGHT_VERTICAL_SPEED = 5;
 const JUMP_SPEED = 5.8;
 const WALK_SPEED = 5;
 const RUN_SPEED = 8;
+const FLIGHT_BOOST_SPEED=25;
 const CROUCH_SPEED=1.65;
 const EDGE_DROP=.23;
 const FLOAT_DRAFT = .96;
@@ -63,7 +64,8 @@ export class ToroidalLocomotion {
   update(seconds, {right = 0, forward = 0, yaw = this.yaw, sprint = false, jump = false, flight = false, vertical = 0, crouch = false} = {}) {
     if (!Number.isFinite(seconds) || seconds <= 0 || ![right, forward, yaw].every(Number.isFinite)) return;
     const inputLength = Math.max(1, Math.hypot(right, forward));
-    const speed = (crouch&&!flight&&!this.swimming?CROUCH_SPEED:sprint?RUN_SPEED:WALK_SPEED) / inputLength;
+    const speed = (flight&&!this.swimming&&sprint?FLIGHT_BOOST_SPEED:
+      crouch&&!flight&&!this.swimming?CROUCH_SPEED:sprint?RUN_SPEED:WALK_SPEED) / inputLength;
     const sine = Math.sin(yaw), cosine = Math.cos(yaw);
     const ringTarget = (right * cosine + forward * sine) * speed;
     const crossTarget = (forward * cosine - right * sine) * speed;

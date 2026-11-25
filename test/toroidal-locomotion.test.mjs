@@ -194,3 +194,16 @@ test('crouching holds the lip of a ledge instead of walking off it',()=>{
   assert.ok(ordinary.v>.201);
   assert.equal(ordinary.height,-2);
 });
+
+test('boost flight travels at least three times the flat ground run speed',()=>{
+  const motion=height=>new ToroidalLocomotion({u:.02,v:.25,height,ground:()=>18});
+  const run=motion(18),fly=motion(32);
+  const speeds=[run,fly].map((pilot,index)=>{
+    const input={forward:1,sprint:true,flight:index===1};
+    const start=simulate(pilot,1,60,input).position;
+    const end=simulate(pilot,1,60,input).position;
+    return new Vector3().copy(end).distanceTo(start);
+  });
+  assert.ok(speeds[0]>7.9&&speeds[0]<8.1);
+  assert.ok(speeds[1]>=3*speeds[0]&&speeds[1]<25.1);
+});
