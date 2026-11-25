@@ -96,6 +96,10 @@ const facade={
 const fixture=(room,id,title,x,y,z)=>({id,title,kind:'fixture',position:{x,y,z},
   revision:Number.parseInt(ATELIER_ASSET_REVISIONS['room-art/compaii-atelier/'+room+'.glb'].slice(0,12),16)+1});
 const floorProfile={replacesShell:true,authoredExhibitBase:true};
+// Walkable faces measured in both packed room variants, after Blender Y
+// becomes negative room Z. Passage anchors remain on the walkable side.
+const foyerWallFaces={west:-5.55,east:5.55,north:-5.605,south:5.528};
+const galleryWallFaces={west:-5.685,east:5.606,north:-5.86,south:5.62};
 const box=({x,y,z,w,h,d})=>`<m-cube x="${x}" y="${y}" z="${z}" width="${w}" height="${h}" depth="${d}" opacity="0" cast-shadows="false"></m-cube>`;
 const gardenVisual={asset:GARDEN_ASSET,revision:GARDEN_REVISION,x:0,y:0,z:0,sx:1,sy:1,sz:1,
   colliders:[
@@ -180,7 +184,7 @@ export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt())
     }
   }
   const asset=name=>assets.get(name+'.glb');
-  const foyerArt={...asset('foyer'),...floorProfile,ambient:.22,keyLight:foyerKey,authoredDoor:true,
+  const foyerArt={...asset('foyer'),...floorProfile,innerWallFaces:foyerWallFaces,ambient:.22,keyLight:foyerKey,authoredDoor:true,
     fixtures:[fixture('foyer','foyer-orientation-table','Mesa de orientación',0,.66,.16),
       fixture('foyer','foyer-bench','Banco del vestíbulo',-5.13,.582,1.18)],
     colliders:[
@@ -189,7 +193,7 @@ export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt())
       {x:-5.46,y:.86,z:1.18,w:.21,h:1.34,d:2.96},
     ].map(box).join(''),
     lightRig:softLight({id:'vestibule-practical',x:-2.83,y:1.78,z:-1.42,intensity:13,distance:6,color:'#ffbb75'})};
-  const galleryArt={...floorProfile,ambient:.40,colliders:galleryColliders,keyLight:galleryKey,
+  const galleryArt={...floorProfile,innerWallFaces:galleryWallFaces,ambient:.40,colliders:galleryColliders,keyLight:galleryKey,
     authoredPortal:{plaque:.438,light:.64},
     fixtures:[fixture('gallery','gallery-finished-plinth','Expositor central',2.5,.965,1.25),
       fixture('gallery','gallery-work-plinth','Expositor de trabajo',3.3945,1.1075,-.34944),

@@ -26,6 +26,23 @@ export function passageAt(room,link,index,destination,upperLanding=false) {
 const cube=(x,y,z,width,height,depth,color,attributes='')=>
   `<m-cube x="${x}" y="${y}" z="${z}" width="${width}" height="${height}" depth="${depth}" color="${color}"${attributes}></m-cube>`;
 
+// Art provides the room-facing planes. Put physical thickness outside the
+// walkable bounds so an authored lining cannot hide a second walkable lane.
+export function roomPerimeter(height,wall,end,visible,faces={}){
+  const {west=-5.9,east=5.9,north=-5.9,south=5.9}=faces;
+  const y=height/2;
+  const attributes=visible?'':' opacity="0" cast-shadows="false"';
+  const thickness=.2,pad=thickness/2;
+  const pieces=[
+    ['west',west-pad,(north+south)/2,thickness,south-north+2*thickness,wall],
+    ['east',east+pad,(north+south)/2,thickness,south-north+2*thickness,wall],
+    ['north',(west+east)/2,north-pad,east-west,thickness,end],
+    ['south',(west+east)/2,south+pad,east-west,thickness,end],
+  ];
+  return pieces.map(([name,x,z,width,depth,color])=>
+    cube(round(x),y,round(z),round(width),height,round(depth),color,attributes+` id="room-wall-${name}"`)).join('');
+}
+
 export function roomFloor(passages,color,visible=true) {
   const attributes=visible?'':' opacity="0" cast-shadows="false"';
   const holes=passages.filter(p=>p.rise<0).map(p=>{

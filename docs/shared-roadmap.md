@@ -939,7 +939,10 @@ along the southern ridge. The same field darkens the floor and thins the
 grass. Three opaque instanced canopy meshes preserve each root and crown
 scale across detail levels. The trunk collider uses the existing locomotion
 route. This qualifies the first meadow-to-woodland walk on both physical
-profiles. More species and the far canopy across the ring remain open.
+profiles. Six seeded stands now extend the same immutable roots and
+forest floor to the inner arc. A single distant batch tints their
+crowns with the sky palette, and the near representation preserves
+trunk collision. More species and longer physical traversal remain open.
 
 - **Near** — instance actual trunks and understory silhouettes, low-poly
   grass and alpha-cutout cards for leaves and small plants. Keep large,

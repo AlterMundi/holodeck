@@ -8,7 +8,7 @@ test('a doorway label sits forward of the approach point along the visible passa
   const label=indoorDoorLabelAnchor(door,'door');
   assert.ok(Math.abs(label.x+3)<1e-6);
   assert.ok(Math.abs(label.z+5.39)<1e-6);
-  assert.ok(label.y>2.1);
+  assert.equal(label.y,door.y+1.05);
   const portal=indoorDoorLabelAnchor(door,'portal');
   assert.equal(portal.z,door.z);
 });

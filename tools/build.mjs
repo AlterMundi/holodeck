@@ -11,6 +11,7 @@ ensureMmlServerAuthContext({check:true});
 // The pinned MML model resource aborts its own fetch when its last handle is
 // removed. Handle that specific rejection when a room is unmounted mid-load.
 // Keep every other load error observable and leave the installed package intact.
+// Collision-only primitives stay registered without submitting draw calls.
 const modelCancellation={
   name:'mml-model-cancellation',
   setup(api){
@@ -22,9 +23,16 @@ const modelCancellation={
       const start='    this.abortController = new AbortController();\n    _ThreeJSModelResource.getModelLoader().load(';
       const end='        modelHandle.handleLoaded(result);\n      }\n    }).finally(() => {';
       const source=bytes.toString('utf8');
+      const primitiveStart=source.indexOf('// src/elements/ThreeJSCube.ts');
+      const primitiveEnd=source.indexOf('// src/elements/ThreeJSDebugHelper.ts',primitiveStart);
+      const primitives=source.slice(primitiveStart,primitiveEnd);
+      const opacity='    this.material.opacity = opacity;';
+      if(primitiveStart<0||primitiveEnd<0||primitives.split(opacity).length!==3)
+        throw Error('Pinned MML collision-only primitives no longer match');
       if(source.split(start).length!==2||source.split(end).length!==2)
         throw Error('Pinned MML model resource no longer matches');
       return {loader:'js',contents:source
+        .replace(primitives,primitives.replaceAll(opacity,opacity+'\n    this.material.visible = opacity > 0;'))
         .replace(start,'    const request = this.abortController = new AbortController();\n    _ThreeJSModelResource.getModelLoader().load(')
         .replace(end,`        modelHandle.handleLoaded(result);
       }
