@@ -2,6 +2,17 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `73735199e2d49b74e75fbc8bc1e018c3580f90ab` fingerprints the compiled
+motion sampler for exact editions. Shading-only changes preserved the
+fingerprint, while changes to braking input and physical water level moved
+it. Archive `3e645734e929890927d0c37c166e4078782fc86996f6b4eb0f935c07e0d8320b`
+matched 87 payloads and changed only the browser bundle and pose catalog
+from the woodland candidate. Two Chromium fixture visitors and an own-native
+fixture matched the new editions on the ground and flight studies and
+exchanged a note. Holodeck passed 421 tests with two skips. Candidate
+links using the retired fingerprint remain tied to their corresponding
+build. Protected Home acceptance remains open.
+
 Source `5787cf46860202953803fc43514b5bcb7cc086a5` carries the meadow and
 woodland from the protected `251ab9f928e8` package into the Character
 candidate. Archive `256e73466a9d45c0d415ff81abeede189792eb7f14174ddf9fec872260162edc`
