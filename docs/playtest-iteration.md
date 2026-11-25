@@ -177,26 +177,30 @@ atomicity and prompted the uniqueness constraint, retry/failure tests and
 a compatibility migration fixture. A recreated reservation after expiry
 or a restored journal cannot prove the age of the original observation.
 
-The next receiving step must bind the acknowledged baseline to an actual
-native admission in the exact continuing thread and scope. Keep canonical
-retention, native admission and installation of the baseline as separate
-receipts. Persist the receiving order floor across baseline loss. On a late
-original, use only its frozen historical context and preserve the newest
-baseline. Send a full snapshot after a missing/invalid baseline and verify
-the complete changed, unchanged and loss sequence before opting in. The
-browser's separate receipt does not yet reduce the full native context.
-Keep the live legacy configuration until those receiving checks close.
+The candidate receiver now distinguishes a full snapshot, an unchanged
+capture and a delta in the direct native request. It advances the baseline
+only on the matching native acceptance. A restart, observed compaction or
+unprovable acceptance invalidates the selected baseline without discarding
+the reservation floor. An older accepted capture cannot move the latest
+baseline back. Routed native tasks keep their full source. Fable 5.2 High
+and Opus 5.5 High identified the concurrency, loss and stale-full cases.
+The candidate binds the exact payload at admission and marks every delta
+against its original. In the controlled native qualification, ordinary
+voice and text both preserve their own proof with no context attachment.
 
+The selected service still uses the legacy route. Sustained rollout needs
+an archival policy for sealed receipts and a verified distinction between
+a genuinely later observation and an expired earlier reservation created
+again. Resolve these before enabling reduction on the user's live pair.
 
-Holodeck now has a source-side planner and matching receiver reducer for full,
+The original Holodeck codec prototype defined a planner and reducer for full,
 delta and unchanged situations. The projection keeps distinct object, station,
 visit and piece selections, coarse client-reported position and a bounded
 summary of canonical work events. Capture timestamps, connection identifiers
 and derived work cursors are excluded from comparison. A receiver-selected lane
 scopes baselines to the current actor, being, world, room and writer generation.
-The existing full-attachment transport stays selected. Canonical Conversation
-still needs to retain the independent machine receipt and install the baseline
-at admission for both text and voice before the new path can be selected.
+At that stage, only the codec contract and the full-attachment transport had
+been exercised. The current receiving evidence is recorded above.
 
 Claude Code Opus 5.5 High reviewed the code twice. The corrections add monotonic
 receiving order and a retained order floor, keep full recovery from the exact
@@ -215,8 +219,8 @@ baseline back. An exact installed packet recovers its acknowledgment. Opus
 malformed but correctly hashed state; the corrections request the saved full
 packet for that exact original and reject malformed inputs before install.
 The receiving contract identifies the shared text/voice retention transaction.
-The deployed Conversation still uses the established full-file path until its
-writer retains the new machine receipt and the native delivery path is verified.
+The deployed Conversation still selects the established full-file path.
+The draft receiving implementation uses separate receipt and checkpoint proofs.
 
 ## Video and Appearance HUD
 
