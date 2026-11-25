@@ -56,7 +56,7 @@ Source `c82ebfb` introduces a separate transparent Three.js framebuffer for Matt
 
 The next toolbelt change makes the minimized Conversation and minimap actions and contextual Matter entry part of one bottom A2UI surface. The hidden legacy action handlers still own routing until their panels migrate. Claude Code confirmed `claude-opus-5-5` and returned a high-effort critique of the actual diff. Its findings drove touch-size layout, safe-area wrapping, focus restoration, separation of worktable and Conversation input, and a valid minimize target. A second focused review timed out. After corrections, controlled Chromium passed desktop and touch Matter entry, the minimap action, keyboard focus restoration, and the Conversation fixture's target, drag/resize, minimize/reopen and draft preservation. These checks do not cover every safe-area device, simultaneous visitors, or the Raspberry Pi performance budget.
 
-The captured toolbelt still compresses text horizontally in narrow controls at 1.5 DPR. The receiving evidence and requested reusable capability were posted to Proyección #5. [Proyección PR #6](https://github.com/AlterMundi/proyeccion/pull/6), merged with passing CI, supplies opt-in raster dimensions, measured ellipsis and bounded density for screen-space single-line labels. Opus 5.5 High reviewed the actual change. The correction preserves choice suffixes, the complete accessible label and the currently open menu through density changes, and bounds the raster area. All 16 spatial HUD browser tests passed. The Holodeck candidate pins the reviewed source and uses the layer's actual display ratio for its toolbelt and Matter controls. Multiline and field labels remain to migrate. Continue with density-aware lettering and the native surface cutovers. The minimap panel and the legacy world composer still have native HTML. Measure text, frame-time cost and context recovery. Complete desktop/Pi and multi-visitor checks on the selected package before switching the protected release.
+The captured toolbelt still compresses text horizontally in narrow controls at 1.5 DPR. The receiving evidence and requested reusable capability were posted to Proyección #5. [Proyección PR #6](https://github.com/AlterMundi/proyeccion/pull/6), merged with passing CI, supplies opt-in raster dimensions, measured ellipsis and bounded density for screen-space single-line labels. Opus 5.5 High reviewed the actual change. The correction preserves choice suffixes, the complete accessible label and the currently open menu through density changes, and bounds the raster area. All 16 spatial HUD browser tests passed. The Holodeck candidate pins the reviewed source and uses the layer's actual display ratio for its toolbelt and Matter controls. Multiline and field labels remain to migrate. Continue with density-aware lettering and the native surface cutovers. The legacy world composer still has native HTML. Measure text, frame-time cost and context recovery. Complete desktop/Pi and multi-visitor checks on the selected package before switching the protected release.
 
 ## Conversation window qualification
 
@@ -81,6 +81,23 @@ resize, a rendered minimize action, restore, stable iframe and draft, and
 viewport clamping. The same tests passed on exact archive `775be6260aa8`
 from `e8362e3` (33,454,080 bytes). Hardware and live receiving checks
 remain open.
+
+## Map qualification
+
+The toolbelt opens a native Three.js A2UI map for the toroidal exterior or
+interior, with painted terrain or projected door/player marks, destination
+paging, close/focus restoration and the existing checked return route. The
+host keeps the same room-travel authority and validates a drawn destination
+against the current scope and exact location. The previous browser map
+remains a layout/state adapter and a compatibility presentation outside the
+mounted HUD. The bearing badge after the map closes remains in the native
+surface inventory.
+
+Opus 5.5 High reviewed the implemented map in the focused run. It identified
+a retained raster that could reopen stale and a stale/default heading at a
+scope change. The corrections preserve a fresh raster even while the HUD is
+suppressed, clear the old viewer and wait for known orientation. Tests cover
+stale destination and room events, busy exit and hidden raster painting.
 
 ## Matter inspection qualification
 

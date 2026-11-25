@@ -1,4 +1,5 @@
 import {OrthographicCamera,Raycaster,Scene,Vector2} from 'three';
+import {WorldMapHud,worldMapId} from './world-map-hud.mjs';
 import {HudRenderLayer} from './hud-render-layer.mjs';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
 
@@ -66,7 +67,7 @@ const work=[
 const movement=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE']);
 
 export class MatterWorktableHud{
-  constructor({document,webgl,table,onActive,canEnter=()=>true,onError,readTools,activateTool}){
+  constructor({document,webgl,table,onActive,canEnter=()=>true,onError,readTools,activateTool,navigation}){
     Object.assign(this,{document,webgl,table,onActive,canEnter,readTools,activateTool,scope:0,toolScope:0,mode:null,blocked:false});
     this.canvas=webgl.domElement;
     this.layer=new HudRenderLayer(webgl);
@@ -86,11 +87,18 @@ export class MatterWorktableHud{
     this.toolInset.className='holodeck-tool-inset';
     this.toolInset.setAttribute('aria-hidden','true');
     document.body.append(this.a11y,this.toolInset);
+    this.map=new WorldMapHud({...navigation,send:(type,content,id)=>this.send(type,content,id),
+      focusLauncher:()=>this.focusTool('map'),invalidate:this.layer.invalidate});
     this.hud=createSpatialHud({parent:this.scene,document,accessibilityRoot:this.a11y,
-      placeSurface:(group,id)=>{if(id===toolbeltId)this.toolGroup=group;else this.group=group;},
+      placeSurface:(group,id)=>{
+        if(id===toolbeltId)this.toolGroup=group;
+        else if(id===worldMapId)this.map.group=group;
+        else this.group=group;
+      },
       send:({action:requested})=>{
         if(!requested)return;
         if(requested.surfaceId===toolbeltId)this.handleTool(requested);
+        else if(requested.surfaceId===worldMapId)this.map.activate(requested);
         else this.handleAction(requested);
       },onTransportError:onError,
     });
@@ -101,7 +109,7 @@ export class MatterWorktableHud{
   }
 
   rayForPointer(event){
-    if(!this.toolGroup&&!this.group)return;
+    if(!this.toolGroup&&!this.group&&!this.map.group)return;
     const rect=this.canvas.getBoundingClientRect();
     if(!rect.width||!rect.height)return;
     this.pointerPosition.set((event.clientX-rect.left)*2/rect.width-1,1-(event.clientY-rect.top)*2/rect.height);
@@ -271,6 +279,7 @@ export class MatterWorktableHud{
   }
 
   key(event){
+    if(this.map.group&&event.key==='Escape'&&!event.defaultPrevented){this.map.close();return true;}
     if(this.active&&event.key==='Escape'&&!event.defaultPrevented){this.leave();return true;}
     if(this.ownsAccessibleInput(event.target))return false;
     const modifier=event.altKey||event.metaKey||event.ctrlKey;
@@ -310,7 +319,7 @@ export class MatterWorktableHud{
   }
 
   draw(additional){
-    if(!this.toolGroup&&!this.group&&!additional){this.layer.hide();return;}
+    if(!this.toolGroup&&!this.group&&!this.map.group&&!additional){this.layer.hide();return;}
     const {clientWidth:width,clientHeight:height}=this.canvas;
     if(!width||!height)return;
     const viewport={width,height};
@@ -321,7 +330,15 @@ export class MatterWorktableHud{
       const barTop=height-bottom-(this.toolLayout.height+.035)*toolScale;
       this.place(this.toolGroup,'toolPlacement',viewport,(width+left-right)/2,barTop,toolScale);
     }
+    if(this.map.group){
+      const {left,right}=this.toolInsets();
+      const top=width<700&&height>=610?132:76;
+      const scale=Math.min(250,(width-left-right)/1.28,Math.max(30,height-top-69)/1.82);
+      this.place(this.map.group,'mapPlacement',viewport,width-right-scale*.64,top,scale);
+    }
     this.hud.update();
+    this.map.decoration();
+    if(this.map.group)this.map.panel.dataset.nativeMap='';
     if(Boolean(additional)!==this.composingAdditional){
       this.composingAdditional=Boolean(additional);
       this.layer.invalidate();
@@ -335,6 +352,7 @@ export class MatterWorktableHud{
     this.unbind();
     this.events.abort();
     this.layer.dispose();
+    this.map.dispose();
     this.hud.dispose();
     this.a11y.remove();
     this.toolInset.remove();

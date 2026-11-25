@@ -118,6 +118,9 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
     near=closest;button.hidden=!near;
     if(near)button.textContent=near.title;
   };
+  update.navigation=()=>({scope:space.id,busy,canExit:!suspended&&links.length>0,map:suspended?null:map?.state()});
+  update.mapSelect=id=>{if(!suspended&&travel.open)map?.choose(id);};
+  update.mapExit=()=>{if(!suspended&&travel.open&&links.length)void move(links[0]);};
   update.suspend=()=>{
     if(suspended)return;
     suspended=true;near=null;

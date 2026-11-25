@@ -17,7 +17,7 @@ export function showRoomMap(travel,doors){
   const dismiss=guide.querySelector('button');
   const element=tag=>travel.ownerDocument.createElement(tag);
   const pins=[];
-  let selected=null,player,position;
+  let selected=null,player,position,viewer;
 
   function select(pin){
     selected=pin;
@@ -33,7 +33,7 @@ export function showRoomMap(travel,doors){
   }
 
   function clear(){
-    pins.length=0;select(null);position=null;player=null;
+    pins.length=0;select(null);position=null;player=null;viewer=null;
     dismiss.onclick=null;
     plot.replaceChildren();
     destinations.replaceChildren();
@@ -41,7 +41,8 @@ export function showRoomMap(travel,doors){
   }
 
   function update(next,rotation,nearest){
-    if(!player||(!travel.open&&!selected))return;
+    if(!player)return;
+    if(!travel.open){position=null;viewer=null;if(!selected)return;}
     const known=Number.isFinite(next?.x)&&Number.isFinite(next?.z);
     const facing=known&&rotation?.();
     const yaw=facing?Math.atan2(-2*(facing.x*facing.z+facing.w*facing.y),
@@ -61,12 +62,13 @@ export function showRoomMap(travel,doors){
     }
     if(!travel.open)return;
     if(player.hidden===known)player.hidden=!known;
-    if(!known){position=null;return;}
+    if(!known){position=null;viewer=null;return;}
     const x=coordinate(next.x),z=coordinate(next.z);
     const heading=Number.isFinite(yaw)?Math.round(yaw*180/Math.PI/5)*5:null;
     const stamp=x+':'+z+':'+heading;
     if(stamp===position)return;
     position=stamp;
+    viewer=heading===null?null:{x:Math.round(next.x*10)/10,z:Math.round(next.z*10)/10,heading:heading*Math.PI/180};
     place(player,next);
     player.style.setProperty('--map-heading',heading===null?'0deg':heading+'deg');
     player.toggleAttribute('data-heading',heading!==null);
@@ -93,7 +95,8 @@ export function showRoomMap(travel,doors){
       button.setAttribute('aria-label','Señalar '+door.mapTitle+detail);
       button.dataset.kind=marker.dataset.kind;
       button.setAttribute('aria-pressed','false');
-      const pin={marker,button,door};
+      const {x,y,z}=door.door;
+      const pin={marker,button,door,id:JSON.stringify([door.to,type,x,y,z])};
       button.onclick=()=>select(selected===pin?null:pin);
       pins.push(pin);destinations.append(button);
     }
@@ -102,5 +105,12 @@ export function showRoomMap(travel,doors){
   }
 
   show();
-  return {update,clear};
+  return {update,clear,
+    state:()=>({viewer,selected:selected?.id??'',destinations:pins.map(pin=>({id:pin.id,title:pin.door.mapTitle})),
+      marks:pins.map(pin=>({id:pin.id,kind:pin.marker.dataset.kind,x:pin.door.door.x,z:pin.door.door.z}))}),
+    choose(id){
+      const pin=pins.find(item=>item.id===id);
+      if(pin)select(selected===pin?null:pin);
+    },
+  };
 }

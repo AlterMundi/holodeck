@@ -45,5 +45,6 @@ export function bindToroidalMinimap(panel){
     ctx.beginPath();ctx.moveTo(0,-9);ctx.lineTo(6,7);ctx.lineTo(0,4);ctx.lineTo(-6,7);ctx.closePath();
     ctx.fillStyle='#fff4cd';ctx.strokeStyle='#182e34';ctx.lineWidth=2;ctx.stroke();ctx.fill();
     ctx.restore();
+    return true;
   };
 }

@@ -587,7 +587,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     },inspection);
     const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
     const releaseOrbit=bindWorldOrbitInput(options.coreCameraManager,renderer.composer.renderer.domElement,()=>mouseSensitivity,()=>inspection.active);
-    const minimap=bindToroidalMinimap(document.querySelector('#space-travel'));
+    const mapPanel=document.querySelector('#space-travel');
+    const minimap=bindToroidalMinimap(mapPanel);
     const frameBudget=createFrameBudget(renderer);
     galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
     collectionShelves=new CollectionShelves({base,scene:renderer.mmlCompositionScene.group,panel:document.querySelector('#collection-shelf'),
@@ -606,6 +607,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     }]));
     matterHud=new MatterWorktableHud({document,webgl:renderer.composer.renderer,table:collectionShelves.worktable,
       readTools,activateTool:id=>tools[id]?.click(),
+      navigation:{panel:mapPanel,mapState:()=>updateDoor.navigation?.()??{
+        scope:activeSpace.id,canExit:false,busy:false,map:null,
+      },selectDestination:id=>updateDoor.mapSelect?.(id),returnOutside:()=>updateDoor.mapExit?.()},
       canEnter:()=>!options.coreCameraManager.isFlyCameraOn()&&
         inspection.enter(cameraState(),client.getLocalCharacterState()?.position,collectionShelves.worktable.anchor),
       onActive:active=>{
@@ -732,7 +736,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       Boolean(geometryProbe?.snapshot());
     renderer.render=renderState=>{
       const character=client.getLocalCharacterState(),position=character?.position;
-      minimap(outsideRing()?position:null,character?.rotation?.eulerY,activeSpace.entrances);
+      const paintedRaster=minimap(outsideRing()?position:null,character?.rotation?.eulerY,activeSpace.entrances);
       if(outsideRing()){
         ring??=new ToroidalTerrainRenderer(renderer.mmlCompositionScene.group,base);
         if(position){
@@ -829,6 +833,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         contentVisitor?.update(position);
         updateDoor(position,()=>options.coreCameraManager.getCameraState().rotation);
       }
+      matterHud.map.update(!entering&&!moving&&!needsSync&&drawWorld&&!opaqueVisit&&!toolModal&&
+        document.getElementById('conversation-panel').hidden,paintedRaster);
       beaconControls.update(inside&&!moving&&remoteScene?activeSpace.objects:null,position);
       render(renderState);
       if(!inside&&drawWorld)geometryProbe.afterRender();
