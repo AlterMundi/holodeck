@@ -1,5 +1,15 @@
 # Current MVP work
 
+## November 25 cockpit HUD
+
+The protected release is `8c485a4c8cfe`, built from `eddd42a` on
+`release/cockpit-hud`. `1db0e674e988` remains the rollback. On a desktop with
+a fine pointer, `?hud-look=cabina` projects the contextual toolbelt and room
+header into two actual perspective planes, with chamfered material housings.
+Touch and narrow layouts keep the flat arrangement. The app still supports
+the earlier looks and the default selection is independent of the preview.
+See [HUD art direction](playtest-iteration.md#hud-art-direction).
+
 ## November 25 native HUD looks
 
 The protected release is `1db0e674e988` from `release/native-hud-looks`

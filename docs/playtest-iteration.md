@@ -323,6 +323,25 @@ acceptance and the rest of the iteration remain open.
 
 ### HUD art direction
 
+The cockpit preview (`hud-look=cabina`) applies the November 25 visual
+reference to actual Holodeck surfaces. The desktop toolbelt recedes from
+eye level, the location panel turns inward, and the material housings have
+visible depth. The center stays clear. The movable map, worktable and
+embedded Conversation display retain front-facing controls. Cabina is
+selected at load time and retains the flat arrangement on touch and narrow
+viewports.
+
+Fable 5.2 High recommended shared convergence, conservative angles and
+solid material housings. Opus 5.5 High identified the crossing depth planes,
+projection cache and window evidence gaps. The toolbar now stays behind
+floating windows and uses projected launcher bounds. Chromium exercised
+physical minimap and worktable clicks, native window drag and resize, plus
+Conversation fold, restore and draft retention. The follow-up Opus review
+found no remaining code blocker. The protected package matched all 80
+installed files and exact HTTPS assets with the world run and access scope
+intact. Physical Raspberry Pi performance is still open.
+
+
 The protected native comparison now opens in Holodeck with an opt-in
 `hud-look` query: `orbita`, `umbral`, `pulso`, or `estratos`. The three
 views use the gameplay toolbar, an actual Matter project, and the A2UI
