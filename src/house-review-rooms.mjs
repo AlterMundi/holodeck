@@ -21,3 +21,8 @@ export function houseReviewRooms(rooms, house, matterId, labId) {
   if (guests.length > 16) throw Error('The house foyer exceeds the supported guest capacity');
   return [{...foyer, entry:true, guests, links:roomsOffFoyer.map(room => door(room.id))}, ...roomsOffFoyer];
 }
+
+export const characterWorktable=Object.freeze({
+  id:'character-worktable', kind:'fixture', title:'Mesa de Char Design', revision:1,
+  position:Object.freeze({x:0,y:.88,z:0}),
+});

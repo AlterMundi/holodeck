@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {houseReviewRooms,ATELIER_FOYER,CHARACTER_STUDIO} from '../src/house-review-rooms.mjs';
-import {InteriorSpaces} from '../src/interior-spaces.mjs';
+import {houseReviewRooms,ATELIER_FOYER,CHARACTER_STUDIO,characterWorktable} from '../src/house-review-rooms.mjs';
+import {InteriorSpaces,interiorDocument} from '../src/interior-spaces.mjs';
 import {houseId} from '../src/houses.mjs';
 
 const owner='dm:being:v1:'+'Q'.repeat(43), house=houseId(owner);
@@ -40,4 +40,15 @@ test('a room serving as both the lab and collection keeps its direct entrance',(
   assert.deepEqual(houseReviewRooms([foyer,lab],house,'lab','lab'),[
     {...lab,entry:true,links:[]},
   ]);
+});
+
+test('Char Design has a physical worktable scoped to its room',()=>{
+  const rooms=houseReviewRooms([foyer,matter,lab],house,'matter','lab');
+  const studio=rooms.find(room=>room.id===CHARACTER_STUDIO);
+  const expected=new RegExp('id="'+characterWorktable.id+'"');
+  const markup=interiorDocument(studio);
+  assert.match(markup,expected);
+  assert.match(markup,/<m-cube y="\.81" width="2\.42"/);
+  assert.doesNotMatch(markup,/id="room-marker"/);
+  for(const room of rooms.filter(room=>room!==studio))assert.doesNotMatch(interiorDocument(room),expected);
 });

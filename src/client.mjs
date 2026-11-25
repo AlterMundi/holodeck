@@ -37,6 +37,7 @@ import { ContentVisitor } from './content-visitor.mjs';
 import { GalleryModels } from './gallery-models.mjs';
 import { CollectionShelves } from './collection-shelves.mjs';
 import { MatterWorktableHud } from './matter-worktable-hud.mjs';
+import {CharacterWorktable} from './character-worktable.mjs';
 import { ConversationDisplay } from './conversation-display.mjs';
 import { bindHudPanelWindow } from './hud-panel-window.mjs';
 import { bindWorldOrbitInput } from './world-orbit-input.mjs';
@@ -56,7 +57,7 @@ import {WorldHistory} from './world-history.mjs';
 import { snapshotMayApply, sameRequest } from './client-order.mjs';
 import { WorldNotice } from './client-feedback.mjs';
 import {arrivalDoor,doorLocation,readSpace,showSpaceLinks} from './space-travel.mjs';
-import {CHARACTER_STUDIO} from './house-review-rooms.mjs';
+import {CHARACTER_STUDIO,characterWorktable} from './house-review-rooms.mjs';
 const reviewedHudLook=selectedHudLook(location.href);
 if(reviewedHudLook)document.body.dataset.hudLook=reviewedHudLook;
 bindHudAppearance(document,window);
@@ -216,17 +217,8 @@ const entryDeadline=setTimeout(()=>entryLocation.abort(),12000);
 let activeSpace;
 try{activeSpace=await readSpace(entryLocation.signal);}
 finally{clearTimeout(entryDeadline);}
-function goToCharacterStudio(space){
-  if(space.id!==CHARACTER_STUDIO)return false;
-  const target=new URL('./',document.baseURI);
-  target.searchParams.set('taller','personajes');
-  location.replace(target);
-  return true;
-}
-if(!goToCharacterStudio(activeSpace)){
-  if(activeSpace.id!=='outside'&&activeSpace.live!==1)startInterior(activeSpace);
-  else startWorld(activeSpace);
-}
+if(activeSpace.id!=='outside'&&activeSpace.live!==1)startInterior(activeSpace);
+else startWorld(activeSpace);
 
 function startInterior(space){
   document.body.classList.add('inside-house');
@@ -568,7 +560,6 @@ function onNear(destination){
 }
 function applySpace(next,anchor){
   if(next.actorRef!==activeSpace.actorRef){sceneCache.clear();location.reload();return;}
-  if(goToCharacterStudio(next))return;
   const changed=next.id!==activeSpace.id;
   const leavingOutside=activeSpace.id==='outside'&&next.id!=='outside';
   activeSpace=next;inside=next.id!=='outside';arrival=anchor;
@@ -832,6 +823,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         }catch{}
       }
     }
+    const characterTable=new CharacterWorktable({document,scene:renderer.mmlCompositionScene.group});
     matterHud=new MatterWorktableHud({document,webgl:renderer.composer.renderer,table:collectionShelves.worktable,collection:collectionShelves,
       creatorContext:()=>({draft:preview,point:worldIndication?.selected,shared:worldIndication?.own()?.sequence}),
       beaconControls,onBeaconOpen:()=>client.keyInputManager?.handleUnfocus(),
@@ -855,14 +847,14 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       door:{adapter:document.getElementById('house-door'),read:()=>updateDoor.doorOffer?.(),
         cross:(scope,revision)=>updateDoor.followDoor?.(scope,revision)}},
       canEnter:()=>!options.coreCameraManager.isFlyCameraOn()&&
-        tableFlight.enter(client.getCharacterManager().localController,collectionShelves.worktable.anchor),
+        tableFlight.enter(client.getCharacterManager().localController,matterHud.table.anchor),
       onActive:active=>{
         document.body.classList.toggle('is-operating-matter',active);
         if(!active){
           pointRequest?.controller.abort();
           tableFlight.exit(client.getCharacterManager().localController);
         }
-        void shareTabletopMode(active);
+        if(matterHud.table===collectionShelves.worktable)void shareTabletopMode(active);
         client.keyInputManager?.handleUnfocus();
       },
       onError:()=>say('No pude mostrar estos controles. Volvé a abrirlos.',{transient:true}),
@@ -996,13 +988,16 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         document.elementFromPoint(pointer.clientX,pointer.clientY)===worldCanvas,
     });
     let tableGaze=null;
+    const tabletopPlayers=()=>activeSpace.id===CHARACTER_STUDIO?
+      new Set([...poses.peers].filter(([,pose])=>pose==='table').map(([id])=>id)):
+      collectionShelves.tabletopPlayers;
     const releaseFlightAnimation=bindFlightAvatarAnimation(renderer.characterManager,()=>({
-      outdoor:outsideRing(),flying:flightEnabled,grounded:client.getCharacterManager().localController?.characterOnGround,table:tableFlight.active,tabletopPlayers:collectionShelves.tabletopPlayers,
+      outdoor:outsideRing(),flying:flightEnabled,grounded:client.getCharacterManager().localController?.characterOnGround,table:tableFlight.active,tabletopPlayers:tabletopPlayers(),
       peerPoses:poses.peers,peerGaze:points.gazes,gaze:tableGaze,glanceMotion:!companion.motion.matches&&!document.hidden,
       microphoneLevel:sharedConversation&&!moving&&!entering&&sharedSurface()?sharedConversation.microphoneLevel():null,
       crouch:!moving&&client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt'),
     }),{clock:()=>performance.now()});
-    const releaseHologram=bindMatterHologram(renderer.characterManager,tableFlight,()=>collectionShelves.tabletopPlayers);
+    const releaseHologram=bindMatterHologram(renderer.characterManager,tableFlight,tabletopPlayers);
     const tableInputAllowed=()=>!moving&&!entering&&!document.hidden&&document.hasFocus()&&!mapPanel.open&&
       document.querySelector('#conversation-panel').hidden&&!document.querySelector('dialog[open]')&&!signalEditor?.active;
     // On the ring the sun keeps one direction in the traveler's radial frame,
@@ -1044,7 +1039,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       if(position&&!moving&&activeSpace.avatarPosePresence){
         const low=!entering&&!tableFlight.active&&client.getCharacterManager().localController?.characterOnGround&&
           client.keyInputManager?.isKeyPressed('alt');
-        poses.update(client.getWorldConnection(),activeSpace.id,outsideRing()&&flightEnabled?'fly':low?'crouch':'ground');
+        const usingCharacterTable=activeSpace.id===CHARACTER_STUDIO&&tableFlight.active;
+        poses.update(client.getWorldConnection(),activeSpace.id,usingCharacterTable?'table':
+          outsideRing()&&flightEnabled?'fly':low?'crouch':'ground');
       }
       const yaw=client.getCharacterManager().localController?.networkState.rotation?.eulerY;
       const paintedRaster=minimap(outsideRing()?position:null,yaw,activeSpace.entrances);
@@ -1201,8 +1198,14 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
           options.coreCameraManager.activePointers.clear();
         }
       }
-      matterHud.update(!collectionRoom||needsSync||!document.getElementById('conversation-panel').hidden||opaqueVisit||toolModal||settingsOpen,
-        !entering&&!moving&&drawWorld&&!opaqueVisit&&!toolModal);
+      const characterRoom=inside&&!moving&&activeSpace.id===CHARACTER_STUDIO;
+      const characterBench=characterRoom&&remoteScene?.isConnected?
+        activeSpace.objects.find(object=>object.id===characterWorktable.id)?.position:null;
+      characterTable.update(position,characterBench);
+      matterHud.selectTable(characterRoom?characterTable:collectionShelves.worktable);
+      matterHud.update((!collectionRoom&&!characterRoom)||needsSync||!document.getElementById('conversation-panel').hidden||
+        opaqueVisit||toolModal||settingsOpen,!entering&&!moving&&drawWorld&&!opaqueVisit&&!toolModal);
+      characterTable.render(tableNow);
       garden.update(inside&&!moving&&activeSpace.playableInterior?activeSpace.id:null);gardenMarkers();
       if(!inside){worldIndication?.update();if(!moving)playableHUD.update(state?.lightExercise===true?position:null);}
       if(!moving){

@@ -203,7 +203,7 @@ export class MatterWorktableHud{
       canOpenNative:()=>Boolean(this.layer.overlay&&!this.layer.lost&&
         this.canvas.clientWidth>=330&&this.canvas.clientHeight>=320)});
     this.lookPreview=new HudLookPreview({document,parent:this.scene,invalidate:this.layer.invalidate});
-    this.hud=createSpatialHud({parent:this.scene,document,accessibilityRoot:this.a11y,controlStyle:'optical',controlRole:opticalRole,
+    this.hud=createSpatialHud({parent:this.scene,document,accessibilityRoot:this.a11y,controlStyle:'optical',retainTextDrafts:true,controlRole:opticalRole,
       controlIconOnly:(surface,id)=>surface===toolbeltId&&this.toolLayout?.iconOnly===true&&Object.hasOwn(toolIcons,id),
       placeSurface:(group,id)=>{
         if(id===toolbeltId)this.toolGroup=group;
@@ -263,6 +263,7 @@ export class MatterWorktableHud{
     this.canvas.addEventListener('lostpointercapture',event=>this.capturedPointers.delete(event.pointerId),activity);
     this.unbind=bindSpatialHudPointer({element:this.canvas,hud:this.hud,
       rayForPointer:event=>this.rayForPointer(event)});
+    this.collectionTable=table;
     table.panel.setAttribute('data-spatial','');
   }
 
@@ -290,20 +291,47 @@ export class MatterWorktableHud{
     this.layer.invalidate();
   }
 
+  selectTable(table){
+    if(this.table===table)return;
+    this.setMode(null);
+    this.table=table;
+  }
+
   setMode(mode){
     if(this.mode===mode)return;
     const leaving=this.active;
-    if(leaving)this.send('deleteSurface',{});
+    if(leaving){
+      this.table.stop?.();
+      this.send('deleteSurface',{});
+    }
     this.mode=mode;
     this.scope++;
     this.signature=null;
     this.group=null;
     if(this.active){
       this.send('createSurface',{catalogId:spatialHudCatalog.id});
-      this.send('updateComponents',{components:work});
-      this.sync();
+      if(this.table.start){
+        const scope=this.scope;
+        this.table.start({close:()=>this.leave(),send:(type,content)=>{
+          if(this.active&&this.scope===scope)this.sendApplication(type,content,scope);
+        }});
+      }else{
+        this.send('updateComponents',{components:work});
+        this.sync();
+      }
     }
     if(leaving!==this.active)this.onActive(this.active);
+  }
+
+  sendApplication(type,content,scope){
+    if(type==='updateComponents'){
+      content={components:content.components.map(component=>{
+        const event=component.action?.event;
+        return event?{...component,action:{event:{...event,context:{...event.context,
+          scope}}}}:component;
+      })};
+    }
+    this.send(type,content);
   }
 
   enter(){
@@ -313,7 +341,7 @@ export class MatterWorktableHud{
     this.previousFocus?.blur();
     this.setMode('work');
     this.syncToolbelt(this.toolsVisible);
-    if(this.restoreEntryFocus)this.hud.focusAccessibleControl(surfaceId,'project');
+    if(this.restoreEntryFocus)this.hud.focusAccessibleControl(surfaceId,this.table.firstControl??'project');
     else{this.canvas.tabIndex=-1;this.canvas.focus({preventScroll:true});}
   }
 
@@ -333,6 +361,11 @@ export class MatterWorktableHud{
     if(!this.active)return;
     const {value,revision,project}=context;
     const table=this.table;
+    if(table.action){
+      this.lookPreview.hit(surfaceId);
+      table.action(requested);
+      return;
+    }
     const local={
       close:()=>this.leave(),
       project:()=>{if(typeof value==='string')table.chooseLocal(value);},
@@ -345,6 +378,7 @@ export class MatterWorktableHud{
   }
 
   sync(){
+    if(this.table.start)return;
     const compact=this.lookPreview.name==='taller'&&this.canvas.clientWidth<470;
     const state={scope:this.scope,closeLabel:compact?'Salir':'Salir de la mesa',...(this.active?this.table.hudState():{})};
     const signature=JSON.stringify(state);
@@ -925,7 +959,7 @@ export class MatterWorktableHud{
   }
 
   dispose(){
-    if(this.active)this.onActive(false);
+    if(this.active){this.table.stop?.();this.onActive(false);}
     this.unbind();
     this.windows.dispose();
     this.events.abort();
@@ -949,6 +983,6 @@ export class MatterWorktableHud{
     delete this.document.body.dataset.a2uiToolbelt;
     this.document.body.removeAttribute('data-native-settings-available');
     this.document.body.style.removeProperty('--holodeck-notice-bottom');
-    this.table.panel.removeAttribute('data-spatial');
+    this.collectionTable.panel.removeAttribute('data-spatial');
   }
 }

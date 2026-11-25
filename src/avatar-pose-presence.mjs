@@ -1,5 +1,5 @@
 export const avatarPoseBroadcast='holodeck.avatar-pose.v1';
-export const avatarPoseModes=new Set(['ground','crouch','fly']);
+export const avatarPoseModes=new Set(['ground','crouch','fly','table']);
 export const poseConnection=id=>Number.isSafeInteger(id)&&id>=0;
 export const poseKeyMaterial=token=>avatarPoseBroadcast+'\n'+token;
 export const poseProofMessage=({space,connection,pose,revision})=>JSON.stringify([space,connection,pose,revision]);

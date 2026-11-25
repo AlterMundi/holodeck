@@ -4,7 +4,7 @@ import {indoorGardenTemplates} from './indoor-garden-recipe.mjs';
 import {COMPAII_HOUSE,interiorArt} from './interior-art.mjs';
 import {ATELIER_EXPANSION_WRITES,ATELIER_PROFILE,ATELIER_ROOMS,atelierLabReturn,matchesAtelierLayout,packedExteriorArt,selectAtelier} from './compaii-atelier.mjs';
 import {RoomExhibits,EXHIBIT_SAVE_BYTES} from './room-exhibits.mjs';
-import {ATELIER_FOYER,CHARACTER_STUDIO,houseReviewRooms} from './house-review-rooms.mjs';
+import {ATELIER_FOYER,CHARACTER_STUDIO,characterWorktable,houseReviewRooms} from './house-review-rooms.mjs';
 import {createCharacterPoseReview} from './character-pose-review.mjs';
 import {InteriorSpaces, OUTSIDE, SPACE_SAVE_BYTES, interiorDocument} from './interior-spaces.mjs';
 import {InteriorLayouts,LAYOUT_SAVE_BYTES} from './interior-layouts.mjs';
@@ -445,7 +445,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }
   function roomObjects(view){
     const art=artForRoom(spaces.rooms.get(view.id),view.exits ?? []);
-    const objects=art?.replacesShell||art?.hideMarker?[]:view.objects;
+    const objects=view.id===CHARACTER_STUDIO?[characterWorktable]:art?.replacesShell||art?.hideMarker?[]:view.objects;
     const stations=[art?.station,...(art?.controls??[])].filter(Boolean);
     const fixtures=(art?.fixtures??[]).map(fixture=>({...fixture,revision:art.designRevision??fixture.revision}));
     return [...objects,...fixtures,...stations.map(station=>({id:station.id,kind:'workstation',title:station.title,
@@ -931,7 +931,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
        typeof input.space!=='string'||input.space.length>96)return res.sendStatus(400);
     const scope=spaces.current(req.actor);
     if(input.space!==scope||!inScope(req.actor,scope))return res.sendStatus(409);
-    if(input.pose==='fly'&&scope!==OUTSIDE)return res.sendStatus(400);
+    if(input.pose==='fly'&&scope!==OUTSIDE||input.pose==='table'&&scope!==CHARACTER_STUDIO)return res.sendStatus(400);
     const proof=req.get('X-Holodeck-Pose-Proof');
     const peer=posePeers(scope)?.get(input.connection);
     // The HTTP cookie proves the actor. The signed fields prove the exact

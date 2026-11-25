@@ -159,13 +159,13 @@ function disposeFigure(figure){
   for(const item of resources)item?.dispose?.();
 }
 
-function normalise(root){
+function normalise(root,heightTarget=1.48){
   root.updateMatrixWorld(true);
   const bounds=new Box3().setFromObject(root,true);
   const centre=bounds.getCenter(new Vector3());
   const height=bounds.max.y-bounds.min.y;
   if(!(height>.01))throw Error('Could not frame the rig');
-  const scale=1.48/height;
+  const scale=heightTarget/height;
   root.scale.multiplyScalar(scale);
   root.position.set(-centre.x*scale,-bounds.min.y*scale,-centre.z*scale);
 }
@@ -186,87 +186,69 @@ function studioLights(scene){
   }
 }
 
-export async function openCharacterStudio(document){
+export function openCharacterStudio(document,table=null){
   const url=new URL(document.location.href),window=document.defaultView;
-  const renderer=new WebGLRenderer({antialias:true});
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));
-  renderer.toneMapping=ACESFilmicToneMapping;
-  renderer.toneMappingExposure=1.15;
-  window.dispatchEvent(new Event('holodeck:entered'));
-  const stage=buildStage(document),status=stage.querySelector('output');
-  stage.prepend(renderer.domElement);
-  const scene=new Scene(),hudScene=new Scene();
-  scene.background=new Color(0x0b1e2a);
-  scene.fog=new Fog(0x0b1e2a,5,15);
-  studioLights(scene);
+  const scene=table?new Group():new Scene();
+  if(table){
+    scene.position.set(table.anchor.x+.34,table.anchor.y+.025,table.anchor.z);
+    table.scene.add(scene);
+  }
   const waterline=new Mesh(new PlaneGeometry(3.5,3.5),new MeshBasicMaterial({
     color:0x3999b0,transparent:true,opacity:.20,depthWrite:false,
   }));
   waterline.rotation.x=-Math.PI/2;
+  if(table)waterline.scale.setScalar(table.height/1.48);
   waterline.visible=false;
   scene.add(waterline);
-  const camera=new PerspectiveCamera(36,1,.03,35);
-  const hudCamera=new OrthographicCamera(-1,1,1,-1,.1,12);
-  hudCamera.position.z=4;
-  const pointer=new Vector2(),ray=new Raycaster();
-  const loader=new ModelLoader();
+  const loader=new ModelLoader(),inputs=new AbortController();
   const viewAngles={front:0,angle:.62,side:Math.PI/2};
   let view=Object.hasOwn(viewAngles,url.searchParams.get('vista'))?url.searchParams.get('vista'):'angle';
-  let figure,playback,group,rig,clip,frame=0,playing=false,revision='',note='',message='',showedAt=-Infinity;
-  let sequence=0,elapsed=0,previous=0,visible=true,loop=true,speed='1',viewportWidth=0,viewportHeight=0;
-  let compact=false,section='Pose',panelWidth=1.85;
+  let figure,playback,rig,clip,frame=0,playing=false,revision='',note='',message='',showedAt=-Infinity;
+  let sequence=0,elapsed=0,previous=0,visible=true,loop=true,speed='1';
+  let compact=Boolean(table),section='Pose',panelWidth=table?2.20:1.85;
   let primary=null,reference=null,showingReference=false,referenceRequest=0;
   let canReview=null,review=null,selectedNote='',readingReview=false,savingNote=false,pendingNote,presentationBusy=false;
-  void connectStudioReturn(stage).then(inStudio=>{canReview=Boolean(inStudio);refresh();});
-  const reduce=window.matchMedia('(prefers-reduced-motion: reduce)');
-
-  const hud=createSpatialHud({document,parent:hudScene,accessibilityRoot:stage.querySelector('.studio-a11y'),
-    controlStyle:'optical',retainTextDrafts:true,controlRole:(_,id)=>id==='play'?'primary':transport.has(id)?'navigation':'utility',
-    placeSurface(value){group=value;},send:({action:requested})=>void activate(requested?.name,requested?.context).catch(()=>report('No se pudo aplicar el cambio.'))});
-  const inputs=new AbortController();
-  document.body.addEventListener('focusin',event=>{
-    if(playing&&hud.ownsTextInput(event.target)){playing=false;scrub(frame);}
-  },{signal:inputs.signal});
-  const receive=(type,value)=>hud.receive({version:'1.0',[type]:{surfaceId,...value}});
-  receive('createSurface',{catalogId:spatialHudCatalog.id});
-  receive('updateComponents',{components:controls});
-  hud.setPalette({background:'#102834e8',button:'#263e46',pressed:'#43766e',text:'#eff7f0',focus:'#ecc782',disabled:'#25353d'});
-  const canvas=renderer.domElement;
-  function rayForPointer(event){
-    const {left,top,width,height}=canvas.getBoundingClientRect();
-    if(!width||!height)return;
-    pointer.set((event.clientX-left)/width*2-1,1-(event.clientY-top)/height*2);
-    ray.setFromCamera(pointer,hudCamera);
-    return {ray:ray.ray};
+  const projected=table?null:webStudioProjection(document,scene,dispatch,()=>{
+    if(playing){playing=false;scrub(frame);refresh();}
+  },dispose);
+  function dispatch(requested){
+    if(!visible)return;
+    void activate(requested?.name,requested?.context).catch(()=>report('No se pudo aplicar el cambio.'));
   }
-  const unbind=bindSpatialHudPointer({element:canvas,hud,rayForPointer});
-  canvas.addEventListener('wheel',event=>{
-    const projection=rayForPointer(event);
-    if(group&&projection&&hud.pointerTarget(projection.ray)!==undefined){
-      event.preventDefault();
-      event.stopImmediatePropagation();
-    }
-  },{capture:true,passive:false,signal:inputs.signal});
-  const orbit=new OrbitControls(camera,canvas);
-  orbit.target.set(0,.78,0);
-  orbit.enablePan=false;
-  orbit.minDistance=2.2;
-  orbit.maxDistance=8;
-  orbit.maxPolarAngle=Math.PI*.56;
-  setView(view);
-
+  const receive=(type,value)=>{
+    if(visible)(table??projected).send(type,value);
+  };
+  const root=controls[0];
+  const tableControls=table?[{...root,label:'Mesa de Char Design',width:panelWidth,
+    children:['tableHeading',...root.children.filter(id=>id!=='title')]},
+    ...controls.slice(1).map(control=>control.id==='title'?label('title','Char Design','title'):control),
+    row('tableHeading',['title','close']),button('close','Salir de la mesa')]:null;
+  if(table){
+    receive('updateComponents',{components:[
+      {...tableControls[0],children:['tableHeading','status']},
+      ...tableControls.filter(component=>['tableHeading','title','close'].includes(component.id)),
+      {...label('status',path('status'),'status'),lines:2},
+    ]});
+  }else{
+    receive('createSurface',{catalogId:spatialHudCatalog.id});
+    receive('updateComponents',{components:controls});
+  }
+  const membership=table?readSpace(inputs.signal).then(space=>space.id===CHARACTER_STUDIO):
+    connectStudioReturn(projected.stage);
+  void membership.then(inStudio=>{if(visible){canReview=Boolean(inStudio);refresh();}})
+    .catch(()=>{if(visible){canReview=false;refresh();}});
+  const reduce=window.matchMedia('(prefers-reduced-motion: reduce)');
   function setView(next){
     view=next;
-    const angle=viewAngles[view],distance=stage.clientWidth<670?4.7:4.4;
-    camera.position.set(Math.sin(angle)*distance,1.95,Math.cos(angle)*distance);
-    orbit.update();
+    projected?.setAngle(viewAngles[view]);
   }
+  setView(view);
 
   const hex=bytes=>Array.from(bytes,n=>n.toString(16).padStart(2,'0')).join('');
 
   async function readAsset(file){
     const source=new URL(file,url);
-    const response=await fetch(source);
+    const response=await fetch(source,{signal:AbortSignal.any([inputs.signal,AbortSignal.timeout(12000)])});
     if(!response.ok)throw Error('Missing rig or clip');
     const bytes=await response.arrayBuffer();
     const hash=new Uint8Array(await window.crypto.subtle.digest('SHA-256',bytes));
@@ -303,7 +285,7 @@ export async function openCharacterStudio(document){
     const root=new Group(),orientation=new Group();
     root.add(orientation);
     orientation.add(model.group);
-    normalise(root);
+    normalise(root,table?.height);
     const nextFigure={root,orientation,model:model.group,rigDigest:digest,
       mixer:new AnimationMixer(model.group),clips:new Map(model.animations.map(item=>[item.name,item]))};
     if(id!==sequence){disposeFigure(nextFigure);return;}
@@ -390,6 +372,7 @@ export async function openCharacterStudio(document){
     primary=prepared;
     revision=prepared.edition;
     clip=next;
+    if(table)receive('updateComponents',{components:tableControls});
     displayClip(false);
     scrub(expected&&expected!==revision?0:requestedFrame);
     report(expected&&expected!==revision?'El enlace corresponde a otra edición del movimiento.':'');
@@ -420,9 +403,15 @@ export async function openCharacterStudio(document){
     elapsed=frame/motionStudyRate;
     drawPose();
   }
-  function report(text){message=text;status.textContent=text;refresh();}
+  function report(text){
+    if(!visible)return;
+    message=text;
+    if(projected)projected.status.textContent=text;
+    if(table&&!clip)receive('updateDataModel',{value:{status:text}});
+    refresh();
+  }
   function refresh(){
-    if(!figure||!clip)return;
+    if(!visible||!figure||!clip)return;
     const options=clipOptions(rigs[rig],figure);
     const chapters=availableChapters();
     const chapter=chapters.find(entry=>entry.frame===frame)?.id??'';
@@ -432,6 +421,7 @@ export async function openCharacterStudio(document){
     const reviewText=selected?selected.author+' · '+selected.text:'';
     const show=Object.fromEntries([...compactControls].map(id=>[id,!compact||sectionControls[section].includes(id)]));
     show.title=show.status=!compact;
+    if(table){show.views=false;show.status=Boolean(message);}
     show.chapter&&=chapters.length>0;
     show.presentation&&=canReview===true;
     show.reviewNotes&&=notes.length>0;
@@ -461,7 +451,8 @@ export async function openCharacterStudio(document){
     return review&&playback&&review.key===keyForPose(reviewPose())?review:null;
   }
   function exactUrl(){
-    const share=new URL(url),pose=reviewPose();
+    const share=new URL('./',url),pose=reviewPose();
+    share.searchParams.set('taller','personajes');
     const exact={rig,clip:pose.clip,edicion:pose.edition,fotograma:pose.frame,vista:view};
     for(const [key,value] of Object.entries(exact))share.searchParams.set(key,value);
     return share.href;
@@ -554,6 +545,7 @@ export async function openCharacterStudio(document){
     }finally{savingNote=false;if(visible)refresh();}
   }
   async function activate(name,{value,clipEdition:expectedClip}={}){
+    if(name==='close'&&table){table.close();return;}
     if(!name)return;
     if(Object.hasOwn(sectionControls,name)){section=name;refresh();return;}
     if(name==='rig'&&Object.hasOwn(rigs,value)&&rig!==value)return loadRig(value);
@@ -618,25 +610,101 @@ export async function openCharacterStudio(document){
         if(now-showedAt>150){showedAt=now;refresh();}
       }
     }
+    projected?.draw(Boolean(figure&&clip),(nextCompact,nextWidth)=>{
+      compact=nextCompact;
+      if(panelWidth!==nextWidth){
+        panelWidth=nextWidth;
+        receive('updateComponents',{components:[{...root,width:panelWidth}]});
+      }
+      refresh();
+    });
+  }
+
+  function dispose(){
+    if(!visible)return;
+    visible=false;
+    sequence++;
+    inputs.abort();
+    projected?.dispose();
+    playback?.stop();
+    disposeFigure(figure);
+    scene.traverse(object=>{if(object.isMesh||object.isLineSegments){object.geometry.dispose();object.material.dispose();}});
+    if(table)scene.removeFromParent();
+  }
+
+  projected?.start(render);
+  const initial=!table&&Object.hasOwn(rigs,url.searchParams.get('rig'))?url.searchParams.get('rig'):'companion';
+  void loadRig(initial,table?undefined:url.searchParams.get('clip'),
+    table?0:url.searchParams.get('fotograma'),table?null:url.searchParams.get('edicion'))
+    .then(()=>{if(visible){playing=!table&&!reduce.matches&&!url.searchParams.has('fotograma');refresh();}})
+    .catch(()=>report(table?'No se pudo abrir el personaje. Volvé a probar.':'No se pudo abrir el personaje. Podés volver al mundo.'));
+  return {dispatch,render,dispose};
+}
+
+function webStudioProjection(document,scene,dispatch,onTextFocus,close){
+  const window=document.defaultView,events=new AbortController();
+  const renderer=new WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));
+  renderer.toneMapping=ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.15;
+  window.dispatchEvent(new Event('holodeck:entered'));
+  const stage=buildStage(document),status=stage.querySelector('output');
+  const canvas=renderer.domElement;
+  stage.prepend(canvas);
+  const hudScene=new Scene();
+  scene.background=new Color(0x0b1e2a);
+  scene.fog=new Fog(0x0b1e2a,5,15);
+  studioLights(scene);
+  const camera=new PerspectiveCamera(36,1,.03,35);
+  const hudCamera=new OrthographicCamera(-1,1,1,-1,.1,12);
+  hudCamera.position.z=4;
+  const pointer=new Vector2(),ray=new Raycaster();
+  let group,viewportWidth=0,viewportHeight=0;
+  const hud=createSpatialHud({document,parent:hudScene,accessibilityRoot:stage.querySelector('.studio-a11y'),
+    controlStyle:'optical',retainTextDrafts:true,controlRole:(_,id)=>id==='play'?'primary':transport.has(id)?'navigation':'utility',
+    placeSurface(value){group=value;},send:({action})=>dispatch(action)});
+  document.body.addEventListener('focusin',event=>{
+    if(hud.ownsTextInput(event.target))onTextFocus();
+  },{signal:events.signal});
+  hud.setPalette({background:'#102834e8',button:'#263e46',pressed:'#43766e',text:'#eff7f0',focus:'#ecc782',disabled:'#25353d'});
+  function rayForPointer(event){
+    const {left,top,width,height}=canvas.getBoundingClientRect();
+    if(!width||!height)return;
+    pointer.set((event.clientX-left)/width*2-1,1-(event.clientY-top)/height*2);
+    ray.setFromCamera(pointer,hudCamera);
+    return {ray:ray.ray};
+  }
+  const unbind=bindSpatialHudPointer({element:canvas,hud,rayForPointer});
+  canvas.addEventListener('wheel',event=>{
+    const projection=rayForPointer(event);
+    if(group&&projection&&hud.pointerTarget(projection.ray)!==undefined){
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  },{capture:true,passive:false,signal:events.signal});
+  const orbit=new OrbitControls(camera,canvas);
+  orbit.target.set(0,.78,0);
+  orbit.enablePan=false;
+  orbit.minDistance=2.2;
+  orbit.maxDistance=8;
+  orbit.maxPolarAngle=Math.PI*.56;
+  window.addEventListener('pagehide',event=>{if(!event.persisted)close();},{signal:events.signal});
+
+  function draw(ready,onResize){
     const width=stage.clientWidth,height=stage.clientHeight;
     if(!width||!height)return;
     const portrait=width<height*1.05;
-    const nextCompact=width<720||height<570;
+    const compact=width<720||height<570;
     const availableWidth=portrait?width-24:Math.min(420,width*.49-12);
     if(viewportWidth!==width||viewportHeight!==height){
       viewportWidth=width;
       viewportHeight=height;
-      compact=nextCompact;
       stage.classList.toggle('studio-compact',compact);
       const shortHud=compact&&height<680;
       hud.setChoicePageSize(surfaceId,shortHud?(height<500?1:2):undefined);
       hud.setChoicePresentation(surfaceId,shortHud?'overlay':undefined);
       const nextPanelWidth=compact?Math.min(1.10,Math.max(.5,availableWidth/300-.12)):1.85;
-      if(panelWidth!==nextPanelWidth){
-        panelWidth=nextPanelWidth;
-        receive('updateComponents',{components:[{...controls[0],width:panelWidth}]});
-      }
-      refresh();
+      onResize(compact,nextPanelWidth);
       renderer.setSize(width,height,false);
       camera.setViewOffset(width,height,Math.round(width*(compact&&portrait?0:.19)),
         compact&&portrait?Math.round(height*.20):0,width,height);
@@ -644,7 +712,7 @@ export async function openCharacterStudio(document){
     renderer.autoClear=true;
     renderer.render(scene,camera);
     hud.update();
-    if(group&&figure&&clip){
+    if(group&&ready){
       const bounds=hud.getSurfaceBounds(surfaceId);
       if(!bounds)return;
       const panelHeight=bounds.top-bounds.bottom;
@@ -662,23 +730,21 @@ export async function openCharacterStudio(document){
     }
   }
 
-  window.addEventListener('pagehide',event=>{
-    if(event.persisted)return;
-    visible=false;
-    sequence++;
-    renderer.setAnimationLoop(null);
-    unbind();
-    inputs.abort();
-    orbit.dispose();
-    hud.dispose();
-    playback?.stop();
-    disposeFigure(figure);
-    scene.traverse(object=>{if(object.isMesh||object.isLineSegments){object.geometry.dispose();object.material.dispose();}});
-    renderer.dispose();
-  });
-  renderer.setAnimationLoop(render);
-  const initial=Object.hasOwn(rigs,url.searchParams.get('rig'))?url.searchParams.get('rig'):'companion';
-  await loadRig(initial,url.searchParams.get('clip'),url.searchParams.get('fotograma'),url.searchParams.get('edicion'))
-    .then(()=>{playing=!reduce.matches&&!url.searchParams.has('fotograma');refresh();})
-    .catch(()=>report('No se pudo abrir el personaje. Podés volver al mundo.'));
+  return {stage,status,draw,
+    send:(type,value)=>hud.receive({version:'1.0',[type]:{surfaceId,...value}}),
+    setAngle(angle){
+      const distance=stage.clientWidth<670?4.7:4.4;
+      camera.position.set(Math.sin(angle)*distance,1.95,Math.cos(angle)*distance);
+      orbit.update();
+    },
+    start:render=>renderer.setAnimationLoop(render),
+    dispose(){
+      renderer.setAnimationLoop(null);
+      unbind();
+      events.abort();
+      orbit.dispose();
+      hud.dispose();
+      renderer.dispose();
+    },
+  };
 }
