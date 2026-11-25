@@ -2,6 +2,22 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `7587d1f663fb35f5c6ec8af32dd8b7e025977904` keeps an unsent
+note bound to the pose where writing started. Its archive
+`fcb27abe80ab86820bf36497f93f358722d7d3219399c62b7e1c6d6c8abe0a5f`
+matched all 87 payloads. With two isolated Chromium sessions, the
+worktable presented frame 111 while the reviewer had a draft for frame
+110. The reviewer followed the new pose, retained their text and saved
+it on frame 110. After the server saved and the test dropped the reply,
+the retry sent the same UUID and pose. Frame 110 contained one copy of
+the note and frame 111 contained none. The same sequence passed with a
+390 × 780 touchscreen emulation, including a switch between compact
+review sections while the draft was open. The physical table captured
+ground, takeoff, hover, turn and landing at frames 0, 22, 36, 65 and 110
+in the loopback world. The native restart check still passed. Holodeck
+passed 412 tests with two skips. The protected release still serves
+`76bacef3cd52` without the pose catalog.
+
 Source `44cfcdc3e2e40596259e16e5761588bc6728878b` combines the Character
 Design Room and native pose-review port with the selected landscape HUD
 from `33da64d`. It pins Proyección
