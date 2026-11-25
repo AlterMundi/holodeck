@@ -360,10 +360,22 @@ survives new sessions, with the embedded Orbital material as load fallback.
 The preceding release c2d4434bd2e6 retained Collection rearchiving. Both
 selected packages passed protected byte and native world continuity checks.
 
-The first [HUD design comparison](https://compaii.dmn.homes/view/59b2b33b3e7a4fdcbbefee7bb8d21868?display=work)
-contains three Claude Fable 5.2 High directions in dark and light. Human
-selection precedes adoption of two presets. Keep user-specific position,
-size, readable type and appearance separable from shared application state.
+The human rejected the first HUD comparison and identified Elder Scrolls
+Online and Asphalt as the art references. The revised private
+[HUD comparison](https://compaii.dmn.homes/view/59b2b33b3e7a4fdcbbefee7bb8d21868?display=work)
+offers Meridiano and Impulso on actual toroidal and Matter captures, with
+day and night settings, compass interaction, minimap, piece inspection and
+a preserved sample Conversation draft. Fable High proposed a quiet edge-based
+layout and a separate torus-shaped toolbelt. Opus 5.5 High reviewed the rendered
+frames and found competing CTAs, an inert compass, cut framing and mobile focus
+issues. The revision separates travel from the toolbelt, gives the part and its
+section control priority, aligns the compass with the map indicator and
+qualifies pointer and touch at desktop, 390px and 320px. World movement and
+piece clipping remain native integration requirements. The mock controls
+change the review display. They do not submit actions to the shared world.
+The previous comparison remains in private version history.
+Human selection precedes preset adoption. Position, size, typography and
+appearance remain independent from shared application state.
 Use one shared positioning interaction for minimap, settings, Collection and
 Matter worktable panels. Provide keyboard and touch input, increase hit
 areas without increasing icon art, clamp windows on viewport change, and
