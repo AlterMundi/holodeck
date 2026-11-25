@@ -91,7 +91,8 @@ export class MatterWorktableHud{
     this.map=new WorldMapHud({...navigation,send:(type,content,id)=>this.send(type,content,id),
       focusLauncher:()=>this.focusTool('map'),invalidate:this.layer.invalidate});
     this.settings=new SettingsHud({document,send:(type,content,id)=>this.send(type,content,id),
-      focusControl:name=>this.hud.focusAccessibleControl(settingsId,name),focusLauncher:name=>this.focusTool(name)});
+      focusControl:name=>this.hud.focusAccessibleControl(settingsId,name),focusLauncher:name=>this.focusTool(name),
+      onSurfaceChange:()=>this.syncSettingsInput()});
     this.hud=createSpatialHud({parent:this.scene,document,accessibilityRoot:this.a11y,
       placeSurface:(group,id)=>{
         if(id===toolbeltId)this.toolGroup=group;
@@ -103,10 +104,7 @@ export class MatterWorktableHud{
         if(!requested)return;
         if(requested.surfaceId===toolbeltId)this.handleTool(requested);
         else if(requested.surfaceId===worldMapId)this.map.activate(requested);
-        else if(requested.surfaceId===settingsId){
-          this.settings.activate(requested);
-          this.syncSettingsInput();
-        }
+        else if(requested.surfaceId===settingsId)this.settings.activate(requested);
         else this.handleAction(requested);
       },onTransportError:onError,
     });
@@ -221,11 +219,9 @@ export class MatterWorktableHud{
     if(name==='appearance'||name==='video'){
       if(this.active)this.leave();
       this.settings.open(name);
-      this.syncSettingsInput();
       return;
     }
     this.settings.close(false);
-    this.syncSettingsInput();
     if(name==='open')this.enter();
     else this.activateTool(name);
   }
@@ -292,7 +288,6 @@ export class MatterWorktableHud{
     if(this.active)this.sync();
     if(!toolsVisible)this.settings.close(false);
     this.settings.sync();
-    this.syncSettingsInput();
     this.syncToolbelt(toolsVisible);
     const look=this.document.body.dataset.roomLook;
     if(this.look!==look){
@@ -312,11 +307,23 @@ export class MatterWorktableHud{
     const open=Boolean(this.settings.group);
     if(open===this.settingsInput)return;
     this.settingsInput=open;
-    this.hud.setInteractionScope(open?{surfaceIds:[toolbeltId,settingsId],blockOutside:true}:undefined);
+    this.hud.setInteractionScope(open?{surfaceIds:[settingsId],blockOutside:true}:undefined);
   }
 
   settingsKey(event){
     if(event.defaultPrevented)return false;
+    if(event.repeat&&(event.key==='Enter'||event.key===' '))return true;
+    if(event.key==='Tab'){
+      const active=this.document.activeElement;
+      const group=this.ownsAccessibleInput(active)&&active.closest('[role="group"]');
+      if(group){
+        const controls=Array.from(group.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled)'));
+        const current=controls.indexOf(active);
+        const next=(current+(event.shiftKey?-1:1)+controls.length)%controls.length;
+        controls[next]?.focus({preventScroll:true});
+      }else this.hud.focusAccessibleControl(settingsId,'close');
+      return true;
+    }
     const handled=this.hud.handleKey(event,{surfaceId:settingsId});
     if(event.key==='Escape'){
       if(!handled||!this.hud.currentFocus())this.settings.close();

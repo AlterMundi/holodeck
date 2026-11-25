@@ -1,6 +1,6 @@
 import {showSettingsDialog} from './settings-hud.mjs';
 
-export function bindVideoSettings({document,window,lightweight,onGraphics,onSensitivity}){
+export function bindVideoSettings({document,window,lightweight,onGraphics,onSensitivity,onFullscreenError}){
   const dialog=document.querySelector('#video-dialog');
   const open=document.querySelector('#video-open');
   const close=document.querySelector('#video-close');
@@ -30,7 +30,7 @@ export function bindVideoSettings({document,window,lightweight,onGraphics,onSens
       else await root.requestFullscreen();
     }catch{
       status.textContent='No se pudo cambiar la pantalla completa.';
-      showSettingsDialog(dialog);
+      if(!onFullscreenError?.(status.textContent))showSettingsDialog(dialog);
     }finally{
       changing=false;
       syncFullscreen();

@@ -53,8 +53,8 @@ function change(input, value, event) {
 // Keep the browser settings adapters as the behavior owners. The visible
 // controls use their live state and invoke the same actions and persistence.
 export class SettingsHud {
-  constructor({document, send, focusControl, focusLauncher}) {
-    Object.assign(this, {send, focusControl, focusLauncher, scope: 0});
+  constructor({document, send, focusControl, focusLauncher, onSurfaceChange}) {
+    Object.assign(this, {send, focusControl, focusLauncher, onSurfaceChange, scope: 0});
     const find = id => document.getElementById(id);
     this.dialogs = {appearance: find('appearance-dialog'), video: find('video-dialog')};
     this.launchers = {appearance: find('appearance-open'), video: find('video-open')};
@@ -78,12 +78,13 @@ export class SettingsHud {
     this.sync();
   }
 
-  sync() {
+  sync(restoreFocus = true) {
     const current = Object.keys(this.dialogs).find(id =>
       this.dialogs[id].open && this.dialogs[id].hasAttribute('data-native-settings'));
-    const opened = current !== this.current;
+    const previous = this.current;
+    const opened = current !== previous;
     if (opened) {
-      if (this.current) this.send('deleteSurface', {}, settingsId);
+      if (previous) this.send('deleteSurface', {}, settingsId);
       this.current = current;
       this.group = null;
       this.signature = null;
@@ -93,7 +94,13 @@ export class SettingsHud {
         this.send('updateComponents', {components: current === 'video' ? video : appearance}, settingsId);
       }
     }
-    if (!current) return;
+    if (!current) {
+      if (opened) {
+        this.onSurfaceChange();
+        if (restoreFocus) this.focusLauncher(previous);
+      }
+      return;
+    }
     const value = {scope: this.scope, ...(current === 'video' ? {
       quality: this.quality.value, qualityOptions: options(this.quality),
       qualityDisabled: this.quality.disabled,
@@ -112,7 +119,10 @@ export class SettingsHud {
     if (this.signature === signature) return;
     this.signature = signature;
     this.send('updateDataModel', {value}, settingsId);
-    if (opened) this.focusControl('close');
+    if (opened) {
+      this.onSurfaceChange();
+      this.focusControl('close');
+    }
   }
 
   activate({name, context}) {
@@ -137,8 +147,7 @@ export class SettingsHud {
     const active = this.current;
     if (!active) return false;
     this.dialogs[active].close();
-    this.sync();
-    if (restoreFocus) this.focusLauncher(active);
+    this.sync(restoreFocus);
     return true;
   }
 }

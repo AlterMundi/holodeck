@@ -118,11 +118,11 @@ class HolodeckExperienceClient extends Networked3dWebExperienceClient {
 
 const rendererBudget={adaptive:true,startAtNative:matchMedia('(pointer: coarse)').matches,
   lightweight:usesLightGraphics(location.search)};
-let videoFrameBudget,mouseSensitivity=1,updateRoomGlazing=()=>{};
+let videoFrameBudget,mouseSensitivity=1,updateRoomGlazing=()=>{},notifyFullscreenError;
 function createFrameBudget(renderer){
   return videoFrameBudget=capWorldPixelRatio(renderer,rendererBudget);
 }
-bindVideoSettings({document,window,lightweight:rendererBudget.lightweight,onSensitivity:value=>{mouseSensitivity=value;},onGraphics:lightweight=>{
+bindVideoSettings({document,window,lightweight:rendererBudget.lightweight,onFullscreenError:message=>notifyFullscreenError?.(message),onSensitivity:value=>{mouseSensitivity=value;},onGraphics:lightweight=>{
   rendererBudget.lightweight=lightweight;
   videoFrameBudget?.setLightweight(lightweight);
   updateRoomGlazing();
@@ -889,6 +889,11 @@ window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()
 const $=selector=>document.querySelector(selector);
 const notice=$('#notice');
 const worldNotice=new WorldNotice(notice);
+notifyFullscreenError=message=>{
+  if($('#conversation-panel').hidden)return false;
+  say(message,{transient:true});
+  return true;
+};
 contentVisitor=new ContentVisitor({document,window,base,say,scoped:inside,roomId:hot?activeSpace.id:null,onCatalog:entries=>{
   if(remoteScene){galleryModels?.sync(entries);applyGallerySigns(remoteScene,entries);}
 }});
