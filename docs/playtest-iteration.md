@@ -144,3 +144,25 @@ receiving checks.
 | Activity, exhibition and visits | History filters/paging/revisions, generated exhibit entries, generated visit selector and navigation, pointing and discussion actions | Shared world/activity and original result owner. Verify exact selected result identity, independent session layout, and no private result leaks across visitors. |
 | Beacon | In-world affordance, surrounding launch/status/close controls; authorized Harmonic Lab iframe payload when selected | Beacon owner and existing authorized route. Exercise opening and exiting within the room and preserve authorization. |
 | Embedded content | Canonical Conversation, deliberately visited Nexus content and the existing Harmonic Lab payload retain the content app renderer. All frames, navigation and host actions belong to Holodeck. | Verify origin, stable mounts where needed, native shell and browser-owned device prompts. |
+
+
+## Situated context implementation
+
+Holodeck now has a source-side planner and matching receiver reducer for full,
+delta and unchanged situations. The projection keeps distinct object, station,
+visit and piece selections, coarse client-reported position and a bounded
+summary of canonical work events. Capture timestamps, connection identifiers
+and derived work cursors are excluded from comparison. A receiver-selected lane
+scopes baselines to the current actor, being, world, room and writer generation.
+The existing full-attachment transport stays selected. Canonical Conversation
+still needs to retain the independent machine receipt and install the baseline
+at admission for both text and voice before the new path can be selected.
+
+Claude Code Opus 5.5 High reviewed the code twice. The corrections add monotonic
+receiving order and a retained order floor, keep full recovery from the exact
+frozen projection, preserve unavailable collections and distinguish workstation
+selection. Six tests cover unchanged transport noise, pose, work and selection
+changes, event sanitization, bounded history, scope and generation isolation,
+out-of-order delivery and recovery after losing the baseline. The tests exercise
+the codec. Live zero-attachment delivery is still open under
+[Holodeck #19](https://github.com/AlterMundi/holodeck/issues/19).

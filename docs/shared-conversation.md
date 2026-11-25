@@ -81,6 +81,41 @@ unknown write. Status sends only original ID, phase and busy: no chat body,
 transcript, audio or unrelated history crosses frames. It is not admission proof.
 No arbitrary browser app_context is accepted as authority.
 
+## Situated deltas receiving contract
+
+The source codec separates the semantic room, selection, coarse client-reported
+position and current work state from the immutable per-original observation.
+The receiver selects its baseline lane from its writer generation and current
+binding, actor, being, world run, edition and authorized room. The writer
+allocates a monotonic order before preparation. The client supplies neither the
+lane nor the order. The same original keeps the same order across recovery.
+A semantic revision detects distinct state. Its receiving order prevents an old
+full packet from replacing a later state, even if the old state recurs. Delta
+and unchanged packets must reference both the installed revision and its order.
+Persist the order floor independently of the evictable baseline. If both are
+lost, rotate the lane generation so late packets cannot restore old state.
+
+The current Conversation submit reader accepts reply, visual, playback and
+ordinary file references. The installed source/status contract verifies an
+exact machine attachment on the retained original. Attachment omission requires
+the canonical owner to retain a separate machine source receipt. Register the
+offer through the authenticated service seam before submission and bind it to
+the exact original, actor and current native Conversation. Canonical retention
+must associate that reserved receipt with the original for text and audio before
+admission. Authorization and source verification continue to use that original
+and receipt. The reducer never authorizes a world operation.
+
+The receiver installs a baseline only with retained canonical admission. A
+missing baseline returns a typed recovery outcome before admission so the same
+original can use its frozen full projection at the same order. Do not recapture
+or recompute it after an uncertain write or after moving the avatar. A stale order never changes the
+installed baseline. A return indicating uncertain admission uses native status
+recovery. To select the new protocol, verify text, voice, reload, lost
+acknowledgment, concurrent preparations and revoked room access against the
+canonical owner. Unchanged then occupies zero user attachment slots, with the
+machine receipt still independently verifiable. The full source attachment
+remains the active compatibility contract pending that integration.
+
 ## Implemented world-side source seam
 
 NativeBridge exposes these existing-owner, UID-restricted operations:
