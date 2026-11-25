@@ -326,6 +326,54 @@ installed release `1c78c31a2b82`. Reciprocal studio doors resolved. The room
 rule admitted one configured human guest and the house owner's daimon
 identity. The copy omitted Home sign-in. The protected release still needs
 selection of the candidate and a two-session receiving trial.
+## November 25 Shaper worktop and Weaver Instrumento route
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `edb3654520af`
+from `284c3d0`. The Shaper console opens the existing body-service card
+in [Harmonic Lab](https://compaii.dmn.homes/harmonic_lab/), revision
+`02ed23e92610`. Its ready interface opens the existing Instrumento tab.
+The paired Legion has the exact frontend bundle `f5a270c2a337` from
+Harmonic Weaver `e94db5f`, with the previous dist retained. No instrument
+start was submitted during placement of its static build. The body service
+was idle, so its actual runtime status and human use remain unverified.
+
+Controlled RTX 2060 Normal and Pi 5 Livianos browsers verified the stair,
+Shaper collider, selected panel, explicit ready link and Instrumento view.
+They made zero start, configuration or device requests and returned to the
+same avatar position. Both exited to the foyer and received 404 for the
+departed room art. Stationary samples on both devices had a 16.7 ms median.
+The suite passed 411 tests with two skips.
+
+Receiving matched 86 Holodeck files, the existing access and configuration,
+and world sequence 433. The two service rollbacks are Holodeck
+`0bbaf60eb737` and Harmonic Lab `aab865b842c8`. Continuous movement
+among all worktops and real signed-in instrument acceptance remain open.
+
+## November 25 Guitar worktop and focused Laboratory route
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `0bbaf60eb737`
+from `16911a6`. The modeled Guitar worktop opens the focused Guitar card
+inside the existing Laboratory window. [Harmonic Lab](https://compaii.dmn.homes/harmonic_lab/)
+serves `aab865b842c8`, with the focused route from Harmonic Weaver
+`4fb4462`. It retains the same selected receiver, access and separate
+instrument-start control.
+
+The controlled RTX 2060 Normal and Pi 5 Livianos browsers descended the stair,
+checked the new collision, opened the Guitar card, read simulated stopped and
+ready status, returned control at the same avatar position and exited to the
+foyer. The fixture denied the guest request and submitted zero start requests.
+Three matched Pi samples kept a 33.3 ms median and p95 around 50 ms on both
+builds. The suite passed 411 tests with two skips.
+
+Receiving matched all 86 Holodeck files, retained world sequence
+433, and kept the existing access and configuration. The first
+install attempt ended when Home Access hit its memory cap. The same
+retained request completed after the service recovered. Immediate
+rollbacks are `179364d0f9fc` for Holodeck and `87df9184488a` for the
+Laboratory panel. The panel kept its three verified files, alias and
+selected audience. Live instrument readiness and human acceptance
+remain untested. Shaper remains an optional visual study.
+
 ## November 25 Harmonic Lab floor and return lighting
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `179364d0f9fc`

@@ -1,13 +1,14 @@
 const panel='/harmonic_lab/';
 const STATUS_LIMIT=128*1024;
 const STATUS_LIFETIME=30000;
-const station=(id,title,service,x,z)=>Object.freeze({id,title,service,revision:1,
+const station=(id,title,service,x,z,view)=>Object.freeze({id,title,service,view,revision:1,
   position:Object.freeze({x,y:.1,z})});
 
 export const BEACON_CONTROLS=Object.freeze([
   station('beacon-spatializer','Spatializer','audio',3.802,-.791),
   station('beacon-weaver','Weaver','body',-3.758,2.659),
   station('beacon-guitar','Guitarra','guitar',-4.49,-.35),
+  station('beacon-shaper','Shaper','body',3.51,2.78,'instrumento'),
 ]);
 
 export function nearbyBeaconControl(objects,position){
@@ -182,7 +183,9 @@ export class BeaconControls{
     this.link.hidden=!next;
     if(this.statusButton)this.statusButton.hidden=!next;
     if(!next){this.link.removeAttribute('href');return;}
-    this.link.href=panel+'?service='+next.service;
+    const target=new URLSearchParams({service:next.service});
+    if(next.view)target.set('view',next.view);
+    this.link.href=panel+'?'+target;
     this.link.textContent='Abrir '+next.title;
   }
 

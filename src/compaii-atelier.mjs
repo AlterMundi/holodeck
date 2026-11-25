@@ -71,8 +71,8 @@ export const ATELIER_ASSET_REVISIONS=Object.freeze({
   'room-art/compaii-atelier/foyer-gallery.glb':'aa35e6ad7a059928dccdf7f45331290bf6962464b733fa549fe907d357956d3a',
   'room-art/compaii-atelier/gallery.glb':'a014d251eaf7ef33f6ba66fc696ecf4ad946177c6fccf8f64a0b75546118e3ba',
   'room-art/compaii-atelier/gallery-sealed.glb':'b1aa5cc6341904430aba821ba4b23e17776fff43e8e8acf4d0468c1c2ab3decc',
-  'room-art/compaii-atelier/beacon.glb':'e371bfc816840b602fc2d3da43d0f5b083d27aa3a1122f5377428e54b29c45e1',
-  'room-art/compaii-atelier/beacon-return.glb':'28e025591b92883374be85a23468b723d392303414608950a4bb0f39ff06a94d',
+  'room-art/compaii-atelier/beacon.glb':'7ef9eb24decebaa993264356f46c40f6b6ddb1dc79731a4d9823d5f513c10f3a',
+  'room-art/compaii-atelier/beacon-return.glb':'1f3017de16c3a3063c7f2efd1e329839f76f74f27137085a247e486a1b484508',
   'room-art/compaii-atelier/tower.glb':'ce6d7f438909e938814266b8ef9901c5d7b738a85be81cacfed270eb7b65b2e7',
   ['assets/'+FACADE_ASSET]:'bc548baaf5112a109644243d88fca9f31f604c135a32b8761ad48ef587365a9e',
   ['assets/'+GARDEN_ASSET]:GARDEN_REVISION,
@@ -203,7 +203,8 @@ export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt())
     colliders:'<m-cylinder x="-.44" y=".315" z="1.9" radius="1.62" height=".43" opacity="0" cast-shadows="false"></m-cylinder>'+
      box({x:3.802,y:.643,z:-.791,w:2.332,h:1.085,d:.886})+
      box({x:-3.758,y:.643,z:2.659,w:2.068,h:1.085,d:.886})+
-     box({x:-4.49,y:.605,z:-.35,w:1.76,h:1.01,d:1.12}),
+     box({x:-4.49,y:.605,z:-.35,w:1.76,h:1.01,d:1.12})+
+     box({x:3.51,y:.684,z:2.78,w:1.76,h:1.168,d:1.12}),
     lightRig:chamberRig};
   const towerArt={...asset('tower'),replacesShell:true,authoredPortal:{plaque:.181,light:.35},ambient:.64,
     // The east clerestory is an open aperture in the Blender model.

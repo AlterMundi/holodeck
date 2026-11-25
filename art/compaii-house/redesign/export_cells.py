@@ -196,7 +196,7 @@ def prepare_beacon_lettering(objects):
         sign.data.materials[0] = ivory
 
 
-def mesh_for(collection, origin, cell, study_stations=False):
+def mesh_for(collection, origin, cell):
     scope = bpy.data.collections[collection]
     scope.hide_render = False
     exclusions = {'beacon': BEACON_STAIRS + BEACON_VAULT,
@@ -224,7 +224,7 @@ def mesh_for(collection, origin, cell, study_stations=False):
     obj.location -= Vector(origin)
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     if cell in ('beacon','beacon-return'):
-        register_beacon(obj, study_stations)
+        register_beacon(obj)
     if cell=='beacon-return':
         register_beacon_return(obj)
     if cell=='facade':
@@ -584,7 +584,7 @@ def beacon_floor(collection):
 
 
 
-def beacon_workstations(collection, study_stations):
+def beacon_workstations(collection):
     # Blender Y is the negation of room Z in the registered chamber.
     materials = bpy.data.materials
     basalt = materials['Split basalt']
@@ -652,8 +652,6 @@ def beacon_workstations(collection, study_stations):
     spindle('Guitar cradle neck pad',(-4.07,.35),
             [(.966,.18,.14),(1.07,.18,.14),(1.11,.15,.12)],iron,20)
     plaque('Guitarra',(-3.631,.35,.846),1)
-    if not study_stations:
-        return parts
 
     shaper = (3.51,-2.78)
     spindle('Shaper console base',shaper,
@@ -671,7 +669,7 @@ def beacon_workstations(collection, study_stations):
     plaque('Shaper',(2.694,-2.78,.924),-1)
     return parts
 
-def register_beacon(obj, study_stations=False):
+def register_beacon(obj):
     # Preserve the existing 12m cell and the west stair passage. The rendered
     # chamber extends south from the stair and leaves the original steps free.
     # Blender (X,Y,Z) here is centered on the chamber, before glTF converts it.
@@ -684,7 +682,7 @@ def register_beacon(obj, study_stations=False):
     iron = bpy.data.materials['Blue gunmetal']
     collection = obj.users_collection[0]
     pieces = [obj, *beacon_vault(collection), beacon_floor(collection),
-              *beacon_workstations(collection, study_stations)]
+              *beacon_workstations(collection)]
 
     def piece(name, at, size, mat, tilt=0, bevel=.015, segments=3):
         bpy.ops.mesh.primitive_cube_add(size=1, location=at)
@@ -870,11 +868,8 @@ if __name__ == '__main__':
     args = sys.argv[sys.argv.index('--')+1:]
     destination, cell = Path(args[0]).resolve(), args[1]
     collection, origin = CELLS[cell]
-    extra = args[2:]
-    if extra not in ([], ['--study-stations']) or (extra and cell not in ('beacon','beacon-return')):
-        raise ValueError('Expected an optional --study-stations flag for Beacon exports')
     destination.mkdir(parents=True, exist_ok=True)
-    obj = mesh_for(collection, origin, cell, study_stations=bool(extra))
+    obj = mesh_for(collection, origin, cell)
     # This smaller cell keeps its look with a 768px atlas and fits the
     # existing package budget alongside both permissioned gallery variants.
     color_size = 768 if cell == 'tower' else ALBEDO_RESOLUTION

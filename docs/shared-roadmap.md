@@ -692,13 +692,13 @@ walnut worktop at (−4.49, −0.35) uses the owned panel's Guitar deep link.
 Controlled browsers tested the room-scoped action, selected card, simulated
 receiving readiness and return at the same avatar position.
 
-Shaper has a [room-scale study](../art/compaii-house/redesign/README.md#guitar-worktop-and-shaper-study)
-at (3.51, 2.78), with measured collider envelopes. Shaper runs with the
-managed Weaver body service. Qualify a view hint for its existing
-Instrumento tab and label that relationship in the room. The current
-receiver serves instrument interfaces locally. Opening the projected
-control uses the existing owner panel, and instrument starts remain
-explicit. Test signed-in use and continuous passage between worktops.
+The [Shaper worktop](../art/compaii-house/redesign/README.md#guitar-and-shaper-worktops)
+sits at (3.51, 2.78). Its Laboratory window points to the existing
+managed Weaver body service. The ready interface opens the Instrumento
+tab under the same operator, on the selected receiver. The panel
+retains its explicit Start action. The receiving frontend is prepared
+on Legion. Verify signed-in instrument use and continuous passage among
+all worktops independently of controlled rendering tests.
 
 The Prototype Bench is a scoped portal to the existing 3D Guitar review.
 Preserve its role and authorization. In a new layout, distinguish inspection
