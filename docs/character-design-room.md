@@ -14,18 +14,25 @@ The toroidal Atelier has a foyer with doors to the Matter room, Harmonic
 Lab and the Character Design Room. The studio's return door moves the actor
 back to the foyer through the same authorized spatial navigation. Exact pose
 links remain independently reviewable through the protected Holodeck entry.
-The studio opens a Three.js view with the shipped Navegante and a humanoid rig.
-Proyección A2UI controls select the character and compatible published
-clips, play or pause, scrub the sequence at 30 fps, step a frame,
-and select front, side or three-quarter views. The view starts paused
-under reduced motion or when opening an exact frame link.
+In the worktable candidate, enter the studio through its door, approach
+the furniture and choose **Usar mesa**. It mounts the rig in the existing
+world scene and uses the worktable's miniature movement and local camera.
+**Salir de la mesa** or Escape returns control to the visitor in the same
+room. The foyer door handles room exit.
+
+The physical table and direct web projection use the same Three.js player
+for Navegante and the humanoid rig, Proyección A2UI controls and scoped
+review state. Both support compatible clips, play, pause, scrubbing at
+30 fps and frame stepping. The web projection also offers front, side and
+three-quarter presets. The player starts paused at the physical table,
+with reduced motion, or when opening an exact frame link.
 
 Copying a pose link includes the rig and clip content digests, frame
 and view. When the served assets have changed, the studio reports
 the older edition and resets to the first frame. It does not assign
-the old frame to the new asset. A frame note stays in the current
-browser, bounded to 30 notes. This draft uses the existing shared
-authentication and does not change a visitor's active in-world avatar.
+the old frame to the new asset. Notes created outside the room are
+browser-local, bounded to 30 notes. The studio uses the existing shared
+authentication and keeps the visitor's active in-world avatar.
 
 ## Motion studies
 
@@ -108,11 +115,13 @@ to be selected by the application.
 
 In the existing protected Holodeck, use the admitted human guest and the
 house owner's authenticated identity. Both enter through the foyer.
-The owner shows the humanoid landing frame and the guest opens the
-shared pose. Compare the rig, clip, edition and frame on both sides
-while each visitor adjusts their own camera. The guest adds an agreed
-note. The owner reopens that exact frame, reads the attributed note
-and checks that returning to the foyer leaves the review out of scope.
+The owner shows the humanoid landing frame from the physical worktable.
+The guest opens the same room's review in the direct web projection and
+follows that pose. Compare the rig, clip, edition and frame while each
+visitor adjusts their own camera. The guest adds an agreed note. The owner
+reopens that exact frame at the table, reads the attributed note and checks
+that leaving the table keeps the room active. Returning to the foyer ends
+access to the room review.
 
 Record the installed package digest and the observed room entry and
 readback. Keep fixture identities and temporary copies in technical

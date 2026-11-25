@@ -105,12 +105,25 @@ The loopback world recovered after one initial socket timeout.
 Proyección `3d7bdf0ef93dd349b07e35da673b423294c97f3f` passed 721 tests,
 and Holodeck passed 405 with two optional skips.
 
-Protected release `b4031531fdfd` supplied the baseline for an earlier layout check. The candidate booted on a
-temporary copy of the selected house, Atelier and active-space checkpoints.
-The reciprocal studio doors resolved and the room rule admitted one
-configured human guest and the house owner's daimon identity. This check
-used the copied layout and omitted Home sign-in. Holodeck's release
-selection and the protected two-session trial remain open.
+Candidate `17ef4d455ea4` ports the physical worktable from `a2be069`
+onto the selected shared presentation and note contract and the live
+Atelier baseline `2678e38`. Its archive
+`63a09b7548ec97eda07303ee14ce3aabd10425f19c8b56665b07ae7d69815329`
+matches all 87 payload files. In the actual room on a loopback fixture,
+**Usar mesa** mounted the shared player with local tabletop movement. One
+visitor selected landing frame 110, compared it with the swim study at the
+same time and published the exact visible swim edition. A second, separate
+Chromium session opened that pose in the web projection and wrote a scoped
+note. The table read back its attribution. Opening the native editor paused
+playback. Escape restored world control in the same room. A separate web
+touch fixture retained portrait/landscape menu placement and the other
+visitor's independent frame. Holodeck passed 411 tests with two skips.
+
+The candidate booted on a temporary copy of three selected checkpoints from
+installed release `1c78c31a2b82`. Reciprocal studio doors resolved. The room
+rule admitted one configured human guest and the house owner's daimon
+identity. The copy omitted Home sign-in. The protected release still needs
+selection of the candidate and a two-session receiving trial.
 
 ## November 25 Atelier interaction and portrait controls
 
