@@ -158,13 +158,26 @@ export function terrainTrail(u,v,terrain = TOROIDAL_TERRAIN) {
 }
 
 const groundColors={
-  moss:[.16,.238,.102], grass:[.236,.287,.127], heather:[.29,.222,.147],
+  moss:[.077,.168,.065], grass:[.163,.256,.079], straw:[.276,.261,.107],
   scree:[.291,.264,.227], highStone:[.367,.348,.294], wetSand:[.28,.239,.172],
   sediment:[.136,.16,.12], trail:[.423,.344,.214],
 };
 
+// Broad exposures shape both the ground and the tufts. Use the canonical
+// periodic samples so the field survives profile and tile changes.
+export function terrainMeadowMoisture(u,v,height,terrain = TOROIDAL_TERRAIN) {
+  const basin=periodicNoise(u,v,64,24,terrain.seed^0xac5127);
+  const pocket=periodicNoise(u,v,176,64,terrain.seed^0x9c4256);
+  const exposed=fade(Math.max(0,Math.min(1,(height-23)/35)));
+  const shore=Number.isFinite(terrain.waterLevel)?
+    fade(Math.max(0,1-Math.abs(height-terrain.waterLevel-6)/16)):0;
+  return Math.max(0,Math.min(1,.50+basin*.35+pocket*.15+shore*.13-exposed*.20));
+}
+
 export function terrainColor(u,v,height,slope,terrain = TOROIDAL_TERRAIN) {
-  const cover=(periodicNoise(u,v,128,48,terrain.seed^0xac5127)+1)/2;
+  const moisture=terrainMeadowMoisture(u,v,height,terrain);
+  const growth=fade(Math.max(0,Math.min(1,moisture/.61)));
+  const moss=fade(Math.max(0,Math.min(1,(moisture-.56)/.39)));
   const patch=(periodicNoise(u,v,512,192,terrain.seed^0x412da5)+1)/2;
   const rock=fade(Math.max(0,Math.min(1,(slope-.08)/.32)));
   const crest=fade(Math.max(0,Math.min(1,(height-23)/34)));
@@ -175,7 +188,7 @@ export function terrainColor(u,v,height,slope,terrain = TOROIDAL_TERRAIN) {
   const trail=terrainTrail(u,v,terrain)*(1-submerged)*.72;
   const soil=groundColors;
   return soil.grass.map((value,axis)=>{
-    const vegetation=mix(soil.moss[axis],mix(value,soil.heather[axis],cover**2),cover);
+    const vegetation=mix(mix(soil.straw[axis],value,growth),soil.moss[axis],moss);
     const stone=mix(soil.scree[axis],soil.highStone[axis],crest);
     const dry=mix(vegetation,stone,Math.max(rock,crest*.86));
     const shoreColor=mix(mix(dry,soil.wetSand[axis],shore*.85),soil.sediment[axis],submerged);

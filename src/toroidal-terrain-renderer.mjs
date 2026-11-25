@@ -101,48 +101,15 @@ const terrainShading = {
     float holoMeadowRoughness = .96;
     float holoTrailMask = 0.0;
     float holoTrailRoughness = .90;
-    // Continuous bands follow the seed's surface between scenery cells.
-    // Three projections avoid a visible seam on the inner or lower faces.
-    float fieldSlope = smoothstep(.72,.96,meadowSlope);
-    float fieldHeight = smoothstep(-7.8,-1.2,vHoloHeight)*(1.0-smoothstep(31.0,69.0,vHoloHeight));
-    float fieldMask = fieldSlope*fieldHeight*(1.0-holoMeadowGround);
-    if(fieldMask > .008){
-      vec3 normal = abs(normalize(vHoloUp));
-      vec3 weights = normalize(normal*normal);
-      weights /= dot(weights,vec3(1.0));
-      vec3 point = vHoloWorld;
-      float broadField = dot(weights,vec3(
-        ringNoise(point.yz*.024+vec2(7.7,19.2)),
-        ringNoise(point.xz*.024+vec2(13.7,8.2)),
-        ringNoise(point.xy*.024+vec2(4.7,31.2))));
-      float green = smoothstep(.28,.69,broadField);
-      vec3 fieldColor = mix(vec3(.078,.130,.044),vec3(.156,.238,.068),green);
-      fieldColor = mix(fieldColor,vec3(.288,.255,.099),smoothstep(.70,.91,broadField)*.65);
-      float mottlingWeight=(1.0-smoothstep(.24,.50,.36*meadowFootprint))*holodeckMeadowGrain;
-      if(mottlingWeight > .001){
-        vec3 mids=vec3(ringNoise(point.yz*.36+9.1),ringNoise(point.xz*.36+6.2),ringNoise(point.xy*.36+2.6));
-        float mottling=dot(weights,mids)-.5;
-        fieldColor *= 1.0+mottling*mottlingWeight*.24;
+    // Vertex colours carry the same field as the rooted cover. Keep
+    // local grain small and screen-filtered instead of adding another
+    // projected palette over the authored regional colours.
+    if (holoMeadow > .001 && holodeckMeadowGrain > .5) {
+      float grainWeight = 1.0-smoothstep(.32,.62,4.1*meadowFootprint);
+      if(grainWeight > .001){
+        float grain=ringNoise(approach*4.1+vec2(5.8,17.0))-.5;
+        diffuseColor.rgb *= 1.0+grain*grainWeight*.24*holoMeadow;
       }
-      diffuseColor.rgb = mix(diffuseColor.rgb,fieldColor,fieldMask*.76);
-    }
-    if (holoMeadow > .001) {
-      vec2 field = mat2(.94,.34,-.34,.94)*approach;
-      float patchWeight = 1.0-smoothstep(.38,.72,.47*meadowFootprint);
-      float growth = patchWeight > .001 ? (ringNoise(field*.47+vec2(9.4,21.8))-.5)*patchWeight : 0.0;
-      float broadWeight = 1.0-smoothstep(.38,.72,.105*meadowFootprint);
-      float broad = ringNoise(field*vec2(.105,.078)+vec2(31.2,8.8)+growth*vec2(.14,-.11))-.5;
-      float seedHeads = mix(.19,smoothstep(.01,.39,broad+growth*.23),broadWeight);
-      float fresh = mix(.74,smoothstep(-.39,.08,broad+growth*.36),broadWeight);
-      vec3 meadowColor = mix(vec3(.113,.210,.061),vec3(.192,.314,.084),fresh);
-      meadowColor = mix(meadowColor,vec3(.337,.281,.103),seedHeads*.87);
-      meadowColor *= 1.0 + growth*.14;
-      float grainWeight = 1.0-smoothstep(.32,.62,6.8*meadowFootprint);
-      if (holodeckMeadowGrain > .5 && grainWeight > .001) {
-        meadowColor *= 1.0 + (ringNoise(field*6.8+vec2(5.8,17.0))-.5)*grainWeight*.25;
-      }
-      diffuseColor.rgb = mix(diffuseColor.rgb,meadowColor,holoMeadow);
-      holoMeadowRoughness = mix(.91,.99,seedHeads);
     }
     if (holodeckApproachArt > .5 && abs(approach.x) < 14.0 &&
         approach.y > 6.0 && approach.y < 51.0 && vHoloWorld.y > 0.0) {
