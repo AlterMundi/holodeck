@@ -6,30 +6,27 @@ The MVP coverage below remains its own unfinished acceptance record.
 
 The MVP scope includes the [complete environment art production plan](shared-roadmap.md#environment-art-production). Nicolás confirmed entry to the Beacon basement and requested a full visual redesign. The commons, attractive small house exterior, expandable interior, working Beacon instruments and versioned 3D gallery are all part of the same goal, together with the existing native and multi-user acceptance checks.
 
-The selected visual endpoint is a photorealistic shared world with fluid
-locomotion and room transitions. Art increments must move the player-height
-experience toward that endpoint while keeping the full interactive roadmap.
-
-The separate [appearance objective](shared-roadmap.md#separate-implementation-objective--room-appearance)
-is now active in the native Holodeck thread. On 24 November, the original paused
-MVP objective and accounting were retained before editing and resuming the same
-native goal for appearance. The MVP scope below remains pending. Simulated
-participants and devices remain the selected qualification route, with direct
-observations attributed separately.
+The current active goal covers the complete shared roadmap, with
+[shared habitation](shared-roadmap.md#first-shared-habitation-iteration) as
+the first release. The selected concept studies set the quality bar for a
+children-oriented default style. The shared scene remains declarative and
+viewers may render it differently. See
+[the world and presentation boundary](shared-roadmap.md#one-declarative-world-individually-styled)
+for the asset and hybrid renderer strategy. Keep controlled results separate
+from real participant and physical-device acceptance.
 
 | Outcome | Implemented and checked | Still required |
 | --- | --- | --- |
 | [Native situated participation #1](https://github.com/AlterMundi/holodeck/issues/1) | Exact original + immutable situation; the local paired route and seven remote paired routes with identity-pinned return ports; durable uncertain-intent recovery; actual own-native runtime creation. The working fixture turn followed two authorized passages to its captured room and applied the signal. Both simulated browsers saw completion. The installed Conversation client rendered the associated fixture final after a sibling final, and only the same original could recover its exact CLI receipt, including after completion and source release. A selected room fixture remains pinned to the prepared source while the player walks and chooses the next topic. An actual Codex model independently read the room, followed the permitted passages and chose the missing signal in the same fixture original. The client projected the model-authored answer via simulated canonical transport. The combined trial used the real isolated Telecodex writer and actual native packet attachment, a real Codex model, both Chromium participants and one owner-published final for that same original. It preserved the receipt after release and excluded another original. A separate selected-worker trial combined the real isolated routing owner, fresh routed proof, exact attachment, both browser views of the action and one covering worker reply. A second run independently used a real model to choose the passages and signal and author that reply. The served observer exposes typed actions and checks exact active routed execution at writes. The producer and bridge passed isolated tests. | Verify the production round trip and adoption of the new routed proof on the native owner and bridge. Real input uptake and a prior human-confirmed beacon/light edit are already recorded. |
-| [Playable shared creation #2](https://github.com/AlterMundi/holodeck/issues/2) | Shared world, keyboard and emulated touch, revisioned native results, editable lights and cooperative signal gardens. The hosted native and paired-human editor also offer reusable solo and cooperative room templates. Two independent simulated browsers played and reconnected while canonical Conversation preserved the original garden situation. Two exterior browsers exercised WASD, touch joystick, ordinary planting and bridge controls, and matched the same reversible progress in their rendered markers, HUD and native state. | Exercise device performance and native turn-to-action in the same shared activity. |
+| [Playable shared creation #2](https://github.com/AlterMundi/holodeck/issues/2) | Shared world, keyboard and emulated touch, revisioned native results, with historical editable-light and signal-garden trials. The hosted native and paired-human editor also offer reusable solo and cooperative room templates. Two independent simulated browsers played and reconnected while canonical Conversation preserved the original garden situation. Two exterior browsers exercised WASD, touch joystick, ordinary planting and bridge controls, and matched the same reversible progress in their rendered markers, HUD and native state. | First qualify the selected Matter and Collection project end to end. Carry playable work forward with its own supported creator surface and receiving tests. |
 | [Quality and device trial #3](https://github.com/AlterMundi/holodeck/issues/3) | Blender-authored public routes and landmarks; bounded lighting; desktop/touch HUD; real browser movement/creation checks; readable game instructions and a Conversation reply readable at four tested desktop and emulated phone sizes. The same frame and draft survive returning to the world. The same assigned avatar rendered through worker failures in emulated touch and a shared plaza-to-room trial. The opt-in lightweight entrance draws at reduced resolution from launch and keeps ordinary input and room travel. | Keep specific human/device performance observations distinct from viewport emulation; fix concrete quality/usability problems encountered |
 | [Durable sharing #4](https://github.com/AlterMundi/holodeck/issues/4) | Existing Home package/auth boundary; bounded state; protected HTTPS release/audience; real creation exported to the shared viewer and immutable Nexus reviews; verified native review associations for published and successor draft editions; actual own-being historical revisit; independently selected stable trial entrance; actual native-created protected result portal with linked game node and edition-safe dynamic discovery | Exercise creation review, contextual comment/response and revisit with independent fixture identities; retain authenticated recovery and device qualification |
 
 The MVP includes a walkable 3D world. QR scanning and augmented physical mapping
 remain candidate creations. Avatar/VR refinement is not a prerequisite for the
 initial explicit turn-based Conversation mode. No canned companion can satisfy
-native integration. Prove the full requested behavior with independent fixture
-identities, simulated inputs and physical-device emulation where useful. Keep
-any subsequent voluntary human use as additional evidence. Existing observed
+native integration. Use independent fixtures for regression checks. Close receiving acceptance
+with separate authorized participants and physical device observations. Existing observed
 shared movement and authentication results continue to count.
 
 See [plan](plan.md), [current evidence](STATUS.md), [native contract](native-integration.md),

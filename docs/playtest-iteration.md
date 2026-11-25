@@ -653,14 +653,11 @@ instrument sources live in `src/hud-material-shell.mjs` and `art/hud-spatial/`.
 
 ### Select and ship the game-wide HUD design
 
-This is an explicit acceptance item for the active playtest iteration.
-Review the six existing looks on real gameplay surfaces and let Nicolás
-select the visual direction before promoting a default. Compare each at
+The selected concept studies now set the quality bar. The previous
+six-look comparison is historical. Compare the next integrated design at
 arrival, with the minimap open, inside Matter around an actual part, and
-with Conversation open alongside it. The playable comparisons live on
-Holodeck in the `hud-look` variants `cabina`, `orbita`, `umbral`, `pulso`,
-`estratos`, and `taller`. Taller currently styles the worktable only.
-The linked comparison viewer is useful for the design studies.
+with Conversation open alongside it. The historical `hud-look` previews
+remain opt-in for reference.
 
 Carry the selected direction through all native HUD surfaces, overlays,
 windows and their opening, closing, focused, disabled and confirmed states.
@@ -680,7 +677,7 @@ project selection and Conversation display for each. The embedded test
 payload shows the framing. Fable High addressed composition and text
 contrast. Opus 5.5 High checked the draft geometry and the comparison.
 Anillo's initial position encroached on the piece and was moved toward the
-edge before its final capture. These are visual drafts for selection.
+edge before its final capture. These are historical visual drafts.
 A dedicated design workshop table is a later
 project.
 

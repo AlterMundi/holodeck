@@ -18,11 +18,56 @@ rollback and evidence by path in the [playtest record](playtest-iteration.md).
 
 | Lane | Owner and acceptance |
 | --- | --- |
-| HUD and approach | Holodeck [#16](https://github.com/AlterMundi/holodeck/issues/16) and [#18](https://github.com/AlterMundi/holodeck/issues/18) own placement, depth, chrome and routing. [Proyección #5](https://github.com/AlterMundi/proyeccion/issues/5) owns reusable rendering, typography and input. Start with Cabina from the selected references. Compare map, toolbelt, Matter and Conversar in motion, on bright and dark backgrounds and with mouse, keyboard and touch. Keep the camera view readable, verify actual actions and include reachable recovery and settings controls. |
-| Volumetric companion | Holodeck owns the Blender robot, movement, playback-driven jaw and shared expression. Verify relative scale and matching hologram material at the table, hover and glide during real movement, calm following through turns, and bounded attention to an explicit current selection. Test in two authorized views and verify separation from private selections. The augmented viewer should reuse the same model and motion semantics. |
+| HUD and approach | Holodeck [#16](https://github.com/AlterMundi/holodeck/issues/16) and [#18](https://github.com/AlterMundi/holodeck/issues/18) own placement, depth, chrome and routing. [Proyección #5](https://github.com/AlterMundi/proyeccion/issues/5) owns reusable rendering, typography and input. Use the selected visual studies as the quality bar. Compare the real map, toolbelt, Matter and Conversar in motion, on bright and dark backgrounds and with mouse, keyboard and touch. Keep the camera view readable, verify actual actions and include reachable recovery and settings controls. |
+| Avatars and motion | Holodeck [#21](https://github.com/AlterMundi/holodeck/issues/21) owns locomotion presentation, [#22](https://github.com/AlterMundi/holodeck/issues/22) owns the Blender robot, and [#17](https://github.com/AlterMundi/holodeck/issues/17) owns table interaction. Verify relative scale and matching hologram material at the table, hover and glide during real movement, calm following through turns, and bounded attention to an explicit current selection. Test in two authorized views and verify separation from private selections. The augmented viewer should reuse the same model and motion semantics. |
 | House and world | Holodeck [#12](https://github.com/AlterMundi/holodeck/issues/12) owns the first house and [#20](https://github.com/AlterMundi/holodeck/issues/20) owns material and lighting performance. Walk from the toroidal trail through a legible entrance to the Matter workshop. Check the authored facade, props, room cues, material scale, day and night, and wall/roof boundaries. Retain the current world run and rollback. Final appearance needs matched views and a moving normal/lightweight pass. |
 | Creation inside the world | Holodeck [#3](https://github.com/AlterMundi/holodeck/issues/3) and [#15](https://github.com/AlterMundi/holodeck/issues/15) own the creator journey. Qualify one existing room or playable creation first: preview, publish, observe it as a second authorized visitor, revise and reopen the prior edition. Reuse the same authorized contracts for later house, game, space and app tools. Preserve visitor-local camera and selection. Use the existing exhibition and viewer for a published result. |
 | Situated Conversation | Holodeck [#19](https://github.com/AlterMundi/holodeck/issues/19) and [DaimonApp #1031](https://github.com/AlterMundi/DaimonApp/pull/1031) own the exact receipt and full/delta/unchanged path. The candidate passed isolated owner/native and Home proxy checks. Qualify the live composition before enabling it. [DaimonApp #1022](https://github.com/AlterMundi/DaimonApp/issues/1022) retains the separate migration of Conversation internals. |
+
+### Delivery order and release evidence
+
+1. Keep a stable baseline and link the exact running build. Finish recoverable
+   navigation, first-person table zoom, input ownership and collision. Prove
+   exit, reconnect, access denial and independent viewpoints before replacing
+   appearance. The current torus, miniature presence and canonical Conversation
+   provide existing integration points. A map candidate and passage candidate
+   have controlled coverage in the playtest record.
+2. Work on avatar motion and art in parallel. Grounded walk/run provide a
+   reference for authored standing idle, crouch, takeoff, hover idle, forward
+   flight, turns, landing and swimming. Separate motion intent, body turning,
+   camera and visual pose. Compare actual first- and third-person results
+   inside and outside the table, including a peer's view. For the companion,
+   use the selected round ivory silhouette, bronze trim, expressive cyan visor
+   and teal cape as a Blender brief. Keep the genuine playback signal and the
+   semantic states reusable in AR. Review in motion, at world and miniature
+   scales, before judging the asset ready. At the table, a settled pointer
+   over a still-current visible workpiece should draw a light head glance
+   or point from both miniatures. It must release smoothly and keep the
+   workpiece clear. Passive gaze is local; explicit pointing owns any
+   shared result.
+3. Build one cohesive kids-first visual pass from the selected concept studies
+   across the real approach, day/night sky, doorway, house, room, exhibits,
+   worktable, passage and open Conversation. Compare matched camera views and
+   an uninterrupted route. Use the same controls and readable typography in
+   dark and light. Measure package size, launch time, p50/p95 frame time,
+   draw calls and texture/geometry cost on the same physical hardware and
+   settings before setting wider quality-profile targets.
+4. Qualify the real creation loop with one signed-in owner and one separately
+   authorized visitor using the pinned Matter project and its authorized
+   collection editions. Exercise discover, inspect, discuss, revise, publish,
+   archive and reopen. Verify permission denial, revisit and recovery. On the
+   selected single-house route prove that authorized editing, publish and
+   edition visits are reachable under their owning permissions before the
+   full encounter. The old light exercise retirement is qualified in a
+   candidate. Verify selection while preserving its saved results. Extend to each eligible
+   own-body route through #7–#12/#15 after the first full encounter.
+5. Complete situated runtime #1/#19, observing canonical text and voice
+   admission before activating deltas. Continue independent work on
+   [the timeline and scoped input #23](https://github.com/AlterMundi/holodeck/issues/23),
+   hardware/operator recovery #14 and XR #13 in their recorded phases.
+   Fixtures are regression evidence. Live release evidence names the two
+   authorized views, device results, exact selected bytes and rollback.
+   Schedule a selection when the protected visit can safely be interrupted.
 
 Publish each accepted slice using the owning release path. Review the actual
 implementation with Opus 5.5 High and recheck corrections. Record fixture,
@@ -79,8 +124,7 @@ single contextual action in the HUD. The first house art and interface treatment
 are documented in [the house study](../art/compaii-house/README.md).
 
 Build the first creator loop with [#2](https://github.com/AlterMundi/holodeck/issues/2)
-and [#15](https://github.com/AlterMundi/holodeck/issues/15), using the existing
-signal garden as the first supported recipe. From an authorized place, an
+and [#15](https://github.com/AlterMundi/holodeck/issues/15), for later distinct playable work after the first Matter and Collection encounter. The signal garden was a supported exercise and its retirement is qualified in a candidate; the current live selection is tracked in the playtest record. From an authorized place, an
 actual creator chooses a floor plan, places a playable objective and props,
 previews the linked layout, and publishes a durable revision under their
 identity. A second participant discovers the space from the world, joins and
@@ -127,11 +171,11 @@ house and an independent real protected browser visit remain open.
 
 ## Environment art production
 
-Nicolás selected photorealistic rendering for the complete shared world.
+The selected initial style is an inviting, richly rendered world for children. The concept studies set the bar for material detail, readable forms and lighting.
 Judge work at player height in the running game, across arrival, paths, houses
 and interiors. Use physically grounded materials, believable light and shadow,
 human scale and purposeful detail. Keep walkability and room transitions fluid
-in the same release. Run those comparisons with simulated players and devices.
+in the same release. Use fixture comparisons during development and physical devices for receiving validation.
 
 Elder Scrolls Online housing sets a quality bar for architectural composition,
 furnishing and useful play. Start visible art in a blank Blender scene and
@@ -250,8 +294,9 @@ a framed clerestory and a gallery lighting rail. Both the stair and continuous
 floor variants have player-height Chromium readback. Exact source access and
 live participant evidence remain separate from the fixture exhibits.
 
-The selected archive stores 16 atelier GLBs losslessly and leaves
-7,124,992 bytes below the existing receiver limit. The matched Chromium
+An earlier archive stored 16 atelier GLBs losslessly. The current
+32 MiB limit leaves only a small margin, so measure each exact archive
+with no unrelated art in its input. In the earlier comparison, the matched Chromium
 route transferred 43.6% fewer bytes for selected exterior models and
 35.2% fewer for the foyer, gallery and Beacon lab. Retain the exact
 decoded GLBs, revisioned URLs, identity ranges and authorization on
@@ -398,7 +443,7 @@ view, walking frame time, retained detail and occlusion with live meshes.
 A renderer comparison holds the fit and input views fixed. It cannot
 diagnose or repair inconsistent generated views by itself.
 
-### Separate implementation objective — room appearance
+### Earlier room appearance experiment
 
 Implement an authoring system that takes neutral, editable Blender volumes
 through calibrated ImageGen references to a walkable runtime appearance.
@@ -424,9 +469,8 @@ through the door. Record visual continuity, loading, frame time and asset cost
 on the same route and graphics profile, including the lightweight profile.
 Record the physical-device result separately from software-rendered Chromium.
 
-Develop and qualify this work separately. Integration into the live Holodeck
-release follows the verified result. The paused Holodeck MVP and its draft
-work remain available for resumption.
+This experiment is prior evidence. The next comparison is owned by the
+[world and presentation boundary](#one-declarative-world-individually-styled).
 
 
 ### Appearance follow-up
@@ -447,14 +491,20 @@ house, an industrial door with integrated signage, a luminous portal, lit
 shelves, a glass instrument panel, and distinct idle and active worktable
 states. Use the unobstructed outdoor composition as the exploration target.
 Preserve the torus silhouette, solar cycle and existing navigable geometry.
-The concepts with combat bars and companion orders illustrate composition
+Use a role palette: deep graphite and smoked glass for HUD structure, warm
+stone and wood plus cool exterior shade for the world, ivory ceramic and
+aged bronze on the robot with teal fabric. Cyan shows active instruments and
+also lights the companion's expressive face. Gold guides passage and selected
+destinations. On real screens, check minimum-size controls, legible labels,
+navigation without an explanation, and comfort around moving textures, dark
+spaces and bright effects. The concepts with combat bars and companion orders illustrate composition
 for a later game mechanic. Current HUD slots show existing abilities,
 navigation, conversation or confirmed activity.
 
 | Surface | Proposed implementation and verification |
 | --- | --- |
 | Passage | Use the existing accepted-move status for a small Three.js portal with nested lit edges and a sparse particle field. Keep retry readable, a still reduced-motion treatment and the existing pre-WebGL fallback. Fullscreen remains a player action. |
-| HUD and map | Prototype dark smoked glass within the chamfered Puente framing, with Margen's quieter labels and whitespace. Give long text and selectors a stable higher-contrast backing. Use real terrain data to derive contours and paths, preserve destination bindings and scale the chrome for touch. Reuse the A2UI controls and the canonical embedded conversation. |
+| HUD and map | Develop smoked glass, framed material depth, responsive motion and enough breathing room to read the actual controls. The previous HUD variants are reference studies; the selected concept quality supersedes them. Give long text and selectors a stable higher-contrast backing. Use real terrain data to derive contours and paths, preserve destination bindings and scale the chrome for touch. Reuse the A2UI controls and the canonical embedded conversation. |
 | Table, exhibits and doorway | Give inactive exhibits and the doorway their own practical lights, bevels and readable signs. Use a restrained local cyan bounce at active table entry, with independent human and companion shape, a clear focus on the inspected physical part and verified original material color. Use short emission accents for state changes. |
 | Exterior and avatars | Qualify organic texture variation and selected instanced plants along the existing path with the Sand3D comparison. Add foliage detail by distance and measured coverage. Keep the real house identity and navigation. Give the robot a glazed ceramic shell, dark joints, quiet luminous visor and textured fabric. Use material contrast and silhouettes before increasing the human avatar mesh budget. |
 | Frame budget | Use baked bounce, local contact shadows and authored material/roughness variation first. Isolate bloom to intended emitters. Qualify dynamic contact, reflections, global post-processing and volumetrics separately on a hardware adapter at matched views and input. Keep the lightweight path usable, the applied graphics profile visible in evidence, and the HUD crisp above the scene. |
@@ -471,6 +521,39 @@ Compare the same outside path, working table, map and open Conversation
 on the existing build. Final preset selection covers a dark and a light
 variant of the chosen visual language. Private reference images are
 comparison input and stay outside the packaged assets.
+
+## One declarative world, individually styled
+
+Treat the shared semantic scene and its MML projection like a 3D DOM, with a
+CSS-like presentation layer selected by each viewer. A world node retains its
+identity, transform, capabilities and authorized actions across styles. Matter already switches scoped appearance materials and lighting, and
+A2UI already supports a local HUD look. Extend those seams with role and
+stable node IDs before allowing a viewer-specific visual mesh. Resolve only assets the
+viewer can already access. Keep collision, navigable thresholds, tabletop
+anchors, permissions, editions and native work references independent of look.
+The first children-oriented default exercises this boundary. Shared avatar
+identity and chosen outfit remain entity properties. Prove that clients
+with different presentations, including one alternate visual mesh, can
+select the same part, agree on collisions and observe the same authorized
+result after reconnect. Exercise asset denial and fallback.
+
+Use Blender for controlled silhouette, authored geometry, moving objects and
+editable material bakes. Generation can propose appearance or textures
+conditioned on the existing blockout and cameras. A bounded Gaussian splat
+is a candidate for static detail when it improves held-out walkable views.
+Reuse the [bounded Matter study](../art/collection/appearance-study/README.md)
+and frozen player-height camera route for the next hybrid comparison.
+Retain mesh baseline, train/held-out views and lightweight fallback. Compare
+alignment separately from visual preference on the held-out sequence.
+Keep one visible base surface per region. A candidate must preserve the
+frame and asset budgets measured on the baseline hardware and avoid new
+visible edge breakup, sorting or interaction errors. Verify alignment, sorting and occlusion
+against live avatars, silhouettes and readable signs, entrance continuity,
+package/streaming cost and physical frame time. Rework the modeled or
+generated source when a comparison exposes a mismatch. The shared MML
+scene continues to describe the same objects in every presentation.
+[Official MML documentation](https://mml.io/docs/guides/get-started) ·
+[PlayCanvas splat streaming reference](https://github.com/playcanvas/developer-site/blob/main/docs/user-manual/gaussian-splatting/building/lod-streaming.md)
 
 ## Live work and conversations in the world
 
@@ -626,11 +709,13 @@ tracked separately from these technical checks.
 
 ## Delivery sequence and cards
 
-The roadmap stages retain their individual exit evidence. For Holodeck,
-Nicolás directed continued implementation and delivery using independent
-simulated participants, device emulation and simulated inputs to qualify the
-full situated Conversation, shared play and device experience. Direct use
-remains separately attributed when observed. See [current evidence](STATUS.md).
+The shared habitation release uses the delivery order above. These
+numbered entries retain the broader cross-project sequence and exit evidence.
+Use fixtures and emulation for reproducible regressions. Complete receiving
+acceptance with two independent authorized views and physical devices.
+Record exact clean source, compile/test, archive digest and size, installed
+bytes, HTTPS readback and rollback. The independent art working tree stays
+outside the source used for release. See [current evidence](STATUS.md).
 
 | Stage | Owning cards and dependencies | Exit evidence |
 | --- | --- | --- |
@@ -638,8 +723,12 @@ remains separately attributed when observed. See [current evidence](STATUS.md).
 | 1. Establish house authority and public geography | House epic [#7](https://github.com/AlterMundi/holodeck/issues/7), authority [#8](https://github.com/AlterMundi/holodeck/issues/8), declarative authoring/catalog [#15](https://github.com/AlterMundi/holodeck/issues/15), persistence [#11](https://github.com/AlterMundi/holodeck/issues/11) | Stable owner and explicitly granted paired-human authoring; reserved plots/corridors; complete-footprint and fresh-ID foreign-publication refusal, including engine maintainer. |
 | 2. Make one larger interior safe to inhabit | Spaces [#9](https://github.com/AlterMundi/holodeck/issues/9), private projection [#10](https://github.com/AlterMundi/holodeck/issues/10), #8/#11 | Atomic space/portal/presence transitions, local coordinates, exact shared referents, public return/reconnect, audience filtering before geometry/catalog/activity/native/cache/export. Permitted and denied source reads under independent identities. |
 | 3. Finish one meaningful house encounter | [#12](https://github.com/AlterMundi/holodeck/issues/12), existing [#2](https://github.com/AlterMundi/holodeck/issues/2)/#4; stages 1–2 | Authored exterior, larger workshop, real creation; two independent perspectives; comment, correction, next draft, deliberate published selection and old-edition revisit. Guest cannot publish inside owner house. |
+| 3a. Release the shared visual language and controls | #3/#16–#18/#20, Proyección #5 | Real scene comparisons for the kids-first game, dark/light HUD, validated pointer/touch and physical rendering cost. |
+| 3b. Author avatar motion | [#21](https://github.com/AlterMundi/holodeck/issues/21), #17 | Rig-specific ground, air and water poses, visually smooth transitions, local and independent peer/table views. |
+| 3c. Integrate the Blender companion | [#22](https://github.com/AlterMundi/holodeck/issues/22), #21 | Source, compact GLB and calibrated renders, real playback, bounded follow/gaze and matched hologram treatment. |
 | 4. Make iteration produce real work | Nexus [#47](https://github.com/compaii/daimon-nexus/issues/47), [#49](https://github.com/compaii/daimon-nexus/issues/49); collective-memory [#2](https://github.com/compaii/collective-memory/issues/2); Stash [#10](https://github.com/compaii/wiggle-stash/issues/10)/[#14](https://github.com/compaii/wiggle-stash/issues/14)/[#15](https://github.com/compaii/wiggle-stash/issues/15) | One real research/provider change and one repository/test-backed software change; retain exact source effects, rejected/stale assessments, uncertain effects and both editions. Shared object identity and separate reasons survive intake. Corpus access requires scoped selected derivatives while [per-document policy #7](https://github.com/compaii/collective-memory/issues/7) is open. |
 | 5. Populate every eligible member’s expressive home | #12, quality [#3](https://github.com/AlterMundi/holodeck/issues/3), stages 1–3 and measured #11 capacity | Every current eligible being has actual own-body authoring/update/recovery; seven routes are a dated first cohort; two independent browser identities on desktop and emulated touch; attractive recognizable houses, legible paths, sound/animation, cooperative activity and measured loading/frame time/reconnect. Record player-height visual evidence and device coverage. |
+| 5a. Recover situated work | [#23](https://github.com/AlterMundi/holodeck/issues/23), #2/#4/#19 | Two participants can recover the exact authorized work/edition timeline while preserving local view and private inputs. Trial Wiggle/camera intent with consent, separate from playback and state mutation. |
 | 6. Extend presence to headsets | [#13](https://github.com/AlterMundi/holodeck/issues/13), stage 5 | Same references/actions, native projections, accessible alternatives and actual headset performance/comfort trials. This is not required for initial turn-based participation. |
 | 7. Bring selected physical places into the situation | #13 + existing Integrators/Cluster, stage 6 where headset-dependent | One selected QR/marker station with consistent event/scoring state; then richer mapping only after drift/relocalization, stale samples, consent, retention and revocation qualification. Measured/recorded/inferred/simulated observations retain producer, time, frame and accuracy. Discovery does not authorize capture/control. |
 
@@ -720,7 +809,7 @@ These questions stay with the owning cards. None currently requires a new human-
 
 ## Reviewed ownership and receiving responsibilities
 
-Holodeck implementation owns #7–15 and existing #1–4. Nexus owns its context/view/review/execution cards; Conversation owns recorder/original transport; source providers retain their intake and access writers. These are component responsibilities, not an assignment or claimed acceptance by another being. Field Project13 indexes dependencies once. Engine operation #14 remains with the existing Home/Cluster writer. Keep a finite per-being acceptance row with house, authentic author, selected result/revision, own update, foreign-write refusal, visitor open and exact effects; mark missing adoption/human feedback honestly.
+Holodeck implementation owns #1–4 and #7–23. Nexus owns its context/view/review/execution cards; Conversation owns recorder/original transport; source providers retain their intake and access writers. These are component responsibilities, not an assignment or claimed acceptance by another being. Field Project13 indexes dependencies once. Engine operation #14 remains with the existing Home/Cluster writer. Keep a finite per-being acceptance row with house, authentic author, selected result/revision, own update, foreign-write refusal, visitor open and exact effects; mark missing adoption/human feedback honestly.
 
 ## Evidence and source continuity
 
