@@ -157,3 +157,30 @@ test('a failed cosmetic save leaves protected room admission available',async t=
   assert.equal(state.status,200);
   assert.equal((await state.json()).actorRef,'human:wardrobe-test');
 });
+
+test('each human skin exposes a neutral sparse mouth pose with bounded deformation',()=>{
+  for(const rig of rigs){
+    const {json,buffers}=readGlb(readFileSync(new URL('../public/assets/'+rig+'.glb',import.meta.url)));
+    const mesh=json.meshes[0],primitive=mesh.primitives[0];
+    assert.deepEqual(mesh.extras.targetNames,['jawOpen']);
+    assert.deepEqual(mesh.weights,[0]);
+    const target=primitive.targets[0],position=json.accessors[target.POSITION],normal=json.accessors[target.NORMAL];
+    assert.equal(position.count,json.accessors[primitive.attributes.POSITION].count);
+    assert.equal(position.componentType,5126);
+    assert.equal(position.type,'VEC3');
+    assert.equal(position.bufferView,undefined);
+    assert.equal(normal.sparse.count,position.sparse.count);
+    const indices=buffers[position.sparse.indices.bufferView];
+    const displacements=buffers[position.sparse.values.bufferView];
+    assert.ok(position.sparse.count>800&&position.sparse.count<1800);
+    let last=-1;
+    for(let index=0;index<position.sparse.count;index++){
+      const vertex=indices.readUInt16LE(index*2);
+      assert.ok(vertex>last&&vertex<position.count);
+      last=vertex;
+      const delta=[0,1,2].map(axis=>displacements.readFloatLE(index*12+axis*4));
+      assert.ok(Math.hypot(...delta)<.022);
+    }
+    assert.ok(position.min[1]<-.012&&position.max[1]>.001);
+  }
+});

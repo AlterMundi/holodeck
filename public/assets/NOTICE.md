@@ -25,3 +25,21 @@ under the same MIT terms. Their clothing palettes were authored with Blender
 5.2.2 in `tools/geometry/build-human-outfits.py`. Each alternate uses the
 original geometry, rig, normal and lighting maps. The server assembles
 standard GLBs at startup so the release keeps only one copy of each rig.
+
+## Speech aperture derivative
+
+The files named above now include an original Holodeck `jawOpen` shape.
+The hashes in the first section identify the upstream base. The derivative
+preserves the complete original binary chunk as a prefix, including geometry,
+rig, skin weights and atlases. It appends sparse position and normal deltas
+and starts with zero morph weight. The same target is available in each
+alternate wardrobe. Use `node tools/geometry/build-human-mouths.mjs STOCK OUT`
+with the four pinned source GLBs in a separate, clean input directory.
+The writer verifies the source hashes and never replaces its inputs.
+
+Current derivative digests:
+
+- `avatar-1-bodyA-skin01.glb` · `5bbec95d975f80e0033308500ea3c03f18577f793fdca608d7f865d58c3faa44`
+- `avatar-2-bodyB-skin03.glb` · `86f705be125f2aeaa65c0bd5b4a3f08aa5efd02c7362a7f020e9114524373242`
+- `avatar-3-bodyA-skin05.glb` · `1e6036dcc1bb7c6a9d3aa72f9add98fb166837a908d09959b9b5e641895b05ac`
+- `avatar-4-bodyB-skin07.glb` · `ce38b5a4a70880d3f28ef85ff7faaa4ff9eb994e44427f94e55bdea33ef9c3ef`
