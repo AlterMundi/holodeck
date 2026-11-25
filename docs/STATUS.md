@@ -1,5 +1,23 @@
 # Current MVP work
 
+## November 25 evergreen woodland along the arrival meadow
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `251ab9f928e8`
+from `ebc4140`. The arrival meadow and southern ridge now share a
+woodland field for 883 deterministic evergreens, darker forest floor
+and thinner grass. Both profiles use the same roots and nearby trunk
+colliders. Three opaque canopy meshes change detail with distance.
+The outer route and cave entrance keep their existing terrain.
+
+Daylight captures at four fixed views and an 11 m walk at the forest
+edge held p95 at 16.7–16.8 ms on RTX 2060 Normal and Pi 5 Livianos, in
+the same range as the prior build. The walk added three draw calls
+and about 56k–66k rendered triangles. The browser fixture used
+controlled identities. The suite passed 414 tests with two skips.
+Receiving matched 86 files and preserved the existing access,
+configuration and world sequence 433. Immediate rollback is
+`49c78e382a09`.
+
 ## November 25 dry ridges and sheltered meadow
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `49c78e382a09`
