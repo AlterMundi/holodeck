@@ -668,7 +668,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       set:record=>action('focus.set',record.target,{},record.revision,{selection:record}),
       clear:record=>action('focus.clear',null,{},record.sequence),edit:editLight,
       visit:record=>contentVisitor.openNode(record.target,{expectedRevision:record.revision}).catch(()=>say('No pude abrir este contenido. Conservé la visita anterior.'))});
-    const display=new ConversationDisplay(renderer.composer.renderer,document.querySelector('#conversation-panel'));
+    const display=new ConversationDisplay(renderer.composer.renderer,document.querySelector('#conversation-panel'),matterHud.layer,
+      ()=>({worktable:worktableTopic?.reference??null,history:worldHistory?.reference()??null}));
     conversationDisplay=display;
     const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
     const draw=renderer.composer.render.bind(renderer.composer);
@@ -682,8 +683,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         floorSplatScope.projection.sort(camera,false);
       }
       draw();
-      matterHud.draw();
-      display.draw();
+      matterHud.draw(display.draw());
     };
     const exteriorAddress=socket('world');
     const arrivalAddress=socket('world?dressing=arrival');
@@ -1311,6 +1311,7 @@ $('#undo').onclick=async()=>{
 };
 function openConversation(open){
   const panel=$('#conversation-panel'),talk=$('#talk');
+  const wasHidden=panel.hidden;
   const restoreFocus=!open&&panel.contains(document.activeElement);
   if(!open&&!panel.hidden){
     const target=matterHud?.toolBounds('talk')??talk.getBoundingClientRect();
@@ -1318,7 +1319,11 @@ function openConversation(open){
   }
   panel.hidden=!open;
   talk.setAttribute('aria-expanded',String(open));
-  if(open){$('#space-travel').open=false;updateNativeAvailability();}
+  if(open){
+    $('#space-travel').open=false;
+    updateNativeAvailability();
+    if(wasHidden)conversationDisplay?.restore(matterHud?.toolBounds('talk'));
+  }
   if(open&&sharedSurface()){
     if(!sharedConversation)sharedConversation=new SharedConversationHost({window,document,container:$('#shared-conversation'),api,
       capture:captureInteractionContext,currentActor:()=>activeSpace?.actorRef??state?.actorRef,

@@ -309,8 +309,8 @@ export class MatterWorktableHud{
       width:widthFor(name)*scale,height:toolRowHeight*scale};
   }
 
-  draw(){
-    if(!this.toolGroup&&!this.group){this.layer.hide();return;}
+  draw(additional){
+    if(!this.toolGroup&&!this.group&&!additional){this.layer.hide();return;}
     const {clientWidth:width,clientHeight:height}=this.canvas;
     if(!width||!height)return;
     const viewport={width,height};
@@ -322,7 +322,11 @@ export class MatterWorktableHud{
       this.place(this.toolGroup,'toolPlacement',viewport,(width+left-right)/2,barTop,toolScale);
     }
     this.hud.update();
-    this.layer.draw(this.scene,this.camera);
+    if(Boolean(additional)!==this.composingAdditional){
+      this.composingAdditional=Boolean(additional);
+      this.layer.invalidate();
+    }
+    this.layer.draw(this.scene,this.camera,additional);
     if(this.toolGroup)this.document.body.dataset.a2uiToolbelt='';
   }
 

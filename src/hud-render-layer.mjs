@@ -36,13 +36,20 @@ export class HudRenderLayer {
     return Math.min(2,Math.max(1,this.window.devicePixelRatio||1));
   }
 
-  draw(scene,camera) {
+  draw(scene,camera,additional) {
     this.start();
     const {renderer,overlay}=this;
     if(!renderer||this.lost){
       const autoClear=this.world.autoClear;
       this.world.autoClear=false;
-      try{this.world.clearDepth();this.world.render(scene,camera);}
+      try{
+        this.world.clearDepth();
+        this.world.render(scene,camera);
+        if(additional){
+          this.world.clearDepth();
+          this.world.render(additional.scene,additional.camera);
+        }
+      }
       finally{this.world.autoClear=autoClear;}
       return;
     }
@@ -62,6 +69,14 @@ export class HudRenderLayer {
     if(overlay.hidden){overlay.hidden=false;this.invalidate();}
     if(!this.dirty)return;
     renderer.render(scene,camera);
+    if(additional){
+      const autoClear=renderer.autoClear;
+      renderer.autoClear=false;
+      try{
+        renderer.clearDepth();
+        renderer.render(additional.scene,additional.camera);
+      }finally{renderer.autoClear=autoClear;}
+    }
     this.dirty=false;
   }
 

@@ -51,7 +51,29 @@ Source `c82ebfb` introduces a separate transparent Three.js framebuffer for Matt
 
 The next toolbelt change makes the minimized Conversation and minimap actions and contextual Matter entry part of one bottom A2UI surface. The hidden legacy action handlers still own routing until their panels migrate. Claude Code confirmed `claude-opus-5-5` and returned a high-effort critique of the actual diff. Its findings drove touch-size layout, safe-area wrapping, focus restoration, separation of worktable and Conversation input, and a valid minimize target. A second focused review timed out. After corrections, controlled Chromium passed desktop and touch Matter entry, the minimap action, keyboard focus restoration, and the Conversation fixture's target, drag/resize, minimize/reopen and draft preservation. These checks do not cover every safe-area device, simultaneous visitors, or the Raspberry Pi performance budget.
 
-The captured toolbelt still compresses text horizontally in narrow controls at 1.5 DPR. The receiving evidence and requested reusable capability were posted to Proyección #5. [Proyección PR #6](https://github.com/AlterMundi/proyeccion/pull/6), merged with passing CI, supplies opt-in raster dimensions, measured ellipsis and bounded density for screen-space single-line labels. Opus 5.5 High reviewed the actual change. The correction preserves choice suffixes, the complete accessible label and the currently open menu through density changes, and bounds the raster area. All 16 spatial HUD browser tests passed. The Holodeck candidate pins the reviewed source and uses the layer's actual display ratio for its toolbelt and Matter controls. Multiline and field labels remain to migrate. Continue with density-aware lettering and the native surface cutovers. The minimap panel itself and the Conversation shell still have native HTML. Measure text, frame-time cost and context recovery. Complete desktop/Pi and multi-visitor checks on the selected package before switching the protected release.
+The captured toolbelt still compresses text horizontally in narrow controls at 1.5 DPR. The receiving evidence and requested reusable capability were posted to Proyección #5. [Proyección PR #6](https://github.com/AlterMundi/proyeccion/pull/6), merged with passing CI, supplies opt-in raster dimensions, measured ellipsis and bounded density for screen-space single-line labels. Opus 5.5 High reviewed the actual change. The correction preserves choice suffixes, the complete accessible label and the currently open menu through density changes, and bounds the raster area. All 16 spatial HUD browser tests passed. The Holodeck candidate pins the reviewed source and uses the layer's actual display ratio for its toolbelt and Matter controls. Multiline and field labels remain to migrate. Continue with density-aware lettering and the native surface cutovers. The minimap panel and the legacy world composer still have native HTML. Measure text, frame-time cost and context recovery. Complete desktop/Pi and multi-visitor checks on the selected package before switching the protected release.
+
+## Conversation window qualification
+
+The canonical Conversation iframe stays mounted in a moveable window. The
+shared high-density Three.js compositor now renders the frame and A2UI
+header, topic navigation, reference removal and resize affordance. The
+hidden native buttons and select continue to route the existing Holodeck
+actions. Reference removal compares the exact rendered source revision.
+The actual shell folds into and restores from the contextual toolbelt.
+Restore reveals the same iframe; the motion ends independently of the world
+render loop if rendering stops. The window has invisible native pointer and
+keyboard grips for drag and resize. The legacy composer remains in scope for
+a later native-surface cutover in this iteration.
+
+Opus 5.5 High reviewed the implementation. Its actionable findings led to
+independent reference commands, preserved keyboard focus, disabled-topic
+handling, usability at short window heights and a bounded animation cleanup.
+The browser fixture exposed depth clipping from scaling mesh thickness with
+CSS pixel dimensions. The correction preserves catalog depth while sizing the
+window in screen pixels. Controlled desktop and touchscreen runs verified drag,
+resize, a rendered minimize action, restore, stable iframe and draft, and
+viewport clamping. Hardware and live receiving checks remain open.
 
 ## Matter inspection qualification
 
