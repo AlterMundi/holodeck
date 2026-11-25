@@ -1480,6 +1480,31 @@ and 9.3° remotely, and both views returned to their ground pose. The
 [protected deployment](STATUS.md#november-25-humanoid-standing-idle-and-airborne-turns)
 selects this archive with `873ae82b51f6` as its code-only rollback.
 
+## Humanoid mouth aperture
+
+[Holodeck #21](https://github.com/AlterMundi/holodeck/issues/21) tracks source
+`4f8d192`. The original heads already had an inner upper and lower lip
+ring in two face topologies. The pose opens those rings around a jaw pivot,
+tapers at the corners and moves the coincident lining vertices with the
+face. The complete original compressed geometry, skin and atlases remain
+byte-identical inside every derivative. The appended sparse position and
+normal targets preserve neutral at weight zero and follow the alternate
+wardrobe atlas replacement. This is one aperture control for a measured
+audio envelope.
+
+Chromium rendered all four skins at 0, 0.5 and 1 from the front and in
+three-quarter view. The largest point displacement was under 20 mm and
+coincident positions stayed coincident in all four loaded models. The
+clean archive `d9a0b53abdb5` occupies 33,443,840 bytes with 80 payloads.
+The exact source passed 355 tests with two optional skips. The packaged
+world loaded the named morph at zero, accepted a controlled 0.65 weight,
+retained it while moving with W and returned exactly to neutral. That
+controlled test uses an assigned weight, without audio or native dispatch.
+
+The archive is a candidate. Production continues on `326890e44863`.
+The local capture consumer, physical microphone, additional facial poses
+and any authorized peer voice presentation remain open.
+
 ## Authored flight and swimming poses
 
 The four registered human models share two bind rigs. The flight and swim

@@ -134,13 +134,13 @@ Chromium with two independent loopback origins verified tone, silence and opt-ou
 with generated PCM using the real frame and meter scripts. Recorder tests verify
 that a late PCM callback cannot revive the former capture's signal.
 
-The selected browser does not yet request the signal. The four current human
-GLBs expose neither a jaw bone nor mouth morph targets. Author and verify the
-facial poses on both rigs, bind the local channel with short sample expiry,
-and qualify a real microphone in the protected Conversation surface. Ordinary
-capture without live PCM and the continuous voice engines are outside the
-producer candidate. Any peer rendering follows the audience of the existing
-authorized voice path.
+The [facial rig candidate](playtest-iteration.md#humanoid-mouth-aperture)
+adds a `jawOpen` shape to both licensed human rigs and their four skins.
+The selected browser does not yet request the microphone signal. Bind it
+to the local rig with short sample expiry and qualify a physical microphone
+in the protected Conversation surface. Ordinary capture without live PCM
+and the continuous voice engines are outside the producer candidate. Any
+peer rendering follows the audience of the existing authorized voice path.
 
 ### Canonical writer integration
 
