@@ -1385,6 +1385,42 @@ visitor used a stand-in collection. The [protected service selected the
 exact archive](STATUS.md#november-25-oriented-arrival-and-compact-hud).
 The signed-in visitor pair is still open.
 
+## Airborne turn and bank
+
+[Holodeck #21](https://github.com/AlterMundi/holodeck/issues/21) tracks
+candidate `56a472d`. The rendered humanoid heading follows steering with
+exponential damping. The previous visible heading is projected into the
+current radial plane so banking responds to steering across the torus.
+The bank is limited, reduced during descent and at the miniature table,
+and cleared when support is confirmed. Reduced motion uses the mixer
+heading. Teleports and room or table handoffs reset the visible heading.
+The same render binding uses the admitted peer cues. The input, camera,
+collision and scoped presence contracts are unchanged.
+
+Fable High flagged false bank from changing radial up. Opus 5.5 High
+flagged the moment of contact, reduced motion and the lateral limb axis.
+The implementation releases heading and bank at confirmed ground support,
+follows heading faster during descent and applies limb-local axes after
+the visual yaw correction. Tests exercise both turn signs, heading wrap,
+discontinuity, reduced motion on the radial frame and ground release.
+
+The clean Node 24 archive from this source is 33,331,200 bytes,
+`c368220490d44947458f231fa1d911614431e6ae949c1c3c3f37a6fd9db04495`,
+with 80 payloads. All nonclient payloads match the deployed archive.
+The unpacked package completed a 90° keyboard turn, flight exit and
+landing in controlled Chromium. In that run the largest observed
+rendered step was 27.4°, the bank peaked at 9.1° and the heading and
+bank were within 2.9° of their settled values after 421 ms.
+On the physical RTX 2060, the exact archive completed the held-key
+turn and landed in lightweight and normal graphics. The two 90° turns
+showed maximum rendered steps of 15.1° and 15.0°, an 8.5° and 8.6°
+peak bank, and 333 ms and 326 ms to settle within 2.9°. These numbers
+cover one short controlled local-character run per profile. The
+lightweight fixture timed out closing its remote browser context after
+recording the landing and passing its checks. Dedicated browser cleanup
+was subsequently verified. The clean suite passed 353 tests with two optional skips.
+Deployment and confirmation with independent signed-in peers remain open.
+
 ## Authored flight and swimming poses
 
 The four registered human models share two bind rigs. The flight and swim
