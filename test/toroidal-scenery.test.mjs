@@ -3,8 +3,30 @@ import test from 'node:test';
 import {Scene,Vector3} from 'three';
 import {approachCover,ToroidalScenery} from '../src/toroidal-scenery.mjs';
 import {meadowBankPlants} from '../src/toroidal-meadow-banks.mjs';
-import {TOROIDAL_TERRAIN,terrainPosition,terrainTrail,TOROIDAL_SPAWN} from '../src/toroidal-terrain.mjs';
+import {TOROIDAL_TERRAIN,terrainPosition,terrainTrail,TOROIDAL_SPAWN,TOROIDAL_OVERLOOK} from '../src/toroidal-terrain.mjs';
 import {approachCoordinates} from '../src/sand3d-trail.mjs';
+
+test('the lookout collider remains active while analytical plants wait for detailed terrain',()=>{
+  const scene=new Scene(),colliders=new Set();
+  const cover=new ToroidalScenery(scene,null,{
+    addCollider:mesh=>colliders.add(mesh),
+    removeCollider:mesh=>colliders.delete(mesh),
+  });
+  const {u,v}=TOROIDAL_OVERLOOK;
+  const position=new Vector3().fromArray(terrainPosition(u,v));
+  try{
+    cover.update(position,false,null,1,false);
+    assert.ok(scene.getObjectByName('Inner ring overlook'));
+    assert.ok(colliders.has(scene.getObjectByName('Lookout masonry and seating collision')));
+    assert.ok(cover.group.children.every(mesh=>!mesh.visible&&mesh.count===0));
+    assert.equal(cover.meadow.group.visible,false);
+    cover.update(position,false);
+    assert.ok(cover.group.children.some(mesh=>mesh.count>0));
+  }finally{
+    cover.dispose();
+  }
+  assert.equal(colliders.size,0);
+});
 
 test('the meadow profiles share rooted banks outside the trail and dispose their instance buffers',()=>{
   const normal=meadowBankPlants(false),light=meadowBankPlants(true);

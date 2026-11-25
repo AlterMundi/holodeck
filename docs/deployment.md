@@ -379,7 +379,13 @@ bounded copies of the receiving checkpoints with native lanes disabled.
 
 ## Selected shared release
 
-The protected playtest selects `601108cb255e` at source `43c39e0` with
+The [current receiving record](STATUS.md) tracks the selected package,
+source commit, runtime checks and immediate rollback. Preserve that
+rollback through exact protected readback. The current terrain startup
+keeps the coarse ring usable and mounts optional ground cover only
+after the first atomic detailed tile commit.
+
+The earlier protected playtest selected `601108cb255e` at source `43c39e0` with
 `f46d93f436be` as its immediate rollback. The 33,464,320-byte package
 includes the merged Proyección density update and the current world HUD
 candidate. The protected reader verified all 78 installed payloads and the
