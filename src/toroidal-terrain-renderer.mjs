@@ -91,7 +91,8 @@ const terrainShading = {
       * smoothstep(4.0,12.0,vHoloHeight)
       * smoothstep(370.0,460.0,vHoloWorld.y);
     // Match the continuous worn trail outside the locally painted arrival.
-    float arrival = smoothstep(6.0,10.0,approach.y)*(1.0-smoothstep(37.0,51.0,approach.y));
+    float arrival = holodeckApproachArt * smoothstep(6.0,10.0,approach.y)
+      * (1.0-smoothstep(37.0,51.0,approach.y));
     float holoMeadow = holoMeadowGround * smoothstep(1.15+arrival*.9,3.65+arrival*.7,edge);
     float holoMeadowRoughness = .96;
     if (holoMeadow > .001) {
@@ -123,7 +124,8 @@ const terrainShading = {
         *(1.0-smoothstep(12.0,34.0,length(vViewPosition)));
       vec3 packedEarth = mix(vec3(.35,.236,.127),vec3(.52,.389,.224),.38+.36*edgeNoise+.25*pebble);
       diffuseColor.rgb = mix(diffuseColor.rgb,packedEarth,mask*.88);
-      diffuseColor.rgb = mix(diffuseColor.rgb,vec3(.114,.191,.068)*(.88+.42*edgeNoise),shoulder*.61);
+      diffuseColor.rgb = mix(diffuseColor.rgb,vec3(.114,.191,.068)*(.88+.42*edgeNoise),
+        shoulder*mix(.61,.18,holoMeadowGround));
 
       // Join the path to the sill in the entrance's cross-path frame.
       vec3 door = holodeckSill;
@@ -152,6 +154,7 @@ const terrainShading = {
         vec3 apronEarth = mix(packedEarth,vec3(.273,.198,.122),.53);
         diffuseColor.rgb = mix(diffuseColor.rgb,apronEarth,apronMask*.83);
         diffuseColor.rgb = mix(diffuseColor.rgb,flagstone,flags*.95);
+        holoMeadow *= 1.0-apronMask;
         holoApproachSkylight = max(holoApproachSkylight,apronMask*.85);
       }
     }
