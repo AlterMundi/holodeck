@@ -1,5 +1,22 @@
 # Current MVP work
 
+## November 25 animated Navegante and exhibitions
+
+The protected Holodeck release is `0f5b5c10a971`, built from `d3f0512`
+with `b3aec1e9b89a` retained for rollback. The following companion loads
+the Blender-authored Navegante blanco. Its GLB retains the nine authored
+motion clips and uses the existing Conversation playback level for jaw motion.
+The new exhibition picker and viewer controls use Three.js A2UI.
+
+All 80 runtime files matched. Authenticated HTTPS returned the exact GLB,
+browser bundle, terrain worker and health body. The native world run and
+receiving configuration were preserved. The test suite passed 319 checks
+with 2 skipped. Chromium checked visible angles, moving idle, jaw response
+and reduced motion with injected levels. The exact package also passed
+the catalog and retained viewer check. Full live voice timing and physical
+device acceptance remain open. See [appearance](native-appearance.md#blender-companion)
+and [exhibitions](playtest-iteration.md#native-exhibitions-and-visit-controls).
+
 ## November 25 native Activity
 
 The selected Holodeck release is b3aec1e9b89a with fda64cf266b7
