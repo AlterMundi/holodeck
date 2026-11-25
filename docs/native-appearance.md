@@ -56,17 +56,22 @@ real native provider/model turn or human/artistic acceptance was asserted.
 
 ## Blender companion
 
-The following companion uses an authored Blender model based on the same selected
-Navegante. Its editable scene and generator are under `art/compaii-avatar/`. The
-rounded shells and articulated pivots retain the original contours and authored
-movement. The atlas uses a pearl palette and preserves the cyan face details.
-The generator bakes the nine authored motion clips into an embedded GLB. In
-Blender, unmute the corresponding NLA tracks to inspect each alternative pose.
+The receiving candidate uses a from-scratch volumetric Blender model for the
+following companion. The design study supplies the pearl palette, cyan face,
+compact proportions, mantle and poses. The scene and generator under
+`art/compaii-avatar/` author the meshes, seven solid materials and rigid weighted
+armature directly. The GLB contains nine pose clips and a grounded walk cycle.
+Unmute one Blender NLA track at a time to inspect alternative poses. Run the
+generator in Blender background mode and pass a staging directory after `--`
+to regenerate the editable scene, GLB and studio views.
 
-Holodeck plays the original calm loop for the companion. Canonical Conversation
-sends its existing bound playback level to the separate jaw pivot, which returns
-to rest when the signal stops. The browser check rendered the GLB from the
-front, side and back, exercised opening and release with injected playback
-levels, and checked reduced motion. This does not qualify spoken phoneme timing
-or a full live Conversation turn. Explicit native world markers retain their
-existing layered projection and permission checks.
+Holodeck blends the calm loop with grounded walking. Canonical Conversation
+sends its bound playback level to the separate jaw pivot. The pivot returns to
+rest when the signal stops. In Chromium, the candidate loaded from front, side
+and rear, drew in seven calls, and moved its jaw down 23.3 mm at full playback
+level. The walking clip preserved the head and jaw tracks for independent
+motion. Thirty-two Three.js samples measured 0.51 mm maximum vertical drift
+of a planted ankle and 58.8 mm peak swing clearance. The controlled playback
+check covered reduced motion and air/ground transitions. Physical voice timing
+and production acceptance remain open. Explicit native world markers retain
+their layered projection and existing permission checks.

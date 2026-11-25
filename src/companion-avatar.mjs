@@ -6,6 +6,7 @@ import {toroidalRotation} from './toroidal-locomotion.mjs';
 const appearance='compaii-navegante-white-v1';
 const localUp=new Vector3(0,1,0);
 const jawTravel=12/515;
+const strideSpeed=.424; // 198 mm of planted travel over half a 28-frame walk cycle.
 
 async function loadFigure(url){
   const {scene:root,animations}=await new GLTFLoader().loadAsync(url.href);
@@ -53,7 +54,7 @@ async function loadFigure(url){
   stride?.setEffectiveWeight(0);
   // The new armature keeps Blender's Z-up axes inside the Y-up GLB.
   // The prior object-joint asset used Y-up local axes.
-  const vertical=hinge.isBone?'z':'y', hingeAxis=hinge.isBone?'y':'z';
+  const vertical=hinge.isBone?'z':'y', hingeAxis=hinge.isBone?'x':'z';
   const jawHeight=hinge.position[vertical], jawAngle=hinge.rotation[hingeAxis];
   let walking=0;
   return {root,dispose,pose(seconds,level,speed,motion){
@@ -61,11 +62,11 @@ async function loadFigure(url){
     const weight=motion?Math.min(1,Math.max(0,(speed-.12)/.7)):0;
     walking=motion?walking+(weight-walking)*(1-Math.exp(-step*12)):0;
     still?.setEffectiveWeight(1-walking);
-    stride?.setEffectiveWeight(walking).setEffectiveTimeScale(Math.max(.7,Math.min(2.6,speed/.93)));
+    stride?.setEffectiveWeight(walking).setEffectiveTimeScale(Math.max(.7,Math.min(3.4,speed/strideSpeed)));
     if(motion)mixer.update(step);
     else mixer.setTime(0);
     hinge.position[vertical]=jawHeight-jawTravel*level;
-    hinge.rotation[hingeAxis]=jawAngle+(hinge.isBone?.035:-.035)*level;
+    hinge.rotation[hingeAxis]=jawAngle+(hinge.isBone?.10:-.035)*level;
   }};
 }
 
