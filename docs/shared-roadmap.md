@@ -576,8 +576,10 @@ dress five regions around the house in both profiles. The live
 identify the real passage from the near landscape and preserve its two
 mouths. The live [overlook guide](playtest-iteration.md#overlook-spur-shore-and-swim-crossing)
 identifies the existing shore and distinguishes the water crossing from
-the dry spur. The full crossing, wider landscape coverage and the
-independent shared workshop visit remain open.
+the dry spur. A [continuous physical crossing](playtest-iteration.md#continuous-crossing-from-shore-to-inner-overlook)
+verified the whole water leg and dry arrival on RTX and Pi. The bare
+Mirador, underwater companion pose and key guidance, wider landscape
+coverage and the independent shared workshop visit remain open.
 
 Compare the same outside path, working table, map and open Conversation
 on the existing build. Final preset selection covers a dark and a light

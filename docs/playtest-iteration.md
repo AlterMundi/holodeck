@@ -1962,3 +1962,43 @@ The 84 installed payloads and the protected client and terrain worker
 read back exactly. The receiving configuration, App audience and native
 world run remained the same. Immediate rollback is `a76e321eb728`.
 The temporary technical reader was revoked.
+
+
+## Continuous crossing from shore to inner overlook
+
+The exact selected archive `2286ee700dc7` from `f52fef0` ran on Legion's
+RTX 2060 in Normal and Raspberry Pi 5 V3D in Livianos. Each controlled
+visitor began on land before the first shore. After that initial fixture
+placement the test used normal keyboard input, guiding the existing
+camera azimuth along the charted spur. Each run entered the water,
+descended with Shift, moved underwater, returned to the surface with
+Space, crossed the second shore and climbed onto dry terrain at the
+original Mirador. The map rendered the swim key at departure and
+the dry landmark at arrival. The recorded avatar and camera were both
+below the -9 m radial waterline in the underwater captures.
+
+| Device | Elapsed wall time | Water leg | Total movement | Deepest radial height |
+| --- | ---: | ---: | ---: | ---: |
+| RTX 2060, Normal | 196.1 s | 151.2 s | 579.7 m | -29.24 m |
+| Raspberry Pi 5, Livianos | 195.8 s | 151.0 s | 578.6 m | -29.23 m |
+
+Position telemetry was read 289 and 282 times, respectively. The
+largest read interval was 1.12 s. No sampled speed exceeded 5.84 m/s,
+and the largest cross-track offset was 0.14 m. Interpolated crossing
+of the lookout latitude passed within 4 cm of the exact landmark.
+The last samples in both runs matched the analytic dry ground.
+Elapsed browser and wall clocks matched at the end of both trials. The foreground
+frame monitor observed 11,789 and 11,742 animation-frame intervals,
+with observed maxima of 16.8 and 33.4 ms during these short runs.
+
+Fable High reviewed the trial instrumentation and Opus 5.5 High reviewed
+the new regression covering submerged travel, surfacing in deep water,
+bounded displacement and final grounded arrival. The new regression
+passed against isolated selected runtime source. The same protected
+digest and rollback `a76e321eb728` remained selected. This is a scripted
+physical check, with independently authenticated visitors still open.
+
+The route also exposed art and guidance gaps. The Mirador currently
+lands on a bare slope. In the underwater view the avatar uses the swim
+pose, the companion has no distinct water locomotion state, and the
+desktop key prompt still advertises crouch and jump.

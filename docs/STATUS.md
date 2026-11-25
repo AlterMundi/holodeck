@@ -8,7 +8,9 @@ existing spur as a solid trail and a dashed swim crossing, with shore
 and overlook markers. [Exact physical evidence](playtest-iteration.md#overlook-spur-shore-and-swim-crossing)
 covers RTX 2060 keyboard water entry, dive and resurfacing and Pi 5
 Livianos map use. The shared world, receiving access and rollback
-`a76e321eb728` were verified. The full swim crossing remains open.
+`a76e321eb728` were verified. A later [continuous physical crossing](playtest-iteration.md#continuous-crossing-from-shore-to-inner-overlook)
+reached the dry Mirador on both devices with the same selected archive.
+Independent shared acceptance remains open.
 
 
 ## November 25 cave wayfinding
