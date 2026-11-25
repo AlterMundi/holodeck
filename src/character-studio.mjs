@@ -741,6 +741,12 @@ function webStudioProjection(document,scene,dispatch,close){
     return {ray:ray.ray};
   }
   const unbind=bindSpatialHudPointer({element:canvas,hud,rayForPointer});
+  document.addEventListener('keydown',event=>{
+    if(event.key!=='Escape'||event.defaultPrevented||event.isComposing||
+      event.target?.closest?.('input,textarea,select,[contenteditable]')||!hud.dismissChoice(surfaceId))return;
+    event.preventDefault();
+    event.stopPropagation();
+  },{signal:events.signal});
   canvas.addEventListener('wheel',event=>{
     const projection=rayForPointer(event);
     if(group&&projection&&hud.pointerTarget(projection.ray)!==undefined){

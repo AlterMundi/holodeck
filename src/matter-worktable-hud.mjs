@@ -592,6 +592,10 @@ export class MatterWorktableHud{
       return false;
     }
     if(this.windows.key(surface,event))return true;
+    if(event.key==='Escape'&&(event.repeat||this.hud.dismissChoice(surface))){
+      this.layer.invalidate();
+      return true;
+    }
     if(event.repeat&&(event.key==='Enter'||event.key===' '))return true;
     if(event.key==='Tab'){
       const active=this.document.activeElement;
@@ -622,6 +626,13 @@ export class MatterWorktableHud{
   key(event){
     const scope=this.hud.currentFocus()?.surfaceId??(this.map.group?worldMapId:this.active?surfaceId:null);
     if(this.windows.key(scope,event))return true;
+    if(event.key==='Escape'&&!event.defaultPrevented&&(this.map.group||this.active)){
+      const menuSurface=this.map.group?worldMapId:surfaceId;
+      if(event.repeat||this.hud.dismissChoice(menuSurface)){
+        this.layer.invalidate();
+        return true;
+      }
+    }
     if(this.map.group&&event.key==='Escape'&&!event.defaultPrevented){this.map.close();return true;}
     if(this.active&&event.key==='Escape'&&!event.defaultPrevented){this.leave();return true;}
     if(this.creation.isFocused()&&event.key==='Escape'&&!event.defaultPrevented&&this.creation.cancel())return true;

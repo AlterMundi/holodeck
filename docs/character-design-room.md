@@ -79,7 +79,9 @@ and keeps its text at screen density. It keeps 46 px plates for the base
 controls on a 390 px portrait viewport. Short viewports show one or two
 options per page in a menu over the controls. The panel keeps its
 placement when the menu fits inside it. The active choice and pending
-highlight are retained across resize.
+highlight are retained across resize. Escape dismisses a spatial choice
+without selecting it or leaving the tabletop. A separate Escape press
+can then leave the table.
 
 Section selection is browser-local. Switching sections preserves an
 unpublished note and its caret. Publishing still requires the ordinary
