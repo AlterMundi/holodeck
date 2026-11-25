@@ -5,8 +5,13 @@ import {ExtrudeGeometry, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, P
  * transform and leaves the rendered components and pointer targets with A2UI.
  * Coordinates are in the display's own layout units.
  */
-function outline(shape,width,height,radius){
+function outline(shape,width,height,radius,chamfer){
   const x=width/2,y=height/2,r=Math.min(x,y,radius);
+  if(chamfer){
+    shape.moveTo(-x+r,-y);
+    for(const [px,py] of [[x-r,-y],[x,-y+r],[x,y-r],[x-r,y],[-x+r,y],[-x,y-r],[-x,-y+r],[-x+r,-y]])shape.lineTo(px,py);
+    return shape;
+  }
   shape.moveTo(-x+r,-y);shape.lineTo(x-r,-y);
   shape.quadraticCurveTo(x,-y,x,-y+r);shape.lineTo(x,y-r);
   shape.quadraticCurveTo(x,y,x-r,y);shape.lineTo(-x+r,y);
@@ -15,7 +20,7 @@ function outline(shape,width,height,radius){
   return shape;
 }
 
-export function createHudMaterialShell({frame, accent, radius=.038, thickness=.10, roughness=.38, markers=[.062,.020]}) {
+export function createHudMaterialShell({frame, accent, radius=.038, thickness=.10, roughness=.38, markers=[.062,.020], chamfer=false}) {
   const group=new Group();
   group.visible=false;
   const housing=new MeshStandardMaterial({color:frame,roughness,metalness:.28});
@@ -58,13 +63,13 @@ export function createHudMaterialShell({frame, accent, radius=.038, thickness=.1
       geometryKey=key;
       releaseMeshes();
 
-      const frame=outline(new Shape(),width+.087,height+.077,radius);
-      frame.holes.push(outline(new Path(),width-.014,height-.014,.019));
+      const frame=outline(new Shape(),width+.087,height+.077,radius,chamfer);
+      frame.holes.push(outline(new Path(),width-.014,height-.014,.019,chamfer));
       const bezel=new ExtrudeGeometry(frame,{depth:thickness,bevelEnabled:true,bevelThickness:.006,
         bevelSize:.009,bevelSegments:2,curveSegments:8});
       part(bezel,housing,0,0,-.029-thickness);
-      const trim=outline(new Shape(),width+.033,height+.036,.024);
-      trim.holes.push(outline(new Path(),width+.013,height+.015,.020));
+      const trim=outline(new Shape(),width+.033,height+.036,.024,chamfer);
+      trim.holes.push(outline(new Path(),width+.013,height+.015,.020,chamfer));
       part(new ExtrudeGeometry(trim,{depth:.009,bevelEnabled:false,curveSegments:7}),edge,0,0,-.021);
       for(const direction of [-1,1]){
         const x=direction*(width/2-.093);

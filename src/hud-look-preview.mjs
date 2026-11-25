@@ -2,6 +2,7 @@ import {AmbientLight, Group, Matrix4} from 'three';
 import {createHudMaterialShell} from './hud-material-shell.mjs';
 
 const looks={
+  cabina:{frame:'#213232',accent:'#87dbc9',radius:.048,thickness:.19,roughness:.51,markers:[.12,.054],chamfer:true},
   orbita:{frame:'#142e36',accent:'#d6ed9c',radius:.075,thickness:.10,roughness:.22,markers:[.062,.020]},
   umbral:{frame:'#36223f',accent:'#e9b8ff',radius:.090,thickness:.075,roughness:.24,markers:[.14,.033]},
   pulso:{frame:'#45263c',accent:'#ffb38a',radius:.027,thickness:.15,roughness:.30,markers:[.108,.070]},

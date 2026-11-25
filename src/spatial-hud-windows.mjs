@@ -38,14 +38,24 @@ export class SpatialHudWindows{
     this.geometry.set(id,{view,bounds,actual,rect,resizable});
     if(resizable){
       const mark=this.marks.get(id)??this.resizeMark(id);
-      mark.visible=true;
-      placeHudInViewport(mark,this.camera,{...view,x:rect.right-9,y:rect.bottom-9,pixelsPerUnit:1,depth:.89});
+      const signature=[view.width,view.height,rect.right,rect.bottom].join(':');
+      if(!mark.visible||mark.userData.placement!==signature){
+        mark.visible=true;
+        mark.userData.placement=signature;
+        placeHudInViewport(mark,this.camera,{...view,x:rect.right-9,y:rect.bottom-9,pixelsPerUnit:1,depth:.89});
+        this.invalidate();
+      }
     }
     return actual;
   }
 
   end(){
-    for(const [id,mark] of this.marks)mark.visible=Boolean(this.geometry.get(id)?.resizable);
+    for(const [id,mark] of this.marks){
+      if(mark.visible&&!this.geometry.get(id)?.resizable){
+        mark.visible=false;
+        this.invalidate();
+      }
+    }
     if(this.drag&&!this.geometry.has(this.drag.id))this.drag=null;
   }
 

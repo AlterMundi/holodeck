@@ -1,5 +1,5 @@
 import {HudLookPreview} from './hud-look-preview.mjs';
-import {OrthographicCamera,Raycaster,Scene,Vector2} from 'three';
+import {Matrix4,OrthographicCamera,PerspectiveCamera,Raycaster,Scene,Vector2,Vector3} from 'three';
 import {WorldMapHud,worldMapId,worldBearingId} from './world-map-hud.mjs';
 import {DoorPromptHud,doorPromptId,doorPromptWidth} from './door-prompt-hud.mjs';
 import {CollectionHud,collectionHudId,collectionHudWidth} from './collection-hud.mjs';
@@ -12,6 +12,10 @@ import {SpatialHudWindows} from './spatial-hud-windows.mjs';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
 
 const surfaceId='matter-worktable',toolbeltId='world-toolbelt';
+const cockpitDocks={
+  toolPlacement:{x:-.26,y:0,depth:1.08,anchor:0},
+  headerPlacement:{x:0,y:.22,depth:1.32,anchor:-1},
+};
 const movementStick='world-move',movementJump='world-jump';
 const floatingWindows=new Map([[worldMapId,true],[surfaceId,true],[collectionHudId,false],[settingsId,false]]);
 const movementPanels=[
@@ -102,7 +106,9 @@ export class MatterWorktableHud{
       document.addEventListener(event,this.layer.invalidate,{capture:true,signal:this.events.signal});
     }
     this.scene=new Scene();
-    this.camera=new OrthographicCamera(-1,1,1,-1,.1,12);
+    this.cockpit=document.body.dataset.hudLook==='cabina';
+    this.fineInput=this.cockpit?document.defaultView.matchMedia('(pointer: fine)'):null;
+    this.camera=this.cockpit?new PerspectiveCamera(50,1,.1,12):new OrthographicCamera(-1,1,1,-1,.1,12);
     this.camera.position.z=4;
     this.camera.updateMatrixWorld();
     this.a11y=document.createElement('div');
@@ -470,17 +476,31 @@ export class MatterWorktableHud{
     return this.hud.handleKey(event,{surfaceId});
   }
 
+  usesCockpitDocks({width,height}){
+    return Boolean(this.fineInput?.matches&&width>=900&&height>=540);
+  }
+
   place(group,key,viewport,x,y,scale){
     if(!group||scale<=0)return;
     const resizable=floatingWindows.get(group.name);
     if(resizable!==undefined)({x,y,scale}=this.windows.place(group.name,viewport,this.hud.getSurfaceBounds(group.name),{x,y,scale},resizable));
     const pixelRatio=this.layer.pixelRatio;
-    const signature=[viewport.width,viewport.height,x,y,scale,pixelRatio].join(':');
+    const dock=this.usesCockpitDocks(viewport)?cockpitDocks[key]:null;
+    const bounds=dock?this.hud.getSurfaceBounds(group.name):null;
+    const signature=[viewport.width,viewport.height,x,y,scale,pixelRatio,dock?.depth,bounds?.left,bounds?.right,bounds?.top,bounds?.bottom].join(':');
     if(this[key]?.group===group&&this[key].signature===signature)return;
-    placeHudInViewport(group,this.camera,{...viewport,x,y,pixelsPerUnit:scale,depth:1});
-    this.hud.setTextDensity(group.name,{cssPixelsPerUnit:Math.round(scale),pixelRatio,
+    placeHudInViewport(group,this.camera,{...viewport,x,y,pixelsPerUnit:scale,depth:dock?.depth??1});
+    if(bounds){
+      const cx=dock.anchor===-1?bounds.left:(bounds.left+bounds.right)/2;
+      const cy=(bounds.top+bounds.bottom)/2;
+      group.matrix.multiply(new Matrix4().makeTranslation(cx,cy,0))
+        .multiply(new Matrix4().makeRotationX(dock.x)).multiply(new Matrix4().makeRotationY(dock.y))
+        .multiply(new Matrix4().makeTranslation(-cx,-cy,0));
+      group.matrixWorldNeedsUpdate=true;
+    }
+    this.hud.setTextDensity(group.name,{cssPixelsPerUnit:Math.round(scale*(bounds?1.12:1)),pixelRatio,
       fontSize:15});
-    this[key]={group,signature,x,y,scale};
+    this[key]={group,signature,x,y,scale,tilted:Boolean(bounds)};
     this.layer.invalidate();
   }
 
@@ -496,7 +516,18 @@ export class MatterWorktableHud{
     const widthFor=id=>available*toolPixels[id]/total;
     const xOffset=ids.slice(0,index).reduce((sum,id)=>sum+widthFor(id)+toolGap,-width/2);
     const viewport=this.canvas.getBoundingClientRect();
-    return {left:viewport.left+x+xOffset*scale,top:viewport.top+y+rowIndex*(toolRowHeight+toolGap)*scale,
+    const localTop=-rowIndex*(toolRowHeight+toolGap);
+    if(this.toolPlacement.tilted){
+      this.toolGroup.updateWorldMatrix(true,false);
+      const points=[xOffset,xOffset+widthFor(name)].flatMap(localX=>[localTop,localTop-toolRowHeight].map(localY=>{
+        const p=new Vector3(localX,localY,0).applyMatrix4(this.toolGroup.matrixWorld).project(this.camera);
+        return [viewport.left+(p.x+1)*viewport.width/2,viewport.top+(1-p.y)*viewport.height/2];
+      }));
+      const xs=points.map(([px])=>px),ys=points.map(([,py])=>py);
+      const left=Math.min(...xs),top=Math.min(...ys);
+      return {left,top,width:Math.max(...xs)-left,height:Math.max(...ys)-top};
+    }
+    return {left:viewport.left+x+xOffset*scale,top:viewport.top+y-localTop*scale,
       width:widthFor(name)*scale,height:toolRowHeight*scale};
   }
 
@@ -512,11 +543,17 @@ export class MatterWorktableHud{
     const {clientWidth:width,clientHeight:height}=this.canvas;
     if(!width||!height){this.releaseHudOverrides();this.windows.end();return;}
     const viewport={width,height};
+    if(this.cockpit&&this.camera.aspect!==width/height){
+      this.camera.aspect=width/height;
+      this.camera.updateProjectionMatrix();
+      this.layer.invalidate();
+    }
     const scale=Math.min(170,(width-24)/2.2,(height-124)/1.9);
     this.place(this.group,'workPlacement',viewport,width-14-scale*1.10,height<520?54:95,scale);
     if(this.toolGroup){
       const {left,right,bottom}=this.toolInsets();
-      const barTop=height-bottom-(this.toolLayout.height+.035)*toolScale;
+      const dockClearance=this.usesCockpitDocks(viewport)?21:0;
+      const barTop=height-bottom-dockClearance-(this.toolLayout.height+.035)*toolScale;
       let barCenter=(width+left-right)/2;
       if(this.lookPreview.look&&additional&&width>=720&&!additional.panel.hidden){
         const display=additional.panel.getBoundingClientRect(), canvasLeft=this.canvas.getBoundingClientRect().left;
@@ -553,8 +590,9 @@ export class MatterWorktableHud{
     if(this.status.headerGroup){
       const {left,right,top}=this.toolInsets();
       const headerScale=Math.min(152,(width-left-right)/(worldHeaderWidth+.12));
-      this.place(this.status.headerGroup,'headerPlacement',viewport,left+headerScale*(worldHeaderWidth+.06)/2,
-        Math.max(top,width<700?18:24),headerScale);
+      const margin=this.usesCockpitDocks(viewport)?16:0;
+      this.place(this.status.headerGroup,'headerPlacement',viewport,left+margin+headerScale*(worldHeaderWidth+.06)/2,
+        Math.max(top,width<700?18:24)+margin,headerScale);
     }
     if(this.status.noticeGroup){
       const {left,right}=this.toolInsets();
@@ -617,6 +655,7 @@ export class MatterWorktableHud{
     }
     this.hud.update();
     this.lookPreview.draw(worldHeaderId,this.status.headerGroup,this.hud.getSurfaceBounds(worldHeaderId));
+    if(this.cockpit)this.lookPreview.draw(worldMapId,this.map.group,this.hud.getSurfaceBounds(worldMapId));
     this.lookPreview.draw(toolbeltId,this.toolGroup,this.hud.getSurfaceBounds(toolbeltId));
     this.lookPreview.draw(surfaceId,this.group,this.hud.getSurfaceBounds(surfaceId));
     this.windows.end();
