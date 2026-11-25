@@ -82,19 +82,21 @@ function meadowCell(cell,index,door){
     color:GRASSES[Math.floor(pick(499)*GRASSES.length)]};
 }
 
-function meadowWind(material,clock){
+function meadowWind(material,clock,motion){
   const compile=material.onBeforeCompile;
   material.onBeforeCompile=function(shader,renderer){
     compile.call(this,shader,renderer);
     shader.uniforms.fieldClock=clock;
+    shader.uniforms.fieldMotion=motion;
     shader.vertexShader=`uniform float fieldClock;
+uniform float fieldMotion;
 varying float meadowCut;\n`+shader.vertexShader.replace('#include <begin_vertex>',
       `#include <begin_vertex>
        vec3 root=(modelMatrix*instanceMatrix*vec4(0.0,0.0,0.0,1.0)).xyz;
-       float sway=sin(dot(root,vec3(.37,.16,.19))+fieldClock*1.72);
+       float sway=sin(dot(root,vec3(.37,.16,.19))+fieldClock*5.0);
        float bend=clamp(position.y,0.0,1.0);
-       transformed.x+=sway*bend*bend*.16;
-       transformed.z+=cos(sway+fieldClock*.68)*bend*bend*.075;
+       transformed.x+=sway*bend*bend*.16*fieldMotion;
+       transformed.z+=cos(sway+fieldClock*2.0)*bend*bend*.075*fieldMotion;
        meadowCut=1.0-smoothstep(18.0,27.0,distance(cameraPosition,root));`);
     shader.fragmentShader=`varying float meadowCut;\n`+shader.fragmentShader.replace('#include <alphatest_fragment>',
       `#include <alphatest_fragment>
@@ -201,6 +203,8 @@ export class ToroidalScenery {
       roughness:1,vertexColors:true,side:DoubleSide,
     }),INSTANCE_LIMIT);
     this.fieldClock={value:0};
+    this.fieldMotion={value:1};
+    this.reducedMotion=globalThis.matchMedia?.('(prefers-reduced-motion: reduce)');
     this.field=new InstancedMesh(plantGeometry(false,6),new MeshStandardMaterial({
       roughness:.94,vertexColors:true,side:DoubleSide,
     }),FIELD_LIMIT);
@@ -231,7 +235,7 @@ export class ToroidalScenery {
     this.field.frustumCulled=false;
     this.group.add(this.field);
     useSceneryDaylight(this.field.material,this.daylight);
-    meadowWind(this.field.material,this.fieldClock);
+    meadowWind(this.field.material,this.fieldClock,this.fieldMotion);
     this.fieldCells=new Map();
     scene.add(this.group);
     this.key=null;
@@ -249,7 +253,8 @@ export class ToroidalScenery {
     if(![u,v].every(Number.isFinite))return;
     const rows=2**LEVEL, columns=rows*TOROIDAL_TERRAIN.rootColumns;
     const cell=terrainTile(LEVEL,Math.floor(u*columns),Math.floor(v*rows));
-    this.fieldClock.value=(performance.now()%360000)*.001;
+    this.fieldClock.value=(performance.now()%18000)*TAU/18000;
+    this.fieldMotion.value=this.reducedMotion?.matches?0:1;
     const doorKey=(door?.x??'')+':'+(door?.z??15.5)+':'+(door?.facing??-1);
     const distance=this.approach.distanceToSquared(position);
     const nearTrail=distance<105**2;
