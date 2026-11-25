@@ -28,8 +28,10 @@ const modelCancellation={
         .replace(end,`        modelHandle.handleLoaded(result);
       }
     }).catch((error) => {
-      if (!request.signal.aborted ||
-          (error !== request.signal.reason && error?.name !== "AbortError")) throw error;
+      const retired = request.signal.aborted && this.modelHandles.size === 0;
+      const closedFetch = error?.name === "TypeError" && error.message === "Failed to fetch";
+      if (!retired || (error !== request.signal.reason &&
+          error?.name !== "AbortError" && !closedFetch)) throw error;
     }).finally(() => {`)};
     });
   }
