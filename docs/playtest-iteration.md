@@ -70,6 +70,12 @@ above the avatar and produced ceiling shots. The corrected fixture aims at
 the floor and shelves explicitly. The three matched lightweight crops
 retain SSIM 0.999974 or higher. That is an appearance continuity check and
 does not measure seam frequency or prove a physical frame budget.
+Normal-mode captures were repeated after the adaptive renderer reached the
+same 660 × 407 buffer with extra shadows off on both builds. Floor and deck
+crops measured SSIM above 0.99999. The wider shelf crop was 0.96867. Two
+static wall and frame crops within it reached 0.99999 or better. Exact
+browser captures in both modes reported zero shader errors. Higher
+hardware tiers and human visual acceptance remain open.
 
 ## Situated Conversation context
 
