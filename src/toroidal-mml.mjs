@@ -2,12 +2,12 @@ import {Line3, Quaternion, Vector3} from 'three';
 import {createAvatarHeadroom} from './avatar-headroom.mjs';
 import {createToroidalCameraClearance} from './toroidal-camera-clearance.mjs';
 import {ToroidalLocomotion, toroidalRotation} from './toroidal-locomotion.mjs';
-import {TOROIDAL_SPAWN, terrainCoordinates} from './toroidal-terrain.mjs';
+import {TOROIDAL_SPAWN, terrainCoordinates, terrainFrame} from './toroidal-terrain.mjs';
 
 // The MML host still owns input, network cadence, interpolation, avatar
 // animation and the orbit camera. Only the selected exterior uses a radial
 // surface and reconstructs the world-space orientation from tangent yaw.
-export function bindToroidalMml(manager, camera, enabled, flight=()=>false) {
+export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firstDoor=null) {
   const updateCharacters = manager.update;
   const updateCamera = camera.update;
   const adjustCamera = camera.adjustCameraPosition;
@@ -32,7 +32,24 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false) {
       if (!Number.isFinite(start.height) || Math.abs(start.height) > 180) {
         start = terrainCoordinates([TOROIDAL_SPAWN.x, TOROIDAL_SPAWN.y, TOROIDAL_SPAWN.z]);
       }
-      motion = new ToroidalLocomotion({...start, yaw: 2 * Math.atan2(quaternion.y, quaternion.w)});
+      let yaw=2*Math.atan2(quaternion.y,quaternion.w);
+      if(firstDoor){
+        const door=firstDoor;
+        firstDoor=null;
+        if(Math.hypot(position.x-TOROIDAL_SPAWN.x,position.y-TOROIDAL_SPAWN.y,position.z-TOROIDAL_SPAWN.z)<.6){
+          const {alongRing,aroundTube}=terrainFrame(start.u,start.v);
+          viewOffset.set(door.x-position.x,door.y-position.y,door.z-position.z);
+          const along=viewOffset.dot(right.fromArray(alongRing));
+          const across=viewOffset.dot(side.fromArray(aroundTube));
+          if(Math.hypot(along,across)>1){
+            yaw=Math.atan2(along,across);
+            // MML input reports forward as PI in its azimuth convention.
+            camera.setOrbitAngle(3*Math.PI/2-yaw);
+            camera.theta=camera.targetTheta;
+          }
+        }
+      }
+      motion = new ToroidalLocomotion({...start,yaw});
     }
     lastLocal = controller;
     const moving = Number.isFinite(control?.direction);

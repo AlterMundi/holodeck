@@ -328,6 +328,8 @@ const hot=activeSpace?.live===1;
 const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
 let inside=hot&&activeSpace.id!=='outside';
 const outsideRing=()=>!inside&&activeSpace.outdoorTerrain===TOROIDAL_TERRAIN.id;
+// Capture the fresh entry before MML initializes or writes a location hash.
+let firstExteriorDoor=outsideRing()&&!location.hash&&activeSpace.entrances?.length===1?activeSpace.entrances[0].door:null;
 let flightEnabled=false,previousSpacePress=null;
 function doubleSpace(event){
   if(event.code!=='Space'||event.repeat||event.altKey||event.ctrlKey||event.metaKey||
@@ -1140,7 +1142,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         releaseSearchKeys=()=>{releaseRun();if(keys.shouldCaptureKeyPress===capture)keys.shouldCaptureKeyPress=shouldCapture;};
       }
       releaseHeadroom=bindInteriorHeadroom(client.getCharacterManager(),()=>inside);
-      releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing,()=>flightEnabled);
+      releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing,()=>flightEnabled,firstExteriorDoor);
+      firstExteriorDoor=null;
       releaseTableFlight=bindMatterFlight(client.getCharacterManager(),options.coreCameraManager,tableFlight,tableInputAllowed,()=>matterHud.leave());
       options.onInitialized();
     });
