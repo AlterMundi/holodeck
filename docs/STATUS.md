@@ -2,6 +2,23 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `f5a87fc3cf4fddda6bdffdf2fdf7a65624ec410e` gives the canonical
+Conversation panel priority on compact screens. The world heading resumes
+when minimized, and temporary world notices do not cover the panel.
+The package archive
+`9467e8904f4e946ad327a50f11be5b2aed5d78d68789aff0998c7d5fd27df7fc`
+matched all 87 payloads. Relative to `ebb75f57c3d3`, only the host HTML
+and the browser bundle changed. Chromium checked the decoded bundle
+`06be0b5001de99e41099500c24b5f3d19b4118470dcb27a642ab771834535053`,
+retained one canonical frame across the exchange, kept typing separate
+from movement and restored the world heading when minimized. The mic and
+send controls fit at 1100 by 800, 390 by 844 with a bottom movement lane,
+and 844 by 390 with a side lane. The two narrow runs used Chromium touch
+emulation. The same archive also passed the packaged Character browser
+and own-native check, including receipt and browser readback of a
+room-scoped shoulder note on the flight pose. The suite passed 422 tests,
+with two skips. Protected Home acceptance is still open.
+
 Source `60503cff1b2ec3eee9b6e8618f2c5b514a74f395` integrates the room
 boundaries and object leaders from protected release `ea2efd93199d`.
 Archive `ebb75f57c3d3aa2b0161bc1533d56f7691513341f0a7a9b62693c6a872e01457`
