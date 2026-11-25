@@ -2,7 +2,39 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {Scene,Vector3} from 'three';
 import {approachCover,ToroidalScenery} from '../src/toroidal-scenery.mjs';
+import {meadowBankPlants} from '../src/toroidal-meadow-banks.mjs';
 import {TOROIDAL_TERRAIN,terrainPosition,terrainTrail,TOROIDAL_SPAWN} from '../src/toroidal-terrain.mjs';
+
+test('the meadow profiles share rooted banks outside the trail and dispose their instance buffers',()=>{
+  const normal=meadowBankPlants(false),light=meadowBankPlants(true);
+  assert.deepEqual(meadowBankPlants(false),normal);
+  assert.equal(normal.length,5);
+  for(const [index,plants] of normal.entries()){
+    assert.ok(plants.length>light[index].length);
+    const selected=plants.filter(p=>light[index].some(q=>p.u===q.u&&p.v===q.v));
+    assert.deepEqual(selected,light[index]);
+    assert.ok(plants.every(p=>terrainTrail(p.u,p.v)<=.10&&p.size<=1&&p.h>TOROIDAL_TERRAIN.waterLevel));
+  }
+  const scene=new Scene(),cover=new ToroidalScenery(scene);
+  const spawn=new Vector3(TOROIDAL_SPAWN.x,TOROIDAL_SPAWN.y,TOROIDAL_SPAWN.z);
+  const batches=()=>cover.meadow.profiles.find(p=>p.group.visible).group.children;
+  const triangleCount=()=>batches().reduce((total,batch)=>total+batch.count*batch.geometry.attributes.position.count/3,0);
+  cover.update(spawn,false);
+  assert.equal(triangleCount(),10564);
+  assert.equal(batches().length,10);
+  const original=batches()[0];
+  cover.update(spawn,true);
+  assert.equal(triangleCount(),2466);
+  cover.update(spawn,false);
+  assert.equal(batches()[0],original);
+  cover.update(new Vector3().fromArray(terrainPosition(.4,.25,25)),false);
+  assert.equal(cover.meadow.group.visible,false);
+  let disposed=false;
+  original.addEventListener('dispose',()=>{disposed=true;});
+  cover.dispose();
+  assert.ok(disposed);
+  assert.equal(scene.children.length,0);
+});
 
 test('trail-edge planting preserves the clear route and keeps the same flowers in both profiles',()=>{
   const normal=approachCover(false),light=approachCover(true);

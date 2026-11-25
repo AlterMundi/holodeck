@@ -1,0 +1,196 @@
+import {BufferGeometry,Color,DoubleSide,Float32BufferAttribute,Group,InstancedMesh,MeshStandardMaterial,Object3D,Vector3} from 'three';
+import {approachCoordinates} from './sand3d-trail.mjs';
+import {toroidalRotation} from './toroidal-locomotion.mjs';
+import {terrainElevation,terrainPosition,terrainTrail,TOROIDAL_TERRAIN} from './toroidal-terrain.mjs';
+
+// Offsets use the existing trail's local metres. Each pocket reads as one
+// bank, with a broken outline and open ground between pockets.
+const beds=[
+  {x:-12,z:22,across:4.8,along:7.0,heading:-.42,count:28},
+  {x:12,z:33,across:5.2,along:10.8,heading:.47,count:35},
+  {x:-25,z:34,across:7.0,along:12.4,heading:.63,count:43},
+  {x:-41,z:9,across:9.0,along:14.0,heading:-.52,count:40},
+  {x:-20,z:58,across:8.5,along:11.6,heading:-.57,count:38},
+];
+const goldenAngle=Math.PI*(3-Math.sqrt(5));
+const tint=[0xfff3d7,0xe4edd2,0xe5ebce,0xffeec4,0xf5f7de];
+
+function random(bed,index,salt) {
+  let key=Math.imul(index+1,0x45d9f3b)^Math.imul(bed+3,0x7feb352d)^salt;
+  key=Math.imul(key^(key>>>16),0x21f0aaad);
+  return ((key^(key>>>15))>>>0)/4294967296;
+}
+
+export function meadowBankPlants(lightweight) {
+  return beds.map(({x,z,across,along,heading,count},bed)=>{
+    const plants=[];
+    const s=Math.sin(heading),c=Math.cos(heading);
+    for(let i=0;i<count;i++){
+      const pick=salt=>random(bed,i,salt);
+      if(lightweight&&i>1&&pick(129)>.48)continue;
+      const angle=i*goldenAngle+pick(23)*.49;
+      const spread=Math.sqrt((i+.45)/count);
+      const edge=.80+.22*Math.cos(3*angle+heading)+.20*pick(37);
+      const a=Math.cos(angle)*spread*across*edge,b=Math.sin(angle)*spread*along*edge;
+      const point={x:x+a*c+b*s,z:z+b*c-a*s};
+      const {u,v}=approachCoordinates(point.x,point.z);
+      const h=terrainElevation(u,v);
+      if(terrainTrail(u,v)>.10||Math.abs(point.x)<5.4||point.z<1||
+        h<TOROIDAL_TERRAIN.waterLevel+3)continue;
+      const flowers=spread>.58&&pick(17)<.60;
+      const size=flowers?.44+.31*pick(51):(.66+.31*pick(51))*(1-.20*spread);
+      plants.push({u,v,h,size,flowers,yaw:6.28319*pick(29),
+        color:tint[Math.floor(pick(87)*tint.length)]});
+    }
+    return plants;
+  });
+}
+
+function plantMesh(flowers,lightweight) {
+  const positions=[],colors=[],color=new Color();
+  const leaf=[0x3d542b,0x6d853d,0xaab35d,0xc6b470];
+  const sprig=[0x3e6039,0x668b48,0x88a65d,0x9db26a];
+  const triangle=(points,shades)=>{
+    for(let i=0;i<3;i++){
+      positions.push(...points[i]);
+      colors.push(...color.setHex(shades[i]).toArray());
+    }
+  };
+  const bladeCount=flowers?(lightweight?4:6):(lightweight?6:10);
+  for(let i=0;i<bladeCount;i++){
+    const angle=i*goldenAngle;
+    const x=Math.cos(angle),z=Math.sin(angle);
+    const height=(flowers?.21:.58)+random(7,i,11)*(flowers?.14:.31);
+    const lean=(flowers?.26:.35)+random(8,i,15)*.20;
+    const width=(lightweight?.063:.042)+random(9,i,37)*.021;
+    const palette=flowers?sprig:leaf;
+    const point=(t,side)=>{
+      const bend=.04+t*t*lean;
+      const cross=width*(1-t*.76)*side;
+      return [x*bend-z*cross,t*height-.045,x*cross+z*bend];
+    };
+    let previous=[point(0,-1),point(0,1)];
+    const levels=lightweight?[.53,1]:[.34,.69,1];
+    for(let j=0;j<levels.length;j++){
+      const t=levels[j],tip=t===1;
+      const left=point(t,tip?0:-1),right=point(t,1);
+      triangle([previous[0],previous[1],left],[palette[j],palette[j],palette[j+1]]);
+      if(!tip)triangle([left,previous[1],right],[palette[j+1],palette[j],palette[j+1]]);
+      previous=[left,right];
+    }
+    if(i>=(flowers?3:lightweight?1:3))continue;
+    const stemTop=(flowers?.46:.83)+random(10,i,39)*(flowers?.14:.19);
+    const span=(flowers?.21:.13)*(i+1)/3;
+    const top=[span*x,stemTop,span*z];
+    const root=[0,-.04,0],side=.022;
+    triangle([root,[x*.07-z*side,stemTop*.73,z*.07+x*side],top],[palette[0],palette[1],palette[2]]);
+    if(flowers){
+      for(let k=0;k<5;k++){
+        const a=k*6.28319/5;
+        const petal=(offset,rise)=>[top[0]+.087*Math.cos(a+offset),stemTop+rise,top[2]+.087*Math.sin(a+offset)];
+        triangle([top,petal(-.43,.018),petal(.43,.042)],
+          [0xddb46d,i===1?0xf5e9d8:0xaf8bbd,i===1?0xfff6de:0xd3b6e0]);
+      }
+    }else{
+      const ear=.11;
+      const seed=[top[0]+x*.045,stemTop+ear,top[2]+z*.045];
+      for(const [dx,dz] of [[z,-x],[x,z]]){
+        const midA=[top[0]+dx*.032,stemTop+ear*.48,top[2]+dz*.032];
+        const midB=[top[0]-dx*.035,stemTop+ear*.41,top[2]-dz*.035];
+        triangle([top,midA,midB],[0xa8884c,0xd9be79,0xbfa060]);
+        triangle([midA,seed,midB],[0xd9be79,0xe2c98a,0xc4a46d]);
+      }
+    }
+  }
+  const mesh=new BufferGeometry();
+  mesh.setAttribute('position',new Float32BufferAttribute(positions,3));
+  mesh.setAttribute('color',new Float32BufferAttribute(colors,3));
+  mesh.computeVertexNormals();
+  return mesh;
+}
+
+export class ToroidalMeadowBanks {
+  constructor(scene,applyDaylight,daylight) {
+    this.group=new Group();
+    this.group.name='Toroidal meadow banks';
+    this.group.visible=false;
+    scene.add(this.group);
+    this.clock={value:0};
+    this.reducedMotion=globalThis.matchMedia?.('(prefers-reduced-motion: reduce)');
+    this.profiles=[false,true].map(lightweight=>{
+      const group=new Group();
+      group.visible=false;
+      this.group.add(group);
+      return {lightweight,group,geometries:[],materials:[]};
+    });
+    this.applyDaylight=applyDaylight;
+    this.daylight=daylight;
+  }
+
+  build({lightweight,group,geometries,materials}) {
+    const transform=new Object3D(),origin=new Vector3(),color=new Color();
+    const material=new MeshStandardMaterial({roughness:.96,side:DoubleSide,vertexColors:true});
+    this.applyDaylight(material,this.daylight);
+    const before=material.onBeforeCompile;
+    const clock=this.clock;
+    if(!lightweight){
+      material.customProgramCacheKey=()=> 'holodeck-meadow-breeze';
+      material.onBeforeCompile=shader=>{
+        before(shader);
+        shader.uniforms.meadowSeconds=clock;
+        shader.vertexShader=shader.vertexShader
+          .replace('#include <common>','#include <common>\nuniform float meadowSeconds;')
+          .replace('#include <begin_vertex>',`#include <begin_vertex>
+            vec2 seed = instanceMatrix[3].xz;
+            float gust = sin(meadowSeconds*1.35+dot(seed,vec2(.32,.21)));
+            float bend = max(transformed.y,0.0);
+            transformed.x += .12*bend*bend*gust;
+            transformed.z += .054*bend*bend*gust;`);
+      };
+    }
+    materials.push(material);
+    geometries.push(plantMesh(false,lightweight),plantMesh(true,lightweight));
+    meadowBankPlants(lightweight).forEach((plants,bed)=>{
+      const {x,z}=beds[bed],{u,v}=approachCoordinates(x,z);
+      origin.fromArray(terrainPosition(u,v,terrainElevation(u,v)));
+      for(const flowers of [false,true]){
+        const members=plants.filter(plant=>plant.flowers===flowers);
+        if(!members.length)continue;
+        const batch=new InstancedMesh(geometries[Number(flowers)],material,members.length);
+        batch.name=flowers?'Meadow flowers':'Meadow tussocks';
+        batch.position.copy(origin);
+        for(const [index,plant] of members.entries()){
+          transform.position.fromArray(terrainPosition(plant.u,plant.v,plant.h-.026));
+          toroidalRotation(transform.position,plant.yaw,transform.quaternion);
+          transform.position.sub(origin);
+          transform.scale.setScalar(plant.size);
+          transform.updateMatrix();
+          batch.setMatrixAt(index,transform.matrix);
+          batch.setColorAt(index,color.setHex(plant.color));
+        }
+        batch.computeBoundingSphere();
+        batch.boundingSphere.radius+=.22;
+        group.add(batch);
+      }
+    });
+  }
+
+  update(visible,lightweight,time) {
+    this.group.visible=visible;
+    if(!visible)return;
+    for(const profile of this.profiles){
+      profile.group.visible=profile.lightweight===lightweight;
+      if(profile.group.visible&&!profile.materials.length)this.build(profile);
+    }
+    this.clock.value=this.reducedMotion?.matches?0:time*.001;
+  }
+
+  dispose() {
+    for(const profile of this.profiles){
+      for(const batch of profile.group.children)batch.dispose();
+      for(const geometry of profile.geometries)geometry.dispose();
+      for(const material of profile.materials)material.dispose();
+    }
+    this.group.removeFromParent();
+  }
+}

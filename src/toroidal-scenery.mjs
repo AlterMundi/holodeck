@@ -1,4 +1,5 @@
 import {approachCoordinates,Sand3DTrail} from './sand3d-trail.mjs';
+import {ToroidalMeadowBanks} from './toroidal-meadow-banks.mjs';
 import {
   BufferGeometry, Color, DodecahedronGeometry, DoubleSide, Float32BufferAttribute, Group,
   InstancedMesh, MeshStandardMaterial, Object3D, TetrahedronGeometry, Vector3,
@@ -147,6 +148,7 @@ export class ToroidalScenery {
     this.meshes=[this.stones,this.grasses,this.ribbonGrass,this.blooms];
     this.daylight={value:1};
     this.detail=base?new Sand3DTrail(scene,base,approach,useSceneryDaylight,this.daylight):null;
+    this.meadow=new ToroidalMeadowBanks(scene,useSceneryDaylight,this.daylight);
     this.ribbonGrass.name='Trail-side tufts';
     this.blooms.name='Trail-edge wildflowers';
     this.stones.name='Weathered stone';
@@ -175,6 +177,7 @@ export class ToroidalScenery {
     const cell=terrainTile(LEVEL,Math.floor(u*columns),Math.floor(v*rows));
     const doorKey=(door?.x??'')+':'+(door?.z??15.5)+':'+(door?.facing??-1);
     const nearTrail=this.approach.distanceToSquared(position)<105**2;
+    this.meadow.update(nearTrail,Boolean(lightweight),performance.now());
     const key=cell.key+':'+lightweight+':'+nearTrail+':'+doorKey;
     if(key===this.key)return;
     this.key=key;
@@ -225,6 +228,7 @@ export class ToroidalScenery {
 
   dispose() {
     this.detail?.dispose();
+    this.meadow.dispose();
     for(const mesh of this.meshes){
       mesh.geometry.dispose();
       mesh.material.dispose();
