@@ -300,7 +300,7 @@ function startInterior(space){
       // current PCF enum for comparison sampling and per-light shadow radii.
       renderer.composer.renderer.shadowMap.type=PCFShadowMap;
       const frameBudget=createFrameBudget(renderer);
-      const actionLabel=new WorldActionLabel({scene:renderer.mmlCompositionScene.group,document});
+      const actionLabel=new WorldActionLabel({scene:renderer.mmlCompositionScene.group,document,colliders:options.coreCameraManager.collisionsManager});
       galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
       galleryModels.sync(visitor.entries);
       const picker=new PublicWorldPicker({document,canvas:options.targetElement.querySelector(':scope > canvas'),
@@ -318,7 +318,7 @@ function startInterior(space){
         galleryModels.update();visitor.refreshScopedCatalog();updateDoor(position);visitor.update(position);
         beaconControls.update(space.objects,position);
         actionLabel.update(beaconAvailable()&&!matchMedia('(pointer: coarse)').matches?beaconControls.nearbyAction():null,
-          options.coreCameraManager.getCameraState(),renderer.composer.renderer.domElement.clientHeight);
+          options.coreCameraManager.getCameraState(),renderer.composer.renderer.domElement.clientHeight,{feet:position});
         render(state);
         if(entering&&position&&entryRoomReady(document.getElementById(space.id)))worldEntered();
       };
@@ -922,7 +922,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       onError:()=>say('No pude mostrar estos controles. Volvé a abrirlos.',{transient:true}),
     });
     const sky=new OutdoorSky(renderer.mmlCompositionScene.group.parent,base);
-    const actionLabel=new WorldActionLabel({scene:renderer.mmlCompositionScene.group,document});
+    const actionLabel=new WorldActionLabel({scene:renderer.mmlCompositionScene.group,document,colliders:options.coreCameraManager.collisionsManager});
     const light=new DirectionalLight(0xffefd6,1.8);
     light.position.set(12,22,10);light.target.position.set(0,0,-6);light.castShadow=true;
     light.shadow.mapSize.set(1024,1024);
@@ -1292,11 +1292,11 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(door?.anchor&&!door.busy)label={anchor:door.anchor,label:door.title,key:'E'};
         else if(!door&&bench&&matterHud.nearbyTableAvailable&&
             !options.coreCameraManager.isFlyCameraOn()&&client.getCharacterManager().localController){
-          label={anchor:{x:bench.x,y:bench.y+.92,z:bench.z},label:'Usar mesa',key:'E'};
+          label={anchor:{x:bench.x,y:bench.y+.78,z:bench.z},label:'Usar mesa',key:'E'};
         }else if(beaconWorldAvailable())label=beaconControls.nearbyAction();
       }
       actionLabel.update(label,options.coreCameraManager.getCameraState(),matterHud.canvas.clientHeight,
-        {light:document.body.dataset.hudTheme==='light'});
+        {light:document.body.dataset.hudTheme==='light',feet:position});
       matterHud.collection.update(navigationVisible&&!matterHud.active&&!mapPanel.open&&!signalEditor.active);
       const {left:statusLeft,right:statusRight}=matterHud.toolInsets();
       matterHud.status.update({

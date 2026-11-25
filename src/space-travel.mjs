@@ -12,7 +12,7 @@ export function indoorDoorLabelAnchor(door,kind){
   const setback=kind==='door'?.58:0;
   return {
     x:door.x+Math.sin(heading)*setback,
-    y:door.y+(kind==='door'?2.18:1.75),
+    y:door.y+(kind==='door'?1.05:.62),
     z:door.z+Math.cos(heading)*setback,
   };
 }

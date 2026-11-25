@@ -192,7 +192,7 @@ export class BeaconControls{
   nearbyAction(){
     if(!this.current||this.opened)return null;
     const {position:{x,y,z},title}=this.current;
-    return {anchor:{x,y:y+1.90,z},label:'Abrir '+title,key:'E'};
+    return {anchor:{x,y:y+1.11,z},label:'Abrir '+title,key:'E'};
   }
 
   useNearby(event,objects,position,open=()=>this.open()){
