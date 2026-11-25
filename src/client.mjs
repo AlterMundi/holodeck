@@ -1255,7 +1255,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(door?.anchor&&!door.busy)label={anchor:door.anchor,label:door.title,key:'E'};
         else if(!door&&bench&&matterHud.nearbyTableAvailable&&
             !options.coreCameraManager.isFlyCameraOn()&&client.getCharacterManager().localController){
-          label={anchor:{x:bench.x,y:bench.y+.57,z:bench.z},label:'Usar mesa',key:'E'};
+          label={anchor:{x:bench.x,y:bench.y+.92,z:bench.z},label:'Usar mesa',key:'E'};
         }
       }
       actionLabel.update(label,options.coreCameraManager.getCameraState(),matterHud.canvas.clientHeight,
