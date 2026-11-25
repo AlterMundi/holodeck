@@ -2,6 +2,16 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `5787cf46860202953803fc43514b5bcb7cc086a5` carries the meadow and
+woodland from the protected `251ab9f928e8` package into the Character
+candidate. Archive `256e73466a9d45c0d415ff81abeede189792eb7f14174ddf9fec872260162edc`
+matched all 87 payloads and both protected Lab assets. On this archive,
+a direct own-native fixture presented flight frame 22. A separately
+identified HTTP session read the exact same revision, and each actor's
+note was visible through both paths. Room scope, stale edits and
+restart persistence passed. Holodeck passed 420 tests with two skips.
+The combined browser and protected two-participant acceptance remain open.
+
 Source `0beebcb4e062df3cb7d800adf01449f8f06ad309` combines Character
 review with the protected world label and keyboard work from `5e63550`.
 Archive `e23a54cb8789addfba5b622502afefcc2f7be7388b0d295ffc7b56ea844639c8`
