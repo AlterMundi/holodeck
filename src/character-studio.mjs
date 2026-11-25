@@ -33,7 +33,7 @@ const choice=(id,name)=>({id,component:'HudChoice',label:name,options:path(id+'O
   value:path(id),draft:path('draft/'+id),action:action(id,id)});
 const controls=[
   {id:'root',component:'HudPanel',label:'Revisión de movimiento',width:1.85,gap:.025,
-    children:['title','rig','clip','clock','chapter','playback','playOptions','comparison','views','note','archive','reviewNotes','reviewText','status']},
+    children:['title','rig','clip','clock','chapter','playback','playOptions','comparison','views','presentation','note','archive','reviewNotes','reviewText','status']},
   label('title','Revisión de movimiento','title'),choice('rig','Personaje'),choice('clip','Ciclo'),
   {id:'clock',component:'HudRange',label:'Fotograma',min:0,max:path('lastFrame'),step:1,value:path('frame'),
     draft:path('draft/frame'),gestureKey:path('clipEdition'),
@@ -51,6 +51,9 @@ const controls=[
   {...button('compare',path('compareLabel')),icon:'compare',pressed:path('showingReference'),
     disabled:path('noReference')},
   row('views',['front','angle','side']),button('front','Frente'),button('angle','Tres cuartos'),button('side','Perfil'),
+  {...row('presentation',['present','follow']),visible:path('canReview')},
+  {...button('present','Mostrar pose'),disabled:path('presentationBusy')},
+  {...button('follow','Ver pose del Taller'),disabled:path('presentationBusy')},
   {id:'note',component:'HudTextInput',label:'Nota para este fotograma',value:path('note'),
     draft:path('draft/note'),placeholder:'Qué ves en la pose',maxLength:300,action:action('pin','note')},
   row('archive',['pin','copy','review']),
@@ -197,7 +200,7 @@ export async function openCharacterStudio(document){
   let figure,playback,group,rig,clip,frame=0,playing=false,revision='',note='',message='',showedAt=-Infinity;
   let sequence=0,elapsed=0,previous=0,visible=true,loop=true,speed='1',viewportWidth=0,viewportHeight=0;
   let primary=null,reference=null,showingReference=false,referenceRequest=0;
-  let canReview=null,review=null,selectedNote='',readingReview=false,savingNote=false,pendingNote;
+  let canReview=null,review=null,selectedNote='',readingReview=false,savingNote=false,pendingNote,presentationBusy=false;
   void connectStudioReturn(stage).then(inStudio=>{canReview=Boolean(inStudio);refresh();});
   const reduce=window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -417,7 +420,7 @@ export async function openCharacterStudio(document){
       compareLabel:showingReference?'Ver A':'Ver B',showingReference,noReference:!reference,
       lastFrame:frameLimit(),clipEdition:clipEdition(),speedOptions,speed,loop,
       hasChapters:chapters.length>0,chapter,chapterOptions:chapters,
-      canReview:canReview===true,noteAction:canReview?'Compartir nota':'Fijar nota',
+      canReview:canReview===true,presentationBusy,noteAction:canReview?'Compartir nota':'Fijar nota',
       savingNote:savingNote||canReview===null,reviewAction:viewedReview?'Ocultar notas':'Ver notas',
       showReviewNotes:notes.length>0,reviewText,reviewNotes:selected?.id??'',
       reviewNotesOptions:notes.map(item=>({id:item.id,label:item.author+' · '+item.text})),
@@ -439,19 +442,50 @@ export async function openCharacterStudio(document){
     return share.href;
   }
 
-  async function fetchReview(pose,submission){
-    const endpoint=new URL('api/space/character-pose-review',url);
-    if(!submission)endpoint.search=new URLSearchParams(pose).toString();
+  async function requestReview(endpoint,submission,conflict){
     let response;
     try{response=await fetch(endpoint,{signal:inputs.signal,...(submission?{method:'POST',
       headers:{'content-type':'application/json'},body:JSON.stringify(submission)}:{})});}
-    catch{throw Error('No pude confirmar las notas. Podés volver a intentar.');}
-    if(response.status===409)throw Error('La edición de esta pose cambió. Volvé a abrirla.');
-    if(response.status===403)throw Error('Entrá al Taller para compartir o leer sus notas.');
-    if(!response.ok)throw Error('No pude confirmar las notas. Podés volver a intentar.');
-    const result=await response.json().catch(()=>null);
-    if(!Array.isArray(result?.notes))throw Error('No pude confirmar las notas. Podés volver a intentar.');
-    return result.notes;
+    catch{throw Error('No pude confirmar el cambio. Podés volver a intentar.');}
+    if(response.status===409)throw Error(conflict);
+    if(response.status===403)throw Error('Entrá al Taller para continuar.');
+    const result=response.ok?await response.json().catch(()=>null):null;
+    if(!result)throw Error('No pude confirmar el cambio. Podés volver a intentar.');
+    return result;
+  }
+
+  async function fetchReview(pose,submission){
+    const endpoint=new URL('api/space/character-pose-review',url);
+    if(!submission)endpoint.search=new URLSearchParams(pose).toString();
+    const {notes}=await requestReview(endpoint,submission,'La edición de esta pose cambió. Volvé a abrirla.');
+    if(!Array.isArray(notes))throw Error('No pude confirmar las notas. Podés volver a intentar.');
+    return notes;
+  }
+
+  async function usePresentation(publish){
+    if(presentationBusy)return;
+    playing=false;
+    const origin=reviewPose(),key=keyForPose(origin),request=sequence;
+    const endpoint=new URL('api/space/character-presentation',url);
+    const conflict='La pose del Taller cambió. Volvé a abrirla antes de mostrar otra.';
+    presentationBusy=true;
+    refresh();
+    try{
+      const state=await requestReview(endpoint,null,conflict);
+      if(!visible)return;
+      if(publish){
+        await requestReview(endpoint,{expectedRevision:state.revision,pose:origin},conflict);
+        if(visible)report('Mostraste esta pose en el Taller.');
+        return;
+      }
+      if(!state.presentation){report('Todavía no hay una pose compartida.');return;}
+      if(!playback||request!==sequence||key!==keyForPose(reviewPose()))return;
+      const {pose,author}=state.presentation;
+      if(rig===pose.rig)await loadClip(pose.clip,pose.frame,pose.edition);
+      else await loadRig(pose.rig,pose.clip,pose.frame,pose.edition);
+      if(visible&&playback&&keyForPose(reviewPose())===keyForPose(pose))report('Pose mostrada por '+author+'.');
+    }catch(error){if(visible)report(error.message);}
+    finally{presentationBusy=false;if(visible)refresh();}
   }
 
   async function toggleReview(){
@@ -499,6 +533,7 @@ export async function openCharacterStudio(document){
     if(name==='rig'&&Object.hasOwn(rigs,value)&&rig!==value)return loadRig(value);
     if(name==='clip'&&typeof value==='string'&&(clip!==value||!playback))return loadClip(value);
     if(!playback)return;
+    if((name==='present'||name==='follow')&&canReview)return usePresentation(name==='present');
     if(name==='review'&&canReview)return toggleReview();
     if(name==='reviewNotes'&&currentReview()?.notes.some(item=>item.id===value))selectedNote=value;
     if(name==='reference')return loadReference(value);
@@ -572,7 +607,7 @@ export async function openCharacterStudio(document){
     hud.update();
     if(group&&figure&&clip){
       const rows=(displayed()?.chapters[0]?.frame<=frameLimit()?2.64:2.43)+
-        (currentReview()?.notes.length?0.54:0);
+        (canReview?0.205:0)+(currentReview()?.notes.length?0.54:0);
       const scale=Math.min(169,(compact?width*.90:width*.36)/2.02,
         (compact?height*.46:height*.75)/rows);
       hud.setTextDensity(surfaceId,{cssPixelsPerUnit:Math.round(scale),pixelRatio:renderer.getPixelRatio()});

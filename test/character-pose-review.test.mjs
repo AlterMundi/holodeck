@@ -41,3 +41,25 @@ test('an uncertain durable replacement fences writes without claiming a save',()
   assert.equal(writes,1);
   assert.deepEqual(review.forPose(pose).notes,[]);
 });
+
+test('sharing a pose keeps notes and rejects a competing stale presentation',()=>{
+  const edition='a'.repeat(64)+'.'+'b'.repeat(64);
+  const catalog={companion:{walk:{edition,maxFrame:45}}};
+  let saved={version:1,notes:[]};
+  const store={load:()=>saved,save:value=>{saved=value;}};
+  let review=createCharacterPoseReview(store,catalog);
+  const first={id:'human:one',name:'One'},second={id:'human:two',name:'Two'};
+  const pose={rig:'companion',clip:'walk',edition,frame:5};
+  assert.deepEqual(review.presented(),{status:200,revision:0,presentation:null});
+  const initial=review.present(first,{pose,expectedRevision:0});
+  assert.deepEqual(initial,{status:200,revision:1,presentation:{pose,author:'One'}});
+  assert.deepEqual(review.present(first,{pose,expectedRevision:0}),initial);
+  assert.equal(review.present(second,{pose:{...pose,frame:6},expectedRevision:0}).status,409);
+  assert.equal(review.add(first,{pose,id:randomUUID(),text:'Plant the foot'}).status,200);
+  review=createCharacterPoseReview(store,catalog);
+  assert.deepEqual(review.presented(),initial);
+  assert.equal(review.present(second,{pose:{...pose,frame:6},expectedRevision:1}).revision,2);
+  assert.equal(review.forPose(pose).notes.length,1);
+  const later=createCharacterPoseReview(store,{companion:{walk:{edition:edition.replaceAll('a','c'),maxFrame:45}}});
+  assert.deepEqual(later.presented(),{status:200,revision:2,presentation:null});
+});

@@ -70,6 +70,12 @@ bytes together with the compiled motion-study revision. The server validates
 the submitted pose against that catalog and takes authorship from the current
 session. Camera angles remain local.
 
+**Mostrar pose** confirms one current clip, edition and frame for the room.
+**Ver pose del Taller** loads that exact selection on demand with the
+visitor's own orbit and zoom. Holodeck rejects competing writes based on
+an older presentation revision. A newly selected rig release makes the
+previous presentation unavailable until someone presents a current pose.
+
 The **Ver notas** action reads the selected pose on demand. A copied pose
 link can be opened outside the room. Shared feedback still requires current
 room membership. The existing browser-local note option is available

@@ -755,7 +755,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(session[budget].length>=(pointing?1:4))return res.status(429).json({message:'Esperá un momento antes de intentar otra acción.'});
       session[budget].push(now);
     }
-    const spaceRoute=['/space','/space/character-pose-review','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/avatar-pose','/space/collection/tabletop-presence','/space/collection/pointing','/space/matter-look','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
+    const spaceRoute=['/space','/space/character-pose-review','/space/character-presentation','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/avatar-pose','/space/collection/tabletop-presence','/space/collection/pointing','/space/matter-look','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
       req.path==='/appearance'||req.path==='/conversation-surface'||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
@@ -766,15 +766,17 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const reviewResponse=(req,res,read)=>{
     if(!inScope(req.actor,CHARACTER_STUDIO))return res.sendStatus(403);
     if(!poseReview)return res.sendStatus(503);
-    const {status,notes}=read();
+    const {status,...result}=read();
     if(status!==200)return res.sendStatus(status);
-    return res.json({notes});
+    return res.json(result);
   };
   app.get(route('api/space/character-pose-review'),(req,res)=>reviewResponse(req,res,()=>poseReview.forPose({
     rig:req.query.rig,clip:req.query.clip,edition:req.query.edition,
     frame:/^(0|[1-9][0-9]{0,5})$/.test(req.query.frame??'')?Number(req.query.frame):-1,
   })));
   app.post(route('api/space/character-pose-review'),(req,res)=>reviewResponse(req,res,()=>poseReview.add(req.actor,req.body)));
+  app.get(route('api/space/character-presentation'),(req,res)=>reviewResponse(req,res,()=>poseReview.presented()));
+  app.post(route('api/space/character-presentation'),(req,res)=>reviewResponse(req,res,()=>poseReview.present(req.actor,req.body)));
   app.post(route('api/space/matter-look'),(req,res)=>{
     const actor=req.actor;
     if(!collection?.art||!inScope(actor,collection.room))return res.sendStatus(404);
