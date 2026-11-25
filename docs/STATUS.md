@@ -1,5 +1,24 @@
 # Current MVP work
 
+## November 25 Harmonic Lab floor and return lighting
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `179364d0f9fc`
+from `d26bd46`. Six turquoise interference lines mark the floor near the
+Beacon. Dark acoustic surfaces continue to the stairs, where the lighter
+treads and lit doorway distinguish the return to the foyer. Both permission
+variants use this finish and retain the existing stair and station geometry.
+
+Controlled browsers completed the foyer–laboratory round trip on RTX 2060
+Normal and Pi 5 V3D Livianos. The scoped art returned 404 after leaving.
+Matched stationary frame samples retained a 16.7 ms median on both and p95
+values of 16.7 and 33.4 ms respectively. Both GLBs add 768 triangles and the
+full package is 102,400 bytes smaller. The Holodeck suite passed 411 tests
+with two skips. Receiving matched 86 files, the existing access and
+configuration, and world sequence 433. Immediate rollback is `d7b3b73478fa`.
+
+The [next two station placements and their owning panel routes](shared-roadmap.md#harmonic-lab-as-a-playable-resonant-volume)
+remain a candidate. Physical phone and participant use remain unverified.
+
 ## November 25 HIT-inspired Harmonic Lab vault
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
