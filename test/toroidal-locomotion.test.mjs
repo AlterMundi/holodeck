@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {Quaternion, Vector3} from 'three';
 import {ToroidalLocomotion, toroidalRotation} from '../src/toroidal-locomotion.mjs';
-import {TOROIDAL_TERRAIN, terrainElevation, terrainFrame, terrainWaterDepth} from '../src/toroidal-terrain.mjs';
+import {
+  TOROIDAL_OVERLOOK, TOROIDAL_TERRAIN, terrainElevation, terrainFrame, terrainPosition, terrainWaterDepth, toroidalSpurPoint,
+} from '../src/toroidal-terrain.mjs';
 
 const EPS = 1e-9;
 
@@ -95,6 +97,37 @@ test('the seeded shore supports wading, a deep crossing and return to dry land',
   assert.deepEqual([...seen],['dry','wading','floating']);
   assert.equal(terrainWaterDepth(motion.u,motion.v),0);
   assert.ok(motion.v>.27);
+});
+
+test('the authored spur can be followed from the first shore to the inner overlook',()=>{
+  const motion=new ToroidalLocomotion(toroidalSpurPoint(.309));
+  const destination=TOROIDAL_OVERLOOK.v,{waterLevel,majorRadius,tubeRadius}=TOROIDAL_TERRAIN;
+  const here=new Vector3(),next=new Vector3(),direction=new Vector3(),axis=new Vector3();
+  let dove=false,resurfaced=false;
+  for(let frame=0;frame<260*60&&motion.v<destination-.00035;frame++){
+    const point=toroidalSpurPoint(Math.min(destination,motion.v+.0032));
+    const ground=terrainElevation(point.u,point.v);
+    const position=motion.pose().position;
+    here.set(position.x,position.y,position.z);
+    direction.fromArray(terrainPosition(point.u,point.v,Math.max(ground,waterLevel-.96))).sub(here);
+    const {alongRing,aroundTube}=terrainFrame(motion.u,motion.v);
+    const yaw=Math.atan2(direction.dot(axis.fromArray(alongRing)),direction.dot(axis.fromArray(aroundTube)));
+    const vertical=motion.v>.345&&motion.v<.356?-1:motion.v>=.356&&!resurfaced?1:0;
+    motion.update(1/60,{forward:1,yaw,vertical});
+    const after=motion.pose().position;
+    assert.ok(next.set(after.x,after.y,after.z).distanceTo(here)<.145);
+    const delta=motion.u-toroidalSpurPoint(motion.v).u;
+    const radius=majorRadius+(tubeRadius+motion.height)*Math.cos(motion.v*2*Math.PI);
+    assert.ok(Math.abs(delta-Math.round(delta))*radius*2*Math.PI<2);
+    dove ||= motion.swimming&&motion.height<waterLevel-3;
+    resurfaced ||= dove&&motion.height>=waterLevel-1&&terrainWaterDepth(motion.u,motion.v)>3;
+  }
+  assert.ok(dove&&resurfaced&&motion.grounded);
+  assert.ok(Math.abs(motion.v-destination)<.00035);
+  assert.ok(Math.abs(motion.u-TOROIDAL_OVERLOOK.u)<.0004);
+  assert.equal(terrainWaterDepth(motion.u,motion.v),0);
+  assert.equal(motion.height,terrainElevation(motion.u,motion.v));
+  assert.ok(motion.height>35);
 });
 
 test('a continuous route completes the ring on the production seed', () => {
