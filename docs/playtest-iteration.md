@@ -339,7 +339,7 @@ See the [A2UI catalog guide](https://a2ui.org/guides/defining-a-catalog/) and
 
 ### November 25 playtest and next controls
 
-The selected runtime 52ca23ac4a7e caps the Conversation minimize glyph at
+The 52ca23ac4a7e release caps the Conversation minimize glyph at
 11 CSS pixels and fades its background plate. The corner resize mark and
 pointer target are unchanged. The exterior palette supplies an explicit dark control fill.
 The browser fixture exercised drag, resize, minimize, restore, draft retention
@@ -367,14 +367,15 @@ the evidence folder. SwiftShader measured 68 vs 71 median draw calls and
 Before wider adoption, measure a culled and reduced-density variant on the
 game hardware. Retain the live baseline outside the test.
 
-The next package keeps the rails, room geometry and collection data in place
+The selected package 29399a048e35 keeps the room geometry and collection data in place
 while changing movement and presentation. Inside the Matter work area the
 player flies with the regular movement inputs, stays inside the table bounds
 and appears as a small translucent figure to the other people in the room.
 The room presence channel carries the active tabletop state for each connected
-avatar and serves the current roster to a newly connected viewer. A second
-authorized view must see entry, a reload and exit restore the original size
-and materials before this package is selected.
+avatar and serves the current roster to a newly connected viewer. A second authorized browser saw the hologram at entry and after a reload and
+saw the original scale and materials return on exit. Foreign connection writes
+were rejected and a stale revision could not replace the newer exit. Chromium
+reported aborted GLB reads for superseded room views, then loaded the current room.
 
 The exterior uses a solar clock evaluated at Buenos Aires and a generated
 space panorama behind the atmosphere. The accessible control surfaces keep
@@ -382,5 +383,8 @@ their current actions while minimap and table tools can be moved and resized.
 The 3D companion reuses the selected Navegante design. Its mouth tracks the
 authenticated Conversation playback signal when that capability is present.
 [DaimonApp #1026](https://github.com/AlterMundi/DaimonApp/pull/1026) owns the
-sender. The packaged model and the live speech round trip have distinct
-acceptance checks.
+sender. CompAII received the exact two web assets on the existing Portability
+release, preserving native processes and configuration. Sessions returned 200
+with the bound human session and 401 after logout. Chromium exchanged a
+synthetic playback level and reset through the two bound origins. Hearing live
+speech and seeing the lips move during it still needs a live trial.

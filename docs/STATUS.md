@@ -2,13 +2,19 @@
 
 ## November 25 selected playtest update
 
-Holodeck is serving 52ca23ac4a7e after exact protected package readback.
-The deployed Conversation display uses a compact high-contrast minimize glyph and
-a small corner resize mark. Matter uses Orbital layered light by default and
-saves selected room looks per visitor account. The previous package
-c2d4434bd2e6 is the observed compatible rollback. Both packages support
-returning restored editions to the cabinet. Native world run and receiving configuration
-were preserved.
+Holodeck is serving 29399a048e35 after exact protected package readback.
+The release adds tabletop hologram flight, movable HUD windows, the sky and
+Buenos Aires solar cycle, and the animated Navegante companion. The compact
+Conversation minimize glyph, corner resize grip, per-account Orbital look and
+Collection rearchiving are delivered. The compatible previous package is
+52ca23ac4a7e. Native world run and receiving configuration were preserved.
+
+Two browser visitors exercised the tabletop state across entry, reload and
+exit. The emulated touch check validated simultaneous movement and jump,
+cancellation on map entry and ascent inside the tabletop bounds. Browser
+playback-level transfer through the bound Conversation frame passed with
+synthetic levels. The CompAII Conversation sender is selected at App #1026;
+the complete live speech and physical device trial is still open.
 
 The HUD theme studies and bounded Sand3D Nature comparison are available
 through the [playtest plan](playtest-iteration.md#november-25-playtest-and-next-controls).
