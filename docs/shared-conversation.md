@@ -124,6 +124,15 @@ remains the active compatibility contract pending that integration.
 
 ### Canonical writer integration
 
+[DaimonApp draft PR #1031](https://github.com/AlterMundi/DaimonApp/pull/1031)
+implements the owner-local reservation and atomic receipt for text and ordinary
+voice. Tests cover first native establishment, retry, voice recovery through the
+owner command, and eight human files alongside the receipt. The deployed bridge
+still sends a full file. To activate the receipt path, connect the verified
+registered speaker and the current room authorization to the native offer,
+isolate the pending-source storage budget, and project the sealed evidence
+into the native conversation before acknowledging a reusable baseline.
+
 The current DaimonApp dashboard dispatches text through
 `dashboard/provider.py` and ordinary voice through its voice submit provider.
 Both reach `src/app/conversation_inputs.rs` and converge on
