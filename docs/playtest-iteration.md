@@ -1022,3 +1022,32 @@ house entry. A standalone Node check across 50 warm chart rebuilds measured
 3.69 ms median and 6.22 ms p95 on ITACA; these numbers exclude canvas
 composition and rendering. The package is staged. Physical GPU and live
 selection remain open.
+
+## Ceramic companion and worktable glance
+
+Navegante uses a volumetric authored Blender rig with the selected ceramic,
+bronze relief and embroidered cape textures. Opus 5.5 High found the floating
+trim, overlaid mouth, excessive double-sided hologram draws and dark bronze.
+The revised bezel is one mapped ring with aligned colour/normal repetition.
+The speech jaw remains independent. Astra High reviewed the actual turnarounds
+and prompted a longer folded cape, a thinner chin and larger plain ivory areas.
+The sampled Blender poses had zero cape/limb triangle intersections across 80
+frames in calm, walk, hover, glide, joy and uncertain.
+
+Tabletop mouse attention is viewer-local and additive to the existing poses.
+It reuses visible worktable hit testing, ignores the companion hologram as
+a hover obstruction and applies a bounded glance to each head. Fable High
+reviewed local focus and pose ownership. Opus 5.5 High drove the cursor freshness,
+occlusion budget, reset and near-vertical changes. The regressions cover
+clipped and obstructed models, stale cursor, model changes and restoration of
+the base pose. Ordinary click selection keeps its original behavior.
+
+Exact archive `a73f695a9e97` is 33,310,720 bytes, under the 32 MiB receiver
+limit. Lossless packing of an existing public figure preserved its decoded
+bytes and recovered space for the materials. The exact build passed 337 tests
+with two skips. Chromium on the exact Node24 package verified both heads
+responding to an actual workpiece and returning toward the sampled no-hover
+pose without turning it into a selection. The draw count remained nine.
+The draft is staged. Full avatar state transitions and final in-game art
+direction remain open. Production and physical GPU qualification
+are separate receiving checks.

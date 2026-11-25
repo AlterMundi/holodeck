@@ -1,6 +1,9 @@
 import {PerspectiveCamera,Raycaster,Vector2,BoxHelper} from 'three';
 import {entityLabel} from './focus.mjs';
 const visible=object=>{for(let p=object;p;p=p.parent)if(!p.visible)return false;return true;};
+const visibleHit=hit=>(hit.object.isMesh||hit.object.isSprite)&&visible(hit.object)&&
+  [hit.object.material].flat().some(material=>material?.visible&&material.opacity>0&&
+    !material.clippingPlanes?.some(plane=>plane.distanceToPoint(hit.point)<0));
 export function selectionLabel(id,state){
  const node=state?.nodes?.[id];
  return node&&!node.deleted&&typeof node.title==='string'&&node.title.trim()
@@ -19,15 +22,32 @@ export class PublicWorldPicker{
   };
   for(const[type,listener]of [['pointerdown',this.down],['pointermove',this.move],['pointerup',this.up],['pointercancel',this.cancel]])canvas.addEventListener(type,listener);
  }
- hit(x,y,skip=()=>false){
+ aim(x,y){
   const state=this.cameraState(),rect=this.canvas.getBoundingClientRect();if(!state||!rect.width||!rect.height)return null;
   Object.assign(this.camera,{fov:state.fov,aspect:state.aspect,near:.01,far:200});this.camera.position.set(state.position.x,state.position.y,state.position.z);
   this.camera.quaternion.set(state.rotation.x,state.rotation.y,state.rotation.z,state.rotation.w);this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld(true);this.scene.updateMatrixWorld(true);
   this.ray.setFromCamera(new Vector2((x-rect.left)/rect.width*2-1,-(y-rect.top)/rect.height*2+1),this.camera);
-  return this.ray.intersectObjects(this.scene.children,true).find(hit=>
-    (hit.object.isMesh||hit.object.isSprite)&&!skip(hit.object)&&visible(hit.object)&&
-    [hit.object.material].flat().some(material=>material?.visible&&material.opacity>0&&
-      !material.clippingPlanes?.some(plane=>plane.distanceToPoint(hit.point)<0)))??null;
+  return true;
+ }
+ hit(x,y,skip=()=>false){
+  if(!this.aim(x,y))return null;
+  return this.ray.intersectObjects(this.scene.children,true).find(hit=>!skip(hit.object)&&visibleHit(hit))??null;
+ }
+ worktableHit(x,y){
+  const targets=this.collection();
+  if(!targets?.size)return null;
+  const parts=[...targets].filter(([,record])=>record.kind==='worktable-part').map(([mesh])=>mesh);
+  if(!parts.length||!this.aim(x,y))return null;
+  const hit=this.ray.intersectObjects(parts,false).find(visibleHit);
+  if(!hit)return null;
+  const companion=this.companion();
+  const blockers=this.scene.children.filter(object=>object!==companion);
+  const far=this.ray.far;
+  try{
+   this.ray.far=hit.distance-.0005;
+   if(this.ray.intersectObjects(blockers,true).some(visibleHit))return null;
+  }finally{this.ray.far=far;}
+  return {...targets.get(hit.object),point:hit.point};
  }
  pick(x,y){
   const companion=this.companion();

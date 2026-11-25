@@ -104,8 +104,9 @@ export function bindMatterFlight(manager,camera,flight,inputAllowed,onLost){
 }
 
 export class MatterHologram{
-  constructor(root){
+  constructor(root,{depthWrite=false}={}){
     this.root=root;
+    this.depthWrite=depthWrite;
     this.appearance=new Map();
   }
 
@@ -129,7 +130,8 @@ export class MatterHologram{
         clone.transparent=true;
         clone.opacity*=.55;
         clone.alphaTest*=.55;
-        clone.depthWrite=false;
+        clone.depthWrite=this.depthWrite;
+        clone.forceSinglePass=this.depthWrite;
         return clone;
       };
       const materials=Array.isArray(source)?source.map(translucent):translucent(source);

@@ -27,6 +27,7 @@ import { saveIntent, loadIntent, archiveIntent, sameActor, nativeRetryRoute } fr
 import { NativeAvatarLayer } from './native-avatar.mjs';
 import {CompanionAvatar} from './companion-avatar.mjs';
 import {PublicWorldPicker,WorldIndication} from './world-indication.mjs';
+import {bindTabletopAttention} from './tabletop-attention.mjs';
 import { ContentVisitor } from './content-visitor.mjs';
 import { GalleryModels } from './gallery-models.mjs';
 import { CollectionShelves } from './collection-shelves.mjs';
@@ -875,8 +876,22 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     }
     let nextDressing=0, ring=null, cave=null, scenery=null, atmosphere=null, releaseRadialMovement=null, releaseHeadroom=null, ringSun=null;
     let sceneryAfter=null,releaseTableFlight=null,releaseSearchKeys=null;
+    const worldCanvas=worldPicker.canvas;
+    const table=collectionShelves.worktable;
+    const tableAttention=bindTabletopAttention({document,canvas:worldCanvas,
+      pick:(x,y)=>worldPicker.worktableHit(x,y),
+      current:({id,mesh})=>table.available&&mesh.visible&&table.model?.parts.get(id)===mesh,
+      allowed:()=>matterHud.active&&tableFlight.active&&!moving&&!entering&&!needsSync&&
+        !document.hidden&&!mapPanel.open&&!document.querySelector('dialog[open]')&&
+        !contentVisitor?.isOpeningOverWorld()&&!options.coreCameraManager.activePointers.size&&
+        !matterHud.capturedPointers.size,
+      overWorld:pointer=>!matterHud.overControl(pointer)&&
+        document.elementFromPoint(pointer.clientX,pointer.clientY)===worldCanvas,
+    });
+    let tableGaze=null;
     const releaseFlightAnimation=bindFlightAvatarAnimation(renderer.characterManager,()=>({
       outdoor:outsideRing(),flying:flightEnabled,table:tableFlight.active,tabletopPlayers:collectionShelves.tabletopPlayers,
+      gaze:tableGaze,glanceMotion:!companion.motion.matches&&!document.hidden,
       crouch:!moving&&client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt'),
     }));
     const releaseHologram=bindMatterHologram(renderer.characterManager,tableFlight,()=>collectionShelves.tabletopPlayers);
@@ -1001,7 +1016,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         atmosphere=null;
       }
       nativeAvatarLayer.update();
-      companion.update({position,yaw,outdoor:outsideRing(),table:tableFlight,
+      tableGaze=tableAttention.sample(performance.now());
+      companion.update({position,yaw,outdoor:outsideRing(),table:tableFlight,gaze:tableGaze,
         grounded:!flightEnabled&&client.getCharacterManager().localController?.characterOnGround===true,
         visible:!entering&&!moving&&drawWorld,seconds:renderState.deltaTimeSeconds});
       galleryModels.update();
@@ -1062,7 +1078,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
       }
     };
-    renderer.dispose=()=>{releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();tableAttention.dispose();display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
       if(client.keyInputManager){
         const keys=client.keyInputManager,shouldCapture=keys.shouldCaptureKeyPress;

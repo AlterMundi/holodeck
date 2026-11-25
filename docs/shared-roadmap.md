@@ -92,7 +92,9 @@ for the walkthrough. New gameplay mechanics follow their own stages.
    Schedule a selection when the protected visit can safely be interrupted.
 
 Publish each accepted slice using the owning release path. Review the actual
-implementation with Opus 5.5 High and recheck corrections. Record fixture,
+implementation with Opus 5.5 High and recheck corrections. Ask Astra High for
+a second critique when an actual visual or technical result misses the bar.
+Bring the hard remaining questions back to Opus or Fable with the evidence. Record fixture,
 production, device and participant evidence separately. Keep hardware frame
 budget, multi-visitor isolation, replay and Wiggle input visible on their
 owning lanes. The night work uses the existing active Holodeck and Proyección

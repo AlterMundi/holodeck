@@ -1,8 +1,10 @@
 import {AnimationClip, AnimationMixer, Quaternion, Vector3} from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {AVATARS} from './avatar-registry.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
 import {MatterHologram,matterAvatarScale} from './matter-flight.mjs';
+import {TabletopGlance} from './tabletop-attention.mjs';
 
 const appearance='compaii-navegante-white-v1';
 const localUp=new Vector3(0,1,0);
@@ -13,7 +15,7 @@ const followDeceleration=6;
 const maximumFollowSpeed=8.5;
 
 async function loadFigure(url){
-  const {scene:root,animations}=await new GLTFLoader().loadAsync(url.href);
+  const {scene:root,animations}=await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url.href);
   const geometries=new Set(),materials=new Set(),textures=new Set(),skeletons=new Set();
   root.traverse(object=>{
     if(!object.isMesh)return;
@@ -25,6 +27,7 @@ async function loadFigure(url){
     geometries.add(object.geometry);
     for(const material of [object.material].flat()){
       materials.add(material);
+      if(material.normalMap)textures.add(material.normalMap);
       if(material.map){
         textures.add(material.map);
         material.transparent=false;
@@ -42,6 +45,8 @@ async function loadFigure(url){
       for(const resource of resources)resource.dispose();
     }
   };
+  const glance=new TabletopGlance();
+  const head=root.getObjectByName('head');
   const idle=animations.find(clip=>clip.name==='calm');
   const walk=animations.find(clip=>clip.name==='walk');
   const hover=animations.find(clip=>clip.name==='hover');
@@ -65,7 +70,8 @@ async function loadFigure(url){
   const vertical=hinge.isBone?'z':'y', hingeAxis=hinge.isBone?'x':'z';
   const jawHeight=hinge.position[vertical], jawAngle=hinge.rotation[hingeAxis];
   let walking=0,floating=0,cruising=0,phase=0;
-  return {root,dispose,pose(seconds,level,speed,motion,airborne){
+  return {root,dispose,resetGlance:()=>glance.reset(),pose(seconds,level,speed,motion,airborne,gaze){
+    glance.restore();
     const step=Math.min(.05,Math.max(0,seconds));
     const fade=motion?1-Math.exp(-step*10):1;
     const airborneWeight=hovering&&airborne?1:0;
@@ -89,6 +95,8 @@ async function loadFigure(url){
     }
     if(motion)mixer.update(step);
     else mixer.setTime(0);
+    if(motion)glance.apply(root,head,gaze,step,1-cruising*.7);
+    else glance.reset();
     hinge.position[vertical]=jawHeight-jawTravel*level;
     hinge.rotation[hingeAxis]=jawAngle+(hinge.isBone?.10:-.035)*level;
   }};
@@ -119,7 +127,7 @@ export class CompanionAvatar{
     void loadFigure(model).then(figure=>{
       if(this.disposed){figure.dispose();return;}
       this.figure=figure;
-      this.hologram=new MatterHologram(figure.root);
+      this.hologram=new MatterHologram(figure.root,{depthWrite:true});
       this.figure.root.visible=false;
       scene.add(this.figure.root);
     }).catch(error=>{console.warn('The companion avatar could not be loaded.',error);});
@@ -133,11 +141,11 @@ export class CompanionAvatar{
     this.speechAt=performance.now();
   }
   get object(){return this.figure?.root.visible?this.figure.root:null;}
-  update({position,yaw=0,outdoor,table,visible,seconds,grounded=true}){
+  update({position,yaw=0,outdoor,table,gaze,visible,seconds,grounded=true}){
     const root=this.figure?.root;
     if(!root)return;
     root.visible=Boolean(position&&visible);
-    if(!root.visible){this.previous=null;this.attention=null;return;}
+    if(!root.visible){this.previous=null;this.attention=null;this.figure.resetGlance();return;}
     const now=performance.now();
     const small=Boolean(table?.active);
     const canWalk=grounded&&!small;
@@ -217,7 +225,7 @@ export class CompanionAvatar{
       if(!reset&&moving)root.quaternion.slerp(this.previousHeading,Math.exp(-Math.max(0,seconds)*5));
     }
     const level=moving&&now-(this.speechAt??-Infinity)<300?this.level:0;
-    this.figure.pose(seconds,level,speed,moving,!canWalk);
+    this.figure.pose(seconds,level,speed,moving,!canWalk,small?gaze:null);
   }
   dispose(){
     this.disposed=true;

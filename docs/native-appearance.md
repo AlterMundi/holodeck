@@ -56,14 +56,14 @@ real native provider/model turn or human/artistic acceptance was asserted.
 
 ## Blender companion
 
-The receiving candidate uses a from-scratch volumetric Blender model for the
+The earlier selected release uses a from-scratch volumetric Blender model for the
 following companion. The design study supplies the pearl palette, cyan face,
 compact proportions, mantle and poses. The scene and generator under
 `art/compaii-avatar/` author the meshes, seven solid materials and rigid weighted
 armature directly. The staged GLB contains nine pose clips and grounded walk, hover and glide cycles.
 Unmute one Blender NLA track at a time to inspect alternative poses. Run the
-generator in Blender background mode and pass a staging directory after `--`
-to regenerate the editable scene, GLB and studio views.
+generator for the current revision with the inputs listed in the
+[Blender source notes](../art/compaii-avatar/README.md).
 
 Holodeck blends the calm loop with grounded walking. Canonical Conversation
 sends its bound playback level to the separate jaw pivot. The pivot returns to
@@ -86,3 +86,23 @@ table part uses the center of its authorized loaded geometry and an offset from
 the part, clamped to table bounds. In the world, a current selection can orient
 the robot. Shared native attention, room navigation and augmented anchoring need
 separate receiving verification.
+
+## Ceramic, engraved bronze and fabric candidate
+
+The editable Blender model now has a machined visor ring, projected gold
+inlays, compass clasp, shaped ceramic housings and a chest-to-cape weight
+gradient. Its ring, face anchor and separate speech jaw remain legible from
+the side. The reference inputs are the selected ceramic colour atlas, scroll
+normal atlas and fabric colour atlas. The [Blender generator](../art/compaii-avatar/README.md) requires those
+three paths after the output directory. It crops a bronze normal strip,
+derives compact colour maps and packs the derivatives into the scene. It
+does not depend on external paths after the editable scene is saved.
+
+The staged GLB uses lossless meshopt transport for its mesh and skin streams.
+In controlled Chromium it drew 12,644 triangles in nine calls, with 23.3 mm
+of measured jaw travel using fixture playback, and restored material/scale
+after leaving the table. The companion and local human used an additive
+head glance at a visible part in the exact running package. Pointer movement
+and the glance did not change the selected part. Explicit selection remains
+its own action. See [avatar motion #21](https://github.com/AlterMundi/holodeck/issues/21)
+and [companion art #22](https://github.com/AlterMundi/holodeck/issues/22).

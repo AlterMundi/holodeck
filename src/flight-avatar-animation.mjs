@@ -1,6 +1,7 @@
 import {Euler,Quaternion,Vector3} from 'three';
 import {TOROIDAL_TERRAIN,terrainCoordinates,terrainWaterDepth} from './toroidal-terrain.mjs';
 import {matterAvatarScale} from './matter-flight.mjs';
+import {TabletopGlance} from './tabletop-attention.mjs';
 
 const limbNames=['upperarm_l','upperarm_r','lowerarm_l','lowerarm_r','thigh_l','thigh_r','calf_l','calf_r'];
 const pitchAxis=new Vector3(1,0,0);
@@ -12,6 +13,7 @@ export function bindFlightAvatarAnimation(manager,context){
   const displacement=new Vector3(),up=new Vector3(),right=new Vector3(),localAxis=new Vector3();
   const bodyFacing=new Quaternion(),boneFacing=new Quaternion(),bend=new Quaternion();
   function restore(entry){
+    entry.glance?.restore();
     for(const [bone,neutral] of entry.modified)bone.quaternion.copy(neutral);
     if(entry.rotation?.equals(entry.applied))entry.rotation.copy(entry.unpitched);
   }
@@ -19,7 +21,7 @@ export function bindFlightAvatarAnimation(manager,context){
     // Remove last frame's extra limb rotations before the base mixer runs.
     for(const entry of actors.values())restore(entry);
     const result=update.call(this,state,dt);
-    const {outdoor,flying,table,crouch,tabletopPlayers=[]}=context();
+    const {outdoor,flying,table,crouch,gaze,glanceMotion=true,tabletopPlayers=[]}=context();
     for(const [id,actor] of state.characters){
       const character=this.loadedCharacters.get(id)?.character;
       const mesh=character?.getMesh();
@@ -33,6 +35,11 @@ export function bindFlightAvatarAnimation(manager,context){
         actors.set(id,entry);
       }
       const isLocal=id===state.localCharacterId;
+      if(!glanceMotion)entry.glance?.reset();
+      if(isLocal&&glanceMotion&&table&&gaze&&!entry.glance){
+        entry.glance??=new TabletopGlance();
+        entry.head??=mesh.getObjectByName('head');
+      }
       const coordinate=outdoor?terrainCoordinates([position.x,position.y,position.z]):null;
       const underwater=coordinate&&coordinate.height<TOROIDAL_TERRAIN.waterLevel-.92&&terrainWaterDepth(coordinate.u,coordinate.v)>.18;
       const atTable=isLocal?table:tabletopPlayers.has?.(id)||tabletopPlayers.includes?.(id);
@@ -53,7 +60,11 @@ export function bindFlightAvatarAnimation(manager,context){
       entry.weight+=(target-entry.weight)*fade;
       entry.hoverWeight+=(Number(Boolean(active))*(1-target)-entry.hoverWeight)*fade;
       entry.lowWeight+=(Number(low)-entry.lowWeight)*fade;
-      if(entry.weight<.01&&entry.hoverWeight<.01&&entry.lowWeight<.01){entry.modified.clear();continue;}
+      if(entry.weight<.01&&entry.hoverWeight<.01&&entry.lowWeight<.01){
+        entry.modified.clear();
+        entry.glance?.apply(character,entry.head,isLocal&&table&&glanceMotion?gaze:null,dt);
+        continue;
+      }
       entry.phase=(entry.phase+dt*(underwater?4.4:2.1))%(2*Math.PI);
       const stroke=Math.sin(entry.phase),counter=Math.cos(entry.phase);
       const w=entry.weight;
@@ -66,6 +77,7 @@ export function bindFlightAvatarAnimation(manager,context){
       }
       entry.rotation.multiply(pitch);
       entry.applied.copy(entry.rotation);
+      entry.glance?.apply(character,entry.head,isLocal&&table&&glanceMotion?gaze:null,dt,1-w*.8);
       const strokeAmplitude=underwater?.58:.16;
       const kickAmplitude=underwater?.27:.075;
       for(let index=0;index<entry.limbs.length;index++){
