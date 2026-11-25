@@ -15,12 +15,13 @@ import {nodeVisits} from './content-nodes.mjs';
 import express from 'express';
 import { Networked3dWebExperienceServer } from '@mml-io/3d-web-experience-server';
 import { NetworkedDOM } from '@mml-io/networked-dom-server';
-import { handleExperienceWebsocketSubprotocol } from '@mml-io/3d-web-experience-protocol';
+import {avatarPoseBroadcast,avatarPoseModes,poseConnection,poseKeyMaterial,poseProofMessage} from './avatar-pose-presence.mjs';
+import {FROM_SERVER_BROADCAST_MESSAGE_TYPE,handleExperienceWebsocketSubprotocol,serializeServerBroadcastMessage} from '@mml-io/3d-web-experience-protocol';
 import enableWs from 'express-ws';
 import { existsSync, readFileSync } from 'node:fs';
 import {ANIMATION_ASSET_REVISIONS,readPackedArt,sendPackedArt} from './packed-art.mjs';
 import { packedClientHandler } from './packed-client.mjs';
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { join } from 'node:path';
 import { Room, RoomError, LIMITS } from './room.mjs';
@@ -346,6 +347,30 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     }).catch(()=>socket.close(1008)).finally(()=>pendingSockets--);
   });
   const cellTransports=new Map();
+  const outsidePosePeers=new Map();
+  const posePeers=scope=>scope===OUTSIDE?outsidePosePeers:cellTransports.get(scope)?.connections;
+  const poseNetwork=scope=>scope===OUTSIDE?network:cellTransports.get(scope)?.network;
+  const canReadPose=(peer,scope)=>Date.now()-peer.session.created<SESSION_MS&&inScope(peer.session.actor,scope);
+  function sendPose(scope,connection,payload,peers=posePeers(scope),transport=poseNetwork(scope)){
+    const peer=peers?.get(connection);
+    if(!peer||!canReadPose(peer,scope))return;
+    try{
+      transport?.userNetworkingServer.sendCustomMessageToClient(connection,FROM_SERVER_BROADCAST_MESSAGE_TYPE,
+        serializeServerBroadcastMessage({broadcastType:avatarPoseBroadcast,payload:{space:scope,...payload}}));
+    }catch{
+      // Presence sockets already handle closure. Pose hints never impede it.
+    }
+  }
+  function fanOutPose(scope,connection,pose,peers=posePeers(scope),transport=poseNetwork(scope)){
+    for(const id of peers?.keys()??[])
+      if(id!==connection)sendPose(scope,id,{connection,pose},peers,transport);
+  }
+  function dropPose(scope,connection,peers,transport){
+    const peer=peers.get(connection);
+    peers.delete(connection);
+    if(peer?.pose&&peer.pose!=='ground')fanOutPose(scope,connection,'ground',peers,transport);
+  }
+
   function renderInterior(room,passages,exhibit){
     const art=artForRoom(room,passages),src=art?route('api/space/art/'+art.revision):null;
     const gallerySigns=room.id===gallery?.room&&exhibit?.pin.kind==='artifact_review'&&exhibit.pin.adapter==='interactive_3d';
@@ -371,7 +396,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const space=describeSpace(actor,true);
     const roomLooks=space.collectionShelves&&matterArt?.roomLooks;
     const splat=space.collectionShelves&&matterArt?.floorSplat;
-    return {...space,live:1,actorRef:actor.id,
+    return {...space,live:1,avatarPosePresence:true,actorRef:actor.id,
       ...(roomLooks?{matterStyles:{...roomLooks.describe(revision=>route('api/space/art/'+revision)),
         ...(roomLookPreferences.has(lookReaderKey(actor))?{preferred:roomLookPreferences.get(lookReaderKey(actor))}:{})}}:{}),
       ...(splat?{matterFloorSplat:{src:route('api/space/art/'+splat.revision),target:splat.target,radius:splat.radius}}:{}),
@@ -589,9 +614,10 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(s.connection!==null||sessionFor(token)!==s||socket.readyState!==1||!sockets.has(socket))return new Error('Room connection changed');
       s.connection=connection;
       room.atomic(()=>room.event(actor,'participant.joined',{name:actor.name||'Explorador'}));
+      outsidePosePeers.set(connection,{session:s,poseKey:createHash('sha256').update(poseKeyMaterial(token)).digest()});
       return {userId:actor.id,connectionKey:`session:${s.id}`,username:actor.name||`Explorador ${s.id}`,characterDescription:avatarProfile(actor),colors:null};
     },
-    onClientDisconnect(connection){for(const s of sessions.values())if(s.connection===connection){s.connection=null;if(!room.commitUncertain)room.atomic(()=>room.event(s.actor,'participant.left',{}));}},
+    onClientDisconnect(connection){dropPose(OUTSIDE,connection,outsidePosePeers,network);for(const s of sessions.values())if(s.connection===connection){s.connection=null;if(!room.commitUncertain)room.atomic(()=>room.event(s.actor,'participant.left',{}));}},
     onClientUserIdentityUpdate(){return false;}
   };
   const index=readFileSync(new URL('../public/index.html',import.meta.url),'utf8').replace('<head>','<head><base href="'+basePath+'">');
@@ -611,13 +637,13 @@ export async function createHolodeck({basePath='/',production=false,identityReso
             [...connections.values()].some(peer=>peer.session===session))
           return new Error('Room connection changed');
         record.presenceSession=session;
-        connections.set(connection,{actor,session});
+        connections.set(connection,{actor,session,poseKey:createHash('sha256').update(poseKeyMaterial(token)).digest()});
         return {userId:actor.id,connectionKey:`session:${session.id}`,username:actor.name||'Explorador',
           characterDescription:avatarProfile(actor),colors:null};
       },
       onClientDisconnect(connection){
         const peer=connections.get(connection);
-        connections.delete(connection);
+        dropPose(id,connection,connections,scopedNetwork);
         if(peer?.tabletop)broadcastTabletop();
       },
       onClientUserIdentityUpdate(){return false;}
@@ -650,6 +676,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const selected='(self '+conversationOrigins.map(value=>'"'+value+'"').join(' ')+')';
     res.set('Permissions-Policy','microphone='+selected+', autoplay='+selected);next();
   });
+  app.use(route('api/space/avatar-pose'),express.json({limit:'256b',strict:true}));
   app.use(express.json({limit:'48kb',strict:true}));
   const packedClient=new URL('../runtime/client.js.br',import.meta.url);
   if(existsSync(packedClient))
@@ -710,11 +737,12 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(req.method==='POST'){
       const expectedOrigin=publicOrigin||`http://${req.headers.host}`;
       if((production||req.headers.origin)&&req.headers.origin!==expectedOrigin)return res.status(403).json({message:'Abrí esta acción desde el taller.'});
-      const now=Date.now();session.times=session.times.filter(time=>now-time<1000);
-      if(session.times.length>=4)return res.status(429).json({message:'Esperá un momento antes de intentar otra acción.'});
-      session.times.push(now);
+      const budget=req.path==='/space/avatar-pose'?'poseTimes':'times';
+      const now=Date.now();session[budget]=(session[budget]??[]).filter(time=>now-time<1000);
+      if(session[budget].length>=4)return res.status(429).json({message:'Esperá un momento antes de intentar otra acción.'});
+      session[budget].push(now);
     }
-    const spaceRoute=['/space','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/collection/tabletop-presence','/space/matter-look','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
+    const spaceRoute=['/space','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/avatar-pose','/space/collection/tabletop-presence','/space/matter-look','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
       req.path==='/appearance'||req.path==='/conversation-surface'||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
@@ -867,8 +895,35 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     res.json({room:collection.room,projects:[...projects,...restored],...(worktable?{worktable}:{}),
       ...(collection.archive&&art?.archive?{archive:{anchor:art.archive,editions:archive,...(canRestore?{canRestore}:{})}}:{})});
   }));
-  // This stream carries only a refresh hint. The catalog and geometry still
-  // require their own current, actor-scoped authorization on every read.
+  app.post(route('api/space/avatar-pose'),(req,res)=>{
+    const input=req.body;
+    if(!input||Object.keys(input).sort().join(',')!=='connection,pose,revision,space'||
+       !poseConnection(input.connection)||!avatarPoseModes.has(input.pose)||
+       !Number.isSafeInteger(input.revision)||input.revision<1||
+       typeof input.space!=='string'||input.space.length>96)return res.sendStatus(400);
+    const scope=spaces.current(req.actor);
+    if(input.space!==scope||!inScope(req.actor,scope))return res.sendStatus(409);
+    if(input.pose==='fly'&&scope!==OUTSIDE)return res.sendStatus(400);
+    const proof=req.get('X-Holodeck-Pose-Proof');
+    const peer=posePeers(scope)?.get(input.connection);
+    // The HTTP cookie proves the actor. The signed fields prove the exact
+    // authenticated MML tab without placing its session token on this route.
+    if(!peer||peer.session.actor.id!==req.actor.id||!canReadPose(peer,scope)||
+       !/^[a-f0-9]{64}$/.test(proof??''))return res.sendStatus(409);
+    const expected=createHmac('sha256',peer.poseKey).update(poseProofMessage(input)).digest();
+    if(!timingSafeEqual(expected,Buffer.from(proof,'hex')))return res.sendStatus(409);
+    if(input.revision>(peer.poseRevision??0)){
+      const previous=peer.pose??'ground';
+      peer.poseRevision=input.revision;
+      peer.pose=input.pose;
+      if(previous!==input.pose)fanOutPose(scope,input.connection,input.pose);
+      const poses=[...posePeers(scope)].filter(([,entry])=>entry.pose&&entry.pose!=='ground'&&canReadPose(entry,scope))
+        .map(([id,entry])=>[id,entry.pose]);
+      sendPose(scope,input.connection,{poses});
+    }
+    return res.status(204).end();
+  });
+  // This stream carries only a refresh hint. Catalog and geometry are separately authorized.
   app.get(route('api/space/collection/events'),(req,res)=>{
     if(!collection?.art||!inScope(req.actor,collection.room))return res.sendStatus(404);
     if(collectionStreams.size>=LIMITS.sessions)return res.sendStatus(503);

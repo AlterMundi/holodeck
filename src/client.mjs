@@ -1,3 +1,4 @@
+import {AvatarPosePresence} from './avatar-pose-presence.mjs';
 import {bindHudAppearance} from './hud-appearance.mjs';
 import {selectedHudLook} from './hud-look-preview.mjs';
 import {ToroidalScenery} from './toroidal-scenery.mjs';
@@ -243,8 +244,10 @@ function startInterior(space){
       event.stopImmediatePropagation();
     }
   },true);
+  const poses=new AvatarPosePresence(base,window.SESSION_TOKEN);
   const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
     sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket(`spaces/${space.id}/network`),waitForWorldConfig:true,
+    onServerBroadcast:message=>poses.receive(message),
     enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
     createRenderer:options=>{
       constrainInteriorCamera(options,()=>space.id);
@@ -261,6 +264,8 @@ function startInterior(space){
       renderer.composer.render=()=>{if(!visitor.isOpeningOverWorld())draw();};
       renderer.render=state=>{
         const position=client.getLocalCharacterState()?.position;
+        const low=client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt');
+        if(position&&space.avatarPosePresence)poses.update(client.getWorldConnection(),space.id,low?'crouch':'ground');
         frameBudget.sample(!document.hidden&&!!position&&!visitor.isOpeningOverWorld());
         galleryModels.update();visitor.refreshScopedCatalog();updateDoor(position);visitor.update(position);
         beaconControls.update(space.objects,position);render(state);
@@ -268,9 +273,10 @@ function startInterior(space){
       };
       let releaseHeadroom,releaseRun;
       const releaseAnimation=bindFlightAvatarAnimation(renderer.characterManager,()=>({
+        peerPoses:poses.peers,
         crouch:client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt'),
       }));
-      renderer.dispose=()=>{releaseRun?.();releaseHeadroom?.();releaseAnimation();frameBudget.dispose();picker.dispose();galleryModels.clear();dispose();};
+      renderer.dispose=()=>{poses.dispose();releaseRun?.();releaseHeadroom?.();releaseAnimation();frameBudget.dispose();picker.dispose();galleryModels.clear();dispose();};
       queueMicrotask(()=>{
         releaseRun=bindWorldKeyShortcuts(client.keyInputManager);
         releaseHeadroom=bindInteriorHeadroom(client.getCharacterManager(),()=>true);
@@ -678,8 +684,10 @@ document.addEventListener('keydown',event=>{
 },true);
 const playableHUD=new PlayableHUD(document);
 let geometryProbe=null,companionAvatar=null,nativeAvatarLayer=null,contentVisitor=null,galleryModels=null,collectionShelves=null,matterHud=null,matterFlight=null,conversationDisplay=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null,worldHistory=null;
+const poses=new AvatarPosePresence(base,window.SESSION_TOKEN);
 const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
   sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket(hot?'active/network':'network'),waitForWorldConfig:true,
+  onServerBroadcast:message=>poses.receive(message),
   enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
   // Upstream's default sun allocates an 8192² shadow map. This small world uses
   // the public renderer factory and a bounded 1024² light instead, on all clients.
@@ -893,7 +901,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     let tableGaze=null;
     const releaseFlightAnimation=bindFlightAvatarAnimation(renderer.characterManager,()=>({
       outdoor:outsideRing(),flying:flightEnabled,grounded:client.getCharacterManager().localController?.characterOnGround,table:tableFlight.active,tabletopPlayers:collectionShelves.tabletopPlayers,
-      gaze:tableGaze,glanceMotion:!companion.motion.matches&&!document.hidden,
+      peerPoses:poses.peers,gaze:tableGaze,glanceMotion:!companion.motion.matches&&!document.hidden,
       crouch:!moving&&client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt'),
     }),{clock:()=>performance.now()});
     const releaseHologram=bindMatterHologram(renderer.characterManager,tableFlight,()=>collectionShelves.tabletopPlayers);
@@ -935,6 +943,11 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       Boolean(geometryProbe?.snapshot());
     renderer.render=renderState=>{
       const character=client.getLocalCharacterState(),position=character?.position;
+      if(position&&!moving&&activeSpace.avatarPosePresence){
+        const low=!entering&&!tableFlight.active&&client.getCharacterManager().localController?.characterOnGround&&
+          client.keyInputManager?.isKeyPressed('alt');
+        poses.update(client.getWorldConnection(),activeSpace.id,outsideRing()&&flightEnabled?'fly':low?'crouch':'ground');
+      }
       const yaw=client.getCharacterManager().localController?.networkState.rotation?.eulerY;
       const paintedRaster=minimap(outsideRing()?position:null,yaw,activeSpace.entrances);
       if(outsideRing()){
@@ -1080,7 +1093,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
       }
     };
-    renderer.dispose=()=>{releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();tableAttention.dispose();display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();tableAttention.dispose();display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
       if(client.keyInputManager){
         const keys=client.keyInputManager,shouldCapture=keys.shouldCaptureKeyPress;

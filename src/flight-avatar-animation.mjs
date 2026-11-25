@@ -35,7 +35,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
     // Remove last frame's extra limb rotations before the base mixer runs.
     for(const entry of actors.values())restore(entry);
     const result=update.call(this,state,dt);
-    const {outdoor,flying,grounded,table,crouch,gaze,glanceMotion=true,tabletopPlayers=[]}=context();
+    const {outdoor,flying,grounded:localGrounded,table,crouch,gaze,peerPoses,glanceMotion=true,tabletopPlayers=[]}=context();
     const now=clock?.();
     const elapsed=now!==undefined&&previousTime!==undefined?(now-previousTime)/1000:dt;
     previousTime=now;
@@ -64,7 +64,9 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const waterLine=entry.mode==='swim'?.78:.92;
       const underwater=coordinate&&coordinate.height<TOROIDAL_TERRAIN.waterLevel-waterLine&&terrainWaterDepth(coordinate.u,coordinate.v)>.18;
       const atTable=isLocal?table:tabletopPlayers.has?.(id)||tabletopPlayers.includes?.(id);
-      const explicitFlight=isLocal&&outdoor&&flying;
+      const peerPose=isLocal?null:peerPoses?.get(id);
+      const grounded=isLocal?localGrounded:actor.animationState>=0&&actor.animationState<=2||actor.animationState===5;
+      const explicitFlight=Boolean(isLocal?outdoor&&flying:peerPose==='fly');
       if(entry.table!==atTable){
         entry.last.copy(position);
         resetMotion(entry);
@@ -95,7 +97,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       if(mode!==entry.mode){entry.mode=mode;entry.airTime=0;}
       else entry.airTime+=step;
       const active=mode!==null;
-      const low=isLocal&&crouch&&!active;
+      const low=!active&&(isLocal?crouch:peerPose==='crouch'&&grounded);
       entry.planarSpeed+=(speed-entry.planarSpeed)*fade;
       const target=(mode==='hover'||mode==='swim')?Math.min(1,Math.max(0,(entry.planarSpeed-.14)/1.8)):0;
       entry.weight+=(target-entry.weight)*fade;

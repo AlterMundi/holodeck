@@ -1208,5 +1208,34 @@ controlled Chromium, holding Alt while standing lowered the hip by
 The previous build lifted both ankles by roughly 10 cm. Alt walking,
 release, ordinary exterior takeoff, hover/glide and landing passed on
 the exact candidate with software rendering. MML 0.28.0 currently transmits seven base animation states and has no crouch
-state. This slice fixes the player's local pose. The peer rendition,
-complete grounded clip set and physical-device acceptance remain open.
+state. This slice fixes the player's local pose. Peer pose publication was still pending at this earlier stage. The complete
+grounded clip set and physical-device acceptance remain open.
+
+## Peer crouch and exterior flight
+
+The staged Holodeck build shares the supported crouch and exterior flight
+poses with peers in that room. The authenticated MML connections retain
+their existing animation enum and movement authority. An optional, advertised
+pose route accepts only bounded, versioned hints for the current actor's
+particular MML connection. A proof derived from the tab's existing
+session key covers the room, connection, pose and revision. The route receives
+no raw MML session token and does not persist poses. Snapshots and changes
+use the existing authenticated MML socket, with disconnect and scope cleanup.
+Tabletop miniaturisation retains its existing scoped presence.
+
+Fable High identified the released animation enum and room scope hazards.
+Opus 5.5 High tightened disconnect cleanup, snapshot recovery, background-tab
+release and peer flight ownership. Its follow-up reviewed the tab proof and
+secure-browser fallback. The exact staged archive `b74aa8939953` is
+33,331,200 bytes. It passed 351 tests with two optional gallery checks
+skipped. Actual shared-Home visitor and physical-GPU evidence remain open.
+
+The two-browser controlled run rendered an 18.5 cm remote crouch and received
+its current pose after the observer reloaded. It verified the remote exterior
+flight animation and retirement of its pose on disconnect. Both a different
+fixture actor and a separately authenticated tab for the same actor were refused
+when addressing the original tab's connection with their own proof.
+The exact same package passed the two-browser tabletop sequence with
+matching scale and translucency, bounded flight, reload and exact return.
+These were controlled Chromium runs with software rendering and fixture
+identities. The protected service keeps its prior selected release.

@@ -158,3 +158,32 @@ test('flight exit holds a descent until contact, then gives the feet back to the
   release();
   assert.ok(Math.abs(hipHeight()-standingHip)<1e-6);
 });
+
+test('a peer follows scoped crouch and flight cues and releases them on the base animation state',()=>{
+  const {root,mesh}=avatar('avatar-2-bodyB-skin03.glb');
+  root.getMesh=()=>mesh;
+  const peer={position:new Vector3(1800,498,11),animationState:0};
+  const state={characters:new Map([[7,peer]]),localCharacterId:1};
+  const manager={loadedCharacters:new Map([[7,{character:root}]]),update(){}};
+  const peerPoses=new Map();
+  const controls={outdoor:true,grounded:false,flying:false,peerPoses};
+  const release=bindFlightAvatarAnimation(manager,()=>controls);
+  const pelvis=mesh.getObjectByName('pelvis'),arm=mesh.getObjectByName('upperarm_l');
+  const height=()=>pelvis.getWorldPosition(new Vector3()).y;
+  const stockHip=height(),stockArm=arm.quaternion.clone();
+  const frames=count=>{for(let n=0;n<count;n++)manager.update(state,1/60);};
+  peerPoses.set(7,'crouch');
+  frames(80);
+  assert.ok(stockHip-height()>.15);
+  peer.animationState=4;
+  frames(80);
+  assert.ok(Math.abs(height()-stockHip)<.001);
+  peerPoses.set(7,'fly');
+  frames(60);
+  assert.ok(arm.quaternion.angleTo(stockArm)>.05);
+  peerPoses.clear();
+  peer.animationState=5;
+  frames(100);
+  assert.ok(arm.quaternion.equals(stockArm));
+  release();
+});
