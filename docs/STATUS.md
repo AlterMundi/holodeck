@@ -1,9 +1,20 @@
 # Current MVP work
 
+## November 25 meadow material
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `0878bc6c67fc` from `9fc06a6`. The shallow meadow beside the house
+has filtered green and straw patches in both graphics profiles. The
+world path and apron retain their surfaces and route. No assets were
+added. [Matched physical comparisons](playtest-iteration.md#meadow-material-around-the-house)
+cover RTX day and dusk and Pi 5 in Livianos. The installed files, shared
+access and world run matched. Immediate rollback is `38a43c533c2e`.
+
+
 ## November 25 Sand3D verge
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
-serves `38a43c533c2e` from `46dc397`. Low groups of grass, ferns and
+selected `38a43c533c2e` from `46dc397` for this update. Low groups of grass, ferns and
 pumice follow the sides of the existing flagstones. Normal loads the
 models near the authorized house after world entry. Livianos keeps the
 existing ground cover without those downloads.

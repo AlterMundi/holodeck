@@ -568,8 +568,10 @@ addresses the prompt and dock overlap in #16 and is
 The [packaged Sand3D verge](playtest-iteration.md#packaged-sand3d-verge-on-the-flagstone-approach)
 is selected for the near approach in Normal. The exact device screens
 covered the running game, route clearance and zero model fetches
-in Livianos on Raspberry Pi 5. Distant terrain and the independent shared
-workshop visit remain open.
+in Livianos on Raspberry Pi 5. The live [meadow material](playtest-iteration.md#meadow-material-around-the-house)
+adds filtered colour variation around the existing route, with matched
+day, dusk and lightweight measurements. Mid-distance silhouette, plant
+coverage and the independent shared workshop visit remain open.
 
 Compare the same outside path, working table, map and open Conversation
 on the existing build. Final preset selection covers a dark and a light

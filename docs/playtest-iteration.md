@@ -1785,3 +1785,52 @@ client, health, avatar assets and terrain worker matched the archive. The
 App and audience matched, the same native run stayed at sequence 403 with
 30 entities and four nodes, and the technical reader was revoked.
 Independent authenticated participant acceptance remains open.
+
+
+## Meadow material around the house
+
+The near parcel retains the toroidal height, route and flagstone apron.
+Its shallow shoulder blends fresh grass and dry patches in local XZ
+metres, replacing the old oblique projection that stretched the rock
+grain at eye height. Both graphics profiles render the broad palette.
+Normal adds filtered fine grain. The look fades with slope, distance
+from the house and pixel footprint. No new textures, geometry, state
+fields or workbench assets are required.
+
+The clean candidate `0878bc6c67fc` from `9fc06a6` has 84 payloads.
+Only the packed browser bundle differs from `38a43c533c2e`. The archive
+occupies 33,546,240 bytes and the source suite passed 365 tests with two
+optional skips. Fable High diagnosed the projected grain and guided
+world-space coordinates and grazing-angle filtering. Opus 5.5 High
+caught a reserved identifier and corrected the route-width blend, color
+filtering, and the transition into the stone apron. Physical ANGLE runs
+checked the exact corrected shader.
+
+The Legion renderer was RTX 2060 at a 1200 × 740 buffer. The Pi 5 was
+Broadcom V3D 7.1.7.0 at 363 × 244 in Livianos. These matched camera
+views sample 120 full compositor timer queries each, after 12 warmup
+frames. They are short screens with controlled visitor identities.
+
+| Device and view | GPU median previous → candidate | GPU p95 previous → candidate |
+| --- | ---: | ---: |
+| RTX daylight, arrival | 2.06 → 2.09 ms | 3.48 → 3.57 ms |
+| RTX daylight, across meadow | 2.02 → 2.00 ms | 3.77 → 4.10 ms |
+| RTX dusk, arrival | 2.04 → 2.01 ms | 3.47 → 3.72 ms |
+| RTX dusk, across meadow | 1.95 → 1.98 ms | 3.44 → 3.58 ms |
+| Pi 5 daylight, arrival | 10.67 → 11.83 ms | 14.16 → 14.86 ms |
+| Pi 5 daylight, across meadow | 10.48 → 10.58 ms | 11.59 → 13.91 ms |
+
+Median browser frame intervals remained 16.6–16.7 ms. A preceding draft
+showed a single larger daytime RTX median on the meadow view. Repeating
+the same control and draft brought both near 2 ms, and the selected archive
+matched that range. The Pi results retain the higher measured GPU cost.
+A three-metre walk at the second view passed on both physical devices.
+The ground now has broader green and straw colour variation. Distant
+silhouettes remain sparse and the route could use more close-range grit.
+
+The protected receiver selected `0878bc6c67fc` with `38a43c533c2e` as
+immediate rollback. The 84 installed files and protected client, models,
+health and terrain worker matched. The App and audience remained the
+same. The native world stayed at sequence 403 with 30 entities and four
+nodes. The technical reader was revoked. Acceptance with independently
+authenticated participants remains open.

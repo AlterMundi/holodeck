@@ -747,11 +747,20 @@ session storage were preserved; served Apps metadata is retained but hidden.
 
 ## Recovery
 
+The [meadow material release](STATUS.md#november-25-meadow-material)
+`0878bc6c67fc` changes only the packed client bundle. Restore
+`38a43c533c2e` for immediate code-only rollback or `7a466b1ca447` for
+the older published recovery. The previous pointing archive
+`41508709635f` was retired from publication after checking the exact
+archive remains recoverable locally. Published history totals
+100,546,560 bytes.
+
+
 The [packaged Sand3D verge](STATUS.md#november-25-sand3d-verge)
 `38a43c533c2e` changes the browser bundle and static art route and adds
-three optional compressed models plus their attribution. Restore
-`7a466b1ca447` for immediate code-only rollback or `41508709635f` for
-older published recovery. No checkpoint migration is needed. The publisher
+three optional compressed models plus their attribution. Its prior recovery
+record selected `7a466b1ca447` for immediate code-only rollback and
+`41508709635f` as the older published recovery at that time. No checkpoint migration is needed. The publisher
 retired `0425dd6d7c67` after checking its exact retained local archive.
 The three published archives total 100,454,400 bytes.
 
