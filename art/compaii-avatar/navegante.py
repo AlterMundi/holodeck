@@ -285,6 +285,27 @@ def stride(t):
 for name,pose in poses.items():
     clip(name,[(1,{},0),(25,pose,.012 if name in ("calm","joy") else 0),(50,{},0)])
 clip("walk",[(frame+1,*stride(frame/28)) for frame in range(0,29,2)])
+
+def flight_pose(t, moving):
+    breath=math.sin(2*math.pi*t)
+    lean=1 if moving else 0
+    return {
+        "chest":(5+11*lean,0,1.3*breath),
+        "head":(-5-8*lean,2*breath,0),
+        "arm-L":(-9-13*lean+2*breath,-13-5*lean,0),
+        "arm-R":(-9-13*lean-2*breath,13+5*lean,0),
+        "elbow-L":(-15+2*breath,0,0),"elbow-R":(-15-2*breath,0,0),
+        "leg-left":(-8-16*lean+3*breath,0,0),
+        "leg-right":(-8-16*lean-3*breath,0,0),
+        "shin-left":(19+9*lean-2*breath,0,0),
+        "shin-right":(19+9*lean+2*breath,0,0),
+        "foot-L":(-10-6*lean,0,0),"foot-R":(-10-6*lean,0,0),
+        "mantle":(-2-8*lean,3*breath,0),"antenna":(-4*lean+3*breath,0,0),
+    }, .008*breath
+
+for name,moving in (("hover",False),("glide",True)):
+    clip(name,[(1+i*8,*flight_pose(i/8,moving)) for i in range(9)])
+
 for bone in rig.pose.bones:
     bone.rotation_euler=(0,0,0)
     bone.location=(0,0,0)

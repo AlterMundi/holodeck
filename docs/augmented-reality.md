@@ -57,3 +57,16 @@ world foundation and its native conversation integration.
 Physical sensing reuses the selected [Daimon Integrators](sensory-integration.md)
 boundary. Its discovery report is device-use evidence, not a camera frame, QR
 recognition, spatial map or proof of actual model perception.
+
+
+## Companion representation
+
+The Blender model, skeleton and animation clips define the companion's visual
+representation across Holodeck and augmented views. Reuse that asset and its
+pose semantics with each view's own verified spatial anchor and scale. In a
+shared presentation, publish only the authorized avatar state and explicit
+shared attention. A browser-local part selection can prompt a local look
+without becoming an assertion that the daimon perceived it or shared it with
+other viewers. Acceptance requires the same companion identity and pose on
+two authorized projections, plus stable anchoring and readable scale on a
+physical device.

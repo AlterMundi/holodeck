@@ -243,6 +243,7 @@ export class CollectionWorktable{
     this.details.open=true;
     this.part.value=id;
     this.projectModel();
+    return true;
   }
 
   choose(selection){

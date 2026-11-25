@@ -747,3 +747,29 @@ It is staged on the development host. The selected live build still serves the
 volumetric model with the previous movement controller. Authored fast
 locomotion and hovering, ground contact on slopes and stairs, and video review
 of transitions in the real world remain part of the visual acceptance.
+
+## Tabletop companion
+
+Nicolas's selected view showed the companion larger than the human avatar and
+opaque while the human was translucent. The companion had a separate .33
+factor against the human's .19. Both now use .19 and the same material adapter,
+with the ordinary materials restored on exit. The Blender asset adds authored
+hover and glide cycles. A selected current object can hold the companion's gaze,
+and an exact still-loaded table part can draw it closer within the table bounds.
+Those reactions are viewer-local while shared companion state is pending.
+
+Fable High reviewed the architecture and Opus 5.5 High reviewed the diff.
+The latter highlighted a possible MML material subclass constructor failure,
+which the first two-client browser run reproduced. The final adapter copies
+into a base Three.js material and the regression covers an MML-like constructor.
+Opus also found the geometric pivot and full-body pitch issues, addressed with
+the part bounds center and planar facing.
+
+The staged archive `024474ad3115` is 33,525,760 bytes and the 329-test suite
+reported 327 passes and two skips. The exact archive's two-client tabletop
+browser check reached the matched scale and transparency, bounded hand-led
+flight and return to the prior position. Its final error audit still observed
+two asynchronous failed reads for an aborted peer room-art request. The whole
+browser run is therefore not a clean pass. A separate controlled Chromium
+check passed scale, material restoration, expiring attention and jaw playback.
+The actual protected release still serves the previous avatar controller.

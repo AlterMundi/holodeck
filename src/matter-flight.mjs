@@ -103,49 +103,62 @@ export function bindMatterFlight(manager,camera,flight,inputAllowed,onLost){
   };
 }
 
-export function bindMatterHologram(manager,flight,tabletopPlayers=()=>[]){
-  const update=manager.update;
-  const saved=new Map();
-
-  function restore(id){
-    const {character,scale,appearance}=saved.get(id);
-    character.scale.copy(scale);
-    for(const [mesh,entry] of appearance)restoreMesh(mesh,entry);
-    saved.delete(id);
+export class MatterHologram{
+  constructor(root){
+    this.root=root;
+    this.appearance=new Map();
   }
 
-  function restoreMesh(mesh,{source,materials,shadow}){
+  restoreMesh(mesh,{source,materials,shadow}){
     if(mesh.material===materials)mesh.material=source;
     mesh.castShadow=shadow;
     for(const material of Array.isArray(materials)?materials:[materials])material.dispose();
   }
 
-  function syncMeshes({root,appearance}){
+  sync(){
     const current=new Set();
-    root.traverse(mesh=>{
+    this.root.traverse(mesh=>{
       if(!mesh.isMesh||!mesh.material)return;
       current.add(mesh);
-      const previous=appearance.get(mesh);
+      const previous=this.appearance.get(mesh);
       if(mesh.material===previous?.materials)return;
-      if(previous)restoreMesh(mesh,previous);
-      const source=mesh.material;
+      if(previous)this.restoreMesh(mesh,previous);
+      const source=mesh.material,shadow=mesh.castShadow;
       const translucent=material=>{
         const clone=new MeshStandardMaterial().copy(material);
         clone.transparent=true;
         clone.opacity*=.55;
+        clone.alphaTest*=.55;
         clone.depthWrite=false;
         return clone;
       };
       const materials=Array.isArray(source)?source.map(translucent):translucent(source);
-      appearance.set(mesh,{source,materials,shadow:mesh.castShadow});
+      this.appearance.set(mesh,{source,materials,shadow});
       mesh.material=materials;
       mesh.castShadow=false;
     });
-    for(const [mesh,entry] of appearance){
+    for(const [mesh,entry] of this.appearance){
       if(current.has(mesh))continue;
-      restoreMesh(mesh,entry);
-      appearance.delete(mesh);
+      this.restoreMesh(mesh,entry);
+      this.appearance.delete(mesh);
     }
+  }
+
+  restore(){
+    for(const [mesh,entry] of this.appearance)this.restoreMesh(mesh,entry);
+    this.appearance.clear();
+  }
+}
+
+export function bindMatterHologram(manager,flight,tabletopPlayers=()=>[]){
+  const update=manager.update;
+  const saved=new Map();
+
+  function restore(id){
+    const {character,scale,hologram}=saved.get(id);
+    character.scale.copy(scale);
+    hologram.restore();
+    saved.delete(id);
   }
 
   function draw(state,...args){
@@ -164,13 +177,13 @@ export function bindMatterHologram(manager,flight,tabletopPlayers=()=>[]){
         const character=manager.loadedCharacters.get(id)?.character;
         const root=character?.getMesh();
         if(!root)continue;
-        entry={character,root,appearance:new Map(),scale:character.scale.clone(),nextScan:now};
+        entry={character,root,hologram:new MatterHologram(root),scale:character.scale.clone(),nextScan:now};
         saved.set(id,entry);
         character.scale.multiplyScalar(matterAvatarScale);
       }
       // The SDK can attach or replace a model after admitting its empty root.
-      if(!entry.appearance.size||now>=entry.nextScan){
-        syncMeshes(entry);
+      if(!entry.hologram.appearance.size||now>=entry.nextScan){
+        entry.hologram.sync();
         entry.nextScan=now+125;
       }
     }

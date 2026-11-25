@@ -753,11 +753,25 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(record.kind==='daimon-companion'){openConversation(true);return;}
         if(matterHud.active&&record.kind!=='worktable-part')return;
         if(record.kind==='collection-shelf')collectionShelves.placeOnTable(record.item,record.edition);
-        else if(record.kind==='worktable-part'&&matterHud.active)collectionShelves.worktable.selectPart(record);
+        else if(record.kind==='worktable-part'&&matterHud.active){
+          const table=collectionShelves.worktable;
+          if(table.selectPart(record))companion.attend(point=>{
+            if(!tableFlight.active||!table.available||table.part.value!==record.id||table.model?.parts.get(record.id)!==record.mesh||!record.mesh.visible)return null;
+            const bounds=record.mesh.geometry.boundingBox;
+            if(!bounds)return null;
+            record.mesh.localToWorld(bounds.getCenter(point));
+            return renderer.mmlCompositionScene.group.worldToLocal(point);
+          });
+        }
         else if(record.kind==='gallery')contentVisitor.openGallery(record.entry).catch(()=>say('No pude abrir esta edición.'));
         else if(record.kind==='content')contentVisitor?.openNode(record.node).catch(()=>say('No pude abrir este contenido. Conservé la visita anterior.'));
         else{
           worldIndication?.select(record);
+          if(record.container)companion.attend(point=>{
+            if(worldIndication?.selected!==record||!worldIndication.current())return null;
+            record.container.getWorldPosition(point);
+            return renderer.mmlCompositionScene.group.worldToLocal(point);
+          });
           const visit=pickedRepresentationVisit(record,state);
           if(visit)contentVisitor?.openNode(visit.id,{expectedRevision:visit.revision}).catch(()=>say('No pude abrir este contenido. Conservé la visita anterior.'));
         }
@@ -803,7 +817,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     let nextDressing=0, ring=null, cave=null, scenery=null, atmosphere=null, releaseRadialMovement=null, releaseHeadroom=null, ringSun=null;
     let sceneryAfter=null,releaseTableFlight=null,releaseSearchKeys=null;
     const releaseFlightAnimation=bindFlightAvatarAnimation(renderer.characterManager,()=>({
-      outdoor:outsideRing(),flying:flightEnabled,table:tableFlight.active,
+      outdoor:outsideRing(),flying:flightEnabled,table:tableFlight.active,tabletopPlayers:collectionShelves.tabletopPlayers,
       crouch:!moving&&client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('shift'),
     }));
     const releaseHologram=bindMatterHologram(renderer.characterManager,tableFlight,()=>collectionShelves.tabletopPlayers);

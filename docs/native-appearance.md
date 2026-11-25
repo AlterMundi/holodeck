@@ -60,7 +60,7 @@ The receiving candidate uses a from-scratch volumetric Blender model for the
 following companion. The design study supplies the pearl palette, cyan face,
 compact proportions, mantle and poses. The scene and generator under
 `art/compaii-avatar/` author the meshes, seven solid materials and rigid weighted
-armature directly. The GLB contains nine pose clips and a grounded walk cycle.
+armature directly. The staged GLB contains nine pose clips and grounded walk, hover and glide cycles.
 Unmute one Blender NLA track at a time to inspect alternative poses. Run the
 generator in Blender background mode and pass a staging directory after `--`
 to regenerate the editable scene, GLB and studio views.
@@ -75,3 +75,14 @@ of a planted ankle and 58.8 mm peak swing clearance. The controlled playback
 check covered reduced motion and air/ground transitions. Physical voice timing
 and production acceptance remain open. Explicit native world markers retain
 their layered projection and existing permission checks.
+
+
+The tabletop candidate applies the human avatar's scale factor and translucent
+material treatment to the companion and restores its source materials on exit.
+Authored hover stays upright and glide shifts the center of the pose as the
+companion advances. The runtime blends these with walking and keeps the jaw
+independent. Attention is local to an exact, still-current selection. A picked
+table part uses the center of its authorized loaded geometry and an offset from
+the part, clamped to table bounds. In the world, a current selection can orient
+the robot. Shared native attention, room navigation and augmented anchoring need
+separate receiving verification.
