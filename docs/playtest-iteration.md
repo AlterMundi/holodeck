@@ -188,10 +188,22 @@ The candidate binds the exact payload at admission and marks every delta
 against its original. In the controlled native qualification, ordinary
 voice and text both preserve their own proof with no context attachment.
 
+The receiving draft now anchors the expiry of new situated reservations
+to the Holodeck server capture time. A separate durable clock floor prevents
+a swept observation from acquiring a later order after a clock rollback.
+Legacy receipts remain readable. Only capture-anchored receipts can
+contribute to the native baseline. Opus 5.5 High identified a downgrade
+incompatibility in the initial schema change. The final layout preserves
+the old two-column order clock and keeps the expiry floor separately.
+The previous writer's expiry deletion also retains a capture-anchored
+deadline. Confirmed sources continue to read across expiry and restart.
+
 The selected service still uses the legacy route. Sustained rollout needs
-an archival policy for sealed receipts and a verified distinction between
-a genuinely later observation and an expired earlier reservation created
-again. Resolve these before enabling reduction on the user's live pair.
+an exact sealed-source archive and qualification of the selected live
+pair. Use the existing owner-local access boundary and keep retained
+world sources separate from the human attachment vault. The archive must
+verify durable bytes before reducing hot storage, retain the original
+receipt and digest, and keep its retention independently bounded.
 
 The original Holodeck codec prototype defined a planner and reducer for full,
 delta and unchanged situations. The projection keeps distinct object, station,
