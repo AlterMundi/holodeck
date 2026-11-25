@@ -168,3 +168,37 @@ The meadow is sparse in some parts of the arrival view, and the fixture
 runs do not establish independent visitor feedback or final quality of
 the facade, exhibits and workbench. Do not extend the optional Sand3D
 assets beyond their tested trail until the wider route is composed.
+
+
+## Installed night lighting at the Atelier threshold
+
+Protected package `6a7916621c6c` from `7aa2b35` makes exterior ambient
+and reflected lighting follow the Argentine solar clock. The existing
+porch sconce gets one warm point light with no shadows, located from
+the packaged facade's transform. The terrain retains a cool readable
+floor at night. The baked foyer, geometry, room graph and admission
+keep their own existing configuration.
+
+At a matched RTX camera, an 80 × 46 pixel crop on the cream side wall
+had the same median luma by day before and after the change (182.6/255).
+At 23:10 ART it dropped from 171.9 to 73.5. A separate footpath crop went
+from 50.9 to 41.5. The small warm sconce and sill read against the wall.
+This is a local pixel comparison on the displayed output and does not
+measure brightness for every surface or physical display.
+
+At rest, each of two scenes used 36 rAF intervals. RTX 2060 Normal
+kept 161 draw calls and p95 16.8 ms by day and 16.7 ms at night.
+Pi 5 Livianos kept 88 draw calls and around 16.7–16.8 ms on both
+versions. Each physical browser entered the existing foyer and returned
+to the same exterior. The foyer recovered ambient 0.22 and disabled the
+porch light, then the exterior restored the nighttime fill. Pi logged
+one state read conflict during the switch and reached the correct views.
+
+Four hundred Node tests passed with two optional skips. Fable High
+reviewed the lighting direction and Opus 5.5 High reviewed the binding.
+The final fixture rechecked a replaced fill light, re-applied environment
+intensity and a moved facade. The deployment matched 85 installed files,
+the protected UI assets, audience, configuration and native world with
+30 entities and four creation nodes. Rollback is `a4bfd4f17dee`.
+Continue through the exhibit rooms and active workbench in the same
+visual language, with independent signed-in visitors still pending.

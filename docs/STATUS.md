@@ -1,5 +1,15 @@
 # Current MVP work
 
+## November 25 softer night exposure and warm porch
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `6a7916621c6c` from `7aa2b35`. At night, the house and its
+approach now use cooler, lower ambient light. A warm porch light marks
+the existing door. RTX 2060 and Pi 5 completed the matched day/night
+view and entry/return. The foyer retained its authored interior exposure.
+The protected audience, world and doors matched. Rollback is `a4bfd4f17dee`.
+[Measurements](environment-art-revamp.md#installed-night-lighting-at-the-atelier-threshold)
+
 ## November 25 meadow, optical HUD and animated passage
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
