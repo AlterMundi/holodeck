@@ -13,6 +13,10 @@ const fail=(code,message)=>new NativeConversationError(code,message,{contextOnly
 const fileRef=value=>value&&Object.keys(value).length===5&&uuid(value.file_id)
   &&/^[a-f0-9]{64}$/.test(value.sha256)&&value.name==='holodeck-situation.json'
   &&value.mime==='application/json'&&Number.isSafeInteger(value.size)&&value.size>0&&value.size<=49152;
+const machineRef=value=>value&&Object.keys(value).length===2&&uuid(value.receipt)&&/^[a-f0-9]{64}$/.test(value.sourceSha256);
+const machineMode='owner-journal/v1';
+const validPrepared=value=>value.mode===machineMode?!value.file&&machineRef(value.machine):
+  value.mode===undefined&&!value.machine&&fileRef(value.file);
 
 // This is a bounded ledger of machine-source preparation, never chat history.
 // Conversation owns human text/audio/files, recording, originals and all sends.
@@ -20,50 +24,54 @@ export async function createConversationContexts({room,stateDir,transport,allowI
   await fs.mkdir(stateDir,{recursive:true,mode:0o700});
   const meta=await fs.lstat(stateDir);
   if(!meta.isDirectory()||meta.isSymbolicLink()||meta.uid!==process.getuid()||(meta.mode&0o077))throw Error('Private context source state required');
-  const path=join(stateDir,'conversation-contexts.json');let records={},receipts={},serial=Promise.resolve(),fenced=false;
+  const ledgerPath=mode=>join(stateDir,mode===machineMode?'conversation-machine-contexts.json':'conversation-contexts.json');
+  let records={},receipts={},serial=Promise.resolve(),fenced=false;
   const inflight=new Map();let retireCursor=0;
-  try{
-    const file=await fs.open(path,constants.O_RDONLY|constants.O_NOFOLLOW);
+  for(const mode of [undefined,machineMode])try{
+    const file=await fs.open(ledgerPath(mode),constants.O_RDONLY|constants.O_NOFOLLOW);
     try{
       const stat=await file.stat();if(!stat.isFile()||stat.uid!==process.getuid()||(stat.mode&0o077)||stat.size>MAX_BYTES)throw Error('Invalid context source ledger');
       const saved=JSON.parse(await file.readFile('utf8'));
       if(saved.schema!=='holodeck.conversation-contexts/v1'||!saved.records||Array.isArray(saved.records)||Object.keys(saved.records).length>MAX_RECORDS)throw Error('Invalid context source ledger');
       for(const [id,r]of Object.entries(saved.records)){
-        if(!uuid(id)||r.id!==id||typeof r.actorRef!=='string'||!r.actorRef.startsWith('human:')
+        if(!uuid(id)||records[id]||receipts[id]||r.mode!==mode||r.id!==id||typeof r.actorRef!=='string'||!r.actorRef.startsWith('human:')
           ||!/^[a-f0-9]{64}$/.test(r.requestHash)||!r.frozen||r.frozen.actorRef!==r.actorRef
           ||r.observation?.schema!=='holodeck.situation/v1'||r.observation.observer!==r.actorRef
           ||r.observation.inputAssociation?.humanInputId!==id||!['frozen','prepared'].includes(r.phase)
-          ||r.phase==='prepared'&&!fileRef(r.file))throw Error('Invalid context source record');
+          ||r.mode!==undefined&&r.mode!==machineMode
+          ||r.phase==='prepared'&&!validPrepared(r))throw Error('Invalid context source record');
       }
       const retained=saved.receipts??{};
       if(typeof retained!=='object'||Array.isArray(retained)||Object.keys(retained).length>MAX_RECEIPTS)
         throw Error('Invalid context receipt index');
       for(const [id,r] of Object.entries(retained)){
-        if(!uuid(id)||saved.records[id]||!r||typeof r.actorRef!=='string'||!r.actorRef.startsWith('human:')
+        if(!uuid(id)||records[id]||receipts[id]||saved.records[id]||!r||r.mode!==mode||typeof r.actorRef!=='string'||!r.actorRef.startsWith('human:')
           ||r.frozen?.actorRef!==r.actorRef||typeof r.frozen.beingRef!=='string'
-          ||!uuid(r.run)||typeof r.space!=='string'||typeof r.observationId!=='string'||!fileRef(r.file))
+          ||!uuid(r.run)||(typeof r.space!=='string'&&!(mode===machineMode&&r.space===null))||typeof r.observationId!=='string'||!validPrepared(r))
           throw Error('Invalid context receipt reference');
       }
-      records=saved.records;receipts=retained;
+      Object.assign(records,saved.records);Object.assign(receipts,retained);
     }finally{await file.close();}
   }catch(error){if(error.code!=='ENOENT')throw error;}
   const transaction=fn=>{const work=serial.then(fn);serial=work.catch(()=>{});return work;};
-  async function persist(nextReceipts=receipts){
+  async function persist(mode,nextReceipts=receipts){
     if(fenced)throw fail('context-recovery','Context source ledger needs receiving recovery');
-    nextReceipts={...nextReceipts};
-    const serialize=()=>Buffer.from(encode({schema:'holodeck.conversation-contexts/v1',records,receipts:nextReceipts}));
-    const oldest=Object.keys(nextReceipts);
-    while(oldest.length>MAX_RECEIPTS)delete nextReceipts[oldest.shift()];
+    const path=ledgerPath(mode);
+    const selected=entries=>Object.fromEntries(Object.entries(entries).filter(([,record])=>record.mode===mode));
+    const localReceipts=selected(nextReceipts),localRecords=selected(records);
+    const serialize=()=>Buffer.from(encode({schema:'holodeck.conversation-contexts/v1',records:localRecords,receipts:localReceipts}));
+    const oldest=Object.keys(localReceipts);
+    while(oldest.length>MAX_RECEIPTS)delete localReceipts[oldest.shift()];
     let bytes=serialize();
     while(bytes.length>MAX_BYTES&&oldest.length){
-      delete nextReceipts[oldest.shift()];
+      delete localReceipts[oldest.shift()];
       bytes=serialize();
     }
-    if(bytes.length>MAX_BYTES||Object.keys(records).length>MAX_RECORDS)throw fail('capacity','Context source capacity reached');
+    if(bytes.length>MAX_BYTES||Object.keys(localRecords).length>MAX_RECORDS)throw fail('capacity','Context source capacity reached');
     const stage=path+'.stage';const file=await fs.open(stage,constants.O_CREAT|constants.O_TRUNC|constants.O_WRONLY|constants.O_NOFOLLOW,0o600);
     try{await file.writeFile(bytes);await file.sync();}finally{await file.close();}
     let replaced=false;
-    try{await fs.rename(stage,path);replaced=true;const dir=await fs.open(stateDir,constants.O_RDONLY);try{await dir.sync();}finally{await dir.close();}receipts=nextReceipts;}
+    try{await fs.rename(stage,path);replaced=true;const dir=await fs.open(stateDir,constants.O_RDONLY);try{await dir.sync();}finally{await dir.close();}receipts={...Object.fromEntries(Object.entries(nextReceipts).filter(([,record])=>record.mode!==mode)),...localReceipts};}
     catch(error){if(replaced){fenced=true;error.replaced=true;}throw error;}
   }
   const actorRef=actor=>{
@@ -71,19 +79,24 @@ export async function createConversationContexts({room,stateDir,transport,allowI
     return actor.ref;
   };
   function owned(actor,id){const record=records[id];if(!record||record.actorRef!==actorRef(actor))throw fail('not-found','No prepared source belongs to this participant');return record;}
-  const result=record=>({id:record.id,binding:record.frozen.binding,files:[structuredClone(record.file)],work_admitted:false});
-  const statusPayload=record=>({actorRef:record.actorRef,frozen:record.frozen,id:record.id,textSha256:null,
-    observationId:record.observation.id,contextFile:record.file});
+  const result=record=>({id:record.id,binding:record.frozen.binding,work_admitted:false,
+    ...(record.mode===machineMode?{files:[],machine_source:record.machine.receipt}:{files:[structuredClone(record.file)]})});
+  const readStatus=(source,id=source.id)=>{
+    const payload={actorRef:source.actorRef,frozen:source.frozen,id,
+      observationId:source.observation?.id??source.observationId};
+    return source.mode===machineMode?transport.machineContextStatus({...payload,...source.machine}):
+      transport.status({...payload,textSha256:null,contextFile:source.file});
+  };
   async function retire(record,status){
     return transaction(async()=>{
       if(records[record.id]!==record)return false;
       const next={...receipts};
-      if(status.phase==='completed'&&status.nativeAcceptance==='observed'&&record.observation.scope==='structured-interior-room'){
-        const {actorRef,frozen,file,observation}=record;
-        next[record.id]={actorRef,frozen,file,run:observation.run,space:observation.place.id,observationId:observation.id};
+      if(status.phase==='completed'&&status.nativeAcceptance==='observed'&&(record.mode===machineMode||record.observation.scope==='structured-interior-room')){
+        const {actorRef,frozen,file,observation,mode,machine}=record;
+        next[record.id]={actorRef,frozen,file,mode,machine,run:observation.run,space:observation.scope==='structured-interior-room'?observation.place.id:null,observationId:observation.id};
       }
       delete records[record.id];
-      try{await persist(next);}catch(error){if(!error.replaced)records[record.id]=record;throw error;}
+      try{await persist(record.mode,next);}catch(error){if(!error.replaced)records[record.id]=record;throw error;}
       return true;
     });
   }
@@ -93,7 +106,7 @@ export async function createConversationContexts({room,stateDir,transport,allowI
     const selected=Array.from({length:Math.min(4,available.length)},(_,i)=>available[(retireCursor+i)%available.length]);
     if(available.length)retireCursor=(retireCursor+selected.length)%available.length;
     for(const candidate of selected){
-      let status;try{status=await transport.status(statusPayload(candidate));}catch{continue;}
+      let status;try{status=await readStatus(candidate);}catch{continue;}
       if(status.retainedOriginal===true&&status.tracking===false&&['completed','problem'].includes(status.phase)){
         if(await retire(candidate,status))return true;
       }
@@ -102,10 +115,12 @@ export async function createConversationContexts({room,stateDir,transport,allowI
   }
   async function prepareSource(actor,request,retryRecord=null,capturePlace=null){
       const ref=actorRef(actor);
-      if(!request||Object.keys(request).some(k=>!['id','binding','view','displayedSequence'].includes(k))||!uuid(request.id)
+      if(!request||Object.keys(request).some(k=>!['id','binding','view','displayedSequence','mode'].includes(k))||!uuid(request.id)
+        ||request.mode!==undefined&&request.mode!==machineMode
         ||!/^[a-f0-9]{64}$/.test(request.binding))throw fail('input','Select the shared original and current binding');
       if(fenced)throw fail('context-recovery','Context source ledger needs receiving recovery');
-      const requestHash=retryRecord?retryRecord.requestHash:digest({id:request.id,binding:request.binding,view:request.view??null,displayedSequence:request.displayedSequence??null});
+      const mode=retryRecord?retryRecord.mode:request.mode;
+      const requestHash=retryRecord?retryRecord.requestHash:digest({id:request.id,binding:request.binding,view:request.view??null,displayedSequence:request.displayedSequence??null,mode});
       if(receipts[request.id])throw fail('id-reuse','Recover the existing canonical original before preparing another source');
       const existing=records[request.id];
       if(existing&&(existing.actorRef!==ref||existing.requestHash!==requestHash))throw fail('id-reuse','Preserve the originally captured source');
@@ -140,20 +155,30 @@ export async function createConversationContexts({room,stateDir,transport,allowI
             if(Object.keys(records).length>=MAX_RECORDS)throw fail('capacity','Context source capacity reached');
             const observation=captureNativeSituation(room,actor,request,{
               pairedBeing:frozen.beingRef,serverCapture:'at-machine-context-preparation',interior,roomVisit,worktable});
-            const value={id:request.id,actorRef:ref,requestHash,frozen,observation,phase:'frozen'};records[value.id]=value;
-            try{await persist();}catch(error){if(!error.replaced)delete records[value.id];throw error;}return value;
+            const value={id:request.id,actorRef:ref,requestHash,frozen,observation,mode,phase:'frozen'};records[value.id]=value;
+            try{await persist(mode);}catch(error){if(!error.replaced)delete records[value.id];throw error;}return value;
           });
         }
         if(indoorId&&!await allowInteriorSource(actor,frozen.beingRef,indoorId))
           throw fail('forbidden','El acceso a la sala cambió antes de preparar el contexto');
         if(record.observation.run!==room.run)throw fail('scope-changed','El mundo cambió antes de preparar el contexto');
-        const prepared=await transport.prepareContext({actorRef:ref,frozen:record.frozen,id:record.id,observation:record.observation});
-        if(prepared?.schema!=='holodeck.prepared-conversation-context/v1'||prepared.id!==record.id
+        const payload={actorRef:ref,frozen:record.frozen,id:record.id,observation:record.observation};
+        const inline=mode===machineMode;
+        const prepared=await (inline?transport.prepareMachineContext(payload):transport.prepareContext(payload));
+        if(prepared?.schema!==(inline?'holodeck.prepared-machine-context/v1':'holodeck.prepared-conversation-context/v1')||prepared.id!==record.id
           ||prepared.binding!==record.frozen.binding||encode(prepared.entry_binding)!==encode(record.frozen.entry)
-          ||prepared.observation_id!==record.observation.id||prepared.work_admitted!==false||!fileRef(prepared.file))
+          ||prepared.observation_id!==record.observation.id||(inline?
+            prepared.submitted_by_prepare!==false||prepared.retained_original!==false||
+              !machineRef({receipt:prepared.receipt,sourceSha256:prepared.source_sha256}):
+            prepared.work_admitted!==false||!fileRef(prepared.file)))
           throw fail('source','The immutable source acknowledgment is unconfirmed');
-        await transaction(async()=>{const previous={phase:record.phase,file:record.file};record.file=structuredClone(prepared.file);record.phase='prepared';
-          try{await persist();}catch(error){if(!error.replaced){record.phase=previous.phase;if(previous.file)record.file=previous.file;else delete record.file;}throw error;}});
+        await transaction(async()=>{
+          if(records[record.id]!==record||record.phase!=='frozen')throw fail('source','The source reservation changed');
+          const next={...record,phase:'prepared',...(inline?{machine:{receipt:prepared.receipt,sourceSha256:prepared.source_sha256}}:{file:structuredClone(prepared.file)})};
+          records[record.id]=next;
+          try{await persist(record.mode);}catch(error){if(!error.replaced)records[record.id]=record;throw error;}
+          record=next;
+        });
         return result(record);
       })();
       inflight.set(request.id,{actorRef:ref,requestHash,work});
@@ -172,10 +197,7 @@ export async function createConversationContexts({room,stateDir,transport,allowI
         ||source.frozen.beingRef!==expectedBeingRef)throw fail('native-scope','The prepared source does not belong to this room and return lane');
       const current=await transport.inspect(source.actorRef);
       if(encode(current)!==encode(source.frozen))throw fail('binding','The current pair or Conversation changed');
-      const status=await transport.status(record?statusPayload(record):{
-        actorRef:receipt.actorRef,frozen:receipt.frozen,id,textSha256:null,
-        observationId:receipt.observationId,contextFile:receipt.file,
-      });
+      const status=await readStatus(source,id);
       if(status.nativeAcceptance!=='observed'||status.phase==='problem'||status.retainedOriginal!==true
         ||(receipt&&(status.phase!=='completed'||status.tracking!==false)))
         throw fail('native-scope','Actual canonical admission is not observed');
@@ -200,7 +222,7 @@ export async function createConversationContexts({room,stateDir,transport,allowI
       const previous=receipts[id];
       if(previous&&previous.actorRef===actorRef(actor)&&!fenced)return {released:true,canonicalOriginalPreserved:true};
       const record=owned(actor,id);if(fenced||record.phase!=='prepared')return {released:false};
-      const status=await transport.status(statusPayload(record));
+      const status=await readStatus(record);
       if(status.retainedOriginal!==true||status.tracking!==false||!['completed','problem'].includes(status.phase))return {released:false};
       const released=await retire(record,status);
       return {released,canonicalOriginalPreserved:true};
@@ -217,10 +239,19 @@ export async function createConversationContexts({room,stateDir,transport,allowI
       // The shared component signals this only before attempting its writer.
       // Verify canonical absence too, then forget machine preparation only.
       // No original/file is deleted, cancelled or declared never submitted.
-      await transaction(async()=>{if(records[id]!==record)return;delete records[id];try{await persist();}catch(error){if(!error.replaced)records[id]=record;throw error;}});
+      await transaction(async()=>{if(records[id]!==record)return;delete records[id];try{await persist(record.mode);}catch(error){if(!error.replaced)records[id]=record;throw error;}});
       return {released:true,canonicalOriginalAltered:false,canonicalFilesPreserved:true};
     },
     async recover(actor,id,binding){
+      const retained=receipts[id];
+      if(retained?.mode===machineMode){
+        if(fenced||retained.actorRef!==actorRef(actor)||binding!==retained.frozen.binding||retained.run!==room.run
+          ||encode(await transport.inspect(retained.actorRef))!==encode(retained.frozen))
+          throw fail('binding','Preserve the source from the earlier room or binding');
+        if(retained.space&&(!allowInteriorSource||!await allowInteriorSource(actor,retained.frozen.beingRef,retained.space)))
+          throw fail('forbidden','El acceso a esa sala cambió');
+        return {id,binding,prepared:true,retained:true,machine_source:retained.machine.receipt,files:[],work_admitted:false};
+      }
       const record=owned(actor,id);const current=await transport.inspect(record.actorRef);
       if(fenced||binding!==record.frozen.binding||encode(current)!==encode(record.frozen)||record.observation.run!==room.run)
         throw fail('binding','Preserve the source from the earlier room or binding');

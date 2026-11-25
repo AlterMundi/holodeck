@@ -45,6 +45,32 @@ test('shared original gets one durable machine source and restart/retry never re
  assert.deepEqual(JSON.parse(readFileSync(join(f.dir,'conversation-contexts.json'),'utf8')).records[input.id].observation,original);
  assert.equal(f.uploads,1);assert.equal(f.writes,0);
 });
+test('owner-journal mode freezes across retries and leaves the legacy ledger readable',async t=>{
+ const f=await fixture(t),context=await f.open(),legacy=request();
+ await context.prepare(actor,legacy);
+ const legacyPath=join(f.dir,'conversation-contexts.json'),prior=readFileSync(legacyPath);
+ const mode='owner-journal/v1',id=randomUUID(),proof=randomUUID(),sourceSha256='e'.repeat(64);
+ const input={...request(),id,mode};let prepared=0;
+ f.transport.prepareMachineContext=async value=>{
+  prepared++;assert.equal(value.id,id);assert.equal(value.observation.inputAssociation.humanInputId,id);
+  return {schema:'holodeck.prepared-machine-context/v1',id,binding,entry_binding:initial.entry,
+    observation_id:value.observation.id,receipt:proof,source_sha256:sourceSha256,retained_original:false,submitted_by_prepare:false};
+ };
+ f.transport.machineContextStatus=async value=>{
+  assert.equal(value.id,id);assert.equal(value.receipt,proof);assert.equal(value.sourceSha256,sourceSha256);
+  return {nativeAcceptance:'observed',phase:'completed',tracking:false,retainedOriginal:true};
+ };
+ const staged=await context.prepare(actor,input);
+ assert.deepEqual(staged,{id,binding,machine_source:proof,files:[],work_admitted:false});
+ assert.deepEqual(readFileSync(legacyPath),prior);
+ const resumed=await f.open();assert.deepEqual(await resumed.retry(actor,id,binding),staged);
+ assert.equal(prepared,1);assert.equal(f.uploads,1);
+ await assert.rejects(resumed.prepare(actor,{...input,mode:undefined}),/originally/);
+ assert.equal((await resumed.release(actor,id)).released,true);
+ const saved=await(await f.open()).recover(actor,id,binding);
+ assert.equal(saved.retained,true);assert.equal(saved.machine_source,proof);
+ assert.deepEqual(readFileSync(legacyPath),prior);
+});
 test('context alone cannot authorize native actions; real matching canonical admission is required',async t=>{
  const f=await fixture(t),context=await f.open(),input=request();await context.prepare(actor,input);
  await assert.rejects(context.authorizeWorldRequest(input.id,being),/admission/);

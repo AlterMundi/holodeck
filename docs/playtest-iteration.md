@@ -148,6 +148,36 @@ receiving checks.
 
 ## Situated context implementation
 
+The Holodeck host and [DaimonApp #1031](https://github.com/AlterMundi/DaimonApp/pull/1031)
+now have a browser candidate for independently retained machine receipts.
+They negotiate through the existing authorized frame, freeze the choice
+per original, and leave the legacy attachment path inspectable across
+rollback. The journal-mode ledger stays separate, so an older Holodeck
+release can still reopen its own records. A machine receipt remains
+distinct from a grant to perform a world action. Fable 5.2 High confirmed
+the channel negotiation, reservation retry, and compatibility path.
+Opus 5.5 High identified a
+same-channel animation reset regression. The corrected host emits silence
+on a fresh ready announcement while preserving the negotiated mode.
+
+The real iframe tests with controlled IO exercised both transport modes at
+desktop and narrow widths, eight human text attachments, a separate
+ordinary voice receipt and uncertain text acknowledgments. An edited
+dictation recovered its original UUID and receipt from local storage and
+sent only edited text with the two existing evidence files. Existing legacy
+bytes remained readable in a separate-host rollback fixture.
+
+The next receiving step must bind the acknowledged baseline to an actual
+native admission in the exact continuing thread and scope. Keep canonical
+retention, native admission and installation of the baseline as separate
+receipts. Persist the receiving order floor across baseline loss. On a late
+original, use only its frozen historical context and preserve the newest
+baseline. Send a full snapshot after a missing/invalid baseline and verify
+the complete changed, unchanged and loss sequence before opting in. The
+browser's separate receipt does not yet reduce the full native context.
+Keep the live legacy configuration until those receiving checks close.
+
+
 Holodeck now has a source-side planner and matching receiver reducer for full,
 delta and unchanged situations. The projection keeps distinct object, station,
 visit and piece selections, coarse client-reported position and a bounded
@@ -517,3 +547,13 @@ The implementation rechecks the exact edition and uses the same action for
 pointer and keyboard submission. Chromium qualified desktop search,
 touch return, draft retention and recovery to HTML on WebGL loss. A second
 signed-in fixture actor received only its permitted edition.
+
+## Current release collision regression
+
+The exact deployed Cabina archive `8c485a4c8cfe` passed the controlled
+Chromium interior wall and ceiling checks and the toroidal cave flight
+headroom check. Recorded limits were 5.822 m wall position and 3.926 m
+camera height for that fixture, with a 3.958 m interior capsule peak and
+2.279 m of cave flight headroom. This exercised the installed package bytes
+with controlled local identities and does not claim physical-device or
+multi-visitor performance.

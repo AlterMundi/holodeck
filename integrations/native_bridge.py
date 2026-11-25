@@ -148,9 +148,13 @@ class NativeBridge:
         frozen=self.inspect(actor)
         if self.home_origin is None or self.home_entry is None:
             raise BridgeError('surface-unavailable','No registered shared Conversation entrance is selected')
-        return {'schema':'holodeck.conversation-surface/v1','actorRef':actor,
+        result={'schema':'holodeck.conversation-surface/v1','actorRef':actor,
                 'beingRef':frozen['beingRef'],'homeRef':frozen['homeRef'],
                 'binding':frozen['binding'],'url':self.home_origin+self.home_entry}
+        if self.machine_sources:
+            self.machine_source_capability(actor,frozen)
+            result['machineSource']='owner-journal/v1'
+        return result
 
     def observation_file(self,ident_,actor,observation):
         if (not isinstance(observation,dict) or observation.get('schema')!='holodeck.situation/v1'

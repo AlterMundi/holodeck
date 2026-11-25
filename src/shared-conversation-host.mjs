@@ -2,6 +2,7 @@
 // Canonical Conversation retains all human content, drafts, media and sends.
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const SCHEMA='conversation.surface/v1';
+const machineMode='owner-journal/v1';
 const bounded=value=>{try{return JSON.stringify(value).length<=8192;}catch{return false;}};
 export class SharedConversationHost{
   constructor({window,document,container,api,capture,currentActor,onStatus=()=>{},onError=()=>{},onSpeechLevel}){
@@ -42,8 +43,12 @@ export class SharedConversationHost{
     const d=event.data;
     if(d.type==='ready'){
       // A reload establishes a fresh channel; old async replies stay on the old channel.
-      this.channel=d.channel;this.onSpeechLevel?.(0);
-      this.send(d,'connect',this.onSpeechLevel?{features:{avatarPlayback:true}}:{});return;
+      this.onSpeechLevel?.(0);
+      if(this.channel!==d.channel){
+        this.channel=d.channel;
+        this.mode=d.features?.machineSource===true&&this.selected.machineSource===machineMode?machineMode:undefined;
+      }
+      this.send(d,'connect',{features:{...(this.onSpeechLevel?{avatarPlayback:true}:{}),...(this.mode?{machineSource:this.mode}:{})}});return;
     }
     if(d.channel!==this.channel)return;
     if(d.type==='avatar-playback'&&typeof d.level==='number'&&Number.isFinite(d.level)&&d.level>=0&&d.level<=1){
@@ -60,30 +65,34 @@ export class SharedConversationHost{
     }
   }
   async prepare(d){
+    const inline=d.mode===machineMode;
     if(!UUID.test(d.id||'')||!UUID.test(d.request||'')||!['text','audio'].includes(d.modality)
-      ||!Number.isSafeInteger(d.capacity?.files)||d.capacity.files<1||d.capacity.files>8
-      ||!Number.isSafeInteger(d.capacity?.bytes)||d.capacity.bytes<65536||d.capacity.bytes>40*1024*1024
+      ||!Number.isSafeInteger(d.capacity?.files)||d.capacity.files<(inline?0:1)||d.capacity.files>8
+      ||!Number.isSafeInteger(d.capacity?.bytes)||d.capacity.bytes<(inline?0:65536)||d.capacity.bytes>40*1024*1024
       ||d.capacity.context_bytes!==65536)return;
+    if(d.mode!==this.mode){this.send(d,'error',{request:d.request,id:d.id,message:'La conexión del contexto cambió. Conservá tu borrador.'});return;}
     let record=this.records.get(d.id);
-    if(record&&(record.request!==d.request||record.channel!==d.channel||record.modality!==d.modality))return;
+    if(record&&(record.request!==d.request||record.channel!==d.channel||record.modality!==d.modality||record.mode!==d.mode))return;
     if(!record){
       if(this.records.size>=128){const old=[...this.records].find(([,value])=>value.prepared&&!value.discarded);if(old)this.records.delete(old[0]);}
       if(this.records.size>=128){this.send(d,'error',{request:d.request,id:d.id,message:'Hay intervenciones por confirmar. Conservá tu borrador.'});return;}
       // capture() copies world position synchronously before its first await.
-      record={request:d.request,channel:d.channel,modality:d.modality};this.records.set(d.id,record);
+      record={request:d.request,channel:d.channel,modality:d.modality,mode:d.mode};this.records.set(d.id,record);
       record.work=(async()=>{
         const view=await this.capture();
         if(record.discarded||this.currentActor()!==d.actor||this.closed)throw Error('El acceso al mundo cambió.');
-        const result=await this.api('conversation-contexts',{id:d.id,binding:d.binding,displayedSequence:null,view});
-        if(result.id!==d.id||result.binding!==d.binding||result.work_admitted!==false||result.files?.length!==1)throw Error('No pude conservar el contexto.');
+        const result=await this.api('conversation-contexts',{id:d.id,binding:d.binding,displayedSequence:null,view,...(inline?{mode:machineMode}:{})});
+        if(result.id!==d.id||result.binding!==d.binding||result.work_admitted!==false||(inline?
+          !UUID.test(result.machine_source||'')||result.files?.length!==0:
+          result.files?.length!==1||result.machine_source!==undefined))throw Error('No pude conservar el contexto.');
         record.prepared=true;
         if(record.discarded)this.api(`conversation-contexts/${d.id}/discard`,{binding:d.binding,reason:record.reason}).then(value=>{if(value.released)this.records.delete(d.id);}).catch(()=>{});
-        return result.files[0];
+        return inline?{machine_source:result.machine_source}:{file:result.files[0]};
       })();
     }
     try{
-      const file=await record.work;
-      if(!record.discarded&&this.channel===d.channel&&this.currentActor()===d.actor)this.send(d,'prepared',{request:d.request,id:d.id,file});
+      const source=await record.work;
+      if(!record.discarded&&this.channel===d.channel&&this.currentActor()===d.actor)this.send(d,'prepared',{request:d.request,id:d.id,...source});
     }catch{
       if(!record.discarded&&this.channel===d.channel)this.send(d,'error',{request:d.request,id:d.id,message:'No pude conservar el contexto de este lugar. Tu borrador sigue en la conversación.'});
     }
