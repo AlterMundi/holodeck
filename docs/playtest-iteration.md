@@ -968,6 +968,29 @@ of transitions in the real world remain part of the visual acceptance.
 
 ## Tabletop companion
 
+### Looking beside the selected piece
+
+Candidate `8f77817` gives the miniature companion a bounded lateral perch
+when a visible part has passed pointer dwell or has been selected. It uses
+the piece bounds in table coordinates and the current camera direction.
+It holds the chosen side while the same part is in focus. The existing
+follower still moves gradually. The planar step checks the currently
+focused part's expanded bounds before movement and admits escape motion
+if a repositioned part already overlaps the miniature. Where there is
+no bounded safe step, the companion can look at the piece from its
+current side. This is local presentation. It adds no shared state or
+authority, and only tests clearance against the current focused part.
+
+The exact archive `0425dd6d7c67` contains 80 payloads in 33,443,840 bytes.
+The source suite passed 359 tests with two optional skips. In controlled
+Chromium the mounted world opened the Matter table, loaded an actual
+collection fixture and aimed the pointer at its exposed upper surface.
+The companion turned toward it, shifted about 1.5 cm to the side, stayed
+within the tabletop bounds through small pointer movements, then released
+its focus when the cursor left the piece. The visual check covers that
+one desktop camera and fixture. Physical-device, live peer and production
+selection checks remain open.
+
 Nicolas's selected view showed the companion larger than the human avatar and
 opaque while the human was translucent. The companion had a separate .33
 factor against the human's .19. Both now use .19 and the same material adapter,
