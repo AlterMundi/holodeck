@@ -104,6 +104,11 @@ The **Ver notas** action reads the selected pose on demand. A copied pose
 link can be opened outside the room. Shared feedback still requires current
 room membership. The existing browser-local note option is available
 outside. Saving a shared note never falls back to local storage on failure.
+A draft keeps the rig, clip edition and frame where writing started.
+If the visitor changes poses, the panel shows the draft target. Following a
+new presentation keeps that target and the draft text. A shared save with
+an unconfirmed response offers **Reintentar**, using the same submission ID
+and original pose.
 
 The pose note checkpoint uses the existing atomic `RoomStore` under
 `character-pose-review`, with up to 160 notes in a 256 KiB checkpoint.

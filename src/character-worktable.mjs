@@ -11,8 +11,8 @@ export class CharacterWorktable {
     this.available=Boolean(player&&anchor&&Math.hypot(player.x-anchor.x,player.z-anchor.z)<2.05);
   }
 
-  start({send,close,isEditing}){
-    this.viewer=openCharacterStudio(this.document,{scene:this.scene,anchor:this.anchor,height:.58,send,close,isEditing});
+  start({send,close,ownsTextInput}){
+    this.viewer=openCharacterStudio(this.document,{scene:this.scene,anchor:this.anchor,height:.58,send,close,ownsTextInput});
   }
 
   stop(){
