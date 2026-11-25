@@ -150,12 +150,16 @@ export class ConversationChrome{
       this.data=data;
       this.receive(header,'updateDataModel',{value:state});
     }
-    if(this.look!==look){
-      this.look=look;
+    if(this.look!==(look??'')){
+      this.look=look??'';
       const css=this.panel.ownerDocument.defaultView.getComputedStyle(this.panel);
       const value=name=>css.getPropertyValue(name).trim();
-      this.hud.setPalette({background:value('--panel'),button:value('--control-fill')||'#20434b',
+      const {hudLook,roomLook}=this.panel.ownerDocument.body.dataset;
+      if(hudLook)this.hud.setPalette({background:value('--panel'),button:value('--control-fill')||'#20434b',
         pressed:value('--control-hover')||'#305861',text:value('--ink'),focus:value('--gold')});
+      else this.hud.setPalette({background:value('--hud-panel'),button:value('--control-fill')||value('--hud-control'),
+        pressed:value('--control-hover')||value('--hud-pressed'),text:roomLook?value('--ink'):value('--hud-ink'),
+        focus:value('--hud-brass'),disabled:value('--hud-disabled')});
       this.mark.ink.color.set(value('--gold')||'#e6f5f4');
       this.invalidate();
     }

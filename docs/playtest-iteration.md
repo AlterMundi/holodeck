@@ -1113,3 +1113,30 @@ and controlled identities.
 The remaining animation work includes the grounded crouch, run and idle
 quality passes, complete facial expression and microphone lip sync across
 avatars, and independent authenticated visitor and physical GPU validation.
+
+## Instrument glass on the native HUD
+
+The default Three.js toolbelt, room title, topographic map, worktable and
+Conversation header share a dark glass backing with a cool rim and short warm
+highlights. The room theme can tint the same material. The optical layer is one
+quad per visible surface, behind the translucent Proyección backing. It does
+not capture the world framebuffer and does not participate in input. Historical
+explicit HUD looks retain their existing shell and palette route.
+
+Fable High proposed the single material plane and static reduced-motion
+treatment. Opus 5.5 High found a transparent sorting hazard, stale redraws and
+shared CSS defaults spilling into other panels. The rear draw order, bounded
+pane reuse, matrix/extent invalidation and HUD-specific tokens address those
+findings. The renderer's existing focus, controls and mounted Conversation
+remain the input and state owners.
+
+Stage `ccb72f15ef10` is 33,320,960 bytes. The exact source passed 344 tests
+with two skips, including the material visibility, theme and relayout regression.
+Controlled Chromium verified the daylight topographic map and a mounted
+Conversation that preserves its draft while moving, resizing and minimizing.
+The exact archive also passed the loaded desktop worktable cut by keyboard,
+rotation, part visibility and exit-focus checks. The touch-sized capture
+keeps the complete exit label and verified tabletop flight and return. The
+browser checks use SwiftShader. Physical device performance,
+two authenticated visitors, the full light-base theme, and the remaining
+graphic hierarchy across the game remain open.

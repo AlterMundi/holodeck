@@ -1,4 +1,4 @@
-import {ExtrudeGeometry, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, Path, PlaneGeometry, Shape} from 'three';
+import {Color, ExtrudeGeometry, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, Path, PlaneGeometry, ShaderMaterial, Shape, Vector2} from 'three';
 
 /**
  * Material surround for a Proyección surface. It inherits the display's
@@ -82,6 +82,70 @@ export function createHudMaterialShell({frame, accent, radius=.038, thickness=.1
       group.removeFromParent();
       releaseMeshes();
       for(const material of [housing,edge,light])material.dispose();
+    },
+  };
+}
+
+// One optical layer behind the catalog's transparent backing plate.
+export function createInstrumentGlass(){
+  const uniforms={
+    size:{value:new Vector2()},reflection:{value:new Color()},rim:{value:new Color()},
+    brass:{value:new Color()},pulse:{value:0},
+  };
+  const material=new ShaderMaterial({
+    uniforms,transparent:true,depthWrite:false,toneMapped:false,
+    vertexShader:`
+      varying vec2 paneUv;
+      void main(){
+        paneUv=uv;
+        gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+      }
+    `,
+    fragmentShader:`
+      uniform vec2 size;
+      uniform vec3 reflection,rim,brass;
+      uniform float pulse;
+      varying vec2 paneUv;
+      void main(){
+        vec2 p=(paneUv-.5)*size;
+        vec2 edge=abs(p)-size*.5+vec2(.037);
+        float bevel=max(max(edge.x,edge.y),.7071*(edge.x+edge.y)+.011);
+        float aa=max(fwidth(bevel),.002);
+        float inside=1.0-smoothstep(-aa,aa,bevel);
+        if(inside<.001)discard;
+        float top=pow(paneUv.y,4.0);
+        float chrome=1.0-smoothstep(aa*.4,aa*1.6,abs(bevel+.009));
+        float fromTop=size.y*.5-p.y;
+        float fromSide=size.x*.5-abs(p.x);
+        float copper=chrome*(1.0-smoothstep(.065,.08,fromTop))*
+          (1.0-smoothstep(.105,.135,fromSide));
+        float sheen=.28+.28*top+.14*(1.0-smoothstep(.0,.24,abs(paneUv.y+paneUv.x*.26-1.04)));
+        vec3 glaze=mix(reflection,rim,chrome*.76);
+        glaze=mix(glaze,brass,copper*.86);
+        gl_FragColor=vec4(glaze,inside*min(1.0,sheen+chrome*(.54+pulse*.12)));
+        #include <colorspace_fragment>
+      }
+    `,
+  });
+  const geometry=new PlaneGeometry(1,1);
+  const group=new Mesh(geometry,material);
+  group.raycast=()=>{};
+  group.renderOrder=-1;
+  return {group,
+    update(bounds,{colors,effects=true,lightLevel=0}){
+      const width=bounds.right-bounds.left+.096,height=bounds.top-bounds.bottom+.096;
+      group.position.set((bounds.left+bounds.right)/2,(bounds.top+bounds.bottom)/2,-.075);
+      group.scale.set(width,height,1);
+      uniforms.size.value.set(width,height);
+      uniforms.reflection.value.set(colors.fill);
+      uniforms.rim.value.set(colors.rim);
+      uniforms.brass.value.set(colors.brass);
+      uniforms.pulse.value=effects?Math.min(1,lightLevel):0;
+    },
+    dispose(){
+      group.removeFromParent();
+      geometry.dispose();
+      material.dispose();
     },
   };
 }

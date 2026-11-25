@@ -70,7 +70,7 @@ const work=[
   {id:'root',component:'HudPanel',label:'Mesa de trabajo',width:2.20,
     children:['heading','project','sharing','inspection','discuss','status']},
   row('heading',['title','close']),
-  text('title','Mesa de trabajo',{style:'title',weight:2}),button('close',path('closeLabel'),{weight:1.4}),
+  text('title','Mesa de trabajo',{style:'title'}),button('close',path('closeLabel')),
   choice('project','Proyecto','projects','project'),
   row('sharing',['share','follow','clear']),
   button('share','Compartir',{visible:path('canShare'),disabled:path('busy'),action:action('share',{revision:path('revision'),project:path('project')})}),
@@ -416,17 +416,18 @@ export class MatterWorktableHud{
     this.settings.sync();
     this.syncToolbelt(toolsVisible);
     const {hudLook,roomLook}=this.document.body.dataset;
-    const look=hudLook==='taller'?roomLook:hudLook??roomLook;
+    const look=(hudLook==='taller'?roomLook:hudLook??roomLook)??'';
     if(this.look!==look){
       this.look=look;
       this.layer.invalidate();
-      if(!look)this.hud.setPalette();
-      else{
-        const css=this.document.defaultView.getComputedStyle(this.document.body);
-        const color=name=>css.getPropertyValue(name).trim();
-        this.hud.setPalette({background:color('--panel'),button:color('--control-fill'),
-          pressed:color('--control-hover'),text:color('--ink'),focus:color('--gold')});
-      }
+      const css=this.document.defaultView.getComputedStyle(this.document.body);
+      const color=name=>css.getPropertyValue(name).trim();
+      if(hudLook&&!look)this.hud.setPalette();
+      else if(hudLook)this.hud.setPalette({background:color('--panel'),button:color('--control-fill'),
+        pressed:color('--control-hover'),text:color('--ink'),focus:color('--gold')});
+      else this.hud.setPalette({background:color('--hud-panel'),button:color('--control-fill')||color('--hud-control'),
+        pressed:color('--control-hover')||color('--hud-pressed'),text:roomLook?color('--ink'):color('--hud-ink'),
+        focus:color('--hud-brass'),disabled:color('--hud-disabled')});
     }
   }
 
@@ -778,11 +779,11 @@ export class MatterWorktableHud{
       }
     }
     this.hud.update();
+    this.windows.end();
     this.lookPreview.draw(worldHeaderId,this.status.headerGroup,this.hud.getSurfaceBounds(worldHeaderId));
-    if(this.cockpit)this.lookPreview.draw(worldMapId,this.map.group,this.hud.getSurfaceBounds(worldMapId));
+    if(this.cockpit||!this.lookPreview.name)this.lookPreview.draw(worldMapId,this.map.group,this.hud.getSurfaceBounds(worldMapId));
     this.lookPreview.draw(toolbeltId,this.toolGroup,this.hud.getSurfaceBounds(toolbeltId));
     this.lookPreview.draw(surfaceId,this.group,this.hud.getSurfaceBounds(surfaceId));
-    this.windows.end();
     this.map.decoration();
     if(this.map.group)this.map.panel.dataset.nativeMap='';
     if(Boolean(additional)!==this.composingAdditional){

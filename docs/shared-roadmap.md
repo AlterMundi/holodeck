@@ -42,7 +42,8 @@ for the walkthrough. New gameplay mechanics follow their own stages.
   state. Show the toolbelt, map, movable windows, active table and open
   Conversation on the same visual pass. Quality is judged in play on
   bright and dark scenes, with the normal and lighter settings and a
-  reduced-motion path.
+  reduced-motion path. The [instrument glass stage](playtest-iteration.md#instrument-glass-on-the-native-hud)
+  introduces the common material on native surfaces.
 - Apply the selected ceramic filigree atlas and engraved bronze relief to
   their appropriate surfaces. Review them in close and gameplay views
   with the actual lighting and expression, retaining the tactile cape

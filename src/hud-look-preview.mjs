@@ -1,5 +1,8 @@
 import {AmbientLight, Group, Matrix4} from 'three';
-import {createHudMaterialShell} from './hud-material-shell.mjs';
+import {createHudMaterialShell, createInstrumentGlass} from './hud-material-shell.mjs';
+
+const instrumentSurfaces=new Set(['matter-worktable','world-toolbelt','world-header',
+  'world-map','conversation-header']);
 
 const looks={
   taller:{frame:'#1c282b',accent:'#7d9994',radius:.11,thickness:.055,roughness:.78,
@@ -21,11 +24,12 @@ export function selectedHudLook(url){
 export class HudLookPreview{
   constructor({document,parent,invalidate}){
     Object.assign(this,{invalidate,parent,panels:new Map(),turn:new Matrix4()});
+    this.document=document;
     this.name=document.body.dataset.hudLook;
     this.look=looks[this.name];
+    this.reduced=document.defaultView.matchMedia('(prefers-reduced-motion: reduce)');
     if(!this.look)return;
     this.stylesDock=!this.look.surfaces;
-    this.reduced=document.defaultView.matchMedia('(prefers-reduced-motion: reduce)');
     this.light=new AmbientLight('#ffffff',this.look.quiet?1:1.55);
     parent.add(this.light);
   }
@@ -41,7 +45,11 @@ export class HudLookPreview{
   }
 
   draw(key,source,bounds){
-    if(!this.look||this.look.surfaces&&!this.look.surfaces.includes(key))return;
+    if(!this.look){
+      this.drawInstrument(key,source,bounds);
+      return;
+    }
+    if(this.look.surfaces&&!this.look.surfaces.includes(key))return;
     let panel=this.panels.get(key);
     const now=performance.now();
     if(source?.visible&&bounds){
@@ -78,6 +86,49 @@ export class HudLookPreview{
     if(active||panel.animated||source!==panel.source)this.invalidate();
     panel.animated=active;
     panel.source=source;
+  }
+
+  drawInstrument(key,source,bounds){
+    if(!instrumentSurfaces.has(key))return;
+    let panel=this.panels.get(key);
+    let visible=Boolean(source&&bounds);
+    for(let node=source;node&&visible;node=node.parent)visible=node.visible;
+    if(!visible){
+      if(panel?.anchor.visible){panel.anchor.visible=false;this.invalidate();}
+      return;
+    }
+    const theme=this.document.body.dataset.roomLook??'';
+    if(this.instrumentTheme!==theme){
+      this.instrumentTheme=theme;
+      const style=this.document.defaultView.getComputedStyle(this.document.body);
+      const color=name=>style.getPropertyValue(name).trim();
+      this.instrumentColors={fill:color('--hud-glass'),rim:color('--hud-rim'),brass:color('--hud-brass')};
+      this.invalidate();
+    }
+    if(!panel){
+      const anchor=new Group(),shell=createInstrumentGlass();
+      anchor.matrixAutoUpdate=false;
+      anchor.renderOrder=-1;
+      anchor.add(shell.group);
+      this.parent.add(anchor);
+      panel={anchor,shell};
+      this.panels.set(key,panel);
+      this.invalidate();
+    }
+    source.updateWorldMatrix(true,false);
+    this.turn.copy(this.parent.matrixWorld).invert().multiply(source.matrixWorld);
+    const extent=[bounds.left,bounds.right,bounds.top,bounds.bottom].join(':');
+    if(!panel.anchor.visible||!panel.anchor.matrix.equals(this.turn)||panel.extent!==extent){
+      panel.anchor.visible=true;
+      panel.anchor.matrix.copy(this.turn);
+      panel.anchor.matrixWorldNeedsUpdate=true;
+      panel.extent=extent;
+      this.invalidate();
+    }
+    const pulse=this.reduced.matches?0:Math.max(0,1-(performance.now()-(panel.hit??-Infinity))/210);
+    panel.shell.update(bounds,{colors:this.instrumentColors,lightLevel:pulse});
+    if(pulse||panel.animated)this.invalidate();
+    panel.animated=Boolean(pulse);
   }
 
   dispose(){
