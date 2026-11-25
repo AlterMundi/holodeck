@@ -1501,7 +1501,7 @@ world loaded the named morph at zero, accepted a controlled 0.65 weight,
 retained it while moving with W and returned exactly to neutral. That
 controlled test uses an assigned weight, without audio or native dispatch.
 
-The archive is a candidate. Production continues on `326890e44863`.
+The original rig-only archive was superseded by the selected consumer package.
 The [local microphone candidate](#local-microphone-animation) adds the
 consumer. Physical capture, additional facial poses and any authorized
 peer voice presentation remain open.
@@ -1526,7 +1526,7 @@ jaw opened to a measured weight of 0.75 and returned to zero after silence,
 a stalled publisher, reduced motion and capture stop. A separate Chromium
 process with a different fixture identity saw the same actor at weight zero
 while the local jaw was open. This is controlled browser/media evidence.
-The protected two-release composition and physical microphone remain open.
+The [protected Holodeck consumer](STATUS.md#november-25-humanoid-mouth-rigs-and-local-microphone-consumer) is selected. The protected producer composition and physical microphone remain open.
 
 ## Authored flight and swimming poses
 

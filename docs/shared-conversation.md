@@ -138,8 +138,10 @@ The [facial rig candidate](playtest-iteration.md#humanoid-mouth-aperture)
 adds a `jawOpen` shape to both licensed human rigs and their four skins.
 The [local consumer candidate](playtest-iteration.md#local-microphone-animation)
 negotiates the signal and applies it only to the active local avatar.
-Production still uses the previous browser and producer. Qualify a physical
-microphone in the protected Conversation surface after compatible adoption.
+[Production Holodeck](STATUS.md#november-25-humanoid-mouth-rigs-and-local-microphone-consumer)
+selects the consumer. The served CompAII Conversation script still lacks
+the producing capability, so that path keeps the mouth neutral. Qualify a
+physical microphone in the protected Conversation surface after compatible adoption.
 Ordinary capture without live PCM and the continuous voice engines are
 outside the producer candidate. Any peer rendering follows the audience
 of the existing authorized voice path.

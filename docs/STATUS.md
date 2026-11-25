@@ -1,5 +1,29 @@
 # Current MVP work
 
+## November 25 humanoid mouth rigs and local microphone consumer
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/) serves
+`8260b7fcf577` from source `c3a5b84`. The four humanoid models load with a
+neutral jaw and can consume a bound local microphone envelope. The existing
+Conversation installation still serves a producer without that capability.
+The combined playback with a synthetic mic and independent fixture observer
+passed in the [controlled test](playtest-iteration.md#local-microphone-animation).
+Physical microphone and authenticated two-person acceptance remain open.
+
+The deployment changed the four humanoid GLBs, their notice and the browser
+bundle. All 80 installed payloads matched. Protected HTTPS returned the exact
+browser bundle, four humanoid GLBs, companion GLB, terrain worker and health
+response. The Home App, audience, configuration and expected denials matched.
+The temporary technical reader was revoked. Native readback preserved the
+same run, 30 entities, four nodes and sequence 403. Twenty-two state files
+matched byte for byte. The world observations rotated the two room checkpoints.
+
+The immediate code-only rollback is `326890e44863`. Its installed files
+all match the manifest. The older compatible `873ae82b51f6` is installed
+and published. The three published archives total 100,096,000 bytes. The
+superseded `20726f08a3e0` publication was retired after its local archive
+was verified.
+
 ## November 25 humanoid standing idle and airborne turns
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/) serves
