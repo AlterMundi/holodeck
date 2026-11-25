@@ -357,6 +357,23 @@ warm fixture bounce into editable Blender materials and a bounded floor
 texture. A spatially limited splat remains a candidate where it could add
 detail in movement.
 
+### PlayCanvas evaluation
+
+Keep Three.js, MML and Proyección as the selected Holodeck runtime. Use
+[SuperSplat](https://developer.playcanvas.com/user-manual/gaussian-splatting/editing/supersplat/)
+for local capture inspection and cleanup when useful. Retain portable splat
+sources and the authoritative Blender and interaction geometry.
+
+Compare the same retained fit and camera route in the existing Spark/Three.js
+trial and a standalone
+[PlayCanvas GSplat viewer](https://developer.playcanvas.com/user-manual/gaussian-splatting/rendering-architecture/renderers/).
+Use [SplatTransform](https://developer.playcanvas.com/user-manual/splat-transform/streamed-sog/)
+to test compression and streamed detail separately. Use the existing
+appearance acceptance measures on physical hardware, including first usable
+view, walking frame time, retained detail and occlusion with live meshes.
+A renderer comparison holds the fit and input views fixed. It cannot
+diagnose or repair inconsistent generated views by itself.
+
 ### Separate implementation objective — room appearance
 
 Implement an authoring system that takes neutral, editable Blender volumes
