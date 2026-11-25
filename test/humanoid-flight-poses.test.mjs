@@ -148,10 +148,14 @@ test('flight exit holds a descent until contact, then gives the feet back to the
   controls.grounded=true;
   render(1);
   assert.ok(arm.quaternion.angleTo(stockArm)>.03);
-  render(10);
-  assert.ok(leg.quaternion.angleTo(stockLeg)<.04);
-  render(80);
+  render(9);
+  // The absorbing legs stay on the mixer's contact while the hips give.
+  assert.ok(standingHip-hipHeight()>.02);
+  assert.ok(ankle.getWorldPosition(new Vector3()).sub(root.position).distanceTo(standingAnkle)<.012);
+  render(100);
+  assert.ok(leg.quaternion.equals(stockLeg));
   assert.ok(arm.quaternion.equals(stockArm));
+  assert.ok(Math.abs(standingHip-hipHeight())<1e-6);
   controls.crouch=true;
   render(100);
   assertPlanted();
@@ -213,15 +217,27 @@ test('airborne humanoid eases heading changes on a radial frame and releases ban
     return vertical.clone().applyQuaternion(q).dot(lateral.clone().applyQuaternion(heading));
   };
   frame(0);
-  const right=frame(Math.PI/2);
-  assert.ok(angle(right)>.10&&angle(right)<.40);
-  assert.ok(bank(right)>.02&&bank(right)<.18);
-  let stable;
-  for(let i=0;i<70;i++)stable=frame(Math.PI/2);
+  // A damped turn: it starts gently, banks inward, settles without overshoot.
+  const first=angle(frame(Math.PI/2));
+  assert.ok(first>0&&first<.10);
+  let stable,previous=first,peakBank=0,settledAt=null,peakStep=0;
+  for(let i=0;i<110;i++){
+    stable=frame(Math.PI/2);
+    const at=angle(stable);
+    assert.ok(at>=previous-1e-6&&at<Math.PI/2+.035);
+    peakStep=Math.max(peakStep,at-previous);
+    previous=at;
+    peakBank=Math.max(peakBank,bank(stable));
+    if(settledAt===null&&Math.PI/2-at<.035)settledAt=i/60;
+  }
+  assert.ok(settledAt>.4&&settledAt<1.1,String(settledAt));
+  assert.ok(peakStep<.12);
+  assert.ok(peakBank>.15&&peakBank<.53,String(peakBank));
   assert.ok(Math.abs(angle(stable)-Math.PI/2)<.002);
   assert.ok(Math.abs(bank(stable))<.002);
-  const left=frame(0);
-  assert.ok(angle(left)>.9&&bank(left)<-.02);
+  let left;
+  for(let i=0;i<14;i++)left=frame(0);
+  assert.ok(angle(left)>.2&&angle(left)<1.4&&bank(left)<-.02);
 
   controls.glanceMotion=false;
   const quiet=frame(-.4);
@@ -230,13 +246,18 @@ test('airborne humanoid eases heading changes on a radial frame and releases ban
   actor.position.z+=20;
   const afterJump=frame(.9);
   assert.ok(Math.abs(angle(afterJump)-.9)<.001&&Math.abs(bank(afterJump))<.001);
-  frame(Math.PI-.04,.5);
-  const across=frame(-Math.PI+.04);
-  assert.ok(angle(across)>Math.PI-.04&&bank(across)>0);
-  frame(0);
+  for(let i=0;i<90;i++)frame(Math.PI-.04);
+  // The short way across the seam, not a turn through the front.
+  let across;
+  for(let i=0;i<10;i++){
+    across=frame(-Math.PI+.04);
+    assert.ok(Math.abs(angle(across))>Math.PI-.05);
+  }
+  for(let i=0;i<5;i++)frame(0);
   Object.assign(controls,{grounded:true,flying:false});
-  const ground=frame(0);
-  assert.ok(Math.abs(angle(ground))<.001&&Math.abs(bank(ground))<.001);
+  let ground;
+  for(let i=0;i<55;i++)ground=frame(0);
+  assert.ok(Math.abs(angle(ground))<.001&&Math.abs(bank(ground))<.01);
   release();
   assert.ok(root.quaternion.angleTo(stock)<.001);
 });
@@ -288,7 +309,8 @@ test('standing idle animates supported humanoids and releases without moving eit
     assert.ok(peak>.045,file);
     actor.animationState=1;
     frames(24,.03);
-    assert.ok(head.quaternion.equals(stockHead));
+    // Idle is gone. The remaining trunk accent belongs to the acceleration.
+    assert.ok(head.quaternion.angleTo(stockHead)<.12);
     actor.animationState=0;
     frames(100);
     assert.ok(!head.quaternion.equals(stockHead));

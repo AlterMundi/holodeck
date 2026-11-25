@@ -24,3 +24,18 @@ blender -b --python-exit-code 19 --python navegante.py -- OUTPUT CERAMIC RELIEF 
 
 Validate the exported asset and update its registry digest together. Preserve
 the unkeyed `anchor-mouth` speech joint and the existing NLA clip names.
+
+## Motion
+
+`motion.py` holds every pose and its timing. It replaces the NLA tracks of the
+packed scene and exports the GLB without the private texture inputs:
+
+```sh
+blender -b --python-exit-code 19 --python motion.py -- OUTPUT
+```
+
+`navegante.py` imports the same module. Base clips key all seventeen body
+joints. The gestures (`brace`, `scan`, `sway`, `tinker`, `chirp` and the nine
+cues except `calm`) start and end at neutral, so the runtime can layer them.
+The runtime solves ground contact over these clips. See
+[character motion](../../docs/character-motion.md).

@@ -10,6 +10,9 @@ from pathlib import Path
 import bpy
 from mathutils import Vector
 
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+import motion
+
 args = sys.argv[sys.argv.index("--") + 1:]
 if len(args) != 4:
     raise SystemExit("Use -- OUTPUT CERAMIC RELIEF CAPE")
@@ -379,130 +382,16 @@ skin.parent=rig
 modifier=skin.modifiers.new("Rigid weighted joints","ARMATURE")
 modifier.object=rig
 
-poses={
-    "calm":{"chest":(1,0,0),"head":(-2,-3,0),"cape":(2,1,0)},
-    "curious":{"head":(-13,14,0),"antenna":(-11,0,2),"chest":(-5,0,0)},
-    "joy":{"head":(8,0,0),"arm-L":(2,-24,0),"arm-R":(2,24,0),"elbow-L":(25,0,0),"elbow-R":(25,0,0)},
-    "sad":{"chest":(-12,0,0),"head":(-14,-7,0),"antenna":(17,0,0)},
-    "anger":{"head":(-9,0,0),"eye-L":(0,-16,0),"eye-R":(0,16,0),"arm-L":(-12,-8,0),"arm-R":(-12,8,0)},
-    "uncertain":{"head":(10,-12,0),"arm-L":(-5,-18,0),"elbow-L":(40,0,0)},
-    "focus":{"chest":(-8,0,0),"head":(-7,0,0),"eye-L":(0,8,0),"eye-R":(0,-8,0)},
-    "welcome":{"head":(4,-5,0),"arm-L":(0,-33,0),"arm-R":(0,34,0),"elbow-R":(30,0,0)},
-    "sleep":{"chest":(-17,0,0),"head":(-19,8,0),"cape":(3,-4,0)},
-}
+motion.author(rig)
 
-
-def clip(name, frames):
-    action=bpy.data.actions.new(name)
-    rig.animation_data_create()
-    rig.animation_data.action=action
-    names=sorted({bone for _,pose,_ in frames for bone in pose})
-    for frame,pose,bob in frames:
-        for bone in names:
-            current=rig.pose.bones[bone]
-            current.rotation_mode="XYZ"
-            current.rotation_euler=tuple(math.radians(v) for v in pose.get(bone,(0,0,0)))
-            current.keyframe_insert(data_path="rotation_euler",frame=frame-1,group=bone)
-        hips=rig.pose.bones["hips"]
-        hips.location.z=bob
-        hips.keyframe_insert(data_path="location",frame=frame-1,group="hips")
-    rig.animation_data.action=None
-    track=rig.animation_data.nla_tracks.new()
-    track.name=name
-    track.strips.new(name,0,action)
-    track.mute=True
-
-
-def stride(t, running=False):
-    swing=math.cos(2*math.pi*t)
-    stance=.44 if running else .56
-    distance=.68 if running else .396
-    toe=distance*stance/2
-    airborne=running and (t%.5)>stance
-    bounce=.025*math.sin(math.pi*((t%.5)-stance)/(.5-stance)) if airborne else 0
-    bob=(-.054 if running else -.026)+(.014 if running else .008)*(1-swing*swing)+bounce
-    shoulder=28 if running else 19
-    lean=9 if running else 2
-    pose={"arm-L":(shoulder*swing,0,0),"arm-R":(-shoulder*swing,0,0),
-          "elbow-L":(-18-8*swing if running else -8-4*swing,0,0),
-          "elbow-R":(-18+8*swing if running else -8+4*swing,0,0),
-          "chest":(lean,2*swing,5*swing if running else 3*swing),
-          "cape":(11+6*swing*swing if running else 3+3*swing*swing,3*swing,0)}
-    for direction,suffix,offset in (("left","L",0),("right","R",.5)):
-        phase=(t+offset)%1
-        if phase<stance:
-            y=-toe+distance*phase
-            lift=0
-        else:
-            arc=(phase-stance)/(1-stance)
-            y=toe*math.cos(math.pi*arc)
-            lift=(.112 if running else .065)*math.sin(math.pi*arc)**2
-        hip,shin,ankle=[joints[name][0] for name in ("leg-"+direction,"shin-"+direction,"foot-"+suffix)]
-        upper=(shin[1]-hip[1],hip[2]-shin[2])
-        lower=(ankle[1]-shin[1],shin[2]-ankle[2])
-        a,b=math.hypot(*upper),math.hypot(*lower)
-        down=hip[2]-ankle[2]+bob-lift
-        length=min(a+b-1e-6,math.hypot(y,down))
-        knee=math.acos((length*length-a*a-b*b)/(2*a*b))
-        thigh=math.atan2(y,down)-math.atan2(b*math.sin(knee),a+b*math.cos(knee))
-        thigh_delta=thigh-math.atan2(*upper)
-        knee_delta=knee-math.atan2(*lower)+math.atan2(*upper)
-        pose["leg-"+direction]=(math.degrees(thigh_delta),0,0)
-        pose["shin-"+direction]=(math.degrees(knee_delta),0,0)
-        pose["foot-"+suffix]=(-math.degrees(thigh_delta+knee_delta),0,0)
-    return pose,bob
-for name,pose in poses.items():
-    clip(name,[(1,{},0),(25,pose,.012 if name in ("calm","joy") else 0),(50,{},0)])
-clip("walk",[(frame+1,*stride(frame/28)) for frame in range(0,29,2)])
-clip("run",[(frame+1,*stride(frame/24,True)) for frame in range(0,25,2)])
-
-def flight_pose(t, moving):
-    breath=math.sin(2*math.pi*t)
-    lean=1 if moving else 0
-    return {
-        "chest":(5+11*lean,0,1.3*breath),
-        "head":(-5-8*lean,2*breath,0),
-        "arm-L":(-9-13*lean+2*breath,-13-5*lean,0),
-        "arm-R":(-9-13*lean-2*breath,13+5*lean,0),
-        "elbow-L":(-15+2*breath,0,0),"elbow-R":(-15-2*breath,0,0),
-        "leg-left":(-8-16*lean+3*breath,0,0),
-        "leg-right":(-8-16*lean-3*breath,0,0),
-        "shin-left":(19+9*lean-2*breath,0,0),
-        "shin-right":(19+9*lean+2*breath,0,0),
-        "foot-L":(-10-6*lean,0,0),"foot-R":(-10-6*lean,0,0),
-        "cape":(4+12*lean+2*breath,2*breath,0),"antenna":(-4*lean+3*breath,0,0),
-    }, .008*breath
-
-for name,moving in (("hover",False),("glide",True)):
-    clip(name,[(1+i*8,*flight_pose(i/8,moving)) for i in range(9)])
-
-# The motion controller owns altitude. These clips move only the skeleton.
-flight_rest, _ = flight_pose(0,False)
-stance = {bone:(0,0,0) for bone in flight_rest}
-brace = {**stance,"chest":(6,0,0),"head":(-4,0,0),
-         "leg-left":(-13,0,0),"leg-right":(-13,0,0),
-         "shin-left":(29,0,0),"shin-right":(29,0,0),
-         "foot-L":(-16,0,0),"foot-R":(-16,0,0),
-         "arm-L":(-10,13,0),"arm-R":(-10,-13,0),"cape":(8,0,0)}
-clip("lift",[(1,stance,0),(5,brace,-.018),(14,flight_rest,.004)])
-clip("landing",[(1,flight_rest,0),(7,brace,-.021),(16,stance,0)])
-
-for bone in rig.pose.bones:
-    bone.rotation_euler=(0,0,0)
-    bone.location=(0,0,0)
-
-scene.render.fps=30
+scene.render.fps=motion.FPS
 scene.frame_set(1)
 bpy.ops.object.select_all(action="DESELECT")
 rig.select_set(True)
 skin.select_set(True)
 bpy.context.view_layer.objects.active=rig
 bpy.ops.wm.save_as_mainfile(filepath=str(out/"navegante.blend"))
-for track in rig.animation_data.nla_tracks:track.mute=False
-bpy.ops.export_scene.gltf(filepath=str(out/"navegante.glb"),export_format="GLB",use_selection=True,
-    export_animation_mode="NLA_TRACKS",export_animations=True,export_materials="EXPORT",
-    export_texcoords=True,export_meshopt_compression_enable=True,
-    export_meshopt_extension="EXT_meshopt_compression",export_optimize_animation_keep_anim_armature=False)
+motion.export(rig,out/"navegante.glb")
 
 # Studio photographs are local qualification, separate from the game mesh.
 for track in rig.animation_data.nla_tracks:track.mute=True

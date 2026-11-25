@@ -18,8 +18,9 @@ export function bindHumanoidMicrophoneMouth(mesh){
   return {
     restore,
     reset(){restore();aperture=0;},
-    apply(level,step){
-      const target=.78*level;
+    // A miniature face needs a wider aperture to read. The shape stays bounded.
+    apply(level,step,gain=1){
+      const target=Math.min(1,.78*level*gain);
       aperture+=(target-aperture)*(1-Math.exp(-step/(target>aperture?.045:.085)));
       if(aperture<.001){aperture=0;return;}
       for(const face of targets){
