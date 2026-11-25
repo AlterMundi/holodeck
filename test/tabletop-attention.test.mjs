@@ -132,19 +132,19 @@ test('the companion holds on its side when the follow path cuts through the focu
 });
 
 test('a shared cue uses the receiving transform and vanishes with its sender or revision',async()=>{
-  const {BoxGeometry,Group,Mesh,MeshStandardMaterial,Scene}=await import('three');
   const {TabletopPointView}=await import('../src/tabletop-point-view.mjs');
   const {tabletopPointBroadcast,tabletopPointDuration}=await import('../src/tabletop-pointing.mjs');
   const signal={connection:4,sequence:1,revision:2,space:'matter',reference:{
     resource:'a'.repeat(32),version:'b'.repeat(64),scene:'bench',sceneVersion:'c'.repeat(64),part:'bow',
   }};
-  const scene=new Scene(),rotated=new Group(),mesh=new Mesh(new BoxGeometry(2,1,1),new MeshStandardMaterial());
+  const scene=new Scene(),rotated=new Group(),mesh=new Mesh(new BoxGeometry(2,1,1),new MeshBasicMaterial());
   mesh.position.set(2,0,0);
   mesh.geometry.computeBoundingBox();
   rotated.rotation.y=Math.PI/2;
   scene.add(rotated);rotated.add(mesh);
   const world={isConnected:()=>true,getConnectionId:()=>7};
-  const table={shared:{revision:2},pointingTarget:reference=>reference.part==='bow'?mesh:null};
+  let model=mesh;
+  const table={shared:{revision:2},pointingTarget:reference=>reference.part==='bow'?model:null};
   let notices=0;
   const view=new TabletopPointView(scene,()=>notices++);
   const players=new Set([4]);
@@ -156,6 +156,18 @@ test('a shared cue uses the receiving transform and vanishes with its sender or 
     assert.equal(view.outline.visible,true);
     assert.ok(view.gazes.get(4).distanceTo(new Vector3(0,0,-2))<1e-6);
     assert.equal(notices,1);
+    mesh.material.clippingPlanes=[new Plane(new Vector3(0,-1,0),.1)];
+    update();
+    assert.equal(view.outline.box.max.y,.1);
+    assert.ok(Math.abs(view.gazes.get(4).y+.2)<1e-6);
+    mesh.material.clippingPlanes[0].constant=-.5;
+    update();
+    assert.equal(view.outline.visible,false);
+    assert.equal(view.gazes.size,0);
+    mesh.material.clippingPlanes=null;
+    model=null;update();
+    assert.equal(view.outline.visible,false);
+    model=mesh;
     mesh.visible=false;update();
     assert.equal(view.outline.visible,false);
     assert.equal(view.gazes.size,0);

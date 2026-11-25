@@ -93,6 +93,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
     id:house,owner,revision:1,parcel:'parcel-west-1',
     facade:{color:'#226655',title:'House',width:2,depth:1,height:2},
   }]});
+  let holdPointRecipient;
   const archived=[{resource:main,version:oldVersion,label:'Guitarra · Banco inicial'}];
   const sceneVersion='d'.repeat(64);
   const review=Buffer.from(JSON.stringify({scenes:[{id:'bench-scene',title:'Estudio',version:sceneVersion,units:'mm',
@@ -167,6 +168,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
       const [, ,resource,requestedVersion,file]=url.pathname.split('/');
       assert.notEqual(resource,foreign);
       if(hold)await hold();
+      if(headers.Cookie.endsWith('guest')&&file==='review-live.json')await holdPointRecipient?.();
       if(resource===main&&(revoked||requestedVersion===oldVersion&&historicalDenied))return new Response('',{status:404});
       if(file==='gallery.json')return new Response(review,{headers:{'X-Home-Version':requestedVersion}});
       return Response.json({schema:'dm.review-live/v1',gallery:'gallery.json',sha256:gallerySha256},
@@ -327,8 +329,19 @@ test('collection projects stay grouped and editions follow each visitor and thei
   assert.equal((await sendPoint(author,visiblePoint)).status,409,'a replay does not confirm a new gesture');
   assert.deepEqual(receiver.received,[{...visiblePoint,space:'matter'}]);
   assert.equal(await readEvent(),'event: refresh\ndata: {}\n\n');
-  assert.equal((await setOnTable(visitor,receiver.connection,false,2)).status,204);
+  let readingRecipient,releaseRecipient;
+  const recipientRead=new Promise(resolve=>{readingRecipient=resolve;});
+  const recipientHeld=new Promise(resolve=>{releaseRecipient=resolve;});
+  holdPointRecipient=()=>{readingRecipient();return recipientHeld;};
+  await new Promise(resolve=>setTimeout(resolve,1020));
+  const pointingWhileLeaving=sendPoint(author,signal(main,2,3));
+  try{
+    await recipientRead;
+    assert.equal((await setOnTable(visitor,receiver.connection,false,2)).status,204);
+  }finally{holdPointRecipient=null;releaseRecipient();}
+  assert.equal((await pointingWhileLeaving).status,204);
   assert.equal(await readEvent(),'event: tabletop\ndata: '+JSON.stringify([pointer.connection])+'\n\n');
+  assert.deepEqual(receiver.received,[{...visiblePoint,space:'matter'}]);
   assert.equal(runtime.room.sequence,beforePoint);
   assert.equal((await visitor.art(archivedThumbnail)).status,200);
   const speaker=await session('guest');
@@ -382,6 +395,19 @@ test('collection projects stay grouped and editions follow each visitor and thei
   assert.deepEqual((await (await visitor.catalog()).json()).worktable,{...table(3,main),version:oldVersion});
   assert.deepEqual(new RoomStore(join(stateDir,'collection-worktable')).load(),
     {room:'matter',revision:3,resource:null,edition:{resource:main,version:oldVersion}});
+  assert.equal(await readEvent(),'event: refresh\ndata: {}\n\n');
+  assert.equal(await readEvent(),'event: refresh\ndata: {}\n\n');
+  assert.equal((await setOnTable(visitor,receiver.connection,true,3)).status,204);
+  await readEvent(); // Tabletop roster, separate from edition changes.
+  const pinnedPoint=signal(main,3,4);
+  pinnedPoint.reference.version=oldVersion;
+  await new Promise(resolve=>setTimeout(resolve,1020));
+  assert.equal((await sendPoint(author,pinnedPoint)).status,204);
+  for(let attempt=0;attempt<20&&receiver.received.length<2;++attempt)
+    await new Promise(resolve=>setTimeout(resolve,10));
+  assert.deepEqual(receiver.received,[{...visiblePoint,space:'matter'},{...pinnedPoint,space:'matter'}]);
+  assert.equal((await setOnTable(visitor,receiver.connection,false,4)).status,204);
+  await readEvent();
   historicalDenied=true;
   const denied=await (await visitor.catalog()).json();
   assert.equal(denied.projects.length,1);
@@ -436,8 +462,6 @@ test('collection projects stay grouped and editions follow each visitor and thei
   finally{release();}
   assert.equal((await racing).status,404);
   assert.equal((await visitor.art(asset)).status,404);
-  assert.equal(await readEvent(),'event: refresh\ndata: {}\n\n');
-  assert.equal(await readEvent(),'event: refresh\ndata: {}\n\n');
   assert.equal(await readEvent(),'event: refresh\ndata: {}\n\n');
   assert.equal((await stream.read()).done,true);
   assert.equal((await visitor.events()).status,404);

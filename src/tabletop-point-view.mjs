@@ -7,7 +7,10 @@ export function pointingBounds(mesh,box){
   mesh.updateWorldMatrix(true,false);
   box.copy(mesh.geometry.boundingBox).applyMatrix4(mesh.matrixWorld);
   const section=mesh.material.clippingPlanes?.[0];
-  if(section)box.max.y=Math.min(box.max.y,section.constant);
+  if(section){
+    if(section.constant<=box.min.y)return null;
+    box.max.y=Math.min(box.max.y,section.constant);
+  }
   return box.isEmpty()?null:box;
 }
 
