@@ -2,6 +2,18 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `b2d88ca8c2c771c7b191dee6cfd8465c075351bd` pins Proyección
+`1a1e29a9ab37926b9d903e94413c660d5f8c3543` and adopts its scoped
+choice dismissal. The archive
+`152d7b281a3bcaa156afe5be09c6c2dd4878c330e15c965e670333f010dace98`
+matched all 87 payloads. Desktop Chromium closed the tabletop flight
+menu with Escape and held frame 110, including a repeated keydown.
+A later Escape left only the table. The short-landscape web projection
+closed its overlay with Escape at frame 78, reopened it and moved to
+takeoff at frame 22 while the separate visitor stayed at 78. The exact
+pin passed all 20 spatial HUD tests, and Holodeck passed 412 tests with
+two skips. The protected-world trial remains open.
+
 Source `47be59ad60f3f08c89b365d6c91ee68bec79a899` separates a confirmed
 outside visitor from an unconfirmed room check. Its archive
 `4e09b14986d52945dceb31fa412b21f69ccc9a528cbd9e4bc57af7d9eaa63041`
