@@ -93,6 +93,51 @@ lightweight settings and development identities. Production remains on
 the prior release. Physical frame time, daylight and sunset quality, and
 independently authenticated visitors are open.
 
+## Physical GPU screening for the tabletop release
+
+The candidate `c20735c` and the immediately preceding tabletop candidate
+`791d57c` ran in Google Chrome 156 on Legion's RTX 2060 (driver 615.71.09).
+The actual WebGL context reported NVIDIA through ANGLE/OpenGL for every
+recorded run. A dedicated Chrome profile and loopback-only fixture sessions
+kept the production service and the operator's browser outside the test.
+Fable High and Opus 5.5 High reviewed the method. Based on the review, the
+sun date is fixed without replacing the browser frame clock. WebGL2 GPU
+timers are drained without waiting synchronously and discarded on disjoint.
+The test used the actual toroidal spawn and the pale specimen with the
+worktable section at 92%, using the same camera setup and matching final
+camera positions. The fixture did not record orientation and projection
+matrices independently. The test exercised the packaged application, including MML and
+the actual collection worker, with fixture identities.
+
+The dusk run selects 22:40 UTC on November 25, the sun near the horizon in
+the Argentine reference clock. Metrics summarize one short matched run
+per arm. GPU median/p95 use 150 complete queries per arm and scene, with
+no skipped, disjoint or undrained queries. Frame interval is measured
+between consecutive composer calls. This is a release screen on one
+desktop adapter, without fixed GPU clocks, independent replication or a
+mobile-hardware result.
+
+| Profile and scene | Render buffer | GPU median/p95 ms, baseline → candidate | Frame interval median/p95 ms, baseline → candidate | Draw calls |
+| --- | --- | --- | --- | --- |
+| Normal, exterior | 1200 × 740 | 2.46/3.59 → 2.61/2.67 | 16.60/20.90 → 16.60/20.50 | 56 → 56 |
+| Normal, tabletop | 1200 × 740 | 2.82/5.77 → 3.18/6.24 | 16.60/20.90 → 16.60/20.30 | 61 → 61 |
+| Lightweight, exterior | 660 × 407 | 1.36/1.40 → 1.36/2.13 | 16.70/20.10 → 16.60/20.00 | 42 → 42 |
+| Lightweight, tabletop | 660 × 407 | 12.69/13.86 → 2.57/2.60 | 16.70/20.40 → 16.60/20.00 | 43 → 43 |
+
+The table's median GPU time rose 0.36 ms at the matched buffer. Frame
+interval medians held near one 60 Hz frame in this test. Both lightweight
+arms verified dynamic shadows were off, so the anomalous tabletop GPU
+difference is unresolved and cannot be attributed to PCF. The first daytime
+set also produced both normal captures and completed the two scenes,
+though the exterior changed adaptive resolution during the measurement and
+that set used an earlier clock shim. Treat it as visual and diagnostic
+evidence. The daytime and dusk views both show a rectangular discontinuity
+in the sky near the horizon in both builds. Isolate its rendering source
+before treating the exterior art as qualified. This also leaves the complete
+camera route and two genuinely signed-in visitors outstanding. The second
+browser job exited cleanly and its profile and tunnel were retired. The
+protected production version stays at the existing selection.
+
 ## Multiscale materials and lighting
 
 [Holodeck #20](https://github.com/AlterMundi/holodeck/issues/20) tracks the receiving work. Modern engines layer detail maps and world-aligned sampling, and recommend baking expensive procedural graphs when the result permits it. Randomized tiling is applicable to isotropic signals whose contrast needs to survive a blend. View-dependent stochastic filtering has a different purpose and requires temporal stability the lightweight client cannot assume.
