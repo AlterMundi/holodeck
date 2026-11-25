@@ -63,6 +63,15 @@ test('a nearby bench mounts one owner panel only on open and discards it when ac
   controls.update(objects,shaper.position);
   assert.equal(link.href,'/harmonic_lab/?service=body&view=instrumento');
   assert.deepEqual(stage.children,[]);
+  assert.equal(controls.nearbyAction().label,'Abrir Shaper');
+  const shortcut={code:'KeyE',composedPath:()=>[]};
+  assert.equal(controls.useNearby(shortcut,objects,spatial.position),false);
+  assert.equal(controls.useNearby(shortcut,[],shaper.position),false);
+  assert.equal(controls.useNearby({...shortcut,repeat:true},objects,shaper.position),false);
+  assert.equal(controls.useNearby({...shortcut,composedPath:()=>[{matches:()=>true}]},objects,shaper.position),false);
+  assert.equal(controls.useNearby(shortcut,objects,shaper.position),true);
+  assert.equal(controls.nearbyAction(),null);
+  assert.equal(controls.reference().id,shaper.id);
 });
 
 test('station status uses only confirmed tool states and hides host identities',()=>{

@@ -360,6 +360,24 @@ installed release `1c78c31a2b82`. Reciprocal studio doors resolved. The room
 rule admitted one configured human guest and the house owner's daimon
 identity. The copy omitted Home sign-in. The protected release still needs
 selection of the candidate and a two-session receiving trial.
+## November 25 world labels and E at Harmonic Lab worktops
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `9bfd9248797b`
+from `5e63550`. Each available Harmonic Lab worktop uses the shared
+world-positioned label. E opens the existing panel for the current station.
+Doors and the Materializer retain their existing shortcut priority. The
+label hides during the panel and respects scene depth. The compact
+desktop layout places the existing station controls above the label area.
+
+The exact RTX 2060 and Pi 5 fixtures opened all four workstation panels
+with E, typed E into a focused text field without opening one, returned
+to the foyer and verified denial of the departed room art. The classic
+interior path was also checked for keyboard opening and closing before
+the compact native HUD adjustment. The suite passed 411 tests with two
+skips. Only the browser payload changed. Receiving matched all 86 files,
+the existing permissions and configuration, and world sequence 433.
+Immediate rollback is `edb3654520af`.
+
 ## November 25 Shaper worktop and Weaver Instrumento route
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `edb3654520af`

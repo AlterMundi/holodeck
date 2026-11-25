@@ -67,17 +67,19 @@ export class BeaconHud{
     this.syncSurface(beaconViewerId,'viewerGroup',viewerComponents,identity&&opened&&native?identity:null);
   }
 
+  openNearby(){
+    this.restoreStation=true;
+    this.onOpen();
+    this.owner.open({native:this.canOpenNative()});
+  }
+
   activate({surfaceId,name,context}){
     const {current,native,opened}=this.owner;
     if(!current||context?.station!==current.id||context?.revision!==current.revision||
         context?.generation!==this.generation||this.current!==current)return;
     if(surfaceId===beaconStationId&&this.stationPresented&&!opened){
       if(name==='check'&&!this.owner.statusButton.disabled)void this.owner.checkStatus();
-      else if(name==='open'){
-        this.restoreStation=true;
-        this.onOpen();
-        this.owner.open({native:this.canOpenNative()});
-      }
+      else if(name==='open')this.openNearby();
     }else if(surfaceId===beaconViewerId&&this.viewerPresented&&opened&&native){
       if(name==='close')this.owner.close();
       else if(name==='external')this.owner.external.click();

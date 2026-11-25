@@ -189,6 +189,21 @@ export class BeaconControls{
     this.link.textContent='Abrir '+next.title;
   }
 
+  nearbyAction(){
+    if(!this.current||this.opened)return null;
+    const {position:{x,y,z},title}=this.current;
+    return {anchor:{x,y:y+1.90,z},label:'Abrir '+title,key:'E'};
+  }
+
+  useNearby(event,objects,position,open=()=>this.open()){
+    if(event.code!=='KeyE'||!this.current||this.opened||event.defaultPrevented||event.repeat||event.isComposing||
+      event.altKey||event.ctrlKey||event.metaKey||
+      event.composedPath().some(target=>target.matches?.('input,textarea,button,a,summary,select,[contenteditable]'))||
+      nearbyBeaconControl(objects,position)!==this.current)return false;
+    open();
+    return this.opened;
+  }
+
   reference(){
     if(this.current&&this.last===this.current)
       return {id:this.current.id,revision:this.current.revision};
