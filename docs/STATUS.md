@@ -105,12 +105,35 @@ The loopback world recovered after one initial socket timeout.
 Proyección `3d7bdf0ef93dd349b07e35da673b423294c97f3f` passed 721 tests,
 and Holodeck passed 405 with two optional skips.
 
-The protected world serves `b4031531fdfd`. The candidate booted on a
+Protected release `b4031531fdfd` supplied the baseline for an earlier layout check. The candidate booted on a
 temporary copy of the selected house, Atelier and active-space checkpoints.
 The reciprocal studio doors resolved and the room rule admitted one
 configured human guest and the house owner's daimon identity. This check
 used the copied layout and omitted Home sign-in. Holodeck's release
 selection and the protected two-session trial remain open.
+
+## November 25 Atelier interaction and portrait controls
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `1c78c31a2b82` from `2678e38`. The foyer is clear of its two
+interior piers. Its reciprocal doors face visitors into each destination,
+and E reaches the Matter worktable and the return doorway from desktop
+world focus with Conversation open. The companion checks furniture,
+keeps a grounded target during jumps, follows an indoor sprint and
+uses a short light transfer when it falls behind or stalls.
+The portrait touch HUD uses five named icons. The unrecognized-object
+notice expires after four seconds.
+
+The RTX 2060 fixture confirmed the Matter table and reciprocal door with
+E, preserved the Conversation draft, closed Conversation from the same
+launcher, showed a forced catch-up effect, and checked separation at
+the Harmonic Lab stair arrival. The Pi 5 touch fixture confirmed the
+portrait dock, minimap activation and transient notice before the final
+landing-only adjustment. The final source passed 407 tests with two
+skipped. Protected readback matched all 86 files, the earlier run, the existing
+App and audience, unchanged configuration and the same sequence 431.
+Immediate rollback is `b4031531fdfd`. Physical Redmi acceptance remains open.
+Seat occupancy and poses remain in [seating #28](https://github.com/AlterMundi/holodeck/issues/28).
 
 ## November 25 Atelier return thresholds
 

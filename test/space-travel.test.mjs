@@ -19,6 +19,9 @@ test('an interior crossing uses the authorized return passage in the destination
   const from={id:'gallery'};
   const next={id:'tower',exits:[{to:'workshop',door:{x:4}},{to:'gallery',door}]};
   assert.deepEqual(arrivalDoor(from,next),door);
+  assert.deepEqual(arrivalDoor(from,{...next,exits:[{to:'gallery',kind:'door',door}]}),{...door,yaw:270});
+  assert.deepEqual(arrivalDoor(from,{...next,exits:[{to:'gallery',kind:'door',door:{...door,yaw:180}}]}),
+    {...door,yaw:0});
   assert.equal(arrivalDoor({id:'unlinked'},next),null);
 });
 

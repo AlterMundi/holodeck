@@ -33,6 +33,7 @@ BEACON_STAIRS = ('Descending stair tread', 'Stair rail', 'Stone wall at stair')
 FOYER_EXTERIOR = ('Stone plinth','Warm entrance floor','Entrance step','CASA DE COMPAII',
                   'Clerestory smoked glass','Vertical recessed window','Amber window sill',
                   'Right wing stone rib','Facade ')
+FOYER_REMOVED_PIERS = ('Stone vestibule pier', 'Vestibule lamp mask', 'Vestibule practical')
 GALLERY_BASE = ('Limestone gallery floor', 'Drafts stone base', 'Drafts oak top',
                 'Published stone base', 'Published oak top', 'Archive stone base', 'Archive oak top')
 
@@ -178,8 +179,9 @@ def foyer_joinery():
 def mesh_for(collection, origin, cell):
     scope = bpy.data.collections[collection]
     scope.hide_render = False
-    exclusions = {'beacon':BEACON_STAIRS, 'beacon-return':BEACON_STAIRS, 'foyer':FOYER_EXTERIOR,
-                  'foyer-gallery':FOYER_EXTERIOR,
+    exclusions = {'beacon':BEACON_STAIRS, 'beacon-return':BEACON_STAIRS,
+                  'foyer':FOYER_EXTERIOR + FOYER_REMOVED_PIERS,
+                  'foyer-gallery':FOYER_EXTERIOR + FOYER_REMOVED_PIERS,
                   'gallery':GALLERY_BASE,'gallery-sealed':GALLERY_BASE}.get(cell, ())
     objects = [obj for obj in scope.objects if not obj.name.startswith(exclusions)]
     select(objects)

@@ -26,11 +26,16 @@ export function arrivalDoor(from,next){
     // Keep the landing inside the threshold, looking into the room.
     return door?{x:door.x,y:door.y,z:door.z-.9,yaw:180}:null;
   }
-  return next.exits.find(exit=>exit.to===from.id)?.door??null;
+  const passage=next.exits.find(exit=>exit.to===from.id);
+  const door=passage?.door;
+  // The offer faces the doorway. Arrival uses the opposite heading so
+  // walking continues into the destination instead of toward the return.
+  return passage?.kind==='door'&&Number.isFinite(door?.yaw)?
+    {...door,yaw:(door.yaw+180)%360}:door??null;
 }
 
 export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving,revision,onNear,onAccessLost,onDoorDenied,
-  mapEnabled=true,manageShortcut=true}){
+  mapEnabled=true,manageShortcut=true,allowWithConversation=()=>false}){
   const travel=document.querySelector('#space-travel'),button=document.querySelector('#house-door');
   const inside=space.id!=='outside';
   const doors=inside
@@ -42,8 +47,9 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
   const map=inside&&mapEnabled?showRoomMap(travel,doors):null;
   let near=null,busy=false,suspended=false,nearRevision=0;
   const doorCovered=()=>travel.open||document.querySelector(
-    'dialog[open],.room-transition,.is-operating-matter,#world-entry:not([hidden]),#conversation-panel:not([hidden]),'+
-    '#creator:not([hidden]),#signal-editor:not([hidden]),#content-visit:not([hidden]):not(.is-walking)');
+    'dialog[open],.room-transition,.is-operating-matter,#world-entry:not([hidden]),'+
+    '#creator:not([hidden]),#signal-editor:not([hidden]),#content-visit:not([hidden]):not(.is-walking)')||
+    !allowWithConversation()&&document.querySelector('#conversation-panel:not([hidden])');
   async function move(destination,proximityRevision) {
     if(busy||suspended)return;
     busy=true;
@@ -123,10 +129,11 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
   button.onkeydown=buttonKey;
   button.onclick=clickDoor;
   const hotkey=event=>{
-    if(event.code!=='KeyE'||event.repeat||event.defaultPrevented||!doorOffer()||
+    if(event.code!=='KeyE'||event.repeat||event.isComposing||event.defaultPrevented||!doorOffer()||
        (!button.hasAttribute('data-native-door')&&!button.getClientRects().length)||
        event.altKey||event.ctrlKey||event.metaKey||
-       event.target instanceof Element&&event.target.closest('input,textarea,select,[contenteditable="true"]'))return;
+       event.composedPath().some(target=>target instanceof Element&&
+         target.matches('input,textarea,select,[contenteditable]:not([contenteditable="false"])')))return;
     event.preventDefault();
     followDoor(space.id,nearRevision);
     return true;

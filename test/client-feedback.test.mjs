@@ -14,6 +14,25 @@ test('confirmed transient feedback expires without clearing a newer error or unc
  notice.show('Otra confirmación.',{transient:true});const canceled=tasks.get(3);notice.clear();canceled();assert.equal(element.textContent,'');assert.equal(tasks.size,0);
 });
 
+test('a retry hint fades on its own deadline and leaves durable feedback in place',()=>{
+ const element={textContent:''},motion={matches:false};let now=10,finish;
+ const notice=new WorldNotice(element,{clock:()=>now,motion,
+   setTimeout:(fn,delay)=>{assert.equal(delay,4000);finish=fn;return 1;},clearTimeout:()=>{}});
+ notice.show('Todavía estoy comprobando el cambio.');
+ notice.show('Probá de nuevo.',{hint:true});
+ assert.equal(element.textContent,'Todavía estoy comprobando el cambio.');
+ assert.equal(finish,undefined);
+ notice.clear();
+ notice.show('Probá de nuevo.',{hint:true});
+ assert.equal(notice.opacity,1);
+ now=3890;
+ assert.equal(notice.opacity,.5);
+ motion.matches=true;
+ assert.equal(notice.opacity,1);
+ finish();
+ assert.equal(element.textContent,'');
+});
+
 test('selection names come from the current public node, distinguishing game and result without raw identifiers',()=>{
  const id='node-private-looking-id',state={nodes:{[id]:{title:'Taller en revisión'}}};
  assert.equal(selectionLabel(id,state),'el contenido «Taller en revisión»');

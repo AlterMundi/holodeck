@@ -43,8 +43,9 @@ export function wrapNotice(message,measure,maxWidth){
 }
 
 export class WorldStatusHud{
-  constructor({document,send,toggleSound,focusSound,hasSoundFocus,focusWorld}){
-    Object.assign(this,{send,toggleSound,focusSound,hasSoundFocus,focusWorld});
+  constructor({document,send,toggleSound,focusSound,hasSoundFocus,focusWorld,invalidate}){
+    Object.assign(this,{send,toggleSound,focusSound,hasSoundFocus,focusWorld,invalidate});
+    this.noticeMaterials=new WeakMap();
     this.headerAdapter=document.getElementById('hud');
     this.sound=this.headerAdapter.querySelector('#sound');
     this.title=this.headerAdapter.querySelector('h1');
@@ -83,7 +84,7 @@ export class WorldStatusHud{
     this.send('updateDataModel',{value},id);
   }
 
-  update({headerVisible,showExterior,noticeVisible,soundBlocked,width,height}){
+  update({headerVisible,showExterior,noticeVisible,soundBlocked,width,height,noticeOpacity=1}){
     this.showExterior=showExterior;
     this.soundBlocked=soundBlocked;
     const people=this.people.hidden?'':this.people.textContent;
@@ -119,6 +120,23 @@ export class WorldStatusHud{
       this.noticeComponents=notice(layout.panelWidth,layout.lines.length);
     }
     this.updateSurface(worldNoticeId,this.noticeComponents,layout.lines.length?{lines:layout.lines}:null,modelKey);
+    if(this.noticeGroup&&(noticeOpacity<1||this.noticeOpacity<1)){
+      this.noticeGroup.traverse(({material})=>{
+        if(!material)return;
+        if(!this.noticeMaterials.has(material))this.noticeMaterials.set(material,{
+          opacity:material.opacity,transparent:material.transparent,depthWrite:material.depthWrite});
+        const original=this.noticeMaterials.get(material);
+        const transparent=noticeOpacity<1||original.transparent;
+        material.opacity=original.opacity*noticeOpacity;
+        material.depthWrite=noticeOpacity===1&&original.depthWrite;
+        if(material.transparent!==transparent){
+          material.transparent=transparent;
+          material.needsUpdate=true;
+        }
+      });
+      this.invalidate?.();
+    }
+    this.noticeOpacity=noticeOpacity;
   }
 
   activate({name}){

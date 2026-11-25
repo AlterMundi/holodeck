@@ -1,12 +1,29 @@
-// Only explicitly confirmed success/navigation messages expire. Errors and
-// uncertain operations stay visible until another deliberate message replaces them.
+const hintDuration=4000,hintFade=240;
+
+// Errors and uncertain operations outlast a retry hint.
 export class WorldNotice {
- constructor(element,{setTimeout:schedule=(...args)=>globalThis.setTimeout(...args),clearTimeout:cancel=(...args)=>globalThis.clearTimeout(...args)}={}){
-  Object.assign(this,{element,schedule,cancel});this.timer=null;this.serial=0;
+ constructor(element,{setTimeout:schedule=(...args)=>globalThis.setTimeout(...args),clearTimeout:cancel=(...args)=>globalThis.clearTimeout(...args),
+   clock=Date.now,motion=globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')}={}){
+  Object.assign(this,{element,schedule,cancel,clock,motion});this.timer=null;this.serial=0;
  }
- clear(){this.serial++;if(this.timer!==null)this.cancel(this.timer);this.timer=null;this.element.textContent='';}
- show(text,{transient=false}={}){
+ get opacity(){
+  if(this.expires===undefined||this.motion?.matches)return 1;
+  return Math.max(0,Math.min(1,(this.expires-this.clock())/hintFade));
+ }
+ clear(){
+  this.serial++;if(this.timer!==null)this.cancel(this.timer);this.timer=null;this.expires=undefined;
+  this.animation?.cancel();this.animation=null;this.element.textContent='';
+ }
+ show(text,{transient=false,hint=false}={}){
+  if(hint&&this.element.textContent&&this.timer===null)return;
   this.clear();this.element.textContent=text;
-  if(transient){const serial=this.serial;this.timer=this.schedule(()=>{if(this.serial===serial){this.element.textContent='';this.timer=null;}},6000);}
+  if(!transient&&!hint)return;
+  if(hint){
+   this.expires=this.clock()+hintDuration;
+   if(!this.motion?.matches)this.animation=this.element.animate?.([{opacity:1},{opacity:0}],{
+     delay:hintDuration-hintFade,duration:hintFade,fill:'forwards'});
+  }
+  const serial=this.serial;
+  this.timer=this.schedule(()=>{if(this.serial===serial)this.clear();},hint?hintDuration:6000);
  }
 }

@@ -668,6 +668,26 @@ reduced motion, the unchanged desktop concurrent Conversation flow, mic
 permission granted/refused, recording interruption and upload retry without
 duplicate send.
 
+### Nearby interactions and repeatable panel launchers
+
+Use a consistent nearby interaction for authorized doors, worktables and
+seats. Doors are reciprocal by default. Preserve their existing passage
+permission and destination tracking. Land facing into the new room from its
+return threshold. When desktop Conversation is open, world focus can still
+use the door. Typing and touch Conversation retain input ownership.
+
+Use one action for the Matter table's visible control and E. Keep seat pose,
+clearance and occupancy tied to authored seat anchors. When a human sits,
+use a reachable free seat for the companion, with a clear adjacent floor
+pose when there is no place. Check sit, stand and room departure in a
+separate visitor's view. [Interaction and seating #28](https://github.com/AlterMundi/holodeck/issues/28).
+
+Pressing the same launcher again dismisses or minimizes its surface.
+Audit map, Conversation, Appearance, Video and Activity across the world
+and room previews. Retain focus, private drafts and confirmed device
+actions when hiding a surface. Keep the HUD ownership and regression
+tests in [#16](https://github.com/AlterMundi/holodeck/issues/16).
+
 ## One declarative world, individually styled
 
 Treat the shared semantic scene and its MML projection like a 3D DOM, with a
@@ -927,11 +947,12 @@ bytes, HTTPS readback and rollback. The independent art working tree stays
 outside the source used for release. See [current evidence](STATUS.md).
 
 Track the reported Legion and Redmi tab exits in
-[#27](https://github.com/AlterMundi/holodeck/issues/27). The later report
-locates one recurrence during flight. Diagnose foreground renderer/GL
-loss separately from background discard or WebView closure, and verify
-reopen from the last confirmed location before treating the report as
-resolved.
+[#27](https://github.com/AlterMundi/holodeck/issues/27). The participant
+identified Ctrl+W as the desktop trigger. The protected fullscreen
+control captures that chord with browser permission, while a regular
+Chromium tab reserves it. R remains the ordinary sprint modifier. The
+Redmi exit remains unexplained. Diagnose WebView and mobile lifecycle
+behavior and verify reopen from the last confirmed location.
 
 | Stage | Owning cards and dependencies | Exit evidence |
 | --- | --- | --- |

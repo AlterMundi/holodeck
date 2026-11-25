@@ -174,6 +174,7 @@ export class MatterWorktableHud{
         if(focus?.surfaceId===collectionHudId)return focus.instanceId;
       }});
     this.status=new WorldStatusHud({document,toggleSound,send:(type,content,id)=>this.send(type,content,id),
+      invalidate:this.layer.invalidate,
       focusSound:()=>this.hud.focusAccessibleControl(worldHeaderId,'sound'),
       focusWorld:()=>this.focusTool('map')||this.focusTool('talk'),
       hasSoundFocus:()=>this.ownsAccessibleInput(this.document.activeElement)&&this.hud.currentFocus()?.surfaceId===worldHeaderId});
@@ -343,6 +344,7 @@ export class MatterWorktableHud{
     this.syncToolbelt(this.toolsVisible);
     if(this.restoreEntryFocus)this.hud.focusAccessibleControl(surfaceId,this.table.firstControl??'project');
     else{this.canvas.tabIndex=-1;this.canvas.focus({preventScroll:true});}
+    return true;
   }
 
   leave(){
@@ -608,6 +610,13 @@ export class MatterWorktableHud{
     if(['KeyW','KeyA','KeyS','KeyD','Space','ShiftLeft','ShiftRight','AltLeft','AltRight','ControlLeft','ControlRight','KeyR'].includes(event.code))
       return false;
     return this.hud.handleKey(event,{surfaceId});
+  }
+
+  useNearbyTable(event){
+    if(this.mode!=='enter'||event.code!=='KeyE'||event.repeat||event.isComposing||
+      event.defaultPrevented||event.altKey||event.ctrlKey||event.metaKey||
+      event.composedPath().some(target=>target.matches?.('input,textarea,button,summary,select,[contenteditable]')))return false;
+    return this.enter();
   }
 
   usesCockpitDocks({width,height}){
