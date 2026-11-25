@@ -110,12 +110,42 @@ export function bindMatterHologram(manager,flight,tabletopPlayers=()=>[]){
   function restore(id){
     const {character,scale,appearance}=saved.get(id);
     character.scale.copy(scale);
-    for(const {mesh,source,materials,shadow} of appearance){
-      if(mesh.material===materials)mesh.material=source;
-      mesh.castShadow=shadow;
-      for(const material of Array.isArray(materials)?materials:[materials])material.dispose();
-    }
+    for(const [mesh,entry] of appearance)restoreMesh(mesh,entry);
     saved.delete(id);
+  }
+
+  function restoreMesh(mesh,{source,materials,shadow}){
+    if(mesh.material===materials)mesh.material=source;
+    mesh.castShadow=shadow;
+    for(const material of Array.isArray(materials)?materials:[materials])material.dispose();
+  }
+
+  function syncMeshes({root,appearance}){
+    const current=new Set();
+    root.traverse(mesh=>{
+      if(!mesh.isMesh||!mesh.material)return;
+      current.add(mesh);
+      const previous=appearance.get(mesh);
+      if(mesh.material===previous?.materials)return;
+      if(previous)restoreMesh(mesh,previous);
+      const source=mesh.material;
+      const translucent=material=>{
+        const clone=new MeshStandardMaterial().copy(material);
+        clone.transparent=true;
+        clone.opacity*=.55;
+        clone.depthWrite=false;
+        return clone;
+      };
+      const materials=Array.isArray(source)?source.map(translucent):translucent(source);
+      appearance.set(mesh,{source,materials,shadow:mesh.castShadow});
+      mesh.material=materials;
+      mesh.castShadow=false;
+    });
+    for(const [mesh,entry] of appearance){
+      if(current.has(mesh))continue;
+      restoreMesh(mesh,entry);
+      appearance.delete(mesh);
+    }
   }
 
   function draw(state,...args){
@@ -127,29 +157,22 @@ export function bindMatterHologram(manager,flight,tabletopPlayers=()=>[]){
       const loaded=manager.loadedCharacters.get(id)?.character;
       if(!players.has(id)||loaded!==character||loaded.getMesh()!==root)restore(id);
     }
+    const now=performance.now();
     for(const id of players){
-      if(saved.has(id))continue;
-      const character=manager.loadedCharacters.get(id)?.character;
-      const root=character?.getMesh();
-      if(!root)continue;
-      const appearance=[];
-      saved.set(id,{character,root,appearance,scale:character.scale.clone()});
-      character.scale.multiplyScalar(matterAvatarScale);
-      root.traverse(mesh=>{
-        if(!mesh.isMesh||!mesh.material)return;
-        const source=mesh.material;
-        const translucent=material=>{
-          const clone=new MeshStandardMaterial().copy(material);
-          clone.transparent=true;
-          clone.opacity*=.55;
-          clone.depthWrite=false;
-          return clone;
-        };
-        const materials=Array.isArray(source)?source.map(translucent):translucent(source);
-        appearance.push({mesh,source,materials,shadow:mesh.castShadow});
-        mesh.material=materials;
-        mesh.castShadow=false;
-      });
+      let entry=saved.get(id);
+      if(!entry){
+        const character=manager.loadedCharacters.get(id)?.character;
+        const root=character?.getMesh();
+        if(!root)continue;
+        entry={character,root,appearance:new Map(),scale:character.scale.clone(),nextScan:now};
+        saved.set(id,entry);
+        character.scale.multiplyScalar(matterAvatarScale);
+      }
+      // The SDK can attach or replace a model after admitting its empty root.
+      if(now>=entry.nextScan){
+        syncMeshes(entry);
+        entry.nextScan=now+125;
+      }
     }
     return result;
   }
