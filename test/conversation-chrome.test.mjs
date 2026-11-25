@@ -13,7 +13,7 @@ function chrome(){
   const elements=Object.fromEntries([...panel.querySelectorAll('[id]')].map(el=>[el.id,el]));
   const references={history:{sequence:1},worktable:{revision:2,part:'pin'}};
   const instance=Object.assign(Object.create(ConversationChrome.prototype),{
-    panel,elements,readReferences:()=>references,invalidate(){},
+    panel,elements,lookPreview:{hit(){}},readReferences:()=>references,invalidate(){},
   });
   const clicks=[];
   for(const button of panel.querySelectorAll('button'))button.onclick=()=>clicks.push(button.id);

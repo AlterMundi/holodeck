@@ -106,7 +106,8 @@ export class ConversationDisplay {
       this.camera.right=viewport.width;this.camera.top=viewport.height;
       this.camera.updateProjectionMatrix();
     }
-    const look=panel.ownerDocument.body.dataset.roomLook;
+    const {hudLook,roomLook}=panel.ownerDocument.body.dataset;
+    const look=hudLook??roomLook;
     this.chrome.update(rect,viewport,this.layer.pixelRatio,look);
     const display=panel.querySelector('iframe');
     const screen=display?.getBoundingClientRect();
@@ -126,11 +127,13 @@ export class ConversationDisplay {
         this.plates.add(mesh);
         return mesh;
       };
+      const frame=hudLook?css.getPropertyValue('--control-fill').trim():look==='amber'?0x342322:0x12262d;
+      const glass=hudLook==='orbita'||hudLook==='umbral';
       this.back=[
         add(rect.width+14,rect.height+14,26,0x081117,.15),
         add(rect.width+8,rect.height+8,24,0x081117,.30),
         add(rect.width+2,rect.height+2,20,edge,.64),
-        add(rect.width,rect.height,19,look==='amber'?0x342322:0x12262d,1),
+        add(rect.width,rect.height,19,frame,glass?.89:1),
       ];
       this.rim=hasScreen?[
         add(screen.width+10,screen.height+10,16,edge,.16),

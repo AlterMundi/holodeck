@@ -1,3 +1,4 @@
+import {HudLookPreview} from './hud-look-preview.mjs';
 import {OrthographicCamera,Raycaster,Scene,Vector2} from 'three';
 import {WorldMapHud,worldMapId,worldBearingId} from './world-map-hud.mjs';
 import {DoorPromptHud,doorPromptId,doorPromptWidth} from './door-prompt-hud.mjs';
@@ -145,6 +146,7 @@ export class MatterWorktableHud{
       focus:name=>this.hud.focusAccessibleControl(activityHudId,name)});
     this.visit=new VisitHud({owner:visitor,send:(type,content,id)=>this.send(type,content,id),
       focus:(id,name)=>this.hud.focusAccessibleControl(id,name)});
+    this.lookPreview=new HudLookPreview({document,parent:this.scene,invalidate:this.layer.invalidate});
     this.hud=createSpatialHud({parent:this.scene,document,accessibilityRoot:this.a11y,
       placeSurface:(group,id)=>{
         if(id===toolbeltId)this.toolGroup=group;
@@ -270,7 +272,7 @@ export class MatterWorktableHud{
       follow:()=>table.followTable(),share:()=>table.publishSelection(revision,project),
       clear:()=>table.publishSelection(revision,null),discuss:()=>table.discussSelection(),
     };
-    if(Object.hasOwn(local,name))local[name]();
+    if(Object.hasOwn(local,name)){this.lookPreview.hit(surfaceId);local[name]();}
   }
 
   sync(){
@@ -292,6 +294,7 @@ export class MatterWorktableHud{
     if(!this.toolGroup||context?.scope!==this.toolScope||!toolNames.includes(name))return;
     const selected=this.toolState()[name];
     if(!selected?.visible||selected.disabled)return;
+    this.lookPreview.hit(toolbeltId);
     if(name==='appearance'||name==='video'){
       if(this.active)this.leave();
       this.settings.open(name);
@@ -335,10 +338,11 @@ export class MatterWorktableHud{
     const maxWidth=this.canvas.clientWidth-left-right-toolPadding*toolScale;
     this.document.body.toggleAttribute('data-native-settings-available',maxWidth>=150);
     if(maxWidth<150)return;
-    const layout=layoutTools(tools,Math.min(590,maxWidth));
+    const layout=layoutTools(tools,Math.min(this.lookPreview.look?640:590,maxWidth));
     if(!this.toolGroup)this.send('createSurface',{catalogId:spatialHudCatalog.id},toolbeltId);
     const layoutKey=JSON.stringify(layout);
     if(this.toolLayoutKey!==layoutKey){
+      if(this.toolLayoutKey)this.lookPreview.redock(toolbeltId);
       this.toolLayoutKey=layoutKey;
       this.toolLayout=layout;
       this.send('updateComponents',{components:toolComponents(layout)},toolbeltId);
@@ -365,7 +369,7 @@ export class MatterWorktableHud{
     if(!toolsVisible)this.settings.close(false);
     this.settings.sync();
     this.syncToolbelt(toolsVisible);
-    const look=this.document.body.dataset.roomLook;
+    const look=this.document.body.dataset.hudLook??this.document.body.dataset.roomLook;
     if(this.look!==look){
       this.look=look;
       this.layer.invalidate();
@@ -513,7 +517,19 @@ export class MatterWorktableHud{
     if(this.toolGroup){
       const {left,right,bottom}=this.toolInsets();
       const barTop=height-bottom-(this.toolLayout.height+.035)*toolScale;
-      this.place(this.toolGroup,'toolPlacement',viewport,(width+left-right)/2,barTop,toolScale);
+      let barCenter=(width+left-right)/2;
+      if(this.lookPreview.look&&additional&&width>=720&&!additional.panel.hidden){
+        const display=additional.panel.getBoundingClientRect(), canvasLeft=this.canvas.getBoundingClientRect().left;
+        const half=(this.toolLayout.width+.12)*toolScale/2;
+        if(display.bottom>barTop&&display.top<height-bottom){
+          const start=display.left-canvasLeft, end=display.right-canvasLeft;
+          if(barCenter+half>start&&barCenter-half<end){
+            if(start-left>=half*2+18)barCenter=(left+start-12)/2;
+            else if(width-right-end>=half*2+18)barCenter=(end+12+width-right)/2;
+          }
+        }
+      }
+      this.place(this.toolGroup,'toolPlacement',viewport,barCenter,barTop,toolScale);
       const movementScale=width<380?145:166;
       const movementTop=Math.max(34,barTop-.64*movementScale-14);
       if(this.movementGroups.size){
@@ -600,6 +616,9 @@ export class MatterWorktableHud{
       }else this.visit.present({painted:false});
     }
     this.hud.update();
+    this.lookPreview.draw(worldHeaderId,this.status.headerGroup,this.hud.getSurfaceBounds(worldHeaderId));
+    this.lookPreview.draw(toolbeltId,this.toolGroup,this.hud.getSurfaceBounds(toolbeltId));
+    this.lookPreview.draw(surfaceId,this.group,this.hud.getSurfaceBounds(surfaceId));
     this.windows.end();
     this.map.decoration();
     if(this.map.group)this.map.panel.dataset.nativeMap='';
@@ -644,6 +663,7 @@ export class MatterWorktableHud{
     this.settings.close(false);
     this.activity.present(false,false);
     this.visit.present({painted:false});
+    this.lookPreview.dispose();
     this.hud.dispose();
     this.a11y.remove();
     this.toolInset.remove();

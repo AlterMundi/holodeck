@@ -1,3 +1,4 @@
+import {HudLookPreview} from './hud-look-preview.mjs';
 import {Group,Mesh,MeshBasicMaterial,PlaneGeometry,Raycaster,Vector2,Vector3} from 'three';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
 
@@ -37,6 +38,7 @@ export class ConversationChrome{
       .map(id=>[id,panel.querySelector('#'+id)]));
     this.a11y=document.createElement('div');
     panel.prepend(this.a11y);
+    this.lookPreview=new HudLookPreview({document,parent,invalidate});
     this.hud=createSpatialHud({parent,document,accessibilityRoot:this.a11y,
       placeSurface:(group,id)=>this.groups.set(id,group),
       send:({action})=>{if(action)this.activate(action.name,action.context);},
@@ -87,6 +89,7 @@ export class ConversationChrome{
   activate(name,context){
     if(this.contextLost||this.panel.hidden||this.panel.dataset.displayMotion==='restore')return;
     const elements=this.elements,state=this.state();
+    this.lookPreview.hit(header);
     if(name==='minimize')elements['conversation-close'].click();
     const clear=name==='clearWorktable'&&state.worktable&&state.worktable===context?.source?'worktable-reference-clear':
       name==='clearHistory'&&state.history&&state.history===context?.source?'history-reference-clear':null;
@@ -171,12 +174,14 @@ export class ConversationChrome{
       this.invalidate();
     }
     this.hud.update();
+    this.lookPreview.draw(header,this.groups.get(header),this.hud.getSurfaceBounds(header));
     this.panel.dataset.hudChrome='';
   }
 
   dispose(){
     this.unbind();
     this.events.abort();
+    this.lookPreview.dispose();
     this.hud.dispose();
     this.mark.group.removeFromParent();
     this.mark.group.traverse(object=>object.geometry?.dispose());

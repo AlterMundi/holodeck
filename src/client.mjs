@@ -1,3 +1,4 @@
+import {selectedHudLook} from './hud-look-preview.mjs';
 import {ToroidalScenery} from './toroidal-scenery.mjs';
 import {ToroidalAtmosphere,toroidalViewDepth} from './toroidal-atmosphere.mjs';
 import {argentineSun} from './toroidal-solar-clock.mjs';
@@ -49,6 +50,9 @@ import {WorldHistory} from './world-history.mjs';
 import { snapshotMayApply, sameRequest } from './client-order.mjs';
 import { WorldNotice } from './client-feedback.mjs';
 import {arrivalDoor,doorLocation,readSpace,showSpaceLinks} from './space-travel.mjs';
+const reviewedHudLook=selectedHudLook(location.href);
+if(reviewedHudLook)document.body.dataset.hudLook=reviewedHudLook;
+
 const base=new URL('./',document.baseURI);
 const url=path=>new URL(path,base);
 const socket=path=>{const target=url(path);target.protocol=location.protocol==='https:'?'wss:':'ws:';return target.href;};

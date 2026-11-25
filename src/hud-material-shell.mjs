@@ -15,10 +15,10 @@ function outline(shape,width,height,radius){
   return shape;
 }
 
-export function createHudMaterialShell({frame, accent, radius=.038, thickness=.10}) {
+export function createHudMaterialShell({frame, accent, radius=.038, thickness=.10, roughness=.38, markers=[.062,.020]}) {
   const group=new Group();
   group.visible=false;
-  const housing=new MeshStandardMaterial({color:frame,roughness:.38,metalness:.28});
+  const housing=new MeshStandardMaterial({color:frame,roughness,metalness:.28});
   const edge=new MeshStandardMaterial({
     color:accent,roughness:.32,metalness:.28,emissive:accent,emissiveIntensity:.12,
   });
@@ -44,12 +44,12 @@ export function createHudMaterialShell({frame, accent, radius=.038, thickness=.1
   }
 
   return {group,
-    update(bounds,{effects=true,wave=0}={}){
+    update(bounds,{effects=true,wave=0,lightLevel=0}={}){
       group.visible=!!bounds;
       if(!bounds)return;
       spring.value=effects?wave*.047:0;
-      edge.emissiveIntensity=effects?.24:.025;
-      light.opacity=effects?.82:.43;
+      edge.emissiveIntensity=effects?.24+lightLevel:.025;
+      light.opacity=effects?Math.min(1,.76+lightLevel):.43;
       const width=bounds.right-bounds.left;
       const height=bounds.top-bounds.bottom;
       const key=`${width}:${height}`;
@@ -68,8 +68,8 @@ export function createHudMaterialShell({frame, accent, radius=.038, thickness=.1
       part(new ExtrudeGeometry(trim,{depth:.009,bevelEnabled:false,curveSegments:7}),edge,0,0,-.021);
       for(const direction of [-1,1]){
         const x=direction*(width/2-.093);
-        part(new PlaneGeometry(.062,.009),light,x,height/2+.015,.002);
-        part(new PlaneGeometry(.020,.009),light,x,-height/2-.014,.002);
+        part(new PlaneGeometry(markers[0],.009),light,x,height/2+.015,.002);
+        part(new PlaneGeometry(markers[1],.009),light,x,-height/2-.014,.002);
       }
     },
     dispose(){
