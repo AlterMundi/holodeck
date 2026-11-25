@@ -32,7 +32,9 @@ Use the [Space Engineers HUD](https://www.spaceengineersgame.com/space-engineers
 
 ## Qualification in progress
 
-Source `01c48c9` introduces a separate transparent Three.js framebuffer for Matter A2UI and positions the entry affordance above the current bottom strip. A clean-source candidate was 33,443,840 bytes, the same archived size as the receiving baseline. This slice still uses the pinned Proyección text textures and the legacy toolbelt. Measure glyph sharpness, frame-time cost and context recovery before selecting a release.
+Source `c82ebfb` introduces a separate transparent Three.js framebuffer for Matter A2UI and positions the entry affordance above the bottom strip and touch controls. The clean-source candidate `649618566fe5` was 33,443,840 bytes, the same archived size as the receiving baseline. The final source builds with 296 passing tests and two skips. Separate controlled desktop and touch sessions opened the table through actual pointer gestures at DPR 1.5 on this exact candidate. The test asserted a native-size HUD backing buffer while the world ran at reduced resolution. A broader on-host two-session trial did not complete, so this evidence covers individual entry and backing resolution only.
+
+The candidate still uses the pinned Proyección text textures and the previous toolbelt. Continue with density-aware lettering, the unified bottom layout and the native surface cutovers. Measure text, frame-time cost and context recovery. Complete desktop/Pi and multi-visitor checks on the selected package before switching the protected release.
 
 ## Native surface inventory
 
