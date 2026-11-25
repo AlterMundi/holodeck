@@ -618,7 +618,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       readTools,activateTool:id=>tools[id]?.click(),
       navigation:{panel:mapPanel,mapState:()=>updateDoor.navigation?.()??{
         scope:activeSpace.id,canExit:false,busy:false,map:null,
-      },selectDestination:id=>updateDoor.mapSelect?.(id),returnOutside:()=>updateDoor.mapExit?.()},
+      },selectDestination:id=>updateDoor.mapSelect?.(id),returnOutside:()=>updateDoor.mapExit?.(),
+      readBearing:()=>updateDoor.bearing?.(),dismissBearing:id=>updateDoor.mapDismiss?.(id),
+      bearingAdapter:document.getElementById('door-guidance')},
       canEnter:()=>!options.coreCameraManager.isFlyCameraOn()&&
         inspection.enter(cameraState(),client.getLocalCharacterState()?.position,collectionShelves.worktable.anchor),
       onActive:active=>{
@@ -852,8 +854,10 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         contentVisitor?.update(position);
         updateDoor(position,()=>options.coreCameraManager.getCameraState().rotation);
       }
-      matterHud.map.update(!entering&&!moving&&!needsSync&&drawWorld&&!opaqueVisit&&!toolModal&&!settingsOpen&&
-        document.getElementById('conversation-panel').hidden,paintedRaster);
+      const navigationVisible=!entering&&!moving&&!needsSync&&drawWorld&&!opaqueVisit&&!toolModal&&!settingsOpen&&
+        document.getElementById('conversation-panel').hidden;
+      matterHud.map.update(navigationVisible,paintedRaster);
+      matterHud.map.updateBearing(navigationVisible&&!matterHud.active);
       beaconControls.update(inside&&!moving&&remoteScene?activeSpace.objects:null,position);
       render(renderState);
       if(!inside&&drawWorld)geometryProbe.afterRender();

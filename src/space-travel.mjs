@@ -119,6 +119,8 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
     if(near)button.textContent=near.title;
   };
   update.navigation=()=>({scope:space.id,busy,canExit:!suspended&&links.length>0,map:suspended?null:map?.state()});
+  update.bearing=()=>suspended||travel.open?null:map?.bearing();
+  update.mapDismiss=id=>!suspended&&!travel.open&&map?.dismiss(id)===true;
   update.mapSelect=id=>{if(!suspended&&travel.open)map?.choose(id);};
   update.mapExit=()=>{if(!suspended&&travel.open&&links.length)void move(links[0]);};
   update.suspend=()=>{

@@ -1,5 +1,5 @@
 import {OrthographicCamera,Raycaster,Scene,Vector2} from 'three';
-import {WorldMapHud,worldMapId} from './world-map-hud.mjs';
+import {WorldMapHud,worldMapId,worldBearingId} from './world-map-hud.mjs';
 import {SettingsHud,settingsId} from './settings-hud.mjs';
 import {HudRenderLayer} from './hud-render-layer.mjs';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
@@ -97,6 +97,7 @@ export class MatterWorktableHud{
       placeSurface:(group,id)=>{
         if(id===toolbeltId)this.toolGroup=group;
         else if(id===worldMapId)this.map.group=group;
+        else if(id===worldBearingId)this.map.bearingGroup=group;
         else if(id===settingsId)this.settings.group=group;
         else this.group=group;
       },
@@ -104,6 +105,7 @@ export class MatterWorktableHud{
         if(!requested)return;
         if(requested.surfaceId===toolbeltId)this.handleTool(requested);
         else if(requested.surfaceId===worldMapId)this.map.activate(requested);
+        else if(requested.surfaceId===worldBearingId)this.map.activateBearing(requested);
         else if(requested.surfaceId===settingsId)this.settings.activate(requested);
         else this.handleAction(requested);
       },onTransportError:onError,
@@ -122,7 +124,7 @@ export class MatterWorktableHud{
   }
 
   rayForPointer(event){
-    if(!this.toolGroup&&!this.group&&!this.map.group&&!this.settings.group)return;
+    if(!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.settings.group)return;
     const rect=this.canvas.getBoundingClientRect();
     if(!rect.width||!rect.height)return;
     this.pointerPosition.set((event.clientX-rect.left)*2/rect.width-1,1-(event.clientY-rect.top)*2/rect.height);
@@ -374,9 +376,13 @@ export class MatterWorktableHud{
   }
 
   draw(additional){
-    if(!this.toolGroup&&!this.group&&!this.map.group&&!this.settings.group&&!additional){this.layer.hide();return;}
+    if(!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.settings.group&&!additional){
+      this.map.markBearingPresented(false);
+      this.layer.hide();
+      return;
+    }
     const {clientWidth:width,clientHeight:height}=this.canvas;
-    if(!width||!height)return;
+    if(!width||!height){this.map.markBearingPresented(false);return;}
     const viewport={width,height};
     const scale=Math.min(170,(width-24)/2.2,(height-124)/1.9);
     this.place(this.group,'workPlacement',viewport,width-14-scale*1.10,height<520?54:95,scale);
@@ -396,6 +402,11 @@ export class MatterWorktableHud{
       const scale=Math.min(250,(width-left-right)/1.28,Math.max(30,height-top-69)/1.82);
       this.place(this.map.group,'mapPlacement',viewport,width-right-scale*.64,top,scale);
     }
+    if(this.map.bearingGroup){
+      const {left,right}=this.toolInsets();
+      const scale=Math.min(170,(width-left-right)/2.12);
+      this.place(this.map.bearingGroup,'bearingPlacement',viewport,width-right-scale*1.06,width<700?116:74,scale);
+    }
     if(this.settings.group){
       const {left,right,bottom}=this.toolInsets();
       const top=height<500?54:92;
@@ -411,6 +422,7 @@ export class MatterWorktableHud{
       this.layer.invalidate();
     }
     this.layer.draw(this.scene,this.camera,additional);
+    this.map.markBearingPresented(Boolean(this.map.bearingGroup&&this.hud.getSurfaceBounds(worldBearingId)));
     if(this.toolGroup)this.document.body.dataset.a2uiToolbelt='';
   }
 

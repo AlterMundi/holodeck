@@ -175,6 +175,7 @@ body:has(#conversation-panel:not([hidden])) #house-door,body:has(#creator:not([h
 .room-map-destinations button{display:flex;align-items:center;gap:10px;padding:7px 10px;font-size:14px;line-height:1.25;overflow-wrap:anywhere}
 .room-map-destinations button::before{content:'';flex:0 0 10px;height:10px}
 .room-map-destinations button[aria-pressed=true]{border-color:var(--gold);background:#245153}
+#door-guidance[data-native-bearing],.is-operating-matter #door-guidance,body:has(dialog[open]) #door-guidance{display:none!important}
 #door-guidance{position:fixed;z-index:23;right:22px;top:74px;display:grid;grid-template-columns:28px minmax(0,1fr) 44px;align-items:center;gap:8px;max-width:min(264px,calc(100vw - 24px));padding-left:10px;border-radius:14px}
 .door-guide-arrow{color:var(--gold);font:24px/1 system-ui;text-align:center;rotate:var(--door-direction)}
 .door-guide-title{display:block;font-size:14px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

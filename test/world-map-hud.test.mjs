@@ -8,12 +8,14 @@ function fixture(){
     destinations:[{id:'0',title:'Taller'},{id:'1',title:'Vestíbulo'}],
   }};
   const effects=[];
+  let bearing={id:'0',label:'Taller',heading:0,distance:'3 m'};
   const hud=new WorldMapHud({panel,mapState:()=>state,selectDestination:id=>effects.push(id),
+    readBearing:()=>bearing,dismissBearing:id=>{effects.push(id);bearing=null;return true;},
     returnOutside:()=>effects.push('exit'),focusLauncher:()=>effects.push('focus'),
     send:type=>effects.push(type),invalidate(){}});
   hud.group={};hud.mapScope=state.scope;hud.scope=4;
   const action=(name,context={})=>hud.activate({name,context:{scope:4,...context}});
-  return {hud,panel,state,effects,action};
+  return {hud,panel,state,effects,action,setBearing:value=>{bearing=value;}};
 }
 
 test('map actions retain the exact drawn destination and reject an old room',()=>{
@@ -49,4 +51,26 @@ test('a raster paint is retained while a contextual map is suppressed',()=>{
   assert.equal(hud.texture.needsUpdate,true);
   assert.equal(hud.group,null);
   assert.equal(panel.open,true);
+});
+
+
+test('bearing dismissal is bound to the selection, room and presentation epoch',()=>{
+  const {hud,panel,state,effects,setBearing}=fixture();
+  panel.open=false;
+  hud.bearingGroup={};
+  hud.bearingSpace='west';
+  const dismiss=(destination='0',epoch=0)=>hud.activateBearing({name:'dismiss',context:{destination,epoch}});
+  dismiss('0',1);
+  panel.open=true;
+  dismiss();
+  panel.open=false;
+  state.scope='east';
+  dismiss();
+  state.scope='west';
+  setBearing({id:'1',label:'Vestíbulo',heading:0,distance:'4 m'});
+  dismiss();
+  assert.deepEqual(effects,[]);
+  dismiss('1');
+  assert.deepEqual(effects,['1','deleteSurface','focus']);
+  assert.equal(hud.bearingEpoch,1);
 });

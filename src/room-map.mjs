@@ -17,10 +17,11 @@ export function showRoomMap(travel,doors){
   const dismiss=guide.querySelector('button');
   const element=tag=>travel.ownerDocument.createElement(tag);
   const pins=[];
-  let selected=null,player,position,viewer;
+  let selected=null,player,position,viewer,bearingState=null;
 
   function select(pin){
     selected=pin;
+    bearingState=null;
     guide.hidden=true;
     guideTitle.textContent=pin?.door.mapTitle??'';
     guideDistance.textContent='';
@@ -53,11 +54,14 @@ export function showRoomMap(travel,doors){
       const bearing=Math.atan2(dx,-dz)-yaw;
       const hidden=travel.open||nearest?.to===selected.door.to||!known||!Number.isFinite(bearing);
       if(guide.hidden!==hidden)guide.hidden=hidden;
+      bearingState=null;
       if(!hidden){
-        const angle=Math.round(bearing*180/Math.PI/5)*5+'deg';
+        const degrees=Math.round(bearing*180/Math.PI/5)*5;
+        const angle=degrees+'deg';
         if(guide.style.getPropertyValue('--door-direction')!==angle)guide.style.setProperty('--door-direction',angle);
         const distance=Math.max(1,Math.round(Math.hypot(dx,dz)))+' m';
         if(guideDistance.textContent!==distance)guideDistance.textContent=distance;
+        bearingState={id:selected.id,label:selected.door.mapTitle,heading:degrees*Math.PI/180,distance};
       }
     }
     if(!travel.open)return;
@@ -105,7 +109,13 @@ export function showRoomMap(travel,doors){
   }
 
   show();
-  return {update,clear,
+  return {update,clear,guide,
+    bearing:()=>bearingState,
+    dismiss(id){
+      if(selected?.id!==id)return false;
+      select(null);
+      return true;
+    },
     state:()=>({viewer,selected:selected?.id??'',destinations:pins.map(pin=>({id:pin.id,title:pin.door.mapTitle})),
       marks:pins.map(pin=>({id:pin.id,kind:pin.marker.dataset.kind,x:pin.door.door.x,z:pin.door.door.z}))}),
     choose(id){

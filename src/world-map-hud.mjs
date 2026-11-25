@@ -1,7 +1,7 @@
 import {CanvasTexture,Mesh,MeshBasicMaterial,PlaneGeometry,SRGBColorSpace} from 'three';
 import {spatialHudCatalog} from 'proyeccion/spatial-hud';
 
-export const worldMapId='world-map';
+export const worldMapId='world-map',worldBearingId='world-bearing';
 const path=name=>({'@path':'/'+name});
 const button=(id,label,fields={},context)=>({id,component:'HudButton',label,
   action:{event:{name:id,...(context?{context}:{})}},...fields});
@@ -23,9 +23,16 @@ const components=[
   button('exit','Volver al exterior',{visible:path('canExit'),disabled:path('busy')},scope()),
 ];
 
+const bearingComponents=[
+  {id:'root',component:'HudPanel',label:'Salida marcada',width:2.06,children:['route']},
+  row('route',['bearing','dismiss']),
+  {id:'bearing',component:'HudBearing',label:path('label'),heading:path('heading'),distance:path('distance'),weight:3},
+  button('dismiss','Quitar',{weight:1},{epoch:path('epoch'),destination:path('id')}),
+];
+
 export class WorldMapHud{
-  constructor({send,panel,mapState,selectDestination,returnOutside,focusLauncher,invalidate}){
-    Object.assign(this,{send,panel,mapState,selectDestination,returnOutside,focusLauncher,invalidate,scope:0,index:0});
+  constructor({send,panel,mapState,selectDestination,returnOutside,readBearing,dismissBearing,bearingAdapter,focusLauncher,invalidate}){
+    Object.assign(this,{send,panel,mapState,selectDestination,returnOutside,readBearing,dismissBearing,bearingAdapter,focusLauncher,invalidate,scope:0,bearingEpoch:0,index:0});
   }
 
   message(type,content){
@@ -111,6 +118,42 @@ export class WorldMapHud{
     if(count>1&&(name==='previous'||name==='next'))this.index=(this.index+(name==='next'?1:-1)+count)%count;
   }
 
+  updateBearing(visible){
+    const target=visible&&!this.panel.open?this.readBearing():null;
+    const scope=target?this.mapState().scope:null;
+    if(this.bearingGroup&&(!target||scope!==this.bearingSpace)){
+      this.send('deleteSurface',{},worldBearingId);
+      this.bearingGroup=null;
+      this.bearingSignature=null;
+      this.bearingEpoch++;
+      this.markBearingPresented(false);
+    }
+    if(!target)return;
+    this.bearingSpace=scope;
+    if(!this.bearingGroup){
+      this.send('createSurface',{catalogId:spatialHudCatalog.id},worldBearingId);
+      this.send('updateComponents',{components:bearingComponents},worldBearingId);
+    }
+    const value={...target,epoch:this.bearingEpoch};
+    const signature=JSON.stringify(value);
+    if(signature===this.bearingSignature)return;
+    this.bearingSignature=signature;
+    this.send('updateDataModel',{value},worldBearingId);
+  }
+
+  markBearingPresented(visible){
+    this.bearingAdapter?.toggleAttribute('data-native-bearing',visible);
+  }
+
+  activateBearing({name,context}){
+    if(!this.bearingGroup||this.panel.open||name!=='dismiss'||context?.epoch!==this.bearingEpoch||
+      this.mapState().scope!==this.bearingSpace||this.readBearing()?.id!==context.destination)return;
+    if(this.dismissBearing(context.destination)){
+      this.updateBearing(false);
+      this.focusLauncher();
+    }
+  }
+
   close(){
     this.panel.open=false;
     this.reset();
@@ -119,6 +162,8 @@ export class WorldMapHud{
 
   dispose(){
     this.reset();
+    this.updateBearing(false);
+    this.markBearingPresented(false);
     this.texture?.dispose();
   }
 }
