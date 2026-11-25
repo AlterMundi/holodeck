@@ -374,6 +374,28 @@ qualifies pointer and touch at desktop, 390px and 320px. World movement and
 piece clipping remain native integration requirements. The mock controls
 change the review display. They do not submit actions to the shared world.
 The previous comparison remains in private version history.
+
+The next [HUD comparison](https://compaii.dmn.homes/view/59b2b33b3e7a4fdcbbefee7bb8d21868?display=work)
+uses the actual Proyección A2UI renderer with a Three.js instrument in each
+look. Órbita selects waypoints on a toroidal relief, Umbral brings different
+world previews to the foreground through translucent glass, Pulso toggles a
+sample's moving scan plane and visible structure, and Estratos changes the
+separation of a layered assembly. The art uses the existing Holodeck sky and
+room captures. A shared material shell follows the bounds of the native
+surface, with a beveled opening, lit rim and a damped deformation that keeps
+labels and hit targets fixed. Effects can be disabled and follow the browser's
+reduced motion setting initially. No fixture action writes shared world state.
+
+Fable High recommended a strong luminance hierarchy, limited overlap between
+translucent layers and tying spring motion to meaningful state. Opus 5.5 High
+reviewed the rendered frames and found occluded buttons and focus rings,
+undersized touch targets, muted scenery and a stale blending mode on Pulso.
+The revised check exercises real canvas hits, keyboard actions, keyboard
+adjustment of separation, reduced effects, and all four visual layouts in
+Chromium at desktop, 390 and 320 CSS pixels. Hitting a control through
+software WebGL leaves physical-device GPU cost open. The shell and four
+instrument sources live in `src/hud-material-shell.mjs` and `art/hud-spatial/`.
+
 Human selection precedes preset adoption. Position, size, typography and
 appearance remain independent from shared application state.
 Use one shared positioning interaction for minimap, settings, Collection and
