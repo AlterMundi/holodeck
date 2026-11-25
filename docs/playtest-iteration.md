@@ -2171,6 +2171,16 @@ canvas-touch opening, format switching and closing in local Chromium, with
 the live terrain raster and original navigation actions. The loopback fixture's
 favicon returned 404. Source and capture receipts accompany the candidate.
 
+The Conversation surround uses the pinned Proyección `fee3570c516d`
+renderer. Its native heading combines the Conversation glyph, the themed
+focus accent and title typography. Raster density follows the actual placed
+scale of the embedded app's header. Archive `94596951a02a` passed the
+canonical mount path with a loopback Conversation fixture. Keyboard focus
+returned to the world after minimizing. Touch movement and jumping stayed
+available beside the panel, and moving it or rotating the viewport preserved
+the iframe and its draft. Desktop, portrait and landscape captures are
+retained with the exact package.
+
 The early software render timings cover short fixture runs. The latest host
 also changed atmosphere, so those timings do not isolate HUD cost. Use one
 physical device and matching atmosphere for the final comparison. Reconcile

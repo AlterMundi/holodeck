@@ -118,7 +118,7 @@ export class ConversationChrome{
     if(this.layout!==layout){
       this.layout=layout;
       const children=['head'];
-      const entries=[row('head',['heading','minimize']),label('heading','Conversar',{weight:8,style:'title'}),
+      const entries=[row('head',['heading','minimize']),label('heading','Conversar',{weight:8,style:'title',icon:'conversation'}),
         button('minimize','Minimizar conversación',{icon:'minimize',weight:.65,quiet:true})];
       if(topics){
         children.push('topics');
@@ -165,7 +165,7 @@ export class ConversationChrome{
         placeHudInViewport(group,this.camera,{...within,x:rect.left+rect.width/2-viewport.left,y:rect.top+11-viewport.top});
         group.matrix.scale(shared?sharedDepthScale:depthScale);
         group.matrixWorldNeedsUpdate=true;
-        this.hud.setTextDensity(header,{cssPixelsPerUnit:scale,pixelRatio:dpr,fontSize:15});
+        this.hud.setTextDensity(header,{cssPixelsPerUnit:unit,pixelRatio:dpr,fontSize:15});
       }
       placeHudInViewport(this.mark.group,this.camera,{...within,pixelsPerUnit:1,
         x:rect.right-13-viewport.left,y:rect.bottom-13-viewport.top});
