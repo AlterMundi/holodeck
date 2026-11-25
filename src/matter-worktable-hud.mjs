@@ -2,7 +2,7 @@ import {OrthographicCamera,Raycaster,Scene,Vector2} from 'three';
 import {WorldMapHud,worldMapId,worldBearingId} from './world-map-hud.mjs';
 import {DoorPromptHud,doorPromptId,doorPromptWidth} from './door-prompt-hud.mjs';
 import {CollectionHud,collectionHudId,collectionHudWidth} from './collection-hud.mjs';
-import {WorldStatusHud,worldHeaderId,worldNoticeId,worldHeaderWidth,worldNoticeWidth} from './world-status-hud.mjs';
+import {WorldStatusHud,worldHeaderId,worldNoticeId,worldHeaderWidth} from './world-status-hud.mjs';
 import {SettingsHud,settingsId} from './settings-hud.mjs';
 import {HudRenderLayer} from './hud-render-layer.mjs';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
@@ -460,9 +460,9 @@ export class MatterWorktableHud{
     }
     if(this.status.noticeGroup){
       const {left,right}=this.toolInsets();
-      const noticeScale=Math.min(174,(width-left-right)/(worldNoticeWidth+.12));
+      const {lines,scale}=this.status.noticeLayout;
       const bottom=Number.parseFloat(this.noticeOffset)||100;
-      this.place(this.status.noticeGroup,'noticePlacement',viewport,(width+left-right)/2,height-bottom-(.12+.084*this.status.noticeLines)*noticeScale,noticeScale);
+      this.place(this.status.noticeGroup,'noticePlacement',viewport,(width+left-right)/2,height-bottom-(.07+.188*lines.length)*scale,scale);
     }
     if(this.map.group){
       const {left,right}=this.toolInsets();

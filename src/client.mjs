@@ -622,7 +622,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     }]));
     let settingsInputCaptured=false;
     matterHud=new MatterWorktableHud({document,webgl:renderer.composer.renderer,table:collectionShelves.worktable,collection:collectionShelves,
-      toggleSound:()=>{if(!inside&&!moving&&!entering&&navigator.userActivation?.isActive)void toggleWorldSound();},
+      toggleSound:()=>{if(!moving&&!entering&&navigator.userActivation?.isActive&&(!inside||worldAudio.status().active))void toggleWorldSound();},
       readTools,activateTool:id=>tools[id]?.click(),
       navigation:{panel:mapPanel,mapState:()=>updateDoor.navigation?.()??{
         scope:activeSpace.id,canExit:false,busy:false,map:null,
@@ -870,9 +870,11 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       matterHud.updateBearing(navigationVisible&&!matterHud.active);
       matterHud.door.update(navigationVisible&&!matterHud.active&&Boolean(matterHud.toolGroup)&&!signalEditor.active);
       matterHud.collection.update(navigationVisible&&!matterHud.active&&!mapPanel.open&&!signalEditor.active);
+      const {left:statusLeft,right:statusRight}=matterHud.toolInsets();
       matterHud.status.update({
         headerVisible:!entering&&drawWorld&&!opaqueVisit&&!settingsOpen&&!toolModal&&(inside||Boolean(navigator.userActivation)),
-        showExterior:!inside,noticeVisible:!entering&&drawWorld&&!opaqueVisit,width:matterHud.canvas.clientWidth,
+        showExterior:!inside,noticeVisible:!entering&&drawWorld&&!opaqueVisit,soundBlocked:moving||needsSync,
+        width:matterHud.canvas.clientWidth-statusLeft-statusRight,height:matterHud.canvas.clientHeight,
       });
       beaconControls.update(inside&&!moving&&remoteScene?activeSpace.objects:null,position);
       render(renderState);
@@ -935,6 +937,7 @@ function updateSoundButton(){
   button.setAttribute('aria-label',status.active?'Silenciar sonido del mundo':status.selected?'Reanudar sonido del mundo':'Activar sonido del mundo');
   button.title=status.supported?'Ambiente suave y sonidos de los cambios del mundo':'El sonido no está disponible en este navegador';
   button.disabled=soundBusy||!status.supported||status.disposed;
+  button.toggleAttribute('data-audio-unavailable',!status.supported);
 }
 async function toggleWorldSound(){
   if(soundBusy)return;

@@ -1,7 +1,7 @@
 import {spatialHudCatalog} from 'proyeccion/spatial-hud';
 
 export const worldHeaderId='world-header',worldNoticeId='world-notice';
-export const worldHeaderWidth=2.5,worldNoticeWidth=3.05;
+export const worldHeaderWidth=2.5;
 const path=key=>({'@path':'/'+key});
 const text=(id,fields={})=>({id,component:'HudText',label:path(id),...fields});
 const header=[
@@ -13,10 +13,34 @@ const header=[
   text('people',{style:'body',visible:path('hasPeople')}),
   text('conversation',{style:'body',visible:path('hasConversation')}),
 ];
-const notice=lines=>[
-  {id:'root',component:'HudPanel',label:'Aviso del mundo',width:worldNoticeWidth,children:['message']},
-  text('message',{style:'body',lines}),
+const notice=(width,count)=>[
+  {id:'root',component:'HudPanel',label:'Aviso del mundo',width,gap:.008,
+    children:Array.from({length:count},(_,i)=>'line'+i)},
+  ...Array.from({length:count},(_,i)=>text('line'+i,{label:path('lines/'+i)})),
 ];
+
+function wrapNotice(message,measure,maxWidth){
+  const lines=[];
+  for(const paragraph of message.split('\n')){
+    let line='';
+    for(const word of paragraph.trim().split(/\s+/u)){
+      const next=line?line+' '+word:word;
+      if(measure(next)<=maxWidth){line=next;continue;}
+      if(line)lines.push(line);
+      line='';
+      for(const character of word){
+        if(line&&measure(line+character)>maxWidth){
+          lines.push(line);line='';
+          if(lines.length===8)return [];
+        }
+        line+=character;
+      }
+    }
+    lines.push(line||' ');
+    if(lines.length>8)return [];
+  }
+  return lines;
+}
 
 export class WorldStatusHud{
   constructor({document,send,toggleSound,focusSound,hasSoundFocus,focusWorld}){
@@ -27,6 +51,8 @@ export class WorldStatusHud{
     this.people=this.headerAdapter.querySelector('#people');
     this.conversation=document.getElementById('companion-status');
     this.noticeAdapter=document.getElementById('notice');
+    this.measure=document.createElement('canvas').getContext('2d');
+    if(this.measure)this.measure.font='600 13px system-ui';
   }
 
   updateSurface(id,components,value,layoutKey=0){
@@ -57,43 +83,67 @@ export class WorldStatusHud{
     this.send('updateDataModel',{value},id);
   }
 
-  update({headerVisible,showExterior,noticeVisible,width}){
-    const people=this.people.textContent,conversation=showExterior?this.conversation.textContent:'';
-    const soundAvailable=headerVisible&&showExterior;
+  update({headerVisible,showExterior,noticeVisible,soundBlocked,width,height}){
+    this.showExterior=showExterior;
+    this.soundBlocked=soundBlocked;
+    const people=this.people.hidden?'':this.people.textContent;
+    const conversation=showExterior&&!this.conversation.hidden?this.conversation.textContent:'';
+    const soundActive=this.sound.getAttribute('aria-pressed')==='true';
+    const soundAvailable=headerVisible&&(showExterior||soundActive);
     const moveFocus=this.hasSound&&!soundAvailable&&this.hasSoundFocus();
     this.hasSound=soundAvailable;
     this.updateSurface(worldHeaderId,header,headerVisible?{
       title:this.title.textContent,people,hasPeople:Boolean(people),
       conversation,hasConversation:Boolean(conversation),
-      sound:this.sound.textContent,hasSound:this.hasSound,soundDisabled:this.sound.disabled,
-      soundActive:this.sound.getAttribute('aria-pressed')==='true',
+      sound:this.sound.hasAttribute('data-audio-unavailable')?'Sin audio':this.sound.textContent,
+      hasSound:this.hasSound,soundDisabled:this.sound.disabled||soundBlocked,soundActive,
     }:null);
     if(moveFocus&&this.headerGroup)this.focusWorld();
-    const message=noticeVisible?this.noticeAdapter.textContent:'';
-    const lines=Math.max(1,Math.min(8,Math.ceil(Array.from(message).length/(width<680?42:65))));
-    this.noticeLines=lines;
-    this.updateSurface(worldNoticeId,notice(lines),message?{message}:null,lines);
+    const message=noticeVisible&&!this.noticeAdapter.hidden?this.noticeAdapter.textContent:'';
+    if(!message||!this.measure||width<180){
+      this.updateSurface(worldNoticeId,null,null);
+      return;
+    }
+    const panelWidth=width<660?2.32:3.05;
+    const scale=Math.min(174,width/(panelWidth+.12));
+    const key=JSON.stringify([message,width,height]);
+    if(this.noticeLayout?.key!==key){
+      const lines=wrapNotice(message,text=>this.measure.measureText(text).width,panelWidth*scale-28);
+      const usable=lines.length&&(lines.length*.188+.07)*scale<=height*.32;
+      this.noticeLayout={key,lines:usable?lines:[],panelWidth,scale};
+    }
+    const layout=this.noticeLayout;
+    const modelKey=layout.panelWidth+':'+layout.lines.length;
+    if(this.noticeModelKey!==modelKey){
+      this.noticeModelKey=modelKey;
+      this.noticeComponents=notice(layout.panelWidth,layout.lines.length);
+    }
+    this.updateSurface(worldNoticeId,this.noticeComponents,layout.lines.length?{lines:layout.lines}:null,modelKey);
   }
 
   activate({name}){
-    if(name==='sound'&&this.headerGroup&&this.hasSound&&!this.sound.disabled)this.toggleSound();
+    if(name==='sound'&&this.headerGroup&&this.hasSound&&!this.soundBlocked&&!this.sound.disabled)this.toggleSound();
   }
 
   present(isHeader,visible){
     const adapter=isHeader?this.headerAdapter:this.noticeAdapter;
+    if(isHeader)this.conversation.toggleAttribute('data-native-status',visible&&this.showExterior);
     if(adapter.hasAttribute('data-native-status')===visible)return;
     const active=adapter.ownerDocument.activeElement;
     const fromNative=isHeader&&!visible&&this.hasSoundFocus();
     adapter.toggleAttribute('data-native-status',visible);
     if(!isHeader)return;
-    this.conversation.toggleAttribute('data-native-status',visible);
     if(visible&&active===this.sound){if(this.hasSound)this.focusSound();else this.focusWorld();}
-    if(fromNative&&this.sound.getClientRects().length)this.sound.focus({preventScroll:true});
+    if(fromNative){
+      if(this.sound.getClientRects().length&&adapter.ownerDocument.defaultView.getComputedStyle(this.sound).visibility==='visible')
+        this.sound.focus({preventScroll:true});
+      else this.focusWorld();
+    }
   }
 
   dispose(){
     this.updateSurface(worldHeaderId,header,null);
-    this.updateSurface(worldNoticeId,notice(1),null);
+    this.updateSurface(worldNoticeId,null,null);
     this.present(true,false);
     this.present(false,false);
   }
