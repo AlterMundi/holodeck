@@ -1,3 +1,5 @@
+import {showSettingsDialog} from './settings-hud.mjs';
+
 export function bindVideoSettings({document,window,lightweight,onGraphics,onSensitivity}){
   const dialog=document.querySelector('#video-dialog');
   const open=document.querySelector('#video-open');
@@ -28,7 +30,7 @@ export function bindVideoSettings({document,window,lightweight,onGraphics,onSens
       else await root.requestFullscreen();
     }catch{
       status.textContent='No se pudo cambiar la pantalla completa.';
-      if(!dialog.open)dialog.showModal();
+      showSettingsDialog(dialog);
     }finally{
       changing=false;
       syncFullscreen();
@@ -51,7 +53,7 @@ export function bindVideoSettings({document,window,lightweight,onGraphics,onSens
   }
   quality.value=lightweight?'light':'auto';
   quality.onchange=()=>onGraphics(quality.value==='light');
-  open.onclick=()=>{if(!dialog.open)dialog.showModal();};
+  open.onclick=()=>{showSettingsDialog(dialog);};
   close.onclick=()=>dialog.close();
   toggle.onclick=()=>void switchFullscreen();
   document.addEventListener('fullscreenchange',syncFullscreen);
@@ -63,7 +65,7 @@ export function bindVideoSettings({document,window,lightweight,onGraphics,onSens
       event.preventDefault();
       event.stopImmediatePropagation();
       void switchFullscreen();
-    }else if(dialog.open)event.stopImmediatePropagation();
+    }else if(dialog.open&&!dialog.hasAttribute('data-native-settings'))event.stopImmediatePropagation();
   },true);
   if(!available())status.textContent='La pantalla completa no está disponible en este navegador.';
   syncFullscreen();

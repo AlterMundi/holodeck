@@ -11,6 +11,7 @@ import {MatterInspection,bindMatterInspection} from './matter-inspection.mjs';
 import {constrainInteriorCamera} from './interior-camera.mjs';
 import {capWorldPixelRatio,usesLightGraphics} from './render-pixel-budget.mjs';
 import {bindVideoSettings} from './video-settings.mjs';
+import {showSettingsDialog} from './settings-hud.mjs';
 import {bindOrbitalMatterGlazing,useLightweightMatterGlazing} from './matter-glazing.mjs';
 import {bindMatterStyle,loadMatterStyleImages} from './matter-style.mjs';
 import {projectRoomSurface} from '../art/collection/appearance-study/viewer/surface-projection.mjs';
@@ -77,16 +78,16 @@ async function readAppearance(body){
   }
 }
 document.querySelector('#appearance-open').onclick=()=>{
-  appearanceDialog.showModal();void readAppearance();
+  showSettingsDialog(appearanceDialog);void readAppearance();
 };
 document.querySelector('#appearance-close').onclick=()=>appearanceDialog.close();
-appearanceDialog.addEventListener('close',()=>{appearanceGeneration++;});
+appearanceDialog.addEventListener('close',()=>{if(!appearanceDialog.open)appearanceGeneration++;});
 document.querySelector('#appearance-form').onsubmit=event=>{
   event.preventDefault();
   if(!appearanceSave.disabled)void readAppearance({choice:appearanceChoice.value===''?null:Number(appearanceChoice.value)});
 };
 window.addEventListener('keydown',event=>{
-  if(appearanceDialog.open)event.stopImmediatePropagation();
+  if(appearanceDialog.open&&!appearanceDialog.hasAttribute('data-native-settings'))event.stopImmediatePropagation();
 },true);
 const touchControls={
   mount(container,experience){
@@ -541,6 +542,11 @@ function resetDoor(){
 // MML captures document keys by default. Preserve ordinary text editing and
 // keyboard activation of the HUD without turning typed words into locomotion.
 document.addEventListener('keydown',event=>{
+  if(matterHud?.settings.group){
+    if(matterHud.settingsKey(event))event.preventDefault();
+    event.stopImmediatePropagation();
+    return;
+  }
   if(matterInspection?.key(event)){event.preventDefault();event.stopImmediatePropagation();return;}
   if(matterHud?.key(event)){event.preventDefault();event.stopImmediatePropagation();return;}
   if(matterHud?.ownsAccessibleInput(event.target))return;
@@ -598,13 +604,16 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         worktableTopic={reference,label};openConversation(true);
       }});
     const tools={map:document.getElementById('map-tool'),talk:document.getElementById('talk'),
+      appearance:document.getElementById('appearance-open'),video:document.getElementById('video-open'),
       bridge:document.getElementById('bridge'),plant:document.getElementById('plant'),undo:document.getElementById('undo')};
     const readTools=operating=>Object.fromEntries(Object.entries(tools).map(([id,element])=>[id,{
-      label:id==='undo'?'Deshacer':element.textContent.trim(),
-      visible:!element.hidden&&(id==='map'||id==='talk'||!inside&&!operating),
+      label:id==='undo'?'Deshacer':element.getAttribute('aria-label')??element.textContent.trim(),
+      visible:!element.hidden&&(['map','talk','appearance','video'].includes(id)||!inside&&!operating)
+        &&(!['appearance','video'].includes(id)||document.getElementById('conversation-panel').hidden),
       disabled:element.disabled,
       pressed:element.getAttribute('aria-expanded')==='true',
     }]));
+    let settingsInputCaptured=false;
     matterHud=new MatterWorktableHud({document,webgl:renderer.composer.renderer,table:collectionShelves.worktable,
       readTools,activateTool:id=>tools[id]?.click(),
       navigation:{panel:mapPanel,mapState:()=>updateDoor.navigation?.()??{
@@ -614,7 +623,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         inspection.enter(cameraState(),client.getLocalCharacterState()?.position,collectionShelves.worktable.anchor),
       onActive:active=>{
         document.body.classList.toggle('is-operating-matter',active);
-        touchControls.pause(active);
+        touchControls.pause(active||settingsInputCaptured);
         if(active){
           client.keyInputManager?.handleUnfocus();
           const canvas=renderer.composer.renderer.domElement;
@@ -626,7 +635,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
           client.keyInputManager?.handleUnfocus();
         }
       },
-      onError:()=>say('No pude mostrar los controles de la mesa. Volvé a abrirla.',{transient:true}),
+      onError:()=>say('No pude mostrar estos controles. Volvé a abrirlos.',{transient:true}),
     });
     const inspectionInput=bindMatterInspection({canvas:renderer.composer.renderer.domElement,inspection,
       picker:()=>worldPicker,overHud:event=>matterHud.overControl(event),sensitivity:()=>mouseSensitivity});
@@ -823,8 +832,18 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         activeSpace?.sharedConversation===true,matterStyleScope?.style.contactShadows===true,
         options.coreCameraManager.getCameraState(),renderer.composer.renderer.domElement.clientHeight);
       const opaqueVisit=contentVisitor?.frame&&!contentVisitor.panel.classList.contains('is-walking');
-      const toolModal=Boolean(document.querySelector('dialog[open]'));
-      matterHud.update(!collectionRoom||needsSync||!document.getElementById('conversation-panel').hidden||opaqueVisit||toolModal,
+      const settingsOpen=Boolean(document.querySelector('#appearance-dialog[open],#video-dialog[open]'));
+      const toolModal=Boolean(document.querySelector('dialog[open]:not([data-native-settings])'));
+      if(settingsOpen!==settingsInputCaptured){
+        settingsInputCaptured=settingsOpen;
+        touchControls.pause(settingsOpen||matterHud.active);
+        if(settingsOpen){
+          client.keyInputManager?.handleUnfocus();
+          if(document.pointerLockElement===matterHud.canvas)document.exitPointerLock();
+          options.coreCameraManager.activePointers.clear();
+        }
+      }
+      matterHud.update(!collectionRoom||needsSync||!document.getElementById('conversation-panel').hidden||opaqueVisit||toolModal||settingsOpen,
         !entering&&!moving&&drawWorld&&!opaqueVisit&&!toolModal);
       garden.update(inside&&!moving&&activeSpace.playableInterior?activeSpace.id:null);gardenMarkers();
       if(!inside){worldIndication?.update();if(!moving)playableHUD.update(position);}
@@ -833,7 +852,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         contentVisitor?.update(position);
         updateDoor(position,()=>options.coreCameraManager.getCameraState().rotation);
       }
-      matterHud.map.update(!entering&&!moving&&!needsSync&&drawWorld&&!opaqueVisit&&!toolModal&&
+      matterHud.map.update(!entering&&!moving&&!needsSync&&drawWorld&&!opaqueVisit&&!toolModal&&!settingsOpen&&
         document.getElementById('conversation-panel').hidden,paintedRaster);
       beaconControls.update(inside&&!moving&&remoteScene?activeSpace.objects:null,position);
       render(renderState);

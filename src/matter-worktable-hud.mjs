@@ -1,5 +1,6 @@
 import {OrthographicCamera,Raycaster,Scene,Vector2} from 'three';
 import {WorldMapHud,worldMapId} from './world-map-hud.mjs';
+import {SettingsHud,settingsId} from './settings-hud.mjs';
 import {HudRenderLayer} from './hud-render-layer.mjs';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
 
@@ -12,8 +13,8 @@ const text=(id,label,fields={})=>({id,component:'HudText',label,...fields});
 const choice=(id,label,options,value)=>({id,component:'HudChoice',label,
   options:path(options),value:path(value),draft:path(id+'Draft'),action:action(id,{value:path(id+'Draft')})});
 const toolScale=286,toolGap=.035,toolRowHeight=.18,toolPadding=.12;
-const toolNames=['map','open','talk','bridge','plant','undo'];
-const toolPixels={map:90,open:154,talk:96,bridge:122,plant:88,undo:84};
+const toolNames=['map','open','talk','appearance','video','bridge','plant','undo'];
+const toolPixels={map:90,open:154,talk:96,appearance:98,video:70,bridge:122,plant:88,undo:84};
 
 function layoutTools(tools,maxWidth){
   const gap=toolGap*toolScale;
@@ -38,7 +39,7 @@ function toolComponents({width,rows}){
     ...rows.flatMap(({ids},index)=>[
       row(rowIds[index],ids,{gap:toolGap}),
       ...ids.map(id=>button(id,path(id+'Label'),{
-        disabled:path(id+'Disabled'),...(['map','talk'].includes(id)?{pressed:path(id+'Pressed')}:{}),
+        disabled:path(id+'Disabled'),...(['map','talk','appearance','video'].includes(id)?{pressed:path(id+'Pressed')}:{}),
         weight:toolPixels[id]/66,
       })),
     ]),
@@ -89,19 +90,33 @@ export class MatterWorktableHud{
     document.body.append(this.a11y,this.toolInset);
     this.map=new WorldMapHud({...navigation,send:(type,content,id)=>this.send(type,content,id),
       focusLauncher:()=>this.focusTool('map'),invalidate:this.layer.invalidate});
+    this.settings=new SettingsHud({document,send:(type,content,id)=>this.send(type,content,id),
+      focusControl:name=>this.hud.focusAccessibleControl(settingsId,name),focusLauncher:name=>this.focusTool(name)});
     this.hud=createSpatialHud({parent:this.scene,document,accessibilityRoot:this.a11y,
       placeSurface:(group,id)=>{
         if(id===toolbeltId)this.toolGroup=group;
         else if(id===worldMapId)this.map.group=group;
+        else if(id===settingsId)this.settings.group=group;
         else this.group=group;
       },
       send:({action:requested})=>{
         if(!requested)return;
         if(requested.surfaceId===toolbeltId)this.handleTool(requested);
         else if(requested.surfaceId===worldMapId)this.map.activate(requested);
+        else if(requested.surfaceId===settingsId){
+          this.settings.activate(requested);
+          this.syncSettingsInput();
+        }
         else this.handleAction(requested);
       },onTransportError:onError,
     });
+    const consumeSettingsPointer=event=>{
+      if(!this.settings.group||(event.type==='pointerdown'&&event.button===0))return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    };
+    for(const type of ['wheel','pointerdown'])this.canvas.addEventListener(type,consumeSettingsPointer,
+      {capture:true,passive:false,signal:this.events.signal});
     this.pointerRay=new Raycaster();
     this.pointerPosition=new Vector2();
     this.unbind=bindSpatialHudPointer({element:this.canvas,hud:this.hud,rayForPointer:event=>this.rayForPointer(event)});
@@ -109,7 +124,7 @@ export class MatterWorktableHud{
   }
 
   rayForPointer(event){
-    if(!this.toolGroup&&!this.group&&!this.map.group)return;
+    if(!this.toolGroup&&!this.group&&!this.map.group&&!this.settings.group)return;
     const rect=this.canvas.getBoundingClientRect();
     if(!rect.width||!rect.height)return;
     this.pointerPosition.set((event.clientX-rect.left)*2/rect.width-1,1-(event.clientY-rect.top)*2/rect.height);
@@ -193,7 +208,9 @@ export class MatterWorktableHud{
   }
 
   toolState(){
-    return {...this.readTools(this.active),
+    const tools=this.readTools(this.active);
+    for(const name of ['appearance','video'])tools[name].pressed=this.settings.current===name;
+    return {...tools,
       open:{label:'Usar mesa',visible:this.mode==='enter',disabled:false}};
   }
 
@@ -201,6 +218,14 @@ export class MatterWorktableHud{
     if(!this.toolGroup||context?.scope!==this.toolScope||!toolNames.includes(name))return;
     const selected=this.toolState()[name];
     if(!selected?.visible||selected.disabled)return;
+    if(name==='appearance'||name==='video'){
+      if(this.active)this.leave();
+      this.settings.open(name);
+      this.syncSettingsInput();
+      return;
+    }
+    this.settings.close(false);
+    this.syncSettingsInput();
     if(name==='open')this.enter();
     else this.activateTool(name);
   }
@@ -223,6 +248,7 @@ export class MatterWorktableHud{
   syncToolbelt(visible){
     this.toolsVisible=visible;
     if(!visible){
+      this.document.body.removeAttribute('data-native-settings-available');
       if(this.toolGroup){
         this.send('deleteSurface',{},toolbeltId);
         this.toolGroup=null;
@@ -235,6 +261,7 @@ export class MatterWorktableHud{
     const tools=this.toolState();
     const {left,right}=this.toolInsets();
     const maxWidth=this.canvas.clientWidth-left-right-toolPadding*toolScale;
+    this.document.body.toggleAttribute('data-native-settings-available',maxWidth>=150);
     if(maxWidth<150)return;
     const layout=layoutTools(tools,Math.min(590,maxWidth));
     if(!this.toolGroup)this.send('createSurface',{catalogId:spatialHudCatalog.id},toolbeltId);
@@ -263,6 +290,9 @@ export class MatterWorktableHud{
     if(!available&&this.active)this.leave();
     else if(!this.active)this.setMode(available?'enter':null);
     if(this.active)this.sync();
+    if(!toolsVisible)this.settings.close(false);
+    this.settings.sync();
+    this.syncSettingsInput();
     this.syncToolbelt(toolsVisible);
     const look=this.document.body.dataset.roomLook;
     if(this.look!==look){
@@ -276,6 +306,24 @@ export class MatterWorktableHud{
           pressed:color('--control-hover'),text:color('--ink'),focus:color('--gold')});
       }
     }
+  }
+
+  syncSettingsInput(){
+    const open=Boolean(this.settings.group);
+    if(open===this.settingsInput)return;
+    this.settingsInput=open;
+    this.hud.setInteractionScope(open?{surfaceIds:[toolbeltId,settingsId],blockOutside:true}:undefined);
+  }
+
+  settingsKey(event){
+    if(event.defaultPrevented)return false;
+    const handled=this.hud.handleKey(event,{surfaceId:settingsId});
+    if(event.key==='Escape'){
+      if(!handled||!this.hud.currentFocus())this.settings.close();
+      return true;
+    }
+    if(event.target?.closest?.('input,textarea,select,[contenteditable]'))return false;
+    return handled||(!event.altKey&&!event.metaKey&&!event.ctrlKey&&movement.has(event.code));
   }
 
   key(event){
@@ -319,7 +367,7 @@ export class MatterWorktableHud{
   }
 
   draw(additional){
-    if(!this.toolGroup&&!this.group&&!this.map.group&&!additional){this.layer.hide();return;}
+    if(!this.toolGroup&&!this.group&&!this.map.group&&!this.settings.group&&!additional){this.layer.hide();return;}
     const {clientWidth:width,clientHeight:height}=this.canvas;
     if(!width||!height)return;
     const viewport={width,height};
@@ -329,12 +377,24 @@ export class MatterWorktableHud{
       const {left,right,bottom}=this.toolInsets();
       const barTop=height-bottom-(this.toolLayout.height+.035)*toolScale;
       this.place(this.toolGroup,'toolPlacement',viewport,(width+left-right)/2,barTop,toolScale);
+      const noticeOffset=Math.ceil(height-barTop+12)+'px';
+      if(noticeOffset!==this.noticeOffset){
+        this.noticeOffset=noticeOffset;
+        this.document.body.style.setProperty('--holodeck-notice-bottom',noticeOffset);
+      }
     }
     if(this.map.group){
       const {left,right}=this.toolInsets();
       const top=width<700&&height>=610?132:76;
       const scale=Math.min(250,(width-left-right)/1.28,Math.max(30,height-top-69)/1.82);
       this.place(this.map.group,'mapPlacement',viewport,width-right-scale*.64,top,scale);
+    }
+    if(this.settings.group){
+      const {left,right,bottom}=this.toolInsets();
+      const top=height<500?54:92;
+      const reserved=(this.toolLayout?.height??0)*toolScale+bottom+15;
+      const scale=Math.min(178,(width-left-right)/2.25,Math.max(70,height-top-reserved)/2.0);
+      this.place(this.settings.group,'settingsPlacement',viewport,(width+left-right)/2,top,scale);
     }
     this.hud.update();
     this.map.decoration();
@@ -353,10 +413,13 @@ export class MatterWorktableHud{
     this.events.abort();
     this.layer.dispose();
     this.map.dispose();
+    this.settings.close(false);
     this.hud.dispose();
     this.a11y.remove();
     this.toolInset.remove();
     delete this.document.body.dataset.a2uiToolbelt;
+    this.document.body.removeAttribute('data-native-settings-available');
+    this.document.body.style.removeProperty('--holodeck-notice-bottom');
     this.table.panel.removeAttribute('data-spatial');
   }
 }
