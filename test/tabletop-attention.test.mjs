@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {Bone, Box3, BoxGeometry, Group, Mesh, MeshBasicMaterial, Plane, PlaneGeometry, Quaternion, Scene, Vector3} from 'three';
+import {Bone, Box3, BoxGeometry, Group, Mesh, MeshBasicMaterial, Plane, PlaneGeometry, Quaternion, RingGeometry, Scene, Vector3} from 'three';
 import {PublicWorldPicker} from '../src/world-indication.mjs';
 import {TabletopCompanionPerch} from '../src/tabletop-companion-perch.mjs';
 import {bindTabletopAttention, TabletopGlance} from '../src/tabletop-attention.mjs';
@@ -186,5 +186,30 @@ test('a shared cue uses the receiving transform and vanishes with its sender or 
   }finally{
     view.dispose();
     mesh.geometry.dispose();mesh.material.dispose();
+  }
+});
+
+test('a hollow workpiece gets a surface marker off its empty center',async()=>{
+  const {TabletopPointView}=await import('../src/tabletop-point-view.mjs');
+  const {tabletopPointBroadcast}=await import('../src/tabletop-pointing.mjs');
+  const scene=new Scene(),mesh=new Mesh(new RingGeometry(.46,.5,24),new MeshBasicMaterial());
+  mesh.geometry.computeBoundingBox();
+  scene.add(mesh);
+  const world={isConnected:()=>true,getConnectionId:()=>7};
+  const view=new TabletopPointView(scene,()=>{});
+  const camera={position:new Vector3(0,0,2),rotation:{x:0,y:0,z:0,w:1},fov:50};
+  const reference={resource:'a'.repeat(32),version:'b'.repeat(64),scene:'bench',
+    sceneVersion:'c'.repeat(64),part:'ring'};
+  const table={shared:{revision:2},pointingTarget:()=>mesh};
+  try{
+    view.receive({broadcastType:tabletopPointBroadcast,
+      payload:{space:'matter',connection:4,sequence:1,revision:2,reference}},'matter',world);
+    view.update('matter',world,table,new Set([4]),performance.now(),7,camera,720);
+    assert.equal(view.marker.visible,true);
+    const {anchor}=view.cues.get(4);
+    assert.ok(Math.hypot(anchor.x,anchor.y)>.45);
+    assert.ok(view.marker.quaternion.toArray().every(Number.isFinite));
+  }finally{
+    view.dispose();mesh.geometry.dispose();mesh.material.dispose();
   }
 });
