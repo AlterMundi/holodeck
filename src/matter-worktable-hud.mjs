@@ -21,7 +21,7 @@ const cockpitDocks={
   toolPlacement:{x:-.26,y:0,depth:1.08,anchor:0},
   headerPlacement:{x:0,y:.22,depth:1.32,anchor:-1},
 };
-const movementStick='world-move',movementJump='world-jump';
+const movementStick='world-move',movementJump='world-jump',conversationMovementScale=126;
 const floatingWindows=new Map([[worldMapId,true],[surfaceId,true],[collectionHudId,false],[settingsId,false]]);
 const movementPanels=[
   [movementStick,'Moverse','HudStick',.68],
@@ -373,6 +373,16 @@ export class MatterWorktableHud{
     return this.insets;
   }
 
+  conversationTravelInsets(){
+    const insets=this.toolInsets();
+    const movementReady=Boolean(this.toolGroup&&this.toolLayout)&&!this.webgl.getContext().isContextLost();
+    const viewport={width:this.canvas.clientWidth,height:this.canvas.clientHeight};
+    const dockClearance=this.usesCockpitDocks(viewport)?21:0;
+    const dockHeight=this.toolLayout?(this.toolLayout.height+.035)*this.dockScale(this.toolLayout.compact):0;
+    return {...insets,movementReady,travelBottom:Math.ceil(insets.bottom+dockClearance+dockHeight+
+      .64*conversationMovementScale+26)};
+  }
+
   compactDock(){
     const {clientWidth:width,clientHeight:height}=this.canvas;
     this.dockCompact=width>height&&height<(this.dockCompact?512:496);
@@ -455,13 +465,14 @@ export class MatterWorktableHud{
     this.map.updateBearing(visible&&this.canvas.clientWidth-left-right>=218);
   }
 
-  syncMovement(visible){
-    if(!visible){
+  syncMovement(visible,lane=''){
+    if(!visible||this.movementLane!==lane){
       this.movementPresented=false;
       for(const id of this.movementGroups.keys())this.send('deleteSurface',{},id);
       this.movementGroups.clear();
       this.presentMovement(null);
-      return;
+      this.movementLane=lane;
+      if(!visible)return;
     }
     for(const [id,label,component,width] of movementPanels){
       if(this.movementGroups.has(id))continue;
@@ -673,7 +684,11 @@ export class MatterWorktableHud{
       const {left,right,bottom}=this.toolInsets();
       const dockClearance=this.usesCockpitDocks(viewport)?21:0;
       const compact=this.toolLayout.compact;
-      const dockScale=this.dockScale(compact);
+      const lane=this.movementLane;
+      const sideEdge=lane==='side'?parseFloat(additional?.panel.style.getPropertyValue('--conversation-travel-edge')):NaN;
+      const dockScale=Number.isFinite(sideEdge)?
+        Math.min(this.dockScale(compact),(sideEdge-left-12)/(this.toolLayout.width+toolPadding)):
+        this.dockScale(compact);
       const barTop=height-bottom-dockClearance-(this.toolLayout.height+.035)*dockScale;
       const dockWidth=(this.toolLayout.width+toolPadding)*dockScale;
       const promptCompact=this.door.group?this.door.compact:compact;
@@ -682,8 +697,9 @@ export class MatterWorktableHud{
       const promptPlate=(promptWidth+toolPadding)*promptScale;
       const beside=compact&&promptCompact&&this.toolLayout.rows.length===1&&
         dockWidth+promptPlate+8<=width-left-right;
-      let barCenter=beside?width-right-dockWidth/2:(width+left-right)/2;
-      if(this.lookPreview.stylesDock&&additional&&width>=720&&!additional.panel.hidden){
+      let barCenter=Number.isFinite(sideEdge)?(left+sideEdge)/2:
+        beside?width-right-dockWidth/2:(width+left-right)/2;
+      if(lane!=='side'&&this.lookPreview.stylesDock&&additional&&width>=720&&!additional.panel.hidden){
         const display=additional.panel.getBoundingClientRect(), canvasLeft=this.canvas.getBoundingClientRect().left;
         const half=dockWidth/2;
         if(display.bottom>barTop&&display.top<height-bottom){
@@ -695,11 +711,12 @@ export class MatterWorktableHud{
         }
       }
       this.place(this.toolGroup,'toolPlacement',viewport,barCenter,barTop,dockScale);
-      const movementScale=width<380?145:166;
+      const movementScale=lane?conversationMovementScale:width<380?145:166;
       const movementTop=Math.max(34,barTop-.64*movementScale-14);
       if(this.movementGroups.size){
+        const jumpCenter=lane==='side'?left+146:width-right-.34*movementScale;
         this.place(this.movementGroups.get(movementStick),'stickPlacement',viewport,left+.40*movementScale,movementTop,movementScale);
-        this.place(this.movementGroups.get(movementJump),'jumpPlacement',viewport,width-right-.34*movementScale,
+        this.place(this.movementGroups.get(movementJump),'jumpPlacement',viewport,jumpCenter,
           movementTop+.07*movementScale,movementScale);
       }
       let promptTop=barTop;

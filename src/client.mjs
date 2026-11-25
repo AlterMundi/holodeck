@@ -335,10 +335,17 @@ const outsideRing=()=>!inside&&activeSpace.outdoorTerrain===TOROIDAL_TERRAIN.id;
 // Capture the fresh entry before MML initializes or writes a location hash.
 let firstExteriorDoor=outsideRing()&&!location.hash&&activeSpace.entrances?.length===1?activeSpace.entrances[0].door:null;
 let flightEnabled=false,previousSpacePress=null;
+let fitConversationWindow=()=>{};
+const resetFlightTap=()=>{previousSpacePress=null;};
+window.addEventListener('blur',resetFlightTap);
+document.addEventListener('visibilitychange',resetFlightTap);
+document.addEventListener('focusin',event=>{
+  if(event.target?.closest?.('iframe,#conversation-panel,button,input,select,summary,textarea,[contenteditable]'))resetFlightTap();
+});
 function doubleSpace(event){
   if(event.code!=='Space'||event.repeat||event.altKey||event.ctrlKey||event.metaKey||
      !outsideRing()||entering||moving||
-     document.querySelector('dialog[open]')||event.target?.closest?.('button,input,select,summary,textarea,[contenteditable]'))return;
+     document.querySelector('dialog[open]')||event.target?.closest?.('#conversation-panel,button,input,select,summary,textarea,[contenteditable]'))return;
   const now=performance.now();
   if(previousSpacePress!==null&&now-previousSpacePress<340){
     flightEnabled=!flightEnabled;
@@ -948,6 +955,16 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     let nextDressing=0, ring=null, cave=null, scenery=null, atmosphere=null, releaseRadialMovement=null, releaseHeadroom=null, ringSun=null;
     let sceneryAfter=null,releaseTableFlight=null,releaseSearchKeys=null;
     const worldCanvas=worldPicker.canvas;
+    const worldFocus=new AbortController();
+    worldCanvas.addEventListener('pointerdown',event=>{
+      // Spatial HUD handlers consume their own pointers before this listener.
+      const panel=document.getElementById('conversation-panel');
+      if(event.button!==0||event.defaultPrevented||panel.hidden||entering||moving)return;
+      if(panel.contains(document.activeElement)){
+        worldCanvas.tabIndex=-1;
+        worldCanvas.focus({preventScroll:true});
+      }
+    },{signal:worldFocus.signal});
     const table=collectionShelves.worktable;
     const tableAttention=bindTabletopAttention({document,canvas:worldCanvas,
       pick:(x,y)=>worldPicker.worktableHit(x,y),
@@ -1162,12 +1179,16 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         contentVisitor?.update(position);
         updateDoor(position,()=>options.coreCameraManager.getCameraState().rotation);
       }
-      const navigationVisible=!entering&&!moving&&!needsSync&&drawWorld&&!opaqueVisit&&!toolModal&&!settingsOpen&&
-        document.getElementById('conversation-panel').hidden;
+      const conversation=document.getElementById('conversation-panel');
+      if(!conversation.hidden)fitConversationWindow();
+      const worldToolsVisible=!entering&&!moving&&!needsSync&&drawWorld&&!opaqueVisit&&!toolModal&&!settingsOpen;
+      const navigationVisible=worldToolsVisible&&conversation.hidden;
       matterHud.map.update(navigationVisible,paintedRaster);
-      const touchAvailable=navigationVisible&&!mapPanel.open&&!signalEditor.active&&!document.hidden&&document.hasFocus();
-      touchControls.pause(!touchAvailable);
-      matterHud.syncMovement(touchAvailable&&Boolean(matterHud.toolGroup)&&navigator.maxTouchPoints>0);
+      const touchAvailable=worldToolsVisible&&(conversation.hidden||!!conversation.dataset.travelLane)&&
+        !mapPanel.open&&!signalEditor.active&&!document.hidden&&document.hasFocus();
+      const movementLane=conversation.hidden?'':conversation.dataset.travelLane??'';
+      matterHud.syncMovement(touchAvailable&&Boolean(matterHud.toolGroup)&&navigator.maxTouchPoints>0,movementLane);
+      touchControls.pause(!touchAvailable||!conversation.hidden&&!matterHud.movementPresented);
       matterHud.updateBearing(navigationVisible&&!matterHud.active);
       matterHud.door.update(navigationVisible&&!matterHud.active&&Boolean(matterHud.toolGroup)&&!signalEditor.active,
         Boolean(matterHud.toolLayout?.compact));
@@ -1194,7 +1215,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
       }
     };
-    renderer.dispose=()=>{poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();tableAttention.dispose();pointRequest?.controller.abort();document.removeEventListener('visibilitychange',abortHiddenPoint);points.dispose();if(pointView===points)pointView=null;display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();worldFocus.abort();tableAttention.dispose();pointRequest?.controller.abort();document.removeEventListener('visibilitychange',abortHiddenPoint);points.dispose();if(pointView===points)pointView=null;display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
       if(client.keyInputManager){
         const keys=client.keyInputManager,shouldCapture=keys.shouldCaptureKeyPress;
@@ -1779,10 +1800,12 @@ function openConversation(open){
     if(target.width&&target.height)conversationDisplay?.minimize(target);
   }
   panel.hidden=!open;
+  if(wasHidden===open)resetFlightTap();
   talk.setAttribute('aria-expanded',String(open));
   if(open){
     $('#space-travel').open=false;
     updateNativeAvailability();
+    fitConversationWindow(true);
     if(wasHidden)conversationDisplay?.restore(matterHud?.toolBounds('talk'));
   }
   if(open&&sharedSurface()){
@@ -1792,13 +1815,17 @@ function openConversation(open){
       onStatus:({phase,busy})=>{$('#companion-status').textContent=phases[phase]||(busy?'La conversación está procesando tu intervención.':'Tu intervención quedó en la conversación.');},onError:say});
     sharedConversation.mount().catch(()=>say('No pude abrir tu conversación. Volvé a tocar Conversar para intentarlo.'));
   }else if(open&&!flightEnabled)$('#message').focus();
-  if(open&&flightEnabled&&wasHidden){
+  let didFocusWorld=false;
+  if(flightEnabled&&(open&&wasHidden||restoreFocus)){
     const canvas=client.getRenderer()?.composer.renderer.domElement;
-    if(canvas){canvas.tabIndex=-1;canvas.focus({preventScroll:true});}
+    if(canvas){canvas.tabIndex=-1;canvas.focus({preventScroll:true});didFocusWorld=true;}
   }
-  if(restoreFocus&&!matterHud?.focusTool('talk'))talk.focus({preventScroll:true});
+  if(!open)fitConversationWindow(true);
+  if(restoreFocus&&!didFocusWorld&&!matterHud?.focusTool('talk'))talk.focus({preventScroll:true});
 }
-bindHudPanelWindow($('#conversation-panel'),{move:$('#conversation-move'),resize:$('#conversation-resize')});
+fitConversationWindow=bindHudPanelWindow($('#conversation-panel'),{
+  move:$('#conversation-move'),resize:$('#conversation-resize'),readInsets:()=>matterHud?.conversationTravelInsets()??{},
+});
 $('#talk').onclick=()=>openConversation($('#conversation-panel').hidden);
 const mapPanel=$('#space-travel'),mapTool=$('#map-tool');
 mapTool.onclick=()=>{

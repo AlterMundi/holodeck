@@ -140,6 +140,14 @@ body:has(#conversation-panel[data-hud-chrome]:not([hidden])) .touch-controls{vis
   max-width:none;padding:8px;gap:6px
  }
 }
+#conversation-panel.shared-conversation[data-travel-lane]{
+ top:max(10px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right));padding-inline:10px
+}
+#conversation-panel.shared-conversation[data-travel-lane="bottom"]{bottom:var(--conversation-travel-edge)}
+#conversation-panel.shared-conversation[data-travel-lane="side"]{
+ left:auto;bottom:max(8px,env(safe-area-inset-bottom));max-width:none;
+ width:min(510px,calc(100vw - var(--conversation-travel-edge) - max(8px,env(safe-area-inset-right))))
+}
 #play-near{position:fixed;z-index:21;right:22px;top:148px;width:310px;max-width:calc(100vw - 44px);padding:12px 15px;border-radius:15px;font-size:14px}#play-near summary{cursor:pointer;min-height:44px;align-content:center;color:var(--gold)}#play-near summary strong{color:var(--ink)}#play-progress{display:block;margin:3px 0 0;color:var(--mint)}#play-instruction{margin:10px 0 0;color:var(--ink)}body:has(#content-visit:not([hidden]):not(.is-walking)) #play-near,body:has(#creator:not([hidden])) #play-near,body:has(#conversation-panel:not([hidden])) #play-near,body:has(#pointing:not([hidden])) #play-near{display:none}@media(max-width:740px){#play-near{top:205px;right:12px;width:calc(100vw - 24px);max-width:none;padding:10px 13px}body:has(#visit-near[hidden]) #play-near{top:148px}}
 
 /* One deliberate history surface; existing world/Conversation/viewer stay mounted. */
