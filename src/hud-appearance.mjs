@@ -49,7 +49,7 @@ export function readHudAppearance(document){
     },
     defaultWorldPalette:!light&&hudLook==='taller'&&!roomLook,
     edge:color(light?'--hud-rim':'--gold'),
-    glass:{fill:color('--hud-glass'),rim:color('--hud-rim'),brass:color('--hud-brass')},
+    glass:{fill:color('--hud-glass'),rim:color('--hud-rim'),brass:color('--hud-brass'),absorption:color('--hud-absorption')||color('--hud-glass')},
     frame:light?color('--hud-frame'):preview&&color('--control-fill')?color('--control-fill'):roomLook==='amber'?'#342322':'#12262d',
     frameOpacity:preview&&['orbita','umbral'].includes(hudLook)?.89:1,
   };

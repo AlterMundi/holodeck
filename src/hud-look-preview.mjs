@@ -131,7 +131,7 @@ export class HudLookPreview{
       this.invalidate();
     }
     const pulse=this.reduced.matches?0:Math.max(0,1-(performance.now()-(panel.hit??-Infinity))/210);
-    panel.shell.update(bounds,{colors:this.instrumentColors,lightLevel:pulse});
+    panel.shell.update(bounds,{colors:this.instrumentColors,compact:key==='world-toolbelt'||key==='world-header',lightLevel:pulse});
     if(pulse||panel.animated)this.invalidate();
     panel.animated=Boolean(pulse);
   }

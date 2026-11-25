@@ -42,9 +42,15 @@ const choice=(id,label,options,value)=>({id,component:'HudChoice',label,
   options:path(options),value:path(value),draft:path(id+'Draft'),action:action(id,{value:path(id+'Draft')})});
 const toolScale=286,toolGap=.035,toolRowHeight=.18,toolPadding=.12;
 const toolNames=['map','open','talk','appearance','video','bridge','plant','undo','activity','visit','endVisit'];
-const toolPixels={map:108,open:154,talk:112,appearance:112,video:76,bridge:153,plant:100,undo:92,activity:104,visit:124,endVisit:140};
+const toolPixels={map:130,open:154,talk:134,appearance:138,video:96,bridge:153,plant:100,undo:92,activity:126,visit:124,endVisit:140};
 
-const compactToolPixels={map:92,talk:98,appearance:108,video:66,activity:94};
+function opticalRole(surface,id,component){
+  if(surface===worldMapId||surface===worldBearingId||id==='map')return 'navigation';
+  if(['talk','open','share','discuss'].includes(id))return 'primary';
+  if(surface===toolbeltId||component==='HudRange'||component==='HudChoice')return 'utility';
+}
+const toolIcons={map:'map',talk:'conversation',appearance:'appearance',video:'video',activity:'activity'};
+const compactToolPixels={map:110,talk:116,appearance:122,video:82,activity:110};
 const pixelsForTool=(id,compact)=>compact?(compactToolPixels[id]??toolPixels[id]):toolPixels[id];
 
 function layoutTools(tools,maxWidth,compact){
@@ -72,7 +78,7 @@ function toolComponents({width,rows,compact}){
       row(rowIds[index],ids,{gap:toolGap}),
       ...ids.map(id=>button(id,path(id+'Label'),{
         disabled:path(id+'Disabled'),...(['map','talk','appearance','video'].includes(id)?{pressed:path(id+'Pressed')}:{}),
-        weight:pixelsForTool(id,compact)/66,
+        weight:pixelsForTool(id,compact)/66,...(toolIcons[id]?{icon:toolIcons[id]}:{}),
       })),
     ]),
   ];
@@ -193,7 +199,7 @@ export class MatterWorktableHud{
       canOpenNative:()=>Boolean(this.layer.overlay&&!this.layer.lost&&
         this.canvas.clientWidth>=330&&this.canvas.clientHeight>=320)});
     this.lookPreview=new HudLookPreview({document,parent:this.scene,invalidate:this.layer.invalidate});
-    this.hud=createSpatialHud({parent:this.scene,document,accessibilityRoot:this.a11y,
+    this.hud=createSpatialHud({parent:this.scene,document,accessibilityRoot:this.a11y,controlStyle:'optical',controlRole:opticalRole,
       placeSurface:(group,id)=>{
         if(id===toolbeltId)this.toolGroup=group;
         else if(id===worldMapId)this.map.group=group;
@@ -426,7 +432,7 @@ export class MatterWorktableHud{
     const maxWidth=available*toolScale/scale-toolPadding*toolScale;
     this.document.body.toggleAttribute('data-native-settings-available',maxWidth>=150);
     if(maxWidth<150)return;
-    const layout=layoutTools(tools,Math.min(this.lookPreview.stylesDock?640:590,maxWidth),compact);
+    const layout=layoutTools(tools,Math.min(this.lookPreview.stylesDock?720:670,maxWidth),compact);
     if(!this.toolGroup)this.send('createSurface',{catalogId:spatialHudCatalog.id},toolbeltId);
     const layoutKey=JSON.stringify(layout);
     if(this.toolLayoutKey!==layoutKey){

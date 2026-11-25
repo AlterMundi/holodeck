@@ -1,16 +1,16 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#183d42"><title>Holodeck · Plaza de llegada</title>
 <style>
-:root{color-scheme:dark;--ink:#f6edda;--muted:#bdd4c8;--panel:#163b3feb;--line:#dce7d32e;--gold:#eed19b;--mint:#a4d3bd;--hud-ink:#f0f7f5;--hud-panel:#0c2029d9;--hud-control:#1b343d;--hud-pressed:#305761;--hud-disabled:#243238;--hud-glass:#264b55;--hud-rim:#83d2cb;--hud-brass:#f0c892}
+:root{color-scheme:dark;--ink:#f6edda;--muted:#bdd4c8;--panel:#163b3feb;--line:#dce7d32e;--gold:#eed19b;--mint:#a4d3bd;--hud-ink:#f0f7f5;--hud-panel:#0a1924cd;--hud-absorption:#0a1b25;--hud-control:#1b343d;--hud-pressed:#305761;--hud-disabled:#243238;--hud-glass:#264b55;--hud-rim:#83d2cb;--hud-brass:#f0c892}
 body[data-room-look="orbital"]{--ink:#f1f4f7;--muted:#bfceda;--panel:#1b2d3bea;--hud-panel:#102632d9;--hud-glass:#2f5970;--hud-disabled:#243441;--line:#afd4f654;--gold:#f2c38f;--mint:#90cbee;--control-fill:#152634;--control-hover:#28455a}
 body[data-room-look="orbital-layered"]{--ink:#f1f7f9;--muted:#bbd9e6;--panel:#132e45ed;--hud-panel:#10283add;--hud-glass:#325e79;--hud-disabled:#253341;--line:#83c5eb68;--gold:#f0ba84;--mint:#8bd4f5;--control-fill:#0d2438;--control-hover:#254968}
-body[data-room-look="amber"]{--ink:#fff2df;--muted:#e2c8ae;--panel:#412a24ed;--hud-panel:#322521de;--hud-glass:#61493d;--hud-disabled:#392d29;--hud-rim:#daa183;--hud-brass:#ffd297;--line:#ecb88170;--gold:#ffd297;--mint:#f6c294;--control-fill:#30201d;--control-hover:#603f32}
+body[data-room-look="amber"]{--ink:#fff2df;--muted:#e2c8ae;--panel:#412a24ed;--hud-panel:#322521de;--hud-absorption:#281b1a;--hud-glass:#61493d;--hud-disabled:#392d29;--hud-rim:#daa183;--hud-brass:#ffd297;--line:#ecb88170;--gold:#ffd297;--mint:#f6c294;--control-fill:#30201d;--control-hover:#603f32}
 body[data-hud-look="orbita"]{--ink:#f0f4de;--muted:#b1cac1;--panel:#172f36cb;--line:#b4d88a75;--gold:#d6ed9c;--mint:#68dbbb;--control-fill:#233d40;--control-hover:#3d5b46}
 body[data-hud-look="umbral"]{--ink:#f7ebff;--muted:#d1bdda;--panel:#2c1b3cd2;--line:#c796e885;--gold:#efc3ff;--mint:#b0e6ee;--control-fill:#392649;--control-hover:#5e3972}
 body[data-hud-look="pulso"]{--ink:#fff1e8;--muted:#e2bab7;--panel:#381e31f5;--line:#efad8b85;--gold:#ffbb8f;--mint:#ff92a8;--control-fill:#44283b;--control-hover:#6e3c51}
 body[data-hud-look="estratos"]{--ink:#eefbf4;--muted:#b1d9ce;--panel:#163a3df4;--line:#8ce4ce82;--gold:#a1efda;--mint:#94d6bc;--control-fill:#254c4e;--control-hover:#38685f}
 body[data-hud-look="cabina"]{--ink:#f5f4dd;--muted:#a6c1b9;--panel:#172d31f5;--line:#8acabd85;--gold:#a4ebd1;--mint:#ebbc7c;--control-fill:#2b4244;--control-hover:#425b50}
-body[data-hud-theme="light"]{--hud-ink:#132933;--hud-panel:#edf5f3f5;--hud-control:#e0ece9;--hud-pressed:#c5e2dc;--hud-disabled:#d5dfdc;--hud-glass:#f0faf7;--hud-rim:#3e746f;--hud-brass:#79400d;--hud-frame:#e3efec}
+body[data-hud-theme="light"]{--hud-ink:#132933;--hud-panel:#edf5f3f5;--hud-absorption:#dbeeea;--hud-control:#e0ece9;--hud-pressed:#c5e2dc;--hud-disabled:#d5dfdc;--hud-glass:#f0faf7;--hud-rim:#3e746f;--hud-brass:#79400d;--hud-frame:#e3efec}
 body[data-hud-theme="light"][data-room-look="amber"]{--hud-panel:#f8f0e5f5;--hud-control:#f0e6d7;--hud-pressed:#eadac0;--hud-disabled:#e7dfd4;--hud-glass:#fff7ea;--hud-rim:#865b49;--hud-frame:#f4e9dd}
 body[data-hud-theme="light"] :is(.glass,#appearance-dialog,#video-dialog,#conversation-panel,#collection-worktable,#exhibition-index,#content-visit,#beacon-panel,#activity-dialog){color-scheme:light;color:var(--ink);--a2ui-color-primary:var(--hud-brass);--ink:var(--hud-ink);--muted:#344e59;--panel:var(--hud-panel);--gold:var(--hud-brass);--mint:#246a5e;--line:#52777b;--control-fill:var(--hud-control);--control-hover:var(--hud-pressed)}
 body[data-hud-theme="light"] :is(#conversation-panel,#content-visit,#beacon-panel) iframe{color-scheme:dark}
