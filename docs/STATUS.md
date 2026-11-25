@@ -10,7 +10,15 @@ a direct own-native fixture presented flight frame 22. A separately
 identified HTTP session read the exact same revision, and each actor's
 note was visible through both paths. Room scope, stale edits and
 restart persistence passed. Holodeck passed 420 tests with two skips.
-The combined browser and protected two-participant acceptance remain open.
+A combined Chromium session then verified the direct-to-projection exchange
+on the same archive. The own-native actor read the pose shown at the
+worktable and presented flight frame 36 with the current edition and
+revision. The web visitor followed to that confirmed presentation and
+wrote a note read back directly with its human fixture attribution. The
+other physical table retained its local ground frame 57. Leaving the room
+denied the native read. Both browsers also passed the ground and flight
+sequence, comparison, draft recovery and exit checks. The loopback
+fixture used assigned identities. Protected Home acceptance remains open.
 
 Source `0beebcb4e062df3cb7d800adf01449f8f06ad309` combines Character
 review with the protected world label and keyboard work from `5e63550`.
