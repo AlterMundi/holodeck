@@ -34,7 +34,9 @@ for(const [path,revision] of Object.entries({...ATELIER_ASSET_REVISIONS,...VALLE
   if(!path.endsWith('.glb'))continue;
   const original=join(stage,'public',path),bytes=await readFile(original);
   if(bytes.length>4*1024*1024||digest(bytes)!==revision)throw Error('Unqualified art export: '+path);
-  const packed=brotliCompressSync(bytes,{params:{[zlib.BROTLI_PARAM_QUALITY]:path in SAND3D_TRAIL_REVISIONS?11:6}});
+  // Keep the authored foyer bytes exact and make room for revised motion.
+  const compact=path in SAND3D_TRAIL_REVISIONS||path==='room-art/compaii-atelier/foyer.glb';
+  const packed=brotliCompressSync(bytes,{params:{[zlib.BROTLI_PARAM_QUALITY]:compact?11:6}});
   if(packed.length+1024>=bytes.length)continue;
   const output=join(stage,'runtime/art',path+'.br');
   await mkdir(dirname(output),{recursive:true});

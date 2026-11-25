@@ -173,9 +173,19 @@ function fallbackAvatarModel(fileUrl) {
     });
   }
 };
+// Review links pin the pose implementation as well as the rig and stock
+// animation bytes. HUD-only edits keep exact pose links valid.
+const motionStudyHash=createHash('sha256');
+for(const file of ['human-motion-study','flight-avatar-animation','humanoid-flight-poses',
+  'avatar-medium','avatar-motion-curves','humanoid-standing-idle','humanoid-ground-accents',
+  'humanoid-crouch','toroidal-locomotion','toroidal-terrain']){
+  motionStudyHash.update(file+'\0').update(await readFile(new URL('../src/'+file+'.mjs',import.meta.url)));
+}
+const motionStudyRevision=motionStudyHash.digest('hex');
 await build({entryPoints:['src/browser-entry.mjs'],outfile:'build/client.js',bundle:true,
   format:'esm',platform:'browser',target:'es2022',minify:true,
   plugins:[modelCancellation,avatarRendering],
+  define:{HOLODECK_MOTION_STUDY_REVISION:JSON.stringify(motionStudyRevision)},
   loader:{'.wasm':'file'},assetNames:'[name]-[hash]'});
 
 await build({entryPoints:['src/collection-review-worker.mjs'],outfile:'build/collection-review-worker.js',

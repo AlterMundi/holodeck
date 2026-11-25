@@ -1,11 +1,12 @@
 import {
   ACESFilmicToneMapping,AnimationMixer,Box3,Color,CylinderGeometry,DirectionalLight,
-  Fog,GridHelper,HemisphereLight,Mesh,MeshStandardMaterial,OrthographicCamera,
+  Fog,GridHelper,Group,HemisphereLight,Mesh,MeshBasicMaterial,MeshStandardMaterial,OrthographicCamera,PlaneGeometry,
   PerspectiveCamera,Raycaster,Scene,Vector2,Vector3,WebGLRenderer,
 } from 'three';
 import {ModelLoader} from '@mml-io/model-loader';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
 import {AVATARS} from './avatar-registry.mjs';
+import {createHumanMotionStudy,humanMotionStudies,motionStudyRate} from './human-motion-study.mjs';
 import {ATELIER_FOYER,CHARACTER_STUDIO} from './house-review-rooms.mjs';
 import {arrivalDoor,doorLocation,readSpace} from './space-travel.mjs';
 
@@ -19,8 +20,11 @@ const rigs={
 const names={
   idle:'Reposo',jog:'Trote',air:'En el aire',calm:'Reposo',curious:'Curiosidad',joy:'Alegría',
   sad:'Tristeza',anger:'Enojo',uncertain:'Duda',focus:'Concentración',welcome:'Saludo',
-  sleep:'Dormir',walk:'Marcha',run:'Carrera',hover:'Vuelo en el lugar',glide:'Planeo',
-  lift:'Despegue',landing:'Aterrizaje',
+  sleep:'Dormir',walk:'Marcha · clip original',run:'Carrera · clip original',
+  hover:'Vuelo en el lugar',glide:'Planeo',lift:'Despegue',landing:'Aterrizaje',
+  bound:'Zancada larga · clip original',wade:'Vadear',tread:'Flotar',swim:'Nado',
+  brace:'Frenada',scan:'Mirar alrededor',sway:'Balanceo',tinker:'Explorar',chirp:'Exclamación',
+  ...Object.fromEntries(Object.entries(humanMotionStudies).map(([id,study])=>[id,study.label])),
 };
 const surfaceId='character-studio';
 const choices=items=>Object.entries(items).map(([id,label])=>({id,label}));
@@ -109,7 +113,7 @@ function disposeFigure(figure){
   if(!figure)return;
   figure.root.removeFromParent();
   figure.mixer?.stopAllAction();
-  figure.mixer?.uncacheRoot(figure.root);
+  figure.mixer?.uncacheRoot(figure.mixer.getRoot());
   const resources=new Set();
   figure.root.traverse(object=>{
     if(!object.isMesh)return;
@@ -164,6 +168,12 @@ export async function openCharacterStudio(document){
   scene.background=new Color(0x0b1e2a);
   scene.fog=new Fog(0x0b1e2a,5,15);
   studioLights(scene);
+  const waterline=new Mesh(new PlaneGeometry(3.5,3.5),new MeshBasicMaterial({
+    color:0x3999b0,transparent:true,opacity:.20,depthWrite:false,
+  }));
+  waterline.rotation.x=-Math.PI/2;
+  waterline.visible=false;
+  scene.add(waterline);
   const camera=new PerspectiveCamera(36,1,.03,35);
   const hudCamera=new OrthographicCamera(-1,1,1,-1,.1,12);
   hudCamera.position.z=4;
@@ -171,7 +181,7 @@ export async function openCharacterStudio(document){
   const loader=new ModelLoader();
   const viewAngles={front:0,angle:.62,side:Math.PI/2};
   let view=Object.hasOwn(viewAngles,url.searchParams.get('vista'))?url.searchParams.get('vista'):'angle';
-  let figure,currentAction,group,rig,clip,frame=0,playing=false,revision='',note='',message='',showedAt=-Infinity;
+  let figure,playback,group,rig,clip,frame=0,playing=false,revision='',note='',message='',showedAt=-Infinity;
   let sequence=0,elapsed=0,previous=0,visible=true;
   const reduce=window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -191,14 +201,34 @@ export async function openCharacterStudio(document){
     return {ray:ray.ray};
   }});
 
+  const hex=bytes=>Array.from(bytes,n=>n.toString(16).padStart(2,'0')).join('');
+
   async function readAsset(file){
     const source=new URL(file,url);
     const response=await fetch(source);
     if(!response.ok)throw Error('Missing rig or clip');
     const bytes=await response.arrayBuffer();
     const hash=new Uint8Array(await window.crypto.subtle.digest('SHA-256',bytes));
-    const digest=Array.from(hash,n=>n.toString(16).padStart(2,'0')).join('');
+    const digest=hex(hash);
     return {model:await loader.loadFromBuffer(bytes,new URL('.',source).href),digest};
+  }
+
+  const clipOptions=(profile,figure)=>profile.clips
+    ?[...Object.keys(profile.clips),...Object.keys(humanMotionStudies)]:Array.from(figure.clips.keys());
+
+  function targetClip(model,next,figure){
+    const clip=model.animations[0]?.clone();
+    if(!clip)return null;
+    clip.name=next;
+    clip.tracks=clip.tracks.filter(track=>figure.model.getObjectByName(track.name.split('.')[0]));
+    return clip;
+  }
+
+  async function stockClip(profile,next,figure){
+    const {model,digest}=await readAsset(profile.clips[next]);
+    const selected=targetClip(model,next,figure);
+    disposeFigure({root:model.group});
+    return {selected,digest};
   }
 
   async function loadRig(next,requestedClip,requestedFrame=0,expected=null){
@@ -208,37 +238,79 @@ export async function openCharacterStudio(document){
     playing=false;
     report('Abriendo el personaje…');
     const {model,digest}=await readAsset(profile.file);
-    const root=model.group;
+    const root=new Group(),orientation=new Group();
+    root.add(orientation);
+    orientation.add(model.group);
     normalise(root);
-    const nextFigure={root,rigDigest:digest,mixer:new AnimationMixer(root),clips:new Map(model.animations.map(item=>[item.name,item]))};
+    const nextFigure={root,orientation,model:model.group,rigDigest:digest,
+      mixer:new AnimationMixer(model.group),clips:new Map(model.animations.map(item=>[item.name,item]))};
     if(id!==sequence){disposeFigure(nextFigure);return;}
+    playback?.stop();
     disposeFigure(figure);
     figure=nextFigure;
-    currentAction=null;
+    playback=null;
+    waterline.visible=false;
     rig=next;
     scene.add(root);
-    const options=profile.clips?Object.keys(profile.clips):Array.from(figure.clips.keys());
-    await loadClip(options.includes(requestedClip)?requestedClip:options[0],requestedFrame,expected,id);
+    const options=clipOptions(profile,figure);
+    const primary=options.includes(requestedClip)?requestedClip:profile.clips?'estudio-vuelo':options[0];
+    await loadClip(primary,requestedFrame,expected,id);
   }
 
   async function loadClip(next,requestedFrame=0,expected=null,id=++sequence){
     const activeFigure=figure,profile=rigs[rig];
     if(!activeFigure||!next)return;
     playing=false;
+    const study=profile.clips&&Object.hasOwn(humanMotionStudies,next)?humanMotionStudies[next]:null;
     let selected=activeFigure.clips.get(next),clipDigest=activeFigure.rigDigest;
     if(profile.clips){
-      if(!Object.hasOwn(profile.clips,next))return;
-      const {model,digest}=await readAsset(profile.clips[next]);
-      disposeFigure({root:model.group});
+      if(!study&&!Object.hasOwn(profile.clips,next))return;
+      const loaded=await stockClip(profile,study?'idle':next,activeFigure);
       if(figure!==activeFigure||id!==sequence)return;
-      selected=model.animations[0]?.clone();
-      if(selected)selected.tracks=selected.tracks.filter(track=>activeFigure.root.getObjectByName(track.name.split('.')[0]));
-      clipDigest=digest;
+      selected=loaded.selected;
+      clipDigest=loaded.digest;
     }
     if(!selected?.tracks.length||!(selected.duration>0))throw Error('Missing animation');
-    activeFigure.mixer.stopAllAction();
-    currentAction=activeFigure.mixer.clipAction(selected).play();
-    currentAction.paused=true;
+    if(study){
+      const signature=new TextEncoder().encode(HOLODECK_MOTION_STUDY_REVISION+' '+next+' '+clipDigest);
+      const bytes=new Uint8Array(await window.crypto.subtle.digest('SHA-256',signature));
+      if(figure!==activeFigure||id!==sequence)return;
+      clipDigest=hex(bytes);
+    }
+    playback?.stop();
+    playback=null;
+    waterline.visible=false;
+    if(study){
+      const run=createHumanMotionStudy(activeFigure.model,selected,study);
+      const neutral=[];
+      activeFigure.model.traverse(node=>{
+        if(node===activeFigure.model||node.isBone)neutral.push([node,node.position.clone(),node.quaternion.clone()]);
+      });
+      playback={duration:run.count/motionStudyRate,
+        draw(time){
+          const depth=run.apply(activeFigure.model,activeFigure.orientation,Math.round(time*motionStudyRate));
+          waterline.visible=Number.isFinite(depth);
+          if(waterline.visible)waterline.position.y=activeFigure.root.position.y+depth*activeFigure.root.scale.y;
+        },
+        stop(){
+          waterline.visible=false;
+          activeFigure.orientation.quaternion.identity();
+          for(const [node,position,rotation] of neutral){
+            node.position.copy(position);
+            node.quaternion.copy(rotation);
+          }
+        }};
+    }else{
+      const current=activeFigure.mixer.clipAction(selected).play();
+      current.paused=true;
+      playback={duration:selected.duration,draw(time){
+        current.time=time;
+        activeFigure.mixer.update(0);
+      },stop(){
+        current.stop();
+        if(profile.clips)activeFigure.mixer.uncacheClip(selected);
+      }};
+    }
     revision=activeFigure.rigDigest+'.'+clipDigest;
     clip=next;
     receive('updateComponents',{components:controls(frameLimit())});
@@ -247,19 +319,16 @@ export async function openCharacterStudio(document){
     refresh();
   }
 
-  function frameLimit(){return currentAction?Math.min(1000,Math.ceil(currentAction.getClip().duration*30)):0;}
+  function frameLimit(){return playback?Math.min(1000,Math.ceil(playback.duration*motionStudyRate)):0;}
   function scrub(target){
     frame=Math.max(0,Math.min(Math.round(Number(target)||0),frameLimit()));
-    elapsed=frame/30;
-    if(currentAction){
-      currentAction.time=Math.min(currentAction.getClip().duration,elapsed);
-      figure.mixer.update(0);
-    }
+    elapsed=frame/motionStudyRate;
+    playback?.draw(Math.min(playback.duration,elapsed));
   }
   function report(text){message=text;status.textContent=text;refresh();}
   function refresh(){
     if(!figure||!clip)return;
-    const options=rigs[rig].clips?Object.keys(rigs[rig].clips):Array.from(figure.clips.keys());
+    const options=clipOptions(rigs[rig],figure);
     receive('updateDataModel',{value:{rig,clip,rigOptions:choices(Object.fromEntries(Object.entries(rigs).map(([id,value])=>[id,value.label]))),
       clipOptions:choices(Object.fromEntries(options.map(id=>[id,names[id]||id]))),frame,
       playLabel:playing?'Pausar':'Reproducir',note,status:message,
@@ -271,9 +340,10 @@ export async function openCharacterStudio(document){
     return share.href;
   }
   async function activate(name,value){
-    if(!name||!currentAction)return;
+    if(!name)return;
     if(name==='rig'&&Object.hasOwn(rigs,value)&&rig!==value)return loadRig(value);
-    if(name==='clip'&&typeof value==='string'&&clip!==value)return loadClip(value);
+    if(name==='clip'&&typeof value==='string'&&(clip!==value||!playback))return loadClip(value);
+    if(!playback)return;
     if(name==='clock'){playing=false;scrub(value??frame);}
     if(name==='play')playing=!playing;
     if(name==='back'||name==='forward'){playing=false;scrub(frame+(name==='back'?-1:1));}
@@ -299,12 +369,10 @@ export async function openCharacterStudio(document){
     if(!visible||document.hidden)return;
     const dt=Math.min(.05,(now-(previous||now))/1000);
     previous=now;
-    if(playing&&currentAction){
-      const duration=currentAction.getClip().duration;
-      elapsed=(elapsed+dt)%duration;
-      currentAction.time=elapsed;
-      figure.mixer.update(0);
-      frame=Math.floor(elapsed*30);
+    if(playing&&playback){
+      elapsed=(elapsed+dt)%playback.duration;
+      playback.draw(elapsed);
+      frame=Math.floor(elapsed*motionStudyRate);
       if(now-showedAt>150){showedAt=now;refresh();}
     }
     const width=stage.clientWidth,height=stage.clientHeight;
@@ -323,7 +391,7 @@ export async function openCharacterStudio(document){
     renderer.autoClear=true;
     renderer.render(scene,camera);
     hud.update();
-    if(group&&currentAction){
+    if(group&&figure&&clip){
       const scale=Math.min(169,(compact?width*.90:width*.36)/2.02,
         (compact?height*.47:height*.75)/1.87);
       placeHudInViewport(group,hudCamera,{width,height,pixelsPerUnit:scale,
@@ -337,9 +405,11 @@ export async function openCharacterStudio(document){
   window.addEventListener('pagehide',event=>{
     if(event.persisted)return;
     visible=false;
+    sequence++;
     renderer.setAnimationLoop(null);
     unbind();
     hud.dispose();
+    playback?.stop();
     disposeFigure(figure);
     scene.traverse(object=>{if(object.isMesh||object.isLineSegments){object.geometry.dispose();object.material.dispose();}});
     renderer.dispose();
