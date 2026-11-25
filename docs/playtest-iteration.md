@@ -1381,8 +1381,9 @@ installed owner validator accepted the 33,320,960-byte archive
 from `9dbe660` with 80 inventory payloads. The unpacked archive painted
 all six complete labels including the compact E shortcut in controlled
 Chromium, with the same single crossing per activation. The controlled
-visitor used a stand-in collection. Production remains on `20726f08a3e0`
-and the signed-in visitor pair is still open.
+visitor used a stand-in collection. The [protected service selected the
+exact archive](STATUS.md#november-25-oriented-arrival-and-compact-hud).
+The signed-in visitor pair is still open.
 
 ## Authored flight and swimming poses
 

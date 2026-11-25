@@ -559,7 +559,9 @@ by day and at dusk. The [flagstone approach candidate](playtest-iteration.md#fla
 joins the trail to the existing facade and frames it with current plant
 assets. The exact candidate passed the controlled lightweight route
 and frame screen on a Raspberry Pi 5. The [short landscape HUD candidate](playtest-iteration.md#short-landscape-entrance-and-dock)
-addresses the prompt and dock overlap in #16. A later Sand3D integration
+addresses the prompt and dock overlap in #16 and is
+[selected in the protected service](STATUS.md#november-25-oriented-arrival-and-compact-hud).
+A later Sand3D integration
 still needs its own exact packed-size and device checks. The real shared
 workshop visit remains open.
 

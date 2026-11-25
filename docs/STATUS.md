@@ -1,8 +1,38 @@
 # Current MVP work
 
-## November 25 toroidal sky and worktable lighting
+## November 25 oriented arrival and compact HUD
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/) serves
+`873ae82b51f6` from `9dbe660`. A fresh toroidal arrival faces the permitted
+house entrance. The path ends in a flagstone landing and the door prompt
+moves beside the compact dock on short landscape displays. Touch layouts
+can stack the prompt clear of the movement control. The earlier worktable
+light and improved toroidal sky remain active.
+
+The existing Home App and audience were verified after activation.
+`20726f08a3e0` is the immediate rollback and `b74aa8939953` is the
+compatible older recovery. Both are retained as exact installed trees and
+published archives. The three archives total 99,973,120 bytes.
+`ccb72f15ef10` was retired from the publisher after preserving its exact
+local archive and confirming both retained rollback versions.
+
+The controlled package passed 352 tests with two optional skips. The
+short layout was exercised on a Raspberry Pi 5 with the same dock geometry
+and in the final exact package in Chromium. Protected HTTPS verified the
+exact client, terrain worker, avatar and health responses, four access
+denials and refusal after revoking the temporary package reader. All
+80 installed payloads matched. Native verification preserved the same
+world, 30 entities, four content nodes and sequence 403. Twenty state
+files were byte-identical. The two room checkpoint files rotated as the
+verification saved its own observations, with no change to world content.
+
+Production is available. The shared visit with two independently signed-in
+people and native Conversation return through their actual interaction
+remain to verify.
+
+## November 25 toroidal sky and worktable lighting
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/) served
 `20726f08a3e0` from `151ef83`. It includes the filtered orbital worktable
 light, cut-aware specimen shadows, and a stable integer cloud lattice.
 Matched physical RTX 2060 captures at the toroidal spawn show the sky
