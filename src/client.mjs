@@ -1060,9 +1060,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
             // which can still be loading after the coarse ring is traversable.
             const now=performance.now();
             sceneryAfter??=now+240;
-            if(now>=sceneryAfter&&ring.hasDetailedTerrain){
+            if(now>=sceneryAfter){
               scenery??=new ToroidalScenery(renderer.mmlCompositionScene.group,base,renderer.mmlCompositionScene.mmlScene);
-              scenery.update(position,rendererBudget.lightweight,door,solar?.daylight);
+              scenery.update(position,rendererBudget.lightweight,door,solar?.daylight,ring.hasDetailedTerrain);
             }
           }
         }

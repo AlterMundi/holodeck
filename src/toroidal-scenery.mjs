@@ -294,9 +294,11 @@ export class ToroidalScenery {
     this.color=new Color();
   }
 
-  update(position,lightweight,door,daylight=1) {
+  update(position,lightweight,door,daylight=1,groundCoverReady=true) {
     this.daylight.value=daylight;
     this.overlook.update(position);
+    // Authored landmarks and their colliders are independent of ground cover.
+    if(!groundCoverReady)return;
     this.detail?.update(position,lightweight,door);
     const {u,v}=terrainCoordinates([position.x,position.y,position.z]);
     if(![u,v].every(Number.isFinite))return;
