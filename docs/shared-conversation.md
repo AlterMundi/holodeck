@@ -110,16 +110,56 @@ must associate that reserved receipt with the original for text and audio before
 admission. Authorization and source verification continue to use that original
 and receipt. The reducer never authorizes a world operation.
 
-The receiver installs a baseline only with retained canonical admission. A
-missing baseline returns a typed recovery outcome before admission so the same
-original can use its frozen full projection at the same order. Do not recapture
-or recompute it after an uncertain write or after moving the avatar. A stale order never changes the
-installed baseline. A return indicating uncertain admission uses native status
+The receiver records a baseline candidate with retained canonical admission.
+Reuse requires confirmed delivery into the continuing native context. A missing
+baseline returns a typed recovery outcome before admission so the same original
+can use its frozen full projection at the same order. Do not recapture or
+recompute it after an uncertain write or after moving the avatar. A stale order
+never changes the installed baseline. A return indicating uncertain admission uses native status
 recovery. To select the new protocol, verify text, voice, reload, lost
 acknowledgment, concurrent preparations and revoked room access against the
 canonical owner. Unchanged then occupies zero user attachment slots, with the
 machine receipt still independently verifiable. The full source attachment
 remains the active compatibility contract pending that integration.
+
+### Canonical writer integration
+
+The current DaimonApp dashboard dispatches text through
+`dashboard/provider.py` and ordinary voice through its voice submit provider.
+Both reach `src/app/conversation_inputs.rs` and converge on
+`Store::capture_original_mode` in `src/store/conversation_inputs.rs`. That
+transaction compares the immutable original on retry and inserts retained
+originals. Use it to associate the machine receipt with the original.
+Conversation determines when the receipt and baseline are eligible for reuse
+from actual native delivery and continuity. A row insertion alone establishes
+retention. Native status and source lookup must recover the same original
+after a lost acknowledgment, including when its earlier baseline was evicted.
+
+Before the writer attempt, the authorized native bridge reserves one order
+and current baseline reference for the exact original and scope. Holodeck
+freezes the projected full state and the selected packet using that reservation.
+A long voice capture may finish after a later original. After checking fresh
+scope and confirming its reservation is still unadmitted, the writer may
+retain the earlier original with its frozen full context. The newer baseline
+and order floor stay in place. A late delta without its base needs the same
+original's frozen full context. A known installed packet must match the
+retained order and exact packet digest. The writer always keeps the order floor
+at or above the last installed order, including when a cached base is corrupt
+or absent. Keep status recovery available after
+later packets advance the baseline. Any independent retained receipt needed
+for a native world action still undergoes the existing actor, room and
+native-result checks.
+
+Qualification requires the real text and ordinary voice writers with first
+full, changed, unchanged, concurrent voice/text, revoke, evict, and lost reply
+cases. Exercise unchanged with eight otherwise valid human files. Verify
+that the canonical source survives reopening and remains attributable to the
+original even when it occupied zero human attachment slots. A new native
+context that cannot continue the installed semantic reference requires a
+fresh full context. These changes are tracked in
+[Holodeck #19](https://github.com/AlterMundi/holodeck/issues/19).
+[DaimonApp #1022](https://github.com/AlterMundi/DaimonApp/issues/1022) owns the
+later A2UI presentation of Conversation itself.
 
 ## Implemented world-side source seam
 

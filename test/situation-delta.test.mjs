@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 import {applySituationDelta, planSituationDelta, situationLane} from '../src/situation-delta.mjs';
 
@@ -106,4 +107,77 @@ test('baseline recovery reuses frozen content and respects a surviving order flo
   assert.equal(recovered.state.pose.cell[0], 2);
   assert.equal(recovered.state.selection.workstation.id, 'station');
   assert.equal(recovered.state.work.contents, null);
+});
+
+test('an earlier voice capture can carry only its own full state after a newer text installs', () => {
+  const voice = {...observation, referredWorktable: {project: 'first'}};
+  const text = {...observation, referredWorktable: {project: 'later'},
+    clientReportedView: {value: {local: {position: {x: 90, y: 0, z: 0}}}}};
+  const later = applySituationDelta(lane, plan(6, text)).baseline;
+  const packet = plan(5, voice, later);
+  assert.equal(packet.kind, 'full');
+  assert.deepEqual(applySituationDelta(lane, packet, {baseline: later}), {kind: 'stale'});
+  const historical = applySituationDelta(lane, packet, {baseline: later, allowHistoricalFull: true});
+  const before = structuredClone(later);
+  const recording = planSituationDelta({...authority, order: 5}, voice, installed);
+  assert.equal(recording.packet.kind, 'delta');
+  assert.deepEqual(applySituationDelta(lane, recording.packet, {baseline: later, allowHistoricalFull: true}),
+    {kind: 'needs-full'});
+  assert.deepEqual(applySituationDelta(lane, recording.full, {baseline: later, allowHistoricalFull: true}), historical);
+  assert.equal(historical.kind, 'historical');
+  assert.ok(!Object.hasOwn(historical, 'baseline'));
+  assert.deepEqual(historical.state, plan(5, voice).state);
+  assert.deepEqual(later, before);
+  assert.equal(later.state.selection.worktable.project, 'later');
+  const damaged = {...packet, state: {...packet.state, selection: null}};
+  assert.throws(() => applySituationDelta(lane, damaged, {baseline: later, allowHistoricalFull: true}), /full situation/);
+});
+
+test('only an exact installed packet is a recovered acknowledgment', () => {
+  const packet = plan(2, observation, installed);
+  const result = applySituationDelta(lane, packet, {baseline: installed});
+  const options = {baseline: result.baseline, installedPacket: result.packetDigest};
+  assert.deepEqual(applySituationDelta(lane, JSON.parse(JSON.stringify(packet)), options), {kind: 'installed'});
+  assert.throws(() => applySituationDelta(lane, {...packet, baseOrder: 0}, options), /Invalid situation base/);
+  const different = plan(2, {...observation, place: {...observation.place, exhibitRevision: 8}});
+  assert.throws(() => applySituationDelta(lane, different, options), /different packet/);
+  const alternate = plan(2, observation);
+  assert.throws(() => applySituationDelta(lane, alternate, options), /different packet/);
+  assert.deepEqual(applySituationDelta(lane, packet, {floor: 2}), {kind: 'stale'});
+  assert.throws(() => applySituationDelta(lane, {...original, kind: 'invalid'}, options), /packet kind/);
+  const future = plan(4, observation, installed);
+  assert.deepEqual(applySituationDelta(lane, future, {baseline: installed, floor: 3}), {kind: 'needs-full'});
+});
+
+test('authored node instructions are semantic even when a node has progress', () => {
+  const exterior = {...observation, scope: 'structured-room-overview',
+    nodes: {'node-fixture': {revision: 2, instruction: 'Place the green light',
+      status: 'Pending', progress: {through: 2, complete: false}}}};
+  const exteriorLane = situationLane({...authority, observation: exterior});
+  const baseline = applySituationDelta(exteriorLane, plan(1, exterior)).baseline;
+  const next = structuredClone(exterior);
+  next.nodes['node-fixture'].progress.through++;
+  assert.equal(plan(2, next, baseline).kind, 'unchanged');
+  next.nodes['node-fixture'].instruction = 'Place the violet light';
+  assert.equal(plan(2, next, baseline).kind, 'delta');
+});
+
+test('contradictory fields fail before a receipt can acknowledge them', () => {
+  const unchanged = plan(2, observation, installed);
+  assert.throws(() => applySituationDelta(lane, {...unchanged, changes: {selection: null}}, {baseline: installed}),
+    /Invalid situation fields/);
+  const late = {...original, unrelated: true};
+  assert.throws(() => applySituationDelta(lane, late, {floor: 2, allowHistoricalFull: true}),
+    /Invalid situation fields/);
+});
+
+test('correctly hashed but malformed state cannot establish a baseline', () => {
+  const state = {place: {}, pose: null, recentWork: {}, selection: {}, work: {}};
+  const revision = createHash('sha256').update(JSON.stringify(state)).digest('hex');
+  const packet = {...original, state, revision};
+  assert.throws(() => applySituationDelta(lane, packet), /Invalid full situation/);
+  const delta = {...plan(2, observation, installed), kind: 'delta', changes: {recentWork: {}}};
+  assert.throws(() => applySituationDelta(lane, delta, {baseline: installed}), /Invalid situation state/);
+  const invalidBaseline = {lane, order: 1, state, revision};
+  assert.equal(plan(2, observation, invalidBaseline).kind, 'full');
 });

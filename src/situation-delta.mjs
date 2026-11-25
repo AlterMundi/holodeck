@@ -2,6 +2,10 @@ import {createHash} from 'node:crypto';
 
 const SCHEMA = 'holodeck.situation-delta/v1';
 const FIELDS = ['place', 'selection', 'pose', 'work', 'recentWork'];
+const HEADER = ['schema', 'lane', 'order', 'revision', 'kind'];
+const PAYLOAD = new Map([
+  ['full', ['state']], ['unchanged', ['base', 'baseOrder']], ['delta', ['base', 'baseOrder', 'changes']],
+]);
 const WORK_TYPES = new Set(['garden.place', 'garden.update', 'garden.remove',
   'node.place', 'node.update', 'node.remove', 'bridge.set']);
 const revision = /^[a-f0-9]{64}$/;
@@ -23,12 +27,14 @@ function scenePosition(view, previous) {
   if (!position || !['x', 'y', 'z'].every(axis => Number.isFinite(position[axis]) && Math.abs(position[axis]) <= 1e9)) return null;
   // Preserve a coarse client-reported location, not a claim of observed attention.
   const cellMeters = 0.5;
+  const priorCell = previous?.kind === 'client-reported-position' && previous.cellMeters === cellMeters
+    ? previous.cell : null;
   return {
     kind: 'client-reported-position',
     cellMeters,
     cell: ['x', 'y', 'z'].map((axis, index) => {
       const coordinate = position[axis] / cellMeters;
-      const old = previous?.cell?.[index];
+      const old = priorCell?.[index];
       const margin = 0.15;
       return Number.isInteger(old) && coordinate >= old - margin && coordinate < old + 1 + margin
         ? old : Math.floor(coordinate);
@@ -71,8 +77,7 @@ function projectSituation(observation, previous) {
     nodes: observation.nodes ? Object.fromEntries(Object.entries(observation.nodes).map(([id, node]) => {
       if (!node.progress) return [id, node];
       const {through, ...progress} = node.progress;
-      const {instruction, status, ...definition} = node;
-      return [id, {...definition, progress}];
+      return [id, {...node, progress}];
     })) : null,
     entities: observation.entities ?? null,
   };
@@ -90,9 +95,15 @@ export function situationLane({generation, binding, actorRef, beingRef, observat
   return identify(values);
 }
 
+const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+
 function validState(state) {
-  return state && !Array.isArray(state) && Object.keys(state).length === FIELDS.length &&
-    FIELDS.every(key => Object.hasOwn(state, key));
+  return record(state) && Object.keys(state).length === FIELDS.length &&
+    FIELDS.every(key => Object.hasOwn(state, key)) &&
+    record(state.place) && record(state.selection) && record(state.work) &&
+    (state.pose === null || record(state.pose)) &&
+    Array.isArray(state.recentWork) && state.recentWork.length <= 8 &&
+    state.recentWork.every(event => record(event) && Number.isSafeInteger(event.sequence) && event.sequence > 0);
 }
 
 function matchesBase(base, lane) {
@@ -106,8 +117,9 @@ export function planSituationDelta(authority, observation, acknowledged = null) 
   const lane = situationLane({...authority, observation});
   const {order} = authority;
   if (!Number.isSafeInteger(order) || order < 1) throw new Error('A receiving order is required');
-  const hasBase = matchesBase(acknowledged, lane);
-  if (hasBase && order <= acknowledged.order) throw new Error('The original preceded the installed situation');
+  // An earlier original (for example a long voice capture) must not borrow
+  // pose or work history from a conversation state installed after it.
+  const hasBase = matchesBase(acknowledged, lane) && acknowledged.order < order;
   const state = projectSituation(observation, hasBase ? acknowledged.state : null);
   const current = identify(state);
   const envelope = {schema: SCHEMA, lane, order, revision: current};
@@ -120,38 +132,63 @@ export function planSituationDelta(authority, observation, acknowledged = null) 
   return {packet: {...envelope, kind: 'delta', base, baseOrder, changes}, full};
 }
 
-// Pure receiver operation. The caller is responsible for atomically retaining
-// the native original and its association before acknowledging installation.
-// A semantic digest mismatch signals corruption. A missing or stale base
-// requests a new full packet for the same still-unadmitted original.
-export function applySituationDelta(lane, packet, {baseline = null, floor = 0} = {}) {
+// Only the canonical writer can permit an earlier, still-unadmitted original
+// to carry historical source. It must check the original ID and current
+// authority separately. Historical results never propose installing a base.
+export function applySituationDelta(lane, packet, {
+  baseline = null, floor = 0, installedPacket = null, allowHistoricalFull = false,
+} = {}) {
   if (typeof lane !== 'string' || !revision.test(lane) || packet?.schema !== SCHEMA ||
       packet.lane !== lane || !Number.isSafeInteger(packet.order) || packet.order < 1 ||
       typeof packet.revision !== 'string' || !revision.test(packet.revision))
     throw new Error('Invalid situation envelope');
   if (!Number.isSafeInteger(floor) || floor < 0) throw new Error('A valid order floor is required');
-  const hasBase = matchesBase(baseline, lane);
-  if (packet.order <= Math.max(floor, hasBase ? baseline.order : 0)) return {kind: 'stale'};
-  let state;
-  switch (packet.kind) {
-    case 'full':
-      if (!validState(packet.state)) throw new Error('Invalid full situation');
-      state = packet.state;
-      break;
-    case 'unchanged':
-    case 'delta':
-      if (!hasBase || baseline.revision !== packet.base || baseline.order !== packet.baseOrder)
-        return {kind: 'needs-full'};
-      state = baseline.state;
-      if (packet.kind === 'delta') {
-        const keys = Object.keys(packet.changes ?? {});
-        if (!keys.length || keys.some(key => !FIELDS.includes(key))) throw new Error('Invalid situation changes');
-        state = {...state, ...packet.changes};
-      }
-      break;
-    default:
-      throw new Error('Invalid situation packet kind');
+
+  const payload = PAYLOAD.get(packet.kind);
+  if (!payload) throw new Error('Invalid situation packet kind');
+  const fields = [...HEADER, ...payload];
+  if (!record(packet) || Object.keys(packet).length !== fields.length ||
+      !fields.every(key => Object.hasOwn(packet, key)))
+    throw new Error('Invalid situation fields');
+
+  const full = packet.kind === 'full';
+  if (full) {
+    if (!validState(packet.state) || identify(packet.state) !== packet.revision)
+      throw new Error('Invalid full situation');
+  } else {
+    if (typeof packet.base !== 'string' || !revision.test(packet.base) ||
+        !Number.isSafeInteger(packet.baseOrder) || packet.baseOrder < 1 || packet.baseOrder >= packet.order ||
+        packet.kind === 'unchanged' && packet.revision !== packet.base)
+      throw new Error('Invalid situation base');
+    if (packet.kind === 'delta') {
+      const keys = record(packet.changes) ? Object.keys(packet.changes) : [];
+      if (!keys.length || keys.some(key => !FIELDS.includes(key))) throw new Error('Invalid situation changes');
+    }
   }
-  if (identify(state) !== packet.revision) throw new Error('Situation revision mismatch');
-  return {kind: 'ready', baseline: {lane, order: packet.order, revision: packet.revision, state: structuredClone(state)}};
+
+  const hasBase = matchesBase(baseline, lane);
+  const latest = Math.max(floor, hasBase ? baseline.order : 0);
+  if (packet.order < latest) {
+    if (!allowHistoricalFull) return {kind: 'stale'};
+    return full ? {kind: 'historical', state: structuredClone(packet.state)} : {kind: 'needs-full'};
+  }
+  const packetDigest = identify(packet);
+  if (packet.order === latest) {
+    if (!hasBase || baseline.order !== latest) return {kind: 'stale'};
+    if (packet.revision !== baseline.revision || installedPacket && packetDigest !== installedPacket)
+      throw new Error('The situation order already contains a different packet');
+    return installedPacket ? {kind: 'installed'} : {kind: 'stale'};
+  }
+
+  let state = packet.state;
+  if (!full) {
+    if (!hasBase || baseline.order < floor || baseline.revision !== packet.base || baseline.order !== packet.baseOrder)
+      return {kind: 'needs-full'};
+    state = packet.kind === 'delta' ? {...baseline.state, ...packet.changes} : baseline.state;
+    if (!validState(state)) throw new Error('Invalid situation state');
+    if (identify(state) !== packet.revision) throw new Error('Situation revision mismatch');
+  }
+  return {kind: 'ready', packetDigest, baseline: {
+    lane, order: packet.order, revision: packet.revision, state: structuredClone(state),
+  }};
 }

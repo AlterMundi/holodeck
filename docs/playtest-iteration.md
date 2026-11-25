@@ -167,6 +167,17 @@ out-of-order delivery and recovery after losing the baseline. The tests exercise
 the codec. Live zero-attachment delivery is still open under
 [Holodeck #19](https://github.com/AlterMundi/holodeck/issues/19).
 
+A later Fable High review found that a voice capture could arrive after a newer
+text had installed its context. The source planner and reducer now allow the
+earlier original's authorized frozen full projection without moving the
+baseline back. An exact installed packet recovers its acknowledgment. Opus
+5.5 High identified the late delta case, contradictory envelope fields and
+malformed but correctly hashed state; the corrections request the saved full
+packet for that exact original and reject malformed inputs before install.
+The receiving contract identifies the shared text/voice retention transaction.
+The deployed Conversation still uses the established full-file path until its
+writer retains the new machine receipt and the native delivery path is verified.
+
 ## Video and Appearance HUD
 
 The shared-world toolbelt presents Video and Appearance as Three.js A2UI
