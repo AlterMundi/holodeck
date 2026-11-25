@@ -60,6 +60,21 @@ the turn cue and the first ground contact. These bookmarks come from the
 sampled control and contact state. Selecting one pauses playback and seeks
 to its exact recorded frame.
 
+## Studio on compact displays
+
+The compact HUD groups controls into **Pose**, **Clips**, **Comparar** and
+**Notas**. Portrait places the rig above the controls. Short landscape
+places them beside it. The same Three.js controls use the same playback and
+room actions across layouts. The host fits the active panel to the viewport
+and keeps its text at screen density. It keeps 46 px plates for the base
+controls on a 390 px portrait viewport. Expanded menus may scale to fit
+available height.
+
+Section selection is browser-local. Switching sections preserves an
+unpublished note and its caret. Publishing still requires the ordinary
+explicit action in the current room. Orbit, zoom and playback selection
+are independent of the visible controls.
+
 ## Room-scoped pose notes
 
 Enter the Character Design Room through the Atelier to share a note or read
