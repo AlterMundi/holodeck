@@ -122,6 +122,26 @@ canonical owner. Unchanged then occupies zero user attachment slots, with the
 machine receipt still independently verifiable. The full source attachment
 remains the active compatibility contract pending that integration.
 
+### Local avatar microphone motion
+
+[DaimonApp PR #1035](https://github.com/AlterMundi/DaimonApp/pull/1035) adds
+an optional local signal to the existing bound Conversation iframe. Ordinary
+capture with live PCM uses Conversation's existing meter. The parent must opt in.
+Samples carry a rounded scalar only, bound to the actor, visit, frame and
+capture's original binding. The owner sends zero when capture stops or the scope
+ends. No content, device details or new peer-presence data use this path.
+Chromium with two independent loopback origins verified tone, silence and opt-out
+with generated PCM using the real frame and meter scripts. Recorder tests verify
+that a late PCM callback cannot revive the former capture's signal.
+
+The selected browser does not yet request the signal. The four current human
+GLBs expose neither a jaw bone nor mouth morph targets. Author and verify the
+facial poses on both rigs, bind the local channel with short sample expiry,
+and qualify a real microphone in the protected Conversation surface. Ordinary
+capture without live PCM and the continuous voice engines are outside the
+producer candidate. Any peer rendering follows the audience of the existing
+authorized voice path.
+
 ### Canonical writer integration
 
 [DaimonApp draft PR #1031](https://github.com/AlterMundi/DaimonApp/pull/1031)
