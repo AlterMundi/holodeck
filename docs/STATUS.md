@@ -1,5 +1,21 @@
 # Current MVP work
 
+## November 25 combined optical HUD and Character Design Room candidate
+
+Source `b1af25131d4b` on `design/character-studio` combines the optical dock,
+map, Matter controls and Conversation surround with the reviewed studio
+controls, exact pose notes and room presentation. It pins Proyección
+`fee3570c516d`. The trail and scale use the existing terrain data. This
+candidate does not select the separate environment art branch.
+
+The reproducible archive is `8006b8cf1480a67d` with 85 payload files.
+The exact package passed two-visitor pose review and note scoping,
+keyboard and touch map controls, the canonical Conversation mount with
+a loopback app fixture, and two-visitor Matter entry, share, follow,
+clearing and exit. The Node 24 suite passed 400 tests with two optional
+skips. This is staged evidence. The protected release still needs
+selection of this combined package and independent signed-in acceptance.
+
 ## November 25 grounded companion and humanoid pose studies
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
