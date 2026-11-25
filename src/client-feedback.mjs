@@ -10,6 +10,7 @@ export class WorldNotice {
   if(this.expires===undefined||this.motion?.matches)return 1;
   return Math.max(0,Math.min(1,(this.expires-this.clock())/hintFade));
  }
+ get temporary(){return this.timer!==null;}
  clear(){
   this.serial++;if(this.timer!==null)this.cancel(this.timer);this.timer=null;this.expires=undefined;
   this.animation?.cancel();this.animation=null;this.element.textContent='';

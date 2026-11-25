@@ -382,6 +382,7 @@ let flightEnabled=false,previousSpacePress=null,radialMovementMode='ground';
 const verticalHelp=document.getElementById('world-vertical-help');
 const dryVerticalHelp=verticalHelp.textContent;
 let fitConversationWindow=()=>{};
+const conversationFirst=matchMedia('(max-width:740px), (max-width:1180px) and (max-height:540px)');
 const resetFlightTap=()=>{previousSpacePress=null;};
 window.addEventListener('blur',resetFlightTap);
 document.addEventListener('visibilitychange',resetFlightTap);
@@ -1304,10 +1305,14 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         {light:document.body.dataset.hudTheme==='light',feet:position});
       matterHud.collection.update(navigationVisible&&!matterHud.active&&!mapPanel.open&&!signalEditor.active);
       const {left:statusLeft,right:statusRight}=matterHud.toolInsets();
+      const compactConversation=!conversation.hidden&&conversationFirst.matches;
+      conversation.toggleAttribute('data-compact-priority',compactConversation);
+      const suppressNotice=compactConversation&&worldNotice.temporary;
+      worldNotice.element.toggleAttribute('data-compact-suppressed',suppressNotice);
       matterHud.status.update({
-        headerVisible:!entering&&drawWorld&&!opaqueVisit&&!settingsOpen&&!quietTouch&&
+        headerVisible:!compactConversation&&!entering&&drawWorld&&!opaqueVisit&&!settingsOpen&&!quietTouch&&
           !(matterHud.active&&(matterHud.workCompact||matterHud.compactCharacterTable))&&(!toolModal||worldHistory?.native)&&(inside||Boolean(navigator.userActivation)),
-        showExterior:!inside,noticeVisible:!entering&&drawWorld&&!opaqueVisit,noticeOpacity:worldNotice.opacity,
+        showExterior:!inside,noticeVisible:!suppressNotice&&!entering&&drawWorld&&!opaqueVisit,noticeOpacity:worldNotice.opacity,
         soundBlocked:moving||needsSync,
         width:matterHud.canvas.clientWidth-statusLeft-statusRight,height:matterHud.canvas.clientHeight,
       });
