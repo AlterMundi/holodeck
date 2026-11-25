@@ -1430,6 +1430,37 @@ entry. The verifier reconstructs XYZ base rotations from MML's public
 Euler fields before comparing them with the rendered root. Confirmation
 with independent signed-in people remains open.
 
+## Humanoid standing idle
+
+[Holodeck #21](https://github.com/AlterMundi/holodeck/issues/21) tracks
+candidate `64195e8`. After a brief settled hold, the humanoid adds restrained
+breathing, shoulder movement and occasional glances in body-relative axes.
+The locomotion mixer retains the pelvis and feet. The upper-body accents
+fade as the character walks, crouches or loses ground support. They clear
+for reduced motion, a new room or a miniature table handoff. This layer
+uses the same grounded animation state for keyboard and touch and evaluates
+local support and independent peer state separately.
+
+Fable High reviewed the anchoring and pre-mixer restore. Opus 5.5 High
+caught the abrupt idle exit on loss of support. The revised fade composes
+after the air and crouch poses, then restores before the locomotion
+mixer runs. Regression coverage verifies both supported humanoid rigs
+across four skins, including tilted ground, no accumulation, stationary
+foot and pelvis transforms, the mixer weight gate, supported-to-unsupported
+fade and reduced motion.
+
+The clean Node 24 package contains 80 payloads. The Home package verifier
+unpacked all 33,331,200 bytes at
+`326890e4486302e90c2beb3a2e7eb30cbda16763330656eea6dfe458f3a7f85c`.
+The clean suite passed 354 tests with two optional skips. Controlled
+Chromium booted the unpacked package in both graphics profiles. During
+standing samples the character root did not translate. The rendered
+head and chest moved, walking with W moved the character and the avatar
+returned to grounded rest after release. The measured rotations include
+the stock mixer. Physical-device and separately signed-in peer validation
+for this idle slice remain open. The live service still selects the
+previous package.
+
 ## Authored flight and swimming poses
 
 The four registered human models share two bind rigs. The flight and swim
