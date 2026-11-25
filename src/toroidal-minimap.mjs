@@ -125,7 +125,7 @@ function drawSpur(ctx,paths){
       if(i===0)ctx.moveTo(x*DISPLAY,y*DISPLAY);
       else ctx.lineTo(x*DISPLAY,y*DISPLAY);
     ctx.setLineDash(path.water?[7,8]:[]);
-    ctx.lineDashOffset=-path.phase;
+    ctx.lineDashOffset=path.phase;
     ctx.strokeStyle='#152d32';ctx.lineWidth=6;ctx.stroke();
     ctx.strokeStyle=path.water?'#a2e1ed':'#f7d7a0';ctx.lineWidth=3;ctx.stroke();
   }
@@ -163,8 +163,9 @@ function drawMapLabel(ctx,label,x,y){
   ctx.textAlign='start';
 }
 
-function drawSpurMark(ctx,point,label,water){
-  if(point.x<=.036||point.x>=.964||point.y<=.038||point.y>=.942)return;
+function drawSpurMark(ctx,point,label,water,legend){
+  if(point.x<=.036||point.x>=.964||point.y<=.038||point.y>=.942||
+    legend&&point.x>.38&&point.y>.85)return;
   const x=point.x*DISPLAY,y=point.y*DISPLAY;
   ctx.fillStyle='#122831';ctx.fillRect(x-7,y-7,14,14);
   ctx.fillStyle=water?'#a2e1ed':'#f7d7a0';ctx.fillRect(x-4,y-4,8,8);
@@ -179,7 +180,7 @@ export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
   const pixels=raster.getContext('2d');
   if(!pixels)return ()=>{};
   const image=pixels.createImageData(SIZE,SIZE);
-  let guide=null,paths=[];
+  let guide=null,paths=[],waterVisible=false;
   let chart=null,last=null,next=0;
   const restore=()=>{chart=null;last=null;next=0;};
   canvas.addEventListener('contextrestored',restore);
@@ -197,6 +198,11 @@ export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
       pixels.putImageData(image,0,0);
       guide??=toroidalSpurGuide();
       paths=projectToroidalSpur(chart,guide);
+      waterVisible=paths.some(path=>path.water);
+      const landVisible=paths.some(path=>!path.water);
+      canvas.setAttribute('aria-label','Minimapa topográfico con la casa y la cueva cercanas.'+
+        (landVisible?' Línea continua hacia el mirador.':'')+
+        (waterVisible?' Línea discontinua en el cruce a nado.':''));
       last=null;
     }
     const {x,y}=toroidalMapPoint(chart,point);
@@ -211,8 +217,8 @@ export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
     ctx.scale(width/DISPLAY,height/DISPLAY);
     drawSpur(ctx,paths);
     for(const shore of guide.shores)
-      drawSpurMark(ctx,toroidalMapPoint(chart,shore),'Orilla',true);
-    drawSpurMark(ctx,toroidalMapPoint(chart,TOROIDAL_OVERLOOK),'Mirador',false);
+      drawSpurMark(ctx,toroidalMapPoint(chart,shore),'Orilla',true,waterVisible);
+    drawSpurMark(ctx,toroidalMapPoint(chart,TOROIDAL_OVERLOOK),'Mirador',false,waterVisible);
     for(const {door} of entrances??[]){
       if(!door)continue;
       const {x,y}=toroidalMapPoint(chart,terrainCoordinates([door.x,door.y,door.z]));
@@ -232,10 +238,10 @@ export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
     ctx.strokeStyle='#eee3c7';ctx.lineWidth=2;
     ctx.beginPath();ctx.moveTo(16,367);ctx.lineTo(16+scaleLength,367);ctx.stroke();
     ctx.fillStyle='#eee3c7';ctx.font='600 23px system-ui';ctx.fillText('50 m',16,362);
-    if(paths.some(path=>path.water)){
+    if(waterVisible){
       ctx.fillStyle='#132327e6';ctx.fillRect(248,335,128,41);
       ctx.strokeStyle='#a2e1ed';ctx.lineWidth=3;
-      ctx.setLineDash([5,4]);
+      ctx.setLineDash([7,8]);
       ctx.beginPath();ctx.moveTo(258,356);ctx.lineTo(278,356);ctx.stroke();
       ctx.setLineDash([]);
       ctx.fillStyle='#d9f5fb';ctx.font='600 21px system-ui';ctx.fillText('A nado',286,363);

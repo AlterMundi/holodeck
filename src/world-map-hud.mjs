@@ -73,8 +73,9 @@ export class WorldMapHud{
     const count=destinations.length;
     this.index=Math.min(this.index,Math.max(0,count-1));
     const current=destinations[this.index];
-    this.raster=!map&&!this.panel.querySelector('#world-minimap').hidden;
-    const mapLabel=this.raster?'Mapa del terreno. Línea continua hacia el mirador y línea punteada en el cruce a nado.':'Mapa y posición actual';
+    const canvas=this.panel.querySelector('#world-minimap');
+    this.raster=!map&&!canvas.hidden;
+    const mapLabel=(this.raster&&canvas.getAttribute('aria-label'))||'Mapa y posición actual';
     const value={scope:this.scope,mapLabel,marks:map?.marks??[],viewer:map?.viewer??null,selected:map?.selected??'',
       bounds:{minX:-6,maxX:6,minZ:-6,maxZ:6},destination:current?.id??'',
       destinationLabel:current?.title??'',destinationSelected:!!current&&map.selected===current.id,

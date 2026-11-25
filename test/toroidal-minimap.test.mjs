@@ -53,11 +53,17 @@ test('the overlook spur follows the terrain and distinguishes open water from la
       assert.equal(terrainElevation(u,v)<TOROIDAL_TERRAIN.waterLevel,water);
     }
   const chart=toroidalMapChart(toroidalSpurPoint(.35));
-  assert.ok(projectToroidalSpur(chart,guide).every(path=>path.water));
+  const wetPath=projectToroidalSpur(chart,guide);
+  assert.ok(wetPath.length&&wetPath.every(path=>path.water));
+  assert.ok(wetPath[0].phase>0);
   const opposite=toroidalMapChart({u:.51,v:.35});
   assert.deepEqual(projectToroidalSpur(opposite,guide),[]);
-  const nearJoin=toroidalMapChart({u:.997,v:.25});
-  assert.deepEqual(projectToroidalSpur(nearJoin,guide),projectToroidalSpur({...nearJoin,u:nearJoin.u-1},guide));
+  const nearJoin=toroidalMapChart({u:.9997,v:.25});
+  const joined=projectToroidalSpur(nearJoin,guide);
+  assert.ok(joined.length>0);
+  const precision=paths=>paths.map(({water,phase,points})=>
+    [water,phase.toFixed(9),points.map(({x,y})=>[x.toFixed(9),y.toFixed(9)])]);
+  assert.deepEqual(precision(joined),precision(projectToroidalSpur({...nearJoin,u:nearJoin.u-1},guide)));
 });
 
 test('the map reuses the terrain raster while still updating its position and heading',()=>{
@@ -68,7 +74,7 @@ test('the map reuses the terrain raster while still updating its position and he
     beginPath(){},moveTo(){},lineTo(){},closePath(){},stroke(){},fill(){},fillRect(){},fillText(){},strokeText(){},
     measureText:()=>({width:58}),setLineDash(){},
   };
-  const canvas={width:384,height:384,getContext:()=>view,addEventListener:(_,callback)=>{restore=callback;},
+  const canvas={width:384,height:384,getContext:()=>view,setAttribute(){},addEventListener:(_,callback)=>{restore=callback;},
     ownerDocument:{createElement:()=>({getContext:()=>raster,addEventListener(){}})}};
   const panel={open:true,querySelector:()=>canvas};
   const paint=bindToroidalMinimap(panel,{now:()=>time});
