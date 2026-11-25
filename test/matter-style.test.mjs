@@ -106,6 +106,11 @@ test('layered diffuse uses linear light data and restores both material programs
     assert.equal(material[channel].image,albedo);
     assert.equal(material[channel].colorSpace,SRGBColorSpace);
     assert.match(shader.fragmentShader,/textureGrad\(roomSurfaceTiles/);
+    assert.match(shader.fragmentShader,/dFdx\(roomSurfacePosition\)/);
+    assert.doesNotMatch(shader.fragmentShader,/dFdx\(projected\)/);
+    const calls=[...shader.fragmentShader.matchAll(/= roomTileBand\([\s\S]*?;/g)];
+    assert.equal(calls.length,4);
+    for(const [call] of calls)assert.match(call,/layer, footprint(?: \* (?:coarseScale|microScale))?\);$/);
     assert.equal(shader.uniforms.roomSurfaceRoles.value.image,roles);
     assert.equal(shader.uniforms.roomSurfaceRoles.value.minFilter,NearestFilter);
     assert.equal(shader.uniforms.roomSurfaceRoles.value.generateMipmaps,false);
@@ -128,10 +133,10 @@ test('layered diffuse uses linear light data and restores both material programs
       assert.equal(shader.uniforms.roomDeckDetail.value.wrapS,RepeatWrapping);
       assert.equal(shader.uniforms.roomDeckTileScale.value,.88);
       assert.equal(shader.uniforms.roomFloorDiffuseFill.value,.03);
-      assert.equal(material.customProgramCacheKey(),'room-diffuse-layers:map:reflection:layered-detail-v1');
+      assert.equal(material.customProgramCacheKey(),'room-diffuse-layers:map:reflection:layered-detail-v2');
     }else{
       assert.equal(shader.uniforms.roomEmitters,undefined);
-      assert.equal(material.customProgramCacheKey(),'room-diffuse-layers:emissiveMap:layered-detail-v1');
+      assert.equal(material.customProgramCacheKey(),'room-diffuse-layers:emissiveMap:layered-detail-v2');
     }
   }
   assert.deepEqual(unpacked.map(({x,y})=>[x,y]),[[4,4],[260,4],[516,4],[4,260],[260,260]]);

@@ -59,39 +59,49 @@ const materialDetail=/* glsl */`
   uniform sampler2D roomSurfaceRoles;
   uniform highp sampler2DArray roomSurfaceTiles;
 
-  float roomTileBand(vec2 coordinates, vec2 dx, vec2 dy, float layer) {
-    float footprint = 248.0 * max(length(dx), length(dy));
+  float roomTileBand(vec2 coordinates, vec2 dx, vec2 dy, float layer, float footprint) {
     float visible = 1.0 - smoothstep(4.0, 11.0, footprint);
     if (visible == 0.0) return 0.0;
     return visible * (2.0 * textureGrad(roomSurfaceTiles, vec3(coordinates, layer), dx, dy).r - 1.0);
   }
 
+  vec2 roomMaterialPlane(vec3 value, bool side, bool wall) {
+    return side ? vec2(-value.z, value.y) : wall ? value.xy : vec2(value.x, -value.z);
+  }
+
   vec3 roomDetail(vec3 diffuse, vec2 atlasUv) {
     float encoded = texture2D(roomSurfaceRoles, atlasUv).r * (255.0 / 32.0);
     float role = floor(encoded + 0.5);
-    vec3 normal = abs(roomSurfaceNormal);
-    vec2 meters = normal.x >= max(normal.y, normal.z) ? vec2(-roomSurfacePosition.z, roomSurfacePosition.y)
-      : normal.z >= normal.y ? roomSurfacePosition.xy : vec2(roomSurfacePosition.x, -roomSurfacePosition.z);
-    float scale = role == 1.0 ? 0.78 : role == 2.0 ? 0.92 : role == 3.0 ? 1.2 : 1.1;
-    vec2 projected = meters * scale;
-    vec2 dx = dFdx(projected);
-    vec2 dy = dFdy(projected);
+    // Differentiate the continuous world position before choosing a material
+    // scale or face. Those choices can differ within a fragment quad.
+    vec3 worldDx = dFdx(roomSurfacePosition);
+    vec3 worldDy = dFdy(roomSurfacePosition);
     if (role < 1.0 || role > 5.0 || abs(role - encoded) >= 0.12) return diffuse;
+    vec3 normal = abs(roomSurfaceNormal);
+    bool side = normal.x >= max(normal.y, normal.z);
+    bool wall = normal.z >= normal.y;
+    float scale = role == 1.0 ? 0.78 : role == 2.0 ? 0.92 : role == 3.0 ? 1.2 : 1.1;
+    vec2 projected = roomMaterialPlane(roomSurfacePosition, side, wall) * scale;
+    vec2 dx = roomMaterialPlane(worldDx, side, wall) * scale;
+    vec2 dy = roomMaterialPlane(worldDy, side, wall) * scale;
+    float footprint = 248.0 * sqrt(max(dot(dx, dx), dot(dy, dy)));
     float layer = role - 1.0;
-    float primary = roomTileBand(projected, dx, dy, layer);
+    float primary = roomTileBand(projected, dx, dy, layer, footprint);
     // The independent sampling domains avoid synchronizing the room-scale
     // grain and close detail. Retain the brushed orientation on steel.
-    const mat2 turn = mat2(0.83867, 0.54464, -0.54464, 0.83867);
+    // Uniform scale and rotation preserve the footprint relation. Keep
+    // the transformed vector gradients for anisotropic texture filtering.
+    const mat2 turn = mat2(0.838670568, 0.544639035, -0.544639035, 0.838670568);
     const float coarseScale = .173;
     if (role == 4.0) {
-      float grain = roomTileBand(projected * coarseScale + vec2(.19,.71), dx * coarseScale, dy * coarseScale, layer);
+      float grain = roomTileBand(projected * coarseScale + vec2(.19,.71), dx * coarseScale, dy * coarseScale, layer, footprint * coarseScale);
       return diffuse * (1.0 + .82 * primary + .13 * grain);
     }
     float coarse = roomTileBand(turn * projected * coarseScale + vec2(.19,.71),
-      turn * dx * coarseScale, turn * dy * coarseScale, layer);
+      turn * dx * coarseScale, turn * dy * coarseScale, layer, footprint * coarseScale);
     const float microScale = 5.37;
     float micro = roomTileBand(turn * projected * microScale + vec2(.67,.23),
-      turn * dx * microScale, turn * dy * microScale, layer);
+      turn * dx * microScale, turn * dy * microScale, layer, footprint * microScale);
     return diffuse * (1.0 + .64 * primary + .18 * micro + .13 * coarse);
   }
 `;
@@ -111,7 +121,7 @@ function diffuseLayers(material){
     roomFloorDiffuseFill:{value:0},
   };
   material.customProgramCacheKey=()=>channel
-    ?'room-diffuse-layers:'+channel+(reflectionEnabled?':reflection':'')+(detailEnabled?':layered-detail-v1':''):'';
+    ?'room-diffuse-layers:'+channel+(reflectionEnabled?':reflection':'')+(detailEnabled?':layered-detail-v2':''):'';
   material.onBeforeCompile=shader=>{
     if(!channel)return;
     const {chunk,sampler,uv}=diffuseSamples[channel];

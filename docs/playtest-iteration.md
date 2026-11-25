@@ -41,6 +41,33 @@ Before closing each deliverable, review its actual implementation with Claude Co
 
 A focused Claude Code Fable 5.2 High review completed before this implementation. It located the repeated signal in the periodic one-metre detail layer, warned about mip bleed across material-role tiles and about destroying directional grain, and recommended testing decorrelated fine and room-scale domains without additional shipped maps before heavier stochastic synthesis. The first candidate keeps the baked room irradiance, baked structural seams and specular response. It unpacks the existing five grayscale tile cores into an isolated mipmapped texture-array layer per role. Gradient-aware samples add independent fine and coarse variation inside the prior modulation amplitude, with the steel grain direction retained. The existing floor reflection and other appearance variants use their existing paths. Start validation with matched Orbital layered floor, deck and wall/shelf views in normal and lightweight, and measure identical camera motion on each client. Evaluate pattern recurrence and visible silhouette, highlight and contact lighting before proposing the selected look. Claude Code Opus 5.5 High reviewed the actual material diff. It identified cross-grain in the coarse steel band, mid-distance contrast loss and implicit anisotropy changes. The correction keeps both steel bands axis-aligned, restores primary detail weight and preserves the source anisotropy. Runtime canvas readback and projected normal boundaries remain explicit portability checks. The corrected package `1fd0283a0c64` at `d3c42bf` was 33,454,080 bytes, 100,352 bytes under the cap. The exact package rendered Orbital Layered in both modes without a shader error in controlled Chromium. Three paired camera positions and a moving sequence ran in both modes. Software-rendered p95 rose from 349.9 to 383.3 ms in normal mode and from 216.6 to 233.3 ms in lightweight. These are fixture measurements, not hardware frame times. A baseline re-run with the same toolbelt measured software p95 of 333.3 ms in normal and 250 ms in lightweight, against 383.3 and 233.3 ms for the reviewed layered candidate. The mixed result and software timing variance leave the shader budget unresolved on the actual GPU. The benchmark and the visual quality bar remain open before promoting a material. Current live digest readback is still `f46d93f436be`.
 
+The material-gradient follow-up differentiates continuous world position
+before choosing the material role or projection plane. At a boundary, a
+fragment quad formerly differenced different role scales and could request
+a coarser mip. The transformed vector gradients still drive anisotropic
+filtering. Uniform rotation and scale reuse one scalar texel footprint for
+the band fade. Fable High reviewed both operations and recommended holding
+camera and drawing-buffer size constant in comparisons. Opus 5.5 High found
+one missing argument in the coarse band. The corrected source passes all
+331 active tests, with two existing skips. GLSL compilation was rechecked in
+Chromium because source assertions alone cannot prove linking.
+
+The corrected archive `115bb0bf6617` is 33,536,000 bytes. In a first
+same-buffer normal-mode SwiftShader sweep, baseline and candidate both
+measured 350 ms frame p95 at 268,620 pixels and 38 median draw calls.
+Software timer-query p95 was 224.8 versus 245.9 ms, so there is no measured
+performance gain. Use an actual hardware adapter and a matched run before
+promoting this material correction. ITACA exposes SwiftShader and no DRM
+graphics device. The comparison therefore records the browser renderer,
+WebGL identity, device and render pixel ratios, drawing-buffer area and
+draw/triangle counts, and checks whether GPU timer samples are disjoint.
+Static comparison now verifies the actual Three.js render camera before
+each shot. The earlier close-deck fixture aimed the player orbit camera
+above the avatar and produced ceiling shots. The corrected fixture aims at
+the floor and shelves explicitly. The three matched lightweight crops
+retain SSIM 0.999974 or higher. That is an appearance continuity check and
+does not measure seam frequency or prove a physical frame budget.
+
 ## Situated Conversation context
 
 [Holodeck #19](https://github.com/AlterMundi/holodeck/issues/19) tracks the semantic projection and baseline policy. The current site bridge retains machine provenance as one immutable file.
