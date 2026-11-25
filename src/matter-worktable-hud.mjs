@@ -373,6 +373,12 @@ export class MatterWorktableHud{
     return this.insets;
   }
 
+  conversationSideEdge(){
+    const panel=this.document.getElementById('conversation-panel');
+    return !panel.hidden&&panel.dataset.travelLane==='side'?
+      parseFloat(panel.style.getPropertyValue('--conversation-travel-edge')):NaN;
+  }
+
   conversationTravelInsets(){
     const insets=this.toolInsets();
     const movementReady=Boolean(this.toolGroup&&this.toolLayout)&&!this.webgl.getContext().isContextLost();
@@ -409,7 +415,9 @@ export class MatterWorktableHud{
     const tools=this.toolState();
     const {left,right}=this.toolInsets();
     const compact=this.compactDock(),scale=this.dockScale(compact);
-    const maxWidth=(this.canvas.clientWidth-left-right)*toolScale/scale-toolPadding*toolScale;
+    const sideEdge=this.conversationSideEdge();
+    const available=Number.isFinite(sideEdge)?sideEdge-left-12:this.canvas.clientWidth-left-right;
+    const maxWidth=available*toolScale/scale-toolPadding*toolScale;
     this.document.body.toggleAttribute('data-native-settings-available',maxWidth>=150);
     if(maxWidth<150)return;
     const layout=layoutTools(tools,Math.min(this.lookPreview.stylesDock?640:590,maxWidth),compact);
@@ -685,7 +693,7 @@ export class MatterWorktableHud{
       const dockClearance=this.usesCockpitDocks(viewport)?21:0;
       const compact=this.toolLayout.compact;
       const lane=this.movementLane;
-      const sideEdge=lane==='side'?parseFloat(additional?.panel.style.getPropertyValue('--conversation-travel-edge')):NaN;
+      const sideEdge=this.conversationSideEdge();
       const dockScale=Number.isFinite(sideEdge)?
         Math.min(this.dockScale(compact),(sideEdge-left-12)/(this.toolLayout.width+toolPadding)):
         this.dockScale(compact);
