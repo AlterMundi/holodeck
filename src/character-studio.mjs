@@ -3,8 +3,7 @@ import {
   Fog,GridHelper,HemisphereLight,Mesh,MeshStandardMaterial,OrthographicCamera,
   PerspectiveCamera,Raycaster,Scene,Vector2,Vector3,WebGLRenderer,
 } from 'three';
-import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
+import {ModelLoader} from '@mml-io/model-loader';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
 import {AVATARS} from './avatar-registry.mjs';
 import {ATELIER_FOYER,CHARACTER_STUDIO} from './house-review-rooms.mjs';
@@ -169,7 +168,7 @@ export async function openCharacterStudio(document){
   const hudCamera=new OrthographicCamera(-1,1,1,-1,.1,12);
   hudCamera.position.z=4;
   const pointer=new Vector2(),ray=new Raycaster();
-  const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+  const loader=new ModelLoader();
   const viewAngles={front:0,angle:.62,side:Math.PI/2};
   let view=Object.hasOwn(viewAngles,url.searchParams.get('vista'))?url.searchParams.get('vista'):'angle';
   let figure,currentAction,group,rig,clip,frame=0,playing=false,revision='',note='',message='',showedAt=-Infinity;
@@ -199,7 +198,7 @@ export async function openCharacterStudio(document){
     const bytes=await response.arrayBuffer();
     const hash=new Uint8Array(await window.crypto.subtle.digest('SHA-256',bytes));
     const digest=Array.from(hash,n=>n.toString(16).padStart(2,'0')).join('');
-    return {model:await loader.parseAsync(bytes,new URL('.',source).href),digest};
+    return {model:await loader.loadFromBuffer(bytes,new URL('.',source).href),digest};
   }
 
   async function loadRig(next,requestedClip,requestedFrame=0,expected=null){
@@ -209,7 +208,7 @@ export async function openCharacterStudio(document){
     playing=false;
     report('Abriendo el personaje…');
     const {model,digest}=await readAsset(profile.file);
-    const root=model.scene;
+    const root=model.group;
     normalise(root);
     const nextFigure={root,rigDigest:digest,mixer:new AnimationMixer(root),clips:new Map(model.animations.map(item=>[item.name,item]))};
     if(id!==sequence){disposeFigure(nextFigure);return;}
@@ -230,6 +229,7 @@ export async function openCharacterStudio(document){
     if(profile.clips){
       if(!Object.hasOwn(profile.clips,next))return;
       const {model,digest}=await readAsset(profile.clips[next]);
+      disposeFigure({root:model.group});
       if(figure!==activeFigure||id!==sequence)return;
       selected=model.animations[0]?.clone();
       if(selected)selected.tracks=selected.tracks.filter(track=>activeFigure.root.getObjectByName(track.name.split('.')[0]));
