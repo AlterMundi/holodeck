@@ -61,6 +61,10 @@ export function validVisitPin(pin){
   &&(version!==2||['interactive_3d','video'].includes(pin.adapter));
 }
 export function sameVisitPin(a,b){return validVisitPin(a)&&validVisitPin(b)&&visitVersion(a)===visitVersion(b)&&Object.keys(a).every(k=>a[k]===b[k]);}
+export function sameVisitEdition(a,b){
+  return !!a&&!!b&&(a.id===b.id||a.node==='house-exhibit'&&b.node===a.node)&&
+    a.nodeRevision===b.nodeRevision&&sameVisitPin(a.pin,b.pin);
+}
 export function knownVisitState(value){return !!value&&['dirty','recording','processing','playing'].every(key=>typeof value[key]==='boolean');}
 export function visitResponseMatches(event,{source,origin,id,visitId,pin}){
  const value=event.data;

@@ -3,7 +3,7 @@ import {TOROIDAL_SPAWN, TOROIDAL_TERRAIN, toroidalParcelPoint} from './toroidal-
 import {indoorGardenTemplates} from './indoor-garden-recipe.mjs';
 import {COMPAII_HOUSE,interiorArt} from './interior-art.mjs';
 import {ATELIER_EXPANSION_WRITES,ATELIER_PROFILE,matchesAtelierLayout,packedExteriorArt,selectAtelier} from './compaii-atelier.mjs';
-import {RoomExhibits,EXHIBIT_SAVE_BYTES} from './room-exhibits.mjs';
+import {RoomExhibits,EXHIBIT_ARCHIVE_SAVE_BYTES,EXHIBIT_SAVE_BYTES} from './room-exhibits.mjs';
 import {InteriorSpaces, OUTSIDE, SPACE_SAVE_BYTES, interiorDocument} from './interior-spaces.mjs';
 import {InteriorLayouts,LAYOUT_SAVE_BYTES} from './interior-layouts.mjs';
 import {RoomDesigns,DESIGN_SAVE_BYTES} from './room-designs.mjs';
@@ -255,12 +255,14 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const gallery=spaces.rooms.has(authoredGallery?.room)?authoredGallery:null;
   const authorizeRoomVisit=galleryAuthorization??(publicOrigin?createGalleryAuthorization(publicOrigin):null);
   const exhibitStore=stateDir?new RoomStore(join(stateDir,'exhibits'),{maxBytes:EXHIBIT_SAVE_BYTES}):null;
-  const exhibits=new RoomExhibits({state:exhibitStore?.load(),spaces,houses,artForRoom,
-    persist:exhibitStore?state=>exhibitStore.save(state):null});
-  function interiorVisits(actor,id){
-    const placed=exhibits.visit(actor,id);
+  const exhibitArchiveStore=stateDir?new RoomStore(join(stateDir,'exhibit-archive'),{maxBytes:EXHIBIT_ARCHIVE_SAVE_BYTES}):null;
+  const exhibits=new RoomExhibits({state:exhibitStore?.load(),archive:exhibitArchiveStore?.load(),spaces,houses,artForRoom,
+    persist:exhibitStore?state=>exhibitStore.save(state):null,
+    persistArchive:exhibitArchiveStore?state=>exhibitArchiveStore.save(state):null});
+  function interiorVisits(actor,id,{includeArchive=false}={}){
+    const placed=exhibits.visit(actor,id,{includeArchive});
     return id===gallery?.room?
-      [...placed,...gallery.slots.filter(slot=>!placed.some(entry=>sameVisitPin(entry.pin,slot.pin)))]:placed;
+      [...placed,...gallery.slots.filter(slot=>!placed.some(entry=>!entry.catalogOnly&&sameVisitPin(entry.pin,slot.pin)))]:placed;
   }
   const room=new Room({houses,state:store?.load(),persist:store?s=>store.save(s):null,contentNodes:selectedContentNodes,lightExercise,
     presence:()=>[...sessions.values()].filter(s=>s.connection!==null&&Date.now()-s.created<SESSION_MS&&spaces.current(s.actor)===OUTSIDE)
@@ -469,7 +471,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(!place)throw new RoomError('forbidden','Tu acceso a esta sala cambió.');
     const snapshot={id:randomUUID(),run:room.run,edition:room.edition,sequence:room.sequence,capturedAt:Date.now(),place};
     const selected=request.view?.roomVisit;
-    const entry=selected&&interiorVisits(actor,id).find(visit=>visit.node===selected.id&&visit.nodeRevision===selected.revision);
+    const entry=selected&&interiorVisits(actor,id,{includeArchive:true})
+      .find(visit=>visit.node===selected.id&&visit.nodeRevision===selected.revision);
     if(entry&&authorizeRoomVisit){
       // The paired daimon's room grant does not imply access to the speaker's
       // source edition. Verify the speaker and retain only the room address.
@@ -506,6 +509,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const canWrite=()=>!room.commitUncertain&&!spaces.fenced;
     if(!canWrite())return null;
     if(input.type==='exhibit.current')return exhibits.inspect(actor,input.room);
+    if(input.type==='exhibit.history')return exhibits.history(actor,input.room);
+    if(input.type==='exhibit.archive')return exhibits.setArchive(actor,input);
     const preview=input.type==='exhibit.preview';
     const authorizeReview=nativeReviewAuthority&&(async(author,pin)=>{
       if(await nativeReviewAuthority(author,pin)!==true)return false;
@@ -1121,7 +1126,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const currentEntries=()=>{
       if(Date.now()-req.holodeckSession.created>=SESSION_MS||
          !inScope(req.holodeckSession.actor,active)||spaces.fenced||room.commitUncertain||exhibits.fenced)return [];
-      return interiorVisits(req.actor,active);
+      return interiorVisits(req.actor,active,{includeArchive:req.query.exhibitHistory==='1'});
     };
     const visits=await allowedGalleryVisits({entries:currentEntries(),currentEntries,
       authorize:pin=>authorizeRoomVisit?.(req.headers.cookie,pin,{details:true})});

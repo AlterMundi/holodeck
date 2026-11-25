@@ -471,6 +471,33 @@ accepts the visitor's own session for that exact edition, including in ordinary
 rooms. The visitor rechecks this catalog on reopen and while in the room. The
 embedded viewer confirms the exact edition before it becomes interactive.
 
+### Keep a published edition in the room archive
+
+While visiting their own room, the author can list its retained published
+editions and explicitly select one for the room's exhibition index.
+
+```sh
+holodeck-world --own act --json '{"type":"exhibit.history","room":"ROOM_ID"}'
+holodeck-world --own act --json '{"type":"exhibit.archive","room":"ROOM_ID","revision":1,"archived":true,"expectedArchiveRevision":0}'
+```
+
+Use the returned `archiveRevision` for the next archive change. Set
+`archived` to `false` to withdraw an edition from the index. If a write's
+outcome is uncertain, read history before repeating the selection. A stale
+command cannot restore a withdrawn edition. The current exhibit keeps its
+physical position. The archive accepts up to three selected editions per
+room, including the current one if the owner elects to keep it after the
+next publication. A changed source or an expired publication receipt drops
+the historical entry. Previewed editions never appear.
+
+The index shows only entries the visitor can still open through Nexus.
+A visitor who already opened the old exact edition keeps that frame if the
+owner archives it and their source access still holds. The open visit is
+parked when its room or exact edition is no longer available. Withdrawal
+from this index leaves the author's receipt and the owning Nexus source
+untouched. The archive checkpoint contains only bounded selectors and is
+separate from the exhibit and receipt checkpoint used for compatible rollback.
+
 `Volver al mundo` keeps the visitor in the gallery with the same iframe and
 avatar position. Leaving the room after opening the visit requires a clear
 work-state acknowledgment from Nexus. Situated capture remains a separate

@@ -141,9 +141,9 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
             throw Error('Indoor gardens require an own-native route');
           result=indoorGarden?.(actor,request.args);
           if(!result)throw Error('Indoor garden unavailable');
-        }else if(request.operation==='act'&&['exhibit.current','exhibit.preview','exhibit.put'].includes(request.args.type)){
+        }else if(request.operation==='act'&&['exhibit.current','exhibit.preview','exhibit.put','exhibit.history','exhibit.archive'].includes(request.args.type)){
           if(!own||!rights.includes('edit'))throw Error('Exhibit authoring requires an own-native editor route');
-          if(request.args.type==='exhibit.current'&&Object.keys(request.args).sort().join(',')!=='room,type')
+          if(['exhibit.current','exhibit.history'].includes(request.args.type)&&Object.keys(request.args).sort().join(',')!=='room,type')
             throw Error('Invalid exhibit lookup');
           result=await putExhibit?.(actor,request.args);
           if(!result)throw Error('Exhibit authoring unavailable');

@@ -12,6 +12,7 @@ import {createHolodeck} from '../src/server.mjs';
 import {exteriorDoor,houseId} from '../src/houses.mjs';
 import {RoomStore, RoomCommitUncertain} from '../src/room-store.mjs';
 import {InteriorSpaces} from '../src/interior-spaces.mjs';
+import {RoomExhibits} from '../src/room-exhibits.mjs';
 
 const owner='dm:being:v1:'+'x'.repeat(43);
 const guest={id:'human:guest',kind:'human',rights:['observe']};
@@ -64,14 +65,14 @@ test('HTTP, real geometry upgrades and native observation share active room and 
   const stateDir=mkdtempSync(join(tmpdir(),'holodeck-spaces-')),socketPath=join(stateDir,'native.sock'),foreignSocket=join(stateDir,'foreign.sock');
   const foreignBeing='dm:being:v1:'+'z'.repeat(43);
   new RoomStore(join(stateDir,'houses')).save({schema:'holodeck.houses/v1',houses:[house],receipts:[]});
-  let allowed=true,nativeAllowed=true,foyerAccess=true,editionAccess=false,ownerEdition=false,reviewGate=null,proofCalls=0,runtime,listener;
+  let allowed=true,nativeAllowed=true,foyerAccess=true,editionAccess=false,deniedEdition=null,ownerEdition=false,reviewGate=null,proofCalls=0,runtime,listener;
   const clients=[],peers=[];
   async function start(){
     const fetchHTTP=globalThis.fetch;
     globalThis.fetch=async(url,options)=>{
       const revision=url.pathname.match(/^\/nexus\/api\/tables\/published-fixture\/artifact-review\/work\/(version-[12])\/visit$/)?.[1];
       if(url.origin!=='https://world.test'||!revision)return fetchHTTP(url,options);
-      if(!editionAccess||options.headers.Cookie!=='__Host-home=guest')return new Response(null,{status:403});
+      if(!editionAccess||revision===deniedEdition||options.headers.Cookie!=='__Host-home=guest')return new Response(null,{status:403});
       return Response.json({schema:'dm.holodeck-visit/descriptor-v2',kind:'interactive_3d',
         entry:'/nexus/?table=published-fixture&review=work',pin:{kind:'artifact_review',
           tableId:'published-fixture',reviewId:'work',revision,adapter:'interactive_3d'}});
@@ -228,11 +229,18 @@ test('HTTP, real geometry upgrades and native observation share active room and 
     assert.deepEqual((await native('act',inspect)).result.exhibit,firstExhibit);
     assert.deepEqual((await native('result',{id:place.id})).result,firstExhibit);
     assert.equal((await native('result',{id:place.id},foreignSocket)).ok,false);
-    const visit=async()=>await (await fetch(base+'api/space/content-visits',{headers:headers(person)})).json();
+    const history={type:'exhibit.history',room:'gallery'};
+    const archive={type:'exhibit.archive',room:'gallery',revision:1,archived:true,expectedArchiveRevision:0};
+    assert.equal((await native('act',history,foreignSocket)).ok,false);
+    assert.equal((await native('act',archive,foreignSocket)).ok,false);
+    assert.deepEqual((await native('act',history)).result.editions.map(({revision,archived})=>[revision,archived]),[[1,false]]);
+    assert.equal((await native('act',archive)).result.archiveRevision,1);
+    const visit=async({history=true}={})=>await (await fetch(base+'api/space/content-visits'+
+      (history?'?exhibitHistory=1':''),{headers:headers(person)})).json();
     assert.deepEqual(await visit(),{revalidate:true,visits:[]});
     assert.equal((await (await read(person)).json()).id,'gallery');
     editionAccess=true;
-    assert.deepEqual((await visit()).visits[0].pin,firstPin);
+    assert.deepEqual((await visit()).visits.map(({pin})=>pin),[firstPin]);
     editionAccess=false;
     assert.deepEqual(await visit(),{revalidate:true,visits:[]});
     editionAccess=true;
@@ -269,7 +277,22 @@ test('HTTP, real geometry upgrades and native observation share active room and 
     assert.deepEqual(secondExhibit.pin,secondPin);
     assert.equal((await native('act',{...update,id:'receipt-stale-command'})).ok,false);
     assert.deepEqual((await native('result',{id:place.id})).result,firstExhibit);
-    assert.deepEqual((await visit()).visits[0].pin,secondPin);
+    const publicExhibits=(await visit()).visits;
+    assert.deepEqual(publicExhibits.map(({pin})=>pin),[secondPin,firstPin]);
+    assert.deepEqual((await visit({history:false})).visits.map(({pin})=>pin),[secondPin]);
+    assert.equal(publicExhibits[1].catalogOnly,true);
+    assert.equal(publicExhibits[1].position,undefined);
+    assert.equal(publicExhibits[1].node,publicExhibits[0].node);
+    const recovered=new RoomStore(join(stateDir,'exhibits')).load();
+    recovered.receipts.find(receipt=>receipt.result.revision===1).result.pin.revision='recovered-version';
+    const restored=new RoomExhibits({
+      state:recovered,archive:new RoomStore(join(stateDir,'exhibit-archive')).load(),
+      spaces:{current:()=>place.room,rooms:new Map()},
+    });
+    assert.deepEqual(restored.visit(guest,place.room,{includeArchive:true}).map(({pin})=>pin),[secondPin]);
+    deniedEdition='version-1';
+    assert.deepEqual((await visit()).visits.map(({pin})=>pin),[secondPin]);
+    deniedEdition=null;
     const ownerGeometry=connect('spaces/gallery/world',holder.cookie);
     const ownerSnapshot=String((await once(ownerGeometry,'message'))[0]);
     assert.match(ownerSnapshot,/Secret Laboratory|house-exhibit/);
@@ -289,7 +312,14 @@ test('HTTP, real geometry upgrades and native observation share active room and 
     await stop();
     base=await start();
     assert.equal((await (await read(person)).json()).id,'gallery');
-    assert.deepEqual((await visit()).visits[0].pin,secondPin);
+    assert.deepEqual((await visit()).visits.map(({pin})=>pin),[secondPin,firstPin]);
+    nativeAllowed=true;
+    assert.equal((await native('act',{type:'space.move',from:'lab',to:'gallery'})).ok,true);
+    assert.equal((await native('act',{...archive,archived:false,expectedArchiveRevision:1})).result.archiveRevision,2);
+    assert.equal((await native('act',archive)).ok,false,'a stale archive command cannot restore a withdrawal');
+    assert.deepEqual((await visit()).visits.map(({pin})=>pin),[secondPin]);
+    assert.deepEqual((await native('result',{id:place.id})).result,firstExhibit);
+    assert.equal((await native('act',{type:'space.move',from:'gallery',to:'lab'})).ok,true);
     const rejoined=connect('spaces/gallery/world',person);
     assert.match(String((await once(rejoined,'message'))[0]),/Gallery/);
     const rejoinedClose=once(rejoined,'close');

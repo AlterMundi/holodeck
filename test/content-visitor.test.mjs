@@ -96,3 +96,41 @@ test('an exterior catalog selection keeps its original edition while the catalog
   assert.equal(visitor.frame,null);
   assert.match(visitor.notice,/cambió de lugar o edición/);
 });
+
+test('a mounted exhibit keeps its frame and exact reference when moved to the archive',async()=>{
+  const original={...entry,id:'house-exhibit',node:'house-exhibit'};
+  const archived={...original,id:'house-exhibit-history-2',catalogOnly:true};
+  const successor={...original,nodeRevision:3,pin:{...pin,revision:'successor'}};
+  const visitor=Object.assign(scope(),{entry:original,entries:[successor,archived],catalog:Promise.resolve()});
+  const frame=visitor.frame;
+  visitor.reconcileVisitAccess();
+  assert.equal(visitor.parked,false);
+  assert.equal(visitor.frame,frame);
+  assert.equal(visitor.entry,archived);
+  assert.deepEqual(visitor.reference(),{id:'house-exhibit',revision:2});
+  visitor.open=(id,options)=>({id,options});
+  assert.deepEqual(await visitor.openNode('house-exhibit',{expectedRevision:2}),{
+    id:null,options:{nodeId:'house-exhibit',nodeRevision:2},
+  });
+  visitor.entries=[successor];
+  visitor.reconcileVisitAccess();
+  assert.equal(visitor.parked,true);
+  assert.equal(visitor.reference(),null);
+});
+
+test('a scoped plinth does not fall back to an archived edition, while exact references still open it',async()=>{
+  const original={...entry,id:'house-exhibit',node:'house-exhibit'};
+  const archived={...original,id:'house-exhibit-history-2',catalogOnly:true,
+    descriptor:'/nexus/api/edition',entry:'/nexus/?table=table'};
+  const visitor=Object.assign(scope(),{entry:original,entries:[original],frame:null,
+    window:{location:{origin:'https://world.test'}},say(){},
+    loadCatalog:async()=>{visitor.entries=[archived];return true;}});
+  const urls=[],fetch=globalThis.fetch;
+  globalThis.fetch=async url=>{urls.push(String(url));return{ok:false,status:403};};
+  try{
+    await visitor.openNode(original.node);
+    assert.deepEqual(urls,[]);
+    await visitor.openNode(original.node,{expectedRevision:2});
+    assert.deepEqual(urls,['https://world.test/nexus/api/edition']);
+  }finally{globalThis.fetch=fetch;}
+});
