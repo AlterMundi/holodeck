@@ -1,6 +1,7 @@
 import { build } from 'esbuild';
+import {characterPoseCatalog} from './character-pose-catalog.mjs';
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile,writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { avatarModelFiles } from '../src/human-avatars.mjs';
@@ -187,6 +188,7 @@ await build({entryPoints:['src/browser-entry.mjs'],outfile:'build/client.js',bun
   plugins:[modelCancellation,avatarRendering],
   define:{HOLODECK_MOTION_STUDY_REVISION:JSON.stringify(motionStudyRevision)},
   loader:{'.wasm':'file'},assetNames:'[name]-[hash]'});
+await writeFile('build/character-pose-catalog.json',JSON.stringify(await characterPoseCatalog(motionStudyRevision)));
 
 await build({entryPoints:['src/collection-review-worker.mjs'],outfile:'build/collection-review-worker.js',
   bundle:true,format:'esm',platform:'browser',target:'es2022',minify:true});

@@ -60,6 +60,27 @@ the turn cue and the first ground contact. These bookmarks come from the
 sampled control and contact state. Selecting one pauses playback and seeks
 to its exact recorded frame.
 
+## Room-scoped pose notes
+
+Enter the Character Design Room through the Atelier to share a note or read
+the current pose's notes. Holodeck checks current room access on every
+read and write. A note binds the exact rig, clip, edition and frame. The
+build generates its accepted pose catalog from the shipped rig and animation
+bytes together with the compiled motion-study revision. The server validates
+the submitted pose against that catalog and takes authorship from the current
+session. Camera angles remain local.
+
+The **Ver notas** action reads the selected pose on demand. A copied pose
+link can be opened outside the room. Shared feedback still requires current
+room membership. The existing browser-local note option is available
+outside. Saving a shared note never falls back to local storage on failure.
+
+The pose note checkpoint uses the existing atomic `RoomStore` under
+`character-pose-review`, with up to 160 notes in a 256 KiB checkpoint.
+Retries of the same actor's submission are idempotent. Notes remain stored
+across editions. Reading historical notes needs the corresponding edition
+to be selected by the application.
+
 ## Shared session and authored motion
 
 Track the [Character Design Room #24](https://github.com/AlterMundi/holodeck/issues/24)

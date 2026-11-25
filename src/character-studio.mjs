@@ -6,18 +6,11 @@ import {
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {ModelLoader} from '@mml-io/model-loader';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
-import {AVATARS} from './avatar-registry.mjs';
+import {rigs} from './character-studio-rigs.mjs';
 import {createHumanMotionStudy,humanMotionStudies,motionStudyRate} from './human-motion-study.mjs';
 import {ATELIER_FOYER,CHARACTER_STUDIO} from './house-review-rooms.mjs';
 import {arrivalDoor,doorLocation,readSpace} from './space-travel.mjs';
 
-const rigs={
-  companion:{label:'Navegante',file:AVATARS['compaii-navegante-white-v1'].model},
-  humanoid:{label:'Humanoide',file:'assets/avatar-1-bodyA-skin01.glb',clips:{
-    idle:'assets/anim_idle.glb',jog:'assets/anim_jog.glb',
-    run:'assets/anim_run.glb',air:'assets/anim_air.glb',
-  }},
-};
 const names={
   idle:'Reposo',jog:'Trote',air:'En el aire',calm:'Reposo',curious:'Curiosidad',joy:'Alegría',
   sad:'Tristeza',anger:'Enojo',uncertain:'Duda',focus:'Concentración',welcome:'Saludo',
@@ -40,7 +33,7 @@ const choice=(id,name)=>({id,component:'HudChoice',label:name,options:path(id+'O
   value:path(id),draft:path('draft/'+id),action:action(id,id)});
 const controls=[
   {id:'root',component:'HudPanel',label:'Revisión de movimiento',width:1.85,gap:.025,
-    children:['title','rig','clip','clock','chapter','playback','playOptions','comparison','views','note','archive','status']},
+    children:['title','rig','clip','clock','chapter','playback','playOptions','comparison','views','note','archive','reviewNotes','reviewText','status']},
   label('title','Revisión de movimiento','title'),choice('rig','Personaje'),choice('clip','Ciclo'),
   {id:'clock',component:'HudRange',label:'Fotograma',min:0,max:path('lastFrame'),step:1,value:path('frame'),
     draft:path('draft/frame'),gestureKey:path('clipEdition'),
@@ -60,7 +53,12 @@ const controls=[
   row('views',['front','angle','side']),button('front','Frente'),button('angle','Tres cuartos'),button('side','Perfil'),
   {id:'note',component:'HudTextInput',label:'Nota para este fotograma',value:path('note'),
     draft:path('draft/note'),placeholder:'Qué ves en la pose',maxLength:300,action:action('pin','note')},
-  row('archive',['pin','copy']),{...button('pin','Fijar nota','note'),submitFor:'note'},button('copy','Copiar enlace'),
+  row('archive',['pin','copy','review']),
+  {...button('pin',path('noteAction'),'note'),submitFor:'note',disabled:path('savingNote')},
+  button('copy','Copiar enlace'),
+  {...button('review',path('reviewAction')),visible:path('canReview')},
+  {...choice('reviewNotes','Notas de esta pose'),visible:path('showReviewNotes')},
+  {...label('reviewText',path('reviewText')),lines:3,visible:path('showReviewNotes')},
   {...label('status',path('status'),'status'),lines:2},
 ];
 const studioStyle=`
@@ -122,6 +120,7 @@ async function connectStudioReturn(wrapper){
     link.removeAttribute('aria-disabled');
     pending=false;
   });
+  return true;
 }
 
 function disposeFigure(figure){
@@ -177,7 +176,6 @@ export async function openCharacterStudio(document){
   renderer.toneMappingExposure=1.15;
   window.dispatchEvent(new Event('holodeck:entered'));
   const stage=buildStage(document),status=stage.querySelector('output');
-  void connectStudioReturn(stage);
   stage.prepend(renderer.domElement);
   const scene=new Scene(),hudScene=new Scene();
   scene.background=new Color(0x0b1e2a);
@@ -199,6 +197,8 @@ export async function openCharacterStudio(document){
   let figure,playback,group,rig,clip,frame=0,playing=false,revision='',note='',message='',showedAt=-Infinity;
   let sequence=0,elapsed=0,previous=0,visible=true,loop=true,speed='1',viewportWidth=0,viewportHeight=0;
   let primary=null,reference=null,showingReference=false,referenceRequest=0;
+  let canReview=null,review=null,selectedNote='',readingReview=false,savingNote=false,pendingNote;
+  void connectStudioReturn(stage).then(inStudio=>{canReview=Boolean(inStudio);refresh();});
   const reduce=window.matchMedia('(prefers-reduced-motion: reduce)');
 
   const hud=createSpatialHud({document,parent:hudScene,accessibilityRoot:stage.querySelector('.studio-a11y'),
@@ -407,27 +407,100 @@ export async function openCharacterStudio(document){
     const options=clipOptions(rigs[rig],figure);
     const chapters=availableChapters();
     const chapter=chapters.find(entry=>entry.frame===frame)?.id??'';
+    const viewedReview=currentReview();
+    const notes=viewedReview?.notes??[];
+    const selected=notes.find(item=>item.id===selectedNote)??notes[0];
+    const reviewText=selected?selected.author+' · '+selected.text:'';
     receive('updateDataModel',{value:{rig,clip,rigOptions:choices(Object.fromEntries(Object.entries(rigs).map(([id,value])=>[id,value.label]))),
       clipOptions:options.map(id=>({id,label:names[id]||id})),frame,
       reference:reference?.name??'',referenceOptions:options.filter(id=>id!==clip).map(id=>({id,label:names[id]||id})),
       compareLabel:showingReference?'Ver A':'Ver B',showingReference,noReference:!reference,
       lastFrame:frameLimit(),clipEdition:clipEdition(),speedOptions,speed,loop,
       hasChapters:chapters.length>0,chapter,chapterOptions:chapters,
+      canReview:canReview===true,noteAction:canReview?'Compartir nota':'Fijar nota',
+      savingNote:savingNote||canReview===null,reviewAction:viewedReview?'Ocultar notas':'Ver notas',
+      showReviewNotes:notes.length>0,reviewText,reviewNotes:selected?.id??'',
+      reviewNotesOptions:notes.map(item=>({id:item.id,label:item.author+' · '+item.text})),
       playLabel:playing?'Pausar':'Reproducir',playIcon:playing?'pause':'play',note,status:message,
-      draft:{rig,clip,frame,note,speed,chapter,reference:reference?.name??''}}});
+      draft:{rig,clip,frame,note,speed,chapter,reference:reference?.name??'',reviewNotes:selected?.id??''}}});
+  }
+  function reviewPose(){
+    const selection=displayed();
+    return {rig,clip:selection.name,edition:selection.edition,frame:Math.min(frame,frameLimit(selection))};
+  }
+  const keyForPose=pose=>JSON.stringify(pose);
+  function currentReview(){
+    return review&&playback&&review.key===keyForPose(reviewPose())?review:null;
   }
   function exactUrl(){
-    const share=new URL(url),selection=displayed();
-    const exact={rig,clip:selection.name,edicion:selection.edition,
-      fotograma:Math.min(frame,frameLimit(selection)),vista:view};
+    const share=new URL(url),pose=reviewPose();
+    const exact={rig,clip:pose.clip,edicion:pose.edition,fotograma:pose.frame,vista:view};
     for(const [key,value] of Object.entries(exact))share.searchParams.set(key,value);
     return share.href;
+  }
+
+  async function fetchReview(pose,submission){
+    const endpoint=new URL('api/space/character-pose-review',url);
+    if(!submission)endpoint.search=new URLSearchParams(pose).toString();
+    let response;
+    try{response=await fetch(endpoint,{signal:inputs.signal,...(submission?{method:'POST',
+      headers:{'content-type':'application/json'},body:JSON.stringify(submission)}:{})});}
+    catch{throw Error('No pude confirmar las notas. Podés volver a intentar.');}
+    if(response.status===409)throw Error('La edición de esta pose cambió. Volvé a abrirla.');
+    if(response.status===403)throw Error('Entrá al Taller para compartir o leer sus notas.');
+    if(!response.ok)throw Error('No pude confirmar las notas. Podés volver a intentar.');
+    const result=await response.json().catch(()=>null);
+    if(!Array.isArray(result?.notes))throw Error('No pude confirmar las notas. Podés volver a intentar.');
+    return result.notes;
+  }
+
+  async function toggleReview(){
+    if(currentReview()){review=null;refresh();return;}
+    if(readingReview)return;
+    playing=false;
+    const pose=reviewPose(),key=keyForPose(pose);
+    readingReview=true;
+    try{
+      const notes=await fetchReview(pose);
+      if(playback&&key===keyForPose(reviewPose())){
+        review={key,notes};
+        selectedNote='';
+        report(notes.length?'':'Todavía no hay notas en esta pose.');
+      }
+    }catch(error){if(visible)report(error.message);}
+    finally{readingReview=false;if(visible)refresh();}
+  }
+
+  async function shareNote(text){
+    if(savingNote)return;
+    playing=false;
+    const pose=reviewPose(),key=keyForPose(pose);
+    if(!pendingNote||pendingNote.key!==key||pendingNote.submission.text!==text)
+      pendingNote={key,submission:{id:window.crypto.randomUUID(),pose,text}};
+    const attempt=pendingNote;
+    savingNote=true;
+    refresh();
+    try{
+      const notes=await fetchReview(pose,attempt.submission);
+      pendingNote=null;
+      note='';
+      if(playback&&keyForPose(reviewPose())===key){
+        review={key,notes};
+        selectedNote=notes.at(-1)?.id??'';
+        report('Nota compartida en el Taller.');
+      }
+    }catch(error){
+      note=text;
+      if(visible)report(error.message);
+    }finally{savingNote=false;if(visible)refresh();}
   }
   async function activate(name,{value,clipEdition:expectedClip}={}){
     if(!name)return;
     if(name==='rig'&&Object.hasOwn(rigs,value)&&rig!==value)return loadRig(value);
     if(name==='clip'&&typeof value==='string'&&(clip!==value||!playback))return loadClip(value);
     if(!playback)return;
+    if(name==='review'&&canReview)return toggleReview();
+    if(name==='reviewNotes'&&currentReview()?.notes.some(item=>item.id===value))selectedNote=value;
     if(name==='reference')return loadReference(value);
     if(name==='compare'&&reference)displayClip(!showingReference);
     if(name==='clock'){
@@ -454,6 +527,8 @@ export async function openCharacterStudio(document){
     if(name==='pin'){
       const text=String(value||'').trim().slice(0,300);
       if(!text){report('Escribí una nota para este fotograma.');return;}
+      if(canReview)return shareNote(text);
+      if(canReview===null)return;
       const key='holodeck.characterStudio.notes';
       let notes=[];
       try{const list=JSON.parse(window.localStorage.getItem(key)||'[]');if(Array.isArray(list))notes=list;}catch{}
@@ -496,7 +571,8 @@ export async function openCharacterStudio(document){
     renderer.render(scene,camera);
     hud.update();
     if(group&&figure&&clip){
-      const rows=displayed()?.chapters[0]?.frame<=frameLimit()?2.64:2.43;
+      const rows=(displayed()?.chapters[0]?.frame<=frameLimit()?2.64:2.43)+
+        (currentReview()?.notes.length?0.54:0);
       const scale=Math.min(169,(compact?width*.90:width*.36)/2.02,
         (compact?height*.46:height*.75)/rows);
       hud.setTextDensity(surfaceId,{cssPixelsPerUnit:Math.round(scale),pixelRatio:renderer.getPixelRatio()});
