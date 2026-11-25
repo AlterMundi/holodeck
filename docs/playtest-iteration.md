@@ -388,3 +388,15 @@ release, preserving native processes and configuration. Sessions returned 200
 with the bound human session and 401 after logout. Chromium exchanged a
 synthetic playback level and reset through the two bound origins. Hearing live
 speech and seeing the lips move during it still needs a live trial.
+
+## Native Activity panel
+
+The production audit found Activity still used its exterior HTML launcher and
+dialog. The cutover is part of [Holodeck #16](https://github.com/AlterMundi/holodeck/issues/16).
+The Activity read API and retained timeline stay with the existing world owner.
+Fable 5.2 High's focused review recommended one controller for both
+presentations, a bounded set of visible choices on narrow screens, a stable
+sequence for selection, a fixed action row, and page/revision checks before
+applying any action. The native panel uses Proyección's paged choice and
+keeps the existing fetch boundary of up to 20 records. It retains the HTML
+dialog as the presentation fallback for loss of a usable native frame.

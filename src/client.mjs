@@ -579,7 +579,7 @@ function resetDoor(){
 // MML captures document keys by default. Preserve ordinary text editing and
 // keyboard activation of the HUD without turning typed words into locomotion.
 document.addEventListener('keydown',event=>{
-  if(matterHud?.settings.group){
+  if(matterHud?.settings.group||worldHistory?.native){
     if(matterHud.settingsKey(event))event.preventDefault();
     event.stopImmediatePropagation();
     return;
@@ -650,10 +650,11 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       }});
     const tools={map:document.getElementById('map-tool'),talk:document.getElementById('talk'),
       appearance:document.getElementById('appearance-open'),video:document.getElementById('video-open'),
-      bridge:document.getElementById('bridge'),plant:document.getElementById('plant'),undo:document.getElementById('undo')};
+      bridge:document.getElementById('bridge'),plant:document.getElementById('plant'),undo:document.getElementById('undo'),
+      activity:document.getElementById('activity-open')};
     const readTools=operating=>Object.fromEntries(Object.entries(tools).map(([id,element])=>[id,{
       label:id==='undo'?'Deshacer':element.getAttribute('aria-label')??element.textContent.trim(),
-      visible:!element.hidden&&(['map','talk','appearance','video'].includes(id)||!inside&&!operating)
+      visible:(id==='activity'||!element.hidden)&&(['map','talk','appearance','video'].includes(id)||!inside&&!operating)
         &&(!['appearance','video'].includes(id)||document.getElementById('conversation-panel').hidden),
       disabled:element.disabled,
       pressed:element.getAttribute('aria-expanded')==='true',
@@ -679,7 +680,13 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     }
     matterHud=new MatterWorktableHud({document,webgl:renderer.composer.renderer,table:collectionShelves.worktable,collection:collectionShelves,
       toggleSound:()=>{if(!moving&&!entering&&navigator.userActivation?.isActive&&(!inside||worldAudio.status().active))void toggleWorldSound();},
-      readTools,activateTool:id=>tools[id]?.click(),
+      readTools,history:()=>worldHistory,activateTool:id=>{
+        if(id!=='activity'){tools[id]?.click();return;}
+        client.keyInputManager?.handleUnfocus();touchControls.pause(true);
+        if(document.pointerLockElement===matterHud.canvas)document.exitPointerLock();
+        options.coreCameraManager.activePointers.clear();
+        void worldHistory?.open({native:true});
+      },
       presentMovement:provider=>touchControls.present(provider),
       navigation:{panel:mapPanel,mapState:()=>updateDoor.navigation?.()??{
         scope:activeSpace.id,canExit:false,busy:false,map:null,
@@ -916,7 +923,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         options.coreCameraManager.getCameraState(),renderer.composer.renderer.domElement.clientHeight);
       const opaqueVisit=contentVisitor?.frame&&!contentVisitor.panel.classList.contains('is-walking');
       const settingsOpen=Boolean(document.querySelector('#appearance-dialog[open],#video-dialog[open]'));
-      const toolModal=Boolean(document.querySelector('dialog[open]:not([data-native-settings])'));
+      const toolModal=Boolean(worldHistory?.opened||document.querySelector('dialog[open]:not([data-native-settings])'));
       if(settingsOpen!==settingsInputCaptured){
         settingsInputCaptured=settingsOpen;
         touchControls.pause(settingsOpen);
@@ -946,7 +953,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       matterHud.collection.update(navigationVisible&&!matterHud.active&&!mapPanel.open&&!signalEditor.active);
       const {left:statusLeft,right:statusRight}=matterHud.toolInsets();
       matterHud.status.update({
-        headerVisible:!entering&&drawWorld&&!opaqueVisit&&!settingsOpen&&!toolModal&&(inside||Boolean(navigator.userActivation)),
+        headerVisible:!entering&&drawWorld&&!opaqueVisit&&!settingsOpen&&(!toolModal||worldHistory?.native)&&(inside||Boolean(navigator.userActivation)),
         showExterior:!inside,noticeVisible:!entering&&drawWorld&&!opaqueVisit,soundBlocked:moving||needsSync,
         width:matterHud.canvas.clientWidth-statusLeft-statusRight,height:matterHud.canvas.clientHeight,
       });
@@ -997,7 +1004,10 @@ contentVisitor=new ContentVisitor({document,window,base,say,scoped:inside,roomId
 }});
 worldHistory=new WorldHistory({document,window,getState:()=>state,
   load:(query,{signal})=>api('activity?'+new URLSearchParams(query),undefined,{signal}),
-  resumeWorld:()=>{document.activeElement?.blur();window.focus();},onDiscuss:()=>openConversation(true),
+  resumeWorld:native=>{
+    document.activeElement?.blur();window.focus();
+    if(native)requestAnimationFrame(()=>{if(!worldHistory.opened&&$('#conversation-panel').hidden)matterHud?.focusTool('activity');});
+  },onDiscuss:()=>openConversation(true),
   onPoint:async reference=>{
     await refresh();if(state.actorRef!==reference.actorRef)throw Object.assign(Error('History actor changed'),{userMessage:'Tu acceso cambió. Volvé a abrir la actividad.'});
     if(state.run!==reference.run||state.edition!==reference.edition)throw Object.assign(Error('History room changed'),{userMessage:'Este cambio pertenece a otra etapa del mundo.'});
@@ -1052,7 +1062,7 @@ client.on('configChanged',config=>{
   if(config.mmlDocuments){worldDocuments={...config.mmlDocuments};delete worldDocuments.preview;}
 });
 function say(text,options){
-  if(worldHistory?.dialog.open){worldHistory.message(text);worldNotice.clear();}
+  if(worldHistory?.opened){worldHistory.message(text);worldNotice.clear();}
   else if(!$('#creator').hidden){$('#preview-hint').textContent=text;worldNotice.clear();}
   else worldNotice.show(text,options);
 }
@@ -1192,7 +1202,12 @@ async function refresh(){
   if(inside)return;
   const request=++stateRequest,continuityVersion=worldAudio.continuityVersion;
   let incoming;
-  try{incoming=await api('state');}catch(error){if(request!==stateRequest)return;worldAudio.breakContinuity();throw error;}
+  try{incoming=await api('state');}catch(error){
+    if(request!==stateRequest)return;
+    worldAudio.breakContinuity();
+    if([401,403].includes(error.httpStatus))worldHistory.observe(null);
+    throw error;
+  }
   if(!snapshotMayApply(state,incoming,request,stateRequest))return;
   state=incoming;contentVisitor.syncNodes(state.nodes);playableHUD.sync(state.nodes,state.actorRef,state.canEdit===true);
   if(activeSpace?.id==='outside'&&Array.isArray(state.entrances)&&
