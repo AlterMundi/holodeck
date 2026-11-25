@@ -747,6 +747,12 @@ session storage were preserved; served Apps metadata is retained but hidden.
 
 ## Recovery
 
+The [selected humanoid release](STATUS.md#november-25-humanoid-standing-idle-and-airborne-turns)
+`326890e44863` changed only the browser bundle. Use `873ae82b51f6` as
+the immediate rollback with the same protected Home App and current world
+state. The exact older `20726f08a3e0` remains installed and published if
+needed. Qualify any further rollback against the current state and access.
+
 For the selected atelier release `27501f434aab`, the directly usable
 predecessor is `c8f4eb5a011f`. Both retain the same receiving fields,
 world art and browser recipe editing. The earlier `a286c3c0a36e` can load

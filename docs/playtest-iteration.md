@@ -1476,8 +1476,9 @@ These are instrumented pose measurements with two fixture identities.
 They do not measure GPU performance, animation phase synchronization
 or sign-in with two people. An independent Chromium pair also repeated
 the 90° airborne turn with the same archive. Bank peaked at 8.7° locally
-and 9.3° remotely, and both views returned to their ground pose. The live
-service still selects `873ae82b51f6` with `20726f08a3e0` as rollback.
+and 9.3° remotely, and both views returned to their ground pose. The
+[protected deployment](STATUS.md#november-25-humanoid-standing-idle-and-airborne-turns)
+selects this archive with `873ae82b51f6` as its code-only rollback.
 
 ## Authored flight and swimming poses
 

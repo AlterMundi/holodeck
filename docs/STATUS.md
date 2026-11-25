@@ -1,5 +1,30 @@
 # Current MVP work
 
+## November 25 humanoid standing idle and airborne turns
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/) serves
+package `326890e44863` from source `64195e8`. Humanoids add breathing and
+small glances at rest, keep the base foot and pelvis pose and fade the
+gesture into movement. Airborne turns ease heading and bank in the local
+radial frame. The exact archive passed 354 tests, with two optional skips.
+The [RTX 2060 and separate fixture observer measurements](playtest-iteration.md#humanoid-standing-idle)
+cover both graphics profiles and the reduced-motion control.
+
+Only the browser bundle changed among the 80 payloads. Protected HTTPS returned
+the exact bundle, terrain worker, avatar and health response. The existing App
+resource, audience and receiving configuration matched. Native readback kept
+the same world, 30 entities, four nodes and sequence 403. Twenty-two state files
+were byte-identical. The two room checkpoints rotated during the observations.
+Anonymous access and four protected-route denials were confirmed, and the
+temporary technical reader was revoked.
+
+`873ae82b51f6` is the immediate code-only rollback, with `20726f08a3e0`
+as the compatible older recovery. Both installed trees were retained, and all
+files in the immediate rollback matched its manifest. The three published
+archives occupy 99,973,120 bytes. The superseded `b74aa8939953` publication
+was retired after its local recovery archive was verified. The visit with two
+independently authenticated people and their native Conversation return remain open.
+
 ## November 25 oriented arrival and compact HUD
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/) serves
