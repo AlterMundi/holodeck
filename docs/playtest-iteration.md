@@ -136,7 +136,32 @@ in the sky near the horizon in both builds. Isolate its rendering source
 before treating the exterior art as qualified. This also leaves the complete
 camera route and two genuinely signed-in visitors outstanding. The second
 browser job exited cleanly and its profile and tunnel were retired. The
-protected production version stays at the existing selection.
+protected production version stayed at its previous selection during those measurements.
+
+## Toroidal cloud boundary and combined receipt
+
+The physical canvas isolates the former rectangle to cloud density.
+Removing the panorama kept the boundary, and removing the clouds removed
+it. Explicit interpolation weights and a small floor bias did not resolve
+it. An unsigned 32-bit lattice hash eliminated it while keeping the
+interpolation, atmospheric lighting and motion. Opus 5.5 High found a
+reflection collision in the first XOR variant. The integrated additive
+lattice computes each shared corner in exact modular arithmetic, with
+explicit high precision and fewer coordinate multiplications.
+
+On Legion at the same dusk pose and 1200 × 740 drawing buffer, the maximum
+median adjacent-pixel jump in the previous edge windows fell from 21.33
+horizontal and 33.33 vertical to 1.00 and 0.33 in 8-bit RGB component units.
+The exact candidate also ran with the cloud clock at 1970 and 3599 seconds
+and live animation in normal dusk and lightweight daylight views. These
+results cover the original spawn angle, not all sky views, long-duration
+motion or mobile GPU compatibility. The cloud distribution changes.
+
+Archive `20726f08a3e037a415d5687b8b1cf23bccc4a177a506996f931cc4e296930978`
+contains the verified tabletop candidate and the revised cloud shader.
+It differs from `5d38ae522df7` only in the browser bundle and inventory.
+The [protected receiving record](STATUS.md#november-25-toroidal-sky-and-worktable-lighting)
+records the installed package, compatible rollback and preserved world.
 
 ## Multiscale materials and lighting
 

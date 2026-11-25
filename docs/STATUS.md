@@ -1,5 +1,34 @@
 # Current MVP work
 
+## November 25 toroidal sky and worktable lighting
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/) serves
+`20726f08a3e0` from `151ef83`. It includes the filtered orbital worktable
+light, cut-aware specimen shadows, and a stable integer cloud lattice.
+Matched physical RTX 2060 captures at the toroidal spawn show the sky
+without the former rectangular cloud boundary. Daytime lightweight and
+dusk normal graphics were checked. The exact package passed 351 tests
+with two optional gallery skips.
+
+The existing Home App and audience were retained. The immediate rollback
+is `b74aa8939953`, with `ccb72f15ef10` retained as compatible recovery.
+The three Home archives total 99,973,120 bytes. The superseded
+`52dccaadf135` publication was retired through the publisher after verifying
+its exact locally retained archive and both compatible protected predecessors.
+
+The initial activation request was interrupted by the Home access unit's
+384 MiB memory limit. Its automatic restart restored the gateway and left
+the prior Holodeck code selected. The original request was present in the
+owner journal and absent in the runtime journal. Resubmitting that exact
+request after checking memory headroom and an empty listener completed the
+upgrade. All 80 installed files and the previous code digest matched.
+The protected HTTPS readback verified health, exact client, avatar and
+terrain worker bytes, four baseline denials and refusal after revoking the
+temporary reader. All 22 sampled state files were byte-identical. The
+native readback verified the run, edition, 30 entities and four nodes.
+This release has technical and physical device evidence. The full route
+with two distinct signed-in visitors is still open.
+
 ## November 25 viewer themes and shared avatar poses
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/) serves
