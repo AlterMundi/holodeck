@@ -1883,3 +1883,44 @@ browser and art URLs, the existing audience and the same native run
 at sequence 403. Immediate compatible rollback is `0878bc6c67fc`.
 The technical reader was revoked. Broader plant coverage, a strong
 distant landmark and independently authenticated visits remain open.
+
+
+## Rock crown and cave wayfinding
+
+The existing toroidal cave is the nearest actual landmark on the
+route toward the inner overlook. Four rust-coloured fins form a crest
+beside its arrival end. The tallest and a lower neighbour break the
+horizon from the house. One narrow mineral seam picks up the cool
+palette. The shapes use one material, 624 triangles and no downloads.
+Both graphics profiles receive the same surfaces and colliders.
+
+The original passage construction and both mouth coordinates are
+unchanged. The crown mesh provides its own matching collision.
+Signed volume confirms outward winding. Vertex, edge and face-centre
+checks keep it off the tunnel footprint and painted trail. A direct
+triangle-distance query found at least 1.84 m to the existing shell
+and 1.79 m between the closest fins. The map draws an outlined Cueva
+label at the original entrance and flips its placement by measured
+text width. No new access, world entity, checkpoint or destination
+interaction is required.
+
+Fable High reviewed silhouette, sightlines and real collision. Opus
+5.5 High called out the initial tight separation and label clipping.
+Both were corrected and verified. The exact 84-payload archive
+`a76e321eb728` comes from `63ed7c4` and changes only the compressed
+client bundle and entry HTML. The clean source passed 367 tests and
+two optional cases were skipped.
+
+The RTX 2060 displayed the landmark in the ordinary arrival view by
+day and at dusk. A controlled visitor walked from the house around the
+mouth and through the full original tunnel, emerging beyond the second
+mouth. The existing minimap action rendered the Cueva label. RTX
+arrival GPU median was 2.10 ms by day and 2.11 ms at dusk. In Pi 5
+Livianos the matched arrival median was 10.75 → 10.76 ms and p95 was
+13.30 → 14.25 ms over 120 samples. These screens use fixture identities.
+
+The protected receiver selected `a76e321eb728`. All 84 installed
+payloads, protected client and art bytes verified. The App, audience,
+receiving configuration and native world matched. Immediate rollback is
+`2a4ff7ba1da6`. The technical reader was revoked. Independent shared
+workshop acceptance remains open.

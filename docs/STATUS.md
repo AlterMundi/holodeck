@@ -1,9 +1,22 @@
 # Current MVP work
 
+## November 25 cave wayfinding
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `a76e321eb728` from `63ed7c4`. Four rust-coloured stone fins
+identify the existing passage from the house and the exterior map marks
+the original cave entrance. The full walk passed on RTX 2060.
+The exact candidate also drew the landmark in Livianos on Pi 5.
+
+[Physical and geometric evidence](playtest-iteration.md#rock-crown-and-cave-wayfinding)
+covers the same silhouette and collision mesh, preserved tunnel and
+receiving readback. Immediate rollback is `2a4ff7ba1da6`.
+
+
 ## November 25 meadow banks
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
-serves `2a4ff7ba1da6` from `7b1bcf1`. Five rooted banks of feathered
+selected `2a4ff7ba1da6` from `7b1bcf1` for this update. Five rooted banks of feathered
 tussocks and wildflowers bring depth to the landscape around the house.
 Both graphics profiles retain the same bank locations. Normal uses finer
 blades and visible movement with a reduced-motion option.

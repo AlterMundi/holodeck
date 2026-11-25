@@ -571,9 +571,11 @@ covered the running game, route clearance and zero model fetches
 in Livianos on Raspberry Pi 5. The live [meadow material](playtest-iteration.md#meadow-material-around-the-house)
 adds filtered colour variation around the existing route, with matched
 day, dusk and lightweight measurements. The live [rooted banks](playtest-iteration.md#rooted-meadow-banks-around-the-shared-route)
-dress five regions around the house in both profiles. A stronger distance
-landmark, wider landscape coverage and the independent shared workshop
-visit remain open.
+dress five regions around the house in both profiles. The live
+[cave crown and map marker](playtest-iteration.md#rock-crown-and-cave-wayfinding)
+identify the real passage from the near landscape and preserve its two
+mouths. Wider landscape coverage, the inner overlook route and the
+independent shared workshop visit remain open.
 
 Compare the same outside path, working table, map and open Conversation
 on the existing build. Final preset selection covers a dark and a light

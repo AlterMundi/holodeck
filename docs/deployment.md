@@ -747,10 +747,18 @@ session storage were preserved; served Apps metadata is retained but hidden.
 
 ## Recovery
 
+The [cave wayfinding release](STATUS.md#november-25-cave-wayfinding)
+`a76e321eb728` changes the packed client and entry HTML. Restore
+`2a4ff7ba1da6` for immediate code-only rollback or `0878bc6c67fc`
+for older published recovery. The superseded `38a43c533c2e` archive
+was retired from publication after local archive verification. Published
+history uses 100,638,720 bytes.
+
+
 The [meadow banks release](STATUS.md#november-25-meadow-banks)
-`2a4ff7ba1da6` changes only the packed client bundle. Restore
-`0878bc6c67fc` for immediate code-only rollback or `38a43c533c2e`
-for older published recovery. The preceding conversation input archive
+`2a4ff7ba1da6` changed only the packed client bundle. Its prior
+recovery record selected `0878bc6c67fc` and `38a43c533c2e` as the
+compatible published versions at that time. The preceding conversation input archive
 `7a466b1ca447` was retired from publication after exact archive
 verification. Published history uses 100,638,720 bytes.
 
