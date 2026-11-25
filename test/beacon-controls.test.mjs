@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {BeaconControls,BEACON_CONTROLS,nearbyBeaconControl,summarizeBeaconStatus} from '../src/beacon-controls.mjs';
 
-const spatial=BEACON_CONTROLS[0],weaver=BEACON_CONTROLS[1];
+const [spatial,weaver,guitar]=BEACON_CONTROLS;
 const objects=BEACON_CONTROLS.map(({id,revision})=>({id,revision,kind:'workstation'}));
 
 test('a control requires a current room object and nearby player position',()=>{
@@ -11,6 +11,8 @@ test('a control requires a current room object and nearby player position',()=>{
   assert.equal(nearbyBeaconControl([{...objects[0],revision:2}],spatial.position),null);
   assert.equal(nearbyBeaconControl(objects,spatial.position),spatial);
   assert.equal(nearbyBeaconControl(objects,weaver.position),weaver);
+  assert.equal(nearbyBeaconControl(objects,guitar.position),guitar);
+  assert.equal(nearbyBeaconControl(objects.filter(object=>object.id!==guitar.id),guitar.position),null);
 });
 
 test('a nearby bench mounts one owner panel only on open and discards it when access changes',()=>{
@@ -55,14 +57,18 @@ test('a nearby bench mounts one owner panel only on open and discards it when ac
   assert.equal(controls.reference(),null);
   controls.update(objects,weaver.position);
   assert.equal(controls.reference(),null);
+  controls.update(objects,guitar.position);
+  assert.equal(link.href,'/harmonic_lab/?service=guitar');
+  assert.deepEqual(stage.children,[]);
 });
 
 test('station status uses only confirmed tool states and hides host identities',()=>{
   const status={csrf:'private',hosts:[
-    {id:'private',online:true,services:[{id:'audio',status:'ready'},{id:'body',status:'stopped'}]},
+    {id:'private',online:true,services:[{id:'audio',status:'ready'},{id:'body',status:'stopped'},{id:'guitar',enabled:false,installed:true,status:'stopped'}]},
     {id:'other',online:false},
   ]};
   assert.equal(summarizeBeaconStatus(status,'audio'),'En marcha (1) · Sin respuesta (1)');
+  assert.equal(summarizeBeaconStatus(status,'guitar'),'No seleccionado (1) · Sin respuesta (1)');
   assert.equal(summarizeBeaconStatus(status,'body'),'Detenido (1) · Sin respuesta (1)');
   assert.equal(summarizeBeaconStatus({hosts:[{online:false}]},'body'),'Sin respuesta.');
   assert.equal(summarizeBeaconStatus({hosts:[{online:true,services:[]}]},'body'),'Sin confirmar.');

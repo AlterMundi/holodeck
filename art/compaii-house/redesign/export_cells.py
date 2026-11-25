@@ -196,7 +196,7 @@ def prepare_beacon_lettering(objects):
         sign.data.materials[0] = ivory
 
 
-def mesh_for(collection, origin, cell):
+def mesh_for(collection, origin, cell, study_stations=False):
     scope = bpy.data.collections[collection]
     scope.hide_render = False
     exclusions = {'beacon': BEACON_STAIRS + BEACON_VAULT,
@@ -224,7 +224,7 @@ def mesh_for(collection, origin, cell):
     obj.location -= Vector(origin)
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     if cell in ('beacon','beacon-return'):
-        register_beacon(obj)
+        register_beacon(obj, study_stations)
     if cell=='beacon-return':
         register_beacon_return(obj)
     if cell=='facade':
@@ -583,7 +583,95 @@ def beacon_floor(collection):
     return field
 
 
-def register_beacon(obj):
+
+def beacon_workstations(collection, study_stations):
+    # Blender Y is the negation of room Z in the registered chamber.
+    materials = bpy.data.materials
+    basalt = materials['Split basalt']
+    brass = materials['Satin brass']
+    oak = materials['Dark oiled oak']
+    iron = materials['Blue gunmetal']
+    ivory = materials[BEACON_LETTERING]
+    parts = []
+
+    def spindle(name, center, profile, finish, sides=32):
+        vertices = [(center[0] + width * cos(2*pi*j/sides),
+                     center[1] + depth * sin(2*pi*j/sides), height)
+                    for height, width, depth in profile for j in range(sides)]
+        faces = [tuple(reversed(range(sides)))]
+        for ring in range(len(profile) - 1):
+            start = ring * sides
+            faces.extend((start+j, start+(j+1)%sides,
+                          start+sides+(j+1)%sides, start+sides+j)
+                         for j in range(sides))
+        faces.append(tuple(range(len(vertices)-sides, len(vertices))))
+        mesh = bpy.data.meshes.new(name)
+        mesh.from_pydata(vertices, [], faces)
+        mesh.update()
+        for face in mesh.polygons[1:-1]:
+            face.use_smooth = True
+        mesh.materials.append(finish)
+        part = bpy.data.objects.new(name, mesh)
+        collection.objects.link(part)
+        parts.append(part)
+
+    def plaque(body, center, face):
+        x, y, height = center
+        bpy.ops.mesh.primitive_cube_add(size=1, location=(x-face*.026, y, height+.055))
+        plate = bpy.context.object
+        plate.name, plate.dimensions = body+' plaque', (.045,.68,.19)
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+        edge = plate.modifiers.new('Rounded plaque', 'BEVEL')
+        edge.width, edge.segments = .012, 2
+        plate.data.materials.append(iron)
+        parts.append(plate)
+        bpy.ops.mesh.primitive_cube_add(size=1, location=(x-face*.137, y, height+.119))
+        mount = bpy.context.object
+        mount.name, mount.dimensions = body+' plaque mount', (.21,.64,.071)
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+        mount.data.materials.append(brass)
+        parts.append(mount)
+        lettering = bpy.data.curves.new(body, 'FONT')
+        lettering.body, lettering.size, lettering.align_x = body, .151, 'CENTER'
+        lettering.extrude, lettering.resolution_u = .001, 3
+        lettering.materials.append(ivory)
+        label = bpy.data.objects.new(body, lettering)
+        collection.objects.link(label)
+        label.location = center
+        label.rotation_euler = (pi/2, 0, face*pi/2)
+        parts.append(label)
+
+    guitar = (-4.49, .35)
+    spindle('Guitar workbench pedestal', guitar,
+            [(.10,.67,.42),(.18,.67,.42),(.44,.39,.27),(.86,.64,.38)],basalt)
+    spindle('Guitar workbench brass seam', guitar,[(.85,.77,.53),(.88,.83,.55)],brass)
+    spindle('Guitar walnut worktop', guitar,
+            [(.87,.83,.55),(.95,.85,.55),(.985,.79,.51)],oak)
+    spindle('Guitar cradle body pad',(-4.75,.35),
+            [(.966,.32,.36),(1.01,.32,.36),(1.07,.29,.33)],iron,24)
+    spindle('Guitar cradle neck pad',(-4.07,.35),
+            [(.966,.18,.14),(1.07,.18,.14),(1.11,.15,.12)],iron,20)
+    plaque('Guitarra',(-3.631,.35,.846),1)
+    if not study_stations:
+        return parts
+
+    shaper = (3.51,-2.78)
+    spindle('Shaper console base',shaper,
+            [(.10,.66,.48),(.18,.65,.48),(.51,.38,.29),(.90,.59,.42)],basalt)
+    spindle('Shaper bronze collar',shaper,[(.89,.64,.46),(.94,.75,.50)],brass)
+    spindle('Shaper dark console',shaper,[(.94,.76,.51),(1.025,.80,.55),(1.06,.76,.52)],iron)
+    for row, y in enumerate((shaper[1]-.20,shaper[1]+.20)):
+        for column, x in enumerate((shaper[0]-.30,shaper[0],shaper[0]+.30)):
+            knob_top = 1.18 + .024 * (column + row)
+            spindle('Shaper voice control', (x,y),
+                    [(1.055,.102,.102),(1.086,.108,.108),
+                     (knob_top-.012,.063,.063),(knob_top,.058,.058)],brass,16)
+            spindle('Shaper voice ceramic cap', (x,y),
+                    [(knob_top-.001,.054,.054),(knob_top+.016,.041,.041)],ivory,16)
+    plaque('Shaper',(2.694,-2.78,.924),-1)
+    return parts
+
+def register_beacon(obj, study_stations=False):
     # Preserve the existing 12m cell and the west stair passage. The rendered
     # chamber extends south from the stair and leaves the original steps free.
     # Blender (X,Y,Z) here is centered on the chamber, before glTF converts it.
@@ -595,7 +683,8 @@ def register_beacon(obj):
     basalt = bpy.data.materials['Split basalt']
     iron = bpy.data.materials['Blue gunmetal']
     collection = obj.users_collection[0]
-    pieces = [obj, *beacon_vault(collection), beacon_floor(collection)]
+    pieces = [obj, *beacon_vault(collection), beacon_floor(collection),
+              *beacon_workstations(collection, study_stations)]
 
     def piece(name, at, size, mat, tilt=0, bevel=.015, segments=3):
         bpy.ops.mesh.primitive_cube_add(size=1, location=at)
@@ -780,9 +869,12 @@ def inventory(path):
 if __name__ == '__main__':
     args = sys.argv[sys.argv.index('--')+1:]
     destination, cell = Path(args[0]).resolve(), args[1]
-    destination.mkdir(parents=True, exist_ok=True)
     collection, origin = CELLS[cell]
-    obj = mesh_for(collection, origin, cell)
+    extra = args[2:]
+    if extra not in ([], ['--study-stations']) or (extra and cell not in ('beacon','beacon-return')):
+        raise ValueError('Expected an optional --study-stations flag for Beacon exports')
+    destination.mkdir(parents=True, exist_ok=True)
+    obj = mesh_for(collection, origin, cell, study_stations=bool(extra))
     # This smaller cell keeps its look with a 768px atlas and fits the
     # existing package budget alongside both permissioned gallery variants.
     color_size = 768 if cell == 'tower' else ALBEDO_RESOLUTION

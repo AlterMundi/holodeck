@@ -205,6 +205,20 @@ the scene anchor and the room reference in Conversation use the new position.
 The older profile retains its original bench and station revision.
 [Plaque at player height](review/beacon-prototype-plaque.jpg)
 
+### Guitar worktop and Shaper study
+
+Guitar has a walnut top with paired cradle pads, an ivory plaque and a
+workstation anchor at (−4.49, −0.35) in room x/z metres. The existing
+Harmonic Lab window opens directly to the Guitar card. The selected
+receiver and its separate instrument start remain with the owner panel.
+
+Add `--study-stations` after `beacon` or `beacon-return` in the export
+command to render the Shaper worktop alongside Guitar. Use a separate
+output directory for the study. The Shaper uses six bronze and ivory
+controls on a dark pedestal and reuses the current textures. Its
+[studio placement and instrument route](../../../docs/shared-roadmap.md#harmonic-lab-as-a-playable-resonant-volume)
+remain staged for validation.
+
 
 ```sh
 blender -b art/compaii-house/redesign/casa-compaii-redesign.blend -t 6 --python-exit-code 1 \
