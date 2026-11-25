@@ -1,5 +1,14 @@
 # Current MVP work
 
+## November 25 native HUD looks
+
+The protected release is `1db0e674e988` from `release/native-hud-looks`
+(`e6e9416`). `8e6647b2b23c` remains the rollback. The existing game accepts
+four opt-in HUD looks. Choose `hud-look=orbita`, `umbral`, `pulso`, or
+`estratos` on the game URL. Compare the same gameplay toolbar, Matter
+workbench and Conversation chrome. See the art-direction section of
+[the playtest record](playtest-iteration.md#hud-art-direction).
+
 ## November 25 skeletal Navegante
 
 The protected release is `8e6647b2b23c`, built from `b87e1ed` on the

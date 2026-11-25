@@ -323,6 +323,25 @@ acceptance and the rest of the iteration remain open.
 
 ### HUD art direction
 
+The protected native comparison now opens in Holodeck with an opt-in
+`hud-look` query: `orbita`, `umbral`, `pulso`, or `estratos`. The three
+views use the gameplay toolbar, an actual Matter project, and the A2UI
+Conversation chrome over the canonical web frame. The material meshes follow
+the existing A2UI groups and sit outside the hit targets. The chrome pivots
+on entry and during toolbelt layout changes, folds on exit, and flashes
+along its trim on handled actions. It honors reduced motion. The default room
+and HUD settings remain independent of the comparison.
+
+Fable High reviewed the implementation approach and prompted a visible
+glass/enamel split and stable accessibility targets. The exact release
+passed 319 tests with two skipped. All four looks were captured in controlled
+Chromium on the real room and worktable surfaces with an isolated conversation
+fixture. The packaged build passed desktop and touch Conversation drag,
+resize, minimize and reopen with its draft retained. The selected archive
+matched all 80 installed files and the protected HTTPS assets. Physical Pi
+performance and the final dark/light selection remain open.
+
+
 Holodeck owns the surface intent, room look, and interaction state. A2UI
 describes controls and actions against the registered Proyección catalog.
 Proyección resolves those controls into Three.js visuals and the corresponding
