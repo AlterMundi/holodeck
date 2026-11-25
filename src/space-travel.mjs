@@ -4,6 +4,7 @@ const base=()=>new URL('./',document.baseURI);
 const DOOR_RANGE=1.65;
 const STAIR_RANGE=.85;
 const PORTAL_RANGE=.90;
+let doorOfferRevision=0;
 
 export async function readSpace(signal){
   const result=await fetch(new URL('api/space?live=1',base()),{credentials:'same-origin',signal});
@@ -39,12 +40,18 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
     : space.entrances.map(entrance=>({to:entrance.id,title:'Entrar · '+entrance.title,door:entrance.door}));
   const list=travel.querySelector('nav');
   const map=inside&&mapEnabled?showRoomMap(travel,doors):null;
-  let near=null,busy=false,suspended=false;
-  async function move(destination) {
-    if(busy)return;
+  let near=null,busy=false,suspended=false,nearRevision=0;
+  const doorCovered=()=>travel.open||document.querySelector(
+    'dialog[open],.room-transition,.is-operating-matter,#world-entry:not([hidden]),#conversation-panel:not([hidden]),'+
+    '#creator:not([hidden]),#signal-editor:not([hidden]),#content-visit:not([hidden]):not(.is-walking)');
+  async function move(destination,proximityRevision) {
+    if(busy||suspended)return;
     busy=true;
     try{if(!await canLeave()){busy=false;return;}}
     catch{busy=false;onError('No pude comprobar el estado de la visita.');return;}
+    if(suspended||(proximityRevision!==undefined&&(near!==destination||nearRevision!==proximityRevision||doorCovered()))){
+      busy=false;return;
+    }
     button.disabled=true;onMoving?.(true);
     for(const control of list.children)control.disabled=true;
     let next;
@@ -89,13 +96,27 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
     control.onclick=()=>move(destination);
     list.append(control);
   }
-  button.onclick=()=>{if(near)move(near);};
+  const doorOffer=()=>!suspended&&near&&!doorCovered()?
+    {scope:space.id,revision:nearRevision,title:near.title,busy}:null;
+  const followDoor=(scope,expectedRevision)=>{
+    const offer=doorOffer();
+    if(offer&&!offer.busy&&offer.scope===scope&&offer.revision===expectedRevision)return move(near,expectedRevision);
+  };
+  let pointerRevision;
+  button.onpointerdown=event=>{if(event.button===0)pointerRevision=doorOffer()?.revision;};
+  button.onpointercancel=()=>{pointerRevision=undefined;};
+  button.onclick=event=>{
+    const revision=event.detail===0?nearRevision:pointerRevision;
+    pointerRevision=undefined;
+    followDoor(space.id,revision);
+  };
   const hotkey=event=>{
-    if(event.code!=='KeyE'||event.repeat||!near||!button.getClientRects().length||
+    if(event.code!=='KeyE'||event.repeat||event.defaultPrevented||!doorOffer()||
+       (!button.hasAttribute('data-native-door')&&!button.getClientRects().length)||
        event.altKey||event.ctrlKey||event.metaKey||
        event.target instanceof Element&&event.target.closest('input,textarea,select,[contenteditable="true"]'))return;
     event.preventDefault();
-    move(near);
+    followDoor(space.id,nearRevision);
   };
   document.addEventListener('keydown',hotkey);
   const update=(position,rotation)=>{
@@ -115,10 +136,12 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
     map?.update(position,rotation,closest);
     if(nearby)onNear?.(nearby.to);
     if(closest===near)return;
-    near=closest;button.hidden=!near;
+    near=closest;nearRevision=++doorOfferRevision;button.hidden=!near;
     if(near)button.textContent=near.title;
   };
   update.navigation=()=>({scope:space.id,busy,canExit:!suspended&&links.length>0,map:suspended?null:map?.state()});
+  update.doorOffer=doorOffer;
+  update.followDoor=followDoor;
   update.bearing=()=>suspended||travel.open?null:map?.bearing();
   update.mapDismiss=id=>!suspended&&!travel.open&&map?.dismiss(id)===true;
   update.mapSelect=id=>{if(!suspended&&travel.open)map?.choose(id);};
@@ -133,6 +156,7 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
   update.dispose=()=>{
     update.suspend();
     document.removeEventListener('keydown',hotkey);
+    button.onclick=button.onpointerdown=button.onpointercancel=null;
   };
   return update;
 }

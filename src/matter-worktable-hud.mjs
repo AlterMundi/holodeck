@@ -1,5 +1,6 @@
 import {OrthographicCamera,Raycaster,Scene,Vector2} from 'three';
 import {WorldMapHud,worldMapId,worldBearingId} from './world-map-hud.mjs';
+import {DoorPromptHud,doorPromptId,doorPromptWidth} from './door-prompt-hud.mjs';
 import {SettingsHud,settingsId} from './settings-hud.mjs';
 import {HudRenderLayer} from './hud-render-layer.mjs';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
@@ -71,10 +72,14 @@ export class MatterWorktableHud{
   constructor({document,webgl,table,onActive,canEnter=()=>true,onError,readTools,activateTool,navigation}){
     Object.assign(this,{document,webgl,table,onActive,canEnter,readTools,activateTool,scope:0,toolScope:0,mode:null,blocked:false});
     this.canvas=webgl.domElement;
-    const clearBearing=()=>this.map?.markBearingPresented(false);
-    this.layer=new HudRenderLayer(webgl,{onLoss:clearBearing});
+    const releaseHudOverrides=()=>{
+      this.map?.markBearingPresented(false);
+      this.door?.presented(false);
+    };
+    this.releaseHudOverrides=releaseHudOverrides;
+    this.layer=new HudRenderLayer(webgl,{onLoss:releaseHudOverrides});
     this.events=new AbortController();
-    this.canvas.addEventListener('webglcontextlost',clearBearing,{signal:this.events.signal});
+    this.canvas.addEventListener('webglcontextlost',releaseHudOverrides,{signal:this.events.signal});
     for(const event of ['pointerdown','pointermove','pointerup','pointercancel','keydown','focusin','focusout','input','click']){
       document.addEventListener(event,this.layer.invalidate,{capture:true,signal:this.events.signal});
     }
@@ -93,6 +98,11 @@ export class MatterWorktableHud{
     this.map=new WorldMapHud({...navigation,send:(type,content,id)=>this.send(type,content,id),
       focusBearing:()=>this.hud.focusAccessibleControl(worldBearingId,'dismiss'),
       focusLauncher:()=>this.focusTool('map'),invalidate:this.layer.invalidate});
+    const finePointer=this.document.defaultView.matchMedia('(pointer: fine)');
+    this.door=new DoorPromptHud({...navigation.door,send:(type,content,id)=>this.send(type,content,id),
+      focusControl:name=>this.hud.focusAccessibleControl(doorPromptId,name),
+      hasFocus:()=>this.ownsAccessibleInput(this.document.activeElement)&&this.hud.currentFocus()?.surfaceId===doorPromptId,
+      finePointer:()=>finePointer.matches});
     this.settings=new SettingsHud({document,send:(type,content,id)=>this.send(type,content,id),
       focusControl:name=>this.hud.focusAccessibleControl(settingsId,name),focusLauncher:name=>this.focusTool(name),
       onSurfaceChange:()=>this.syncSettingsInput()});
@@ -101,6 +111,7 @@ export class MatterWorktableHud{
         if(id===toolbeltId)this.toolGroup=group;
         else if(id===worldMapId)this.map.group=group;
         else if(id===worldBearingId)this.map.bearingGroup=group;
+        else if(id===doorPromptId)this.door.group=group;
         else if(id===settingsId)this.settings.group=group;
         else this.group=group;
       },
@@ -109,6 +120,7 @@ export class MatterWorktableHud{
         if(requested.surfaceId===toolbeltId)this.handleTool(requested);
         else if(requested.surfaceId===worldMapId)this.map.activate(requested);
         else if(requested.surfaceId===worldBearingId)this.map.activateBearing(requested);
+        else if(requested.surfaceId===doorPromptId)this.door.activate(requested);
         else if(requested.surfaceId===settingsId)this.settings.activate(requested);
         else this.handleAction(requested);
       },onTransportError:onError,
@@ -127,7 +139,7 @@ export class MatterWorktableHud{
   }
 
   rayForPointer(event){
-    if(!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.settings.group)return;
+    if(!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.settings.group)return;
     const rect=this.canvas.getBoundingClientRect();
     if(!rect.width||!rect.height)return;
     this.pointerPosition.set((event.clientX-rect.left)*2/rect.width-1,1-(event.clientY-rect.top)*2/rect.height);
@@ -384,13 +396,13 @@ export class MatterWorktableHud{
   }
 
   draw(additional){
-    if(!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.settings.group&&!additional){
-      this.map.markBearingPresented(false);
+    if(!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.settings.group&&!additional){
+      this.releaseHudOverrides();
       this.layer.hide();
       return;
     }
     const {clientWidth:width,clientHeight:height}=this.canvas;
-    if(!width||!height){this.map.markBearingPresented(false);return;}
+    if(!width||!height){this.releaseHudOverrides();return;}
     const viewport={width,height};
     const scale=Math.min(170,(width-24)/2.2,(height-124)/1.9);
     this.place(this.group,'workPlacement',viewport,width-14-scale*1.10,height<520?54:95,scale);
@@ -398,7 +410,13 @@ export class MatterWorktableHud{
       const {left,right,bottom}=this.toolInsets();
       const barTop=height-bottom-(this.toolLayout.height+.035)*toolScale;
       this.place(this.toolGroup,'toolPlacement',viewport,(width+left-right)/2,barTop,toolScale);
-      const noticeOffset=Math.ceil(height-barTop+12)+'px';
+      const promptGap=this.door.finePointer()?52:138;
+      const promptTop=this.door.group?Math.max(36,barTop-promptGap):barTop;
+      if(this.door.group){
+        const promptScale=Math.min(200,(width-left-right)/(doorPromptWidth+.12));
+        this.place(this.door.group,'doorPlacement',viewport,(width+left-right)/2,promptTop,promptScale);
+      }
+      const noticeOffset=Math.ceil(height-promptTop+12)+'px';
       if(noticeOffset!==this.noticeOffset){
         this.noticeOffset=noticeOffset;
         this.document.body.style.setProperty('--holodeck-notice-bottom',noticeOffset);
@@ -431,7 +449,10 @@ export class MatterWorktableHud{
     }
     let painted=false;
     try{painted=this.layer.draw(this.scene,this.camera,additional);}
-    finally{this.map.markBearingPresented(Boolean(painted&&this.map.bearingGroup&&this.hud.getSurfaceBounds(worldBearingId)));}
+    finally{
+      this.map.markBearingPresented(Boolean(painted&&this.map.bearingGroup&&this.hud.getSurfaceBounds(worldBearingId)));
+      this.door.presented(Boolean(painted&&this.door.group&&this.toolGroup&&this.hud.getSurfaceBounds(doorPromptId)));
+    }
     if(this.toolGroup)this.document.body.dataset.a2uiToolbelt='';
   }
 
@@ -441,6 +462,7 @@ export class MatterWorktableHud{
     this.events.abort();
     this.layer.dispose();
     this.map.dispose();
+    this.door.update(false);
     this.settings.close(false);
     this.hud.dispose();
     this.a11y.remove();

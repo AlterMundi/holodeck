@@ -119,3 +119,40 @@ test('the room map follows the actor and only highlights authorized physical doo
     dom.window.close();
   }
 });
+
+
+test('a physical crossing is rechecked after a pending visit check', async ()=>{
+  const dom=new JSDOM('<details id="space-travel"><nav></nav></details><button id="house-door"></button>',
+    {url:'https://fixture.test/holodeck/'});
+  const prior=globalThis.document, priorFetch=globalThis.fetch;
+  globalThis.document=dom.window.document;
+  let verify, requests=0;
+  globalThis.fetch=async (url,{body})=>{
+    requests++;
+    assert.equal(url.pathname,'/holodeck/api/space');
+    assert.deepEqual(JSON.parse(body),{from:'gallery',to:'tower',live:1});
+    return Response.json({id:'tower',live:1,exits:[]});
+  };
+  const update=showSpaceLinks({id:'gallery',exits:[
+    {to:'tower',title:'Torre',door:{x:0,y:.1,z:0}},
+  ]},{canLeave:()=>new Promise(resolve=>{verify=resolve;}),onError:assert.fail,
+    onMoved:next=>assert.equal(next.id,'tower'),revision:()=>undefined});
+  try{
+    update({x:0,y:.1,z:.2});
+    const offered=update.doorOffer();
+    const pending=update.followDoor(offered.scope,offered.revision);
+    update({x:4,y:.1,z:4});
+    update({x:0,y:.1,z:.2});
+    verify(true);
+    await pending;
+    assert.equal(requests,0,'re-entering the same door does not revive the old action');
+    assert.equal(update.followDoor(offered.scope,offered.revision),undefined);
+    const current=update.doorOffer();
+    const next=update.followDoor(current.scope,current.revision);
+    verify(true);
+    await next;
+    assert.equal(requests,1);
+  }finally{
+    update.dispose();globalThis.document=prior;globalThis.fetch=priorFetch;dom.window.close();
+  }
+});

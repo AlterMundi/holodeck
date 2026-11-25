@@ -152,6 +152,7 @@ body.is-operating-matter #hud,body.is-operating-matter #dock{visibility:hidden;p
 #collection-worktable p:empty{display:none}
 body:has(#conversation-panel:not([hidden])) #collection-worktable,body:has(#content-visit:not([hidden]):not(.is-walking)) #collection-worktable{display:none}
 @media(max-width:600px){#collection-worktable{right:12px;top:123px;width:min(235px,calc(100vw - 24px));max-height:47dvh}#collection-worktable summary{min-height:24px;align-content:center}#collection-worktable select,#collection-worktable button{min-height:44px}}
+#house-door[data-native-door],.is-operating-matter #house-door,body:has(dialog[open]) #house-door,body:has(#space-travel[open]) #house-door,body:has(#signal-editor:not([hidden])) #house-door{display:none!important}
 #house-door{position:fixed;z-index:23;bottom:max(98px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);max-width:calc(100vw - 30px)}
 .inside-house #house-door{bottom:max(92px,env(safe-area-inset-bottom))}
 body:has(#conversation-panel:not([hidden])) #house-door,body:has(#creator:not([hidden])) #house-door,body:has(#content-visit:not([hidden]):not(.is-walking)) #house-door{display:none}
