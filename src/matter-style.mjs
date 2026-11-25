@@ -1,4 +1,4 @@
-import {NearestFilter,NoColorSpace,RepeatWrapping,ShaderChunk,Source,Vector2,Vector3} from 'three';
+import {DataArrayTexture,LinearFilter,LinearMipmapLinearFilter,NearestFilter,NoColorSpace,RedFormat,RepeatWrapping,ShaderChunk,Source,Vector2,Vector3} from 'three';
 
 const diffuseSamples={
   map:{chunk:'map_fragment',sampler:'map',uv:'vMapUv'},
@@ -57,7 +57,14 @@ const floorReflection=/* glsl */`
 const materialDetail=/* glsl */`
   varying vec3 roomSurfaceNormal;
   uniform sampler2D roomSurfaceRoles;
-  uniform sampler2D roomSurfaceTiles;
+  uniform highp sampler2DArray roomSurfaceTiles;
+
+  float roomTileBand(vec2 coordinates, vec2 dx, vec2 dy, float layer) {
+    float footprint = 248.0 * max(length(dx), length(dy));
+    float visible = 1.0 - smoothstep(4.0, 11.0, footprint);
+    if (visible == 0.0) return 0.0;
+    return visible * (2.0 * textureGrad(roomSurfaceTiles, vec3(coordinates, layer), dx, dy).r - 1.0);
+  }
 
   vec3 roomDetail(vec3 diffuse, vec2 atlasUv) {
     float encoded = texture2D(roomSurfaceRoles, atlasUv).r * (255.0 / 32.0);
@@ -69,16 +76,18 @@ const materialDetail=/* glsl */`
     vec2 projected = meters * scale;
     vec2 dx = dFdx(projected);
     vec2 dy = dFdy(projected);
-    float footprint = 248.0 * max(length(dx), length(dy));
-    float strength = (1.0 - smoothstep(4.0, 11.0, footprint)) *
-      step(1.0, role) * step(role, 5.0) * (1.0 - step(0.12, abs(role - encoded)));
-    if (strength == 0.0) return diffuse;
-    float tile = role - 1.0;
-    vec2 cell = vec2(mod(tile, 3.0), floor(tile / 3.0));
-    vec2 atlasSize = vec2(768.0, 512.0);
-    vec2 uv = (cell * 256.0 + 4.0 + fract(projected) * 248.0) / atlasSize;
-    float variation = textureGrad(roomSurfaceTiles, uv, dx * 248.0 / atlasSize, dy * 248.0 / atlasSize).r;
-    return diffuse * (1.0 + strength * 0.95 * (2.0 * variation - 1.0));
+    if (role < 1.0 || role > 5.0 || abs(role - encoded) >= 0.12) return diffuse;
+    float layer = role - 1.0;
+    float primary = roomTileBand(projected, dx, dy, layer);
+    // The independent sampling domains avoid synchronizing the room-scale
+    // grain and close detail. Retain the brushed orientation on steel.
+    const mat2 turn = mat2(0.83867, 0.54464, -0.54464, 0.83867);
+    float coarse = roomTileBand(turn * projected * .173 + vec2(.19,.71), turn * dx * .173, turn * dy * .173, layer);
+    if (role == 4.0) return diffuse * (1.0 + .82 * primary + .13 * coarse);
+    const float microScale = 5.37;
+    float micro = roomTileBand(turn * projected * microScale + vec2(.67,.23),
+      turn * dx * microScale, turn * dy * microScale, layer);
+    return diffuse * (1.0 + .55 * primary + .26 * micro + .14 * coarse);
   }
 `;
 
@@ -97,7 +106,7 @@ function diffuseLayers(material){
     roomFloorDiffuseFill:{value:0},
   };
   material.customProgramCacheKey=()=>channel
-    ?'room-diffuse-layers:'+channel+(reflectionEnabled?':reflection':'')+(detailEnabled?':detail':''):'';
+    ?'room-diffuse-layers:'+channel+(reflectionEnabled?':reflection':'')+(detailEnabled?':layered-detail-v1':''):'';
   material.onBeforeCompile=shader=>{
     if(!channel)return;
     const {chunk,sampler,uv}=diffuseSamples[channel];
@@ -157,7 +166,29 @@ function diffuseLayers(material){
   };
 }
 
-export function bindMatterStyle(group,catalog){
+function roomDetailArray(image,document){
+  const size=248,tile=256,layers=5;
+  if(image.width!==3*tile||image.height!==2*tile)throw Error('Unexpected room detail atlas dimensions');
+  const unpack=document.createElement('canvas');
+  unpack.width=unpack.height=size;
+  const context=unpack.getContext('2d',{willReadFrequently:true});
+  const pixels=new Uint8Array(size*size*layers);
+  for(let layer=0;layer<layers;layer++){
+    context.drawImage(image,layer%3*tile+4,Math.floor(layer/3)*tile+4,size,size,0,0,size,size);
+    const rgba=context.getImageData(0,0,size,size).data;
+    for(let i=0,j=layer*size*size;i<rgba.length;i+=4,j++)pixels[j]=rgba[i];
+  }
+  const texture=new DataArrayTexture(pixels,size,size,layers);
+  texture.format=RedFormat;
+  texture.wrapS=texture.wrapT=RepeatWrapping;
+  texture.minFilter=LinearMipmapLinearFilter;
+  texture.magFilter=LinearFilter;
+  texture.generateMipmaps=true;
+  texture.needsUpdate=true;
+  return texture;
+}
+
+export function bindMatterStyle(group,catalog,{document=globalThis.document}={}){
   const roles=new Map(Object.entries(catalog.surfaces).map(([role,name])=>[name,role]));
   const channelsByRole=new Map();
   for(const {materials,diffuseLayers} of catalog.looks){
@@ -170,7 +201,7 @@ export function bindMatterStyle(group,catalog){
       channelsByRole.get(role).add(channel);
     }
   }
-  const materials=new Map();
+  const materials=new Map(),detailArrays=new Map();
   const textures={color:new Map(),data:new Map(),tile:new Map(),roles:new Map()};
   const variant=(source,image,mode='color')=>{
     if(!source||!image)return source;
@@ -217,7 +248,8 @@ export function bindMatterStyle(group,catalog){
         const roleImage=authored&&images?.get(authored.roles);
         const tileImage=authored&&images?.get(authored.tiles);
         const roles=roleImage?variant(source[layers.channel],roleImage,'roles'):null;
-        const tiles=tileImage?variant(source[layers.channel],tileImage,'data'):null;
+        if(tileImage&&!detailArrays.has(tileImage))detailArrays.set(tileImage,roomDetailArray(tileImage,document));
+        const tiles=tileImage?detailArrays.get(tileImage):null;
         setLayers(light?layers.channel:undefined,light,reflection,detail,roles,tiles);
         const overrides=style.materials[role];
         for(const channel of channels){
@@ -228,6 +260,7 @@ export function bindMatterStyle(group,catalog){
     },
     dispose(){
       for(const {material} of materials.values())material.dispose();
+      for(const texture of detailArrays.values())texture.dispose();
       for(const cache of Object.values(textures))
         for(const variants of cache.values())
           for(const texture of variants.values())texture.dispose();
