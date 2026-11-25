@@ -2,6 +2,18 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `0beebcb4e062df3cb7d800adf01449f8f06ad309` combines Character
+review with the protected world label and keyboard work from `5e63550`.
+Archive `e23a54cb8789addfba5b622502afefcc2f7be7388b0d295ffc7b56ea844639c8`
+matched all 87 payloads. Both compressed Lab assets match the installed
+`9bfd9248797b` manifest. One desktop Chromium visitor opened all four
+Lab panels with E from their corresponding world labels. A focused text
+field received E as text. Returning through the foyer removed access to
+the Lab art. In Character Design, E opened the table from its own label
+anchor. Escape left the table and kept the room active. No instrument
+starts were sent. Holodeck passed 417 tests with two skips. The shared
+world with two authenticated Character visitors remains unverified.
+
 Source `406955ff08ad29b8054ecb42f9980e776a58bdfc` recovers an open
 Character review after the visitor leaves the room. Archive
 `c047820183b0d7d18f70cb74ef7658e16f7dccf3f95d6acacce4079fcf71d038`
