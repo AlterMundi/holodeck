@@ -80,8 +80,10 @@ export class CollectionHud{
       const previous=focus??this.currentFocus();
       this.signature=signature;
       this.send('updateDataModel',{value},collectionHudId);
-      if(previous==='restore'&&(!value.canRestore||value.busy))this.focusControl('viewArchive');
-      else if(focus&&!this.focusControl(focus))this.focusControl(archiveOpen?'viewArchive':'viewShelf');
+      const disabled=previous==='restore'&&(!value.canRestore||value.busy)||
+        (previous==='previous'||previous==='next')&&value.stepDisabled||
+        (previous==='showShelf'||previous==='showArchive')&&!both;
+      if(disabled||focus&&!this.focusControl(focus))this.focusControl(archiveOpen?'viewArchive':'viewShelf');
     }
   }
 
@@ -91,6 +93,7 @@ export class CollectionHud{
     if(!state)return;
     const {entries,archive,room}=state;
     if(room!==this.room)return;
+    if(name!=='viewShelf'&&name!=='viewArchive')this.viewerProblem='';
     if(name==='showShelf'&&entries.length&&archive)this.mode='shelf';
     else if(name==='showArchive'&&entries.length&&archive)this.mode='archive';
     else if(this.mode==='shelf'){
