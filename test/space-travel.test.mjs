@@ -148,6 +148,15 @@ test('a physical crossing is rechecked after a pending visit check', async ()=>{
     assert.equal(requests,0,'re-entering the same door does not revive the old action');
     assert.equal(update.followDoor(offered.scope,offered.revision),undefined);
     const current=update.doorOffer();
+    const covered=update.followDoor(current.scope,current.revision);
+    const dialog=document.createElement('dialog');
+    dialog.open=true;
+    document.body.append(dialog);
+    assert.equal(update.doorOffer(),null);
+    verify(true);
+    await covered;
+    assert.equal(requests,0,'opening another surface also cancels the pending check');
+    dialog.remove();
     const next=update.followDoor(current.scope,current.revision);
     verify(true);
     await next;

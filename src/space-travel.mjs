@@ -30,7 +30,7 @@ export function arrivalDoor(from,next){
 }
 
 export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving,revision,onNear,onAccessLost,onDoorDenied,
-  mapEnabled=true}){
+  mapEnabled=true,manageShortcut=true}){
   const travel=document.querySelector('#space-travel'),button=document.querySelector('#house-door');
   const inside=space.id!=='outside';
   const doors=inside
@@ -117,8 +117,9 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
        event.target instanceof Element&&event.target.closest('input,textarea,select,[contenteditable="true"]'))return;
     event.preventDefault();
     followDoor(space.id,nearRevision);
+    return true;
   };
-  document.addEventListener('keydown',hotkey);
+  if(manageShortcut)document.addEventListener('keydown',hotkey,true);
   const update=(position,rotation)=>{
     if(suspended)return;
     let closest=null,distance=DOOR_RANGE,nearby=null,prefetchDistance=3.75;
@@ -142,6 +143,7 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
   update.navigation=()=>({scope:space.id,busy,canExit:!suspended&&links.length>0,map:suspended?null:map?.state()});
   update.doorOffer=doorOffer;
   update.followDoor=followDoor;
+  update.key=hotkey;
   update.bearing=()=>suspended||travel.open?null:map?.bearing();
   update.mapDismiss=id=>!suspended&&!travel.open&&map?.dismiss(id)===true;
   update.mapSelect=id=>{if(!suspended&&travel.open)map?.choose(id);};
@@ -155,7 +157,7 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
   };
   update.dispose=()=>{
     update.suspend();
-    document.removeEventListener('keydown',hotkey);
+    if(manageShortcut)document.removeEventListener('keydown',hotkey,true);
     button.onclick=button.onpointerdown=button.onpointercancel=null;
   };
   return update;

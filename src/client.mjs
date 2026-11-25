@@ -505,6 +505,7 @@ function resetDoor(){
   $('#house-door').hidden=true;$('#house-door').disabled=false;
   if(!activeSpace)return;
   updateDoor=showSpaceLinks(activeSpace,{
+    manageShortcut:false,
     canLeave:()=>{
       if(moving)return false;
       if(signalEditor?.active){say('Guardá o cerrá el diseño antes de cambiar de lugar.');return false;}
@@ -549,6 +550,7 @@ document.addEventListener('keydown',event=>{
   }
   if(matterInspection?.key(event)){event.preventDefault();event.stopImmediatePropagation();return;}
   if(matterHud?.key(event)){event.preventDefault();event.stopImmediatePropagation();return;}
+  if(updateDoor.key?.(event)){event.stopImmediatePropagation();return;}
   if(matterHud?.ownsAccessibleInput(event.target))return;
   doubleSpace(event);
   if(event.target instanceof Element&&event.target.closest('#exhibition-index')){event.stopImmediatePropagation();return;}
