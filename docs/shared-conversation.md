@@ -41,6 +41,11 @@ require another generic trial before implementation can continue.
 
 ## Ownership and required shared hook
 
+The hosted panel opens on the general conversation. Its standard title strip
+is 36 CSS pixels high and omits the room-topic picker. An explicitly attached
+world reference can still be cleared. World context continues to come from the
+current place and selected object at the original preparation boundary.
+
 Conversation owns human text, recording/transcription, original file bytes, draft/
 recording/upload/unknown-outcome recovery, actual submission and native progress.
 Holodeck owns the world view and its immutable machine-authored situation, including

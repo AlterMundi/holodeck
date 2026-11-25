@@ -1,8 +1,9 @@
 import {Group,Mesh,MeshBasicMaterial,PlaneGeometry,Raycaster,Vector2,Vector3} from 'three';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
 
-const header='conversation-header',scale=286;
+const header='conversation-header',scale=286,sharedScale=200;
 const depthScale=new Vector3(1,1,1/scale);
+const sharedDepthScale=new Vector3(1,1,1/sharedScale);
 const path=name=>({'@path':'/'+name});
 const button=(id,label,fields={},context)=>({id,component:'HudButton',label,action:{event:{name:id,...(context?{context}:{})}},...fields});
 const label=(id,value,fields={})=>({id,component:'HudText',label:value,...fields});
@@ -76,7 +77,8 @@ export class ConversationChrome{
     const enabled=Array.from(select.options).filter(option=>!option.disabled);
     const history=references.history&&!elements['history-reference-clear'].hidden?JSON.stringify(references.history):'';
     const worktable=references.worktable&&!elements['worktable-reference-clear'].hidden?JSON.stringify(references.worktable):'';
-    return {topics:!elements['room-topic'].hidden&&!select.disabled&&enabled.length>1,
+    const shared=this.panel.classList.contains('shared-conversation');
+    return {shared,topics:!shared&&!elements['room-topic'].hidden&&!select.disabled&&enabled.length>1,
       topic:select.selectedOptions[0]?.textContent??'Este lugar',history,worktable,
       hint:elements['conversation-hint'].hidden?'':elements['conversation-hint'].textContent.trim(),
     };
@@ -107,8 +109,9 @@ export class ConversationChrome{
   update(rect,viewport,dpr,look){
     if(this.contextLost||!rect.width||!rect.height)return;
     const state=this.state();
-    const {topics,history,worktable,hint}=state;
-    const layout=[rect.width,topics,Boolean(history),Boolean(worktable),Boolean(hint)].join(':');
+    const {shared,topics,history,worktable,hint}=state;
+    const unit=shared?sharedScale:scale;
+    const layout=[rect.width,shared,topics,Boolean(history),Boolean(worktable),Boolean(hint)].join(':');
     if(this.layout!==layout){
       this.layout=layout;
       const children=['head'];
@@ -135,8 +138,8 @@ export class ConversationChrome{
         entries.push(row('reference',controls));
       }
       if(!this.groups.has(header))this.receive(header,'createSurface',{catalogId:spatialHudCatalog.id});
-      this.receive(header,'updateComponents',{components:[panelRoot((rect.width-42)/scale,children),...entries]});
-      this.panel.style.setProperty('--conversation-header-height',Math.ceil((children.length*.18+(children.length-1)*.015)*scale)+'px');
+      this.receive(header,'updateComponents',{components:[panelRoot((rect.width-42)/unit,children),...entries]});
+      this.panel.style.setProperty('--conversation-header-height',Math.ceil((children.length*.18+(children.length-1)*.015)*unit)+'px');
     }
     const data=JSON.stringify(state);
     if(data!==this.data){
@@ -155,11 +158,11 @@ export class ConversationChrome{
     const placement=[rect.left,rect.top,rect.width,rect.height,viewport.width,viewport.height,viewport.left,viewport.top,dpr,layout].join(':');
     if(this.placement!==placement){
       this.placement=placement;
-      const within={width:viewport.width,height:viewport.height,pixelsPerUnit:scale,depth:1};
+      const within={width:viewport.width,height:viewport.height,pixelsPerUnit:unit,depth:1};
       const group=this.groups.get(header);
       if(group){
         placeHudInViewport(group,this.camera,{...within,x:rect.left+rect.width/2-viewport.left,y:rect.top+11-viewport.top});
-        group.matrix.scale(depthScale);
+        group.matrix.scale(shared?sharedDepthScale:depthScale);
         group.matrixWorldNeedsUpdate=true;
         this.hud.setTextDensity(header,{cssPixelsPerUnit:scale,pixelRatio:dpr,fontSize:15});
       }
