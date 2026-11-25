@@ -2,8 +2,9 @@ import {SAND3D_TRAIL_REVISIONS} from './sand3d-trail-assets.mjs';
 import {TOROIDAL_SPAWN, TOROIDAL_TERRAIN, toroidalParcelPoint} from './toroidal-terrain.mjs';
 import {indoorGardenTemplates} from './indoor-garden-recipe.mjs';
 import {COMPAII_HOUSE,interiorArt} from './interior-art.mjs';
-import {ATELIER_EXPANSION_WRITES,ATELIER_PROFILE,matchesAtelierLayout,packedExteriorArt,selectAtelier} from './compaii-atelier.mjs';
+import {ATELIER_EXPANSION_WRITES,ATELIER_PROFILE,ATELIER_ROOMS,matchesAtelierLayout,packedExteriorArt,selectAtelier} from './compaii-atelier.mjs';
 import {RoomExhibits,EXHIBIT_SAVE_BYTES} from './room-exhibits.mjs';
+import {ATELIER_FOYER,CHARACTER_STUDIO,houseReviewRooms} from './house-review-rooms.mjs';
 import {InteriorSpaces, OUTSIDE, SPACE_SAVE_BYTES, interiorDocument} from './interior-spaces.mjs';
 import {InteriorLayouts,LAYOUT_SAVE_BYTES} from './interior-layouts.mjs';
 import {RoomDesigns,DESIGN_SAVE_BYTES} from './room-designs.mjs';
@@ -146,9 +147,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const layoutDefinitions=()=>{
     const combined=authoredLayout();
     if(!toroidal)return combined;
-    const selected=combined.find(room=>room.id===matterCollection?.room&&room.house===COMPAII_HOUSE);
-    if(!selected)throw Error('The toroidal world requires the Matter room in CompAII’s house');
-    return [{...selected,entry:true,links:[]}];
+    return houseReviewRooms(combined,COMPAII_HOUSE,matterCollection?.room,ATELIER_ROOMS.lab);
   };
   const spaces=new InteriorSpaces({definitions:layoutDefinitions(),houses,state:spaceStore?.load(),
     persist:spaceStore ? state=>spaceStore.save(state) : null,guestAccess:interiorGuestAccess});
@@ -380,7 +379,9 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       const fitting=atelier?.passageFitting(room,passage);
       return fitting?route('api/space/art/'+fitting.revision):null;
     };
-    return interiorDocument(room,passages,exhibit,art&&{...art,src,gallerySigns},passageAsset);
+    const houseDoor=spaces.rooms.has(CHARACTER_STUDIO)&&
+      (room.id===ATELIER_FOYER||passages.some(p=>p.to===ATELIER_FOYER));
+    return interiorDocument(room,passages,exhibit,art&&{...art,src,gallerySigns},passageAsset,houseDoor);
   }
   function interiorScopeKey(actor,selected){
     return JSON.stringify([spaces.passages(actor,selected).map(link=>link.slot),

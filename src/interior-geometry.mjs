@@ -43,11 +43,26 @@ export function roomFloor(passages,color,visible=true) {
   return floor;
 }
 
-export function passageMarkup(passage,{visibleSteps=true,authoredPortal=null,authoredDoor=false,authoredPassages=[],portalAsset=null}={}) {
+export function passageMarkup(passage,{visibleSteps=true,authoredPortal=null,authoredDoor=false,authoredPassages=[],portalAsset=null,houseDoor=false,existingDoor=false}={}) {
   const slot=SLOTS[passage.slot],y=passage.rise*STAIR_STEPS*RISE;
   const portal=passage.kind==='portal',color=portal?'#9384bd':passage.rise?'#779491':'#d6b58c';
   const fill=portal?'#4f6a8d':passage.rise?'#3f5b5e':'#675948';
   const attributes=visibleSteps?'':' opacity="0" cast-shadows="false"';
+  if(houseDoor&&passage.kind==='door'){
+    const noCollision=' collide="false"';
+    const leaf=existingDoor?'':[
+      cube(0,1.17,.39,1.66,2.15,.26,'#513b2c',noCollision),
+      cube(0,1.16,.53,1.40,1.96,.05,'#987a58',noCollision),
+      cube(0,1.58,.566,1.18,.89,.026,'#203b3f',noCollision),
+      cube(0,.60,.566,1.18,.73,.026,'#29484a',noCollision),
+      cube(.46,1.08,.59,.16,.19,.033,'#b08a57',noCollision),
+      cube(.46,1.08,.648,.17,.04,.095,'#e1bd76',noCollision),
+    ].join('');
+    return `<m-group id="passage-${passage.slot}" x="${slot.x}" z="${slot.z}" ry="${slot.rotation}">
+      ${leaf}<m-label y="2.56" z=".68" width="2.38" height=".33" padding="7" alignment="center"
+        font-size="18" color="#182d30" font-color="#ffe2a8" content="${passage.label}" collide="false"></m-label>
+    </m-group>`;
+  }
   let steps='';
   for(let i=0;passage.rise&&i<STAIR_STEPS;i++){
     const z=TREAD*(i+.5),top=.1+passage.rise*(STAIR_STEPS-i)*RISE;

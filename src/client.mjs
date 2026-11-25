@@ -55,6 +55,7 @@ import {WorldHistory} from './world-history.mjs';
 import { snapshotMayApply, sameRequest } from './client-order.mjs';
 import { WorldNotice } from './client-feedback.mjs';
 import {arrivalDoor,doorLocation,readSpace,showSpaceLinks} from './space-travel.mjs';
+import {CHARACTER_STUDIO} from './house-review-rooms.mjs';
 const reviewedHudLook=selectedHudLook(location.href);
 if(reviewedHudLook)document.body.dataset.hudLook=reviewedHudLook;
 bindHudAppearance(document,window);
@@ -214,8 +215,17 @@ const entryDeadline=setTimeout(()=>entryLocation.abort(),12000);
 let activeSpace;
 try{activeSpace=await readSpace(entryLocation.signal);}
 finally{clearTimeout(entryDeadline);}
-if(activeSpace.id!=='outside'&&activeSpace.live!==1)startInterior(activeSpace);
-else startWorld(activeSpace);
+function goToCharacterStudio(space){
+  if(space.id!==CHARACTER_STUDIO)return false;
+  const target=new URL('./',document.baseURI);
+  target.searchParams.set('taller','personajes');
+  location.replace(target);
+  return true;
+}
+if(!goToCharacterStudio(activeSpace)){
+  if(activeSpace.id!=='outside'&&activeSpace.live!==1)startInterior(activeSpace);
+  else startWorld(activeSpace);
+}
 
 function startInterior(space){
   document.body.classList.add('inside-house');
@@ -556,6 +566,7 @@ function onNear(destination){
 }
 function applySpace(next,anchor){
   if(next.actorRef!==activeSpace.actorRef){sceneCache.clear();location.reload();return;}
+  if(goToCharacterStudio(next))return;
   const changed=next.id!==activeSpace.id;
   const leavingOutside=activeSpace.id==='outside'&&next.id!=='outside';
   activeSpace=next;inside=next.id!=='outside';arrival=anchor;

@@ -202,7 +202,7 @@ export class InteriorSpaces {
 }
 
 // Each server-authorized room has its own local collision and render document.
-export function interiorDocument(room,passages=[],exhibit=null,art=null,passageAsset=()=>null) {
+export function interiorDocument(room,passages=[],exhibit=null,art=null,passageAsset=()=>null,houseDoor=false) {
   const {id,position:{x,y,z},radius,height}=ROOM_MARKER;
   const walls=art?.replacesShell||art?.replacesWalls?' opacity="0" cast-shadows="false"':'';
   const ceiling=art?.ceiling??3.3,wallCenter=ceiling/2;
@@ -236,7 +236,7 @@ export function interiorDocument(room,passages=[],exhibit=null,art=null,passageA
     ${passages.map(p=>passageMarkup({...p,label:attribute(p.title)},{
       visibleSteps:!art?.authoredStairs,authoredPortal:art?.authoredPortal,
       authoredDoor:art?.authoredDoor,authoredPassages:art?.authoredPassages,
-      portalAsset:passageAsset(p)})).join('')}
+      portalAsset:passageAsset(p),houseDoor,existingDoor:houseDoor&&art?.authoredDoor&&p.slot===0})).join('')}
     ${room.entry?'<m-group id="house-exit"><m-cube y="1.13" z="5.86" width="1.35" height="2.06" depth=".08" color="#c8a36d" collide="false"></m-cube><m-cube x=".45" y="1.05" z="5.79" width=".06" height=".14" depth=".08" color="#343e40" collide="false"></m-cube><m-label y="2.53" z="5.81" ry="180" width="1.55" height=".37" font-size="19" content="Salida" collide="false"></m-label></m-group>':''}
     ${art&&!art.palette?'':`<m-label x="0" y="2.3" z="-5.87" width="4" height=".65" font-size="26" content="${attribute(room.title)}"${art?.palette?' color="#163b3f" font-color="#f6edda"':''} collide="false"></m-label>`}
     ${art?.replacesShell||art?.hideMarker?'':`<m-cylinder id="${id}" x="${x}" y="${y}" z="${z}" radius="${radius}" height="${height}" color="#af956a"></m-cylinder>`}

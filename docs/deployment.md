@@ -359,9 +359,16 @@ readback; preserve source, unfinished work, current state and the actual rollbac
 ## Toroidal world qualification
 
 The explicit `worldTerrain: "toroidal-terrain@1"` receiving selection mounts
-the procedural exterior and sets the eligible room graph to the established
-Matter room in CompAII's house. It preserves the authored graph in storage
-so a code rollback or selection change can restore it. The terrain edition
+the procedural exterior and uses CompAII's existing Atelier foyer when the
+receiving graph has both the Atelier and Matter rooms. Three reciprocal doors
+lead to the existing Matter room, the existing Harmonic Lab and the Character
+Design Room. Matter and Lab retain their room grants. The Character Design Room
+inherits Matter's guest list, and the foyer admits the combined guest lists of
+the original foyer, Matter and Lab. The single Matter entrance remains available
+to a receiver without the Atelier. The active doors do not rewrite the authored
+graph, room identities, or stored Matter and Lab content. A predecessor that
+predates the foyer can still restore the same Matter room and ignore the newer
+room's position entry. The terrain edition
 selects its own coordinate origin, entry pose and lighting distance.
 The configured gallery editions and room-design, garden and editor
 checkpoints still validate against the authored room graph. Their normal
