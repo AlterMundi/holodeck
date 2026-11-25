@@ -1,3 +1,4 @@
+import {PassageHud} from './passage-hud.mjs';
 import {HudLookPreview} from './hud-look-preview.mjs';
 import {Matrix4,OrthographicCamera,PerspectiveCamera,Raycaster,Scene,Vector2,Vector3} from 'three';
 import {WorldMapHud,worldMapId,worldBearingId} from './world-map-hud.mjs';
@@ -92,6 +93,7 @@ export class MatterWorktableHud{
     Object.assign(this,{document,webgl,table,onActive,canEnter,readTools,activateTool,presentMovement,movementGroups:new Map(),scope:0,toolScope:0,mode:null,blocked:false});
     this.canvas=webgl.domElement;
     const releaseHudOverrides=()=>{
+      this.passage?.fallback(true);
       this.map?.markBearingPresented(false);
       this.door?.presented(false);
       this.collection?.presented(false);
@@ -106,6 +108,7 @@ export class MatterWorktableHud{
     };
     this.releaseHudOverrides=releaseHudOverrides;
     this.layer=new HudRenderLayer(webgl,{onLoss:releaseHudOverrides});
+    this.passage=new PassageHud({document,layer:this.layer,onError});
     this.events=new AbortController();
     this.canvas.addEventListener('webglcontextlost',releaseHudOverrides,{signal:this.events.signal});
     for(const event of ['pointerdown','pointermove','pointerup','pointercancel','keydown','focusin','focusout','input','click']){
@@ -231,11 +234,16 @@ export class MatterWorktableHud{
     document.addEventListener('visibilitychange',()=>{if(document.hidden)lostMovement();},activity);
     document.defaultView.addEventListener('blur',lostMovement,activity);
     document.defaultView.addEventListener('pagehide',lostMovement,activity);
-    this.unbind=bindSpatialHudPointer({element:this.canvas,hud:this.hud,rayForPointer:event=>this.rayForPointer(event)});
+    this.capturedPointers=new Set();
+    this.canvas.addEventListener('gotpointercapture',event=>this.capturedPointers.add(event.pointerId),activity);
+    this.canvas.addEventListener('lostpointercapture',event=>this.capturedPointers.delete(event.pointerId),activity);
+    this.unbind=bindSpatialHudPointer({element:this.canvas,hud:this.hud,
+      rayForPointer:event=>this.rayForPointer(event)});
     table.panel.setAttribute('data-spatial','');
   }
 
   rayForPointer(event){
+    if(this.priorInert!==undefined)return;
     if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.status.headerGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.movementGroups.size)return;
     const rect=this.canvas.getBoundingClientRect();
     if(!rect.width||!rect.height)return;
@@ -566,6 +574,38 @@ export class MatterWorktableHud{
       width:widthFor(name)*scale,height:toolRowHeight*scale};
   }
 
+  beginPassage(){
+    if(this.passage.active)return;
+    this.priorInert??=this.a11y.inert;
+    this.a11y.inert=true;
+    try{
+      this.passage.begin();
+      this.windows.cancelDrag();
+      for(const pointer of this.capturedPointers){
+        if(this.canvas.hasPointerCapture(pointer))this.canvas.releasePointerCapture(pointer);
+      }
+      this.syncMovement(false);
+      if(this.document.pointerLockElement===this.canvas)this.document.exitPointerLock();
+    }catch(error){
+      this.passage.fallback(true);
+      console.error('Could not open passage HUD',error);
+    }
+  }
+
+  drawPassage(){
+    this.beginPassage();
+    this.visit.present({painted:false});
+    this.passage.draw();
+  }
+
+  endPassage(){
+    try{this.passage.end();}
+    finally{
+      if(this.priorInert!==undefined)this.a11y.inert=this.priorInert;
+      this.priorInert=undefined;
+    }
+  }
+
   draw(additional){
     this.windows.begin();
     this.activity.update();this.visit.update();
@@ -781,6 +821,7 @@ export class MatterWorktableHud{
     this.unbind();
     this.windows.dispose();
     this.events.abort();
+    this.passage.dispose();
     this.layer.dispose();
     this.map.dispose();
     this.door.update(false);

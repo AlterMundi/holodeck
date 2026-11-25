@@ -777,6 +777,26 @@ camera height for that fixture, with a 3.958 m interior capsule peak and
 with controlled local identities and does not claim physical-device or
 multi-visitor performance.
 
+## Passage and startup recovery
+
+The live passage uses a separate Three.js A2UI surface over the existing
+backdrop. It waits for the original message delay and replaces the HTML
+controls only after a visible draw. The passage owns pointer and keyboard
+input while active. Each passage receives a distinct A2UI surface identity.
+The existing retry still reads the server-admitted place after reload.
+Cold bootstrap, lost WebGL, short viewport and a stale paint use one ordinary
+HTML retry. A failed native draw keeps that fallback for the rest of the passage.
+
+Fable High recommended a paint acknowledgment and a timer independent of
+animation frames. Opus 5.5 High identified render ordering, inert state,
+pointer release and focus handoff. The real browser also caught a reversed
+Proyección callback and a duplicate DOM-accessible control on fallback.
+The corrected archive `8494a6e66177` exercised a delayed canonical move
+and exactly one POST from desktop and touch. The browser returned to the
+already committed destination after the native retry, lost context and
+paused drawing. A failed client import left a working HTML retry. The
+package remains qualified locally and unselected in production.
+
 ## Multiline HUD and recovery
 
 The host pins Proyección `6e6facd563a146874476e0ddd6b4e89f2a5f8b02` with

@@ -117,6 +117,12 @@ export class SpatialHudWindows{
     if(this.canvas.hasPointerCapture(event.pointerId))this.canvas.releasePointerCapture(event.pointerId);
     event.preventDefault();event.stopImmediatePropagation();
   }
+  cancelDrag(){
+    const pointer=this.drag?.pointer;
+    this.drag=null;
+    if(pointer!==undefined&&this.canvas.hasPointerCapture(pointer))this.canvas.releasePointerCapture(pointer);
+  }
+
   pointercancel(event){this.pointerup(event);}
   lostpointercapture(event){if(this.drag?.pointer===event.pointerId)this.drag=null;}
 

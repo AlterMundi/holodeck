@@ -402,13 +402,21 @@ const setMoving=value=>{
     document.body.classList.toggle('room-transition',value);
     $('#room-passage-message').textContent=value?'Cambiando de lugar…':'';
     $('#room-passage-retry').hidden=true;
+    $('#room-passage-retry').disabled=false;
     clearTimeout(passageNotice);
     if(value)passageNotice=setTimeout(()=>{
       $('#room-passage-message').textContent='Este lugar está tardando en cargar.';
       $('#room-passage-retry').hidden=false;
     },12000);
+    if(value){
+      try{client.keyInputManager?.handleUnfocus();}catch(error){console.error('Could not release passage input',error);}
+      matterHud?.beginPassage();
+    }
   }
-  if(!value){clearTimeout(moveDeadline);moveDeadline=null;}
+  if(!value){
+    clearTimeout(moveDeadline);moveDeadline=null;
+    try{matterHud?.endPassage();}catch(error){console.error('Could not close passage HUD',error);}
+  }
 };
 const removeScene=()=>{
   if(signalEditor?.draft?.mode)signalEditor.dismiss();
@@ -836,13 +844,18 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     // Keep the frame loop and collision running behind opaque overlays. Skip
     // drawing until Nexus yields or the destination can produce a room frame.
     renderer.composer.render=()=>{
-      if(!drawWorld){matterHud.visit.present({painted:false});return;}
+      if(!drawWorld){
+        if(moving)matterHud.drawPassage();
+        else matterHud.visit.present({painted:false});
+        return;
+      }
       if(floorSplatScope?.projection){
         const camera=roomModel.getScene().getGraphicsAdapter().getCamera();
         floorSplatScope.projection.sort(camera,false);
       }
       draw();
-      matterHud.draw(display.draw());
+      if(moving)matterHud.drawPassage();
+      else matterHud.draw(display.draw());
     };
     const exteriorAddress=socket('world');
     const arrivalAddress=socket('world?dressing=arrival');

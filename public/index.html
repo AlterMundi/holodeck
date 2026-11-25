@@ -219,6 +219,7 @@ body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-controls
 .inside-house #space-travel nav:not(:empty){margin-top:8px}
 .room-transition #space-travel,body:has(#conversation-panel:not([hidden])) #space-travel,body:has(#content-visit:not([hidden]):not(.is-walking)) #space-travel{visibility:hidden;pointer-events:none}
 .room-transition canvas{visibility:hidden}
+.room-transition:has(#room-passage[data-native-passage]) canvas[data-hud-render-layer]{visibility:visible}
 #room-passage{
   position:fixed;inset:0;z-index:40;display:grid;place-items:center;
   background:radial-gradient(ellipse at 50% 48%,#285351,#142f33 68%);
@@ -240,7 +241,9 @@ body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-controls
 @keyframes passage-light{from{opacity:.45;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
 #room-passage-message{position:absolute;top:calc(50% + min(26vw,18vh,116px) + 12px);color:var(--ink);margin:0;font-size:14px;opacity:0}
 .room-transition #room-passage-message{opacity:1;transition:opacity 160ms ease 1100ms}
-#room-passage-retry{position:absolute;top:calc(50% + min(26vw,18vh,116px) + 40px)}
+#room-passage[data-native-passage] #room-passage-retry{display:none}
+#room-passage[data-native-passage] #room-passage-message{width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+#room-passage-retry{position:absolute;top:min(calc(50% + min(26vw,18vh,116px) + 40px),calc(100% - 52px))}
 @media(prefers-reduced-motion:reduce){.room-transition .passage-arch{animation:none}}
 .inside-house #creator,.inside-house #pointing,.inside-house #play-near,.inside-house #recovery-panel{display:none!important}
 .inside-house #world-tools,.inside-house #dock,.inside-house #companion-status,.inside-house #sound:not([aria-pressed="true"]){display:none}
@@ -328,7 +331,7 @@ body:has(#conversation-panel:not([hidden])) #view-tools,body:has(#content-visit:
 <aside id="door-guidance" class="glass" aria-label="Salida marcada" hidden><span class="door-guide-arrow" aria-hidden="true">↑</span><span><span class="door-guide-title"></span><span class="door-guide-distance"></span></span><button type="button" aria-label="Quitar salida marcada">×</button></aside>
 <div id="companion-status" class="glass" role="status">Exploración compartida</div>
 <div id="notice" class="glass" role="status"></div>
-<div id="room-passage"><span class="passage-arch" aria-hidden="true"></span><p id="room-passage-message" role="status"></p><button id="room-passage-retry" type="button" onclick="location.reload()" hidden>Reintentar</button></div>
+<div id="room-passage" tabindex="-1"><span class="passage-arch" aria-hidden="true"></span><p id="room-passage-message" role="status"></p><button id="room-passage-retry" type="button" hidden>Reintentar</button></div>
 <nav id="dock" class="glass" aria-label="Acciones del taller"><button id="bridge" class="primary">Conectar islas</button><button id="plant" hidden>Crear luz</button><button id="map-tool" type="button" aria-expanded="false" aria-controls="space-travel" disabled>Minimapa</button><button id="talk" aria-expanded="false" aria-controls="conversation-panel">Conversar</button><button id="undo" class="icon" title="Deshacer mi último cambio" aria-label="Deshacer mi último cambio" disabled>↶</button></nav>
 <section id="pointing" class="glass" aria-label="Indicar un objeto" hidden><p id="point-label"></p><div class="row"><button id="point-visit" class="primary" type="button" hidden>Visitar contenido</button><button id="point-send" class="primary" type="button">Señalar</button><button id="point-edit" type="button" hidden>Editar luz</button><button id="point-clear" type="button">Cancelar</button></div></section>
 <details id="play-near" class="glass" hidden><summary><strong id="play-title"></strong> · Cómo jugar<span id="play-progress" role="status"></span></summary><p id="play-instruction"></p><button id="play-edit" type="button" hidden>Editar jardín</button></details>
@@ -394,6 +397,9 @@ window.SESSION_TOKEN="SESSION.TOKEN.PLACEHOLDER";
     showRetry(hadEntered?'Se interrumpió la conexión con el mundo.':'No se pudo abrir el mundo.');
   },{once:true});
   retry.onclick=()=>location.reload();
+  const passageRetry=document.querySelector('#room-passage-retry');
+  window.addEventListener('pageshow',()=>{passageRetry.disabled=false;});
+  passageRetry.onclick=()=>{if(passageRetry.disabled||passageRetry.hidden)return;passageRetry.disabled=true;location.reload();};
 }
 </script>
 <script type="module">
