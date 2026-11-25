@@ -1,9 +1,30 @@
 # Current MVP work
 
+## November 25 world controls alongside Conversation
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `7a466b1ca447` from `e9d23ce`. The same mounted Conversation can
+stay open while using world controls. A direct world click returns keyboard
+focus to the scene. In flight, minimizing from the panel also returns it.
+On touch with enough room, the existing movement controls and dock have
+their own region below the panel in portrait or beside it in landscape.
+The compact editor layout resumes when space runs out.
+[Keyboard and touch evidence](shared-conversation.md#world-input-with-conversation-open)
+covers the exact archive on Legion's RTX 2060.
+
+The installed package and predecessor verified against their 80-payload
+inventories. The client bundle, five avatar assets, terrain worker and
+health matched over protected HTTPS. The App, audience and receiving
+configuration matched and the temporary technical reader was revoked.
+Native readback retained the same run, sequence 403, 30 entities and four
+nodes. Twenty-two state files matched byte for byte and observation rotated
+two room checkpoints. Immediate rollback is `41508709635f`; older
+published recovery is `0425dd6d7c67`.
+
 ## November 25 explicit workpiece pointing
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
-serves `41508709635f` from `9dc9e0f`. **Señalar esta pieza** sends a
+selected `41508709635f` from `9dc9e0f` for the shared pointing release. **Señalar esta pieza** sends a
 five-second cue to authorized miniature visitors following the same exact
 table edition and scene. The receiving view shows a small gold mark on
 the part and the pointing avatar's head turn. The checked browser package

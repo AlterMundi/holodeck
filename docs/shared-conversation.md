@@ -39,6 +39,34 @@ conversation acceptance. Nicolas explicitly resumed the full existing MVP22Novem
 active objective; specific acceptance observations remain separate and do not
 require another generic trial before implementation can continue.
 
+## World input with Conversation open
+
+Keyboard ownership follows focus. Clicking the exposed world canvas brings
+control back to the scene and a new double Space toggles flight there.
+Moving focus into the mounted frame ends a pending world tap. Space belongs
+to the editor while its field is focused. Minimizing from within the panel
+while flying returns focus to the world canvas.
+
+On coarse touch displays, the existing A2UI stick and jump control use
+a separate region below the open panel in portrait and beside it in short,
+wide landscape. The dock fits on the same side in landscape through
+ordinary row wrapping. The panel keeps its private window placement and
+clamps its move and resize bounds to the remaining viewport and safe areas.
+Layouts without room, zoomed views and a reduced visual viewport return to
+the editor-priority layout. The frame and draft stay mounted.
+
+Release `7a466b1ca447` passed 363 source tests with two optional skips.
+The exact 33,454,080-byte archive ran on Chrome with Legion's RTX 2060.
+The Normal desktop fixture checked flight exit by double Space, ordinary
+spaces in the frame, focus crossing and minimizing during flight. In
+Livianos, an independent emulated-touch context held keyboard focus in the
+draft while using actual screen pointers to move and jump with the panel
+open at 430 × 782 and 782 × 430. It retained the same frame and draft on
+rotation, drag and the 360 × 640 editor-priority fallback. Both captures
+showed a readable touch dock and the full `Saltar` label. The controlled
+cross-origin editor fixture establishes input ownership and layout. Physical
+phone keyboard behavior and independently signed-in human use remain open.
+
 ## Ownership and required shared hook
 
 The hosted panel opens on the general conversation. Its standard title strip
