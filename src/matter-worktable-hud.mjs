@@ -12,7 +12,7 @@ const choice=(id,label,options,value)=>({id,component:'HudChoice',label,
   options:path(options),value:path(value),draft:path(id+'Draft'),action:action(id,{value:path(id+'Draft')})});
 const toolScale=286,toolGap=.035,toolRowHeight=.18,toolPadding=.12;
 const toolNames=['map','open','talk','bridge','plant','undo'];
-const toolPixels={map:66,open:134,talk:72,bridge:110,plant:80,undo:74};
+const toolPixels={map:90,open:154,talk:96,bridge:122,plant:88,undo:84};
 
 function layoutTools(tools,maxWidth){
   const gap=toolGap*toolScale;
@@ -66,8 +66,8 @@ const work=[
 const movement=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE']);
 
 export class MatterWorktableHud{
-  constructor({document,webgl,table,onActive,onError,readTools,activateTool}){
-    Object.assign(this,{document,webgl,table,onActive,readTools,activateTool,scope:0,toolScope:0,mode:null,blocked:false});
+  constructor({document,webgl,table,onActive,canEnter=()=>true,onError,readTools,activateTool}){
+    Object.assign(this,{document,webgl,table,onActive,canEnter,readTools,activateTool,scope:0,toolScope:0,mode:null,blocked:false});
     this.canvas=webgl.domElement;
     this.layer=new HudRenderLayer(webgl);
     this.events=new AbortController();
@@ -94,16 +94,24 @@ export class MatterWorktableHud{
         else this.handleAction(requested);
       },onTransportError:onError,
     });
-    const ray=new Raycaster(),point=new Vector2();
-    this.unbind=bindSpatialHudPointer({element:this.canvas,hud:this.hud,rayForPointer:event=>{
-      if(!this.toolGroup&&!this.group)return;
-      const rect=this.canvas.getBoundingClientRect();
-      if(!rect.width||!rect.height)return;
-      point.set((event.clientX-rect.left)*2/rect.width-1,1-(event.clientY-rect.top)*2/rect.height);
-      ray.setFromCamera(point,this.camera);
-      return {ray:ray.ray};
-    }});
+    this.pointerRay=new Raycaster();
+    this.pointerPosition=new Vector2();
+    this.unbind=bindSpatialHudPointer({element:this.canvas,hud:this.hud,rayForPointer:event=>this.rayForPointer(event)});
     table.panel.setAttribute('data-spatial','');
+  }
+
+  rayForPointer(event){
+    if(!this.toolGroup&&!this.group)return;
+    const rect=this.canvas.getBoundingClientRect();
+    if(!rect.width||!rect.height)return;
+    this.pointerPosition.set((event.clientX-rect.left)*2/rect.width-1,1-(event.clientY-rect.top)*2/rect.height);
+    this.pointerRay.setFromCamera(this.pointerPosition,this.camera);
+    return {ray:this.pointerRay.ray};
+  }
+
+  overControl(event){
+    const projection=this.rayForPointer(event);
+    return projection&&this.hud.pointerTarget(projection.ray)!==undefined;
   }
 
   get active(){return this.mode==='work';}
@@ -132,7 +140,7 @@ export class MatterWorktableHud{
   }
 
   enter(){
-    if(this.mode!=='enter'||this.blocked||!this.table.available)return;
+    if(this.mode!=='enter'||this.blocked||!this.table.available||!this.canEnter())return;
     this.previousFocus=this.document.activeElement;
     this.restoreEntryFocus=this.ownsAccessibleInput(this.previousFocus);
     this.previousFocus?.blur();
@@ -275,9 +283,12 @@ export class MatterWorktableHud{
 
   place(group,key,viewport,x,y,scale){
     if(!group||scale<=0)return;
-    const signature=[viewport.width,viewport.height,x,y,scale].join(':');
+    const pixelRatio=this.layer.pixelRatio;
+    const signature=[viewport.width,viewport.height,x,y,scale,pixelRatio].join(':');
     if(this[key]?.group===group&&this[key].signature===signature)return;
     placeHudInViewport(group,this.camera,{...viewport,x,y,pixelsPerUnit:scale,depth:1});
+    this.hud.setTextDensity(group.name,{cssPixelsPerUnit:Math.round(scale),pixelRatio,
+      fontSize:13});
     this[key]={group,signature,x,y,scale};
     this.layer.invalidate();
   }

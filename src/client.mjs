@@ -7,6 +7,7 @@ import {bindToroidalMml} from './toroidal-mml.mjs';
 import {RemoteDocumentWrapper} from '@mml-io/mml-web';
 import {RoomSceneCache,roomArtURL} from './room-scene-cache.mjs';
 import {bindInteriorHeadroom} from './avatar-headroom.mjs';
+import {MatterInspection,bindMatterInspection} from './matter-inspection.mjs';
 import {constrainInteriorCamera} from './interior-camera.mjs';
 import {capWorldPixelRatio,usesLightGraphics} from './render-pixel-budget.mjs';
 import {bindVideoSettings} from './video-settings.mjs';
@@ -540,6 +541,7 @@ function resetDoor(){
 // MML captures document keys by default. Preserve ordinary text editing and
 // keyboard activation of the HUD without turning typed words into locomotion.
 document.addEventListener('keydown',event=>{
+  if(matterInspection?.key(event)){event.preventDefault();event.stopImmediatePropagation();return;}
   if(matterHud?.key(event)){event.preventDefault();event.stopImmediatePropagation();return;}
   if(matterHud?.ownsAccessibleInput(event.target))return;
   doubleSpace(event);
@@ -567,21 +569,24 @@ document.addEventListener('keydown',event=>{
   }
 },true);
 const playableHUD=new PlayableHUD(document);
-let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,galleryModels=null,collectionShelves=null,matterHud=null,conversationDisplay=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null,worldHistory=null;
+let geometryProbe=null,nativeAvatarLayer=null,contentVisitor=null,galleryModels=null,collectionShelves=null,matterHud=null,matterInspection=null,conversationDisplay=null,preparingConversation=false,worldPicker=null,worldIndication=null,state=null,sharedConversation=null,worldHistory=null;
 const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createFullscreenHolder(),{
   sessionToken:window.SESSION_TOKEN,userNetworkAddress:socket(hot?'active/network':'network'),waitForWorldConfig:true,
   enableTweakPane:false,postProcessingEnabled:false,respawnButtonPlugin:null,virtualJoystickPlugin:touchControls,
   // Upstream's default sun allocates an 8192² shadow map. This small world uses
   // the public renderer factory and a bounded 1024² light instead, on all clients.
   createRenderer:options=>{
+    const inspection=new MatterInspection(options.collisionsManager);
+    matterInspection=inspection;
+    const cameraState=()=>options.coreCameraManager.getMainCameraState();
     constrainInteriorCamera(options,()=>{
       if(inside)return activeSpace?.id;
       if(activeSpace?.outdoorTerrain!==true)return null;
       const position=client.getLocalCharacterState()?.position;
       return position&&position.x>21&&position.x<32&&position.z<-6&&position.z>-26?'valley-cave':null;
-    });
+    },inspection);
     const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
-    const releaseOrbit=bindWorldOrbitInput(options.coreCameraManager,renderer.composer.renderer.domElement,()=>mouseSensitivity);
+    const releaseOrbit=bindWorldOrbitInput(options.coreCameraManager,renderer.composer.renderer.domElement,()=>mouseSensitivity,()=>inspection.active);
     const minimap=bindToroidalMinimap(document.querySelector('#space-travel'));
     const frameBudget=createFrameBudget(renderer);
     galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
@@ -601,13 +606,26 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     }]));
     matterHud=new MatterWorktableHud({document,webgl:renderer.composer.renderer,table:collectionShelves.worktable,
       readTools,activateTool:id=>tools[id]?.click(),
+      canEnter:()=>!options.coreCameraManager.isFlyCameraOn()&&
+        inspection.enter(cameraState(),client.getLocalCharacterState()?.position,collectionShelves.worktable.anchor),
       onActive:active=>{
         document.body.classList.toggle('is-operating-matter',active);
         touchControls.pause(active);
-        if(active)client.keyInputManager?.handleUnfocus();
+        if(active){
+          client.keyInputManager?.handleUnfocus();
+          const canvas=renderer.composer.renderer.domElement;
+          if(document.pointerLockElement===canvas)document.exitPointerLock();
+          options.coreCameraManager.activePointers.clear();
+        }else{
+          inspectionInput.finish();
+          inspection.exit(cameraState());
+          client.keyInputManager?.handleUnfocus();
+        }
       },
       onError:()=>say('No pude mostrar los controles de la mesa. Volvé a abrirla.',{transient:true}),
     });
+    const inspectionInput=bindMatterInspection({canvas:renderer.composer.renderer.domElement,inspection,
+      picker:()=>worldPicker,overHud:event=>matterHud.overControl(event),sensitivity:()=>mouseSensitivity});
     const sky=new OutdoorSky(renderer.mmlCompositionScene.group.parent,base);
     const light=new DirectionalLight(0xffefd6,1.8);
     light.position.set(12,22,10);light.target.position.set(0,0,-6);light.castShadow=true;
@@ -802,7 +820,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         options.coreCameraManager.getCameraState(),renderer.composer.renderer.domElement.clientHeight);
       const opaqueVisit=contentVisitor?.frame&&!contentVisitor.panel.classList.contains('is-walking');
       const toolModal=Boolean(document.querySelector('dialog[open]'));
-      matterHud.update(!collectionRoom||!document.getElementById('conversation-panel').hidden||opaqueVisit||toolModal,
+      matterHud.update(!collectionRoom||needsSync||!document.getElementById('conversation-panel').hidden||opaqueVisit||toolModal,
         !entering&&!moving&&drawWorld&&!opaqueVisit&&!toolModal);
       garden.update(inside&&!moving&&activeSpace.playableInterior?activeSpace.id:null);gardenMarkers();
       if(!inside){worldIndication?.update();if(!moving)playableHUD.update(position);}
@@ -827,7 +845,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
       }
     };
-    renderer.dispose=()=>{releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();inspectionInput.dispose();if(matterInspection===inspection)matterInspection=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
       releaseHeadroom=bindInteriorHeadroom(client.getCharacterManager(),()=>inside);
       releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing,()=>flightEnabled);

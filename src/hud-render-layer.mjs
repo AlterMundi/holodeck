@@ -32,6 +32,10 @@ export class HudRenderLayer {
     document.body.append(canvas);
   }
 
+  get pixelRatio(){
+    return Math.min(2,Math.max(1,this.window.devicePixelRatio||1));
+  }
+
   draw(scene,camera) {
     this.start();
     const {renderer,overlay}=this;
@@ -45,7 +49,7 @@ export class HudRenderLayer {
 
     const {width,height,left,top}=this.canvas.getBoundingClientRect();
     if(!width||!height){this.hide();return;}
-    const ratio=Math.min(2,Math.max(1,this.window.devicePixelRatio||1));
+    const ratio=this.pixelRatio;
     const columns=Math.round((left+width)*ratio)-Math.round(left*ratio);
     const rows=Math.round((top+height)*ratio)-Math.round(top*ratio);
     const placement=[left,top,width,height,columns,rows].join(':');

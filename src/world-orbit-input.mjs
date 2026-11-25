@@ -1,6 +1,6 @@
 // Keep the host's picking gestures and touch orbit. Mouse look can use raw
 // movement while locked so a sustained drag can pass the edge of the screen.
-export function bindWorldOrbitInput(camera,canvas,sensitivity){
+export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false){
   const document=canvas.ownerDocument;
   const abort=new AbortController(),capture={capture:true,signal:abort.signal};
   let rightHeld=false;
@@ -11,12 +11,12 @@ export function bindWorldOrbitInput(camera,canvas,sensitivity){
       camera.targetPhi-y/canvas.clientHeight*scale));
   };
   canvas.addEventListener('pointerdown',event=>{
-    if(event.pointerType!=='mouse'||event.button!==2||!canvas.requestPointerLock)return;
+    if(blocked()||event.pointerType!=='mouse'||event.button!==2||!canvas.requestPointerLock)return;
     rightHeld=true;
     try{canvas.requestPointerLock()?.catch(()=>{});}catch{}
   },capture);
   document.addEventListener('pointermove',event=>{
-    if(event.pointerType!=='mouse'||camera.isFlyCameraOn()||!canvas.clientWidth||!canvas.clientHeight)return;
+    if(blocked()||event.pointerType!=='mouse'||camera.isFlyCameraOn()||!canvas.clientWidth||!canvas.clientHeight)return;
     const pointer=camera.activePointers.get(event.pointerId);
     if(document.pointerLockElement===canvas){
       turn(event.movementX,event.movementY);

@@ -5,7 +5,7 @@ const CLEARANCE=.07;
 
 // MML's collision pass follows the previous boom direction. Recheck the new
 // frame after orbit/zoom, including the corners of the rendered near plane.
-export function constrainInteriorCamera({coreCameraManager:camera,collisionsManager},getRoom){
+export function constrainInteriorCamera({coreCameraManager:camera,collisionsManager},getRoom,inspection){
   const update=camera.update.bind(camera);
   const adjust=camera.adjustCameraPosition;
   if(adjust)camera.adjustCameraPosition=function(...args){
@@ -19,6 +19,7 @@ export function constrainInteriorCamera({coreCameraManager:camera,collisionsMana
   let lastRoom,lastDistance;
 
   camera.update=(...args)=>{
+    if(!camera.isFlyCameraOn()&&inspection?.apply(camera.getMainCameraState()))return;
     update(...args);
     const room=getRoom();
     if(!room||camera.isFlyCameraOn()){
