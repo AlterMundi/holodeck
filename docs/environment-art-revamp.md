@@ -228,7 +228,12 @@ until the first detailed replacement is committed. Later selections retain
 the previous detailed surface and the placed cover until the new set is
 ready. A failed worker before the first commit leaves cover hidden.
 
-The exact packed client in `fdc871f47841` held at four patches and zero
+The first rollout gated the whole scenery group. The code review caught
+that this also withheld the authored overlook and its collider. The
+follow-up keeps their original lifecycle, defers only analytic
+ground cover and avoids preparing empty instanced field draws.
+
+The exact packed client in `b3cb2d08a6cc` held at four patches and zero
 cover on RTX 2060 Normal and Raspberry Pi 5 Livianos. After the script
 response was released, they drew 112 and 64 patches and 2,749 and 1,165
 cover instances. A separate Chromium fixture moved 0.81 m on the coarse
@@ -236,4 +241,6 @@ surface before releasing the script. Aborting the request kept the
 coarse scene available without cover. These are fixture identities and
 controlled browser loads, not a repeat of the phone playtest. The
 artificial wait still exposes the coarse geometry around the authored
-facade. Four hundred Node tests passed with two optional skips.
+facade. 401 Node tests passed with two optional skips. The new regression
+asserts that the overlook collider is registered and disposed with
+terrain detail still pending.
