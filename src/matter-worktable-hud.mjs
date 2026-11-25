@@ -67,7 +67,7 @@ const work=[
   {id:'root',component:'HudPanel',label:'Mesa de trabajo',width:2.20,
     children:['heading','project','sharing','inspection','discuss','status']},
   row('heading',['title','close']),
-  text('title','Mesa de trabajo',{style:'title',weight:2}),button('close','Salir de la mesa',{weight:1.4}),
+  text('title','Mesa de trabajo',{style:'title',weight:2}),button('close',path('closeLabel'),{weight:1.4}),
   choice('project','Proyecto','projects','project'),
   row('sharing',['share','follow','clear']),
   button('share','Compartir',{visible:path('canShare'),disabled:path('busy'),action:action('share',{revision:path('revision'),project:path('project')})}),
@@ -289,7 +289,8 @@ export class MatterWorktableHud{
   }
 
   sync(){
-    const state={scope:this.scope,...(this.active?this.table.hudState():{})};
+    const compact=this.lookPreview.name==='taller'&&this.canvas.clientWidth<470;
+    const state={scope:this.scope,closeLabel:compact?'Salir':'Salir de la mesa',...(this.active?this.table.hudState():{})};
     const signature=JSON.stringify(state);
     if(signature===this.signature)return;
     this.signature=signature;
@@ -351,7 +352,7 @@ export class MatterWorktableHud{
     const maxWidth=this.canvas.clientWidth-left-right-toolPadding*toolScale;
     this.document.body.toggleAttribute('data-native-settings-available',maxWidth>=150);
     if(maxWidth<150)return;
-    const layout=layoutTools(tools,Math.min(this.lookPreview.look?640:590,maxWidth));
+    const layout=layoutTools(tools,Math.min(this.lookPreview.stylesDock?640:590,maxWidth));
     if(!this.toolGroup)this.send('createSurface',{catalogId:spatialHudCatalog.id},toolbeltId);
     const layoutKey=JSON.stringify(layout);
     if(this.toolLayoutKey!==layoutKey){
@@ -382,7 +383,8 @@ export class MatterWorktableHud{
     if(!toolsVisible)this.settings.close(false);
     this.settings.sync();
     this.syncToolbelt(toolsVisible);
-    const look=this.document.body.dataset.hudLook??this.document.body.dataset.roomLook;
+    const {hudLook,roomLook}=this.document.body.dataset;
+    const look=hudLook==='taller'?roomLook:hudLook??roomLook;
     if(this.look!==look){
       this.look=look;
       this.layer.invalidate();
@@ -562,8 +564,12 @@ export class MatterWorktableHud{
       this.camera.updateProjectionMatrix();
       this.layer.invalidate();
     }
-    const scale=Math.min(170,(width-24)/2.2,(height-124)/1.9);
-    this.place(this.group,'workPlacement',viewport,width-14-scale*1.10,height<520?54:95,scale);
+    const taller=this.lookPreview.name==='taller';
+    const scale=taller?Math.min(170,(width-left-right-24)/2.46,(height-top-bottom-124)/1.9):
+      Math.min(170,(width-24)/2.2,(height-124)/1.9);
+    const workRight=taller?right+12+scale*1.23:14+scale*1.10;
+    const workTop=(taller?top:0)+(height<520?54:95);
+    this.place(this.group,'workPlacement',viewport,width-workRight,workTop,scale);
     if(this.recovery.group){
       const {scale,width:panelWidth}=this.recovery.placement;
       this.place(this.recovery.group,'recoveryPlacement',viewport,left+18+panelWidth*scale/2,recoveryTop,scale);
@@ -573,7 +579,7 @@ export class MatterWorktableHud{
       const dockClearance=this.usesCockpitDocks(viewport)?21:0;
       const barTop=height-bottom-dockClearance-(this.toolLayout.height+.035)*toolScale;
       let barCenter=(width+left-right)/2;
-      if(this.lookPreview.look&&additional&&width>=720&&!additional.panel.hidden){
+      if(this.lookPreview.stylesDock&&additional&&width>=720&&!additional.panel.hidden){
         const display=additional.panel.getBoundingClientRect(), canvasLeft=this.canvas.getBoundingClientRect().left;
         const half=(this.toolLayout.width+.12)*toolScale/2;
         if(display.bottom>barTop&&display.top<height-bottom){

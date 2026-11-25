@@ -2,6 +2,8 @@ import {AmbientLight, Group, Matrix4} from 'three';
 import {createHudMaterialShell} from './hud-material-shell.mjs';
 
 const looks={
+  taller:{frame:'#1c282b',accent:'#7d9994',radius:.11,thickness:.055,roughness:.78,
+    markers:null,quiet:true,surfaces:['matter-worktable']},
   cabina:{frame:'#213232',accent:'#87dbc9',radius:.048,thickness:.19,roughness:.51,markers:[.12,.054],chamfer:true},
   orbita:{frame:'#142e36',accent:'#d6ed9c',radius:.075,thickness:.10,roughness:.22,markers:[.062,.020]},
   umbral:{frame:'#36223f',accent:'#e9b8ff',radius:.090,thickness:.075,roughness:.24,markers:[.14,.033]},
@@ -19,10 +21,12 @@ export function selectedHudLook(url){
 export class HudLookPreview{
   constructor({document,parent,invalidate}){
     Object.assign(this,{invalidate,parent,panels:new Map(),turn:new Matrix4()});
-    this.look=looks[document.body.dataset.hudLook];
+    this.name=document.body.dataset.hudLook;
+    this.look=looks[this.name];
     if(!this.look)return;
+    this.stylesDock=!this.look.surfaces;
     this.reduced=document.defaultView.matchMedia('(prefers-reduced-motion: reduce)');
-    this.light=new AmbientLight('#ffffff',1.55);
+    this.light=new AmbientLight('#ffffff',this.look.quiet?1:1.55);
     parent.add(this.light);
   }
 
@@ -37,7 +41,7 @@ export class HudLookPreview{
   }
 
   draw(key,source,bounds){
-    if(!this.look)return;
+    if(!this.look||this.look.surfaces&&!this.look.surfaces.includes(key))return;
     let panel=this.panels.get(key);
     const now=performance.now();
     if(source?.visible&&bounds){
@@ -64,8 +68,9 @@ export class HudLookPreview{
     }
     const click=still?0:Math.max(0,1-(now-(panel.hit??-Infinity))/220);
     const eased=1-(1-inT)**3;
-    const angle=(1-eased)*.33-outT*.54;
-    const rocking=Math.sin(inT*Math.PI*2)*(1-inT)*.52+Math.sin(click*Math.PI*2)*click*.33;
+    const angle=((1-eased)*.33-outT*.54)*(this.look.quiet?.35:1);
+    const rocking=(Math.sin(inT*Math.PI*2)*(1-inT)*.52+Math.sin(click*Math.PI*2)*click*.33)*
+      (this.look.quiet?.17:1);
     const active=inT<1||outT>0||click>0;
     panel.anchor.matrix.copy(panel.transform).multiply(this.turn.makeRotationX(angle));
     panel.anchor.matrixWorldNeedsUpdate=true;
