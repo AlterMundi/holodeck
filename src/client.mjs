@@ -622,6 +622,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     }]));
     let settingsInputCaptured=false;
     matterHud=new MatterWorktableHud({document,webgl:renderer.composer.renderer,table:collectionShelves.worktable,collection:collectionShelves,
+      toggleSound:()=>{if(!inside&&!moving&&!entering&&navigator.userActivation?.isActive)void toggleWorldSound();},
       readTools,activateTool:id=>tools[id]?.click(),
       navigation:{panel:mapPanel,mapState:()=>updateDoor.navigation?.()??{
         scope:activeSpace.id,canExit:false,busy:false,map:null,
@@ -869,6 +870,10 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       matterHud.updateBearing(navigationVisible&&!matterHud.active);
       matterHud.door.update(navigationVisible&&!matterHud.active&&Boolean(matterHud.toolGroup)&&!signalEditor.active);
       matterHud.collection.update(navigationVisible&&!matterHud.active&&!mapPanel.open&&!signalEditor.active);
+      matterHud.status.update({
+        headerVisible:!entering&&drawWorld&&!opaqueVisit&&!settingsOpen&&!toolModal&&(inside||Boolean(navigator.userActivation)),
+        showExterior:!inside,noticeVisible:!entering&&drawWorld&&!opaqueVisit,width:matterHud.canvas.clientWidth,
+      });
       beaconControls.update(inside&&!moving&&remoteScene?activeSpace.objects:null,position);
       render(renderState);
       if(!inside&&drawWorld)geometryProbe.afterRender();
@@ -931,15 +936,16 @@ function updateSoundButton(){
   button.title=status.supported?'Ambiente suave y sonidos de los cambios del mundo':'El sonido no está disponible en este navegador';
   button.disabled=soundBusy||!status.supported||status.disposed;
 }
-$('#sound').onclick=async event=>{
-  if(!event.isTrusted||soundBusy)return;
+async function toggleWorldSound(){
+  if(soundBusy)return;
   soundBusy=true;updateSoundButton();
   const enable=!worldAudio.status().active;
   try{const result=enable?await worldAudio.enableFromGesture():await worldAudio.disable();
     if(enable&&result.active)refresh().catch(()=>{});
     if(enable&&!result.active)say('No pude activar el sonido. Podés intentarlo de nuevo.');
   }finally{soundBusy=false;updateSoundButton();}
-};
+}
+$('#sound').onclick=event=>{if(event.isTrusted)void toggleWorldSound();};
 worldAudio.setVisibility(!document.hidden);
 document.addEventListener('visibilitychange',()=>{worldAudio.setVisibility(!document.hidden);if(!document.hidden)refresh().catch(()=>{});});
 window.addEventListener('offline',()=>worldAudio.breakContinuity());
