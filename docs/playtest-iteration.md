@@ -30,6 +30,36 @@ Before closing each deliverable, review its actual implementation with Claude Co
 
 [The shared roadmap](shared-roadmap.md) owns the subsequent Wiggle/camera, activity timeline, work-state replay and avatar work. Holodeck issues #3, #12 and #1 remain the parent experience, house integration and situated Conversation records.
 
+## Active tabletop lighting candidate
+
+[Holodeck #20](https://github.com/AlterMundi/holodeck/issues/20) tracks this
+candidate at source `791d57c`. The orbital workshop shifts its existing
+key light toward a warmer side angle when a loaded model is inspected in
+tabletop mode. The layered look uses the existing worktable shadow receiver
+for an inset cyan edge and a slight spill around the specimen silhouette.
+The receiver still respects sectioning and part visibility. Leaving the
+table restores the room light. Other room profiles keep their authored setup.
+
+Fable High reviewed the plan. Opus 5.5 High reviewed the diff, including the
+profile and room reset, compatible defaults and the final fade correction.
+The browser exposed a slow fade under dropped frames because MML provides a
+fixed simulation step. The lighting now uses elapsed presentation time.
+The effect adds zero lights, draws, render targets or texture samples.
+
+The 80-payload candidate archive is 33,320,960 bytes with SHA-256
+`b4095ad308c84313b930e4f665793397645200a50a3d734ada2ac372bc96a900`.
+The exact change passed 351 tests with two optional installed-gallery skips.
+Packaged Chromium at normal and lightweight settings used the actual loaded
+review fixture. It confirmed the inspection light settles at 53 and returns
+to 70 on exit, the pad emission goes from full to near zero, and piece
+selection, cut, rotation, hide and keyboard focus restoration still work.
+The protected production build remains the prior release.
+
+The matched view shows the cyan surface accent and a warmer upper highlight
+on the specimen and avatars. The pale test specimen still has visibly hard
+shadow edges. Shadow quality, small-screen touch interaction and performance
+of the final lighting on physical GPUs remain open.
+
 ## Multiscale materials and lighting
 
 [Holodeck #20](https://github.com/AlterMundi/holodeck/issues/20) tracks the receiving work. Modern engines layer detail maps and world-aligned sampling, and recommend baking expensive procedural graphs when the result permits it. Randomized tiling is applicable to isotropic signals whose contrast needs to survive a blend. View-dependent stochastic filtering has a different purpose and requires temporal stability the lightweight client cannot assume.
