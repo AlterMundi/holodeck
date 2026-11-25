@@ -1213,7 +1213,7 @@ grounded clip set and physical-device acceptance remain open.
 
 ## Peer crouch and exterior flight
 
-The staged Holodeck build shares the supported crouch and exterior flight
+The Holodeck release shares the supported crouch and exterior flight
 poses with peers in that room. The authenticated MML connections retain
 their existing animation enum and movement authority. An optional, advertised
 pose route accepts only bounded, versioned hints for the current actor's
@@ -1238,4 +1238,4 @@ when addressing the original tab's connection with their own proof.
 The exact same package passed the two-browser tabletop sequence with
 matching scale and translucency, bounded flight, reload and exact return.
 These were controlled Chromium runs with software rendering and fixture
-identities. The protected service keeps its prior selected release.
+identities. The protected service now selects this package. See the [receiving evidence](STATUS.md#november-25-viewer-themes-and-shared-avatar-poses).

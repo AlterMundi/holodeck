@@ -1,5 +1,33 @@
 # Current MVP work
 
+## November 25 viewer themes and shared avatar poses
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/) serves
+`b74aa8939953` from `6be9393`. Appearance now offers the browser-local
+light and dark bases. The humanoid crouch keeps the feet planted, and peer
+browsers render the supported crouch and exterior flight poses for the
+current room. The same App resource, access and URL remain selected.
+
+The existing Home writer completed selection after an unoccupied-world
+sample. Immediate rollback is `ccb72f15ef10`; the compatible recovery
+archive `52dccaadf135` is still retained. The three generated archives total
+100,188,160 bytes. The older `883efcd70ed1` Home publication was retired after
+readback of the current release, rollback and exact local original.
+
+All 80 installed payloads match. The protected HTTPS reader verified exact
+health, client, avatar and terrain-worker bytes and four boundary denials.
+Native readback preserved the run, edition, 30 entities and four nodes.
+The configuration and 20 of 22 inspected state files were byte-identical.
+The current and previous world checkpoints were rewritten.
+
+The exact build passed 351 tests with two optional installed-gallery checks
+skipped. Two controlled browsers verified remote crouch after reload,
+exterior flight and disconnect cleanup. A different actor and an additional
+tab for the same actor could not submit a pose for the original tab. The
+same package passed tabletop scale, translucency, flight and exact return.
+These runs used fixture identities and software rendering. Signed-in
+human participation and physical GPU validation remain open.
+
 ## November 25 archived light exercise and instrument HUD
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/) serves

@@ -218,6 +218,14 @@ configuration and CLI routes are operator-selected. Native world actions use a
 separate application-owned world port, matched to the actual retained interaction
 and current room permission. Neither socket is a generic command executor.
 
+The existing world connection also carries optional scoped avatar pose hints.
+The live space response advertises support. Peer poses travel only over
+authenticated room connections. The pose update route uses the normal browser
+session and room/origin checks, plus a revision-bound proof from the originating
+tab. There are no new credentials, sockets, durable fields or MML animation
+codes. Earlier clients keep the ordinary SDK rendering. A code rollback
+leaves the world data and browser-local theme preferences available.
+
 ## Reproducible package
 
 Build the ordinary client, then the fully vendored receiving package:
