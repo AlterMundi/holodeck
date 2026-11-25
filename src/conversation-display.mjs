@@ -31,10 +31,10 @@ export class ConversationDisplay {
     }
   }
 
-  minimize(target){
+  minimize(button){
     const window=this.panel.ownerDocument.defaultView;
     if(!this.layers.children.length||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-    const rect=this.panel.getBoundingClientRect(),button=target.getBoundingClientRect();
+    const rect=this.panel.getBoundingClientRect();
     if(!rect.width||!rect.height)return;
     const canvas=this.webgl.domElement.getBoundingClientRect();
     this.motion={

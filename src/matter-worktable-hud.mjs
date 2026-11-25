@@ -2,7 +2,7 @@ import {OrthographicCamera,Raycaster,Scene,Vector2} from 'three';
 import {HudRenderLayer} from './hud-render-layer.mjs';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
 
-const surfaceId='matter-worktable';
+const surfaceId='matter-worktable',toolbeltId='world-toolbelt';
 const path=name=>({'@path':'/'+name});
 const action=(name,context={})=>({event:{name,context:{scope:path('scope'),...context}}});
 const button=(id,label,fields={})=>({id,component:'HudButton',label,action:action(id),...fields});
@@ -10,8 +10,39 @@ const row=(id,children,fields={})=>({id,component:'HudRow',children,...fields});
 const text=(id,label,fields={})=>({id,component:'HudText',label,...fields});
 const choice=(id,label,options,value)=>({id,component:'HudChoice',label,
   options:path(options),value:path(value),draft:path(id+'Draft'),action:action(id,{value:path(id+'Draft')})});
-const enter=[{id:'root',component:'HudPanel',label:'Mesa de trabajo',width:1.30,children:['open']},
-  button('open','Usar mesa de trabajo')];
+const toolScale=286,toolGap=.035,toolRowHeight=.18,toolPadding=.12;
+const toolNames=['map','open','talk','bridge','plant','undo'];
+const toolPixels={map:66,open:134,talk:72,bridge:110,plant:80,undo:74};
+
+function layoutTools(tools,maxWidth){
+  const gap=toolGap*toolScale;
+  const rows=[];
+  for(const id of toolNames.filter(name=>tools[name]?.visible)){
+    let row=rows.at(-1);
+    if(!row||row.width+gap+toolPixels[id]>maxWidth){
+      row={ids:[],width:0};
+      rows.push(row);
+    }
+    row.width+=(row.ids.length?gap:0)+toolPixels[id];
+    row.ids.push(id);
+  }
+  const width=Math.min(maxWidth,Math.max(150,...rows.map(item=>item.width)))/toolScale;
+  return {width,rows,height:rows.length*toolRowHeight+Math.max(0,rows.length-1)*toolGap};
+}
+
+function toolComponents({width,rows}){
+  const rowIds=rows.map((_,index)=>'toolRow'+index);
+  return [
+    {id:'root',component:'HudPanel',label:'Herramientas de Holodeck',width,gap:toolGap,children:rowIds},
+    ...rows.flatMap(({ids},index)=>[
+      row(rowIds[index],ids,{gap:toolGap}),
+      ...ids.map(id=>button(id,path(id+'Label'),{
+        disabled:path(id+'Disabled'),...(['map','talk'].includes(id)?{pressed:path(id+'Pressed')}:{}),
+        weight:toolPixels[id]/66,
+      })),
+    ]),
+  ];
+}
 const work=[
   {id:'root',component:'HudPanel',label:'Mesa de trabajo',width:2.20,
     children:['heading','project','sharing','inspection','discuss','status']},
@@ -35,8 +66,8 @@ const work=[
 const movement=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE']);
 
 export class MatterWorktableHud{
-  constructor({document,webgl,table,onActive,onError}){
-    Object.assign(this,{document,webgl,table,onActive,scope:0,mode:null,blocked:false});
+  constructor({document,webgl,table,onActive,onError,readTools,activateTool}){
+    Object.assign(this,{document,webgl,table,onActive,readTools,activateTool,scope:0,toolScope:0,mode:null,blocked:false});
     this.canvas=webgl.domElement;
     this.layer=new HudRenderLayer(webgl);
     this.events=new AbortController();
@@ -51,14 +82,21 @@ export class MatterWorktableHud{
     this.a11y.addEventListener('keydown',event=>{
       if(this.active||['Enter',' ','Tab'].includes(event.key))event.stopPropagation();
     });
-    document.body.append(this.a11y);
+    this.toolInset=document.createElement('div');
+    this.toolInset.className='holodeck-tool-inset';
+    this.toolInset.setAttribute('aria-hidden','true');
+    document.body.append(this.a11y,this.toolInset);
     this.hud=createSpatialHud({parent:this.scene,document,accessibilityRoot:this.a11y,
-      placeSurface:group=>{this.group=group;},
-      send:({action:requested})=>this.handleAction(requested),onTransportError:onError,
+      placeSurface:(group,id)=>{if(id===toolbeltId)this.toolGroup=group;else this.group=group;},
+      send:({action:requested})=>{
+        if(!requested)return;
+        if(requested.surfaceId===toolbeltId)this.handleTool(requested);
+        else this.handleAction(requested);
+      },onTransportError:onError,
     });
     const ray=new Raycaster(),point=new Vector2();
     this.unbind=bindSpatialHudPointer({element:this.canvas,hud:this.hud,rayForPointer:event=>{
-      if(!this.mode||this.blocked||!this.table.available)return;
+      if(!this.toolGroup&&!this.group)return;
       const rect=this.canvas.getBoundingClientRect();
       if(!rect.width||!rect.height)return;
       point.set((event.clientX-rect.left)*2/rect.width-1,1-(event.clientY-rect.top)*2/rect.height);
@@ -72,22 +110,22 @@ export class MatterWorktableHud{
 
   ownsAccessibleInput(target){return this.hud.ownsAccessibleInput(target);}
 
-  send(type,content){
-    this.hud.receive({version:'1.0',[type]:{surfaceId,...content}});
+  send(type,content,id=surfaceId){
+    this.hud.receive({version:'1.0',[type]:{surfaceId:id,...content}});
     this.layer.invalidate();
   }
 
   setMode(mode){
     if(this.mode===mode)return;
     const leaving=this.active;
-    if(this.mode)this.send('deleteSurface',{});
+    if(leaving)this.send('deleteSurface',{});
     this.mode=mode;
     this.scope++;
     this.signature=null;
     this.group=null;
-    if(mode){
+    if(this.active){
       this.send('createSurface',{catalogId:spatialHudCatalog.id});
-      this.send('updateComponents',{components:mode==='work'?work:enter});
+      this.send('updateComponents',{components:work});
       this.sync();
     }
     if(leaving!==this.active)this.onActive(this.active);
@@ -99,13 +137,15 @@ export class MatterWorktableHud{
     this.restoreEntryFocus=this.ownsAccessibleInput(this.previousFocus);
     this.previousFocus?.blur();
     this.setMode('work');
-    this.hud.focusControl(surfaceId,'project');
+    this.syncToolbelt(this.toolsVisible);
+    this.hud.focusAccessibleControl(surfaceId,'project');
   }
 
   leave(){
     this.setMode(this.table.available&&!this.blocked?'enter':null);
-    if(this.restoreEntryFocus&&this.mode==='enter')this.hud.focusAccessibleControl(surfaceId,'open');
-    else if(this.previousFocus?.isConnected&&this.previousFocus!==this.document.body)
+    this.syncToolbelt(this.toolsVisible);
+    const focused=this.restoreEntryFocus&&this.mode==='enter'&&this.focusTool('open');
+    if(!focused&&this.previousFocus?.isConnected&&this.previousFocus!==this.document.body)
       this.previousFocus.focus({preventScroll:true});
     this.restoreEntryFocus=false;
     this.previousFocus=null;
@@ -114,7 +154,6 @@ export class MatterWorktableHud{
   handleAction(requested){
     const {name,context}=requested??{};
     if(!this.mode||this.blocked||!this.table.available||context?.scope!==this.scope)return;
-    if(name==='open'){this.enter();return;}
     if(!this.active)return;
     const {value,revision,project}=context;
     const table=this.table;
@@ -137,15 +176,78 @@ export class MatterWorktableHud{
     this.send('updateDataModel',{value:state});
   }
 
-  update(blocked){
-    this.blocked=blocked;
-    if(blocked||!this.table.available){
-      if(this.active)this.leave();
-      else this.setMode(null);
+  toolState(){
+    return {...this.readTools(this.active),
+      open:{label:'Usar mesa de trabajo',visible:this.mode==='enter',disabled:false}};
+  }
+
+  handleTool({name,context}){
+    if(!this.toolGroup||context?.scope!==this.toolScope||!toolNames.includes(name))return;
+    const selected=this.toolState()[name];
+    if(!selected?.visible||selected.disabled)return;
+    if(name==='open')this.enter();
+    else this.activateTool(name);
+  }
+
+  focusTool(name){
+    return this.hud.focusAccessibleControl(toolbeltId,name);
+  }
+
+  toolInsets(){
+    const width=this.canvas.clientWidth,height=this.canvas.clientHeight;
+    if(this.insetWidth!==width||this.insetHeight!==height){
+      const style=this.document.defaultView.getComputedStyle(this.toolInset);
+      this.insets={left:parseFloat(style.paddingLeft),right:parseFloat(style.paddingRight),bottom:parseFloat(style.height)};
+      this.insetWidth=width;
+      this.insetHeight=height;
+    }
+    return this.insets;
+  }
+
+  syncToolbelt(visible){
+    this.toolsVisible=visible;
+    if(!visible){
+      if(this.toolGroup){
+        this.send('deleteSurface',{},toolbeltId);
+        this.toolGroup=null;
+        this.toolSignature=null;
+        this.toolLayoutKey=null;
+        this.toolScope++;
+      }
       return;
     }
-    if(!this.mode)this.setMode('enter');
-    this.sync();
+    const tools=this.toolState();
+    const {left,right}=this.toolInsets();
+    const maxWidth=this.canvas.clientWidth-left-right-toolPadding*toolScale;
+    if(maxWidth<150)return;
+    const layout=layoutTools(tools,Math.min(590,maxWidth));
+    if(!this.toolGroup)this.send('createSurface',{catalogId:spatialHudCatalog.id},toolbeltId);
+    const layoutKey=JSON.stringify(layout);
+    if(this.toolLayoutKey!==layoutKey){
+      this.toolLayoutKey=layoutKey;
+      this.toolLayout=layout;
+      this.send('updateComponents',{components:toolComponents(layout)},toolbeltId);
+    }
+    const value={scope:this.toolScope};
+    for(const id of toolNames){
+      const item=tools[id];
+      value[id+'Disabled']=Boolean(item?.disabled);
+      value[id+'Pressed']=item?.pressed??false;
+      value[id+'Label']=item?.label??'';
+    }
+    const signature=JSON.stringify(value);
+    if(signature===this.toolSignature)return;
+    this.toolSignature=signature;
+    this.send('updateDataModel',{value},toolbeltId);
+  }
+
+  update(blocked,toolsVisible){
+    this.blocked=blocked;
+    const available=!blocked&&this.table.available;
+    if(!available&&this.active)this.leave();
+    else if(!this.active)this.setMode(available?'enter':null);
+    if(this.active)this.sync();
+    this.syncToolbelt(toolsVisible);
     const look=this.document.body.dataset.roomLook;
     if(this.look!==look){
       this.look=look;
@@ -161,40 +263,56 @@ export class MatterWorktableHud{
   }
 
   key(event){
-    if(!this.mode)return false;
     if(this.active&&event.key==='Escape'&&!event.defaultPrevented){this.leave();return true;}
     if(this.ownsAccessibleInput(event.target))return false;
     const modifier=event.altKey||event.metaKey||event.ctrlKey;
     if(!this.active){
-      if(!modifier&&event.key==='Tab'&&(event.target===this.document.body||event.target===this.canvas))
-        return this.hud.focusAccessibleControl(surfaceId,'open');
-      return false;
+      return this.mode==='enter'&&!modifier&&event.key==='Tab'&&!event.shiftKey&&
+        (event.target===this.document.body||event.target===this.canvas)&&this.focusTool('open');
     }
     return this.hud.handleKey(event,{surfaceId})||(!modifier&&movement.has(event.code));
   }
 
+  place(group,key,viewport,x,y,scale){
+    if(!group||scale<=0)return;
+    const signature=[viewport.width,viewport.height,x,y,scale].join(':');
+    if(this[key]?.group===group&&this[key].signature===signature)return;
+    placeHudInViewport(group,this.camera,{...viewport,x,y,pixelsPerUnit:scale,depth:1});
+    this[key]={group,signature,x,y,scale};
+    this.layer.invalidate();
+  }
+
+  toolBounds(name){
+    if(!this.toolGroup||this.toolPlacement?.group!==this.toolGroup)return null;
+    const {rows,width}=this.toolLayout;
+    const rowIndex=rows.findIndex(({ids})=>ids.includes(name));
+    if(rowIndex<0)return null;
+    const {ids}=rows[rowIndex],index=ids.indexOf(name);
+    const {x,y,scale}=this.toolPlacement;
+    const available=width-toolGap*(ids.length-1);
+    const total=ids.reduce((sum,id)=>sum+toolPixels[id],0);
+    const widthFor=id=>available*toolPixels[id]/total;
+    const xOffset=ids.slice(0,index).reduce((sum,id)=>sum+widthFor(id)+toolGap,-width/2);
+    const viewport=this.canvas.getBoundingClientRect();
+    return {left:viewport.left+x+xOffset*scale,top:viewport.top+y+rowIndex*(toolRowHeight+toolGap)*scale,
+      width:widthFor(name)*scale,height:toolRowHeight*scale};
+  }
+
   draw(){
-    if(!this.mode||!this.group){this.layer.hide();return;}
-    const width=this.canvas.clientWidth,height=this.canvas.clientHeight;
+    if(!this.toolGroup&&!this.group){this.layer.hide();return;}
+    const {clientWidth:width,clientHeight:height}=this.canvas;
     if(!width||!height)return;
-    const active=this.active;
-    const scale=active?Math.min(170,(width-24)/2.2,(height-124)/1.9):Math.min(165,(width-24)/1.4);
-    if(scale<=0)return;
-    const x=active?width-14-scale*1.10:width/2;
-    const dock=this.document.querySelector('#dock')?.getBoundingClientRect();
-    const dockTop=dock?.height?dock.top-this.canvas.getBoundingClientRect().top:height;
-    const touch=this.document.defaultView.matchMedia('(pointer: coarse)').matches;
-    // Reserve the input band until the joystick and the dock share the toolbelt layout.
-    const y=active?(height<520?54:95):Math.max(12,Math.min(height-(touch?258:104),dockTop-56));
-    const size=[width,height,x,y,scale].join(':');
-    if(this.placedGroup!==this.group||this.placedSize!==size){
-      placeHudInViewport(this.group,this.camera,{width,height,x,y,pixelsPerUnit:scale,depth:1});
-      this.placedGroup=this.group;
-      this.placedSize=size;
-      this.layer.invalidate();
+    const viewport={width,height};
+    const scale=Math.min(170,(width-24)/2.2,(height-124)/1.9);
+    this.place(this.group,'workPlacement',viewport,width-14-scale*1.10,height<520?54:95,scale);
+    if(this.toolGroup){
+      const {left,right,bottom}=this.toolInsets();
+      const barTop=height-bottom-(this.toolLayout.height+.035)*toolScale;
+      this.place(this.toolGroup,'toolPlacement',viewport,(width+left-right)/2,barTop,toolScale);
     }
     this.hud.update();
     this.layer.draw(this.scene,this.camera);
+    if(this.toolGroup)this.document.body.dataset.a2uiToolbelt='';
   }
 
   dispose(){
@@ -204,6 +322,8 @@ export class MatterWorktableHud{
     this.layer.dispose();
     this.hud.dispose();
     this.a11y.remove();
+    this.toolInset.remove();
+    delete this.document.body.dataset.a2uiToolbelt;
     this.table.panel.removeAttribute('data-spatial');
   }
 }

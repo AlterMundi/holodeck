@@ -557,7 +557,8 @@ document.addEventListener('keydown',event=>{
     if(event.key==='Escape'){
       event.preventDefault();
       if(event.target.closest('#space-travel')){
-        $('#space-travel').open=false;$('#map-tool').focus();
+        $('#space-travel').open=false;
+        if(!matterHud?.focusTool('map'))$('#map-tool').focus();
       }
       else if(event.target.closest('#creator')){closePreview();say('La vista previa quedó descartada.',{transient:true});}
       else openConversation(false);
@@ -590,7 +591,16 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(moving||!inside||!sharedSurface())return;
         worktableTopic={reference,label};openConversation(true);
       }});
+    const tools={map:document.getElementById('map-tool'),talk:document.getElementById('talk'),
+      bridge:document.getElementById('bridge'),plant:document.getElementById('plant'),undo:document.getElementById('undo')};
+    const readTools=operating=>Object.fromEntries(Object.entries(tools).map(([id,element])=>[id,{
+      label:id==='undo'?'Deshacer':element.textContent.trim(),
+      visible:!element.hidden&&(id==='map'||id==='talk'||!inside&&!operating),
+      disabled:element.disabled,
+      pressed:element.getAttribute('aria-expanded')==='true',
+    }]));
     matterHud=new MatterWorktableHud({document,webgl:renderer.composer.renderer,table:collectionShelves.worktable,
+      readTools,activateTool:id=>tools[id]?.click(),
       onActive:active=>{
         document.body.classList.toggle('is-operating-matter',active);
         touchControls.pause(active);
@@ -790,9 +800,10 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         collectionRoom?activeSpace.objects.find(object=>object.id==='worktable')?.position:null,
         activeSpace?.sharedConversation===true,matterStyleScope?.style.contactShadows===true,
         options.coreCameraManager.getCameraState(),renderer.composer.renderer.domElement.clientHeight);
-      matterHud.update(!collectionRoom||!document.querySelector('#conversation-panel').hidden||
-        contentVisitor?.frame&&!contentVisitor.panel.classList.contains('is-walking')||
-        Boolean(document.querySelector('dialog[open]')));
+      const opaqueVisit=contentVisitor?.frame&&!contentVisitor.panel.classList.contains('is-walking');
+      const toolModal=Boolean(document.querySelector('dialog[open]'));
+      matterHud.update(!collectionRoom||!document.getElementById('conversation-panel').hidden||opaqueVisit||toolModal,
+        !entering&&!moving&&drawWorld&&!opaqueVisit&&!toolModal);
       garden.update(inside&&!moving&&activeSpace.playableInterior?activeSpace.id:null);gardenMarkers();
       if(!inside){worldIndication?.update();if(!moving)playableHUD.update(position);}
       if(!moving){
@@ -1282,7 +1293,11 @@ $('#undo').onclick=async()=>{
 };
 function openConversation(open){
   const panel=$('#conversation-panel'),talk=$('#talk');
-  if(!open&&!panel.hidden)conversationDisplay?.minimize(talk);
+  const restoreFocus=!open&&panel.contains(document.activeElement);
+  if(!open&&!panel.hidden){
+    const target=matterHud?.toolBounds('talk')??talk.getBoundingClientRect();
+    if(target.width&&target.height)conversationDisplay?.minimize(target);
+  }
   panel.hidden=!open;
   talk.setAttribute('aria-expanded',String(open));
   if(open){$('#space-travel').open=false;updateNativeAvailability();}
@@ -1292,7 +1307,7 @@ function openConversation(open){
       onStatus:({phase,busy})=>{$('#companion-status').textContent=phases[phase]||(busy?'La conversación está procesando tu intervención.':'Tu intervención quedó en la conversación.');},onError:say});
     sharedConversation.mount().catch(()=>say('No pude abrir tu conversación. Volvé a tocar Conversar para intentarlo.'));
   }else if(open)$('#message').focus();
-  else if(panel.contains(document.activeElement))$('#talk').focus({preventScroll:true});
+  else if(restoreFocus&&!matterHud?.focusTool('talk'))talk.focus({preventScroll:true});
 }
 bindHudPanelWindow($('#conversation-panel'),{move:$('#conversation-move'),resize:$('#conversation-resize')});
 $('#talk').onclick=()=>openConversation($('#conversation-panel').hidden);
