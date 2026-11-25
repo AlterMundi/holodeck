@@ -113,7 +113,7 @@ export class ConversationChrome{
       this.layout=layout;
       const children=['head'];
       const entries=[row('head',['heading','minimize']),label('heading','Conversar',{weight:8,style:'title'}),
-        button('minimize','Minimizar conversación',{icon:'minimize',weight:.65})];
+        button('minimize','Minimizar conversación',{icon:'minimize',weight:.65,quiet:true})];
       if(topics){
         children.push('topics');
         entries.push(row('topics',['previous','topic','next']),
