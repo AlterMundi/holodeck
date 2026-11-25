@@ -19,11 +19,20 @@ paso** at frame 57 and advanced to 58. Rotating to portrait and back
 retained the selected frame and room. Both browser runs used fixture
 identities.
 
-The protected selection advanced from `179364d0f9fc` to `0bbaf60eb737`.
-The new protected manifest still lacks the Character catalog and carries
-different Harmonic Lab Beacon and return assets. Retain those exact
-installed assets and the selected live behavior when preparing the combined
-candidate. The protected room test with two Home identities remains open.
+Source `0963092b739a75ad136e62c9ff007e29f354727b` brings the Character
+candidate onto the selected Guitar worktop and Laboratory controls from
+`16911a6`. Archive
+`a87de1ab73c2fe1f590fd43fa0cd92f004686ebd8e1f8d7c53eff948553d9849`
+matched all 87 payloads. Both compressed Lab assets match protected
+release `0bbaf60eb737` byte for byte. In one loopback Chromium session,
+the Guitar station opened the focused card, read simulated stopped and
+ready states, and closed at the same avatar position. The fixture
+positioned the visitor near the worktop because the scripted stair
+keystrokes did not move the avatar on this runner. With no instrument
+starts, the visitor returned through the foyer, opened the Character
+table, selected ground frame 57 and exited the table into the same room.
+Holodeck passed 417 tests with two skips. The protected room test with two
+Home identities remains open.
 
 Source `c28bf4c896932722e9289f5f820637262259a5bb` locks Holodeck to the published Proyección alpha.14
 archive instead of the optical branch source archive. The release
