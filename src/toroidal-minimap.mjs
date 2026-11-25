@@ -141,19 +141,23 @@ function drawHouse(ctx,x,y){
   ctx.fillStyle='#f4ce94';ctx.fill();
 }
 
-function drawCave(ctx,x,y){
+function drawCave(ctx,x,y,circular){
   ctx.beginPath();
   ctx.moveTo(x-10,y+6);ctx.lineTo(x-8,y-5);ctx.lineTo(x-2,y-11);
   ctx.lineTo(x+5,y-8);ctx.lineTo(x+10,y+6);ctx.closePath();
   ctx.strokeStyle='#261e22';ctx.lineWidth=3;ctx.stroke();
   ctx.fillStyle='#e5a984';ctx.fill();
   ctx.fillStyle='#352726';ctx.fillRect(x-3,y-1,6,7);
-  drawMapLabel(ctx,'Cueva',x,y);
+  drawMapLabel(ctx,'Cueva',x,y,circular);
 }
 
-function drawMapLabel(ctx,label,x,y){
+function drawMapLabel(ctx,label,x,y,circular){
   ctx.font='600 19px system-ui';
-  const left=x+15+ctx.measureText(label).width>DISPLAY-6;
+  const textWidth=ctx.measureText(label).width;
+  const half=DISPLAY/2;
+  const edge=circular?Math.sqrt(Math.max(0,(half-7)**2-(Math.abs(y+6-half)+8)**2)):half-6;
+  const left=x+15+textWidth>half+edge;
+  if(left&&x-15-textWidth<half-edge)return;
   const labelX=x+(left?-15:15);
   ctx.textAlign=left?'right':'left';
   ctx.strokeStyle='#261e22';ctx.lineWidth=3;
@@ -163,13 +167,13 @@ function drawMapLabel(ctx,label,x,y){
   ctx.textAlign='start';
 }
 
-function drawSpurMark(ctx,point,label,water,legend){
+function drawSpurMark(ctx,point,label,water,legend,circular){
   if(point.x<=.036||point.x>=.964||point.y<=.038||point.y>=.942||
-    legend&&point.x>.38&&point.y>.85)return;
+    legend&&point.x>.38&&point.y>.85||circular&&Math.hypot(point.x-.5,point.y-.5)>.46)return;
   const x=point.x*DISPLAY,y=point.y*DISPLAY;
   ctx.fillStyle='#122831';ctx.fillRect(x-7,y-7,14,14);
   ctx.fillStyle=water?'#a2e1ed':'#f7d7a0';ctx.fillRect(x-4,y-4,8,8);
-  drawMapLabel(ctx,label,x,y);
+  drawMapLabel(ctx,label,x,y,circular);
 }
 
 export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
@@ -188,6 +192,7 @@ export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
   return (position,yaw,entrances)=>{
     canvas.hidden=!position;
     if(!position||!panel.open){last=null;return;}
+    const circular=panel.dataset.terrainFormat==='circle';
     const time=now();
     if(time<next)return;
     next=time+90;
@@ -208,25 +213,26 @@ export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
     const {x,y}=toroidalMapPoint(chart,point);
     const heading=toroidalMapHeading(chart,point.v,Number.isFinite(yaw)?yaw:0);
     if(last&&Math.hypot(x-last.x,y-last.y)<.75/DISPLAY&&
-      Math.abs(wrap((heading-last.heading)/TAU))<.025/TAU&&last.entrances===entrances)return;
+      Math.abs(wrap((heading-last.heading)/TAU))<.025/TAU&&last.entrances===entrances&&last.circular===circular)return;
     // Entrances are an immutable snapshot of the current exterior scope.
-    last={x,y,heading,entrances};
+    last={x,y,heading,entrances,circular};
     const {width,height}=canvas;
     ctx.drawImage(raster,0,0,width,height);
     ctx.save();
     ctx.scale(width/DISPLAY,height/DISPLAY);
     drawSpur(ctx,paths);
     for(const shore of guide.shores)
-      drawSpurMark(ctx,toroidalMapPoint(chart,shore),'Orilla',true,waterVisible);
-    drawSpurMark(ctx,toroidalMapPoint(chart,TOROIDAL_OVERLOOK),'Mirador',false,waterVisible);
+      drawSpurMark(ctx,toroidalMapPoint(chart,shore),'Orilla',true,waterVisible,circular);
+    drawSpurMark(ctx,toroidalMapPoint(chart,TOROIDAL_OVERLOOK),'Mirador',false,waterVisible,circular);
     for(const {door} of entrances??[]){
       if(!door)continue;
       const {x,y}=toroidalMapPoint(chart,terrainCoordinates([door.x,door.y,door.z]));
       if(x>0&&x<1&&y>0&&y<1)drawHouse(ctx,x*DISPLAY,y*DISPLAY);
     }
     const cave=toroidalMapPoint(chart,CAVE_ENTRANCE);
-    if(cave.x>.032&&cave.x<.968&&cave.y>.032&&cave.y<.968)
-      drawCave(ctx,cave.x*DISPLAY,cave.y*DISPLAY);
+    if(cave.x>.032&&cave.x<.968&&cave.y>.032&&cave.y<.968&&
+      (!circular||Math.hypot(cave.x-.5,cave.y-.5)<.46))
+      drawCave(ctx,cave.x*DISPLAY,cave.y*DISPLAY,circular);
     ctx.save();
     ctx.translate(x*DISPLAY,y*DISPLAY);
     ctx.rotate(heading);
@@ -234,17 +240,19 @@ export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
     ctx.fillStyle='#fff4cd';ctx.strokeStyle='#182e34';ctx.lineWidth=2;ctx.stroke();ctx.fill();
     ctx.restore();
     const scaleLength=DISPLAY*50/SPAN;
-    ctx.fillStyle='#132327d9';ctx.fillRect(8,335,scaleLength+16,41);
+    const scaleX=circular?(DISPLAY-scaleLength)/2:16, scaleY=circular?325:335;
+    ctx.fillStyle='#132327d9';ctx.fillRect(scaleX-8,scaleY,scaleLength+16,41);
     ctx.strokeStyle='#eee3c7';ctx.lineWidth=2;
-    ctx.beginPath();ctx.moveTo(16,367);ctx.lineTo(16+scaleLength,367);ctx.stroke();
-    ctx.fillStyle='#eee3c7';ctx.font='600 23px system-ui';ctx.fillText('50 m',16,362);
+    ctx.beginPath();ctx.moveTo(scaleX,scaleY+32);ctx.lineTo(scaleX+scaleLength,scaleY+32);ctx.stroke();
+    ctx.fillStyle='#eee3c7';ctx.font='600 23px system-ui';ctx.fillText('50 m',scaleX,scaleY+27);
     if(waterVisible){
-      ctx.fillStyle='#132327e6';ctx.fillRect(248,335,128,41);
+      const legendX=circular?128:248, legendY=circular?281:335;
+      ctx.fillStyle='#132327e6';ctx.fillRect(legendX,legendY,128,41);
       ctx.strokeStyle='#a2e1ed';ctx.lineWidth=3;
       ctx.setLineDash([7,8]);
-      ctx.beginPath();ctx.moveTo(258,356);ctx.lineTo(278,356);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(legendX+10,legendY+21);ctx.lineTo(legendX+30,legendY+21);ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle='#d9f5fb';ctx.font='600 21px system-ui';ctx.fillText('A nado',286,363);
+      ctx.fillStyle='#d9f5fb';ctx.font='600 21px system-ui';ctx.fillText('A nado',legendX+38,legendY+28);
     }
     ctx.restore();
     return true;

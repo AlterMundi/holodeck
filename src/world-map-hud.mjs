@@ -127,7 +127,11 @@ export class WorldMapHud{
     const destinations=state.map?.destinations??[];
     const count=destinations.length;
     if(name==='close')this.close();
-    if(name==='format'&&this.raster){this.circular=!this.circular;this.invalidate();}
+    if(name==='format'&&this.raster){
+      this.circular=!this.circular;
+      this.panel.dataset.terrainFormat=this.circular?'circle':'square';
+      this.invalidate();
+    }
     if(name==='exit'&&state.canExit&&!state.busy)this.returnOutside();
     if(name==='navigation'&&!state.busy&&destinations[this.index]?.id===context.destination)this.selectDestination(context.destination);
     if(count>1&&(name==='previous'||name==='next'))this.index=(this.index+(name==='next'?1:-1)+count)%count;

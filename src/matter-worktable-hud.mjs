@@ -42,7 +42,7 @@ const choice=(id,label,options,value)=>({id,component:'HudChoice',label,
   options:path(options),value:path(value),draft:path(id+'Draft'),action:action(id,{value:path(id+'Draft')})});
 const toolScale=286,toolGap=.035,toolRowHeight=.18,toolPadding=.12;
 const toolNames=['map','open','talk','appearance','video','bridge','plant','undo','activity','visit','endVisit'];
-const toolPixels={map:108,open:154,talk:112,appearance:112,video:76,bridge:153,plant:100,undo:92,activity:104,visit:124,endVisit:140};
+const toolPixels={map:130,open:154,talk:134,appearance:138,video:96,bridge:153,plant:100,undo:92,activity:126,visit:124,endVisit:140};
 
 function opticalRole(surface,id,component){
   if(surface===worldMapId||surface===worldBearingId||id==='map')return 'navigation';
@@ -50,7 +50,7 @@ function opticalRole(surface,id,component){
   if(surface===toolbeltId||component==='HudRange'||component==='HudChoice')return 'utility';
 }
 const toolIcons={map:'map',talk:'conversation',appearance:'appearance',video:'video',activity:'activity'};
-const compactToolPixels={map:92,talk:98,appearance:108,video:66,activity:94};
+const compactToolPixels={map:110,talk:116,appearance:122,video:82,activity:110};
 const pixelsForTool=(id,compact)=>compact?(compactToolPixels[id]??toolPixels[id]):toolPixels[id];
 
 function layoutTools(tools,maxWidth,compact){
