@@ -119,6 +119,20 @@ playback. Escape restored world control in the same room. A separate web
 touch fixture retained portrait/landscape menu placement and the other
 visitor's independent frame. Holodeck passed 411 tests with two skips.
 
+Candidate `a119c1ac81e66f9dc9a6af28e7982efe31f16f41` extends the same
+store to the signed own-native Holodeck world port. The archive
+`b3d0b11ed143a65c3dd1e3789e8cfb81d8acf1c61d8e925dba3398d6a8120660`
+matched all 87 payloads. A loopback receiving check presented flight frame 22
+through the native port, confirmed the exact clip edition and presentation
+revision through HTTP, and exchanged attributed notes. It rejected stale
+revisions and access outside the room, honored revoked edit rights, and
+restored two notes without duplication after restart. A separate two-browser
+run against these same bytes repeated the table-to-web comparison and note
+readback, preserved local camera and world input, and returned to the room
+with Escape. Holodeck passed 412 tests with two optional skips. The protected
+release observed afterward, `76bacef3cd52`, has no pose catalog. The
+receiving trial with independently authenticated participants remains open.
+
 The candidate booted on a temporary copy of three selected checkpoints from
 installed release `1c78c31a2b82`. Reciprocal studio doors resolved. The room
 rule admitted one configured human guest and the house owner's daimon
