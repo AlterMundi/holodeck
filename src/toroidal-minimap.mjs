@@ -51,16 +51,17 @@ export function paintToroidalRelief(chart,rgba,terrain=TOROIDAL_TERRAIN){
     const relief=clamp((se-nw)*2.9,-18,19);
     const contourLevel=Math.round(height/INTERVAL)*INTERVAL;
     const lines=contourLevel>=low&&contourLevel<=high&&high-low>.025;
-    const contour=lines?(contourLevel%(INTERVAL*3)===0?-32:-18):0;
+    const index=lines&&contourLevel%(INTERVAL*3)===0;
+    const contour=lines?(index?19:-24):0;
     const water=((nw<terrain.waterLevel)+(ne<terrain.waterLevel)+(sw<terrain.waterLevel)+(se<terrain.waterLevel))*.25;
     const depth=clamp(terrain.waterLevel-height,0,30);
     const trail=clamp((trails[a]+trails[b]+trails[c]+trails[d])*.29,0,.95)*(1-water);
     const shore=water>0&&water<1?24:0;
     const shade=elevation+relief+contour;
     const i=(y*SIZE+x)*4;
-    rgba[i]=((82+shade)*(1-trail)+178*trail)*(1-water)+(38-depth*.38)*water+shore;
-    rgba[i+1]=((106+shade)*(1-trail)+151*trail)*(1-water)+(86-depth*.65)*water+shore;
-    rgba[i+2]=((80+shade)*(1-trail)+102*trail)*(1-water)+(101-depth*.54)*water+shore;
+    rgba[i]=((57+shade+(index?17:0))*(1-trail)+186*trail)*(1-water)+(24-depth*.38)*water+shore;
+    rgba[i+1]=((91+shade)*(1-trail)+155*trail)*(1-water)+(62-depth*.65)*water+shore;
+    rgba[i+2]=((76+shade-(index?12:0))*(1-trail)+100*trail)*(1-water)+(83-depth*.54)*water+shore;
     rgba[i+3]=255;
   }
 }
@@ -141,19 +142,23 @@ function drawHouse(ctx,x,y){
   ctx.fillStyle='#f4ce94';ctx.fill();
 }
 
-function drawCave(ctx,x,y){
+function drawCave(ctx,x,y,circular){
   ctx.beginPath();
   ctx.moveTo(x-10,y+6);ctx.lineTo(x-8,y-5);ctx.lineTo(x-2,y-11);
   ctx.lineTo(x+5,y-8);ctx.lineTo(x+10,y+6);ctx.closePath();
   ctx.strokeStyle='#261e22';ctx.lineWidth=3;ctx.stroke();
   ctx.fillStyle='#e5a984';ctx.fill();
   ctx.fillStyle='#352726';ctx.fillRect(x-3,y-1,6,7);
-  drawMapLabel(ctx,'Cueva',x,y);
+  drawMapLabel(ctx,'Cueva',x,y,circular);
 }
 
-function drawMapLabel(ctx,label,x,y){
+function drawMapLabel(ctx,label,x,y,circular){
   ctx.font='600 19px system-ui';
-  const left=x+15+ctx.measureText(label).width>DISPLAY-6;
+  const textWidth=ctx.measureText(label).width;
+  const half=DISPLAY/2;
+  const edge=circular?Math.sqrt(Math.max(0,(half-7)**2-(Math.abs(y+6-half)+8)**2)):half-6;
+  const left=x+15+textWidth>half+edge;
+  if(left&&x-15-textWidth<half-edge)return;
   const labelX=x+(left?-15:15);
   ctx.textAlign=left?'right':'left';
   ctx.strokeStyle='#261e22';ctx.lineWidth=3;
@@ -163,13 +168,33 @@ function drawMapLabel(ctx,label,x,y){
   ctx.textAlign='start';
 }
 
-function drawSpurMark(ctx,point,label,water,legend){
+function drawSpurMark(ctx,point,label,water,legend,circular){
   if(point.x<=.036||point.x>=.964||point.y<=.038||point.y>=.942||
-    legend&&point.x>.38&&point.y>.85)return;
+    legend&&point.x>.38&&point.y>.85||circular&&Math.hypot(point.x-.5,point.y-.5)>.46)return;
   const x=point.x*DISPLAY,y=point.y*DISPLAY;
   ctx.fillStyle='#122831';ctx.fillRect(x-7,y-7,14,14);
   ctx.fillStyle=water?'#a2e1ed':'#f7d7a0';ctx.fillRect(x-4,y-4,8,8);
-  drawMapLabel(ctx,label,x,y);
+  drawMapLabel(ctx,label,x,y,circular);
+}
+
+function drawChartRim(ctx,circular){
+  const margin=5,half=DISPLAY/2;
+  ctx.lineWidth=2;
+  if(circular){
+    for(const [ink,start] of [['#edc797',Math.PI],['#79c1c4',0]]){
+      ctx.strokeStyle=ink;
+      ctx.beginPath();
+      ctx.arc(half,half,half-margin,start,start+Math.PI);
+      ctx.stroke();
+    }
+    return;
+  }
+  for(const [edge,ink] of [[margin,'#edc797'],[DISPLAY-margin,'#79c1c4']]){
+    ctx.strokeStyle=ink;
+    ctx.beginPath();
+    ctx.moveTo(margin,edge);ctx.lineTo(DISPLAY-margin,edge);
+    ctx.stroke();
+  }
 }
 
 export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
@@ -188,6 +213,7 @@ export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
   return (position,yaw,entrances)=>{
     canvas.hidden=!position;
     if(!position||!panel.open){last=null;return;}
+    const circular=panel.dataset.terrainFormat==='circle';
     const time=now();
     if(time<next)return;
     next=time+90;
@@ -208,43 +234,50 @@ export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
     const {x,y}=toroidalMapPoint(chart,point);
     const heading=toroidalMapHeading(chart,point.v,Number.isFinite(yaw)?yaw:0);
     if(last&&Math.hypot(x-last.x,y-last.y)<.75/DISPLAY&&
-      Math.abs(wrap((heading-last.heading)/TAU))<.025/TAU&&last.entrances===entrances)return;
+      Math.abs(wrap((heading-last.heading)/TAU))<.025/TAU&&last.entrances===entrances&&last.circular===circular)return;
     // Entrances are an immutable snapshot of the current exterior scope.
-    last={x,y,heading,entrances};
+    last={x,y,heading,entrances,circular};
     const {width,height}=canvas;
     ctx.drawImage(raster,0,0,width,height);
     ctx.save();
     ctx.scale(width/DISPLAY,height/DISPLAY);
+    drawChartRim(ctx,circular);
     drawSpur(ctx,paths);
     for(const shore of guide.shores)
-      drawSpurMark(ctx,toroidalMapPoint(chart,shore),'Orilla',true,waterVisible);
-    drawSpurMark(ctx,toroidalMapPoint(chart,TOROIDAL_OVERLOOK),'Mirador',false,waterVisible);
+      drawSpurMark(ctx,toroidalMapPoint(chart,shore),'Orilla',true,waterVisible,circular);
+    drawSpurMark(ctx,toroidalMapPoint(chart,TOROIDAL_OVERLOOK),'Mirador',false,waterVisible,circular);
     for(const {door} of entrances??[]){
       if(!door)continue;
       const {x,y}=toroidalMapPoint(chart,terrainCoordinates([door.x,door.y,door.z]));
       if(x>0&&x<1&&y>0&&y<1)drawHouse(ctx,x*DISPLAY,y*DISPLAY);
     }
     const cave=toroidalMapPoint(chart,CAVE_ENTRANCE);
-    if(cave.x>.032&&cave.x<.968&&cave.y>.032&&cave.y<.968)
-      drawCave(ctx,cave.x*DISPLAY,cave.y*DISPLAY);
+    if(cave.x>.032&&cave.x<.968&&cave.y>.032&&cave.y<.968&&
+      (!circular||Math.hypot(cave.x-.5,cave.y-.5)<.46))
+      drawCave(ctx,cave.x*DISPLAY,cave.y*DISPLAY,circular);
     ctx.save();
     ctx.translate(x*DISPLAY,y*DISPLAY);
     ctx.rotate(heading);
-    ctx.beginPath();ctx.moveTo(0,-12);ctx.lineTo(8,10);ctx.lineTo(0,6);ctx.lineTo(-8,10);ctx.closePath();
-    ctx.fillStyle='#fff4cd';ctx.strokeStyle='#182e34';ctx.lineWidth=2;ctx.stroke();ctx.fill();
+    ctx.beginPath();ctx.moveTo(0,-16);ctx.lineTo(10,11);ctx.lineTo(0,6);ctx.lineTo(-10,11);ctx.closePath();
+    ctx.fillStyle='#fff4cd';ctx.strokeStyle='#14292f';ctx.lineWidth=5;ctx.stroke();ctx.fill();
     ctx.restore();
     const scaleLength=DISPLAY*50/SPAN;
-    ctx.fillStyle='#132327d9';ctx.fillRect(8,335,scaleLength+16,41);
+    const scaleX=circular?(DISPLAY-scaleLength)/2:16, scaleY=circular?325:335;
+    ctx.fillStyle='#132327d9';ctx.fillRect(scaleX-8,scaleY,scaleLength+16,41);
     ctx.strokeStyle='#eee3c7';ctx.lineWidth=2;
-    ctx.beginPath();ctx.moveTo(16,367);ctx.lineTo(16+scaleLength,367);ctx.stroke();
-    ctx.fillStyle='#eee3c7';ctx.font='600 23px system-ui';ctx.fillText('50 m',16,362);
+    ctx.beginPath();
+    ctx.moveTo(scaleX,scaleY+29);ctx.lineTo(scaleX,scaleY+34);
+    ctx.lineTo(scaleX+scaleLength,scaleY+34);ctx.lineTo(scaleX+scaleLength,scaleY+29);
+    ctx.stroke();
+    ctx.fillStyle='#eee3c7';ctx.font='600 23px system-ui';ctx.fillText('50 m',scaleX,scaleY+27);
     if(waterVisible){
-      ctx.fillStyle='#132327e6';ctx.fillRect(248,335,128,41);
+      const legendX=circular?128:248, legendY=circular?281:335;
+      ctx.fillStyle='#132327e6';ctx.fillRect(legendX,legendY,128,41);
       ctx.strokeStyle='#a2e1ed';ctx.lineWidth=3;
       ctx.setLineDash([7,8]);
-      ctx.beginPath();ctx.moveTo(258,356);ctx.lineTo(278,356);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(legendX+10,legendY+21);ctx.lineTo(legendX+30,legendY+21);ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle='#d9f5fb';ctx.font='600 21px system-ui';ctx.fillText('A nado',286,363);
+      ctx.fillStyle='#d9f5fb';ctx.font='600 21px system-ui';ctx.fillText('A nado',legendX+38,legendY+28);
     }
     ctx.restore();
     return true;

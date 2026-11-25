@@ -71,12 +71,12 @@ test('the map reuses the terrain raster while still updating its position and he
   const raster={createImageData:(width,height)=>({data:new Uint8ClampedArray(width*height*4)}),putImageData:()=>paints++};
   const view={
     drawImage:()=>composites++,save(){},scale(){},restore(){},translate(){},rotate(){},
-    beginPath(){},moveTo(){},lineTo(){},closePath(){},stroke(){},fill(){},fillRect(){},fillText(){},strokeText(){},
+    beginPath(){},moveTo(){},lineTo(){},arc(){},closePath(){},stroke(){},fill(){},fillRect(){},fillText(){},strokeText(){},
     measureText:()=>({width:58}),setLineDash(){},
   };
   const canvas={width:384,height:384,getContext:()=>view,setAttribute(){},addEventListener:(_,callback)=>{restore=callback;},
     ownerDocument:{createElement:()=>({getContext:()=>raster,addEventListener(){}})}};
-  const panel={open:true,querySelector:()=>canvas};
+  const panel={open:true,dataset:{},querySelector:()=>canvas};
   const paint=bindToroidalMinimap(panel,{now:()=>time});
   const position=(u,v)=>{
     const [x,y,z]=terrainPosition(u,v,terrainElevation(u,v));
@@ -95,7 +95,11 @@ test('the map reuses the terrain raster while still updating its position and he
   time+=100;
   assert.equal(paint(position(.001,.25),.2,entrances),true);
   assert.deepEqual([paints,composites],[2,4]);
+  panel.dataset.terrainFormat='circle';
+  time+=100;
+  assert.equal(paint(position(.001,.25),.2,entrances),true);
+  assert.deepEqual([paints,composites],[2,5]);
   restore();
   assert.equal(paint(position(.001,.25),.2,entrances),true);
-  assert.deepEqual([paints,composites],[3,5]);
+  assert.deepEqual([paints,composites],[3,6]);
 });

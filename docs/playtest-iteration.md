@@ -2144,3 +2144,45 @@ The release preserved the installed file inventory, protected Home
 audience, native world and compatible previous package. The technical
 reader was revoked. An independently authenticated visitor pair and
 fingers on a physical touchscreen remain unverified.
+
+## Optical A2UI HUD visual candidate
+
+Holodeck pins Proyección `b0749091ba3f` with its codeload SHA-512. The
+host selects navigation, primary and utility styles independently of A2UI
+messages. The renderer draws the accents, focus and disabled treatment on
+the same Three.js surfaces and retains labels alongside dock symbols.
+Square and circular exterior minimaps use the same terrain and destinations.
+The circular layout moves the scale and legends inside its clipping bounds.
+
+Source `56db955` produced identical copies of archive `35fc6849a60d`
+with 85 verified payload files. Controlled Chromium exercised the square and
+circular map with keyboard and touchscreen. Two separate fixture clients
+shared a worktable model, retained local inspection, enforced read-only and
+stale-action checks and restored movement on exit. The canonical Conversation
+mount passed focus and touch movement tests with a local Conversation fixture.
+The visual sample included the existing portal and the earlier touch journey.
+
+The topographic HUD candidate differentiates index contours from minor
+contours, gives the player arrow a high-contrast outline and adds distinct
+square and circular rims. Both layouts use the same terrain samples,
+destinations and 50 m scale. Switching format repaints the marks over the
+cached elevation raster. The exact archive `745798604d13` passed keyboard and
+canvas-touch opening, format switching and closing in local Chromium, with
+the live terrain raster and original navigation actions. The loopback fixture's
+favicon returned 404. Source and capture receipts accompany the candidate.
+
+The Conversation surround uses the pinned Proyección `fee3570c516d`
+renderer. Its native heading combines the Conversation glyph, the themed
+focus accent and title typography. Raster density follows the actual placed
+scale of the embedded app's header. Archive `94596951a02a` passed the
+canonical mount path with a loopback Conversation fixture. Keyboard focus
+returned to the world after minimizing. Touch movement and jumping stayed
+available beside the panel, and moving it or rotating the viewport preserved
+the iframe and its draft. Desktop, portrait and landscape captures are
+retained with the exact package.
+
+The early software render timings cover short fixture runs. The latest host
+also changed atmosphere, so those timings do not isolate HUD cost. Use one
+physical device and matching atmosphere for the final comparison. Reconcile
+portrait treatment and the rest of the art direction against the selected
+private Gemini references before the visual acceptance.

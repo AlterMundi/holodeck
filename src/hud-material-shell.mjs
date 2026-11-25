@@ -90,6 +90,7 @@ export function createHudMaterialShell({frame, accent, radius=.038, thickness=.1
 export function createInstrumentGlass(){
   const uniforms={
     size:{value:new Vector2()},reflection:{value:new Color()},rim:{value:new Color()},
+    absorption:{value:new Color()},rounding:{value:.08},
     brass:{value:new Color()},pulse:{value:0},
   };
   const material=new ShaderMaterial({
@@ -103,26 +104,27 @@ export function createInstrumentGlass(){
     `,
     fragmentShader:`
       uniform vec2 size;
-      uniform vec3 reflection,rim,brass;
-      uniform float pulse;
+      uniform vec3 reflection,rim,brass,absorption;
+      uniform float pulse,rounding;
       varying vec2 paneUv;
       void main(){
         vec2 p=(paneUv-.5)*size;
-        vec2 edge=abs(p)-size*.5+vec2(.037);
-        float bevel=max(max(edge.x,edge.y),.7071*(edge.x+edge.y)+.011);
-        float aa=max(fwidth(bevel),.002);
-        float inside=1.0-smoothstep(-aa,aa,bevel);
-        if(inside<.001)discard;
-        float top=pow(paneUv.y,4.0);
-        float chrome=1.0-smoothstep(aa*.4,aa*1.6,abs(bevel+.009));
-        float fromTop=size.y*.5-p.y;
-        float fromSide=size.x*.5-abs(p.x);
-        float copper=chrome*(1.0-smoothstep(.065,.08,fromTop))*
-          (1.0-smoothstep(.105,.135,fromSide));
-        float sheen=.28+.28*top+.14*(1.0-smoothstep(.0,.24,abs(paneUv.y+paneUv.x*.26-1.04)));
-        vec3 glaze=mix(reflection,rim,chrome*.76);
-        glaze=mix(glaze,brass,copper*.86);
-        gl_FragColor=vec4(glaze,inside*min(1.0,sheen+chrome*(.54+pulse*.12)));
+        float r=min(rounding, min(size.x,size.y)*.43);
+        vec2 q=abs(p)-(size*.5-vec2(r+.012));
+        float edge=length(max(q,0.0))+min(max(q.x,q.y),0.0)-r;
+        float px=max(fwidth(edge),.0005);
+        float inside=1.0-smoothstep(-px,px,edge);
+        if(inside<.002)discard;
+        float rimLine=1.0-smoothstep(px*.55,px*1.55,abs(edge+px));
+        float innerLine=1.0-smoothstep(px*.45,px*1.5,abs(edge+max(.017,px*3.7)));
+        float warm=smoothstep(.25,.89,paneUv.y*.82+paneUv.x*.18);
+        vec3 optics=mix(rim,brass,warm);
+        float reflectionBand=pow(max(0.0, paneUv.y*.8+(1.0-paneUv.x)*.2),4.0);
+        float sheen=reflectionBand*(.21+.067*pulse);
+        vec3 glass=mix(absorption,reflection,sheen);
+        glass=mix(glass,optics,clamp(rimLine*(.71+.18*pulse)+innerLine*.24,0.0,.96));
+        float alpha=.70+rimLine*.28+innerLine*.10;
+        gl_FragColor=vec4(glass,inside*min(.99,alpha));
         #include <colorspace_fragment>
       }
     `,
@@ -132,12 +134,14 @@ export function createInstrumentGlass(){
   group.raycast=()=>{};
   group.renderOrder=-1;
   return {group,
-    update(bounds,{colors,effects=true,lightLevel=0}){
+    update(bounds,{colors,compact=false,effects=true,lightLevel=0}){
       const width=bounds.right-bounds.left+.096,height=bounds.top-bounds.bottom+.096;
       group.position.set((bounds.left+bounds.right)/2,(bounds.top+bounds.bottom)/2,-.075);
       group.scale.set(width,height,1);
       uniforms.size.value.set(width,height);
       uniforms.reflection.value.set(colors.fill);
+      uniforms.absorption.value.set(colors.absorption||colors.fill);
+      uniforms.rounding.value=compact?.071:.092;
       uniforms.rim.value.set(colors.rim);
       uniforms.brass.value.set(colors.brass);
       uniforms.pulse.value=effects?Math.min(1,lightLevel):0;

@@ -3,7 +3,7 @@ import {ToroidalOverlook} from './toroidal-overlook.mjs';
 import {ToroidalMeadowBanks} from './toroidal-meadow-banks.mjs';
 import {
   BufferGeometry, Color, DodecahedronGeometry, DoubleSide, Float32BufferAttribute, Group,
-  InstancedMesh, MeshStandardMaterial, Object3D, TetrahedronGeometry, Vector3,
+  InstancedMesh, MeshStandardMaterial, Object3D, Vector3,
 } from 'three';
 import {CAVE} from './toroidal-cave.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
@@ -14,6 +14,10 @@ import {
 const LEVEL=7;
 const RANGE=2;
 const CANDIDATES=12;
+const FIELD_LEVEL=9;
+const FIELD_RANGE=5;
+const FIELD_DENSITY=50;
+const FIELD_LIMIT=(2*FIELD_RANGE+1)**2*FIELD_DENSITY;
 const INSTANCE_LIMIT=(2*RANGE+1)**2*CANDIDATES;
 const GRASSES=[0x849552,0x758549,0x939968,0xb5a66b,0x9a843f];
 const STONES=[0x74664f,0x7d7d70,0x8b7860,0x66635c,0x9f8a73];
@@ -50,13 +54,66 @@ export function sceneryForCell(cell,count=CANDIDATES) {
   return instances;
 }
 
-function plantGeometry(bloom=false) {
+// The cells use canonical torus indices. Their vegetation stays rooted on
+// the same metre of soil through movement, tile eviction and graphics changes.
+function fieldTile(column,row){
+  const rows=2**FIELD_LEVEL,columns=rows*TOROIDAL_TERRAIN.rootColumns;
+  column=(column+columns)%columns;
+  row=(row+rows)%rows;
+  return {key:column+':'+row,column,row,columns,rows};
+}
+
+function meadowCell(cell,index,door){
+  const pick=salt=>random(cell,index,salt);
+  const u=(cell.column+pick(103))/cell.columns;
+  const v=(cell.row+pick(181))/cell.rows;
+  const xOffset=(.25-v)*TAU*(TOROIDAL_TERRAIN.tubeRadius+18);
+  const zOffset=(u-Math.round(u))*TAU*TOROIDAL_TERRAIN.majorRadius;
+  if(Math.abs(xOffset)<5.8&&Math.abs(zOffset-15.5)<8.2)return null;
+  if(door&&Math.abs(zOffset-door.z)<3.3&&Math.abs(xOffset-(door.x-TOROIDAL_TERRAIN.majorRadius))<5.2)return null;
+  if(u>CAVE.from-.00029&&u<CAVE.to+.00029&&Math.abs(v-CAVE.latitude)<.0031)return null;
+  if(u>overlookStart.u&&u<overlookEnd.u&&v>overlookStart.v&&v<overlookEnd.v)return null;
+  if(terrainTrail(u,v)>.12)return null;
+  const h=terrainElevation(u,v);
+  if(h<TOROIDAL_TERRAIN.waterLevel+1.4||h>51)return null;
+  const band=.54+.24*Math.sin(349*TAU*u+188*TAU*v)+.15*Math.sin(287*TAU*u-420*TAU*v);
+  if(pick(229)>band)return null;
+  return {u,v,h,yaw:pick(321)*TAU,size:.33+pick(421)**1.4*.60,
+    color:GRASSES[Math.floor(pick(499)*GRASSES.length)]};
+}
+
+function meadowWind(material,clock,motion){
+  const compile=material.onBeforeCompile;
+  material.onBeforeCompile=function(shader,renderer){
+    compile.call(this,shader,renderer);
+    shader.uniforms.fieldClock=clock;
+    shader.uniforms.fieldMotion=motion;
+    shader.vertexShader=`uniform float fieldClock;
+uniform float fieldMotion;
+varying float meadowCut;\n`+shader.vertexShader.replace('#include <begin_vertex>',
+      `#include <begin_vertex>
+       vec3 root=(modelMatrix*instanceMatrix*vec4(0.0,0.0,0.0,1.0)).xyz;
+       float sway=sin(dot(root,vec3(.37,.16,.19))+fieldClock*5.0);
+       float bend=clamp(position.y,0.0,1.0);
+       transformed.x+=sway*bend*bend*.16*fieldMotion;
+       transformed.z+=cos(sway+fieldClock*2.0)*bend*bend*.075*fieldMotion;
+       meadowCut=1.0-smoothstep(18.0,27.0,distance(cameraPosition,root));`);
+    shader.fragmentShader=`varying float meadowCut;\n`+shader.fragmentShader.replace('#include <alphatest_fragment>',
+      `#include <alphatest_fragment>
+       float grain=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(.06711056,.00583715))));
+       if(grain>meadowCut)discard;`);
+  };
+  const key=material.customProgramCacheKey.bind(material);
+  material.customProgramCacheKey=()=>key()+'-meadow-wind';
+}
+
+function plantGeometry(bloom=false,count=5) {
   const points=[], colors=[];
   const triangle=(a,b,c,shades,tint=[1,1,1])=>{
     points.push(...a,...b,...c);
     for(const shade of shades)colors.push(...tint.map(value=>shade*value));
   };
-  const blades=bloom?3:5;
+  const blades=bloom?3:count;
   for(let i=0;i<blades;i++){
     const angle=i*2.39996, x=Math.cos(angle),z=Math.sin(angle);
     const root=[.16*x,-.14,.16*z], width=.105+.014*(i%3);
@@ -142,7 +199,16 @@ export class ToroidalScenery {
     this.group=new Group();
     this.group.name='Toroidal ground cover';
     this.stones=new InstancedMesh(new DodecahedronGeometry(1,0),new MeshStandardMaterial({roughness:.94}),INSTANCE_LIMIT);
-    this.grasses=new InstancedMesh(new TetrahedronGeometry(1,0),new MeshStandardMaterial({roughness:1}),INSTANCE_LIMIT);
+    this.grasses=new InstancedMesh(plantGeometry(false,3),new MeshStandardMaterial({
+      roughness:1,vertexColors:true,side:DoubleSide,
+    }),INSTANCE_LIMIT);
+    this.fieldClock={value:0};
+    this.fieldMotion={value:1};
+    this.reducedMotion=globalThis.matchMedia?.('(prefers-reduced-motion: reduce)');
+    this.field=new InstancedMesh(plantGeometry(false,6),new MeshStandardMaterial({
+      roughness:.94,vertexColors:true,side:DoubleSide,
+    }),FIELD_LIMIT);
+    this.field.name='Continuous meadow';
     this.ribbonGrass=new InstancedMesh(plantGeometry(),new MeshStandardMaterial({
       roughness:1,vertexColors:true,side:DoubleSide,
     }),48);
@@ -165,6 +231,12 @@ export class ToroidalScenery {
       mesh.frustumCulled=false;
       this.group.add(mesh);
     }
+    this.field.count=0;
+    this.field.frustumCulled=false;
+    this.group.add(this.field);
+    useSceneryDaylight(this.field.material,this.daylight);
+    meadowWind(this.field.material,this.fieldClock,this.fieldMotion);
+    this.fieldCells=new Map();
     scene.add(this.group);
     this.key=null;
     this.anchor=new Vector3();
@@ -181,12 +253,17 @@ export class ToroidalScenery {
     if(![u,v].every(Number.isFinite))return;
     const rows=2**LEVEL, columns=rows*TOROIDAL_TERRAIN.rootColumns;
     const cell=terrainTile(LEVEL,Math.floor(u*columns),Math.floor(v*rows));
+    this.fieldClock.value=(performance.now()%18000)*TAU/18000;
+    this.fieldMotion.value=this.reducedMotion?.matches?0:1;
     const doorKey=(door?.x??'')+':'+(door?.z??15.5)+':'+(door?.facing??-1);
     const distance=this.approach.distanceToSquared(position);
     const nearTrail=distance<105**2;
     this.meadow.update(distance<(this.meadow.group.visible?142:124)**2,Boolean(lightweight),performance.now());
     const key=cell.key+':'+lightweight+':'+nearTrail+':'+doorKey;
-    if(key===this.key)return;
+    if(key===this.key){
+      this.placeField(u,v,lightweight,door,doorKey);
+      return;
+    }
     this.key=key;
     this.anchor.set(position.x,position.y,position.z);
     this.group.position.copy(this.anchor);
@@ -208,6 +285,7 @@ export class ToroidalScenery {
       }
       for(const item of this.ribbon)this.place(item,true);
     }
+    this.placeField(u,v,lightweight,door,doorKey,true);
     for(const mesh of this.meshes){
       mesh.visible=mesh.count>0;
       mesh.instanceMatrix.needsUpdate=true;
@@ -215,18 +293,58 @@ export class ToroidalScenery {
     }
   }
 
+  placeField(u,v,lightweight,door,doorKey,anchorChanged=false){
+    const rows=2**FIELD_LEVEL,columns=rows*TOROIDAL_TERRAIN.rootColumns;
+    const cell=fieldTile(Math.floor(u*columns),Math.floor(v*rows));
+    const key=[cell.key,lightweight,doorKey].join(':');
+    if(key===this.fieldKey&&!anchorChanged)return;
+    this.fieldKey=key;
+    this.field.count=0;
+    const phase=lightweight?17:FIELD_DENSITY;
+    const range=FIELD_RANGE;
+    const retained=new Map();
+    for(let dy=-range;dy<=range;dy++)for(let dx=-range;dx<=range;dx++){
+      const tile=fieldTile(cell.column+dx,cell.row+dy);
+      const indexed=[tile.key,phase,doorKey].join(':');
+      let samples=this.fieldCells.get(indexed);
+      if(!samples){
+        samples=[];
+        for(let i=0;i<phase;i++){
+          const plant=meadowCell(tile,i,door);
+          if(plant)samples.push(plant);
+        }
+      }
+      retained.set(indexed,samples);
+      for(const {u,v,h,size,yaw,color} of samples){
+        const transform=this.transform;
+        transform.position.fromArray(terrainPosition(u,v,h));
+        toroidalRotation(transform.position,yaw,transform.quaternion);
+        transform.position.sub(this.anchor);
+        transform.scale.set(size*.86,size,size*.86);
+        transform.updateMatrix();
+        this.field.setMatrixAt(this.field.count,transform.matrix);
+        this.field.setColorAt(this.field.count,this.color.setHex(color));
+        this.field.count++;
+      }
+    }
+    this.fieldCells=retained;
+    this.field.visible=this.field.count>0;
+    this.field.instanceMatrix.needsUpdate=true;
+    if(this.field.instanceColor)this.field.instanceColor.needsUpdate=true;
+  }
+
   place({kind,u,v,h,size,yaw,color},ribbon=false) {
     const rock=kind==='stone';
     const mesh=rock?this.stones:kind==='bloom'?this.blooms:ribbon?this.ribbonGrass:this.grasses;
     const transform=this.transform;
     if(mesh.count===mesh.instanceMatrix.count)return;
-    const lift=rock?-.06:ribbon?0:size*.35;
+    const lift=rock?-.06:0;
     transform.position.fromArray(terrainPosition(u,v,h+lift));
     toroidalRotation(transform.position,yaw,transform.quaternion);
     transform.position.sub(this.anchor);
     if(rock)transform.scale.set(size*1.3,size*.67,size*.87);
     else if(ribbon)transform.scale.set(size*.70,size,size*.70);
-    else transform.scale.set(size*.26,size,size*.39);
+    else transform.scale.set(size*.89,size*.74,size*.89);
     transform.updateMatrix();
     mesh.setMatrixAt(mesh.count,transform.matrix);
     mesh.setColorAt(mesh.count,this.color.setHex(color));
@@ -236,6 +354,9 @@ export class ToroidalScenery {
   dispose() {
     this.detail?.dispose();
     this.meadow.dispose();
+    this.field.geometry.dispose();
+    this.field.material.dispose();
+    this.fieldCells.clear();
     this.overlook.dispose();
     for(const mesh of this.meshes){
       mesh.geometry.dispose();
