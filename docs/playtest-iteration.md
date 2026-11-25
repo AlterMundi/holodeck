@@ -2067,3 +2067,45 @@ The installed files, protected HTTPS assets, audience, shared world
 and compatible previous release matched the preflight. The task-owned
 technical reader was revoked. Independent authenticated visitors and
 physical touchscreen use remain unverified.
+
+
+## Inner ring overlook
+
+The exterior spur had a map landmark on a bare side slope. Holodeck
+now builds a lightly graded limestone terrace around that same marker.
+Staggered flags meet the trail. The curved timber shelter and bench
+occupy the uphill side. Two low stone wings and three amber markers
+frame the opposite arc. The bronze inlay directs the player left at
+arrival toward the opening. The landmark is separate from the existing
+commons North Mirador and its movable bridge.
+
+The ground, movement solver and terrain worker share a continuous grade
+near the terrace. Physical obstructions register through the existing
+world collider manager. The visual stays resident after its first
+approach, while its collider is scoped to nearby travel. All 4,096
+sampled points and eight terrain payloads outside the edited footprint
+matched the predecessor. The visible landmark uses five material
+batches, 7,448 triangles and no additional texture downloads. The
+invisible collision shapes use 296 triangles.
+
+Fable High pointed to the initial view facing the slope and the need for
+a legible low silhouette. Opus 5.5 High reviewed the source. The revision
+corrected paving height, unsupported joins, the brace collision and
+collider lifetime. The exact candidate `ec75cae97e47` from `62855d7`
+passed 372 Holodeck tests with two optional skips. Three of 84 payloads
+changed across the client, terrain worker and server bundle. The archive
+uses 33,505,280 bytes.
+
+The exact selected package was exercised in Chromium on RTX 2060 Normal
+and Raspberry Pi 5 Livianos, at 13:00 and 19:40 Argentine time. Captures
+match chart locations and headings. Within the changed site, camera
+elevation follows the new support. Each device reached the terrace on
+foot, stopped at the parapet, crossed the opening and returned through
+it using the ordinary movement controls. The short static dusk
+comparison measured 16.7 ms median and 16.7 ms p90 on both devices
+before and after. It does not characterize the entire landscape or
+certify an independent visitor pair.
+
+Protected HTTPS, existing audience, exact installed files, native state
+and compatible previous release were checked separately. The temporary
+technical reader was revoked. The exterior and HUD roadmap remains open.

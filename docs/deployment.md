@@ -747,6 +747,14 @@ session storage were preserved; served Apps metadata is retained but hidden.
 
 ## Recovery
 
+The [inner-ring overlook release](STATUS.md#november-25-inner-ring-overlook)
+`ec75cae97e47` changes the packed client, terrain worker and server bundle.
+The three carry the same local grade data. Keep them together when
+installing or rolling back. Immediate rollback is `bd94dc35ba06`;
+`8a2e0d75c9b4` remains in published recovery. The verified local archive
+`2286ee700dc7` was retired from published history. Published history
+uses 100,515,840 bytes.
+
 The [touch swimming release](STATUS.md#november-25-touch-swimming)
 `bd94dc35ba06` changes the packed client and entry HTML. Immediate
 rollback is `8a2e0d75c9b4`; `2286ee700dc7` remains in published

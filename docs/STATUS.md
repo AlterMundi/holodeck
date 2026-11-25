@@ -1,9 +1,20 @@
 # Current MVP work
 
+## November 25 inner ring overlook
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `ec75cae97e47` from `62855d7`. The existing exterior trail
+ends at a walkable limestone terrace with an oak shelter, bronze
+directional inlay, bench and amber marker lights. The opening faces
+the opposite arc. [Physical browser checks](playtest-iteration.md#inner-ring-overlook)
+cover the walk, edge collision, exit, return and repeated views of
+the same exterior at daylight and dusk. Immediate rollback is
+`bd94dc35ba06`. Independent visitors remain to be verified.
+
 ## November 25 touch swimming
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
-serves `bd94dc35ba06` from `b183414`. Touch shows **Subir** and
+selected `bd94dc35ba06` from `b183414` for this update. Touch shows **Subir** and
 **Bajar** at the deep-water surface, underwater and in flight. Land
 shows **Saltar**. The joystick retains its finger through the shore
 transition. [Physical Chromium checks](playtest-iteration.md#touch-swimming-and-shore-release)

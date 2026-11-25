@@ -582,8 +582,10 @@ The selected [water feedback](playtest-iteration.md#underwater-controls-and-comp
 now shows the active keyboard controls and gives the companion a blended
 water posture. [Touch swimming](playtest-iteration.md#touch-swimming-and-shore-release)
 adds independent vertical buttons with continuous joystick travel on the
-same shore. The bare Mirador, wider landscape coverage and the independent
-shared workshop visit remain open.
+same shore. The [inner-ring overlook](playtest-iteration.md#inner-ring-overlook)
+now gives that route a walkable terrace oriented toward the opposite arc.
+Wider landscape coverage and the independent shared workshop visit remain
+open.
 
 Compare the same outside path, working table, map and open Conversation
 on the existing build. Final preset selection covers a dark and a light
