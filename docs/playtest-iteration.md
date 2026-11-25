@@ -2144,3 +2144,26 @@ The release preserved the installed file inventory, protected Home
 audience, native world and compatible previous package. The technical
 reader was revoked. An independently authenticated visitor pair and
 fingers on a physical touchscreen remain unverified.
+
+## Optical A2UI HUD visual candidate
+
+Holodeck pins Proyección `b0749091ba3f` with its codeload SHA-512. The
+host selects navigation, primary and utility styles independently of A2UI
+messages. The renderer draws the accents, focus and disabled treatment on
+the same Three.js surfaces and retains labels alongside dock symbols.
+Square and circular exterior minimaps use the same terrain and destinations.
+The circular layout moves the scale and legends inside its clipping bounds.
+
+Source `56db955` produced identical copies of archive `35fc6849a60d`
+with 85 verified payload files. Controlled Chromium exercised the square and
+circular map with keyboard and touchscreen. Two separate fixture clients
+shared a worktable model, retained local inspection, enforced read-only and
+stale-action checks and restored movement on exit. The canonical Conversation
+mount passed focus and touch movement tests with a local Conversation fixture.
+The visual sample included the existing portal and the earlier touch journey.
+
+The early software render timings cover short fixture runs. The latest host
+also changed atmosphere, so those timings do not isolate HUD cost. Use one
+physical device and matching atmosphere for the final comparison. Reconcile
+portrait treatment and the rest of the art direction against the selected
+private Gemini references before the visual acceptance.
