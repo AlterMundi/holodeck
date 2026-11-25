@@ -218,7 +218,7 @@ const terrainShading = {
     // A little reflected blue sky keeps the route and the verge readable
     // after dark without washing out the rest of the landscape.
     outgoingLight += diffuseColor.rgb*vec3(.23,.31,.43)*holoApproachSkylight*(1.0-holodeckDaylight);
-    ${aerialPerspective('* mix(.32,1.0,holodeckDaylight)')}
+    ${aerialPerspective('* mix(.45,1.0,holodeckDaylight)')}
   `,
 };
 const waterShading = {
