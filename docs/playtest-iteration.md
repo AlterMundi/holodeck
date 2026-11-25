@@ -366,3 +366,21 @@ the evidence folder. SwiftShader measured 68 vs 71 median draw calls and
 46,065 vs 77,225 median rendered triangles. Frame pacing varied considerably.
 Before wider adoption, measure a culled and reduced-density variant on the
 game hardware. Retain the live baseline outside the test.
+
+The next package keeps the rails, room geometry and collection data in place
+while changing movement and presentation. Inside the Matter work area the
+player flies with the regular movement inputs, stays inside the table bounds
+and appears as a small translucent figure to the other people in the room.
+The room presence channel carries the active tabletop state for each connected
+avatar and serves the current roster to a newly connected viewer. A second
+authorized view must see entry, a reload and exit restore the original size
+and materials before this package is selected.
+
+The exterior uses a solar clock evaluated at Buenos Aires and a generated
+space panorama behind the atmosphere. The accessible control surfaces keep
+their current actions while minimap and table tools can be moved and resized.
+The 3D companion reuses the selected Navegante design. Its mouth tracks the
+authenticated Conversation playback signal when that capability is present.
+[DaimonApp #1026](https://github.com/AlterMundi/DaimonApp/pull/1026) owns the
+sender. The packaged model and the live speech round trip have distinct
+acceptance checks.
