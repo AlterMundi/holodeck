@@ -30,7 +30,7 @@ export class PassageHud {
     this.ray=new Raycaster();
     this.pointer=new Vector2();
     this.hud=createSpatialHud({
-      document,parent:this.scene,accessibilityRoot:this.mirror,controlStyle:'optical',
+      document,parent:this.scene,accessibilityRoot:this.mirror,controlStyle:'optical',controlRole:()=>'navigation',
       placeSurface:(group,id)=>{if(id===this.surface)this.group=group;},
       send:({action})=>{
         if(this.presented&&this.canRetry()&&this.active&&action?.surfaceId===this.surface&&action.name==='retry')

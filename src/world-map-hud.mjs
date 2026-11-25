@@ -1,4 +1,4 @@
-import {CanvasTexture,Mesh,MeshBasicMaterial,PlaneGeometry,SRGBColorSpace} from 'three';
+import {CanvasTexture,CircleGeometry,Mesh,MeshBasicMaterial,PlaneGeometry,SRGBColorSpace} from 'three';
 import {spatialHudCatalog} from 'proyeccion/spatial-hud';
 
 export const worldMapId='world-map',worldBearingId='world-bearing';
@@ -10,11 +10,12 @@ const label=(id,value)=>({id,component:'HudText',label:value});
 const scope=()=>({scope:path('scope')});
 const components=[
   {id:'root',component:'HudPanel',label:'Mapa del lugar',width:1.16,gap:.025,
-    children:['heading','map','navigation','pagination','exit']},
+    children:['heading','map','format','navigation','pagination','exit']},
   row('heading',['title','close']),
   label('title','Mapa'),button('close','Cerrar',{},scope()),
   {id:'map',component:'HudMap',label:path('mapLabel'),marks:path('marks'),viewer:path('viewer'),
     selected:path('selected'),bounds:path('bounds')},
+  button('format',path('formatLabel'),{visible:path('hasTerrain')},scope()),
   button('navigation',path('destinationLabel'),{
     visible:path('hasDestinations'),pressed:path('destinationSelected'),
   },{...scope(),destination:path('destination')}),
@@ -32,7 +33,7 @@ const bearingComponents=[
 
 export class WorldMapHud{
   constructor({send,panel,mapState,selectDestination,returnOutside,readBearing,dismissBearing,bearingAdapter,focusBearing,focusLauncher,invalidate}){
-    Object.assign(this,{send,panel,mapState,selectDestination,returnOutside,readBearing,dismissBearing,bearingAdapter,focusBearing,focusLauncher,invalidate,scope:0,bearingEpoch:0,index:0});
+    Object.assign(this,{send,panel,mapState,selectDestination,returnOutside,readBearing,dismissBearing,bearingAdapter,focusBearing,focusLauncher,invalidate,scope:0,bearingEpoch:0,index:0,circular:false});
   }
 
   message(type,content){
@@ -76,7 +77,8 @@ export class WorldMapHud{
     const canvas=this.panel.querySelector('#world-minimap');
     this.raster=!map&&!canvas.hidden;
     const mapLabel=(this.raster&&canvas.getAttribute('aria-label'))||'Mapa y posición actual';
-    const value={scope:this.scope,mapLabel,marks:map?.marks??[],viewer:map?.viewer??null,selected:map?.selected??'',
+    const value={scope:this.scope,mapLabel,hasTerrain:this.raster,
+      formatLabel:this.circular?'Vista cuadrada':'Vista circular',marks:map?.marks??[],viewer:map?.viewer??null,selected:map?.selected??'',
       bounds:{minX:-6,maxX:6,minZ:-6,maxZ:6},destination:current?.id??'',
       destinationLabel:current?.title??'',destinationSelected:!!current&&map.selected===current.id,
       hasDestinations:count>0,hasPages:count>1,page:count?String(this.index+1)+' / '+count:'',
@@ -101,11 +103,21 @@ export class WorldMapHud{
       this.texture.colorSpace=SRGBColorSpace;
     }
     if(!this.mesh){
-      this.mesh=new Mesh(new PlaneGeometry(.77,.77),new MeshBasicMaterial({map:this.texture,toneMapped:false}));
+      this.mesh=new Mesh(this.terrainGeometry(),new MeshBasicMaterial({map:this.texture,toneMapped:false}));
       this.mesh.position.z=.07;
+      this.circularMesh=this.circular;
       frame.add(this.mesh);
       this.invalidate();
+    }else if(this.circularMesh!==this.circular){
+      this.mesh.geometry.dispose();
+      this.mesh.geometry=this.terrainGeometry();
+      this.circularMesh=this.circular;
+      this.invalidate();
     }
+  }
+
+  terrainGeometry(){
+    return this.circular?new CircleGeometry(.385,48):new PlaneGeometry(.77,.77);
   }
 
   activate({name,context}){
@@ -115,6 +127,7 @@ export class WorldMapHud{
     const destinations=state.map?.destinations??[];
     const count=destinations.length;
     if(name==='close')this.close();
+    if(name==='format'&&this.raster){this.circular=!this.circular;this.invalidate();}
     if(name==='exit'&&state.canExit&&!state.busy)this.returnOutside();
     if(name==='navigation'&&!state.busy&&destinations[this.index]?.id===context.destination)this.selectDestination(context.destination);
     if(count>1&&(name==='previous'||name==='next'))this.index=(this.index+(name==='next'?1:-1)+count)%count;

@@ -39,7 +39,7 @@ export class ConversationChrome{
     this.a11y=document.createElement('div');
     panel.prepend(this.a11y);
     this.lookPreview=new HudLookPreview({document,parent,invalidate});
-    this.hud=createSpatialHud({parent,document,accessibilityRoot:this.a11y,controlStyle:'optical',
+    this.hud=createSpatialHud({parent,document,accessibilityRoot:this.a11y,controlStyle:'optical',controlRole:()=>'utility',
       placeSurface:(group,id)=>this.groups.set(id,group),
       send:({action})=>{if(action)this.activate(action.name,action.context);},
     });
