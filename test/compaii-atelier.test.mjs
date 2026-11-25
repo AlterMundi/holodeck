@@ -436,6 +436,17 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
       const {min,max}=model.accessors[trace.attributes.POSITION];
       assert.ok(min[1]>3.5 && max[1]<5.25);
     }
+    const inlayIndex=model.materials.findIndex(material=>material.name==='Beacon interference inlay');
+    assert.ok(inlayIndex>=0);
+    const inlays=model.meshes.flatMap(mesh=>mesh.primitives).filter(primitive=>primitive.material===inlayIndex);
+    assert.equal(inlays.length,1);
+    const [inlay]=inlays;
+    assert.equal(model.accessors[inlay.indices].count,768*3);
+    const floor=model.accessors[inlay.attributes.POSITION];
+    assert.ok(floor.min[0]<-3 && floor.max[0]>2);
+    assert.ok(floor.min[1]>.11 && floor.max[1]<.12);
+    assert.ok(floor.min[2]>-1 && floor.max[2]>3 && floor.max[2]<3.5);
+    assert.ok(model.materials[inlayIndex].emissiveFactor[1]>0);
   }
   const bounce=model=>{
     const {emissiveTexture}=model.materials.find(material=>material.name==='Honed honey limestone');

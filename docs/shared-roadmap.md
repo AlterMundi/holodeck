@@ -686,15 +686,21 @@ composition, keep the Beacon as a landmark and use the walkable layout
 to test more organic boundaries.
 
 The [Blender composition study](../art/compaii-house/redesign/lab-hit-study.py)
-places four separate instrument tables around a cyan field above the
-Beacon. The four-table arrangement is an offline study. Preserve the existing
-Spatializer and Weaver routes. The Guitar already exists as a separate
-service card in the owning Laboratory panel. Its deep-link allowlist
-currently selects only `audio` and `body`. Shaper currently runs as part
-of the owner-side `body` service and has its own local API. Qualify an
-authenticated Guitar and Shaper entry through their owning panel before
-giving either new table a real action. Do not route raw local device
-commands through Holodeck.
+places four instrument tables around the Beacon. The implemented floor
+inlay sets the central approach. Keep Spatializer at (3.80, −0.79) and
+Weaver at (−3.76, 2.66) in room x/z metres. For the next visual trial,
+place Guitar near (−4.49, −0.35) to clear the west landing and Shaper
+near (3.51, 2.78) across the central aisle. Fit the collider and action
+approach to each actual worktop.
+
+The selected laboratory panel has a Guitar card, but its installed link
+selector accepts only `audio` and `body`. Extend it with `guitar` through
+the existing auth and selected receiver. Shaper runs with the managed
+Weaver body service. Qualify a view hint for the existing Instrumento
+tab and label that relationship in the room. The current receiver serves
+its instrument interfaces locally. Opening either projected control must
+require the existing authorized panel, and actual instrument start remains
+explicit. Qualify those destinations before placing actionable tables.
 
 The Prototype Bench is a scoped portal to the existing 3D Guitar review.
 Preserve its role and authorization. In a new layout, distinguish inspection
