@@ -2,6 +2,18 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `4a2173ddd6588506c115dfc796c6bb365c0b5b51` adds the live humanoid
+ground transition to the Character worktable and web studio. The candidate
+archive `ba17d1dd30629d5ac241d68a1ccf7dab4095a7d7342d5ca846dc899fb558f9a0`
+matched all 87 payloads. Desktop Chromium selected support, stride start,
+release and settled frames 0, 17, 57 and 63 in the room. It published
+frame 57 and a separate browser identity reopened the matching clip,
+edition and frame on the web. The same run exercised flight frames 0, 22,
+36, 65 and 110, comparison, shared notes and room access recovery. Holodeck
+passed 417 tests with two skips. The Chromium run used fixture identities.
+The protected selection `179364d0f9fc` is still the earlier package, so
+the protected room test with two Home identities remains open.
+
 Source `c28bf4c896932722e9289f5f820637262259a5bb` locks Holodeck to the published Proyección alpha.14
 archive instead of the optical branch source archive. The release
 has SHA-256 `19e8824178997111b7223776f33befc989ca91051efb22ab19f856b5432e1e70`.
