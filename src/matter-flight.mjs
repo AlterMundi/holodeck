@@ -169,7 +169,7 @@ export function bindMatterHologram(manager,flight,tabletopPlayers=()=>[]){
         character.scale.multiplyScalar(matterAvatarScale);
       }
       // The SDK can attach or replace a model after admitting its empty root.
-      if(now>=entry.nextScan){
+      if(!entry.appearance.size||now>=entry.nextScan){
         syncMeshes(entry);
         entry.nextScan=now+125;
       }

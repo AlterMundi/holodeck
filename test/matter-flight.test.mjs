@@ -1,0 +1,33 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {BoxGeometry, Group, Mesh, MeshStandardMaterial} from 'three';
+import {bindMatterHologram,matterAvatarScale} from '../src/matter-flight.mjs';
+
+test('a late-loading peer becomes translucent and restores its own material on exit',()=>{
+  const character=new Group();
+  const root=new Group();
+  character.add(root);
+  character.getMesh=()=>root;
+  const manager={loadedCharacters:new Map([[8,{character}]]),update(){}};
+  const players=new Set([8]);
+  const release=bindMatterHologram(manager,{active:false},()=>players);
+  const state={localCharacterId:3};
+  manager.update(state);
+  assert.equal(character.scale.x,matterAvatarScale);
+  const source=new MeshStandardMaterial();
+  const mesh=new Mesh(new BoxGeometry(),source);
+  mesh.castShadow=true;
+  root.add(mesh);
+  manager.update(state);
+  assert.equal(mesh.material.transparent,true);
+  assert.equal(mesh.material.opacity,.55);
+  assert.equal(mesh.castShadow,false);
+  players.clear();
+  manager.update(state);
+  assert.equal(character.scale.x,1);
+  assert.equal(mesh.material,source);
+  assert.equal(mesh.castShadow,true);
+  release();
+  mesh.geometry.dispose();
+  source.dispose();
+});
