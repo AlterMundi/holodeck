@@ -1,0 +1,88 @@
+{
+  "dataset": "Sandflow/sand3d-nature",
+  "revision": "740f8e5971174df9652935adca632b113180302e",
+  "source": "https://huggingface.co/datasets/Sandflow/sand3d-nature",
+  "license": "CC-BY-4.0",
+  "attribution": "Sandflow",
+  "validation": "local Blender 5.2.2 USD import, GLB export, Chromium rendering",
+  "placement": {
+    "longitudeNearHouse": true,
+    "count": 34,
+    "eyeHeightM": 1.6,
+    "triangleTotalsBeforeAfter": [
+      46065,
+      77225
+    ]
+  },
+  "assets": [
+    {
+      "id": "nature-097b45b40b66f4ca18f2",
+      "subject": "feather-reed-grass",
+      "style": "low-poly",
+      "triangles": 147294,
+      "license": "CC-BY-4.0",
+      "usda_sha256": "966bb6e47b5b44d73b7c157b093c00636639dac6e35a6285eb88fe75ed749daa",
+      "usda_bytes": 26468256,
+      "usda_path": "usda/0000/nature-097b45b40b66f4ca18f2.usda",
+      "prompt": "Feather reed grass rises in low-poly style, its flat angular forms grouped as one subject on a little patch of ground with scattered grass tufts and soil showing between them.",
+      "conversion": {
+        "id": "feather-reed-grass",
+        "trianglesFromUSD": 6154,
+        "trianglesInGLB": 1144,
+        "bytes": 131560,
+        "dimensionsNormalized": [
+          0.4819827973842621,
+          0.48295465111732483,
+          0.9976529479026794
+        ],
+        "sha256": "ef2f34b8ad980f6579a996351f398efa79794e90705834521dbef96bc46fc8ea"
+      }
+    },
+    {
+      "id": "nature-24d1aca5995f5d421f0d",
+      "subject": "sensitive-fern",
+      "style": "toy-like",
+      "triangles": 143800,
+      "license": "CC-BY-4.0",
+      "usda_sha256": "b72cabdf35a3320674f09e8e3c168d48c710d27b537814ecf4b365fa858c7a28",
+      "usda_bytes": 24183796,
+      "usda_path": "usda/0000/nature-24d1aca5995f5d421f0d.usda",
+      "prompt": "sensitive fern cluster, toy-like with smooth forms, in irregular sizes and orientations; river and overgrown. I'd like the fronds to vary in size and direction.",
+      "conversion": {
+        "id": "sensitive-fern",
+        "trianglesFromUSD": 143800,
+        "trianglesInGLB": 625,
+        "bytes": 72452,
+        "dimensionsNormalized": [
+          0.7875753045082092,
+          0.7185637950897217,
+          0.9892536401748657
+        ],
+        "sha256": "6134d81df2a5720ef04249076520af5b9b58dd8f29e9407ca4188c659d19f63e"
+      }
+    },
+    {
+      "id": "nature-2d1852de3bd790c975a7",
+      "subject": "pumice",
+      "style": "low-poly",
+      "triangles": 38908,
+      "license": "CC-BY-4.0",
+      "usda_sha256": "62ff13b0683fea27365854ce2f6de740db9440734da3cb5ac3127b3b34a68593",
+      "usda_bytes": 6699033,
+      "usda_path": "usda/0000/nature-2d1852de3bd790c975a7.usda",
+      "prompt": "Pumice, could a low-poly cluster vary in size and orientation, with flat, angular forms? Keep the pieces distinct.",
+      "conversion": {
+        "id": "pumice",
+        "trianglesFromUSD": 15376,
+        "trianglesInGLB": 888,
+        "bytes": 102424,
+        "dimensionsNormalized": [
+          0.9873260259628296,
+          0.7742270231246948,
+          0.497434139251709
+        ],
+        "sha256": "6853e9d3c267747ff3d3203f55944171bee285182b3524f436048d58514222c1"
+      }
+    }
+  ]
+}
