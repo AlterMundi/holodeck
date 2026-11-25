@@ -989,7 +989,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       crouch:!moving&&client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt'),
     }),{clock:()=>performance.now()});
     const releaseHologram=bindMatterHologram(renderer.characterManager,tableFlight,()=>collectionShelves.tabletopPlayers);
-    const tableInputAllowed=()=>!moving&&!entering&&!document.hidden&&!mapPanel.open&&
+    const tableInputAllowed=()=>!moving&&!entering&&!document.hidden&&document.hasFocus()&&!mapPanel.open&&
       document.querySelector('#conversation-panel').hidden&&!document.querySelector('dialog[open]')&&!signalEditor?.active;
     // On the ring the sun keeps one direction in the traveler's radial frame,
     // matching the terrain's own per-place sunlight. It moves in 4 m steps so
@@ -1200,9 +1200,10 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const touchAvailable=worldToolsVisible&&(conversation.hidden||!!conversation.dataset.travelLane)&&
         !mapPanel.open&&!signalEditor.active&&!document.hidden&&document.hasFocus();
       const movementLane=conversation.hidden?'':conversation.dataset.travelLane??'';
-      matterHud.syncMovement(touchAvailable&&Boolean(matterHud.toolGroup)&&navigator.maxTouchPoints>0,
-        movementLane,mode!=='ground');
-      touchControls.pause(!touchAvailable||!conversation.hidden&&!matterHud.movementPresented);
+      const touchLocomotion=touchAvailable&&(!tableFlight.active||tableInputAllowed());
+      matterHud.syncMovement(touchLocomotion&&Boolean(matterHud.toolGroup)&&navigator.maxTouchPoints>0,
+        movementLane,tableFlight.active||mode!=='ground');
+      touchControls.pause(!touchLocomotion||!conversation.hidden&&!matterHud.movementPresented);
       matterHud.updateBearing(navigationVisible&&!matterHud.active);
       matterHud.door.update(navigationVisible&&!matterHud.active&&Boolean(matterHud.toolGroup)&&!signalEditor.active,
         Boolean(matterHud.toolLayout?.compact));

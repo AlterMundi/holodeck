@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Bone, BoxGeometry, Group, Mesh, MeshStandardMaterial, Vector3} from 'three';
-import {bindMatterHologram,matterAvatarScale} from '../src/matter-flight.mjs';
+import {Bone, BoxGeometry, Group, Mesh, MeshStandardMaterial, Quaternion, Vector3} from 'three';
+import {MatterFlight,bindMatterHologram,matterAvatarScale} from '../src/matter-flight.mjs';
 import {bindFlightAvatarAnimation} from '../src/flight-avatar-animation.mjs';
 
 test('a late-loading peer becomes translucent and restores its own material on exit',()=>{
@@ -106,4 +106,79 @@ test('a miniature peer turns its head for a shared pointing cue and settles agai
   glanceMotion=false;peerGaze.set(8,new Vector3(1,0,3));step();
   assert.equal(head.quaternion.y,0);
   release();
+});
+
+
+function flightFixture(){
+  let keyboard=null,touch=null,up=false,down=false;
+  const position=new Vector3(0,.2,.55),quaternion=new Quaternion(),camera={theta:0,distance:2};
+  const controller={config:{position,quaternion,
+    keyInputManager:{getOutput:()=>keyboard,getJump:()=>up,isKeyPressed:key=>key==='shift'&&down},
+    additionalInputProvider:{getOutput:()=>touch},
+    collisionsManager:{setCharacterPosition(){},applyColliders(){}}},
+    capsuleInfo:{radius:.28,segment:{end:{y:1.56}}},
+    characterVelocity:new Vector3(),updateNetworkState(){}};
+  const flight=new MatterFlight(camera);
+  flight.enter(controller,new Vector3());
+  return {position,quaternion,camera,controller,flight,step:(dt=1/60,allowed=true)=>flight.move(controller,dt,allowed),
+    input:(keys,fingers,ascent=false,descent=false)=>{keyboard=keys;touch=fingers;up=ascent;down=descent;}};
+}
+
+test('miniature flight combines keyboard travel and vertical touch, then arrests released axes',()=>{
+  const f=flightFixture(),start=f.position.clone();
+  f.input({direction:0},{vertical:1});
+  for(let i=0;i<21;i++)f.step();
+  assert.ok(f.position.x>start.x+.15&&f.position.y>start.y+.12);
+  const up=f.position.y;
+  f.input({direction:0},{vertical:-1},true);
+  f.step();
+  assert.equal(f.position.y,up);
+  f.input({direction:0},{vertical:-1});
+  for(let i=0;i<45;i++)f.step();
+  assert.ok(Math.abs(f.position.y-f.flight.bounds.min.y)<1e-12);
+  const parked=f.position.clone();
+  f.step(1/30,false);
+  assert.ok(f.position.distanceTo(parked)<1e-12);
+  assert.equal(f.flight.velocity.length(),0);
+  f.flight.exit(f.controller);
+  assert.ok(f.position.distanceTo(new Vector3(0,.2,.55))<1e-12);
+  assert.equal(f.camera.distance,2);
+});
+
+test('miniature heading turns along the shortest arc at a bounded angular rate',()=>{
+  const f=flightFixture();
+  f.input({direction:Math.PI/2-.045},null);
+  for(let i=0;i<70;i++)f.step();
+  const prior=f.quaternion.clone();
+  f.input({direction:Math.PI/2+.045},null);
+  f.step();
+  assert.ok(f.quaternion.angleTo(prior)<.03);
+  const rounded=f.quaternion.clone();
+  f.input({direction:-Math.PI/2},null);
+  f.step();
+  assert.ok(f.quaternion.angleTo(rounded)>0&&f.quaternion.angleTo(rounded)<=8/60+1e-9);
+  const stable=f.quaternion.clone();
+  f.step(NaN);
+  assert.deepEqual(f.quaternion.toArray(),stable.toArray());
+});
+
+test('miniature collision separation never becomes extra travel speed',()=>{
+  const f=flightFixture();
+  f.input({direction:0},null);
+  f.controller.config.collisionsManager.applyColliders=capsule=>{
+    capsule.start.x+=.11;
+    capsule.end.x+=.11;
+  };
+  f.step();
+  assert.ok(f.position.x>.11&&f.flight.velocity.x<.2);
+  f.controller.config.collisionsManager.applyColliders=capsule=>{
+    capsule.start.x-=.04;
+    capsule.end.x-=.04;
+  };
+  f.step();
+  assert.equal(f.flight.velocity.x,0);
+  f.controller.config.collisionsManager.applyColliders=()=>{};
+  const cleared=f.position.x;
+  f.step();
+  assert.ok(f.position.x>cleared&&f.position.x-cleared<.004);
 });

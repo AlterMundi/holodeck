@@ -733,15 +733,30 @@ export class MatterWorktableHud{
       }
       this.place(this.toolGroup,'toolPlacement',viewport,barCenter,barTop,dockScale);
       const preferredScale=lane?conversationMovementScale:width<380?145:166;
-      const movementScale=this.movementVertical?Math.min(preferredScale,Math.max(95,(barTop-48)/1.23)):preferredScale;
-      const movementTop=Math.max(34,barTop-(this.movementVertical?1.23:.64)*movementScale-14);
+      let movementScale=this.movementVertical?Math.min(preferredScale,Math.max(95,(barTop-48)/1.23)):preferredScale;
+      let movementTop=Math.max(34,barTop-(this.movementVertical?1.23:.64)*movementScale-14);
       if(this.movementGroups.size){
-        const jumpCenter=lane==='side'?left+180:width-right-.34*movementScale;
-        const lower=this.movementVertical?.57*movementScale:0;
+        let jumpCenter=lane==='side'?left+180:width-right-.34*movementScale;
+        let downCenter=jumpCenter;
+        let lower=this.movementVertical?.57*movementScale:0;
+        const work=this.active&&this.movementVertical?this.windows.geometry.get(surfaceId)?.rect:null;
+        if(work&&work.bottom+8>movementTop&&work.top<barTop&&
+          work.right>jumpCenter-.34*movementScale&&work.left<jumpCenter+.34*movementScale){
+          if(work.left>=left+1.64*movementScale+8){
+            jumpCenter=downCenter=left+1.22*movementScale;
+          }else{
+            // Keep both vertical targets below the worktable sheet on a narrow screen.
+            movementScale=Math.min(movementScale,(width-left-right)/2.2);
+            movementTop=Math.max(34,barTop-.64*movementScale-14);
+            lower=0;
+            downCenter=width-right-.34*movementScale;
+            jumpCenter=downCenter-.70*movementScale;
+          }
+        }
         this.place(this.movementGroups.get(movementStick),'stickPlacement',viewport,left+.40*movementScale,movementTop+lower,movementScale);
         this.place(this.movementGroups.get(movementJump),'jumpPlacement',viewport,jumpCenter,
           movementTop+.07*movementScale,movementScale);
-        if(this.movementVertical)this.place(this.movementGroups.get(movementDown),'descendPlacement',viewport,jumpCenter,
+        if(this.movementVertical)this.place(this.movementGroups.get(movementDown),'descendPlacement',viewport,downCenter,
           movementTop+.07*movementScale+lower,movementScale);
       }
       let promptTop=barTop;
@@ -767,8 +782,10 @@ export class MatterWorktableHud{
     }
     if(this.status.headerGroup){
       const {left,right,top}=this.toolInsets();
-      const headerScale=Math.min(152,(width-left-right)/(worldHeaderWidth+.12));
       const margin=this.usesCockpitDocks(viewport)?16:0;
+      const work=this.active&&height<520?this.windows.geometry.get(surfaceId)?.rect:null;
+      const roomWidth=work?.left>left+200?work.left-left-margin-12:width-left-right;
+      const headerScale=Math.min(152,roomWidth/(worldHeaderWidth+.12));
       this.place(this.status.headerGroup,'headerPlacement',viewport,left+margin+headerScale*(worldHeaderWidth+.06)/2,
         Math.max(top,width<700?18:24)+margin,headerScale);
     }

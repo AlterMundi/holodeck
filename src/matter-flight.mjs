@@ -3,6 +3,9 @@ import {Box3, Line3, MeshStandardMaterial, Vector3} from 'three';
 export const matterAvatarScale=.19;
 const up={x:0,y:1,z:0};
 const cameraFields=['minDistance','maxDistance','distance','targetDistance','desiredDistance'];
+const signedAngle=angle=>Math.atan2(Math.sin(angle),Math.cos(angle));
+const permittedSpeed=(requested,actual)=>Math.sign(requested)*Math.max(0,
+  Math.min(Math.abs(requested),actual*Math.sign(requested)));
 
 export class MatterFlight{
   constructor(camera){
@@ -11,12 +14,16 @@ export class MatterFlight{
     this.bounds=new Box3();
     this.point=new Vector3();
     this.capsule=new Line3();
+    this.velocity=new Vector3();
   }
 
   enter(controller,bench){
     if(this.active||!controller||!bench)return false;
     const {position,quaternion}=controller.config;
     this.returnPose={controller,position:{...position},rotation:{...quaternion}};
+    this.yaw=Math.atan2(2*(quaternion.w*quaternion.y+quaternion.x*quaternion.z),
+      1-2*(quaternion.x**2+quaternion.y**2));
+    this.velocity.set(0,0,0);
     // The pad is 2.42 × 1.30 m. Leave room to circle models at its edges.
     this.bounds.min.set(bench.x-1.38,bench.y+.045,bench.z-.78);
     this.bounds.max.set(bench.x+1.38,bench.y+1.12,bench.z+.78);
@@ -32,6 +39,7 @@ export class MatterFlight{
   exit(controller){
     if(!this.active)return;
     this.active=false;
+    this.velocity.set(0,0,0);
     const pose=this.returnPose;
     this.returnPose=null;
     Object.assign(this.camera,this.cameraRanges);
@@ -46,20 +54,28 @@ export class MatterFlight{
 
   move(controller,seconds,inputAllowed){
     const {position,quaternion,keyInputManager,additionalInputProvider,collisionsManager}=controller.config;
-    const control=inputAllowed?(keyInputManager.getOutput()||additionalInputProvider?.getOutput()||null):null;
-    const dt=Math.min(.15,Math.max(0,seconds));
+    const keyboard=inputAllowed?keyInputManager.getOutput():null;
+    const touch=inputAllowed?additionalInputProvider?.getOutput():null;
+    const control=Number.isFinite(keyboard?.direction)?keyboard:touch??keyboard;
+    const dt=Number.isFinite(seconds)?Math.min(.15,Math.max(0,seconds)):0;
     const heading=Number.isFinite(control?.direction)?Math.PI/2-this.camera.theta+control.direction:null;
     const speed=control?.isSprinting?1.44:.94;
-    const vertical=inputAllowed?(Number(Boolean(keyInputManager.getJump()||control?.jump))-
-      Number(keyInputManager.isKeyPressed('shift')))*.76:0;
+    const vertical=inputAllowed?(Number(Boolean(keyInputManager.getJump()||touch?.jump||touch?.vertical>0))-
+      Number(Boolean(keyInputManager.isKeyPressed('shift')||touch?.vertical<0)))*.76:0;
     const vx=heading===null?0:Math.sin(heading)*speed;
     const vz=heading===null?0:Math.cos(heading)*speed;
-    if(heading!==null)quaternion.setFromAxisAngle(up,heading);
+    const {velocity}=this;
+    if(heading===null){velocity.x=0;velocity.z=0;}
+    if(!vertical)velocity.y=0;
     const radius=controller.capsuleInfo.radius*matterAvatarScale;
     const capsuleHeight=controller.capsuleInfo.segment.end.y*matterAvatarScale;
     const steps=Math.max(1,Math.ceil(dt*60)),step=dt/steps;
-    for(let index=0;index<steps;index++){
-      this.point.set(position.x+vx*step,position.y+vertical*step,position.z+vz*step);
+    const response=1-Math.exp(-step*12);
+    for(let index=0;step>0&&index<steps;index++){
+      velocity.x+=(vx-velocity.x)*response;
+      velocity.y+=(vertical-velocity.y)*response;
+      velocity.z+=(vz-velocity.z)*response;
+      this.point.copy(position).addScaledVector(velocity,step);
       this.bounds.clampPoint(this.point,this.point);
       this.capsule.start.copy(this.point);
       this.capsule.start.y+=radius;
@@ -69,7 +85,18 @@ export class MatterFlight{
       collisionsManager.applyColliders(this.capsule,radius);
       this.capsule.start.y-=radius;
       this.bounds.clampPoint(this.capsule.start,this.point);
+      if(heading!==null){
+        velocity.x=permittedSpeed(velocity.x,(this.point.x-position.x)/step);
+        velocity.z=permittedSpeed(velocity.z,(this.point.z-position.z)/step);
+      }
+      if(vertical)velocity.y=permittedSpeed(velocity.y,(this.point.y-position.y)/step);
       position.copy(this.point);
+    }
+    if(heading!==null&&dt>0){
+      const delta=signedAngle(heading-this.yaw);
+      const response=delta*(1-Math.exp(-dt*13));
+      this.yaw=signedAngle(this.yaw+Math.max(-dt*8,Math.min(dt*8,response)));
+      quaternion.setFromAxisAngle(up,this.yaw);
     }
     controller.controlState=control;
     controller.characterOnGround=false;
