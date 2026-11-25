@@ -1,5 +1,28 @@
 # Current MVP work
 
+## November 25 aerial depth, transparent shores and boost wakes
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `a10436594c96`
+from `9eef355`. R in exterior flight targets 25 m/s, compared with the
+8 m/s ground run. A bounded particle draw emits separate human and
+companion colors for continuous fast flight. Reduced-motion settings
+suppress the effect. The motion solver samples intermediate capsule
+positions against existing colliders before reporting the final contact.
+
+Exterior haze accumulates with distance. The solar and particle glows
+are local to their shaders. Distant water keeps screen-filtered surface
+bands and sky reflection. Near shore the terrain's signed depth drives
+transmission and a soft contact edge. Deep tiles retain their opaque
+pass. Matched daylight views show the updated shore from above and the
+existing submerged scene from below.
+
+In controlled physical browsers, boosted speed was 25.12 m/s on RTX
+2060 Normal and 25.22 m/s on Pi 5 Livianos, with both colors emitting
+and frame p95 16.8 ms in both short samples. The full suite passed 417
+checks with two skips. Receiving verified all 86 files and the same
+world run and permissions through sequences 444–446. Only the browser
+payload changed. Immediate rollback is `f647d674febf`.
+
 ## November 25 Harmonic Lab and Listening Tower wall alignment
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `f647d674febf`

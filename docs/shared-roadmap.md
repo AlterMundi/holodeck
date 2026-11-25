@@ -921,6 +921,13 @@ tracked separately from these technical checks.
 
 The foyer, gallery, Harmonic Lab and Listening Tower now align measured solid wall faces to the packed art. The Lab landing and Tower clerestory keep their existing clearances. For new authored rooms, specify and measure visible solid boundaries, qualify all reachable edges and passages, and keep collision-only primitives out of the render pass. Use explicit semantics for intentional pass-through surfaces. The rest of the authored rooms still need the same render/collision audit.
 
+The [exterior optics and boost pass](STATUS.md#november-25-aerial-depth-transparent-shores-and-boost-wakes)
+uses progressive aerial haze, local glow and depth-dependent shoreline
+transmission. It also gives the human and companion separate bounded
+wakes at boost speed. Two physical devices verified the near and
+submerged views and local wake playback. Independent visitor wake
+acceptance, a broader low-light pass and scene reflections remain open.
+
 ### Connected ecosystems above and below the torus
 
 Track surface ecology in [#25](https://github.com/AlterMundi/holodeck/issues/25)
