@@ -163,11 +163,20 @@ the implementation. The corrections cover frame-zero timing, authored
 root offsets, rejected clip identifiers and cleanup during failed
 selection or page exit.
 
-On the RTX 2060 at Normal quality, the new companion followed 30.1 m
-alongside 31.0 m of player movement. Both fixture identities connected
-and the companion's posed ankles moved. The slower software-rendered
-two-tab fixture fell behind during its walk sample. These observations
-do not establish Pi performance, spontaneous independent visitor
-judgment, or author quality acceptance. The in-world flight and landing
-fixture needs separate qualification. The protected release remains
-`61d8ac934638`.
+The RTX 2060 at Normal quality followed 35.0 m alongside 35.9 m of
+player movement. Two distinct fixture identities connected, hovered,
+observed the pilot as a peer and landed. The Pi 5 in Livianos followed
+30.4 m alongside 31.3 m of player movement and completed hover and
+landing with one fixture identity. The displayed robot ankles moved.
+Both physical runs used real keyboard events. Grouping the double
+press in the browser corrected a harness delay above the game's input
+window. A separate sub-20 fps SwiftShader walk sample fell behind; no
+claim is made about sustained CPU-only play or human author judgement.
+
+The exact package `3fd63da1fd1d` was deployed through the existing
+protected Home along with the authored humanoid studies. The same
+run, edition, 30 entities and four creation nodes were read back.
+The protected App, audience and configuration matched, and the
+exterior still led to the foyer. Rollback is `61d8ac934638`.
+Independent signed-in feedback, physically observed shore transitions,
+human stride contact, and joint presenter/notes remain open.

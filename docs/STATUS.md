@@ -1,5 +1,26 @@
 # Current MVP work
 
+## November 25 grounded companion and humanoid pose studies
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `3fd63da1fd1d` from `4aafe28` after exact installed-file and
+authenticated HTTPS readback. Navegante has its reorganized Blender clip
+library and planted runtime steps. The humanoid has revised launch,
+banking, landing, water and idle poses. Its existing walk and run clips
+remain selected. The Character Design Room shows flight and swim
+studies from the same runtime pose adapter. Two isolated fixture
+identities matched the same flight image from a revision-bound link.
+
+On the RTX 2060 at Normal, two browser contexts completed walking,
+hover, pilot projection and landing. In Pi 5 Livianos a single actor
+completed walking, hover and landing. The receiving run, configuration,
+App and audience were unchanged, with matching 30 entities and four
+creation nodes. Rollback is `61d8ac934638`. Full swimming and slope
+review by independent signed-in participants remains open. The visual
+world and optical HUD candidates are separate. See
+[motion qualification](character-motion.md#runtime-and-studio-qualification)
+and [Character Design Room #24](https://github.com/AlterMundi/holodeck/issues/24).
+
 ## November 25 Atelier foyer and Character Design Room
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)

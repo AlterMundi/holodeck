@@ -27,9 +27,9 @@ the old frame to the new asset. A frame note stays in the current
 browser, bounded to 30 notes. This draft uses the existing shared
 authentication and does not change a visitor's active in-world avatar.
 
-## Motion studies candidate
+## Motion studies
 
-The next candidate includes Navegante's reauthored Blender library and two
+Protected release `3fd63da1fd1d` includes Navegante's reauthored Blender library and two
 humanoid motion studies. In the humanoid selector, the flight study samples
 takeoff, banking and the landing. The swim study samples the surface, dive and
 return with a visible water plane. Both run the same toroidal locomotion and
@@ -44,8 +44,8 @@ asset and pose implementation. Two separate fixture actors reopened the same
 flight image at frame 78. Stepping backward restored the same image again,
 and a mismatched digest reported an earlier edition and reset the frame.
 The swim viewport rendered frame 94. Browser-local notes remain separate.
-This is a candidate and does not establish signed-in participant acceptance,
-a synchronized presenter or the final quality of the in-game animation.
+The two-fixture test concerns pose links. Independent signed-in reviews,
+synchronized presenters and the final quality of in-game motion remain open.
 
 ## Shared session and authored motion
 
