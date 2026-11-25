@@ -1007,3 +1007,21 @@ artifact's current and immediately previous versions, so prepare a
 compatible bounded replacement or use the existing staged cutover after
 the visit ends. No production selection or archive retirement occurred in
 this pass.
+
+## Terrain minimap
+
+The outdoor minimap samples the same analytic toroidal elevation and trail
+functions as locomotion. It shows shaded relief, contours, shoreline,
+the actual access anchor for the house, player heading and a 50 m scale.
+The native map and fallback draw from the same canvas. A cached 180 m
+chart crosses both torus seams and rebuilds only after leaving a 3 m
+band. Fable High reviewed sampling and heading. Opus 5.5 High identified
+the relief sign, chart hysteresis, context recovery and small-label
+issues. The implementation and regressions cover those corrections.
+
+Exact package `2e4121b8de01` passed 334 tests with two skips, plus desktop
+and emulated-touch Chromium map open/close with the actual terrain and
+house entry. A standalone Node check across 50 warm chart rebuilds measured
+3.69 ms median and 6.22 ms p95 on ITACA; these numbers exclude canvas
+composition and rendering. The package is staged. Physical GPU and live
+selection remain open.
