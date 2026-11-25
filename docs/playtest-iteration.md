@@ -850,3 +850,11 @@ and two skips. The exact Node24 package `883efcd70ed1` is 33,525,760 bytes.
 Its standalone shared-world fixture admitted two clients and observed the
 same mutation in both. Human-authenticated production acceptance remains
 open.
+
+The combined `883efcd70ed1` package also passed the scoped two-browser
+tabletop sequence, with four retired GLB requests and zero page errors,
+matching .19 figure scale and confirmed return. All 80 archived files
+matched the manifest. The operator artifact received the exact archive
+under its existing private audience; HTTPS readback matched the full
+digest. Cutover is pending with shared visitors currently present. The
+protected service still selects `8b3d41a7410a` and rollback `8c485a4c8cfe`.
