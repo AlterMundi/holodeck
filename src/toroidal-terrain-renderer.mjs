@@ -76,6 +76,25 @@ const terrainShading = {
     float holoLuma = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
     diffuseColor.rgb = max(mix(vec3(holoLuma), diffuseColor.rgb, 1.22), 0.0);
     diffuseColor.rgb *= mix(vec3(0.86, 0.98, 0.90), vec3(1.14, 1.05, 0.93), holoAltitude);
+    // Colour the existing route and its shoulders in world space. The
+    // material follows the fixed parcel through terrain LOD transitions.
+    float holoApproachSkylight = 0.0;
+    vec2 approach = vHoloWorld.xz - vec2(${glsl(TOROIDAL_TERRAIN.majorRadius)},0.0);
+    if (holodeckApproachArt > .5 && abs(approach.x) < 14.0 &&
+        approach.y > 6.0 && approach.y < 51.0 && vHoloWorld.y > 0.0) {
+      float edge = abs(length(vHoloWorld.xz) - ${glsl(TOROIDAL_TERRAIN.majorRadius)});
+      float endFade = smoothstep(6.0,10.0,approach.y)*(1.0-smoothstep(37.0,51.0,approach.y));
+      float edgeNoise = ringNoise(approach*.89)-.5;
+      float mask = (1.0-smoothstep(1.57,2.72,edge+edgeNoise*.66))*endFade;
+      float shoulder = smoothstep(2.15,3.12,edge)*(1.0-smoothstep(3.65,6.8,edge))*endFade;
+      holoApproachSkylight = endFade*(1.0-smoothstep(2.0,9.0,edge));
+      float pebble = smoothstep(.58,.86,ringNoise(approach*4.6))
+        *(1.0-smoothstep(12.0,34.0,length(vViewPosition)));
+      vec3 packedEarth = mix(vec3(.35,.236,.127),vec3(.52,.389,.224),.38+.36*edgeNoise+.25*pebble);
+      diffuseColor.rgb = mix(diffuseColor.rgb,packedEarth,mask*.88);
+      diffuseColor.rgb = mix(diffuseColor.rgb,vec3(.114,.191,.068)*(.88+.42*edgeNoise),shoulder*.61);
+    }
+
   `,
   // Cool sky fill on ground facing radially outward, dim warm bounce on
   // slopes and overhangs, and less of both in the basins.
@@ -93,6 +112,9 @@ const terrainShading = {
     vec3 holoView = normalize(vViewPosition);
     float holoGraze = 1.0 - clamp(dot(normal, holoView), 0.0, 1.0);
     outgoingLight *= mix(vec3(1.0), vec3(0.60, 0.66, 0.74), holoGraze * holoGraze * holoGraze * 0.8);
+    // A little reflected blue sky keeps the route and the verge readable
+    // after dark without washing out the rest of the landscape.
+    outgoingLight += diffuseColor.rgb*vec3(.23,.31,.43)*holoApproachSkylight*(1.0-holodeckDaylight);
     ${aerialPerspective}
   `,
 };
@@ -126,7 +148,8 @@ function artDirect(material, name, shading, environment) {
     shader.uniforms.holodeckSunLocal=environment.sun;
     shader.uniforms.holodeckDaylight=environment.daylight;
     shader.uniforms.holodeckWaterViewDepth=environment.water;
-    fragment=after(fragment,'common','uniform float holodeckWaterViewDepth; uniform float holodeckDaylight;');
+    shader.uniforms.holodeckApproachArt=environment.approach;
+    fragment=after(fragment,'common','uniform float holodeckWaterViewDepth; uniform float holodeckDaylight; uniform float holodeckApproachArt;');
     shader.fragmentShader=before(fragment,'opaque_fragment',shading.output+`
       if (holodeckWaterViewDepth > .014) {
         float scatter = 1.0 - exp(-length(vViewPosition) * (.055 + .006*min(12.0,holodeckWaterViewDepth)));
@@ -184,7 +207,7 @@ export class ToroidalTerrainRenderer {
     this.group.name = 'Toroidal terrain';
     this.material = new MeshStandardMaterial({vertexColors:true,roughness:.96});
     this.waterMaterial = new MeshStandardMaterial({color:0x19606f,roughness:.34,metalness:0,side:DoubleSide});
-    this.environment={water:{value:0},sun:{value:new Vector3(...SUN_LOCAL)},daylight:{value:1}};
+    this.environment={water:{value:0},sun:{value:new Vector3(...SUN_LOCAL)},daylight:{value:1},approach:{value:1}};
     useToroidalRockDetail(this.material);
     this.updateWaterTime=useToroidalWaterDetail(this.waterMaterial);
     artDirect(this.material,'terrain',terrainShading,this.environment);

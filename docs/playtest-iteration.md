@@ -1051,3 +1051,31 @@ pose without turning it into a selection. The draw count remained nine.
 The draft is staged. Full avatar state transitions and final in-game art
 direction remain open. Production and physical GPU qualification
 are separate receiving checks.
+
+## House approach material and planting
+
+The toroidal arrival now has a packed-earth strip with a soft grass verge,
+a little reflected night light and authored tufts and wildflowers. It keeps
+the original terrain and collision. The cover follows the arc of the ring,
+keeps the facade side clear at the selected door, and uses the same flowers
+in both rendering profiles. Fable High reviewed the local art direction.
+Opus 5.5 High caught the facade and door clearance, flower structure, night
+light response and LOD boundaries. The corrections were recaptured with
+the house at its actual plot and orientation.
+
+Fixed day and night views and matched walking runs used the same 1.6 m camera
+and 1100 × 675 buffer in Chromium with SwiftShader. At the house the art
+added two draw calls and 792 median triangles in normal mode or 612 in
+lightweight. Software frame times were mixed. At night p95 rose from 183 to
+217 ms in normal mode and 150 to 217 ms in lightweight. These short runs
+establish a visual and draw-cost comparison. They leave physical frame pacing
+open.
+
+A separate 14-instance Sand3D test added three draws and about 12,916 rendered
+triangles against its own exact control. That is a smaller pilot than the
+earlier 34-instance test. It remains a trial pending hardware measurements
+and an acceptance decision. Its meshes are absent from the staged runtime.
+
+Exact archive `7608545f20a1` is 33,310,720 bytes and passed 338 tests
+with two skips. The package opened and closed the native map on the real
+terrain in controlled Chromium. The release remains staged.
