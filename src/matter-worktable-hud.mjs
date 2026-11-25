@@ -174,7 +174,7 @@ export class MatterWorktableHud{
     this.windows=new SpatialHudWindows({canvas:this.canvas,scene:this.scene,camera:this.camera,
       hit:event=>{const projection=this.rayForPointer(event);return projection&&this.hud.pointerTarget(projection.ray);},
       invalidate:this.layer.invalidate});
-    const lostMovement=()=>{this.hud.locomotionInput.resetUnavailable();this.presentMovement(null);};
+    const lostMovement=()=>this.syncMovement(false);
     const activity={signal:this.events.signal};
     document.addEventListener('visibilitychange',()=>{if(document.hidden)lostMovement();},activity);
     document.defaultView.addEventListener('blur',lostMovement,activity);
@@ -380,6 +380,7 @@ export class MatterWorktableHud{
 
   syncMovement(visible){
     if(!visible){
+      this.movementPresented=false;
       for(const id of this.movementGroups.keys())this.send('deleteSurface',{},id);
       this.movementGroups.clear();
       this.presentMovement(null);
@@ -558,8 +559,11 @@ export class MatterWorktableHud{
       this.status.present(true,Boolean(painted&&this.status.headerGroup&&this.hud.getSurfaceBounds(worldHeaderId)));
       this.status.present(false,Boolean(painted&&this.status.noticeGroup&&this.hud.getSurfaceBounds(worldNoticeId)));
       if(painted&&this.movementGroups.size===2&&this.hud.getSurfaceBounds(movementStick)&&this.hud.getSurfaceBounds(movementJump)){
+        this.movementPresented=true;
         this.presentMovement(this.hud.locomotionInput);
-      }else if(this.movementGroups.size){this.hud.locomotionInput.resetUnavailable();this.presentMovement(null);}
+      }else if(this.movementGroups.size&&this.movementPresented){
+        this.syncMovement(false);
+      }
     }
     if(this.toolGroup)this.document.body.dataset.a2uiToolbelt='';
   }

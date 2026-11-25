@@ -938,7 +938,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const navigationVisible=!entering&&!moving&&!needsSync&&drawWorld&&!opaqueVisit&&!toolModal&&!settingsOpen&&
         document.getElementById('conversation-panel').hidden;
       matterHud.map.update(navigationVisible,paintedRaster);
-      const touchAvailable=navigationVisible&&!mapPanel.open&&!signalEditor.active&&!document.hidden;
+      const touchAvailable=navigationVisible&&!mapPanel.open&&!signalEditor.active&&!document.hidden&&document.hasFocus();
       touchControls.pause(!touchAvailable);
       matterHud.syncMovement(touchAvailable&&Boolean(matterHud.toolGroup)&&navigator.maxTouchPoints>0);
       matterHud.updateBearing(navigationVisible&&!matterHud.active);
