@@ -107,6 +107,8 @@ export function createUnixNativeTransport(socketPath){
   return {inspect:actorRef=>call('inspect',{actorRef}),
     surface:actorRef=>call('surface',{actorRef}),
     prepareContext:payload=>call('prepare-context',payload),
+    prepareMachineContext:payload=>call('prepare-machine-context',payload),
+    machineContextStatus:payload=>call('machine-context-status',payload),
     submit:payload=>call('submit',payload),status:payload=>call('status',payload),lookup:payload=>call('lookup',payload)};
 }
 

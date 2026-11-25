@@ -45,6 +45,14 @@ def bounded_json(value):
     return data
 
 
+def unique_json_object(pairs):
+    value={}
+    for name,item in pairs:
+        if name in value:raise ValueError('Duplicate native bridge field')
+        value[name]=item
+    return value
+
+
 def ident(value):
     if not isinstance(value,str) or str(uuid.UUID(value))!=value:
         raise BridgeError('input','Select an exact interaction identity')
@@ -69,12 +77,14 @@ def routed_execution(route):
 
 
 class NativeBridge:
-    def __init__(self,provider,pair_reader,world_port=None,home_auth=None,world_access_reader=None,review_ownership_reader=None):
+    def __init__(self,provider,pair_reader,world_port=None,home_auth=None,world_access_reader=None,review_ownership_reader=None,
+                 machine_sources=False):
         self.provider=provider
         self.pair_reader=pair_reader
         self.world_port=world_port
         self.world_access_reader=world_access_reader
         self.review_ownership_reader=review_ownership_reader
+        self.machine_sources=machine_sources
         self.human_ref='human:telegram:'+str(provider.human)
         self.home_origin=None
         self.home_entry=None
@@ -124,13 +134,15 @@ class NativeBridge:
                 'pairingRevision':pair['human']['revision'],'binding':binding,'entry':entry}
 
     def authorize(self,actor,frozen,*,current=False):
+        if current:
+            if self.inspect(actor)!=frozen:
+                raise BridgeError('binding','The continuing Conversation changed; preserve the original interaction')
+            return
         pair=self.pair(actor)
         if (not isinstance(frozen,dict)
             or frozen.get('actorRef')!=actor or frozen.get('beingRef')!=pair['owner_being_ref']
             or frozen.get('homeRef')!=pair.get('home_ref')):
             raise BridgeError('binding','The selected human/daimon pairing changed')
-        if current and self.inspect(actor)!=frozen:
-            raise BridgeError('binding','The continuing Conversation changed; preserve the original interaction')
 
     def surface(self,actor):
         frozen=self.inspect(actor)
@@ -224,6 +236,86 @@ class NativeBridge:
                 'binding':frozen['binding'],'entry_binding':frozen['entry'],
                 'observation_id':observation['id'],'file':ref,'work_admitted':False}
 
+    def machine_source_capability(self, actor, frozen):
+        """The opt-in bridge and the actual owner journal must agree."""
+        if not self.machine_sources or self.world_access_reader is None:
+            raise BridgeError('context-capability','The owner journal context route is unavailable')
+        self.authorize(actor,frozen,current=True)
+        if self.world_access_reader(frozen['beingRef']) is not True:
+            raise BridgeError('forbidden','The paired daimon needs current world access')
+        value=self.provider.conversation_machine_source_capabilities()
+        if (value.get('machine_source')!='owner-journal/v1' or value.get('binding')!=frozen['binding']
+                or value.get('entry_binding')!=frozen['entry']):
+            raise BridgeError('context-capability','The owner journal context route changed')
+
+    def prepare_machine_context(self, actor, frozen, input_id, observation):
+        self.machine_source_capability(actor,frozen)
+        input_id=ident(input_id)
+        data,ref=self.observation_file(input_id,actor,observation)
+        observation_id=ident(observation['id'])
+        if observation.get('inputAssociation',{}).get('humanInputId')!=input_id:
+            raise BridgeError('source','The world context must name this exact original')
+        with closing(sqlite3.connect('file:'+str(self.provider.receiver['db_path'])+'?mode=ro',uri=True)) as db:
+            row=db.execute('SELECT human_id FROM conversation_inputs WHERE id=?',(input_id,)).fetchone()
+        if row is not None:
+            if row[0]!=self.provider.human:
+                raise BridgeError('id-reuse','This original belongs to another human')
+            value,selected=self.read_machine_observation(actor,frozen,input_id)
+            if selected!=observation:
+                raise BridgeError('id-reuse','The retained original has another situation; preserve it')
+            checksum=value['source_sha256']
+        else:
+            value=self.provider.reserve_conversation_machine_source(binding=frozen['binding'],ident=input_id,
+                observation_id=observation_id,data=data,file=ref)
+            checksum=ref['sha256']
+        receipt=self.verify_machine_source(value,frozen,input_id,observation_id,checksum)
+        self.machine_source_capability(actor,frozen)
+        return {'schema':'holodeck.prepared-machine-context/v1','id':input_id,
+                'binding':frozen['binding'],'entry_binding':frozen['entry'],
+                'observation_id':observation_id,'receipt':receipt,'source_sha256':checksum,
+                'retained_original':value['retained_original'],'submitted_by_prepare':False}
+
+    @staticmethod
+    def verify_machine_source(value,frozen,input_id,observation_id,checksum):
+        if (value.get('schema')!='telecodex.conversation-machine-source/v1' or value.get('id')!=input_id
+                or value.get('observation_id')!=observation_id or value.get('source_sha256')!=checksum
+                or type(value.get('retained_original')) is not bool
+                or value.get('storage')!='owner-journal' or value.get('entry_binding')!=frozen['entry']):
+            raise BridgeError('source','The world context acknowledgment is unconfirmed')
+        return ident(value.get('receipt'))
+
+    def read_machine_observation(self,actor,frozen,input_id):
+        value=self.provider.read_conversation_machine_source(binding=frozen['binding'],ident=input_id)
+        observation=json.loads(value['observation_json'])
+        if (value.get('retained_original') is not True or not isinstance(observation,dict)
+                or observation.get('schema')!='holodeck.situation/v1'
+                or observation.get('id')!=value.get('observation_id') or observation.get('observer')!=actor
+                or observation.get('inputAssociation',{}).get('humanInputId')!=input_id
+                or not isinstance(value.get('source_sha256'),str) or not re.fullmatch('[a-f0-9]{64}',value['source_sha256'])):
+            raise BridgeError('source','The retained world context names another original')
+        self.verify_machine_source(value,frozen,input_id,ident(observation['id']),value['source_sha256'])
+        return value,observation
+
+    def attached_machine_source(self,input_id):
+        if not self.machine_sources:return None
+        value=self.provider.retained_conversation_machine_source(input_id)
+        if (value.get('schema')!='telecodex.conversation-retained-machine-source/v1' or value.get('id')!=input_id
+                or value.get('original_retained') is not True or type(value.get('machine_source_retained')) is not bool):
+            raise BridgeError('source','The native original source is unconfirmed')
+        return ident(value.get('receipt')) if value['machine_source_retained'] else None
+
+    def machine_context_status(self,actor,frozen,input_id,observation_id,receipt,checksum):
+        self.machine_source_capability(actor,frozen)
+        input_id=ident(input_id);observation_id=ident(observation_id);receipt=ident(receipt)
+        if not isinstance(checksum,str) or not re.fullmatch('[a-f0-9]{64}',checksum):
+            raise BridgeError('source','Select one immutable world context')
+        value,_=self.read_machine_observation(actor,frozen,input_id)
+        if self.verify_machine_source(value,frozen,input_id,observation_id,checksum)!=receipt:
+            raise BridgeError('source','The original does not retain this world context')
+        status=self.status(actor,frozen,input_id)
+        self.machine_source_capability(actor,frozen)
+        return status
+
     def project_status(self,value,frozen):
         if value.get('entry_binding')!=frozen['entry']:
             raise BridgeError('binding','Native result belongs to a different conversation')
@@ -236,6 +328,8 @@ class NativeBridge:
             result['tracking']=False
         elif phase in ('uncertain','unknown','submitting'):
             result['phase']='unknown'
+        elif phase=='answered':
+            result.update(phase='completed',tracking=False)
         return result
 
     def lookup(self,actor,input_id,text_sha256=None):
@@ -255,14 +349,21 @@ class NativeBridge:
         checksum=hashlib.sha256(text.encode()).hexdigest()
         if text_sha256 is not None and checksum!=text_sha256:
             raise BridgeError('id-reuse','Interaction ID already contains another original')
-        selected=self.retained_observation(actor,input_id,value)
         entry=value.get('entry_binding')
         if not isinstance(entry,list) or len(entry)!=4 or entry[0]!=self.provider.human:
             raise BridgeError('binding','The retained original belongs to another owner')
         # Historical status may remain readable after native rebinding. Its old
         # entry cannot pass the current world-action authorizer or be resubmitted.
+        if receipt:=self.attached_machine_source(input_id):
+            self.machine_source_capability(actor,frozen)
+            proof,selected=self.read_machine_observation(actor,frozen,input_id)
+            if proof['receipt']!=receipt:
+                raise BridgeError('source','The native original source changed')
+        else:
+            selected=self.retained_observation(actor,input_id,value)
         frozen={**frozen,'entry':entry}
         native=self.status(actor,frozen,input_id)
+        if receipt:self.machine_source_capability(actor,frozen)
         return {'state':'retained','frozen':frozen,'textSha256':checksum,
                 'observation':selected,'native':native}
 
@@ -283,6 +384,8 @@ class NativeBridge:
         if value.get('id')!=input_id:
             raise BridgeError('source','Native input identity changed')
         if context_file is not None:
+            if self.attached_machine_source(input_id):
+                raise BridgeError('source','Select the retained machine context for this original')
             if (not isinstance(context_file,dict)
                 or set(context_file)!={'file_id','sha256','name','mime','size'}
                 or not isinstance(context_file.get('file_id'),str)
@@ -295,9 +398,17 @@ class NativeBridge:
         if text_sha256 is not None and (not isinstance(value.get('text'),str)
             or hashlib.sha256(value['text'].encode()).hexdigest()!=text_sha256):
             raise BridgeError('id-reuse','Native original text does not match the retained app intent')
-        if observation_id is not None and self.retained_observation(actor,input_id,value).get('id')!=observation_id:
-            raise BridgeError('id-reuse','Native situation source does not match the retained app intent')
+        if observation_id is not None:
+            if self.attached_machine_source(input_id):
+                self.machine_source_capability(actor,frozen)
+                _,selected=self.read_machine_observation(actor,frozen,input_id)
+            else:selected=self.retained_observation(actor,input_id,value)
+            if selected.get('id')!=observation_id:
+                raise BridgeError('id-reuse','Native situation source does not match the retained app intent')
         result=self.project_status(value,frozen)
+        if value.get('phase')=='answered':
+            self.authorize(actor,frozen,current=context_file is not None)
+            return result
         trace=self.provider.conversation_input_trace(input_id)
         if trace.get('id')!=input_id or trace.get('entry_binding')!=frozen['entry']:
             raise BridgeError('source','Native trace belongs to another original')
@@ -440,6 +551,8 @@ class NativeBridge:
         op=request.get('operation');actor=request.get('actorRef')
         fields={'inspect':{'operation','actorRef'},'surface':{'operation','actorRef'},'submit':{'operation','actorRef','frozen','input','observation'},
                 'prepare-context':{'operation','actorRef','frozen','id','observation'},
+                'prepare-machine-context':{'operation','actorRef','frozen','id','observation'},
+                'machine-context-status':{'operation','actorRef','frozen','id','observationId','receipt','sourceSha256'},
                 'status':{'operation','actorRef','frozen','id','textSha256','observationId'},'lookup':{'operation','actorRef','id','textSha256'}}
         legacy_status=op=='status' and set(request)=={'operation','actorRef','frozen','id'}
         context_status=op=='status' and set(request)==fields['status']|{'contextFile'}
@@ -449,6 +562,9 @@ class NativeBridge:
         if op=='lookup':return self.lookup(actor,request['id'],request['textSha256'])
         if op=='submit':return self.submit(actor,request['frozen'],request['input'],request['observation'])
         if op=='prepare-context':return self.prepare_context(actor,request['frozen'],request['id'],request['observation'])
+        if op=='prepare-machine-context':return self.prepare_machine_context(actor,request['frozen'],request['id'],request['observation'])
+        if op=='machine-context-status':return self.machine_context_status(actor,request['frozen'],request['id'],
+            request['observationId'],request['receipt'],request['sourceSha256'])
         return self.status(actor,request['frozen'],request['id'],request.get('textSha256'),request.get('observationId'),request.get('contextFile'))
 
 
@@ -459,7 +575,8 @@ def configuration(path):
     value=json.loads(file.read_text())
     required={'schema','provider_source','dashboard_config','home_command','socket_path','allowed_uids'}
     world=value.get('world_port')
-    if (not required<=set(value) or set(value)-required-{'world_port','world_service_key','review_owner'} or value['schema']!='holodeck.native-bridge/v1'
+    if (not required<=set(value) or set(value)-required-{'world_port','world_service_key','review_owner','machine_sources'} or value['schema']!='holodeck.native-bridge/v1'
+        or type(value.get('machine_sources',False)) is not bool or value.get('machine_sources') and 'world_service_key' not in value
         or not isinstance(value['allowed_uids'],list) or not 1<=len(value['allowed_uids'])<=8
         or any(type(uid) is not int or uid<0 for uid in value['allowed_uids'])
         or not isinstance(value['home_command'],list) or len(value['home_command'])!=2
@@ -538,7 +655,8 @@ def serve(path):
         return result['allowed']
     bridge=NativeBridge(provider,pair_reader,config.get('world_port'),home_auth=home_auth,
         world_access_reader=world_access_reader if 'world_service_key' in config else None,
-        review_ownership_reader=review_reader(config['review_owner'],config.get('world_service_key')) if 'review_owner' in config else None)
+        review_ownership_reader=review_reader(config['review_owner'],config.get('world_service_key')) if 'review_owner' in config else None,
+        machine_sources=config.get('machine_sources',False))
     slots=threading.BoundedSemaphore(4)
     class Handler(socketserver.StreamRequestHandler):
         def handle(self):
@@ -549,7 +667,7 @@ def serve(path):
             try:
                 raw=self.rfile.readline(MAX_WIRE+1)
                 if len(raw)>MAX_WIRE or not raw.endswith(b'\n'):return
-                try:reply={'ok':True,'result':bridge.dispatch(json.loads(raw))}
+                try:reply={'ok':True,'result':bridge.dispatch(json.loads(raw,object_pairs_hook=unique_json_object))}
                 except BridgeError as error:reply={'ok':False,'code':error.code,'message':str(error),'knownNotSubmitted':error.known_not_submitted}
                 except Exception:reply={'ok':False,'code':'unavailable','message':'Native operation unconfirmed; inspect its retained status before retrying'}
                 self.wfile.write(bounded_json(reply)+b'\n')

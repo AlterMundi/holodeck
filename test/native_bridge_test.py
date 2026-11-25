@@ -104,6 +104,57 @@ class BridgeContracts(unittest.TestCase):
             with self.assertRaises(module.BridgeError):self.bridge.status(self.actor,self.frozen,ident,None,self.observation['id'],{**prepared['file'],**change})
         self.assertEqual(len(self.provider.inputs),1)
 
+    def test_machine_context_requires_exact_sealed_receipt_and_current_world_access(self):
+        ident_=str(uuid.uuid4());receipt=str(uuid.uuid4())
+        observation={**self.observation,'inputAssociation':{'humanInputId':ident_}}
+        provider=self.provider
+        allowed=True
+        pending={}
+        provider.conversation_machine_source_capabilities=lambda:{
+            'machine_source':'owner-journal/v1','binding':self.frozen['binding'],'entry_binding':copy.deepcopy(ENTRY)}
+        def reserve(**value):
+            self.assertEqual(value['ident'],ident_)
+            self.assertEqual(json.loads(value['data'])['observation'],observation)
+            self.assertEqual(value['file']['sha256'],hashlib.sha256(value['data']).hexdigest())
+            pending.update(schema='telecodex.conversation-machine-source/v1',id=ident_,
+                observation_id=observation['id'],receipt=receipt,source_sha256=value['file']['sha256'],
+                storage='owner-journal',entry_binding=copy.deepcopy(ENTRY))
+            return {**pending,'retained_original':False}
+        provider.reserve_conversation_machine_source=reserve
+        provider.read_conversation_machine_source=lambda **_:{**pending,'retained_original':ident_ in provider.originals,
+            'observation_json':json.dumps(observation)}
+        provider.retained_conversation_machine_source=lambda ident:{'schema':'telecodex.conversation-retained-machine-source/v1',
+            'id':ident,'original_retained':True,'receipt':receipt,'machine_source_retained':True}
+        bridge=module.NativeBridge(provider,lambda:PAIR,world_access_reader=lambda _:allowed,machine_sources=True)
+        prepare={'operation':'prepare-machine-context','actorRef':self.actor,'frozen':self.frozen,
+            'id':ident_,'observation':observation}
+        with self.assertRaises(module.BridgeError):self.bridge.dispatch(prepare)
+        proof=bridge.dispatch(prepare)
+        self.assertEqual(proof['receipt'],receipt)
+        self.assertFalse(proof['retained_original']);self.assertFalse(proof['submitted_by_prepare'])
+        self.assertNotIn('file',proof)
+        self.assertEqual(provider.inputs,[])
+        self.assertEqual(provider.uploads,[])
+        check={'operation':'machine-context-status','actorRef':self.actor,'frozen':self.frozen,'id':ident_,
+            'observationId':observation['id'],'receipt':receipt,'sourceSha256':proof['source_sha256']}
+        with self.assertRaises(module.BridgeError):bridge.dispatch(check)
+        provider.conversation_input_submit({'id':ident_,'text':'Exact fixture','machine_source':receipt,'files':[]})
+        self.assertEqual(bridge.dispatch(check)['nativeAcceptance'],'observed')
+        self.assertEqual(bridge.lookup(self.actor,ident_)['observation'],observation)
+        bridge.world_port={'cli':'/upgraded/cli','socket':'/upgraded/socket'}
+        recovered=bridge.dispatch(prepare)
+        self.assertEqual(recovered['receipt'],receipt);self.assertTrue(recovered['retained_original'])
+        self.assertFalse(recovered['submitted_by_prepare'])
+        self.assertEqual(recovered['source_sha256'],proof['source_sha256'])
+        with self.assertRaises(module.BridgeError):bridge.status(self.actor,self.frozen,ident_,context_file={})
+        with self.assertRaises(module.BridgeError):bridge.dispatch({**check,'receipt':str(uuid.uuid4())})
+        allowed=False
+        with self.assertRaises(module.BridgeError):bridge.dispatch(check)
+        self.assertEqual(len(provider.inputs),1)
+
+    def test_nested_duplicate_bridge_fields_refuse_before_dispatch(self):
+        with self.assertRaises(ValueError):json.loads('{"inner":{"id":1,"id":2}}',object_pairs_hook=module.unique_json_object)
+
     def test_context_selected_status_revalidates_binding_after_observation_but_legacy_reads_survive(self):
         ident=str(uuid.uuid4());prepared=self.bridge.prepare_context(self.actor,self.frozen,ident,self.observation)
         self.provider.conversation_input_submit({'id':ident,'text':'Synthetic canonical fixture','files':[prepared['file']]})

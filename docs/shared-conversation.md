@@ -127,11 +127,27 @@ remains the active compatibility contract pending that integration.
 [DaimonApp draft PR #1031](https://github.com/AlterMundi/DaimonApp/pull/1031)
 implements the owner-local reservation and atomic receipt for text and ordinary
 voice. Tests cover first native establishment, retry, voice recovery through the
-owner command, and eight human files alongside the receipt. The deployed bridge
-still sends a full file. To activate the receipt path, connect the verified
-registered speaker and the current room authorization to the native offer,
-isolate the pending-source storage budget, and project the sealed evidence
-into the native conversation before acknowledging a reusable baseline.
+owner command, and eight human files alongside the receipt. Its candidate now
+stores source bytes in a separate bounded journal, checks digest and identity at
+seal and native admission, and makes exact sealed-source readback available to
+the owner bridge. The text and voice HTTP routes carry the same receipt. The
+controlled HTTP and native protocol fixture checks delayed voice, newer text,
+and routed delivery with zero attachment slots. The selected browser still
+uses a full source attachment.
+
+The optional `machine_sources` bridge setting requires a documented
+`world_service_key`, a compatible provider and the `owner-journal/v1` native
+capability. `prepare-machine-context` reserves the exact observation for the
+registered actor and current pair. Its response distinguishes an already
+retained original from submission by the preparation call. A sealed retry can
+read the original receipt after a native world descriptor change.
+`machine-context-status` requires the exact original, receipt, observation UUID,
+digest and current pair and world grant. It reads sealed evidence from the
+owner journal and checks the canonical result. File-based authority cannot
+select a machine-journal original. These operations are available to the
+specified owner's transport. The supported browser path still needs protocol
+selection and preparation freeze for this route, live room revalidation at
+native submission, archival of settled machine bytes and baseline integration.
 
 The current DaimonApp dashboard dispatches text through
 `dashboard/provider.py` and ordinary voice through its voice submit provider.

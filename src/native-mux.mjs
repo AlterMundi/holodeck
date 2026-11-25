@@ -37,6 +37,8 @@ export function createNativeTransportMux({routes,createTransport}){
     },
     async submit(request){const value=lane(request.actorRef);verify(value,request.frozen);return value.transport.submit(request);},
     async prepareContext(request){const value=lane(request.actorRef);verify(value,request.frozen);return value.transport.prepareContext(request);},
+    async prepareMachineContext(request){const value=lane(request.actorRef);verify(value,request.frozen);return value.transport.prepareMachineContext(request);},
+    async machineContextStatus(request){const value=lane(request.actorRef);verify(value,request.frozen);return value.transport.machineContextStatus(request);},
     async status(request){const value=lane(request.actorRef);verify(value,request.frozen);return value.transport.status(request);}
   };
 }
