@@ -1,5 +1,32 @@
 # Current MVP work
 
+## November 25 archived light exercise and instrument HUD
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/) serves
+package `ccb72f15ef10` from `7ba7cfc`. It includes the native instrument HUD,
+authored avatar flight and swim, the planted approach, and the Harmonic Lab
+station. The light creation exercise is closed and its saved results remain
+visible. A retained signal garden now reads as archived.
+
+The existing Home writer completed both selections while the runtime had no
+established visitor connections. The immediate rollback is the verified
+Harmonic Lab package `52dccaadf135`; `883efcd70ed1` remains a retained
+compatible recovery archive. The three published archives total 100,382,720
+bytes. One superseded archive was removed from Home after an identical
+retained local copy and both selected packages were verified.
+
+Protected HTTPS returned the exact health, client, avatar and terrain worker.
+All 80 installed payload files matched, with the top-level service manifest
+as the archive's 81st file. Four protected denials matched. Native readback
+preserved the run, edition, all 30 entities and all four nodes. Only the
+garden's display status and instruction changed. The receiving configuration
+and 18 of 22 inspected checkpoint hashes were byte-identical. Room and
+avatar current/previous checkpoints were rewritten. The same App resource,
+selected audience and route were used. Two controlled Chromium browsers
+verified shared tabletop flight and reconnect. The retirement was also
+verified in desktop and emulated touch against the exact package. Actual
+signed-in human play and physical GPU acceptance for this build remain open.
+
 ## November 25 native creator release
 
 The protected Holodeck release is `883efcd70ed1` from `2371cdc`. The selected

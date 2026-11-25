@@ -995,8 +995,8 @@ preserved iframe state and clean close. The exact standalone Node24 entry
 passed two independent MML visitors, shared bridge state, projected updates
 to both and same-original command recovery.
 
-The current receiving selector is `883efcd70ed1` with `8b3d41a7410a` as
-rollback. At the activation check two human participants were connected.
+At the initial receiving check the selector was `883efcd70ed1` with
+`8b3d41a7410a` as rollback. At the activation check two human participants were connected.
 The already-published Harmonic Lab package `52dccaadf135` remains the
 operator artifact's current pending version. The combined archive is
 locally qualified. The supported archive writer protects both the
@@ -1140,3 +1140,14 @@ keeps the complete exit label and verified tabletop flight and return. The
 browser checks use SwiftShader. Physical device performance,
 two authenticated visitors, the full light-base theme, and the remaining
 graphic hierarchy across the game remain open.
+
+### Protected cutover
+
+The protected selector now serves `ccb72f15ef10` with `52dccaadf135` as
+immediate rollback. The exact source and 81-file archive passed 344 tests,
+with two optional installed-gallery checks skipped, two controlled browser
+visitors at the shared table, and saved-garden readback in desktop and
+emulated touch. The standalone package also passed independent MML peer
+and exact shared-command retry checks. Existing Home access, the native
+world run and edition and the saved lights were observed after the cutover.
+See [production readback](STATUS.md#november-25-archived-light-exercise-and-instrument-hud).

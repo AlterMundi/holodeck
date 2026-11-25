@@ -81,8 +81,8 @@ for the walkthrough. New gameplay mechanics follow their own stages.
    archive and reopen. Verify permission denial, revisit and recovery. On the
    selected single-house route prove that authorized editing, publish and
    edition visits are reachable under their owning permissions before the
-   full encounter. The old light exercise retirement is qualified in a
-   candidate. Verify selection while preserving its saved results. Extend to each eligible
+   full encounter. The old light exercise is archived in the protected release. Native
+   readback verified its saved results. See [the receiving evidence](STATUS.md#november-25-archived-light-exercise-and-instrument-hud). Extend to each eligible
    own-body route through #7–#12/#15 after the first full encounter.
 5. Complete situated runtime #1/#19, observing canonical text and voice
    admission before activating deltas. Continue independent work on
