@@ -7,6 +7,7 @@ const station=(id,title,service,x,z)=>Object.freeze({id,title,service,revision:1
 export const BEACON_CONTROLS=Object.freeze([
   station('beacon-spatializer','Spatializer','audio',3.802,-.791),
   station('beacon-weaver','Weaver','body',-3.758,2.659),
+  station('beacon-guitar','Guitarra','guitar',-4.49,-.35),
 ]);
 
 export function nearbyBeaconControl(objects,position){

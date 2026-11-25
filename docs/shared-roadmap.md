@@ -686,23 +686,19 @@ composition, keep the Beacon as a landmark and use the walkable layout
 to test more organic boundaries.
 
 The [Blender composition study](../art/compaii-house/redesign/lab-hit-study.py)
-places four instrument tables around the Beacon. The implemented floor
-inlay sets the central approach. Keep Spatializer at (3.80, −0.79) and
-Weaver at (−3.76, 2.66) in room x/z metres. For the next visual trial,
-place Guitar near (−4.49, −0.35) to clear the west landing and Shaper
-near (3.51, 2.78) across the central aisle. Both placements now have a
-[room-scale Blender study](../art/compaii-house/redesign/README.md#four-station-harmonic-lab-study)
-and measured collider envelopes. The remaining visual and functional
-qualification includes the actual action approach at each new worktop.
+places four instrument tables around the Beacon. Spatializer remains at
+(3.80, −0.79) and Weaver at (−3.76, 2.66) in room x/z metres. Guitar's
+walnut worktop at (−4.49, −0.35) uses the owned panel's Guitar deep link.
+Controlled browsers tested the room-scoped action, selected card, simulated
+receiving readiness and return at the same avatar position.
 
-The selected laboratory panel has a Guitar card, but its installed link
-selector accepts only `audio` and `body`. Extend it with `guitar` through
-the existing auth and selected receiver. Shaper runs with the managed
-Weaver body service. Qualify a view hint for the existing Instrumento
-tab and label that relationship in the room. The current receiver serves
-its instrument interfaces locally. Opening either projected control must
-require the existing authorized panel, and actual instrument start remains
-explicit. Qualify those destinations before placing actionable tables.
+Shaper has a [room-scale study](../art/compaii-house/redesign/README.md#guitar-worktop-and-shaper-study)
+at (3.51, 2.78), with measured collider envelopes. Shaper runs with the
+managed Weaver body service. Qualify a view hint for its existing
+Instrumento tab and label that relationship in the room. The current
+receiver serves instrument interfaces locally. Opening the projected
+control uses the existing owner panel, and instrument starts remain
+explicit. Test signed-in use and continuous passage between worktops.
 
 The Prototype Bench is a scoped portal to the existing 3D Guitar review.
 Preserve its role and authorization. In a new layout, distinguish inspection

@@ -205,25 +205,19 @@ the scene anchor and the room reference in Conversation use the new position.
 The older profile retains its original bench and station revision.
 [Plaque at player height](review/beacon-prototype-plaque.jpg)
 
-### Four-station Harmonic Lab study
+### Guitar worktop and Shaper study
+
+Guitar has a walnut top with paired cradle pads, an ivory plaque and a
+workstation anchor at (−4.49, −0.35) in room x/z metres. The existing
+Harmonic Lab window opens directly to the Guitar card. The selected
+receiver and its separate instrument start remain with the owner panel.
 
 Add `--study-stations` after `beacon` or `beacon-return` in the export
-command to render the optional worktops in their chamber positions.
-Choose a separate output directory for study exports. The production
-export omits this option.
-
-Guitar has a walnut top with paired cradle pads and a light plaque.
-Shaper has six bronze controls with ivory caps on a darker console.
-The study reuses the current materials and texture atlases. It adds
-4,260 triangles to each room variant. The isolated playtest uses two
-collider envelopes, each 1.76 × 1.12 m, centered on the placements in
-the [roadmap](../../../docs/shared-roadmap.md#harmonic-lab-as-a-playable-resonant-volume).
-
-The controlled RTX 2060 Normal and Pi 5 Livianos runs descended the entry
-stair and checked keyboard contact from a nearby approach to each table.
-The avatar stopped one 0.45 m collision radius from each collider face.
-The tested build carries the props and colliders only. Signed-in instrument
-use and walking continuously between the worktops remain separate checks.
+command to render the Shaper worktop alongside Guitar. Use a separate
+output directory for the study. The Shaper uses six bronze and ivory
+controls on a dark pedestal and reuses the current textures. Its
+[studio placement and instrument route](../../../docs/shared-roadmap.md#harmonic-lab-as-a-playable-resonant-volume)
+remain staged for validation.
 
 
 ```sh

@@ -584,7 +584,7 @@ def beacon_floor(collection):
 
 
 
-def beacon_study_stations(collection):
+def beacon_workstations(collection, study_stations):
     # Blender Y is the negation of room Z in the registered chamber.
     materials = bpy.data.materials
     basalt = materials['Split basalt']
@@ -652,6 +652,8 @@ def beacon_study_stations(collection):
     spindle('Guitar cradle neck pad',(-4.07,.35),
             [(.966,.18,.14),(1.07,.18,.14),(1.11,.15,.12)],iron,20)
     plaque('Guitarra',(-3.631,.35,.846),1)
+    if not study_stations:
+        return parts
 
     shaper = (3.51,-2.78)
     spindle('Shaper console base',shaper,
@@ -681,9 +683,8 @@ def register_beacon(obj, study_stations=False):
     basalt = bpy.data.materials['Split basalt']
     iron = bpy.data.materials['Blue gunmetal']
     collection = obj.users_collection[0]
-    pieces = [obj, *beacon_vault(collection), beacon_floor(collection)]
-    if study_stations:
-        pieces.extend(beacon_study_stations(collection))
+    pieces = [obj, *beacon_vault(collection), beacon_floor(collection),
+              *beacon_workstations(collection, study_stations)]
 
     def piece(name, at, size, mat, tilt=0, bevel=.015, segments=3):
         bpy.ops.mesh.primitive_cube_add(size=1, location=at)

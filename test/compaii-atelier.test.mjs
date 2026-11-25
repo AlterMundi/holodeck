@@ -460,9 +460,10 @@ test('packaged profile keeps exact gallery and lab bytes behind current room rig
   assert.deepEqual(chamber.keyLight,{position:[-.44,4.35,1.9],target:[-.44,1.07,1.9],color:'#ffe0b6',intensity:68});
   assert.match(chamber.scene.markup,/id="spatializer-practical"/);
   assert.match(chamber.scene.markup,/id="weaver-practical"/);
-  assert.deepEqual(chamber.objects.map(object=>object.id),['beacon-prototypes','beacon-spatializer','beacon-weaver']);
+  assert.deepEqual(chamber.objects.map(object=>object.id),['beacon-prototypes','beacon-spatializer','beacon-weaver','beacon-guitar']);
   assert.match(chamber.scene.markup,/id="beacon-spatializer"/);
   assert.match(chamber.scene.markup,/id="beacon-weaver"/);
+  assert.match(chamber.scene.markup,/id="beacon-guitar"/);
   const prototype=chamber.objects.find(object=>object.id==='beacon-prototypes');
   assert.deepEqual(prototype,{id:'beacon-prototypes',kind:'workstation',title:'Banco de prototipos',
     position:{x:-.44,y:.1,z:.59},revision:2});
