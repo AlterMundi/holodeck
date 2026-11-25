@@ -1,5 +1,21 @@
 # Current MVP work
 
+## November 25 native creator release
+
+The protected Holodeck release is `883efcd70ed1` from `2371cdc`. The selected
+rollback is `8b3d41a7410a`. This package includes the Proyección fitted-text
+revision, native recovery and exterior light creation, the tabletop avatar
+scale and flight changes, Alt crouch, and the optional Taller worktable HUD.
+
+The first request overlapped a Home access authority memory kill and a restart.
+The receiver had no journal entry for that request, and Holodeck retained its
+previous selection. The same request completed after access returned. All 80
+installed files matched, the native run/edition and receiving configuration
+were unchanged, and protected HTTPS returned the exact client, avatar, terrain
+worker and health response. Four protected boundary denials also matched.
+The exact package had passed the two-client tabletop and creator recovery
+fixtures. Physical-device and human acceptance for this release remain open.
+
 ## November 25 volumetric Navegante
 
 The protected release is `8b3d41a7410a`, from `a3f4c20`. The previous
