@@ -968,6 +968,26 @@ of transitions in the real world remain part of the visual acceptance.
 
 ## Tabletop companion
 
+### Explicit workpiece pointing
+
+The final 33,454,080-byte archive `41508709635f` contains 80 payloads.
+The 362 source tests passed with two optional skips in the Node 24 receiver
+runtime. The protected runtime tests use real HTTP and MML sockets to cover
+exact current and pinned editions, a recipient without source access, a
+recipient leaving during the source read, proof from a different actor or
+tab, and replay denial. The table checkpoint and semantic cursor stayed
+unchanged through the gesture. Geometry tests cover hidden and clipped
+parts, a hollow part, model removal, local rotation and cue expiry. Motion
+tests cover the receiving glance, return to base pose and reduced motion.
+
+The same unpacked package ran two independently scoped Chromium fixture actors
+against the mounted Matter table on Legion's RTX 2060. One used Normal and the
+other Livianos. Both sent the gesture. The receiver saw the small surface
+marker on their rotated part while private selection and the shared revision
+stayed fixed. The test also exercised denied source access, forged proof and
+focus restoration. This was controlled browser and physical-device evidence.
+An independent signed-in visit by two people remains to be observed.
+
 ### Looking beside the selected piece
 
 Candidate `8f77817` gives the miniature companion a bounded lateral perch

@@ -1,9 +1,29 @@
 # Current MVP work
 
+## November 25 explicit workpiece pointing
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `41508709635f` from `9dc9e0f`. **Señalar esta pieza** sends a
+five-second cue to authorized miniature visitors following the same exact
+table edition and scene. The receiving view shows a small gold mark on
+the part and the pointing avatar's head turn. The checked browser package
+passed both directions on Legion's RTX 2060, one controlled actor in Normal
+and the other in Livianos. The [test record](playtest-iteration.md#explicit-workpiece-pointing)
+distinguishes fixture actors and authenticated live visitors.
+
+The installed 80-payload package and predecessor matched their inventories.
+Protected HTTPS matched the exact client, five avatar models, terrain worker
+and health with the existing App audience and expected denials. The temporary
+read credential was revoked. Native readback retained the same run, sequence
+403, 30 entities and four nodes. Twenty-two state files matched byte for byte
+and the observations rotated two room checkpoints. Immediate rollback is
+`0425dd6d7c67`; older published recovery is `8260b7fcf577`. The three
+published archives total 100,341,760 bytes.
+
 ## November 25 tabletop companion attention
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
-serves release `0425dd6d7c67` from source `8f77817`. The miniature companion
+selected release `0425dd6d7c67` from source `8f77817` before the shared cue update. The miniature companion
 looks at a settled piece and moves gradually to a bounded position beside
 it. [Normal, Livianos and reduced motion on Legion](playtest-iteration.md#looking-beside-the-selected-piece)
 passed with the same mounted fixture. Independent authenticated tabletop

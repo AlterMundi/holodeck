@@ -69,8 +69,10 @@ for the walkthrough. New gameplay mechanics follow their own stages.
    or point from both miniatures. It must release smoothly and keep the
    workpiece clear. Passive gaze is local; explicit pointing owns any
    shared result. The [bounded companion perch](playtest-iteration.md#looking-beside-the-selected-piece)
-   is live and verified on RTX in both graphics profiles. Independent
-   observers and both roles pointing together remain to be exercised.
+   is live and verified on RTX in both graphics profiles. The
+   [explicit workpiece gesture](playtest-iteration.md#explicit-workpiece-pointing)
+   is live after a two-role physical GPU fixture test. Independent signed-in
+   visitors still need to exercise the gesture together in the shared world.
 3. Build one cohesive kids-first visual pass from the selected concept studies
    across the real approach, day/night sky, doorway, house, room, exhibits,
    worktable, passage and open Conversation. Compare matched camera views and

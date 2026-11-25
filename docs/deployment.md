@@ -747,6 +747,14 @@ session storage were preserved; served Apps metadata is retained but hidden.
 
 ## Recovery
 
+The [shared workpiece cue release](STATUS.md#november-25-explicit-workpiece-pointing)
+`41508709635f` adds transient authenticated pointing to the existing
+browser and server. The change has no additional checkpoint fields.
+Restore `0425dd6d7c67` for an immediate code-only rollback or
+`8260b7fcf577` for older published recovery. Preserve the world state,
+auth configuration and canonical Conversation. The superseded
+`326890e44863` publication was retired after verifying its local archive.
+
 The [tabletop companion release](STATUS.md#november-25-tabletop-companion-attention)
 `0425dd6d7c67` changed only the browser bundle. Use `8260b7fcf577` for the
 immediate code-only rollback, with `326890e44863` as the older published
