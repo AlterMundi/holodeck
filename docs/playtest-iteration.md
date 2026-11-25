@@ -289,3 +289,22 @@ muting after a confirmed exterior-to-Matter crossing. The compatibility
 probe masked the browser activation API and verified the original trusted
 button. The suite passed 314 tests with two skips. Live remains
 `f46d93f436be`.
+
+
+## Proyección playtest deployment
+
+At Nicolás's request, the ongoing iteration has an interim protected
+playtest. Source `43c39e0` pins the merged
+[Proyección density change](https://github.com/AlterMundi/proyeccion/pull/7)
+at `a8e5afc`. The exact 33,464,320-byte build `601108cb255e` booted with a
+receiving copy and passed the Chromium mouse and touch status checks and 314
+Node tests, with two skips. Live readback matched 78 payloads, the HTTPS
+client, worker and health, the receiving configuration and the native run.
+Rollback is `f46d93f436be`.
+
+Opus 5.5 High reviewed the pinned diff, which preserves package and lockfile
+consistency. It found a narrower-than-square `HudJump` raster distortion and
+limits for dense paragraphs. The playtest's touch jump uses the existing MML
+control and this release adds no `HudJump` surface. Retain those findings for
+the touch-control migration and the multiline cases. Physical-device
+acceptance and the rest of the iteration remain open.

@@ -364,6 +364,15 @@ bounded copies of the receiving checkpoints with native lanes disabled.
 
 ## Selected shared release
 
+The protected playtest selects `601108cb255e` at source `43c39e0` with
+`f46d93f436be` as its immediate rollback. The 33,464,320-byte package
+includes the merged Proyección density update and the current world HUD
+candidate. The protected reader verified all 78 installed payloads and the
+served health, client and terrain worker bytes. The authorizing native
+read returned the same run and edition, and the receiving configuration
+hash matched. The first publication response was unconfirmed. The existing
+request recovered to completion without another deployment identity.
+
 The protected service selects `f46d93f436be` at source `f975275`, with
 `2563afe48a8d` as the immediate rollback. The 33,443,840-byte package
 adds the ceiling and camera collision correction. All 78 installed

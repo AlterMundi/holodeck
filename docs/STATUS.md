@@ -276,6 +276,14 @@ and a scripted native worker.
 
 ## Selected receiving release
 
+The protected playtest now selects package `601108cb255e` at source
+`43c39e0`. It includes Proyección PR #7 (`a8e5afc`) for display-density
+text, plus the qualified Matter and world HUD changes. Its immediate
+rollback is `f46d93f436be`. All 78 installed files and the protected HTTPS
+health, client and terrain worker matched. The receiving configuration,
+native run and edition were preserved. The remaining iteration scope is
+tracked in [the playtest plan](playtest-iteration.md).
+
 The current protected release is `f46d93f436be` at source `f975275`.
 The chamber collision shell includes the ceiling. A controlled Chromium
 orbit kept the camera inside Matter at full requested zoom. A strong
