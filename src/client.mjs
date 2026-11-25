@@ -551,6 +551,11 @@ document.addEventListener('keydown',event=>{
   if(matterInspection?.key(event)){event.preventDefault();event.stopImmediatePropagation();return;}
   if(matterHud?.key(event)){event.preventDefault();event.stopImmediatePropagation();return;}
   if(updateDoor.key?.(event)){event.stopImmediatePropagation();return;}
+  if(event.target===document.getElementById('house-door')){
+    updateDoor.buttonKey?.(event);
+    event.stopImmediatePropagation();
+    return;
+  }
   if(matterHud?.ownsAccessibleInput(event.target))return;
   doubleSpace(event);
   if(event.target instanceof Element&&event.target.closest('#exhibition-index')){event.stopImmediatePropagation();return;}

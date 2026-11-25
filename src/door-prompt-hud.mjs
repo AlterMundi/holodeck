@@ -23,7 +23,14 @@ export class DoorPromptHud {
       this.signature = null;
       return;
     }
+    const oldOffer = this.group && this.revision !== current.revision;
+    const restoreFocus = oldOffer && this.hasFocus();
+    if (oldOffer) {
+      this.send('deleteSurface', {}, doorPromptId);
+      this.group = null;
+    }
     if (!this.group) {
+      this.revision = current.revision;
       this.send('createSurface', {catalogId: spatialHudCatalog.id}, doorPromptId);
       this.send('updateComponents', {components}, doorPromptId);
     }
@@ -34,6 +41,7 @@ export class DoorPromptHud {
       this.signature = signature;
       this.send('updateDataModel', {value}, doorPromptId);
     }
+    if (restoreFocus) this.focusControl('cross');
   }
 
   activate({name, context}) {

@@ -102,14 +102,26 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
     const offer=doorOffer();
     if(offer&&!offer.busy&&offer.scope===scope&&offer.revision===expectedRevision)return move(near,expectedRevision);
   };
-  let pointerRevision;
-  button.onpointerdown=event=>{if(event.button===0)pointerRevision=doorOffer()?.revision;};
-  button.onpointercancel=()=>{pointerRevision=undefined;};
-  button.onclick=event=>{
-    const revision=event.detail===0?nearRevision:pointerRevision;
-    pointerRevision=undefined;
+  let pointerRevision,spaceRevision;
+  const cancelPress=()=>{pointerRevision=spaceRevision=undefined;};
+  const clickDoor=event=>{
+    const revision=event.detail===0?(spaceRevision??nearRevision):pointerRevision;
+    cancelPress();
     followDoor(space.id,revision);
   };
+  button.onpointerdown=event=>{
+    cancelPress();
+    if(event.button===0)pointerRevision=doorOffer()?.revision;
+  };
+  button.onpointercancel=cancelPress;
+  button.onblur=cancelPress;
+  const buttonKey=event=>{
+    if(event.repeat&&(event.key===' '||event.key==='Enter')){event.preventDefault();return;}
+    if(event.key===' ')spaceRevision=doorOffer()?.revision;
+    if(event.key==='Enter')spaceRevision=undefined;
+  };
+  button.onkeydown=buttonKey;
+  button.onclick=clickDoor;
   const hotkey=event=>{
     if(event.code!=='KeyE'||event.repeat||event.defaultPrevented||!doorOffer()||
        (!button.hasAttribute('data-native-door')&&!button.getClientRects().length)||
@@ -144,6 +156,7 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
   update.doorOffer=doorOffer;
   update.followDoor=followDoor;
   update.key=hotkey;
+  update.buttonKey=buttonKey;
   update.bearing=()=>suspended||travel.open?null:map?.bearing();
   update.mapDismiss=id=>!suspended&&!travel.open&&map?.dismiss(id)===true;
   update.mapSelect=id=>{if(!suspended&&travel.open)map?.choose(id);};
@@ -158,7 +171,9 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
   update.dispose=()=>{
     update.suspend();
     if(manageShortcut)document.removeEventListener('keydown',hotkey,true);
-    button.onclick=button.onpointerdown=button.onpointercancel=null;
+    if(button.onclick===clickDoor){
+      button.onclick=button.onpointerdown=button.onpointercancel=button.onkeydown=button.onblur=null;
+    }
   };
   return update;
 }

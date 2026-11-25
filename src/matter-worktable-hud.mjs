@@ -358,7 +358,9 @@ export class MatterWorktableHud{
   key(event){
     if(this.map.group&&event.key==='Escape'&&!event.defaultPrevented){this.map.close();return true;}
     if(this.active&&event.key==='Escape'&&!event.defaultPrevented){this.leave();return true;}
-    if(this.ownsAccessibleInput(event.target))return false;
+    if(this.ownsAccessibleInput(event.target)){
+      return event.repeat&&(event.key==='Enter'||event.key===' ')&&this.hud.currentFocus()?.surfaceId===doorPromptId;
+    }
     const modifier=event.altKey||event.metaKey||event.ctrlKey;
     if(!this.active){
       return this.mode==='enter'&&!modifier&&event.key==='Tab'&&!event.shiftKey&&
