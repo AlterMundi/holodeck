@@ -1,5 +1,24 @@
 # Current MVP work
 
+## November 25 Atelier foyer and Character Design Room
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves package `61d8ac934638` from source `95b6d13`. The restored
+foyer has separate reciprocal doors to the Materializador de Materia,
+Harmonic Lab and the Character Design Room. The new review view opens
+original rigs and their existing clips, supports frame stepping and fixed
+views, and copies revision-bound pose links. Notes stay in that browser.
+
+The exact package passed the three interior round trips and pose reopening
+in desktop Chromium. An emulated touch viewport switched to the humanoid
+jog and retained a frame note. The protected receiving read matched 84
+installed files, the unchanged receiving configuration, the existing App
+and audience, and the same native run, 30 entities and four creation nodes.
+The live exterior now advertises the foyer. The immediate rollback is
+`476adaf02828`. Separate signed-in visitor and physical touch behavior,
+shared pose comments and selection of the revised animation remain open.
+See [Character Design Room #24](https://github.com/AlterMundi/holodeck/issues/24).
+
 ## November 25 miniature flight controls
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
