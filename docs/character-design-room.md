@@ -167,6 +167,28 @@ on every request. Presentation and note writes require the native edit
 grant. HTTP and native results share the same revisions, note checkpoint
 and exact-edition checks. The camera, selection and unsent text stay local.
 
+## Packaged browser check
+
+Build and stage the exact candidate with the deployment runtime (Node 24).
+Use an existing Playwright module with its installed Chromium, or set
+`HOLODECK_CHROMIUM` to the selected executable.
+
+```sh
+npm run build
+node deployment/build-package.mjs "$PWD/.state/character-review"
+HOLODECK_STAGE="$PWD/.state/character-review" \
+  HOLODECK_PLAYWRIGHT="/path/to/installed/playwright" \
+  HOLODECK_EVIDENCE_DIR="$PWD/.state/character-review-evidence" \
+  node tools/browser-character-review-check.cjs
+```
+
+The loopback check runs the staged server with separate browser and
+own-native fixture identities. It prints the confirmed pose and revision,
+saves one screenshot, and closes both clients. It exercises the native
+presentation, browser follow, exact-frame note readback and room exit.
+The protected receiving trial below qualifies the real identities and
+world.
+
 ## Protected receiving trial
 
 In the existing protected Holodeck, use the admitted human guest and the
