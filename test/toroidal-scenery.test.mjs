@@ -19,6 +19,7 @@ test('the meadow profiles share rooted banks outside the trail and dispose their
       const x=(.25-plant.v)*2*Math.PI*(TOROIDAL_TERRAIN.tubeRadius+18);
       const z=plant.u*2*Math.PI*TOROIDAL_TERRAIN.majorRadius;
       assert.ok(Math.abs(x)>=6.25);
+      assert.ok(z>.82&&z+.82<70);
       for(let i=0;i<8;i++){
         const angle=i*Math.PI/4;
         const {u,v}=approachCoordinates(x+.82*Math.cos(angle),z+.82*Math.sin(angle));
