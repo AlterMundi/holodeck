@@ -708,9 +708,9 @@ measured Normal/Livianos using [House #12](https://github.com/AlterMundi/holodec
 
 ### Nearby interactions and repeatable panel launchers
 
-The [world-anchored action label](STATUS.md#november-25-world-anchored-nearby-action-labels)
-shows E over the offered Materializer table, interior door or one of the
-four Harmonic Lab worktops. The lab shortcut rechecks the current room
+The [world-anchored action label](STATUS.md#november-25-visible-room-boundaries-and-object-leaders)
+shows E below standing eye height, with a gold leader to the offered
+Materializer table, interior door or one of the four Harmonic Lab worktops. The lab shortcut rechecks the current room
 object and uses the existing Laboratory opening action. Keep pointer,
 keyboard and touch owned by their action handlers. Extend labels to
 further eligible targets as their placement and access are established.
@@ -918,6 +918,8 @@ Raspberry Pi client received the confirmed model. The fixture exercised
 local inspection, access revocation, focus restoration and the confirmed
 room palette. Direct participant experience on the protected entrance is
 tracked separately from these technical checks.
+
+The foyer and gallery now align their collider perimeter to the room-facing planes of the packed art. For new authored rooms, specify and measure visible solid boundaries, qualify all reachable edges and passages, and keep collision-only primitives out of the render pass. Use explicit semantics for intentional pass-through surfaces. The rest of the authored rooms still need the same render/collision audit.
 
 ### Connected ecosystems above and below the torus
 

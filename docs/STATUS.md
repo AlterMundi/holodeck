@@ -1,5 +1,23 @@
 # Current MVP work
 
+## November 25 visible room boundaries and object leaders
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `ea2efd93199d`
+from `2d56daf`. The foyer and gallery perimeter use the measured
+room-facing planes of the packed art. The MML cubes and cylinders reserved
+for collision participate in physics without submitting visible
+geometry. The nearby prompt now sits below normal standing eye height,
+moves beside the avatar, and draws a fine gold leader to the object.
+A separate wall between the camera and the object suppresses the prompt.
+
+RTX 2060 and Pi 5 controlled browser trials hit all four foyer collider
+planes, stopped the avatar short of the north wall, opened all four
+Harmonic Lab consoles with E, and returned to the foyer from the Lab
+and Materializer. The unit tests cover occlusion and exact leader
+endpoints. The suite passed 415 checks with two skips. Receiving
+verified all 86 files, the same access and continuing world run
+through sequences 436–438. Immediate rollback is `0981468421fe`.
+
 ## November 25 woodland across the inner arc
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `0981468421fe`
