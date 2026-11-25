@@ -93,3 +93,37 @@ Compare daylight, dusk, a handheld viewport and reduced motion. Carry
 the same in-game camera and art cues to the Proyección and character
 motion work. Publish exact evidence and a compatible rollback through
 the existing service route.
+
+## First measured atmosphere candidate
+
+The corrected build uses a common linear-light horizon color for sky,
+land and water. It attenuates the cosmic panorama in daylight, warms
+the sunward air toward dusk, integrates ground haze between the eye
+and the visible terrain, and samples the reflected sky direction at
+the water. Fable High identified the divergent colors and overly strong
+panorama. Opus 5.5 High prompted the symmetric path density, amber
+dusk, reflection direction and fixes for texture derivatives and
+night fog. Chromium's lightweight dusk and day checks compiled the
+candidate shaders. The revised build and the physical daylight test
+used the same environment files from `d6930a6`.
+
+Production `476adaf02828` versus candidate `2eb727d13160`, same scripted
+daylight camera and movement. Values are p95 milliseconds over the
+first 55 samples after warm-up.
+
+| Device and view | Frame interval | GPU time | Draw calls |
+| --- | ---: | ---: | ---: |
+| RTX 2060 Normal, arrival at 1,200 × 740 | 21.0 → 21.9 | 4.04 → 5.61 | 159 → 160 |
+| RTX 2060 Normal, dry ridge | 21.1 → 20.7 | 2.78 → 4.65 | 114 → 115 |
+| Raspberry Pi 5 Livianos, arrival at 363 × 244 render buffer | 29.4 → 24.2 | 13.45 → 13.00 | 85 → 87 |
+| Raspberry Pi 5 Livianos, dry ridge | 17.3 → 20.0 | 13.78 → 13.85 | 83 → 84 |
+
+These short controlled samples establish the first cost comparison,
+with similar frame pacing and increased GPU cost on the RTX. They
+are insufficient to qualify continuous visual quality or diagnose
+the Pi ridge frame-interval difference. The foreground banks gain
+coverage, but large individual grass clumps and sparse middle-distance
+detail are still visible against the reference. Next reduce repeated
+vertex work, improve blade silhouettes and evaluate sustained flight,
+dusk, water transition and the actual detailed house. The isolated
+environment candidate has no production selection.
