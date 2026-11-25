@@ -19,7 +19,7 @@
     "@mml-io/networked-dom-server": "0.26.1",
     "express": "4.21.2",
     "express-ws": "5.0.2",
-    "proyeccion": "https://codeload.github.com/AlterMundi/proyeccion/tar.gz/6e6facd563a146874476e0ddd6b4e89f2a5f8b02",
+    "proyeccion": "https://codeload.github.com/AlterMundi/proyeccion/tar.gz/27de258760d52f57825f4cda8ed22cd4e42d0fd4",
     "three": "0.182.0"
   },
   "devDependencies": { "esbuild": "0.24.2", "ws": "8.23.0" }

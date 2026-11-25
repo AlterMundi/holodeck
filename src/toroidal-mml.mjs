@@ -23,7 +23,8 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
 
   function walk(controller, seconds) {
     const {position, quaternion, keyInputManager, additionalInputProvider} = controller.config;
-    const control = keyInputManager.getOutput() || additionalInputProvider?.getOutput() || null;
+    const touch=additionalInputProvider?.getOutput()??null;
+    const control = keyInputManager.getOutput() || touch;
     if (lastLocal !== controller || !lastPosition ||
         Math.hypot(position.x - lastPosition.x, position.y - lastPosition.y, position.z - lastPosition.z) > .001) {
       let start = terrainCoordinates([position.x, position.y, position.z]);
@@ -56,11 +57,14 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
     const yaw = moving ? Math.PI / 2 - camera.theta + control.direction : motion.yaw;
     const flying=flight();
     const wet=motion.atSwimSurface();
+    const touchVertical=touch?.vertical??Number(Boolean(touch?.jump));
     const vertical=flying||motion.swimming||wet?
-      Number(Boolean(keyInputManager.getJump()||control?.jump))-Number(keyInputManager.isKeyPressed('shift')):0;
+      Math.max(-1,Math.min(1,Number(Boolean(keyInputManager.getJump()))-
+        Number(keyInputManager.isKeyPressed('shift'))+touchVertical)):0;
+    const jump=!flying&&!motion.swimming&&Boolean(control?.jump||touch?.jump||(wet&&vertical>0));
     const previousHeight=motion.height;
     motion.update(seconds, {forward: moving ? 1 : 0, yaw, sprint:control?.isSprinting,
-      jump: !flying&&!motion.swimming&&control?.jump,flight:flying,vertical,crouch:!flying&&!wet&&keyInputManager.isKeyPressed('alt')});
+      jump,flight:flying,vertical,crouch:!flying&&!wet&&keyInputManager.isKeyPressed('alt')});
     let state = motion.pose();
     const radius = controller.capsuleInfo.radius;
     const height = controller.capsuleInfo.segment.end.y;

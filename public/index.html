@@ -61,6 +61,7 @@ body:has(#conversation-panel:not([hidden])) #visit-controls,.room-transition #vi
 #beacon-panel[data-beacon-hud] .beacon-panel-stage{pointer-events:auto}
 body:has(#beacon-panel[data-beacon-hud]) canvas[data-hud-render-layer]{z-index:31!important}
 
+.world-interaction-canvas{touch-action:none}
 .touch-controls[data-native-locomotion],.touch-controls[data-touch-paused]{display:none!important}
 body:has(#beacon-panel[open]) .touch-controls{visibility:hidden;pointer-events:none}
 @media(max-width:740px){#beacon-panel{width:calc(100vw - 16px);height:calc(100dvh - 16px);padding:8px;border-radius:14px}#beacon-panel h2{font-size:20px}}

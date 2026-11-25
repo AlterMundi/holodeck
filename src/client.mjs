@@ -959,6 +959,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     let presentedHelp=verticalHelp.textContent;
     let sceneryAfter=null,releaseTableFlight=null,releaseSearchKeys=null;
     const worldCanvas=worldPicker.canvas;
+    worldCanvas.classList.add('world-interaction-canvas');
     const worldFocus=new AbortController();
     worldCanvas.addEventListener('pointerdown',event=>{
       // Spatial HUD handlers consume their own pointers before this listener.
@@ -1199,7 +1200,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const touchAvailable=worldToolsVisible&&(conversation.hidden||!!conversation.dataset.travelLane)&&
         !mapPanel.open&&!signalEditor.active&&!document.hidden&&document.hasFocus();
       const movementLane=conversation.hidden?'':conversation.dataset.travelLane??'';
-      matterHud.syncMovement(touchAvailable&&Boolean(matterHud.toolGroup)&&navigator.maxTouchPoints>0,movementLane);
+      matterHud.syncMovement(touchAvailable&&Boolean(matterHud.toolGroup)&&navigator.maxTouchPoints>0,
+        movementLane,mode!=='ground');
       touchControls.pause(!touchAvailable||!conversation.hidden&&!matterHud.movementPresented);
       matterHud.updateBearing(navigationVisible&&!matterHud.active);
       matterHud.door.update(navigationVisible&&!matterHud.active&&Boolean(matterHud.toolGroup)&&!signalEditor.active,

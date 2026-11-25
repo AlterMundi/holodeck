@@ -21,12 +21,18 @@ const cockpitDocks={
   toolPlacement:{x:-.26,y:0,depth:1.08,anchor:0},
   headerPlacement:{x:0,y:.22,depth:1.32,anchor:-1},
 };
-const movementStick='world-move',movementJump='world-jump',conversationMovementScale=152;
+const movementStick='world-move',movementJump='world-jump',movementDown='world-descend',conversationMovementScale=152;
 const floatingWindows=new Map([[worldMapId,true],[surfaceId,true],[collectionHudId,false],[settingsId,false]]);
-const movementPanels=[
-  [movementStick,'Moverse','HudStick',.68],
-  [movementJump,'Saltar','HudJump',.56],
+const groundMovement=[
+  [movementStick,'Moverse','HudStick',.68,0],
+  [movementJump,'Saltar','HudJump',.56,0],
 ];
+const verticalMovement=[
+  groundMovement[0],
+  [movementJump,'Subir','HudJump',.56,1],
+  [movementDown,'Bajar','HudJump',.56,-1],
+];
+const movementPanels=vertical=>vertical?verticalMovement:groundMovement;
 const path=name=>({'@path':'/'+name});
 const action=(name,context={})=>({event:{name,context:{scope:path('scope'),...context}}});
 const button=(id,label,fields={})=>({id,component:'HudButton',label,action:action(id),...fields});
@@ -204,7 +210,7 @@ export class MatterWorktableHud{
         else if(id===creationHudId)this.creation.group=group;
         else if(id===beaconStationId)this.beacon.stationGroup=group;
         else if(id===beaconViewerId)this.beacon.viewerGroup=group;
-        else if(id===movementStick||id===movementJump)this.movementGroups.set(id,group);
+        else if(id===movementStick||id===movementJump||id===movementDown)this.movementGroups.set(id,group);
         else this.group=group;
       },
       send:({action:requested})=>{
@@ -473,7 +479,7 @@ export class MatterWorktableHud{
     this.map.updateBearing(visible&&this.canvas.clientWidth-left-right>=218);
   }
 
-  syncMovement(visible,lane=''){
+  syncMovement(visible,lane='',vertical=false){
     if(!visible||this.movementLane!==lane){
       this.movementPresented=false;
       for(const id of this.movementGroups.keys())this.send('deleteSurface',{},id);
@@ -482,12 +488,19 @@ export class MatterWorktableHud{
       this.movementLane=lane;
       if(!visible)return;
     }
-    for(const [id,label,component,width] of movementPanels){
+    if(this.movementVertical!==vertical){
+      for(const id of [movementJump,movementDown]){
+        if(this.movementGroups.has(id))this.send('deleteSurface',{},id);
+        this.movementGroups.delete(id);
+      }
+      this.movementVertical=vertical;
+    }
+    for(const [id,label,component,width,axis] of movementPanels(vertical)){
       if(this.movementGroups.has(id))continue;
       this.send('createSurface',{catalogId:spatialHudCatalog.id},id);
       this.send('updateComponents',{components:[
         {id:'root',component:'HudPanel',width,children:['control']},
-        {id:'control',component,label},
+        {id:'control',component,label,...(axis?{vertical:axis}:{})},
       ]},id);
     }
   }
@@ -719,13 +732,17 @@ export class MatterWorktableHud{
         }
       }
       this.place(this.toolGroup,'toolPlacement',viewport,barCenter,barTop,dockScale);
-      const movementScale=lane?conversationMovementScale:width<380?145:166;
-      const movementTop=Math.max(34,barTop-.64*movementScale-14);
+      const preferredScale=lane?conversationMovementScale:width<380?145:166;
+      const movementScale=this.movementVertical?Math.min(preferredScale,Math.max(95,(barTop-48)/1.23)):preferredScale;
+      const movementTop=Math.max(34,barTop-(this.movementVertical?1.23:.64)*movementScale-14);
       if(this.movementGroups.size){
         const jumpCenter=lane==='side'?left+180:width-right-.34*movementScale;
-        this.place(this.movementGroups.get(movementStick),'stickPlacement',viewport,left+.40*movementScale,movementTop,movementScale);
+        const lower=this.movementVertical?.57*movementScale:0;
+        this.place(this.movementGroups.get(movementStick),'stickPlacement',viewport,left+.40*movementScale,movementTop+lower,movementScale);
         this.place(this.movementGroups.get(movementJump),'jumpPlacement',viewport,jumpCenter,
           movementTop+.07*movementScale,movementScale);
+        if(this.movementVertical)this.place(this.movementGroups.get(movementDown),'descendPlacement',viewport,jumpCenter,
+          movementTop+.07*movementScale+lower,movementScale);
       }
       let promptTop=barTop;
       if(this.door.group){
@@ -865,7 +882,9 @@ export class MatterWorktableHud{
       this.visit.present({painted,index:Boolean(this.visit.indexGroup&&this.hud.getSurfaceBounds(exhibitionHudId)),launcher:this.visit.indexActive||Boolean(this.toolGroup&&this.toolLayout?.rows.some(row=>
         row.ids.includes('visit')||row.ids.includes('endVisit'))),
         viewer:Boolean(this.visit.viewerGroup&&this.visitPlacement?.group===this.visit.viewerGroup&&this.hud.getSurfaceBounds(visitHudId))});
-      if(painted&&this.movementGroups.size===2&&this.hud.getSurfaceBounds(movementStick)&&this.hud.getSurfaceBounds(movementJump)){
+      const controlsReady=movementPanels(this.movementVertical).every(([id])=>
+        this.movementGroups.has(id)&&this.hud.getSurfaceBounds(id));
+      if(painted&&controlsReady){
         this.movementPresented=true;
         this.presentMovement(this.hud.locomotionInput);
       }else if(this.movementGroups.size&&this.movementPresented){
