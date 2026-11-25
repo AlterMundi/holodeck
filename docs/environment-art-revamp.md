@@ -217,3 +217,23 @@ destination own a single readable plaque integrated with its frame. Preserve
 the current passage slots, interaction prompts and collision clearance.
 Compare the instruments from the approach and at use distance before
 changing architectural fill, then review the active table and exhibits.
+
+### Terrain-first ground cover
+
+Holding the terrain worker's script response reproduced the reported
+floating grass on the installed predecessor. Four coarse torus patches
+rendered while 2,749 scenery instances used the analytical surface.
+The fix keeps the existing early arrival but delays optional ground cover
+until the first detailed replacement is committed. Later selections retain
+the previous detailed surface and the placed cover until the new set is
+ready. A failed worker before the first commit leaves cover hidden.
+
+The exact packed client in `fdc871f47841` held at four patches and zero
+cover on RTX 2060 Normal and Raspberry Pi 5 Livianos. After the script
+response was released, they drew 112 and 64 patches and 2,749 and 1,165
+cover instances. A separate Chromium fixture moved 0.81 m on the coarse
+surface before releasing the script. Aborting the request kept the
+coarse scene available without cover. These are fixture identities and
+controlled browser loads, not a repeat of the phone playtest. The
+artificial wait still exposes the coarse geometry around the authored
+facade. Four hundred Node tests passed with two optional skips.

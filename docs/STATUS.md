@@ -1,5 +1,18 @@
 # Current MVP work
 
+## November 25 terrain-first ground cover
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `fdc871f47841` from `bcb1606`. The coarse torus still allows
+arrival and movement. Ground cover begins after the first atomic commit
+of detailed terrain and stays mounted across subsequent tile requests.
+Without a first detailed commit, the coarse scene remains usable with its
+optional cover suppressed. Exact RTX 2060 Normal and Pi 5 Livianos
+fixtures verified the delayed load. Protected readback matched all 85
+payload files, the configuration, existing App and audience, and the
+world at sequence 419. Rollback is `6a7916621c6c`.
+[Regression evidence](environment-art-revamp.md#terrain-first-ground-cover).
+
 ## November 25 softer night exposure and warm porch
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
