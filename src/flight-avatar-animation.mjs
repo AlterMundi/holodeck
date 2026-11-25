@@ -4,6 +4,7 @@ import {matterAvatarScale} from './matter-flight.mjs';
 import {TabletopGlance} from './tabletop-attention.mjs';
 import {bindHumanoidFlightRig} from './humanoid-flight-poses.mjs';
 import {bindHumanoidCrouch} from './humanoid-crouch.mjs';
+import {bindHumanoidStandingIdle} from './humanoid-standing-idle.mjs';
 
 const limbNames=['upperarm_l','upperarm_r','lowerarm_l','lowerarm_r','thigh_l','thigh_r','calf_l','calf_r'];
 const pitchAxis=new Vector3(1,0,0);
@@ -43,6 +44,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
   }
   function restore(entry){
     entry.glance?.restore();
+    entry.idleRig?.restore();
     for(const [bone,neutral] of entry.modified)bone.quaternion.copy(neutral);
     entry.modified.clear();
     entry.airRig?.restore();
@@ -52,7 +54,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
   function resetMotion(entry){
     Object.assign(entry,{weight:0,hoverWeight:0,lowWeight:0,planarSpeed:0,airWeight:0,
       lowerWeight:0,airTime:0,rise:0,flightAge:0,pitch:0,phase:0,poseTime:0,observedFlight:false,
-      mode:null,poseMode:null});
+      mode:null,poseMode:null,idleDwell:0,idleTime:0,idleWeight:0});
     entry.heading.set(0,0,0);
     entry.bank=0;
     entry.airRig?.reset();
@@ -75,6 +77,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       if(entry?.mesh!==mesh){
         entry={mesh,last:new Vector3().copy(position),modified:new Map(),
           airRig:bindHumanoidFlightRig(mesh),crouchRig:bindHumanoidCrouch(mesh),
+          idleRig:bindHumanoidStandingIdle(mesh),idlePhase:(id%10000)*2.3999632297,
           unpitched:new Quaternion(),applied:new Quaternion(),heading:new Vector3(),
           limbs:limbNames.map(name=>mesh.getObjectByName(name))};
         resetMotion(entry);
@@ -145,9 +148,17 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       entry.airWeight+=(airWeight-entry.airWeight)*(1-Math.exp(-step*(active?9:13)));
       const lowerTarget=mode==='land'||!active?0:airWeight;
       entry.lowerWeight+=(lowerTarget-entry.lowerWeight)*(1-Math.exp(-step*(lowerTarget?9:24)));
-      if(entry.weight<.01&&entry.hoverWeight<.01&&entry.lowWeight<.01&&entry.airWeight<.01&&entry.lowerWeight<.01&&Math.abs(entry.pitch)<.01&&
-         Math.abs(entry.bank)<.001&&Math.abs(airYaw)<.001){
-        entry.modified.clear();
+      const settled=entry.weight<.01&&entry.hoverWeight<.01&&entry.lowWeight<.01&&entry.airWeight<.01&&
+        entry.lowerWeight<.01&&Math.abs(entry.pitch)<.01&&Math.abs(entry.bank)<.001&&Math.abs(airYaw)<.001;
+      const resting=entry.idleRig&&glanceMotion&&settled&&grounded===true&&!active&&!low&&
+        actor.animationState===0&&(actor.animationWeights?.[0]??1)>.9&&speed<.14&&entry.planarSpeed<.14;
+      entry.idleDwell=resting?entry.idleDwell+step:0;
+      const idleTarget=entry.idleDwell>=.32?1:0;
+      entry.idleWeight=glanceMotion?
+        entry.idleWeight+(idleTarget-entry.idleWeight)*(1-Math.exp(-step*(idleTarget?4:24))):0;
+      entry.idleTime=resting||entry.idleWeight>.001?entry.idleTime+step:0;
+      if(settled){
+        if(entry.idleWeight>.001)entry.idleRig.apply(character,entry.idleTime+entry.idlePhase,entry.idleWeight);
         entry.glance?.apply(character,entry.head,isLocal&&table&&glanceMotion?gaze:null,dt);
         continue;
       }
@@ -179,6 +190,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
         entry.airRig.apply(character,{mode:entry.poseMode,time:entry.poseTime,
           forward:entry.weight,weight:entry.airWeight,lowerWeight:entry.lowerWeight,step});
       }
+      if(entry.idleWeight>.001)entry.idleRig.apply(character,entry.idleTime+entry.idlePhase,entry.idleWeight);
       entry.glance?.apply(character,entry.head,isLocal&&table&&glanceMotion?gaze:null,dt,1-w*.8);
       const airSwing=entry.airRig?0:w,hoverSwing=entry.airRig?0:entry.hoverWeight;
       if(entry.airRig&&entry.crouchRig)continue;

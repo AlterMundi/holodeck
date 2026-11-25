@@ -275,8 +275,10 @@ function startInterior(space){
         if(entering&&position&&entryRoomReady(document.getElementById(space.id)))worldEntered();
       };
       let releaseHeadroom,releaseRun;
+      const reducedMotion=document.defaultView.matchMedia('(prefers-reduced-motion: reduce)');
       const releaseAnimation=bindFlightAvatarAnimation(renderer.characterManager,()=>({
-        peerPoses:poses.peers,
+        peerPoses:poses.peers,grounded:client.getCharacterManager().localController?.characterOnGround,
+        glanceMotion:!reducedMotion.matches&&!document.hidden,
         crouch:client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt'),
       }));
       renderer.dispose=()=>{poses.dispose();releaseRun?.();releaseHeadroom?.();releaseAnimation();frameBudget.dispose();picker.dispose();galleryModels.clear();dispose();};

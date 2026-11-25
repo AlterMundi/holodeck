@@ -240,3 +240,75 @@ test('airborne humanoid eases heading changes on a radial frame and releases ban
   release();
   assert.ok(root.quaternion.angleTo(stock)<.001);
 });
+
+test('standing idle animates supported humanoids and releases without moving either foot',()=>{
+  for(const file of ['avatar-1-bodyA-skin01.glb','avatar-2-bodyB-skin03.glb','avatar-3-bodyA-skin05.glb','avatar-4-bodyB-skin07.glb']){
+    const {root,mesh}=avatar(file);
+    root.rotateZ(.48);
+    root.rotateY(1.3);
+    root.getMesh=()=>mesh;
+    const id=7;
+    const actor={position:new Vector3(),animationState:0,animationWeights:{0:.8}};
+    const state={characters:new Map([[id,actor]]),localCharacterId:id};
+    const head=mesh.getObjectByName('head'),chest=mesh.getObjectByName('spine_05');
+    const stockHead=head.quaternion.clone(),stockChest=chest.quaternion.clone();
+    const contacts=['pelvis','foot_l','foot_r'].map(name=>{
+      const bone=mesh.getObjectByName(name);
+      return [bone,bone.getWorldPosition(new Vector3()),bone.getWorldQuaternion(new Quaternion()).normalize()];
+    });
+    const manager={
+      loadedCharacters:new Map([[id,{character:root}]]),
+      update(){
+        assert.ok(head.quaternion.equals(stockHead),file);
+        assert.ok(chest.quaternion.equals(stockChest),file);
+      },
+    };
+    const controls={grounded:true};
+    const release=bindFlightAvatarAnimation(manager,()=>controls);
+    const frames=(count,positionDelta=0)=>{
+      for(let frame=0;frame<count;frame++){
+        actor.position.x+=positionDelta;
+        manager.update(state,1/60);
+      }
+    };
+    frames(48);
+    assert.ok(head.quaternion.equals(stockHead));
+    actor.animationWeights[0]=1;
+    frames(18);
+    assert.ok(head.quaternion.equals(stockHead));
+    let peak=0;
+    for(let frame=0;frame<600;frame++){
+      frames(1);
+      peak=Math.max(peak,head.quaternion.angleTo(stockHead));
+      for(const [bone,position,rotation] of contacts){
+        assert.ok(bone.getWorldPosition(new Vector3()).distanceTo(position)<1e-6);
+        assert.ok(bone.getWorldQuaternion(new Quaternion()).normalize().angleTo(rotation)<1e-6);
+      }
+    }
+    assert.ok(peak>.045,file);
+    actor.animationState=1;
+    frames(24,.03);
+    assert.ok(head.quaternion.equals(stockHead));
+    actor.animationState=0;
+    frames(100);
+    assert.ok(!head.quaternion.equals(stockHead));
+    const beforeUnsupported=head.quaternion.clone();
+    controls.grounded=false;
+    frames(1);
+    assert.ok(!head.quaternion.equals(stockHead));
+    assert.ok(head.quaternion.angleTo(beforeUnsupported)<.04);
+    controls.grounded=true;
+    frames(65);
+    controls.glanceMotion=false;
+    frames(1);
+    assert.ok(head.quaternion.equals(stockHead));
+    controls.glanceMotion=true;
+    controls.grounded=false;
+    frames(100);
+    assert.ok(head.quaternion.equals(stockHead));
+    controls.grounded=true;
+    frames(65);
+    release();
+    assert.ok(head.quaternion.equals(stockHead));
+  }
+});
