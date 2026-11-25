@@ -198,12 +198,20 @@ the old two-column order clock and keeps the expiry floor separately.
 The previous writer's expiry deletion also retains a capture-anchored
 deadline. Confirmed sources continue to read across expiry and restart.
 
-The selected service still uses the legacy route. Sustained rollout needs
-an exact sealed-source archive and qualification of the selected live
-pair. Use the existing owner-local access boundary and keep retained
-world sources separate from the human attachment vault. The archive must
-verify durable bytes before reducing hot storage, retain the original
-receipt and digest, and keep its retention independently bounded.
+DaimonApp [PR #1031](https://github.com/AlterMundi/DaimonApp/pull/1031)
+now includes the owner-local archive (candidate `5bef7f94`). The journal
+verifies native acceptance and the exact digest before assigning the
+receipt to a separate bounded archive budget. The original bytes,
+receipt and digest stay readable in the same private database. Capacity
+recovery and a new reservation commit together. Fable 5.2 High reviewed
+the design. Opus 5.5 High reviewed the implementation and identified the
+capacity errors that remain possible when a binding has no eligible
+receipt or its oldest receipt fails verification. The controlled
+qualification passed 20 focused tests and the real HTTP and owner
+command fixture. A later native input reused the archived baseline.
+The selected service still uses the legacy route. Qualification and
+activation of the compatible live browser, provider and owner pair
+remain open.
 
 The original Holodeck codec prototype defined a planner and reducer for full,
 delta and unchanged situations. The projection keeps distinct object, station,
