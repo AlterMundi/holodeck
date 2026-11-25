@@ -2,6 +2,23 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `7ba066becd003c6a539330e26c2952de1f1ec541` combines the Character Design Room with the protected
+Matter release `4e3c2d60b33c` from `565ad77`. The combined archive
+`26cfce32d8a0286196ac80415cec7617ee3fb35dd23dcb197ef821cad8989a5f`
+matched all 87 payloads, including both exact installed Beacon assets.
+At 568 × 320 and 568 × 280 in Chromium touch emulation, Matter retained
+its paged part chooser, compact tabs and separate cut and flight input
+through rotation to portrait and back. One session entered Materia,
+left its table, crossed both foyer doors into the Character Design Room
+and opened the pose controls with no Matter tool state inherited. Escape
+left the Character table while keeping the room active. The fixture
+showed clipped Character tab labels at the smallest landscape scale.
+The two-session desktop review repeated exact pose, notes, comparison
+and Escape checks. The native review checkpoint passed its restart
+test, and Holodeck passed 414 tests with two skips. The protected world
+still needs to receive the combined candidate and exercise two
+authenticated visitors.
+
 Source `b2d88ca8c2c771c7b191dee6cfd8465c075351bd` pins Proyección
 `1a1e29a9ab37926b9d903e94413c660d5f8c3543` and adopts its scoped
 choice dismissal. The archive
