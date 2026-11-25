@@ -1,9 +1,21 @@
 # Current MVP work
 
+## November 25 miniature flight controls
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `476adaf02828` from `0c34a0b`. Tabletop flight eases acceleration
+and heading. Touch can independently climb, descend and steer. The
+controls move clear of the workpiece panel on a short display. Both
+avatars retain their own proportions and the common hologram treatment.
+[Exact browser checks](playtest-iteration.md#miniature-flight-controls)
+covered desktop and emulated touch on RTX 2060 and Raspberry Pi 5.
+Immediate rollback is `ec75cae97e47`. Independent authenticated visitor
+and physical touchscreen testing remain open.
+
 ## November 25 inner ring overlook
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
-serves `ec75cae97e47` from `62855d7`. The existing exterior trail
+selected `ec75cae97e47` from `62855d7` for this update. The existing exterior trail
 ends at a walkable limestone terrace with an oak shelter, bronze
 directional inlay, bench and amber marker lights. The opening faces
 the opposite arc. [Physical browser checks](playtest-iteration.md#inner-ring-overlook)

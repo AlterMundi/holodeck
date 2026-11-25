@@ -2109,3 +2109,38 @@ certify an independent visitor pair.
 Protected HTTPS, existing audience, exact installed files, native state
 and compatible previous release were checked separately. The temporary
 technical reader was revoked. The exterior and HUD roadmap remains open.
+
+
+## Miniature flight controls
+
+A miniature visitor can steer, rise or descend using independent
+spatial touch controls. The left stick owns planar movement. Two
+separately held altitude buttons work with it. The keyboard still uses
+Space and Shift. Releasing or cancelling an axis parks it immediately.
+Acceleration while held eases toward the command, heading turns on
+the shortest arc and collision push-out cannot feed movement velocity.
+The table still restores the original position and camera range at
+exit. Each body uses 19% of its own world scale and .55 opacity.
+
+The controls use the existing Proyección inputs and actual worktable
+window bounds. A short landscape display groups altitude alongside
+the stick, clear of the piece controls. A narrow portrait display
+can place the three targets in a row. Room heading and workpiece panel
+stay separate in the measured landscape view.
+
+Selected package `476adaf02828` from `0c34a0b` changed only the
+client of 84 installed payloads. Holodeck passed 375 tests and skipped
+two optional cases. Opus 5.5 High diagnosed collision impulse and
+clock hazards and reviewed their corrections and the layout. The exact
+package exercised ascent, release, descent, simultaneous climb and
+travel, scale, hologram and return in RTX 2060 Normal and Pi 5 Livianos.
+The workpiece stayed mounted in 667×375 and 340×620 touch viewports.
+The ordinary keyboard route also passed on the RTX. These used
+emulated touch in Chromium and controlled identities.
+
+Separate Chromium fixture actors verified pointing, independent
+rotation, unchanged selection, expiry and revoked-reader denial.
+The release preserved the installed file inventory, protected Home
+audience, native world and compatible previous package. The technical
+reader was revoked. An independently authenticated visitor pair and
+fingers on a physical touchscreen remain unverified.
