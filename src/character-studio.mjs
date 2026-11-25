@@ -33,7 +33,7 @@ const button=(id,text,key)=>({id,component:'HudButton',label:text,action:action(
 const choice=(id,name)=>({id,component:'HudChoice',label:name,options:path(id+'Options'),
   value:path(id),draft:path('draft/'+id),action:action(id,id)});
 const sectionControls={
-  Pose:['clock','chapter','playback','views'],
+  Pose:['clock','heldPose','chapter','playback','views'],
   Clips:['rig','clip','playOptions'],
   Comparar:['comparison'],
   Notas:['presentation','noteTarget','note','archive','reviewNotes','reviewText'],
@@ -42,13 +42,14 @@ const sectionIds=Object.keys(sectionControls);
 const compactControls=new Set(sectionIds.flatMap(id=>sectionControls[id]));
 const controls=[
   {id:'root',component:'HudPanel',label:'Revisión de movimiento',width:1.85,gap:.025,
-    children:['sections','title','rig','clip','clock','chapter','playback','playOptions','comparison','views','presentation','noteTarget','note','archive','reviewNotes','reviewText','status']},
+    children:['sections','title','rig','clip','clock','heldPose','chapter','playback','playOptions','comparison','views','presentation','noteTarget','note','archive','reviewNotes','reviewText','status']},
   {...row('sections',sectionIds),visible:path('compact')},
   ...sectionIds.map(id=>({...button(id,id),pressed:path('selectedSection/'+id),weight:id==='Comparar'?1.36:1})),
   label('title','Revisión de movimiento','title'),choice('rig','Personaje'),choice('clip','Ciclo'),
   {id:'clock',component:'HudRange',label:'Fotograma',min:0,max:path('lastFrame'),step:1,value:path('frame'),
     draft:path('draft/frame'),gestureKey:path('clipEdition'),
     action:{event:{name:'clock',context:{value:path('draft/frame'),clipEdition:path('clipEdition')}}}},
+  label('heldPose',path('heldPose'),'status'),
   {...choice('chapter','Fase'),
     action:{event:{name:'chapter',context:{value:path('draft/chapter'),clipEdition:path('clipEdition')}}}},
   row('playback',['back','play','forward']),
@@ -410,18 +411,17 @@ export function openCharacterStudio(document,table=null){
     if(figure!==activeFigure||id!==sequence||request!==referenceRequest)return;
     if(showingReference)displayClip(false);
     reference=prepared;
+    if(elapsed>timelineDuration())scrub(frame);
     refresh();
   }
 
   function displayed(){return showingReference?reference:primary;}
-  function clipEdition(){return [rig,clip,revision,displayed()?.name].join(':');}
-  function frameLimit(selected=primary){return selected?Math.ceil(selected.duration*motionStudyRate):0;}
-  function availableChapters(){
-    const limit=frameLimit();
-    return displayed()?.chapters.filter(chapter=>chapter.frame<=limit)??[];
-  }
+  function clipEdition(){return [rig,primary?.edition,reference?.edition,displayed()?.name].join(':');}
+  function timelineDuration(){return Math.max(primary?.duration??0,reference?.duration??0);}
+  function frameLimit(duration=timelineDuration()){return Math.ceil(duration*motionStudyRate);}
+  function availableChapters(){return displayed()?.chapters??[];}
   function drawPose(){
-    if(playback)playback.draw(Math.min(displayed().duration,elapsed));
+    if(playback)playback.draw(Math.min(displayed().duration,frame/motionStudyRate));
   }
   function scrub(target){
     frame=Math.max(0,Math.min(Math.round(Number(target)||0),frameLimit()));
@@ -436,10 +436,11 @@ export function openCharacterStudio(document,table=null){
     refresh();
   }
   function refresh(){
-    if(!visible||!figure||!clip)return;
+    if(!visible||!figure||!playback||!clip)return;
     const options=clipOptions(rigs[rig],figure);
     const chapters=availableChapters();
-    const chapter=chapters.find(entry=>entry.frame===frame)?.id??'';
+    const exactFrame=reviewPose().frame;
+    const chapter=chapters.find(entry=>entry.frame===exactFrame)?.id??'';
     const viewedReview=currentReview();
     const notes=viewedReview?.notes??[];
     const selected=notes.find(item=>item.id===selectedNote)??notes[0];
@@ -448,6 +449,7 @@ export function openCharacterStudio(document,table=null){
     show.title=show.status=!compact;
     if(table){show.views=false;show.status=Boolean(message);}
     show.chapter&&=chapters.length>0;
+    show.heldPose&&=frame>exactFrame;
     show.presentation&&=canReview===true;
     show.noteTarget&&=Boolean(draftPose&&playback&&keyForPose(draftPose)!==keyForPose(reviewPose()));
     show.reviewNotes&&=notes.length>0;
@@ -458,6 +460,7 @@ export function openCharacterStudio(document,table=null){
       reference:reference?.name??'',referenceOptions:options.filter(id=>id!==clip).map(id=>({id,label:names[id]||id})),
       compareLabel:showingReference?'Ver A':'Ver B',showingReference,noReference:!reference,
       lastFrame:frameLimit(),clipEdition:clipEdition(),speedOptions,speed,loop,
+      heldPose:show.heldPose?'Último fotograma de '+(showingReference?'B':'A')+' · '+exactFrame:'',
       chapter,chapterOptions:chapters,
       canReview:canReview===true,presentationBusy,
       noteAction:compact?(canReview?'Compartir':'Guardar'):(canReview?'Compartir nota':'Fijar nota'),
@@ -473,7 +476,7 @@ export function openCharacterStudio(document,table=null){
   }
   function reviewPose(){
     const selection=displayed();
-    return {rig,clip:selection.name,edition:selection.edition,frame:Math.min(frame,frameLimit(selection))};
+    return {rig,clip:selection.name,edition:selection.edition,frame:Math.min(frame,frameLimit(selection.duration))};
   }
   const keyForPose=pose=>JSON.stringify(pose);
   function currentReview(){
@@ -641,7 +644,7 @@ export function openCharacterStudio(document,table=null){
       refresh();
     }
     if(playing&&playback){
-      const duration=primary.duration;
+      const duration=timelineDuration();
       elapsed+=dt*Number(speed);
       if(elapsed>=duration&&!loop){
         playing=false;
@@ -649,8 +652,8 @@ export function openCharacterStudio(document,table=null){
         refresh();
       }else{
         elapsed%=duration;
-        drawPose();
         frame=Math.floor(elapsed*motionStudyRate);
+        drawPose();
         if(now-showedAt>150){showedAt=now;refresh();}
       }
     }

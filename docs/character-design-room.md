@@ -57,9 +57,11 @@ synchronized presenters and the final quality of in-game motion remain open.
 ## Comparing motion in the viewer
 
 The optical controls provide local orbit and zoom, playback speed and loop,
-and a reference clip from the selected rig. Compare A and B against the same
-primary timeline. A shorter reference holds its last pose. Links and notes
-refer to the visible clip or study, its exact edition and its displayed frame.
+and a reference clip from the selected rig. Compare A and B on a shared
+30 fps timeline that covers both clips. Either side holds its last pose
+after that clip ends. The panel distinguishes that held frame from the
+comparison time. Playback, links and notes use the same displayed frame and
+exact edition.
 Switching clips restores the rig's neutral channels and resets the waterline
 before the other playback owns them. Camera angles remain local.
 The flight study adds a **Fase** selector for support, takeoff, hover,
