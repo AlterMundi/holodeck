@@ -1,5 +1,22 @@
 # Current MVP work
 
+## November 25 meadow, optical HUD and animated passage
+
+The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)
+serves `a4bfd4f17dee` from `c1deb83`. The exterior now draws
+curved meadow blades, a graded earth path and shared air color across
+land, water and sky. The optical HUD includes the redesigned action bar
+and circular topographic minimap. Room travel shows the animated
+portal and retains native reduced-motion and recovery controls.
+
+Matched physical movement covers RTX 2060 Normal and Pi 5 Livianos;
+RTX also renders the 23:10 ART fixture. Separate browser fixtures cover
+touch minimap, the mounted Conversation draft and the transition after
+WebGL loss. Installed inventory, protected HTTPS, audience, configuration
+and native state matched, with `3fd63da1fd1d` as immediate rollback.
+The larger visual objective and independent visitor feedback remain open.
+[Measurements](environment-art-revamp.md#installed-landscape-hud-and-passage-pass)
+
 ## November 25 grounded companion and humanoid pose studies
 
 The protected [Holodeck entrance](https://compaii.dmn.homes/holodeck/)

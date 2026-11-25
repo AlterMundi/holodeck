@@ -10,7 +10,7 @@ an isolated material close-up to make a release decision.
 
 ## Current baseline and observed gaps
 
-Production still selects `476adaf02828`. It has authored vegetation near
+The initial art comparison used `476adaf02828`. It has authored vegetation near
 the house, coarse scattered props beyond it, a seeded level-of-detail
 torus, an Argentine solar clock, procedural clouds, a projected cosmic
 panorama, and materials that already use radial lighting. The production
@@ -127,3 +127,44 @@ detail are still visible against the reference. Next reduce repeated
 vertex work, improve blade silhouettes and evaluate sustained flight,
 dusk, water transition and the actual detailed house. The isolated
 environment candidate has no production selection.
+
+
+## Installed landscape, HUD and passage pass
+
+Protected package `a4bfd4f17dee` from `c1deb83` merges the optical
+HUD and terrain branches with the installed foyer and motion release.
+The near meadow now uses curved, narrower blades with many stable
+appearances across rooted tiles. The weaker render profile shares the
+same seeded addresses and uses simpler geometry. The blades sink into
+the ground in a staggered distance fade. The path uses stable grit,
+dust and roughness in world metres. The AVIF-backed passage runs its
+motion and retry on the existing route.
+
+The pair below used the same camera starts, 15:40 ART, graphics profile
+and 55 moving samples per view. Figures are p95 milliseconds for interval
+and GPU time. Baseline `3fd63da1fd1d`, final `a4bfd4f17dee`.
+
+| Route | Frame interval | GPU time |
+| --- | ---: | ---: |
+| RTX 2060 Normal, arrival (1200 × 740 render buffer) | 21.4 → 21.4 | 4.68 → 4.28 |
+| RTX 2060 Normal, dry ridge | 19.5 → 21.4 | 2.81 → 3.26 |
+| Raspberry Pi 5 Livianos, arrival (363 × 244) | 30.6 → 27.8 | 17.05 → 15.79 |
+| Raspberry Pi 5 Livianos, dry ridge | 20.6 → 17.2 | 11.30 → 12.31 |
+
+A separate 23:10 ART RTX run rendered both views at 1020 × 629 after
+adaptive resolution and completed the same moving checks. A 390 × 780
+touch fixture opened the circular topographic map and closed it through
+the native control. A separate desktop and touch test preserved the
+mounted Conversation draft through the portrait and landscape control
+routes. The passage's WebGL-loss test retried a single committed move,
+and no duplicate travel request was sent. The suite passed 399 Node
+tests with two optional skips.
+
+The package matched 85 installed files, the existing protected audience
+and receiving configuration, and native run, 30 entities and four
+creation nodes. The immediate rollback is `3fd63da1fd1d`.
+The night screenshot still shows strong illumination on the cream house.
+The meadow is sparse in some parts of the arrival view, and the fixture
+runs do not establish independent visitor feedback or final quality of
+the facade, exhibits and workbench. Do not extend the optional Sand3D
+assets beyond their tested trail until the wider route is composed.
