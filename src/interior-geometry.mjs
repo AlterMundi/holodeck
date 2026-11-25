@@ -11,13 +11,14 @@ const SLOTS = [
 const STAIR_STEPS=6, TREAD=.45, RISE=.14;
 const round=n=>Number(n.toFixed(4));
 
-export function passageAt(room,link,index,destination) {
+export function passageAt(room,link,index,destination,upperLanding=false) {
   const slot=SLOTS[index];
   const rise=link.kind==='stair'?Math.sign(destination.level-room.level):0;
-  const approach=rise ? .34 : 1.05;
+  const elevation=(upperLanding?1:rise)*STAIR_STEPS*RISE;
+  const approach=elevation ? .34 : 1.05;
   return {
     ...link,slot:index,rise,
-    door:{x:round(slot.x+slot.dx*approach),y:round(.11+rise*STAIR_STEPS*RISE),
+    door:{x:round(slot.x+slot.dx*approach),y:round(.11+elevation),
       z:round(slot.z+slot.dz*approach),yaw:slot.rotation+180},
   };
 }
@@ -43,11 +44,39 @@ export function roomFloor(passages,color,visible=true) {
   return floor;
 }
 
-export function passageMarkup(passage,{visibleSteps=true,authoredPortal=null,authoredDoor=false,authoredPassages=[],portalAsset=null,houseDoor=false,existingDoor=false}={}) {
+function staircase(rise,fill,attributes) {
+  let steps='';
+  for(let i=0;rise&&i<STAIR_STEPS;i++){
+    const z=TREAD*(i+.5),top=.1+rise*(STAIR_STEPS-i)*RISE;
+    steps+=cube(0,top-.07,z,1.7,.14,TREAD,fill,attributes);
+  }
+  if(rise)for(const side of [-1,1]){
+    const y=rise*STAIR_STEPS*RISE;
+    steps+=cube(side*.91,.57+y/2,STAIR_STEPS*TREAD/2,.12,1.04+Math.abs(y),STAIR_STEPS*TREAD,'#7a9690',attributes);
+  }
+  return steps;
+}
+
+export function upperLandingCollision(index) {
+  const {x,z,rotation}=SLOTS[index];
+  return `<m-group id="return-landing" x="${x}" z="${z}" ry="${rotation}">${staircase(1,'#3f5b5e',' opacity="0" cast-shadows="false"')}</m-group>`;
+}
+
+export function passageMarkup(passage,{visibleSteps=true,authoredPortal=null,authoredDoor=false,authoredPassages=[],portalAsset=null,returnLeaf=null,houseDoor=false,existingDoor=false}={}) {
   const slot=SLOTS[passage.slot],y=passage.rise*STAIR_STEPS*RISE;
   const portal=passage.kind==='portal',color=portal?'#9384bd':passage.rise?'#779491':'#d6b58c';
   const fill=portal?'#4f6a8d':passage.rise?'#3f5b5e':'#675948';
   const attributes=visibleSteps?'':' opacity="0" cast-shadows="false"';
+  if(returnLeaf){
+    const {src,onLanding}=returnLeaf;
+    const lift=onLanding?round(STAIR_STEPS*RISE):0;
+    const plaque=onLanding?`<m-label y="3.32" z=".286" width="1.48" height=".24" padding="3"
+      alignment="center" font-size="18" color="#182628" font-color="#fff0cc"
+      content="${passage.label}" collide="false"></m-label>`:'';
+    return `<m-group id="passage-${passage.slot}" x="${slot.x}" z="${slot.z}" ry="${slot.rotation}">
+      <m-model src="${src}" y="${lift}" sy="${onLanding?1:1.32}" z=".015" collide="false" cast-shadows="false"></m-model>${plaque}
+    </m-group>`;
+  }
   if(houseDoor&&passage.kind==='door'){
     const noCollision=' collide="false"';
     const leaf=existingDoor?'':[
@@ -63,13 +92,7 @@ export function passageMarkup(passage,{visibleSteps=true,authoredPortal=null,aut
         font-size="18" color="#182d30" font-color="#ffe2a8" content="${passage.label}" collide="false"></m-label>
     </m-group>`;
   }
-  let steps='';
-  for(let i=0;passage.rise&&i<STAIR_STEPS;i++){
-    const z=TREAD*(i+.5),top=.1+passage.rise*(STAIR_STEPS-i)*RISE;
-    steps+=cube(0,top-.07,z,1.7,.14,TREAD,fill,attributes);
-  }
-  if(passage.rise)for(const side of [-1,1])
-    steps+=cube(side*.91,.57+y/2,STAIR_STEPS*TREAD/2,.12,1.04+Math.abs(y),STAIR_STEPS*TREAD,'#7a9690',attributes);
+  const steps=staircase(passage.rise,fill,attributes);
   if(portal&&portalAsset)
     return `<m-group id="passage-${passage.slot}" x="${slot.x}" z="${slot.z}" ry="${slot.rotation}">
     <m-model id="portal-fitting-${passage.slot}" src="${portalAsset}" collide="false" cast-shadows="false"></m-model>

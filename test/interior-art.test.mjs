@@ -8,6 +8,7 @@ import {once} from 'node:events';
 import {captureNativeSituation} from '../src/native-conversation.mjs';
 import {interiorArt} from '../src/interior-art.mjs';
 import {interiorDocument} from '../src/interior-spaces.mjs';
+import {passageAt,upperLandingCollision} from '../src/interior-geometry.mjs';
 import {houseId} from '../src/houses.mjs';
 import {RoomStore} from '../src/room-store.mjs';
 import {createHolodeck} from '../src/server.mjs';
@@ -15,6 +16,31 @@ import {createHolodeck} from '../src/server.mjs';
 const owner = 'dm:being:v1:2wG9cFk2YwACrjlcc6JFGux_lcGN_thQ5lq4WdDefKU';
 const house = houseId(owner);
 const lab = 'compaii-lab';
+
+test('the fitted return keeps the existing Matter plaque and meets the upper Lab tread',()=>{
+  const foyer={id:'compaii-vestibulo',level:0};
+  const link={kind:'door',to:foyer.id};
+  const matter={id:'matter',title:'Materia',level:0};
+  const labRoom={id:lab,title:'Harmonic Lab',level:0};
+  const src='/scoped/return.glb';
+  const render=(room,onLanding)=>{
+    const passage={...passageAt(room,link,0,foyer,onLanding),title:'Vestíbulo'};
+    const art={src:'/shell.glb',colliders:onLanding?upperLandingCollision(0):''};
+    return {passage,markup:interiorDocument(room,[passage],null,art,()=>({src,door:true,onLanding}),true)};
+  };
+  const flat=render(matter,false),raised=render(labRoom,true);
+  assert.deepEqual(flat.passage.door,{x:-3,y:.11,z:-4.81,yaw:180});
+  assert.deepEqual(raised.passage.door,{x:-3,y:.95,z:-5.52,yaw:180});
+  assert.equal(raised.passage.kind,'door');
+  assert.equal(raised.passage.rise,0);
+  assert.match(flat.markup,/<m-model src="\/scoped\/return.glb" y="0" sy="1.32"[^>]*collide="false"/);
+  assert.doesNotMatch(flat.markup,/content="Vestíbulo"/);
+  assert.match(raised.markup,/<m-model src="\/scoped\/return.glb" y="0.84" sy="1"[^>]*collide="false"/);
+  assert.match(raised.markup,/content="Vestíbulo"/);
+  assert.equal(raised.markup.match(/width="1.7" height="0.14" depth="0.45"[^>]+opacity="0"/g)?.length,6);
+  assert.doesNotMatch(interiorDocument(labRoom,[],null,{src:'/shell.glb',
+    colliders:upperLandingCollision(0)},()=>({src,door:true,onLanding:true}),true),/scoped\/return|content="Vestíbulo"/);
+});
 
 test('authored room surfaces retain collision and the engine stair geometry',()=>{
   const room={id:lab,title:'Laboratorio',level:-1};

@@ -732,9 +732,9 @@ contract for later rooms, objects and outdoor places.
 
 Build a shared seeded landscape for traversal. Both angular terrain coordinates
 wrap. The radial field pulls toward the centerline of the tube, so players walk
-on its outer skin, including the flank facing the central opening. The first
-release has exactly one building, CompAII’s house. Its only room and app
-is Manipulador de Materia. Locate
+on its outer skin, including the flank facing the central opening. The
+active release has one house with the Atelier foyer, Matter, Harmonic Lab
+and the Character Design Room. Locate
 arrival where players can see the opposite arc and find the house, a water
 basin, a traversable cave and a route around the ring from recognizable
 landmarks. Leave earlier island experiments out of this release.
@@ -793,10 +793,12 @@ A seeded water basin near the house now streams its surface with the same
 balanced tiles. The water and ground agree on the radial level, including edge
 stitching. The paired browser trial walked from a dry bank into deep water,
 confirmed the avatar was supported near the surface, and walked back out.
-The first cave adds two open mouths and a connected two-chamber passage.
-The local rock shell registers the same triangles for rendering and avatar
-collision. The paired browser fixture walked through, measured the collider
-overhead and observed the other side from the independent participant.
+The first cave preview adds two open mouths and a connected two-chamber
+passage. Its shell is placed on the existing heightfield. It registers the
+same triangles for rendering and avatar collision. The paired browser
+fixture walked through, measured the overhead collider and observed the
+other side from the independent participant. This evidence applies to the
+shell preview. The target is a continuous subworld carved from terrain.
 Terrain material now distinguishes the worn shoulder route, vegetated
 patches, rock and shore. An inland spur reaches a raised inner-flank lookout
 with views into the opening and across the opposite arc. The exterior
@@ -852,6 +854,67 @@ local inspection, access revocation, focus restoration and the confirmed
 room palette. Direct participant experience on the protected entrance is
 tracked separately from these technical checks.
 
+### Connected ecosystems above and below the torus
+
+Track surface ecology in [#25](https://github.com/AlterMundi/holodeck/issues/25)
+and the carved subworld in [#26](https://github.com/AlterMundi/holodeck/issues/26),
+under the shared world goal [#3](https://github.com/AlterMundi/holodeck/issues/3).
+
+Design the view from the walker's feet to the opposite arc. Seed a shared
+biome field from elevation, moisture, exposure, slope, shore and rock,
+then use the field for both terrain colors and species distribution. Use
+authored palettes and recognizable silhouettes for distinct regions.
+Keep clear routes and landmarks, irregular forest edges, transitions
+between communities, and reasons to visit both open and enclosed spaces.
+
+- **Near** — instance actual trunks and understory silhouettes, low-poly
+  grass and alpha-cutout cards for leaves and small plants. Keep large,
+  collidable objects tied to world geometry.
+- **Middle distance** — simplify meshes and use crossed cards or several
+  view-angle impostors where they preserve volume and canopy edges.
+- **Far** — group crowns into bounded forest patches and blend the last
+  silhouette detail into ground color and atmospheric perspective.
+  Benchmark alpha coverage at grazing angles, especially on Livianos.
+
+Keep seed-derived instance identities and roots across distance and viewer
+profiles. Thin deterministically and use mipmaps that preserve alpha
+coverage, with a short transition between mesh and cards. Start with a
+meadow-to-woodland route and the lookout across the ring. Capture identical
+cameras at ground height, across the slope and in flight. Measure draw calls,
+p95 moving frame time, decoded texture memory and cold arrival. Low triangle
+counts alone do not prove that stacked transparent cards are faster.
+[SpeedTree LOD documentation](https://docs.unity.com/en-us/speedtree-runtime-sdk/10/level-of-detail).
+
+For the subworld, keep the playtest shell until a replacement is qualified.
+Start with one genuinely carved, connected route from the outside surface
+through interior chambers to a distinct ecosystem on the inner torus.
+Anchor that route first and let procedural strata and chamber branches
+enrich it within established safe clearances. Then extend it into a network
+with multiple entrances, branches, navigation landmarks and local light,
+water, plants and decoration. Use entrance dressing for geological detail.
+The opened space itself comes from the terrain's volumetric representation.
+
+Use bounded voxel or density chunks that merge with the existing exterior
+heightfield at their boundary. Generate render and solid collision from the
+same versioned field. Match mouth edges across tile resolutions, suppress
+invalid surface foliage, and commit geometry and collision together.
+Keep the current radial locomotion, MML presence and one world coordinate
+space. Retain the confirmed 3D underground pose across reconnect and use
+reachable safe anchors when chunks are unavailable. Establish gravity and
+water behavior on the first route before authoring further underground
+ecosystems. Borrow the layering of terrain, materials, population and
+simulation from Hello Games' production talk. Evaluate Transvoxel where
+mixed-resolution seams actually need transition cells.
+[Hello Games' continuous world generation talk](https://www.gdcvault.com/play/1024265/contactus)
+and [Transvoxel](https://transvoxel.org/).
+
+Acceptance starts with a cold walk from the outer surface to the inner
+ecosystem and back in the same world. Check render/collision agreement with
+capsule and camera sweeps, entrance sightlines, first-load and chunk-loss
+behavior, reconnect inside, two independent authorized visitors, and moving
+frame time on physical Normal and Livianos hardware. Replace the preview
+route after validation and keep a compatible rollback.
+
 
 ## Delivery sequence and cards
 
@@ -862,6 +925,13 @@ acceptance with two independent authorized views and physical devices.
 Record exact clean source, compile/test, archive digest and size, installed
 bytes, HTTPS readback and rollback. The independent art working tree stays
 outside the source used for release. See [current evidence](STATUS.md).
+
+Track the reported Legion and Redmi tab exits in
+[#27](https://github.com/AlterMundi/holodeck/issues/27). The later report
+locates one recurrence during flight. Diagnose foreground renderer/GL
+loss separately from background discard or WebView closure, and verify
+reopen from the last confirmed location before treating the report as
+resolved.
 
 | Stage | Owning cards and dependencies | Exit evidence |
 | --- | --- | --- |
