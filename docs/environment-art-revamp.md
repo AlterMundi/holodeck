@@ -284,6 +284,20 @@ Gaps remain farther up the slope and the coverage is limited to the west
 side of the trail. The closer shapes still read as angular blades. This is
 provisional pending player feedback. Device optimization follows approval.
 
+### Finer blades and middle-distance colour (local candidate)
+
+Source `6bc2b7a` prepared the archive `a367976da5eb`. The candidate keeps
+the western roots and replaces the flat spikes with narrower bent ribbons.
+It extends the staggered geometry fade from 33 m to 43 m and carries olive
+and dry-straw variation in the filtered terrain past the grass fade. The
+comparison uses the same camera at noon on an RTX 2060, plus a dusk check
+and a 7 m walk. The candidate showed more continuity uphill and finer
+silhouettes at the same 850×552 draw buffer. The scene peaked at 485,340
+triangles and 135 draws for that noon view, compared with 291,077 and 129 on
+the installed version. Both reported a median animation-frame interval of
+16.7 ms. The test has no GPU timer readings. This candidate is local while
+the installed meadow trial is available for feedback.
+
 ## Trial of short grass drifts at the arrival meadow
 
 Protected visual trial `4cf4d8b5a6d3` serves source `818502a`, with
