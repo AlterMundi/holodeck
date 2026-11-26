@@ -14,8 +14,10 @@ in the standalone viewer and the in-world table. At 1480 × 928 Chromium
 exercised direct rig, cycle and speed choices and playback in both mounts.
 It verified that the table camera follows miniature travel, supports drag
 and wheel, and uses the viewer field of view. Playback stayed available
-in Notes at 550 × 490. These tests used fixture identities. Live review
-with two signed-in people remains a separate acceptance check.
+in Notes at 550 × 490. The packaged browser walkthrough also passed
+shared pose and note review with two fixture identities, independent
+cameras, landscape touch and situated native review. Live review with two
+signed-in people remains a separate acceptance check.
 
 ## Character worktable deployed at the foyer door
 
