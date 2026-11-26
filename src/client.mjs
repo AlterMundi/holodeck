@@ -965,7 +965,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const companion=new CompanionAvatar({scene:renderer.mmlCompositionScene.group,document,base});
     const flightWake=new FlightWake(renderer.mmlCompositionScene.group);
     const waterSplash=new WaterSplash(renderer.mmlCompositionScene.group,{lightweight:()=>rendererBudget.lightweight});
-    const waterWake=new WaterWake(renderer.mmlCompositionScene.group,{lightweight:()=>rendererBudget.lightweight});
+    const waterWake=new WaterWake(renderer.mmlCompositionScene.group,{
+      lightweight:()=>rendererBudget.lightweight,pixelRatio:()=>renderer.composer.renderer.getPixelRatio(),
+    });
     companionAvatar=companion;
     worldPicker=new PublicWorldPicker({document,canvas:options.targetElement.querySelector(':scope > canvas'),scene:renderer.mmlCompositionScene.group,
       cameraState:()=>options.coreCameraManager.getCameraState(),proof:()=>geometryProbe?.snapshot(),

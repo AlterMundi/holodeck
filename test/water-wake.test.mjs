@@ -49,3 +49,33 @@ test('the bounded blue trail sheds across frames and cannot bridge a reposition'
   wake.dispose();
   assert.equal(scene.children.length,0);
 });
+
+
+test('drops continue to shed after departure, then stop while flight keeps moving',()=>{
+  const scene=new Group();
+  let time=0;
+  const wake=new WaterWake(scene,{clock:()=>time,lightweight:()=>true,pixelRatio:()=>1.5});
+  const position=new Vector3(),up=new Vector3(0,1,0);
+  const frame=feet=>{
+    time+=50;
+    position.x+=.5;
+    wake.observe(1,position,up,{...water,feet},{flying:true,seconds:.05,continuous:true,emit:true});
+    wake.update(true);
+  };
+  frame(-9);
+  for(let i=0;i<10;i++)frame(-9);
+  const wetDrops=wake.cursor;
+  assert.ok(wetDrops>0);
+  assert.equal(wake.mesh.material.uniforms.pixelRatio.value,1.5);
+  assert.ok(wake.launch.getY(0)>0,'skim drops should arc above the plane');
+  for(let i=0;i<16;i++)frame(-7);
+  assert.ok(wake.cursor>wetDrops);
+  for(let i=0;i<20;i++)frame(-7);
+  const dryDrops=wake.cursor;
+  for(let i=0;i<16;i++)frame(-7);
+  assert.equal(wake.cursor,dryDrops);
+  assert.equal(wake.mesh.visible,false);
+  for(let i=0;i<8;i++)frame(-8.4);
+  assert.ok(wake.cursor>dryDrops);
+  wake.dispose();
+});
