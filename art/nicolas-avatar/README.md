@@ -4,7 +4,7 @@ Nicolás selected the explorer in his three-view concept and supplied a private
 likeness portrait. Use the smile, swept-back silver hair and tapered beard from
 the portrait. Carry the split teal coat, bronze armour, gold embroidery, cyan
 compass and two-nozzle pack from the concept. The original references stay in
-the private conversation.
+the private conversation. See the [rig and expression contract](rig-contract.md).
 
 ## Proportions study
 
@@ -25,6 +25,16 @@ and is not registered under the current player's appearance. Blender rendered
 a three-quarter view, and Three.js loaded and sampled the current walk,
 flight, boost and swim studies with their target bones. These are binding and
 pose-sampling checks, not visual acceptance of the final movement.
+
+Check a new GLB against the shipping armature and its motion studies:
+
+```sh
+node art/nicolas-avatar/check-rig.mjs .state/nicolas-avatar-blockout/explorer-blockout.glb
+```
+
+This checks junction hierarchy, bind matrices and stock rest transforms,
+loads the mesh in Three.js, and runs the same motion studies as the review room.
+It also reports skinned draw count, triangle count and exported morph names.
 
 Develop the face with a neutral mouth and an expressive smile pose, movable
 lids and a jaw that carries the beard. Sculpt eyes, cheeks and nose to read at
