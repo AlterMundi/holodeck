@@ -1,5 +1,12 @@
 # Current MVP work
 
+## November 26 — Harmonic Lab worktop lighting
+
+Protected release `ccd70257f992` serves `977a168` with
+`6719339a8b57` as rollback. The existing Spatializer and Weaver lights
+put more of their warm pool on the worktops. 13 state files matched by hash. The room journal changed only for presence.
+[Physical comparisons and visitor checks](environment-art-revamp.md#installed-harmonic-lab-worktop-light-pools).
+
 ## November 26 — Limestone and bronze foyer route
 
 Protected release `6719339a8b57` serves `707a5b6`, with `f7528962fb8d`

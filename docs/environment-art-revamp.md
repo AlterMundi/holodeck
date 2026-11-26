@@ -369,6 +369,43 @@ High reviewed the scoped shader and lifecycle. 487 tests passed with
 two optional skips. 13 state files matched by hash. The room journal changed only for presence. Installed foyer variants, room art,
 client, worker, server and protected health matched.
 
+## Installed Harmonic Lab worktop light pools
+
+Protected release `ccd70257f992` serves source `977a168` with `6719339a8b57`
+as rollback. The existing Spatializer and Weaver lights concentrate warmth
+on their worktops. The farther acoustic wall stays darker. The Beacon
+key, authored HIT vault, geometry, panel actions and model bytes are
+unchanged. The archive differs only in the server bundle and manifest.
+The only server byte changes are the two light parameter sets.
+
+At the same entry, Spatializer and Weaver camera poses, RTX 2060 Normal
+p95 was 16.7 / 16.7 / 16.8 to 16.7 / 16.7 / 16.8 ms. Pi 5 V3D Livianos was 16.8 / 16.8 / 16.7 to
+16.8 / 33.4 / 16.7 ms. A separate 120-frame Pi sample at Spatializer was
+16.7 to 33.4 ms p95, and median
+16.7 to 16.7 ms. With candidate
+run first, p95 was 16.8 ms for candidate and
+33.4 ms for baseline. The slower sample followed run
+order in this check. Matching pictures used identical per-device draw-buffer
+sizes, draw counts and triangles.
+The selected control crops gained mean display luma from 84.5 to 93.3
+for Spatializer and 84.5 to 96.0 for Weaver on RTX, without a sampled
+pixel channel reaching 250. These are local still samples.
+
+A two-visitor Chromium fixture entered with E, opened and dismissed each
+target panel using its usual keyboard action, and returned through the
+scoped passage endpoint. The limited visitor got 409 on passage and
+404 on the art. The first visitor could read the art in the room and got
+404 after leaving. Both physical profiles resolved the same focused
+panel routes. Independent human use and instrument output are not
+established by these fixtures.
+
+Fable 5.2 High advised separating local light pools. The current dark vault
+already has the broad baked hierarchy, so the pass reuses two existing
+practicals. Opus 5.5 High reviewed the exact parameters and requested the
+glare check. 487 tests passed with two optional skips. Protected serving
+matched the client, terrain worker, server, both chamber models and
+return leaf. 13 state files matched by hash. The room journal changed only for presence.
+
 ## Screening route
 
 Use identical graphics quality, resolution, seed, camera and solar clock

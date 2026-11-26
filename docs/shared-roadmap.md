@@ -428,8 +428,15 @@ uses the existing meshes and baked light to give the limestone and the
 bronze border more detail. Both authorized room variants carry the
 finish and preserve their passage boundaries.
 
-Continue the finish pass through the miniature, exterior paths, gallery and
-tower with the same standard. Use scale, joinery, hardware and purposeful work objects to carry
+The current toroidal projection exposes Matter, Harmonic Lab and
+Character Studio off the foyer. Gallery and Listening Tower remain
+available to the historical Atelier layout and have no passage in the
+selected torus. Use the active map for the current interior finish pass.
+Classic export and collision evidence remains applicable to its own layout.
+
+Continue the same finish pass through the active miniature, exterior paths
+and rooms. Retain the planned gallery and tower work for an edition that
+exposes those passages. Use scale, joinery, hardware and purposeful work objects to carry
 the detail while leaving the route and interaction targets clear. Compare
 matched before/after captures in the browser and verify clearance,
 transitions and frame cost on the revised route.
@@ -761,6 +768,10 @@ tab under the same operator, on the selected receiver. The panel
 retains its explicit Start action. The receiving frontend is prepared
 on Legion. Verify signed-in instrument use and continuous passage among
 all worktops independently of controlled rendering tests.
+
+The [worktop lighting pass](environment-art-revamp.md#installed-harmonic-lab-worktop-light-pools)
+puts the existing Spatializer and Weaver light pools closer to their
+instruments while preserving the authored dark surround and Beacon key.
 
 The Prototype Bench is a scoped portal to the existing 3D Guitar review.
 Preserve its role and authorization. In a new layout, distinguish inspection
