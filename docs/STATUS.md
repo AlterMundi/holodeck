@@ -1,6 +1,31 @@
 # Current MVP work
 
 
+## November 26 — Longer blue wake over water
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `6416a5246b17`
+from `11f2770`. The wake combines elongated waterline spray and falling
+drops in one bounded Points draw. The spray stays near the interface.
+Droplets persist briefly as the pilot climbs away. Slow peer frames
+preserve the trail and distribute capped emissions across the segment.
+
+Day and night hardware fixtures exercised the exact candidate browser
+bundle on RTX 2060 Normal and Raspberry Pi 5 Livianos. The sharper wake
+is visible in both; daylight is softer in Livianos. In the two-authorized-
+fixture RTX run the other visitor saw one crossing splash and 19 updates
+of the pilot's wake. Independently signed-in participant acceptance
+remains open. Fable High informed the implementation and Opus 5.5 High
+reviewed and rechecked the corrected code. Node passed 457 of 459 tests
+with two optional skips.
+
+Exact protected HTTPS client and health readback passed. Only the packed
+client and its manifest changed. The audience, receiver configuration,
+houses, room designs, avatar choices, and pose-review checkpoints matched.
+The room retained 30 entities and four creation nodes. Its checkpoint
+advanced with participant presence activity during activation.
+Immediate rollback is `58ce88972da7`.
+See [motion #21](https://github.com/AlterMundi/holodeck/issues/21).
+
 ## November 26 flight through water and blue wake
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `58ce88972da7`
