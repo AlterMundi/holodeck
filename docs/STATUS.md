@@ -40,6 +40,16 @@ viewport. The renderer's mouse and touch checks confirmed that the fill
 changes only when the host confirms a value. The runtime server and pose
 catalog match the prior candidate. Protected selection remains open.
 
+An isolated Chromium on the RTX 2060 compared archive `a54512888dc6`
+with `40bf7218b58c` in the same room, with the same rig and paused
+frame 36. The probe verified the NVIDIA WebGL adapter and sampled
+99 browser frame intervals per viewport. Both packages observed
+16.7 ms p50 and 16.8 ms p95 on desktop and in 390-pixel touch
+emulation. Captures show the distinct confirmed fill and remaining
+track. This measures a single stationary review scene with fixture
+room entry. The physical door, touchscreen hardware and protected
+visitor sessions are separate checks.
+
 On that exact archive, the situated Conversation check prepared a
 speaker's local frame 37 after another actor moved the room's shared
 presentation to frame 35. The admitted fixture actor observed frame 37
