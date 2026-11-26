@@ -38,6 +38,16 @@ visitor orbited without changing the first visitor's camera and recovered
 the avatar camera on exit. The full Node suite passed 443 cases with
 two skips. Protected activation still belongs to Holodeck.
 
+The [Proyección alpha.19 release](https://github.com/AlterMundi/proyeccion/releases/tag/v0.1.0-alpha.19)
+packages the timeline and press changes at `ccc9fe919234dc66943aa75a1afc26218e3f96e7`.
+The published npm archive SHA-256 is
+`69891fbf39a65a4af1cedfa87111262d6e0f056c7026df53d0198bf0e1151d17`.
+The exact bytes passed the Chromium host check with one Three.js instance
+and two fixture Matter sessions with independent selections and permissions.
+The pinned specification comparison verified 571 passed and 120 excluded
+cases across 28 suites. The Character candidate still pins the tested
+source archive below.
+
 The table timeline marks the chapter frames returned by the selected
 animation. It pins Proyección `52bdbe0f8eda561e1a068dff21f1eec99e9fe9c7`.
 The package SHA-256 is
