@@ -42,6 +42,14 @@ works and reverts to the browser control if WebGL is lost.
 
 ### Vegetation by distance
 
+The [selected forest release](STATUS.md#november-26-character-table-water-depth-and-closed-doorway-clearance)
+adds a broad, asymmetric evergreen crown beside the original narrow family.
+Both use the same placed trees and preserve the selected family across
+detail switches. The instance capacity is split by family and empty meshes
+are hidden. Matched forest-edge, ground travel and flight checks cover the
+inner arc. The open distance transitions and canopy lighting remain in
+[biomes #25](https://github.com/AlterMundi/holodeck/issues/25).
+
 Use the maintained analytic terrain for elevation, wetness, slope and
 trail masks. Keep the foreground plants grounded on its actual surface
 at both ends of each torus address seam. Group grass by wrapped tiles.

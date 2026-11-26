@@ -839,6 +839,20 @@ contract for later rooms, objects and outdoor places.
    sensory observations to the spatial timeline. See the
    [initial research and experiment](research/2026-11-24-work-projection-replay.md).
 
+### Talk about the live view
+
+Nicolás wants to speak about what he is looking at in Holodeck without having
+to make and attach a screenshot. Carry the actively shared rendered view into
+the same canonical original with its captured camera, space, world's edition,
+and selected object or part when available. An orbit-dependent artifact needs
+a short explicitly shared sequence as well as the camera samples. Use the
+viewer's actual world render and established Conversation permission boundary.
+The receiver checks access to any referenced private content, and absence of
+the optional visual context still leaves text and voice usable.
+Track the in-game capture and receiving evidence in
+[Holodeck #1](https://github.com/AlterMundi/holodeck/issues/1) and
+[DaimonApp #1031](https://github.com/AlterMundi/DaimonApp/issues/1031).
+
 ## First production world — continuous torus
 
 Build a shared seeded landscape for traversal. Both angular terrain coordinates

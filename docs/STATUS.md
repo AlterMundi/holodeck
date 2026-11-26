@@ -1,5 +1,51 @@
 # Current MVP work
 
+## November 26 character table, water depth and closed doorway clearance
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `6692863a8f0a`.
+It preserves the published walkable Character Design Room and the exact
+Proyección alpha.19 pose catalog from `15ed1ac8a65e`. The compatible
+rollback is that same predecessor. Its receiving-authorized owner entered
+through the foyer, read the physical review table and catalog, and returned
+through the reciprocal door. The catalog and public shell bytes are identical
+across this cutover.
+
+In the two reported underwater views, the eyes were approximately .99 m and
+.78 m below the surface. The runtime classified opaque humanoid skins as
+transparent and could draw the entire body after the intersecting water.
+The pinned MML adaptation in `1cb6a40` retains the solid depth pass and uses
+alpha coverage for the first-person fade. The exact received candidate ran
+both reported views on RTX 2060: both had the expected head ray through water,
+and body rendering preceded the intersecting surface. The fully faded and
+restored states also passed. The water opacity cap remains .80.
+
+Shut procedural and authored return leaves now have physical envelopes around
+their visible surfaces (`9173409`). The camera and locomotion use the same
+volumes. A controlled two-browser trial of the earlier composition exercised
+the new leaf bounds on RTX 2060 and Pi 5. The camera was at z = -5.09 on the
+habitable side of the return leaf in both trials. The broad decorative
+occluder fallback and a full authored-room sweep are open.
+
+The stable second woodland crown family (`8ab98a4`) preserves root identity
+and trunk clearance from the trail to the inner arc. The matched Pi trial of
+the same woodland code covered the forest edge, a walk and flight. At the
+forest edge, p95 was 16.8 ms at a 363 × 244 drawing buffer, with 53 draws
+and 139,864 triangles. The preceding composition measured 16.7 ms, 51 draws
+and 140,144 triangles at the same fixed pose. RTX matched earlier geometry
+with 16.7–16.8 ms p95 at 1200 × 740. Keep foliage performance comparisons
+separate from signed-in participant acceptance. See
+[biomes #25](https://github.com/AlterMundi/holodeck/issues/25),
+[avatar motion #21](https://github.com/AlterMundi/holodeck/issues/21) and
+[Character Design #24](https://github.com/AlterMundi/holodeck/issues/24).
+
+The composed source passed 447 Node checks with two optional skips. The
+extended packaged Character test reached and rendered the table and frame
+comparisons; a later Pose-control check on the software browser did not
+complete within the test run. Production readback matched all 87 installed
+files, 13 protected HTTPS bytes and four expected denials, with the prior
+world sequence, App and access preserved. The controlled browser identities
+are fixtures. Independent human confirmation remains open.
+
 ## Combined Character worktable on the installed alpha.19 baseline
 
 Candidate source `602355faab3c44d7b9be2b828d71679482647a5d` combines the
