@@ -1,5 +1,6 @@
 import {woodlandShadeShader} from './toroidal-woodland-shade.mjs';
 import {toroidalAirColor,toroidalCosmosColor} from './toroidal-air.mjs';
+import {caveExitCoverShader,createCaveExitCoverTexture} from './toroidal-cave-verge.mjs';
 import {REFLECTION_BANK} from './toroidal-bank-reflection.mjs';
 import {createMeadowCoverTexture,useToroidalRockDetail,useToroidalWaterDetail} from './toroidal-surface-detail.mjs';
 import {BufferAttribute, BufferGeometry, DataTexture, DoubleSide, Group, LinearFilter, MathUtils, Mesh, MeshStandardMaterial, RGFormat, ShaderChunk, UnsignedByteType, Vector3, Vector4} from 'three';
@@ -151,6 +152,17 @@ const terrainShading = {
         holoTrailRoughness=mix(.84,.95,dust);
         holoApproachSkylight=.42*westernSpur;
       }
+    }
+    vec2 caveExitCover=caveExitCoverAt(vHoloWorld);
+    holoMeadow=max(holoMeadow,caveExitCover.x*.96)*(1.0-.87*caveExitCover.y);
+    diffuseColor.rgb*=mix(vec3(1.0),vec3(.88,.94,.80),caveExitCover.x);
+    if(caveExitCover.y>.001){
+      float silt=ringNoise(approach*vec2(.56,.42)+vec2(6.0,2.2));
+      float grain=(1.0-smoothstep(.12,.29,meadowFootprint))*
+        (ringNoise(approach*5.7)-.5);
+      vec3 wornEarth=mix(vec3(.21,.153,.084),vec3(.33,.250,.15),silt)
+        +grain*vec3(.070,.055,.031);
+      diffuseColor.rgb=mix(diffuseColor.rgb,wornEarth,caveExitCover.y*.65);
     }
     // Low-frequency colours remain legible across the hill after leaves
     // are too small to draw. Their frequencies stay fixed in world space.
@@ -462,10 +474,11 @@ function artDirect(material, name, shading, environment, bank=null) {
     }
     if(name==='terrain'){
       shader.uniforms.holodeckMeadowCover=environment.meadowCover;
+      shader.uniforms.holodeckCaveExitCover=environment.caveExitCover;
       shader.uniforms.holodeckFacadeGround=environment.facadeGround;
       shader.uniforms.woodlandShadeMap=environment.woodlandShade;
       shader.uniforms.holodeckWoodlandShade=environment.hasWoodlandShade;
-      fragment=after(fragment,'common','uniform bool holodeckWoodlandShade;'+woodlandShadeShader+spurTrack);
+      fragment=after(fragment,'common','uniform bool holodeckWoodlandShade;'+woodlandShadeShader+spurTrack+caveExitCoverShader);
       fragment=after(fragment,'common','uniform sampler2D holodeckMeadowCover; uniform vec4 holodeckFacadeGround;');
     }
     shader.fragmentShader=before(fragment,'opaque_fragment',shading.output+`
@@ -527,7 +540,7 @@ export class ToroidalTerrainRenderer {
     this.waterMaterial = new MeshStandardMaterial({color:0x19606f,roughness:.34,metalness:0,side:DoubleSide,
       transparent:true,opacity:WATER_OPACITY,depthWrite:false,forceSinglePass:true});
     this.environment={water:{value:0},sun:{value:new Vector3(...SUN_LOCAL)},daylight:{value:1},
-      cosmos:{value:null},hasCosmos:{value:false},approach:{value:1},eyeHeight:{value:0},sill:{value:new Vector3()},facadeGround:{value:new Vector4(0,0,0,0)},meadowCover:{value:createMeadowCoverTexture()},woodlandShade:{value:null},hasWoodlandShade:{value:false},lightWater:{value:false}};
+      cosmos:{value:null},hasCosmos:{value:false},approach:{value:1},eyeHeight:{value:0},sill:{value:new Vector3()},facadeGround:{value:new Vector4(0,0,0,0)},meadowCover:{value:createMeadowCoverTexture()},caveExitCover:{value:createCaveExitCoverTexture()},woodlandShade:{value:null},hasWoodlandShade:{value:false},lightWater:{value:false}};
     useToroidalRockDetail(this.material,{meadow:true});
     this.updateWaterTime=useToroidalWaterDetail(this.waterMaterial,this.environment.lightWater);
     artDirect(this.material,'terrain',terrainShading,this.environment);
@@ -769,6 +782,8 @@ export class ToroidalTerrainRenderer {
     this.material.dispose();
     this.environment.meadowCover.value.dispose();
     this.environment.meadowCover.value=null;
+    this.environment.caveExitCover.value.dispose();
+    this.environment.caveExitCover.value=null;
     this.environment.cosmos.value=null;
     this.environment.hasCosmos.value=false;
     this.bankBuild=null;

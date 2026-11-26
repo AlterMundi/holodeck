@@ -9,6 +9,7 @@ import {
   InstancedBufferAttribute, InstancedMesh, MeshStandardMaterial, Object3D, Vector2, Vector3,
 } from 'three';
 import {CAVE} from './toroidal-cave.mjs';
+import {caveExitCellCapacity,caveExitCover,intersectsCaveExitCover} from './toroidal-cave-verge.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
 import {
   overlookCoordinates, TOROIDAL_TERRAIN, terrainCoordinates, terrainElevation, terrainMeadowMoisture, terrainPosition, terrainTile, terrainTrail, terrainWoodland,
@@ -25,8 +26,11 @@ const FIELD_RANGE=5;
 const FIELD_ROWS=2**FIELD_LEVEL;
 const FIELD_COLUMNS=FIELD_ROWS*TOROIDAL_TERRAIN.rootColumns;
 const FIELD_DENSITY=42;
+const FIELD_EXIT_EXTRA=32;
+const FIELD_CAP=FIELD_DENSITY+FIELD_EXIT_EXTRA;
 const FIELD_NEAR=2;
-const FIELD_LIMIT=(2*FIELD_RANGE+1)**2*FIELD_DENSITY;
+const FIELD_LIMIT=(2*FIELD_RANGE+1)**2*FIELD_DENSITY+
+  FIELD_EXIT_EXTRA*caveExitCellCapacity(FIELD_COLUMNS,FIELD_ROWS);
 const FIELD_MAX_ELEVATION=51;
 const INSTANCE_LIMIT=(2*RANGE+1)**2*CANDIDATES;
 const GRASSES=[0x72874b,0x809154,0x667d48,0x99a35e,0xbaaa65];
@@ -115,7 +119,7 @@ function fieldTile(column,row){
   return {key:column+':'+row,column,row,columns,rows};
 }
 
-function meadowCell(cell,index,door){
+function meadowCell(cell,index,door,atCaveExit){
   const pick=salt=>random(cell,index,salt);
   const u=(cell.column+pick(103))/cell.columns;
   const v=(cell.row+pick(181))/cell.rows;
@@ -123,7 +127,10 @@ function meadowCell(cell,index,door){
   const zOffset=(u-Math.round(u))*TAU*TOROIDAL_TERRAIN.majorRadius;
   if(Math.abs(xOffset)<5.8&&Math.abs(zOffset-15.5)<8.2)return null;
   if(door&&Math.abs(zOffset-door.z)<3.3&&Math.abs(xOffset-(door.x-TOROIDAL_TERRAIN.majorRadius))<5.2)return null;
-  if(u>CAVE.from-.00029&&u<CAVE.to+.00029&&Math.abs(v-CAVE.latitude)<.0031)return null;
+  let turf=0,tread=0;
+  if(atCaveExit)[turf,tread]=caveExitCover(u,v);
+  if(index>=FIELD_DENSITY&&turf===0)return null;
+  if(turf===0&&u>CAVE.from-.00029&&u<CAVE.to+.00029&&Math.abs(v-CAVE.latitude)<.0031)return null;
   if(u>overlookStart.u&&u<overlookEnd.u&&v>overlookStart.v&&v<overlookEnd.v)return null;
   if(terrainTrail(u,v)>.12)return null;
   const h=terrainElevation(u,v);
@@ -131,11 +138,15 @@ function meadowCell(cell,index,door){
   const fold=349*TAU*u+188*TAU*v+1.3*Math.sin(54*TAU*u-93*TAU*v);
   const pocket=287*TAU*u-420*TAU*v+.9*Math.sin(76*TAU*u+58*TAU*v);
   const moisture=terrainMeadowMoisture(u,v,h);
-  const growth=(.47+moisture*.19+.21*Math.sin(fold)+.17*Math.sin(pocket))*(1-.40*terrainWoodland(u,v,h));
+  const ordinary=(.47+moisture*.19+.21*Math.sin(fold)+.17*Math.sin(pocket))*(1-.40*terrainWoodland(u,v,h));
+  const growth=index>=FIELD_DENSITY ? turf*.96 :
+    (ordinary+(1-ordinary)*turf*.85)*(1-.87*tread);
   if(pick(229)>growth)return null;
   const vigor=pick(421)**1.6;
-  return {u,v,h,yaw:pick(321)*TAU,size:.30+vigor*.51+growth*.14,
-    color:grassColor(moisture,pick(499))};
+  const tall=turf>.25&&pick(773)<.12;
+  const size=.30+vigor*.51+growth*.14+turf*(tall?.28:.10);
+  return {u,v,h,yaw:pick(321)*TAU,size,
+    color:grassColor(moisture+turf*.11,pick(499))};
 }
 
 function meadowWind(material,clock,motion,viewer){
@@ -350,7 +361,7 @@ export class ToroidalScenery {
     this.reducedMotion=globalThis.matchMedia?.('(prefers-reduced-motion: reduce)');
     this.fieldGeometry=[meadowBlades(5,false,1),meadowBlades(5,true,1),meadowBlades(4,true,1.22)];
     const fieldMaterial=new MeshStandardMaterial({roughness:.94,vertexColors:true,side:DoubleSide});
-    this.field=new InstancedMesh(this.fieldGeometry[0],fieldMaterial,(2*FIELD_NEAR+1)**2*FIELD_DENSITY);
+    this.field=new InstancedMesh(this.fieldGeometry[0],fieldMaterial,(2*FIELD_NEAR+1)**2*FIELD_CAP);
     this.fieldFar=new InstancedMesh(this.fieldGeometry[1],fieldMaterial,FIELD_LIMIT);
     for(const [index,geometry] of this.fieldGeometry.entries()){
       const capacity=index===0?this.field.instanceMatrix.count:FIELD_LIMIT;
@@ -508,8 +519,12 @@ export class ToroidalScenery {
         const stoneScale=this.stoneCover(
           {u:tile.column/columns,v:tile.row/rows},
           {u:(tile.column+1)/columns,v:(tile.row+1)/rows});
-        for(let i=0;i<phase;i++){
-          const plant=meadowCell(tile,i,door);
+        const atCaveExit=intersectsCaveExitCover(tile.column/columns,tile.row/rows,1/columns,1/rows);
+        const extra=atCaveExit ? FIELD_EXIT_EXTRA : 0;
+        for(let slot=0;slot<phase+extra;slot++){
+          // Both profiles keep the same outlet sample indices, including the tall tufts.
+          const i=slot<phase ? slot : FIELD_DENSITY+slot-phase;
+          const plant=meadowCell(tile,i,door,atCaveExit);
           if(!plant)continue;
           const scale=stoneScale(plant.u,plant.v);
           if(scale<=.01)continue;

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {DoubleSide, MeshBasicMaterial, Raycaster, Scene, Vector3} from 'three';
 import {buildCaveCrown, buildToroidalCave, CAVE, ToroidalCave} from '../src/toroidal-cave.mjs';
+import {caveExitCover} from '../src/toroidal-cave-verge.mjs';
 import {TOROIDAL_SPAWN, terrainCoordinates, terrainElevation, terrainFrame, terrainPosition, terrainTrail} from '../src/toroidal-terrain.mjs';
 
 const point = (u,v,offset=0) => new Vector3(...terrainPosition(u,v,terrainElevation(u,v)+offset));
@@ -95,4 +96,29 @@ test('visible crown triangles and collision share one footprint off the path and
   assert.equal(new Raycaster(eye,direction,0,120).intersectObjects([cave.mesh,cave.crown],false)[0]?.object,cave.crown);
   cave.dispose();
   assert.equal(colliders.size,0);
+});
+
+
+test('the exit turf leaves the central tread and rock feet clear',()=>{
+  const cave=new ToroidalCave(new Scene(),{addCollider(){},removeCollider(){}});
+  cave.update(point(CAVE.to,CAVE.latitude));
+  const {mesh}=cave;
+  mesh.material.side=DoubleSide;
+  const bladeAxialReach=1.3;
+  let samples=0;
+  for(let u=CAVE.to-.0001;u<CAVE.to+.0017;u+=.000031){
+    for(let v=CAVE.latitude-.0042;v<CAVE.latitude+.0042;v+=.00011){
+      const [turf]=caveExitCover(u,v);
+      if(turf<=.01)continue;
+      samples+=1;
+      const root=point(u,v,-.03);
+      const up=new Vector3(...terrainFrame(u,v).up);
+      const hit=new Raycaster(root,up,0,bladeAxialReach).intersectObject(mesh,false);
+      assert.equal(hit.length,0,`root would intersect the cave foot at ${u}, ${v}`);
+    }
+  }
+  const [turf,tread]=caveExitCover(CAVE.to+.00045,CAVE.latitude);
+  assert.equal(turf,0);
+  assert.ok(tread>.8&&samples>300);
+  cave.dispose();
 });
