@@ -121,6 +121,37 @@ async function main(){
         parent.postMessage({...base,type:'ready'},target);
       </script>`}));
     await page.goto(url,{waitUntil:'domcontentloaded'});
+    const currentSpace=()=>page.evaluate(()=>fetch('api/space?live=1').then(r=>r.json()));
+    const worldReady=()=>page.waitForFunction(()=>window.holodeckDevelopment?.client.getLocalCharacterState()&&
+      document.querySelector('#world-entry').hidden&&!document.body.classList.contains('room-transition'));
+    const placeAvatar=(position,yaw=180)=>page.evaluate(({position,yaw})=>{
+      const client=holodeckDevelopment.client;
+      client.updateConfig({spawnConfiguration:{spawnPosition:position,spawnYRotation:yaw,respawnTrigger:{minY:-2500}}});
+      client.respawn();
+    },{position,yaw});
+    const approachDoor=async destination=>{
+      const space=await currentSpace();
+      const exit=space.exits.find(link=>link.to===destination&&link.kind==='door');
+      assert.ok(exit,'Missing reciprocal world door for '+destination);
+      const {x,y,z,yaw}=exit.door,angle=yaw*Math.PI/180;
+      await placeAvatar({x:x+Math.sin(angle)*.58,y:y+.12,z:z+Math.cos(angle)*.58},-yaw);
+      const button=page.getByRole('group',{name:'Cruzar un paso',exact:true})
+        .getByRole('button',{name:'Ir a · '+exit.title+' [E]',exact:true});
+      await button.press('Enter',{timeout:15000});
+      await page.waitForFunction(async id=>(await fetch('api/space?live=1').then(r=>r.json())).id===id,destination);
+      await worldReady();
+      assert.equal(new URL(page.url()).searchParams.has('taller'),false);
+      return currentSpace();
+    };
+    const openWorktable=async space=>{
+      const bench=space.objects.find(object=>object.id==='character-worktable');
+      assert.ok(bench,'The Character room has no worktable');
+      await placeAvatar({x:bench.position.x,y:.25,z:bench.position.z+1.62});
+      await page.getByRole('button',{name:'Usar mesa',exact:true}).press('Enter',{timeout:15000});
+      const table=page.getByRole('group',{name:'Mesa de Char Design',exact:true});
+      await table.getByRole('button',{name:'Pose',exact:true}).waitFor({state:'attached'});
+      return table;
+    };
 
     assert.deepEqual(await native('character-review.current'),{status:403});
     for(const [from,to] of [['outside',foyer],[foyer,studio]]){
@@ -129,10 +160,18 @@ async function main(){
     assert.equal(await page.evaluate(async foyer=>(await fetch('api/space',{method:'POST',
       headers:{'content-type':'application/json'},body:JSON.stringify({from:'outside',to:foyer})})).status,foyer),200);
     const worldLoaded=()=>page.waitForURL(value=>!value.searchParams.has('taller'));
+    await page.goto(url,{waitUntil:'domcontentloaded'});
+    await worldReady();
+    const doorRoom=await approachDoor(studio);
+    const walkedInTable=await openWorktable(doorRoom);
+    await page.screenshot({path:join(evidence,'character-room-world-door.png')});
+    await page.keyboard.press('Escape');
+    await walkedInTable.waitFor({state:'detached'});
+    assert.equal((await currentSpace()).id,studio);
+    await approachDoor(foyer);
     await page.goto(url+'?taller=personajes',{waitUntil:'domcontentloaded'});
     await page.getByRole('link',{name:'Entrar al taller',exact:true}).click();
     await worldLoaded();
-    const currentSpace=()=>page.evaluate(()=>fetch('api/space?live=1').then(r=>r.json()));
     assert.equal((await currentSpace()).id,studio);
     await page.goto(url+'?taller=personajes',{waitUntil:'domcontentloaded'});
     const panel=page.getByRole('group',{name:'Revisión de movimiento',exact:true});
@@ -168,19 +207,10 @@ async function main(){
     // The shared pose stays at frame 36. Frame 37 is a visitor-local choice.
     await page.getByRole('link',{name:'Abrir sala 3D',exact:true}).click();
     await worldLoaded();
-    await page.waitForFunction(()=>window.holodeckDevelopment?.client.getLocalCharacterState()&&
-      document.querySelector('#world-entry').hidden&&!document.body.classList.contains('room-transition'));
+    await worldReady();
     const roomView=await currentSpace();
     assert.equal(roomView.id,studio);
-    const bench=roomView.objects.find(object=>object.id==='character-worktable');
-    assert.ok(bench);
-    await page.evaluate(({x,z})=>{
-      const client=holodeckDevelopment.client;
-      client.updateConfig({spawnConfiguration:{spawnPosition:{x,y:.25,z:z+1.62},spawnYRotation:180,respawnTrigger:{minY:-2500}}});
-      client.respawn();
-    },bench.position);
-    await page.getByRole('button',{name:'Usar mesa',exact:true}).press('Enter',{timeout:15000});
-    const table=page.getByRole('group',{name:'Mesa de Char Design',exact:true});
+    const table=await openWorktable(roomView);
     const tableButton=name=>table.getByRole('button',{name,exact:true});
     await tableButton('Notas').press('Enter');
     await tableButton('Ver pose del Taller').press('Enter');
@@ -243,7 +273,7 @@ async function main(){
     assert.deepEqual(errors,[]);
     console.log(JSON.stringify({pose,revision:readback.revision,visitor,observedNote:note,roomScope:true,
       conversationPose:referredPose,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
-      situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,doorFromViewer:true,returnedToRoomFromViewer:true}));
+      situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,reciprocalWorldDoors:true,openedTableFromWorldDoor:true,doorFromViewer:true,returnedToRoomFromViewer:true}));
   }finally{
     await browser?.close();
     runtime?.close();

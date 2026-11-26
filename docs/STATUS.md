@@ -25,6 +25,15 @@ pose and note round trip. Archive
 passed 425 tests with two skips. The public door still needs selection
 of the candidate before an authenticated visitor can see the table there.
 
+The same room also passed the direct in-world route on the later
+`25de9871d9609122b46200f844cabc0914758452e5f28b416ee79dbbf95bacbc`
+archive. Chromium activated the A2UI door in the foyer, opened the
+Character table in the receiving room, used Escape to close the table
+while staying in the room, and crossed the reciprocal door back. The test
+also retained the direct viewer route and the browser-to-native pose and
+note checks on frames 36 and 37. This is staged evidence using fixture
+identities.
+
 Source `64243ccd5c97ec1d0705f64315eb255d1e47b79e` exposes the exact
 Character pose to its retained Conversation turn. In the staged
 browser and native-port check, a paired daimon entered through the
