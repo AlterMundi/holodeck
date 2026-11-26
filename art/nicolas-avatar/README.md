@@ -46,6 +46,18 @@ A temporary Blender fixture validated both paths: a working target moved
 The check uses CPU skinning. Verify the face, lips, beard and costume
 visually on the rendered character.
 
+For the visual articulation check, run the existing
+[avatar motion route](../../tools/avatar-motion/sequence.mjs) with the
+candidate's absolute GLB path. Use the matching Blender contact-sheet tool
+to inspect its skinned costume beside Navegante. The proportions study has
+been rendered at samples from walk, crouch, launch, glide, landing, wade,
+surface swim and submersion. The short wade sample is taken early in the
+actual shoreline crossing, before this route enters swimming. The attached
+armour and pack follow the selected rig. The rigid segmented sleeves,
+knees and coat panels are still study geometry, so the authored costume
+needs the same review for continuous silhouettes and clearance. These
+are offline renders of sampled game poses.
+
 Develop the face from the resting smile with a separate expressive smile pose,
 movable lids and a jaw that carries the beard. Sculpt eyes, cheeks and nose to read at
 the ordinary game camera distance. Replace the blockout hair masses with
