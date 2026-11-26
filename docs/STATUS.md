@@ -28,6 +28,25 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+Candidate `ad5e6a1` preserves the arrival authorization and startup
+from protected release `d2a9b89a726d` and pins the published Proyección
+alpha.17 package. Archive
+`fb099bbfede92dd67b0aa9a082ff2594f19060cbb1c436f00d61ed1bce0ddd09`
+passed 435 Node checks with two skips and the complete staged Chromium
+review with two independent visitors. The private Home receiver read
+the exact artifact and the owner request was prepared against that
+protected predecessor. Live selection remains open.
+
+The direct viewer now offers a keyboard-accessible retry if opening
+the initial model or movement fails. It reloads the original exact pose
+link and keeps the doorway available. A separate Chromium test injected
+one HTTP 503 from the humanoid asset, then recovered the same rig, clip
+edition and frame 36 using the retry. This fix was tested after the
+archive above and is retained in source. The protected viewer and
+assets were inspected separately. Both default rigs loaded when the
+installed release was run locally against a fixture identity, so the
+reported visitor-session failure is still unreproduced.
+
 Candidate `bb9e4aa` preserves the installed gallery plaques from
 `c024dbda2833` and the same renderer pin as `2535231`. Its archive
 `3f9366114a8e3c87deb6786f159cee3d248b2325d329ba9a31ed79b1db8c4eb8`

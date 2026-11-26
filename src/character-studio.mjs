@@ -159,16 +159,22 @@ function bindStudioNavigation(wrapper,space){
   if(space?.id===ATELIER_FOYER&&available(CHARACTER_STUDIO))bindPassage(studio,CHARACTER_STUDIO,'Entrar al taller');
 }
 
+function offerStudioRetry(stage){
+  if(stage.querySelector('[data-studio-retry]'))return;
+  const retry=stage.ownerDocument.createElement('button');
+  retry.type='button';
+  retry.textContent='Reintentar';
+  retry.dataset.studioRetry='';
+  retry.onclick=()=>stage.ownerDocument.location.reload();
+  stage.querySelector('nav').prepend(retry);
+  if(stage.ownerDocument.activeElement===stage.ownerDocument.body)retry.focus({preventScroll:true});
+}
+
 function showUnavailableStudio(document){
   const stage=buildStage(document);
   const message=stage.querySelector('output');
   message.textContent='No se pudo iniciar la vista 3D.';
-  const retry=document.createElement('button');
-  retry.type='button';
-  retry.textContent='Reintentar';
-  retry.onclick=()=>document.location.reload();
-  stage.querySelector('nav').prepend(retry);
-  retry.focus({preventScroll:true});
+  offerStudioRetry(stage);
   void readSpace(AbortSignal.timeout(5000)).then(space=>bindStudioNavigation(stage,space)).catch(()=>{});
   return null;
 }
@@ -761,7 +767,11 @@ export function openCharacterStudio(document,table=null){
   void loadRig(initial,table?undefined:url.searchParams.get('clip'),
     table?0:url.searchParams.get('fotograma'),table?null:url.searchParams.get('edicion'))
     .then(()=>{if(visible){playing=!table&&!reduce.matches&&!url.searchParams.has('fotograma');refresh();}})
-    .catch(()=>report(table?'No se pudo abrir el personaje. Volvé a probar.':'No se pudo abrir el personaje. Podés volver al mundo.'));
+    .catch(()=>{
+      if(!visible)return;
+      report(table?'No se pudo abrir el personaje. Volvé a probar.':'No se pudo abrir el personaje. Podés reintentar o volver al mundo.');
+      if(projected)offerStudioRetry(projected.stage);
+    });
   function setShortTableLayout(short){
     const width=short?3.10:2.20;
     if(!table||width===panelWidth)return;

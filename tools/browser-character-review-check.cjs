@@ -479,6 +479,21 @@ async function main(){
     assert.equal((await native('space.move',{from:studio,to:foyer})).id,foyer);
     assert.deepEqual(await native('character-review.notes',{pose}),{status:403});
 
+    const retryURL=url+'?'+new URLSearchParams({
+      taller:'personajes',rig:pose.rig,clip:pose.clip,fotograma:String(pose.frame),edicion:pose.edition,
+    });
+    const missingRig=await context.newPage();
+    missingRig.on('pageerror',error=>errors.push(error.message));
+    await missingRig.route('**/assets/avatar-1-bodyA-skin01.glb',route=>route.fulfill({status:503}),{times:1});
+    await missingRig.goto(retryURL,{waitUntil:'domcontentloaded'});
+    await missingRig.getByText('No se pudo abrir el personaje. Podés reintentar o volver al mundo.',{exact:true}).waitFor();
+    const retryRig=missingRig.getByRole('button',{name:'Reintentar',exact:true});
+    assert.equal(await retryRig.evaluate(button=>button===document.activeElement),true);
+    await retryRig.press('Enter');
+    await frame(pose.frame,missingRig);
+    assert.equal(missingRig.url(),retryURL);
+    await missingRig.close();
+
     // Reject the initial graphics context and then retry the same exact pose URL.
     await context.addInitScript(() => {
       if (sessionStorage.getItem('graphics-retry')) return;
@@ -490,9 +505,6 @@ async function main(){
     });
     const noGraphics=await context.newPage();
     noGraphics.on('pageerror',error=>errors.push(error.message));
-    const retryURL=url+'?'+new URLSearchParams({
-      taller:'personajes',rig:pose.rig,clip:pose.clip,fotograma:String(pose.frame),edicion:pose.edition,
-    });
     await noGraphics.goto(retryURL,{waitUntil:'domcontentloaded'});
     await noGraphics.getByText('No se pudo iniciar la vista 3D.',{exact:true}).waitFor();
     await noGraphics.getByRole('link',{name:'Entrar al taller',exact:true}).waitFor();
@@ -528,7 +540,7 @@ async function main(){
     assert.deepEqual(errors,[]);
     console.log(JSON.stringify({pose,flightChapters,groundChapters,comparedHeldPose:heldPose,comparisonFrame:110,revision:committed.revision,visitor,observedNote:note,roomScope:true,
       conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,shortTableWithSharedNote:shortTable,tablePlayback:{speed:2,stoppedAt:lastFrame,loopWrapped:true},independentTableOrbit:{firstCamera,peerCamera,peerOrbit},sharedReceiptMatchesLocalFrame:true,notesWaitedForSharedPose:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
-      situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,reciprocalWorldDoors:true,openedTableFromWorldDoor:true,doorFromViewer:true,returnedToRoomFromViewer:true,noGraphicsRetryKeptPose:true,graphicsRestoreKeptLocalFrameAndDraft:true}));
+      situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,reciprocalWorldDoors:true,openedTableFromWorldDoor:true,doorFromViewer:true,returnedToRoomFromViewer:true,rigRetryKeptPose:true,noGraphicsRetryKeptPose:true,graphicsRestoreKeptLocalFrameAndDraft:true}));
   }finally{
     await browser?.close();
     runtime?.close();
