@@ -130,22 +130,30 @@ function evergreenGeometry(detail,spreading=false){
   return geometry;
 }
 
-// Two closed skirt crowns retain volume when the rim is seen end-on.
+// Offset the two closed skirts so the lower branches and the leader
+// stay distinct from several angles without adding silhouette triangles.
 function skylineGeometry(spreading=false){
   const positions=[],colors=[];
-  for(const [height,radius,span,tint] of [[.26,.21,.57,0x3a5948],[.57,.13,.43,0x55734e]]){
-    const shade=new Color(tint);
-    for(let side=0;side<5;side++){
-      const a=side*TAU/5,b=(side+1)*TAU/5;
-      const width=spreading?1.42:1;
+  const base=new Color(),leader=new Color();
+  for(const [tier,height,radius,tipY,baseTint,tipTint] of [
+    [0,.19,.224,.74,0x344d3d,0x567348],
+    [1,.53,.146,1.00,0x465f44,0x70905a],
+  ]){
+    base.setHex(baseTint);leader.setHex(tipTint);
+    const rim=side=>{
+      const angle=(side+tier*.5)*TAU/5;
+      const width=radius*(spreading?1.32:1)*(1+.12*Math.sin(side*TAU/5*2+tier));
       const lean=spreading?height*.13:0;
-      const east=[lean+radius*Math.cos(a)*width,height,radius*Math.sin(a)*width];
-      const west=[lean+radius*Math.cos(b)*width,height,radius*Math.sin(b)*width];
-      positions.push(...east,lean,height+span,0,...west,...west,lean,height,0,...east);
-      for(let index=0;index<6;index++){
-        const light=index<3?1:.68;
-        colors.push(shade.r*light,shade.g*light,shade.b*light);
-      }
+      return [lean+width*Math.cos(angle),height+.04*Math.sin(side*TAU/5+tier),width*Math.sin(angle)-lean*.4];
+    };
+    const lead=spreading?tipY*.145:0;
+    const apex=[lead,tipY,-lead*.50];
+    const under=spreading?height*.13:0;
+    for(let side=0;side<5;side++){
+      const east=rim(side),west=rim(side+1);
+      positions.push(...east,...apex,...west,...west,under,height,-under*.4,...east);
+      colors.push(base.r,base.g,base.b,leader.r,leader.g,leader.b,base.r,base.g,base.b);
+      for(let vertex=0;vertex<3;vertex++)colors.push(base.r*.68,base.g*.68,base.b*.68);
     }
   }
   const geometry=new BufferGeometry();
@@ -155,18 +163,34 @@ function skylineGeometry(spreading=false){
   return geometry;
 }
 
-function skylineMaterial(daylight){
+function skylineMaterial(daylight,sun){
   const material=new MeshBasicMaterial({vertexColors:true,fog:false});
   material.onBeforeCompile=shader=>{
     shader.uniforms.woodlandDaylight=daylight;
+    shader.uniforms.woodlandSun=sun;
+    const varyings='varying vec3 vWoodlandAir;';
     shader.vertexShader=shader.vertexShader
-      .replace('#include <common>','#include <common>\nvarying float vWoodlandDistance;')
-      .replace('#include <project_vertex>','#include <project_vertex>\nvWoodlandDistance=length(mvPosition.xyz);');
+      .replace('#include <common>','#include <common>\n'+varyings+'\nuniform vec3 woodlandSun;')
+      .replace('#include <project_vertex>',`#include <project_vertex>
+        vec3 root=(modelMatrix*instanceMatrix[3]).xyz;
+        float radial=max(length(root.xz),.001);
+        vec2 ring=root.xz/radial;
+        vec2 tube=normalize(vec2(radial-${TOROIDAL_TERRAIN.majorRadius.toFixed(1)},root.y));
+        vec3 along=vec3(-ring.y,0.0,ring.x);
+        vec3 up=vec3(ring.x*tube.x,tube.y,ring.y*tube.x);
+        vec3 around=vec3(-ring.x*tube.y,tube.x,-ring.y*tube.y);
+        vec3 sun=woodlandSun.x*along+woodlandSun.y*up+woodlandSun.z*around;
+        vec3 eye=normalize(cameraPosition-root);
+        vec3 normalWorld=normalize(mat3(modelMatrix*instanceMatrix)*normal);
+        vWoodlandAir=vec3(length(mvPosition.xyz),dot(-eye,sun),dot(normalWorld,sun));`);
     shader.fragmentShader=shader.fragmentShader
-      .replace('#include <common>','#include <common>\nvarying float vWoodlandDistance;\nuniform float woodlandDaylight;'+toroidalAirColor)
+      .replace('#include <common>','#include <common>\n'+varyings+'\nuniform float woodlandDaylight;'+toroidalAirColor)
       .replace('#include <opaque_fragment>',`
-        float haze=(1.0-exp(-vWoodlandDistance/2650.0))*.56;
-        outgoingLight=mix(outgoingLight*mix(.28,.94,woodlandDaylight),toroidalAir(0.0,woodlandDaylight),haze);
+        float haze=(1.0-exp(-vWoodlandAir.x/2650.0))*.56;
+        float wrap=clamp(vWoodlandAir.z*.5+.5,0.0,1.0);
+        float sunlight=mix(.84,1.08,wrap);
+        vec3 crown=outgoingLight*mix(.28,.94*sunlight,woodlandDaylight);
+        outgoingLight=mix(crown,toroidalAir(vWoodlandAir.y,woodlandDaylight),haze);
         #include <opaque_fragment>`);
   };
   return material;
@@ -254,7 +278,8 @@ export class ToroidalWoodland{
     ];
     this.material=new MeshStandardMaterial({vertexColors:true,roughness:.95});
     useDaylight(this.material,daylight);
-    this.skylineMaterial=skylineMaterial(daylight);
+    this.sun={value:new Vector3(0,1,0)};
+    this.skylineMaterial=skylineMaterial(daylight,this.sun);
     const trees=[...woodlandTrees(),...innerWoodlandTrees()].map(tree=>({...tree,
       spreading:tree.height>=7.8&&sample(Math.round(tree.u*1e6),Math.round(tree.v*1e6),3941)>.59,
     }));
@@ -308,7 +333,8 @@ export class ToroidalWoodland{
     scene.add(this.group);
   }
 
-  update(position,lightweight){
+  update(position,lightweight,sunDirection){
+    if(sunDirection)this.sun.value.fromArray(sunDirection);
     if(this.last.distanceToSquared(position)<36&&this.lightweight===lightweight)return;
     this.last.copy(position);
     this.lightweight=lightweight;
