@@ -19,6 +19,18 @@ and own-native check, including receipt and browser readback of a
 room-scoped shoulder note on the flight pose. The suite passed 422 tests,
 with two skips. Protected Home acceptance is still open.
 
+In a separate local compatibility build, the host used the actual control
+mesh rectangle from Proyección source
+`743cc8b2854dca8a70ef8721788d31064e7ce4ca` for the Conversar launcher.
+Chromium observed the minimize and restore animations on the assembled HUD
+with the installed canonical Conversation assets. It kept the existing
+iframe and draft and verified typing and world movement separately. The
+trial bundle was `474a33f59689d7fd70de1a2d504dbccd684e82bf483f23a1d14596866be3fdd2`
+in archive `8d2c61a3df226ea9a0870048aa70b2316ba52049f816479c90acc8e2a474ecd0`.
+The production candidate still pins Proyección alpha.14. The compatibility
+result is available for the next owning renderer pin.
+[Renderer change](https://github.com/AlterMundi/proyeccion/pull/20).
+
 Source `60503cff1b2ec3eee9b6e8618f2c5b514a74f395` integrates the room
 boundaries and object leaders from protected release `ea2efd93199d`.
 Archive `ebb75f57c3d3aa2b0161bc1533d56f7691513341f0a7a9b62693c6a872e01457`
