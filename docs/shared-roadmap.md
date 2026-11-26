@@ -853,6 +853,12 @@ contract for later rooms, objects and outdoor places.
    sensory observations to the spatial timeline. See the
    [initial research and experiment](research/2026-11-24-work-projection-replay.md).
 
+The [ordinary Matter first-person baseline](playtest-iteration.md#matter-first-person-baseline)
+reproduces the displaced camera at table entry on both physical
+graphics profiles. The separate two-visitor check preserves local
+inspection, publishing, recovery and exit. Physical eye placement and
+cursor-targeted dolly remain in [#17](https://github.com/AlterMundi/holodeck/issues/17).
+
 ### Water-flight controls and effects
 
 The [camera-facing aim and water-flight candidate](playtest-iteration.md#camera-facing-aim-and-flight-through-water)

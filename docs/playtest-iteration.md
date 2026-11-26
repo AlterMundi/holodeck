@@ -2238,6 +2238,24 @@ and compatible previous release were checked separately. The temporary
 technical reader was revoked. The exterior and HUD roadmap remains open.
 
 
+## Matter first-person baseline
+
+The protected package `e6093e9e889f` entered ordinary Matter from the
+foyer and operated the table in RTX 2060 Normal and Pi 5 Livianos
+Chromium fixtures. Space and Alt moved the miniature up and down.
+Escape restored the original feet position and the main camera zoom
+range. The opening camera was 0.68 m from the miniature eye on both
+devices. Wheel reduced the camera boom while the avatar stayed in place.
+This establishes the remaining first-person and physical-dolly gap
+tracked in [Matter inspection #17](https://github.com/AlterMundi/holodeck/issues/17).
+
+A separate two-identity Chromium run of the exact archive verified
+independent camera and local section inspection while the other
+visitor shared a different model, keyboard publication during HUD
+context loss, native touch clearing, denied stale and revoked edits,
+and the return through the foyer door. That run used bundled
+fixtures, desktop and emulated touch, rather than human Home accounts.
+
 ## Miniature flight controls
 
 A miniature visitor can steer, rise or descend using independent
