@@ -1,5 +1,30 @@
 # Current MVP work
 
+## November 26 visible plaza entry
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `c599c78afef3`
+from `841d5ef`. The terrain and admitted player can render while the
+toroidal house projection is pending. The exterior door waits for its
+projected world target. The upstream loading screen is hidden. A compact
+connection notice offers retry and lightweight graphics when entry is
+slow or fails. A delayed location check can finish after the notice.
+
+Holding the arrival projection reproduced the 25-second delay on
+Legion's physical RTX 2060. The preceding package stayed without a local
+avatar until release. The current package entered in 4.7 seconds with
+Normal and 8.5 seconds on Pi 5 Livianos while the projection was still
+held. Keyboard movement worked on the RTX before the house arrived.
+Both fixtures recovered a location lookup delayed by 14.5 seconds and
+displayed an error without a local avatar on an explicit 403. A separate
+RTX check entered directly into the foyer with the room model ready. These are
+controlled device checks. The original signed-in Legion tab was not used.
+
+Node 24 passed 426 checks with two optional skips. The index and client
+bundle changed. Receiving matched 86 files, 13 protected HTTPS reads and
+four expected denials. The application, audience, receiving configuration
+and world sequence 463 matched before and after. Immediate rollback is
+`c024dbda2833`. See [HUD #16](https://github.com/AlterMundi/holodeck/issues/16).
+
 ## November 26 gallery exhibit plaques
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `c024dbda2833`
