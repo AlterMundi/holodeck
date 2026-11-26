@@ -1,5 +1,11 @@
 # Current MVP work
 
+## November 26 — Continuous short cover on the western meadow
+
+Visual trial `98f37f24b9c1` is available at the existing Holodeck entrance.
+Leave the arrival trail for the western pines to compare the foreground.
+[Scope and visual evidence](environment-art-revamp.md#continuous-short-cover-on-the-western-meadow).
+
 ## November 26 — Short 3D grass beside the arrival trail
 
 Visual trial `4cf4d8b5a6d3` is available at the existing Holodeck entrance.

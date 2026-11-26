@@ -269,6 +269,21 @@ cut and retained its durable content across the adjacent saves.
 Independent participant acceptance and a controlled Normal frame-time
 comparison remain open.
 
+## Continuous short cover on the western meadow
+
+Trial `98f37f24b9c1` replaces the three isolated low-grass drifts with
+adjacent 9 m tiles on the existing route from the arrival trail toward the
+western pines. Each tile grows from deterministic jittered roots. Low leaves
+thin toward the shore and trail, and sink into the ground as distance
+increases. Tiles are generated near the player without an asset download.
+The meadow banks and taller vegetation provide contrast above the low layer.
+
+One RTX 2060 browser reached the exterior, rendered the daylight view and
+completed a 7 m walk. The close view showed a more connected foreground.
+Gaps remain farther up the slope and the coverage is limited to the west
+side of the trail. The closer shapes still read as angular blades. This is
+provisional pending player feedback. Device optimization follows approval.
+
 ## Trial of short grass drifts at the arrival meadow
 
 Protected visual trial `4cf4d8b5a6d3` serves source `818502a`, with

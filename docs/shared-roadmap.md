@@ -1132,9 +1132,10 @@ similar crowns. The next visual comparison should start at player height and
 show the experience inside the two habitats, including when the player stops.
 
 The [short-leaf surface](environment-art-revamp.md#installed-short-leaf-cover-at-the-arrival-meadow)
-is selected for the existing approach. The [short 3D grass trial](environment-art-revamp.md#trial-of-short-grass-drifts-at-the-arrival-meadow)
-adds three rooted foreground drifts. Nicolás can try it through the existing
-entrance. Forest continuation and batch device qualification are open.
+is selected for the existing approach. The [western meadow trial](environment-art-revamp.md#continuous-short-cover-on-the-western-meadow)
+extends rooted short grass from the arrival trail toward the western pines.
+Nicolás can try it through the existing entrance. Mid-distance continuity,
+full woodland coverage and batch device qualification are open.
 
 Use the arrival meadow and its wooded edge for one continuous first pass.
 Match the grass roots to a short-cover ground material and add dense low
