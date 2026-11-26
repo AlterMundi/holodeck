@@ -1,9 +1,28 @@
 # Current MVP work
 
+## November 26 cosmic ocean reflection
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `bd625c3d10a0`
+from `6a08981`. The water now samples the sky's existing panorama in the
+direction reflected by the animated wave normals. The same horizon and
+daylight fade shape both. The view retains the previous underwater
+treatment. The shore and offshore surfaces share one existing texture
+upload and require no additional render pass.
+
+A matched 23:10 ART coast trial inspected two shore angles, a submerged
+camera and the view from flight. It made one panorama request and retained
+the same draw calls, triangle counts and texture counts in both profiles.
+RTX 2060 Normal at 1200 × 740 went from 16.7 to 16.8 ms frame p95.
+Pi 5 Livianos at 363 × 244 went from 16.8 to 16.7 ms. These are short
+fixture runs, with independent phone and signed-in play evidence still open.
+Opus 5.5 High reviewed texture visibility and lifetime. The corrected
+package was rerun on both devices. Receiving matched 86 installed files
+and 13 protected HTTPS reads, retained the same world and audience, and
+keeps `d2a9b89a726d` as immediate rollback.
+
 ## November 26 authenticated plaza startup
 
-[Holodeck](https://compaii.dmn.homes/holodeck/) serves `d2a9b89a726d`
-from `e1bb0d3`. Home authorization now completes before the WebSocket
+The preceding release `d2a9b89a726d` came from `e1bb0d3`. Home authorization now completes before the WebSocket
 upgrade. The presence transport can receive the first handshake as soon as
 the browser sends it. The exterior scene reuses the socket authorization.
 The first visible frame contains the admitted player and current terrain.
