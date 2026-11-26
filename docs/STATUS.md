@@ -26,6 +26,16 @@ canonical Conversation across desktop and compact layouts with one
 fixture original, one retained frame and no browser errors. The Node
 suite passed 425 checks with two skips. This candidate is staged locally.
 
+## Floating HUD window input ownership
+
+Host revision `ea3f7c8b0eaf419023f7a9cd95d396513296db4f` releases a captured
+drag when its table closes or the viewport changes. Chromium used the
+Three.js worktable resize grip, held the mouse button during Escape and
+viewport resize, checked capture release before the button came up, and
+verified that a new resize gesture worked. The full Node suite passed
+445 checks with two skips. Package SHA-256 is `932730af1852d9abf948b8081e77f041584c85857785f517877590228f5298df`.
+This follow-on source and archive are ready for the Holodeck owner.
+
 ## Materializador de Materia on the private combined candidate
 
 The Matter browser journey passed on the same exact private archive
