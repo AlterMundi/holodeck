@@ -140,11 +140,12 @@ export class CollectionShelves {
       }
       this.sync(current?.projects);
       this.archive.sync(current?.archive,this.root);
-      this.worktable.sync(current?.projects,current?.worktable);
+      if(current)this.worktable.sync(current.projects,current.worktable,this.catalogUnavailable);
+      else this.worktable.clear(this.catalogUnavailable);
     }catch{
       if(!controller.signal.aborted){
         this.retryCatalog();
-        this.sync([]);this.archive.clear();this.worktable.clear();
+        this.sync([]);this.archive.clear();this.worktable.clear(true);
       }
     }finally{
       if(this.flight===controller)this.flight=null;

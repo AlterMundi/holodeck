@@ -30,13 +30,14 @@ const selected={room:'matter',projects:[
 
 test('collection retry reports upstream server errors and resets on denial',async t=>{
   let status=504,partial=false;
-  const notices=[];
+  const notices=[],table=[];
   t.mock.method(globalThis,'fetch',async()=>status===200
     ?Response.json({room:'matter',partial})
     :new Response(null,{status}));
   const view=Object.assign(Object.create(CollectionShelves.prototype),{
     base:new URL('https://fixture.test/holodeck/'),room:'matter',sync(){},
-    archive:{sync(){}},worktable:{sync(){}},onCatalogUnavailable(partial){notices.push(partial);},
+    archive:{sync(){}},worktable:{sync(_projects,_shared,retrying){table.push(retrying);},clear(retrying){table.push(retrying);}},
+    onCatalogUnavailable(partial){notices.push(partial);},
   });
   for(const [transient,delay] of [[504,3000],[502,6000],[500,12000],[503,12000],[408,12000],[429,12000]]){
     status=transient;
@@ -55,6 +56,9 @@ test('collection retry reports upstream server errors and resets on denial',asyn
   assert.ok(view.refreshAt<performance.now()+5000);
   await view.refresh();
   assert.deepEqual(notices,[false,true]);
+  partial=false;
+  await view.refresh();
+  assert.deepEqual(table,[true,true,true,true,true,true,false,true,true,false]);
 });
 
 test('receiving appearance selection preserves the preceding package fallback',()=>{

@@ -122,8 +122,11 @@ title, immutable edition and gallery digest. Where available, it also returns
 the validated scene-index digest. Movement or admission change cancels the
 projection. The response uses `no-store`, and the source requests have a
 shared deadline and byte bounds. The compatible configuration can remain
-unselected while a room or thumbnail preparation is ongoing. The selected room exposes the worktable and archive controls when their
-source editions are available. The same room exposes a bounded event stream
+unselected while a room or thumbnail preparation is ongoing. The selected room
+keeps the worktable operable during a temporary catalog failure and shows retry
+status while unverified editions and their geometry are cleared. A denied room
+read removes the controls. The archive requires available source editions. The
+room exposes a bounded event stream
 that signals table and shelf changes without sending project details or
 geometry. The browser uses the normal authenticated catalog to resolve a
 refresh. The 12-second catalog refresh also picks up saved Home editions and

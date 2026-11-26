@@ -162,8 +162,12 @@ export class CollectionWorktable{
 
   hudState(){
     const choices=select=>Array.from(select.options,option=>({id:option.value,label:option.textContent}));
-    const status=this.sharedStatus.textContent||this.status.textContent||
-      (this.shareRequest?'Actualizando mesa…':this.local?'Inspección local':'Siguiendo la mesa');
+    const collectionStatus=this.catalogUnavailable?'La colección no está disponible. Volviendo a intentar…':
+      'No hay proyectos disponibles para esta mesa.';
+    const status=this.editions.length
+      ?this.sharedStatus.textContent||this.status.textContent||
+        (this.shareRequest?'Actualizando mesa…':this.local?'Inspección local':'Siguiendo la mesa')
+      :collectionStatus;
     const reference=this.referenceFor(this.part.value);
     return {
       pointDisabled:this.pointingPending===true||!this.canPoint(reference,this.shared?.revision),
@@ -189,12 +193,14 @@ export class CollectionWorktable{
     this.anchor=anchor;
     this.discuss.hidden=!canDiscuss;
     const near=!!(player&&anchor&&Math.hypot(player.x-anchor.x,player.z-anchor.z)<2.05);
-    this.available=near&&!!(this.editions.length||this.selection);
+    // The room fixture can explain a temporary failure while its protected contents are cleared.
+    this.available=near&&!!(this.editions.length||this.selection||this.shared||this.catalogUnavailable);
     this.panel.hidden=!this.available||this.panel.hasAttribute('data-spatial');
 
   }
 
-  sync(projects,shared){
+  sync(projects,shared,catalogUnavailable=false){
+    this.catalogUnavailable=catalogUnavailable===true;
     const editions=(projects??[]).flatMap(project=>project.editions.map(edition=>({
       ...edition,pinned:project.restored===true,selection:selectionKey(edition,project.restored===true),
     })));
@@ -372,10 +378,10 @@ export class CollectionWorktable{
     this.status.textContent='';
   }
 
-  clear(){
+  clear(catalogUnavailable=false){
     this.shareRequest?.abort();this.shareRequest=null;this.local=false;
     this.sharedStatus.textContent='';
-    this.closeModel();this.sync([]);this.panel.hidden=true;this.available=false;this.anchor=null;
+    this.closeModel();this.sync([],undefined,catalogUnavailable);this.panel.hidden=true;this.available=false;this.anchor=null;
     this.details.open=!matchMedia('(max-width: 600px)').matches;
   }
 }
