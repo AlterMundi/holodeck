@@ -28,6 +28,16 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+Source `cae9939` also handles loss of a running direct-viewer WebGL
+context. Chromium triggered the native loss and restoration events. The
+viewer retained its navigation during the interruption and recovered
+the locally selected frame 37 and unpublished note draft in the same
+document. Archive
+`9dc0e9a15ee138c8b2dba7295cc563b6f6931048610a4a97820fbfde5fc9130e`
+also passed the startup retry, physical doors and two-visitor review.
+The pose catalog is byte-identical. The Node suite passed 426 checks
+with two skips. This was a staged fixture trial.
+
 Source `d8b4706` keeps the direct pose viewer recoverable when the
 initial WebGL context fails. Chromium rejected all WebGL contexts for
 the first load, inspected the confirmed foyer link and focused retry,
