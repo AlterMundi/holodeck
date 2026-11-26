@@ -84,7 +84,8 @@ mkdirSync(evidence,{recursive:true});
     const failures=[];
     async function open(actor,mobile){
       const viewport=mobile?{width:568,height:320}:{width:1200,height:800};
-      const context=await browser.newContext({viewport,hasTouch:mobile,isMobile:mobile,reducedMotion:'reduce'});
+      const context=await browser.newContext({viewport,deviceScaleFactor:mobile?1.25:1.5,
+        hasTouch:mobile,isMobile:mobile,reducedMotion:'reduce'});
       context.setDefaultTimeout(28000);
       await context.addCookies([{name:'fixture',value:actor,url}]);
       const tab=await context.newPage();
@@ -147,10 +148,11 @@ mkdirSync(evidence,{recursive:true});
       '[data-spatial-hud-accessibility] select[aria-label="Proyecto"]')?.value===value,value,{timeout:12000});
     const waitPiece=(view,label)=>view.controls.getByRole('combobox',{name:'Pieza',exact:true})
       .locator('option').filter({hasText:label}).waitFor({state:'attached',timeout:15000});
-    const share=async(view,action,expected)=>{
+    const share=async(view,action,expected,{keyboard=false}={})=>{
       await view.tab.bringToFront();
       const pending=view.tab.waitForResponse(r=>r.request().method()==='POST'&&r.url().endsWith('/api/space/collection'));
-      await go(view,action);
+      if(keyboard)await view.controls.getByRole('button',{name:action,exact:true}).press('Enter');
+      else await go(view,action);
       const response=await pending;
       assert.equal(response.status(),204);
       assert.deepEqual(response.request().postDataJSON(),expected);
@@ -159,9 +161,50 @@ mkdirSync(evidence,{recursive:true});
       const state=holodeckDevelopment.client.getCameraManager().getCameraState();
       return [state.position.x,state.position.y,state.position.z,state.rotation.x,state.rotation.y,state.rotation.z,state.rotation.w];
     });
+    const framebuffer=async tab=>tab.evaluate(()=>{
+      const world=holodeckDevelopment.client.getRenderer().composer.renderer.domElement;
+      const overlay=document.querySelector('canvas[data-hud-render-layer]');
+      const bounds=canvas=>{
+        const {left,top,width,height}=canvas.getBoundingClientRect();
+        return {left,top,width,height};
+      };
+      return {world:bounds(world),overlay:bounds(overlay),worldWidth:world.width,worldHeight:world.height,
+        hudWidth:overlay.width,hudHeight:overlay.height,dpr:devicePixelRatio,
+        overlayIgnoresPointer:getComputedStyle(overlay).pointerEvents==='none'};
+    });
+    function checkFramebuffer({world,overlay,worldWidth,worldHeight,hudWidth,hudHeight,dpr,overlayIgnoresPointer},light){
+      assert.ok(world.width>0&&world.height>0);
+      assert.deepEqual(overlay,world);
+      assert.equal(overlayIgnoresPointer,true);
+      assert.equal(hudWidth,Math.round((world.left+world.width)*dpr)-Math.round(world.left*dpr));
+      assert.equal(hudHeight,Math.round((world.top+world.height)*dpr)-Math.round(world.top*dpr));
+      if(light){
+        assert.ok(worldWidth<=world.width*.55+1);
+        assert.ok(worldHeight<=world.height*.55+1);
+        assert.ok(hudWidth>worldWidth&&hudHeight>worldHeight);
+      }
+    }
+    const overlayRendered=tab=>tab.waitForFunction(()=>{
+      const overlay=document.querySelector('canvas[data-hud-render-layer]');
+      return overlay&&!overlay.hidden&&overlay.width>0&&overlay.width!==300&&overlay.getBoundingClientRect().width>0;
+    });
     const [alpha,beta]=entries;
     const left=await open('reviewer',false);
     const right=await open('peer',true);
+    await overlayRendered(left.tab);
+    await overlayRendered(right.tab);
+    const normalBuffer=await framebuffer(left.tab);
+    const lightBuffer=await framebuffer(right.tab);
+    assert.equal(normalBuffer.dpr,1.5);
+    assert.equal(lightBuffer.dpr,1.25);
+    checkFramebuffer(normalBuffer,false);
+    checkFramebuffer(lightBuffer,true);
+    await right.tab.setViewportSize({width:592,height:344});
+    await right.tab.waitForFunction(width=>document.querySelector('canvas[data-hud-render-layer]')
+      .getBoundingClientRect().width===width,592);
+    const resizedBuffer=await framebuffer(right.tab);
+    checkFramebuffer(resizedBuffer,true);
+    assert.notEqual(resizedBuffer.hudWidth,lightBuffer.hudWidth);
     assert.equal((await read(left.tab)).revision,0);
     await select(left,alpha);
     await waitPiece(left,'Pieza Alfa');
@@ -184,7 +227,22 @@ mkdirSync(evidence,{recursive:true});
     await select(right,beta);
     await waitPiece(right,'Pieza Beta');
     await go(right,'Mesa');
-    await share(right,'Compartir',{resource:beta.resource,revision:1});
+    await right.tab.evaluate(()=>{
+      const overlay=document.querySelector('canvas[data-hud-render-layer]');
+      const loss=overlay.getContext('webgl2').getExtension('WEBGL_lose_context');
+      if(!loss)throw Error('Missing WebGL context-loss extension');
+      window.fixtureRestoreMatterHud=()=>loss.restoreContext();
+      loss.loseContext();
+    });
+    await right.tab.waitForFunction(()=>{
+      const overlay=document.querySelector('canvas[data-hud-render-layer]');
+      const world=holodeckDevelopment.client.getRenderer().composer.renderer.domElement;
+      return overlay.hidden&&overlay.getContext('webgl2').isContextLost()&&!world.getContext('webgl2').isContextLost();
+    });
+    await share(right,'Compartir',{resource:beta.resource,revision:1},{keyboard:true});
+    await right.tab.evaluate(()=>window.fixtureRestoreMatterHud());
+    await overlayRendered(right.tab);
+    checkFramebuffer(await framebuffer(right.tab),true);
     assert.deepEqual(await read(left.tab),{revision:2,resource:beta.resource,canShare:true});
     assert.equal(await left.project.inputValue(),alpha.resource);
     assert.equal(await cut.inputValue(),'64');
@@ -220,7 +278,9 @@ mkdirSync(evidence,{recursive:true});
     assert.equal(await right.tab.evaluate(async()=>(await fetch('api/space/collection')).status),404);
     assert.deepEqual(failures,[]);
     console.log(JSON.stringify({desktopPublished:true,touchPublished:true,localCut:64,cameraIndependent:true,
-      rejoinedSharedBeta:true,staleWrite:409,revokedEdit:403,clearedRevision:3,tableClosedInsideRoom:true,returnedThroughDoor:true,readAfterExit:404}));
+      rejoinedSharedBeta:true,staleWrite:409,revokedEdit:403,clearedRevision:3,tableClosedInsideRoom:true,
+      returnedThroughDoor:true,readAfterExit:404,overlayFallbackShare:true,
+      hudFramebuffers:{normal:normalBuffer,light:lightBuffer,lightAfterResize:resizedBuffer}}));
   }finally{
     await browser?.close();
     app.close();server.closeAllConnections();

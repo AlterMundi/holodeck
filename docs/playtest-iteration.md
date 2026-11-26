@@ -48,6 +48,26 @@ touch published Beta. The desktop chose to follow Beta and observed
 clear revision 3. Evidence includes the two HUD views and the received
 HTTP statuses. Protected participant acceptance remains separate.
 
+The current candidate archive `15ed1ac8a65ea448d0abd7f168ce3f2032a6616e050faf1ee293cf014642ccce`
+passed the expanded check. In Chromium with DPR 1.5, the automatic desktop
+profile rendered a 1,800 × 1,200 HUD over a 660 × 440 world buffer. The
+touch profile used DPR 1.25 and rendered a 710 × 400 HUD over a 312 × 176
+world buffer. After resizing, the touch HUD was 740 × 430 over a 325 × 189
+world buffer. Each HUD covered the exact world CSS rectangle without
+intercepting pointer events.
+
+The check forced real WebGL loss of the touch HUD context. The world
+canvas remained usable. Keyboard activation of **Compartir** submitted
+the expected revision and the second visitor observed it. Restoring the
+HUD context repainted the same overlay at the correct density. The desktop
+visitor retained its local cut and camera. The shared world still needs the
+equivalent signed-in verification.
+
+The renderer's alpha.20 source measured the same glyph bounds on narrow
+and wide buttons at DPR 1, 1.5 and 2. Those raster checks complement the
+published renderer's hit-rectangle tests and this host-specific framebuffer
+check. The candidate itself retains the protected alpha.19 pin.
+
 ## Active tabletop lighting candidate
 
 [Holodeck #20](https://github.com/AlterMundi/holodeck/issues/20) tracks this
