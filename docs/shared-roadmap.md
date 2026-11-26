@@ -1150,8 +1150,11 @@ Lightweight have matched comparisons on one physical RTX 2060. Check
 the transition at speed in the next pass. The
 [western pine bark trial](environment-art-revamp.md#western-pine-bark-trial)
 adds filtered bark color and relief to the same stems. Normal and
-Lightweight share the selected geometry. The grazing-angle motion and
-wider device checks remain open.
+Lightweight share the selected geometry. A follow-up dusk run and return
+tracked the same pine and a tuft through their available tiers. It also
+exposed a green strip at the [western woodland spur](environment-art-revamp.md#western-woodland-spur-material),
+where the existing path removes grass. The new dirt material follows that
+segment. Frame-resolved visual review and wider device checks remain open.
 
 Use the arrival meadow and its wooded edge for one continuous first pass.
 Match the grass roots to a short-cover ground material and add dense low

@@ -181,9 +181,36 @@ Matched noon and dusk poses at 850×552 kept 135 draws and 544,755
 triangles in Normal and 97 draws and 323,815 triangles in Lightweight.
 Frame-interval p95 was 16.7–16.8 ms at the presentation cap. Fable
 identified grazing motion as the next useful check. The matched moving
-poses exercise filtering over a short sweep. A longer pass around the
-trunk and across the grass tier, Pi 5 and paired-human acceptance remain
-open.
+poses exercise filtering over a short sweep. A subsequent dusk pass loaded exact protected client bytes in a loopback
+fixture on the same physical RTX 2060. The controlled camera swept
+about 170° around a trunk from 2.25 m. Browser keyboard input then drove
+an outbound run of 47.51 m in Normal and 45.84 m in Lightweight, followed
+by a walk back. The tracked pine appeared in one tier at all 18/17
+outbound and 25 return samples. The tracked tuft switched to the outer
+batch in Normal, left both batches and returned. Lightweight used the
+outer batch throughout its visible portion. The maximum recorded rAF
+interval was 16.8 ms on both profiles at 1000×650 CSS pixels and DPR 1.
+These samples establish geometry selection and presentation cadence.
+A frame-resolved visual check for shimmer, Pi 5 and paired-human
+acceptance remain open.
+
+#### Western woodland spur material
+
+The return from the pine trial crosses an existing grass-free trail
+segment whose vertex tint reads green from player height. Protected package
+`fae6c8604b6f` (`87835aa`) follows that segment with dry dirt and
+a soft verge in the existing terrain material. The fragment mask
+matches `terrainTrail` in the bounded test region. A numerical mirror
+matched it at 14,016 positions. The first implementation changed the
+motion-study edition hashes through a shared numerical module. The
+renderer-only version preserved the worker, server and motion catalog
+bytes alongside the route geometry and planting rules.
+
+Matched noon and dusk views at the spur used 148 draws and 356,835
+triangles on one physical RTX 2060 at 850×552, before and after. The
+visible result is qualified in Normal on that device. The material
+pass covers the western grove segment. Validation along the rest of
+the spur and the wider device comparison remain open.
 
 ### Air and light
 

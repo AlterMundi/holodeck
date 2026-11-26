@@ -1,5 +1,15 @@
 # Current MVP work
 
+## November 26 — Western woodland trail material and motion pass
+
+Protected `fae6c8604b6f` serves `87835aa` with `17fc3bed2bc0` as
+immediate rollback. A renderer-only change gives the existing cleared
+woodland spur a dirt surface. The terrain worker, server, motion
+catalog, room art and all 14 checked state files matched. One RTX
+2060 compared the spur material in Normal and exercised an outbound
+run and return on the preceding exact bark client in both profiles.
+[Art and evidence](environment-art-revamp.md#western-woodland-spur-material).
+
 ## November 26 — Western pine bark
 
 Protected `17fc3bed2bc0` serves `450608b` with immediate rollback
