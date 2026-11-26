@@ -12,7 +12,7 @@ test('stone contact uses the wrapped footprint at each root and leaves distant g
   const scale=(u,v=.25)=>grassBesideStones([stone],u,v);
   assert.equal(scale(.00001),0);
   assert.equal(scale(.99997),0);
-  const margin=scale(.00012);
+  const margin=scale(.00010);
   assert.ok(margin>0&&margin<1);
   assert.equal(scale(.0002),1);
   assert.equal(scale(.00001,.251),1);

@@ -15,9 +15,8 @@ import {
 
 const LEVEL=7;
 const STONE_SCALE=[1.30,.67,.87];
-const STONE_EDGE=1.15;
-const STONE_CLEARANCE=.58;
-const STONE_HALO=STONE_SCALE[0]*STONE_EDGE+STONE_CLEARANCE;
+const STONE_CLEARANCE=.29;
+const STONE_HALO=STONE_SCALE[0]+STONE_CLEARANCE;
 const RANGE=2;
 const CANDIDATES=12;
 const FIELD_LEVEL=9;
@@ -96,8 +95,8 @@ export function grassBesideStones(stones,u,v){
     const du=u-stone.u,dv=v-stone.v;
     const x=(du-Math.round(du))*along,z=(dv-Math.round(dv))*across;
     if(Math.abs(x)>STONE_HALO||Math.abs(z)>STONE_HALO)continue;
-    const width=stone.size*STONE_SCALE[0]*STONE_EDGE;
-    const depth=stone.size*STONE_SCALE[2]*STONE_EDGE;
+    const width=stone.size*STONE_SCALE[0];
+    const depth=stone.size*STONE_SCALE[2];
     const distance=Math.hypot((x*cosine-z*sine)/width,(x*sine+z*cosine)/depth);
     if(distance<=1)return 0;
     const clearance=Math.hypot(x,z)*(1-1/distance);
