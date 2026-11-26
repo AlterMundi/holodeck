@@ -1,4 +1,4 @@
-import {toroidalAirColor} from './toroidal-air.mjs';
+import {toroidalAirColor,toroidalCosmosColor} from './toroidal-air.mjs';
 import {useToroidalRockDetail,useToroidalWaterDetail} from './toroidal-surface-detail.mjs';
 import {BufferAttribute, BufferGeometry, DoubleSide, Group, Mesh, MeshStandardMaterial, ShaderChunk, Vector3} from 'three';
 import {
@@ -204,6 +204,15 @@ const waterShading = {
     float skyHeight=clamp(dot(reflectedRay,holoUp),0.0,1.0);
     float nightSky=(1.0-holodeckDaylight)*(1.0-smoothstep(.0,.08,holodeckWaterViewDepth));
     reflectedAir+=vec3(.022,.038,.061)*nightSky*mix(.40,1.0,skyHeight);
+    if(holodeckHasCosmos && gl_FrontFacing && holodeckWaterViewDepth<=.014 && holodeckDaylight<.85){
+      // View space normals add wave detail, then the celestial map is
+      // sampled in the same world axes as the sky.
+      vec3 worldRay=transpose(mat3(viewMatrix))*reflectedRay;
+      float window=toroidalCosmosWindow(skyHeight,holodeckDaylight)*(1.0-smoothstep(.21,.85,holodeckDaylight));
+      vec3 skyLight=toroidalCosmos(holodeckCosmos,worldRay);
+      float radiance=max(max(skyLight.r,skyLight.g),skyLight.b);
+      reflectedAir=mix(reflectedAir,skyLight*1.12,window*smoothstep(.018,.24,radiance));
+    }
     vec3 depths=(outgoingLight-totalSpecular)*mix(.25,1.0,holodeckDaylight);
     depths+=holodeckDaylight*vec3(.025,.066,.084);
     outgoingLight=mix(depths,reflectedAir,.10+.54*holoFresnel+holoSwell*.07);
@@ -253,6 +262,11 @@ function artDirect(material, name, shading, environment) {
     shader.uniforms.holodeckApproachArt=environment.approach;
     shader.uniforms.holodeckSill=environment.sill;
     fragment=after(fragment,'common','uniform float holodeckWaterViewDepth; uniform float holodeckDaylight; uniform float holodeckApproachArt; uniform vec3 holodeckSill; uniform float holodeckEyeHeight;'+toroidalAirColor);
+    if(name.startsWith('water')){
+      shader.uniforms.holodeckCosmos=environment.cosmos;
+      shader.uniforms.holodeckHasCosmos=environment.hasCosmos;
+      fragment=after(fragment,'common','uniform sampler2D holodeckCosmos; uniform bool holodeckHasCosmos;'+toroidalCosmosColor);
+    }
     if(name==='terrain'){
       shader.uniforms.holodeckMeadowGrain=environment.meadowGrain;
       fragment=after(fragment,'common','uniform float holodeckMeadowGrain;');
@@ -318,7 +332,7 @@ export class ToroidalTerrainRenderer {
     this.shoreMaterial=this.waterMaterial.clone();
     Object.assign(this.shoreMaterial,{transparent:true,depthWrite:false,forceSinglePass:true});
     this.environment={water:{value:0},sun:{value:new Vector3(...SUN_LOCAL)},daylight:{value:1},
-      approach:{value:1},eyeHeight:{value:0},sill:{value:new Vector3()},meadowGrain:{value:1},lightWater:{value:false}};
+      cosmos:{value:null},hasCosmos:{value:false},approach:{value:1},eyeHeight:{value:0},sill:{value:new Vector3()},meadowGrain:{value:1},lightWater:{value:false}};
     useToroidalRockDetail(this.material,{meadow:true});
     const openWaterTime=useToroidalWaterDetail(this.waterMaterial,this.environment.lightWater);
     const shoreTime=useToroidalWaterDetail(this.shoreMaterial,this.environment.lightWater);
@@ -363,7 +377,9 @@ export class ToroidalTerrainRenderer {
     sill.set(x,door.z,door.facing);
   }
 
-  setView(eye,waterDepth){
+  setView(eye,waterDepth,panorama=null){
+    this.environment.cosmos.value=panorama;
+    this.environment.hasCosmos.value=panorama!==null;
     this.environment.water.value=waterDepth;
     this.environment.eyeHeight.value=terrainCoordinates([eye.x,eye.y,eye.z]).height;
   }
@@ -472,6 +488,8 @@ export class ToroidalTerrainRenderer {
     this.group.clear();
     this.group.removeFromParent();
     this.material.dispose();
+    this.environment.cosmos.value=null;
+    this.environment.hasCosmos.value=false;
     this.waterMaterial.dispose();
     this.shoreMaterial.dispose();
   }
