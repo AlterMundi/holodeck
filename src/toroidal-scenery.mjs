@@ -133,15 +133,17 @@ varying vec3 meadowUp;
 function meadowBlades(count,lightweight=false,fieldCoverage=0){
   const positions=[],colors=[],faces=[];
   const levels=lightweight?[0,.54,1]:[0,.32,.68,1];
+  const field=fieldCoverage>0;
+  const taper=field ? .62 : .81;
   for(let blade=0;blade<count;blade++){
     const angle=blade*2.39996+.19*Math.sin(blade*4.17);
     const x=Math.cos(angle),z=Math.sin(angle);
     const tall=blade<2;
-    const height=(.55+.28*(.5+.5*Math.sin(blade*6.34+blade*blade*.35)))*(fieldCoverage&&!tall?.84:1);
+    const tipHeight=.55+.28*(.5+.5*Math.sin(blade*6.34+blade*blade*.35));
+    const height=field&&!tall ? tipHeight*.84 : tipHeight;
     const spread=.21+.30*(.5+.5*Math.cos(blade*2.12));
-    const coverage=fieldCoverage?(tall?1.42:1.98)*fieldCoverage:1;
+    const coverage=field ? (tall ? 1.42 : 1.98)*fieldCoverage : 1;
     const width=(.024+.013*(.5+.5*Math.cos(blade*3.09)))*coverage;
-    const taper=fieldCoverage?.62:.81;
     const base=positions.length/3;
     for(let level=0;level<levels.length;level++){
       const t=levels[level],tip=t===1;
@@ -150,8 +152,8 @@ function meadowBlades(count,lightweight=false,fieldCoverage=0){
       for(const side of (tip?[0]:[-1,1])){
         const edge=lateral+width*(1-t*taper)*side;
         positions.push(x*radial-z*edge,t*(height+.09)-.14,z*radial+x*edge);
-        const red=fieldCoverage?1.04-.03*t:.87+.14*t;
-        const blue=fieldCoverage?.88+.04*t:1.08-.16*t;
+        const red=field ? 1.04-.03*t : .87+.14*t;
+        const blue=field ? .88+.04*t : 1.08-.16*t;
         colors.push(brightness*red,brightness,brightness*blue);
       }
       if(!level)continue;
