@@ -104,6 +104,26 @@ looking up into a broad pine and a 6.56 m walk passed on the same RTX
 checks that the stem ring crosses an upper whorl hub. Both archives
 remain drafts.
 
+#### Installed pine needle and crown trial
+
+Protected `7cb8c7170403` (`faa812f`) uses the connected branchlets and
+a small locally generated, mipmapped needle chart on nearby trees. The
+opaque cutout is removed as the projected detail becomes too small.
+Bark and distant tree materials keep their own appearance. The one
+128×128 two-channel texture is allocated on first material use, with
+no asset request.
+
+The selected broad crown was compared at noon and dusk on one RTX
+2060. The camera showed needle-shaped edges where the earlier draft
+had flat foliage. The previous geometric draft and the new chart
+both showed 92 draws and 495,535 triangles at the matched 850×552
+view. A separate real keyboard run moved the same tree from 11.99 m in
+the near batch to 43.66 m in the middle batch without losing its
+root. That verifies selection continuity, with visual transition
+quality and lightweight cost still available for later review.
+The protected runtime read matched 14 state files, terrain worker,
+server and room art. Immediate rollback is `de01619ab41c`.
+
 ### Air and light
 
 Link the horizon, the terrain's distant color and the low-angle sun.

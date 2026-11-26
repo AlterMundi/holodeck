@@ -1,5 +1,14 @@
 # Current MVP work
 
+## November 26 — Pine needle and crown trial
+
+Protected `7cb8c7170403` serves `faa812f`. The rooted pine branchlets
+and filtered local needle pattern are reachable in the western grove.
+A single RTX 2060 visit verified noon and dusk, a walk near the trunk
+and travel through the near-to-middle geometry selection. The immediate
+rollback is `de01619ab41c`.
+[Scope and evidence](environment-art-revamp.md#installed-pine-needle-and-crown-trial).
+
 ## November 26 — Meadow stone shape and grass contact trial
 
 Protected `de01619ab41c` serves source `3cc63b3`. The trial is visible
