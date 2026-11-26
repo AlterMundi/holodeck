@@ -118,7 +118,7 @@ varying vec3 meadowUp;
        float offset=2.4*(fract(dot(root,vec3(.38,.19,.63)))-.5);
        float retention=1.0-smoothstep(17.0+offset,27.0+offset,distanceToTuft);
        transformed.y=mix(-.16,transformed.y,retention);
-       transformed.xz*=smoothstep(0.0,.10,retention);`);
+       transformed.xz*=smoothstep(0.0,.76,retention);`);
     shader.fragmentShader=`varying vec3 meadowUp;
 `+shader.fragmentShader.replace('#include <normal_fragment_begin>',
       `#include <normal_fragment_begin>
@@ -130,24 +130,29 @@ varying vec3 meadowUp;
 
 // Indexed ribbons share their vertices between height bands. The roots hold
 // their soil contact while the taper and bend read against the distant slopes.
-function meadowBlades(count,lightweight=false){
+function meadowBlades(count,lightweight=false,fieldCoverage=0){
   const positions=[],colors=[],faces=[];
   const levels=lightweight?[0,.54,1]:[0,.32,.68,1];
   for(let blade=0;blade<count;blade++){
     const angle=blade*2.39996+.19*Math.sin(blade*4.17);
     const x=Math.cos(angle),z=Math.sin(angle);
-    const height=.55+.28*(.5+.5*Math.sin(blade*6.34+blade*blade*.35));
+    const tall=blade<2;
+    const height=(.55+.28*(.5+.5*Math.sin(blade*6.34+blade*blade*.35)))*(fieldCoverage&&!tall?.84:1);
     const spread=.21+.30*(.5+.5*Math.cos(blade*2.12));
-    const width=.024+.013*(.5+.5*Math.cos(blade*3.09));
+    const coverage=fieldCoverage?(tall?1.42:1.98)*fieldCoverage:1;
+    const width=(.024+.013*(.5+.5*Math.cos(blade*3.09)))*coverage;
+    const taper=fieldCoverage?.62:.81;
     const base=positions.length/3;
     for(let level=0;level<levels.length;level++){
       const t=levels[level],tip=t===1;
       const radial=.041+spread*t*t,lateral=.04*t*Math.sin(blade);
       const brightness=.39+.61*t;
       for(const side of (tip?[0]:[-1,1])){
-        const edge=lateral+width*(1-t*.81)*side;
+        const edge=lateral+width*(1-t*taper)*side;
         positions.push(x*radial-z*edge,t*(height+.09)-.14,z*radial+x*edge);
-        colors.push(brightness*(.87+.14*t),brightness,brightness*(1.08-.16*t));
+        const red=fieldCoverage?1.04-.03*t:.87+.14*t;
+        const blue=fieldCoverage?.88+.04*t:1.08-.16*t;
+        colors.push(brightness*red,brightness,brightness*blue);
       }
       if(!level)continue;
       const lo=base+2*(level-1);
@@ -258,7 +263,7 @@ export class ToroidalScenery {
     this.fieldClock={value:0};
     this.fieldMotion={value:1};
     this.reducedMotion=globalThis.matchMedia?.('(prefers-reduced-motion: reduce)');
-    this.fieldGeometry=[meadowBlades(5),meadowBlades(5,true),meadowBlades(4,true)];
+    this.fieldGeometry=[meadowBlades(5,false,1),meadowBlades(5,true,1),meadowBlades(4,true,1.22)];
     const fieldMaterial=new MeshStandardMaterial({roughness:.94,vertexColors:true,side:DoubleSide});
     this.field=new InstancedMesh(this.fieldGeometry[0],fieldMaterial,(2*FIELD_NEAR+1)**2*FIELD_DENSITY);
     this.fieldFar=new InstancedMesh(this.fieldGeometry[1],fieldMaterial,FIELD_LIMIT);
