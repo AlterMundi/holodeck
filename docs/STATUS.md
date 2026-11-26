@@ -1,5 +1,13 @@
 # Current MVP work
 
+## November 26 — Short grass material at the arrival meadow
+
+Protected release `b16825cfa1d6` serves `0a22901` with
+`ccd70257f992` as rollback. A filtered short-leaf texture fills the gaps
+between existing upright tufts without new downloads or geometry.
+13 state files matched by hash. The room journal changed only for presence.
+[Matched device and visitor checks](environment-art-revamp.md#installed-short-leaf-cover-at-the-arrival-meadow).
+
 ## November 26 — Harmonic Lab worktop lighting
 
 Protected release `ccd70257f992` serves `977a168` with

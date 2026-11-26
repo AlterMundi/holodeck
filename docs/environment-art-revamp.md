@@ -269,6 +269,36 @@ cut and retained its durable content across the adjacent saves.
 Independent participant acceptance and a controlled Normal frame-time
 comparison remain open.
 
+## Installed short-leaf cover at the arrival meadow
+
+Protected release `b16825cfa1d6` serves `0a22901`, with `ccd70257f992`
+available for rollback. The ground between upright tufts now reads as
+shorter grass beside the approach. A single local 128 by 128 R8 repeat
+is generated only in the terrain renderer. Filtered leaf relief keeps
+the existing terrain colour, mutes subpixel detail and has the same
+pattern in Normal and Livianos. The top-level texture uses 16 KiB and
+has no download. Draws, terrain geometry, room links and planted roots
+are unchanged.
+
+At matched noon, dusk and night moving-camera samples, p95 was
+16.7–16.8 ms on RTX 2060 Normal and Pi 5 V3D Livianos for both packages.
+The matched buffers were 561 × 378 and 264 × 189 respectively. At every
+measured sample, draws and triangles were identical within each profile
+(114 / 245,754 and 70 / 94,642). Both Pi runs ended warmer than they
+began, with historical throttle flags only in recorded pre/post readings.
+In one close RTX ground crop, mean display luma went from 150.5 to
+148.5/255 while the mean absolute horizontal-neighbour difference grew
+from 0.05 to 1.14. This measures local texture contrast, with real lower
+vegetation density and a continuous meadow-to-forest walk still to do.
+
+Two Chromium fixture visitors resolved the same house entrance. The
+Livianos peer downloaded no Sand3D models. Independently signed-in human
+acceptance is open. Fable 5.2 High informed the short cover. Opus 5.5
+High reviewed the final bytes after neutralising the mip-level tint and
+checking anisotropy, masks and texture disposal. 488 tests passed with
+two optional skips. 13 state files matched by hash. The room journal changed only for presence. The server, worker, scoped art and client
+matched the selected serving release.
+
 ## Installed middle-distance meadow coverage
 
 Protected release `95d58169730b` serves `65344ee`, with `a051266d693e` as
