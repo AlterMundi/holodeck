@@ -26,6 +26,21 @@ canonical Conversation across desktop and compact layouts with one
 fixture original, one retained frame and no browser errors. The Node
 suite passed 425 checks with two skips. This candidate is staged locally.
 
+## Situated room topics in the Conversation surround
+
+Host revision `26cb1dafd7a23b973b627b79c1a10443c298656c` displays the active
+room object and previous/next controls in the optical Conversation header.
+The action binds the room, displayed selection, target object and their
+revisions. It uses the existing room-topic selector and context writer.
+The package SHA-256 is `005ebe7b7869d4f134da364e1189c008f03ec6353d08b01e0e78e03dc4f962fe`.
+Chromium entered the Character room through the foyer, selected its
+worktable, moved and resized Conversation by keyboard, then minimized and
+reopened the existing iframe. Keyboard focus returned to the world launcher.
+At 390 CSS pixels, both Three.js navigation buttons responded to emulated
+touch. The same draft survived the changes. The fixture bridge prepared one
+authorized context containing the exact table, revision 1. The Node suite
+passed 444 checks with two skips. Protected activation remains open.
+
 ## Compact exterior terrain minimap
 
 Host revision `09c49c59ba03ed869ca15d27e2f17d8100ade505` shows a
