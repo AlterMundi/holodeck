@@ -634,14 +634,13 @@ alongside the pending mobile Conversation work.
 | Reading or composing in Conversation | Hide phone movement controls and release their captured inputs as the panel takes ownership. Keep the draft, scroll and selected part through collapse, rotation and keyboard resize. Restore world controls and focus on close without restoring held input. |
 | Audio-only | Switch through Conversation to a mic and an explicit return to text, without opening the keyboard. Leave world movement available. Keep recording and stop controls visible during locomotion and mode changes. Reuse the mounted canonical capture and its interruption, upload, denial and retry behavior. Preserve a text draft on switching modes. |
 
-Start with the notice and compact dock, then derive visibility and input
-from the same form-factor, gesture-ownership and focus state. The captured
-object-identification text maps to the point-selection unavailable callback,
-which currently uses a persistent notice through `say`. Give this
-retryable hint a four-second lifetime and a brief fade in the A2UI
-projection, with a static timeout under reduced motion. A newer hint
-starts its own timer. Hints cannot displace unresolved operations or
-recovery. Leave attribution of the original gesture open.
+The captured object-identification text comes from the point-selection
+retry. The [object notice](STATUS.md#november-26-object-identification-notice)
+now requires a short primary gesture hitting a visible eligible world
+object and an unconfirmed projection. Blank scenery and missing geometry
+stay quiet. A retry lasts four seconds, with a brief fade or static expiry
+under reduced motion. A newer retry starts its own timer. Persistent
+operation and recovery notices keep their priority.
 
 Style existing spatial controls and minimize visual area while retaining
 comfortable hit targets. Use safe-area insets and compact viewport plus

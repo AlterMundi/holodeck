@@ -1,5 +1,29 @@
 # Current MVP work
 
+## November 26 object identification notice
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `9281853a628a`
+from `f986646`. A short primary gesture must hit a visible eligible
+world object before an unconfirmed projection can produce the four-second
+retry notice. A blank or occluded hit stays quiet. The existing check
+still prevents stale records from opening a visit or selecting an
+object. The reduced-motion setting uses the same deadline with no fade.
+
+Matching prior and current browser packages ran on physical Pi 5 V3D
+Livianos at 390 × 780 with touch emulation and RTX 2060 Normal at
+1200 × 740 with mouse and reduced motion. Both prior builds showed the
+notice on a blank hit during a controlled projection mismatch. Both
+current builds kept blank hits silent and cleared the eligible retry
+after 4.01 s and 4.00 s, respectively. The mismatch and target were
+introduced in the loopback test fixture. The physical Redmi and a
+shared session with two signed-in visitors remain open.
+
+Node 24 passed 423 checks with two optional skips. Only the browser
+bundle changed. Receiving matched 86 files, 13 exact protected HTTPS
+reads, four expected denials, the same App audience and configuration,
+and the same world run at sequence 463. Immediate rollback is
+`4d87ebe3a88d`. See [HUD #16](https://github.com/AlterMundi/holodeck/issues/16).
+
 ## November 26 ground gait and supported turns
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `4d87ebe3a88d`
