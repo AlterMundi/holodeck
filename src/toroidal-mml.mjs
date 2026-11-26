@@ -15,7 +15,8 @@ export function steerToroidalFlight(direction,polarAngle,atSurface=false){
   // The camera's polar angle belongs to the avatar's radial-up frame.
   const pitch=(Number.isFinite(polarAngle)?polarAngle:Math.PI/2)-Math.PI/2;
   const ahead=-Math.cos(direction);
-  if(Math.abs(ahead)<1e-10||Math.abs(pitch)<=AIM_DEADBAND||(atSurface&&Math.abs(pitch)<SURFACE_DIVE&&pitch*ahead<0))
+  if(Math.abs(ahead)<1e-10||Math.abs(pitch)<=AIM_DEADBAND||
+     (atSurface&&(pitch*ahead>=0||Math.abs(pitch)<SURFACE_DIVE)))
     return {direction,forward:1,climb:0};
   const angle=Math.sign(pitch)*(Math.abs(pitch)-AIM_DEADBAND)*(Math.PI/2)/(Math.PI/2-AIM_DEADBAND);
   const strafe=Math.sin(direction);

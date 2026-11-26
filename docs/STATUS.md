@@ -1,6 +1,5 @@
 # Current MVP work
 
-
 ## November 26 — Longer blue wake over water
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `6416a5246b17`
@@ -28,7 +27,7 @@ See [motion #21](https://github.com/AlterMundi/holodeck/issues/21).
 
 ## November 26 flight through water and blue wake
 
-[Holodeck](https://compaii.dmn.homes/holodeck/) serves `58ce88972da7`
+Holodeck previously served `58ce88972da7`
 from source `422b916`. Immediate code rollback is `2ee067ffd313`.
 Protected HTTPS health and the exact Brotli client passed readback. The
 audience matched the deployment request, and the world checkpoint
@@ -60,9 +59,275 @@ independent fixture identities and the real MML and application routes.
 See [water-flight playtest](playtest-iteration.md#camera-facing-aim-and-flight-through-water)
 and [motion #21](https://github.com/AlterMundi/holodeck/issues/21).
 
+## Whole-rig opening view on the selected Holodeck base
+
+Character client source `a401a02335f6c47d174ed844a2993c9168127f8e`
+frames the actual preview rig from a reachable miniature eye position.
+The opening wheel distance matches that physical placement. The
+1480 × 928 capture shows the figure from head to feet above the dock.
+Chromium verified the opening frame, physical eye position, keyboard
+travel, pointer orbit, wheel and playback. Node 24 passed 457 tests
+with two optional skips.
+
+Receiving candidate SHA-256
+`71e175bad8d16ced8060e076416b719ced7552b224a943782bca47eb25a4592a`
+uses the exact selected base `6416a5246b17` and the Proyección alpha.21
+pin `8da5ac9`. The released wake and splash sources are incorporated
+unchanged. Only the browser bundle and manifest differ in the archive.
+Both the generated and packed pose catalogs match the installed catalog.
+The exact archive also passed the complete two-visitor Chromium walkthrough,
+including independent cameras and frames, reviewed ground and flight
+chapters, shared notes, the situated native action and graphics recovery.
+A follow-up 568 × 320 touch trial on the same immutable archive drove
+real Chromium touch events into the world canvas. A one-finger drag
+rotated the miniature view and a two-finger spread brought it closer.
+Both moved the miniature, kept the camera at eye height, and released
+pointer ownership. The other visitor's camera and frame stayed local.
+The existing private runtime artifact now retains the exact immutable
+package. Authenticated byte readback matched its SHA-256, and an anonymous
+read returned 404. The prepared owner request pins `6416a5246b17` and
+the existing application audience. It has not been submitted. The registry
+retains the selected live archive and its rollback. The exact older
+superseded archive is available in the local recovery record.
+
+## Character table navigation from the miniature's eyes
+
+Client source `ea084a5` uses the review orbit and dolly to move the miniature
+visitor through the existing worktable collision bounds. The rendered camera
+is at the resulting eye position. The first packaged check passed keyboard
+travel, primary drag and wheel in Chromium, plus playback and direct choices
+in both projections.
+
+The receiving composition `d28c5307de0f077bd07d035bd528cca175bac296`
+keeps the active water effects from `422b916` and preserves the published
+animation editions. All 670 published sampled frames and chapter indexes matched exactly.
+The built and installed catalog bytes also matched. The prior camera build
+calculated different edition IDs and could not follow a pose shared under
+the installed catalog. The whole-rig candidate above supersedes this composition.
+
+Receiving candidate SHA-256
+`7468892a3c6246a55aaff1bf6f9917e9974c2bb0afab6ce013a147f1a850f386`.
+It replaces only the client and its manifest hash on `58ce88972da7`.
+Node 24 passed 456 tests with two skips. Chromium opened the same
+published frame in the web and table views, preserved the held comparison
+frame in its shared link, and verified flight and land transitions. Two
+distinct fixture visitors then kept separate camera angles and frames,
+and the second visitor read the shared note in a 568 × 320 viewport.
+The full walkthrough returned a native note for the referred local frame
+and restored the visitor's frame and draft after graphics recovery.
+The protected deployment still selected `58ce88972da7` at verification.
+
+## Matter and canonical Conversation on the Character receiving archive
+
+Candidate `7468892a3c62` was exercised against installed canonical
+Conversation assets. The served surface script matched those assets.
+Chromium covered four desktop and touch layouts, one retained iframe,
+draft and selection retention, restoration of world input and a pointer
+activation of the narrow dock. The loopback sink accepted one exact
+original with its world context and attachment. The fixture refused
+four forged requests. This verifies the embedding and submission flow
+with fixture I/O.
+
+Two Matter fixture visitors entered the existing room through the door
+and used the same project selection revision. The first visitor kept
+a private camera and cut setting while the second published from the
+compact layout using the keyboard during HUD graphics loss. Following
+the updated table selected the published project. A stale write and an
+edit after access revocation returned 409 and 403. A trusted touch on
+the drawn **Despejar** control cleared the table at revision 3 in both
+browsers. The visitor then left the table, returned through the door
+and lost access to the room's collection.
+
+The renderer guide's [HUD inventory](https://github.com/AlterMundi/proyeccion/pull/37)
+lists the host owners, spatial presentations and remaining browser flows.
+
+## Narrow desktop dock and Conversation pointer check
+
+Client revision `4ad1781` widens the bridge control so the full label
+is visible. The canonical browser fixture verifies the dock at
+760 × 680 as well as the desktop, portrait and landscape baselines.
+It waits for rendered hit regions after resizing and actuates the
+projected Conversation control with the browser pointer. The panel
+minimizes, world input becomes available, and the iframe is retained.
+Draft contents and selection survived all four layouts.
+
+Candidate archive SHA-256
+`5471bdbca0f6938afb93ba6bf7eef206fb76bf3e2780db97cddb6f66793d94a3`.
+It retains the alpha.21 renderer and changes the browser client on the
+previous candidate. Node 24 passed 447 tests with two skips. The
+protected release at the time of this check was `2ee067ffd313`.
+
+## World dock alongside canonical Conversation
+
+Client revision `3fd7e11c2d270c404835f36559375ad58ac1870c` lays out
+the dock in the available side span when Conversation occupies its
+usual lower screen area. The host reuses its existing control rows
+and visitor-local input. On desktop and landscape touch, Chromium
+verified that map, conversation, bridge and undo were outside the
+frame. Portrait keeps its separate travel lane.
+
+Candidate archive SHA-256
+`ea436f5311145951bb98747e8c595875d68337555dc128a8d05ba1082a067d14`.
+The archive replaces the client only on the alpha.21 fixture base.
+The served canonical Conversation surface, composer and app script
+hashes matched the release selected by the public Interaction route.
+In the isolated browser, minimizing and restoring retained one frame.
+A draft and its backward text selection survived all three layouts.
+Keyboard input edited the draft without moving the avatar and returned
+to the world after focus moved. One fixture original retained both
+its world context and user attachment. Node 24 passed 447 tests with
+two skips. Protected Holodeck selection and signed-in device acceptance
+remain open.
+
+## Released Proyección alpha.21 in the receiving candidate
+
+The lock selects released renderer source
+`8da5ac9f4148197e4823817eecee14c2fb6d942e`.
+The [alpha.21 prerelease](https://github.com/AlterMundi/proyeccion/releases/tag/v0.1.0-alpha.21)
+includes the CI-tested installable package and pinned A2UI manifest.
+The tagged source reproduced the archived Holodeck client byte for byte.
+
+Candidate archive SHA-256
+`0ce3905575af253af74e7d5a4f59ebfe733cf6ab9b62781e573a06fc1c79e7f6`.
+It replaces the compressed client of protected release `2ee067ffd313`.
+The Character note button uses a short label, and the browser
+walkthrough shared the draft through that action and read it back
+against the same authored pose. The second fixture visitor saw the note
+while keeping its independent frame and orbit. The walk also covered
+the world door, ground and flight phases, and room-scoped review.
+Node 24 passed 447 tests with two skips. Production activation and a
+paired review with real participants remain open.
+
+## Range gesture ownership in the receiving candidate
+
+The renderer pin `09901297b78df95259af4363452d8c196f6b6250`
+includes [Proyección PR 35](https://github.com/AlterMundi/proyeccion/pull/35).
+During a scope transition, a range preview is cancelled even if the
+surface remains eligible. Equivalent scope reordering preserves an
+ongoing drag. Chromium reproduced an extra write before the fix and
+verified cancellation without passing the gesture to the world.
+The renderer passed 723 local tests and the GitHub package and
+A2UI conformance checks.
+
+The receiving archive SHA-256 is
+`c6410f2d9d8d2628e8ee1acd0e29ed020051da533ffc1271277dc7033133f8e2`.
+Building from the pinned merged source reproduced the archived client
+byte for byte. The Character viewer/table parity and miniature camera
+checks passed. The Matter desktop and landscape touch walkthrough shared
+in both directions and preserved independent cuts and cameras.
+The protected deployment remains `2ee067ffd313`.
+
+## Readable Character cycle selection in both projections
+
+Client revision `229b847431515432191edea4637a30ad4d356c75` gives
+cycle controls short labels in the viewer and table while retaining the
+authored names for pose references. Inline presses carry the identity of
+the selected item. Phase and comparison presses also carry the edition
+they target. The renderer's existing scope and gesture rules apply.
+
+The service candidate SHA-256 is
+`659b876c46303e6d0361f338e5a2a18256c35c219997e2d3b067b646b5056f97`.
+It includes the Matter readability changes and replaces only the
+compressed client from protected `2ee067ffd313`. The server, asset
+payloads and exact pose catalog match. Shader and renderer selection
+remain on the Proyección alpha.20 pin.
+
+Chromium verified the complete cycle labels at 1480 × 928, selection
+from marching to flight in both projections, and unchanged playback
+and miniature camera navigation. The full two-fixture walk exercised
+the world door, ground frames 0/17/57/63, flight frames 0/22/36/65/110,
+an exact shared pose and room-scoped notes, independent local frames
+and orbit, and permission refusal outside the room. Node 24 passed
+447 tests with two skips. Live selection remains with Holodeck.
+
+## Matter worktable readability on the alpha.20 candidate
+
+Client revision `a0225316402228db379ecee8370bd7bc454407c4` puts
+Compartir on its own row in the landscape touch layout, preserves
+Seguir and Despejar side by side, and uses short contextual labels for
+pointing and conversation. The desktop layout names the model or part.
+Chromium captures verify complete labels and tabs at 568 × 320 and
+the desktop layout at 1200 × 800.
+
+The service candidate SHA-256 is
+`ff0cd6187c4e5527fa6c851eaa0055e6b95c4e0005fbaf6d3fa8c0eb3fa9f76c`.
+It replaces only the compressed client from protected `2ee067ffd313`
+and retains Proyección alpha.20. The remaining package payloads,
+including the pose catalog and server, match the protected release.
+Character web/table playback and miniature camera parity passed
+against the same archive. The two-fixture Matter walkthrough replayed
+sharing in both directions, retained each visitor's camera and local cut,
+and left the room through its existing door. The Node 24 suite passed
+447 tests with two skips. Activation remains with Holodeck.
+
+## Proyección alpha.20 receiving candidate
+
+The dependency lock selects Proyección
+`77d7d4c4db4996a8e7780296d422e24aacdf9d95`
+([alpha.20 prerelease](https://github.com/AlterMundi/proyeccion/releases/tag/v0.1.0-alpha.20)).
+The signed release source, published package source and receiving renderer
+sources matched. The release manifest records 571 passes and 120 documented
+skips across 28 suites of the pinned A2UI 1.0 corpus.
+
+The candidate service archive uses the protected `2ee067ffd313` release as
+its preimage and replaces its compressed client. The catalog, server and
+world resources match the preimage. Its SHA-256 is
+`c6b3f7ea0ebf95a9d05db3e9e1c6450e74a3a98df1176ac299105a043296969b`.
+Reproduce it with the lockfile, `node tools/build.mjs`, the existing service
+package builder and the previous release's exact non-client payload.
+The renderer Chromium check passed the blocked-and-restored modal gesture
+and equivalent reordering of the same interaction scope. Character's
+receiving browser check passed matching web and table controls, playback,
+and miniature camera displacement, orbit and zoom. Holodeck's Node 24 suite
+passed 447 tests with two skips.
+
+The exact service package also passed the Matter browser walkthrough with
+desktop and touch fixture visitors. Each published a different scope; the
+other visitor read it back while retaining independent camera and local
+cut. Rejoin recovered the shared scope. Stale and revoked writes returned
+409 and 403, clearing advanced revision, graphics fallback still shared,
+and leaving through the door restored world controls and removed room
+read access. The visual evidence includes both the desktop local cut
+after the touch write and the touch view of the shared result.
+
+The receiving source contains these additional surfaces beyond the earlier
+[HUD inventory](https://github.com/AlterMundi/proyeccion/blob/77d7d4c4db4996a8e7780296d422e24aacdf9d95/docs/holodeck-hud.md#holodeck-hud-inventory).
+
+| Host surface | Current projection and authority |
+| --- | --- |
+| Boot and passage | Browser boot remains available before the world can draw. Passage retry has a spatial panel when the frame can be presented and keeps the existing browser fallback. |
+| Uncertain submissions | The spatial recovery panel offers the existing check, retry and close actions. The original and its details stay with the canonical recovery writer. |
+| Pointing and creation | Spatial controls project the current tool and selection. Playable, layout and garden editors retain their owning interaction flows. |
+| Beacon | Spatial station and viewer controls wrap the owning instrument app. Launch and close respect current room and focus. |
+| Conversation | The optical spatial frame hosts canonical Conversation. Message entry and submission remain with that application. |
+| Review and collection | Character Studio, Matter, and exhibit visits use native spatial controls with the owning app's scoped state and permissions. |
+
+The candidate is retained for selection by the existing Holodeck work
+conversation. The protected deployment still serves `2ee067ffd313`.
+Real paired acceptance in Character Studio and Matter remains open.
+
+## Character Studio controls and miniature camera in the live room
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves
+`2ee067ffd313300a36287f820a6a19c9d3dac2e0a7a9dbe2a4362b06704bf23b`
+from client revision `5250ee61c1d99e57e4d9581c58ea329f295d5dbe`.
+The protected HTTPS client and health response matched the package.
+The package changes the client only on the `6692863a8f0a` release,
+which is the immediate rollback. The installed pose catalog is unchanged.
+
+The same Character Studio control tree selects a wide or compact layout
+in the standalone viewer and the in-world table. At 1480 × 928 Chromium
+exercised direct rig, cycle and speed choices and playback in both mounts.
+It verified that the table camera follows miniature travel, supports drag
+and wheel, and uses the viewer field of view. Playback stayed available
+in Notes at 550 × 490. The packaged browser walkthrough also passed
+shared pose and note review with two fixture identities, independent
+cameras, landscape touch and situated native review. Live review with two
+signed-in people remains a separate acceptance check.
+
 ## Character worktable deployed at the foyer door
 
-[Holodeck](https://compaii.dmn.homes/holodeck/) serves `15ed1ac8a65e`
+[Holodeck](https://compaii.dmn.homes/holodeck/) served `15ed1ac8a65e`
 from `04e0a57e61d9`, following Nicolás's direct instruction to connect
 the door to the table. The protected package activation completed.
 All 87 installed payloads matched. The protected HTTPS bundle and

@@ -16,6 +16,8 @@ if(stage){
 }
 const {createHolodeck}=await import(stage?pathToFileURL(join(stage,'src/server.mjs')):new URL('../src/server.mjs',import.meta.url));
 const installed=await realpath(conversationRelease),web=join(installed,'dashboard/web');
+if(!(await readFile(join(web,'index.html'),'utf8')).includes('assets/conversation-surface.js'))
+ throw Error('Selected Conversation release does not mount the canonical iframe surface');
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex'),served=new Map(),wait=ms=>new Promise(r=>setTimeout(r,ms));
 const frameOrigin='https://127.0.0.1:18945',worldOrigin='http://127.0.0.1:18944',actor='human:surface-fixture',binding='b'.repeat(64),being='dm:being:v1:'+'a'.repeat(43),home='home:'+'c'.repeat(32);
 const pin={tableId:'fixture-table',reportId:'fixture-report',revision:'r1'},accepted=[],prepared=[],released=[],requests=[],fileWrites=[];
@@ -144,10 +146,10 @@ try{
   await keyEvent('rawKeyDown',{...shift,modifiers:8});
   try{return await action();}finally{await keyEvent('keyUp',shift);}
  }
- async function holdA(shift=false){
+ async function holdA(shift=false,during=()=>wait(550)){
   const key=shift?'A':'a',stroke={key,code:'KeyA',windowsVirtualKeyCode:65,modifiers:shift?8:0};
   await keyEvent('keyDown',{...stroke,text:key});
-  try{await wait(550);}finally{await keyEvent('keyUp',stroke);}
+  try{await during();}finally{await keyEvent('keyUp',stroke);}
  }
  await frame('document.querySelector("#conversation-message").focus();true');
  const writingFrom=await position();
@@ -189,7 +191,7 @@ try{
  if(await evaluate('document.querySelector("#conversation-panel").contains(document.activeElement)'))throw Error('Closing left keyboard focus inside Conversation');
  const worldSprint=await holdShift(running);
  if(!worldSprint||await running())throw Error('World Shift did not enter and release the run state');
- await holdA();
+ await holdA(false,()=>until(async()=>walked(submit.local.position,await position())>=.1,8000,'world movement while the original remains pending'));
  const later=await evaluate('({capturedAt:Date.now(),local:structuredClone(holodeckDevelopment.client.getLocalCharacterState())})');
  const walkingDistance=walked(submit.local.position,later.local.position);
  if(walkingDistance<.1)throw Error('World did not move independently during canonical preparation');
@@ -213,7 +215,7 @@ try{
  const nextDraft='Next canonical draft retained';
  if(await drafting()!==nextDraft)throw Error('Canonical send erased newer draft');
  await frame(`(()=>{const draft=document.querySelector('#conversation-message');draft.focus();draft.setSelectionRange(5,9,'backward');return true})()`);
- const layouts=[];for(const [name,width,height,lane]of [['desktop',1100,800,''],['mobile',390,844,'bottom'],['landscape',844,390,'side']]){
+ const layouts=[];for(const [name,width,height,lane]of [['desktop',1100,800,''],['desktop-narrow',760,680,''],['mobile',390,844,'bottom'],['landscape',844,390,'side']]){
   const mobile=Boolean(lane);
   await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile});
   await cdp('Emulation.setTouchEmulationEnabled',{enabled:mobile,...(mobile?{maxTouchPoints:1}:{})});
@@ -230,7 +232,17 @@ try{
   const draftState=await frame(`(()=>{const draft=document.querySelector('#conversation-message');return {focused:draft===document.activeElement,value:draft.value,selection:[draft.selectionStart,draft.selectionEnd,draft.selectionDirection]}})()`);
   if(!await evaluate('document.activeElement===retainedConversation')||!draftState.focused||draftState.value!==nextDraft||JSON.stringify(draftState.selection)!=='[5,9,"backward"]')
    throw Error('Conversation reflow lost draft input '+JSON.stringify({name,draftState}));
-  layouts.push({name,outer,inner,draftState,worldHeader:await worldHeader()});
+  const dockState=()=>evaluate(`(()=>{
+   const panel=document.querySelector('#conversation-panel').getBoundingClientRect();
+   const controls=Object.fromEntries(['map','talk','bridge','undo'].map(id=>[id,holodeckDevelopment.toolBounds(id)]));
+   const clear=Object.values(controls).every(tool=>tool&&(
+    tool.left>=panel.right||tool.left+tool.width<=panel.left||tool.top>=panel.bottom||tool.top+tool.height<=panel.top));
+   return {controls,clear};
+  })()`);
+  if(name!=='mobile')await until(async()=>{const state=await dockState();return state.clear;},6000,'dock controls clear the Conversation frame in '+name)
+   .catch(async error=>{throw Error(error.message+' '+JSON.stringify(await dockState()));});
+  const {controls:toolBounds}=await dockState();
+  layouts.push({name,outer,inner,draftState,toolBounds,worldHeader:await worldHeader()});
   const duplicate=await visibleLegacy();
   if(duplicate.length)throw Error('Duplicate host controls in '+name+': '+duplicate.join(', '));
   const shot=await cdp('Page.captureScreenshot',{format:'png'});await writeFile(join(directory,'layout-'+name+'.png'),Buffer.from(shot.data,'base64'));
@@ -239,10 +251,40 @@ try{
  const reflowSprint=await holdShift(async()=>{await holdA(true);return running();});
  if(reflowSprint||walked(reflowPosition,await position())>.02||await drafting()!==nextDraft.slice(0,5)+'A'+nextDraft.slice(9))
   throw Error('Keyboard input after landscape reflow did not edit only the selected draft text');
- await evaluate('document.querySelector("#conversation-close").click();true');
- await until(()=>evaluate('document.querySelector("#hud").hasAttribute("data-native-status")'),8000,'compact world header restored after minimizing');
+ // Minimize Conversation from its projected dock control with actual pointer input while Conversation still occupies the window.
+ await cdp('Emulation.setDeviceMetricsOverride',{width:760,height:680,deviceScaleFactor:1,mobile:false});
+ await cdp('Emulation.setTouchEmulationEnabled',{enabled:false});
+ await until(()=>evaluate(`(()=>{
+  const panel=document.querySelector('#conversation-panel'),map=holodeckDevelopment.toolBounds('talk');
+  return !panel.hidden&&innerWidth===760&&panel.dataset.travelLane!=='side'&&map&&map.left+map.width<=panel.getBoundingClientRect().left;
+ })()`),8000,'narrow desktop dock before pointer click');
+ const talkTarget=await evaluate(`(async()=>{
+  const bounds=()=>holodeckDevelopment.toolBounds('talk');
+  for(let i=0;i<8;i++){
+   const first=bounds();
+   await new Promise(requestAnimationFrame);
+   const second=bounds();
+   if(!first||!second||Object.keys(first).some(key=>Math.abs(first[key]-second[key])>.5))continue;
+   return second;
+  }
+  throw Error('The dock did not settle after the last viewport change');
+ })()`);
+ const talkPoint={x:talkTarget.left+talkTarget.width/2,y:talkTarget.top+talkTarget.height/2};
+ const hit=await evaluate(`(()=>{const target=document.elementFromPoint(${talkPoint.x},${talkPoint.y});return {
+  canvas:target===holodeckDevelopment.client.getRenderer().composer.renderer.domElement,
+  target:target?.tagName,id:target?.id,role:target?.getAttribute('role')};})()`);
+ if(!hit.canvas)throw Error('Conversation dock click would hit '+JSON.stringify(hit));
+ await cdp('Input.dispatchMouseEvent',{...talkPoint,type:'mouseMoved'});
+ await cdp('Input.dispatchMouseEvent',{...talkPoint,type:'mousePressed',button:'left',buttons:1,clickCount:1});
+ await cdp('Input.dispatchMouseEvent',{...talkPoint,type:'mouseReleased',button:'left',buttons:0,clickCount:1});
+ await until(()=>evaluate('document.querySelector("#conversation-panel").hidden'),8000,'pointer minimizes Conversation from the dock')
+  .catch(async error=>{throw Error(error.message+' '+JSON.stringify(await evaluate(`(()=>{
+   const conversation=document.querySelector('#conversation-panel');
+   return {conversationHidden:conversation.hidden,point:holodeckDevelopment.toolBounds('talk')};
+  })()`)));});
+ await until(()=>evaluate('document.querySelector("#hud").hasAttribute("data-native-status")'),8000,'world header restored after minimizing');
  const errors=await evaluate('checkErrors'),frameErrors=await frame('checkErrors');if(errors.length||frameErrors.length)throw Error('Browser errors '+JSON.stringify({errors,frameErrors}));
- const evidence={schema:'holodeck.shared-conversation-browser/v1',qualification:'Actual installed canonical full shell/assets and Holodeck MML world, synthetic loopback Home/context/files/original I/O; no real human/native/model/provider input or acceptance.',canonicalRelease:installed.split('/').at(-1),canonicalAssets:Object.fromEntries(served),loads,acceptedOriginals:accepted.length,exactOriginal:true,contextFiles:1,userFiles:1,fileUploads:fileWrites.length,draftRetained:true,operationalAlerts:'Canonical quiet frame intentionally hides the ordinary launcher; not an exercised capability.',recordingControlVisibleAndFits:true,recordingCountdownSounds:'Not exercised by this text/files fixture; use separate canonical recorder qualification.',forgeriesRefused:4,retainedOneFrame:true,submit,later,captured,positionError,layouts,reflowDraftAndFocusRetained:true,legacyDuplicateControlsHidden:legacyControls,keyboardHelp,errors,frameErrors};
+ const evidence={schema:'holodeck.shared-conversation-browser/v1',qualification:'Actual installed canonical full shell/assets and Holodeck MML world, synthetic loopback Home/context/files/original I/O; no real human/native/model/provider input or acceptance.',canonicalRelease:installed.split('/').at(-1),canonicalAssets:Object.fromEntries(served),loads,acceptedOriginals:accepted.length,exactOriginal:true,contextFiles:1,userFiles:1,fileUploads:fileWrites.length,draftRetained:true,operationalAlerts:'Canonical quiet frame intentionally hides the ordinary launcher; not an exercised capability.',recordingControlVisibleAndFits:true,recordingCountdownSounds:'Not exercised by this text/files fixture; use separate canonical recorder qualification.',forgeriesRefused:4,retainedOneFrame:true,submit,later,captured,positionError,layouts,narrowDockPointerMinimized:true,reflowDraftAndFocusRetained:true,legacyDuplicateControlsHidden:legacyControls,keyboardHelp,errors,frameErrors};
  if(loads!==1)throw Error('Canonical frame unexpectedly reloaded');await writeFile(join(directory,'evidence.json'),JSON.stringify({...evidence,clientSHA256,writingDistance,walkingDistance,minimizeMotion,restoreMotion,composerSprint,worldSprint,sentDraftLocked},null,2)+'\n');console.log(JSON.stringify(evidence));
  }
 }catch(error){console.error('diagnostic-world',JSON.stringify(await evaluate('({body:document.body.innerText.slice(-1200),messages:window.surfaceMessages,errors:window.checkErrors})').catch(e=>({error:e.message}))));console.error('requests',JSON.stringify(requests.slice(-35)));console.error('contexts',JSON.stringify(events.filter(e=>['Runtime.executionContextCreated','Runtime.exceptionThrown'].includes(e.method)).slice(-12)));throw error;

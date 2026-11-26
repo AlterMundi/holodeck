@@ -73,7 +73,8 @@ export class ToroidalLocomotion {
     const verticalInput=Math.min(1,Math.max(-1,vertical||climb));
     // Published motion studies keep their authored thrust. The live controller
     // uses one normalized three-dimensional input for camera steering.
-    const inputLength=this.cameraSteering?Math.max(1,Math.hypot(right,forward,verticalInput)):
+    const steerHeight=this.cameraSteering&&(flight||this.swimming||(verticalInput<0&&this.atSwimSurface()));
+    const inputLength=steerHeight?Math.max(1,Math.hypot(right,forward,verticalInput)):
       Math.max(1,Math.hypot(right,forward));
     const travelSpeed=flight&&sprint?FLIGHT_BOOST_SPEED:
       crouch&&!flight&&!this.swimming?CROUCH_SPEED:sprint?RUN_SPEED:WALK_SPEED;

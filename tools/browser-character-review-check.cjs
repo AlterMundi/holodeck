@@ -19,6 +19,8 @@ const lab='compaii-lab',gallery='compaii-galeria',tower='compaii-torre';
 const origin='https://fixture.test';
 const conversationURL=origin+'/conversation-fixture/';
 const binding='b'.repeat(64);
+const cycleNames={'estudio-vuelo':'Vuelo y aterrizaje','estudio-aceleracion':'Vuelo rápido',
+  'estudio-nado':'Nado e inmersión','estudio-marcha':'Marcha y frenada'};
 
 async function moveVisitor(page,from,to){
   return page.evaluate(async body=>(await fetch('api/space',{method:'POST',
@@ -193,8 +195,12 @@ async function main(){
         assert.equal(await panel.getByRole('combobox',{name:'Velocidad',exact:true}).count(),0);
         assert.equal(await control(panel,'Pose').count(),0);
         await control(panel,'Humanoide').press('Enter');
-        await panel.getByRole('button',{name:'Despegue, giro y aterrizaje',exact:true,pressed:true})
-          .waitFor({state:'attached'});
+        for(const name of Object.values(cycleNames))await control(panel,name).waitFor({state:'attached'});
+        for(const id of ['estudio-marcha','estudio-vuelo']){
+          const name=cycleNames[id];
+          await control(panel,name).press('Enter');
+          await panel.getByRole('button',{name,exact:true,pressed:true}).waitFor({state:'attached'});
+        }
         await control(panel,'2×').press('Enter');
         assert.equal(await control(panel,'2×').getAttribute('aria-pressed'),'true');
         await control(panel,'Reproducir').press('Enter');
@@ -210,8 +216,32 @@ async function main(){
         const s=client.getCameraManager().getCameraState();
         return {body:[p.x,p.y,p.z],eye:[s.position.x,s.position.y,s.position.z],fov:s.fov};
       });
-      const before=await camera();
+      const checkMiniatureEye=async()=>{
+        const {body,eye}=await camera();
+        const eyeHeight=1.75*.19;
+        assert.ok(Math.hypot(eye[0]-body[0],eye[1]-body[1]-eyeHeight,eye[2]-body[2])<1e-5,
+          JSON.stringify({body,eye}));
+        return {body,eye};
+      };
+      await page.waitForFunction(()=>{
+        const {client}=holodeckDevelopment;
+        const p=client.getCharacterManager().localController.config.position;
+        const c=client.getCameraManager().getCameraState().position;
+        return Math.hypot(c.x-p.x,c.y-p.y-1.75*.19,c.z-p.z)<1e-5;
+      });
+      const before={...await camera(),...await checkMiniatureEye()};
       assert.equal(before.fov,36);
+      const frame=await page.evaluate(()=>{
+        const camera=holodeckDevelopment.client.getCameraManager();
+        const {position,fov}=camera.getCameraState();
+        const {x,y,z}=camera.target;
+        const horizontal=Math.hypot(x-position.x,z-position.z);
+        const low=y-.58*.69/1.48;
+        const elevation=height=>Math.atan2(height-position.y,horizontal);
+        return {top:elevation(low+.58)-elevation(y),bottom:elevation(y)-elevation(low),
+          limit:fov*Math.PI/360};
+      });
+      assert.ok(Math.max(frame.top,frame.bottom)<frame.limit-.02,JSON.stringify(frame));
       const canvas=page.locator('.world-interaction-canvas');
       await canvas.evaluate(element=>{element.tabIndex=-1;element.focus();});
       await page.keyboard.down('w');
@@ -229,15 +259,26 @@ async function main(){
         }));
         throw error;
       }finally{await page.keyboard.up('w');}
+      const beforeOrbitPose=await checkMiniatureEye();
       const beforeOrbit=await page.evaluate(()=>holodeckDevelopment.client.getCameraManager().targetTheta);
       await page.mouse.move(630,450);
-      await page.mouse.down({button:'right'});
+      await page.mouse.down();
       await page.mouse.move(702,484,{steps:5});
-      await page.mouse.up({button:'right'});
+      await page.mouse.up();
       await page.waitForFunction(theta=>Math.abs(holodeckDevelopment.client.getCameraManager().targetTheta-theta)>.1,beforeOrbit);
+      await page.waitForFunction(body=>{
+        const p=holodeckDevelopment.client.getCharacterManager().localController.config.position;
+        return Math.hypot(p.x-body[0],p.y-body[1],p.z-body[2])>.04;
+      },beforeOrbitPose.body);
+      const beforeDolly=await checkMiniatureEye();
       const beforeZoom=await page.evaluate(()=>holodeckDevelopment.client.getCameraManager().targetDistance);
       await page.mouse.wheel(0,-120);
       await page.waitForFunction(distance=>holodeckDevelopment.client.getCameraManager().targetDistance<distance,beforeZoom);
+      await page.waitForFunction(body=>{
+        const p=holodeckDevelopment.client.getCharacterManager().localController.config.position;
+        return Math.hypot(p.x-body[0],p.y-body[1],p.z-body[2])>.04;
+      },beforeDolly.body);
+      await checkMiniatureEye();
       await viewer.close();
       await page.setViewportSize({width:550,height:490});
       await control(table,'Notas').waitFor({state:'attached'});
@@ -246,7 +287,7 @@ async function main(){
       assert.equal(await table.getByRole('combobox',{name:'Personaje',exact:true}).count(),0);
       assert.deepEqual(errors,[]);
       console.log(JSON.stringify({wideToolsMatch:true,inlineOptionsMatch:true,inlineCycleWorks:true,
-        playbackInBoth:true,miniatureTranslationCarriesCamera:true,orbitAndZoom:true,playInCompactNotes:true}));
+        playbackInBoth:true,miniatureTranslationCarriesCamera:true,orbitAndZoomMoveMiniature:true,renderedCameraAtMiniatureEye:true,wholeRigInOpeningFrame:true,playInCompactNotes:true}));
       return;
     }
 
@@ -291,7 +332,12 @@ async function main(){
     assert.deepEqual(committed.presentation.pose,pose);
     await action('Ver pose del Taller').press('Enter');
     await page.waitForFunction(frame=>document.querySelector('input[aria-label="Fotograma"]')?.valueAsNumber===frame,pose.frame);
-    assert.equal(await panel.getByRole('combobox',{name:'Ciclo',exact:true}).inputValue(),pose.clip);
+    const webCycle=panel.getByRole('combobox',{name:'Ciclo',exact:true});
+    if(await webCycle.count()){
+      assert.equal(await webCycle.inputValue(),pose.clip);
+    }else{
+      await panel.getByRole('button',{name:cycleNames[pose.clip],exact:true,pressed:true}).waitFor({state:'attached'});
+    }
     assert.equal((await page.evaluate(()=>fetch('api/space?live=1').then(r=>r.json()))).actorRef,visitor);
     const readback=await page.evaluate(()=>fetch('api/space/character-presentation').then(r=>r.json()));
     assert.deepEqual(readback.presentation,committed.presentation);
@@ -301,7 +347,7 @@ async function main(){
     await action('Nota para este fotograma').press('Enter');
     await page.getByRole('textbox',{name:'Nota para este fotograma',exact:true}).fill(note);
     const pending=page.waitForResponse(r=>r.request().method()==='POST'&&r.url().endsWith('/character-pose-review'));
-    await page.keyboard.press('Enter');
+    await action('Compartir').press('Enter');
     const saved=await pending;
     assert.equal(saved.status(),200);
     assert.deepEqual(saved.request().postDataJSON().pose,pose);
@@ -324,7 +370,7 @@ async function main(){
     };
     const chapterNames=Object.fromEntries(Object.values(humanMotionStudies)
       .flatMap(study=>study.chapters??[]).map(({id,label})=>[id,label]));
-    const optionName=(name,value)=>name==='Fase'?chapterNames[value]:humanMotionStudies[value]?.label;
+    const optionName=(name,value)=>name==='Fase'?chapterNames[value]:cycleNames[value];
     const choose=async(panel,name,value)=>{
       const menu=panel.getByRole('combobox',{name,exact:true});
       if(await menu.count())await menu.selectOption(value,{force:true});
@@ -540,10 +586,10 @@ async function main(){
 
     const touch=await peerContext.newCDPSession(peerPage);
     await touch.send('Emulation.setDeviceMetricsOverride',{width:568,height:320,deviceScaleFactor:1,mobile:true});
-    await touch.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
+    await touch.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:2});
     await peerPage.waitForFunction(()=>{
       const window=holodeckDevelopment.hudWindow('matter-worktable');
-      return matchMedia('(pointer: coarse)').matches&&navigator.maxTouchPoints===1&&
+      return matchMedia('(pointer: coarse)').matches&&navigator.maxTouchPoints===2&&
         window?.view.width===568&&window.view.height===320&&window.bounds.right-window.bounds.left>3;
     });
     const shortTable=await peerPage.evaluate(()=>holodeckDevelopment.hudWindow('matter-worktable').rect);
@@ -565,6 +611,48 @@ async function main(){
     await peerButton('−1').press('Enter');
     await frame(pose.frame-1,peerPage);
     await frame(pose.frame+1);
+    const beforePeerTouch=await cameraAngles(page);
+    const peerView=()=>peerPage.evaluate(()=>{
+      const {client}=holodeckDevelopment;
+      const camera=client.getCameraManager();
+      const feet=client.getCharacterManager().localController.config.position;
+      const {position:eye}=camera.getCameraState();
+      return {orbit:camera.targetTheta,distance:camera.targetDistance,feet:[feet.x,feet.y,feet.z],
+        atEye:Math.hypot(eye.x-feet.x,eye.y-feet.y-1.75*.19,eye.z-feet.z)<1e-5};
+    });
+    const startOrbit=await peerView();
+    const worldPoints=[{x:111,y:136,id:1},{x:166,y:146,id:1}];
+    const pinchStart=[{x:115,y:130,id:1},{x:156,y:130,id:2}];
+    const pinchFinish=[{x:85,y:130,id:1},{x:190,y:130,id:2}];
+    assert.equal(await peerPage.evaluate(points=>points.every(({x,y})=>
+      document.elementFromPoint(x,y)?.classList.contains('world-interaction-canvas')),
+    [...worldPoints,...pinchStart,...pinchFinish]),true);
+    const touchGesture=async(start,finish)=>{
+      await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:start});
+      try{
+        await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:finish});
+      }finally{
+        await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+      }
+    };
+    const waitForTouchTravel=({feet})=>peerPage.waitForFunction(expected=>{
+      const p=holodeckDevelopment.client.getCharacterManager().localController.config.position;
+      return Math.hypot(p.x-expected[0],p.y-expected[1],p.z-expected[2])>.03;
+    },feet,{timeout:5000});
+    await touchGesture([worldPoints[0]],[worldPoints[1]]);
+    await peerPage.waitForFunction(yaw=>
+      Math.abs(holodeckDevelopment.client.getCameraManager().targetTheta-yaw)>.1,startOrbit.orbit,{timeout:5000});
+    await waitForTouchTravel(startOrbit);
+    const startPinch=await peerView();
+    assert.equal(startPinch.atEye,true);
+    await touchGesture(pinchStart,pinchFinish);
+    await peerPage.waitForFunction(distance=>
+      holodeckDevelopment.client.getCameraManager().targetDistance<distance-.02,startPinch.distance,{timeout:5000});
+    await waitForTouchTravel(startPinch);
+    const afterPinch=await peerView();
+    assert.equal(afterPinch.atEye,true);
+    await peerPage.waitForFunction(()=>holodeckDevelopment.client.getCameraManager().activePointers.size===0);
+    assert.deepEqual(await cameraAngles(page),beforePeerTouch);
     await touch.detach();
 
     const peerReadback=await peerPage.evaluate(()=>fetch('api/space/character-presentation').then(r=>r.json()));
@@ -692,7 +780,7 @@ async function main(){
     assert.equal(noGraphics.url(),retryURL);
     assert.deepEqual(errors,[]);
     console.log(JSON.stringify({pose,flightChapters,boostChapters,groundChapters,comparedHeldPose:heldPose,comparisonFrame:110,revision:committed.revision,visitor,observedNote:note,roomScope:true,
-      conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,shortTableWithSharedNote:shortTable,tablePlayback:{speed:2,stoppedAt:lastFrame,loopWrapped:true},independentTableOrbit:{firstCamera,peerCamera,peerOrbit},sharedReceiptMatchesLocalFrame:true,notesWaitedForSharedPose:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
+      conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,shortTableWithSharedNote:shortTable,tablePlayback:{speed:2,stoppedAt:lastFrame,loopWrapped:true},independentTableOrbit:{firstCamera,peerCamera,peerOrbit},touchOrbitAndPinchMoveMiniature:true,sharedReceiptMatchesLocalFrame:true,notesWaitedForSharedPose:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
       situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,reciprocalWorldDoors:true,openedTableFromWorldDoor:true,doorFromViewer:true,returnedToRoomFromViewer:true,tableRigRetriedInPlace:true,rigRetryKeptPose:true,noGraphicsRetryKeptPose:true,graphicsRestoreKeptLocalFrameAndDraft:true}));
   }finally{
     await browser?.close();

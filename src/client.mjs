@@ -114,20 +114,29 @@ window.addEventListener('keydown',event=>{
 const physicalMoves=new Map([['KeyW','w'],['KeyA','a'],['KeyS','s'],['KeyD','d']]);
 const physicalControls=new Map([['AltLeft','alt'],['AltRight','alt'],['ShiftLeft','shift'],['ShiftRight','shift'],['Space',' ']]);
 const editorOwns=event=>event.target?.closest?.('input,textarea,select,[contenteditable]');
+const interactiveOwns=event=>editorOwns(event)||
+  event.target?.closest?.('button,summary,a[href],[role="button"],[tabindex]:not(canvas)');
 function bindWorldKeyShortcuts(keys){
   if(!keys)return;
-  const listen=new AbortController(),pressed=new Map();
+  const listen=new AbortController(),pressed=new Map(),metaKeys=new Set();
   const clear=()=>{
     for(const key of pressed.values())keys.keys.set(key,false);
     pressed.clear();
+    metaKeys.clear();
   };
   document.addEventListener('keydown',event=>{
-    if(editorOwns(event)||!keys.shouldCaptureKeyPress())return;
+    if(event.code==='MetaLeft'||event.code==='MetaRight'){
+      pressed.clear();
+      keys.keys.clear();
+      metaKeys.add(event.code);
+      return;
+    }
+    if(interactiveOwns(event)||!keys.shouldCaptureKeyPress())return;
     const control=physicalControls.get(event.code);
     const physicalAlt=pressed.has('AltLeft')||pressed.has('AltRight');
     // Some layouts report Shift+Alt as Meta even though the key code is
     // AltLeft. Recognize the physical chord without claiming browser shortcuts.
-    if(event.ctrlKey||event.getModifierState('AltGraph')||
+    if(event.ctrlKey||metaKeys.size||event.getModifierState('AltGraph')||
        (event.metaKey&&control!=='alt'&&!physicalAlt)){
       event.stopImmediatePropagation();
       return;
@@ -141,11 +150,12 @@ function bindWorldKeyShortcuts(keys){
     }else if((event.altKey||physicalAlt)&&['ArrowLeft','ArrowRight'].includes(event.code))event.preventDefault();
   },{capture:true,signal:listen.signal});
   document.addEventListener('keyup',event=>{
+    if(metaKeys.delete(event.code))return;
     const key=pressed.get(event.code);
     if(key){
       pressed.delete(event.code);
       keys.keys.set(key,[...pressed.values()].includes(key));
-      if(!editorOwns(event)&&keys.shouldCaptureKeyPress())event.preventDefault();
+      if(!interactiveOwns(event)&&keys.shouldCaptureKeyPress())event.preventDefault();
       event.stopImmediatePropagation();
     }else if(event.altKey){
       const movement=physicalMoves.get(event.code);
@@ -1427,7 +1437,7 @@ client.update();
 const worldAudio=new WorldAudio({onChange:()=>updateSoundButton()});
 let soundBusy=false;
 // Development inspection surface only. It reports actual client state.
-window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()||null,audioState:()=>worldAudio.status(),avatarState:()=>nativeAvatarLayer?.status(),tableFlight:()=>({active:!!matterFlight?.active,bounds:matterFlight?.bounds}),companion:()=>companionAvatar?.object??null,flight:()=>flightEnabled,hudWindow:id=>matterHud?.windows.geometry.get(id)??null};
+window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()||null,audioState:()=>worldAudio.status(),avatarState:()=>nativeAvatarLayer?.status(),tableFlight:()=>({active:!!matterFlight?.active,bounds:matterFlight?.bounds}),companion:()=>companionAvatar?.object??null,flight:()=>flightEnabled,hudWindow:id=>matterHud?.windows.geometry.get(id)??null,toolBounds:id=>matterHud?.toolBounds(id)??null};
 const $=selector=>document.querySelector(selector);
 notifyFullscreenError=message=>{
   if($('#conversation-panel').hidden&&matterHud?.compactTouch()!=='landscape')return false;

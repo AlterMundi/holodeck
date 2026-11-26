@@ -812,6 +812,20 @@ scene continues to describe the same objects in every presentation.
 [Official MML documentation](https://mml.io/docs/guides/get-started) ·
 [PlayCanvas splat streaming reference](https://github.com/playcanvas/developer-site/blob/main/docs/user-manual/gaussian-splatting/building/lod-streaming.md)
 
+### Playable explorer appearance
+
+The [explorer study](../art/nicolas-avatar/README.md) is the first editable
+candidate for Nicolás's avatar. The expression study uses green-and-honey
+irises, relaxed lids and a soft smile. Its 580,304-byte GLB matches the stock
+87-joint hierarchy and local bind poses. The Three.js harness sampled the
+walk, flight, boost and swim studies. It does not establish visual gait or
+facial animation acceptance. Continue the rig-compatible authored face and
+costume through [motion #21](https://github.com/AlterMundi/holodeck/issues/21)
+and the [Character Design Room #24](https://github.com/AlterMundi/holodeck/issues/24).
+The current appearance remains selected in production. Candidate qualification
+still needs speech, deforming accessories, and two authorized viewpoints on
+Normal and Livianos.
+
 ## Live work and conversations in the world
 
 See [Live work in shared spaces](architecture.md#live-work-in-shared-spaces).
@@ -856,6 +870,20 @@ skim and dry-off. The current RTX peer fixture confirmed the broadcast and
 another visitor's view. Independently signed-in acceptance remains open.
 Track live human acceptance and shared vertical aim in [motion #21](https://github.com/AlterMundi/holodeck/issues/21)
 and [Character Studio #24](https://github.com/AlterMundi/holodeck/issues/24).
+
+### Talk about the live view
+
+Nicolás wants to speak about what he is looking at in Holodeck without having
+to make and attach a screenshot. Carry the actively shared rendered view into
+the same canonical original with its captured camera, space, world's edition,
+and selected object or part when available. An orbit-dependent artifact needs
+a short explicitly shared sequence as well as the camera samples. Use the
+viewer's actual world render and established Conversation permission boundary.
+The receiver checks access to any referenced private content, and absence of
+the optional visual context still leaves text and voice usable.
+Track the in-game capture and receiving evidence in
+[Holodeck #1](https://github.com/AlterMundi/holodeck/issues/1) and
+[DaimonApp #1031](https://github.com/AlterMundi/DaimonApp/issues/1031).
 
 ## First production world — continuous torus
 

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Bone, BoxGeometry, Group, Mesh, MeshStandardMaterial, Quaternion, Vector3} from 'three';
-import {MatterFlight,bindMatterFlight,bindMatterHologram,matterAvatarScale} from '../src/matter-flight.mjs';
+import {MatterFlight,bindMatterFlight,bindMatterHologram,matterAvatarScale,matterEyeHeight} from '../src/matter-flight.mjs';
 import {CharacterReviewFlight,characterReviewCamera} from '../src/character-review-camera.mjs';
 import {bindFlightAvatarAnimation} from '../src/flight-avatar-animation.mjs';
 
@@ -148,14 +148,19 @@ test('miniature flight combines keyboard travel and vertical touch, then arrests
 });
 
 test('a review pivots one visitor around the model and restores avatar-centered flight',()=>{
-  const {camera,controller,flight}=flightFixture(CharacterReviewFlight);
+  const {camera,controller,flight,input,step}=flightFixture(CharacterReviewFlight);
   flight.exit(controller);
   const manager={localController:controller,update(){}};
   const target=new Vector3();
   camera.setTarget=point=>target.copy(point);
   const release=bindMatterFlight(manager,camera,flight,()=>true);
   const avatarPoint=new Vector3(0,2,0),modelCentre={x:.34,y:.315,z:0};
-  assert.equal(flight.enter(controller,new Vector3(),{reviewTarget:modelCentre}),true);
+  assert.equal(flight.enter(controller,new Vector3(),{reviewTarget:modelCentre,
+    reviewScale:.58/characterReviewCamera.rigHeight}),true);
+  assert.ok(camera.distance>1.1);
+  const desiredEye=new Vector3().setFromSphericalCoords(camera.distance,camera.phi,Math.PI/2-camera.theta)
+    .add(flight.reviewTarget);
+  assert.ok(desiredEye.distanceTo(controller.config.position.clone().add(new Vector3(0,matterEyeHeight,0)))<1e-12);
   camera.setTarget(avatarPoint);
   assert.deepEqual(target.toArray(),[.34,.315,0]);
   assert.deepEqual(avatarPoint.toArray(),[0,2,0]);
@@ -164,10 +169,21 @@ test('a review pivots one visitor around the model and restores avatar-centered 
   assert.equal(camera.targetPhi,Math.atan2(characterReviewCamera.distance,characterReviewCamera.eyeHeight-characterReviewCamera.targetHeight));
   for(const field of ['fov','targetFOV','minFOV','maxFOV'])assert.equal(camera[field],characterReviewCamera.fov);
   assert.equal(camera.zoomScale,.04*matterAvatarScale);
-  controller.config.position.x+=.25;
-  controller.config.position.y+=.125;
+  const requestedEye=new Vector3(3,.62,.5);
+  const state={position:requestedEye,rotation:new Quaternion()};
+  flight.placeReviewEye(state,controller);
+  assert.equal(controller.config.position.x,flight.bounds.max.x);
+  assert.deepEqual(requestedEye.toArray(),[flight.bounds.max.x,.62,.5]);
+  assert.ok(Math.abs(controller.config.position.y+matterEyeHeight-requestedEye.y)<1e-12);
+  const direction=new Vector3(0,0,-1).applyQuaternion(state.rotation);
+  assert.ok(direction.distanceTo(target.clone().sub(requestedEye).normalize())<1e-12);
+  const feet=controller.config.position.clone();
+  input({direction:0},null,true);
+  step(.10);
   camera.setTarget(avatarPoint);
-  assert.ok(target.distanceTo(new Vector3(.59,.44,0))<1e-12);
+  const travel=controller.config.position.clone().sub(feet);
+  assert.ok(travel.length()>.025);
+  assert.ok(target.distanceTo(new Vector3(.34,.315,0).add(travel))<1e-12);
   const peer=flightFixture();
   assert.equal(peer.camera.targetTheta,.21);
   assert.equal(peer.camera.distance,.68);

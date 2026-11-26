@@ -1,5 +1,22 @@
 # Authored character motion
 
+## Current motion feedback
+
+Nicolás reports rapid joint and position corrections in the live companion,
+including occasional visible skips while following a walking avatar. Compare
+the same gait in the Character Studio and the live exterior. In the exterior,
+measure world-space displacement, step contacts and follow corrections on the
+same route at steady and uneven cadence. Keep this in
+[Holodeck #21](https://github.com/AlterMundi/holodeck/issues/21).
+
+Nicolás requested a bespoke human avatar with the same rig and animation
+quality bar as Navegante. He selected the explorer in the supplied front,
+profile and back concept and provided a personal portrait for likeness. The
+portrait and concept remain in the private conversation. The existing avatar
+remains selected during authoring. Its water compositing is a separate
+rendering correction.
+
+
 Scope: the local presentation of the human avatars and the CompAII robot.
 Physics, network authority, the pose protocol, renderer and HUD stay as they are.
 

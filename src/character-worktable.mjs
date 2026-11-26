@@ -24,8 +24,8 @@ export class CharacterWorktable {
   get reviewCameraTarget(){
     if(!this.anchor)return null;
     const origin=this.previewOrigin;
-    // Leave the top of the figure clear of the compact HUD.
-    return {...origin,y:origin.y+characterReviewCamera.targetHeight*this.reviewScale};
+    // Leave room below the figure for the dock.
+    return {...origin,y:origin.y+characterReviewCamera.tableTargetHeight*this.reviewScale};
   }
 
   start({send,close,ownsTextInput}){

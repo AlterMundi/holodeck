@@ -138,7 +138,7 @@ if(import.meta.url===`file://${process.argv[1]}`){
   const frames=[],taken=new Map();
   const shots={idle:[.5,2.6],walk:[.6,1,1.4,1.8],'run-turn':[.15,.3,.5,.9,1.3],stop:[.1,.2,.4,.9],crouch:[.2,.9],'crouch-walk':[.6,1],
     jump:[.15,.35,.62,.75,1.1],launch:[.08,.2,.35,.55,.9],hover:[.6,1.4,2.2],glide:[.4,.9,1.8],bank:[.12,.28,.45,.7,1.1],flare:[.2,.5,1.0],
-    descend:[.15,.4,.7],touchdown:[.04,.10,.18,.3,.5,.9],shore:[1.5,1.7],wade:[.5,1.2,2.4],'surface-swim':[.15,.4,.8,1.4,2.2,2.6,3,3.4,3.8],tread:[.3,.8,1.4,2.2],
+    descend:[.15,.4,.7],touchdown:[.04,.10,.18,.3,.5,.9],shore:[1.5,1.7],wade:[.16,.5,1.2,2.4],'surface-swim':[.15,.4,.8,1.4,2.2,2.6,3,3.4,3.8],tread:[.3,.8,1.4,2.2],
     'surface-turn':[.3,.7],dive:[.2,.5,1,1.6],submerged:[.6,1,1.4,1.8,2.2],drift:[.6,1.4],ascend:[.5,1.2],ashore:[.3,1.2]};
   const result=await runSequence({file,fps:Number(fps),onFrame({name,phase,root,actor,avatar,dt}){
     const index=taken.get(name)??0;
