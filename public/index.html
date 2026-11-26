@@ -245,13 +245,13 @@ body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-controls
 .room-transition #space-travel,body:has(#conversation-panel:not([hidden])) #space-travel,body:has(#content-visit:not([hidden]):not(.is-walking)) #space-travel{visibility:hidden;pointer-events:none}
 .room-transition canvas{visibility:hidden}
 .room-transition:has(#room-passage[data-native-passage]) canvas[data-hud-render-layer]{visibility:visible}
-#room-passage,#world-entry{isolation:isolate;overflow:hidden;background:#020910}
-#room-passage::before,#world-entry::before{
+#room-passage{isolation:isolate;overflow:hidden;background:#020910}
+#room-passage::before{
   content:'';position:absolute;z-index:-2;inset:0;pointer-events:none;
   background:radial-gradient(ellipse at 50% 39%,#14445980,transparent 62%),
     url('./assets/holodeck-passage.avif') center center/cover no-repeat;
 }
-#room-passage::after,#world-entry::after{
+#room-passage::after{
   content:'';position:absolute;z-index:-1;inset:0;pointer-events:none;
   background:linear-gradient(180deg,transparent 57%,#02080e38 67%,#02080ee6 97%),
     radial-gradient(ellipse at 50% 40%,transparent 40%,#01050b75 100%);
@@ -261,11 +261,11 @@ body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-controls
   transition:opacity 180ms ease-out,visibility 0s linear 180ms;
 }
 .room-transition #room-passage{opacity:1;visibility:visible;pointer-events:auto;transition:none}
-:where(.room-transition) #room-passage::before,#world-entry:not([hidden])::before{
+:where(.room-transition) #room-passage::before{
   animation:passage-current 14s ease-in-out infinite alternate;
 }
 @keyframes passage-current{from{transform:scale(1.015)}to{transform:scale(1.068)}}
-#room-passage .passage-energy,#world-entry .passage-energy{
+#room-passage .passage-energy{
   position:absolute;z-index:-1;pointer-events:none;left:50%;top:41%;
   width:min(34vh,50vw);aspect-ratio:1;transform:translate(-50%,-50%);
   border-radius:50%;overflow:hidden;
@@ -278,7 +278,7 @@ body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-controls
     repeating-conic-gradient(from 30deg,transparent 0deg 19deg,#506e9020 30deg,transparent 62deg 88deg);
   filter:blur(5px);
 }
-.room-transition .passage-energy::before,#world-entry:not([hidden]) .passage-energy::before{
+.room-transition .passage-energy::before{
   animation:passage-orbit 16s linear infinite;
 }
 .passage-orbit{
@@ -286,31 +286,30 @@ body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-controls
   border:1px solid #9ce9f536;border-top-color:#f5d79d;border-right-color:#9ce9f5;
   box-shadow:0 0 19px #42d9dc38,inset 0 0 8px #42d9dc23;pointer-events:none;
 }
-.room-transition .passage-orbit,#world-entry:not([hidden]) .passage-orbit{animation:passage-orbit 1.55s linear infinite}
+.room-transition .passage-orbit{animation:passage-orbit 1.55s linear infinite}
 @keyframes passage-orbit{to{transform:rotate(1turn)}}
-.passage-copy,.world-entry-card{
+.passage-copy{
   position:absolute;inset-inline:0;top:72%;width:min(calc(100% - 36px),660px);margin-inline:auto;
   text-align:center;color:#f1f8f5;text-shadow:0 2px 16px #000,0 0 24px #55d7df68;
 }
-#room-passage-message,.world-entry-card h1{
+#room-passage-message{
   color:#f0f8f8;font:500 clamp(24px,4.4vw,48px)/1.08 system-ui,sans-serif;letter-spacing:.015em;margin:0;
 }
 #room-passage[data-native-passage] :is(#room-passage-retry,.passage-orbit){display:none}
 #room-passage[data-native-passage] #room-passage-message{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 #room-passage-retry{margin:14px auto 0}
-#room-passage:has(#room-passage-retry:not([hidden])) .passage-orbit,
-#world-entry:has(#world-entry-retry:not([hidden])) .passage-orbit{display:none}
+#room-passage:has(#room-passage-retry:not([hidden])) .passage-orbit{display:none}
 @media(max-height:480px){
-  .passage-copy,.world-entry-card{top:68%}
+  .passage-copy{top:68%}
   .passage-orbit{margin-top:9px;width:19px;height:19px}
 }
 @media(prefers-reduced-motion:reduce){
-  #room-passage::before,#world-entry::before,.passage-orbit,.passage-energy::before{animation:none!important}
+  #room-passage::before,.passage-orbit,.passage-energy::before{animation:none!important}
 }
 @media(forced-colors:active){
-  #room-passage::before,#world-entry::before,#room-passage::after,#world-entry::after,.passage-energy{display:none}
-  #room-passage,#world-entry{background:Canvas}
-  .passage-copy,.world-entry-card{color:CanvasText;text-shadow:none}
+  #room-passage::before,#room-passage::after,.passage-energy{display:none}
+  #room-passage{background:Canvas}
+  .passage-copy{color:CanvasText;text-shadow:none}
 }
 .inside-house #creator,.inside-house #pointing,.inside-house #play-near,.inside-house #recovery-panel{display:none!important}
 .inside-house #world-tools,.inside-house #dock,.inside-house #companion-status,.inside-house #sound:not([aria-pressed="true"]){display:none}
@@ -346,27 +345,21 @@ body[data-a2ui-toolbelt] #view-tools,dialog[data-native-settings]{display:none!i
 #appearance-status:empty{display:none}
 body:has(#conversation-panel:not([hidden])) #view-tools,body:has(#content-visit:not([hidden]):not(.is-walking)) #view-tools{display:none}
 @media(max-width:740px){#view-tools{right:12px;top:12px;bottom:auto}#appearance-open{padding:8px 12px;font-size:14px}#hud{max-width:calc(100vw - 168px)}}
-#world-entry{position:fixed;inset:0;z-index:100}
-.world-entry-card :is(p,h1){margin-bottom:0}
-.world-entry-card p{margin-top:7px;font:400 clamp(15px,2vw,19px)/1.4 system-ui,sans-serif}
-.world-entry-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:13px}
+#loading-screen{display:none!important}
+#world-entry{position:fixed;z-index:100;top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));width:max-content;max-width:calc(100vw - 24px);padding:12px 14px;border-radius:13px;background:var(--panel)}
+#world-entry p{margin:0;color:var(--ink)}
+.world-entry-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 :is(.world-entry-actions,#room-passage) button{
   min-height:44px;padding:7px 15px;border:1px solid #9edfdd70;border-radius:8px;
   color:#f6f8f4;background:#071621ec;
 }
 :is(.world-entry-actions,#room-passage) button:focus-visible{outline:2px solid #ffe2ac;outline-offset:3px}
-@media(max-height:480px){
-  .world-entry-card h1{font-size:24px}
-  .world-entry-card p{margin-top:3px;font-size:14px}
-  .world-entry-actions{margin-top:6px}
-}
 </style></head><body>
-<section id="world-entry" aria-labelledby="world-entry-title"><span class="passage-energy" aria-hidden="true"></span><div class="world-entry-card">
-  <h1 id="world-entry-title">Holodeck</h1><p id="world-entry-status" role="status">Abriendo el mundo…</p><span class="passage-orbit" aria-hidden="true"></span>
-  <div class="world-entry-actions"><button id="world-entry-retry" class="primary" type="button" hidden>Volver a intentar</button><button id="world-entry-graphics" type="button" hidden>Entrar con gráficos livianos</button></div>
-  <noscript><p>Activá JavaScript para entrar al mundo.</p></noscript>
-</div></section>
-<header id="hud" class="glass"><span class="brand-mark" aria-hidden="true"></span><div><small>Holodeck</small><h1>Plaza de llegada</h1><div id="people">Entrando a la plaza…</div></div><button id="sound" type="button" aria-pressed="false" aria-label="Activar sonido del mundo">Sonido</button></header>
+<section id="world-entry" class="glass" aria-label="Conexión con Holodeck" hidden>
+  <p id="world-entry-status" role="status"></p>
+  <div class="world-entry-actions"><button id="world-entry-retry" class="primary" type="button">Volver a intentar</button><button id="world-entry-graphics" type="button">Entrar con gráficos livianos</button></div>
+</section>
+<header id="hud" class="glass"><span class="brand-mark" aria-hidden="true"></span><div><small>Holodeck</small><h1>Plaza de llegada</h1><div id="people"></div></div><button id="sound" type="button" aria-pressed="false" aria-label="Activar sonido del mundo">Sonido</button></header>
 <div id="view-tools">
   <button id="appearance-open" type="button" class="glass" aria-haspopup="dialog">Apariencia</button>
   <button id="video-open" type="button" class="glass" aria-label="Video" title="Video" aria-haspopup="dialog"><span class="video-icon" aria-hidden="true"></span></button>
@@ -462,22 +455,20 @@ window.SESSION_TOKEN="SESSION.TOKEN.PLACEHOLDER";
   const showGraphicsChoice=()=>{graphics.textContent=light()?'Usar gráficos automáticos':'Entrar con gráficos livianos';};
   showGraphicsChoice();
   window.addEventListener('holodeck:graphics-changed',showGraphicsChoice);
-  graphics.hidden=false;
   graphics.onclick=()=>{
     const next=new URL(location.href);
     if(light())next.searchParams.delete('graficos');
     else next.searchParams.set('graficos','livianos');
     location.replace(next);
   };
-  function showRetry(text){if(!entry.hidden){status.textContent=text;retry.hidden=false;}}
-  const deadline=setTimeout(()=>showRetry('La entrada está tardando más de lo esperado.'),25000);
-  window.addEventListener('holodeck:entered',()=>{clearTimeout(deadline);entry.hidden=true;},{once:true});
+  let entered=false;
+  function showRetry(text){status.textContent=text;entry.hidden=false;}
+  const deadline=setTimeout(()=>showRetry('La conexión sigue en curso.'),12000);
+  window.addEventListener('holodeck:entered',()=>{entered=true;clearTimeout(deadline);entry.hidden=true;},{once:true});
   window.addEventListener('holodeck:entry-failed',()=>{
     clearTimeout(deadline);
-    const hadEntered=entry.hidden;
-    entry.hidden=false;
-    showRetry(hadEntered?'Se interrumpió la conexión con el mundo.':'No se pudo abrir el mundo.');
-  },{once:true});
+    showRetry(entered?'Se interrumpió la conexión con el mundo.':'No se pudo abrir el mundo.');
+  });
   retry.onclick=()=>location.reload();
   const passageRetry=document.querySelector('#room-passage-retry');
   window.addEventListener('pageshow',()=>{passageRetry.disabled=false;});
