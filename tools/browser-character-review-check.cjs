@@ -551,6 +551,7 @@ async function main(){
     await peerButton('Notas').waitFor({state:'attached'});
     await openSection(peerButton,'Notas');
     await peerButton('Reproducir').waitFor({state:'attached'});
+    await openSection(peerButton,'Pose');
     await frame(pose.frame-1,peerPage);
     await openSection(peerButton,'Notas');
     await peerButton('Ver pose del Taller').press('Enter');
