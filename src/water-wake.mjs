@@ -15,8 +15,9 @@ export function sampleWetFlight(previous,sample,time){
 }
 
 export class WaterWake{
-  constructor(scene,{lightweight=()=>false,clock=()=>performance.now()}={}){
+  constructor(scene,{lightweight=()=>false,pixelRatio=()=>1,clock=()=>performance.now()}={}){
     this.lightweight=lightweight;
+    this.pixelRatio=pixelRatio;
     this.clock=clock;
     this.start=clock();
     this.tracks=new Map();
@@ -35,25 +36,27 @@ export class WaterWake{
     this.positions=attribute('position',3);
     this.launch=attribute('launch',3);
     this.normals=attribute('waterUp',3);
-    this.timing=attribute('timing',2);
+    this.timing=attribute('timing',3);
     for(let i=0;i<capacity;i++)this.timing.setX(i,-10);
     const material=new ShaderMaterial({
       transparent:true,depthWrite:false,
-      uniforms:{clock:{value:0},sizeLimit:{value:20}},
+      uniforms:{clock:{value:0},sizeLimit:{value:20},pixelRatio:{value:1}},
       vertexShader:`
         attribute vec3 launch;
         attribute vec3 waterUp;
-        attribute vec2 timing;
+        attribute vec3 timing;
         uniform float clock;
         uniform float sizeLimit;
+        uniform float pixelRatio;
         varying float opacity;
         void main() {
           float age=max(0.0,clock-timing.x);
           vec3 drop=position+launch*age-waterUp*(5.6*age*age);
           vec4 eye=modelViewMatrix*vec4(drop,1.0);
-          opacity=(1.0-smoothstep(.12,${life},age))*smoothstep(.65,1.5,-eye.z)*timing.y;
+          float surface=timing.z>=0.0?smoothstep(-.075,.04,timing.z+dot(launch*age-waterUp*(5.6*age*age),waterUp)):1.0;
+          opacity=surface*(1.0-smoothstep(.12,${life},age))*smoothstep(.65,1.5,-eye.z)*timing.y;
           gl_Position=projectionMatrix*eye;
-          gl_PointSize=opacity>.002?clamp(125.0*timing.y/max(1.0,-eye.z),2.0,sizeLimit):0.0;
+          gl_PointSize=opacity>.002?clamp(125.0*timing.y/max(1.0,-eye.z),2.0,sizeLimit)*pixelRatio:0.0;
         }`,
       fragmentShader:`
         varying float opacity;
@@ -86,13 +89,14 @@ export class WaterWake{
       track={previous:new Vector3().copy(position),remainder:0};
       this.tracks.set(id,track);
     }
-    const valid=continuous&&seconds>0&&seconds<=.2;
-    if(!valid)track.remainder=0;
-    const wet=sampleWetFlight(valid?track.wet:null,sample,now);
     const start=track.previous;
     const delta=this.delta.subVectors(position,start);
     const distance=delta.length();
     const speed=distance/Math.max(.001,seconds);
+    const sameRun=continuous&&speed<=39;
+    const valid=sameRun&&seconds>0&&seconds<=.2;
+    if(!sameRun)track.remainder=0;
+    const wet=sampleWetFlight(sameRun?track.wet:null,sample,now);
     track.wet=wet;
     track.seen=now;
     if(!emit||!wet.amount||!valid||speed>39||speed<1.3){
@@ -108,7 +112,8 @@ export class WaterWake{
     this.side.crossVectors(up,delta);
     if(this.side.lengthSq()<1e-7)this.side.fromArray(terrainFrame(sample.u,sample.v).alongRing);
     else this.side.normalize();
-    const groundOffset=wet.near?clamp(wet.draft,-.20,1.10):.20;
+    const groundOffset=wet.near?clamp(wet.draft,-.08,1.10):.20;
+    const surface=wet.near&&wet.draft<=1.10;
     for(let index=0;index<count;index++){
       const offset=(index+1-track.remainder)/rate;
       const t=clamp(offset/distance);
@@ -119,11 +124,12 @@ export class WaterWake{
         .addScaledVector(up,groundOffset+.14*spray).addScaledVector(this.side,scatter*.25);
       this.velocity.copy(delta).multiplyScalar((.11+.08*spray)/seconds)
         .addScaledVector(this.side,scatter*(.55+.55*spray))
-        .addScaledVector(up,-.18-.60*spray);
+        .addScaledVector(up,surface?.85+1.85*spray:-.18-.60*spray);
       this.positions.setXYZ(slot,this.origin.x,this.origin.y,this.origin.z);
       this.launch.setXYZ(slot,this.velocity.x,this.velocity.y,this.velocity.z);
       this.normals.setXYZ(slot,up.x,up.y,up.z);
-      this.timing.setXY(slot,now-seconds*(1-t),(.34+.39*spray)*Math.sqrt(wet.amount));
+      const aboveWater=surface?Math.max(0,groundOffset+.14*spray-wet.draft):-1;
+      this.timing.setXYZ(slot,now-seconds*(1-t),(.34+.39*spray)*Math.sqrt(wet.amount),aboveWater);
     }
     track.remainder=available-Math.floor(available);
     start.copy(position);
@@ -132,6 +138,7 @@ export class WaterWake{
     const {uniforms}=this.mesh.material;
     uniforms.clock.value=now;
     uniforms.sizeLimit.value=light?13:20;
+    uniforms.pixelRatio.value=this.pixelRatio();
     this.lastEmission=now;
     this.mesh.visible=true;
   }
