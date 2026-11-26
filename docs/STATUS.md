@@ -22,27 +22,30 @@ fixtures. Peer vertical aim and independent human acceptance are open.
 See [water-flight playtest](playtest-iteration.md#camera-facing-aim-and-flight-through-water)
 and [motion #21](https://github.com/AlterMundi/holodeck/issues/21).
 
-The Holodeck-owned receiving release `58ce88972da7` subsequently activated
-the water and flight changes from the separately composed receiving
-revision `422b916`. Its runtime fixes are incorporated here to keep later Character work compatible with
-the selected world.
-
 ## Character table navigation from the miniature's eyes
 
-Client source `ea084a5c99bff4a9cdfc8b3f01e7e34d903daea6` uses the review
-orbit and dolly to move the miniature visitor through the existing worktable
-collision bounds. The rendered camera is at the resulting eye position.
-Keyboard travel carries the view, while the standalone viewer keeps its
-own framing. Browser checks on the receiving archive passed for keyboard
-travel, primary drag and wheel. Both surfaces passed playback and direct
-choice checks. Node 24 passed 456 tests with two skips.
+Client source `ea084a5` uses the review orbit and dolly to move the miniature
+visitor through the existing worktable collision bounds. The rendered camera
+is at the resulting eye position. The first packaged check passed keyboard
+travel, primary drag and wheel in Chromium, plus playback and direct choices
+in both projections.
+
+The receiving composition `d28c5307de0f077bd07d035bd528cca175bac296`
+keeps the active water effects from `422b916` and preserves the published
+animation editions. All 670 published sampled frames and chapter indexes matched exactly.
+The built and installed catalog bytes also matched. The prior camera build
+calculated different edition IDs and could not follow a pose shared under
+the installed catalog. Use the receiving composition for this review.
 
 Receiving candidate SHA-256
-`f05516e2ef2f60c1d37a31455feb35cb0f4ee03be879e938e36bc570f6bf7b8f`.
-It replaces only the client and its manifest hash on
-`58ce88972da7`. The live pose catalog and remaining runtime assets
-matched byte for byte. The protected deployment still selected
-`58ce88972da7` at verification.
+`7468892a3c6246a55aaff1bf6f9917e9974c2bb0afab6ce013a147f1a850f386`.
+It replaces only the client and its manifest hash on `58ce88972da7`.
+Node 24 passed 456 tests with two skips. Chromium opened the same
+published frame in the web and table views, preserved the held comparison
+frame in its shared link, and verified flight and land transitions. Two
+distinct fixture visitors then kept separate camera angles and frames,
+and the second visitor read the shared note in a 568 × 320 viewport.
+The protected deployment still selected `58ce88972da7` at verification.
 
 ## Narrow desktop dock and Conversation pointer check
 
