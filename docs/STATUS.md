@@ -14,6 +14,16 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+Source `bc5e70d2d562d2ddda0f4b95ef429c0bbb2d0a7a` carries the selected
+arrival trail from release `e2b318f4b262` and disables note reads while the
+requested shared pose loads. Chromium held the presentation request open,
+observed that **Ver notas** was disabled, then released the request and
+read the authored note at frame 36. The physical door, independent
+table frames and situated note exchange also passed on archive
+`2bda53bd2af101f6f63e4d5bdc8d697a0c6ac835aa47085733c7cc31febbdfa8`. The pose catalog
+matches the prior archive byte for byte. The Node suite passed 425
+checks with two skips. This is staged fixture evidence.
+
 Nicolás confirmed that the published foyer door opens the same full-screen
 viewer as `?taller=personajes`. Protected release `394ab30b12c6`
 redirects there upon entering the Character room. Source `1a0c023`
