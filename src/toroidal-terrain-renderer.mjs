@@ -116,7 +116,9 @@ const terrainShading = {
       float endFade = arrival;
       float edgeNoise = ringNoise(approach*.89)-.5;
       float mask = (1.0-smoothstep(1.57,2.72,edge+edgeNoise*.66))*endFade;
-      float shoulder = smoothstep(2.15,3.12,edge)*(1.0-smoothstep(3.65,6.8,edge))*endFade;
+      float vergeDistance = edge + .68*edgeNoise;
+      float shoulder = smoothstep(1.95,2.85,vergeDistance) *
+        (1.0-smoothstep(3.33,6.95,vergeDistance))*endFade;
       holoApproachSkylight = endFade*(1.0-smoothstep(2.0,9.0,edge));
       // Grains taper below two pixels; the wider scuffs and the warm
       // verge remain legible from a running camera and both graphics modes.
@@ -130,8 +132,12 @@ const terrainShading = {
       holoTrailMask=mask;
       holoTrailRoughness=clamp(.87-.09*chip+.08*hollow,.73,.99);
       diffuseColor.rgb = mix(diffuseColor.rgb,packedEarth,mask*.88);
-      diffuseColor.rgb = mix(diffuseColor.rgb,vec3(.114,.191,.068)*(.88+.42*edgeNoise),
-        shoulder*mix(.61,.18,holoMeadowGround));
+      // Worn vegetation and exposed soil meet the roots in the verge.
+      float bareVerge = (1.0-smoothstep(2.58,4.55,vergeDistance)) *
+        mix(.44,.86,smoothstep(.26,.72,dust));
+      vec3 trampled = vec3(.137,.161,.072)*(.93+.50*edgeNoise);
+      vec3 verge = mix(trampled,packedEarth*.86,bareVerge);
+      diffuseColor.rgb = mix(diffuseColor.rgb,verge,shoulder*(1.0-.48*mask)*mix(.61,.35,holoMeadowGround));
 
       // Join the path to the sill in the entrance's cross-path frame.
       vec3 door = holodeckSill;
