@@ -440,8 +440,16 @@ test('collection projects stay grouped and editions follow each visitor and thei
   assert.deepEqual(receiver.received,[{...visiblePoint,space:'matter'},{...pinnedPoint,space:'matter'}]);
   assert.equal((await setOnTable(visitor,receiver.connection,false,4)).status,204);
   await readEvent();
+  manifestFailure=503;
+  assert.equal((await visitor.catalog()).status,503);
+  const temporarilyIncomplete=await (await author.catalog()).json();
+  assert.equal(temporarilyIncomplete.partial,true);
+  assert.deepEqual(temporarilyIncomplete.worktable,table(3,null,true));
+  manifestFailure=null;
+  assert.deepEqual((await (await visitor.catalog()).json()).worktable,{...table(3,main),version:oldVersion});
   historicalDenied=true;
   const denied=await (await visitor.catalog()).json();
+  assert.equal(denied.partial,undefined);
   assert.equal(denied.projects.length,1);
   assert.deepEqual(denied.worktable,table(3,null));
   assert.equal((await visitor.art(archivedThumbnail)).status,404);
