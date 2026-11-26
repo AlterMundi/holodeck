@@ -134,7 +134,10 @@ export class CollectionShelves {
       const current=data?.room===this.room?data:null;
       const partial=current?.partial===true;
       if(partial||response.status>=500||response.status===408||response.status===429)this.retryCatalog(partial);
-      else this.catalogUnavailable=false;
+      else{
+        this.catalogUnavailable=false;
+        this.catalogRetryMs=0;
+      }
       this.sync(current?.projects);
       this.archive.sync(current?.archive,this.root);
       this.worktable.sync(current?.projects,current?.worktable);
@@ -149,7 +152,8 @@ export class CollectionShelves {
   }
 
   retryCatalog(partial=false){
-    this.refreshAt=performance.now()+3000;
+    this.catalogRetryMs=Math.min(REFRESH_MS,this.catalogRetryMs?this.catalogRetryMs*2:3000);
+    this.refreshAt=performance.now()+this.catalogRetryMs;
     if(this.catalogUnavailable)return;
     this.catalogUnavailable=true;
     this.onCatalogUnavailable?.(partial);
@@ -338,6 +342,6 @@ export class CollectionShelves {
     this.archiveRequest?.abort();this.archiveRequest=null;this.setArchiveStatus(null,'');
     for(const item of this.items.values())this.remove(item);
     this.nearby=[];this.links([]);this.archive.clear();this.worktable.clear();
-    this.room=null;this.root=null;this.refreshAt=0;this.catalogUnavailable=false;
+    this.room=null;this.root=null;this.refreshAt=0;this.catalogUnavailable=false;this.catalogRetryMs=0;
   }
 }

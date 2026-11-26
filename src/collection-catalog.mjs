@@ -106,7 +106,7 @@ export function createCollectionReader(origin,{request=fetch}={}){
       try{
         const response=await read('/works/'+resource+'/'+version+'/review-live.json');
         const manifest=await boundedJSON(response,16*1024);
-        if(response.status===401||response.status===429||response.status>=500)unavailable=true;
+        if(response.status===401||response.status===408||response.status===429||response.status>=500)unavailable=true;
         if(response.headers.get('x-home-version')!==version||manifest?.schema!=='dm.review-live/v1'||
            manifest.gallery!=='gallery.json'||typeof manifest.sha256!=='string'||!VERSION.test(manifest.sha256))return null;
         const index=manifest.scene_index;

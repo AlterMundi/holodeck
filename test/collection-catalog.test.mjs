@@ -38,11 +38,11 @@ test('collection retry reports upstream server errors and resets on denial',asyn
     base:new URL('https://fixture.test/holodeck/'),room:'matter',sync(){},
     archive:{sync(){}},worktable:{sync(){}},onCatalogUnavailable(partial){notices.push(partial);},
   });
-  for(const transient of [504,502,500,503,408,429]){
+  for(const [transient,delay] of [[504,3000],[502,6000],[500,12000],[503,12000],[408,12000],[429,12000]]){
     status=transient;
     const began=performance.now();
     await view.refresh();
-    assert.ok(view.refreshAt<began+5000);
+    assert.ok(view.refreshAt>=began+delay&&view.refreshAt<=performance.now()+delay);
   }
   assert.deepEqual(notices,[false]);
   status=403;
@@ -492,7 +492,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
   assert.equal((await visitor.catalog()).status,503);
   unavailable=false;
   assert.equal((await author.share(main,4)).status,204);
-  for(const failure of ['timeout',429,503]){
+  for(const failure of ['timeout',408,429,503]){
     manifestFailure=failure;
     assert.equal((await visitor.catalog()).status,503,String(failure));
   }
