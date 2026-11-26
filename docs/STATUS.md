@@ -28,6 +28,16 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+Host revision `64e18b7646afbabad8bb4a10f167ea6e78c3f794` frames the
+review figure from the physical Character worktable. The exact package
+SHA-256 is `e4b9ee16963aeec0098cf11305aa218c434c921825450bb5eb38b9079c66932f`.
+The packaged Chromium fixture crossed the foyer door, captured flight
+frame 36 in desktop and 390 × 844 touch emulation, and kept the entire
+review figure clear of the compact HUD at the tested angle. A second
+visitor orbited without changing the first visitor's camera and recovered
+the avatar camera on exit. The full Node suite passed 443 cases with
+two skips. Protected activation still belongs to Holodeck.
+
 The table timeline marks the chapter frames returned by the selected
 animation. It pins Proyección `52bdbe0f8eda561e1a068dff21f1eec99e9fe9c7`.
 The package SHA-256 is
