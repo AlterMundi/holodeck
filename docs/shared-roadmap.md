@@ -377,11 +377,11 @@ recognizable purpose, frame or view and keep collision aligned with the visible
 edge. Check contact shadows and surface scale after geometry changes.
 
 Apply the [surface contact policy](environment-art-revamp.md#surface-contacts)
-to new and revised assets. The reported exterior example is the base of the
-stone spires and adjacent rocks at night. Use the retained camera in the report
-to check how they sit into the ground before and after a material or placement
-change. The shared policy is documented and the pictured contacts still need
-a visual pass.
+to new and revised assets. The [first cave contact pass](STATUS.md#november-26-cave-rock-contacts)
+uses local soil color and wider buried spire roots away from the trail.
+The rain-worn profile of the projecting corner and the surrounding
+ground cover still need work. Use the retained night camera and a walk
+past the flank to compare subsequent passes.
 
 Start with the [foyer](../art/compaii-house/redesign/review/foyer-baked-light.jpg)
 and [Beacon room](../art/compaii-house/redesign/review/beacon-light-after.jpg).

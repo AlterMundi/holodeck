@@ -1,5 +1,23 @@
 # Current MVP work
 
+## November 26 cave rock contacts
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `49acf79b2a04`
+from `e7bf7e9`. The outer rock and spire bases borrow the local soil
+palette. The buried spire ring widens away from the trail. The tunnel's
+collision positions are byte-identical. The same mesh still draws and
+blocks each spire. The pass adds no draw call or triangle.
+
+The controlled browsers used the retained night entry coordinates.
+RTX 2060 Normal and Pi 5 Livianos showed a softer tint near the contact.
+The projecting corner still reads sharply at night. The Pi samples
+used identical 363 × 244 render buffers and measured 16.7 → 16.8 ms
+frame p95. RTX showed 16.7 → 16.7 ms, with adaptive resolution selecting
+1020 × 629 and 1200 × 740 respectively. These are short single-visitor
+fixtures. The suite passed 417 checks with two skips. Receiving matched
+86 files, the same audience and continuing world run (450–451), and
+four access denials. Immediate rollback is `a10436594c96`.
+
 ## November 25 aerial depth, transparent shores and boost wakes
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `a10436594c96`
