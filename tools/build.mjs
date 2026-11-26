@@ -212,6 +212,9 @@ const publishedMotionRevisions=new Map([
     '5a74c3383c834fca81920395084deff916b918e0fe31a4e9ddd7e608621ad7d4'],
   ['87fea49cf1221b573ea5583af8ed277f90e676104f0b0e79a4a197fd6ca8dfca',
     '5a74c3383c834fca81920395084deff916b918e0fe31a4e9ddd7e608621ad7d4'],
+  // The baked terrain colours keep all 670 poses and chapter frames identical.
+  ['74d101063cd4fb9ab74e8f4686ad73983bd7765f9c9e26f2807c8e66ad367ada',
+    '5a74c3383c834fca81920395084deff916b918e0fe31a4e9ddd7e608621ad7d4'],
 ]);
 const motionStudyRevision=publishedMotionRevisions.get(sampledMotionRevision)??sampledMotionRevision;
 await build({entryPoints:['src/browser-entry.mjs'],outfile:'build/client.js',bundle:true,

@@ -73,6 +73,30 @@ test('a fine edge follows the adjacent coarse edge across a periodic seam', () =
   }
 });
 
+test('baked meadow RGB interpolates coarse edges on both arrival axes',()=>{
+  const count=12;
+  const coarse=buildTerrainTile(terrainTile(5,-1,8),count);
+  const fine=buildTerrainTile(terrainTile(6,0,16),count,TERRAIN_EDGES.west);
+  const color=(mesh,i,j)=>Array.from(mesh.colors.subarray((j*(count+1)+i)*3,(j*(count+1)+i)*3+3));
+  assert.notDeepEqual(color(fine,0,0),color(fine,0,3));
+  for(let j=0;j<=count;j++){
+    const lower=color(coarse,count,Math.floor(j/2));
+    const upper=color(coarse,count,Math.ceil(j/2));
+    const rgb=color(fine,0,j);
+    assert.ok(rgb.every(Number.isFinite));
+    assert.deepEqual(rgb,lower.map((value,axis)=>Math.fround((value+upper[axis])/2)));
+  }
+  const southern=buildTerrainTile(terrainTile(6,0,16),count);
+  const northern=buildTerrainTile(terrainTile(7,0,34),count,TERRAIN_EDGES.south);
+  for(let i=0;i<=count;i++){
+    const lower=color(southern,Math.floor(i/2),count);
+    const upper=color(southern,Math.ceil(i/2),count);
+    const rgb=color(northern,i,0);
+    assert.ok(rgb.every(Number.isFinite));
+    assert.deepEqual(rgb,lower.map((value,axis)=>Math.fround((value+upper[axis])/2)));
+  }
+});
+
 test('terrain selection partitions both axes under the tile budget and balances neighbors', () => {
   const columns = TOROIDAL_TERRAIN.rootColumns * 2 ** TOROIDAL_TERRAIN.maxLevel;
   const rows = 2 ** TOROIDAL_TERRAIN.maxLevel;

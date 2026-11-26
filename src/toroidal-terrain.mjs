@@ -207,6 +207,7 @@ export function terrainWoodland(u,v,height,terrain = TOROIDAL_TERRAIN) {
   return irregular*understory*treeline*(1-terrainTrail(u,v,terrain));
 }
 
+const meadowSwathTint=[.16,.16,.09],meadowSwathRadius=76;
 const groundColors={
   woodland:[.071,.109,.041], moss:[.077,.168,.065], grass:[.163,.256,.079], straw:[.276,.261,.107],
   scree:[.291,.264,.227], highStone:[.367,.348,.294], wetSand:[.28,.239,.172],
@@ -224,6 +225,17 @@ export function terrainMeadowMoisture(u,v,height,terrain = TOROIDAL_TERRAIN) {
   return Math.max(0,Math.min(1,.50+basin*.35+pocket*.15+shore*.13-exposed*.20));
 }
 
+function arrivalMeadowSwath(u,v,terrain){
+  const across=wrappedDistance(v,.25)*TAU*terrain.tubeRadius;
+  if(across<=3.8||across>=meadowSwathRadius)return 0;
+  const along=wrappedDistance(u,0)*TAU*terrain.majorRadius;
+  const distance=Math.hypot(across,along);
+  if(distance>=meadowSwathRadius)return 0;
+  // The periodic cells are about 50 by 31 metres at the arrival latitude.
+  return periodicNoise(u,v,224,96,terrain.seed^0x5a8c43)*(1-fade(Math.max(0,(distance-34)/42)))
+    *fade(Math.min(1,(across-3.8)/6));
+}
+
 export function terrainColor(u,v,height,slope,terrain = TOROIDAL_TERRAIN) {
   const moisture=terrainMeadowMoisture(u,v,height,terrain);
   const woodland=terrainWoodland(u,v,height,terrain);
@@ -236,10 +248,13 @@ export function terrainColor(u,v,height,slope,terrain = TOROIDAL_TERRAIN) {
     fade(Math.max(0,1-Math.abs(height-terrain.waterLevel)/4.8)):0;
   const submerged=Number.isFinite(terrain.waterLevel)?
     fade(Math.max(0,Math.min(1,(terrain.waterLevel-height)/9))):0;
-  const trail=terrainTrail(u,v,terrain)*(1-submerged)*.72;
+  const trailMask=terrainTrail(u,v,terrain);
+  const trail=trailMask*(1-submerged)*.72;
   const soil=groundColors;
+  const swath=arrivalMeadowSwath(u,v,terrain)*(1-trailMask)*(1-shore)*(1-submerged);
   return soil.grass.map((value,axis)=>{
-    const meadow=mix(mix(soil.straw[axis],value,growth),soil.moss[axis],moss);
+    const meadow=mix(mix(soil.straw[axis],value,growth),soil.moss[axis],moss)
+      *(1+swath*meadowSwathTint[axis]);
     const vegetation=mix(meadow,soil.woodland[axis],woodland*.60);
     const stone=mix(soil.scree[axis],soil.highStone[axis],crest);
     const dry=mix(vegetation,stone,Math.max(rock,crest*.86));
@@ -325,6 +340,28 @@ export function buildTerrainTile(tile, segmentCount, coarseEdges = 0, terrain = 
         const a = j * width + i, b = a + 1, c = a + width, d = c + 1;
         indices.set([a, c, b, b, c, d], (j * segmentCount + i) * 6);
       }
+    }
+  }
+  if(coarseEdges){
+    // Interpolate the existing RGB stream along each stitched chord as well.
+    const colorSample=(i,j)=>{
+      const offset=(j*width+i)*3;
+      return colors.subarray(offset,offset+3);
+    };
+    const nearSwath=(i,j)=>{
+      const [u,v]=coordinates(i,j);
+      return Math.hypot(wrappedDistance(u,0)*TAU*terrain.majorRadius,
+        wrappedDistance(v,.25)*TAU*terrain.tubeRadius)<meadowSwathRadius;
+    };
+    const alignColor=(i,j,di,dj)=>{
+      if(nearSwath(i-di,j-dj)||nearSwath(i,j)||nearSwath(i+di,j+dj))
+        colorSample(i,j).set(stitch(colorSample,i,j));
+    };
+    for(let step=1;step<segmentCount;step+=2){
+      if(coarseEdges&TERRAIN_EDGES.west)alignColor(0,step,0,1);
+      if(coarseEdges&TERRAIN_EDGES.east)alignColor(segmentCount,step,0,1);
+      if(coarseEdges&TERRAIN_EDGES.south)alignColor(step,0,1,0);
+      if(coarseEdges&TERRAIN_EDGES.north)alignColor(step,segmentCount,1,0);
     }
   }
   const waterIndices = [];
