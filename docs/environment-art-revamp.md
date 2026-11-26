@@ -138,6 +138,41 @@ reflections of nearby characters or rocks still matter after that trial.
 A global planar mirror assumes flat water, while the world's up direction
 changes around the torus. Review bloom as a separate optional effect.
 
+### Visual review follow-up
+
+The independent Astra High review checked the estate previsualization,
+captured Holodeck coast and woodland views, and the current rendering path.
+It assessed Gemini's water and foliage recommendations from retained text.
+Both profiles should preserve the scene's composition and depth cues.
+Normal can add selective close detail where Livianos uses simpler shapes.
+
+Claude Code Fable 5.2 High inspected the estate previsualization and the
+terrain, sky, field and meadow-bank sources. Its alternative first water
+trial is a directional glint from the planet's position, angular size and
+palette, broadened by wave slope. Compare that with the shared panorama
+sample at the same coast and solar time. Choose the simplest variant that
+keeps the visible planet and reflection aligned and avoids shimmer. The
+estate and water studies show different skies. Use one in-game sky for each
+matched comparison, with a common directional reference for sky, water and
+character lighting.
+
+Fable also proposed feeding the same localized lantern falloff into the
+terrain path and nearby plant tint. Try that against the current lighting
+at a fixed player-height view. Evaluate present-view depth and soft shadow
+separately from the prior depth-of-field cost. Reserve further passes for
+specific measured gaps.
+
+Qualify water in a lateral shoreline turn, shallows crossing and short
+flight. The planet's reflection must move with view direction, retain dark
+gaps between glints and stay coherent across tile edges. Check character
+readability against the reflective band and check the same view with bloom
+disabled. For foliage, prefer shaded understory clusters, overlapping
+uneven crowns and readable clearings. Compare one passage from an open
+clearing into the trees and one near-ground flight. Track density jumps,
+alpha-edge shimmer, instance uploads and GPU time. Use the same internal
+render size and clock in each baseline and candidate. Keep phone validation
+distinct from Pi 5 Livianos and RTX 2060 Normal measurements.
+
 ### Background depth of field
 
 Try an optional exterior mode that keeps the avatar, nearby path and
