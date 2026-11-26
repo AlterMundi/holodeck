@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {Plane, Quaternion, Vector3} from 'three';
 import {constrainInteriorCamera} from '../src/interior-camera.mjs';
+import {passageMarkup} from '../src/interior-geometry.mjs';
 
 test('interior camera retracts before rendering a newly occluded orbit and clears its limit on exit',()=>{
   let room='foyer';
@@ -34,4 +35,17 @@ test('interior camera retracts before rendering a newly occluded orbit and clear
   room=null;
   camera.update();
   assert.equal(state.position.z,4);
+});
+
+
+test('closed fitted doors block the boom from the wall to the handle',()=>{
+  const passage={slot:0,kind:'door',rise:0,label:'Taller'};
+  const envelope=markup=>markup.match(/<m-cube[^>]*id="passage-leaf-collider-0"[^>]*>/)?.[0];
+  const volume=envelope(passageMarkup(passage,{houseDoor:true}));
+  assert.match(volume,/z="0.28".*depth="0.84".*opacity="0"/);
+  assert.doesNotMatch(volume,/collide="false"/);
+  assert.equal(envelope(passageMarkup(passage,{houseDoor:true,existingDoor:true})),undefined);
+  const returnDoor=envelope(passageMarkup(passage,{returnLeaf:{src:'return.glb',onLanding:true}}));
+  assert.match(returnDoor,/y="2.06".*depth="0.43".*opacity="0"/);
+  assert.equal(envelope(passageMarkup({...passage,kind:'portal'},{houseDoor:true})),undefined);
 });

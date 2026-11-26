@@ -76,7 +76,7 @@ export function innerWoodlandTrees(){
   return trees;
 }
 
-function evergreenGeometry(detail){
+function evergreenGeometry(detail,spreading=false){
   const positions=[],colors=[];
   const shade=new Color();
   const trunk=0x534134;
@@ -95,28 +95,32 @@ function evergreenGeometry(detail){
     triangle(foot,top,nextFoot,trunk,.85+i%3*.10);
     triangle(top,nextTop,nextFoot,trunk,.85+i%3*.10);
   }
-  const whorls=detail===2?6:detail===1?5:3;
+  const whorls=(spreading?[3,4,5]:[3,5,6])[detail];
   for(let band=0;band<whorls;band++){
     const t=band/(whorls-1);
-    const base=.21+.51*t;
-    const radius=.254*(1-.79*t);
-    const apex=[.025*t,band===whorls-1?1:base+.23,-.026*t];
+    const base=spreading?.27+.45*t:.21+.51*t;
+    const radius=spreading?.345*(1-.76*t**1.6):.254*(1-.79*t);
+    const lean=spreading?.12*t*t:0;
+    const crown=(r,y,a)=>[Math.cos(a)*r+lean,y,Math.sin(a)*r-.4*lean];
+    const apex=[lean+.025*t,band===whorls-1?1:base+(spreading?.18:.23),-.026*t-.4*lean];
     const spokeCount=detail===2?10:detail===1?7:4;
     const turn=.47*band;
     const tint=foliage[Math.round(t*(foliage.length-1))];
     const canopyShade=.68+.32*t;
     for(let i=0;i<spokeCount;i++){
       const a=turn+i*TAU/spokeCount;
-      const spur=radius*(.88+.17*Math.sin(i*3.7+band*4.4));
-      const tip=ring(spur,base-.032+.037*Math.cos(i*2.9+band),a);
+      const spread=spreading?.94+.22*Math.cos(a-.7)+.13*Math.sin(a*3+band):.88+.17*Math.sin(i*3.7+band*4.4);
+      const drop=spreading?-.065+.030*Math.cos(3*a+band):-.032+.037*Math.cos(i*2.9+band);
+      const tip=crown(radius*spread,base+drop,a);
       const span=TAU/spokeCount;
-      const left=ring(radius*.64,base+.042,a-span*.5);
-      const right=ring(radius*.64,base+.042,a+span*.5);
+      const left=crown(radius*(spreading?.73:.64),base+.042,a-span*.5);
+      const right=crown(radius*(spreading?.73:.64),base+.042,a+span*.5);
       const scale=canopyShade*(.81+.25*Math.sin(i*2.71+band)**2);
       triangle(apex,tip,left,tint,scale);
       triangle(apex,right,tip,tint,scale*1.13);
-      triangle([0,base+.047,0],left,tip,tint,scale*.70);
-      triangle([0,base+.047,0],tip,right,tint,scale*.70);
+      const center=[lean,base+.047,-.4*lean];
+      triangle(center,left,tip,tint,scale*.70);
+      triangle(center,tip,right,tint,scale*.70);
     }
   }
   const geometry=new BufferGeometry();
@@ -127,15 +131,17 @@ function evergreenGeometry(detail){
 }
 
 // Two closed skirt crowns retain volume when the rim is seen end-on.
-function skylineGeometry(){
+function skylineGeometry(spreading=false){
   const positions=[],colors=[];
   for(const [height,radius,span,tint] of [[.26,.21,.57,0x3a5948],[.57,.13,.43,0x55734e]]){
     const shade=new Color(tint);
     for(let side=0;side<5;side++){
       const a=side*TAU/5,b=(side+1)*TAU/5;
-      const east=[radius*Math.cos(a),height,radius*Math.sin(a)];
-      const west=[radius*Math.cos(b),height,radius*Math.sin(b)];
-      positions.push(...east,0,height+span,0,...west,...west,0,height,0,...east);
+      const width=spreading?1.42:1;
+      const lean=spreading?height*.13:0;
+      const east=[lean+radius*Math.cos(a)*width,height,radius*Math.sin(a)*width];
+      const west=[lean+radius*Math.cos(b)*width,height,radius*Math.sin(b)*width];
+      positions.push(...east,lean,height+span,0,...west,...west,lean,height,0,...east);
       for(let index=0;index<6;index++){
         const light=index<3?1:.68;
         colors.push(shade.r*light,shade.g*light,shade.b*light);
@@ -242,14 +248,22 @@ export class ToroidalWoodland{
     this.colliders=colliders;
     this.group=new Group();
     this.group.name='Rooted woodland';
-    this.geometry=[...[0,1,2].map(evergreenGeometry),skylineGeometry()];
+    this.geometry=[
+      ...[0,1,2].map(detail=>evergreenGeometry(detail)),skylineGeometry(),
+      ...[0,1,2].map(detail=>evergreenGeometry(detail,true)),skylineGeometry(true),
+    ];
     this.material=new MeshStandardMaterial({vertexColors:true,roughness:.95});
     useDaylight(this.material,daylight);
     this.skylineMaterial=skylineMaterial(daylight);
-    const trees=[...woodlandTrees(),...innerWoodlandTrees()];
+    const trees=[...woodlandTrees(),...innerWoodlandTrees()].map(tree=>({...tree,
+      spreading:tree.height>=7.8&&sample(Math.round(tree.u*1e6),Math.round(tree.v*1e6),3941)>.59,
+    }));
+    const broad=trees.filter(tree=>tree.spreading).length;
     this.meshes=this.geometry.map((geometry,index)=>{
-      const mesh=new InstancedMesh(geometry,index===3?this.skylineMaterial:this.material,trees.length);
-      mesh.name=['Woodland distant','Woodland middle','Woodland near','Inner arc canopy'][index];
+      const capacity=index<4?trees.length-broad:broad;
+      const mesh=new InstancedMesh(geometry,index%4===3?this.skylineMaterial:this.material,capacity);
+      mesh.name=['Woodland distant','Woodland middle','Woodland near','Inner arc canopy',
+        'Woodland spreading distant','Woodland spreading middle','Woodland spreading near','Inner arc spreading canopy'][index];
       mesh.count=0;
       this.group.add(mesh);
       return mesh;
@@ -322,7 +336,7 @@ export class ToroidalWoodland{
         const distance=tree.point.distanceToSquared(position);
         if(distance>limit**2)continue;
         const level=distance>maxRange**2?3:distance<(lightweight?23:39)**2?2:distance<(lightweight?81:126)**2?1:0;
-        const mesh=this.meshes[level];
+        const mesh=this.meshes[level+(tree.spreading?4:0)];
         mesh.setMatrixAt(mesh.count,tree.matrix);
         const light=.85+.29*tree.tint;
         mesh.setColorAt(mesh.count,this.tint.setRGB(light,light,.94*light+.06));

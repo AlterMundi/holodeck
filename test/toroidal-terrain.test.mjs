@@ -181,7 +181,20 @@ test('woodland representation changes preserve roots and release nearby trunk co
     near(height,terrainElevation(u,v)-.08,.0005);
     assert.ok(terrainTrail(u,v)<=.0121);
   }
+  const spreadingRoots=()=>{
+    const roots=[];
+    for(const mesh of woodland.meshes.slice(4)){
+      for(let index=0;index<mesh.count;index++){
+        mesh.getMatrixAt(index,transform);
+        roots.push(plantRoot.setFromMatrixPosition(transform).toArray().join(':'));
+      }
+    }
+    return roots.sort();
+  };
+  const broadCrownRoots=spreadingRoots();
+  assert.ok(broadCrownRoots.length>0&&broadCrownRoots.length<total);
   woodland.update(position,true);
+  assert.deepEqual(spreadingRoots(),broadCrownRoots);
   assert.ok(woodland.meshes[2].count<nearCount);
   assert.ok(woodland.undergrowth.count>0&&woodland.undergrowth.count<undergrowthCount);
   assert.equal(woodland.meshes.reduce((count,mesh)=>count+mesh.count,0),total);

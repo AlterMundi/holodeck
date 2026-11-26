@@ -79,6 +79,11 @@ export function upperLandingCollision(index) {
   return `<m-group id="return-landing" x="${x}" z="${z}" ry="${rotation}">${staircase(1,'#3f5b5e',' opacity="0" cast-shadows="false"')}</m-group>`;
 }
 
+function passageLeafCollider(slot,y,z,width,height,depth){
+  return cube(0,y,z,width,height,depth,'#513b2c',
+    ` id="passage-leaf-collider-${slot}" opacity="0" cast-shadows="false"`);
+}
+
 export function passageMarkup(passage,{visibleSteps=true,authoredPortal=null,authoredDoor=false,authoredPassages=[],portalAsset=null,returnLeaf=null,houseDoor=false,existingDoor=false}={}) {
   const slot=SLOTS[passage.slot],y=passage.rise*STAIR_STEPS*RISE;
   const portal=passage.kind==='portal',color=portal?'#9384bd':passage.rise?'#779491':'#d6b58c';
@@ -87,16 +92,22 @@ export function passageMarkup(passage,{visibleSteps=true,authoredPortal=null,aut
   if(returnLeaf){
     const {src,onLanding}=returnLeaf;
     const lift=onLanding?round(STAIR_STEPS*RISE):0;
+    const scale=onLanding?1:1.32;
+    // Matches the shut timber leaf and lever in atelier-return-leaf.py.
+    const solid=passageLeafCollider(passage.slot,round(lift+1.22*scale),.08,1.56,round(2.24*scale),.43);
     const plaque=onLanding?`<m-label y="3.32" z=".286" width="1.48" height=".24" padding="3"
       alignment="center" font-size="18" color="#182628" font-color="#fff0cc"
       content="${passage.label}" collide="false"></m-label>`:'';
     return `<m-group id="passage-${passage.slot}" x="${slot.x}" z="${slot.z}" ry="${slot.rotation}">
-      <m-model src="${src}" y="${lift}" sy="${onLanding?1:1.32}" z=".015" collide="false" cast-shadows="false"></m-model>${plaque}
+      <m-model src="${src}" y="${lift}" sy="${scale}" z=".015" collide="false" cast-shadows="false"></m-model>${solid}${plaque}
     </m-group>`;
   }
   if(houseDoor&&passage.kind==='door'){
     const noCollision=' collide="false"';
     const leaf=existingDoor?'':[
+      // One solid spans from the wall through the visible leaf and hardware.
+      // The camera sweeps the same boundary as the walking capsule.
+      passageLeafCollider(passage.slot,1.17,.28,1.66,2.15,.84),
       cube(0,1.17,.39,1.66,2.15,.26,'#513b2c',noCollision),
       cube(0,1.16,.53,1.40,1.96,.05,'#987a58',noCollision),
       cube(0,1.58,.566,1.18,.89,.026,'#203b3f',noCollision),
