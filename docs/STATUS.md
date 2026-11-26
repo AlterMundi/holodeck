@@ -34,6 +34,14 @@ also retained the direct viewer route and the browser-to-native pose and
 note checks on frames 36 and 37. This is staged evidence using fixture
 identities.
 
+Candidate source `759d22f1deb25bc84929caad13451e14e47d638d` also carries
+the selected offshore water code from protected release `6affd43be714`.
+Archive `17f18db4017a598e8a0cebd5ef11c0cdde99ef01d31ccc5845b80500d87e41b5`
+passed the same door, table and exact-pose check in Chromium. Its pose
+catalog is byte-identical to the earlier keyboard HUD candidate. The
+Node suite passed 425 checks with two skips. The protected water
+release does not ship the Character review catalog.
+
 Source `64243ccd5c97ec1d0705f64315eb255d1e47b79e` exposes the exact
 Character pose to its retained Conversation turn. In the staged
 browser and native-port check, a paired daimon entered through the
