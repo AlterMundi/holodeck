@@ -622,10 +622,11 @@ comparison input and stay outside the packaged assets.
 
 ### Mobile play and Conversation
 
-The [toroidal startup recovery](STATUS.md#november-26-visible-plaza-entry)
-shows the admitted terrain while optional arrival art loads. A slow
-connection uses a compact retry notice, and denied access still stops entry.
-This uses the existing world and renderer in both quality presets.
+The [toroidal startup recovery](STATUS.md#november-26-authenticated-plaza-startup)
+completes access verification before the presence handshake. The first visible
+frame shows the admitted player, current terrain, and current controls.
+Optional arrival art loads after the plaza is playable. A slow connection
+uses a compact retry notice, and denied access still stops entry.
 
 The November 25 portrait capture in Telegram Android shows the title panel,
 an object-identification notice, square movement panels and a wrapped

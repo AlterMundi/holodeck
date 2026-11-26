@@ -1,9 +1,30 @@
 # Current MVP work
 
+## November 26 authenticated plaza startup
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `d2a9b89a726d`
+from `e1bb0d3`. Home authorization now completes before the WebSocket
+upgrade. The presence transport can receive the first handshake as soon as
+the browser sends it. The exterior scene reuses the socket authorization.
+The first visible frame contains the admitted player and current terrain.
+The provisional checkerboard and the old island controls do not appear
+during toroidal startup. Optional scenery loads after the plaza is playable.
+
+A 300 ms delay in the upgrade authorization reproduced the lost first
+handshake on the old implementation. The fix accepts matching connections
+and refuses a token from another actor. Node 24 passed 426 tests with two
+optional skips. With 650 ms of upgrade delay and the house projection held,
+the packaged client entered in 6.5 seconds on Legion's RTX 2060 with Normal
+graphics and 7.0 seconds on Pi 5 with Livianos. Legion accepted movement
+before the house arrived. Both rendered the current toolbar on the first
+visible frame. The original signed-in Legion tab was outside these tests.
+Receiving matched 86 installed files, 13 protected HTTPS reads, four
+expected denials and world sequence 463. Immediate rollback is
+`c599c78afef3`.
+
 ## November 26 visible plaza entry
 
-[Holodeck](https://compaii.dmn.homes/holodeck/) serves `c599c78afef3`
-from `841d5ef`. The terrain and admitted player can render while the
+The preceding release `c599c78afef3` came from `841d5ef`. The terrain and admitted player can render while the
 toroidal house projection is pending. The exterior door waits for its
 projected world target. The upstream loading screen is hidden. A compact
 connection notice offers retry and lightweight graphics when entry is
