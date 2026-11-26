@@ -302,6 +302,43 @@ possible tuft. The grass stays opaque and uses no separate shadow pass.
 Longer routes, RTX Normal and independent participant acceptance remain
 open.
 
+## Installed cool night lighting on the approach
+
+The protected release `d88590271d57` serves `c908766`, with
+`e97413d21211` as immediate rollback. It uses the existing directional
+light as a cool three-quarter key after sunset. The Argentine clock
+brings the sun to zero before changing direction. The warm porch lamp
+still marks the threshold. The sky keeps the solar clock and the water
+shader keeps the authored reflection instead of adding this direct
+light.
+
+Pi 5 Broadcom V3D comparisons used matched approach poses at noon,
+dusk and night on Normal (336 × 240 buffer) and Livianos (264 × 189).
+Noon and dusk key direction, intensity and colour matched. The
+night path crop rose from 43.5 to
+48.4 on a 255-step display scale.
+A separate local shore screenshot rose from 26.4
+to 27.0 in the water crop with the same
+wave phase. The displayed values describe these regions.
+The matched renders kept 111 / 72 draws and 314,032 / 158,233
+triangles in Normal and Livianos. The hot Normal candidate hit
+49.9 ms p95 and registered a current thermal flag. A separate
+night-only comparison measured 33.4 ms baseline
+and 33.4 ms candidate p95, with final board flags
+`0xe0008` and `0xe0008`.
+Median differed (16.8 and 33.3 ms). Both runs
+ended at 82.3 °C. The samples leave sustained Normal throughput open.
+
+The two profiles passed low flight. A second controlled visitor saw
+the same doorway. A separate Pi fixture passed the early dawn change,
+then loaded the foyer with ambient .22 and the outdoor key hidden.
+Returning to the exterior restored the cool key. Independent
+participant and longer sustained desktop acceptance remain open.
+Fable 5.2 High informed the use of the existing light and Opus 5.5 High
+checked the production diff. 485 tests passed with two optional skips.
+14 state files matched by hash. The protected challenge and the exact installed client,
+server, worker, room art and health matched.
+
 ## Screening route
 
 Use identical graphics quality, resolution, seed, camera and solar clock

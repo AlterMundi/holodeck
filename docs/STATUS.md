@@ -1,5 +1,13 @@
 # Current MVP work
 
+## November 26 — Cool exterior light after dusk
+
+The protected release `d88590271d57` serves `c908766`, with
+`e97413d21211` as immediate rollback. The approach uses the existing
+directional light for a cool night edge along the path and trees.
+The tested dawn, foyer and return recovered their authored lighting.
+[Matched physical poses and receiving checks](environment-art-revamp.md#installed-cool-night-lighting-on-the-approach).
+
 ## November 26 — Short touch toolbar
 
 The protected release `e97413d21211` serves `ed5710a`, with

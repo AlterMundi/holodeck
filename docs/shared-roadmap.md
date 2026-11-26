@@ -1052,6 +1052,13 @@ clears its world target correctly. Matched RTX measurements leave too
 little GPU headroom for promotion. Keep the direct render selected and
 qualify a cheaper capture and blur path.
 
+The [cool night key](environment-art-revamp.md#installed-cool-night-lighting-on-the-approach)
+uses the existing directional light to separate the figures, path and
+tree silhouettes after dark, with the warm porch retained. The tested
+departure from the first lighting pass is the higher side angle. Extend
+the night contrast work to the outer routes after matched longer
+movement and independent visitor checks.
+
 The [installed meadow colours](environment-art-revamp.md#installed-vertex-colours-for-the-arrival-meadow)
 use the existing terrain worker and RGB stream. The [installed grass
 coverage](environment-art-revamp.md#installed-middle-distance-meadow-coverage)
