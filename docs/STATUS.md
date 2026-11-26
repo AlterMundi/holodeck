@@ -1,5 +1,12 @@
 # Current MVP work
 
+## November 26 — Arrival meadow colours
+
+The protected release `a051266d693e` serves `3c5f6a6` with
+`62442e1a268b` as rollback. The approach terrain gains broad colour
+variation between existing rooted plants.
+[Physical comparisons and worker timings](environment-art-revamp.md#installed-vertex-colours-for-the-arrival-meadow).
+
 ## November 26 — Portrait topographic map
 
 Protected release `62442e1a268b` uses source `a348618`, with

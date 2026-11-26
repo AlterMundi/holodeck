@@ -1046,6 +1046,12 @@ clears its world target correctly. Matched RTX measurements leave too
 little GPU headroom for promotion. Keep the direct render selected and
 qualify a cheaper capture and blur path.
 
+The [installed meadow colours](environment-art-revamp.md#installed-vertex-colours-for-the-arrival-meadow)
+use the existing terrain worker and RGB stream. Compare the colour
+changes along the arrival route before extending the field. Longer
+desktop and Normal flight runs and denser, rooted middle-distance plants
+remain in [#25](https://github.com/AlterMundi/holodeck/issues/25).
+
 ### Connected ecosystems above and below the torus
 
 Track surface ecology in [#25](https://github.com/AlterMundi/holodeck/issues/25)

@@ -227,6 +227,48 @@ Normal. Keep the direct release. Isolate the multisampled capture cost
 from the blur kernel, and evaluate a lower-resolution effect against
 foreground edges and shore transparency before promoting a candidate.
 
+## Installed vertex colours for the arrival meadow
+
+Protected package `a051266d693e` serves source `3c5f6a6`. The immediate
+rollback is `62442e1a268b`. Earlier fragment-swath pilots stayed in trial
+after their thermal comparison was inconclusive. The selected version
+stores a broad, periodic colour field in the RGB stream already built by
+the terrain worker, within 76 metres of arrival. It keeps the worn trail
+and shore masks and interpolates the local field over the existing
+coarse-to-fine chords on both axes. The shader, texture inventory and
+vertex payload shape are unchanged.
+
+Matched noon, dusk and night poses in physical Pi 5 Normal (336 × 240
+buffer) and Livianos (264 × 189) retained 142 / 80 draws and
+329,205 / 159,030 triangles. The daylight meadow crop changed by a mean
+2.7 / 3.1 RGB steps of 255; a wall crop was pixel-identical at all
+three clocks. Livianos measured about 16.7–16.8 ms p95 in the exact
+installed build. The Normal render timings ran at different physical
+temperatures with active throttle in the trial. Treat those as render
+checks, without a frame-speed comparison.
+
+Separate ABBA/BAAB trials used the exact two terrain workers in a single
+physical Pi Chromium instance, without running a 3D scene. Eight
+batches per worker and profile measured turnaround and transfer over
+the arrival tiles. Batch median was 173.6 → 158.6 ms (64 tiles) and
+384.9 → 387.1 ms (112 tiles). Batch p95 was 180.5 → 175.9 ms and
+408.2 → 398.8 ms, respectively. Board telemetry began at 75.7 °C and
+ended at 78.5 °C, with historical flags only at those readings.
+Mesh positions, normals, indices and water arrays were byte-identical in
+the separate deterministic terrain comparison.
+
+The two controlled visitors saw the same doorway coordinate and the
+Livianos visitor requested zero Sand3D assets. The published Character
+catalog stayed byte-identical after an exact 670-pose and chapter
+comparison. Fable 5.2 High informed the worker design; Opus 5.5 High
+review prompted finite and exact two-axis edge tests. 483 automated
+tests passed with two optional skips. Installed server, client, worker,
+room art and protected serving checks matched. Thirteen state files
+matched by hash. The room journal recorded presence events during the
+cut and retained its durable content across the adjacent saves.
+Independent participant acceptance and a controlled Normal frame-time
+comparison remain open.
+
 ## Screening route
 
 Use identical graphics quality, resolution, seed, camera and solar clock
