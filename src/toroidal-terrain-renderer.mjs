@@ -294,7 +294,7 @@ const waterShading = {
       // to broaden the shallow ramp for larger grazing pixels. Fade
       // back to the same optics as the back face near the waterline.
       float reflectedCoverage = 1.0;
-      float aboveWater = holodeckEyeHeight-${glsl(TOROIDAL_TERRAIN.waterLevel)};
+      float aboveWater = holodeckEyeHeight-(${glsl(TOROIDAL_TERRAIN.waterLevel)});
       if (gl_FrontFacing && aboveWater > .008) {
         float reach = clamp(15.6*footprint,.16,.55);
         reflectedCoverage -= exp(-depth/reach)*smoothstep(.008,.08,aboveWater);
