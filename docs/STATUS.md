@@ -49,6 +49,30 @@ The full walkthrough returned a native note for the referred local frame
 and restored the visitor's frame and draft after graphics recovery.
 The protected deployment still selected `58ce88972da7` at verification.
 
+## Matter and canonical Conversation on the Character receiving archive
+
+Candidate `7468892a3c62` was exercised against installed canonical
+Conversation assets. The served surface script matched those assets.
+Chromium covered four desktop and touch layouts, one retained iframe,
+draft and selection retention, restoration of world input and a pointer
+activation of the narrow dock. The loopback sink accepted one exact
+original with its world context and attachment. The fixture refused
+four forged requests. This verifies the embedding and submission flow
+with fixture I/O.
+
+Two Matter fixture visitors entered the existing room through the door
+and used the same project selection revision. The first visitor kept
+a private camera and cut setting while the second published from the
+compact layout using the keyboard during HUD graphics loss. Following
+the updated table selected the published project. A stale write and an
+edit after access revocation returned 409 and 403. A trusted touch on
+the drawn **Despejar** control cleared the table at revision 3 in both
+browsers. The visitor then left the table, returned through the door
+and lost access to the room's collection.
+
+The renderer guide's [HUD inventory](https://github.com/AlterMundi/proyeccion/pull/37)
+lists the host owners, spatial presentations and remaining browser flows.
+
 ## Narrow desktop dock and Conversation pointer check
 
 Client revision `4ad1781` widens the bridge control so the full label

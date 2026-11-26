@@ -258,7 +258,7 @@ mkdirSync(evidence,{recursive:true});
     assert.ok(beforeCamera.every((v,i)=>Math.abs(v-afterCamera[i])<.025));
     await left.tab.screenshot({path:join(evidence,'desktop-local-after-touch-publish.png')});
     await right.tab.screenshot({path:join(evidence,'touch-shared-beta.png')});
-    console.log('Touch published Beta, leaving the desktop’s local Alfa cut and camera intact');
+    console.log('Keyboard fallback published Beta on the touch layout; desktop inspection stayed local');
     assert.equal(await status(left.tab,{resource:alpha.resource,revision:1}),409);
     await go(left,'Seguir mesa');
     await waitProject(left,beta.resource);
@@ -269,7 +269,26 @@ mkdirSync(evidence,{recursive:true});
     assert.equal(await status(right.tab,{resource:null,revision:2}),403);
     assert.equal((await read(left.tab)).revision,2);
     peerCanEdit=true;
-    await share(right,'Despejar',{resource:null,revision:2});
+    await right.tab.bringToFront();
+    await matterAction(right,'Despejar').and(right.tab.locator(':enabled')).waitFor({state:'attached'});
+    // Follow mode shows Despejar as the full row beneath the Mesa tabs.
+    const clearPoint={x:418,y:78};
+    assert.equal(await right.tab.evaluate(({x,y})=>
+      document.elementFromPoint(x,y)?.classList.contains('world-interaction-canvas'),clearPoint),true);
+    await right.tab.evaluate(()=>{
+      window.fixtureMatterTouch=null;
+      document.addEventListener('pointerdown',event=>{
+        window.fixtureMatterTouch={trusted:event.isTrusted,type:event.pointerType,
+          canvas:event.target.classList.contains('world-interaction-canvas')};
+      },{capture:true,once:true});
+    });
+    const clearing=right.tab.waitForResponse(response=>response.request().method()==='POST'&&
+      response.url().endsWith('/api/space/collection'));
+    await right.tab.touchscreen.tap(clearPoint.x,clearPoint.y);
+    const cleared=await clearing;
+    assert.equal(cleared.status(),204);
+    assert.deepEqual(cleared.request().postDataJSON(),{resource:null,revision:2});
+    assert.deepEqual(await right.tab.evaluate(()=>window.fixtureMatterTouch),{trusted:true,type:'touch',canvas:true});
     await waitProject(left,'');
     assert.equal((await read(left.tab)).revision,3);
     await right.tab.locator('canvas').first().focus();
@@ -285,7 +304,7 @@ mkdirSync(evidence,{recursive:true});
     assert.equal((await right.space()).id,foyer);
     assert.equal(await right.tab.evaluate(async()=>(await fetch('api/space/collection')).status),404);
     assert.deepEqual(failures,[]);
-    console.log(JSON.stringify({desktopPublished:true,touchPublished:true,localCut:64,cameraIndependent:true,
+    console.log(JSON.stringify({desktopPublished:true,keyboardPublishedOnTouchLayout:true,touchCleared:true,localCut:64,cameraIndependent:true,
       rejoinedSharedBeta:true,staleWrite:409,revokedEdit:403,clearedRevision:3,tableClosedInsideRoom:true,
       returnedThroughDoor:true,readAfterExit:404,overlayFallbackShare:true,
       hudFramebuffers:{normal:normalBuffer,light:lightBuffer,lightAfterResize:resizedBuffer}}));
