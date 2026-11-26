@@ -155,7 +155,12 @@ test('a review pivots one visitor around the model and restores avatar-centered 
   camera.setTarget=point=>target.copy(point);
   const release=bindMatterFlight(manager,camera,flight,()=>true);
   const avatarPoint=new Vector3(0,2,0),modelCentre={x:.34,y:.315,z:0};
-  assert.equal(flight.enter(controller,new Vector3(),{reviewTarget:modelCentre}),true);
+  assert.equal(flight.enter(controller,new Vector3(),{reviewTarget:modelCentre,
+    reviewScale:.58/characterReviewCamera.rigHeight}),true);
+  assert.ok(camera.distance>1.1);
+  const desiredEye=new Vector3().setFromSphericalCoords(camera.distance,camera.phi,Math.PI/2-camera.theta)
+    .add(flight.reviewTarget);
+  assert.ok(desiredEye.distanceTo(controller.config.position.clone().add(new Vector3(0,matterEyeHeight,0)))<1e-12);
   camera.setTarget(avatarPoint);
   assert.deepEqual(target.toArray(),[.34,.315,0]);
   assert.deepEqual(avatarPoint.toArray(),[0,2,0]);

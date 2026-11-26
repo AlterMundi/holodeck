@@ -231,6 +231,17 @@ async function main(){
       });
       const before={...await camera(),...await checkMiniatureEye()};
       assert.equal(before.fov,36);
+      const frame=await page.evaluate(()=>{
+        const camera=holodeckDevelopment.client.getCameraManager();
+        const {position,fov}=camera.getCameraState();
+        const {x,y,z}=camera.target;
+        const horizontal=Math.hypot(x-position.x,z-position.z);
+        const low=y-.58*.78/1.48;
+        const elevation=height=>Math.atan2(height-position.y,horizontal);
+        return {top:elevation(low+.58)-elevation(y),bottom:elevation(y)-elevation(low),
+          limit:fov*Math.PI/360};
+      });
+      assert.ok(Math.max(frame.top,frame.bottom)<frame.limit-.02,JSON.stringify(frame));
       const canvas=page.locator('.world-interaction-canvas');
       await canvas.evaluate(element=>{element.tabIndex=-1;element.focus();});
       await page.keyboard.down('w');
@@ -276,7 +287,7 @@ async function main(){
       assert.equal(await table.getByRole('combobox',{name:'Personaje',exact:true}).count(),0);
       assert.deepEqual(errors,[]);
       console.log(JSON.stringify({wideToolsMatch:true,inlineOptionsMatch:true,inlineCycleWorks:true,
-        playbackInBoth:true,miniatureTranslationCarriesCamera:true,orbitAndZoomMoveMiniature:true,renderedCameraAtMiniatureEye:true,playInCompactNotes:true}));
+        playbackInBoth:true,miniatureTranslationCarriesCamera:true,orbitAndZoomMoveMiniature:true,renderedCameraAtMiniatureEye:true,wholeRigInOpeningFrame:true,playInCompactNotes:true}));
       return;
     }
 

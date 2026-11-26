@@ -28,18 +28,31 @@ export class CharacterReviewFlight extends MatterFlight{
 
   get reviewTarget(){return this.reviewAnchor;}
 
-  enter(controller,bench,{reviewTarget=null}={}){
+  enter(controller,bench,{reviewTarget=null,reviewScale=matterAvatarScale}={}){
     if(!super.enter(controller,bench,{reviewTarget}))return false;
     if(!reviewTarget)return true;
     for(const field of reviewCameraFields)this.cameraRanges[field]=this.camera[field];
     const {distance,eyeHeight,targetHeight,minDistance,maxDistance,maxPolarAngle,fov,angle}=characterReviewCamera;
-    const radius=Math.hypot(distance,eyeHeight-targetHeight)*matterAvatarScale;
-    Object.assign(this.camera,{fov,targetFOV:fov,minFOV:fov,maxFOV:fov,maxPolarAngle,minDistance:minDistance*matterAvatarScale,maxDistance:maxDistance*matterAvatarScale,
+    const height=eyeHeight-targetHeight;
+    const farthest=maxDistance*matterAvatarScale;
+    const expectedRadius=Math.min(Math.hypot(distance,height)*reviewScale,farthest);
+    const expectedPhi=Math.atan2(distance,height);
+    // Frame the displayed rig, then measure the legal eye position rather
+    // than starting the wheel at a distance outside the tabletop bounds.
+    this.requestedFeet.setFromSphericalCoords(expectedRadius,expectedPhi,angle).add(this.reviewAnchor);
+    this.requestedFeet.y-=matterEyeHeight;
+    const feet=this.resolvePosition(controller,this.requestedFeet);
+    this.eye.copy(feet).sub(this.reviewAnchor);
+    this.eye.y+=matterEyeHeight;
+    const radius=this.eye.length();
+    const theta=Math.atan2(this.eye.z,this.eye.x);
+    const phi=Math.atan2(Math.hypot(this.eye.x,this.eye.z),this.eye.y);
+    Object.assign(this.camera,{fov,targetFOV:fov,minFOV:fov,maxFOV:fov,
+      maxPolarAngle,minDistance:minDistance*matterAvatarScale,maxDistance:farthest,
+      theta,targetTheta:theta,phi,targetPhi:phi,
       distance:radius,targetDistance:radius,desiredDistance:radius});
     if(Number.isFinite(this.cameraRanges.zoomScale))this.camera.zoomScale=this.cameraRanges.zoomScale*matterAvatarScale;
-    this.setReviewAngle(angle);
-    this.camera.theta=this.camera.targetTheta;
-    this.camera.phi=this.camera.targetPhi;
+    controller.config.position.copy(feet);
     return true;
   }
 
