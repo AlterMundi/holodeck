@@ -1,6 +1,6 @@
 import {toroidalAirColor,toroidalCosmosColor} from './toroidal-air.mjs';
 import {useToroidalRockDetail,useToroidalWaterDetail} from './toroidal-surface-detail.mjs';
-import {BufferAttribute, BufferGeometry, DoubleSide, Group, Mesh, MeshStandardMaterial, ShaderChunk, Vector3} from 'three';
+import {BufferAttribute, BufferGeometry, DoubleSide, Group, Mesh, MeshStandardMaterial, ShaderChunk, Vector3, Vector4} from 'three';
 import {
   TOROIDAL_PARCEL_Y, TOROIDAL_TERRAIN, buildTerrainTile, terrainCoordinates, terrainFrame, terrainTile,
 } from './toroidal-terrain.mjs';
@@ -11,6 +11,8 @@ const profiles = Object.freeze({
 });
 const ROOT_SEGMENTS = 16;
 const WATER_OPACITY = .8;
+// Half-extents of the Split basalt primitive in the packaged atelier facade.
+const ATELIER_PLINTH = Object.freeze({x:.732,z:1.574});
 
 // The sun is fixed in every local radial frame (along the ring, radial up,
 // around the tube) instead of in world axes: about 38° above the local
@@ -171,6 +173,20 @@ const terrainShading = {
         holoApproachSkylight = max(holoApproachSkylight,apronMask*.85);
       }
     }
+    // Ground absorption and worn earth give the plinth a short contact
+    // transition on the same terrain material, including at night.
+    float holoFacadeContact = 0.0;
+    vec2 facadeOffset = vHoloWorld.xz - holodeckFacadeGround.xy;
+    vec2 facadeEdge = abs(facadeOffset) - holodeckFacadeGround.zw;
+    if (holodeckFacadeGround.z > 0.0 && max(facadeEdge.x,facadeEdge.y) < .82 &&
+        abs(vHoloWorld.y-${glsl(TOROIDAL_PARCEL_Y)}) < .8) {
+      float d = length(max(facadeEdge,0.0));
+      float wear = ringNoise(facadeOffset*vec2(3.6,4.2))-.5;
+      float sediment = 1.0-smoothstep(.03,.67+.25*wear,d);
+      holoFacadeContact = 1.0-smoothstep(.015,.29+.09*wear,d);
+      vec3 wornSoil = mix(vec3(.13,.109,.074),vec3(.21,.174,.119),.5+wear);
+      diffuseColor.rgb = mix(diffuseColor.rgb,wornSoil,.46*sediment);
+    }
 
   `,
   // Cool sky fill on ground facing radially outward, dim warm bounce on
@@ -192,6 +208,7 @@ const terrainShading = {
     // A little reflected blue sky keeps the route and the verge readable
     // after dark without washing out the rest of the landscape.
     outgoingLight += diffuseColor.rgb*vec3(.23,.31,.43)*holoApproachSkylight*(1.0-holodeckDaylight);
+    outgoingLight *= 1.0-.36*holoFacadeContact;
     ${aerialPerspective('* mix(.45,1.0,holodeckDaylight)')}
   `,
 };
@@ -268,7 +285,8 @@ function artDirect(material, name, shading, environment) {
     }
     if(name==='terrain'){
       shader.uniforms.holodeckMeadowGrain=environment.meadowGrain;
-      fragment=after(fragment,'common','uniform float holodeckMeadowGrain;');
+      shader.uniforms.holodeckFacadeGround=environment.facadeGround;
+      fragment=after(fragment,'common','uniform float holodeckMeadowGrain; uniform vec4 holodeckFacadeGround;');
     }
     shader.fragmentShader=before(fragment,'opaque_fragment',shading.output+`
       if (holodeckWaterViewDepth > .014) {
@@ -329,7 +347,7 @@ export class ToroidalTerrainRenderer {
     this.waterMaterial = new MeshStandardMaterial({color:0x19606f,roughness:.34,metalness:0,side:DoubleSide,
       transparent:true,opacity:WATER_OPACITY,depthWrite:false,forceSinglePass:true});
     this.environment={water:{value:0},sun:{value:new Vector3(...SUN_LOCAL)},daylight:{value:1},
-      cosmos:{value:null},hasCosmos:{value:false},approach:{value:1},eyeHeight:{value:0},sill:{value:new Vector3()},meadowGrain:{value:1},lightWater:{value:false}};
+      cosmos:{value:null},hasCosmos:{value:false},approach:{value:1},eyeHeight:{value:0},sill:{value:new Vector3()},facadeGround:{value:new Vector4(0,0,0,0)},meadowGrain:{value:1},lightWater:{value:false}};
     useToroidalRockDetail(this.material,{meadow:true});
     this.updateWaterTime=useToroidalWaterDetail(this.waterMaterial,this.environment.lightWater);
     artDirect(this.material,'terrain',terrainShading,this.environment);
@@ -369,6 +387,16 @@ export class ToroidalTerrainRenderer {
       return;
     }
     sill.set(x,door.z,door.facing);
+  }
+
+  setFacadeContact(facade){
+    const footprint=this.environment.facadeGround.value;
+    if(!facade){footprint.set(0,0,0,0);return;}
+    facade.updateWorldMatrix(true,false);
+    const m=facade.matrixWorld.elements;
+    footprint.set(m[12],m[14],
+      Math.abs(m[0])*ATELIER_PLINTH.x+Math.abs(m[8])*ATELIER_PLINTH.z,
+      Math.abs(m[2])*ATELIER_PLINTH.x+Math.abs(m[10])*ATELIER_PLINTH.z);
   }
 
   setView(eye,waterDepth,panorama=null){

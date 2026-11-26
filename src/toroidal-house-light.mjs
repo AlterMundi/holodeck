@@ -54,6 +54,7 @@ export function bindToroidalHouseLight(composer,group,document){
       }
       practical.visible=!!house;
       practical.intensity=house?7.5*(1-day):0;
+      return house;
     },
     dispose(){
       restore();

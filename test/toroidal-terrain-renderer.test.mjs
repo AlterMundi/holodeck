@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {Scene, Vector3} from 'three';
+import {Group, Scene, Vector3} from 'three';
 import {buildTerrainTile, selectTerrainTiles, terrainPosition} from '../src/toroidal-terrain.mjs';
 import {ToroidalTerrainRenderer} from '../src/toroidal-terrain-renderer.mjs';
 
@@ -102,4 +102,23 @@ test('worker failure preserves usable distant terrain and releases queued work',
   assert.equal(renderer.status().worker, false);
   assert.equal(worker.terminated, true);
   renderer.dispose();
+});
+
+test('facade contact follows the authored transform and clears without changing terrain',()=>{
+  const scene=new Scene();
+  const terrain=new ToroidalTerrainRenderer(scene,base,TestWorker);
+  const original=terrain.group.children.slice();
+  const facade=new Group();
+  facade.position.set(1795.5,498,15.5);
+  facade.rotation.y=Math.PI/2;
+  scene.add(facade);
+  try{
+    terrain.setFacadeContact(facade);
+    const [x,z,halfX,halfZ]=terrain.environment.facadeGround.value.toArray();
+    assert.deepEqual([x,z],[1795.5,15.5]);
+    assert.ok(Math.abs(halfX-1.574)<1e-9&&Math.abs(halfZ-.732)<1e-9);
+    terrain.setFacadeContact(null);
+    assert.deepEqual(terrain.environment.facadeGround.value.toArray(),[0,0,0,0]);
+    assert.deepEqual(terrain.group.children,original);
+  }finally{terrain.dispose();}
 });

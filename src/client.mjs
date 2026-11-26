@@ -1225,7 +1225,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       frameBudget.sample(drawWorld&&!document.hidden&&!!position&&!moving&&!needsSync&&(!hot||networkScope===activeSpace.id));
       light.visible=!inside||!activeSpace.indoorLighting;
       aimSun(position);
-      houseLight.update(outsideRing()?solar:null);
+      const litFacade=houseLight.update(outsideRing()?solar:null);
+      ring?.setFacadeContact(litFacade);
       const key=inside&&activeSpace.keyLight||null;
       const keyRoom=key?activeSpace.id:null;
       if(keyRoom!==inspectionRoom||!key?.inspection)inspectionMix=0;
