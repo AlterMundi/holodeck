@@ -30,25 +30,27 @@ async function main(){
     import('../src/avatar-registry.mjs'),
     import('../src/conversation-context.mjs'),
   ]);
-  let roomGrant=true;
+  let roomGrant=true,writeGrant=true,admitted=false;
+  const execution={status:'running',instruction:randomUUID(),local_turn:1};
   const contexts=[];
   mkdirSync(evidence,{recursive:true});
   const dir=mkdtempSync(join(tmpdir(),'holodeck-characters-'));
   const socketPath=join(dir,'review.sock');
   const room=(id,title,level,entry,links)=>({id,title,level,entry,house,guests:[visitor],
     links:links.map(([kind,to])=>({kind,to}))});
-  const native=(type,args={})=>new Promise((accept,reject)=>{
+  const port=body=>new Promise((accept,reject)=>{
     const socket=createConnection(socketPath);
     let buffer='';
     socket.once('error',reject);
     socket.setTimeout(8000,()=>socket.destroy(Error('Native result timed out')));
-    socket.once('connect',()=>socket.write(JSON.stringify({ownNative:true,operation:'act',args:{type,...args}})+'\n'));
+    socket.once('connect',()=>socket.write(JSON.stringify(body)+'\n'));
     socket.on('data',chunk=>{
       buffer+=chunk;
       const eol=buffer.indexOf('\n');
-      if(eol!==-1){socket.end();accept(JSON.parse(buffer.slice(0,eol)).result);}
+      if(eol!==-1){socket.end();accept(JSON.parse(buffer.slice(0,eol)));}
     });
   });
+  const native=async(type,args={})=>(await port({ownNative:true,operation:'act',args:{type,...args}})).result;
   let runtime,server,browser;
   try{
     new RoomStore(join(dir,'houses')).save({schema:'holodeck.houses/v1',receipts:[],houses:[{
@@ -70,6 +72,8 @@ async function main(){
         const transport={
           inspect:async actorRef=>({actorRef,beingRef:owner,binding,entry:[1,{},2,'character-fixture']}),
           lookup:async()=>({state:'absent'}),
+          status:async()=>({phase:'working',tracking:true,retainedOriginal:admitted,nativeAcceptance:admitted?'observed':'unavailable',
+            activeExecution:execution}),
           prepareContext:async request=>{
             contexts.push(request.observation);
             return {schema:'holodeck.prepared-conversation-context/v1',id:request.id,binding,
@@ -77,13 +81,14 @@ async function main(){
               file:{file_id:randomUUID(),sha256:'d'.repeat(64),name:'holodeck-situation.json',mime:'application/json',size:2000}};
           },
         };
-        return {contexts:await createConversationContexts({room,stateDir:join(stateDir,'contexts'),transport,allowInteriorSource}),
+        const prepared=await createConversationContexts({room,stateDir:join(stateDir,'contexts'),transport,allowInteriorSource});
+        return {contexts:prepared,
           conversationSurface:async actor=>({schema:'holodeck.conversation-surface/v1',actorRef:actor.ref,
             beingRef:owner,homeRef:'home:'+'c'.repeat(32),binding,url:conversationURL}),
           availability:async()=>({available:true}),
-          authorizeWorldRequest(){throw Error('Fixture uses only own-native');}};
+          authorizeWorldRequest:(...args)=>prepared.authorizeWorldRequest(...args)};
       },
-      nativeRoomAuthority:async verified=>roomGrant&&verified.actor.id===owner?['observe','edit']:[],
+      nativeRoomAuthority:async verified=>roomGrant&&verified.actor.id===owner?(writeGrant?['observe','edit']:['observe']):[],
       ownNative:true,worldPorts:[{socket:socketPath,beingRef:owner}],
       identityResolver:async req=>req.headers.cookie?.includes('fixture=reviewer')?
         {id:visitor,ref:visitor,kind:'human',name:'Visitante',rights:['observe']}:null,
@@ -188,6 +193,29 @@ async function main(){
     assert.equal(contexts[0].scope,'structured-interior-room');
     assert.equal(contexts[0].place.id,studio);
     assert.equal((await native('character-review.current')).presentation.pose.frame,pose.frame);
+    const interactionId=contexts[0].inputAssociation.humanInputId;
+    const situated=(operation,args={})=>port({interactionId,operation,args});
+    assert.equal((await situated('observe')).ok,false);
+    admitted=true;
+    const review=await situated('observe');
+    assert.equal(review.ok,true);
+    assert.deepEqual(review.result.referredCharacterPose,contexts[0].referredCharacterPose);
+    const readAction={type:'character-review.notes',pose:referredPose};
+    const addAction={type:'character-review.add-note',pose:referredPose};
+    assert.ok(review.result.actions.some(x=>x.args.type===readAction.type));
+    assert.ok(review.result.actions.some(x=>x.args.type===addAction.type));
+    assert.deepEqual((await situated('act',readAction)).result,{status:200,notes:[]});
+    const nativeNote={...addAction,id:randomUUID(),text:'Revisar el apoyo en este fotograma.'};
+    assert.equal((await situated('act',{...nativeNote,pose})).ok,false);
+    writeGrant=false;
+    assert.equal((await situated('act',nativeNote)).ok,false);
+    assert.equal((await situated('act',readAction)).result.status,200);
+    writeGrant=true;
+    const noted=await situated('act',nativeNote);
+    assert.equal(noted.result.status,200);
+    assert.deepEqual(await situated('act',nativeNote),noted);
+    const notes=await page.evaluate(async pose=>(await fetch('api/space/character-pose-review?'+new URLSearchParams(pose))).json(),referredPose);
+    assert.deepEqual(notes.notes.map(row=>row.text),[nativeNote.text]);
     const prepare=(id,spaceId,characterPose)=>page.evaluate(async body=>{
       const response=await fetch('api/conversation-contexts',{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify(body)});
@@ -207,7 +235,8 @@ async function main(){
     assert.deepEqual(await native('character-review.notes',{pose}),{status:403});
     assert.deepEqual(errors,[]);
     console.log(JSON.stringify({pose,revision:readback.revision,visitor,observedNote:note,roomScope:true,
-      conversationPose:referredPose,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true}));
+      conversationPose:referredPose,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
+      situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true}));
   }finally{
     await browser?.close();
     runtime?.close();

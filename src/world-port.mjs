@@ -4,22 +4,31 @@ import { chmodSync,lstatSync } from 'node:fs';
 import { DaimonPort } from './daimon-port.mjs';
 import {situatedGardenCommandId} from './indoor-gardens.mjs';
 import {MAX_WORLD_REQUEST_BYTES} from './world-limits.mjs';
+import {CHARACTER_STUDIO} from './house-review-rooms.mjs';
 
 const characterReviewCommands=new Set(['character-review.current','character-review.focus',
   'character-review.notes','character-review.add-note']);
 const characterReviewWrites=new Set(['character-review.focus','character-review.add-note']);
 
-function situatedInterior({request,verified,actor,room,conversationPlace,indoorGarden,approachSpace,moveSpace}){
+function situatedInterior({request,verified,actor,room,conversationPlace,indoorGarden,approachSpace,moveSpace,describeSpace,reviewCharacter}){
   const {operation,args}=request;
   const captured=conversationPlace?.(actor,verified.capturedSpace);
   if(!captured)throw Error('The current being has no access to that room');
   const fields=Object.keys(args).sort().join(',');
   const next=()=>verified.working&&actor.rights.includes('edit')?approachSpace?.(actor,captured.id):null;
+  const reference=captured.id===CHARACTER_STUDIO&&verified.working?verified.referredCharacterPose:null;
+  const pose=reference&&{rig:reference.rig,clip:reference.clip,edition:reference.edition,frame:reference.frame};
+  const atCharacterReview=pose&&describeSpace?.(actor)?.id===captured.id;
   if(verified.receiptOnly&&operation!=='result')throw Error('The completed turn only supports receipt recovery');
   if(operation==='observe'&&!fields){
     const approach=next(),activity=captured.activity;
     const actions=[];
     if(approach)actions.push({operation:'act',args:{type:'space.move',...approach}});
+    if(atCharacterReview){
+      actions.push({operation:'act',args:{type:'character-review.notes',pose}});
+      if(actor.rights.includes('edit'))
+        actions.push({operation:'act',args:{type:'character-review.add-note',pose},required:['id','text']});
+    }
     if(verified.working&&activity?.canPlay&&!activity.progress.complete){
       // An incomplete garden with all targets matched still needs another
       // contributor. The live writer checks the supplied command and revision.
@@ -34,7 +43,8 @@ function situatedInterior({request,verified,actor,room,conversationPlace,indoorG
       observer:actor.id,space:captured,actions,...(approach?{approach}:{}),
       // This is the selection attached to the admitted original. Ordinary room
       // observation does not grant the participant access to a Home review.
-      ...(verified.referredWorktable?{referredWorktable:verified.referredWorktable}:{})};
+      ...(verified.referredWorktable?{referredWorktable:verified.referredWorktable}:{}),
+      ...(reference?{referredCharacterPose:reference}:{})};
   }
   const {nativeRequest,...command}=args;
   const commandFields=Object.keys(command).sort().join(',');
@@ -45,6 +55,16 @@ function situatedInterior({request,verified,actor,room,conversationPlace,indoorG
     const arrived=moveSpace?.(actor,step);
     if(!arrived||arrived.id!==step.to)throw Error('The admitted room move could not be confirmed');
     return {from:step.from,to:arrived.id};
+  }
+  if(operation==='act'&&['character-review.notes','character-review.add-note'].includes(command.type)){
+    const {type,...input}=command;
+    const writing=type==='character-review.add-note';
+    if(!atCharacterReview||!currentOriginal||!Object.keys(pose).every(key=>input.pose?.[key]===pose[key])||
+      commandFields!==(writing?'id,pose,text,type':'pose,type')||writing&&!actor.rights.includes('edit'))
+      throw Error('The referred Character pose or room grant changed');
+    const result=reviewCharacter?.(actor,type,input);
+    if(!result)throw Error('The referred Character review is unavailable');
+    return result;
   }
 
   const id=situatedGardenCommandId(verified.nativeRequest,command.id);
@@ -114,7 +134,7 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
         let result;
         const savedExhibit=own&&request.operation==='result'?exhibitResult?.(actor,request.args.id):null;
         if(verified.capturedSpace){
-          result=situatedInterior({request,verified,actor,room,conversationPlace,indoorGarden,approachSpace,moveSpace});
+          result=situatedInterior({request,verified,actor,room,conversationPlace,indoorGarden,approachSpace,moveSpace,describeSpace,reviewCharacter});
         }else if(request.operation==='act'&&characterReviewCommands.has(request.args.type)){
           const {type,...input}=request.args;
           if(!own||characterReviewWrites.has(type)&&!rights.includes('edit'))

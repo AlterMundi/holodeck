@@ -48,6 +48,16 @@ test('changes are cumulative from the last installed state and clear old selecti
   assert.throws(() => applySituationDelta(lane, {...packet, revision: original.revision}, {baseline: installed}), /mismatch/);
 });
 
+test('the same Character selection is unchanged and an exact frame change is carried in the delta', () => {
+  const selected={...observation,referredCharacterPose:{rig:'humanoid',clip:'estudio-vuelo',edition:'test-edition',frame:36}};
+  const ready=applySituationDelta(lane,plan(1,selected)).baseline;
+  assert.equal(plan(2,selected,ready).kind,'unchanged');
+  const next={...selected,referredCharacterPose:{...selected.referredCharacterPose,frame:37}};
+  const packet=plan(2,next,ready);
+  assert.deepEqual(Object.keys(packet.changes),['selection']);
+  assert.equal(applySituationDelta(lane,packet,{baseline:ready}).baseline.state.selection.characterPose.frame,37);
+});
+
 test('baseline loss, stale references and lane changes recover a full state', () => {
   const next = {...observation, place: {...observation.place, exhibitRevision: 2}};
   const packet = plan(3, next, installed);

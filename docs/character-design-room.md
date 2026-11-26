@@ -193,6 +193,16 @@ table is suspended. Preparing an original includes that selection as
 checks the reported pose against its installed catalog and requires
 current room access for both sender and recipient. The capture leaves the
 shared presentation alone and grants no new editing rights.
+
+The world port exposes the reference on the retained Conversation original
+after canonical admission. The paired daimon can use the ordinary room
+approach and, once in the studio, call `character-review.notes` for that
+exact edition and frame. The same action list offers
+`character-review.add-note` when the daimon has room edit rights. The
+receiving writer keeps the daimon attribution and the ordinary idempotent
+note ID. The browser reads the note from that frame. The shared
+presentation and visitor-local cameras are independent of this action.
+
 The protected receiving trial below qualifies the real identities and
 world.
 

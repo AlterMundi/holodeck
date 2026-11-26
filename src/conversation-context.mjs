@@ -213,10 +213,12 @@ export async function createConversationContexts({room,stateDir,transport,allowI
         Number.isSafeInteger(execution.local_turn)&&execution.local_turn>0?execution:null;
       const working=status.phase==='working'&&(!Object.hasOwn(status,'activeExecution')||!!activeExecution);
       const referredWorktable=record?.observation.referredWorktable;
+      const referredCharacterPose=record?.observation.referredCharacterPose;
       return {actor:{id:current.beingRef,ref:current.beingRef,kind:'daimon'},humanRef:source.actorRef,nativeRequest:id,
         ...(capturedSpace?{capturedSpace,working,receiptOnly:!!receipt,
           ...(working&&activeExecution?{activeExecution}:{}),
-          ...(working&&referredWorktable?{referredWorktable:structuredClone(referredWorktable)}:{})}: {})};
+          ...(working&&referredWorktable?{referredWorktable:structuredClone(referredWorktable)}:{}),
+          ...(working&&referredCharacterPose?{referredCharacterPose:structuredClone(referredCharacterPose)}:{})}: {})};
     },
     async release(actor,id){
       const previous=receipts[id];

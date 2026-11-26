@@ -65,6 +65,7 @@ function projectSituation(observation, previous) {
     workstation: observation.referredWorkstation ?? null,
     visit: observation.referredRoomVisit ?? null,
     worktable: observation.referredWorktable ?? null,
+    characterPose: observation.referredCharacterPose ?? null,
     history: observation.selectedActivity ?? null,
   };
   const work = {
