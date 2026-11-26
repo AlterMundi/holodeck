@@ -233,6 +233,37 @@ trace, with sparse downhill overlap and residual slip of 9.7% and
 12.3%. It remains a target for contact work. Fable reviewed the route
 design and Opus reviewed the actual samples and their limits.
 
+## Installed directional water crossing spray
+
+The protected release `f7528962fb8d` serves `dc8ba7a` with
+`d88590271d57` as immediate rollback. The splash holds its contact point
+at the true radial waterline while side detection settles. Shallow,
+moving crossings throw a tapered fan along travel. More vertical
+crossings retain a compact crown. A few short-lived foam flecks follow
+the waterline's apparent angle. The foam and droplets share one pooled
+Points batch with the previous maximum count.
+
+Paired release comparisons preserve the Character Studio pose catalog
+byte for byte. The authored water, transparency and longer blue flight
+wake use the existing rendering path. The hardware route produced one
+splash per crossing on RTX 2060 Normal at night and Pi 5 Livianos in
+daylight. They continued to emit the longer wake after the exit,
+settle it when dry and resume it on reentry. Normal emitted
+3 and 4 foam flecks
+on the two sampled crossings. Livianos used
+2 and 3.
+With the observer on the dry bank, repositioning the pilot produced
+no splash. Two controlled identities verified the signed flight pose. The observer saw one remote burst
+with 3 foam flecks and 32 trail
+updates.
+
+Fable 5.2 High informed the fan, crown and foam. Opus 5.5 High reviewed
+the final patch. The seam regression verifies the remembered contact
+point, bounded particles and forward dominant fan. The full suite
+passed 486 tests with two optional skips. 14 state files matched by hash. The installed protected
+client, server, worker, room art and health matched.
+Independent participant acceptance remains open.
+
 ## Remote boost wake on the selected browser build
 
 A controlled two-client run of live package `394ab30b12c6` used RTX

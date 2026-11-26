@@ -1047,6 +1047,10 @@ submerged views and local wake playback. A [two-device fixture](character-motion
 also saw the remote pilot's wake. The [offshore water update](STATUS.md#november-26-offshore-water-and-night-reflection)
 was compared on both physical profiles and selected. Signed-in visitor
 acceptance, a broader low-light pass and geometry reflections remain open.
+The [directional crossing spray](character-motion.md#installed-directional-water-crossing-spray)
+anchors its foam to the radial waterline and keeps the existing wake and
+pose references. Independent acceptance remains in
+[motion #21](https://github.com/AlterMundi/holodeck/issues/21).
 The [depth-of-field candidate](environment-art-revamp.md#background-depth-of-field)
 clears its world target correctly. Matched RTX measurements leave too
 little GPU headroom for promotion. Keep the direct render selected and

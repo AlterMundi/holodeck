@@ -1,5 +1,13 @@
 # Current MVP work
 
+## November 26 — Directional water crossing spray
+
+The protected release `f7528962fb8d` serves `dc8ba7a`, with
+`d88590271d57` as immediate rollback. Water crossings share a pooled
+splash batch with directional drops and foam at the actual contact.
+The Character Studio catalog is byte-identical.
+[Device and two-visitor checks](character-motion.md#installed-directional-water-crossing-spray).
+
 ## November 26 — Cool exterior light after dusk
 
 The protected release `d88590271d57` serves `c908766`, with
