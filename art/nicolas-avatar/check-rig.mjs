@@ -3,11 +3,14 @@ import {readFileSync} from 'node:fs';
 import {Group,Matrix4} from 'three';
 import {clone} from 'three/addons/utils/SkeletonUtils.js';
 import {createHumanMotionStudy,humanMotionStudies,motionStudyRate} from '../../src/human-motion-study.mjs';
+import {bindHumanoidMicrophoneMouth} from '../../src/humanoid-microphone-mouth.mjs';
 import {parseGlb} from '../../tools/avatar-motion/rig.mjs';
 
 const assets=new URL('../../public/assets/',import.meta.url);
-const candidate=process.argv[2];
-if(!candidate)throw Error('Usage: node art/nicolas-avatar/check-rig.mjs CANDIDATE.glb');
+const [candidate,mode]=process.argv.slice(2);
+if(!candidate||(mode&&mode!=='--blockout')){
+  throw Error('Usage: node art/nicolas-avatar/check-rig.mjs CANDIDATE.glb [--blockout]');
+}
 
 function readRig(path){
   const bytes=readFileSync(path);
@@ -94,13 +97,23 @@ for(const [name,study] of Object.entries(humanMotionStudies)){
 const draws=output.document.meshes.flatMap(mesh=>mesh.primitives);
 assert.ok(draws.every(draw=>'JOINTS_0' in draw.attributes&&'WEIGHTS_0' in draw.attributes),'Unskinned geometry');
 const triangles=draws.reduce((count,draw)=>count+output.document.accessors[draw.indices].count/3,0);
-const morphs=new Set();
+const morphs=new Set(),jawTargets=[];
 model.scene.traverse(mesh=>{
   const targets=mesh.morphTargetDictionary??{};
   for(const name of Object.keys(targets))morphs.add(name);
   if(Object.hasOwn(targets,'jawOpen')){
-    assert.equal(mesh.morphTargetInfluences[targets.jawOpen],0,'Default speech aperture');
+    assert.ok(mesh.isSkinnedMesh,'The mouth driver requires a skinned mesh');
+    jawTargets.push({weights:mesh.morphTargetInfluences,index:targets.jawOpen});
   }
 });
+const mouth=bindHumanoidMicrophoneMouth(model.scene);
+if(mode!=='--blockout')assert.ok(mouth,'Missing skinned jawOpen target');
+if(mouth){
+  for(const {weights,index} of jawTargets)assert.equal(weights[index],0,'Default speech aperture');
+  mouth.apply(1,0.12);
+  for(const {weights,index} of jawTargets)assert.ok(weights[index]>0.5,'Speech must open the mouth');
+  mouth.reset();
+  for(const {weights,index} of jawTargets)assert.equal(weights[index],0,'Restored expression');
+}
 console.log(JSON.stringify({bytes:output.bytes,triangles,skinnedDraws:draws.length,stockJoints:stock.size,
   skinCount:output.rigs.length,stockLocalBindsMatch:true,morphs:[...morphs],studies}));

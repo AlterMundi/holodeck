@@ -29,12 +29,14 @@ pose-sampling checks, not visual acceptance of the final movement.
 Check a new GLB against the shipping armature and its motion studies:
 
 ```sh
-node art/nicolas-avatar/check-rig.mjs .state/nicolas-avatar-blockout/explorer-blockout.glb
+node art/nicolas-avatar/check-rig.mjs .state/nicolas-avatar-blockout/explorer-blockout.glb --blockout
 ```
 
 This checks junction hierarchy, bind matrices and stock rest transforms,
 loads the mesh in Three.js, and runs the same motion studies as the review room.
 It also reports skinned draw count, triangle count and exported morph names.
+Omit `--blockout` for an authored model to verify that its speech morph opens
+and restores the default expression through Holodeck’s mouth driver.
 
 Develop the face with a neutral mouth and an expressive smile pose, movable
 lids and a jaw that carries the beard. Sculpt eyes, cheeks and nose to read at
