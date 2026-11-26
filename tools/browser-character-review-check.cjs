@@ -337,10 +337,33 @@ async function main(){
     assert.equal(contexts.length,1);
     assert.equal((await native('space.move',{from:studio,to:foyer})).id,foyer);
     assert.deepEqual(await native('character-review.notes',{pose}),{status:403});
+
+    // Reject the initial graphics context and then retry the same exact pose URL.
+    await context.addInitScript(() => {
+      if (sessionStorage.getItem('graphics-retry')) return;
+      sessionStorage.setItem('graphics-retry','attempted');
+      const original=HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext=function(type,...args){
+        return ['webgl','webgl2','experimental-webgl'].includes(type)?null:original.call(this,type,...args);
+      };
+    });
+    const noGraphics=await context.newPage();
+    noGraphics.on('pageerror',error=>errors.push(error.message));
+    const retryURL=url+'?'+new URLSearchParams({
+      taller:'personajes',rig:pose.rig,clip:pose.clip,fotograma:String(pose.frame),edicion:pose.edition,
+    });
+    await noGraphics.goto(retryURL,{waitUntil:'domcontentloaded'});
+    await noGraphics.getByText('No se pudo iniciar la vista 3D.',{exact:true}).waitFor();
+    await noGraphics.getByRole('link',{name:'Entrar al taller',exact:true}).waitFor();
+    const retry=noGraphics.getByRole('button',{name:'Reintentar',exact:true});
+    assert.equal(await retry.evaluate(button=>button===document.activeElement),true);
+    await retry.press('Enter');
+    await frame(pose.frame,noGraphics);
+    assert.equal(noGraphics.url(),retryURL);
     assert.deepEqual(errors,[]);
     console.log(JSON.stringify({pose,revision:readback.revision,visitor,observedNote:note,roomScope:true,
       conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,notesWaitedForSharedPose:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
-      situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,reciprocalWorldDoors:true,openedTableFromWorldDoor:true,doorFromViewer:true,returnedToRoomFromViewer:true}));
+      situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,reciprocalWorldDoors:true,openedTableFromWorldDoor:true,doorFromViewer:true,returnedToRoomFromViewer:true,noGraphicsRetryKeptPose:true}));
   }finally{
     await browser?.close();
     runtime?.close();

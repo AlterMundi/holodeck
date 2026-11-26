@@ -23,7 +23,9 @@ room. The foyer door handles room exit.
 The direct viewer also offers **Entrar al taller** from the foyer when the
 world confirms the Character door. Inside the studio, **Abrir sala 3D**
 returns to the same room in the world projection, where the visitor can
-approach the physical table and select **Usar mesa**.
+approach the physical table and select **Usar mesa**. If the graphics
+context cannot start in the direct viewer, **Reintentar** reloads the
+same pose link. The available room and return links remain usable.
 
 The physical table and direct web projection use the same Three.js player
 for Navegante and the humanoid rig, Proyección A2UI controls and scoped

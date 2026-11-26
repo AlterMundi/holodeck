@@ -91,8 +91,8 @@ const studioStyle=`
   right:clamp(18px,4vw,54px);display:flex;justify-content:space-between;align-items:center;gap:12px;pointer-events:none}
 .character-studio header nav{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:2px 16px}
 .character-studio h1{font:500 clamp(19px,4.8vw,34px)/1.1 Georgia,serif;margin:0;color:#f5eccd}
-.character-studio a{pointer-events:auto;color:#c5e9e3;text-decoration:none;border-bottom:1px solid #82b7ad;padding:8px 0}
-.character-studio a:focus-visible{outline:2px solid #f2d393}
+.character-studio nav :is(a,button){pointer-events:auto;color:#c5e9e3;text-decoration:none;border-bottom:1px solid #82b7ad;padding:8px 0}
+.character-studio nav :is(a,button):focus-visible{outline:2px solid #f2d393}
 .character-studio output{position:absolute;bottom:20px;left:clamp(18px,4vw,54px);font-size:12px;color:#c4dddb;pointer-events:none}
 .character-studio .studio-a11y{position:absolute;inset:0;pointer-events:none}
 .character-studio.studio-compact header{top:max(12px,env(safe-area-inset-top))}
@@ -159,6 +159,20 @@ function bindStudioNavigation(wrapper,space){
   if(space?.id===ATELIER_FOYER&&available(CHARACTER_STUDIO))bindPassage(studio,CHARACTER_STUDIO,'Entrar al taller');
 }
 
+function showUnavailableStudio(document){
+  const stage=buildStage(document);
+  const message=stage.querySelector('output');
+  message.textContent='No se pudo iniciar la vista 3D.';
+  const retry=document.createElement('button');
+  retry.type='button';
+  retry.textContent='Reintentar';
+  retry.onclick=()=>document.location.reload();
+  stage.querySelector('nav').prepend(retry);
+  retry.focus({preventScroll:true});
+  void readSpace(AbortSignal.timeout(5000)).then(space=>bindStudioNavigation(stage,space)).catch(()=>{});
+  return null;
+}
+
 function disposeFigure(figure){
   if(!figure)return;
   figure.root.removeFromParent();
@@ -206,6 +220,11 @@ function studioLights(scene){
 
 export function openCharacterStudio(document,table=null){
   const url=new URL(document.location.href),window=document.defaultView;
+  let renderer;
+  if(!table){
+    try{renderer=new WebGLRenderer({antialias:true});}
+    catch{return showUnavailableStudio(document);}
+  }
   const scene=table?new Group():new Scene();
   if(table){
     scene.position.set(table.anchor.x+.34,table.anchor.y+.025,table.anchor.z);
@@ -226,7 +245,7 @@ export function openCharacterStudio(document,table=null){
   let compact=Boolean(table),section='Pose',panelWidth=table?2.20:widePanelWidth;
   let primary=null,reference=null,showingReference=false,referenceRequest=0;
   let canReview=null,checkingAccess=false,review=null,selectedNote='',readingReview=false,savingNote=false,pendingNote,draftPose,noteReplaced=false,presentationBusy=false;
-  const projected=table?null:webStudioProjection(document,scene,dispatch,dispose);
+  const projected=table?null:webStudioProjection(document,renderer,scene,dispatch,dispose);
   const ownsNoteInput=target=>target?.getAttribute?.('aria-label')===noteLabel&&
     (table??projected).ownsTextInput(target);
   document.addEventListener('focusin',event=>{
@@ -744,9 +763,8 @@ export function openCharacterStudio(document,table=null){
     currentPose:()=>visible&&playback?reviewPose():null};
 }
 
-function webStudioProjection(document,scene,dispatch,close){
+function webStudioProjection(document,renderer,scene,dispatch,close){
   const window=document.defaultView,events=new AbortController();
-  const renderer=new WebGLRenderer({antialias:true});
   renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));
   renderer.toneMapping=ACESFilmicToneMapping;
   renderer.toneMappingExposure=1.15;
