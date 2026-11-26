@@ -1,5 +1,6 @@
 import {
-  BoxGeometry, BufferGeometry, Color, Float32BufferAttribute, Group, IcosahedronGeometry,
+  BoxGeometry, BufferGeometry, Color, DataTexture, Float32BufferAttribute, Group, IcosahedronGeometry,
+  LinearFilter, LinearMipmapLinearFilter, RGFormat, UnsignedByteType,
   InstancedMesh, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, Vector3,
 } from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
@@ -79,12 +80,13 @@ export function innerWoodlandTrees(){
 }
 
 function evergreenGeometry(detail,spreading=false){
-  const positions=[],colors=[];
+  const positions=[],colors=[],needles=[];
   const shade=new Color();
   const trunk=0x534134;
   const foliage=[0x375443,0x425d45,0x4a674a,0x587348,0x668155,0x738c58];
-  const triangle=(a,b,c,tint,value)=>{
+  const triangle=(a,b,c,tint,value,chart)=>{
     positions.push(...a,...b,...c);
+    if(detail===2)needles.push(...(chart??[0,-1,0,-1,0,-1]));
     shade.setHex(tint);
     for(const light of typeof value==='number'?[value,value,value]:value){
       colors.push(shade.r*light,shade.g*light,shade.b*light);
@@ -164,10 +166,10 @@ function evergreenGeometry(detail,spreading=false){
           const right=point(reach-.18,side+width,-.011);
           const belly=point(reach-.29,side,.020);
           const value=scale*(.91+.09*Math.sin(i*4.71+band+order*2.2));
-          triangle(ridge,lobeTip,left,tint,[.74*value,1.22*value,.96*value]);
-          triangle(ridge,right,lobeTip,tint,[.74*value,.99*value,1.22*value]);
-          triangle(belly,left,lobeTip,tint,[.56*value,.86*value,1.06*value]);
-          triangle(belly,lobeTip,right,tint,[.56*value,1.06*value,.86*value]);
+          triangle(ridge,lobeTip,left,tint,[.74*value,1.22*value,.96*value],[.5,0,.5,1,0,.32]);
+          triangle(ridge,right,lobeTip,tint,[.74*value,.99*value,1.22*value],[.5,0,1,.40,.5,1]);
+          triangle(belly,left,lobeTip,tint,[.56*value,.86*value,1.06*value],[.5,0,0,.32,.5,1]);
+          triangle(belly,lobeTip,right,tint,[.56*value,1.06*value,.86*value],[.5,0,.5,1,1,.40]);
         }
         continue;
       }
@@ -181,8 +183,69 @@ function evergreenGeometry(detail,spreading=false){
   const geometry=new BufferGeometry();
   geometry.setAttribute('position',new Float32BufferAttribute(positions,3));
   geometry.setAttribute('color',new Float32BufferAttribute(colors,3));
+  if(detail===2)geometry.setAttribute('pineNeedleUV',new Float32BufferAttribute(needles,2));
   geometry.computeVertexNormals();
   return geometry;
+}
+
+function pineNeedleTexture(){
+  const size=128,pixels=new Uint8Array(size*size*2);
+  const draw=(x,y,endX,endY,width,tone)=>{
+    const dx=endX-x,dy=endY-y,span=dx*dx+dy*dy;
+    for(let row=Math.max(0,Math.floor(size*(Math.min(y,endY)-width)));row<size&&row<size*(Math.max(y,endY)+width);row++){
+      for(let col=Math.max(0,Math.floor(size*(Math.min(x,endX)-width)));col<size&&col<size*(Math.max(x,endX)+width);col++){
+        const offsetX=(col+.5)/size-x,offsetY=(row+.5)/size-y;
+        const t=Math.max(0,Math.min(1,(offsetX*dx+offsetY*dy)/span));
+        const distance=Math.hypot(offsetX-t*dx,offsetY-t*dy);
+        const coverage=Math.round(255*Math.max(0,Math.min(1,(width*(1-.72*t)-distance)*size+1)));
+        const at=(row*size+col)*2;
+        if(coverage>pixels[at]){
+          pixels[at]=coverage;
+          pixels[at+1]=tone;
+        }
+      }
+    }
+  };
+  for(let tuft=0;tuft<18;tuft++){
+    for(const side of [-1,1]){
+      const seed=sample(tuft,side,8201);
+      const root=.028+tuft*.048+.025*seed;
+      const reach=(.40-.24*root)*(.71+.29*sample(tuft,side,957));
+      draw(.5,root,.5+side*reach,Math.min(.996,root+.16+.09*seed),.019+.005*seed,100+Math.round(141*seed));
+    }
+  }
+  draw(.5,0,.5,.996,.032,110);
+  const texture=new DataTexture(pixels,size,size,RGFormat,UnsignedByteType);
+  texture.magFilter=LinearFilter;
+  texture.minFilter=LinearMipmapLinearFilter;
+  texture.generateMipmaps=true;
+  texture.needsUpdate=true;
+  return texture;
+}
+
+function usePineNeedles(material,atlas){
+  const compile=material.onBeforeCompile;
+  material.customProgramCacheKey=()=> 'toroidal-pine-needle-chart';
+  material.onBeforeCompile=(shader,renderer)=>{
+    compile.call(material,shader,renderer);
+    atlas.value??=pineNeedleTexture();
+    shader.uniforms.pineNeedles=atlas;
+    const chart='varying vec2 pineNeedleChart;';
+    shader.vertexShader=shader.vertexShader
+      .replace('#include <common>','#include <common>\n'+chart+'\nattribute vec2 pineNeedleUV;')
+      .replace('#include <begin_vertex>','#include <begin_vertex>\npineNeedleChart=pineNeedleUV;');
+    shader.fragmentShader=shader.fragmentShader
+      .replace('#include <common>','#include <common>\n'+chart+'\nuniform sampler2D pineNeedles;')
+      .replace('#include <alphatest_fragment>',`
+        #include <alphatest_fragment>
+        vec2 needleDX=dFdx(pineNeedleChart),needleDY=dFdy(pineNeedleChart);
+        float needleDetail=1.0-smoothstep(.025,.105,max(length(needleDX),length(needleDY)));
+        if(pineNeedleChart.y>=0.0&&needleDetail>.001){
+          vec2 needle=textureGrad(pineNeedles,pineNeedleChart,needleDX,needleDY).rg;
+          if(needle.r<mix(0.0,.38,needleDetail))discard;
+          diffuseColor.rgb*=mix(1.0,mix(.77,1.28,needle.g),needleDetail);
+        }`);
+  };
 }
 
 // Offset the two closed skirts so the lower branches and the leader
@@ -385,6 +448,10 @@ export class ToroidalWoodland{
     ];
     this.material=new MeshStandardMaterial({vertexColors:true,roughness:.95});
     useDaylight(this.material,daylight,.95);
+    this.nearMaterial=this.material.clone();
+    useDaylight(this.nearMaterial,daylight,.95);
+    this.needles={value:null};
+    usePineNeedles(this.nearMaterial,this.needles);
     this.sun={value:new Vector3(0,1,0)};
     this.viewer={value:new Vector3()};
     this.skylineMaterial=skylineMaterial(daylight,this.sun,this.viewer);
@@ -397,7 +464,9 @@ export class ToroidalWoodland{
     const broad=trees.filter(tree=>tree.spreading).length;
     this.meshes=this.geometry.map((geometry,index)=>{
       const capacity=index<4?trees.length-broad:broad;
-      const mesh=new InstancedMesh(geometry,index%4===3?this.skylineMaterial:this.material,capacity);
+      const level=index%4;
+      const material=level===3?this.skylineMaterial:level===2?this.nearMaterial:this.material;
+      const mesh=new InstancedMesh(geometry,material,capacity);
       mesh.name=['Woodland distant','Woodland middle','Woodland near','Inner arc canopy',
         'Woodland spreading distant','Woodland spreading middle','Woodland spreading near','Inner arc spreading canopy'][index];
       mesh.count=0;
@@ -541,6 +610,8 @@ export class ToroidalWoodland{
     for(const mesh of this.meshes)mesh.dispose();
     for(const geometry of this.geometry)geometry.dispose();
     this.material.dispose();
+    this.nearMaterial.dispose();
+    this.needles.value?.dispose();
     this.skylineMaterial.dispose();
     this.undergrowth.dispose();
     this.undergrowth.geometry.dispose();
