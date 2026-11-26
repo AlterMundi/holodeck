@@ -626,6 +626,15 @@ comparison input and stay outside the packaged assets.
 
 ### Mobile play and Conversation
 
+Holodeck adopts [Proyección alpha.19](https://github.com/AlterMundi/proyeccion/releases/tag/v0.1.0-alpha.19)
+on the existing A2UI projection. The Character Studio applies its optical
+range, keeps the proposed frame separate from the confirmed pose, and
+rejects proposals for superseded rig and clip revisions. The procedural
+flight and swim studies mark their sampled input transitions. See
+[Character Studio integration](STATUS.md#november-26-proyección-in-character-studio).
+Keep corresponding world actions and canonical Conversation on their
+existing owners.
+
 The [toroidal startup recovery](STATUS.md#november-26-authenticated-plaza-startup)
 completes access verification before the presence handshake. The first visible
 frame shows the admitted player, current terrain, and current controls.

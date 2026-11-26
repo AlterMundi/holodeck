@@ -1,9 +1,31 @@
 # Current MVP work
 
+## November 26 Proyección in Character Studio
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `54a0892119ec`
+from `340387b` with
+[Proyección alpha.19](https://github.com/AlterMundi/proyeccion/releases/tag/v0.1.0-alpha.19),
+commit `ccc9fe919234`. The Character Studio uses its optical range with a
+local preview and a confirmed frame. Flight and swim input transitions
+appear as landmarks. An interrupted gesture cannot seek a newly selected
+clip. The standalone studio now reveals its canvas after the first rendered
+character and HUD, correcting the startup visibility regression.
+
+RTX 2060 and Pi 5 Chromium fixtures reproduced exact flight and underwater
+poses in two identities, exercised keyboard seek, and refused an outdated
+revision link. On RTX the pointer drag kept the confirmed position until
+release. A second release after changing to the equally long swim study
+left the new timeline at frame zero. A touch-browser dock fixture opened
+and closed the minimap. The package uses one Three r182 instance.
+Node 24 ran 426 Holodeck checks and 21 upstream spatial HUD checks, with
+two optional Holodeck skips. Home readback matched 86 installed files, 13
+protected HTTPS reads and four expected denials. It retained the same world
+and audience. Immediate rollback is `bd625c3d10a0`.
+The wider Proyección and Holodeck visual roadmap remains active.
+
 ## November 26 cosmic ocean reflection
 
-[Holodeck](https://compaii.dmn.homes/holodeck/) serves `bd625c3d10a0`
-from `6a08981`. The water now samples the sky's existing panorama in the
+The preceding release `bd625c3d10a0` came from `6a08981`. The water now samples the sky's existing panorama in the
 direction reflected by the animated wave normals. The same horizon and
 daylight fade shape both. The view retains the previous underwater
 treatment. The shore and offshore surfaces share one existing texture
