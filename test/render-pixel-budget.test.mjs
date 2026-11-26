@@ -11,8 +11,8 @@ function display({adaptive=true,dpr=3,startAtNative=false,lightweight=false}={})
   }};
   const renderer={composer:{renderer:webgl},fitContainer:()=>webgl.setPixelRatio(dpr)};
   const visibility=new EventTarget();
-  const {sample,setLightweight,dispose}=capWorldPixelRatio(renderer,{adaptive,startAtNative,lightweight,clock:()=>now,visibility});
-  return {webgl,allocations,parent,renderer,sample,setLightweight,dispose,visibility,
+  const {sample,setLightweight,setPixelLimit,dispose}=capWorldPixelRatio(renderer,{adaptive,startAtNative,lightweight,clock:()=>now,visibility});
+  return {webgl,allocations,parent,renderer,sample,setLightweight,setPixelLimit,dispose,visibility,
     frames(interval,count,ready=true){for(let index=0;index<count;index++){now+=interval;sample(ready);}}};
 }
 
@@ -118,6 +118,26 @@ test('desktop keeps native density subject to the existing pixel ceiling',()=>{
   const dense=display({adaptive:false});
   dense.frames(500,200);
   assert.deepEqual(dense.allocations,[2]);
+});
+
+test('an exterior effects limit fits 1080p and leaves CSS and the light profile alone',()=>{
+  const view=display({dpr:1});
+  Object.assign(view.parent,{clientWidth:1920,clientHeight:1080});
+  view.renderer.fitContainer();
+  const pixels=()=>Math.floor(1920*view.webgl.getPixelRatio())*Math.floor(1080*view.webgl.getPixelRatio());
+  assert.equal(pixels(),2073600);
+  view.setPixelLimit(1600000);
+  assert.ok(pixels()<=1600000&&pixels()>1500000);
+  const applied=view.allocations.length;
+  view.setPixelLimit(1600000);
+  assert.equal(view.allocations.length,applied);
+  assert.deepEqual(view.parent,{clientWidth:1920,clientHeight:1080});
+  view.setLightweight(true);
+  assert.equal(view.webgl.getPixelRatio(),.55);
+  view.setLightweight(false);
+  assert.ok(pixels()<=1600000);
+  view.setPixelLimit(undefined);
+  assert.equal(pixels(),2073600);
 });
 
 test('a visibility change breaks a streak even if rendering paused in the background',()=>{

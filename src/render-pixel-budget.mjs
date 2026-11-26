@@ -15,7 +15,7 @@ export function capWorldPixelRatio(renderer,{adaptive=false,startAtNative=false,
   // Both pinned MML resize paths use this Three.js renderer, which reallocates
   // the drawing buffer without changing CSS layout when its ratio changes.
   const webgl=renderer.composer?.renderer;
-  if(!webgl)return {sample(){},setLightweight(){},dispose(){}};
+  if(!webgl)return {sample(){},setLightweight(){},setPixelLimit(){},dispose(){}};
   const setPixelRatio=webgl.setPixelRatio.bind(webgl);
   const shadowMap=webgl.shadowMap;
   const shadowsEnabled=shadowMap?.enabled===true;
@@ -23,6 +23,7 @@ export function capWorldPixelRatio(renderer,{adaptive=false,startAtNative=false,
   let adjust=adaptive&&!lightweight;
   const initialTier=()=>lightweight?lowest:adjust&&startAtNative?TIERS.indexOf(1):0;
   let requested=1,width=0,height=0,tier=initialTier();
+  let pixelLimit=WORLD_PIXELS;
   let previousFrame=null,slow=0,fast=0;
   let nextStep=0,recoverAfter=tier>0?clock()+RECOVER_MS:0;
 
@@ -31,7 +32,10 @@ export function capWorldPixelRatio(renderer,{adaptive=false,startAtNative=false,
   };
   const ratioFor=index=>{
     const pixels=width*height;
-    return Math.min(requested,TIERS[index],pixels>0?Math.sqrt(WORLD_PIXELS/pixels):Infinity);
+    // Three floors each drawing buffer dimension. Leave a sub-pixel area
+    // margin at a stricter effects limit to absorb floating point rounding.
+    const ceiling=lightweight||pixelLimit===WORLD_PIXELS?WORLD_PIXELS:pixelLimit-.5;
+    return Math.min(requested,TIERS[index],pixels>0?Math.sqrt(ceiling/pixels):Infinity);
   };
   const applyRatio=()=>{
     const ratio=ratioFor(tier);
@@ -78,6 +82,12 @@ export function capWorldPixelRatio(renderer,{adaptive=false,startAtNative=false,
     resetSamples();
     nextStep=0;
     recoverAfter=tier>0?clock()+RECOVER_MS:0;
+    applyRatio();
+  },setPixelLimit(limit){
+    const next=limit>1&&limit<WORLD_PIXELS?limit:WORLD_PIXELS;
+    if(pixelLimit===next)return;
+    pixelLimit=next;
+    resetSamples();
     applyRatio();
   },dispose(){
     if(adaptive)visibility?.removeEventListener('visibilitychange',resetSamples);

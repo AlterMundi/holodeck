@@ -1253,6 +1253,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         void applyMatterStyle(preferred);
       }
       drawWorld=!waitingForRoomFrame&&!contentVisitor?.isOpeningOverWorld();
+      if(backgroundFocus)frameBudget.setPixelLimit(outsideRing()&&!rendererBudget.lightweight?backgroundFocus.pixelLimit:undefined);
       frameBudget.sample(drawWorld&&!document.hidden&&!!position&&!moving&&!needsSync&&(!hot||networkScope===activeSpace.id));
       light.visible=!inside||!activeSpace.indoorLighting;
       aimSun(position);

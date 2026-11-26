@@ -12,18 +12,17 @@ const fragmentShader=`
   #include <packing>
   uniform sampler2D sceneColor;
   uniform sampler2D sceneDepth;
-  uniform vec2 pixel;
   uniform vec2 clipRange;
   uniform float nearRange;
   uniform float radius;
   uniform mat4 inverseProjection;
   uniform vec3 radialUp;
   uniform vec2 waterBounds;
+  uniform ivec2 offsets[4];
   varying vec2 vUv;
-  const vec2 offsets[4]=vec2[4](vec2(-.8,-.6),vec2(.6,-.8),vec2(.8,.6),vec2(-.6,.8));
 
-  float viewDistance(vec2 uv) {
-    return -perspectiveDepthToViewZ(texture2D(sceneDepth,uv).r,clipRange.x,clipRange.y);
+  float viewDistance(ivec2 texel) {
+    return -perspectiveDepthToViewZ(texelFetch(sceneDepth,texel,0).r,clipRange.x,clipRange.y);
   }
 
   float circleOfConfusion(float depth) {
@@ -42,9 +41,11 @@ const fragmentShader=`
   }
 
   void main() {
-    vec4 center=texture2D(sceneColor,vUv);
+    ivec2 lastTexel=textureSize(sceneColor,0)-ivec2(1);
+    ivec2 centerTexel=clamp(ivec2(vUv*vec2(lastTexel+ivec2(1))),ivec2(0),lastTexel);
+    vec4 center=texelFetch(sceneColor,centerTexel,0);
     if(radius>0.0){
-      float depth=viewDistance(vUv);
+      float depth=viewDistance(centerTexel);
       float coc=circleOfConfusion(depth);
       float amount=coc;
       if(amount>0.0)amount*=dryForeground();
@@ -52,11 +53,11 @@ const fragmentShader=`
         vec3 sum=center.rgb;
         float weightSum=1.0;
         for(int i=0;i<4;i++){
-          vec2 tap=(floor(vUv/pixel+offsets[i]*radius)+.5)*pixel;
+          ivec2 tap=clamp(centerTexel+offsets[i],ivec2(0),lastTexel);
           float tapCoc=circleOfConfusion(viewDistance(tap));
           // Reject near silhouettes from the far colour.
           float weight=smoothstep(coc-.12,coc-.04,tapCoc)*tapCoc;
-          sum+=texture2D(sceneColor,tap).rgb*weight;
+          sum+=texelFetch(sceneColor,tap,0).rgb*weight;
           weightSum+=weight;
         }
         center.rgb=mix(center.rgb,sum/weightSum,amount);
@@ -78,17 +79,22 @@ export class BackgroundFocus {
     this.up=new Vector3();
   }
 
+  get pixelLimit(){
+    const gl=this.webgl;
+    if(this.cannotCapture||gl.xr.isPresenting||gl.getContext().isContextLost()||
+       gl.capabilities.logarithmicDepthBuffer||gl.capabilities.reversedDepthBuffer||
+       gl.outputColorSpace!==SRGBColorSpace||!gl.extensions.has('EXT_color_buffer_float'))return;
+    return MAX_PIXELS;
+  }
+
   draw(drawWorld){
     const gl=this.webgl;
     const {x,y}=gl.getDrawingBufferSize(this.size);
-    if(!x||!y||x*y>MAX_PIXELS||gl.xr.isPresenting||gl.getContext().isContextLost()||
-       gl.capabilities.logarithmicDepthBuffer||gl.capabilities.reversedDepthBuffer||
-       gl.outputColorSpace!==SRGBColorSpace||!gl.extensions.has('EXT_color_buffer_float')){
+    if(!x||!y||x*y>MAX_PIXELS||!this.pixelLimit){
       this.dispose();
       drawWorld();
       return;
     }
-    if(this.cannotCapture){drawWorld();return;}
     const render=gl.render;
     gl.render=(scene,camera)=>{
       if(scene!==this.scene||gl.getRenderTarget()!==null||!camera.isPerspectiveCamera){
@@ -136,7 +142,7 @@ export class BackgroundFocus {
       const material=new ShaderMaterial({
         uniforms:{
           sceneColor:{value:this.target.texture},sceneDepth:{value:this.target.depthTexture},
-          pixel:{value:new Vector2()},clipRange:{value:new Vector2()},
+          clipRange:{value:new Vector2()},offsets:{value:new Int32Array(8)},
           nearRange:{value:START_METRES},radius:{value:0},inverseProjection:{value:new Matrix4()},
           radialUp:{value:new Vector3()},waterBounds:{value:new Vector2()},
         },
@@ -155,7 +161,6 @@ export class BackgroundFocus {
     this.validateTarget ||= this.target.width!==width||this.target.height!==height;
     this.target.setSize(width,height);
     const {uniforms}=this.quad.material;
-    uniforms.pixel.value.set(1/width,1/height);
     uniforms.clipRange.value.set(camera.near,camera.far);
     camera.updateWorldMatrix(true,false);
     this.eye.setFromMatrixPosition(camera.matrixWorld);
@@ -165,7 +170,12 @@ export class BackgroundFocus {
     uniforms.radialUp.value.copy(this.up);
     uniforms.inverseProjection.value.copy(camera.projectionMatrixInverse);
     uniforms.waterBounds.value.set(waterHeight,Math.hypot(this.eye.x,this.eye.z));
-    uniforms.radius.value=this.strength*Math.min(2.5,height*.0056);
+    const radius=this.strength*Math.min(2.5,height*.0056);
+    if(uniforms.radius.value!==radius){
+      const wide=Math.round(.8*radius),narrow=Math.round(.6*radius);
+      uniforms.offsets.value.set([-wide,-narrow,narrow,-wide,wide,narrow,-narrow,wide]);
+      uniforms.radius.value=radius;
+    }
     gl.setRenderTarget(this.target);
     try{
       if(this.validateTarget){
