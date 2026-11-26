@@ -1,5 +1,15 @@
 # Current MVP work
 
+## November 26 — Recessed cave mouths
+
+Protected `8f905c18ee6a2` serves `24319c7` with immediate rollback
+`9a1ed6edf6db`. The protruding feet of both cave mouths tuck into the
+slope. The browser crossed both chambers on foot in Normal and
+Lightweight, and the existing roof landing checks passed. The protected
+entry, health, client, room art, terrain worker, server and all 14
+checked state files matched.
+[Visual, physical and collision evidence](environment-art-revamp.md#recessed-cave-mouths).
+
 ## November 26 — Weathered cave footing
 
 Protected `9a1ed6edf6db` serves `58cbd62` with immediate rollback

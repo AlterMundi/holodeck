@@ -267,6 +267,32 @@ past the object. Check daylight and dusk or night, where a dark terrain can
 hide sparse ground cover and leave an abrupt seam. Keep the matched view in
 the environment review evidence when resolving a reported example.
 
+### Recessed cave mouths
+
+Source `24319c7` shortens and buries the protruding low exterior feet at
+both cave mouths. The unequal setbacks fade out along the cave and below
+the shoulders of each arch. The roof, inner shell, crown mesh and index
+topology match the preceding build. The visible exterior shell remains
+the collider. A focused geometry check keeps a minimum spacing between
+successive outer sections. In this build the closest pair stays about
+0.66 m apart along the ring, over half the nominal spacing. The shell
+keeps 2,368 triangles and the existing roof landing cases pass.
+
+One physical RTX 2060 rendered matched arrival and exit views at
+Argentine noon and dusk. The exit matched in Normal and Lightweight.
+Both profiles completed an ordinary keyboard walk from the arrival
+entrance through the chambers to beyond the exit, with pose readback
+along the passage. The frame median stayed 16.7 ms and p95 16.7–16.8 ms
+at 850×552. Respective exit views matched 101 and 89 draws. The
+suite passed 491 tests with two skips. Fable informed the asymmetry and
+feathered setback. Opus flagged the risk of compressed sections,
+which the new geometry test covers.
+
+The arrival-side point no longer projects as far onto the trail.
+The exit has shorter feet and still needs better ground cover to tie
+them to its uphill meadow. Independent signed-in visits remain open.
+[Receiving selection](STATUS.md#november-26--recessed-cave-mouths).
+
 ### Weathered cave footing
 
 `58cbd62` uses radial clearance in metres to wear the existing arch and

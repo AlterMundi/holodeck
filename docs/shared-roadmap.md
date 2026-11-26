@@ -399,9 +399,11 @@ to new and revised assets. The [first cave contact pass](STATUS.md#november-26-c
 uses local soil color and wider buried spire roots away from the trail.
 The [weathered footing](environment-art-revamp.md#weathered-cave-footing)
 adds irregular damp contact outdoors and dry soil on the sheltered walls
-with identical shell and crown collision. The projecting corner profile
-and its surrounding ground cover still need work. Use the retained night
-camera and a walk past the flank to compare subsequent passes.
+with identical shell and crown collision. The [recessed mouths](environment-art-revamp.md#recessed-cave-mouths)
+then shorten the projecting feet with collision following the new exterior.
+A controlled keyboard crossing through both mouths passed. Continue the
+nearby ground cover into the exit feet and compare it from the matched
+exit view at dusk.
 
 Start with the [foyer](../art/compaii-house/redesign/review/foyer-baked-light.jpg)
 and [Beacon room](../art/compaii-house/redesign/review/beacon-light-after.jpg).
