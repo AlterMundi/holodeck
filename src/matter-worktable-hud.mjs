@@ -332,6 +332,7 @@ export class MatterWorktableHud{
     if(this.mode===mode)return;
     const leaving=this.active;
     if(leaving){
+      if(this.windows.drag?.id===surfaceId)this.windows.cancelDrag();
       this.table.stop?.();
       this.send('deleteSurface',{});
       this.document.body.removeAttribute('data-compact-matter');

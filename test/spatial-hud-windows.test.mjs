@@ -24,7 +24,7 @@ test('an inspection window leaves the chosen viewing and thumb zones clear',()=>
   assert.ok(y-bounds.bottom*scale<=143+.01);
 });
 
-test('a press on the drag strip dismisses the choice without moving its panel',()=>{
+function dragFixture(dismissChoice){
   const canvas=new EventTarget();
   let capture;
   Object.assign(canvas,{
@@ -33,18 +33,47 @@ test('a press on the drag strip dismisses the choice without moving its panel',(
     hasPointerCapture:id=>capture===id,
     releasePointerCapture:()=>{capture=undefined;},
   });
-  let dismissed;
-  const windows=new SpatialHudWindows({canvas,hit:()=> 'background',
-    dismissChoice:id=>{dismissed=id;return true;}});
-  windows.geometry.set('matter',{rect:{left:310,right:548,top:8,bottom:153},resizable:true});
+  const windows=new SpatialHudWindows({canvas,hit:()=> 'background',dismissChoice});
+  const geometry={rect:{left:310,right:548,top:8,bottom:153},resizable:true,
+    placementKey:'matter',view:{width:568,height:320}};
+  windows.geometry.set('matter',geometry);
   const press={button:0,isPrimary:true,clientX:342,clientY:20,pointerId:7,
     preventDefault(){this.prevented=true;},stopImmediatePropagation(){}};
+  return {canvas,windows,geometry,press};
+}
+
+test('a press on the drag strip dismisses the choice without moving its panel',()=>{
+  let dismissed;
+  const {canvas,windows,press}=dragFixture(id=>{dismissed=id;return true;});
   windows.pointerdown(press);
   windows.pointermove({...press,clientX:362,clientY:25});
   assert.equal(windows.panels.size,0);
   windows.pointerup(press);
   assert.equal(dismissed,'matter');
   assert.equal(press.prevented,true);
-  assert.equal(capture,undefined);
+  assert.equal(canvas.hasPointerCapture(press.pointerId),false);
   windows.dispose();
+});
+
+
+test('disappearing or resized windows release a held pointer before the next gesture',()=>{
+  const {canvas,windows,geometry,press}=dragFixture();
+  windows.pointerdown(press);
+  assert.equal(canvas.hasPointerCapture(press.pointerId),true);
+  windows.begin();
+  windows.end();
+  assert.equal(canvas.hasPointerCapture(press.pointerId),false);
+
+  windows.geometry.set('matter',geometry);
+  windows.pointerdown(press);
+  assert.equal(canvas.hasPointerCapture(press.pointerId),true);
+  windows.begin();
+  windows.geometry.set('matter',{...geometry,view:{width:320,height:568}});
+  windows.end();
+  assert.equal(canvas.hasPointerCapture(press.pointerId),false);
+
+  windows.pointerdown(press);
+  assert.equal(canvas.hasPointerCapture(press.pointerId),true);
+  windows.dispose();
+  assert.equal(canvas.hasPointerCapture(press.pointerId),false);
 });

@@ -64,7 +64,11 @@ export class SpatialHudWindows{
         this.invalidate();
       }
     }
-    if(this.drag&&!this.geometry.has(this.drag.id))this.drag=null;
+    if(this.drag){
+      const current=this.geometry.get(this.drag.id),original=this.drag.info;
+      if(!current||current.placementKey!==original.placementKey||
+        current.view.width!==original.view.width||current.view.height!==original.view.height)this.cancelDrag();
+    }
   }
 
   resizeMark(id){
@@ -155,6 +159,7 @@ export class SpatialHudWindows{
   }
 
   dispose(){
+    this.cancelDrag();
     this.events.abort();
     for(const mark of this.marks.values()){
       mark.removeFromParent();
