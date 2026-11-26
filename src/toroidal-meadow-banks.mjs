@@ -220,7 +220,7 @@ export class ToroidalMeadowBanks {
   build({lightweight,group,geometries,materials}) {
     const transform=new Object3D(),origin=new Vector3(),color=new Color();
     const material=new MeshStandardMaterial({roughness:.96,side:DoubleSide,vertexColors:true});
-    this.applyDaylight(material,this.daylight);
+    this.applyDaylight(material,this.daylight,.31);
     const before=material.onBeforeCompile;
     const clock=this.clock;
     if(!lightweight){
@@ -269,7 +269,7 @@ export class ToroidalMeadowBanks {
   placeCover(profile,position){
     if(!profile.coverGeometry){
       const material=new MeshStandardMaterial({roughness:1,side:DoubleSide,vertexColors:true});
-      this.applyDaylight(material,this.daylight);
+      this.applyDaylight(material,this.daylight,.24);
       const before=material.onBeforeCompile;
       material.customProgramCacheKey=()=> 'holodeck-meadow-cover';
       material.onBeforeCompile=(shader,renderer)=>{

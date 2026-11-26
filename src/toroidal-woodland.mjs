@@ -331,7 +331,7 @@ export class ToroidalWoodland{
       ...[0,1,2].map(detail=>evergreenGeometry(detail,true)),skylineGeometry(true),
     ];
     this.material=new MeshStandardMaterial({vertexColors:true,roughness:.95});
-    useDaylight(this.material,daylight);
+    useDaylight(this.material,daylight,.95);
     this.sun={value:new Vector3(0,1,0)};
     this.viewer={value:new Vector3()};
     this.skylineMaterial=skylineMaterial(daylight,this.sun,this.viewer);
@@ -352,7 +352,7 @@ export class ToroidalWoodland{
       return mesh;
     });
     const understoryMaterial=new MeshStandardMaterial({vertexColors:true,roughness:.96});
-    useDaylight(understoryMaterial,daylight);
+    useDaylight(understoryMaterial,daylight,.38);
     this.undergrowthDistance={value:112};
     const compile=understoryMaterial.onBeforeCompile;
     understoryMaterial.customProgramCacheKey=()=> 'toroidal-understory';

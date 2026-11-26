@@ -257,13 +257,44 @@ export function approachCover(lightweight,{x:doorX,z:doorZ=15.5,facing=-1}={}) {
   return plants;
 }
 
-function useSceneryDaylight(material, daylight) {
+function useSceneryDaylight(material, daylight, vegetationHeight=0) {
   material.onBeforeCompile=shader=>{
     shader.uniforms.sceneryDaylight=daylight;
     shader.fragmentShader=shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float sceneryDaylight;')
-      .replace('#include <opaque_fragment>', 'outgoingLight *= mix(.45,1.0,sceneryDaylight);\n#include <opaque_fragment>');
+      .replace('#include <common>', '#include <common>\nuniform float sceneryDaylight;');
+    if(!vegetationHeight){
+      shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>',
+        'outgoingLight *= mix(.45,1.0,sceneryDaylight);\n#include <opaque_fragment>');
+      return;
+    }
+    const varyings='varying vec4 vegetationFrame;';
+    shader.vertexShader=shader.vertexShader
+      .replace('#include <common>','#include <common>\n'+varyings)
+      .replace('#include <begin_vertex>',`#include <begin_vertex>
+        vec3 radialUp=modelMatrix[1].xyz;
+        #ifdef USE_INSTANCING
+          radialUp=(modelMatrix*instanceMatrix)[1].xyz;
+        #endif
+        vegetationFrame=vec4(mat3(viewMatrix)*normalize(radialUp),max(position.y,0.0)*length(radialUp));`);
+    shader.fragmentShader=shader.fragmentShader
+      .replace('#include <common>','#include <common>\n'+varyings)
+      .replace('#include <opaque_fragment>',`
+        float day=sceneryDaylight;
+        float bladeHeight=vegetationFrame.w/${vegetationHeight.toFixed(2)};
+        float lowerPlant=1.0-smoothstep(1.6,3.4,vegetationFrame.w);
+        float skyFacing=clamp(.5+.5*dot(normal,normalize(vegetationFrame.xyz)),0.0,1.0);
+        float exposed=.63*smoothstep(.06,.90,bladeHeight)+.37*skyFacing;
+        float twilight=smoothstep(.015,.22,day)*(1.0-smoothstep(.46,.80,day));
+        vec3 shaded=vec3(.42,.41,.39);
+        vec3 sky=vec3(.64,.72,.81);
+        vec3 balance=vec3(mix(.45,1.0,day));
+        vec3 bounce=mix(shaded,sky,exposed)+vec3(.17*day);
+        balance=mix(balance,bounce,twilight*lowerPlant);
+        float contact=mix(.83,1.0,smoothstep(0.0,.28,bladeHeight));
+        outgoingLight*=balance*contact;
+        #include <opaque_fragment>`);
   };
+  if(vegetationHeight)material.customProgramCacheKey=()=> 'vegetation-daylight-'+vegetationHeight;
 }
 
 export class ToroidalScenery {
