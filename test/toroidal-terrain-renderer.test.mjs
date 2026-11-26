@@ -156,12 +156,33 @@ test('the bank data follows the curved terrain and stays off the lightweight wat
   worker.onerror({preventDefault() {}});
   assert.equal(renderer.visibleWaterMaterial,renderer.waterMaterial);
   renderer.update(near,true);
+  assert.ok(renderer.active.size>0);
   for(const mesh of renderer.active.values())
     for(const water of mesh.children)assert.equal(water.material,renderer.waterMaterial);
   let disposals=0;
   for(const target of [texture,reflected])target.addEventListener('dispose',()=>disposals++);
   renderer.dispose();
   assert.equal(disposals,2);
+});
+
+test('worker loss discards unfinished bank rows and leaves the committed tiles visible', () => {
+  const renderer = new ToroidalTerrainRenderer(new Scene(), base, TestWorker, {bankReflection:true});
+  const worker = renderer.worker;
+  const near = new Vector3(...REFLECTION_BANK.center);
+  renderer.update(near);
+  while (worker.pending && worker.pending.kind !== 'reflection-bank') worker.answer();
+  renderer.update(near);
+  assert.equal(worker.pending.kind, 'reflection-bank');
+  const committed = renderer.group.children.slice();
+  worker.answer();
+  assert.equal(renderer.bankBuild.next, 20);
+  worker.onerror({preventDefault() {}});
+  assert.equal(renderer.bankBuild, null);
+  assert.equal(renderer.reflectionTexture, undefined);
+  assert.equal(renderer.visibleWaterMaterial, renderer.waterMaterial);
+  assert.ok(committed.length > 0);
+  assert.deepEqual(renderer.group.children, committed);
+  renderer.dispose();
 });
 
 test('worker failure preserves usable distant terrain and releases queued work', () => {
