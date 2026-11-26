@@ -28,6 +28,18 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+Candidate `bb9e4aa` preserves the installed gallery plaques from
+`c024dbda2833` and the same renderer pin as `2535231`. Its archive
+`3f9366114a8e3c87deb6786f159cee3d248b2325d329ba9a31ed79b1db8c4eb8`
+passed the installed Home package validator and 434 Node checks with
+two skips. The Chromium fixture entered the physical workshop through
+the foyer and recovered the shared frame 36 and its note in a second
+touch view while retaining independent local frames 37 and 35. The
+private Home publisher acknowledged the archive and its stored bytes
+matched the digest. HTTPS readback under the daimon reader returned
+404. The owner artifact version is retained in the private receiving
+record. Protected activation and signed-in room entry remain open.
+
 Candidate `2535231` pins Proyección commit
 `36848c1898de12aa1a008fe8ebe819e441416e82` for the range pointer fix.
 The staged archive is
