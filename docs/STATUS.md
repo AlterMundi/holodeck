@@ -26,6 +26,26 @@ canonical Conversation across desktop and compact layouts with one
 fixture original, one retained frame and no browser errors. The Node
 suite passed 425 checks with two skips. This candidate is staged locally.
 
+## Character table receiving baseline
+
+Holodeck selected protected release
+`bd625c3d10a0a6fa8cf7aaf2928697a0cab2e48e9484a27ba7c7f13f5195448a`
+from host revision `6a08981` for the water and night sky. The earlier
+staged Character table archive `005ebe7b7869d4f134da364e1189c008f03ec6353d08b01e0e78e03dc4f962fe`
+was verified through the private package reader and remains retained for
+the exact predecessor it was tested against. Its activation request is
+unsubmitted.
+
+The receiving owner qualified Proyección alpha.19 in the standalone
+Character viewer on Raspberry Pi and RTX clients. Both runs observed
+the same pose across two fixture actors, reverse frame stepping, stale
+revision refusal, and flight and swim at frames 78 and 94. The selected
+live baseline and Character table branch touch the same world client,
+Matter HUD, flight, terrain and map code. Incorporate the table, compact
+minimap and Conversation controls through the current receiving source.
+Acceptance still needs the real Character room, the actual Matter path
+and independent authorized clients in the selected Holodeck release.
+
 ## Floating HUD window input ownership
 
 Host revision `ea3f7c8b0eaf419023f7a9cd95d396513296db4f` releases a captured
