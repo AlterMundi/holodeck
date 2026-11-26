@@ -1,5 +1,41 @@
 # Current MVP work
 
+## November 26 — Pitched flight and swimming candidate
+
+Candidate `e6093e9e889f` from `68d7170` adds vertical view steering to
+forward and backward movement while flying or swimming. Strafe stays level.
+Alt or Space takes priority for descent or ascent, and Shift boosts the
+three-dimensional input. Ordinary swimming at the surface remains level
+under a shallow downward view; a deliberate steeper dive enters the water.
+
+The deployed baseline accepted Shift and Alt in either press order but
+applied the same approximately 5 m/s descent as Alt alone. On the candidate,
+both orders reached about 25 m/s on RTX 2060 Normal and Raspberry Pi 5
+Livianos. They also verified boosted ascent against downward aim, level
+strafe, a mouse-aimed dive with one splash, underwater steering, and
+ordinary swimming back to the surface. 459 tests passed with two optional
+skips. Fable High reviewed the design; Opus 5.5 High identified focused
+controls and genuine Meta ownership, and verified the corrected input
+and swim handling.
+
+The same candidate aligns the avatar and camera to the confirmed doorway
+before the transition clears. The baseline occasionally showed an inward-
+facing avatar with its camera still in front after the exterior entry.
+The forced late-response fixture processed new network traffic before
+releasing the passage response on both physical graphics profiles and
+verified W walked inward. The same-renderer route included Matter, the
+Lab stair in both directions, and return to the exterior.
+
+The candidate composes the independently staged Character table package
+`71e175bad8d1`. The package comparison changes only the packed browser
+bundle and its manifest. All 670 sampled poses and chapter positions,
+and the published catalog, match the current live build. The staged
+Character owner request still selects `71e175bad8d1`; the protected
+runtime remains on `6416a5246b17`, with rollback `58ce88972da7`.
+Activation of the combined candidate depends on reconciling that prepared
+release. Hardware browser fixtures do not establish acceptance by the
+paired human or another independently signed-in participant.
+
 ## November 26 — Longer blue wake over water
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `6416a5246b17`
