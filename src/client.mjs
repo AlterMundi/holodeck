@@ -7,6 +7,7 @@ import {ToroidalScenery} from './toroidal-scenery.mjs';
 import {ToroidalAtmosphere,toroidalViewDepth} from './toroidal-atmosphere.mjs';
 import {argentineSun,nightSkyKey} from './toroidal-solar-clock.mjs';
 import {bindToroidalHouseLight} from './toroidal-house-light.mjs';
+import {bindFoyerFloorFinish} from './foyer-floor-finish.mjs';
 import {ToroidalCave} from './toroidal-cave.mjs';
 import {TOROIDAL_TERRAIN} from './toroidal-terrain.mjs';
 import {TOROIDAL_SUN,ToroidalTerrainRenderer,toroidalSunDirection} from './toroidal-terrain-renderer.mjs';
@@ -65,7 +66,7 @@ import {WorldHistory} from './world-history.mjs';
 import { snapshotMayApply, sameRequest } from './client-order.mjs';
 import { WorldNotice } from './client-feedback.mjs';
 import {arrivalDoor,doorLocation,readSpace,showSpaceLinks} from './space-travel.mjs';
-import {CHARACTER_STUDIO,characterWorktable} from './house-review-rooms.mjs';
+import {ATELIER_FOYER,CHARACTER_STUDIO,characterWorktable} from './house-review-rooms.mjs';
 const reviewedHudLook=selectedHudLook(location.href);
 if(reviewedHudLook)document.body.dataset.hudLook=reviewedHudLook;
 bindHudAppearance(document,window);
@@ -444,6 +445,7 @@ let outdoorArrivalReady=()=>outdoorReady();
 let confirmedRingPose=null;
 let updateDoor=()=>{},remoteScene=null,roomModel=null,networkScope=null,arrival=null;
 let releaseLightweightGlazing=null;
+let releaseFoyerFloor=null;
 let matterStyleScope=null;
 let floorSplatScope=null;
 updateRoomGlazing=()=>{
@@ -545,6 +547,7 @@ const removeScene=()=>{
     floorSplatScope.projection?.dispose();
     floorSplatScope=null;
   }
+  releaseFoyerFloor?.();releaseFoyerFloor=null;
   releaseLightweightGlazing?.();releaseLightweightGlazing=null;
   pendingRoomArt=null;projectedGarden=null;beaconControls.clear();galleryModels?.clear();collectionShelves?.clear();remoteScene?.remove();remoteScene=roomModel=null;
 };
@@ -1245,6 +1248,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const roomReady=inside&&networkScope===activeSpace.id&&entryRoomReady(remoteScene,roomModel);
       const waitingForRoomFrame=inside&&moving&&!roomReady;
       if(roomReady&&roomModel&&activeSpace.matterFloorSplat&&!floorSplatScope)void mountFloorSplat();
+      if(roomReady&&roomModel&&!releaseFoyerFloor&&activeSpace.id===ATELIER_FOYER){
+        releaseFoyerFloor=bindFoyerFloorFinish(roomModel.getContainer());
+      }
       if(roomReady&&roomModel&&rendererBudget.lightweight&&activeSpace.collectionShelves&&!releaseLightweightGlazing)
         releaseLightweightGlazing=useLightweightMatterGlazing(roomModel.getContainer());
       if(roomReady&&roomModel&&activeSpace.matterStyles&&!matterStyleScope){
