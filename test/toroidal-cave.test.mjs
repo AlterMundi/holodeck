@@ -15,6 +15,10 @@ test('the shared collision shell has two open mouths and two covered chambers', 
   assert.ok(mesh && colliders.has(mesh));
   assert.ok(mesh.geometry.index.count / 3 < 2500);
   assert.ok(mesh.geometry.attributes.color.array.every(value=>value>=0&&value<=1));
+  const contact=mesh.geometry.attributes.caveGroundContact;
+  assert.equal(contact.count,mesh.geometry.attributes.position.count);
+  assert.equal(contact.getY(0),1);
+  assert.equal(contact.getY(contact.count/2),0);
   const original=mesh.material;
   const twoSided=new MeshBasicMaterial({side:DoubleSide});
   mesh.material=twoSided;
@@ -71,6 +75,7 @@ test('visible crown triangles and collision share one footprint off the path and
   cave.update(eye);
   assert.ok(colliders.has(cave.crown));
   assert.equal(cave.crown.geometry.attributes.position.array.length,positions.length);
+  assert.equal(cave.crown.geometry.attributes.caveGroundContact.count,positions.length/3);
   const direction=top.clone().add(new Vector3(0,-.3,0)).sub(eye).normalize();
   assert.equal(new Raycaster(eye,direction,0,120).intersectObjects([cave.mesh,cave.crown],false)[0]?.object,cave.crown);
   cave.dispose();

@@ -107,8 +107,10 @@ export function useToroidalRockDetail(material, {bedding=false,meadow=false,grou
         roughnessFactor = clamp(roughnessFactor + detailFade*(.13*joint-.10*iron),.22,1.0);
   ` : '';
   const previousCompile = material.onBeforeCompile;
+  const caveContact = groundContact === 'cave';
+  const stoneContact = groundContact === true;
   const contactVarying = 'varying float toroidalRockBaseHeight;';
-  const contact = groundContact ? `
+  const contact = stoneContact ? `
         float mossField = ringNoise(uv*2.4 + vec2(11.7,3.2));
         float wearHeight = toroidalRockBaseHeight + .16*(scaleColor+.22*chips);
         float moss = (1.0-smoothstep(.08,.31,wearHeight)) *
@@ -118,12 +120,27 @@ export function useToroidalRockDetail(material, {bedding=false,meadow=false,grou
         diffuseColor.rgb = mix(diffuseColor.rgb,patina,.76*moss)*mix(1.0,seated,detailFade);
         roughnessFactor = mix(roughnessFactor,.99,moss*.75);
   ` : '';
-  material.customProgramCacheKey = () => groundContact ? 'toroidal-stone-contact' :
-    bedding ? 'toroidal-rock-strata' : 'toroidal-rock-grain';
+  const caveVarying = 'varying vec2 toroidalCaveContact;';
+  const caveWeathering = caveContact ? `
+    // Radial clearance follows the terrain on either side of the torus.
+    // Coarse grain shifts the wet line, while separate patches break it up.
+    float clearance = toroidalCaveContact.x + .48*scaleColor + .10*chips;
+    float exposure = toroidalCaveContact.y;
+    float damp = (1.0-smoothstep(.04,.80,clearance)) * exposure *
+      mix(.32,1.0,smoothstep(-.24,.19,scaleColor + .64*chips));
+    float rootShade = 1.0-smoothstep(-.03,.31,clearance + .12*chips);
+    float flecks = smoothstep(.07,.30,chips + .45*scaleColor);
+    float patina = (1.0-smoothstep(.20,1.28,clearance)) * exposure * flecks;
+    diffuseColor.rgb *= (1.0 - detailFade*(.24*damp + mix(.12,.27,exposure)*rootShade)) *
+      mix(vec3(1.0),vec3(.78,.91,.69),patina*detailFade);
+    roughnessFactor = clamp(roughnessFactor + detailFade*(.07*patina - .11*damp),.24,1.0);
+  ` : '';
+  material.customProgramCacheKey = () =>
+    `toroidal-rock-${Number(bedding)}-${Number(meadow)}-${groundContact}`;
   material.onBeforeCompile = (shader,renderer) => {
     previousCompile.call(material,shader,renderer);
     useWorldPosition(shader);
-    if(groundContact){
+    if(stoneContact){
       shader.vertexShader = shader.vertexShader
         .replace('#include <common>', '#include <common>\n' + contactVarying)
         .replace('#include <begin_vertex>', `#include <begin_vertex>
@@ -134,6 +151,14 @@ export function useToroidalRockDetail(material, {bedding=false,meadow=false,grou
           toroidalRockBaseHeight = transformed.y * length(stoneUp) - .06;`);
       shader.fragmentShader = shader.fragmentShader.replace('#include <common>',
         '#include <common>\n' + contactVarying);
+    }
+    if (caveContact) {
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>',
+          '#include <common>\nattribute vec2 caveGroundContact;\n' + caveVarying)
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\ntoroidalCaveContact = caveGroundContact;');
+      shader.fragmentShader = shader.fragmentShader.replace('#include <common>',
+        '#include <common>\n' + caveVarying);
     }
     shader.fragmentShader = shader.fragmentShader.replace('#include <roughnessmap_fragment>',`
       #include <roughnessmap_fragment>
@@ -149,6 +174,7 @@ export function useToroidalRockDetail(material, {bedding=false,meadow=false,grou
         roughnessFactor = clamp(roughnessFactor + chips * detailFade * .13, .2, 1.0);
         ${strata}
         ${contact}
+        ${caveWeathering}
       }
       ${meadow ? 'roughnessFactor = mix(mix(roughnessFactor, holoMeadowRoughness, holoMeadow), holoTrailRoughness, holoTrailMask);' : ''}
     `);

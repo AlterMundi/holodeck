@@ -8,12 +8,12 @@ const SECTION_COUNT = 36;
 const ARCH_SEGMENTS = 16;
 const TAU = 2 * Math.PI;
 
-function weatheredContact(rock, u, v, floor, clearance, transition, terrain) {
+function weatheredContact(rock, u, v, floor, clearance, transition, terrain, strength = 1) {
   if (clearance >= transition) return rock;
   const t = Math.max(0, clearance / transition);
-  const rockWeight = .24 + .76 * t * t * (3 - 2 * t);
+  const soilWeight = strength * .76 * (1 - t * t * (3 - 2 * t));
   const soil = terrainColor(u,v,floor,.08,terrain);
-  return rock.map((channel,i)=>soil[i] * .84 * (1 - rockWeight) + channel * rockWeight);
+  return rock.map((channel,i)=>soil[i] * .84 * soilWeight + channel * (1 - soilWeight));
 }
 
 // The tunnel and its two chambers follow the seeded terrain at the same
@@ -26,6 +26,7 @@ export function buildToroidalCave(terrain = TOROIDAL_TERRAIN) {
   const stride = (SECTION_COUNT + 1) * width;
   const positions = new Float32Array(stride * 6);
   const colors = new Float32Array(positions.length);
+  const groundContact = new Float32Array(stride * 4);
   const indices = [];
   for (let section = 0; section <= SECTION_COUNT; section += 1) {
     const t = section / SECTION_COUNT;
@@ -57,12 +58,17 @@ export function buildToroidalCave(terrain = TOROIDAL_TERRAIN) {
         const shell = walls + roughness * 2 + (.45 + .55 * mouth) * bedding;
         const height = floor - 1.1 + lift * (ceiling + 1.1 + (outer ? shell : roughness * .2));
         const p = terrainPosition(longitude,v,height,terrain);
-        const index = (skin * stride + section * width + arch) * 3;
+        const vertex = skin * stride + section * width + arch;
+        const index = vertex * 3;
         const brightness = shade * (outer ? .85 : .45);
         const mineral = outer ? bedding * .035 : 0;
         for (let axis = 0; axis < 3; axis += 1) positions[index + axis] = p[axis] - origin[axis];
         const rock = [(.34 + mineral) * brightness,.265 * brightness,(.201 - .4 * mineral) * brightness];
-        colors.set(outer ? weatheredContact(rock,longitude,v,floor,height-floor,1.4,terrain) : rock,index);
+        const clearance = height - floor;
+        groundContact[2 * vertex] = clearance;
+        groundContact[2 * vertex + 1] = outer ? 1 : 0;
+        colors.set(weatheredContact(rock,longitude,v,floor,clearance,
+          outer ? 1.4 : .52,terrain,outer ? 1 : .24),index);
       }
 
       if (arch < ARCH_SEGMENTS && section < SECTION_COUNT) {
@@ -76,7 +82,7 @@ export function buildToroidalCave(terrain = TOROIDAL_TERRAIN) {
       }
     }
   }
-  return {origin,positions,colors,indices:new Uint16Array(indices)};
+  return {origin,positions,colors,groundContact,indices:new Uint16Array(indices)};
 }
 
 // The rock crown rises beside the arrival end of the passage, outside the
@@ -95,7 +101,7 @@ const sections=[
 export function buildCaveCrown(terrain = TOROIDAL_TERRAIN) {
   const {u,v}=CAVE_ENTRANCE;
   const origin=terrainPosition(u,v,terrainElevation(u,v,terrain),terrain);
-  const positions=[],colors=[],indices=[];
+  const positions=[],colors=[],groundContact=[],indices=[];
   const sides=8;
   for(const [ordinal,fin] of fins.entries()){
     const first=positions.length/3;
@@ -127,7 +133,9 @@ export function buildCaveCrown(terrain = TOROIDAL_TERRAIN) {
         const mineral=vein&&ordinal===0&&side<5?.64:0;
         const rose=.035*Math.sin(side+ordinal);
         const rock=[shade*(.408+rose-mineral*.30),shade*(.227+mineral*.07),shade*(.12+mineral*.13)];
-        colors.push(...weatheredContact(rock,pointU,pointV,floor,height-floor,1.65,terrain));
+        const clearance=height-floor;
+        colors.push(...weatheredContact(rock,pointU,pointV,floor,clearance,1.65,terrain));
+        groundContact.push(clearance,1);
       }
     }
     for(let row=0;row<sections.length-1;row++){
@@ -141,13 +149,15 @@ export function buildCaveCrown(terrain = TOROIDAL_TERRAIN) {
       indices.push(first,first+side,first+side+1,top,top+side+1,top+side);
     }
   }
-  return {origin,positions:new Float32Array(positions),colors:new Float32Array(colors),indices:new Uint16Array(indices)};
+  return {origin,positions:new Float32Array(positions),colors:new Float32Array(colors),
+    groundContact:new Float32Array(groundContact),indices:new Uint16Array(indices)};
 }
 
-function rockMesh({origin,positions,colors,indices},material,name) {
+function rockMesh({origin,positions,colors,groundContact,indices},material,name) {
   const geometry=new BufferGeometry();
   geometry.setAttribute('position',new BufferAttribute(positions,3));
   geometry.setAttribute('color',new BufferAttribute(colors,3));
+  geometry.setAttribute('caveGroundContact',new BufferAttribute(groundContact,2));
   geometry.setIndex(new BufferAttribute(indices,1));
   geometry.computeVertexNormals();
   const mesh=new Mesh(geometry,material);
@@ -173,10 +183,10 @@ export class ToroidalCave {
     }
     if (distance > 170) return;
     const material = new MeshStandardMaterial({vertexColors:true,roughness:.96});
-    useToroidalRockDetail(material,{bedding:true});
+    useToroidalRockDetail(material,{bedding:true,groundContact:'cave'});
     this.mesh=rockMesh(buildToroidalCave(),material,'Connected rock passage');
     const crownMaterial=new MeshStandardMaterial({vertexColors:true,roughness:.92,flatShading:true});
-    useToroidalRockDetail(crownMaterial,{bedding:true});
+    useToroidalRockDetail(crownMaterial,{bedding:true,groundContact:'cave'});
     this.crown=rockMesh(buildCaveCrown(),crownMaterial,'Stone crown above the cave');
     for(const mesh of [this.mesh,this.crown]){
       this.scene.add(mesh);
