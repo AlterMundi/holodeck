@@ -54,6 +54,25 @@ test('a raster paint is retained while a contextual map is suppressed',()=>{
 });
 
 
+test('rotating an open room map keeps its current destination and action scope',()=>{
+  const {hud,panel,action}=fixture();
+  const updates=[];
+  panel.querySelector=()=>({hidden:true});
+  hud.send=(type,content)=>updates.push({type,...content});
+  hud.update(true,false,true);
+  action('next');
+  hud.update(true,false,true);
+  hud.update(true,false,false);
+  assert.equal(hud.scope,4);
+  assert.equal(hud.index,1);
+  assert.deepEqual(updates.map(({type})=>type),[
+    'updateComponents','updateDataModel','updateDataModel','updateComponents',
+  ]);
+  assert.deepEqual(updates[0].components.find(({id})=>id==='body').children,['map','controls']);
+  assert.equal(updates[2].value.destination,'1');
+  assert.equal(updates[3].components[0].children.includes('map'),true);
+});
+
 test('bearing dismissal is bound to the selection, room and presentation epoch',()=>{
   const {hud,panel,state,effects,setBearing}=fixture();
   panel.open=false;
