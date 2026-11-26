@@ -118,7 +118,7 @@ test('a straight exterior sprint settles without a rebound at 20 or 60 Hz',async
           if(close)assert.ok(gap.length()<.35,'moves away again after reaching the target');
           const step=root.position.clone().sub(previousPosition);
           assert.ok(step.dot(gap)>=-1e-6,'travels away from a settled follow target');
-          const turnLimit=avatar.travelHeading?301:201;
+          const turnLimit=avatar.travelHeading&&avatar.followVelocity.length()>.35?301:201;
           assert.ok(previousHeading.angleTo(root.quaternion)*180/Math.PI*hz<=turnLimit,
             'turns faster than the selected heading limit after release');
         }
