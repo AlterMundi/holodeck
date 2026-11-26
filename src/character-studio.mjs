@@ -605,7 +605,7 @@ export function openCharacterStudio(document,table=null){
       canReview:canReview===true,presentationBusy,
       accessStatus:checkingAccess?'Comprobando acceso al Taller…':
         canReview===false?'Entrá al Taller para compartir notas.':'No pude confirmar el acceso al Taller.',
-      noteAction:compact?(canReview?'Compartir':'Guardar'):(canReview?'Compartir nota':'Guardar en este navegador'),
+      noteAction:canReview?'Compartir':compact?'Guardar':'Guardar aquí',
       copyLabel:compact?'Copiar URL':'Copiar enlace',
       savingNote,
       canSubmitNote:canWriteNote&&(!pendingNote||savingNote||noteReplaced),

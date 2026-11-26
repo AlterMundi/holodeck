@@ -307,7 +307,7 @@ async function main(){
     await action('Nota para este fotograma').press('Enter');
     await page.getByRole('textbox',{name:'Nota para este fotograma',exact:true}).fill(note);
     const pending=page.waitForResponse(r=>r.request().method()==='POST'&&r.url().endsWith('/character-pose-review'));
-    await page.keyboard.press('Enter');
+    await action('Compartir').press('Enter');
     const saved=await pending;
     assert.equal(saved.status(),200);
     assert.deepEqual(saved.request().postDataJSON().pose,pose);
