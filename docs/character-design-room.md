@@ -186,6 +186,13 @@ The loopback check runs the staged server with separate browser and
 own-native fixture identities. It prints the confirmed pose and revision,
 saves one screenshot, and closes both clients. It exercises the native
 presentation, browser follow, exact-frame note readback and room exit.
+It also opens Conversation at the physical table. Opening the panel
+preserves the locally displayed rig, clip edition and frame while the
+table is suspended. Preparing an original includes that selection as
+`referredCharacterPose` in its machine-authored situation. The room
+checks the reported pose against its installed catalog and requires
+current room access for both sender and recipient. The capture leaves the
+shared presentation alone and grants no new editing rights.
 The protected receiving trial below qualifies the real identities and
 world.
 

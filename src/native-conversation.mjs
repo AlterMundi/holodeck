@@ -25,6 +25,8 @@ export function captureNativeSituation(room,actor,request,{pairedBeing=null,pair
     evidence:'client-reported reference matched the room placement and the speaker had source access'};
   if(interior&&worktable)extra.referredWorktable={...worktable,fixture:'worktable',
     evidence:'Client-selected reference matched the exact Home review that the speaker could access. Opening the edition requires Home access.'};
+  if(interior?.characterPose)extra.referredCharacterPose={...interior.characterPose,
+    fixture:'character-worktable',evidence:'Client-reported frame matched the current pose catalog in the authorized Character Design Room.'};
   if(request.view!==undefined){
     if(!request.view||typeof request.view!=='object'||Buffer.byteLength(encode(request.view))>4096)
       throw new NativeConversationError('view','Provide a bounded client-reported view',{retained:false,knownNotSubmitted:true,retryable:true});
@@ -47,6 +49,7 @@ export function captureNativeSituation(room,actor,request,{pairedBeing=null,pair
     }
     // The exact reference is resolved below, never copied event text from a client.
     delete view.historyReference;
+    delete view.characterPose;
     extra.clientReportedView={evidence:'client-reported-at-interaction-capture',value:view,
       uncertainty:'Client-reported scene-graph/DOM evidence only, including any appliedGeometry field. Not presented pixels, authoritative location, line of sight, attention or understanding. A not-in-document entity reference proves DOM absence only.'};
   }

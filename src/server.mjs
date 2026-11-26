@@ -5,7 +5,7 @@ import {COMPAII_HOUSE,interiorArt} from './interior-art.mjs';
 import {ATELIER_EXPANSION_WRITES,ATELIER_PROFILE,ATELIER_ROOMS,atelierLabReturn,matchesAtelierLayout,packedExteriorArt,selectAtelier} from './compaii-atelier.mjs';
 import {RoomExhibits,EXHIBIT_SAVE_BYTES} from './room-exhibits.mjs';
 import {ATELIER_FOYER,CHARACTER_STUDIO,characterWorktable,houseReviewRooms} from './house-review-rooms.mjs';
-import {createCharacterPoseReview} from './character-pose-review.mjs';
+import {createCharacterPoseReview,resolveReviewPose} from './character-pose-review.mjs';
 import {InteriorSpaces, OUTSIDE, SPACE_SAVE_BYTES, interiorDocument} from './interior-spaces.mjs';
 import {InteriorLayouts,LAYOUT_SAVE_BYTES} from './interior-layouts.mjs';
 import {RoomDesigns,DESIGN_SAVE_BYTES} from './room-designs.mjs';
@@ -475,10 +475,14 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const id=spaces.current(actor);
     if(spaces.fenced||room.commitUncertain||id!==(request.view?.spaceId??OUTSIDE))
       throw new RoomError('scope-changed','Tu lugar cambió. Volvé a intentar con el borrador que conservaste.');
+    const pose=request.view?.characterPose;
+    if(pose!==undefined&&(id!==CHARACTER_STUDIO||!poseCatalog||resolveReviewPose(pose,poseCatalog).status!==200))
+      throw new RoomError('scope-changed','Volvé a seleccionar la pose en el Taller de personajes. El borrador sigue en la conversación.');
     if(id===OUTSIDE)return null;
     const place=conversationPlace(actor,id);
     if(!place)throw new RoomError('forbidden','Tu acceso a esta sala cambió.');
     const snapshot={id:randomUUID(),run:room.run,edition:room.edition,sequence:room.sequence,capturedAt:Date.now(),place};
+    if(pose)snapshot.characterPose=structuredClone(pose);
     const selected=request.view?.roomVisit;
     const entry=selected&&interiorVisits(actor,id).find(visit=>visit.node===selected.id&&visit.nodeRevision===selected.revision);
     if(entry&&authorizeRoomVisit){

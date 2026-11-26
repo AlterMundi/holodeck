@@ -3,6 +3,7 @@ const assert=require('node:assert/strict');
 const {once}=require('node:events');
 const {mkdtempSync,mkdirSync,rmSync}=require('node:fs');
 const {createConnection}=require('node:net');
+const {randomUUID}=require('node:crypto');
 const {tmpdir}=require('node:os');
 const {join,resolve}=require('node:path');
 const {pathToFileURL}=require('node:url');
@@ -16,16 +17,21 @@ const visitor='human:character-review';
 const foyer='compaii-vestibulo',studio='compaii-character-studio',matter='matter';
 const lab='compaii-lab',gallery='compaii-galeria',tower='compaii-torre';
 const origin='https://fixture.test';
+const conversationURL=origin+'/conversation-fixture/';
+const binding='b'.repeat(64);
 
 async function main(){
   process.env.HOLODECK_JSDOM_HELPERS=join(stage,'runtime/jsdom/lib/jsdom/living/helpers');
   process.env.HOLODECK_XHR_WORKER=join(stage,'src/xhr-sync-worker.mjs');
-  const [{createHolodeck},{RoomStore},{COMPAII_HOUSE:house},{COMPAII_BEING:owner}]=await Promise.all([
+  const [{createHolodeck},{RoomStore},{COMPAII_HOUSE:house},{COMPAII_BEING:owner},{createConversationContexts}]=await Promise.all([
     import(pathToFileURL(join(stage,'src/server.mjs'))),
     import('../src/room-store.mjs'),
     import('../src/interior-art.mjs'),
     import('../src/avatar-registry.mjs'),
+    import('../src/conversation-context.mjs'),
   ]);
+  let roomGrant=true;
+  const contexts=[];
   mkdirSync(evidence,{recursive:true});
   const dir=mkdtempSync(join(tmpdir(),'holodeck-characters-'));
   const socketPath=join(dir,'review.sock');
@@ -60,8 +66,24 @@ async function main(){
         room(tower,'Torre',2,false,[['portal',gallery]]),
         room(matter,'Materia',0,false,[['portal',foyer]]),
       ],
-      nativeFactory:()=>({authorizeWorldRequest(){throw Error('Fixture uses only own-native');}}),
-      nativeRoomAuthority:async verified=>verified.actor.id===owner?['observe','edit']:[],
+      nativeFactory:async({room,stateDir,allowInteriorSource})=>{
+        const transport={
+          inspect:async actorRef=>({actorRef,beingRef:owner,binding,entry:[1,{},2,'character-fixture']}),
+          lookup:async()=>({state:'absent'}),
+          prepareContext:async request=>{
+            contexts.push(request.observation);
+            return {schema:'holodeck.prepared-conversation-context/v1',id:request.id,binding,
+              entry_binding:request.frozen.entry,observation_id:request.observation.id,work_admitted:false,
+              file:{file_id:randomUUID(),sha256:'d'.repeat(64),name:'holodeck-situation.json',mime:'application/json',size:2000}};
+          },
+        };
+        return {contexts:await createConversationContexts({room,stateDir:join(stateDir,'contexts'),transport,allowInteriorSource}),
+          conversationSurface:async actor=>({schema:'holodeck.conversation-surface/v1',actorRef:actor.ref,
+            beingRef:owner,homeRef:'home:'+'c'.repeat(32),binding,url:conversationURL}),
+          availability:async()=>({available:true}),
+          authorizeWorldRequest(){throw Error('Fixture uses only own-native');}};
+      },
+      nativeRoomAuthority:async verified=>roomGrant&&verified.actor.id===owner?['observe','edit']:[],
       ownNative:true,worldPorts:[{socket:socketPath,beingRef:owner}],
       identityResolver:async req=>req.headers.cookie?.includes('fixture=reviewer')?
         {id:visitor,ref:visitor,kind:'human',name:'Visitante',rights:['observe']}:null,
@@ -77,6 +99,22 @@ async function main(){
     await context.addCookies([{name:'fixture',value:'reviewer',url}]);
     const page=await context.newPage(),errors=[];
     page.on('pageerror',error=>errors.push(error.message));
+    await page.route(conversationURL+'*',route=>route.fulfill({contentType:'text/html',body:`
+      <button disabled>Preparar contexto</button><output></output>
+      <script>
+        const params=new URLSearchParams(location.search),target=params.get('surface_parent');
+        const base={schema:'conversation.surface/v1',visit:params.get('surface_visit'),
+          channel:crypto.randomUUID(),actor:${JSON.stringify(visitor)},binding:${JSON.stringify(binding)}};
+        const button=document.querySelector('button');
+        button.onclick=()=>parent.postMessage({...base,type:'prepare',id:crypto.randomUUID(),request:crypto.randomUUID(),
+          modality:'text',capacity:{files:8,bytes:65536,context_bytes:65536}},target);
+        addEventListener('message',event=>{
+          if(event.source!==parent||event.origin!==target||event.data?.channel!==base.channel)return;
+          if(event.data.type==='connect')button.disabled=false;
+          if(['prepared','error'].includes(event.data.type))document.querySelector('output').textContent=event.data.type;
+        });
+        parent.postMessage({...base,type:'ready'},target);
+      </script>`}));
     await page.goto(url,{waitUntil:'domcontentloaded'});
 
     assert.deepEqual(await native('character-review.current'),{status:403});
@@ -115,11 +153,61 @@ async function main(){
     const result=await native('character-review.notes',{pose});
     assert.equal(result.status,200);
     assert.deepEqual(result.notes.map(({author,text})=>[author,text]),[['Visitante',note]]);
+    await page.screenshot({path:join(evidence,'character-review-roundtrip.png')});
+
+    // The shared pose stays at frame 36. Frame 37 is a visitor-local choice.
+    await page.goto(url,{waitUntil:'domcontentloaded'});
+    await page.waitForFunction(()=>window.holodeckDevelopment?.client.getLocalCharacterState()&&
+      document.querySelector('#world-entry').hidden&&!document.body.classList.contains('room-transition'));
+    const roomView=await page.evaluate(()=>fetch('api/space?live=1').then(r=>r.json()));
+    const bench=roomView.objects.find(object=>object.id==='character-worktable');
+    assert.ok(bench);
+    await page.evaluate(({x,z})=>{
+      const client=holodeckDevelopment.client;
+      client.updateConfig({spawnConfiguration:{spawnPosition:{x,y:.25,z:z+1.62},spawnYRotation:180,respawnTrigger:{minY:-2500}}});
+      client.respawn();
+    },bench.position);
+    await page.getByRole('button',{name:'Usar mesa',exact:true}).press('Enter',{timeout:15000});
+    const table=page.getByRole('group',{name:'Mesa de Char Design',exact:true});
+    const tableButton=name=>table.getByRole('button',{name,exact:true});
+    await tableButton('Notas').press('Enter');
+    await tableButton('Ver pose del Taller').press('Enter');
+    await tableButton('Pose').press('Enter');
+    const frame=expected=>page.waitForFunction(value=>document.querySelector('input[aria-label="Fotograma"]')?.valueAsNumber===value,expected);
+    await frame(pose.frame);
+    await tableButton('+1').press('Enter');
+    await frame(pose.frame+1);
+    await page.getByRole('button',{name:'Conversar',exact:true}).press('Enter');
+    const conversation=page.frameLocator('#shared-conversation iframe');
+    await conversation.getByRole('button',{name:'Preparar contexto'}).click();
+    await conversation.locator('output').filter({hasText:'prepared'}).waitFor();
+    assert.equal(contexts.length,1);
+    const referredPose={...pose,frame:pose.frame+1};
+    assert.deepEqual(contexts[0].referredCharacterPose,{...referredPose,fixture:'character-worktable',
+      evidence:'Client-reported frame matched the current pose catalog in the authorized Character Design Room.'});
+    assert.equal(contexts[0].scope,'structured-interior-room');
+    assert.equal(contexts[0].place.id,studio);
+    assert.equal((await native('character-review.current')).presentation.pose.frame,pose.frame);
+    const prepare=(id,spaceId,characterPose)=>page.evaluate(async body=>{
+      const response=await fetch('api/conversation-contexts',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(body)});
+      return {status:response.status,scope:(await response.json()).scope};
+    },{id,binding,view:{spaceId,characterPose}});
+    // Leave the ordinary action burst from opening the table outside the rate window.
+    await page.waitForTimeout(1050);
+    assert.equal((await prepare(randomUUID(),studio,{...referredPose,edition:'f'.repeat(64)+'.'+'e'.repeat(64)})).status,409);
+    roomGrant=false;
+    assert.deepEqual(await prepare(randomUUID(),studio,referredPose),{status:409,scope:'machine-context'});
+    roomGrant=true;
+    assert.equal(await page.evaluate(async({from,to})=>(await fetch('api/space',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({from,to})})).status,{from:studio,to:foyer}),200);
+    assert.equal((await prepare(randomUUID(),foyer,referredPose)).status,409);
+    assert.equal(contexts.length,1);
     assert.equal((await native('space.move',{from:studio,to:foyer})).id,foyer);
     assert.deepEqual(await native('character-review.notes',{pose}),{status:403});
     assert.deepEqual(errors,[]);
-    await page.screenshot({path:join(evidence,'character-review-roundtrip.png')});
-    console.log(JSON.stringify({pose,revision:readback.revision,visitor,observedNote:note,roomScope:true}));
+    console.log(JSON.stringify({pose,revision:readback.revision,visitor,observedNote:note,roomScope:true,
+      conversationPose:referredPose,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true}));
   }finally{
     await browser?.close();
     runtime?.close();

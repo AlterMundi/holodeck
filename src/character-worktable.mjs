@@ -21,6 +21,7 @@ export class CharacterWorktable {
   }
 
   setShortLayout(short){this.viewer?.setShortTableLayout(short);}
+  currentPose(){return this.viewer?.currentPose()??null;}
   action(requested){this.viewer?.dispatch(requested);}
   render(now){this.viewer?.render(now);}
 }

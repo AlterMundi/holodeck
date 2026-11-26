@@ -729,7 +729,8 @@ export function openCharacterStudio(document,table=null){
     const panel=tableControls[0];
     receive('updateComponents',{components:[playback?panel:{...panel,children:['tableHeading','status']}]});
   }
-  return {dispatch,render,dispose,setShortTableLayout};
+  return {dispatch,render,dispose,setShortTableLayout,
+    currentPose:()=>visible&&playback?reviewPose():null};
 }
 
 function webStudioProjection(document,scene,dispatch,close){

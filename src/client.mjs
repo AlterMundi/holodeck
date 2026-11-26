@@ -387,6 +387,7 @@ const verticalHelp=document.getElementById('world-vertical-help');
 const dryVerticalHelp=verticalHelp.textContent;
 let fitConversationWindow=()=>{};
 const conversationFirst=matchMedia('(max-width:740px), (max-width:1180px) and (max-height:540px)');
+let conversationCharacterPose=null;
 const resetFlightTap=()=>{previousSpacePress=null;};
 window.addEventListener('blur',resetFlightTap);
 document.addEventListener('visibilitychange',resetFlightTap);
@@ -620,7 +621,7 @@ function applySpace(next,anchor){
   document.body.classList.toggle('has-situated-conversation',inside&&next.sharedConversation===true);
   $('#hud h1').textContent=next.title??'Plaza de llegada';
   $('#people').textContent=inside?(next.level===0?'Planta baja':next.level<0?`Subsuelo ${-next.level}`:`Piso ${next.level}`):'Un lugar para crear juntos';
-  if(changed){roomTopic=undefined;worktableTopic=undefined;contentVisitor.changeRoom(inside,next.id);worldIndication.selected=null;worldIndication.removeOutline();state=null;}
+  if(changed){roomTopic=undefined;worktableTopic=undefined;conversationCharacterPose=null;contentVisitor.changeRoom(inside,next.id);worldIndication.selected=null;worldIndication.removeOutline();state=null;}
   else if(inside)contentVisitor.confirmRoom();
   if(anchor&&!anchor.resumeExterior){
     const destination=new URL(location.href);
@@ -1924,6 +1925,11 @@ function openConversation(open){
   const panel=$('#conversation-panel'),talk=$('#talk');
   const wasHidden=panel.hidden;
   const restoreFocus=!open&&panel.contains(document.activeElement);
+  // Opening Conversation suspends the physical table. Keep the local pose
+  // selected at that boundary for originals prepared from this panel.
+  if(open&&wasHidden&&inside&&activeSpace.id===CHARACTER_STUDIO&&matterHud?.active)
+    conversationCharacterPose=matterHud.table?.currentPose?.()??null;
+  if(!open)conversationCharacterPose=null;
   if(!open&&!panel.hidden){
     const target=matterHud?.toolBounds('talk')??talk.getBoundingClientRect();
     if(target.width&&target.height)conversationDisplay?.minimize(target);
@@ -2009,9 +2015,11 @@ async function captureInteractionContext(){
     const position=client.getLocalCharacterState()?.position;
     const subject=roomSubject();
     const visit=contentVisitor.reference();
+    const characterPose=capturedSpace===CHARACTER_STUDIO?conversationCharacterPose:null;
     return structuredClone({capturedAt:Date.now(),spaceId:capturedSpace,local:position?{position}:null,
       ...(subject?{roomObject:{id:subject.id,revision:subject.revision}}:{}),
-      ...(visit?{roomVisit:visit}:{}),...(worktableTopic?{worktable:worktableTopic.reference}:{})});
+      ...(visit?{roomVisit:visit}:{}),...(worktableTopic?{worktable:worktableTopic.reference}:{}),
+      ...(characterPose?{characterPose}:{})});
   }
   const capturedRun=state?.run;
   if(!capturedRun)throw Error('No pude confirmar el mundo desde donde estás pensando.');
