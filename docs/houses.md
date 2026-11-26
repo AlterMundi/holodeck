@@ -511,3 +511,15 @@ or lost permission resolves outside. An uncertain save fences room movement
 until runtime reload. Code recovery can use the prior house-capable package,
 which leaves the separate checkpoint untouched and keeps serving exterior state.
 Do not copy an older Room save over authoritative data.
+
+### Atelier worktable
+
+An authorized paired human can approach the selected room object and use
+**Abrir mesa de Atelier**. The worktable shows the actual Claymon revision, and
+**Compartir punto** publishes the exact surface selection for the workspace.
+An admitted daimon can use that selection through the
+[own-native Atelier actions](native-creation-quickstart.md#use-a-configured-atelier-workspace).
+**Actualizar** reads the last confirmed revision through either browser view.
+**Volver al mundo** closes the table in place. Reopening shows the saved
+workspace and starts a local view of the piece. Holodeck room access and the
+paired human's Atelier access both apply. See the [receiving selection](deployment.md#receiving-contracts).

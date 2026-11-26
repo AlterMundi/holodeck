@@ -343,8 +343,19 @@ receiver operator selects the matching public key and independent workspace
 grants. Use an admitted private route between the two service identities.
 Holodeck checks the actor's current room and permissions before forwarding
 `read`, `smooth` or `result`. Atelier owns edit validation and the stored
-revision. Install and verify both receivers and their access before connecting
-the browser worktable to the same workspace.
+revision.
+
+For the browser worktable, select `receiving.atelierWorkshop.projection` with the
+paired human's `humanRef`, the exact authored room-object ID as `anchor`, and
+`htmlSha256` and `scriptSha256` from the selected Atelier package's unpacked
+`index.html` and `workshop.js`. Enable `native.humanProjection` on that Atelier
+receiver. Use the same paired human and workspace on both receiving selections.
+The projected frame runs on Holodeck's origin. Holodeck serves only the two
+verified assets and the selected workspace's read, select and Smooth routes.
+Current Home session, room and write origin are checked at the same API boundary
+as other space actions. Atelier rechecks the paired-human workspace grant and
+owns both the selected point and the confirmed mesh revision. The workspace has
+one storage and revision lineage across the two surfaces.
 
 ## Reproducible package
 

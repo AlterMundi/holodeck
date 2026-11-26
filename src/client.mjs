@@ -72,6 +72,7 @@ import { AppliedGeometryProbe } from './applied-geometry.mjs';
 import {mountPendingBook} from './pending-book.mjs';
 import {pendingToolId} from './pending-book-hud.mjs';
 import { SharedConversationHost } from './shared-conversation-host.mjs';
+import { AtelierTable } from './atelier-table.mjs';
 import { WorldAudio } from './world-audio.mjs';
 import {WorldHistory} from './world-history.mjs';
 import { snapshotMayApply, sameRequest } from './client-order.mjs';
@@ -306,6 +307,7 @@ function startInterior(space){
     space.level<0?`Subsuelo ${-space.level}`:`Piso ${space.level}`;
   const notice=new WorldNotice(document.querySelector('#notice'));
   const beaconControls=benchControls();
+  const atelierTable=new AtelierTable(document,url('api/space/atelier/'));
   let galleryModels;
   const visitor=new ContentVisitor({document,window,base,scoped:true,
     onCatalog:entries=>{galleryModels?.sync(entries);applyGallerySigns(document.getElementById(space.id),entries);},
@@ -322,6 +324,7 @@ function startInterior(space){
   const beaconAvailable=()=>!entering&&!document.hidden&&!updateDoor.doorOffer?.()&&
     (!visitor.frame||visitor.panel.classList.contains('is-walking'))&&!document.querySelector('dialog[open]');
   window.addEventListener('keydown',event=>{
+    if(atelierTable.opened&&event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();atelierTable.close();return;}
     if(beaconControls.handleProjectionKey(event))return;
     keepWorldTab(event);
     if(beaconControls.opened&&!event.defaultPrevented&&!event.isComposing&&
@@ -331,7 +334,7 @@ function startInterior(space){
       return;
     }
     if(event.target instanceof Element&&event.target.closest('#exhibition-index')){event.stopImmediatePropagation();return;}
-    if((beaconControls.opened||visitor.frame&&!visitor.panel.classList.contains('is-walking'))&&
+    if((atelierTable.opened||beaconControls.opened||visitor.frame&&!visitor.panel.classList.contains('is-walking'))&&
        ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE'].includes(event.code)){
       if(!(event.target instanceof Element&&event.target.closest('button,input,select,textarea')))event.preventDefault();
       event.stopImmediatePropagation();
@@ -376,7 +379,7 @@ function startInterior(space){
         if(position&&space.avatarPosePresence)poses.update(client.getWorldConnection(),space.id,low?'crouch':'ground');
         frameBudget.sample(!document.hidden&&!!position&&!visitor.isOpeningOverWorld());
         galleryModels.update();visitor.refreshScopedCatalog();updateDoor(position);visitor.update(position);
-        beaconControls.update(space.objects,position);
+        beaconControls.update(space.objects,position);atelierTable.update(space,position);
         actionLabel.update(beaconAvailable()&&!matchMedia('(pointer: coarse)').matches?beaconControls.nearbyAction():null,
           options.coreCameraManager.getCameraState(),renderer.composer.renderer.domElement.clientHeight,{feet:position});
         render(state);
@@ -406,7 +409,7 @@ function startInterior(space){
   });
   client.update();
   window.holodeckDevelopment={client};
-  window.addEventListener('pagehide',()=>{updateDoor.dispose?.();exhibitObserver.disconnect();beaconControls.clear();visitor.dispose();client.dispose();},{once:true});
+  window.addEventListener('pagehide',()=>{updateDoor.dispose?.();exhibitObserver.disconnect();beaconControls.clear();atelierTable.update(null);visitor.dispose();client.dispose();},{once:true});
 }
 
 function releaseBeaconInput(client){
@@ -428,6 +431,7 @@ function benchControls(){
 function startWorld(activeSpace){
 const worldView=new WorldViewCapture(document);
 const beaconControls=benchControls();
+const atelierTable=new AtelierTable(document,url('api/space/atelier/'));
 const garden=new IndoorGardenHUD({
   position:()=>client.getLocalCharacterState()?.position,
   onError:say,
@@ -598,6 +602,7 @@ const removeScene=()=>{
   releaseFoyerFloor?.();releaseFoyerFloor=null;
   releaseLightweightGlazing?.();releaseLightweightGlazing=null;
   pendingRoomArt=null;projectedGarden=null;beaconControls.clear();galleryModels?.clear();collectionShelves?.clear();remoteScene?.remove();remoteScene=roomModel=null;
+  atelierTable.update(null);
 };
 async function mountFloorSplat(){
   const {src,target,radius}=activeSpace.matterFloorSplat;
@@ -829,6 +834,7 @@ function beaconWorldAvailable(){
 // MML captures document keys by default. Preserve ordinary text editing and
 // keyboard activation of the HUD without turning typed words into locomotion.
 document.addEventListener('keydown',event=>{
+  if(atelierTable.opened&&event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();atelierTable.close();return;}
   if(event.code==='KeyQ'&&!event.defaultPrevented&&!event.isComposing&&!event.altKey&&!event.metaKey&&!event.ctrlKey&&
      !editorOwns(event)&&!matterHud?.hud.ownsTextInput?.(event.target)){
     if(event.repeat?matterHud?.teleport.group:toggleTeleport()){
@@ -858,7 +864,7 @@ document.addEventListener('keydown',event=>{
   if(matterHud?.ownsAccessibleInput(event.target))return;
   spaceGesture.down(event);
   if(event.target instanceof Element&&event.target.closest('#exhibition-index')){event.stopImmediatePropagation();return;}
-  if((beaconControls.opened||hot&&(moving||inside&&contentVisitor?.frame&&!contentVisitor.panel.classList.contains('is-walking')))&&
+  if((atelierTable.opened||beaconControls.opened||hot&&(moving||inside&&contentVisitor?.frame&&!contentVisitor.panel.classList.contains('is-walking')))&&
      ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE'].includes(event.code)){
     if(!(event.target instanceof Element&&event.target.closest('button,input,select,textarea')))event.preventDefault();
     event.stopImmediatePropagation();return;
@@ -1654,6 +1660,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         mainCamera.near=near;
         mainCamera.updateProjectionMatrix();
       }
+      atelierTable.update(inside&&!moving&&remoteScene?activeSpace:null,position);
       render(renderState);
       if(drawWorld)presentWorldFrame();
       if(!inside&&drawWorld)geometryProbe.afterRender();
@@ -2485,7 +2492,7 @@ $('#workshop-dismiss').onclick=()=>{
   workshopWarningDismissed=true;
 };
 const interval=setInterval(refreshWorkshop,1500);
-window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();pendingBook.dispose();beaconControls.clear();garden.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);if(signalPreview)URL.revokeObjectURL(signalPreview);worldAudio.dispose();client.dispose();});
+window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();pendingBook.dispose();beaconControls.clear();atelierTable.update(null);garden.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);if(signalPreview)URL.revokeObjectURL(signalPreview);worldAudio.dispose();client.dispose();});
 void refreshWorkshop();
 resetDoor();
 syncIndoorDesign();
