@@ -1,5 +1,22 @@
 # Current MVP work
 
+## Character worktable deployed at the foyer door
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `15ed1ac8a65e`
+from `04e0a57e61d9`, following Nicolás's direct instruction to connect
+the door to the table. The protected package activation completed.
+All 87 installed payloads matched. The protected HTTPS bundle and
+health response matched, and the world and receiving configuration
+were preserved. Immediate rollback is `df929b9352b3`.
+
+CompAII's authenticated own-native lane entered from outside, took
+the foyer door into the Character room, observed Mesa de Char Design
+and read the installed flight and walking catalog. The same lane took
+the return door and restored its initial outside location. The exact
+packaged browser test covers opening the table without replacing the
+world document. Independently signed-in browser review of a shared
+frame and note remains open.
+
 ## Character and Matter package on the current water and woodland release
 
 Candidate `04e0a57e61d948df505af9dec0d108570859e954` combines the qualified
