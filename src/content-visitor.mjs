@@ -1,4 +1,4 @@
-import {CONTENT_NODE,validateContentNodes,sameVisitPin,visitResponseMatches,knownVisitState,visitVersion,visitEntryMatches,contextVisitSnapshotMatches} from './content-visits.mjs';
+import {CONTENT_NODE,validateContentNodes,sameVisitEdition,sameVisitPin,visitResponseMatches,knownVisitState,visitVersion,visitEntryMatches,contextVisitSnapshotMatches} from './content-visits.mjs';
 import {ExhibitionIndex} from './exhibition-index.mjs';
 import {GALLERY_STAGES,renderedGalleryPlaque} from './gallery-display.mjs';
 
@@ -50,13 +50,14 @@ export class ContentVisitor{
   this.catalogFlight=true;
   const generation=++this.catalogGeneration;
   try{
-   const response=await fetch(new URL(this.scoped?'api/space/content-visits':'api/content-visits',this.base),{credentials:'same-origin',signal:AbortSignal.timeout(5000)});
+   const response=await fetch(new URL(this.scoped?'api/space/content-visits?exhibitHistory=1':'api/content-visits',this.base),{credentials:'same-origin',signal:AbortSignal.timeout(5000)});
    if(!response.ok)throw Object.assign(Error('Catalog unavailable'),{status:response.status});
    const value=await response.json();if(this.disposed||generation!==this.catalogGeneration)return false;
-   this.nodes=this.scoped?[]:validateContentNodes(value.nodes);this.entries=Array.isArray(value.visits)?value.visits.slice(0,16).map(entry=>{const node=this.nodes.find(node=>node.id===entry.node);return {...entry,title:entry.title||node?.title,position:entry.position||node?.position};}):[];this.catalogSignature=signature;this.choices();
+   this.nodes=this.scoped?[]:validateContentNodes(value.nodes);this.entries=Array.isArray(value.visits)?value.visits.slice(0,16).map(entry=>{const node=this.nodes.find(node=>node.id===entry.node);return {...entry,title:entry.title||node?.title,position:entry.position||node?.position};}):[];this.catalogSignature=signature;
    this.renewScopedCatalog=this.scoped&&(value.revalidate===true||value.gallery===true||this.entries.some(entry=>entry.galleryDisplay===true));
    this.catalogRenewAt=this.renewScopedCatalog?performance.now()+20000:Infinity;
    this.reconcileVisitAccess();
+   this.choices();
    this.index.update(this.scoped||this.index.opened?this.entries:[]);this.onCatalog(this.entries);return true;
   }catch(error){
    if(this.scoped&&!this.disposed&&generation===this.catalogGeneration){
@@ -77,6 +78,7 @@ export class ContentVisitor{
   this.updateEndControl();
   this.nearby=null;let distance=this.scoped?ROOM_VISIT_REACH:5;
   if(position)for(const entry of this.entries){
+   if(entry.catalogOnly)continue;
    const at=entry.position||CONTENT_NODE.position,next=Math.hypot(position.x-at.x,position.z-at.z,this.scoped?(position.y??at.y)-at.y:0);
    if(next<distance){distance=next;this.nearby=entry;}
   }
@@ -99,14 +101,16 @@ export class ContentVisitor{
    this.catalog=this.loadCatalog();
  }
 
- hasCurrentEntry(entry=this.entry,visitRoom=this.visitRoom){
-  return this.roomId===visitRoom&&this.entries.some(value=>value.id===entry?.id&&
-   value.nodeRevision===entry.nodeRevision&&sameVisitPin(value.pin,entry.pin));
+ currentEntry(entry=this.entry,visitRoom=this.visitRoom){
+  if(this.roomId!==visitRoom)return null;
+  return this.entries.find(value=>sameVisitEdition(value,entry))??null;
  }
+ hasCurrentEntry(entry=this.entry,visitRoom=this.visitRoom){return Boolean(this.currentEntry(entry,visitRoom));}
 
  reconcileVisitAccess(){
   if(!this.scoped||!this.frame||this.visitRoom!==this.roomId)return;
-  const available=this.hasCurrentEntry();
+  const available=this.currentEntry();
+  if(available&&available.id!==this.entry.id)this.entry=available;
   if(!available&&!this.parked)this.accessGeneration++;
   this.parked=this.roomId!==null&&!available;
   if(!available)this.minimize();
@@ -135,10 +139,17 @@ export class ContentVisitor{
  }
 
  async openNode(nodeId,{expectedRevision=null}={}){
+  if(this.scoped)return this.open(null,{nodeId,nodeRevision:expectedRevision});
   await this.catalog;
-  const entry=this.entries.find(value=>value.node===nodeId&&value.id===this.entry?.id)||this.entries.find(value=>value.node===nodeId);
-  if(!entry){this.say('No hay contenido disponible para tu acceso en este lugar.');return;}
-  return this.open(entry.id,{nodeRevision:expectedRevision});
+  const matching=this.entries.filter(value=>value.node===nodeId&&(expectedRevision===null||value.nodeRevision===expectedRevision));
+  const entry=matching.find(value=>value.id===this.entry?.id)??matching[0];
+  if(!entry){
+    this.say(expectedRevision!==null&&this.entries.some(value=>value.node===nodeId)?
+      'Este contenido cambió de lugar o edición. Volvé a elegirlo en el mundo.':
+      'No hay contenido disponible para tu acceso en este lugar.');
+    return;
+  }
+  return this.open(entry.id,{nodeRevision:entry.nodeRevision,expectedPin:entry.pin});
  }
 
  request(method){
@@ -195,25 +206,35 @@ export class ContentVisitor{
   if(this.scoped&&entry?.galleryDisplay===true)
    return this.open(entry.id,{nodeRevision:entry.nodeRevision,expectedPin:entry.pin});
  }
- async open(selectedId,{nodeRevision=null,expectedPin=null}={}){
+ async open(selectedId,{nodeRevision=null,expectedPin=null,nodeId=null}={}){
   if(this.roomSyncPending||this.closing)return;
   if(this.parked){
    this.say('La visita anterior sigue guardada en este navegador. Volvé a su sala cuando recuperes el acceso.');
    return;
   }
   const selected=this.entries.find(entry=>entry.id===selectedId);
-  if((nodeRevision!==null&&selected?.nodeRevision!==nodeRevision)||(expectedPin&&!sameVisitPin(selected?.pin,expectedPin))){this.say('Este contenido cambió de lugar o edición. Volvé a elegirlo en el mundo.');return;}
+  if(!nodeId&&((nodeRevision!==null&&selected?.nodeRevision!==nodeRevision)||(expectedPin&&!sameVisitPin(selected?.pin,expectedPin)))){this.say('Este contenido cambió de lugar o edición. Volvé a elegirlo en el mundo.');return;}
   if(!this.scoped&&this.frame&&(!selectedId||selectedId===this.entry?.id&&(!selected||sameVisitPin(selected.pin,this.entry.pin)))){this.reveal();this.frame.focus();return;}
   if(this.opening)return;
   const opening={};this.opening=opening;
-  const current=()=>!this.disposed&&this.opening===opening&&!this.roomSyncPending;
+  const visitRoom=this.roomId;
+  const current=()=>!this.disposed&&this.opening===opening&&!this.roomSyncPending&&this.roomId===visitRoom;
   try{
    if(this.scoped){
     if(!await this.loadCatalog()){if(this.frame)this.minimize();this.say('No pude confirmar tu acceso a esta exposición.');return;}
    }else await this.catalog;
    if(!current())return;
    if(this.parked){this.say('No pude confirmar el acceso a la visita que quedó abierta.');return;}
-   if(this.selector)this.selector.disabled=true;const entry=this.entries.find(value=>value.id===selectedId)||(!selectedId&&this.entries[0]);if(!entry){
+   if(this.selector)this.selector.disabled=true;
+   let entry;
+   if(nodeId)entry=this.entries.find(value=>value.node===nodeId&&
+     (nodeRevision===null?!value.catalogOnly:value.nodeRevision===nodeRevision));
+   else if(this.scoped&&selected)entry=this.currentEntry(selected,visitRoom);
+   else entry=this.entries.find(value=>value.id===selectedId)||(!selectedId&&this.entries.find(value=>!value.catalogOnly));
+   if(!entry&&(selected||nodeId&&nodeRevision!==null&&this.entries.some(value=>value.node===nodeId))){
+    this.say('Este contenido cambió de lugar o edición. Volvé a elegirlo en el mundo.');return;
+   }
+   if(!entry){
     if(this.scoped&&this.frame&&!this.hasCurrentEntry())this.minimize();
     this.say('No hay contenido disponible para tu acceso en este lugar.');return;
    }
@@ -261,7 +282,7 @@ export class ContentVisitor{
     this.removeFrame();
    }
    this.entry=entry;this.visitRoom=this.roomId;this.confirming=false;this.readyAcknowledged=false;this.lastContext=null;this.visitId=crypto.randomUUID();entryURL.searchParams.set('holodeck_visit',this.visitId);
-   if(this.selector){this.selector.value=entry.id;const option=Array.from(this.selector.options).find(value=>value.value===entry.id);if(option&&typeof descriptor.title==='string')option.textContent=entry.galleryDisplay?entry.title+' · '+descriptor.title.slice(0,75):descriptor.title.slice(0,100);}
+   if(this.selector){this.selector.value=entry.id;const option=Array.from(this.selector.options).find(value=>value.value===entry.id);if(option&&typeof descriptor.title==='string')option.textContent=entry.galleryDisplay||entry.catalogOnly?entry.title+' · '+descriptor.title.slice(0,75):descriptor.title.slice(0,100);}
    this.title=typeof descriptor.title==='string'?descriptor.title.slice(0,160):'Contenido';
    this.document.querySelector('#visit-title').textContent=this.title;
    this.reveal();
@@ -310,7 +331,7 @@ export class ContentVisitor{
    requestedAt=Date.now(),panelVisible=!this.panel.classList.contains('is-walking');
   const authorized=()=>!this.disposed&&!this.roomSyncPending&&this.roomGeneration===generation&&
    this.accessGeneration===accessGeneration&&(!scoped||this.hasCurrentEntry(entry,visitRoom));
-  const current=()=>authorized()&&this.frame===frame&&this.entry===entry&&this.visitId===visitId&&sameVisitPin(this.entry.pin,pin);
+  const current=()=>authorized()&&this.frame===frame&&this.visitId===visitId&&sameVisitEdition(this.entry,entry);
   const node=entry.node||CONTENT_NODE.id,nodeRevision=entry.nodeRevision??null;
   const unavailable=()=>authorized()?{node,nodeRevision,visitId,pin,requestedAt,contextUnavailable:true}:null;
   if(this.readyAcknowledged===false)return unavailable();

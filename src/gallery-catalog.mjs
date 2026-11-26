@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto';
-import {sameVisitPin, validVisitPin, visitRoutes} from './content-visits.mjs';
+import {sameVisitEdition, sameVisitPin, validVisitPin, visitRoutes} from './content-visits.mjs';
 
 const PLINTHS = Object.freeze({
   draft: {title:'Borrador',position:Object.freeze({x:3.3945,y:.1,z:-.34944})},
@@ -32,8 +32,9 @@ export async function allowedGalleryVisits({entries, authorize, currentEntries})
   const current=currentEntries();
   return entries.flatMap((entry,index)=>{
     const authorization=allowed[index];
-    if((authorization!==true&&typeof authorization?.editionTitle!=='string')||
-      !current.some(value=>value.id===entry.id&&value.nodeRevision===entry.nodeRevision&&sameVisitPin(value.pin,entry.pin)))return [];
-    return [authorization===true?entry:{...entry,editionTitle:authorization.editionTitle}];
+    if(authorization!==true&&typeof authorization?.editionTitle!=='string')return [];
+    const stillListed=current.find(value=>sameVisitEdition(value,entry));
+    if(!stillListed)return [];
+    return [authorization===true?stillListed:{...stillListed,editionTitle:authorization.editionTitle}];
   });
 }

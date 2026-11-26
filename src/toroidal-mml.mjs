@@ -1,8 +1,11 @@
-import {Line3, Quaternion, Vector3} from 'three';
+import {Line3, Quaternion, Ray, Vector3} from 'three';
 import {createAvatarHeadroom} from './avatar-headroom.mjs';
 import {createToroidalCameraClearance} from './toroidal-camera-clearance.mjs';
 import {ToroidalLocomotion, toroidalRotation} from './toroidal-locomotion.mjs';
 import {TOROIDAL_SPAWN, terrainCoordinates, terrainFrame, terrainPosition} from './toroidal-terrain.mjs';
+
+const FLOOR_SKIN=.04;
+const FLOOR_SAMPLES=[[0,0],[1,0],[-1,0],[0,1],[0,-1]];
 
 // The MML host still owns input, network cadence, interpolation, avatar
 // animation and the orbit camera. Only the selected exterior uses a radial
@@ -18,6 +21,7 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
   const radialAxis = new Vector3(),right=new Vector3(),side=new Vector3(),feet=new Vector3();
   const headroom=createAvatarHeadroom(),contact=new Vector3();
   const capsule = new Line3();
+  const floorProbe = new Ray();
   const originalStart = new Vector3(),sweepStart=new Vector3(),sweepEnd=new Vector3();
   let motion, lastLocal, lastPosition;
 
@@ -78,6 +82,33 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
     controller.config.collisionsManager.setCharacterPosition(point);
     feet.set(point.x,point.y,point.z);
     const rise=motion.height-previousHeight;
+    const wasSupported=motion.colliderGrounded;
+    motion.colliderGrounded=false;
+    if(!state.swimming&&rise<=0&&(rise<0||wasSupported)){
+      // Start the downward sweep at the previous feet height. A probe from
+      // above the avatar would turn the tunnel ceiling into its floor.
+      floorProbe.direction.copy(radialAxis).negate();
+      let lift=-Infinity, walkable=false;
+      for(const [x,z] of FLOOR_SAMPLES){
+        const offset=x||z ? radius*.8 : 0;
+        const cap=radius-Math.sqrt(radius*radius-offset*offset);
+        floorProbe.origin.copy(feet).addScaledVector(radialAxis,cap+FLOOR_SKIN-rise)
+          .addScaledVector(right,x*offset).addScaledVector(side,z*offset);
+        const hit=controller.config.collisionsManager.raycastFirst(floorProbe,2*FLOOR_SKIN-rise+(wasSupported?FLOOR_SKIN:0));
+        if(!hit)continue;
+        const clearance=2*FLOOR_SKIN-rise-hit[0];
+        if(clearance<=lift)continue;
+        lift=clearance;
+        walkable=radialAxis.dot(hit[1])>.45;
+      }
+      if(Number.isFinite(lift)){
+        motion.colliderGrounded=walkable;
+        if(lift>0)motion.applyCollision(feet.addScaledVector(radialAxis,lift));
+        motion.radialSpeed=0;
+        state=motion.pose();
+        point=state.position;
+      }
+    }
     const allowed=headroom(feet,rise,controller.capsuleInfo,controller.config.collisionsManager,radialAxis,right,side);
     if(allowed<rise){
       motion.applyCollision(feet.addScaledVector(radialAxis,allowed-rise));
@@ -137,8 +168,8 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
     const facing = toroidalRotation(lastPosition, state.rotation.eulerY, rotation);
     quaternion.set(facing.x, facing.y, facing.z, facing.w);
     controller.controlState = control;
-    controller.characterOnGround = state.grounded;
-    controller.currentHeight = flying||state.swimming ? 2 : motion.height-motion.supportAt(motion.u,motion.v);
+    controller.characterOnGround = state.grounded || motion.colliderGrounded;
+    controller.currentHeight = flying||state.swimming ? 2 : motion.colliderGrounded ? 0 : motion.height-motion.supportAt(motion.u,motion.v);
     controller.characterVelocity.set(0, motion.radialSpeed, 0);
     controller.networkState = {
       position: state.position, rotation: state.rotation, state: controller.getTargetAnimation(),
