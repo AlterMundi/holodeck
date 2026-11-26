@@ -1224,7 +1224,10 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
             const now=performance.now();
             sceneryAfter??=now+240;
             if(now>=sceneryAfter){
-              scenery??=new ToroidalScenery(renderer.mmlCompositionScene.group,base,renderer.mmlCompositionScene.mmlScene);
+              if(!scenery){
+                scenery=new ToroidalScenery(renderer.mmlCompositionScene.group,base,renderer.mmlCompositionScene.mmlScene);
+                ring.setWoodlandShade(scenery.woodland.shadeTexture);
+              }
               scenery.update(position,rendererBudget.lightweight,door,solar?.daylight,ring.hasDetailedTerrain,solar?.direction);
             }
           }

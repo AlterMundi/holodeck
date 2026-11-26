@@ -4,6 +4,7 @@ import {
   InstancedMesh, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, Vector3,
 } from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
+import {createWoodlandShade} from './toroidal-woodland-shade.mjs';
 import {toroidalAirColor} from './toroidal-air.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
 import {
@@ -461,6 +462,7 @@ export class ToroidalWoodland{
       return {...tree,spreading:tree.height>=7.8&&sample(u,v,3941)>.59,
         skylineDistanceSq:switchDistance**2,returnDistanceSq:(switchDistance-skylineReturnMargin)**2};
     });
+    this.shadeTexture=createWoodlandShade(trees);
     const broad=trees.filter(tree=>tree.spreading).length;
     this.meshes=this.geometry.map((geometry,index)=>{
       const capacity=index<4?trees.length-broad:broad;
@@ -612,6 +614,7 @@ export class ToroidalWoodland{
     this.material.dispose();
     this.nearMaterial.dispose();
     this.needles.value?.dispose();
+    this.shadeTexture.dispose();
     this.skylineMaterial.dispose();
     this.undergrowth.dispose();
     this.undergrowth.geometry.dispose();

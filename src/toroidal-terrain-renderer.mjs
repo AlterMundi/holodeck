@@ -1,3 +1,4 @@
+import {woodlandShadeShader} from './toroidal-woodland-shade.mjs';
 import {toroidalAirColor,toroidalCosmosColor} from './toroidal-air.mjs';
 import {REFLECTION_BANK} from './toroidal-bank-reflection.mjs';
 import {createMeadowCoverTexture,useToroidalRockDetail,useToroidalWaterDetail} from './toroidal-surface-detail.mjs';
@@ -252,6 +253,7 @@ const terrainShading = {
     // after dark without washing out the rest of the landscape.
     outgoingLight += diffuseColor.rgb*vec3(.23,.31,.43)*holoApproachSkylight*(1.0-holodeckDaylight);
     outgoingLight *= 1.0-.36*holoFacadeContact;
+    if(holodeckWoodlandShade)outgoingLight*=1.0-woodlandShadeAt(vHoloWorld.xz)*mix(.12,.65,holodeckDaylight);
     // Share the water mesh's radial datum. The smooth terrain normal
     // keeps the wet strip approximately the same width on sloping banks.
     float shoreDepth = ${glsl(TOROIDAL_TERRAIN.waterLevel)}-vHoloHeight;
@@ -410,6 +412,9 @@ function artDirect(material, name, shading, environment, bank=null) {
     if(name==='terrain'){
       shader.uniforms.holodeckMeadowCover=environment.meadowCover;
       shader.uniforms.holodeckFacadeGround=environment.facadeGround;
+      shader.uniforms.woodlandShadeMap=environment.woodlandShade;
+      shader.uniforms.holodeckWoodlandShade=environment.hasWoodlandShade;
+      fragment=after(fragment,'common','uniform bool holodeckWoodlandShade;'+woodlandShadeShader);
       fragment=after(fragment,'common','uniform sampler2D holodeckMeadowCover; uniform vec4 holodeckFacadeGround;');
     }
     shader.fragmentShader=before(fragment,'opaque_fragment',shading.output+`
@@ -471,7 +476,7 @@ export class ToroidalTerrainRenderer {
     this.waterMaterial = new MeshStandardMaterial({color:0x19606f,roughness:.34,metalness:0,side:DoubleSide,
       transparent:true,opacity:WATER_OPACITY,depthWrite:false,forceSinglePass:true});
     this.environment={water:{value:0},sun:{value:new Vector3(...SUN_LOCAL)},daylight:{value:1},
-      cosmos:{value:null},hasCosmos:{value:false},approach:{value:1},eyeHeight:{value:0},sill:{value:new Vector3()},facadeGround:{value:new Vector4(0,0,0,0)},meadowCover:{value:createMeadowCoverTexture()},lightWater:{value:false}};
+      cosmos:{value:null},hasCosmos:{value:false},approach:{value:1},eyeHeight:{value:0},sill:{value:new Vector3()},facadeGround:{value:new Vector4(0,0,0,0)},meadowCover:{value:createMeadowCoverTexture()},woodlandShade:{value:null},hasWoodlandShade:{value:false},lightWater:{value:false}};
     useToroidalRockDetail(this.material,{meadow:true});
     this.updateWaterTime=useToroidalWaterDetail(this.waterMaterial,this.environment.lightWater);
     artDirect(this.material,'terrain',terrainShading,this.environment);
@@ -531,6 +536,11 @@ export class ToroidalTerrainRenderer {
     this.environment.hasCosmos.value=panorama!==null;
     this.environment.water.value=waterDepth;
     this.environment.eyeHeight.value=terrainCoordinates([eye.x,eye.y,eye.z]).height;
+  }
+
+  setWoodlandShade(texture){
+    this.environment.woodlandShade.value=texture;
+    this.environment.hasWoodlandShade.value=texture!==null;
   }
 
   setSun(solar,direction=solar.direction){

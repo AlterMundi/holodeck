@@ -1,5 +1,6 @@
 import {approachCoordinates,Sand3DTrail} from './sand3d-trail.mjs';
 import {ToroidalWoodland} from './toroidal-woodland.mjs';
+import {useVegetationShade} from './toroidal-woodland-shade.mjs';
 import {ToroidalOverlook} from './toroidal-overlook.mjs';
 import {ToroidalMeadowBanks} from './toroidal-meadow-banks.mjs';
 import {useToroidalRockDetail} from './toroidal-surface-detail.mjs';
@@ -368,9 +369,13 @@ export class ToroidalScenery {
     this.daylight={value:1};
     this.detail=base?new Sand3DTrail(scene,base,approach,useSceneryDaylight,this.daylight):null;
     this.scatterCells=new Map();
-    this.meadow=new ToroidalMeadowBanks(scene,useSceneryDaylight,this.daylight,
-      (first,last)=>this.stoneCover(first,last));
     this.woodland=new ToroidalWoodland(scene,colliders,useSceneryDaylight,this.daylight);
+    const floorDaylight=(material,daylight,height)=>{
+      useSceneryDaylight(material,daylight,height);
+      useVegetationShade(material,this.woodland.shadeTexture);
+    };
+    this.meadow=new ToroidalMeadowBanks(scene,floorDaylight,this.daylight,
+      (first,last)=>this.stoneCover(first,last));
     this.overlook=new ToroidalOverlook(scene,colliders);
     this.ribbonGrass.name='Trail-side tufts';
     this.blooms.name='Trail-edge wildflowers';
@@ -379,7 +384,7 @@ export class ToroidalScenery {
     for(const mesh of this.meshes){
       mesh.count=0;
       mesh.visible=false;
-      useSceneryDaylight(mesh.material,this.daylight);
+      floorDaylight(mesh.material,this.daylight);
       mesh.frustumCulled=false;
       this.group.add(mesh);
     }
@@ -390,7 +395,7 @@ export class ToroidalScenery {
       mesh.frustumCulled=false;
       this.group.add(mesh);
     }
-    useSceneryDaylight(fieldMaterial,this.daylight);
+    floorDaylight(fieldMaterial,this.daylight);
     meadowWind(fieldMaterial,this.fieldClock,this.fieldMotion,this.fieldViewer);
     this.fieldCells=new Map();
     scene.add(this.group);
