@@ -28,6 +28,22 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+Candidate `082f167a304fcdb0fbb25941b2d7ad5371b5b866` pins Proyección
+`02bf284d954faf46bf0f67af526faf1adf897f82` by archive and SHA-512.
+Its Holodeck archive SHA-256 is
+`5a1fd5f2372d2a5f1fd73a6388ffb12c7d9dc20187582d43f80c895ccf93cf60`.
+Clean dependency install, the build and 441 Node cases passed, with two
+skips. The locked renderer passed the two-session Matter probe. The
+protected baseline deliberately redirects the Character door to
+`?taller=personajes`, as reported by the human. The candidate's exact
+Chromium probe traversed the physical door, stayed in the same world
+document and opened the table after retrying a failed rig download.
+On the same archive a separate two-visitor run reached the shared
+flight pose at frame 36 and revision 3, read the room note, retained
+independent orbit, and stepped the compact touch-emulated visitor to
+frame 35 while the first stayed at 37.
+The protected URL continues to select the earlier archive.
+
 The protected viewer fix can be selected independently of room work.
 The exact installed archive `d2a9b89a726d2dc5766e00fdfa6701dd2f8faa8cfa6cd11832b8693d90dfa92a`
 produces candidate `9571f17ffca5ed7fe2ca1915665589068cfc9ccda0ed7c64109f6af643c04b50`

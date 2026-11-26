@@ -177,8 +177,10 @@ async function main(){
     const worldLoaded=()=>page.waitForURL(value=>!value.searchParams.has('taller'));
     await page.goto(url,{waitUntil:'domcontentloaded'});
     await worldReady();
+    const foyerDocument=await page.evaluate(()=>performance.timeOrigin);
     const doorRoom=await approachDoor(studio);
     const documentBeforeTable=await page.evaluate(()=>performance.timeOrigin);
+    assert.equal(documentBeforeTable,foyerDocument,'The Character door must stay in the existing world document');
     await page.route('**/assets/avatar/navegante-blender.glb',route=>route.fulfill({status:503}),{times:1});
     const walkedInTable=await openWorktable(doorRoom,page,0,{retryModel:true});
     assert.equal(await page.evaluate(()=>performance.timeOrigin),documentBeforeTable);
