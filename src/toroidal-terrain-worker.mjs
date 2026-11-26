@@ -1,6 +1,16 @@
+import {buildReflectionBank} from './toroidal-bank-reflection.mjs';
 import {buildTerrainTile, selectTerrainTiles} from './toroidal-terrain.mjs';
 
 self.onmessage = ({data}) => {
+  if (data.kind === 'reflection-bank') {
+    try {
+      const bank=buildReflectionBank(data.row,data.rows);
+      self.postMessage({bank},[bank.buffer]);
+    } catch {
+      self.postMessage({bank:null});
+    }
+    return;
+  }
   try {
     if (data.kind === 'select') {
       self.postMessage({tiles: selectTerrainTiles(data.viewer, data.options)});

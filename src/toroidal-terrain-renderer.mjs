@@ -1,6 +1,7 @@
 import {toroidalAirColor,toroidalCosmosColor} from './toroidal-air.mjs';
+import {REFLECTION_BANK} from './toroidal-bank-reflection.mjs';
 import {useToroidalRockDetail,useToroidalWaterDetail} from './toroidal-surface-detail.mjs';
-import {BufferAttribute, BufferGeometry, DoubleSide, Group, Mesh, MeshStandardMaterial, ShaderChunk, Vector3, Vector4} from 'three';
+import {BufferAttribute, BufferGeometry, DataTexture, DoubleSide, Group, LinearFilter, MathUtils, Mesh, MeshStandardMaterial, RGFormat, ShaderChunk, UnsignedByteType, Vector3, Vector4} from 'three';
 import {
   TOROIDAL_PARCEL_Y, TOROIDAL_TERRAIN, buildTerrainTile, terrainCoordinates, terrainFrame, terrainTile,
 } from './toroidal-terrain.mjs';
@@ -256,7 +257,53 @@ const terrainShading = {
     ${aerialPerspective('* mix(.45,1.0,holodeckDaylight)')}
   `,
 };
-const waterShading = {
+const bankReflectionShading = `
+    float bankOcc=0.0;
+    float bankDist=0.0;
+    float bankEyeAbove=holodeckEyeHeight-(${glsl(TOROIDAL_TERRAIN.waterLevel)});
+    if(gl_FrontFacing && holodeckBankViewerFade>0.0 && bankEyeAbove>.008 && distanceToWater<72.0){
+      vec3 offset=toroidalWorld-holodeckBankCenter;
+      vec2 chart=vec2(dot(offset,holodeckBankAlong),dot(offset,holodeckBankAcross));
+      float bankFade=1.0-smoothstep(17.0,23.0,length(chart));
+      if(bankFade>0.0){
+        // Keep the small ripples in the sky reflection. The rough bank
+        // image follows a calmer ray and spreads across the water.
+        vec3 bankNormal=normalize(mix(nonPerturbedNormal,normal,.32));
+        vec3 viewRay=reflect(-holoView,bankNormal);
+        float bankElevation=dot(viewRay,holoUp);
+        if(bankElevation>0.0){
+          vec3 ray=transpose(mat3(viewMatrix))*viewRay;
+          vec2 planarRay=vec2(dot(ray,holodeckBankAlong),dot(ray,holodeckBankAcross));
+          float run=max(length(planarRay),.001);
+          vec2 direction=planarRay/run;
+          float slope=dot(ray,holodeckBankUp)/run;
+          float start=dot(offset,holodeckBankUp);
+          float travel=1.75;
+          for(int tap=0;tap<7;tap++){
+            vec2 texel=(chart+direction*travel)/${glsl(REFLECTION_BANK.size)}+.5;
+            vec2 encoded=textureLod(holodeckBankHeight,texel,0.0).rg;
+            float height=(dot(encoded,vec2(256.0,1.0))/257.0-.5)*${glsl(REFLECTION_BANK.heightRange)};
+            float rayHeight=start+slope*travel;
+            float width=.10+.071*travel;
+            float hit=smoothstep(-.22*width,.78*width,height-rayHeight);
+            float gain=hit*(1.0-bankOcc);
+            bankOcc+=gain;
+            bankDist+=gain*travel;
+            if(bankOcc>.98)break;
+            travel*=1.74;
+          }
+          bankDist/=max(bankOcc,.001);
+          bankOcc*=bankFade*holodeckBankViewerFade*smoothstep(.008,.08,bankEyeAbove)*
+            smoothstep(0.0,.045,bankElevation)*(1.0-smoothstep(56.0,72.0,distanceToWater));
+        }
+      }
+    }
+    vec3 bankLight=bankHaze*vec3(.33,.44,.38)+vec3(.016,.023,.017)*holodeckDaylight;
+    bankLight=mix(bankLight,bankHaze,1.0-exp(-bankDist*.012));
+    reflectedAir=mix(reflectedAir,bankLight,bankOcc*.68);
+`;
+
+const waterShading = (reflectBank=false) => ({
   // Deep colour looking down, pale sky mirrored at grazing angles.
   output: `
     vec3 holoView = normalize(vViewPosition);
@@ -266,7 +313,7 @@ const waterShading = {
     float skyHeight=clamp(dot(reflectedRay,holoUp),0.0,1.0);
     float surfaceView=1.0-smoothstep(0.0,.08,holodeckWaterViewDepth);
     float nightSky=(1.0-holodeckDaylight)*surfaceView;
-    reflectedAir+=vec3(.022,.038,.061)*nightSky*mix(.40,1.0,skyHeight);
+    reflectedAir+=vec3(.022,.038,.061)*nightSky*mix(.40,1.0,skyHeight);${reflectBank?'\n    vec3 bankHaze=reflectedAir;':''}
     if(holodeckHasCosmos && gl_FrontFacing && surfaceView>0.0 && holodeckDaylight<.85){
       // View space normals add wave detail, then the celestial map is
       // sampled in the same world axes as the sky.
@@ -276,13 +323,14 @@ const waterShading = {
       float radiance=max(max(skyLight.r,skyLight.g),skyLight.b);
       reflectedAir=mix(reflectedAir,skyLight*1.12,window*surfaceView*smoothstep(.018,.24,radiance));
     }
+    ${reflectBank?bankReflectionShading:''}
     vec3 depths=(outgoingLight-totalSpecular)*mix(.25,1.0,holodeckDaylight);
     depths+=holodeckDaylight*vec3(.025,.066,.084);
     outgoingLight=mix(depths,reflectedAir,.10+.54*holoFresnel+holoSwell*.07);
     outgoingLight = mix(outgoingLight, vec3(.30, .49, .47),
       .38*holoShallow*(1.0-.8*holoFresnel)*holodeckDaylight);
     ${aerialPerspective('',.68)}
-    outgoingLight+=totalSpecular*(.65+.48*holoSwell)*(1.0-holoHaze*.68);
+    outgoingLight+=totalSpecular*(.65+.48*holoSwell)*(1.0-holoHaze*.68)${reflectBank?'*(1.0-.68*bankOcc)':''};
     // Opacity follows the signed depth at the fragment everywhere. Camera
     // submersion can change the lighting, never the transmission policy.
     float depth=max(0.0,toroidalShoreDepth);
@@ -308,9 +356,9 @@ const waterShading = {
       diffuseColor.a=edge*max(opticalOpacity,whitewater);
     }
   `,
-};
+});
 
-function artDirect(material, name, shading, environment) {
+function artDirect(material, name, shading, environment, bank=null) {
   // The ring's own aerial perspective stands in for the scene fog.
   material.fog = false;
   const surfaceCompile = material.onBeforeCompile;
@@ -335,6 +383,14 @@ function artDirect(material, name, shading, environment) {
       shader.uniforms.holodeckCosmos=environment.cosmos;
       shader.uniforms.holodeckHasCosmos=environment.hasCosmos;
       fragment=after(fragment,'common','uniform sampler2D holodeckCosmos; uniform bool holodeckHasCosmos;'+toroidalCosmosColor);
+    }
+    if(bank){
+      Object.assign(shader.uniforms,bank);
+      fragment=after(fragment,'common',`
+        uniform sampler2D holodeckBankHeight;
+        uniform float holodeckBankViewerFade;
+        uniform vec3 holodeckBankCenter, holodeckBankAlong, holodeckBankAcross, holodeckBankUp;
+      `);
     }
     if(name==='terrain'){
       shader.uniforms.holodeckMeadowGrain=environment.meadowGrain;
@@ -393,7 +449,7 @@ function viewerKey(viewer, profile) {
 }
 
 export class ToroidalTerrainRenderer {
-  constructor(scene, base, WorkerType = globalThis.Worker) {
+  constructor(scene, base, WorkerType = globalThis.Worker, {bankReflection=false}={}) {
     this.group = new Group();
     this.group.name = 'Toroidal terrain';
     this.material = new MeshStandardMaterial({vertexColors:true,roughness:.96});
@@ -404,7 +460,10 @@ export class ToroidalTerrainRenderer {
     useToroidalRockDetail(this.material,{meadow:true});
     this.updateWaterTime=useToroidalWaterDetail(this.waterMaterial,this.environment.lightWater);
     artDirect(this.material,'terrain',terrainShading,this.environment);
-    artDirect(this.waterMaterial,'water',waterShading,this.environment);
+    artDirect(this.waterMaterial,'water',waterShading(),this.environment);
+    this.visibleWaterMaterial=this.waterMaterial;
+    this.bankReflection=bankReflection;
+    if(bankReflection)this.bankViewerFade={value:0};
     this.active = new Map();
     this.target = null;
     this.requested = null;
@@ -469,13 +528,67 @@ export class ToroidalTerrainRenderer {
     return this.selectedKey !== null;
   }
 
+  installReflectionBank(data){
+    if(data?.byteLength!==REFLECTION_BANK.size**2*2)return;
+    const {size,center,along,across,up}=REFLECTION_BANK;
+    const texture=new DataTexture(data,size,size,RGFormat,UnsignedByteType);
+    texture.minFilter=texture.magFilter=LinearFilter;
+    texture.needsUpdate=true;
+    const material=this.waterMaterial.clone();
+    this.updateReflectionTime=useToroidalWaterDetail(material,this.environment.lightWater);
+    artDirect(material,'water-bank',waterShading(true),this.environment,{
+      holodeckBankHeight:{value:texture},holodeckBankViewerFade:this.bankViewerFade,
+      holodeckBankCenter:{value:new Vector3(...center)},
+      holodeckBankAlong:{value:new Vector3(...along)},holodeckBankAcross:{value:new Vector3(...across)},
+      holodeckBankUp:{value:new Vector3(...up)},
+    });
+    this.reflectionTexture=texture;
+    this.reflectionMaterial=material;
+  }
+
+  receiveBankRows({row,rows},data){
+    const stride=REFLECTION_BANK.size*2;
+    if(data?.byteLength!==stride*rows){
+      this.bankBuild=null;
+      this.bankFinished=true;
+      return;
+    }
+    const bytes=this.bankBuild?.bytes??new Uint8Array(stride*REFLECTION_BANK.size);
+    bytes.set(data,row*stride);
+    const next=row+rows;
+    if(next===REFLECTION_BANK.size){
+      this.bankBuild=null;
+      this.bankFinished=true;
+      this.installReflectionBank(bytes);
+    }else this.bankBuild={bytes,next};
+  }
+
+  selectWaterMaterial(){
+    const material=this.bankWanted&&this.reflectionMaterial||this.waterMaterial;
+    if(material===this.visibleWaterMaterial)return;
+    this.visibleWaterMaterial=material;
+    for(const meshes of [this.active,this.target?.received])
+      for(const mesh of meshes?.values()??[]){
+        if(mesh.children[0])mesh.children[0].material=material;
+      }
+  }
+
   update(position, lightweight = false) {
     this.environment.meadowGrain.value=lightweight?0:1;
     this.environment.lightWater.value=lightweight;
     if (!this.worker || ![position.x, position.y, position.z].every(Number.isFinite)) return;
     const viewer = terrainCoordinates([position.x, position.y, position.z]);
     const profile = lightweight ? 'light' : 'normal';
-    this.updateWaterTime((performance.now()/1000)%3600);
+    const time=(performance.now()/1000)%3600;
+    this.updateWaterTime(time);
+    if(this.bankReflection){
+      const [x,y,z]=REFLECTION_BANK.center;
+      const distance=Math.hypot(position.x-x,position.y-y,position.z-z);
+      this.bankWanted=!lightweight&&distance<46;
+      this.bankViewerFade.value=1-MathUtils.smoothstep(distance,38,44);
+      this.selectWaterMaterial();
+      if(this.visibleWaterMaterial===this.reflectionMaterial)this.updateReflectionTime(time);
+    }
     this.requested = {viewer, profile, key: viewerKey(viewer, profile)};
     this.pump();
   }
@@ -484,7 +597,15 @@ export class ToroidalTerrainRenderer {
     if (!this.worker || !this.requested || this.inFlight) return;
     const request = this.requested;
     if (this.target?.key !== request.key) this.discardTarget();
-    if (this.selectedKey === request.key) return;
+    if (this.selectedKey === request.key){
+      if(this.bankWanted&&!this.bankFinished){
+        const row=this.bankBuild?.next??0;
+        const rows=Math.min(20,REFLECTION_BANK.size-row);
+        this.inFlight={kind:'reflection-bank',row,rows};
+        this.worker.postMessage(this.inFlight);
+      }
+      return;
+    }
     if (!this.target) {
       this.inFlight = {kind: 'select', request};
       this.worker.postMessage({kind: 'select', viewer: request.viewer,
@@ -506,6 +627,11 @@ export class ToroidalTerrainRenderer {
     const job = this.inFlight;
     if (!job || this.disposed) return;
     this.inFlight = null;
+    if(job.kind==='reflection-bank'){
+      this.receiveBankRows(job,data.bank);
+      this.pump();
+      return;
+    }
     if (data.failed) {
       this.stopWorker();
       return;
@@ -516,7 +642,7 @@ export class ToroidalTerrainRenderer {
       const missing = entries.filter(({key}) => !this.active.has(key));
       this.target = {key: job.request.key, entries, missing, segments, received: new Map()};
     } else if (job.kind === 'mesh' && job.target === this.target && job.target.key === this.requested.key) {
-      job.target.received.set(job.key, createTile(data.mesh, this.material, this.waterMaterial));
+      job.target.received.set(job.key, createTile(data.mesh, this.material, this.visibleWaterMaterial));
     }
     this.pump();
   }
@@ -565,6 +691,9 @@ export class ToroidalTerrainRenderer {
     this.material.dispose();
     this.environment.cosmos.value=null;
     this.environment.hasCosmos.value=false;
+    this.bankBuild=null;
+    this.reflectionTexture?.dispose();
+    this.reflectionMaterial?.dispose();
     this.waterMaterial.dispose();
   }
 

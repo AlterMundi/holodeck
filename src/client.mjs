@@ -1171,6 +1171,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       light.target.position.set(anchor.x,anchor.y,anchor.z);
       light.position.set(anchor.x+x*40,anchor.y+y*40,anchor.z+z*40);
     };
+    const bankReflection=new URLSearchParams(location.search).get('reflejos')==='orilla';
     const houseProjected=()=>Boolean(document.querySelector('#workshop #ring-house')?.isConnected);
     outdoorArrivalReady=()=>outsideRing()?ring?.group.children.length>0:Boolean(geometryProbe?.snapshot());
     outdoorReady=()=>outdoorArrivalReady()&&(!outsideRing()||houseProjected());
@@ -1190,7 +1191,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       }
       const yaw=client.getCharacterManager().localController?.networkState.rotation?.eulerY;
       if(outsideRing()){
-        ring??=new ToroidalTerrainRenderer(renderer.mmlCompositionScene.group,base);
+        ring??=new ToroidalTerrainRenderer(renderer.mmlCompositionScene.group,base,undefined,{bankReflection});
         const door=activeSpace.entrances?.[0]?.door;
         ring.setEntrance(door);
         if(position){

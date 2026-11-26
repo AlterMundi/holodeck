@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {Group, Scene, Vector3} from 'three';
-import {buildTerrainTile, selectTerrainTiles, terrainPosition} from '../src/toroidal-terrain.mjs';
+import {buildTerrainTile, selectTerrainTiles, terrainCoordinates, terrainElevation, terrainPosition} from '../src/toroidal-terrain.mjs';
 import {ToroidalTerrainRenderer} from '../src/toroidal-terrain-renderer.mjs';
+import {buildReflectionBank,REFLECTION_BANK} from '../src/toroidal-bank-reflection.mjs';
 
 class TestWorker {
   pending = null;
@@ -16,6 +17,10 @@ class TestWorker {
   answer() {
     const message = this.pending;
     this.pending = null;
+    if(message.kind==='reflection-bank'){
+      this.onmessage({data:{bank:buildReflectionBank(message.row,message.rows)}});
+      return;
+    }
     this.onmessage({data: message.kind === 'select' ?
       {tiles: selectTerrainTiles(message.viewer, message.options)} :
       {mesh: buildTerrainTile(message.tile, message.segments, message.tile.coarseEdges)}});
@@ -89,6 +94,65 @@ test('water keeps one blended surface across the shore and deep tiles', () => {
     assert.equal(material.depthWrite, false);
   }
   renderer.dispose();
+});
+
+test('the bank data follows the curved terrain and stays off the lightweight water path',()=>{
+  const renderer=new ToroidalTerrainRenderer(new Scene(),base,TestWorker,{bankReflection:true});
+  const worker=renderer.worker,near=new Vector3(...REFLECTION_BANK.center);
+  const {size,heightRange,center,along,across,up}=REFLECTION_BANK;
+  const drain=()=>{
+    while(worker.pending)worker.answer();
+  };
+  renderer.update(near,true);
+  drain();
+  renderer.update(near,true);
+  assert.equal(renderer.reflectionTexture,undefined);
+  assert.equal(worker.pending,null);
+
+  renderer.update(near,false);
+  while(worker.pending&&worker.pending.kind!=='reflection-bank')worker.answer();
+  renderer.update(near,false);
+  assert.equal(worker.pending.kind,'reflection-bank');
+
+  // Switching profile while the worker is busy cannot attach the bank
+  // material to the lightweight tiles.
+  renderer.update(near,true);
+  drain();
+  assert.equal(renderer.reflectionTexture,undefined);
+  assert.equal(renderer.bankBuild.next,20);
+  assert.equal(renderer.visibleWaterMaterial,renderer.waterMaterial);
+
+  renderer.update(near,false);
+  drain();
+  renderer.update(near,false);
+  drain();
+  renderer.update(near,false);
+  const texture=renderer.reflectionTexture;
+  assert.deepEqual(texture.image.data,buildReflectionBank());
+  assert.equal(texture.image.data.byteLength,size*size*2);
+  for(const j of [0,35,79,120,159])for(const i of [0,31,80,123,159]){
+    const at=2*(j*size+i), data=texture.image.data;
+    const lift=((256*data[at]+data[at+1])/65535-.5)*heightRange;
+    const x=i+.5-size/2,z=j+.5-size/2;
+    const point=center.map((coordinate,k)=>coordinate+x*along[k]+z*across[k]+lift*up[k]);
+    const {u,v,height}=terrainCoordinates(point);
+    assert.ok(Math.abs(height-terrainElevation(u,v))<.01);
+  }
+  renderer.update(near,false);
+  drain();
+  const reflected=renderer.visibleWaterMaterial;
+  assert.equal(reflected,renderer.reflectionMaterial);
+  assert.equal(reflected.opacity,renderer.waterMaterial.opacity);
+  assert.notEqual(reflected.customProgramCacheKey(),renderer.waterMaterial.customProgramCacheKey());
+  for(const mesh of renderer.active.values())
+    for(const water of mesh.children)assert.equal(water.material,reflected);
+
+  renderer.update(near,true);
+  assert.equal(renderer.visibleWaterMaterial,renderer.waterMaterial);
+  let disposals=0;
+  for(const target of [texture,reflected])target.addEventListener('dispose',()=>disposals++);
+  renderer.dispose();
+  assert.equal(disposals,2);
 });
 
 test('worker failure preserves usable distant terrain and releases queued work', () => {
