@@ -77,9 +77,9 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const activeNetworkPath=route('active/network');
   const isWorldSocket = path => path===route('world') ||
     (path.startsWith(route('spaces/')) && path.endsWith('/world'));
-  enableWs(app,undefined,{wsOptions:{handleProtocols:(protocols,req)=>isWorldSocket(req.url?.split('?')[0] ?? '')
+  enableWs(app,undefined,{wsOptions:{verifyClient:authorizeSocket,handleProtocols:(protocols,req)=>isWorldSocket(req.url?.split('?')[0] ?? '')
     ?NetworkedDOM.handleWebsocketSubprotocol(protocols):handleExperienceWebsocketSubprotocol(protocols)}});
-  const sessions=new Map();const sockets=new Map();let nextId=0,authorizationTimer=null,pendingSockets=0;
+  const sessions=new Map();const sockets=new Map();const socketSessions=new WeakMap();let nextId=0,authorizationTimer=null,pendingSockets=0;
   const sessionBindings=production?new SessionBindings(stateDir,LIMITS.sessions):null;
   for(const binding of sessionBindings?.load()||[])sessions.set(binding.key,{id:++nextId,
     actor:{id:binding.actorRef,kind:'human'},created:binding.created,times:[],connection:null,sourceCookie:undefined});
@@ -314,39 +314,50 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     })();
     try{await record.checking;}finally{record.checking=null;}
   }
+  // Complete Home authorization before the WebSocket upgrade so the
+  // transport has its listener installed when the browser sends its handshake.
+  function authorizeSocket({req},accept){
+    if(sockets.size+pendingSockets>=LIMITS.sessions*2){accept(false,503);return;}
+    const expected=publicOrigin||`http://${req.headers.host}`;
+    if((production||req.headers.origin)&&req.headers.origin!==expected){accept(true);return;}
+    const session=sessionFor(cookieToken(req));
+    if(!session){accept(true);return;}
+    pendingSockets++;
+    currentActor(req,session).then(actor=>{
+      if(actor)socketSessions.set(req,session);
+    }).catch(()=>{}).finally(()=>{
+      pendingSockets--;
+      accept(true);
+    });
+  }
   // Existing HTTP forward-auth does not reauthorize an established WebSocket.
   // Keep one bounded timer only while this room has connections, with no model
   // attention; semantic updates additionally recheck before publishing geometry.
   const registerSocket=app.ws.bind(app);
   app.ws=(path,handler)=>registerSocket(path,(socket,req)=>{
-    if(sockets.size+pendingSockets>=LIMITS.sessions*2){socket.close(1013);return;}
-    const expected=publicOrigin||`http://${req.headers.host}`;
-    if((production||req.headers.origin)&&req.headers.origin!==expected){socket.close(1008);return;}
-    const session=sessionFor(cookieToken(req));
-    pendingSockets++;
-    currentActor(req,session).then(actor=>{
-      if(path===activeNetworkPath&&actor?.rights?.includes('observe'))spaces.releaseDeniedPosition(actor);
-      const scope=path===activeNetworkPath?spaces.current(actor):req.params.space??OUTSIDE;
-      if(!inScope(actor,scope)||socket.readyState!==1){socket.close(1008);return;}
-      const record={session,scope,checking:null};sockets.set(socket,record);
-      // Upstream transports broadcast synchronously. Enforce the current room
-      // before any client payload enters or leaves those transports.
-      const stillAllowed=()=>sessionFor(cookieToken(req))===session&&Date.now()-session.created<SESSION_MS&&inScope(session.actor,scope)&&record.projectionAllowed?.()!==false;
-      const send=socket.send.bind(socket),emit=socket.emit.bind(socket);
-      socket.send=(...args)=>{
-        if(stillAllowed())return send(...args);
-        socket.close(1008);
-      };
-      socket.emit=(event,...args)=>{
-        if(event!=='message'||stillAllowed())return emit(event,...args);
-        socket.close(1008);return false;
-      };
-      socket.once('close',()=>{sockets.delete(socket);if(!sockets.size&&authorizationTimer){clearInterval(authorizationTimer);authorizationTimer=null;}});
-      if(!authorizationTimer){authorizationTimer=setInterval(()=>{
-        for(const [current,state]of sockets)checkSocket(current,state);
-      },2000);authorizationTimer.unref();}
-      handler(socket,req);
-    }).catch(()=>socket.close(1008)).finally(()=>pendingSockets--);
+    const session=socketSessions.get(req),actor=session?.actor;
+    if(!session||sessionFor(cookieToken(req))!==session){socket.close(1008);return;}
+    if(path===activeNetworkPath&&actor?.rights?.includes('observe'))spaces.releaseDeniedPosition(actor);
+    const scope=path===activeNetworkPath?spaces.current(actor):req.params.space??OUTSIDE;
+    if(!inScope(actor,scope)||socket.readyState!==1){socket.close(1008);return;}
+    const record={session,scope,checking:null};sockets.set(socket,record);
+    // Upstream transports broadcast synchronously. Enforce the current room
+    // before any client payload enters or leaves those transports.
+    const stillAllowed=()=>sessionFor(cookieToken(req))===session&&Date.now()-session.created<SESSION_MS&&inScope(session.actor,scope)&&record.projectionAllowed?.()!==false;
+    const send=socket.send.bind(socket),emit=socket.emit.bind(socket);
+    socket.send=(...args)=>{
+      if(stillAllowed())return send(...args);
+      socket.close(1008);
+    };
+    socket.emit=(event,...args)=>{
+      if(event!=='message'||stillAllowed())return emit(event,...args);
+      socket.close(1008);return false;
+    };
+    socket.once('close',()=>{sockets.delete(socket);if(!sockets.size&&authorizationTimer){clearInterval(authorizationTimer);authorizationTimer=null;}});
+    if(!authorizationTimer){authorizationTimer=setInterval(()=>{
+      for(const [current,state]of sockets)checkSocket(current,state);
+    },2000);authorizationTimer.unref();}
+    handler(socket,req);
   });
   const cellTransports=new Map();
   const outsidePosePeers=new Map();
@@ -703,11 +714,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     cellFor(record.scope).network.userNetworkingServer.connectClient(ws);
   });
   app.ws(route('world'),(ws,req)=>{
-    currentActor(req,sessionFor(cookieToken(req))).then(actor=>{
-      if(!inScope(actor,OUTSIDE)||ws.readyState!==1){ws.close(1008);return;}
-      const projection=req.query.dressing==='arrival'&&arrivalDocument||document;
-      projection.addWebSocket(ws);ws.on('close',()=>{if(projection.hasWebSocket(ws))projection.removeWebSocket(ws);});
-    }).catch(()=>ws.close(1008));
+    const projection=req.query.dressing==='arrival'&&arrivalDocument||document;
+    projection.addWebSocket(ws);ws.on('close',()=>{if(projection.hasWebSocket(ws))projection.removeWebSocket(ws);});
   });
   for(const channel of ['network','world'])app.ws(route('spaces/:space/'+channel),(ws,req)=>{
     const record=sockets.get(ws),id=req.params.space;

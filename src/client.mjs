@@ -201,6 +201,11 @@ function worldEntered(){
   window.dispatchEvent(new Event('holodeck:entered'));
 }
 
+function presentWorldFrame(){
+  if(!entering&&document.body.hasAttribute('data-world-starting'))
+    document.body.removeAttribute('data-world-starting');
+}
+
 class HolodeckExperienceClient extends Networked3dWebExperienceClient {
   disposeWithError(message){
     this.dispose();
@@ -324,6 +329,7 @@ function startInterior(space){
         actionLabel.update(beaconAvailable()&&!matchMedia('(pointer: coarse)').matches?beaconControls.nearbyAction():null,
           options.coreCameraManager.getCameraState(),renderer.composer.renderer.domElement.clientHeight,{feet:position});
         render(state);
+        presentWorldFrame();
         if(entering&&position&&entryRoomReady(document.getElementById(space.id)))worldEntered();
       };
       let releaseHeadroom,releaseRun;
@@ -1324,6 +1330,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         width:matterHud.canvas.clientWidth-statusLeft-statusRight,height:matterHud.canvas.clientHeight,
       });
       render(renderState);
+      if(drawWorld)presentWorldFrame();
       if(!inside&&drawWorld)geometryProbe.afterRender();
       else if(inside)keepRoomArt();
       if(hot&&moving&&canFinishMove())setMoving(false);
@@ -1633,7 +1640,7 @@ async function refresh(){
   const count=client.getCharacterStates().size;
   $('#people').textContent=count>1?`${count} exploradores en el taller`:'Un lugar para crear juntos';
   const compact=window.matchMedia('(max-width:740px)').matches;
-  const bridge=state.entities.bridge;
+  const bridge=outsideRing()?null:state.entities.bridge;
   if(!bridge&&activeSpace?.title)$('#hud h1').textContent=activeSpace.title;
   $('#bridge').hidden=!bridge;
   $('#plant').hidden=state.lightExercise!==true||!bridge;
