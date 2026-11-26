@@ -240,6 +240,20 @@ const terrainShading = {
     // after dark without washing out the rest of the landscape.
     outgoingLight += diffuseColor.rgb*vec3(.23,.31,.43)*holoApproachSkylight*(1.0-holodeckDaylight);
     outgoingLight *= 1.0-.36*holoFacadeContact;
+    // Share the water mesh's radial datum. The smooth terrain normal
+    // keeps the wet strip approximately the same width on sloping banks.
+    float shoreDepth = ${glsl(TOROIDAL_TERRAIN.waterLevel)}-vHoloHeight;
+    if (holodeckWaterViewDepth < .014 && shoreDepth > -.58 && shoreDepth < 1.15) {
+      float upright = clamp(dot(nonPerturbedNormal,holoUp), .58, .998);
+      float slope = sqrt(1.0-upright*upright)/upright;
+      float rise = max(0.0,-shoreDepth);
+      float soak = rise/(.42*slope);
+      float wet = exp(-soak*soak)*(1.0-smoothstep(.36,.58,rise))*
+        (1.0-smoothstep(.15,1.15,shoreDepth));
+      float surfaceView = 1.0-smoothstep(0.0,.014,holodeckWaterViewDepth);
+      vec3 wetSoil = outgoingLight*.58+vec3(.009,.016,.021)*upright;
+      outgoingLight = mix(outgoingLight,wetSoil,holodeckShoreCoupling*wet*surfaceView);
+    }
     ${aerialPerspective('* mix(.45,1.0,holodeckDaylight)')}
   `,
 };
@@ -277,7 +291,15 @@ const waterShading = {
       float incident=max(.28,dot(normal,holoView));
       float transmission=exp(-.68*depth/incident);
       float edge=smoothstep(0.0,.075,depth);
-      float opticalOpacity=mix(1.0-transmission,diffuseColor.a,holoFresnel);
+      // The reflected sky acquires coverage over the shallows. Use
+      // the wave field's existing world-space pixel span to keep the
+      // ramp visible from grazing angles without a second depth filter.
+      float reflectedCoverage = 1.0;
+      if (gl_FrontFacing) {
+        float reach = clamp(15.6*footprint,.16,.55);
+        reflectedCoverage = 1.0-exp(-depth/reach);
+      }
+      float opticalOpacity=mix(1.0-transmission,diffuseColor.a,holoFresnel*reflectedCoverage);
       opticalOpacity=mix(clamp(opticalOpacity,.04,diffuseColor.a),diffuseColor.a,smoothstep(2.30,3.5,depth));
       float contact=smoothstep(.026,.105,depth)*(1.0-smoothstep(.13,.39,depth));
       float ripple=smoothstep(.07,.28,holoSwell);
@@ -317,7 +339,8 @@ function artDirect(material, name, shading, environment) {
     if(name==='terrain'){
       shader.uniforms.holodeckMeadowGrain=environment.meadowGrain;
       shader.uniforms.holodeckFacadeGround=environment.facadeGround;
-      fragment=after(fragment,'common','uniform float holodeckMeadowGrain; uniform vec4 holodeckFacadeGround;');
+      shader.uniforms.holodeckShoreCoupling={value:1};
+      fragment=after(fragment,'common','uniform float holodeckMeadowGrain; uniform vec4 holodeckFacadeGround; uniform float holodeckShoreCoupling;');
     }
     shader.fragmentShader=before(fragment,'opaque_fragment',shading.output+`
       if (holodeckWaterViewDepth > .014) {
