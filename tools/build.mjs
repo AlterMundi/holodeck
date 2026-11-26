@@ -59,6 +59,23 @@ const avatarRendering={
         throw Error('Requalify the MML avatar rendering adaptation for these dependency bytes');
       let source=bytes.toString('utf8');
       const replacements=[
+        // Preserve the depth pass of solid GLTF skins. The near-camera fade
+        // uses coverage instead of sorting the whole humanoid against water.
+        [`    this.transparent = true;
+    this.side = this.config.originalMaterial.side;`,`    this.transparent = this.config.originalMaterial.transparent;
+    this.side = this.config.originalMaterial.side;`],
+        [`      if (this.currentAlpha !== this.opacity) {
+        this.opacity = this.currentAlpha;
+      }`,`      if (this.currentAlpha !== this.opacity) {
+        this.opacity = this.currentAlpha;
+      }
+      if (!this.transparent) {
+        const alphaHash = this.config.originalMaterial.alphaHash || this.currentAlpha < 1;
+        if (this.alphaHash !== alphaHash) {
+          this.alphaHash = alphaHash;
+          this.needsUpdate = true;
+        }
+      }`],
         [`    this.usernameTooltip = new CharacterTooltip(
       this.config.isLocal ? {
         secondsToFadeOut: 10
