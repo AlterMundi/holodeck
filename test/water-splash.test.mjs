@@ -11,6 +11,7 @@ test('splash scales with crossing speed and fires once when entering or leaving'
   const mild=sample(dry,.27,{seconds:.18});
   const fast=sample(dry,.27,{planar:17});
   assert.ok(fast.strength>mild.strength&&mild.strength>0);
+  assert.ok(sample(dry,.27,{seconds:.24}).strength>0);
   let state=fast.state;
   for(const draft of [.35,.13,.31,.29,.5,.7,.5,.3,.10]){
     const next=sample(state,draft);
