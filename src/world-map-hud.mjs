@@ -1,7 +1,7 @@
 import {CanvasTexture,CircleGeometry,Mesh,MeshBasicMaterial,PlaneGeometry,SRGBColorSpace} from 'three';
 import {spatialHudCatalog} from 'proyeccion/spatial-hud';
 
-export const worldMapId='world-map',worldBearingId='world-bearing';
+export const worldMapId='world-map',worldBearingId='world-bearing',terrainPeekId='terrain-peek';
 const path=name=>({'@path':'/'+name});
 const button=(id,label,fields={},context)=>({id,component:'HudButton',label,
   action:{event:{name:id,...(context?{context}:{})}},...fields});
@@ -32,6 +32,11 @@ const landscapeComponents=[
   ...components.slice(1).map(component=>component.id==='map'?{...component,weight:.68}:component),
 ];
 
+const peekComponents=[
+  {id:'root',component:'HudPanel',label:'Minimapa',width:.96,chrome:'none',children:['map']},
+  {id:'map',component:'HudMap',label:'Relieve y rumbo actual',marks:[]},
+];
+
 const bearingComponents=[
   {id:'root',component:'HudPanel',label:'Salida marcada',width:2.06,children:['route']},
   row('route',['bearing','dismiss']),
@@ -49,11 +54,7 @@ export class WorldMapHud{
   }
 
   reset(){
-    if(this.mesh){
-      this.mesh.removeFromParent();
-      this.mesh.geometry.dispose();
-      this.mesh.material.dispose();
-    }
+    this.releaseTerrain('mesh');
     if(this.group)this.message('deleteSurface',{});
     this.group=null;
     this.mesh=null;
@@ -100,37 +101,63 @@ export class WorldMapHud{
     }
   }
 
+  updatePeek(visible){
+    if(visible===Boolean(this.peeking))return;
+    this.peeking=visible;
+    if(visible){
+      this.send('createSurface',{catalogId:spatialHudCatalog.id},terrainPeekId);
+      this.send('updateComponents',{components:peekComponents},terrainPeekId);
+    }else{
+      this.send('deleteSurface',{},terrainPeekId);
+      this.releaseTerrain('peekMesh');
+      this.peekGroup=null;
+    }
+  }
+
+  releaseTerrain(key){
+    const mesh=this[key];
+    if(!mesh)return;
+    mesh.removeFromParent();
+    mesh.geometry.dispose();
+    mesh.material.dispose();
+    this[key]=null;
+  }
+
   decoration(){
     if(this.mesh&&this.mesh.visible!==this.raster){
       this.mesh.visible=this.raster;
       this.invalidate();
     }
-    if(!this.group)return;
-    const frame=this.group.getObjectByName('map');
+    if(this.group)this.drawTerrain(this.group,'mesh',this.circular,this.raster);
+    if(this.peekGroup)this.drawTerrain(this.peekGroup,'peekMesh',true,true);
+  }
+
+  drawTerrain(group,key,circular,visible){
+    const frame=group.getObjectByName('map');
     if(!frame)return;
     const background=frame.getObjectByName('hud-map-plot');
-    if(background)background.visible=!this.raster||!this.circular;
-    if(!this.raster)return;
+    if(background)background.visible=!visible||!circular;
+    if(!visible)return;
     if(!this.texture){
       this.texture=new CanvasTexture(this.panel.querySelector('#world-minimap'));
       this.texture.colorSpace=SRGBColorSpace;
     }
-    if(!this.mesh){
-      this.mesh=new Mesh(this.terrainGeometry(),new MeshBasicMaterial({map:this.texture,toneMapped:false}));
-      this.mesh.position.z=.07;
-      this.circularMesh=this.circular;
-      frame.add(this.mesh);
-      this.invalidate();
-    }else if(this.circularMesh!==this.circular){
-      this.mesh.geometry.dispose();
-      this.mesh.geometry=this.terrainGeometry();
-      this.circularMesh=this.circular;
-      this.invalidate();
-    }
+    let mesh=this[key];
+    if(!mesh){
+      mesh=new Mesh(this.terrainGeometry(circular),new MeshBasicMaterial({map:this.texture,toneMapped:false}));
+      this[key]=mesh;
+      mesh.position.z=.07;
+      frame.add(mesh);
+    }else if(mesh.userData.circular!==circular){
+      mesh.geometry.dispose();
+      mesh.geometry=this.terrainGeometry(circular);
+    }else return;
+    mesh.userData.circular=circular;
+    this.invalidate();
   }
 
-  terrainGeometry(){
-    return this.circular?new CircleGeometry(.385,48):new PlaneGeometry(.77,.77);
+  terrainGeometry(circular){
+    return circular?new CircleGeometry(.385,48):new PlaneGeometry(.77,.77);
   }
 
   activate({name,context}){
@@ -202,6 +229,7 @@ export class WorldMapHud{
   }
 
   dispose(){
+    this.updatePeek(false);
     this.reset();
     this.updateBearing(false);
     this.markBearingPresented(false);

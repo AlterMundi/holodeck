@@ -1125,7 +1125,6 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
           outsideRing()&&flightEnabled?(localFlightBoost()?'fly-fast':'fly'):low?'crouch':'ground');
       }
       const yaw=client.getCharacterManager().localController?.networkState.rotation?.eulerY;
-      const paintedRaster=minimap(outsideRing()?position:null,yaw,activeSpace.entrances);
       if(outsideRing()){
         ring??=new ToroidalTerrainRenderer(renderer.mmlCompositionScene.group,base);
         const door=activeSpace.entrances?.[0]?.door;
@@ -1307,7 +1306,12 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       if(!conversation.hidden)fitConversationWindow();
       const worldToolsVisible=!entering&&!moving&&!needsSync&&drawWorld&&!opaqueVisit&&!toolModal&&!settingsOpen;
       const navigationVisible=worldToolsVisible&&conversation.hidden&&!quietTouch;
+      const terrainPosition=outsideRing()?position:null;
+      const peekTerrain=Boolean(terrainPosition&&compactTouch&&navigationVisible&&!mapPanel.open&&
+        !matterHud.active&&!updateDoor.bearing?.());
+      const paintedRaster=minimap(terrainPosition,yaw,activeSpace.entrances,peekTerrain);
       matterHud.map.update(navigationVisible,paintedRaster,compactTouch==='landscape');
+      matterHud.map.updatePeek(peekTerrain);
       const touchAvailable=worldToolsVisible&&(conversation.hidden||!compactTouch&&!!conversation.dataset.travelLane)&&
         !mapPanel.open&&!signalEditor.active&&!document.hidden&&document.hasFocus();
       const movementLane=conversation.hidden?'':conversation.dataset.travelLane??'';

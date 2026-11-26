@@ -210,12 +210,12 @@ export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
   const restore=()=>{chart=null;last=null;next=0;};
   canvas.addEventListener('contextrestored',restore);
   raster.addEventListener('contextrestored',restore);
-  return (position,yaw,entrances)=>{
+  return (position,yaw,entrances,peek=false)=>{
     canvas.hidden=!position;
-    if(!position||!panel.open){last=null;return;}
-    const circular=panel.dataset.terrainFormat==='circle';
+    if(!position||!panel.open&&!peek){last=null;return;}
+    const circular=peek||panel.dataset.terrainFormat==='circle';
     const time=now();
-    if(time<next)return;
+    if(last&&last.peek===peek&&last.circular===circular&&time<next)return;
     next=time+90;
     const point=terrainCoordinates([position.x,position.y,position.z]);
     if(!chart||Math.abs(wrap(point.u-chart.u))/chart.du>3/SPAN||Math.abs(wrap(point.v-chart.v))/chart.dv>3/SPAN){
@@ -234,33 +234,41 @@ export function bindToroidalMinimap(panel,{now=()=>performance.now()}={}){
     const {x,y}=toroidalMapPoint(chart,point);
     const heading=toroidalMapHeading(chart,point.v,Number.isFinite(yaw)?yaw:0);
     if(last&&Math.hypot(x-last.x,y-last.y)<.75/DISPLAY&&
-      Math.abs(wrap((heading-last.heading)/TAU))<.025/TAU&&last.entrances===entrances&&last.circular===circular)return;
+      Math.abs(wrap((heading-last.heading)/TAU))<.025/TAU&&last.entrances===entrances&&last.circular===circular&&last.peek===peek)return;
     // Entrances are an immutable snapshot of the current exterior scope.
-    last={x,y,heading,entrances,circular};
+    last={x,y,heading,entrances,circular,peek};
     const {width,height}=canvas;
     ctx.drawImage(raster,0,0,width,height);
     ctx.save();
     ctx.scale(width/DISPLAY,height/DISPLAY);
     drawChartRim(ctx,circular);
     drawSpur(ctx,paths);
-    for(const shore of guide.shores)
-      drawSpurMark(ctx,toroidalMapPoint(chart,shore),'Orilla',true,waterVisible,circular);
-    drawSpurMark(ctx,toroidalMapPoint(chart,TOROIDAL_OVERLOOK),'Mirador',false,waterVisible,circular);
+    if(!peek){
+      for(const shore of guide.shores)
+        drawSpurMark(ctx,toroidalMapPoint(chart,shore),'Orilla',true,waterVisible,circular);
+      drawSpurMark(ctx,toroidalMapPoint(chart,TOROIDAL_OVERLOOK),'Mirador',false,waterVisible,circular);
+    }
     for(const {door} of entrances??[]){
       if(!door)continue;
       const {x,y}=toroidalMapPoint(chart,terrainCoordinates([door.x,door.y,door.z]));
       if(x>0&&x<1&&y>0&&y<1)drawHouse(ctx,x*DISPLAY,y*DISPLAY);
     }
     const cave=toroidalMapPoint(chart,CAVE_ENTRANCE);
-    if(cave.x>.032&&cave.x<.968&&cave.y>.032&&cave.y<.968&&
+    if(!peek&&cave.x>.032&&cave.x<.968&&cave.y>.032&&cave.y<.968&&
       (!circular||Math.hypot(cave.x-.5,cave.y-.5)<.46))
       drawCave(ctx,cave.x*DISPLAY,cave.y*DISPLAY,circular);
     ctx.save();
     ctx.translate(x*DISPLAY,y*DISPLAY);
     ctx.rotate(heading);
-    ctx.beginPath();ctx.moveTo(0,-16);ctx.lineTo(10,11);ctx.lineTo(0,6);ctx.lineTo(-10,11);ctx.closePath();
+    const pointer=peek?2:1;
+    ctx.beginPath();ctx.moveTo(0,-16*pointer);ctx.lineTo(10*pointer,11*pointer);
+    ctx.lineTo(0,6*pointer);ctx.lineTo(-10*pointer,11*pointer);ctx.closePath();
     ctx.fillStyle='#fff4cd';ctx.strokeStyle='#14292f';ctx.lineWidth=5;ctx.stroke();ctx.fill();
     ctx.restore();
+    if(peek){
+      ctx.restore();
+      return true;
+    }
     const scaleLength=DISPLAY*50/SPAN;
     const scaleX=circular?(DISPLAY-scaleLength)/2:16, scaleY=circular?325:335;
     ctx.fillStyle='#132327d9';ctx.fillRect(scaleX-8,scaleY,scaleLength+16,41);

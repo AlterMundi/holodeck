@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {WorldMapHud} from '../src/world-map-hud.mjs';
+import {WorldMapHud,terrainPeekId} from '../src/world-map-hud.mjs';
 
 function fixture(){
   const panel={open:true,hidden:false,dataset:{}};
@@ -53,6 +53,21 @@ test('a raster paint is retained while a contextual map is suppressed',()=>{
   assert.equal(panel.open,true);
 });
 
+
+test('the read-only terrain preview has its own surface and releases it when suppressed',()=>{
+  const {hud}=fixture();
+  const messages=[];
+  hud.send=(type,content,id)=>messages.push({type,content,id});
+  hud.updatePeek(true);
+  hud.updatePeek(true);
+  hud.updatePeek(false);
+  assert.deepEqual(messages.map(({type,id})=>[type,id]),[
+    ['createSurface',terrainPeekId],['updateComponents',terrainPeekId],['deleteSurface',terrainPeekId],
+  ]);
+  assert.ok(messages[1].content.components.every(component=>!component.action));
+  assert.equal(hud.scope,4);
+  assert.equal(hud.peekGroup,null);
+});
 
 test('rotating an open room map keeps its current destination and action scope',()=>{
   const {hud,panel,action}=fixture();

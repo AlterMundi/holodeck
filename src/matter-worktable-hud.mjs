@@ -2,7 +2,7 @@ import {hudAppearanceKey,readHudAppearance} from './hud-appearance.mjs';
 import {PassageHud} from './passage-hud.mjs';
 import {HudLookPreview} from './hud-look-preview.mjs';
 import {Matrix4,OrthographicCamera,PerspectiveCamera,Raycaster,Scene,Vector2} from 'three';
-import {WorldMapHud,worldMapId,worldBearingId} from './world-map-hud.mjs';
+import {WorldMapHud,worldMapId,worldBearingId,terrainPeekId} from './world-map-hud.mjs';
 import {DoorPromptHud,compactDoorPromptWidth,doorPromptId,doorPromptWidth} from './door-prompt-hud.mjs';
 import {CollectionHud,collectionHudId,collectionHudWidth} from './collection-hud.mjs';
 import {WorldStatusHud,worldHeaderId,worldNoticeId,worldControlsId,worldHeaderWidth,worldControlsWidth} from './world-status-hud.mjs';
@@ -236,6 +236,7 @@ export class MatterWorktableHud{
       placeSurface:(group,id)=>{
         if(id===toolbeltId)this.toolGroup=group;
         else if(id===worldMapId)this.map.group=group;
+        else if(id===terrainPeekId)this.map.peekGroup=group;
         else if(id===worldBearingId)this.map.bearingGroup=group;
         else if(id===doorPromptId)this.door.group=group;
         else if(id===collectionHudId)this.collection.group=group;
@@ -993,6 +994,11 @@ export class MatterWorktableHud{
         this.place(this.map.group,'mapPlacement',viewport,width-right-scale*.64,top,scale);
       }
       if(this.mapPlacement?.group===this.map.group)this.mapPlacement.landscape=this.map.landscape;
+    }
+    if(this.map.peekGroup){
+      const scale=90,margin=12;
+      this.place(this.map.peekGroup,'peekPlacement',viewport,width-right-margin-scale*.49,
+        Math.max(top,margin)+(height<500?0:98),scale);
     }
     if(this.map.bearingGroup){
       const {left,right}=this.toolInsets();
