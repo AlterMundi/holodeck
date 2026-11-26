@@ -19,6 +19,8 @@ const lab='compaii-lab',gallery='compaii-galeria',tower='compaii-torre';
 const origin='https://fixture.test';
 const conversationURL=origin+'/conversation-fixture/';
 const binding='b'.repeat(64);
+const cycleNames={'estudio-vuelo':'Vuelo y aterrizaje','estudio-aceleracion':'Vuelo rápido',
+  'estudio-nado':'Nado e inmersión','estudio-marcha':'Marcha y frenada'};
 
 async function moveVisitor(page,from,to){
   return page.evaluate(async body=>(await fetch('api/space',{method:'POST',
@@ -193,8 +195,12 @@ async function main(){
         assert.equal(await panel.getByRole('combobox',{name:'Velocidad',exact:true}).count(),0);
         assert.equal(await control(panel,'Pose').count(),0);
         await control(panel,'Humanoide').press('Enter');
-        await panel.getByRole('button',{name:'Despegue, giro y aterrizaje',exact:true,pressed:true})
-          .waitFor({state:'attached'});
+        for(const name of Object.values(cycleNames))await control(panel,name).waitFor({state:'attached'});
+        for(const id of ['estudio-marcha','estudio-vuelo']){
+          const name=cycleNames[id];
+          await control(panel,name).press('Enter');
+          await panel.getByRole('button',{name,exact:true,pressed:true}).waitFor({state:'attached'});
+        }
         await control(panel,'2×').press('Enter');
         assert.equal(await control(panel,'2×').getAttribute('aria-pressed'),'true');
         await control(panel,'Reproducir').press('Enter');
@@ -324,7 +330,7 @@ async function main(){
     };
     const chapterNames=Object.fromEntries(Object.values(humanMotionStudies)
       .flatMap(study=>study.chapters??[]).map(({id,label})=>[id,label]));
-    const optionName=(name,value)=>name==='Fase'?chapterNames[value]:humanMotionStudies[value]?.label;
+    const optionName=(name,value)=>name==='Fase'?chapterNames[value]:cycleNames[value];
     const choose=async(panel,name,value)=>{
       const menu=panel.getByRole('combobox',{name,exact:true});
       if(await menu.count())await menu.selectOption(value,{force:true});

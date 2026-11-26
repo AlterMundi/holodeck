@@ -21,6 +21,11 @@ const names={
   brace:'Frenada',scan:'Mirar alrededor',sway:'Balanceo',tinker:'Explorar',chirp:'Exclamación',
   ...Object.fromEntries(Object.entries(humanMotionStudies).map(([id,study])=>[id,study.label])),
 };
+const cycleControlNames={
+  walk:'Marcha original',run:'Carrera original',bound:'Zancada original',
+  'estudio-vuelo':'Vuelo y aterrizaje','estudio-aceleracion':'Vuelo rápido',
+  'estudio-nado':'Nado e inmersión','estudio-marcha':'Marcha y frenada',
+};
 const surfaceId='character-studio';
 const noteLabel='Nota para este fotograma';
 const speedOptions=[{id:'0.25',label:'¼×'},{id:'0.5',label:'½×'},{id:'1',label:'1×'},{id:'2',label:'2×'}];
@@ -60,6 +65,7 @@ function inlineControls(field,title,columns){
     ...ids.map((id,index)=>{
       const key='inline/'+field+'/items/'+index;
       return {...button(id,path(key+'/label')),visible:path(key+'/visible'),pressed:path(key+'/selected'),
+        gestureKey:path(key+'/gestureKey'),
         action:{event:{name:field,context:{value:path(key+'/id'),...(field==='chapter'?{clipEdition:path('clipEdition')}:{})}}}};
     }),
   ];
@@ -569,7 +575,8 @@ export function openCharacterStudio(document,table=null){
     show.reviewText&&=notes.length>0;
     const selectedSection=Object.fromEntries(sectionIds.map(id=>[id,id===section]));
     const rigOptions=choices(Object.fromEntries(Object.entries(rigs).map(([id,value])=>[id,value.label])));
-    const cycleOptions=options.map(id=>({id,label:names[id]||id}));
+    const cycleOptions=options.map(id=>({id,label:cycleControlNames[id]??names[id]??id}));
+    const currentEdition=clipEdition();
     const referenceOptions=cycleOptions.filter(option=>option.id!==clip);
     const inlineChoices={rig:[rigOptions,rig],speed:[speedOptions,speed],clip:[cycleOptions,clip],
       chapter:[chapters,chapter],reference:[referenceOptions,reference?.name]};
@@ -581,7 +588,9 @@ export function openCharacterStudio(document,table=null){
       if(visible)rows-=cost;
       inline[field]={visible,items:inlineIds(field).map((_,index)=>{
         const option=visible?items[index]:null;
-        return option?{...option,selected:option.id===selected,visible:true}:{visible:false};
+        if(!option)return {visible:false};
+        const target=field==='chapter'||field==='reference'?currentEdition:field==='clip'?rig:field;
+        return {...option,gestureKey:JSON.stringify([target,option.id]),selected:option.id===selected,visible:true};
       })};
       if(visible&&Object.hasOwn(show,field))show[field]=false;
     }
@@ -590,7 +599,7 @@ export function openCharacterStudio(document,table=null){
       reference:reference?.name??'',referenceOptions,
       compareLabel:showingReference?'Ver A':'Ver B',showingReference,noReference:!reference,
       lastFrame:Math.max(1,frameLimit()),timelineDisabled:readySequence!==sequence||frameLimit()<1,
-      clipEdition:clipEdition(),speedOptions,speed,loop,
+      clipEdition:currentEdition,speedOptions,speed,loop,
       heldPose:show.heldPose?'Último fotograma de '+(showingReference?'B':'A')+' · '+exactFrame:'',
       chapter,chapterOptions:chapters,chapterFrames:chapters.length?chapters.map(entry=>entry.frame):displayed().landmarks,
       canReview:canReview===true,presentationBusy,
