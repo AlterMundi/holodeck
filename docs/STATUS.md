@@ -1,5 +1,19 @@
 # Current MVP work
 
+## Renderer focus during HUD reflow
+
+[Proyección PR #22](https://github.com/AlterMundi/proyeccion/pull/22)
+merged as `a39bbe3e373c038b2e9214357b891354da7238b4` after
+[the renderer checks passed](https://github.com/AlterMundi/proyeccion/actions/runs/45733284452).
+The merged tree matched the tested PR head. Reordering the same
+enabled native control preserves its keyboard focus. The disposable
+Holodeck host probe installed an archive with SHA-256
+`e8a9540e411f36457a471834377ccc132950166211399e3d5d3ecde622561e09`.
+It found one Three.js instance, observed the mesh and its hit target
+before and after a camera move, and confirmed two-session Matter
+actions with independent selections and permissions. This probe uses
+fixture identities. The protected host still uses the selected renderer pin.
+
 ## Desktop movement help in the spatial HUD
 
 Source `aab91b5b494af8a23e3cbe0b3949d74246089036` projects the current
