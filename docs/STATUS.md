@@ -28,6 +28,16 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+The protected release `9281853a628a` still redirects the Character
+foyer door to the standalone viewer. The candidate removes that redirect
+and mounts the worktable in the room. A read-only check of the selected
+receiving configuration and adopted layout confirmed four active rooms,
+reciprocal Character and foyer doors at the same level, and the same
+guest list for the Character room and Matter. The candidate matches the
+installed release's terrain, locomotion and room art in the source diff.
+The staged archive below is ready for Holodeck to select against that
+release. Live activation and entry with a signed-in guest remain open.
+
 The same staged archive opened the physical table through the foyer
 door. In Chromium, a second visitor switched to an emulated 568 × 320
 touch viewport while keeping local frame 35. The visitor followed the
