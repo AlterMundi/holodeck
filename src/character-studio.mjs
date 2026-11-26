@@ -245,7 +245,11 @@ export function openCharacterStudio(document,table=null){
   let compact=Boolean(table),section='Pose',panelWidth=table?2.20:widePanelWidth;
   let primary=null,reference=null,showingReference=false,referenceRequest=0;
   let canReview=null,checkingAccess=false,review=null,selectedNote='',readingReview=false,savingNote=false,pendingNote,draftPose,noteReplaced=false,presentationBusy=false;
-  const projected=table?null:webStudioProjection(document,renderer,scene,dispatch,dispose);
+  const projected=table?null:webStudioProjection(document,renderer,scene,dispatch,dispose,()=>{
+    playing=false;
+    previous=0;
+    refresh();
+  });
   const ownsNoteInput=target=>target?.getAttribute?.('aria-label')===noteLabel&&
     (table??projected).ownsTextInput(target);
   document.addEventListener('focusin',event=>{
@@ -701,7 +705,7 @@ export function openCharacterStudio(document,table=null){
   }
 
   function render(now){
-    if(!visible||document.hidden)return;
+    if(!visible||document.hidden||projected?.graphicsLost())return;
     const dt=Math.min(.05,(now-(previous||now))/1000);
     previous=now;
     if(playing&&ownsNoteInput(document.activeElement)){
@@ -763,7 +767,7 @@ export function openCharacterStudio(document,table=null){
     currentPose:()=>visible&&playback?reviewPose():null};
 }
 
-function webStudioProjection(document,renderer,scene,dispatch,close){
+function webStudioProjection(document,renderer,scene,dispatch,close,pause){
   const window=document.defaultView,events=new AbortController();
   renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));
   renderer.toneMapping=ACESFilmicToneMapping;
@@ -785,7 +789,38 @@ function webStudioProjection(document,renderer,scene,dispatch,close){
     controlStyle:'optical',retainTextDrafts:true,controlRole:(_,id)=>id==='play'?'primary':transport.has(id)?'navigation':'utility',
     placeSurface(value){group=value;},send:({action})=>dispatch(action)});
   hud.setPalette({background:'#102834e8',button:'#263e46',pressed:'#43766e',text:'#eff7f0',focus:'#ecc782',disabled:'#25353d'});
+  const graphicsNotice=document.createElement('output');
+  graphicsNotice.setAttribute('aria-live','polite');
+  graphicsNotice.hidden=true;
+  stage.append(graphicsNotice);
+  let lost=false,savedFocus;
+  canvas.addEventListener('webglcontextlost',event=>{
+    event.preventDefault();
+    if(lost)return;
+    lost=true;
+    const active=document.activeElement;
+    savedFocus=hud.ownsAccessibleInput(active)||hud.ownsTextInput(active)?hud.currentFocus()?.instanceId:undefined;
+    hud.setInteractionScope({surfaceIds:[]});
+    orbit.enabled=false;
+    status.hidden=true;
+    graphicsNotice.hidden=false;
+    graphicsNotice.textContent='Se interrumpió la vista 3D. Esperando a que se recupere.';
+    pause();
+  },{signal:events.signal});
+  canvas.addEventListener('webglcontextrestored',()=>{
+    if(!lost)return;
+    lost=false;
+    graphicsNotice.hidden=true;
+    status.hidden=false;
+    orbit.enabled=true;
+    hud.setInteractionScope();
+    if(savedFocus&&(document.activeElement===document.body||document.activeElement===canvas)){
+      hud.focusAccessibleControl(surfaceId,savedFocus);
+    }
+    savedFocus=undefined;
+  },{signal:events.signal});
   function rayForPointer(event){
+    if(lost)return;
     const {left,top,width,height}=canvas.getBoundingClientRect();
     if(!width||!height)return;
     pointer.set((event.clientX-left)/width*2-1,1-(event.clientY-top)/height*2);
@@ -854,7 +889,7 @@ function webStudioProjection(document,renderer,scene,dispatch,close){
     }
   }
 
-  return {stage,status,draw,ownsTextInput:hud.ownsTextInput,
+  return {stage,status,draw,ownsTextInput:hud.ownsTextInput,graphicsLost:()=>lost,
     send:(type,value)=>hud.receive({version:'1.0',[type]:{surfaceId,...value}}),
     setAngle(angle){
       const distance=stage.clientWidth<670?4.7:4.4;

@@ -360,10 +360,34 @@ async function main(){
     await retry.press('Enter');
     await frame(pose.frame,noGraphics);
     assert.equal(noGraphics.url(),retryURL);
+
+    // Lose a running context after selecting a local frame and writing a draft.
+    const viewport=noGraphics.getByRole('group',{name:'Revisión de movimiento',exact:true});
+    await viewport.getByRole('button',{name:'+1',exact:true}).press('Enter');
+    await frame(pose.frame+1,noGraphics);
+    const noteField=viewport.getByRole('button',{name:'Nota para este fotograma',exact:true});
+    const noteEditor=noGraphics.getByRole('textbox',{name:'Nota para este fotograma',exact:true});
+    await noteField.press('Enter');
+    await noteEditor.fill('Borrador durante la interrupción');
+    await noGraphics.evaluate(()=>{
+      const gl=document.querySelector('.character-studio canvas').getContext('webgl2');
+      window.graphicsTest=gl.getExtension('WEBGL_lose_context');
+      window.graphicsTest.loseContext();
+    });
+    const lostNotice=noGraphics.getByText('Se interrumpió la vista 3D. Esperando a que se recupere.',{exact:true});
+    await lostNotice.waitFor();
+    await viewport.waitFor({state:'detached'});
+    assert.equal(await noGraphics.getByRole('link',{name:'Entrar al taller',exact:true}).count(),1);
+    await noGraphics.evaluate(()=>window.graphicsTest.restoreContext());
+    await lostNotice.waitFor({state:'hidden'});
+    await frame(pose.frame+1,noGraphics);
+    await noteField.press('Enter');
+    assert.equal(await noteEditor.inputValue(),'Borrador durante la interrupción');
+    assert.equal(noGraphics.url(),retryURL);
     assert.deepEqual(errors,[]);
     console.log(JSON.stringify({pose,revision:readback.revision,visitor,observedNote:note,roomScope:true,
       conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,notesWaitedForSharedPose:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
-      situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,reciprocalWorldDoors:true,openedTableFromWorldDoor:true,doorFromViewer:true,returnedToRoomFromViewer:true,noGraphicsRetryKeptPose:true}));
+      situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,reciprocalWorldDoors:true,openedTableFromWorldDoor:true,doorFromViewer:true,returnedToRoomFromViewer:true,noGraphicsRetryKeptPose:true,graphicsRestoreKeptLocalFrameAndDraft:true}));
   }finally{
     await browser?.close();
     runtime?.close();

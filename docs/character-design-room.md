@@ -26,6 +26,9 @@ returns to the same room in the world projection, where the visitor can
 approach the physical table and select **Usar mesa**. If the graphics
 context cannot start in the direct viewer, **Reintentar** reloads the
 same pose link. The available room and return links remain usable.
+When WebGL is interrupted during a review, playback pauses and the
+navigation remains usable. Graphics restoration brings back the local
+frame and any unpublished note draft in the same tab.
 
 The physical table and direct web projection use the same Three.js player
 for Navegante and the humanoid rig, Proyección A2UI controls and scoped
