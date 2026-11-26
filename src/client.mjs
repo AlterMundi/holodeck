@@ -1282,7 +1282,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       if(!conversation.hidden)fitConversationWindow();
       const worldToolsVisible=!entering&&!moving&&!needsSync&&drawWorld&&!opaqueVisit&&!toolModal&&!settingsOpen;
       const navigationVisible=worldToolsVisible&&conversation.hidden&&!quietTouch;
-      matterHud.map.update(navigationVisible,paintedRaster);
+      matterHud.map.update(navigationVisible,paintedRaster,compactTouch==='landscape');
       const touchAvailable=worldToolsVisible&&(conversation.hidden||!compactTouch&&!!conversation.dataset.travelLane)&&
         !mapPanel.open&&!signalEditor.active&&!document.hidden&&document.hasFocus();
       const movementLane=conversation.hidden?'':conversation.dataset.travelLane??'';
@@ -1292,7 +1292,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       touchControls.pause(!touchLocomotion||!conversation.hidden&&!matterHud.movementPresented);
       matterHud.updateBearing(navigationVisible&&!matterHud.active);
       beaconControls.update(inside&&!moving&&!needsSync&&remoteScene?activeSpace.objects:null,position);
-      const passageAvailable=worldToolsVisible&&!quietTouch&&(conversation.hidden||concurrentRoomDoors())&&
+      const passageAvailable=worldToolsVisible&&!quietTouch&&!matterHud.map.landscape&&(conversation.hidden||concurrentRoomDoors())&&
         !matterHud.active&&Boolean(matterHud.toolGroup)&&!signalEditor.active;
       matterHud.door.update(passageAvailable,Boolean(matterHud.toolLayout?.compact));
       let label=null;

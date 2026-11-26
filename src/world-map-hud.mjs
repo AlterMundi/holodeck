@@ -24,6 +24,14 @@ const components=[
   button('exit','Volver al exterior',{visible:path('canExit'),disabled:path('busy')},scope()),
 ];
 
+const landscapeComponents=[
+  {...components[0],width:1.54,children:['body']},
+  {...row('body',['map','controls']),gap:.04},
+  {id:'controls',component:'HudColumn',weight:.82,gap:.018,
+    children:['heading','format','navigation','pagination','exit']},
+  ...components.slice(1).map(component=>component.id==='map'?{...component,weight:.68}:component),
+];
+
 const bearingComponents=[
   {id:'root',component:'HudPanel',label:'Salida marcada',width:2.06,children:['route']},
   row('route',['bearing','dismiss']),
@@ -50,12 +58,13 @@ export class WorldMapHud{
     this.group=null;
     this.mesh=null;
     this.signature=null;
+    this.landscape=null;
     this.index=0;
     this.scope++;
     delete this.panel.dataset.nativeMap;
   }
 
-  update(visible,rasterUpdated){
+  update(visible,rasterUpdated,landscape=false){
     if(rasterUpdated&&this.texture){
       this.texture.needsUpdate=true;
       this.invalidate();
@@ -66,9 +75,10 @@ export class WorldMapHud{
     }
     const {scope,busy,canExit,map}=this.mapState();
     if(this.mapScope!==scope){this.reset();this.mapScope=scope;}
-    if(!this.group){
-      this.message('createSurface',{catalogId:spatialHudCatalog.id});
-      this.message('updateComponents',{components});
+    if(!this.group)this.message('createSurface',{catalogId:spatialHudCatalog.id});
+    if(this.landscape!==landscape){
+      this.landscape=landscape;
+      this.message('updateComponents',{components:landscape?landscapeComponents:components});
     }
     const destinations=map?.destinations??[];
     const count=destinations.length;
