@@ -1,5 +1,24 @@
 # Current MVP work
 
+## November 26 — Portrait topographic map
+
+Protected release `62442e1a268b` uses source `a348618`, with
+`d59164b2cd50` retained as immediate rollback. Only the browser bundle
+and its manifest changed. The protected exact serving checks and 14
+state files matched. The modal portrait layout reuses the same raster
+and room map. Rotation retains the destination, and dismissal restores
+focus to Minimap. In short portrait the plot shrinks first.
+
+The same Raspberry Pi 5 V3D Livianos pose at 360 × 640 showed a terrain
+plot 220 CSS px wide, up from 186. Standard map button targets measured
+approximately 44 CSS px. The short 320 × 410 exterior kept that target
+height. The physical Chromium run used emulated touch and marked a room
+and the exterior door after opening, closing and rotating the map. Two
+authorized fixture visitors showed independent format and theme state.
+482 tests passed, with two optional skips. Fable 5.2 High reviewed the
+layout and Opus 5.5 High reviewed the implementation. Actual phone and
+Telegram WebView acceptance remains open.
+
 ## November 26 — Portrait Matter controls
 
 The protected [Holodeck](https://compaii.dmn.homes/holodeck/) release
