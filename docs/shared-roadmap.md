@@ -934,8 +934,9 @@ The [exterior optics and boost pass](STATUS.md#november-25-aerial-depth-transpar
 uses progressive aerial haze, local glow and depth-dependent shoreline
 transmission. It also gives the human and companion separate bounded
 wakes at boost speed. Two physical devices verified the near and
-submerged views and local wake playback. Independent visitor wake
-acceptance, a broader low-light pass and scene reflections remain open.
+submerged views and local wake playback. A [two-device fixture](character-motion.md#remote-boost-wake-on-the-selected-browser-build)
+also saw the remote pilot's wake. Signed-in visitor acceptance, a
+broader low-light pass and scene reflections remain open.
 The [depth-of-field candidate](environment-art-revamp.md#background-depth-of-field)
 clears its world target correctly. Matched RTX measurements leave too
 little GPU headroom for promotion. Keep the direct render selected and

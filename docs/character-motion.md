@@ -146,6 +146,23 @@ Open before acceptance:
 - Nicolás's judgement of the motion.
 
 
+## Remote boost wake on the selected browser build
+
+A controlled two-client run of live package `394ab30b12c6` used RTX
+2060 Normal for the pilot and Pi 5 Livianos for a stationary observer.
+They had separate fixture actors, world connections, and hardware
+compositors. Each client received the exact decompressed browser bundle.
+At boost the observer's peer moved 15.1 m, and all 13 sampled particles
+projected inside the camera frame. They used the remote pilot's color,
+near the pilot rather than the observing avatar. The wake then hid and
+the active particle list emptied. The wake is faint at this distance in
+Livianos. The robot still follows the local character on each client.
+
+The test clock advances from the selected local daytime. Freezing
+`Date.now()` had prevented one client from sending subsequent movement.
+The successful fixture uses the normal movement and pose transports.
+Two signed-in Home visitors and human motion feedback remain open.
+
 ## Runtime and studio qualification
 
 The separate motion/studio candidate `3fd63da1fd1d` at source
