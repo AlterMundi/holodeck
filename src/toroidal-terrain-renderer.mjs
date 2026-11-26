@@ -4,7 +4,7 @@ import {REFLECTION_BANK} from './toroidal-bank-reflection.mjs';
 import {createMeadowCoverTexture,useToroidalRockDetail,useToroidalWaterDetail} from './toroidal-surface-detail.mjs';
 import {BufferAttribute, BufferGeometry, DataTexture, DoubleSide, Group, LinearFilter, MathUtils, Mesh, MeshStandardMaterial, RGFormat, ShaderChunk, UnsignedByteType, Vector3, Vector4} from 'three';
 import {
-  TOROIDAL_OVERLOOK, TOROIDAL_PARCEL_Y, TOROIDAL_TERRAIN, TOROIDAL_TRAIL, buildTerrainTile, terrainCoordinates, terrainFrame, terrainTile,
+  TOROIDAL_OVERLOOK, TOROIDAL_PARCEL_Y, TOROIDAL_TERRAIN, buildTerrainTile, terrainCoordinates, terrainFrame, terrainTile,
 } from './toroidal-terrain.mjs';
 
 const profiles = Object.freeze({
@@ -37,21 +37,23 @@ export function toroidalSunDirection(position, terrain = TOROIDAL_TERRAIN, local
 }
 
 const glsl = value => value.toFixed(4);
+// The upper western spur matches terrainTrail's procedural planting mask.
+// Keep its paint in the renderer so motion-study inputs retain their revisions.
 const spurTrack = `
   float westernSpurAt(vec3 position, float horizontal) {
     const float tau=6.28318530718;
-    const float shoulder=${glsl(TOROIDAL_TRAIL.shoulderV)};
+    const float shoulder=.25;
     const float end=${glsl(TOROIDAL_OVERLOOK.v)};
     const float major=${glsl(TOROIDAL_TERRAIN.majorRadius)},tube=${glsl(TOROIDAL_TERRAIN.tubeRadius)};
     float u=atan(position.z,position.x)/tau;
     float v=atan(position.y,horizontal-major)/tau;
     float spurV=clamp(v,shoulder,end);
-    float spurU=${glsl(TOROIDAL_OVERLOOK.u)}+${glsl(TOROIDAL_TRAIL.spurBend)}
+    float spurU=${glsl(TOROIDAL_OVERLOOK.u)}+.003
       *sin(3.14159265359*(spurV-shoulder)/(end-shoulder));
     float along=(fract(u-spurU+.5)-.5)*tau*(major+tube*cos(spurV*tau));
     float across=(fract(v-spurV+.5)-.5)*tau*tube;
-    float t=clamp((length(vec2(along,across))-${glsl(TOROIDAL_TRAIL.treadMetres)})
-      /${glsl(TOROIDAL_TRAIL.vergeMetres)},0.0,1.0);
+    float t=clamp((length(vec2(along,across))-1.2)
+      /2.4,0.0,1.0);
     return 1.0-t*t*t*(t*(t*6.0-15.0)+10.0);
   }
 `;

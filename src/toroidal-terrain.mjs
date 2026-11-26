@@ -139,12 +139,8 @@ export function terrainElevation(u, v, terrain = TOROIDAL_TERRAIN) {
 
 // The low-contrast worn route wraps around the broad shoulder. A spur
 // leads from the house past the cave and toward the inner-ring overlook.
-export const TOROIDAL_TRAIL = Object.freeze({
-  shoulderV:.25, spurBend:.003, treadMetres:1.2, vergeMetres:2.4,
-});
-const {shoulderV,spurBend,treadMetres,vergeMetres}=TOROIDAL_TRAIL;
-const spurLatitude=v=>Math.max(shoulderV,Math.min(wrap(v),TOROIDAL_OVERLOOK.v));
-const spurLongitude=v=>TOROIDAL_OVERLOOK.u+spurBend*Math.sin((v-shoulderV)/(TOROIDAL_OVERLOOK.v-shoulderV)*Math.PI);
+const spurLatitude=v=>Math.max(.25,Math.min(wrap(v),TOROIDAL_OVERLOOK.v));
+const spurLongitude=v=>TOROIDAL_OVERLOOK.u+.003*Math.sin((v-.25)/(TOROIDAL_OVERLOOK.v-.25)*Math.PI);
 
 export function toroidalSpurPoint(latitude){
   const v=spurLatitude(latitude);
@@ -152,13 +148,13 @@ export function toroidalSpurPoint(latitude){
 }
 
 export function terrainTrail(u,v,terrain = TOROIDAL_TERRAIN) {
-  const mainDistance=wrappedDistance(v,shoulderV) * TAU * terrain.tubeRadius;
+  const mainDistance=wrappedDistance(v,.25) * TAU * terrain.tubeRadius;
   const spurV=spurLatitude(v);
   const ringMeters=wrappedDistance(u,spurLongitude(spurV)) * TAU *
     (terrain.majorRadius + terrain.tubeRadius * Math.cos(spurV*TAU));
   const crossMeters=wrappedDistance(v,spurV) * TAU * terrain.tubeRadius;
   const distance=Math.min(mainDistance,Math.hypot(ringMeters,crossMeters));
-  return 1-fade(Math.max(0,Math.min(1,(distance-treadMetres)/vergeMetres)));
+  return 1-fade(Math.max(0,Math.min(1,(distance-1.2)/2.4)));
 }
 
 // Seeded woodland belts along the arrival meadow and south ridge. Offsets
