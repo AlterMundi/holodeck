@@ -1,3 +1,5 @@
+import {JSDOM} from 'jsdom';
+import {applyGallerySigns} from '../src/gallery-display.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {ContentVisitor} from '../src/content-visitor.mjs';
@@ -33,11 +35,17 @@ test('scoped model and plaque actions share the exact current edition and physic
  const {value}=visitor([item]);value.scoped=true;
  const model={},staleModel={},plaque={};
  const objects={targets:()=>[[model,item],[staleModel,{...item,pin:{...pin,revision:'expired'}}]]};
- const scene={querySelector:id=>id.endsWith('-front')?{getContainer:()=>plaque}:null};
+ const {window}=new JSDOM('<div id="scene"></div>');
+ const scene=window.document.getElementById('scene');
+ applyGallerySigns(scene,[item]);
+ scene.querySelector('#house-exhibit-plaque').getContainer=()=>plaque;
  assert.deepEqual([...value.galleryTargets(objects,scene,{x:1,y:.1,z:0})],[[model,item],[plaque,item]]);
  assert.equal(value.galleryTargets(objects,scene,{x:-1,y:.1,z:0}).size,0);
+ value.entries=[{...item,pin:{...item.pin,revision:'new-pin'}}];
+ assert.equal(value.galleryTargets(objects,scene,{x:1,y:.1,z:0}).size,0);
  value.entries=[];
  assert.equal(value.galleryTargets(objects,scene,{x:1,y:.1,z:0}).size,0);
+ window.close();
 });
 test('a gallery edition changed during authorization cannot open with a previous model pin',async()=>{
  const item={...old,id:'house-exhibit',galleryDisplay:true};

@@ -6,59 +6,118 @@ export const GALLERY_STAGES=Object.freeze({
 });
 
 const renderedCatalogs=new WeakMap();
-
-const EDITION_FONT=14;
-const PLAQUE_WIDTH=1.55;
-const PLAQUE_PADDING=4;
+const renderedPlaques=new WeakMap();
+// Hold the feet just inside the aisle edge of each measured oak deck.
+const deckFront={
+  'house-exhibit':1.895,
+  'house-exhibit-draft':2.1245,
+  'house-exhibit-archive':2.1245,
+};
+const bronze='#56391d';
+const enamel='#071412';
+const PLAQUE_WIDTH=.91;
+const PLAQUE_PADDING=3;
 
 function plaqueTitle(title,context){
-  if(typeof title!=='string')return '';
-  const characters=Array.from(title.trim());
+  const characters=Array.from(title.trim().replace(/\s+/g,' ')).slice(0,160);
   const limit=PLAQUE_WIDTH*200-PLAQUE_PADDING*2;
-  const text=characters.slice(0,38).join('');
-  if(!context)return characters.length>38?characters.slice(0,37).join('')+'…':text;
-  // MML rasterizes bold Arial at 200 texture pixels per metre.
-  context.font=`bold ${EDITION_FONT*2}px Arial`;
-  if(characters.length<=38&&context.measureText(text).width<=limit)return text;
-  const prefix=characters.slice(0,37);
-  while(prefix.length&&context.measureText(prefix.join('')+'…').width>limit)prefix.pop();
-  return prefix.join('').trimEnd()+'…';
+  if(!context){
+    const text=characters.length>20?characters.slice(0,19).join('').trimEnd()+'…':characters.join('');
+    return {text,fontSize:8.5};
+  }
+  const text=characters.join('');
+  for(const fontSize of [10.5,9.5,8.5]){
+    context.font=`bold ${fontSize*2}px Arial`;
+    if(context.measureText(text).width<=limit)return {text,fontSize};
+  }
+  const words=text.split(' ');
+  const twoLineSize=7.75;
+  context.font=`bold ${twoLineSize*2}px Arial`;
+  let best=null;
+  for(let i=1;i<words.length;i++){
+    const rows=[words.slice(0,i).join(' '),words.slice(i).join(' ')];
+    const width=Math.max(...rows.map(row=>context.measureText(row).width));
+    if(width<=limit&&(!best||width<best.width))best={rows,width};
+  }
+  if(best)return {text:best.rows.join('\n'),fontSize:twoLineSize,twoLines:true};
+  context.font='bold 17px Arial';
+  while(characters.length&&context.measureText(characters.join('')+'…').width>limit)characters.pop();
+  return {text:characters.join('').trimEnd()+'…',fontSize:8.5};
+}
+
+function element(document,tag,attributes){
+  const node=document.createElement(tag);
+  for(const [key,value] of Object.entries(attributes))node.setAttribute(key,String(value));
+  return node;
+}
+
+function addPlate(signs,entry,measure,authoredDecks,genericDeckTop){
+  const document=signs.ownerDocument;
+  const {title,position}=GALLERY_STAGES[entry.id];
+  const edition=typeof entry.editionTitle==='string'?entry.editionTitle.trim():'';
+  const named=edition&&edition!==title;
+  const deckY=authoredDecks?position.y:entry.id==='house-exhibit'?genericDeckTop:null;
+  const deckMounted=deckY!==null;
+  const plaque=element(document,'m-group',{
+    id:entry.id+'-plaque','aria-label':named?title+' · '+edition:title,
+    x:deckMounted?deckFront[entry.id]:position.x,
+    y:deckY??position.y+.645,z:position.z,ry:-90,
+  });
+  renderedPlaques.set(plaque,{nodeRevision:entry.nodeRevision,pin:entry.pin});
+  const cube=attributes=>element(document,'m-cube',{collide:false,...attributes});
+  if(deckMounted){
+    for(const x of [-.32,.32])plaque.append(cube({x,y:.029,z:-.016,width:.038,height:.058,depth:.060,color:bronze}));
+  }
+  const face=element(document,'m-group',{y:.173,rx:deckMounted?-12:0});
+  face.append(
+    cube({width:1,height:.274,depth:.024,color:bronze}),
+    cube({width:.963,height:.237,depth:.032,color:enamel,'cast-shadows':false}),
+  );
+  const editionRow=named?plaqueTitle(edition,measure):null;
+  const lines=editionRow?[
+    {kind:'sign',text:title,y:.076,height:.085,fontSize:7,fontColor:'#ebc591'},
+    {kind:'edition',...editionRow,y:-.027,height:editionRow.twoLines ? .171 : .122,fontColor:'#fff4da'},
+  ]:[{kind:'sign',text:title,y:0,height:.14,fontSize:11.5,fontColor:'#fff4da'}];
+  for(const direction of [1,-1]){
+    for(const line of lines){
+      face.append(element(document,'m-label',{
+        id:entry.id+'-'+line.kind+(direction===1?'-front':'-back'),
+        'aria-label':line.kind==='edition'?edition:title,content:line.text,
+        y:line.y,z:direction*.017,ry:direction===1?0:180,
+        width:PLAQUE_WIDTH,height:line.height,padding:PLAQUE_PADDING,
+        'font-size':line.fontSize,alignment:'center',color:'rgba(0,0,0,0)',
+        'font-color':line.fontColor,emissive:.20,collide:false,'cast-shadows':false,
+      }));
+    }
+  }
+  plaque.append(face);
+  signs.append(plaque);
 }
 
 export function applyGallerySigns(scene,entries){
   if(!scene)return;
   const authorized=entries.filter(entry=>entry.galleryDisplay===true&&Object.hasOwn(GALLERY_STAGES,entry.id));
   const prior=scene.querySelector('#gallery-stage-signs');
-  const signature=JSON.stringify(authorized.map(({id,nodeRevision,editionTitle})=>[id,nodeRevision,editionTitle]));
+  const fallbackDeck=scene.querySelector('#house-exhibit > m-cube');
+  const authoredDecks=!fallbackDeck&&!!scene.querySelector('m-model#room-art[src]');
+  const genericDeckTop=fallbackDeck?
+    Number(fallbackDeck.getAttribute('y'))+Number(fallbackDeck.getAttribute('height'))/2:null;
+  const signature=JSON.stringify([authoredDecks,genericDeckTop,
+    authorized.map(({id,nodeRevision,editionTitle,pin})=>[id,nodeRevision,editionTitle,pin])]);
   if(prior&&renderedCatalogs.get(prior)===signature)return;
   prior?.remove();
   if(!authorized.length)return;
-  const document=scene.ownerDocument;
+  const document=scene.ownerDocument??scene;
   const measure=document.defaultView?.CanvasRenderingContext2D?
     document.createElement('canvas').getContext('2d'):null;
-  const signs=document.createElement('m-group');
-  signs.id='gallery-stage-signs';
-  signs.setAttribute('data-stages','');
+  const signs=element(document,'m-group',{id:'gallery-stage-signs','data-stages':''});
   renderedCatalogs.set(signs,signature);
-  for(const entry of authorized){
-    const {title,position,color}=GALLERY_STAGES[entry.id];
-    const edition=entry.editionTitle===title?'':plaqueTitle(entry.editionTitle,measure);
-    const lines=edition?[
-      {kind:'sign',text:title,y:1.045,height:.21,fontSize:15,fontColor:'#e7c991'},
-      {kind:'edition',text:edition,y:.827,height:.223,fontSize:EDITION_FONT,fontColor:'#f6edda'},
-    ]:[{kind:'sign',text:title,y:.79,height:.29,fontSize:18,fontColor:'#f6edda'}];
-    for(const facing of [-90,90]){
-      for(const line of lines){
-        const plaque=document.createElement('m-label');
-        const data={id:entry.id+'-'+line.kind+(facing<0?'-front':'-back'),
-          'aria-label':line.text,content:line.text,
-          x:position.x+(facing<0?-.015:.015),y:position.y+line.y,z:position.z,
-          ry:facing,width:PLAQUE_WIDTH,height:line.height,padding:PLAQUE_PADDING,'font-size':line.fontSize,
-          alignment:'center',color,'font-color':line.fontColor,collide:'false'};
-        for(const [name,value] of Object.entries(data))plaque.setAttribute(name,String(value));
-        signs.append(plaque);
-      }
-    }
-  }
+  for(const entry of authorized)addPlate(signs,entry,measure,authoredDecks,genericDeckTop);
   scene.append(signs);
+}
+
+export function renderedGalleryPlaque(scene,id){
+  const plaque=scene?.querySelector('#'+id+'-plaque');
+  const rendered=renderedPlaques.get(plaque);
+  return rendered?{...rendered,container:plaque.getContainer?.()}:null;
 }
