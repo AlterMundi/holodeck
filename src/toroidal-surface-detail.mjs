@@ -66,7 +66,42 @@ export function useToroidalRockDetail(material, {bedding=false,meadow=false} = {
   };
 }
 
-export function useToroidalWaterDetail(material) {
+// Analytic value and gradient share eight lattice samples. A 3D field
+// avoids compressing a fixed 2D projection along parts of the torus.
+const waterSwell = `
+  float ringHash(vec2 p);
+  float waterHash(vec3 cell) {
+    vec3 p = fract(cell * vec3(.1031,.1030,.0973));
+    p += dot(p, p.yxz + 33.33);
+    return fract((p.x + p.y) * p.z);
+  }
+  vec3 waterLightField(vec2 p) {
+    vec2 cell = floor(p), t = fract(p);
+    vec2 f = t*t*(3.0-2.0*t), slope = 6.0*t*(1.0-t);
+    vec2 low = vec2(ringHash(cell),ringHash(cell+vec2(1,0)));
+    vec2 high = vec2(ringHash(cell+vec2(0,1)),ringHash(cell+vec2(1,1)));
+    vec2 along = mix(low,high,f.y);
+    return vec3(mix(along.x,along.y,f.x)-.5,
+      (along.y-along.x)*slope.x,mix(high.x-low.x,high.y-low.y,f.x)*slope.y);
+  }
+  vec4 waterField(vec3 p) {
+    vec3 cell = floor(p), t = fract(p);
+    vec3 f = t*t*t*(t*(6.0*t-15.0)+10.0);
+    vec3 slope = 30.0*t*t*(t-1.0)*(t-1.0);
+    vec4 low = vec4(waterHash(cell), waterHash(cell+vec3(1,0,0)),
+      waterHash(cell+vec3(0,1,0)), waterHash(cell+vec3(1,1,0)));
+    vec4 high = vec4(waterHash(cell+vec3(0,0,1)), waterHash(cell+vec3(1,0,1)),
+      waterHash(cell+vec3(0,1,1)), waterHash(cell+vec3(1,1,1)));
+    vec4 corners = mix(low,high,f.z);
+    vec2 alongX = mix(corners.xz,corners.yw,f.x);
+    vec2 acrossZ = mix((high-low).xz,(high-low).yw,f.x);
+    vec3 grad = vec3(mix(corners.y-corners.x,corners.w-corners.z,f.y),
+      alongX.y-alongX.x,mix(acrossZ.x,acrossZ.y,f.y))*slope;
+    return vec4(mix(alongX.x,alongX.y,f.y)-.5,grad);
+  }
+`;
+
+export function useToroidalWaterDetail(material,lightweight) {
   const clock = {value:0};
   material.customProgramCacheKey = () => 'toroidal-water-ripples';
   material.onBeforeCompile = shader => {
@@ -76,28 +111,41 @@ export function useToroidalWaterDetail(material) {
       .replace('#include <common>', '#include <common>\nattribute float shoreDepth;\n' + depthVarying)
       .replace('#include <project_vertex>', '#include <project_vertex>\ntoroidalShoreDepth = shoreDepth;');
     shader.uniforms.toroidalSeconds = clock;
+    shader.uniforms.toroidalLightWater = lightweight;
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float toroidalSeconds;\n' + depthVarying)
+      .replace('#include <common>', '#include <common>\nuniform float toroidalSeconds; uniform bool toroidalLightWater;\n' + depthVarying + waterSwell)
       .replace('#include <normal_fragment_maps>',`
         #include <normal_fragment_maps>
         vec3 p = toroidalWorld;
         float distanceToWater = length(vViewPosition);
         float holoShallow = 1.0 - smoothstep(0.0, 2.8, max(0.0,toroidalShoreDepth));
         float waveFade = 1.0 - smoothstep(28.0, 110.0, distanceToWater);
-        // Medium swells survive after metre-scale normal detail falls below
-        // pixel size. Filter each band in screen space at grazing angles.
-        vec2 swellUV=ringTextureCoords(p)*vec2(.074,.044);
-        vec2 driftUV=vec2(.023,-.013)*toroidalSeconds;
-        float shoreward=ringNoise(swellUV+driftUV)-.5;
-        vec2 crossing=vec2(swellUV.x*.52+swellUV.y,swellUV.y*.31-swellUV.x)*2.0;
-        float offshore=ringNoise(crossing-driftUV*.83)-.5;
-        vec2 crossingFootprint=fwidth(crossing);
-        float crossingFilter=1.0-smoothstep(.31,.84,max(crossingFootprint.x,crossingFootprint.y));
-        vec2 footprint=fwidth(swellUV);
-        float swellFilter=1.0-smoothstep(.32,.9,max(footprint.x,footprint.y));
-        float holoSwell=shoreward*swellFilter*.64+offshore*crossingFilter*.36;
-        diffuseColor.rgb*=1.0+.38*holoSwell;
-        normal=normalize(normal+mat3(viewMatrix)*vec3(holoSwell*.026,0.0,-holoSwell*.019));
+        // Filter with the largest world-space pixel dimension near the
+        // horizon. Unresolved slopes become roughness instead of stripes.
+        vec3 swellPoint=p*.092;
+        float footprint=max(length(dFdx(swellPoint)),length(dFdy(swellPoint)));
+        float swellFilter=1.0-smoothstep(.23,.78,footprint);
+        float holoSwell=0.0;
+        if(swellFilter > .001) {
+          vec3 drift=vec3(.021,.008,-.016)*toroidalSeconds;
+          vec4 swell;
+          if(toroidalLightWater) {
+            vec3 lightSwell=waterLightField(ringTextureCoords(swellPoint+drift));
+            swell=vec4(lightSwell.x,vec3(.81,.21,.58)*lightSwell.y+vec3(-.16,.96,-.28)*lightSwell.z);
+          } else {
+            swell=waterField(swellPoint+drift);
+          }
+          holoSwell=swell.x*swellFilter;
+          vec3 slope=mat3(viewMatrix)*swell.yzw;
+          slope-=normal*dot(normal,slope);
+          normal=normalize(normal-slope*swellFilter*.036);
+        }
+        if(toroidalLightWater) {
+          roughnessFactor=mix(roughnessFactor,.366,1.0-swellFilter);
+        } else if(swellFilter < .999) {
+          float roughnessSquared=roughnessFactor*roughnessFactor;
+          roughnessFactor=sqrt(sqrt(roughnessSquared*roughnessSquared+.0048*(1.0-swellFilter)));
+        }
         if (waveFade > 0.001) {
           vec2 uv = ringTextureCoords(p);
           float eddies = ringNoise(uv*.21);

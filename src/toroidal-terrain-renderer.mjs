@@ -193,10 +193,14 @@ const waterShading = {
   output: `
     vec3 holoView = normalize(vViewPosition);
     float holoFresnel = pow(1.0 - clamp(dot(normal, holoView), 0.0, 1.0), 4.0);
-    vec3 reflectedAir=toroidalAir(dot(reflect(-holoView,normal),holoSun),holodeckDaylight);
+    vec3 reflectedRay = reflect(-holoView,normal);
+    vec3 reflectedAir=toroidalAir(dot(reflectedRay,holoSun),holodeckDaylight);
+    float skyHeight=clamp(dot(reflectedRay,holoUp),0.0,1.0);
+    float nightSky=(1.0-holodeckDaylight)*(1.0-smoothstep(.0,.08,holodeckWaterViewDepth));
+    reflectedAir+=vec3(.022,.038,.061)*nightSky*mix(.40,1.0,skyHeight);
     vec3 depths=(outgoingLight-totalSpecular)*mix(.25,1.0,holodeckDaylight);
     depths+=holodeckDaylight*vec3(.025,.066,.084);
-    outgoingLight=mix(depths,reflectedAir,.10+.49*holoFresnel+holoSwell*.13);
+    outgoingLight=mix(depths,reflectedAir,.10+.54*holoFresnel+holoSwell*.07);
     outgoingLight = mix(outgoingLight, vec3(.30, .49, .47),
       .38*holoShallow*(1.0-.8*holoFresnel)*holodeckDaylight);
     ${aerialPerspective('',.68)}
@@ -308,10 +312,10 @@ export class ToroidalTerrainRenderer {
     this.shoreMaterial=this.waterMaterial.clone();
     Object.assign(this.shoreMaterial,{transparent:true,depthWrite:false,forceSinglePass:true});
     this.environment={water:{value:0},sun:{value:new Vector3(...SUN_LOCAL)},daylight:{value:1},
-      approach:{value:1},eyeHeight:{value:0},sill:{value:new Vector3()},meadowGrain:{value:1}};
+      approach:{value:1},eyeHeight:{value:0},sill:{value:new Vector3()},meadowGrain:{value:1},lightWater:{value:false}};
     useToroidalRockDetail(this.material,{meadow:true});
-    const openWaterTime=useToroidalWaterDetail(this.waterMaterial);
-    const shoreTime=useToroidalWaterDetail(this.shoreMaterial);
+    const openWaterTime=useToroidalWaterDetail(this.waterMaterial,this.environment.lightWater);
+    const shoreTime=useToroidalWaterDetail(this.shoreMaterial,this.environment.lightWater);
     this.updateWaterTime=seconds=>{openWaterTime(seconds);shoreTime(seconds);};
     artDirect(this.material,'terrain',terrainShading,this.environment);
     artDirect(this.waterMaterial,'water',waterShading,this.environment);
@@ -370,6 +374,7 @@ export class ToroidalTerrainRenderer {
 
   update(position, lightweight = false) {
     this.environment.meadowGrain.value=lightweight?0:1;
+    this.environment.lightWater.value=lightweight;
     if (!this.worker || ![position.x, position.y, position.z].every(Number.isFinite)) return;
     const viewer = terrainCoordinates([position.x, position.y, position.z]);
     const profile = lightweight ? 'light' : 'normal';
