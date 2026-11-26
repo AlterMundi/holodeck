@@ -99,6 +99,32 @@ past the object. Check daylight and dusk or night, where a dark terrain can
 hide sparse ground cover and leave an abrupt seam. Keep the matched view in
 the environment review evidence when resolving a reported example.
 
+### Cosmic sky reflected in water
+
+The November 26 water reference calls for a broken ribbon of amber and
+magenta following the planet, dark blue water outside that ribbon, a softer
+distant shoreline, and readable silhouettes where the characters meet water.
+The reference is an art target. Use the actual coast and sky orientation in
+the comparison.
+
+Start with the current water tiles, layered wave normals, Fresnel and
+depth-based shore transmission. Share the existing cosmic panorama and its
+daylight attenuation with the water shader. Sample it using the wave-perturbed
+reflection direction in world space, with the same radial horizon and underwater
+fade. Keep the reflected planet narrow enough to read against dark water.
+Compare the scene at eye level, in the shallows, underwater, and from flight.
+Check that the reflected planet follows camera motion and stays aligned across
+tile seams, and that the coast reads at day and dusk.
+
+Use existing light and haze controls for soft character contour light and
+distant relief. Try localized ripples and shading at the avatar waterline.
+Keep the HUD outside world effects. The shared panorama adds no new download
+or second scene render. Measure first visible frame and GPU frame time on
+Normal and Livianos. Consider a bounded local reflection target only if
+reflections of nearby characters or rocks still matter after that trial.
+A global planar mirror assumes flat water, while the world's up direction
+changes around the torus. Review bloom as a separate optional effect.
+
 ### Background depth of field
 
 Try an optional exterior mode that keeps the avatar, nearby path and
