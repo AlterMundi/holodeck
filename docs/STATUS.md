@@ -59,6 +59,27 @@ independent fixture identities and the real MML and application routes.
 See [water-flight playtest](playtest-iteration.md#camera-facing-aim-and-flight-through-water)
 and [motion #21](https://github.com/AlterMundi/holodeck/issues/21).
 
+## Whole-rig opening view on the selected Holodeck base
+
+Character client source `a401a02335f6c47d174ed844a2993c9168127f8e`
+frames the actual preview rig from a reachable miniature eye position.
+The opening wheel distance matches that physical placement. The
+1480 × 928 capture shows the figure from head to feet above the dock.
+Chromium verified the opening frame, physical eye position, keyboard
+travel, pointer orbit, wheel and playback. Node 24 passed 457 tests
+with two optional skips.
+
+Receiving candidate SHA-256
+`71e175bad8d16ced8060e076416b719ced7552b224a943782bca47eb25a4592a`
+uses the exact selected base `6416a5246b17` and the Proyección alpha.21
+pin `8da5ac9`. The released wake and splash sources are incorporated
+unchanged. Only the browser bundle and manifest differ in the archive.
+Both the generated and packed pose catalogs match the installed catalog.
+The exact archive also passed the complete two-visitor Chromium walkthrough,
+including independent cameras and frames, reviewed ground and flight
+chapters, shared notes, the situated native action and graphics recovery.
+The candidate awaits selection by the protected host.
+
 ## Character table navigation from the miniature's eyes
 
 Client source `ea084a5` uses the review orbit and dolly to move the miniature
@@ -72,7 +93,7 @@ keeps the active water effects from `422b916` and preserves the published
 animation editions. All 670 published sampled frames and chapter indexes matched exactly.
 The built and installed catalog bytes also matched. The prior camera build
 calculated different edition IDs and could not follow a pose shared under
-the installed catalog. Use the receiving composition for this review.
+the installed catalog. The whole-rig candidate above supersedes this composition.
 
 Receiving candidate SHA-256
 `7468892a3c6246a55aaff1bf6f9917e9974c2bb0afab6ce013a147f1a850f386`.
