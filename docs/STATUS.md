@@ -1,5 +1,22 @@
 # Current MVP work
 
+## November 26 ground gait and supported turns
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `4d87ebe3a88d`
+from `13b1c78`. Humanoid jog and run phase follow rendered travel, with
+a continuous handoff to the remaining animation blend. The
+[physical motion checks](character-motion.md#humanoid-ground-gait-follows-rendered-travel)
+cover straight jog and sprint, a wide turn and a downhill leg on RTX
+Normal and Pi 5 Livianos. A second fixture identity also observed the
+gait in the shared world. Independently signed-in visitors, uphill,
+interior thresholds and precise tight-pivot contact remain open.
+
+The same Home owner key was accepted after the signed proof caught up.
+Receiving matched 86 files, 13 protected asset responses, four expected
+denials, the same audience and configuration, and the same world run
+at sequence 463. The rollback package is `bf4886aafe4e`.
+See [motion #21](https://github.com/AlterMundi/holodeck/issues/21).
+
 ## November 26 landscape touch map
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `bf4886aafe4e`

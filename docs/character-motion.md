@@ -148,7 +148,7 @@ Open before acceptance:
 
 ## Humanoid ground gait follows rendered travel
 
-Candidate `4d87ebe3a88d` from `13b1c78` synchronizes the stock jog and run clips to the
+The deployed build `4d87ebe3a88d` from `13b1c78` synchronizes the stock jog and run clips to the
 avatar's projected ground travel. The shared cycle aligns the approximate
 contact windows when the clips blend. The controller may advance several
 simulation steps between two draws. The gait uses the controller's clip
@@ -183,15 +183,38 @@ positions. Real independently signed-in visitors and the interior
 threshold contact review remain open.
 
 The exact source passed 421 Node 24 checks with two optional skips.
-The protected receiver still selects `bf4886aafe4e` with
-`e2b318f4b262` as its previous package. Home denied publisher
-authorization before candidate activation. The installed authority
-reader detected a stale CompAII actor proof. The same owner key is
-registered and unrevoked. Resume the retained prepared package
-retirement through the same publisher after the signed Home proof is
-reconciled. The exact candidate and both protected package selectors
-remain available.
+Actual owner readback accepted the current signed proof using the
+existing owner key. The retained retirement and deployment then
+continued under their original requests. One gateway restart caused
+a lost deployment response while its journal recorded
+`runtime-dispatching`. The exact retry observed or resumed that
+request. Receiving verified 86 files, 13 exact protected HTTPS reads,
+four expected denials, unchanged configuration and audience, and world
+sequence 463. Immediate rollback is `bf4886aafe4e`.
 See [motion #21](https://github.com/AlterMundi/holodeck/issues/21).
+
+### Matching curves and a downhill grade
+
+A second paired comparison of the same exact packages used the same
+arrival spawn, `W` locomotion and a distance-keyed camera target
+through a straight approach, a broad turn, a tighter reversal and a
+descent. Camera intent was scripted, while position and grounding still
+came from the running game. Both profiles covered about 59 m in each
+build, with approximately 79–82° of observed heading change in the broad
+turn. The final leg had a median signed grade of −22.6% across all four
+runs. This covers descent, with uphill and stairs still open.
+
+| Device/profile | Median low-toe slip in broad turn, before → after | Median low-toe slip on descent, before → after |
+| --- | --- | --- |
+| RTX 2060 Normal | 26.3% → 7.5% | 25.6% → 7.7% |
+| Pi 5 V3D Livianos | 10.8% → 6.9% | 19.5% → 8.1% |
+
+Slip is measured against planar actor travel while the ball of the foot
+is low and moving back in the rig. The tight turn had 8 candidate
+stance intervals on RTX and 3 on Pi. It showed less drift in this
+trace, with sparse downhill overlap and residual slip of 9.7% and
+12.3%. It remains a target for contact work. Fable reviewed the route
+design and Opus reviewed the actual samples and their limits.
 
 ## Remote boost wake on the selected browser build
 
