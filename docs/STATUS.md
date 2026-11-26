@@ -1,5 +1,21 @@
 # Current MVP work
 
+## Narrow desktop dock and Conversation pointer check
+
+Client revision `4ad1781` widens the bridge control so the full label
+is visible. The canonical browser fixture verifies the dock at
+760 × 680 as well as the desktop, portrait and landscape baselines.
+It waits for rendered hit regions after resizing and actuates the
+projected Conversation control with the browser pointer. The panel
+minimizes, world input becomes available, and the iframe is retained.
+Draft contents and selection survived all four layouts.
+
+Candidate archive SHA-256
+`5471bdbca0f6938afb93ba6bf7eef206fb76bf3e2780db97cddb6f66793d94a3`.
+It retains the alpha.21 renderer and changes the browser client on the
+previous candidate. Node 24 passed 447 tests with two skips. The
+protected release remains `2ee067ffd313`.
+
 ## World dock alongside canonical Conversation
 
 Client revision `3fd7e11c2d270c404835f36559375ad58ac1870c` lays out
