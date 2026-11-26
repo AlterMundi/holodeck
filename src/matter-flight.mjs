@@ -1,6 +1,7 @@
 import {Box3, Line3, MeshStandardMaterial, Vector3} from 'three';
 
 export const matterAvatarScale=.19;
+export const matterEyeHeight=1.75*matterAvatarScale;
 const up={x:0,y:1,z:0};
 const cameraFields=['minDistance','maxDistance','distance','targetDistance','desiredDistance'];
 const signedAngle=angle=>Math.atan2(Math.sin(angle),Math.cos(angle));
@@ -69,8 +70,23 @@ export class MatterFlight{
     }
   }
 
+  resolvePosition(controller,position){
+    const {collisionsManager}=controller.config;
+    const radius=controller.capsuleInfo.radius*matterAvatarScale;
+    const capsuleHeight=controller.capsuleInfo.segment.end.y*matterAvatarScale;
+    this.bounds.clampPoint(position,this.point);
+    this.capsule.start.copy(this.point);
+    this.capsule.start.y+=radius;
+    this.capsule.end.copy(this.capsule.start);
+    this.capsule.end.y+=capsuleHeight;
+    collisionsManager.setCharacterPosition(this.point);
+    collisionsManager.applyColliders(this.capsule,radius);
+    this.capsule.start.y-=radius;
+    return this.bounds.clampPoint(this.capsule.start,this.point);
+  }
+
   move(controller,seconds,inputAllowed){
-    const {position,quaternion,keyInputManager,additionalInputProvider,collisionsManager}=controller.config;
+    const {position,quaternion,keyInputManager,additionalInputProvider}=controller.config;
     const keyboard=inputAllowed?keyInputManager.getOutput():null;
     const touch=inputAllowed?additionalInputProvider?.getOutput():null;
     const control=Number.isFinite(keyboard?.direction)?keyboard:touch??keyboard;
@@ -84,8 +100,6 @@ export class MatterFlight{
     const {velocity}=this;
     if(heading===null){velocity.x=0;velocity.z=0;}
     if(!vertical)velocity.y=0;
-    const radius=controller.capsuleInfo.radius*matterAvatarScale;
-    const capsuleHeight=controller.capsuleInfo.segment.end.y*matterAvatarScale;
     const steps=Math.max(1,Math.ceil(dt*60)),step=dt/steps;
     const response=1-Math.exp(-step*12);
     for(let index=0;step>0&&index<steps;index++){
@@ -93,15 +107,7 @@ export class MatterFlight{
       velocity.y+=(vertical-velocity.y)*response;
       velocity.z+=(vz-velocity.z)*response;
       this.point.copy(position).addScaledVector(velocity,step);
-      this.bounds.clampPoint(this.point,this.point);
-      this.capsule.start.copy(this.point);
-      this.capsule.start.y+=radius;
-      this.capsule.end.copy(this.capsule.start);
-      this.capsule.end.y+=capsuleHeight;
-      collisionsManager.setCharacterPosition(this.point);
-      collisionsManager.applyColliders(this.capsule,radius);
-      this.capsule.start.y-=radius;
-      this.bounds.clampPoint(this.capsule.start,this.point);
+      this.resolvePosition(controller,this.point);
       if(heading!==null){
         velocity.x=permittedSpeed(velocity.x,(this.point.x-position.x)/step);
         velocity.z=permittedSpeed(velocity.z,(this.point.z-position.z)/step);
@@ -124,10 +130,10 @@ export class MatterFlight{
 }
 
 export function bindMatterFlight(manager,camera,flight,inputAllowed,onLost){
-  const update=manager.update,setTarget=camera.setTarget;
+  const update=manager.update,setTarget=camera.setTarget,updateCamera=camera.update;
   function target(point){
     if(flight.reviewTarget)return setTarget.call(this,flight.reviewTarget);
-    if(flight.active)point.y-=1.75*(1-matterAvatarScale);
+    if(flight.active)point.y+=matterEyeHeight-1.75;
     return setTarget.call(this,point);
   }
   function updateWithFlight(...args){
@@ -139,12 +145,18 @@ export function bindMatterFlight(manager,camera,flight,inputAllowed,onLost){
     try{return update.apply(this,args);}
     finally{local.update=step;}
   }
+  function updateWithReviewEye(...args){
+    updateCamera.apply(this,args);
+    flight.placeReviewEye(this.getMainCameraState(),manager.localController);
+  }
+  if(updateCamera&&flight.placeReviewEye)camera.update=updateWithReviewEye;
   manager.update=updateWithFlight;
   camera.setTarget=target;
   return ()=>{
     flight.exit(manager.localController);
     if(manager.update===updateWithFlight)manager.update=update;
     if(camera.setTarget===target)camera.setTarget=setTarget;
+    if(camera.update===updateWithReviewEye)camera.update=updateCamera;
   };
 }
 

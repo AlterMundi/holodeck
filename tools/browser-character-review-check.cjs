@@ -216,7 +216,20 @@ async function main(){
         const s=client.getCameraManager().getCameraState();
         return {body:[p.x,p.y,p.z],eye:[s.position.x,s.position.y,s.position.z],fov:s.fov};
       });
-      const before=await camera();
+      const checkMiniatureEye=async()=>{
+        const {body,eye}=await camera();
+        const eyeHeight=1.75*.19;
+        assert.ok(Math.hypot(eye[0]-body[0],eye[1]-body[1]-eyeHeight,eye[2]-body[2])<1e-5,
+          JSON.stringify({body,eye}));
+        return {body,eye};
+      };
+      await page.waitForFunction(()=>{
+        const {client}=holodeckDevelopment;
+        const p=client.getCharacterManager().localController.config.position;
+        const c=client.getCameraManager().getCameraState().position;
+        return Math.hypot(c.x-p.x,c.y-p.y-1.75*.19,c.z-p.z)<1e-5;
+      });
+      const before={...await camera(),...await checkMiniatureEye()};
       assert.equal(before.fov,36);
       const canvas=page.locator('.world-interaction-canvas');
       await canvas.evaluate(element=>{element.tabIndex=-1;element.focus();});
@@ -235,15 +248,26 @@ async function main(){
         }));
         throw error;
       }finally{await page.keyboard.up('w');}
+      const beforeOrbitPose=await checkMiniatureEye();
       const beforeOrbit=await page.evaluate(()=>holodeckDevelopment.client.getCameraManager().targetTheta);
       await page.mouse.move(630,450);
-      await page.mouse.down({button:'right'});
+      await page.mouse.down();
       await page.mouse.move(702,484,{steps:5});
-      await page.mouse.up({button:'right'});
+      await page.mouse.up();
       await page.waitForFunction(theta=>Math.abs(holodeckDevelopment.client.getCameraManager().targetTheta-theta)>.1,beforeOrbit);
+      await page.waitForFunction(body=>{
+        const p=holodeckDevelopment.client.getCharacterManager().localController.config.position;
+        return Math.hypot(p.x-body[0],p.y-body[1],p.z-body[2])>.04;
+      },beforeOrbitPose.body);
+      const beforeDolly=await checkMiniatureEye();
       const beforeZoom=await page.evaluate(()=>holodeckDevelopment.client.getCameraManager().targetDistance);
       await page.mouse.wheel(0,-120);
       await page.waitForFunction(distance=>holodeckDevelopment.client.getCameraManager().targetDistance<distance,beforeZoom);
+      await page.waitForFunction(body=>{
+        const p=holodeckDevelopment.client.getCharacterManager().localController.config.position;
+        return Math.hypot(p.x-body[0],p.y-body[1],p.z-body[2])>.04;
+      },beforeDolly.body);
+      await checkMiniatureEye();
       await viewer.close();
       await page.setViewportSize({width:550,height:490});
       await control(table,'Notas').waitFor({state:'attached'});
@@ -252,7 +276,7 @@ async function main(){
       assert.equal(await table.getByRole('combobox',{name:'Personaje',exact:true}).count(),0);
       assert.deepEqual(errors,[]);
       console.log(JSON.stringify({wideToolsMatch:true,inlineOptionsMatch:true,inlineCycleWorks:true,
-        playbackInBoth:true,miniatureTranslationCarriesCamera:true,orbitAndZoom:true,playInCompactNotes:true}));
+        playbackInBoth:true,miniatureTranslationCarriesCamera:true,orbitAndZoomMoveMiniature:true,renderedCameraAtMiniatureEye:true,playInCompactNotes:true}));
       return;
     }
 

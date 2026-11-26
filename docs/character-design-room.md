@@ -16,7 +16,10 @@ back to the foyer through the same authorized spatial navigation. Exact pose
 links remain independently reviewable through the protected Holodeck entry.
 In the worktable candidate, enter the studio through its door, approach
 the furniture and choose **Usar mesa**. It mounts the rig in the existing
-world scene and uses the worktable's miniature movement and local camera.
+world scene. In the receiving candidate, the table view is at the miniature
+visitor's eye height. Drag to orbit and scroll or pinch to dolly the visitor
+around the review point. Movement uses the table's bounds and collisions.
+Walking or changing elevation moves the review point with the visitor.
 **Salir de la mesa** or Escape returns control to the visitor in the same
 room. The foyer door handles room exit.
 
