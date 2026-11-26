@@ -17,7 +17,7 @@ const trunkWidth=.048;
 const chunkSize=42;
 const maxRange=640;
 const skylineRange=3900;
-const skylineTransitionRange=96;
+const skylineTransitionRange=120;
 const skylineReturnMargin=8;
 
 function sample(x,z,salt){

@@ -236,7 +236,7 @@ test('a distant inner crown becomes the same rooted tree near the grove', () => 
   const owned=[...woodland.chunks.values()].flatMap(chunk=>chunk.trees)
     .find(tree=>tree.inner&&tree.point.distanceTo(point)<.001);
   const boundary=Math.sqrt(owned.skylineDistanceSq);
-  assert.ok(boundary>=544&&boundary<=640);
+  assert.ok(boundary>=520&&boundary<=640);
   const atDistance=distance=>{
     woodland.update(point.clone().add(new Vector3(distance,0,0)),true);
     const place=[0,3,4,7].filter(level=>find(woodland.meshes[level]));
