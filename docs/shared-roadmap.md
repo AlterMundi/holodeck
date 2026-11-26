@@ -655,8 +655,10 @@ and the canonical audio dependency in [Conversation #18](https://github.com/Alte
 The touch dock, locomotion visibility and fullscreen browser action are
 deployed. The [landscape map](STATUS.md#november-26-landscape-touch-map)
 uses one spatial map surface with the plot beside the controls, and returns
-focus to the dock when dismissed. Keep portrait and desktop window
-positioning independent of the compact display. The Redmi and Telegram
+focus to the dock when dismissed. The [portrait Matter table](playtest-iteration.md#installed-portrait-matter-worktable)
+reuses the Modelo, Vista and Mesa controls above the model and movement
+area. It retains a separate portrait window placement and temporarily
+yields its controls while the narrow Conversation overlay is open. The Redmi and Telegram
 WebView still need direct acceptance. Continue the environment and room art
 alongside the pending mobile Conversation work.
 

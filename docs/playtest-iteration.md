@@ -603,6 +603,34 @@ held Space and stale pointer regressions. Live remains `f46d93f436be`.
 
 ## Matter collection HUD
 
+### Installed portrait Matter worktable
+
+Protected package `d59164b2cd50` serves source `742920d`, with
+`3cbae5663c6b` retained as the immediate rollback. Only the browser
+bundle and its manifest changed. Exact protected runtime and worker
+checks, the anonymous challenge, and 14 state files matched.
+
+At the same 390 × 780 pose on Raspberry Pi 5 (Broadcom V3D, Livianos),
+the worktable frame ended at CSS y=329.4, compared with y=369.5 on the
+previous release. The touch target scale was 286 CSS px per unit in each
+tab (44 px for the standard button). Touch input opened the table,
+switched tabs and closed it. Rotation restored the chosen tab. The
+window has a separate placement key for portrait drag and resize.
+A 320 × 365 layout kept the controls available at about 180 CSS px
+per unit by yielding some of the scene reserve.
+
+A two-visitor Chromium fixture shared the selected edition and rendered it
+for a separate authorized test visitor at revision 1. The narrow
+Conversation overlay temporarily hid the table controls and their
+accessibility entries. Dismissal returned the same active table and tab.
+This is a shell/input test with a fixture Conversation frame. Actual phone,
+Telegram WebView and paired-human acceptance remain open. 482 automated
+tests passed and two were skipped. Fable High reviewed the design and
+Opus 5.5 High reviewed the changes. Leaving a table already deletes its
+surface and entering creates a new visible group. The canonical app
+always provides the Conversation element used for ownership.
+
+
 The shelf uses the current project and edition references to select an
 edition, open the canonical 3D Viewer or place it on the worktable. The
 archive uses the same rotating catalog and authorized return writer as before.

@@ -1,5 +1,13 @@
 # Current MVP work
 
+## November 26 — Portrait Matter controls
+
+The protected [Holodeck](https://compaii.dmn.homes/holodeck/) release
+`d59164b2cd50` serves source `742920d`. Compatible rollback is
+`3cbae5663c6b`. The Matter table reuses three spatial control tabs in
+portrait and preserves its state while Conversation has the screen.
+[In-game and receiving evidence](playtest-iteration.md#installed-portrait-matter-worktable).
+
 ## November 26 — Matter worktable continuity during collection outages
 
 The protected release `3cbae5663c6b` uses source `a742056` with
