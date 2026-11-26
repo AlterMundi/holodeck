@@ -23,6 +23,7 @@ import { OutdoorSky } from './outdoor-sky.mjs';
 import { SignalGardenEditor } from './signal-garden-editor.mjs';
 import { AppliedGeometryProbe } from './applied-geometry.mjs';
 import { SharedConversationHost } from './shared-conversation-host.mjs';
+import { AtelierTable } from './atelier-table.mjs';
 import { WorldAudio } from './world-audio.mjs';
 import {WorldHistory} from './world-history.mjs';
 import { snapshotMayApply, sameRequest } from './client-order.mjs';
@@ -116,6 +117,7 @@ function startInterior(space){
     space.level<0?`Subsuelo ${-space.level}`:`Piso ${space.level}`;
   const notice=new WorldNotice(document.querySelector('#notice'));
   const beaconControls=benchControls();
+  const atelierTable=new AtelierTable(document,url('api/space/atelier/'));
   let galleryModels;
   const visitor=new ContentVisitor({document,window,base,scoped:true,
     onCatalog:entries=>{galleryModels?.sync(entries);applyGallerySigns(document.getElementById(space.id),entries);},
@@ -130,8 +132,9 @@ function startInterior(space){
   exhibitObserver.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['data-exhibit-revision']});
   const updateDoor=showSpaceLinks(space,{mapEnabled:false,canLeave:()=>visitor.allowLeaveRoom(),onError:message=>notice.show(message)});
   window.addEventListener('keydown',event=>{
+    if(atelierTable.opened&&event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();atelierTable.close();return;}
     if(event.target instanceof Element&&event.target.closest('#exhibition-index')){event.stopImmediatePropagation();return;}
-    if((beaconControls.opened||visitor.frame&&!visitor.panel.classList.contains('is-walking'))&&
+    if((atelierTable.opened||beaconControls.opened||visitor.frame&&!visitor.panel.classList.contains('is-walking'))&&
        ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE'].includes(event.code)){
       if(!(event.target instanceof Element&&event.target.closest('button,input,select,textarea')))event.preventDefault();
       event.stopImmediatePropagation();
@@ -157,7 +160,7 @@ function startInterior(space){
         const position=client.getLocalCharacterState()?.position;
         frameBudget.sample(!document.hidden&&!!position&&!visitor.isOpeningOverWorld());
         galleryModels.update();visitor.refreshScopedCatalog();updateDoor(position);visitor.update(position);
-        beaconControls.update(space.objects,position);render(state);
+        beaconControls.update(space.objects,position);atelierTable.update(space,position);render(state);
         if(entering&&position&&entryRoomReady(document.getElementById(space.id)))worldEntered();
       };
       renderer.dispose=()=>{frameBudget.dispose();picker.dispose();galleryModels.clear();dispose();};
@@ -168,7 +171,7 @@ function startInterior(space){
   });
   client.update();
   window.holodeckDevelopment={client};
-  window.addEventListener('pagehide',()=>{updateDoor.dispose?.();exhibitObserver.disconnect();beaconControls.clear();visitor.dispose();client.dispose();},{once:true});
+  window.addEventListener('pagehide',()=>{updateDoor.dispose?.();exhibitObserver.disconnect();beaconControls.clear();atelierTable.update(null);visitor.dispose();client.dispose();},{once:true});
 }
 
 function benchControls(){
@@ -179,6 +182,7 @@ function benchControls(){
 
 function startWorld(activeSpace){
 const beaconControls=benchControls();
+const atelierTable=new AtelierTable(document,url('api/space/atelier/'));
 const garden=new IndoorGardenHUD({
   position:()=>client.getLocalCharacterState()?.position,
   onError:say,
@@ -223,7 +227,7 @@ const setMoving=value=>{
 };
 const removeScene=()=>{
   if(signalEditor?.draft?.mode)signalEditor.dismiss();
-  pendingRoomArt=null;projectedGarden=null;beaconControls.clear();galleryModels?.clear();collectionShelves?.clear();remoteScene?.remove();remoteScene=roomModel=null;
+  pendingRoomArt=null;projectedGarden=null;beaconControls.clear();atelierTable.update(null);galleryModels?.clear();collectionShelves?.clear();remoteScene?.remove();remoteScene=roomModel=null;
 };
 function mountScene(){
   removeScene();
@@ -391,8 +395,9 @@ function resetDoor(){
 // MML captures document keys by default. Preserve ordinary text editing and
 // keyboard activation of the HUD without turning typed words into locomotion.
 document.addEventListener('keydown',event=>{
+  if(atelierTable.opened&&event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();atelierTable.close();return;}
   if(event.target instanceof Element&&event.target.closest('#exhibition-index')){event.stopImmediatePropagation();return;}
-  if((beaconControls.opened||hot&&(moving||inside&&contentVisitor?.frame&&!contentVisitor.panel.classList.contains('is-walking')))&&
+  if((atelierTable.opened||beaconControls.opened||hot&&(moving||inside&&contentVisitor?.frame&&!contentVisitor.panel.classList.contains('is-walking')))&&
      ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE'].includes(event.code)){
     if(!(event.target instanceof Element&&event.target.closest('button,input,select,textarea')))event.preventDefault();
     event.stopImmediatePropagation();return;
@@ -530,6 +535,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         updateDoor(position,()=>options.coreCameraManager.getCameraState().rotation);
       }
       beaconControls.update(inside&&!moving&&remoteScene?activeSpace.objects:null,position);
+      atelierTable.update(inside&&!moving&&remoteScene?activeSpace:null,position);
       render(renderState);
       if(!inside&&drawWorld)geometryProbe.afterRender();
       else if(inside)keepRoomArt();
@@ -1105,7 +1111,7 @@ const interval=setInterval(async()=>{
   try{await refresh();}catch{say('La conexión con el taller se interrumpió. Los cambios no se repetirán solos.');}
   finally{refreshing=false;}
 },1500);
-window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();beaconControls.clear();garden.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);if(signalPreview)URL.revokeObjectURL(signalPreview);worldAudio.dispose();client.dispose();});
+window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();beaconControls.clear();atelierTable.update(null);garden.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);if(signalPreview)URL.revokeObjectURL(signalPreview);worldAudio.dispose();client.dispose();});
 refresh().catch(()=>say('No pude conectar con el taller.'));
 resetDoor();
 syncIndoorDesign();
