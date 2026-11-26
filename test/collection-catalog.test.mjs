@@ -114,7 +114,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
     entries:[version,oldVersion].map(version=>({resource:main,version,scene:sceneVersion,sha256}))}));
   const thumbnail='/api/space/collection-model/'+main+'/'+version;
   const archivedThumbnail='/api/space/collection-model/'+main+'/'+oldVersion;
-  let revoked=false,unavailable=false,hold,expiredSession=false,mainVersion=version,historicalDenied=false;
+  let revoked=false,unavailable=false,manifestFailure=null,hold,expiredSession=false,mainVersion=version,historicalDenied=false;
   const requests=[];
   const socket=join(stateDir,'native.sock'),otherPort=join(stateDir,'foreign.sock');
   let admitted=true;
@@ -169,6 +169,8 @@ test('collection projects stay grouped and editions follow each visitor and thei
       assert.notEqual(resource,foreign);
       if(hold)await hold();
       if(headers.Cookie.endsWith('guest')&&file==='review-live.json')await holdPointRecipient?.();
+      if(resource===main&&file==='review-live.json'&&manifestFailure==='timeout')throw new DOMException('Fixture deadline','TimeoutError');
+      if(resource===main&&file==='review-live.json'&&manifestFailure)return new Response('',{status:manifestFailure});
       if(resource===main&&(revoked||requestedVersion===oldVersion&&historicalDenied))return new Response('',{status:404});
       if(file==='gallery.json')return new Response(review,{headers:{'X-Home-Version':requestedVersion}});
       return Response.json({schema:'dm.review-live/v1',gallery:'gallery.json',sha256:gallerySha256},
@@ -451,6 +453,15 @@ test('collection projects stay grouped and editions follow each visitor and thei
   unavailable=true;
   assert.equal((await visitor.catalog()).status,503);
   unavailable=false;
+  for(const failure of ['timeout',429,503]){
+    manifestFailure=failure;
+    assert.equal((await visitor.catalog()).status,503,String(failure));
+  }
+  // Healthy independent editions still reach readers during a partial outage.
+  const partial=await (await author.catalog()).json();
+  assert.deepEqual(partial.projects.flatMap(project=>project.editions.map(edition=>edition.resource)),[component]);
+  manifestFailure=null;
+  assert.equal((await visitor.catalog()).status,200);
 
   let started,release;
   const pending=new Promise(resolve=>{started=resolve;});

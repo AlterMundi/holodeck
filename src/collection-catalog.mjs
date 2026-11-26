@@ -98,6 +98,7 @@ export function createCollectionReader(origin,{request=fetch}={}){
       const resource=row.resource_ref.slice(SOURCE_PREFIX.length);
       if(RESOURCE.test(resource))available.set(resource,{version:row.version_ref,title:title(row.title)});
     }
+    let unavailable=false;
     async function exact(resource,pin){
       const entry=available.get(resource);
       if(!entry)return null;
@@ -105,13 +106,17 @@ export function createCollectionReader(origin,{request=fetch}={}){
       try{
         const response=await read('/works/'+resource+'/'+version+'/review-live.json');
         const manifest=await boundedJSON(response,16*1024);
+        if(response.status===401||response.status===429||response.status>=500)unavailable=true;
         if(response.headers.get('x-home-version')!==version||manifest?.schema!=='dm.review-live/v1'||
            manifest.gallery!=='gallery.json'||typeof manifest.sha256!=='string'||!VERSION.test(manifest.sha256))return null;
         const index=manifest.scene_index;
         const sceneIndexSha256=index?.file==='scene-index.json'&&typeof index.sha256==='string'&&VERSION.test(index.sha256)
           ?index.sha256:null;
         return {resource,...entry,version,gallerySha256:manifest.sha256,...(sceneIndexSha256?{sceneIndexSha256}:{})};
-      }catch{return null;}
+      }catch{
+        unavailable=true;
+        return null;
+      }
     }
     const [projects,archive]=await Promise.all([
       Promise.all(selection.projects.map(async ({id,resources},shelf)=>{
@@ -123,7 +128,8 @@ export function createCollectionReader(origin,{request=fetch}={}){
         return edition?{...edition,label}:null;
       })),
     ]);
-    return {projects:projects.filter(Boolean),archive:archive.filter(Boolean)};
+    const result={projects:projects.filter(Boolean),archive:archive.filter(Boolean)};
+    return unavailable&&!result.projects.length&&!result.archive.length?null:result;
   };
 }
 

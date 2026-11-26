@@ -36,8 +36,8 @@ async function modelBytes(base,edition,signal){
 }
 
 export class CollectionShelves {
-  constructor({base,scene,panel,archivePanel,worktablePanel,webgl,onReference,onPlaced,onTabletop,onPoint}){
-    Object.assign(this,{base,scene,panel,onPlaced,onTabletop,webgl,loader:new GLTFLoader()});
+  constructor({base,scene,panel,archivePanel,worktablePanel,webgl,onReference,onPlaced,onTabletop,onPoint,onCatalogUnavailable}){
+    Object.assign(this,{base,scene,panel,onPlaced,onTabletop,onCatalogUnavailable,webgl,loader:new GLTFLoader()});
     this.items=new Map();
     this.list=panel.querySelector('ul');
     this.archiveStatus=panel.ownerDocument.createElement('p');
@@ -131,15 +131,27 @@ export class CollectionShelves {
         {cache:'no-store',redirect:'error',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(6500)])});
       const data=response.ok?await response.json():null;
       if(controller.signal.aborted)return;
+      if(response.status===503)this.retryCatalog();
+      else if(response.ok)this.catalogUnavailable=false;
       const current=data?.room===this.room?data:null;
       this.sync(current?.projects);
       this.archive.sync(current?.archive,this.root);
       this.worktable.sync(current?.projects,current?.worktable);
     }catch{
-      if(!controller.signal.aborted){this.sync([]);this.archive.clear();this.worktable.clear();}
+      if(!controller.signal.aborted){
+        this.retryCatalog();
+        this.sync([]);this.archive.clear();this.worktable.clear();
+      }
     }finally{
       if(this.flight===controller)this.flight=null;
     }
+  }
+
+  retryCatalog(){
+    this.refreshAt=performance.now()+3000;
+    if(this.catalogUnavailable)return;
+    this.catalogUnavailable=true;
+    this.onCatalogUnavailable?.();
   }
 
   sync(projects){
@@ -325,6 +337,6 @@ export class CollectionShelves {
     this.archiveRequest?.abort();this.archiveRequest=null;this.setArchiveStatus(null,'');
     for(const item of this.items.values())this.remove(item);
     this.nearby=[];this.links([]);this.archive.clear();this.worktable.clear();
-    this.room=null;this.root=null;this.refreshAt=0;
+    this.room=null;this.root=null;this.refreshAt=0;this.catalogUnavailable=false;
   }
 }
