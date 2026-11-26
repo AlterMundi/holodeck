@@ -122,15 +122,23 @@ try{
  }else{
  const position=()=>evaluate('structuredClone(holodeckDevelopment.client.getLocalCharacterState().position)');
  const walked=(before,after)=>Math.hypot(after.x-before.x,after.z-before.z);
- async function holdA(){
-  await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'a',code:'KeyA',text:'a',windowsVirtualKeyCode:65});
-  try{await wait(550);}finally{await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'a',code:'KeyA',windowsVirtualKeyCode:65});}
+ const running=()=>evaluate('holodeckDevelopment.client.keyInputManager.getRun()');
+ const keyEvent=(type,fields)=>cdp('Input.dispatchKeyEvent',{type,...fields});
+ async function holdShift(action){
+  const shift={key:'Shift',code:'ShiftLeft',windowsVirtualKeyCode:16};
+  await keyEvent('rawKeyDown',{...shift,modifiers:8});
+  try{return await action();}finally{await keyEvent('keyUp',shift);}
+ }
+ async function holdA(shift=false){
+  const key=shift?'A':'a',stroke={key,code:'KeyA',windowsVirtualKeyCode:65,modifiers:shift?8:0};
+  await keyEvent('keyDown',{...stroke,text:key});
+  try{await wait(550);}finally{await keyEvent('keyUp',stroke);}
  }
  await frame('document.querySelector("#conversation-message").focus();true');
  const writingFrom=await position();
- await holdA();
+ const composerSprint=await holdShift(async()=>{await holdA(true);return running();});
  const writingDistance=walked(writingFrom,await position());
- if(writingDistance>.02||await frame('document.activeElement.value')!=='a')throw Error('Composer keyboard input leaked into world movement');
+ if(composerSprint||writingDistance>.02||await frame('document.activeElement.value')!=='A')throw Error('Composer keyboard input leaked into world movement');
  const forged={...ready,type:'prepare',id:randomUUID(),request:randomUUID(),modality:'text',capacity:{files:8,bytes:40*1024*1024,context_bytes:65536}};
  for(const [label,source,origin,data]of [['wrong-source','window',frameOrigin,forged],['wrong-origin','document.querySelector("#shared-conversation iframe").contentWindow','https://foreign.test',forged],['wrong-binding','document.querySelector("#shared-conversation iframe").contentWindow',frameOrigin,{...forged,binding:'e'.repeat(64)}],['wrong-actor','document.querySelector("#shared-conversation iframe").contentWindow',frameOrigin,{...forged,actor:'human:other'}]]){
   await evaluate(`dispatchEvent(new MessageEvent('message',{source:${source},origin:${JSON.stringify(origin)},data:${JSON.stringify(data)}}));true`);await wait(50);if(prepared.length)throw Error('Forged host context admitted: '+label);
@@ -148,6 +156,8 @@ try{
   return document.querySelector('#conversation-panel').dataset.displayMotion;
  })()`);
  if(await evaluate('document.querySelector("#conversation-panel").contains(document.activeElement)'))throw Error('Closing left keyboard focus inside Conversation');
+ const worldSprint=await holdShift(running);
+ if(!worldSprint||await running())throw Error('World Shift did not enter and release the run state');
  await holdA();
  const later=await evaluate('({capturedAt:Date.now(),local:structuredClone(holodeckDevelopment.client.getLocalCharacterState())})');
  const walkingDistance=walked(submit.local.position,later.local.position);
@@ -184,7 +194,7 @@ try{
  await until(()=>evaluate('document.querySelector("#hud").hasAttribute("data-native-status")'),8000,'compact world header restored after minimizing');
  const errors=await evaluate('checkErrors'),frameErrors=await frame('checkErrors');if(errors.length||frameErrors.length)throw Error('Browser errors '+JSON.stringify({errors,frameErrors}));
  const evidence={schema:'holodeck.shared-conversation-browser/v1',qualification:'Actual installed canonical full shell/assets and Holodeck MML world, synthetic loopback Home/context/files/original I/O; no real human/native/model/provider input or acceptance.',canonicalRelease:installed.split('/').at(-1),canonicalAssets:Object.fromEntries(served),loads,acceptedOriginals:accepted.length,exactOriginal:true,contextFiles:1,userFiles:1,fileUploads:fileWrites.length,draftRetained:true,operationalAlerts:'Canonical quiet frame intentionally hides the ordinary launcher; not an exercised capability.',recordingControlVisibleAndFits:true,recordingCountdownSounds:'Not exercised by this text/files fixture; use separate canonical recorder qualification.',forgeriesRefused:4,retainedOneFrame:true,submit,later,captured,positionError,layouts,errors,frameErrors};
- if(loads!==1)throw Error('Canonical frame unexpectedly reloaded');await writeFile(join(directory,'evidence.json'),JSON.stringify({...evidence,clientSHA256,writingDistance,walkingDistance,minimizeMotion,restoreMotion},null,2)+'\n');console.log(JSON.stringify(evidence));
+ if(loads!==1)throw Error('Canonical frame unexpectedly reloaded');await writeFile(join(directory,'evidence.json'),JSON.stringify({...evidence,clientSHA256,writingDistance,walkingDistance,minimizeMotion,restoreMotion,composerSprint,worldSprint},null,2)+'\n');console.log(JSON.stringify(evidence));
  }
 }catch(error){console.error('diagnostic-world',JSON.stringify(await evaluate('({body:document.body.innerText.slice(-1200),messages:window.surfaceMessages,errors:window.checkErrors})').catch(e=>({error:e.message}))));console.error('requests',JSON.stringify(requests.slice(-35)));console.error('contexts',JSON.stringify(events.filter(e=>['Runtime.executionContextCreated','Runtime.exceptionThrown'].includes(e.method)).slice(-12)));throw error;
 }finally{

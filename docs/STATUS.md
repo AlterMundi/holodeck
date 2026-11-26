@@ -2,6 +2,23 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `55e05fd1278d62af99fb5b70fc809b624e8bd4c5` carries the
+protected keyboard release `394ab30b12c6` into the Character candidate.
+Shift runs and Alt descends with world focus. The compact touch notice
+keeps its touch-specific wording. Archive
+`01c642c4af297b4ad88e9747ac33a5d14663b8d9314c369449c075d06c67fd3f`
+matched all 87 payloads. Render assets and workers match the selected
+protected archive, and the Character pose catalog is byte-identical
+to `d7bf43032e47`.
+
+In the canonical Conversation test, Shift+A typed uppercase A while
+the avatar stayed in place and the world run state stayed off. After
+minimizing, Shift engaged and released world run, and A moved the avatar.
+The existing frame and draft survived. The same package passed the
+browser and own-native exchange at flight frame 36. Holodeck passed
+424 tests with two skips. The protected selector still needs the
+Character candidate and a trial with independent authenticated visitors.
+
 Source `c2887039b1e86ece1dfb4b6c1c6e2e0898f8bd44` carries the selected
 protected package `49acf79b2a04` into the Character and alpha.15 branch.
 It keeps the live cave contacts, flight boost and wakes, and the Lab
