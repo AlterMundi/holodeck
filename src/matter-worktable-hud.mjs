@@ -955,7 +955,7 @@ export class MatterWorktableHud{
         if(this.movementVertical)this.place(this.movementGroups.get(movementDown),'descendPlacement',viewport,downCenter,
           movementTop+.07*movementScale+lower,movementScale);
       }
-      let promptTop=barTop;
+      let fixedPromptTop=barTop;
       if(this.door.group){
         const besideFinal=beside&&barCenter-dockWidth/2+.01>=left+promptPlate+8;
         const hasTouch=this.document.defaultView.navigator.maxTouchPoints>0;
@@ -968,12 +968,13 @@ export class MatterWorktableHud{
         const promptCenter=promptAnchor
           ? Math.max(left+promptPlate/2,Math.min(width-right-promptPlate/2,promptAnchor.x))
           : promptCompact&&!shortLandscape?left+promptPlate/2:(width+left-right)/2;
-        promptTop=promptAnchor
+        fixedPromptTop=besideFinal?barTop:Math.max(36,barTop-promptGap);
+        const promptTop=promptAnchor
           ? Math.max(top+76,Math.min(barTop-47,promptAnchor.y-29))
-          : besideFinal?barTop:Math.max(36,barTop-promptGap);
+          : fixedPromptTop;
         this.place(this.door.group,'doorPlacement',viewport,promptCenter,promptTop,promptScale);
       }
-      const noticeTop=this.movementGroups.size?Math.min(promptTop,movementTop):promptTop;
+      const noticeTop=this.movementGroups.size?Math.min(fixedPromptTop,movementTop):fixedPromptTop;
       const noticeOffset=Math.ceil(height-noticeTop+12)+'px';
       if(noticeOffset!==this.noticeOffset){
         this.noticeOffset=noticeOffset;
