@@ -23,6 +23,17 @@ checks with two skips. Receiving verified all 86 files and the same
 world run and permissions through sequences 444–446. Only the browser
 payload changed. Immediate rollback is `f647d674febf`.
 
+A follow-up used the same package and camera at dusk on RTX 2060 Normal
+and at night on Pi 5 Livianos. The dusk shore shows a gradual transition.
+Night still loses much of the nearby shoreline shape and material detail,
+and broad wave bands remain conspicuous across the dusk water at a
+distance. Both fixtures rendered the submerged view and reproduced the
+two local wake colors at 25.67 and 25.19 m/s, with short-run frame p95 of
+16.7 and 16.8 ms respectively. The different clocks and graphics profiles
+make these independent observations. The fixtures did not use separate
+visitors. See the [background focus experiment](environment-art-revamp.md#background-depth-of-field)
+for a separate candidate that keeps interface rendering sharp.
+
 ## November 25 Harmonic Lab and Listening Tower wall alignment
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `f647d674febf`
