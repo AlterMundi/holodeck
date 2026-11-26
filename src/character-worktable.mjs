@@ -3,8 +3,8 @@ import {openCharacterStudio} from './character-studio.mjs';
 const previewHeight=.58;
 
 export class CharacterWorktable {
-  constructor({document,scene}){
-    Object.assign(this,{document,scene,available:false,anchor:null});
+  constructor({document,scene,setAngle}){
+    Object.assign(this,{document,scene,setAngle,available:false,anchor:null});
     this.firstControl='Pose';
   }
 
@@ -27,7 +27,7 @@ export class CharacterWorktable {
 
   start({send,close,ownsTextInput}){
     this.viewer=openCharacterStudio(this.document,{scene:this.scene,origin:this.previewOrigin,
-      height:previewHeight,send,close,ownsTextInput});
+      height:previewHeight,setAngle:this.setAngle,send,close,ownsTextInput});
   }
 
   stop(){

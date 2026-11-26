@@ -33,10 +33,18 @@ export class MatterFlight{
     controller.characterVelocity.set(0,0,0);
     this.cameraRanges=Object.fromEntries(cameraFields.map(key=>[key,this.camera[key]]));
     this.reviewTarget=reviewTarget;
+    this.returnOrbit=reviewTarget?{yaw:this.camera.targetTheta,tilt:this.camera.targetPhi}:null;
     const distance=reviewTarget ? .96 : .68;
     Object.assign(this.camera,{minDistance:.27,maxDistance:1.25,distance,targetDistance:distance,desiredDistance:distance});
     this.active=true;
     return true;
+  }
+
+  setReviewAngle(angle){
+    if(!this.reviewTarget)return;
+    // The review presets and the standalone viewer use +Z as front.
+    this.camera.setOrbitAngle(Math.PI/2-angle);
+    this.camera.targetPhi=Math.PI/2-.12;
   }
 
   exit(controller){
@@ -47,6 +55,11 @@ export class MatterFlight{
     const pose=this.returnPose;
     this.returnPose=null;
     Object.assign(this.camera,this.cameraRanges);
+    if(this.returnOrbit){
+      this.camera.setOrbitAngle(this.returnOrbit.yaw);
+      this.camera.targetPhi=this.returnOrbit.tilt;
+      this.returnOrbit=null;
+    }
     if(controller===pose.controller){
       const {position,quaternion}=controller.config;
       position.set(pose.position.x,pose.position.y,pose.position.z);

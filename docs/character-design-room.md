@@ -33,12 +33,14 @@ frame and any unpublished note draft in the same tab.
 The physical table and direct web projection use the same Three.js player
 for Navegante and the humanoid rig, Proyección A2UI controls and scoped
 review state. Both support compatible clips, play, pause, scrubbing at
-30 fps and frame stepping. The web projection also offers front, side and
-three-quarter presets. The player starts paused at the physical table,
-with reduced motion, or when opening an exact frame link.
+30 fps and frame stepping. Open **Vista** for front, three-quarter and
+profile presets, or orbit freely. Each visitor keeps their own angle.
+Leaving the physical table restores the visitor's previous world camera.
+The player starts paused at the table, with reduced motion, or when
+opening an exact frame link.
 
 Copying a pose link includes the rig and clip content digests, frame
-and view. When the served assets have changed, the studio reports
+and selected view preset. When the served assets have changed, the studio reports
 the older edition and resets to the first frame. It does not assign
 the old frame to the new asset. Notes created outside the room are
 browser-local, bounded to 30 notes. The studio uses the existing shared

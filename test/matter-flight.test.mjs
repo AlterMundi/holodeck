@@ -111,7 +111,8 @@ test('a miniature peer turns its head for a shared pointing cue and settles agai
 
 function flightFixture(){
   let keyboard=null,touch=null,up=false,down=false;
-  const position=new Vector3(0,.2,.55),quaternion=new Quaternion(),camera={theta:0,distance:2};
+  const position=new Vector3(0,.2,.55),quaternion=new Quaternion(),camera={theta:0,distance:2,
+    targetTheta:.21,targetPhi:1.4,setOrbitAngle(angle){this.targetTheta=angle;}};
   const controller={config:{position,quaternion,
     keyInputManager:{getOutput:()=>keyboard,getJump:()=>up,isKeyPressed:key=>key==='alt'&&down},
     additionalInputProvider:{getOutput:()=>touch},
@@ -157,14 +158,22 @@ test('a review pivots one visitor around the model and restores avatar-centered 
   camera.setTarget(avatarPoint);
   assert.deepEqual(target.toArray(),[.34,.315,0]);
   assert.deepEqual(avatarPoint.toArray(),[0,2,0]);
+  flight.setReviewAngle(Math.PI/2);
+  assert.equal(camera.targetTheta,0);
+  assert.equal(camera.targetPhi,Math.PI/2-.12);
   const peer=flightFixture();
+  assert.equal(peer.camera.targetTheta,.21);
   assert.equal(peer.camera.distance,.68);
   assert.equal(peer.flight.reviewTarget,null);
   flight.exit(controller);
   camera.setTarget(avatarPoint);
   assert.deepEqual(target.toArray(),[0,2,0]);
   assert.equal(camera.distance,2);
+  assert.equal(camera.targetTheta,.21);
+  assert.equal(camera.targetPhi,1.4);
   flight.enter(controller,new Vector3());
+  flight.setReviewAngle(Math.PI/2);
+  assert.equal(camera.targetTheta,.21);
   camera.setTarget(avatarPoint);
   assert.ok(Math.abs(target.y-(2-1.75*(1-matterAvatarScale)))<1e-9);
   release();

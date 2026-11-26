@@ -380,6 +380,14 @@ async function main(){
     const peerOrbit=await cameraAngles(peerPage);
     assert.ok(Math.abs(peerOrbit[0]-peerCamera[0])>.08);
     assert.deepEqual(await cameraAngles(page),firstCamera);
+    await peerButton('Vista').press('Enter');
+    await peerButton('Perfil').press('Enter');
+    await peerPage.waitForFunction(()=>{
+      const camera=holodeckDevelopment.client.getCameraManager();
+      return Math.abs(Math.sin(camera.targetTheta/2))<1e-6;
+    });
+    assert.deepEqual(await cameraAngles(page),firstCamera);
+    await peerButton('Pose').press('Enter');
     await frame(pose.frame-1,peerPage);
     await frame(pose.frame+1);
 

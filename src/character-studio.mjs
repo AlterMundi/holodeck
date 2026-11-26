@@ -35,19 +35,21 @@ const poseButton=(id,text)=>({...button(id,text),gestureKey:path('poseKey'),
 const choice=(id,name)=>({id,component:'HudChoice',label:name,options:path(id+'Options'),
   value:path(id),draft:path('draft/'+id),action:action(id,id)});
 const sectionControls={
-  Pose:['clock','heldPose','chapter','playback','views'],
+  Pose:['clock','heldPose','chapter','playback'],
   Clips:['rig','clip','playOptions'],
   Comparar:['comparison'],
+  Vista:['views'],
   Notas:['presentation','accessStatus','checkReviewAccess','noteTarget','note','archive','reviewNotes','reviewText'],
 };
 const sectionIds=Object.keys(sectionControls);
+const sectionWeights={Pose:.86,Clips:.93,Comparar:1.65,Vista:.90,Notas:1.10};
 const widePanelWidth=2.60;
 const compactControls=new Set(sectionIds.flatMap(id=>sectionControls[id]));
 const controls=[
   {id:'root',component:'HudPanel',label:'Revisión de movimiento',width:widePanelWidth,gap:.025,
     children:['sections','title','rig','clip','clock','heldPose','chapter','playback','playOptions','comparison','views','presentation','accessStatus','checkReviewAccess','noteTarget','note','archive','reviewNotes','reviewText','status']},
   {...row('sections',sectionIds),visible:path('compact')},
-  ...sectionIds.map(id=>({...button(id,id),pressed:path('selectedSection/'+id),weight:id==='Comparar'?1.36:1})),
+  ...sectionIds.map(id=>({...button(id,id),pressed:path('selectedSection/'+id),weight:sectionWeights[id]})),
   label('title','Revisión de movimiento','title'),choice('rig','Personaje'),choice('clip','Ciclo'),
   {id:'clock',component:'HudRange',label:'Fotograma',min:0,max:path('lastFrame'),step:1,value:path('frame'),
     draft:path('draft/frame'),gestureKey:path('clipEdition'),markers:path('chapterFrames'),
@@ -330,9 +332,9 @@ export function openCharacterStudio(document,table=null){
   const reduce=window.matchMedia('(prefers-reduced-motion: reduce)');
   function setView(next){
     view=next;
-    projected?.setAngle(viewAngles[view]);
+    (table??projected).setAngle(viewAngles[view]);
   }
-  setView(view);
+  projected?.setAngle(viewAngles[view]);
 
   const hex=bytes=>Array.from(bytes,n=>n.toString(16).padStart(2,'0')).join('');
 
@@ -518,7 +520,7 @@ export function openCharacterStudio(document,table=null){
     const reviewText=selected?selected.author+' · '+selected.text:'';
     const show=Object.fromEntries([...compactControls].map(id=>[id,!compact||sectionControls[section].includes(id)]));
     show.title=show.status=!compact;
-    if(table){show.views=false;show.status=Boolean(displayStatus);}
+    if(table)show.status=Boolean(displayStatus);
     show.chapter&&=chapters.length>0;
     show.heldPose&&=frame>exactFrame;
     const canWriteNote=canReview===true||canSaveLocal();

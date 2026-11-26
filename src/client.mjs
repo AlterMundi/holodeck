@@ -895,7 +895,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         }catch{}
       }
     }
-    const characterTable=new CharacterWorktable({document,scene:renderer.mmlCompositionScene.group});
+    const characterTable=new CharacterWorktable({document,scene:renderer.mmlCompositionScene.group,
+      setAngle:angle=>tableFlight.setReviewAngle(angle)});
     matterHud=new MatterWorktableHud({document,webgl:renderer.composer.renderer,table:collectionShelves.worktable,collection:collectionShelves,
       creatorContext:()=>({draft:preview,point:worldIndication?.selected,shared:worldIndication?.own()?.sequence}),
       beaconControls,onBeaconOpen:()=>releaseBeaconInput(client),
