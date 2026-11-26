@@ -831,8 +831,10 @@ The tool strip opens the local exterior minimap or the room map. The
 worktable swaps in its operating controls while keeping Conversation
 available to an authorized visitor. Use the right mouse button to turn
 continuously and set mouse sensitivity under Video. In the toroidal
-exterior, double-tap Space to toggle flight. Space climbs, Shift descends,
+exterior, double-tap Space to toggle flight. Space climbs, Alt descends,
 and another double-tap returns to walking with normal radial gravity.
+Shift runs on foot and boosts in flight. Alt crouches on land and dives
+in water. Space jumps on land and surfaces when swimming.
 
 Use the resonant toroidal neural work as an investigation rather than a source
 of unverified mechanics. The two periodic axes provide natural coordinates for
@@ -1023,8 +1025,8 @@ Track the reported Legion and Redmi tab exits in
 [#27](https://github.com/AlterMundi/holodeck/issues/27). The participant
 identified Ctrl+W as the desktop trigger. The protected fullscreen
 control captures that chord with browser permission, while a regular
-Chromium tab reserves it. R remains the ordinary sprint modifier. The
-Redmi exit remains unexplained. Diagnose WebView and mobile lifecycle
+Chromium tab reserves it. Shift is the sprint modifier. The Redmi exit
+remains unexplained. Diagnose WebView and mobile lifecycle
 behavior and verify reopen from the last confirmed location.
 
 | Stage | Owning cards and dependencies | Exit evidence |

@@ -60,12 +60,12 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
     const touchVertical=touch?.vertical??Number(Boolean(touch?.jump));
     const vertical=flying||motion.swimming||wet?
       Math.max(-1,Math.min(1,Number(Boolean(keyInputManager.getJump()))-
-        Number(keyInputManager.isKeyPressed('shift'))+touchVertical)):0;
+        Number(keyInputManager.isKeyPressed('alt'))+touchVertical)):0;
     const jump=!flying&&!motion.swimming&&Boolean(control?.jump||touch?.jump||(wet&&vertical>0));
     const previousHeight=motion.height;
     if(flying)sweepStart.fromArray(terrainPosition(motion.u,motion.v,motion.height));
     motion.update(seconds, {forward: moving ? 1 : 0, yaw,
-      sprint:flying?keyInputManager.isKeyPressed('r')||keyInputManager.isKeyPressed('control')||touch?.isSprinting:control?.isSprinting,
+      sprint:flying?keyInputManager.getRun()||touch?.isSprinting:control?.isSprinting,
       jump,flight:flying,vertical,crouch:!flying&&!wet&&keyInputManager.isKeyPressed('alt')});
     let state = motion.pose();
     const radius = controller.capsuleInfo.radius;
