@@ -28,6 +28,17 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+Host revision `ed2077601d378dde5336e48c7ca27d9a513941e6`
+adds front, three-quarter and profile presets to the physical worktable.
+The package SHA-256 is `4f1506a79695d72f31d933777fa0ee1e4ea13a911f05214183777f345efec6d6`.
+Chromium crossed the foyer door, changed to three-quarter with the
+keyboard, and tapped profile on the Three.js controls at 390 × 844 with
+all five tabs legible. A second fixture visitor selected front while
+the first stayed in profile at frame 36. The flight tests verify
+restoring the pre-table camera on exit. The complete Node suite passed
+443 cases with two skips. Protected selection and real visitor
+acceptance remain open.
+
 Host revision `b90362e5e6e9238b481250e0e4952af74dbb4fb3` installs the
 published alpha.19 dependency with SHA-512 integrity. Its Home service
 archive SHA-256 is
