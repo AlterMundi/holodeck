@@ -291,6 +291,12 @@ async function main(){
     const held=await heldReply.json();
     const heldPose={rig:pose.rig,clip:'estudio-marcha',edition:current.catalog.humanoid['estudio-marcha'].edition,frame:96};
     assert.deepEqual(held.presentation.pose,heldPose);
+    await context.grantPermissions(['clipboard-read','clipboard-write']);
+    await tableButton('Copiar URL').press('Enter');
+    await page.waitForFunction(async()=> (await navigator.clipboard.readText()).includes('fotograma=96'));
+    const copiedPose=new URL(await page.evaluate(()=>navigator.clipboard.readText())).searchParams;
+    assert.deepEqual({rig:copiedPose.get('rig'),clip:copiedPose.get('clip'),
+      edition:copiedPose.get('edicion'),frame:Number(copiedPose.get('fotograma'))},heldPose);
     const heldNative=await native('character-review.current');
     assert.deepEqual(heldNative.presentation,held.presentation);
     assert.equal(heldNative.revision,held.revision);

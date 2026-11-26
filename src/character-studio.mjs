@@ -30,6 +30,8 @@ const action=(name,key)=>({event:{name,...(key?{context:{value:path('draft/'+key
 const label=(id,text,style='body')=>({id,component:'HudText',label:text,style});
 const row=(id,children)=>({id,component:'HudRow',children});
 const button=(id,text,key)=>({id,component:'HudButton',label:text,action:action(id,key)});
+const poseButton=(id,text)=>({...button(id,text),gestureKey:path('poseKey'),
+  action:{event:{name:id,context:{pose:path('pose')}}}});
 const choice=(id,name)=>({id,component:'HudChoice',label:name,options:path(id+'Options'),
   value:path(id),draft:path('draft/'+id),action:action(id,id)});
 const sectionControls={
@@ -65,7 +67,7 @@ const controls=[
     disabled:path('noReference')},
   row('views',['front','angle','side']),button('front','Frente'),{...button('angle','Tres cuartos'),weight:1.45},button('side','Perfil'),
   row('presentation',['present','follow']),
-  {...button('present','Mostrar pose'),disabled:path('presentationBusy')},
+  {...poseButton('present','Mostrar pose'),disabled:path('presentationBusy')},
   {...button('follow','Ver pose del Taller'),disabled:path('presentationBusy')},
   {...label('accessStatus',path('accessStatus'),'status'),lines:2},
   button('checkReviewAccess','Comprobar acceso'),
@@ -75,7 +77,7 @@ const controls=[
   row('archive',['pin','retryNote','copy','review']),
   {...button('pin',path('noteAction'),'note'),submitFor:'note',disabled:path('savingNote'),visible:path('canSubmitNote'),weight:1.06},
   {...button('retryNote','Reintentar'),visible:path('canRetryNote'),weight:1.06},
-  {...button('copy',path('copyLabel')),weight:1.23},
+  {...poseButton('copy',path('copyLabel')),weight:1.23},
   {...button('review',path('reviewAction')),visible:path('canReview'),disabled:path('presentationBusy')},
   choice('reviewNotes','Notas de esta pose'),
   {...label('reviewText',path('reviewText')),lines:3},
@@ -529,7 +531,7 @@ export function openCharacterStudio(document,table=null){
     show.reviewText&&=notes.length>0;
     const selectedSection=Object.fromEntries(sectionIds.map(id=>[id,id===section]));
     receive('updateDataModel',{value:{rig,clip,compact,show,selectedSection,rigOptions:choices(Object.fromEntries(Object.entries(rigs).map(([id,value])=>[id,value.label]))),
-      clipOptions:options.map(id=>({id,label:names[id]||id})),frame,
+      clipOptions:options.map(id=>({id,label:names[id]||id})),frame,pose:currentPose,poseKey,
       reference:reference?.name??'',referenceOptions:options.filter(id=>id!==clip).map(id=>({id,label:names[id]||id})),
       compareLabel:showingReference?'Ver A':'Ver B',showingReference,noReference:!reference,
       lastFrame:frameLimit(),clipEdition:clipEdition(),speedOptions,speed,loop,
@@ -593,10 +595,10 @@ export function openCharacterStudio(document,table=null){
     return notes;
   }
 
-  async function usePresentation(publish){
+  async function usePresentation(publish,pose){
     if(presentationBusy)return;
     playing=false;
-    const origin=reviewPose(),key=keyForPose(origin),request=sequence;
+    const origin=publish?pose:reviewPose(),key=keyForPose(origin),request=sequence;
     const endpoint=new URL('api/space/character-presentation',url);
     const conflict='La pose del Taller cambió. Volvé a abrirla antes de mostrar otra.';
     presentationBusy=true;
@@ -667,7 +669,7 @@ export function openCharacterStudio(document,table=null){
       if(visible)report(error.message);
     }finally{savingNote=false;if(visible)refresh();}
   }
-  async function activate(name,{value,clipEdition:expectedClip}={}){
+  async function activate(name,{value,clipEdition:expectedClip,pose}={}){
     if(name==='close'&&table){table.close();return;}
     if(name==='retryRig'&&table&&rigRetryAvailable)return openInitialRig();
     if(!name)return;
@@ -676,7 +678,8 @@ export function openCharacterStudio(document,table=null){
     if(name==='rig'&&Object.hasOwn(rigs,value)&&rig!==value)return loadRig(value);
     if(name==='clip'&&typeof value==='string'&&(clip!==value||!playback))return loadClip(value);
     if(!playback)return;
-    if((name==='present'||name==='follow')&&canReview)return usePresentation(name==='present');
+    if(name==='present'&&canReview&&pose)return usePresentation(true,pose);
+    if(name==='follow'&&canReview)return usePresentation(false);
     if(name==='review'&&canReview&&!presentationBusy)return toggleReview();
     if(name==='reviewNotes'&&currentReview()?.notes.some(item=>item.id===value))selectedNote=value;
     if(name==='reference')return loadReference(value);
@@ -698,8 +701,8 @@ export function openCharacterStudio(document,table=null){
     if(name==='speed'&&speedOptions.some(option=>option.id===value))speed=value;
     if(name==='back'||name==='forward'){playing=false;scrub(frame+(name==='back'?-1:1));}
     if(Object.hasOwn(viewAngles,name))setView(name);
-    if(name==='copy'){
-      await window.navigator.clipboard.writeText(exactUrl());
+    if(name==='copy'&&pose){
+      await window.navigator.clipboard.writeText(exactUrl(pose));
       report('Enlace copiado para esta edición y este fotograma.');
     }
     if(name==='retryNote'&&canReview&&pendingNote&&!noteReplaced){

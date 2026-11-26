@@ -28,6 +28,18 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+The present and copy buttons bind the exact displayed pose to the
+pointer press and typed action. The renderer pin is Proyección
+`e9fc30ff943a5110b713f1b3c5c3a04b578430b9` with its archive SHA-512.
+In packaged Chromium, the comparison clock reached 110 while clip A
+held its last frame 96. The clipboard link and the native room readback
+both carried frame 96 with the same rig, clip and edition. The pose
+catalog and server bytes match the flight-boost package. The protected
+deployment still needs selection and visitor acceptance.
+The checked archive SHA-256 is
+`a54512888dc6c4091d73bf6603df4e2628d5ad737e73348efb108acab8be1ddc`.
+Rebuilding from the merged renderer pin produced identical bytes.
+
 Candidate `908f26f5822562b04a6a0b98079d08e3de7761b2` integrates the
 authored humanoid flight-boost study from `9b9f0e4` while preserving the
 world's ground gait and flight wakes. Archive SHA-256 is
