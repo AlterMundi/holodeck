@@ -13,7 +13,7 @@ import {SettingsHud,settingsId} from './settings-hud.mjs';
 import {HudRenderLayer} from './hud-render-layer.mjs';
 import {WorldActivityHud,activityHudId,activityHudWidth} from './world-activity-hud.mjs';
 import {VisitHud,exhibitionHudId,visitHudId,exhibitionHudWidth,visitHudWidth} from './visit-hud.mjs';
-import {SpatialHudWindows} from './spatial-hud-windows.mjs';
+import {placeHudWindow,SpatialHudWindows} from './spatial-hud-windows.mjs';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
 
 const surfaceId='matter-worktable',toolbeltId='world-toolbelt';
@@ -40,6 +40,7 @@ const row=(id,children,fields={})=>({id,component:'HudRow',children,...fields});
 const text=(id,label,fields={})=>({id,component:'HudText',label,...fields});
 const choice=(id,label,options,value)=>({id,component:'HudChoice',label,
   options:path(options),value:path(value),draft:path(id+'Draft'),action:action(id,{value:path(id+'Draft')})});
+const landscapeMapScale=286; // 44 CSS px for Proyección's .154-unit button plate.
 const toolScale=286,toolGap=.035,toolRowHeight=.18,toolPadding=.12;
 const toolNames=['map','open','talk','appearance','video','bridge','plant','undo','activity','visit','endVisit','fullscreen'];
 const toolPixels={map:130,open:154,talk:134,appearance:138,video:96,bridge:153,plant:100,undo:92,activity:126,visit:124,endVisit:140};
@@ -178,7 +179,7 @@ export class MatterWorktableHud{
     document.body.append(this.a11y,this.toolInset);
     this.map=new WorldMapHud({...navigation,send:(type,content,id)=>this.send(type,content,id),
       focusBearing:()=>this.hud.focusAccessibleControl(worldBearingId,'dismiss'),
-      focusLauncher:()=>this.focusTool('map'),invalidate:this.layer.invalidate});
+      focusLauncher:()=>{this.syncSettingsInput();this.focusTool('map');},invalidate:this.layer.invalidate});
     const finePointer=this.document.defaultView.matchMedia('(pointer: fine)');
     this.coarsePointer=this.document.defaultView.matchMedia('(pointer: coarse)');
     this.door=new DoorPromptHud({...navigation.door,send:(type,content,id)=>this.send(type,content,id),
@@ -603,9 +604,19 @@ export class MatterWorktableHud{
   syncSettingsInput(){
     const scope=this.beacon.viewerGroup?beaconViewerId:this.activity.owner()?.native?activityHudId:this.visit.indexActive?exhibitionHudId:
       this.visit.viewerGroup?visitHudId:this.settings.group?settingsId:null;
-    if(scope===this.modalScope)return;
-    this.modalScope=scope;
-    this.hud.setInteractionScope(scope?{surfaceIds:[scope],blockOutside:true}:undefined);
+    const mapTakesFocus=Boolean(this.map.group&&this.map.landscape);
+    for(const group of [this.toolGroup,this.status.headerGroup]){
+      if(group&&group.visible===mapTakesFocus){
+        group.visible=!mapTakesFocus;
+        this.layer.invalidate();
+      }
+    }
+    const focusedSurface=scope||(mapTakesFocus?worldMapId:null);
+    if(focusedSurface===this.modalScope)return;
+    if(this.windows.drag?.id===worldMapId)this.windows.cancelDrag();
+    this.modalScope=focusedSurface;
+    this.hud.setInteractionScope(focusedSurface?{surfaceIds:[focusedSurface],blockOutside:true}:undefined);
+    if(focusedSurface===worldMapId)this.hud.focusAccessibleControl(worldMapId,'close');
   }
 
   updateBearing(visible){
@@ -722,7 +733,8 @@ export class MatterWorktableHud{
   place(group,key,viewport,x,y,scale){
     if(!group||scale<=0)return;
     const resizable=floatingWindows.get(group.name);
-    if(resizable!==undefined)({x,y,scale}=this.windows.place(group.name,viewport,this.hud.getSurfaceBounds(group.name),{x,y,scale},resizable));
+    if(resizable!==undefined)({x,y,scale}=this.windows.place(group.name,viewport,this.hud.getSurfaceBounds(group.name),{x,y,scale},
+      resizable&&!(key==='mapPlacement'&&this.map.landscape)));
     const pixelRatio=this.layer.pixelRatio;
     const dock=this.usesCockpitDocks(viewport)?cockpitDocks[key]:null;
     const bounds=dock?this.hud.getSurfaceBounds(group.name):null;
@@ -964,10 +976,21 @@ export class MatterWorktableHud{
         width-right-12-scale*(worldControlsWidth+.06)/2,Math.max(top,18),scale);
     }
     if(this.map.group){
-      const {left,right}=this.toolInsets();
-      const top=width<700&&height>=610?132:76;
-      const scale=Math.min(250,(width-left-right)/1.28,Math.max(30,height-top-69)/1.82);
-      this.place(this.map.group,'mapPlacement',viewport,width-right-scale*.64,top,scale);
+      if(this.mapPlacement?.group!==this.map.group||this.mapPlacement?.landscape!==this.map.landscape)this.hud.update();
+      if(this.map.landscape){
+        const view={...viewport,insets:{left,right,top,bottom}};
+        const bounds=this.hud.getSurfaceBounds(worldMapId);
+        if(bounds){
+          const centerX=(width+left-right)/2,centerY=(height+top-bottom)/2;
+          const {scale}=placeHudWindow(view,bounds,{x:centerX,y:centerY,scale:landscapeMapScale});
+          this.place(this.map.group,'mapPlacement',view,centerX,centerY+(bounds.top+bounds.bottom)*scale/2,scale);
+        }
+      }else{
+        const top=width<700&&height>=610?132:76;
+        const scale=Math.min(250,(width-left-right)/1.28,Math.max(30,height-top-69)/1.82);
+        this.place(this.map.group,'mapPlacement',viewport,width-right-scale*.64,top,scale);
+      }
+      if(this.mapPlacement?.group===this.map.group)this.mapPlacement.landscape=this.map.landscape;
     }
     if(this.map.bearingGroup){
       const {left,right}=this.toolInsets();
@@ -1058,7 +1081,7 @@ export class MatterWorktableHud{
       this.map.markBearingPresented(Boolean(painted&&this.map.bearingGroup&&this.hud.getSurfaceBounds(worldBearingId)));
       this.door.presented(Boolean(painted&&this.door.group&&this.toolGroup&&this.hud.getSurfaceBounds(doorPromptId)));
       this.collection.presented(Boolean(painted&&this.collection.group&&this.hud.getSurfaceBounds(collectionHudId)));
-      this.status.present(worldHeaderId,Boolean(painted&&this.status.headerGroup&&this.hud.getSurfaceBounds(worldHeaderId)));
+      this.status.present(worldHeaderId,Boolean(painted&&this.status.headerGroup&&(this.map.landscape||this.hud.getSurfaceBounds(worldHeaderId))));
       this.status.present(worldNoticeId,Boolean(painted&&this.status.noticeGroup&&this.hud.getSurfaceBounds(worldNoticeId)));
       this.status.present(worldControlsId,Boolean(painted&&this.status.controlsGroup&&this.hud.getSurfaceBounds(worldControlsId)));
       this.recovery.present(Boolean(painted&&this.recovery.group&&this.hud.getSurfaceBounds(recoveryHudId)));
