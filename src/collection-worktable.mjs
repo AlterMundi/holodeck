@@ -163,7 +163,7 @@ export class CollectionWorktable{
       parts:choices(this.part),part:this.part.value,section:Number(this.section.value),
       ready:!!this.model,hasPart:!!this.part.value,visibility:this.visibility.textContent,
       canShare:!this.share.hidden,canClear:!this.clearTable.hidden,canFollow:!this.follow.hidden,
-      canDiscuss:!!this.model&&!this.discuss.hidden,discuss:this.discuss.textContent,
+      canDiscuss:!!this.model&&!this.discuss.hidden,
       busy:!!this.shareRequest,status,revision:this.shared?.revision??null,
     };
   }

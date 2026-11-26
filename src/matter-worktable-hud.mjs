@@ -97,7 +97,7 @@ const work=[
   choice('project','Proyecto','projects','project'),
   row('sharing',['share','follow','clear']),
   button('share','Compartir',{visible:path('canShare'),disabled:path('busy'),action:action('share',{revision:path('revision'),project:path('project')})}),
-  button('follow','Seguir la mesa',{visible:path('canFollow')}),
+  button('follow',path('followLabel'),{visible:path('canFollow')}),
   button('clear','Despejar',{visible:path('canClear'),disabled:path('busy'),action:action('clear',{revision:path('revision')})}),
   {id:'inspection',component:'HudColumn',visible:path('ready'),children:['scene','part','section','rotation']},
   choice('scene','Escena','scenes','scene'),choice('part','Pieza','parts','part'),
@@ -107,25 +107,26 @@ const work=[
   button('left','Girar izq.'),button('visibility',path('visibility'),{visible:path('hasPart'),weight:1.6}),
   button('right','Girar der.'),
   row('attention',['point','discuss'],{visible:path('ready')}),
-  button('point','Señalar esta pieza',{disabled:path('pointDisabled')}),
-  button('discuss',path('discuss'),{visible:path('canDiscuss')}),
+  button('point',path('pointLabel'),{disabled:path('pointDisabled')}),
+  button('discuss',path('discussLabel'),{visible:path('canDiscuss')}),
   text('status',path('status'),{style:'status',lines:2}),
 ];
 const compactWorkWidth=1.80;
 const workTabs=[['modelTab','Modelo'],['viewTab','Vista'],['sharedTab','Mesa']];
 const compactWork=[
-  ...work.filter(({id})=>!['root','inspection','title','close'].includes(id)),
+  ...work.filter(({id})=>!['root','inspection','sharing','title','close'].includes(id)),
   {id:'root',component:'HudPanel',label:'Mesa de trabajo',width:compactWorkWidth,gap:.018,
     children:['heading','views','modelTools','viewTools','sharedTools','status']},
-  text('title','Mesa de trabajo',{style:'title',weight:1.65}),
+  text('title','Materia',{style:'title',weight:1.65}),
   button('close',path('closeLabel'),{weight:.75}),
   row('views',workTabs.map(([id])=>id),{gap:.025}),
-  ...workTabs.map(([id,label])=>button(id,label,{pressed:path(id+'Selected')})),
+  ...workTabs.map(([id,label])=>button(id,label,{pressed:path(id+'Selected'),weight:id==='modelTab'?1.32:1})),
   {id:'modelTools',component:'HudColumn',visible:path('modelTabSelected'),
     children:['project','modelParts']},
   row('modelParts',['scene','part'],{gap:.025,visible:path('ready')}),
   {id:'viewTools',component:'HudColumn',visible:path('showViewTools'),children:['section','rotation']},
-  {id:'sharedTools',component:'HudColumn',visible:path('sharedTabSelected'),children:['sharing','attention']},
+  row('sharing',['follow','clear']),
+  {id:'sharedTools',component:'HudColumn',visible:path('sharedTabSelected'),children:['share','sharing','attention']},
 ];
 const lowWork=[
   ...compactWork.filter(({id})=>!['root','views','close'].includes(id)),
@@ -440,6 +441,9 @@ export class MatterWorktableHud{
     }
     const state={scope:this.scope,closeLabel:short||this.lookPreview.name==='taller'&&
       this.canvas.clientWidth<470?'Salir':'Salir de la mesa',...this.table.hudState()};
+    state.followLabel=short?'Seguir':'Seguir mesa';
+    state.pointLabel=short?'Señalar':'Señalar pieza';
+    state.discussLabel=short?'Hablar':state.hasPart?'Hablar de la pieza':'Hablar del modelo';
     if(short){
       for(const [id] of workTabs)state[id+'Selected']=this.workTab===id;
       state.showViewTools=state.viewTabSelected&&state.ready;

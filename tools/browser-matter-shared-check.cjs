@@ -227,6 +227,14 @@ mkdirSync(evidence,{recursive:true});
     await select(right,beta);
     await waitPiece(right,'Pieza Beta');
     await go(right,'Mesa');
+    const matterAction=(view,name)=>view.controls.getByRole('button',{name,exact:true});
+    for(const [view,names] of [[left,['Seguir mesa','Señalar pieza','Hablar del modelo']],
+      [right,['Compartir','Seguir','Despejar','Señalar','Hablar']]]){
+      for(const name of names)await matterAction(view,name).waitFor({state:'attached'});
+    }
+    await right.tab.setViewportSize({width:568,height:320});
+    await right.tab.waitForFunction(()=>holodeckDevelopment.hudWindow('matter-worktable')?.view.width===568);
+    await right.tab.screenshot({path:join(evidence,'touch-table-actions.png')});
     await right.tab.evaluate(()=>{
       const overlay=document.querySelector('canvas[data-hud-render-layer]');
       const loss=overlay.getContext('webgl2').getExtension('WEBGL_lose_context');
@@ -252,7 +260,7 @@ mkdirSync(evidence,{recursive:true});
     await right.tab.screenshot({path:join(evidence,'touch-shared-beta.png')});
     console.log('Touch published Beta, leaving the desktop’s local Alfa cut and camera intact');
     assert.equal(await status(left.tab,{resource:alpha.resource,revision:1}),409);
-    await go(left,'Seguir la mesa');
+    await go(left,'Seguir mesa');
     await waitProject(left,beta.resource);
     await waitPiece(left,'Pieza Beta');
     assert.equal(await cut.inputValue(),'100');
