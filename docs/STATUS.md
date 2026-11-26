@@ -28,6 +28,17 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+Candidate `2c4f220` adds the original-link model retry to the verified
+arrival baseline. Archive
+`c2622b55ec85e31311f19e30fb3586b877bc07fec06c5a6e9f1c44daea9dbd1c`
+passed the complete staged Chromium check, including opening the
+physical worktable through the foyer, independent visitor frames,
+the shared note in touch layout, and exact-pose recovery after a
+failed asset request or graphics startup failure. The private Home
+receiver matched the immutable package. The private Character
+candidate record selects the prepared request against `d2a9b89a726d`.
+The request has not been submitted to the live writer.
+
 Candidate `ad5e6a1` preserves the arrival authorization and startup
 from protected release `d2a9b89a726d` and pins the published Proyección
 alpha.17 package. Archive
