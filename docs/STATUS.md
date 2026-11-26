@@ -2,6 +2,17 @@
 
 ## Character Design Room review candidate on the selected world
 
+Nicolás confirmed that the published foyer door opens the same full-screen
+viewer as `?taller=personajes`. Protected release `394ab30b12c6`
+redirects there upon entering the Character room. Source `1a0c023`
+adds a way from the direct viewer to the navigable room in the candidate.
+Chromium clicked **Entrar al taller** from the foyer and **Abrir sala 3D**
+from inside the studio, then mounted the table and completed the scoped
+pose and note round trip. Archive
+`7c157c3109d86b179e4a8f3b0769bcc56d10d0d2dea5caab97c4b5429e709616`
+passed 425 tests with two skips. The public door still needs selection
+of the candidate before an authenticated visitor can see the table there.
+
 Source `64243ccd5c97ec1d0705f64315eb255d1e47b79e` exposes the exact
 Character pose to its retained Conversation turn. In the staged
 browser and native-port check, a paired daimon entered through the
