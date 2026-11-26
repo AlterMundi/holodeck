@@ -14,6 +14,10 @@ const header=[
   text('people',{style:'body',visible:path('hasPeople')}),
   text('conversation',{style:'body',visible:path('hasConversation')}),
 ];
+const compactHeaderWidth=.94;
+const compactHeader=header.slice(0,4).map(component=>component.id==='root'?
+  {...component,width:compactHeaderWidth,children:['heading']}:component.id==='title'?
+  {...component,weight:1.44}:component);
 const notice=(width,count)=>[
   {id:'root',component:'HudPanel',label:'Aviso del mundo',width,gap:.008,
     children:Array.from({length:count},(_,i)=>'line'+i)},
@@ -55,6 +59,7 @@ export function wrapNotice(message,measure,maxWidth){
 export class WorldStatusHud{
   constructor({document,send,toggleSound,focusSound,hasSoundFocus,focusWorld,invalidate}){
     Object.assign(this,{send,toggleSound,focusSound,hasSoundFocus,focusWorld,invalidate});
+    this.headerWidth=worldHeaderWidth;
     this.noticeMaterials=new WeakMap();
     this.headerAdapter=document.getElementById('hud');
     this.sound=this.headerAdapter.querySelector('#sound');
@@ -95,7 +100,7 @@ export class WorldStatusHud{
     this.send('updateDataModel',{value},id);
   }
 
-  update({headerVisible,showExterior,noticeVisible,controlsVisible,soundBlocked,width,height,noticeOpacity=1}){
+  update({headerVisible,showExterior,noticeVisible,controlsVisible,soundBlocked,width,height,shortTouch=false,noticeOpacity=1}){
     this.showExterior=showExterior;
     this.soundBlocked=soundBlocked;
     const people=this.people.hidden?'':this.people.textContent;
@@ -104,12 +109,14 @@ export class WorldStatusHud{
     const soundAvailable=headerVisible&&(showExterior||soundActive);
     const moveFocus=this.hasSound&&!soundAvailable&&this.hasSoundFocus();
     this.hasSound=soundAvailable;
-    this.updateSurface(worldHeaderId,header,headerVisible?{
+    this.compactHeader=shortTouch&&showExterior&&width>=286&&(!conversation||conversation==='Exploración compartida');
+    this.headerWidth=this.compactHeader?compactHeaderWidth:worldHeaderWidth;
+    this.updateSurface(worldHeaderId,this.compactHeader?compactHeader:header,headerVisible?{
       title:this.title.textContent,people,hasPeople:Boolean(people),
       conversation,hasConversation:Boolean(conversation),
       sound:this.sound.hasAttribute('data-audio-unavailable')?'Sin audio':this.sound.textContent,
       hasSound:this.hasSound,soundDisabled:this.sound.disabled||soundBlocked,soundActive,
-    }:null);
+    }:null,this.compactHeader);
     if(moveFocus&&this.headerGroup)this.focusWorld();
     this.updateSurface(worldControlsId,controls,controlsVisible?{
       move:'W  A  S  D · Moverte',mode:this.verticalHelp.textContent.replace(/^\s*·\s*/,''),

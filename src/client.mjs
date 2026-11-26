@@ -1439,6 +1439,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       matterHud.status.update({
         headerVisible:!compactConversation&&!entering&&drawWorld&&!opaqueVisit&&!settingsOpen&&!quietTouch&&
           !(matterHud.active&&(matterHud.workCompact||matterHud.compactCharacterTable))&&(!toolModal||worldHistory?.native)&&(inside||Boolean(navigator.userActivation)),
+        shortTouch:matterHud.compactTouch()==='landscape'&&matterHud.canvas.clientHeight<400,
         showExterior:!inside,noticeVisible:!suppressNotice&&!entering&&drawWorld&&!opaqueVisit,noticeOpacity:worldNotice.opacity,
         controlsVisible:!inside&&navigationVisible&&!mapPanel.open&&!matterHud.coarsePointer.matches&&matterHud.canvas.clientWidth>1150,
         soundBlocked:moving||needsSync,

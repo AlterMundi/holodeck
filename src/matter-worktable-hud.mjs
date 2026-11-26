@@ -5,7 +5,7 @@ import {Matrix4,OrthographicCamera,PerspectiveCamera,Raycaster,Scene,Vector2} fr
 import {WorldMapHud,worldMapId,worldBearingId,terrainPeekId} from './world-map-hud.mjs';
 import {DoorPromptHud,compactDoorPromptWidth,doorPromptId} from './door-prompt-hud.mjs';
 import {CollectionHud,collectionHudId,collectionHudWidth} from './collection-hud.mjs';
-import {WorldStatusHud,worldHeaderId,worldNoticeId,worldControlsId,worldHeaderWidth,worldControlsWidth} from './world-status-hud.mjs';
+import {WorldStatusHud,worldHeaderId,worldNoticeId,worldControlsId,worldControlsWidth} from './world-status-hud.mjs';
 import {RecoveryHud,recoveryHudId} from './recovery-hud.mjs';
 import {CreationHud,creationHudId} from './creation-hud.mjs';
 import {BeaconHud,beaconStationId,beaconViewerId,beaconStationWidth,beaconViewerWidth} from './beacon-hud.mjs';
@@ -40,11 +40,12 @@ const row=(id,children,fields={})=>({id,component:'HudRow',children,...fields});
 const text=(id,label,fields={})=>({id,component:'HudText',label,...fields});
 const choice=(id,label,options,value)=>({id,component:'HudChoice',label,
   options:path(options),value:path(value),draft:path(id+'Draft'),action:action(id,{value:path(id+'Draft')})});
+const toolPanelMinWidth=.5; // Minimum in the Proyección HudPanel catalog.
 const toolScale=286; // Proyección's .154-unit button target is 44 CSS px at this scale.
 const toolGap=.035,touchToolGap=.018,toolRowHeight=.18,toolPadding=.12,dockBottomMargin=.035;
 const iconToolPixels=48;
-const toolNames=['map','open','talk','appearance','video','bridge','plant','undo','activity','visit','endVisit','fullscreen'];
-const toolPixels={map:130,open:154,talk:134,appearance:138,video:96,bridge:182,plant:100,undo:92,activity:126,visit:124,endVisit:140,fullscreen:48};
+const toolNames=['map','open','talk','appearance','video','bridge','plant','undo','activity','visit','endVisit','fullscreen','more'];
+const toolPixels={map:130,open:154,talk:134,appearance:138,video:96,bridge:182,plant:100,undo:92,activity:126,visit:124,endVisit:140,fullscreen:48,more:48};
 
 function opticalRole(surface,id,component){
   if(surface===worldMapId||surface===worldBearingId||id==='map')return 'navigation';
@@ -53,7 +54,8 @@ function opticalRole(surface,id,component){
 }
 const toolIcons={map:'map',talk:'conversation',appearance:'appearance',video:'video',activity:'activity',
   fullscreen:'resize'};
-const compactToolPixels={map:110,talk:116,appearance:122,video:82,activity:110};
+const toolPriority=['open','talk','map','activity','video','appearance','fullscreen','visit','endVisit','bridge','plant','undo'];
+const compactToolPixels={open:86,map:110,talk:116,appearance:122,video:82,activity:110};
 function pixelsForTool(id,{compact,iconOnly}){
   if(iconOnly&&Object.hasOwn(toolIcons,id))return iconToolPixels;
   return compact?(compactToolPixels[id]??toolPixels[id]):toolPixels[id];
@@ -78,7 +80,7 @@ function layoutTools(tools,maxWidth,appearance){
     row.width+=(row.ids.length?gap:0)+pixels;
     row.ids.push(id);
   }
-  const width=Math.min(maxWidth,Math.max(150,...rows.map(item=>item.width)))/toolScale;
+  const width=Math.max(toolPanelMinWidth,Math.min(maxWidth,Math.max(150,...rows.map(item=>item.width)))/toolScale);
   return {width,rows,...appearance,height:rows.length*toolRowHeight+Math.max(0,rows.length-1)*appearance.gap};
 }
 
@@ -90,7 +92,7 @@ function toolComponents(layout){
     ...rows.flatMap(({ids},index)=>[
       row(rowIds[index],ids,{gap}),
       ...ids.map(id=>button(id,path(id+'Label'),{
-        disabled:path(id+'Disabled'),...(['map','talk','appearance','video','fullscreen'].includes(id)?{pressed:path(id+'Pressed')}:{}),
+        disabled:path(id+'Disabled'),...(['map','talk','appearance','video','fullscreen','more'].includes(id)?{pressed:path(id+'Pressed')}:{}),
         weight:pixelsForTool(id,layout)/66,...(toolIcons[id]?{icon:toolIcons[id]}:{}),
       })),
     ]),
@@ -298,6 +300,14 @@ export class MatterWorktableHud{
       {capture:true,passive:false,signal:this.events.signal});
     this.pointerRay=new Raycaster();
     this.pointerPosition=new Vector2();
+    this.canvas.addEventListener('pointerdown',event=>{
+      if(!this.toolOverflowOpen)return;
+      const projection=this.rayForPointer(event);
+      if(projection&&!this.hud.pointerTarget(projection.ray)){
+        this.toolOverflowOpen=false;
+        this.syncToolbelt(true);
+      }
+    },{capture:true,signal:this.events.signal});
     this.windows=new SpatialHudWindows({canvas:this.canvas,scene:this.scene,camera:this.camera,
       hit:event=>{const projection=this.rayForPointer(event);return projection&&this.hud.pointerTarget(projection.ray);},
       dismissChoice:id=>this.hud.dismissChoice(id),
@@ -493,8 +503,19 @@ export class MatterWorktableHud{
   handleTool({name,context}){
     if(!this.toolGroup?.visible||context?.scope!==this.toolScope||!toolNames.includes(name)||
       name==='fullscreen'&&!this.toolLayout?.shortLandscape)return;
-    const selected=this.toolState()[name];
+    const selected=name==='more'?this.toolAvailability?.more:this.toolState()[name];
     if(!selected?.visible||selected.disabled)return;
+    if(name==='more'){
+      this.lookPreview.hit(toolbeltId);
+      this.toolOverflowOpen=!this.toolOverflowOpen;
+      this.syncToolbelt(true);
+      this.focusTool('more');
+      return;
+    }
+    if(this.toolOverflowOpen){
+      this.toolOverflowOpen=false;
+      this.syncToolbelt(this.toolsVisible);
+    }
     this.lookPreview.hit(toolbeltId);
     if(name==='appearance'||name==='video'){
       if(this.active)this.leave();
@@ -507,7 +528,8 @@ export class MatterWorktableHud{
   }
 
   focusTool(name){
-    return this.hud.focusAccessibleControl(toolbeltId,name);
+    const visible=this.toolLayout?.rows.some(row=>row.ids.includes(name));
+    return this.hud.focusAccessibleControl(toolbeltId,!visible&&this.toolOverflow?'more':name);
   }
 
   toolInsets(){
@@ -578,6 +600,8 @@ export class MatterWorktableHud{
     this.toolsVisible=visible;
     if(!visible){
       this.document.body.removeAttribute('data-native-settings-available');
+      this.toolOverflow=this.toolOverflowOpen=false;
+      this.toolAvailability=null;
       if(this.toolGroup){
         this.send('deleteSurface',{},toolbeltId);
         this.toolGroup=null;
@@ -588,6 +612,7 @@ export class MatterWorktableHud{
       return;
     }
     const tools=this.toolState();
+    tools.more={visible:false};
     const {left,right}=this.toolInsets();
     const touch=this.compactTouch(),shortLandscape=touch==='landscape'&&
       this.document.getElementById('conversation-panel').hidden;
@@ -599,24 +624,55 @@ export class MatterWorktableHud{
     const iconOnly=Boolean(touch)||touchDevice&&(compact||this.canvas.clientWidth<=600||Boolean(dockSpan));
     const gap=iconOnly?touchToolGap:toolGap;
     const appearance={compact,iconOnly,shortLandscape,gap,scale};
+    const maxDockWidth=this.lookPreview.stylesDock?720:670;
     const minimum=touchDevice?Math.max(150,...toolNames.filter(id=>tools[id]?.visible)
       .map(id=>pixelsForTool(id,appearance))):150;
     const usable=dockSpan?dockSpan.end-dockSpan.start-12:this.canvas.clientWidth-left-right;
     const fit=reserve=>(usable-reserve)*toolScale/scale-toolPadding*toolScale;
+    const gapPx=gap*toolScale;
     const corners=2*(.8*this.landscapeGrip()+10);
-    const sideGrips=shortLandscape&&this.movementGroups.size>0&&fit(corners)>=minimum;
-    const maxWidth=fit(sideGrips?corners:0);
-    if(maxWidth<minimum){this.syncToolbelt(false);return;}
+    const centralWidth=Math.min(maxDockWidth,fit(corners));
+    const sideGrips=shortLandscape&&this.movementGroups.size>0&&centralWidth>=2*iconToolPixels+gapPx;
+    const available=Math.min(maxDockWidth,fit(0));
+    const maxWidth=sideGrips?centralWidth:available;
+    if(available<minimum){this.syncToolbelt(false);return;}
+    const fullLayout=layoutTools(tools,maxWidth,{...appearance,sideGrips});
+    this.toolOverflow=sideGrips&&fullLayout.rows.length>1;
+    const overflowViewport=this.canvas.clientWidth;
+    if(!this.toolOverflow||this.quietTouch||this.overflowViewport!==overflowViewport)this.toolOverflowOpen=false;
+    this.overflowViewport=overflowViewport;
+
+    let layout=fullLayout;
+    if(this.toolOverflow){
+      tools.more={label:'Más',visible:true,pressed:this.toolOverflowOpen};
+      if(this.toolOverflowOpen){
+        layout=layoutTools(tools,available,{...appearance,sideGrips:false});
+      }else{
+        let budget=maxWidth-iconToolPixels;
+        const visible=new Set(['more']);
+        for(const id of toolPriority){
+          const cost=pixelsForTool(id,appearance)+gapPx;
+          if(tools[id]?.visible&&cost<=budget){
+            visible.add(id);
+            budget-=cost;
+          }
+        }
+        const primary=Object.fromEntries(Object.entries(tools).filter(([id])=>visible.has(id)));
+        layout=layoutTools(primary,maxWidth,{...appearance,sideGrips});
+      }
+    }
     this.toolDockSpan=dockSpan;
+    this.toolAvailability=tools;
     this.document.body.setAttribute('data-native-settings-available','');
-    const layout=layoutTools(tools,Math.min(this.lookPreview.stylesDock?720:670,maxWidth),{...appearance,sideGrips});
     if(!this.toolGroup)this.send('createSurface',{catalogId:spatialHudCatalog.id},toolbeltId);
     if(this.toolGroup&&this.toolGroup.visible===this.quietTouch){
       this.toolGroup.visible=!this.quietTouch;
       this.layer.invalidate();
     }
     const layoutKey=JSON.stringify(layout);
+    let priorFocus;
     if(this.toolLayoutKey!==layoutKey){
+      if(this.ownsAccessibleInput(this.document.activeElement))priorFocus=this.hud.currentFocus();
       if(this.toolLayoutKey)this.lookPreview.redock(toolbeltId);
       this.toolLayoutKey=layoutKey;
       this.toolLayout=layout;
@@ -630,9 +686,11 @@ export class MatterWorktableHud{
       value[id+'Label']=item?.label??'';
     }
     const signature=JSON.stringify(value);
-    if(signature===this.toolSignature)return;
-    this.toolSignature=signature;
-    this.send('updateDataModel',{value},toolbeltId);
+    if(signature!==this.toolSignature){
+      this.toolSignature=signature;
+      this.send('updateDataModel',{value},toolbeltId);
+    }
+    if(priorFocus?.surfaceId===toolbeltId&&!this.focusTool(priorFocus.instanceId))this.focusTool('talk');
   }
 
   update(blocked,toolsVisible,quietTouch=false){
@@ -750,6 +808,14 @@ export class MatterWorktableHud{
   key(event){
     const scope=this.hud.currentFocus()?.surfaceId??(this.map.group?worldMapId:this.active?surfaceId:null);
     if(this.windows.key(scope,event))return true;
+    if(this.toolOverflowOpen&&event.key==='Escape'&&!event.defaultPrevented&&!this.modalScope&&
+      !this.document.pointerLockElement&&this.document.getElementById('conversation-panel').hidden&&
+      (scope===toolbeltId||event.target===this.canvas||event.target===this.document.body)){
+      this.toolOverflowOpen=false;
+      this.syncToolbelt(true);
+      this.focusTool('more');
+      return true;
+    }
     if(event.key==='Escape'&&!event.defaultPrevented&&(this.map.group||this.active)){
       const menuSurface=this.map.group?worldMapId:surfaceId;
       if(event.repeat||this.hud.dismissChoice(menuSurface)){
@@ -1054,8 +1120,10 @@ export class MatterWorktableHud{
       const margin=this.usesCockpitDocks(viewport)?16:0;
       const work=this.active&&height<520?this.windows.geometry.get(surfaceId)?.rect:null;
       const roomWidth=work?.left>left+200?work.left-left-margin-12:width-left-right;
-      const headerScale=Math.min(152,roomWidth/(worldHeaderWidth+.12));
-      this.place(this.status.headerGroup,'headerPlacement',viewport,left+margin+headerScale*(worldHeaderWidth+.06)/2,
+      const {headerWidth,compactHeader}=this.status;
+      const headerRoom=compactHeader?Math.max(120,roomWidth-96):roomWidth;
+      const headerScale=Math.min(compactHeader?250:152,headerRoom/(headerWidth+.12));
+      this.place(this.status.headerGroup,'headerPlacement',viewport,left+margin+headerScale*(headerWidth+.06)/2,
         Math.max(top,width<700?18:24)+margin,headerScale);
     }
     if(this.status.noticeGroup){
@@ -1189,9 +1257,10 @@ export class MatterWorktableHud{
       this.beacon.present(Boolean(painted&&this.beacon.stationGroup&&this.hud.getSurfaceBounds(beaconStationId)),
         Boolean(painted&&beaconViewerPlaced));
       this.activity.present(painted,Boolean(!this.activity.owner()?.opened&&this.toolGroup&&
-        this.toolLayout?.rows.some(row=>row.ids.includes('activity'))));
+        (this.toolOverflow&&this.toolAvailability.activity?.visible||this.toolLayout?.rows.some(row=>row.ids.includes('activity')))));
       this.visit.present({painted,index:Boolean(this.visit.indexGroup&&this.hud.getSurfaceBounds(exhibitionHudId)),launcher:this.visit.indexActive||Boolean(this.toolGroup&&this.toolLayout?.rows.some(row=>
-        row.ids.includes('visit')||row.ids.includes('endVisit'))),
+        row.ids.includes('visit')||row.ids.includes('endVisit'))||this.toolGroup&&this.toolOverflow&&
+          (this.toolAvailability.visit?.visible||this.toolAvailability.endVisit?.visible)),
         viewer:Boolean(this.visit.viewerGroup&&this.visitPlacement?.group===this.visit.viewerGroup&&this.hud.getSurfaceBounds(visitHudId))});
       const controlsReady=movementPanels(this.movementVertical).every(([id])=>
         this.movementGroups.has(id)&&this.hud.getSurfaceBounds(id));
