@@ -1,5 +1,14 @@
 # Current MVP work
 
+## November 26 — Western pine bark
+
+Protected `17fc3bed2bc0` serves `450608b` with immediate rollback
+`8f3cfee9adf7`. The close trunks have filtered bark color and relief.
+Matched Normal and Lightweight views on one RTX 2060 retained the
+same draw and triangle counts. The served client, worker, server,
+room art and all 14 checked state files matched.
+[Art and evidence](environment-art-revamp.md#western-pine-bark-trial).
+
 ## November 26 — Pine litter in the western grove
 
 Protected `8f3cfee9adf7` serves `c9998d7` with immediate rollback

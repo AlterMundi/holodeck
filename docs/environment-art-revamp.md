@@ -166,6 +166,25 @@ and was limited by presentation rate. The candidate walked 6.55 m in
 Normal and 6.61 m in Lightweight. A fast transition past the grass fade,
 the Pi 5 and the paired human's acceptance remain open.
 
+#### Western pine bark trial
+
+Package `17fc3bed2bc0` (`450608b`) adds staggered bark plates, warm
+fiber and narrow cracks to the existing stems. Smooth radial normals
+give the bark a continuous lighting surface. Silhouette geometry and
+trunk collisions keep their existing shapes. A local 128×128, 64 KiB
+base texture is generated once and shared across the rendered stem
+tiers. The unwrapped derivatives filter the map and fade both tint and
+relief as the detail gets smaller on screen.
+
+One physical RTX 2060 walked 6.56 m in Normal and 6.61 m in Lightweight.
+Matched noon and dusk poses at 850×552 kept 135 draws and 544,755
+triangles in Normal and 97 draws and 323,815 triangles in Lightweight.
+Frame-interval p95 was 16.7–16.8 ms at the presentation cap. Fable
+identified grazing motion as the next useful check. The matched moving
+poses exercise filtering over a short sweep. A longer pass around the
+trunk and across the grass tier, Pi 5 and paired-human acceptance remain
+open.
+
 ### Air and light
 
 Link the horizon, the terrain's distant color and the low-angle sun.

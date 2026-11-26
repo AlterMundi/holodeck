@@ -1147,8 +1147,11 @@ applies the same canopy cover to the ground and the grass at their contact.
 The [pine litter trial](environment-art-revamp.md#pine-litter-and-breaks-in-the-grass)
 adds dry ground detail and spaced grass under the same crowns. Normal and
 Lightweight have matched comparisons on one physical RTX 2060. Check
-the transition at speed and the closest bark against the same reference
-in the next passes.
+the transition at speed in the next pass. The
+[western pine bark trial](environment-art-revamp.md#western-pine-bark-trial)
+adds filtered bark color and relief to the same stems. Normal and
+Lightweight share the selected geometry. The grazing-angle motion and
+wider device checks remain open.
 
 Use the arrival meadow and its wooded edge for one continuous first pass.
 Match the grass roots to a short-cover ground material and add dense low
