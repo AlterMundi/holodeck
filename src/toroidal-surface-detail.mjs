@@ -60,7 +60,11 @@ const surfaceNoise = `
   }
 `;
 const worldVertex = `
-  toroidalWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;
+  vec4 detailPosition = vec4(transformed, 1.0);
+  #ifdef USE_INSTANCING
+    detailPosition = instanceMatrix * detailPosition;
+  #endif
+  toroidalWorld = (modelMatrix * detailPosition).xyz;
 `;
 
 function useWorldPosition(shader) {
@@ -71,7 +75,7 @@ function useWorldPosition(shader) {
     '#include <common>\n' + worldPosition + surfaceNoise);
 }
 
-export function useToroidalRockDetail(material, {bedding=false,meadow=false} = {}) {
+export function useToroidalRockDetail(material, {bedding=false,meadow=false,groundContact=false} = {}) {
   const strata = bedding ? `
         // Strata have a fixed world-space dip, with abrasion at exposed edges.
         float plane = dot(p, vec3(.14,.53,-.08)) + .32*ringNoise(uv*.65);
@@ -83,9 +87,35 @@ export function useToroidalRockDetail(material, {bedding=false,meadow=false} = {
           detailFade);
         roughnessFactor = clamp(roughnessFactor + detailFade*(.13*joint-.10*iron),.22,1.0);
   ` : '';
-  material.customProgramCacheKey = () => bedding ? 'toroidal-rock-strata' : 'toroidal-rock-grain';
-  material.onBeforeCompile = shader => {
+  const previousCompile = material.onBeforeCompile;
+  const contactVarying = 'varying float toroidalRockBaseHeight;';
+  const contact = groundContact ? `
+        float mossField = ringNoise(uv*2.4 + vec2(11.7,3.2));
+        float wearHeight = toroidalRockBaseHeight + .16*(scaleColor+.22*chips);
+        float moss = (1.0-smoothstep(.08,.31,wearHeight)) *
+          smoothstep(.39,.70,mossField) * detailFade;
+        vec3 patina = diffuseColor.rgb * vec3(.69,.84,.52);
+        float seated = mix(.55,1.0,smoothstep(-.025,.17,wearHeight));
+        diffuseColor.rgb = mix(diffuseColor.rgb,patina,.76*moss)*mix(1.0,seated,detailFade);
+        roughnessFactor = mix(roughnessFactor,.99,moss*.75);
+  ` : '';
+  material.customProgramCacheKey = () => groundContact ? 'toroidal-stone-contact' :
+    bedding ? 'toroidal-rock-strata' : 'toroidal-rock-grain';
+  material.onBeforeCompile = (shader,renderer) => {
+    previousCompile.call(material,shader,renderer);
     useWorldPosition(shader);
+    if(groundContact){
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\n' + contactVarying)
+        .replace('#include <begin_vertex>', `#include <begin_vertex>
+          vec3 stoneUp = modelMatrix[1].xyz;
+          #ifdef USE_INSTANCING
+            stoneUp = mat3(modelMatrix)*instanceMatrix[1].xyz;
+          #endif
+          toroidalRockBaseHeight = transformed.y * length(stoneUp) - .06;`);
+      shader.fragmentShader = shader.fragmentShader.replace('#include <common>',
+        '#include <common>\n' + contactVarying);
+    }
     shader.fragmentShader = shader.fragmentShader.replace('#include <roughnessmap_fragment>',`
       #include <roughnessmap_fragment>
       float detailFade = (1.0 - smoothstep(14.0, 80.0, length(vViewPosition)))${meadow ? ' * (1.0 - holoMeadowGround)' : ''};
@@ -99,6 +129,7 @@ export function useToroidalRockDetail(material, {bedding=false,meadow=false} = {
         diffuseColor.rgb *= 1.0 + grain * detailFade;
         roughnessFactor = clamp(roughnessFactor + chips * detailFade * .13, .2, 1.0);
         ${strata}
+        ${contact}
       }
       ${meadow ? 'roughnessFactor = mix(mix(roughnessFactor, holoMeadowRoughness, holoMeadow), holoTrailRoughness, holoTrailMask);' : ''}
     `);

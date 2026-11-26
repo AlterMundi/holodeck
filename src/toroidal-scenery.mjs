@@ -2,6 +2,7 @@ import {approachCoordinates,Sand3DTrail} from './sand3d-trail.mjs';
 import {ToroidalWoodland} from './toroidal-woodland.mjs';
 import {ToroidalOverlook} from './toroidal-overlook.mjs';
 import {ToroidalMeadowBanks} from './toroidal-meadow-banks.mjs';
+import {useToroidalRockDetail} from './toroidal-surface-detail.mjs';
 import {
   BufferGeometry, Color, DodecahedronGeometry, DoubleSide, DynamicDrawUsage, Float32BufferAttribute, Group,
   InstancedBufferAttribute, InstancedMesh, MeshStandardMaterial, Object3D, Vector2, Vector3,
@@ -27,7 +28,7 @@ const INSTANCE_LIMIT=(2*RANGE+1)**2*CANDIDATES;
 const GRASSES=[0x72874b,0x809154,0x667d48,0x99a35e,0xbaaa65];
 const FRESH_GRASS=[0x536f41,0x608445,0x426440,0x75964a];
 const DRY_GRASS=[0x868041,0xa39a53,0x72763c,0xb3a35d];
-const STONES=[0x74664f,0x7d7d70,0x8b7860,0x66635c,0x9f8a73];
+const STONES=[0x777870,0x858984,0x80796d,0x686d6c,0x9a9388];
 
 function grassColor(moisture,tint){
   const palette=moisture>.58?FRESH_GRASS:moisture<.45?DRY_GRASS:GRASSES;
@@ -343,6 +344,7 @@ export class ToroidalScenery {
       mesh.frustumCulled=false;
       this.group.add(mesh);
     }
+    useToroidalRockDetail(this.stones.material,{groundContact:true});
     for(const mesh of [this.field,this.fieldFar]){
       mesh.count=0;
       mesh.visible=false;
