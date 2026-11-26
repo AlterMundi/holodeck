@@ -14,8 +14,17 @@ the foyer door into the Character room, observed Mesa de Char Design
 and read the installed flight and walking catalog. The same lane took
 the return door and restored its initial outside location. The exact
 packaged browser test covers opening the table without replacing the
-world document. Independently signed-in browser review of a shared
-frame and note remains open.
+world document.
+
+The authenticated native lane resolved four representative walking
+frames and four flight phases against the exact installed pose catalog.
+The room was empty of presentations, so the lane presented hover at
+frame 36 using expected revision zero. The initial write had no
+persisted effect. Its conditional retry returned revision 1 and a
+separate native read matched it. The durable room checkpoint returned
+the same pose and revision, with the initial outside location restored.
+Independently signed-in browser review and room-scoped note readback
+remain open.
 
 ## Character and Matter package on the current water and woodland release
 
