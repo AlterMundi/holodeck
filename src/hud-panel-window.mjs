@@ -1,4 +1,6 @@
 // Keep a complete conversation and a separate, touch-sized movement region.
+const insetEdges=['left','right','top','bottom'];
+
 export function conversationTravelLane({width,height,visualHeight,touch,zoom},previous=''){
   if(!touch||zoom>1.05||height-visualHeight>125)return '';
   if(width>height&&height<=540&&width>=(previous==='side'?680:700)&&height>=360)return 'side';
@@ -40,7 +42,9 @@ export function bindHudPanelWindow(panel,{move,resize,readInsets=()=>({})}){
 
   function fit(reflow=false){
     const dimensions=size();
-    safe=readInsets();
+    const nextInsets=readInsets();
+    const insetsChanged=insetEdges.some(edge=>(safe[edge]??0)!==(nextInsets[edge]??0));
+    safe=nextInsets;
     let next=panel.hidden||!panel.classList.contains('shared-conversation')?'':conversationTravelLane({
       ...dimensions,touch:coarse.matches&&window.navigator.maxTouchPoints>0&&safe.movementReady,
       visualHeight:viewport?.height??dimensions.height,zoom:viewport?.scale??1,
@@ -61,7 +65,7 @@ export function bindHudPanelWindow(panel,{move,resize,readInsets=()=>({})}){
         panel.style.removeProperty('--conversation-travel-edge');
       }
     }
-    if(placement&&(reflow||changed))place(placement,false);
+    if(placement&&(reflow||changed||insetsChanged))place(placement,false);
   }
 
   for(const [grip,resizing] of [[move,false],[resize,true]]){
