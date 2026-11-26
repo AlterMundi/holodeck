@@ -1,5 +1,36 @@
 # Current MVP work
 
+## Combined Character worktable on the installed alpha.19 baseline
+
+Candidate source `602355faab3c44d7b9be2b828d71679482647a5d` combines the
+in-world Character worktable, compact terrain minimap and Conversation
+surround with protected Holodeck release `54a0892119ec`.
+It retains the installed Proyección pin `ccc9fe919234` and the
+deployed night water and sky source. The standalone Character viewer
+reveals the canvas after drawing the first ready character and HUD.
+The timeline holds the earlier frame while its replacement is loading
+and rejects commands tied to the previous timeline.
+
+Node 24 passed 445 checks with two optional skips. Loopback Chromium
+walked from the foyer into the Character room and opened the physical
+table without replacing the world document. Two independent fixture
+visitors followed the same flight frame and read the same scoped note,
+then kept separate views and frames. The package exercised the phases
+of ground travel and flight, A/B comparison, 2× playback, loop, compact
+landscape note access, and Conversation's exact room object and locally
+displayed pose. Native review revalidated permissions and kept a
+retried note as one note. The separate Matter check entered through its
+door, confirmed desktop and touch writes in both directions, preserved
+visitor-local cut and camera, refused stale and revoked writes, and
+removed collection access after returning to the foyer.
+
+The qualified local archive SHA-256 is
+`f83dd354f03a8175afb707b54b108fe667c3f7e36944a4ada4197cc2c6c6270c` (33,341,440 bytes).
+The current archive is ready for Holodeck's protected selection.
+Local browser identities and the fixture Conversation bridge qualify
+the integration code. Signed-in use on the selected shared release
+remains to be verified.
+
 ## November 26 Proyección in Character Studio
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `54a0892119ec`
