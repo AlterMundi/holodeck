@@ -241,6 +241,48 @@ function undergrowthGeometry(){
   return geometry;
 }
 
+function fernGeometry(){
+  const positions=[],colors=[];
+  const root=new Color(0x345835),tip=new Color(0x9cad60),color=new Color();
+  const vertex=(p,t)=>{
+    positions.push(...p);
+    colors.push(...color.copy(root).lerp(tip,t).toArray());
+  };
+  for(let i=0;i<7;i++){
+    const angle=i*2.39996,x=Math.cos(angle),z=Math.sin(angle);
+    const length=.64+.14*sample(i,19,63);
+    const lift=.63+.33*sample(i,25,81);
+    const point=(t,side=0)=>{
+      const radius=length*t;
+      return [x*radius-z*side,lift*(.34*t+.68*Math.sin(t*Math.PI*.84)),z*radius+x*side];
+    };
+    const start=point(0),end=point(1);
+    vertex(start,.02);vertex(point(.47,.023),.44);vertex(point(.47,-.023),.44);
+    vertex(point(.47,-.023),.44);vertex(point(.47,.023),.44);vertex(end,.92);
+    for(let step=0;step<6;step++){
+      const t=.20+step*.11;
+      const width=.205*Math.sin(Math.PI*t)*Math.sqrt(1-t);
+      const back=point(t-.055),front=point(t+.056),bend=.11*(1-t);
+      const left=point(t+bend,-width),right=point(t+bend,width);
+      vertex(back,t*.52);vertex(front,t*.70);vertex(left,.45+t*.42);
+      vertex(back,t*.52);vertex(right,.45+t*.42);vertex(front,t*.70);
+    }
+  }
+  const geometry=new BufferGeometry();
+  geometry.setAttribute('position',new Float32BufferAttribute(positions,3));
+  geometry.setAttribute('color',new Float32BufferAttribute(colors,3));
+  geometry.computeVertexNormals();
+  const normal=geometry.getAttribute('normal');
+  const value=new Vector3();
+  for(let index=0;index<normal.count;index++){
+    value.fromBufferAttribute(normal,index);
+    value.y=Math.abs(value.y)+.38;
+    value.normalize();
+    normal.setXYZ(index,value.x,value.y,value.z);
+  }
+  return geometry;
+}
+
 function undergrowthFor(trees){
   const plants=[],transform=new Object3D();
   for(const {u,v,h,tint,point,yaw} of trees){
@@ -273,7 +315,7 @@ function undergrowthFor(trees){
       transform.scale.set(width,.46+pick(414+index)*.67,width*.78);
       transform.updateMatrix();
       plants.push({matrix:transform.matrix.clone(),point:transform.position.clone(),
-        tint:.73+pick(911+index)*.35,primary:index===0});
+        tint:.73+pick(911+index)*.35,primary:index===0,fern:pick(1241+index)>.45});
     }
   }
   return plants;
@@ -327,8 +369,11 @@ export class ToroidalWoodland{
     this.undergrowth=new InstancedMesh(undergrowthGeometry(),understoryMaterial,undergrowthBudget);
     this.undergrowth.name='Woodland understory';
     this.undergrowth.count=0;
+    this.ferns=new InstancedMesh(fernGeometry(),understoryMaterial,undergrowthBudget);
+    this.ferns.name='Woodland ferns';
+    this.ferns.count=0;
     this.undergrowthSelection=[];
-    this.group.add(this.undergrowth);
+    this.group.add(this.undergrowth,this.ferns);
     const transform=new Object3D();
     this.chunks=new Map();
     for(const tree of trees){
@@ -397,14 +442,15 @@ export class ToroidalWoodland{
       undrawn.sort((a,b)=>a.distance-b.distance);
       this.undergrowthDistance.value=Math.min(undergrowthRange,Math.max(22,Math.sqrt(undrawn[undergrowthBudget-1].distance)-7));
     }
-    const undergrowth=this.undergrowth;
-    undergrowth.count=Math.min(undrawn.length,undergrowthBudget);
-    for(let index=0;index<undergrowth.count;index++){
+    this.undergrowth.count=this.ferns.count=0;
+    for(let index=0;index<Math.min(undrawn.length,undergrowthBudget);index++){
       const plant=undrawn[index];
-      undergrowth.setMatrixAt(index,plant.matrix);
-      undergrowth.setColorAt(index,this.tint.setRGB(plant.tint,plant.tint,plant.tint));
+      const mesh=plant.fern?this.ferns:this.undergrowth;
+      mesh.setMatrixAt(mesh.count,plant.matrix);
+      mesh.setColorAt(mesh.count,this.tint.setRGB(plant.tint,plant.tint,plant.tint));
+      mesh.count++;
     }
-    for(const mesh of [...this.meshes,undergrowth]){
+    for(const mesh of [...this.meshes,this.undergrowth,this.ferns]){
       mesh.visible=mesh.count>0;
       if(!mesh.visible)continue;
       mesh.instanceMatrix.needsUpdate=true;
@@ -445,6 +491,8 @@ export class ToroidalWoodland{
     this.skylineMaterial.dispose();
     this.undergrowth.dispose();
     this.undergrowth.geometry.dispose();
+    this.ferns.dispose();
+    this.ferns.geometry.dispose();
     this.undergrowth.material.dispose();
   }
 }
