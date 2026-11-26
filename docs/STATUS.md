@@ -28,6 +28,19 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+Candidate `908f26f5822562b04a6a0b98079d08e3de7761b2` integrates the
+authored humanoid flight-boost study from `9b9f0e4` while preserving the
+world's ground gait and flight wakes. Archive SHA-256 is
+`f3aac78d62d0cecda2fa4a68cb7997d0c79e72c1ff016a8d748c1314cc59e137`.
+The full suite passed 442 cases with two skips. Chromium selected cruise,
+boost entry, fast flight, turn, release, return to float and contact
+through the actual in-world table. It captured distinct fast flight and
+return poses at frames 80 and 134. An independent own-native actor
+presented frame 80, and the browser followed and read back the same
+rig, clip, edition and room presentation revision 2. The generated
+studies have a new edition because their shared sampler changed.
+Protected selection and real visitor acceptance remain open.
+
 Candidate `082f167a304fcdb0fbb25941b2d7ad5371b5b866` pins Proyección
 `02bf284d954faf46bf0f67af526faf1adf897f82` by archive and SHA-512.
 Its Holodeck archive SHA-256 is
