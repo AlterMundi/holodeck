@@ -132,3 +132,34 @@ test('a straight exterior sprint settles without a rebound at 20 or 60 Hz',async
     }
   }
 });
+
+test('close passes animate the companion using the ground distance it actually moves',async()=>{
+  for(const hz of [20,60,90]){
+    const {avatar}=await loadCompanion();
+    try{
+      const {figure}=avatar,root=figure.root,player=new Vector3(0,.1,0);
+      const before=new Vector3(),realized=new Vector3();
+      const pose=figure.pose;
+      let sample;
+      figure.pose=input=>{sample=input;pose(input);};
+      let deflected=0,peakError=0;
+      for(let frame=0;frame<8*hz;frame++){
+        const seconds=frame/hz;
+        const pace=seconds>=1&&seconds<1.9?7.3:seconds>=2.25&&seconds<3.4?-6.5:
+          seconds>=3.6&&seconds<4.55?5.4:seconds>=5&&seconds<5.45?-3.1:0;
+        player.x+=pace/hz;
+        player.z+=pace*.45/hz;
+        before.copy(root.position);
+        avatar.update({position:player,visible:true,seconds:1/hz});
+        if(sample.reset)continue;
+        realized.subVectors(root.position,before).setY(0).multiplyScalar(hz);
+        if(realized.distanceTo(avatar.followVelocity)>.25)deflected++;
+        peakError=Math.max(peakError,realized.distanceTo(sample.velocity),Math.abs(realized.length()-sample.speed));
+      }
+      assert.ok(deflected/hz>=.3,`${hz} Hz: the character crossed the companion's path`);
+      assert.ok(peakError<1e-5,`${hz} Hz: pose and ground travel differ by ${peakError} m/s`);
+    }finally{
+      avatar.dispose();
+    }
+  }
+});

@@ -34,6 +34,8 @@ export class CompanionAvatar{
     this.followAngle=new Quaternion();
     this.followVelocity=new Vector3();
     this.lastVelocity=new Vector3();
+    this.groundStepStart=new Vector3();
+    this.groundPoseVelocity=new Vector3();
     this.wantedVelocity=new Vector3();
     this.leaderVelocity=new Vector3();
     this.lastLeader=new Vector3();
@@ -149,7 +151,7 @@ export class CompanionAvatar{
       if(moving&&focusMesh&&samePlace)this.perch.apply(this.target,root.position,position,eye,focusMesh,table.bounds,this.scene);
       else this.perch.clear();
     }
-    let speed=0,rise=0;
+    let speed=0,rise=0,groundSpeed=null;
     const separated=root.position.distanceToSquared(this.target)>(explicitFlight?33:flying?16:13)**2;
     if(!samePlace||!moving||small)this.transfer.cancel();
     else if(!this.transfer.active&&(separated||
@@ -183,6 +185,7 @@ export class CompanionAvatar{
       const deadZone=(small?.22:.25)*scale;
       const pace=this.leaderVelocity.length();
       const groundFollow=!small&&!flying&&!water&&!swimming;
+      if(groundFollow)this.groundStepStart.copy(root.position);
       const speedLimit=small?5.2*scale:swimming?5.4:
         explicitFlight?clamp(pace+4,maximumFollowSpeed,29):outdoor?maximumFollowSpeed:clamp(pace+1.4,6.4,maximumFollowSpeed);
       const braking=small?6*scale*1.4:groundFollow?14:explicitFlight?24:gliding?9.5:10;
@@ -233,6 +236,13 @@ export class CompanionAvatar{
           this.relative.copy(root.position).addScaledVector(this.direction,(.8-room)/room*ease(dt,9));
           if(!avoidFurniture||this.roomClearance.clear(root.position,this.relative,colliders))root.position.copy(this.relative);
         }
+      }
+      if(groundFollow){
+        // Contacts need the step that was actually rendered, including a sidestep
+        // around the player. Leave the follow controller and heading on its own velocity.
+        const step=this.groundPoseVelocity.subVectors(root.position,this.groundStepStart);
+        step.addScaledVector(root.up,-step.dot(root.up)).divideScalar(dt);
+        groundSpeed=step.length()/scale;
       }
     }
     let contact=false,sample=null;
@@ -288,7 +298,9 @@ export class CompanionAvatar{
     const level=moving&&now-(this.speechAt??-Infinity)<300?this.level:0;
     const strolling=small?gaze:point||null;
     if(reset&&!small&&moving&&!relocated)this.figure.greet();
-    this.figure.pose({seconds:dt,level,speed,velocity:this.followVelocity,motion:moving,medium:small?'air':this.medium,
+    const useGroundTravel=groundSpeed!==null&&!airborne&&!wet;
+    this.figure.pose({seconds:dt,level,speed:useGroundTravel?groundSpeed:speed,
+      velocity:useGroundTravel?this.groundPoseVelocity:this.followVelocity,motion:moving,medium:small?'air':this.medium,
       wading:sample?immersion(COMPANION_BODY,measured):0,gaze:strolling,attending:Boolean(point||small&&gaze),reset,
       liftAllowed:flying,place:this.place,pitch,bank,crouch:crouch&&supported?1:0,braking:Math.max(0,-thrust),miniature:small});
     this.transfer.paint(root,relocated);
