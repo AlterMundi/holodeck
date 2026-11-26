@@ -1012,7 +1012,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     nativeAvatarLayer=new NativeAvatarLayer({document,base,onFailure:message=>say(message)});
     const companion=new CompanionAvatar({scene:renderer.mmlCompositionScene.group,document,base});
     const flightWake=new FlightWake(renderer.mmlCompositionScene.group);
-    const waterSplash=new WaterSplash(renderer.mmlCompositionScene.group,{lightweight:()=>rendererBudget.lightweight});
+    const waterSplash=new WaterSplash(renderer.mmlCompositionScene.group,{
+      lightweight:()=>rendererBudget.lightweight,pixelRatio:()=>renderer.composer.renderer.getPixelRatio(),
+    });
     const waterWake=new WaterWake(renderer.mmlCompositionScene.group,{
       lightweight:()=>rendererBudget.lightweight,pixelRatio:()=>renderer.composer.renderer.getPixelRatio(),
     });
