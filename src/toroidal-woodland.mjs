@@ -91,21 +91,37 @@ function evergreenGeometry(detail,spreading=false){
     }
   };
   const sides=[5,7,9][detail];
-  const ring=(radius,height,angle)=>[Math.cos(angle)*radius,height,Math.sin(angle)*radius];
-  for(let i=0;i<sides;i++){
-    const a=i*TAU/sides,b=(i+1)*TAU/sides;
-    const foot=ring(trunkWidth*.68,-.055,a),nextFoot=ring(trunkWidth*.68,-.055,b);
-    const stemHeight=detail?.88:trunkDepth+.12;
-    const top=ring(.008,stemHeight,a),nextTop=ring(.008,stemHeight,b);
-    triangle(foot,top,nextFoot,trunk,.85+i%3*.10);
-    triangle(top,nextTop,nextFoot,trunk,.85+i%3*.10);
-  }
   const whorls=(spreading?[3,4,5]:[3,5,6])[detail];
+  const whorlBase=t=>spreading?.27+.45*t:.21+.51*t;
+  const whorlLean=t=>spreading?.12*t*t:0;
+  const stemHeight=detail?.88:trunkDepth+.12;
+  const stem=[{height:-.055,x:0,z:0}];
+  if(detail&&spreading){
+    for(let band=0;band<whorls;band++){
+      const t=band/(whorls-1),lean=whorlLean(t);
+      stem.push({height:whorlBase(t)+.008,x:lean,z:-.4*lean});
+    }
+  }
+  stem.push({height:stemHeight,x:detail&&spreading?.132:0,z:detail&&spreading?-.058:0});
+  const ring=({height,x,z},angle)=>{
+    const taper=(height+.055)/(stemHeight+.055);
+    const radius=(1-taper)*trunkWidth*.68+taper*.008;
+    return [x+Math.cos(angle)*radius,height,z+Math.sin(angle)*radius];
+  };
+  for(let segment=1;segment<stem.length;segment++){
+    for(let i=0;i<sides;i++){
+      const a=i*TAU/sides,b=(i+1)*TAU/sides;
+      const foot=ring(stem[segment-1],a),nextFoot=ring(stem[segment-1],b);
+      const top=ring(stem[segment],a),nextTop=ring(stem[segment],b);
+      triangle(foot,top,nextFoot,trunk,.85+i%3*.10);
+      triangle(top,nextTop,nextFoot,trunk,.85+i%3*.10);
+    }
+  }
   for(let band=0;band<whorls;band++){
     const t=band/(whorls-1);
-    const base=spreading?.27+.45*t:.21+.51*t;
+    const base=whorlBase(t);
     const radius=spreading?.345*(1-.76*t**1.6):.254*(1-.79*t);
-    const lean=spreading?.12*t*t:0;
+    const lean=whorlLean(t);
     const crown=(r,y,a)=>[Math.cos(a)*r+lean,y,Math.sin(a)*r-.4*lean];
     const apex=[lean+.025*t,band===whorls-1?1:base+(spreading?.18:.23),-.026*t-.4*lean];
     const spokeCount=detail===2?10:detail===1?7:4;
