@@ -601,6 +601,34 @@ touchscreen fixture crossed both directions by tap in lightweight. The
 suite passed 313 tests with two skips, including stale proximity, overlay,
 held Space and stale pointer regressions. Live remains `f46d93f436be`.
 
+## Installed short touch toolbar
+
+The [protected Holodeck](https://compaii.dmn.homes/holodeck/) release
+`e97413d21211` serves `ed5710a`, with `95d58169730b` as immediate rollback.
+The existing A2UI toolbar fits a single primary row between the touch
+grips. **Más** reveals the remaining real tools on the same surface.
+On the short outdoor view, the header gives the room title and audio
+its own line and leaves the middle of the screen clear. Opening a tool,
+moving, tapping the world or rotating out of the narrow layout closes
+the extra tools. The release changes the browser bundle and manifest.
+
+On Raspberry Pi 5 Broadcom V3D with emulated touch, compare the same
+480 × 344 position. The top button edge moved down 56.6 CSS px. The
+48 × 44 CSS px targets retained their dimensions. The 568 × 320 and
+360 × 300 views kept one row when closed. At 360 × 300 the visible
+actions are **Conversar** and **Más**. The compact portrait row
+restored the full regular set. The Livianos fixture opened the narrow
+menu, operated Video and Minimap, restored keyboard focus to Más
+and checked rotation. Normal verified the same layout before the final
+button-label adjustment. A second controlled visitor at 844 × 390
+saw the same door and the full-width toolbar.
+
+Fable 5.2 High reviewed the layout and Opus 5.5 High reviewed the final
+source. 484 tests passed with two optional skips. 14 state files matched by hash. The protected
+anonymous challenge and exact server, client, worker, art and health
+matched. Real phone and Telegram WebView play and independent participant
+acceptance remain open.
+
 ## Matter collection HUD
 
 ### Installed portrait Matter worktable

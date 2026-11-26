@@ -1,5 +1,13 @@
 # Current MVP work
 
+## November 26 — Short touch toolbar
+
+The protected release `e97413d21211` serves `ed5710a`, with
+`95d58169730b` as immediate rollback. A single row between the touch grips
+keeps the middle of a short landscape viewport visible. The smaller
+exterior header preserves audio and the title. 14 state files matched by hash.
+[Device and accessibility checks](playtest-iteration.md#installed-short-touch-toolbar).
+
 ## November 26 — Middle-distance meadow coverage
 
 The protected release `95d58169730b` serves `65344ee`, with

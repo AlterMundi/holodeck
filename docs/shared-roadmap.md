@@ -632,6 +632,12 @@ comparison input and stay outside the packaged assets.
 
 ### Mobile play and Conversation
 
+The [short touch toolbar](playtest-iteration.md#installed-short-touch-toolbar)
+frees a full row of the scene in narrow landscape and preserves the
+secondary tools in the same spatial surface. The physical Pi fixture
+verified touch and keyboard input and rotation. Continue actual phone
+and WebView acceptance under [HUD #16](https://github.com/AlterMundi/holodeck/issues/16).
+
 Holodeck adopts [Proyección alpha.19](https://github.com/AlterMundi/proyeccion/releases/tag/v0.1.0-alpha.19)
 on the existing A2UI projection. The Character Studio applies its optical
 range, keeps the proposed frame separate from the confirmed pose, and
