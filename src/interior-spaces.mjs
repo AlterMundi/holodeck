@@ -245,7 +245,7 @@ export function interiorDocument(room,passages=[],exhibit=null,art=null,passageA
     </m-group>`:''}
     ${passages.map(p=>{
       const fitting=passageAsset(p);
-      return passageMarkup({...p,label:attribute(p.title)},{
+      return passageMarkup({...p,label:attribute(p.title),labelLength:p.title?.length},{
         visibleSteps:!art?.authoredStairs,authoredPortal:art?.authoredPortal,
         authoredDoor:art?.authoredDoor,authoredPassages:art?.authoredPassages,
         portalAsset:fitting?.src,returnLeaf:fitting?.door?fitting:null,

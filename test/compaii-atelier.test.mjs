@@ -144,12 +144,15 @@ test('the Atelier owner adopts the exact live plan and recovers its receipt with
   assert.deepEqual(expanded.exits[0],before.exits[0]);
   assert.deepEqual(expanded.exits[1].door,{x:3,y:.11,z:-4.81,yaw:180});
   const fitting=expanded.scene.markup.match(/id="portal-fitting-1" src="([^"]+)"/)[1];
+  const label=expanded.scene.markup.match(/<m-label[^>]*id="passage-title-1"[^>]*>/g);
+  assert.equal(label?.length,1);
+  assert.match(label[0],/emissive="\.28" content="Taller Sensorial" collide="false" cast-shadows="false"/);
   const authorizedAsset=await fetch(new URL(fitting,base),{headers});
   assert.equal(authorizedAsset.status,200);
   assert.equal(Buffer.from(await authorizedAsset.arrayBuffer()).subarray(0,4).toString(),'glTF');
   const otherHeaders=await login('lab');
   assert.equal((await move('outside',foyer,otherHeaders)).status,200);
-  assert.doesNotMatch((await read('space?live=1',otherHeaders)).scene.markup,/portal-fitting|Taller Sensorial/);
+  assert.doesNotMatch((await read('space?live=1',otherHeaders)).scene.markup,/portal-fitting|passage-title|Taller Sensorial/);
   assert.equal((await fetch(new URL(fitting,base),{headers:otherHeaders})).status,404);
   assert.equal((await move(foyer,added,otherHeaders)).status,409);
   assert.equal((await move(foyer,added)).status,200);

@@ -84,6 +84,14 @@ function passageLeafCollider(slot,y,z,width,height,depth){
     ` id="passage-leaf-collider-${slot}" opacity="0" cast-shadows="false"`);
 }
 
+function passagePlaque(passage,{y,z,width,height,shortFont=13,padding=6}){
+  const length=passage.labelLength??passage.label.length;
+  const fontSize=length>44?9:length>29?11:shortFont;
+  return `<m-label id="passage-title-${passage.slot}" y="${y}" z="${z}" width="${width}" height="${height}"
+    padding="${padding}" font-size="${fontSize}" alignment="center" color="#080c0e" font-color="#fff0d4"
+    emissive=".28" content="${passage.label}" collide="false" cast-shadows="false"></m-label>`;
+}
+
 export function passageMarkup(passage,{visibleSteps=true,authoredPortal=null,authoredDoor=false,authoredPassages=[],portalAsset=null,returnLeaf=null,houseDoor=false,existingDoor=false}={}) {
   const slot=SLOTS[passage.slot],y=passage.rise*STAIR_STEPS*RISE;
   const portal=passage.kind==='portal',color=portal?'#9384bd':passage.rise?'#779491':'#d6b58c';
@@ -116,15 +124,14 @@ export function passageMarkup(passage,{visibleSteps=true,authoredPortal=null,aut
       cube(.46,1.08,.648,.17,.04,.095,'#e1bd76',noCollision),
     ].join('');
     return `<m-group id="passage-${passage.slot}" x="${slot.x}" z="${slot.z}" ry="${slot.rotation}">
-      ${leaf}<m-label y="2.56" z=".68" width="2.38" height=".33" padding="7" alignment="center"
-        font-size="18" color="#182d30" font-color="#ffe2a8" content="${passage.label}" collide="false"></m-label>
+      ${leaf}${passagePlaque(passage,{y:2.50,z:.68,width:2.38,height:.41,shortFont:16,padding:10})}
     </m-group>`;
   }
   const steps=staircase(passage.rise,fill,attributes);
   if(portal&&portalAsset)
     return `<m-group id="passage-${passage.slot}" x="${slot.x}" z="${slot.z}" ry="${slot.rotation}">
     <m-model id="portal-fitting-${passage.slot}" src="${portalAsset}" collide="false" cast-shadows="false"></m-model>
-    <m-label y="3.21" z=".61" width="1.52" height=".19" padding="2" font-size="13" alignment="center" color="#18323c" font-color="#ffe3b0" content="${passage.label}" collide="false"></m-label>
+    ${passagePlaque(passage,{y:3.29,z:.578,width:1.88,height:.334})}
     <m-light y="2.24" z=".96" type="point" intensity="2" distance="3.2" color="#8cddd3" cast-shadows="false"></m-light>
   </m-group>`;
   if(portal&&authoredPortal){

@@ -91,6 +91,9 @@ test('closed fitted doors block the boom from the wall to the handle',()=>{
   const volume=envelope(passageMarkup(passage,{houseDoor:true}));
   assert.match(volume,/z="0.28".*depth="0.84".*opacity="0"/);
   assert.doesNotMatch(volume,/collide="false"/);
+  const sign=passageMarkup(passage,{houseDoor:true});
+  assert.equal((sign.match(/id="passage-title-0"/g)??[]).length,1);
+  assert.match(sign,/emissive="\.28" content="Taller" collide="false" cast-shadows="false"/);
   assert.equal(envelope(passageMarkup(passage,{houseDoor:true,existingDoor:true})),undefined);
   const returnDoor=envelope(passageMarkup(passage,{returnLeaf:{src:'return.glb',onLanding:true}}));
   assert.match(returnDoor,/y="2.06".*depth="0.43".*opacity="0"/);

@@ -87,8 +87,8 @@ section("Teal inset arch", arc(.864, 1.944)+list(reversed(arc(.840, 1.944))), .4
 block("Etched center seam", (0, -.394, 1.316), (.014, .033, 2.304), brass)
 block("Floor sill", (0, -.414, .129), (2.02, .233, .050), stone)
 block("Raised sill bead", (0, -.500, .154), (1.71, .022, .014), brass, .003)
-block("Bronze title frame", (0, -.487, 3.210), (1.76, .106, .259), brass, .023)
-block("Title enamel plate", (0, -.551, 3.210), (1.62, .038, .182), enamel, .010)
+block("Bronze title frame", (0, -.487, 3.290), (2.08, .106, .420), brass, .023)
+block("Title enamel plate", (0, -.551, 3.290), (1.94, .038, .354), enamel, .010)
 
 def select(objects):
     bpy.ops.object.select_all(action="DESELECT")
