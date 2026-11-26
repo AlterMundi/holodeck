@@ -38,6 +38,53 @@ test('interior camera retracts before rendering a newly occluded orbit and clear
 });
 
 
+test('interior eye view preserves orbit and requires forward near-plane clearance',()=>{
+  let room='foyer', inspect=false;
+  let rear=.44,front=Infinity;
+  const focus=new Vector3(0,1.75,0);
+  const state={position:new Vector3(),rotation:new Quaternion(),fov:65,aspect:16/9};
+  const camera={distance:2.7,target:focus,getMainCameraState:()=>state,isFlyCameraOn:()=>false,
+    update(){state.position.copy(focus).add(new Vector3(0,0,this.distance));}};
+  const collisionsManager={raycastFirst(ray,max){
+    const z=ray.direction.z;
+    const distance=z>0?(rear-ray.origin.z)/z:(-front-ray.origin.z)/z;
+    return distance>=0&&distance<=max?[distance]:null;
+  }};
+  constrainInteriorCamera({coreCameraManager:camera,collisionsManager},()=>room,()=>inspect);
+
+  camera.update();
+  assert.deepEqual(state.position.toArray(),focus.toArray());
+  assert.equal(camera.distance,2.7,'preserves requested orbit distance');
+  assert.deepEqual(state.rotation.toArray(),[0,0,0,1]);
+
+  rear=.93;
+  for(let i=0;i<8;i++)camera.update();
+  assert.equal(state.position.z,0,'stays at eye during a marginal clearance change');
+  rear=Infinity;
+  camera.update();
+  assert.ok(state.position.z>=.98,'returns to a usable third-person boom');
+
+  rear=.44;
+  front=.15;
+  camera.update();
+  assert.ok(Math.abs(state.position.z-.37)<1e-9,'no eye view when a foreground surface crosses the near plane');
+  front=Infinity;
+  camera.update();
+  assert.equal(state.position.z,0);
+  inspect=true;
+  camera.update();
+  assert.equal(state.position.z,2.7,'explicit first-person inspection keeps ownership');
+  inspect=false;
+  room=null;
+  camera.update();
+  assert.equal(state.position.z,2.7,'resets outside');
+  room='foyer';
+  rear=Infinity;
+  camera.distance=.44;
+  camera.update();
+  assert.equal(state.position.z,.44,'does not turn an unobstructed close zoom into an eye view');
+});
+
 test('closed fitted doors block the boom from the wall to the handle',()=>{
   const passage={slot:0,kind:'door',rise:0,label:'Taller'};
   const envelope=markup=>markup.match(/<m-cube[^>]*id="passage-leaf-collider-0"[^>]*>/)?.[0];

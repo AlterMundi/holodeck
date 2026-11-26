@@ -2,6 +2,9 @@ import {Quaternion,Ray,Vector3} from 'three';
 
 const NEAR=.1; // Matches the MML Three.js main camera.
 const CLEARANCE=.07;
+// Avoid framing the avatar inside its close-range screen-door fade.
+const EYE_ENTER=.72;
+const EYE_EXIT=.98;
 
 // MML's collision pass follows the previous boom direction. Recheck the new
 // frame after orbit/zoom, including the corners of the rendered near plane.
@@ -16,13 +19,25 @@ export function constrainInteriorCamera({coreCameraManager:camera,collisionsMana
   const back=new Vector3(),right=new Vector3(),up=new Vector3(),focus=new Vector3();
   const ray=new Ray(),destination=new Vector3();
   const samples=[[0,0],[-1,-1],[-1,1],[1,-1],[1,1]];
-  let lastRoom,lastDistance;
+  let lastRoom,lastDistance,eyeView=false;
+
+  function eyeFrustumIsClear(halfHeight,aspect){
+    for(const [x,y] of samples){
+      destination.copy(back).multiplyScalar(-NEAR)
+        .addScaledVector(right,x*halfHeight*aspect).addScaledVector(up,y*halfHeight);
+      const length=destination.length();
+      ray.set(focus,destination.multiplyScalar(1/length));
+      if(collisionsManager.raycastFirst(ray,length+CLEARANCE))return false;
+    }
+    return true;
+  }
 
   camera.update=(...args)=>{
     update(...args);
     const room=getRoom();
     if(firstPerson()||!room||camera.isFlyCameraOn()){
       lastRoom=lastDistance=undefined;
+      eyeView=false;
       return;
     }
     const {position,rotation:q,fov,aspect}=camera.getMainCameraState();
@@ -42,9 +57,22 @@ export function constrainInteriorCamera({coreCameraManager:camera,collisionsMana
       const hit=collisionsManager.raycastFirst(ray,boom+CLEARANCE);
       if(hit)limit=Math.min(limit,Math.max(0,hit[0]-CLEARANCE));
     }
+    if(room!==lastRoom)eyeView=false;
     if(room!==lastRoom||lastDistance===undefined||limit<=lastDistance)lastDistance=limit;
     else lastDistance=Math.min(limit,lastDistance+.18);
     lastRoom=room;
+
+    // Keep the orbit (and its movement heading) intact. Zoom alone keeps
+    // its usual behavior. A retracted boom can temporarily render at the
+    // eye only if every corner of the actual forward near plane is clear.
+    const blocked=limit<boom-1e-4;
+    const useEye=eyeView?lastDistance<EYE_EXIT&&(blocked||boom>EYE_ENTER)
+      :blocked&&limit<EYE_ENTER;
+    eyeView=useEye&&eyeFrustumIsClear(halfHeight,aspect);
+    if(eyeView){
+      position.set(focus.x,focus.y,focus.z);
+      return;
+    }
     position.set(focus.x+back.x*lastDistance,focus.y+back.y*lastDistance,focus.z+back.z*lastDistance);
   };
 }
