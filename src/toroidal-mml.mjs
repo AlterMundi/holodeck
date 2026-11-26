@@ -2,7 +2,7 @@ import {Line3, Quaternion, Vector3} from 'three';
 import {createAvatarHeadroom} from './avatar-headroom.mjs';
 import {createToroidalCameraClearance} from './toroidal-camera-clearance.mjs';
 import {ToroidalLocomotion, toroidalRotation} from './toroidal-locomotion.mjs';
-import {TOROIDAL_SPAWN, terrainCoordinates, terrainFrame} from './toroidal-terrain.mjs';
+import {TOROIDAL_SPAWN, terrainCoordinates, terrainFrame, terrainPosition} from './toroidal-terrain.mjs';
 
 // The MML host still owns input, network cadence, interpolation, avatar
 // animation and the orbit camera. Only the selected exterior uses a radial
@@ -16,9 +16,9 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
   const viewRotation = new Quaternion();
   const viewOffset = new Vector3();
   const radialAxis = new Vector3(),right=new Vector3(),side=new Vector3(),feet=new Vector3();
-  const headroom=createAvatarHeadroom();
+  const headroom=createAvatarHeadroom(),contact=new Vector3();
   const capsule = new Line3();
-  const originalStart = new Vector3();
+  const originalStart = new Vector3(),sweepStart=new Vector3(),sweepEnd=new Vector3();
   let motion, lastLocal, lastPosition;
 
   function walk(controller, seconds) {
@@ -63,7 +63,9 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
         Number(keyInputManager.isKeyPressed('shift'))+touchVertical)):0;
     const jump=!flying&&!motion.swimming&&Boolean(control?.jump||touch?.jump||(wet&&vertical>0));
     const previousHeight=motion.height;
-    motion.update(seconds, {forward: moving ? 1 : 0, yaw, sprint:control?.isSprinting,
+    if(flying)sweepStart.fromArray(terrainPosition(motion.u,motion.v,motion.height));
+    motion.update(seconds, {forward: moving ? 1 : 0, yaw,
+      sprint:flying?keyInputManager.isKeyPressed('r')||keyInputManager.isKeyPressed('control')||touch?.isSprinting:control?.isSprinting,
       jump,flight:flying,vertical,crouch:!flying&&!wet&&keyInputManager.isKeyPressed('alt')});
     let state = motion.pose();
     const radius = controller.capsuleInfo.radius;
@@ -83,11 +85,49 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
       state=motion.pose();
       point=state.position;
     }
-    capsule.start.set(point.x, point.y, point.z).addScaledVector(radialAxis, radius);
-    capsule.end.copy(capsule.start).addScaledVector(radialAxis, height);
-    originalStart.copy(capsule.start);
-    controller.config.collisionsManager.setCharacterPosition(point);
-    controller.config.collisionsManager.applyColliders(capsule, radius);
+    const collisions=controller.config.collisionsManager;
+    function checkCapsule(p,report){
+      capsule.start.copy(p).addScaledVector(radialAxis,radius);
+      capsule.end.copy(capsule.start).addScaledVector(radialAxis,height);
+      originalStart.copy(capsule.start);
+      collisions.setCharacterPosition(p);
+      if(report)collisions.applyColliders(capsule,radius);
+      else for(const collider of collisions.collisionMeshState.values()){
+        if(!collisions.cullingEnabled||collisions.isMeshWithinCullingDistance(collider))
+          collisions.applyCollider(capsule,radius,collider);
+      }
+    }
+    // During a long display frame, boost may move farther than the capsule
+    // radius. Check intermediate poses before accepting the endpoint.
+    sweepEnd.copy(point);
+    const stride=radius*.65,travel=flying?sweepStart.distanceTo(sweepEnd):0;
+    const checks=Math.max(1,Math.min(14,Math.ceil(travel/stride)));
+    if(travel>stride*checks){
+      sweepEnd.lerpVectors(sweepStart,sweepEnd,stride*checks/travel);
+      motion.applyCollision(sweepEnd);
+      state=motion.pose();
+      sweepEnd.copy(state.position);
+    }
+    for(let index=1;index<checks;index++){
+      feet.copy(sweepStart).lerp(sweepEnd,index/checks);
+      checkCapsule(feet,false);
+      if(capsule.start.distanceToSquared(originalStart)>1e-10){
+        contact.subVectors(capsule.start,originalStart);
+        const wallRing=contact.dot(right),wallCross=contact.dot(side);
+        const lateral=wallRing*wallRing+wallCross*wallCross;
+        const into=motion.ringSpeed*wallRing+motion.crossSpeed*wallCross;
+        if(lateral>1e-8&&into<0){
+          motion.ringSpeed-=into*wallRing/lateral;
+          motion.crossSpeed-=into*wallCross/lateral;
+        }
+        sweepEnd.copy(capsule.start).addScaledVector(radialAxis,-radius);
+        motion.applyCollision(sweepEnd);
+        state=motion.pose();
+        sweepEnd.copy(state.position);
+        break;
+      }
+    }
+    checkCapsule(sweepEnd,true);
     if (capsule.start.distanceToSquared(originalStart) > 1e-10) {
       motion.applyCollision(capsule.start.addScaledVector(radialAxis, -radius));
       state = motion.pose();

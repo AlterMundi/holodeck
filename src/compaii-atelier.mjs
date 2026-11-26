@@ -100,6 +100,10 @@ const floorProfile={replacesShell:true,authoredExhibitBase:true};
 // becomes negative room Z. Passage anchors remain on the walkable side.
 const foyerWallFaces={west:-5.55,east:5.55,north:-5.605,south:5.528};
 const galleryWallFaces={west:-5.685,east:5.606,north:-5.86,south:5.62};
+// The Lab's north return lies on a raised stair. Keep its full landing.
+// The tower's east clerestory keeps its existing safety boundary and seat.
+const labWallFaces={west:-5.619,east:5.619,south:5.392};
+const towerWallFaces={west:-5.79,north:-5.79,south:5.79};
 const box=({x,y,z,w,h,d})=>`<m-cube x="${x}" y="${y}" z="${z}" width="${w}" height="${h}" depth="${d}" opacity="0" cast-shadows="false"></m-cube>`;
 const gardenVisual={asset:GARDEN_ASSET,revision:GARDEN_REVISION,x:0,y:0,z:0,sx:1,sy:1,sz:1,
   colliders:[
@@ -199,7 +203,7 @@ export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt())
       fixture('gallery','gallery-work-plinth','Expositor de trabajo',3.3945,1.1075,-.34944),
       fixture('gallery','gallery-archive-plinth','Expositor de archivo',3.3945,1.4075,3.67744)],
     lightRig:softLight({id:'collection-warm-bounce',x:4.2,y:2.6,z:1.6,intensity:12,distance:7,color:'#ffd8ae'})};
-  const labArt={...asset('beacon'),...floorProfile,authoredStairs:true,ambient:.27,keyLight:chamberKey,
+  const labArt={...asset('beacon'),...floorProfile,innerWallFaces:labWallFaces,authoredStairs:true,ambient:.27,keyLight:chamberKey,
     // The authored plaque is on the stair-facing rim of the central instrument.
     station:{...interiorArt(rooms.get(lab)).station,
       position:{x:-.44,y:.1,z:.59},revision:2,authoredSign:true},
@@ -210,7 +214,7 @@ export function selectAtelier(profile,rooms,houses,exterior=packedExteriorArt())
      box({x:-4.49,y:.605,z:-.35,w:1.76,h:1.01,d:1.12})+
      box({x:3.51,y:.684,z:2.78,w:1.76,h:1.168,d:1.12}),
     lightRig:chamberRig};
-  const towerArt={...asset('tower'),replacesShell:true,authoredPortal:{plaque:.181,light:.35},ambient:.64,
+  const towerArt={...asset('tower'),replacesShell:true,innerWallFaces:towerWallFaces,authoredPortal:{plaque:.181,light:.35},ambient:.64,
     // The east clerestory is an open aperture in the Blender model.
     outdoorSky:OUTDOOR_SKY,
     fixtures:[fixture('tower','tower-resonator','Resonador de la torre',.54,2.42,5.46)],

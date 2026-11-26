@@ -76,7 +76,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
     // Remove last frame's extra limb rotations before the base mixer runs.
     for(const entry of actors.values())restore(entry);
     const result=update.call(this,state,dt);
-    const {outdoor,flying,grounded:localGrounded,table,crouch,gaze,peerGaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null}=context();
+    const {outdoor,flying,grounded:localGrounded,table,crouch,gaze,peerGaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null,wake=null}=context();
     const now=clock?.();
     const elapsed=now!==undefined&&previousTime!==undefined?(now-previousTime)/1000:dt;
     previousTime=now;
@@ -136,6 +136,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const sample=outdoor&&!atTable?exteriorSample(position):null;
       entry.medium=sample?avatarMedium(HUMAN_BODY,sample,{supported:grounded===true,previous:entry.medium}):null;
       const underwater=entry.medium==='surface'||entry.medium==='submerged';
+      if(outdoor&&!atTable&&glanceMotion)wake?.observe(id,position,up,explicitFlight&&!underwater,elapsed);
       const draft=sample?sample.waterLevel-sample.feet:-Infinity;
 
       if(!outdoor||underwater)entry.observedFlight=false;

@@ -85,6 +85,9 @@ const fragmentShader = `
     }
     float veil=exp(-max(0.0,elevation)*7.0);
     sky=mix(sky,horizon,veil*.52);
+    // Local solar scatter supplies a broad glow without blurring the HUD or
+    // requiring another full-screen target on lightweight graphics.
+    sky+=vec3(.15,.098,.057)*pow(facing,16.0)*daylight*(1.0-.65*cloud);
     sky+=vec3(.38,.22,.09)*pow(facing,55.0)*daylight*(1.0-.68*cloud);
     sky+=vec3(1.6,.96,.48)*smoothstep(.9987,.9995,facing)*daylight*(1.0-.88*cloud);
     if (waterDepth > .014) {

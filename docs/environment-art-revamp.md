@@ -80,6 +80,44 @@ cards or splats against equal views, motion parallax, package size and
 light response. Use physical geometry wherever visitors can cross or
 touch a surface.
 
+### Surface contacts
+
+When objects meet terrain or other objects, make the contact read as part of
+the scene. This applies indoors and outdoors, including architectural joins
+and the waterline. Preserve crisp edges where the construction or material
+calls for them, and give the actual joint believable support and lighting.
+
+Choose the treatment that fits the materials. Seat rocks into uneven ground,
+vary their base silhouette, and continue local grit, soil or vegetation at the
+foot. Use local contact shadow or baked occlusion where it helps show weight.
+Use a bevel, a fitted joint or material trim where two built surfaces meet.
+At wet edges, let depth, wetness and transparency carry the transition.
+Keep collision aligned with the visible solid surface.
+
+Review at eye height from both sides that visitors can reach and while moving
+past the object. Check daylight and dusk or night, where a dark terrain can
+hide sparse ground cover and leave an abrupt seam. Keep the matched view in
+the environment review evidence when resolving a reported example.
+
+### Background depth of field
+
+Try an optional exterior mode that keeps the avatar, nearby path and
+interaction targets sharp. Increase blur gently over a range of metres
+behind the subject. Keep the HUD and text outside the effect. Preserve
+the current direct render in Livianos and when the option is off.
+
+The pinned MML composer draws the world, clears depth, then draws its
+overlay scene. Holodeck draws its A2UI HUD afterward. Prototype at the
+world draw boundary, using the world's color and depth from the same
+render. Test a bounded, depth-aware blur at reduced resolution before
+considering the stock Three.js BokehPass, which renders a separate depth
+pass. Qualified integration still needs a supported world-draw hook.
+Check that foreground grass and avatar edges stay clean and that shallow
+transparent water does not inherit an implausible blur from the seabed.
+Compare matched renders at zero blur for color and antialiasing, then
+measure GPU cost and frame pacing while turning and flying at dusk.
+[Three.js BokehPass](https://threejs.org/docs/pages/BokehPass.html)
+
 ## Screening route
 
 Use identical graphics quality, resolution, seed, camera and solar clock

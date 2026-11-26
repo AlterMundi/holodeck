@@ -11,6 +11,7 @@ import {ToroidalCave} from './toroidal-cave.mjs';
 import {TOROIDAL_TERRAIN} from './toroidal-terrain.mjs';
 import {TOROIDAL_SUN,ToroidalTerrainRenderer,toroidalSunDirection} from './toroidal-terrain-renderer.mjs';
 import {bindToroidalMml} from './toroidal-mml.mjs';
+import {FlightWake} from './flight-wake.mjs';
 import {bindFlightAvatarAnimation} from './flight-avatar-animation.mjs';
 import {RemoteDocumentWrapper} from '@mml-io/mml-web';
 import {RoomSceneCache,roomArtURL} from './room-scene-cache.mjs';
@@ -941,6 +942,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       canvas:options.targetElement.querySelector(':scope > canvas'),expectedDocumentURL:socket('world')});
     nativeAvatarLayer=new NativeAvatarLayer({document,base,onFailure:message=>say(message)});
     const companion=new CompanionAvatar({scene:renderer.mmlCompositionScene.group,document,base});
+    const flightWake=new FlightWake(renderer.mmlCompositionScene.group);
     companionAvatar=companion;
     worldPicker=new PublicWorldPicker({document,canvas:options.targetElement.querySelector(':scope > canvas'),scene:renderer.mmlCompositionScene.group,
       cameraState:()=>options.coreCameraManager.getCameraState(),proof:()=>geometryProbe?.snapshot(),
@@ -1050,7 +1052,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       collectionShelves.tabletopPlayers;
     const releaseFlightAnimation=bindFlightAvatarAnimation(renderer.characterManager,()=>({
       outdoor:outsideRing(),flying:flightEnabled,grounded:client.getCharacterManager().localController?.characterOnGround,table:tableFlight.active,tabletopPlayers:tabletopPlayers(),
-      peerPoses:poses.peers,peerGaze:points.gazes,gaze:tableGaze,glanceMotion:!companion.motion.matches&&!document.hidden,
+      peerPoses:poses.peers,peerGaze:points.gazes,gaze:tableGaze,wake:!entering&&!moving&&drawWorld?flightWake:null,glanceMotion:!companion.motion.matches&&!document.hidden,
       microphoneLevel:sharedConversation&&!moving&&!entering&&sharedSurface()?sharedConversation.microphoneLevel():null,
       crouch:!moving&&client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt'),
     }),{clock:()=>performance.now()});
@@ -1225,7 +1227,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const pointed=atTable?points.gazes.get(tableConnection):null;
       tableGaze=pointed??tableAttention.sample(tableNow);
       const mode=outsideRing()?radialMovementMode:'ground';
-      const help=mode==='ground'?dryVerticalHelp:mode==='flight'?' · Shift para bajar · Espacio para subir':
+      const help=mode==='ground'?dryVerticalHelp:mode==='flight'?' · Shift para bajar · Espacio para subir · R para acelerar':
         ' · Shift para sumergirte · Espacio para subir';
       if(help!==presentedHelp){
         presentedHelp=help;
@@ -1238,6 +1240,12 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         crouch:!flightEnabled&&!tableFlight.active&&client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt'),
         explicitFlight:flightEnabled,grounded:!flightEnabled&&client.getCharacterManager().localController?.characterOnGround===true,
         visible:!entering&&!moving&&drawWorld,seconds:renderState.deltaTimeSeconds});
+      const wakesVisible=outsideRing()&&!entering&&!moving&&drawWorld&&!document.hidden&&!companion.motion.matches;
+      if(wakesVisible&&companion.object){
+        const robot=companion.object;
+        flightWake.observe('companion',robot.position,robot.up,mode==='flight',renderState.deltaTimeSeconds);
+      }
+      flightWake.update(wakesVisible);
       galleryModels.update();
       collectionShelves.update(collectionRoom,collectionRoom?remoteScene:null,position,
         collectionRoom?activeSpace.objects.find(object=>object.id==='worktable')?.position:null,
@@ -1331,7 +1339,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
       }
     };
-    renderer.dispose=()=>{poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();worldFocus.abort();tableAttention.dispose();pointRequest?.controller.abort();document.removeEventListener('visibilitychange',abortHiddenPoint);points.dispose();if(pointView===points)pointView=null;display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();actionLabel.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();houseLight.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();worldFocus.abort();tableAttention.dispose();pointRequest?.controller.abort();document.removeEventListener('visibilitychange',abortHiddenPoint);points.dispose();if(pointView===points)pointView=null;display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();actionLabel.dispose();flightWake.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();houseLight.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
       if(client.keyInputManager){
         const keys=client.keyInputManager,shouldCapture=keys.shouldCaptureKeyPress;

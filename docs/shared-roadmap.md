@@ -376,6 +376,13 @@ light leaks at floor, wall, stair and roof joins. Give intentional openings a
 recognizable purpose, frame or view and keep collision aligned with the visible
 edge. Check contact shadows and surface scale after geometry changes.
 
+Apply the [surface contact policy](environment-art-revamp.md#surface-contacts)
+to new and revised assets. The [first cave contact pass](STATUS.md#november-26-cave-rock-contacts)
+uses local soil color and wider buried spire roots away from the trail.
+The rain-worn profile of the projecting corner and the surrounding
+ground cover still need work. Use the retained night camera and a walk
+past the flank to compare subsequent passes.
+
 Start with the [foyer](../art/compaii-house/redesign/review/foyer-baked-light.jpg)
 and [Beacon room](../art/compaii-house/redesign/review/beacon-light-after.jpg).
 The foyer now has an orientation table and a place to sit. The Beacon
@@ -708,9 +715,9 @@ measured Normal/Livianos using [House #12](https://github.com/AlterMundi/holodec
 
 ### Nearby interactions and repeatable panel launchers
 
-The [world-anchored action label](STATUS.md#november-25-world-anchored-nearby-action-labels)
-shows E over the offered Materializer table, interior door or one of the
-four Harmonic Lab worktops. The lab shortcut rechecks the current room
+The [world-anchored action label](STATUS.md#november-25-visible-room-boundaries-and-object-leaders)
+shows E below standing eye height, with a gold leader to the offered
+Materializer table, interior door or one of the four Harmonic Lab worktops. The lab shortcut rechecks the current room
 object and uses the existing Laboratory opening action. Keep pointer,
 keyboard and touch owned by their action handlers. Extend labels to
 further eligible targets as their placement and access are established.
@@ -918,6 +925,15 @@ Raspberry Pi client received the confirmed model. The fixture exercised
 local inspection, access revocation, focus restoration and the confirmed
 room palette. Direct participant experience on the protected entrance is
 tracked separately from these technical checks.
+
+The foyer, gallery, Harmonic Lab and Listening Tower now align measured solid wall faces to the packed art. The Lab landing and Tower clerestory keep their existing clearances. For new authored rooms, specify and measure visible solid boundaries, qualify all reachable edges and passages, and keep collision-only primitives out of the render pass. Use explicit semantics for intentional pass-through surfaces. The rest of the authored rooms still need the same render/collision audit.
+
+The [exterior optics and boost pass](STATUS.md#november-25-aerial-depth-transparent-shores-and-boost-wakes)
+uses progressive aerial haze, local glow and depth-dependent shoreline
+transmission. It also gives the human and companion separate bounded
+wakes at boost speed. Two physical devices verified the near and
+submerged views and local wake playback. Independent visitor wake
+acceptance, a broader low-light pass and scene reflections remain open.
 
 ### Connected ecosystems above and below the torus
 

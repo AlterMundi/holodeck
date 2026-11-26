@@ -503,6 +503,75 @@ installed release `1c78c31a2b82`. Reciprocal studio doors resolved. The room
 rule admitted one configured human guest and the house owner's daimon
 identity. The copy omitted Home sign-in. The protected release still needs
 selection of the candidate and a two-session receiving trial.
+
+## November 26 cave rock contacts
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `49acf79b2a04`
+from `e7bf7e9`. The outer rock and spire bases borrow the local soil
+palette. The buried spire ring widens away from the trail. The tunnel's
+collision positions are byte-identical. The same mesh still draws and
+blocks each spire. The pass adds no draw call or triangle.
+
+The controlled browsers used the retained night entry coordinates.
+RTX 2060 Normal and Pi 5 Livianos showed a softer tint near the contact.
+The projecting corner still reads sharply at night. The Pi samples
+used identical 363 × 244 render buffers and measured 16.7 → 16.8 ms
+frame p95. RTX showed 16.7 → 16.7 ms, with adaptive resolution selecting
+1020 × 629 and 1200 × 740 respectively. These are short single-visitor
+fixtures. The suite passed 417 checks with two skips. Receiving matched
+86 files, the same audience and continuing world run (450–451), and
+four access denials. Immediate rollback is `a10436594c96`.
+
+## November 25 aerial depth, transparent shores and boost wakes
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `a10436594c96`
+from `9eef355`. R in exterior flight targets 25 m/s, compared with the
+8 m/s ground run. A bounded particle draw emits separate human and
+companion colors for continuous fast flight. Reduced-motion settings
+suppress the effect. The motion solver samples intermediate capsule
+positions against existing colliders before reporting the final contact.
+
+Exterior haze accumulates with distance. The solar and particle glows
+are local to their shaders. Distant water keeps screen-filtered surface
+bands and sky reflection. Near shore the terrain's signed depth drives
+transmission and a soft contact edge. Deep tiles retain their opaque
+pass. Matched daylight views show the updated shore from above and the
+existing submerged scene from below.
+
+In controlled physical browsers, boosted speed was 25.12 m/s on RTX
+2060 Normal and 25.22 m/s on Pi 5 Livianos, with both colors emitting
+and frame p95 16.8 ms in both short samples. The full suite passed 417
+checks with two skips. Receiving verified all 86 files and the same
+world run and permissions through sequences 444–446. Only the browser
+payload changed. Immediate rollback is `f647d674febf`.
+
+A follow-up used the same package and camera at dusk on RTX 2060 Normal
+and at night on Pi 5 Livianos. The dusk shore shows a gradual transition.
+Night still loses much of the nearby shoreline shape and material detail,
+and broad wave bands remain conspicuous across the dusk water at a
+distance. Both fixtures rendered the submerged view and reproduced the
+two local wake colors at 25.67 and 25.19 m/s, with short-run frame p95 of
+16.7 and 16.8 ms respectively. The different clocks and graphics profiles
+make these independent observations. The fixtures did not use separate
+visitors. See the [background focus experiment](environment-art-revamp.md#background-depth-of-field)
+for a separate candidate that keeps interface rendering sharp.
+
+## November 25 Harmonic Lab and Listening Tower wall alignment
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `f647d674febf`
+from `6414e66`. Three wall planes in Harmonic Lab and three in the
+Listening Tower now use the measured room-facing lining. The existing
+Lab landing and Tower clerestory clearance keep their prior dimensions.
+The selected Matter shell and owned room kits already tracked the generic
+perimeter closely at walking height.
+
+RTX 2060 and Pi 5 controlled clients walked into all three adjusted Lab
+walls and returned to the foyer. They also entered and left the Tower
+through the original Gallery route in a separate fixture. The stationary
+Lab sample measured 16.8 ms p95 on both. The installation verified all
+86 payloads and the existing access and world run. Only the compiled
+server changed. Immediate rollback is `ea2efd93199d`.
+
 ## November 25 visible room boundaries and object leaders
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `ea2efd93199d`

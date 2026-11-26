@@ -14,6 +14,7 @@ test('the shared collision shell has two open mouths and two covered chambers', 
   const {mesh} = cave;
   assert.ok(mesh && colliders.has(mesh));
   assert.ok(mesh.geometry.index.count / 3 < 2500);
+  assert.ok(mesh.geometry.attributes.color.array.every(value=>value>=0&&value<=1));
   const original=mesh.material;
   const twoSided=new MeshBasicMaterial({side:DoubleSide});
   mesh.material=twoSided;
@@ -40,7 +41,8 @@ test('the shared collision shell has two open mouths and two covered chambers', 
 });
 
 test('visible crown triangles and collision share one footprint off the path and the arch',()=>{
-  const {origin,positions,indices}=buildCaveCrown();
+  const {origin,positions,indices,colors}=buildCaveCrown();
+  assert.ok(colors.every(value=>value>=0&&value<=1));
   assert.equal(indices.length/3,624);
   const finVolume=Array(4).fill(0);
   const crownPoint=index=>new Vector3().fromArray(positions,index*3).add(new Vector3(...origin));
