@@ -8,6 +8,8 @@ woodland spur a dirt surface. The terrain worker, server, motion
 catalog, room art and all 14 checked state files matched. One RTX
 2060 compared the spur material in Normal and exercised an outbound
 run and return on the preceding exact bark client in both profiles.
+A Raspberry Pi 5 matched the spur in Lightweight at dusk. Both packages
+had 33.4 ms p95 frame intervals at 512×332 and the current shader linked.
 [Art and evidence](environment-art-revamp.md#western-woodland-spur-material).
 
 ## November 26 — Western pine bark

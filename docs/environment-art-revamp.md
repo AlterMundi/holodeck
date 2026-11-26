@@ -208,9 +208,24 @@ bytes alongside the route geometry and planting rules.
 
 Matched noon and dusk views at the spur used 148 draws and 356,835
 triangles on one physical RTX 2060 at 850×552, before and after. The
-visible result is qualified in Normal on that device. The material
-pass covers the western grove segment. Validation along the rest of
-the spur and the wider device comparison remain open.
+visible result is qualified in Normal on that device. In Lightweight,
+a physical Raspberry Pi 5 with Chromium 154 and Broadcom V3D ran both
+archive clients at the same dusk pose. Browser response bytes matched
+the corresponding stages. The current terrain program linked and
+included the western spur shader. Matched frames show the dirt strip
+through the center and foreground. Both runs submitted 82 draws and
+215,199 triangles at 512×332. Across 164 moving-camera frame intervals
+each, median was 16.7 ms and p95 was 33.4 ms, with no interval above
+50 ms. A separate keyboard step walked 6.38 m on the current archive.
+
+The board was 67.0→76.3 °C for the preceding run and 74.1→78.5 °C for
+the current run. Neither endpoint reported a current throttle flag.
+The headless loopback fixture measures presentation cadence, with no
+available GPU timer samples or production login. The unmatched initial
+temperature and one pass per build limit the performance comparison.
+The material pass covers the western grove segment. A sustained
+thermal run, the rest of the spur and participant acceptance remain
+open.
 
 ### Air and light
 
