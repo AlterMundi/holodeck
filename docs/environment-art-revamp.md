@@ -59,6 +59,19 @@ walkable collision. Apply gradual visual detail transitions within that
 system. A clipmap is an option only if same-route measurements expose
 a sustained geometry or update bottleneck. [Geometry clipmaps](https://hhoppe.com/proj/geomclipmap/)
 
+The current open field keeps separate near and far instance batches. It
+caches deterministic plant samples by wrapped tile but rewrites the instance
+matrices and colors for the whole visible neighborhood when the field cell
+changes. The authored meadow banks already maintain bounded per-cell batches.
+Measure a running crossing and a low flight first, logging instance uploads,
+draw count and GPU time. If the whole-neighborhood upload is visible in frame
+pacing, try reusing bounded tile buffers and updating only entering tiles.
+Compare the extra draw calls with the CPU work saved. Keep opaque blade
+geometry and shader wind for the near field. Use simplified middle-distance
+tufts and match their root tint and lighting to distant ground coverage.
+Compare Normal and Livianos on the same route before increasing density.
+Instance counts and distance fade ranges are tuning outputs of that comparison.
+
 ### Air and light
 
 Link the horizon, the terrain's distant color and the low-angle sun.

@@ -7,6 +7,18 @@ quiet planting point to a single house entrance. The lower stair opens into
 a broad chamber with one illuminated prototype and two offset working bays.
 The long, cooler gallery gives visitors room to look and pass one another.
 
+## Orbital house concept
+
+Nicolas selected a circular, observatory-like house as the visual direction
+on November 26 and supplied an architecture sheet and a night approach
+reference. The miniature uses a faceted dome, an open brass armillary with a
+cyan orbit, ivory walls, and a warm arched entrance. Keep the silhouette
+readable at waypoint size with a small mesh and flat material colors.
+The terrain reference sets the approach at player height: a curving warm-lit
+path, cool trees behind the house, and the armillary readable above the
+foreground vegetation. The concepts are separate from the installed house
+geometry and room layout.
+
 ## Player-height review
 
 - [Arrival through the garden](review/garden.jpg)
