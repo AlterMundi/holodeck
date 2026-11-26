@@ -4,7 +4,7 @@ import {REFLECTION_BANK} from './toroidal-bank-reflection.mjs';
 import {createMeadowCoverTexture,useToroidalRockDetail,useToroidalWaterDetail} from './toroidal-surface-detail.mjs';
 import {BufferAttribute, BufferGeometry, DataTexture, DoubleSide, Group, LinearFilter, MathUtils, Mesh, MeshStandardMaterial, RGFormat, ShaderChunk, UnsignedByteType, Vector3, Vector4} from 'three';
 import {
-  TOROIDAL_PARCEL_Y, TOROIDAL_TERRAIN, buildTerrainTile, terrainCoordinates, terrainFrame, terrainTile,
+  TOROIDAL_OVERLOOK, TOROIDAL_PARCEL_Y, TOROIDAL_TERRAIN, TOROIDAL_TRAIL, buildTerrainTile, terrainCoordinates, terrainFrame, terrainTile,
 } from './toroidal-terrain.mjs';
 
 const profiles = Object.freeze({
@@ -37,6 +37,24 @@ export function toroidalSunDirection(position, terrain = TOROIDAL_TERRAIN, local
 }
 
 const glsl = value => value.toFixed(4);
+const spurTrack = `
+  float westernSpurAt(vec3 position, float horizontal) {
+    const float tau=6.28318530718;
+    const float shoulder=${glsl(TOROIDAL_TRAIL.shoulderV)};
+    const float end=${glsl(TOROIDAL_OVERLOOK.v)};
+    const float major=${glsl(TOROIDAL_TERRAIN.majorRadius)},tube=${glsl(TOROIDAL_TERRAIN.tubeRadius)};
+    float u=atan(position.z,position.x)/tau;
+    float v=atan(position.y,horizontal-major)/tau;
+    float spurV=clamp(v,shoulder,end);
+    float spurU=${glsl(TOROIDAL_OVERLOOK.u)}+${glsl(TOROIDAL_TRAIL.spurBend)}
+      *sin(3.14159265359*(spurV-shoulder)/(end-shoulder));
+    float along=(fract(u-spurU+.5)-.5)*tau*(major+tube*cos(spurV*tau));
+    float across=(fract(v-spurV+.5)-.5)*tau*tube;
+    float t=clamp((length(vec2(along,across))-${glsl(TOROIDAL_TRAIL.treadMetres)})
+      /${glsl(TOROIDAL_TRAIL.vergeMetres)},0.0,1.0);
+    return 1.0-t*t*t*(t*(t*6.0-15.0)+10.0);
+  }
+`;
 const vertexFrame = `
   vec4 holoWorld = modelMatrix * vec4(transformed, 1.0);
   float holoHorizontal = max(length(holoWorld.xz), 1e-4);
@@ -110,6 +128,28 @@ const terrainShading = {
     float holoMeadowRoughness = mix(.96,.995,litterWeight);
     float holoTrailMask = 0.0;
     float holoTrailRoughness = .90;
+    // Resolve the narrow spur per fragment where the woodland flora
+    // already steps away from it. Keep the authored arrival intact.
+    if(approach.x < -14.0 && vHoloWorld.y > 425.0 && length(approach)<205.0){
+      float westernSpur=westernSpurAt(vHoloWorld,across+${glsl(TOROIDAL_TERRAIN.majorRadius)})
+        *smoothstep(14.0,21.0,-approach.x)
+        *(1.0-smoothstep(164.0,205.0,length(approach)))
+        *smoothstep(425.0,445.0,vHoloWorld.y)
+        *smoothstep(${glsl(TOROIDAL_TERRAIN.waterLevel+.08)},${glsl(TOROIDAL_TERRAIN.waterLevel+.9)},vHoloHeight);
+      if(westernSpur>.001){
+        float dust=ringNoise(approach*vec2(.51,.34)+vec2(8.0,5.0));
+        float grainFade=1.0-smoothstep(.10,.32,meadowFootprint);
+        float grit=grainFade>.001?ringNoise(approach*5.7)-.5:0.0;
+        vec3 soil=mix(vec3(.21,.144,.075),vec3(.38,.284,.177),dust)
+          +grit*grainFade*vec3(.12,.09,.065);
+        diffuseColor.rgb=mix(diffuseColor.rgb,soil,westernSpur*.92);
+        holoMeadow*=1.0-westernSpur;
+        litterWeight*=1.0-westernSpur;
+        holoTrailMask=westernSpur;
+        holoTrailRoughness=mix(.84,.95,dust);
+        holoApproachSkylight=.42*westernSpur;
+      }
+    }
     // Low-frequency colours remain legible across the hill after leaves
     // are too small to draw. Their frequencies stay fixed in world space.
     if(holoMeadow>.001){
@@ -423,7 +463,7 @@ function artDirect(material, name, shading, environment, bank=null) {
       shader.uniforms.holodeckFacadeGround=environment.facadeGround;
       shader.uniforms.woodlandShadeMap=environment.woodlandShade;
       shader.uniforms.holodeckWoodlandShade=environment.hasWoodlandShade;
-      fragment=after(fragment,'common','uniform bool holodeckWoodlandShade;'+woodlandShadeShader);
+      fragment=after(fragment,'common','uniform bool holodeckWoodlandShade;'+woodlandShadeShader+spurTrack);
       fragment=after(fragment,'common','uniform sampler2D holodeckMeadowCover; uniform vec4 holodeckFacadeGround;');
     }
     shader.fragmentShader=before(fragment,'opaque_fragment',shading.output+`
