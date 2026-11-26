@@ -21,6 +21,24 @@ export const humanMotionStudies=Object.freeze({
       return {flight:flying,vertical:flying&&time<1.2?1:0,
         forward:flying&&time>=1.45?1:0,yaw:time>=2.14?.9:0};
     }},
+  'estudio-aceleracion':{label:'Vuelo rápido y regreso a flotación',duration:7,u:.002,v:.245,wet:false,
+    chapters:[
+      {id:'ground',label:'Apoyo en tierra',when:({frame,grounded})=>frame===0&&grounded},
+      {id:'lift',label:'Despegue',when:({input,grounded})=>input.flight&&!grounded},
+      {id:'hover',label:'Vuelo en el lugar',when:({input,grounded})=>input.flight&&!grounded&&!input.vertical&&!input.forward},
+      {id:'cruise',label:'Vuelo normal',when:({input})=>input.flight&&input.forward&&!input.sprint},
+      {id:'boost',label:'Entrar en vuelo rápido',when:({input,previousInput})=>input.flight&&input.sprint&&!previousInput.sprint},
+      {id:'fast',label:'Vuelo rápido',when:({input,time})=>input.sprint&&time>=2.64},
+      {id:'release',label:'Soltar la aceleración',when:({input,previousInput})=>input.flight&&!input.sprint&&previousInput.sprint},
+      {id:'float',label:'Volver a flotar',when:({input,time})=>input.flight&&!input.forward&&time>=4.46},
+      {id:'turn',label:'Inicio del giro',when:({input,previousInput})=>input.flight&&input.yaw!==previousInput.yaw},
+      {id:'land',label:'Contacto con el suelo',when:({input,grounded,wasGrounded})=>!input.flight&&grounded&&!wasGrounded},
+    ],
+    input(time){
+      const flying=time>=.72&&time<5.10;
+      return {flight:flying,vertical:flying&&time<1.2?1:0,
+        forward:flying&&time>=1.45&&time<4.46?1:0,sprint:flying&&time>=2.22&&time<3.50,yaw:time>=2.90?.9:0};
+    }},
   'estudio-nado':{label:'Remada, inmersión y ascenso',duration:6,u:.0155,v:.26,wet:true,
     input(time){
       return {forward:time>=.55?1:0,yaw:time>=3.4?1.05:0,
@@ -66,7 +84,7 @@ export function createHumanMotionStudy(template,stock,scenario,walkingClip){
   }};
   let input={};
   const unbind=bindFlightAvatarAnimation(manager,()=>({
-    outdoor:true,flying:Boolean(input.flight),grounded:motion.grounded,glanceMotion:true,
+    outdoor:true,flying:Boolean(input.flight),boosting:Boolean(input.flight&&input.sprint&&input.forward),grounded:motion.grounded,glanceMotion:true,
   }));
   const nodes=relevantNodes(mesh);
   const count=Math.round(scenario.duration*motionStudyRate);

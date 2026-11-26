@@ -1065,8 +1065,13 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const tabletopPlayers=()=>activeSpace.id===CHARACTER_STUDIO?
       new Set([...poses.peers].filter(([,pose])=>pose==='table').map(([id])=>id)):
       collectionShelves.tabletopPlayers;
+    const localFlightBoost=()=>{
+      const control=client.getCharacterManager().localController?.controlState;
+      return Boolean(outsideRing()&&flightEnabled&&!entering&&!moving&&
+        control?.isSprinting&&Number.isFinite(control.direction));
+    };
     const releaseFlightAnimation=bindFlightAvatarAnimation(renderer.characterManager,()=>({
-      outdoor:outsideRing(),flying:flightEnabled,grounded:client.getCharacterManager().localController?.characterOnGround,table:tableFlight.active,tabletopPlayers:tabletopPlayers(),
+      outdoor:outsideRing(),flying:flightEnabled,boosting:localFlightBoost(),grounded:client.getCharacterManager().localController?.characterOnGround,table:tableFlight.active,tabletopPlayers:tabletopPlayers(),
       peerPoses:poses.peers,peerGaze:points.gazes,gaze:tableGaze,wake:!entering&&!moving&&drawWorld?flightWake:null,glanceMotion:!companion.motion.matches&&!document.hidden,
       microphoneLevel:sharedConversation&&!moving&&!entering&&sharedSurface()?sharedConversation.microphoneLevel():null,
       crouch:!moving&&client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt'),
@@ -1115,7 +1120,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
           client.keyInputManager?.isKeyPressed('alt');
         const usingCharacterTable=activeSpace.id===CHARACTER_STUDIO&&tableFlight.active;
         poses.update(client.getWorldConnection(),activeSpace.id,usingCharacterTable?'table':
-          outsideRing()&&flightEnabled?'fly':low?'crouch':'ground');
+          outsideRing()&&flightEnabled?(localFlightBoost()?'fly-fast':'fly'):low?'crouch':'ground');
       }
       const yaw=client.getCharacterManager().localController?.networkState.rotation?.eulerY;
       const paintedRaster=minimap(outsideRing()?position:null,yaw,activeSpace.entrances);

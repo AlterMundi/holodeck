@@ -185,6 +185,14 @@ test('a peer follows scoped crouch and flight cues and releases them on the base
   peerPoses.set(7,'fly');
   frames(60);
   assert.ok(arm.quaternion.angleTo(stockArm)>.05);
+  const hover=arm.quaternion.clone();
+  peerPoses.set(7,'fly-fast');
+  frames(26);
+  const fast=arm.quaternion.clone();
+  assert.ok(fast.angleTo(hover)>.30);
+  peerPoses.set(7,'fly');
+  frames(80);
+  assert.ok(arm.quaternion.angleTo(fast)>.30);
   peerPoses.clear();
   peer.animationState=5;
   frames(100);

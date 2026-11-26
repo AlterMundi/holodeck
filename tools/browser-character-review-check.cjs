@@ -257,6 +257,12 @@ async function main(){
     };
     const flightChapters=await checkPhases('flight',{ground:0,lift:22,hover:36,turn:65,land:110},['lift','land']);
     await tableButton('Clips').press('Enter');
+    await chooseTable('Ciclo','estudio-aceleracion');
+    await page.waitForFunction(()=>document.querySelector('select[aria-label="Ciclo"]')?.value==='estudio-aceleracion');
+    await tableButton('Pose').press('Enter');
+    const boostChapters=await checkPhases('boost',
+      {cruise:44,boost:67,fast:80,turn:87,release:105,float:134,land:167},['fast','float']);
+    await tableButton('Clips').press('Enter');
     await chooseTable('Ciclo','estudio-marcha');
     await page.waitForFunction(()=>document.querySelector('select[aria-label="Ciclo"]')?.value==='estudio-marcha');
     await tableButton('Pose').press('Enter');
@@ -554,7 +560,7 @@ async function main(){
     assert.equal(await noteEditor.inputValue(),'Borrador durante la interrupción');
     assert.equal(noGraphics.url(),retryURL);
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({pose,flightChapters,groundChapters,comparedHeldPose:heldPose,comparisonFrame:110,revision:committed.revision,visitor,observedNote:note,roomScope:true,
+    console.log(JSON.stringify({pose,flightChapters,boostChapters,groundChapters,comparedHeldPose:heldPose,comparisonFrame:110,revision:committed.revision,visitor,observedNote:note,roomScope:true,
       conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,shortTableWithSharedNote:shortTable,tablePlayback:{speed:2,stoppedAt:lastFrame,loopWrapped:true},independentTableOrbit:{firstCamera,peerCamera,peerOrbit},sharedReceiptMatchesLocalFrame:true,notesWaitedForSharedPose:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
       situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,reciprocalWorldDoors:true,openedTableFromWorldDoor:true,doorFromViewer:true,returnedToRoomFromViewer:true,tableRigRetriedInPlace:true,rigRetryKeptPose:true,noGraphicsRetryKeptPose:true,graphicsRestoreKeptLocalFrameAndDraft:true}));
   }finally{

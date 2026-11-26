@@ -64,7 +64,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
   }
   function resetMotion(entry){
     Object.assign(entry,{weight:0,hoverWeight:0,lowWeight:0,planarSpeed:0,airWeight:0,
-      lowerWeight:0,airTime:0,rise:0,flightAge:0,poseTime:0,observedFlight:false,
+      boost:0,boostRelease:0,lowerWeight:0,airTime:0,rise:0,flightAge:0,poseTime:0,observedFlight:false,
       mode:null,poseMode:null,idleDwell:0,idleTime:0,idleWeight:0,
       medium:null,loopTime:0,strokeTime:1.40,wadeWeight:0,phase:0,
       gaitPhase:null,unsupported:0,fall:0,absorbAge:Infinity,absorb:0,brakeAge:Infinity,brake:0,lastSpeed:0});
@@ -76,7 +76,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
   function animatedUpdate(state,dt){
     // Remove last frame's extra limb rotations before the base mixer runs.
     for(const entry of actors.values())restore(entry);
-    const {outdoor,flying,grounded:localGrounded,table,crouch,gaze,peerGaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null,wake=null}=context();
+    const {outdoor,flying,boosting,grounded:localGrounded,table,crouch,gaze,peerGaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null,wake=null}=context();
     const now=clock?.();
     const elapsed=now!==undefined&&previousTime!==undefined?(now-previousTime)/1000:dt;
     previousTime=now;
@@ -90,7 +90,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const atTable=isLocal?table:tabletopPlayers.has?.(id)||tabletopPlayers.includes?.(id);
       const onGround=isLocal?localGrounded:actor.animationState>=0&&actor.animationState<=2||actor.animationState===5;
       const followTravel=glanceMotion&&onGround&&!atTable&&!entry.table&&
-        !(isLocal?crouch||flying:peerPose==='crouch'||peerPose==='fly')&&
+        !(isLocal?crouch||flying:peerPose==='crouch'||peerPose==='fly'||peerPose==='fly-fast')&&
         (!outdoor||entry.medium==='ground')&&elapsed<=.15;
       const character=this.loadedCharacters.get(id)?.character;
       if(character?.getMesh()!==entry.mesh||!actor.animationTimes||!actor.animationWeights){
@@ -151,7 +151,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       }
       const peerPose=isLocal?null:peerPoses?.get(id);
       const grounded=isLocal?localGrounded:actor.animationState>=0&&actor.animationState<=2||actor.animationState===5;
-      const explicitFlight=Boolean(isLocal?outdoor&&flying:peerPose==='fly');
+      const explicitFlight=Boolean(isLocal?outdoor&&flying:peerPose==='fly'||peerPose==='fly-fast');
       if(entry.table!==atTable){
         entry.last.copy(position);
         resetMotion(entry);
@@ -192,6 +192,15 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       else entry.airTime+=step;
       const active=mode!==null;
       const floating=active&&mode!=='land';
+      const boostInput=Boolean(glanceMotion&&explicitFlight&&mode==='hover'&&!atTable&&
+        (isLocal?boosting:peerPose==='fly-fast'));
+      // Reversing a partially completed gesture continues from the current
+      // pose. Letting go has a longer release than the initial punch.
+      entry.boost=mode==='hover'&&!atTable&&glanceMotion?
+        clamp(entry.boost+step*(boostInput?1/.36:-1/.52)):0;
+      const boost=entry.boost;
+      entry.boostRelease+=(Number(!boostInput&&boost>0)-entry.boostRelease)*ease(step,15);
+      const boostRelease=entry.boostRelease*Math.sin(Math.PI*boost);
 
       // Contact absorbs with the planted legs. Depth follows the fall speed.
       const standing=grounded===true&&!floating;
@@ -249,7 +258,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const climb=clamp(entry.rise/5,-1,1);
       const lean=underwater?entry.medium==='surface'?1.12*w:
           clamp(1.22*w-clamp(entry.rise/2.8,-1,1)*(.30+.30*w),-.2,1.72):
-        mode==='hover'||mode==='lift'?(atTable?.56:.57+.13*clamp((entry.planarSpeed-4)/4))*w-.16*climb*w+clamp(.011*thrust,-.20,.14):
+        mode==='hover'||mode==='lift'?(atTable?.56:.57+.13*clamp((entry.planarSpeed-4)/4))*w-.16*climb*w+clamp(.011*thrust,-.20,.14)+.38*smooth(boost)-.10*boostRelease:
           0;
       const pitchValue=glanceMotion?entry.pitch.update(lean+(entry.crouchRig?0:.13*entry.lowWeight),step,floating?7.5:20):
         entry.pitch.reset((underwater?1.12:.56)*w).value;
@@ -336,7 +345,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
         }
         entry.airRig.apply(character,{mode:wading?'wade':entry.poseMode,time:wading?entry.loopTime:entry.poseTime,
           forward:w,weight:armWeight,lowerWeight:entry.lowerWeight,torsoWeight:entry.airWeight,step,
-          bank:entry.airWeight*clamp(bankValue,-.5,.5),
+          bank:entry.airWeight*clamp(bankValue,-.5,.5),boost,boostRelease,
           // Reach overhead only once the body lies along the surface.
           stroke:mode==='swim'?smooth((pitchValue-.45)/.5):0,strokeTime:entry.strokeTime,
           water:surface&&!wading?water:null});

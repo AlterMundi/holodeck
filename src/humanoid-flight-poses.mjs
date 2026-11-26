@@ -1,23 +1,31 @@
 import {Euler,Matrix4,Quaternion,Vector3} from 'three';
-import {keyed} from './avatar-motion-curves.mjs';
+import {keyed,smooth} from './avatar-motion-curves.mjs';
 
 // Original keyed phrases. Directions use the Y-up body frame for the left
 // side. The right side mirrors across X before retargeting to the skeleton.
 // Lanes: upper arm, forearm, thigh, calf, foot, spine and head. The last two
 // hold pitch, yaw and roll in radians. Times are seconds, repeats are holds.
 const pose=(upper,fore,thigh,calf,foot,spine=[0,0,0],head=[0,0,0])=>[...upper,...fore,...thigh,...calf,...foot,...spine,...head];
+// Floating has a long breath and a small offset between the two sides.
+// At cruise the chest leads, with the hands trailing in the slipstream.
 const drift=[
-  pose([.33,-.93,.13],[.15,-.82,.55],[.10,-.93,.36],[.05,-.92,-.38],[.02,-.58,.81],[.05,.05,.02],[-.04,-.04,-.01]),
-  pose([.42,-.90,.02],[.22,-.90,.37],[.08,-.99,.08],[.04,-.97,-.24],[0,-.70,.71],[.09,0,-.02],[-.08,.02,.01]),
-  pose([.50,-.86,.06],[.24,-.80,.55],[.11,-.99,-.02],[.05,-.95,-.31],[.02,-.78,.62],[.04,-.06,-.02],[-.03,.05,.02]),
-  pose([.40,-.91,.12],[.13,-.80,.58],[.10,-.96,.25],[.04,-.91,-.41],[.02,-.64,.77],[.08,-.01,.02],[-.07,-.03,-.01]),
+  pose([.29,-.94,.13],[.16,-.82,.55],[.09,-.93,.36],[.05,-.92,-.38],[.02,-.58,.81],[.04,.04,.02],[-.03,-.04,-.01]),
+  pose([.41,-.90,.08],[.20,-.89,.42],[.08,-.99,.08],[.04,-.97,-.24],[0,-.70,.71],[.10,.01,-.03],[-.08,.02,.01]),
+  pose([.46,-.88,.11],[.22,-.80,.55],[.11,-.99,-.02],[.05,-.95,-.31],[.02,-.78,.62],[.04,-.06,-.02],[-.03,.05,.02]),
+  pose([.35,-.91,.18],[.14,-.80,.58],[.10,-.96,.25],[.04,-.91,-.41],[.02,-.64,.77],[.07,-.01,.02],[-.06,-.03,-.01]),
 ];
 const sweep=[
-  pose([.66,-.56,-.50],[.66,-.45,-.60],[.08,-.98,-.20],[.04,-.97,-.24],[0,-.90,.44],[-.04,0,.02],[-.40,0,-.02]),
-  pose([.72,-.48,-.50],[.72,-.36,-.60],[.06,-.99,-.12],[.03,-.95,-.32],[0,-.92,.40],[-.08,.03,0],[-.36,-.02,0]),
-  pose([.68,-.54,-.49],[.68,-.44,-.59],[.08,-.97,-.24],[.04,-.98,-.18],[0,-.88,.47],[-.04,0,-.02],[-.40,0,.02]),
-  pose([.62,-.60,-.50],[.62,-.50,-.61],[.07,-.98,-.17],[.04,-.96,-.28],[0,-.90,.44],[-.02,-.03,0],[-.42,.02,0]),
+  pose([.42,-.77,-.48],[.23,-.68,-.69],[.08,-.98,-.20],[.04,-.97,-.24],[0,-.90,.44],[-.04,0,.02],[-.38,0,-.02]),
+  pose([.47,-.74,-.48],[.28,-.61,-.74],[.06,-.99,-.12],[.03,-.95,-.32],[0,-.92,.40],[-.08,.03,0],[-.34,-.02,0]),
+  pose([.44,-.75,-.49],[.26,-.63,-.73],[.08,-.97,-.24],[.04,-.98,-.18],[0,-.88,.47],[-.04,0,-.02],[-.38,0,.02]),
+  pose([.40,-.79,-.46],[.20,-.73,-.65],[.07,-.98,-.17],[.04,-.96,-.28],[0,-.90,.44],[-.02,-.03,0],[-.40,.02,0]),
 ];
+// Advance from a gathered shoulder and knee into a long, diagonal shape.
+// The rear arm and feet trail the reach. This asymmetric line is original.
+const boostGather=pose([.33,-.73,.60],[.08,-.18,.98],[.16,-.84,.52],[.06,-.87,-.48],[.01,-.78,.62],[.12,-.09,.09],[-.28,.08,-.05]);
+const boostLead=pose([.16,.89,.43],[.09,.98,.18],[.07,-.99,-.09],[.04,-.98,-.18],[.02,-.99,.10],[-.15,-.10,-.09],[-.54,.08,.05]);
+const boostTrail=pose([.35,-.61,-.70],[.20,-.48,-.85],[.12,-.96,-.21],[.06,-.99,-.12],[.02,-.99,.12]);
+const boostBrake=pose([.68,-.68,-.16],[.52,-.80,.32],[.12,-.91,.38],[.08,-.94,-.32],[.02,-.75,.65],[.09,.02,.02],[-.34,-.02,-.02]);
 const coil=pose([.30,-.86,-.42],[.18,-.95,-.24],[.13,-.84,.53],[.10,-.79,-.61],[0,-.12,.99],[.34,0,0],[-.22,0,0]);
 const spring=pose([.28,-.94,-.18],[.16,-.98,-.12],[.07,-.99,-.08],[.04,-.99,-.12],[0,-.95,.31],[-.16,0,0],[-.26,0,0]);
 const tuck=pose([.54,-.76,.36],[.24,-.60,.76],[.13,-.72,.68],[.08,-.78,-.62],[.02,-.50,.86],[.14,0,0],[-.12,0,0]);
@@ -186,12 +194,25 @@ export function bindHumanoidFlightRig(mesh){
       for(const limb of limbs.flat())limb.aim.set(0,0,0);
     },
     // water is {up, point} in world space while hands must stay submerged.
-    apply(character,{mode,time,forward=0,weight,lowerWeight=weight,torsoWeight=weight,step,bank=0,
+    apply(character,{mode,time,forward=0,weight,lowerWeight=weight,torsoWeight=weight,step,bank=0,boost=0,boostRelease=0,
       stroke:strokeWeight=0,strokeTime=time,water=null}){
       if(weight<=0&&lowerWeight<=0)return;
       const name=mode==='swim'?'tread':clips[mode]?mode:'hover';
       sample(name,time);
-      if(name==='hover')blend('glide',time,forward);
+      if(name==='hover'){
+        blend('glide',time,forward);
+        if(boost>0){
+          const gather=smooth(boost/.30),extend=smooth((boost-.30)/.70);
+          for(const [side,out] of sides.entries()){
+            const target=side===0?boostLead:boostTrail;
+            for(let i=0;i<out.length;i++){
+              out[i]+=(boostGather[i]-out[i])*gather;
+              out[i]+=(target[i]-out[i])*extend;
+              out[i]+=(boostBrake[i]-out[i])*boostRelease*.72;
+            }
+          }
+        }
+      }
       if(name==='tread')blend('stroke',strokeTime,strokeWeight);
       for(const item of body){
         const amount=item.group==='lower'?lowerWeight:item.group==='arm'?weight:torsoWeight;

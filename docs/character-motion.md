@@ -180,3 +180,30 @@ The protected App, audience and configuration matched, and the
 exterior still led to the foyer. Rollback is `61d8ac934638`.
 Independent signed-in feedback, physically observed shore transitions,
 human stride contact, and joint presenter/notes remain open.
+
+## Flight boost and model replacement
+
+The live humanoid reads the same directional sprint input that drives
+toroidal acceleration. The ordinary flight has three readable silhouettes:
+near-vertical float, forward glide with hands following the body, and boost
+with a diagonal reach. The boost gathers before extending, and release
+raises the chest and opens the arms before settling. The current timing is
+0.36 seconds in and 0.52 seconds out. Both transitions start from the current
+blend if interrupted. The exterior avatar-pose cue carries the active boost
+to peer views. The signal changes pose presentation only.
+
+Char Design's **Vuelo rápido y regreso a flotación** study samples the live
+controller at 30 Hz, with bookmarks for float, cruise, entering boost, steady
+boost, turning, release and returning to float. Animation references for
+silhouette and spacing are [DC's Superman anniversary short](
+https://www.dc.com/blog/2013/10/14/the-superman-anniversary-short-75-points-of-annotation)
+and [Pixar in a Box](https://www.khanacademy.org/computing/pixar/animate).
+The choreography and avatar are authored for Holodeck.
+
+A new mesh can use the current motions by skinning it to the chosen humanoid
+armature. Review its bind pose, skin weights, contact positions and ranges of
+motion. A different compatible skeleton needs a verified joint mapping and
+retargeting, including rest axes, body proportions and hand and foot contacts.
+Char Design pins model and motion editions independently for review. A new
+asset is selected after its own checks. This slice authors motion on the
+existing rig while the separate character authoring integration progresses.

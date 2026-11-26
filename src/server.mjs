@@ -961,7 +961,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
        typeof input.space!=='string'||input.space.length>96)return res.sendStatus(400);
     const scope=spaces.current(req.actor);
     if(input.space!==scope||!inScope(req.actor,scope))return res.sendStatus(409);
-    if(input.pose==='fly'&&scope!==OUTSIDE||input.pose==='table'&&scope!==CHARACTER_STUDIO)return res.sendStatus(400);
+    if((input.pose==='fly'||input.pose==='fly-fast')&&scope!==OUTSIDE||input.pose==='table'&&scope!==CHARACTER_STUDIO)return res.sendStatus(400);
     const proof=req.get('X-Holodeck-Pose-Proof');
     const peer=posePeers(scope)?.get(input.connection);
     // The HTTP cookie proves the actor. The signed fields prove the exact

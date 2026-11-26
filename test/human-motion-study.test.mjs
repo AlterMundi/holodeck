@@ -29,6 +29,24 @@ test('a sampled live flight pose plays on the same rig in either direction',asyn
   assert.deepEqual(airborne,snapshot(78));
 });
 
+test('the boost study bookmarks entry, extension, release and float on the shipped rig',async()=>{
+  const {mesh}=humanAvatar('avatar-1-bodyA-skin01.glb');
+  const {clips}=await stockLocomotion(mesh);
+  const study=createHumanMotionStudy(mesh,clips.idle.getClip(),humanMotionStudies['estudio-aceleracion']);
+  assert.deepEqual(study.chapters.map(({id})=>id),['ground','lift','hover','cruise','boost','fast','turn','release','float','land']);
+  const frames=new Map(study.chapters.map(({id,frame})=>[id,frame]));
+  const mount=new Group();
+  const pose=frame=>{
+    study.apply(mesh,mount,frame);
+    return ['upperarm_l','upperarm_r','calf_l','calf_r'].flatMap(name=>
+      mesh.getObjectByName(name).quaternion.toArray());
+  };
+  const fast=pose(frames.get('fast'));
+  assert.notDeepEqual(fast,pose(frames.get('cruise')));
+  assert.notDeepEqual(fast,pose(frames.get('float')));
+  assert.deepEqual(fast,pose(frames.get('fast')));
+});
+
 test('the swim study follows the actual water surface and revisits identical submerged joints',async()=>{
   const {mesh}=humanAvatar('avatar-2-bodyB-skin03.glb');
   const {clips}=await stockLocomotion(mesh);
