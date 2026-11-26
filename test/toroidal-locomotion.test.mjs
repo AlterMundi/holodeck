@@ -207,3 +207,26 @@ test('boost flight travels at least three times the flat ground run speed',()=>{
   assert.ok(speeds[0]>7.9&&speeds[0]<8.1);
   assert.ok(speeds[1]>=3*speeds[0]&&speeds[1]<25.1);
 });
+
+test('submerged flight keeps its speed and altitude until it is steered or released',()=>{
+  const terrain={...TOROIDAL_TERRAIN,waterLevel:-3};
+  const launch=-6;
+  const pilot=new ToroidalLocomotion({u:.1,v:.2,height:launch,terrain,ground:()=>-12});
+  assert.equal(pilot.swimming,true);
+
+  simulate(pilot,1,60,{flight:true,forward:1,sprint:true});
+  assert.equal(pilot.swimming,false);
+  assert.equal(pilot.height,launch);
+  assert.ok(Math.hypot(pilot.ringSpeed,pilot.crossSpeed)>24);
+
+  simulate(pilot,.25,60,{flight:true,vertical:-1});
+  assert.ok(pilot.height<launch-1.15);
+  const turningOff=pilot.height;
+  simulate(pilot,.25,60,{});
+  assert.equal(pilot.swimming,true);
+  assert.equal(pilot.height,turningOff);
+
+  simulate(pilot,1.2,60,{flight:true,vertical:1});
+  assert.equal(pilot.swimming,false);
+  assert.ok(pilot.height>terrain.waterLevel);
+});

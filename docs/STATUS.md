@@ -1,5 +1,10 @@
 # Current MVP work
 
+The Holodeck-owned receiving release `58ce88972da7` subsequently activated
+the water and flight changes through source revision `9fc4090`. That exact
+source is incorporated here to keep later Character work compatible with
+the selected world.
+
 ## Narrow desktop dock and Conversation pointer check
 
 Client revision `4ad1781` widens the bridge control so the full label
@@ -14,7 +19,7 @@ Candidate archive SHA-256
 `5471bdbca0f6938afb93ba6bf7eef206fb76bf3e2780db97cddb6f66793d94a3`.
 It retains the alpha.21 renderer and changes the browser client on the
 previous candidate. Node 24 passed 447 tests with two skips. The
-protected release remains `2ee067ffd313`.
+protected release at the time of this check was `2ee067ffd313`.
 
 ## World dock alongside canonical Conversation
 

@@ -3,7 +3,7 @@
 export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false){
   const document=canvas.ownerDocument;
   const abort=new AbortController(),capture={capture:true,signal:abort.signal};
-  let rightHeld=false;
+  let rightHeld=false,locked=false;
   const turn=(x,y)=>{
     const scale=20*sensitivity();
     camera.targetTheta+=x/canvas.clientWidth*scale;
@@ -11,12 +11,14 @@ export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false)
       camera.targetPhi-y/canvas.clientHeight*scale));
   };
   canvas.addEventListener('pointerdown',event=>{
-    if(blocked()||event.pointerType!=='mouse'||event.button!==2||!canvas.requestPointerLock)return;
+    if(blocked()||event.pointerType!=='mouse'||event.button!==2)return;
     rightHeld=true;
-    try{canvas.requestPointerLock()?.catch(()=>{});}catch{}
+    try{canvas.requestPointerLock?.()?.catch(()=>{});}catch{}
   },capture);
   document.addEventListener('pointermove',event=>{
-    if(blocked()||event.pointerType!=='mouse'||camera.isFlyCameraOn()||!canvas.clientWidth||!canvas.clientHeight)return;
+    if(event.pointerType!=='mouse')return;
+    if(rightHeld&&!(event.buttons&2))release();
+    if(blocked()||camera.isFlyCameraOn()||!canvas.clientWidth||!canvas.clientHeight)return;
     const pointer=camera.activePointers.get(event.pointerId);
     if(document.pointerLockElement===canvas){
       turn(event.movementX,event.movementY);
@@ -34,11 +36,20 @@ export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false)
   };
   document.addEventListener('pointerup',event=>{if(event.button===2)release();},capture);
   document.addEventListener('pointercancel',event=>{if(event.pointerType==='mouse')release();},capture);
+  document.defaultView?.addEventListener('blur',release,{signal:abort.signal});
   document.addEventListener('pointerlockchange',()=>{
-    if(!rightHeld&&document.pointerLockElement===canvas)document.exitPointerLock();
+    if(document.pointerLockElement===canvas){
+      if(rightHeld)locked=true;
+      else document.exitPointerLock();
+    }else if(locked){
+      locked=false;
+      release();
+    }
   },capture);
-  return ()=>{
+  const dispose=()=>{
     abort.abort();
     release();
   };
+  dispose.aiming=()=>rightHeld&&!blocked()&&!camera.isFlyCameraOn();
+  return dispose;
 }

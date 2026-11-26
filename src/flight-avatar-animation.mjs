@@ -69,14 +69,14 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       medium:null,loopTime:0,strokeTime:1.40,wadeWeight:0,phase:0,
       gaitPhase:null,unsupported:0,fall:0,absorbAge:Infinity,absorb:0,brakeAge:Infinity,brake:0,lastSpeed:0});
     for(const follower of [entry.turn,entry.pitch,entry.bank,entry.lift,entry.sink,
-      entry.thrust,entry.lean,entry.sway,entry.lead])follower.reset();
+      entry.thrust,entry.lean,entry.sway,entry.lead,entry.aim])follower.reset();
     entry.heading.set(0,0,0);
     entry.airRig?.reset();
   }
   function animatedUpdate(state,dt){
     // Remove last frame's extra limb rotations before the base mixer runs.
     for(const entry of actors.values())restore(entry);
-    const {outdoor,flying,boosting,grounded:localGrounded,table,crouch,gaze,peerGaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null,wake=null}=context();
+    const {outdoor,flying,boosting,grounded:localGrounded,table,crouch,gaze,peerGaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null,wake=null,splash=null,waterWake=null,aimPitch=null}=context();
     const now=clock?.();
     const elapsed=now!==undefined&&previousTime!==undefined?(now-previousTime)/1000:dt;
     previousTime=now;
@@ -132,7 +132,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
           idlePhase:(id%10000)*2.3999632297,
           unpitched:new Quaternion(),applied:new Quaternion(),heading:new Vector3(),shift:new Vector3(),
           turn:new Follower(8.5),pitch:new Follower(7.5),bank:new Follower(10),lift:new Follower(9),sink:new Follower(4.5),
-          thrust:new Follower(9),lean:new Follower(10),sway:new Follower(9),lead:new Follower(12),
+          thrust:new Follower(9),lean:new Follower(10),sway:new Follower(9),lead:new Follower(12),aim:new Follower(16),
           limbs:limbNames.map(name=>mesh.getObjectByName(name))};
         resetMotion(entry);
         actors.set(id,entry);
@@ -173,8 +173,13 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       // Physics reported a place. Read the medium from it, for any actor.
       const sample=outdoor&&!atTable?exteriorSample(position):null;
       entry.medium=sample?avatarMedium(HUMAN_BODY,sample,{supported:grounded===true,previous:entry.medium}):null;
-      const underwater=entry.medium==='surface'||entry.medium==='submerged';
-      if(outdoor&&!atTable&&glanceMotion)wake?.observe(id,position,up,explicitFlight&&!underwater,elapsed);
+      if(sample){
+        splash?.observe(id,sample,elapsed,continuous?travel/Math.max(elapsed,.001):0,continuous,glanceMotion);
+        waterWake?.observe(id,position,up,sample,{flying:explicitFlight,seconds:elapsed,continuous,emit:glanceMotion});
+      }
+      const wet=entry.medium==='surface'||entry.medium==='submerged';
+      const underwater=wet&&!explicitFlight;
+      if(outdoor&&!atTable&&glanceMotion)wake?.observe(id,position,up,explicitFlight&&!wet,elapsed);
       const draft=sample?sample.waterLevel-sample.feet:-Infinity;
 
       if(!outdoor||underwater)entry.observedFlight=false;
@@ -260,14 +265,18 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
           clamp(1.22*w-clamp(entry.rise/2.8,-1,1)*(.30+.30*w),-.2,1.72):
         mode==='hover'||mode==='lift'?(atTable?.56:.57+.13*clamp((entry.planarSpeed-4)/4))*w-.16*climb*w+clamp(.011*thrust,-.20,.14)+.38*smooth(boost)-.10*boostRelease:
           0;
-      const pitchValue=glanceMotion?entry.pitch.update(lean+(entry.crouchRig?0:.13*entry.lowWeight),step,floating?7.5:20):
-        entry.pitch.reset((underwater?1.12:.56)*w).value;
+      const looking=isLocal&&!atTable&&Number.isFinite(aimPitch);
+      const aimTarget=looking?clamp(aimPitch,-1.2,1.2):0;
+      const aim=glanceMotion?entry.aim.update(aimTarget,step):entry.aim.reset(aimTarget).value;
+      const inclined=clamp(lean+(floating?aim:0),-1.2,1.72);
+      const pitchValue=glanceMotion?entry.pitch.update(inclined+(entry.crouchRig?0:.13*entry.lowWeight),step,floating?7.5:20):
+        entry.pitch.reset(clamp((underwater?1.12:.56)*w+(floating?aim:0),-1.2,1.72)).value;
       const bankTarget=airborne?clamp(-turnRate*(.055+.085*w),-.52,.52)*(mode==='descend'?.35:atTable?.8:1):
         swimming?clamp(-turnRate*.12,-.34,.34):0;
       const bankValue=glanceMotion?entry.bank.update(bankTarget,step,airborne||swimming?10:18):entry.bank.reset().value;
       const lift=entry.lift.update(floating||Math.abs(pitchValue)>.02?1:0,step);
       // Float shoulder deep. Over a near bed the tucked legs set the limit.
-      const sinkTarget=entry.medium==='surface'&&entry.airRig?Math.min(.36-.12*w,Math.max(0,sample.feet-sample.ground+.28)):0;
+      const sinkTarget=underwater&&entry.medium==='surface'&&entry.airRig?Math.min(.36-.12*w,Math.max(0,sample.feet-sample.ground+.28)):0;
       const sink=glanceMotion?entry.sink.update(sinkTarget,step):entry.sink.reset(sinkTarget).value;
       const trunk=glanceMotion&&standing&&!underwater?1:0;
       const trunkPitch=entry.lean.update(trunk*(clamp(.009*thrust,-.13,.13)+.10*dip+.07*entry.wadeWeight),step);
@@ -277,7 +286,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const settled=w<.01&&entry.hoverWeight<.01&&entry.lowWeight<.01&&entry.airWeight<.01&&
         entry.lowerWeight<.01&&entry.wadeWeight<.01&&dip<.002&&sink<.002&&
         Math.abs(pitchValue)<.002&&Math.abs(bankValue)<.001&&Math.abs(airYaw)<.001&&
-        Math.abs(trunkPitch)+Math.abs(trunkRoll)+Math.abs(trunkLead)<.003;
+        Math.abs(trunkPitch)+Math.abs(trunkRoll)+Math.abs(trunkLead)+Math.abs(aim)<.003;
       const resting=entry.idleRig&&glanceMotion&&settled&&grounded===true&&!active&&!low&&
         actor.animationState===0&&(actor.animationWeights?.[0]??1)>.9&&speed<.14&&entry.planarSpeed<.14;
       entry.idleDwell=resting?entry.idleDwell+step:0;
@@ -336,7 +345,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
           entry.poseMode=mode;
           entry.poseTime=mode==='hover'||mode==='swim'?entry.loopTime:glanceMotion?entry.airTime:1;
         }else if(!floating&&entry.poseMode!=='land')entry.poseTime=entry.loopTime;
-        const surface=entry.medium==='surface';
+        const surface=underwater&&entry.medium==='surface';
         if(surface){
           // The waterline, measured where this body is.
           water.up.copy(up);
@@ -351,7 +360,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
           water:surface&&!wading?water:null});
       }
       idle();
-      entry.accents?.apply(character,trunkPitch,trunkLead,trunkRoll);
+      entry.accents?.apply(character,trunkPitch+(floating?0:aim*.35),trunkLead,trunkRoll,floating?0:aim*.88);
       entry.glance?.apply(character,entry.head,glanceTarget,dt,1-w*.8);
       const airSwing=entry.airRig?0:w,hoverSwing=entry.airRig?0:entry.hoverWeight;
       if(entry.airRig&&entry.crouchRig)continue;

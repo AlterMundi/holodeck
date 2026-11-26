@@ -12,6 +12,9 @@ import {TOROIDAL_TERRAIN} from './toroidal-terrain.mjs';
 import {TOROIDAL_SUN,ToroidalTerrainRenderer,toroidalSunDirection} from './toroidal-terrain-renderer.mjs';
 import {bindToroidalMml} from './toroidal-mml.mjs';
 import {FlightWake} from './flight-wake.mjs';
+import {WaterSplash} from './water-splash.mjs';
+import {exteriorSample} from './avatar-medium.mjs';
+import {WaterWake} from './water-wake.mjs';
 import {bindFlightAvatarAnimation} from './flight-avatar-animation.mjs';
 import {LoadingProgressManager,RemoteDocumentWrapper} from '@mml-io/mml-web';
 import {RoomSceneCache,roomArtURL} from './room-scene-cache.mjs';
@@ -404,14 +407,13 @@ document.addEventListener('focusin',event=>{
 function doubleSpace(event){
   if(event.code!=='Space'||event.repeat||event.altKey||event.ctrlKey||event.metaKey||
      !outsideRing()||entering||moving||
-     (!flightEnabled&&(radialMovementMode==='swim'||radialMovementMode==='surface'))||
      document.querySelector('dialog[open]')||event.target?.closest?.('#conversation-panel,button,input,select,summary,textarea,[contenteditable]'))return;
   const now=performance.now();
   if(previousSpacePress!==null&&now-previousSpacePress<340){
     flightEnabled=!flightEnabled;
     previousSpacePress=null;
     const flightNotice=touchControls.native?'Vuelo activo':'Vuelo activo · Espacio sube, Alt baja y Shift acelera.';
-    say(flightEnabled?flightNotice:'Volvés a caminar.',{transient:true});
+    say(flightEnabled?flightNotice:'Vuelo desactivado.',{transient:true});
   }else previousSpacePress=now;
 }
 
@@ -805,6 +807,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     // current PCF enum for comparison sampling and per-light shadow radii.
     renderer.composer.renderer.shadowMap.type=PCFShadowMap;
     const releaseOrbit=bindWorldOrbitInput(options.coreCameraManager,renderer.composer.renderer.domElement,()=>mouseSensitivity);
+    const aiming=()=>releaseOrbit.aiming()&&!entering&&!moving&&!tableFlight.active&&!document.hidden;
     const mapPanel=document.querySelector('#space-travel');
     const minimap=bindToroidalMinimap(mapPanel);
     const frameBudget=createFrameBudget(renderer);
@@ -952,7 +955,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     interiorKey.shadow.normalBias=.02;
     renderer.mmlCompositionScene.group.add(light,light.target,interiorKey,interiorKey.target);
     const houseLight=bindToroidalHouseLight(renderer.composer,renderer.mmlCompositionScene.group,document);
-    let selectedKey=null,inspectionRoom=null,inspectionMix=0,inspectionFrame=performance.now();
+    let selectedKey=null,inspectionRoom=null,inspectionMix=0;
+    let previousPresentationFrame=performance.now();
     const roomKeyColor=new Color(),inspectionKeyColor=new Color();
     const roomKeyPosition=new Vector3(),inspectionKeyPosition=new Vector3();
     const roomKeyTarget=new Vector3(),inspectionKeyTarget=new Vector3();
@@ -961,6 +965,10 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     nativeAvatarLayer=new NativeAvatarLayer({document,base,onFailure:message=>say(message)});
     const companion=new CompanionAvatar({scene:renderer.mmlCompositionScene.group,document,base});
     const flightWake=new FlightWake(renderer.mmlCompositionScene.group);
+    const waterSplash=new WaterSplash(renderer.mmlCompositionScene.group,{lightweight:()=>rendererBudget.lightweight});
+    const waterWake=new WaterWake(renderer.mmlCompositionScene.group,{
+      lightweight:()=>rendererBudget.lightweight,pixelRatio:()=>renderer.composer.renderer.getPixelRatio(),
+    });
     companionAvatar=companion;
     worldPicker=new PublicWorldPicker({document,canvas:options.targetElement.querySelector(':scope > canvas'),scene:renderer.mmlCompositionScene.group,
       cameraState:()=>options.coreCameraManager.getCameraState(),proof:()=>geometryProbe?.snapshot(),
@@ -1076,6 +1084,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const releaseFlightAnimation=bindFlightAvatarAnimation(renderer.characterManager,()=>({
       outdoor:outsideRing(),flying:flightEnabled,boosting:localFlightBoost(),grounded:client.getCharacterManager().localController?.characterOnGround,table:tableFlight.active,tabletopPlayers:tabletopPlayers(),
       peerPoses:poses.peers,peerGaze:points.gazes,gaze:tableGaze,wake:!entering&&!moving&&drawWorld?flightWake:null,glanceMotion:!companion.motion.matches&&!document.hidden,
+      aimPitch:aiming()?Math.PI/2-options.coreCameraManager.phi:null,
+      splash:!entering&&!moving&&drawWorld&&!document.hidden?waterSplash:null,
+      waterWake:!entering&&!moving&&drawWorld&&!document.hidden?waterWake:null,
       microphoneLevel:sharedConversation&&!moving&&!entering&&sharedSurface()?sharedConversation.microphoneLevel():null,
       crouch:!moving&&client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt'),
     }),{clock:()=>performance.now()});
@@ -1117,6 +1128,11 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     outdoorArrivalReady=()=>outsideRing()?ring?.group.children.length>0:Boolean(geometryProbe?.snapshot());
     outdoorReady=()=>outdoorArrivalReady()&&(!outsideRing()||houseProjected());
     renderer.render=renderState=>{
+      const presentationNow=performance.now(),presentationElapsed=presentationNow-previousPresentationFrame;
+      previousPresentationFrame=presentationNow;
+      // MML reports one fixed step even when several simulation steps
+      // advanced the player between two rendered frames.
+      const presentationSeconds=Math.min(.1,presentationElapsed/1000);
       const character=client.getLocalCharacterState(),position=character?.position;
       if(position&&!moving&&activeSpace.avatarPosePresence){
         const low=!entering&&!tableFlight.active&&client.getCharacterManager().localController?.characterOnGround&&
@@ -1184,8 +1200,6 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       light.visible=!inside||!activeSpace.indoorLighting;
       aimSun(position);
       houseLight.update(outsideRing()?solar:null);
-      const inspectionNow=performance.now(),inspectionElapsed=inspectionNow-inspectionFrame;
-      inspectionFrame=inspectionNow;
       const key=inside&&activeSpace.keyLight||null;
       const keyRoom=key?activeSpace.id:null;
       if(keyRoom!==inspectionRoom||!key?.inspection)inspectionMix=0;
@@ -1209,8 +1223,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         tableFlight.active&&collectionShelves.worktable.model);
       if(key){
         const targetMix=key.inspection&&tableInspection?1:0;
-        // MML provides a fixed simulation step here, even when frames are dropped.
-        inspectionMix=targetMix+(inspectionMix-targetMix)*Math.exp(-.007*inspectionElapsed);
+        inspectionMix=targetMix+(inspectionMix-targetMix)*Math.exp(-.007*presentationElapsed);
         interiorKey.position.copy(roomKeyPosition);
         interiorKey.target.position.copy(roomKeyTarget);
         interiorKey.color.copy(roomKeyColor);
@@ -1261,13 +1274,18 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         colliders:options.coreCameraManager.collisionsManager,
         crouch:!flightEnabled&&!tableFlight.active&&client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt'),
         explicitFlight:flightEnabled,grounded:!flightEnabled&&client.getCharacterManager().localController?.characterOnGround===true,
-        visible:!entering&&!moving&&drawWorld,seconds:renderState.deltaTimeSeconds});
+        visible:!entering&&!moving&&drawWorld,seconds:presentationSeconds});
       const wakesVisible=outsideRing()&&!entering&&!moving&&drawWorld&&!document.hidden&&!companion.motion.matches;
       if(wakesVisible&&companion.object){
         const robot=companion.object;
-        flightWake.observe('companion',robot.position,robot.up,mode==='flight',renderState.deltaTimeSeconds);
+        const {feet,ground,waterLevel}=exteriorSample(robot.position);
+        flightWake.observe('companion',robot.position,robot.up,
+          mode==='flight'&&(ground>=waterLevel||feet>waterLevel),presentationSeconds);
       }
       flightWake.update(wakesVisible);
+      const waterEffectsVisible=outsideRing()&&!entering&&!moving&&drawWorld&&!document.hidden;
+      waterSplash.update(waterEffectsVisible);
+      waterWake.update(waterEffectsVisible&&!companion.motion.matches);
       galleryModels.update();
       collectionShelves.update(collectionRoom,collectionRoom?remoteScene:null,position,
         collectionRoom?activeSpace.objects.find(object=>object.id==='worktable')?.position:null,
@@ -1369,7 +1387,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
       }
     };
-    renderer.dispose=()=>{poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();worldFocus.abort();tableAttention.dispose();pointRequest?.controller.abort();document.removeEventListener('visibilitychange',abortHiddenPoint);points.dispose();if(pointView===points)pointView=null;display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();actionLabel.dispose();flightWake.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();houseLight.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();worldFocus.abort();tableAttention.dispose();pointRequest?.controller.abort();document.removeEventListener('visibilitychange',abortHiddenPoint);points.dispose();if(pointView===points)pointView=null;display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();actionLabel.dispose();flightWake.dispose();waterSplash.dispose();waterWake.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();houseLight.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
       if(client.keyInputManager){
         const keys=client.keyInputManager,shouldCapture=keys.shouldCaptureKeyPress;
@@ -1380,10 +1398,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       }
       releaseHeadroom=bindInteriorHeadroom(client.getCharacterManager(),()=>inside);
       releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing,
-        ()=>flightEnabled,firstExteriorDoor,mode=>{
-          if(mode!==radialMovementMode)resetFlightTap();
-          radialMovementMode=mode;
-        });
+        ()=>flightEnabled,firstExteriorDoor,mode=>{radialMovementMode=mode;},aiming);
       firstExteriorDoor=null;
       releaseTableFlight=bindMatterFlight(client.getCharacterManager(),options.coreCameraManager,tableFlight,tableInputAllowed,()=>matterHud.leave());
       options.onInitialized();

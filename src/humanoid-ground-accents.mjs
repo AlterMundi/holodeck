@@ -20,14 +20,14 @@ export function bindHumanoidGroundAccents(mesh){
     }
   }
   return {
-    apply(character,pitch,yaw,roll){
-      if(applied||Math.abs(pitch)+Math.abs(yaw)+Math.abs(roll)<.002)return;
+    apply(character,pitch,yaw,roll,headPitch=0){
+      if(applied||Math.abs(pitch)+Math.abs(yaw)+Math.abs(roll)+Math.abs(headPitch)<.002)return;
       joints.forEach((joint,index)=>neutral[index].copy(joint.quaternion));
       character.getWorldQuaternion(body);
       inverse.copy(body).invert();
       bend(trunk,pitch,yaw*.6,roll);
       // Keep the eyes on the line of travel while the chest works.
-      bend(neck,-pitch*.65,yaw*.4,-roll*.6);
+      bend(neck,headPitch-pitch*.65,yaw*.4,-roll*.6);
       applied=true;
     },
     restore(){

@@ -2073,6 +2073,54 @@ pose, the companion has no distinct water locomotion state, and the
 desktop key prompt still advertises crouch and jump.
 
 
+## Companion cadence under dropped frames
+
+The pinned MML client advances the player through as many fixed 60 Hz
+simulation steps as fit before a draw. Its render callback still reports one
+fixed step. Passing that duration to the companion caused it to fall behind
+at low display rates until the distance recovery relocated it. On one
+controlled straight walk at 20 fps it relocated twice and fell 14.76 m
+behind. With elapsed presentation time the same route had no relocations
+and stayed within 1.36 m. The client now times the follower and its wake
+from the monotonic render clock, capped to the pinned MML advance limit.
+
+The Node 24 source suite passed 449 tests with two optional skips and the
+client build passed. Playwright drove the rebuilt lightweight toroidal
+fixture through a 53 m walk in local Chromium software WebGL. It recorded
+152 frames at 13.76 fps, no jumps over 1.5 m, a maximum follow distance of
+1.36 m and no page errors. Opus 5.5 High reviewed the actual change. Its wake
+timing correction was applied and included in the browser build. This
+qualifies the timing defect in a controlled fixture. Joint-level jitter,
+physical Normal/Livianos and two independently authenticated visitors
+remain open in [#21](https://github.com/AlterMundi/holodeck/issues/21).
+
+## Camera-facing aim and flight through water
+
+A held right mouse button now drives the avatar's heading from the same
+orbit angle as forward input. The local torso and gaze follow vertical
+aim on foot, while flight aim is composed with its authored posture.
+Left drag controls the orbit alone. The radial capsule and collision
+solver keep their original basis. The native presence yaw is shared;
+vertical aim is local presentation.
+
+Double Space can enter or leave flight at the surface and beneath it.
+The fixed-step simulation keeps the current depth, permits normal and
+boost flight through water, and uses the actual bed as its lower limit.
+Returning to swimming retains depth. The waterline emits one radial
+burst per continuous crossing at speed. A separate blue stream tracks
+flight through or close above the surface. The emission fades for 1.6 s
+from the last contact and individual drops expire in .72 s. A later pass
+reactivates the effect. Livianos has fewer and smaller droplets.
+
+Controlled Chromium on RTX 2060 and Raspberry Pi 5 exercised left orbit,
+standing right aim, submerged launch, both water crossings, drying and
+reactivation. Those were local fixtures. The continuous wet-runoff
+transition also passed in Chromium SwiftShader. The staged candidate is
+pending composition with the currently selected Character Studio
+package and exact note/presentation compatibility verification. See
+[motion #21](https://github.com/AlterMundi/holodeck/issues/21) and
+[Character Studio #24](https://github.com/AlterMundi/holodeck/issues/24).
+
 ## Underwater controls and companion posture
 
 The toroidal motion adapter reports the same local swimming and deep
