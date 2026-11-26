@@ -51,39 +51,6 @@ function element(document,tag,attributes){
   return node;
 }
 
-function compactPlate(plaque,lines,deckMounted,createPlaqueBlob){
-  const document=plaque.ownerDocument;
-  const urlApi=document.defaultView?.URL;
-  if(!urlApi?.createObjectURL||!plaque.isConnected)return;
-  let blob;
-  try{blob=createPlaqueBlob(document,lines,deckMounted);}catch{return;}
-  if(!blob)return;
-  const url=urlApi.createObjectURL(blob);
-  const model=element(document,'m-model',{collide:false,'data-compact-plaque':''});
-  plaque.append(model);
-  const container=model.getContainer?.();
-  if(!container){
-    model.remove();
-    urlApi.revokeObjectURL(url);
-    return;
-  }
-  // Keep the mounted MML fallback until the exact same local plate is ready.
-  container.visible=false;
-  model.setAttribute('src',url);
-  const finishBy=performance.now()+4000;
-  function settle(){
-    if(model.isConnected&&model.modelGraphics?.hasLoadedModel()){
-      for(const child of [...plaque.children])if(child!==model)child.remove();
-      container.visible=true;
-      urlApi.revokeObjectURL(url);
-    }else if(!model.isConnected||performance.now()>=finishBy){
-      model.remove();
-      urlApi.revokeObjectURL(url);
-    }else setTimeout(settle,40);
-  }
-  settle();
-}
-
 function addPlate(signs,entry,measure,authoredDecks,genericDeckTop){
   const document=signs.ownerDocument;
   const {title,position}=GALLERY_STAGES[entry.id];
@@ -125,10 +92,9 @@ function addPlate(signs,entry,measure,authoredDecks,genericDeckTop){
   }
   plaque.append(face);
   signs.append(plaque);
-  return {plaque,lines,deckMounted};
 }
 
-export function applyGallerySigns(scene,entries,createPlaqueBlob){
+export function applyGallerySigns(scene,entries){
   if(!scene)return;
   const authorized=entries.filter(entry=>entry.galleryDisplay===true&&Object.hasOwn(GALLERY_STAGES,entry.id));
   const prior=scene.querySelector('#gallery-stage-signs');
@@ -146,9 +112,8 @@ export function applyGallerySigns(scene,entries,createPlaqueBlob){
     document.createElement('canvas').getContext('2d'):null;
   const signs=element(document,'m-group',{id:'gallery-stage-signs','data-stages':''});
   renderedCatalogs.set(signs,signature);
-  const plates=authorized.map(entry=>addPlate(signs,entry,measure,authoredDecks,genericDeckTop));
+  for(const entry of authorized)addPlate(signs,entry,measure,authoredDecks,genericDeckTop);
   scene.append(signs);
-  if(createPlaqueBlob)for(const {plaque,lines,deckMounted} of plates)compactPlate(plaque,lines,deckMounted,createPlaqueBlob);
 }
 
 export function renderedGalleryPlaque(scene,id){
