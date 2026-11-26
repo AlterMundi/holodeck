@@ -1,11 +1,14 @@
-import {openCharacterStudio} from './character-studio.mjs';
+import {characterReviewCamera} from './character-review-camera.mjs';
+import {characterControlRole,openCharacterStudio} from './character-studio.mjs';
 
 const previewHeight=.58;
 
 export class CharacterWorktable {
+  reviewScale=previewHeight/characterReviewCamera.rigHeight;
   constructor({document,scene,setAngle}){
     Object.assign(this,{document,scene,setAngle,available:false,anchor:null});
-    this.firstControl='Pose';
+    this.firstControl='play';
+    this.controlRole=characterControlRole;
   }
 
   update(player,anchor){
@@ -22,7 +25,7 @@ export class CharacterWorktable {
     if(!this.anchor)return null;
     const origin=this.previewOrigin;
     // Leave the top of the figure clear of the compact HUD.
-    return {...origin,y:origin.y+previewHeight*2/3};
+    return {...origin,y:origin.y+characterReviewCamera.targetHeight*this.reviewScale};
   }
 
   start({send,close,ownsTextInput}){
@@ -35,7 +38,7 @@ export class CharacterWorktable {
     this.viewer=null;
   }
 
-  setShortLayout(short){this.viewer?.setShortTableLayout(short);}
+  setLayout(width,height,short){return this.viewer?.setTableLayout(width,height,short);}
   currentPose(){return this.viewer?.currentPose()??null;}
   action(requested){this.viewer?.dispatch(requested);}
   render(now){this.viewer?.render(now);}

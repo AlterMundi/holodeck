@@ -28,12 +28,13 @@ async function moveVisitor(page,from,to){
 async function main(){
   process.env.HOLODECK_JSDOM_HELPERS=join(stage,'runtime/jsdom/lib/jsdom/living/helpers');
   process.env.HOLODECK_XHR_WORKER=join(stage,'src/xhr-sync-worker.mjs');
-  const [{createHolodeck},{RoomStore},{COMPAII_HOUSE:house},{COMPAII_BEING:owner},{createConversationContexts}]=await Promise.all([
+  const [{createHolodeck},{RoomStore},{COMPAII_HOUSE:house},{COMPAII_BEING:owner},{createConversationContexts},{humanMotionStudies}]=await Promise.all([
     import(pathToFileURL(join(stage,'src/server.mjs'))),
     import('../src/room-store.mjs'),
     import('../src/interior-art.mjs'),
     import('../src/avatar-registry.mjs'),
     import('../src/conversation-context.mjs'),
+    import('../src/human-motion-study.mjs'),
   ]);
   let roomGrant=true,writeGrant=true,admitted=false;
   const execution={status:'running',instruction:randomUUID(),local_turn:1};
@@ -113,7 +114,7 @@ async function main(){
     await context.addCookies([{name:'fixture',value:'reviewer',url}]);
     context.setDefaultTimeout(30000);
     const page=await context.newPage(),errors=[];
-    page.on('pageerror',error=>errors.push(error.message));
+    page.on('pageerror',error=>errors.push(error.stack??error.message));
     await page.route(conversationURL+'*',route=>route.fulfill({contentType:'text/html',body:`
       <button disabled>Preparar contexto</button><output></output>
       <script>
@@ -165,9 +166,89 @@ async function main(){
         await table.getByRole('button',{name:'Reintentar personaje',exact:true}).press('Enter');
         await table.getByRole('button',{name:'Reintentar personaje',exact:true}).waitFor({state:'detached'});
       }
-      await table.getByRole('button',{name:'Pose',exact:true}).waitFor({state:'attached'});
+      try{await table.getByRole('button',{name:'Reproducir',exact:true}).waitFor({state:'attached'});}
+      catch(error){
+        console.error('Character table controls',await clientPage.getByRole('button').allTextContents(),errors);
+        throw error;
+      }
       return table;
     };
+
+    if(process.env.HOLODECK_REVIEW_PARITY_ONLY==='1'){
+      assert.equal(await moveVisitor(page,'outside',foyer),200);
+      assert.equal(await moveVisitor(page,foyer,studio),200);
+      await page.setViewportSize({width:1480,height:928});
+      await page.goto(url,{waitUntil:'domcontentloaded'});
+      await worldReady();
+      const table=await openWorktable(await currentSpace());
+      const viewer=await context.newPage();
+      await viewer.setViewportSize({width:1480,height:928});
+      await viewer.goto(url+'?taller=personajes',{waitUntil:'domcontentloaded'});
+      const web=viewer.getByRole('group',{name:'Revisión de movimiento',exact:true});
+      const control=(panel,name)=>panel.getByRole('button',{name,exact:true});
+      for(const panel of [web,table]){
+        for(const name of ['Reproducir','Navegante','Humanoide','1×','2×','Bucle','Perfil','Ver pose del Taller'])
+          await control(panel,name).waitFor({state:'attached'});
+        assert.equal(await panel.getByRole('combobox',{name:'Personaje',exact:true}).count(),0);
+        assert.equal(await panel.getByRole('combobox',{name:'Velocidad',exact:true}).count(),0);
+        assert.equal(await control(panel,'Pose').count(),0);
+        await control(panel,'Humanoide').press('Enter');
+        await panel.getByRole('button',{name:'Despegue, giro y aterrizaje',exact:true,pressed:true})
+          .waitFor({state:'attached'});
+        await control(panel,'2×').press('Enter');
+        assert.equal(await control(panel,'2×').getAttribute('aria-pressed'),'true');
+        await control(panel,'Reproducir').press('Enter');
+        await control(panel,'Pausar').waitFor({state:'attached'});
+        await control(panel,'Pausar').press('Enter');
+      }
+      await viewer.screenshot({path:join(evidence,'wide-web.png')});
+      await page.bringToFront();
+      await page.screenshot({path:join(evidence,'wide-table.png')});
+      const camera=()=>page.evaluate(()=>{
+        const {client}=holodeckDevelopment;
+        const p=client.getCharacterManager().localController.config.position;
+        const s=client.getCameraManager().getCameraState();
+        return {body:[p.x,p.y,p.z],eye:[s.position.x,s.position.y,s.position.z],fov:s.fov};
+      });
+      const before=await camera();
+      assert.equal(before.fov,36);
+      const canvas=page.locator('.world-interaction-canvas');
+      await canvas.evaluate(element=>{element.tabIndex=-1;element.focus();});
+      await page.keyboard.down('w');
+      try{
+        await page.waitForFunction(({body,eye})=>{
+          const {client}=holodeckDevelopment,p=client.getCharacterManager().localController.config.position;
+          const c=client.getCameraManager().getCameraState().position;
+          return Math.hypot(p.x-body[0],p.y-body[1],p.z-body[2])>.08&&
+            Math.hypot(c.x-eye[0],c.y-eye[1],c.z-eye[2])>.06;
+        },before,{timeout:10000});
+      }catch(error){
+        console.error('Table travel',before,await camera(),await page.evaluate(()=>{
+          const {client}=holodeckDevelopment;
+          return {focus:document.hasFocus(),tag:document.activeElement?.tagName,key:client.keyInputManager.isKeyPressed('w')};
+        }));
+        throw error;
+      }finally{await page.keyboard.up('w');}
+      const beforeOrbit=await page.evaluate(()=>holodeckDevelopment.client.getCameraManager().targetTheta);
+      await page.mouse.move(630,450);
+      await page.mouse.down({button:'right'});
+      await page.mouse.move(702,484,{steps:5});
+      await page.mouse.up({button:'right'});
+      await page.waitForFunction(theta=>Math.abs(holodeckDevelopment.client.getCameraManager().targetTheta-theta)>.1,beforeOrbit);
+      const beforeZoom=await page.evaluate(()=>holodeckDevelopment.client.getCameraManager().targetDistance);
+      await page.mouse.wheel(0,-120);
+      await page.waitForFunction(distance=>holodeckDevelopment.client.getCameraManager().targetDistance<distance,beforeZoom);
+      await viewer.close();
+      await page.setViewportSize({width:550,height:490});
+      await control(table,'Notas').waitFor({state:'attached'});
+      await control(table,'Notas').press('Enter');
+      await control(table,'Reproducir').waitFor({state:'attached'});
+      assert.equal(await table.getByRole('combobox',{name:'Personaje',exact:true}).count(),0);
+      assert.deepEqual(errors,[]);
+      console.log(JSON.stringify({wideToolsMatch:true,inlineOptionsMatch:true,inlineCycleWorks:true,
+        playbackInBoth:true,miniatureTranslationCarriesCamera:true,orbitAndZoom:true,playInCompactNotes:true}));
+      return;
+    }
 
     assert.deepEqual(await native('character-review.current'),{status:403});
     for(const [from,to] of [['outside',foyer],[foyer,studio]]){
@@ -237,14 +318,40 @@ async function main(){
     assert.equal(roomView.id,studio);
     const table=await openWorktable(roomView);
     const tableButton=name=>table.getByRole('button',{name,exact:true});
-    await tableButton('Notas').press('Enter');
+    const openSection=async(button,name)=>{
+      const tab=button(name);
+      if(await tab.count())await tab.press('Enter');
+    };
+    const chapterNames=Object.fromEntries(Object.values(humanMotionStudies)
+      .flatMap(study=>study.chapters??[]).map(({id,label})=>[id,label]));
+    const optionName=(name,value)=>name==='Fase'?chapterNames[value]:humanMotionStudies[value]?.label;
+    const choose=async(panel,name,value)=>{
+      const menu=panel.getByRole('combobox',{name,exact:true});
+      if(await menu.count())await menu.selectOption(value,{force:true});
+      else await panel.getByRole('button',{name:optionName(name,value),exact:true}).press('Enter');
+    };
+    const currentClip=async value=>{
+      const menu=table.getByRole('combobox',{name:'Ciclo',exact:true});
+      if(await menu.count()){
+        await page.waitForFunction(value=>document.querySelector('select[aria-label="Ciclo"]')?.value===value,value);
+      }else{
+        await table.getByRole('button',{name:optionName('Ciclo',value),exact:true,pressed:true}).waitFor({state:'attached'});
+      }
+    };
+    await tableButton('Humanoide').waitFor({state:'attached'});
+    assert.equal(await table.getByRole('combobox',{name:'Personaje',exact:true}).count(),0);
+    assert.equal(await tableButton('Pose').count(),0);
+    for(const name of ['Reproducir','Bucle','Perfil','Ver pose del Taller','Ver B'])
+      await tableButton(name).waitFor({state:'attached'});
+
+    await openSection(tableButton,'Notas');
     await tableButton('Ver pose del Taller').press('Enter');
-    await tableButton('Pose').press('Enter');
+    await openSection(tableButton,'Pose');
     const frame=(expected,clientPage=page)=>clientPage.waitForFunction(value=>document.querySelector('input[aria-label="Fotograma"]')?.valueAsNumber===value,expected,{polling:100});
     await frame(pose.frame);
     const followedStatus=table.getByText('Pose recibida de '+committed.presentation.author+'.',{exact:true});
     await followedStatus.waitFor({state:'attached'});
-    const chooseTable=(name,value)=>table.getByRole('combobox',{name,exact:true}).selectOption(value,{force:true});
+    const chooseTable=(name,value)=>choose(table,name,value);
     const checkPhases=async (clip,expected,images)=>{
       const observed={};
       for(const [phase,expectedFrame] of Object.entries(expected)){
@@ -256,33 +363,33 @@ async function main(){
       return observed;
     };
     const flightChapters=await checkPhases('flight',{ground:0,lift:22,hover:36,turn:65,land:110},['lift','land']);
-    await tableButton('Clips').press('Enter');
+    await openSection(tableButton,'Clips');
     await chooseTable('Ciclo','estudio-aceleracion');
-    await page.waitForFunction(()=>document.querySelector('select[aria-label="Ciclo"]')?.value==='estudio-aceleracion');
-    await tableButton('Pose').press('Enter');
+    await currentClip('estudio-aceleracion');
+    await openSection(tableButton,'Pose');
     const boostChapters=await checkPhases('boost',
       {cruise:44,boost:67,fast:80,turn:87,release:105,float:134,land:167},['fast','float']);
-    await tableButton('Clips').press('Enter');
+    await openSection(tableButton,'Clips');
     await chooseTable('Ciclo','estudio-marcha');
-    await page.waitForFunction(()=>document.querySelector('select[aria-label="Ciclo"]')?.value==='estudio-marcha');
-    await tableButton('Pose').press('Enter');
+    await currentClip('estudio-marcha');
+    await openSection(tableButton,'Pose');
     const groundChapters=await checkPhases('ground',{ground:0,walk:17,brake:57,settled:63},['brake']);
 
     // Both clips use one comparison clock. Sharing the shorter clip pins its actual displayed hold.
-    await tableButton('Comparar').press('Enter');
+    await openSection(tableButton,'Comparar');
     await chooseTable('Clip B','estudio-vuelo');
     await tableButton('Ver B').and(page.locator(':enabled')).waitFor({state:'attached'});
     await tableButton('Ver B').press('Enter');
-    await tableButton('Pose').press('Enter');
+    await openSection(tableButton,'Pose');
     await chooseTable('Fase','land');
     await frame(110);
-    await tableButton('Comparar').press('Enter');
+    await openSection(tableButton,'Comparar');
     await tableButton('Ver A').press('Enter');
-    await tableButton('Pose').press('Enter');
+    await openSection(tableButton,'Pose');
     await frame(110);
     await table.getByText('Último fotograma de A · 96',{exact:true}).waitFor({state:'attached'});
     await page.screenshot({path:join(evidence,'character-comparison-held-ground.png')});
-    await tableButton('Notas').press('Enter');
+    await openSection(tableButton,'Notas');
     const heldResponse=page.waitForResponse(response=>response.request().method()==='POST'&&
       new URL(response.url()).pathname.endsWith('/character-presentation'));
     await tableButton('Mostrar pose').press('Enter');
@@ -307,7 +414,7 @@ async function main(){
 
     await tableButton('Ver pose del Taller').and(page.locator(':enabled')).waitFor({state:'attached'});
     await tableButton('Ver pose del Taller').press('Enter');
-    await tableButton('Pose').press('Enter');
+    await openSection(tableButton,'Pose');
     await frame(pose.frame);
     await followedStatus.waitFor({state:'attached'});
     await tableButton('+1').press('Enter');
@@ -331,7 +438,7 @@ async function main(){
     assert.equal(peerSpace.id,studio);
     const peerTable=await openWorktable(peerSpace,peerPage,-.65);
     const peerButton=name=>peerTable.getByRole('button',{name,exact:true});
-    await peerButton('Notas').press('Enter');
+    await openSection(peerButton,'Notas');
     const presentationRoute='**/api/space/character-presentation';
     let releasePresentation;
     const presentationGate=new Promise(resolve=>{releasePresentation=resolve;});
@@ -346,9 +453,9 @@ async function main(){
     }finally{
       releasePresentation();
     }
-    await peerButton('Pose').press('Enter');
+    await openSection(peerButton,'Pose');
     await frame(pose.frame,peerPage);
-    await peerButton('Notas').press('Enter');
+    await openSection(peerButton,'Notas');
     const peerNotesResponse=peerPage.waitForResponse(response=>
       new URL(response.url()).pathname.endsWith('/character-pose-review'));
     assert.equal(await reviewButton.isEnabled(),true);
@@ -359,7 +466,7 @@ async function main(){
     assert.deepEqual((await peerNotes.json()).notes.map(({author,text})=>[author,text]),[['Visitante',note]]);
     const peerNote=peerTable.getByRole('combobox',{name:'Notas de esta pose',exact:true});
     await peerNote.locator('option').filter({hasText:'Visitante · '+note}).waitFor({state:'attached'});
-    await peerButton('Pose').press('Enter');
+    await openSection(peerButton,'Pose');
     await frame(pose.frame,peerPage);
     await frame(pose.frame+1);
     await peerButton('−1').press('Enter');
@@ -380,26 +487,25 @@ async function main(){
     const peerOrbit=await cameraAngles(peerPage);
     assert.ok(Math.abs(peerOrbit[0]-peerCamera[0])>.08);
     assert.deepEqual(await cameraAngles(page),firstCamera);
-    await peerButton('Vista').press('Enter');
+    await openSection(peerButton,'Vista');
     await peerButton('Perfil').press('Enter');
     await peerPage.waitForFunction(()=>{
       const camera=holodeckDevelopment.client.getCameraManager();
       return Math.abs(Math.sin(camera.targetTheta/2))<1e-6;
     });
     assert.deepEqual(await cameraAngles(page),firstCamera);
-    await peerButton('Pose').press('Enter');
+    await openSection(peerButton,'Pose');
     await frame(pose.frame-1,peerPage);
     await frame(pose.frame+1);
 
-    await peerButton('Clips').press('Enter');
-    const speed=peerTable.getByRole('combobox',{name:'Velocidad',exact:true});
-    await speed.selectOption('2',{force:true});
-    assert.equal(await speed.inputValue(),'2');
+    await openSection(peerButton,'Clips');
+    await peerButton('2×').press('Enter');
+    assert.equal(await peerButton('2×').getAttribute('aria-pressed'),'true');
     const loop=peerButton('Bucle');
     assert.equal(await loop.getAttribute('aria-pressed'),'true');
     await loop.press('Enter');
     assert.equal(await loop.getAttribute('aria-pressed'),'false');
-    await peerButton('Pose').press('Enter');
+    await openSection(peerButton,'Pose');
     const slider=peerTable.getByRole('slider',{name:'Fotograma',exact:true});
     const lastFrame=Number(await slider.getAttribute('max'));
     assert.equal(lastFrame,current.catalog.humanoid[pose.clip].maxFrame);
@@ -415,18 +521,18 @@ async function main(){
     await peerButton('Reproducir').waitFor({state:'attached'});
     await frame(pose.frame+1);
 
-    await peerButton('Clips').press('Enter');
+    await openSection(peerButton,'Clips');
     await loop.press('Enter');
     assert.equal(await loop.getAttribute('aria-pressed'),'true');
-    await peerButton('Pose').press('Enter');
+    await openSection(peerButton,'Pose');
     await seekNearEnd();
     await peerButton('Reproducir').press('Enter');
     await peerPage.waitForFunction(()=>document.querySelector('input[aria-label="Fotograma"]')?.valueAsNumber<120&&
       document.querySelector('button[aria-label="Pausar"]'));
     await peerButton('Pausar').press('Enter');
-    await peerButton('Notas').press('Enter');
+    await openSection(peerButton,'Notas');
     await peerButton('Ver pose del Taller').press('Enter');
-    await peerButton('Pose').press('Enter');
+    await openSection(peerButton,'Pose');
     await frame(pose.frame,peerPage);
     await peerButton('−1').press('Enter');
     await frame(pose.frame-1,peerPage);
@@ -442,16 +548,19 @@ async function main(){
     });
     const shortTable=await peerPage.evaluate(()=>holodeckDevelopment.hudWindow('matter-worktable').rect);
     assert.ok(shortTable.left>=0&&shortTable.right<=568&&shortTable.top>=0&&shortTable.bottom<=320);
+    await peerButton('Notas').waitFor({state:'attached'});
+    await openSection(peerButton,'Notas');
+    await peerButton('Reproducir').waitFor({state:'attached'});
     await frame(pose.frame-1,peerPage);
-    await peerButton('Notas').press('Enter');
+    await openSection(peerButton,'Notas');
     await peerButton('Ver pose del Taller').press('Enter');
-    await peerButton('Pose').press('Enter');
+    await openSection(peerButton,'Pose');
     await frame(pose.frame,peerPage);
-    await peerButton('Notas').press('Enter');
+    await openSection(peerButton,'Notas');
     if(await reviewButton.count())await reviewButton.press('Enter');
     await peerNote.locator('option').filter({hasText:'Visitante · '+note}).waitFor({state:'attached'});
     await peerPage.screenshot({path:join(evidence,'character-peer-landscape-note.png')});
-    await peerButton('Pose').press('Enter');
+    await openSection(peerButton,'Pose');
     await peerButton('−1').press('Enter');
     await frame(pose.frame-1,peerPage);
     await frame(pose.frame+1);

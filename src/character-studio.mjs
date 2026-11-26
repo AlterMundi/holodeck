@@ -1,3 +1,4 @@
+import {characterReviewCamera} from './character-review-camera.mjs';
 import {
   ACESFilmicToneMapping,AnimationMixer,Box3,Color,CylinderGeometry,DirectionalLight,
   Fog,GridHelper,Group,HemisphereLight,LoopOnce,Mesh,MeshBasicMaterial,MeshStandardMaterial,OrthographicCamera,PlaneGeometry,
@@ -24,6 +25,8 @@ const surfaceId='character-studio';
 const noteLabel='Nota para este fotograma';
 const speedOptions=[{id:'0.25',label:'¼×'},{id:'0.5',label:'½×'},{id:'1',label:'1×'},{id:'2',label:'2×'}];
 const transport=new Set(['back','play','forward','loop','compare']);
+export const characterControlRole=(_,id)=>id==='play'?'primary':transport.has(id)?'navigation':'utility';
+const compactReview=(width,height)=>width<720||height<570;
 const choices=items=>Object.entries(items).map(([id,label])=>({id,label}));
 const path=key=>({'@path':'/'+key});
 const action=(name,key)=>({event:{name,...(key?{context:{value:path('draft/'+key)}}:{})}});
@@ -44,10 +47,27 @@ const sectionControls={
 const sectionIds=Object.keys(sectionControls);
 const sectionWeights={Pose:.86,Clips:.93,Comparar:1.65,Vista:.90,Notas:1.10};
 const widePanelWidth=2.60;
+const inlineFields={rig:['Personaje',2],speed:['Velocidad',4],clip:['Ciclo',2],chapter:['Fase',2],reference:['Clip B',2]};
+const maxInlineOptions=8;
+const inlineIds=field=>Array.from({length:maxInlineOptions},(_,index)=>field+'Option'+index);
+function inlineControls(field,title,columns){
+  const ids=inlineIds(field);
+  const rows=Array.from({length:Math.ceil(ids.length/columns)},(_,index)=>({...row(field+'Row'+index,
+    ids.slice(index*columns,(index+1)*columns)),visible:path('inline/'+field+'/items/'+(index*columns)+'/visible')}));
+  return [
+    {id:field+'Inline',component:'HudColumn',visible:path('inline/'+field+'/visible'),children:[field+'Caption',...rows.map(entry=>entry.id)]},
+    label(field+'Caption',title,'status'),...rows,
+    ...ids.map((id,index)=>{
+      const key='inline/'+field+'/items/'+index;
+      return {...button(id,path(key+'/label')),visible:path(key+'/visible'),pressed:path(key+'/selected'),
+        action:{event:{name:field,context:{value:path(key+'/id'),...(field==='chapter'?{clipEdition:path('clipEdition')}:{})}}}};
+    }),
+  ];
+}
 const compactControls=new Set(sectionIds.flatMap(id=>sectionControls[id]));
 const controls=[
   {id:'root',component:'HudPanel',label:'Revisión de movimiento',width:widePanelWidth,gap:.025,
-    children:['sections','title','rig','clip','clock','heldPose','chapter','playback','playOptions','comparison','views','presentation','accessStatus','checkReviewAccess','noteTarget','note','archive','reviewNotes','reviewText','status']},
+    children:['sections','title','rig','rigInline','clip','clipInline','clock','heldPose','chapter','chapterInline','playback','speedInline','playOptions','referenceInline','comparison','views','presentation','accessStatus','checkReviewAccess','noteTarget','note','archive','reviewNotes','reviewText','status']},
   {...row('sections',sectionIds),gap:.025,visible:path('compact')},
   ...sectionIds.map(id=>({...button(id,id),pressed:path('selectedSection/'+id),weight:sectionWeights[id]})),
   label('title','Revisión de movimiento','title'),choice('rig','Personaje'),choice('clip','Ciclo'),
@@ -61,10 +81,10 @@ const controls=[
   {...button('back','−1'),icon:'previousFrame'},
   {...button('play',path('playLabel')),icon:path('playIcon'),weight:2},
   {...button('forward','+1'),icon:'nextFrame'},
-  row('playOptions',['speed','loop']),choice('speed','Velocidad'),
+  row('playOptions',['speed','loop']),{...choice('speed','Velocidad'),visible:path('choiceMenus/speed')},
   {...button('loop','Bucle'),icon:'loop',pressed:path('loop')},
   row('comparison',['reference','compare']),
-  {...choice('reference','Clip B'),weight:2},
+  {...choice('reference','Clip B'),visible:path('choiceMenus/reference'),weight:2},
   {...button('compare',path('compareLabel')),icon:'compare',pressed:path('showingReference'),
     disabled:path('noReference')},
   row('views',['front','angle','side']),button('front','Frente'),{...button('angle','Tres cuartos'),weight:1.45},button('side','Perfil'),
@@ -84,6 +104,7 @@ const controls=[
   choice('reviewNotes','Notas de esta pose'),
   {...label('reviewText',path('reviewText')),lines:3},
   {...label('status',path('status'),'status'),lines:2},
+  ...Object.entries(inlineFields).flatMap(([field,[title,columns]])=>inlineControls(field,title,columns)),
 ].map(control=>{
   if(!compactControls.has(control.id)&&!['title','status'].includes(control.id))return control;
   return {...control,visible:path('show/'+control.id)};
@@ -201,7 +222,7 @@ function disposeFigure(figure){
   for(const item of resources)item?.dispose?.();
 }
 
-function normalise(root,heightTarget=1.48){
+function normalise(root,heightTarget=characterReviewCamera.rigHeight){
   root.updateMatrixWorld(true);
   const bounds=new Box3().setFromObject(root,true);
   const centre=bounds.getCenter(new Vector3());
@@ -248,12 +269,13 @@ export function openCharacterStudio(document,table=null){
   waterline.visible=false;
   scene.add(waterline);
   const loader=new ModelLoader(),inputs=new AbortController();
-  const viewAngles={front:0,angle:.62,side:Math.PI/2};
+  const {front,angle,side}=characterReviewCamera;
+  const viewAngles={front,angle,side};
   let view=Object.hasOwn(viewAngles,url.searchParams.get('vista'))?url.searchParams.get('vista'):'angle';
   let figure,playback,rig,clip,frame=0,playing=false,revision='',note='',message='',showedAt=-Infinity;
   let sequence=0,readySequence=-1,elapsed=0,previous=0,visible=true,loop=true,speed='1';
   let loadingInitialRig=false,rigRetryAvailable=false;
-  let compact=Boolean(table),section='Pose',panelWidth=table?2.20:widePanelWidth;
+  let compact=Boolean(table),section='Pose',panelWidth=table?2.20:widePanelWidth,layoutHeight=0;
   let primary=null,reference=null,showingReference=false,referenceRequest=0,followedPose;
   let canReview=null,checkingAccess=false,review=null,selectedNote='',readingReview=false,savingNote=false,pendingNote,draftPose,noteReplaced=false,presentationBusy=false;
   const projected=table?null:webStudioProjection(document,renderer,scene,dispatch,dispose,()=>{
@@ -295,7 +317,7 @@ export function openCharacterStudio(document,table=null){
   const root=controls[0];
   const tableControls=table?[{...root,label:'Mesa de Char Design',width:panelWidth,
     children:['tableHeading',...root.children.filter(id=>id!=='title')]},
-    ...controls.slice(1).map(control=>control.id==='title'?label('title','Char Design','title'):control),
+    ...controls.slice(1).map(control=>control.id==='title'?{...label('title','Revisión de movimiento','title'),weight:1.65}:control),
     row('tableHeading',['title','close']),button('close','Salir de la mesa')]:null;
   const loadingPanel=()=>({...tableControls[0],children:['tableHeading','status','retryRig']});
   if(table){
@@ -533,6 +555,7 @@ export function openCharacterStudio(document,table=null){
     const reviewText=selected?selected.author+' · '+selected.text:'';
     const show=Object.fromEntries([...compactControls].map(id=>[id,!compact||sectionControls[section].includes(id)]));
     show.title=show.status=!compact;
+    show.playback=true;
     if(table)show.status=Boolean(displayStatus);
     show.chapter&&=chapters.length>0;
     show.heldPose&&=frame>exactFrame;
@@ -545,9 +568,26 @@ export function openCharacterStudio(document,table=null){
     show.reviewNotes&&=notes.length>0;
     show.reviewText&&=notes.length>0;
     const selectedSection=Object.fromEntries(sectionIds.map(id=>[id,id===section]));
-    receive('updateDataModel',{value:{rig,clip,compact,show,selectedSection,rigOptions:choices(Object.fromEntries(Object.entries(rigs).map(([id,value])=>[id,value.label]))),
-      clipOptions:options.map(id=>({id,label:names[id]||id})),frame,pose:currentPose,poseKey,
-      reference:reference?.name??'',referenceOptions:options.filter(id=>id!==clip).map(id=>({id,label:names[id]||id})),
+    const rigOptions=choices(Object.fromEntries(Object.entries(rigs).map(([id,value])=>[id,value.label])));
+    const cycleOptions=options.map(id=>({id,label:names[id]||id}));
+    const referenceOptions=cycleOptions.filter(option=>option.id!==clip);
+    const inlineChoices={rig:[rigOptions,rig],speed:[speedOptions,speed],clip:[cycleOptions,clip],
+      chapter:[chapters,chapter],reference:[referenceOptions,reference?.name]};
+    let rows=compact?0:Math.max(0,Math.floor((layoutHeight-640)/28));
+    const inline={};
+    for(const [field,[,columns]] of Object.entries(inlineFields)){
+      const [items,selected]=inlineChoices[field],cost=Math.ceil(items.length/columns);
+      const visible=cost>0&&cost<=rows&&items.length<=maxInlineOptions;
+      if(visible)rows-=cost;
+      inline[field]={visible,items:inlineIds(field).map((_,index)=>{
+        const option=visible?items[index]:null;
+        return option?{...option,selected:option.id===selected,visible:true}:{visible:false};
+      })};
+      if(visible&&Object.hasOwn(show,field))show[field]=false;
+    }
+    receive('updateDataModel',{value:{rig,clip,compact,show,selectedSection,rigOptions,clipOptions:cycleOptions,frame,pose:currentPose,poseKey,
+      inline,choiceMenus:{speed:!inline.speed.visible,reference:!inline.reference.visible},
+      reference:reference?.name??'',referenceOptions,
       compareLabel:showingReference?'Ver A':'Ver B',showingReference,noReference:!reference,
       lastFrame:Math.max(1,frameLimit()),timelineDisabled:readySequence!==sequence||frameLimit()<1,
       clipEdition:clipEdition(),speedOptions,speed,loop,
@@ -764,8 +804,9 @@ export function openCharacterStudio(document,table=null){
         if(now-showedAt>150){showedAt=now;refresh();}
       }
     }
-    projected?.draw(Boolean(figure&&clip),(nextCompact,nextWidth)=>{
+    projected?.draw(Boolean(figure&&clip),(nextCompact,nextWidth,height)=>{
       compact=nextCompact;
+      layoutHeight=height;
       if(panelWidth!==nextWidth){
         panelWidth=nextWidth;
         receive('updateComponents',{components:[{...root,width:panelWidth}]});
@@ -808,15 +849,22 @@ export function openCharacterStudio(document,table=null){
     }
   }
   void openInitialRig();
-  function setShortTableLayout(short){
-    const width=short?3.10:2.20;
-    if(!table||width===panelWidth)return;
-    panelWidth=width;
-    tableControls[0]={...tableControls[0],width};
-    const panel=tableControls[0];
-    receive('updateComponents',{components:[playback?panel:loadingPanel()]});
+  function setTableLayout(width,height,short){
+    const nextCompact=compactReview(width,height);
+    const nextWidth=nextCompact?(short?3.10:2.20):widePanelWidth;
+    if(nextWidth!==panelWidth){
+      panelWidth=nextWidth;
+      tableControls[0]={...tableControls[0],width:nextWidth};
+      receive('updateComponents',{components:[playback?tableControls[0]:loadingPanel()]});
+    }
+    if(nextCompact!==compact||height!==layoutHeight){
+      compact=nextCompact;
+      layoutHeight=height;
+      refresh();
+    }
+    return compact;
   }
-  return {dispatch,render,dispose,setShortTableLayout,
+  return {dispatch,render,dispose,setTableLayout,
     currentPose:()=>visible&&playback?reviewPose():null};
 }
 
@@ -837,13 +885,13 @@ function webStudioProjection(document,renderer,scene,dispatch,close,pause){
   scene.background=new Color(0x0b1e2a);
   scene.fog=new Fog(0x0b1e2a,5,15);
   studioLights(scene);
-  const camera=new PerspectiveCamera(36,1,.03,35);
+  const camera=new PerspectiveCamera(characterReviewCamera.fov,1,.03,35);
   const hudCamera=new OrthographicCamera(-1,1,1,-1,.1,12);
   hudCamera.position.z=4;
   const pointer=new Vector2(),ray=new Raycaster();
   let group,viewportWidth=0,viewportHeight=0;
   const hud=createSpatialHud({document,parent:hudScene,accessibilityRoot:stage.querySelector('.studio-a11y'),
-    controlStyle:'optical',retainTextDrafts:true,controlRole:(_,id)=>id==='play'?'primary':transport.has(id)?'navigation':'utility',
+    controlStyle:'optical',retainTextDrafts:true,controlRole:characterControlRole,
     placeSurface(value){group=value;},send:({action})=>dispatch(action)});
   hud.setPalette({background:'#102834e8',button:'#263e46',pressed:'#43766e',text:'#eff7f0',focus:'#ecc782',disabled:'#25353d'});
   const graphicsNotice=document.createElement('output');
@@ -905,18 +953,18 @@ function webStudioProjection(document,renderer,scene,dispatch,close,pause){
     }
   },{capture:true,passive:false,signal:events.signal});
   const orbit=new OrbitControls(camera,canvas);
-  orbit.target.set(0,.78,0);
+  orbit.target.set(0,characterReviewCamera.targetHeight,0);
   orbit.enablePan=false;
-  orbit.minDistance=2.2;
-  orbit.maxDistance=8;
-  orbit.maxPolarAngle=Math.PI*.56;
+  orbit.minDistance=characterReviewCamera.minDistance;
+  orbit.maxDistance=characterReviewCamera.maxDistance;
+  orbit.maxPolarAngle=characterReviewCamera.maxPolarAngle;
   window.addEventListener('pagehide',event=>{if(!event.persisted)close();},{signal:events.signal});
 
   function draw(ready,onResize){
     const width=stage.clientWidth,height=stage.clientHeight;
     if(!width||!height)return;
     const portrait=width<height*1.05;
-    const compact=width<720||height<570;
+    const compact=compactReview(width,height);
     const availableWidth=portrait?width-24:Math.min(420,width*.49-12);
     if(viewportWidth!==width||viewportHeight!==height){
       viewportWidth=width;
@@ -926,7 +974,7 @@ function webStudioProjection(document,renderer,scene,dispatch,close,pause){
       hud.setChoicePageSize(surfaceId,shortHud?(height<500?1:2):undefined);
       hud.setChoicePresentation(surfaceId,shortHud?'overlay':undefined);
       const nextPanelWidth=compact?Math.min(1.10,Math.max(.5,availableWidth/300-.12)):widePanelWidth;
-      onResize(compact,nextPanelWidth);
+      onResize(compact,nextPanelWidth,height);
       renderer.setSize(width,height,false);
       camera.setViewOffset(width,height,Math.round(width*(compact&&portrait?0:.19)),
         compact&&portrait?Math.round(height*.20):0,width,height);
@@ -956,8 +1004,9 @@ function webStudioProjection(document,renderer,scene,dispatch,close,pause){
   return {stage,status,draw,reveal,ownsTextInput:hud.ownsTextInput,graphicsLost:()=>lost,
     send:(type,value)=>hud.receive({version:'1.0',[type]:{surfaceId,...value}}),
     setAngle(angle){
-      const distance=stage.clientWidth<670?4.7:4.4;
-      camera.position.set(Math.sin(angle)*distance,1.95,Math.cos(angle)*distance);
+      const {distance,compactDistance,eyeHeight}=characterReviewCamera;
+      const radius=stage.clientWidth<670?compactDistance:distance;
+      camera.position.set(Math.sin(angle)*radius,eyeHeight,Math.cos(angle)*radius);
       orbit.update();
     },
     start:render=>renderer.setAnimationLoop(render),

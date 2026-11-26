@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Bone, BoxGeometry, Group, Mesh, MeshStandardMaterial, Quaternion, Vector3} from 'three';
 import {MatterFlight,bindMatterFlight,bindMatterHologram,matterAvatarScale} from '../src/matter-flight.mjs';
+import {CharacterReviewFlight,characterReviewCamera} from '../src/character-review-camera.mjs';
 import {bindFlightAvatarAnimation} from '../src/flight-avatar-animation.mjs';
 
 test('a late-loading peer becomes translucent and restores its own material on exit',()=>{
@@ -109,17 +110,17 @@ test('a miniature peer turns its head for a shared pointing cue and settles agai
 });
 
 
-function flightFixture(){
+function flightFixture(Flight=MatterFlight){
   let keyboard=null,touch=null,up=false,down=false;
   const position=new Vector3(0,.2,.55),quaternion=new Quaternion(),camera={theta:0,distance:2,
-    targetTheta:.21,targetPhi:1.4,setOrbitAngle(angle){this.targetTheta=angle;}};
+    targetTheta:.21,targetPhi:1.4,fov:65,targetFOV:64,minFOV:60,maxFOV:70,maxPolarAngle:3,zoomScale:.04,setOrbitAngle(angle){this.targetTheta=angle;}};
   const controller={config:{position,quaternion,
     keyInputManager:{getOutput:()=>keyboard,getJump:()=>up,isKeyPressed:key=>key==='alt'&&down},
     additionalInputProvider:{getOutput:()=>touch},
     collisionsManager:{setCharacterPosition(){},applyColliders(){}}},
     capsuleInfo:{radius:.28,segment:{end:{y:1.56}}},
     characterVelocity:new Vector3(),updateNetworkState(){}};
-  const flight=new MatterFlight(camera);
+  const flight=new Flight(camera);
   flight.enter(controller,new Vector3());
   return {position,quaternion,camera,controller,flight,step:(dt=1/60,allowed=true)=>flight.move(controller,dt,allowed),
     input:(keys,fingers,ascent=false,descent=false)=>{keyboard=keys;touch=fingers;up=ascent;down=descent;}};
@@ -147,7 +148,7 @@ test('miniature flight combines keyboard travel and vertical touch, then arrests
 });
 
 test('a review pivots one visitor around the model and restores avatar-centered flight',()=>{
-  const {camera,controller,flight}=flightFixture();
+  const {camera,controller,flight}=flightFixture(CharacterReviewFlight);
   flight.exit(controller);
   const manager={localController:controller,update(){}};
   const target=new Vector3();
@@ -160,7 +161,13 @@ test('a review pivots one visitor around the model and restores avatar-centered 
   assert.deepEqual(avatarPoint.toArray(),[0,2,0]);
   flight.setReviewAngle(Math.PI/2);
   assert.equal(camera.targetTheta,0);
-  assert.equal(camera.targetPhi,Math.PI/2-.12);
+  assert.equal(camera.targetPhi,Math.atan2(characterReviewCamera.distance,characterReviewCamera.eyeHeight-characterReviewCamera.targetHeight));
+  for(const field of ['fov','targetFOV','minFOV','maxFOV'])assert.equal(camera[field],characterReviewCamera.fov);
+  assert.equal(camera.zoomScale,.04*matterAvatarScale);
+  controller.config.position.x+=.25;
+  controller.config.position.y+=.125;
+  camera.setTarget(avatarPoint);
+  assert.ok(target.distanceTo(new Vector3(.59,.44,0))<1e-12);
   const peer=flightFixture();
   assert.equal(peer.camera.targetTheta,.21);
   assert.equal(peer.camera.distance,.68);
@@ -168,6 +175,9 @@ test('a review pivots one visitor around the model and restores avatar-centered 
   flight.exit(controller);
   camera.setTarget(avatarPoint);
   assert.deepEqual(target.toArray(),[0,2,0]);
+  assert.deepEqual([camera.fov,camera.targetFOV,camera.minFOV,camera.maxFOV],[65,64,60,70]);
+  assert.equal(camera.maxPolarAngle,3);
+  assert.equal(camera.zoomScale,.04);
   assert.equal(camera.distance,2);
   assert.equal(camera.targetTheta,.21);
   assert.equal(camera.targetPhi,1.4);

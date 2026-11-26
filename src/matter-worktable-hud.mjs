@@ -231,7 +231,7 @@ export class MatterWorktableHud{
       canOpenNative:()=>Boolean(this.layer.overlay&&!this.layer.lost&&
         this.canvas.clientWidth>=330&&this.canvas.clientHeight>=320)});
     this.lookPreview=new HudLookPreview({document,parent:this.scene,invalidate:this.layer.invalidate});
-    this.hud=createSpatialHud({parent:this.scene,document,accessibilityRoot:this.a11y,controlStyle:'optical',retainTextDrafts:true,controlRole:opticalRole,
+    this.hud=createSpatialHud({parent:this.scene,document,accessibilityRoot:this.a11y,controlStyle:'optical',retainTextDrafts:true,controlRole:(...args)=>args[0]===surfaceId&&this.table?.controlRole?this.table.controlRole(...args):opticalRole(...args),
       controlIconOnly:(surface,id)=>surface===toolbeltId&&this.toolLayout?.iconOnly===true&&Object.hasOwn(toolIcons,id),
       placeSurface:(group,id)=>{
         if(id===toolbeltId)this.toolGroup=group;
@@ -836,9 +836,10 @@ export class MatterWorktableHud{
       this.camera.updateProjectionMatrix();
       this.layer.invalidate();
     }
+    let wideReview=false;
     if(this.group&&this.active&&this.table!==this.collectionTable){
       const short=this.compactCharacterTable;
-      this.table.setShortLayout?.(short);
+      wideReview=this.table.setLayout?.(width,height,short)===false;
       this.hud.setChoicePresentation(surfaceId,short?'overlay':'inline');
       this.hud.setChoicePageSize(surfaceId,short?(height<300?1:2):undefined);
     }
@@ -850,6 +851,14 @@ export class MatterWorktableHud{
         (height-top-reservedBottom-18)/(this.workLow?.86:1.06)));
       this.place(this.group,'workPlacement',{...viewport,insets},
         width-right-8-scale*(compactWorkWidth+.12)/2,top+10,scale);
+    }else if(this.group&&wideReview){
+      const bounds=this.hud.getSurfaceBounds(surfaceId);
+      if(bounds){
+        const workTop=Math.max(top+58,Math.round(height*.11));
+        const scale=Math.min(169,(width-left-right)*.42/(bounds.right-bounds.left),
+          (height-workTop-bottom-74)/(bounds.top-bounds.bottom));
+        this.place(this.group,'workPlacement',viewport,width-right-16-bounds.right*scale,workTop+bounds.top*scale,scale);
+      }
     }else if(this.group&&this.compactCharacterTable){
       const insets={left:left+(width-left-right)*.36,right,top,bottom:bottom+1.21*this.landscapeGrip()+6};
       const center=(insets.left+width-right)/2;

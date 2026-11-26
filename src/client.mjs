@@ -16,7 +16,8 @@ import {bindFlightAvatarAnimation} from './flight-avatar-animation.mjs';
 import {LoadingProgressManager,RemoteDocumentWrapper} from '@mml-io/mml-web';
 import {RoomSceneCache,roomArtURL} from './room-scene-cache.mjs';
 import {bindInteriorHeadroom} from './avatar-headroom.mjs';
-import {MatterFlight,bindMatterFlight,bindMatterHologram} from './matter-flight.mjs';
+import {CharacterReviewFlight} from './character-review-camera.mjs';
+import {bindMatterFlight,bindMatterHologram} from './matter-flight.mjs';
 import {constrainInteriorCamera} from './interior-camera.mjs';
 import {capWorldPixelRatio,usesLightGraphics} from './render-pixel-budget.mjs';
 import {bindVideoSettings} from './video-settings.mjs';
@@ -787,7 +788,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
   // Upstream's default sun allocates an 8192² shadow map. This small world uses
   // the public renderer factory and a bounded 1024² light instead, on all clients.
   createRenderer:options=>{
-    const tableFlight=new MatterFlight(options.coreCameraManager);
+    const tableFlight=new CharacterReviewFlight(options.coreCameraManager);
     matterFlight=tableFlight;
     constrainInteriorCamera(options,()=>{
       if(inside)return activeSpace?.id;
@@ -921,7 +922,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         cross:(scope,revision)=>updateDoor.followDoor?.(scope,revision)}},
       canEnter:()=>!options.coreCameraManager.isFlyCameraOn()&&
         tableFlight.enter(client.getCharacterManager().localController,matterHud.table.anchor,
-          {reviewTarget:matterHud.table.reviewCameraTarget}),
+          {reviewTarget:matterHud.table.reviewCameraTarget,reviewScale:matterHud.table.reviewScale}),
       onActive:active=>{
         document.body.classList.toggle('is-operating-matter',active);
         if(!active){
