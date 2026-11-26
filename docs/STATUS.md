@@ -45,6 +45,8 @@ published frame in the web and table views, preserved the held comparison
 frame in its shared link, and verified flight and land transitions. Two
 distinct fixture visitors then kept separate camera angles and frames,
 and the second visitor read the shared note in a 568 × 320 viewport.
+The full walkthrough returned a native note for the referred local frame
+and restored the visitor's frame and draft after graphics recovery.
 The protected deployment still selected `58ce88972da7` at verification.
 
 ## Narrow desktop dock and Conversation pointer check
