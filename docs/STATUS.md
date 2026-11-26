@@ -1,5 +1,28 @@
 # Current MVP work
 
+## Readable Character cycle selection in both projections
+
+Client revision `229b847431515432191edea4637a30ad4d356c75` gives
+cycle controls short labels in the viewer and table while retaining the
+authored names for pose references. Inline presses carry the identity of
+the selected item. Phase and comparison presses also carry the edition
+they target. The renderer's existing scope and gesture rules apply.
+
+The service candidate SHA-256 is
+`659b876c46303e6d0361f338e5a2a18256c35c219997e2d3b067b646b5056f97`.
+It includes the Matter readability changes and replaces only the
+compressed client from protected `2ee067ffd313`. The server, asset
+payloads and exact pose catalog match. Shader and renderer selection
+remain on the Proyección alpha.20 pin.
+
+Chromium verified the complete cycle labels at 1480 × 928, selection
+from marching to flight in both projections, and unchanged playback
+and miniature camera navigation. The full two-fixture walk exercised
+the world door, ground frames 0/17/57/63, flight frames 0/22/36/65/110,
+an exact shared pose and room-scoped notes, independent local frames
+and orbit, and permission refusal outside the room. Node 24 passed
+447 tests with two skips. Live selection remains with Holodeck.
+
 ## Matter worktable readability on the alpha.20 candidate
 
 Client revision `a0225316402228db379ecee8370bd7bc454407c4` puts
