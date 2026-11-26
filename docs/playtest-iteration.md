@@ -30,6 +30,24 @@ Before closing each deliverable, review its actual implementation with Claude Co
 
 [The shared roadmap](shared-roadmap.md) owns the subsequent Wiggle/camera, activity timeline, work-state replay and avatar work. Holodeck issues #3, #12 and #1 remain the parent experience, house integration and situated Conversation records.
 
+## Packaged shared Matter table check
+
+Run `node tools/browser-matter-shared-check.cjs` with the
+[same staging and Playwright variables as the Character check](character-design-room.md#packaged-browser-check).
+The loopback runtime uses two temporary identities and two synthetic
+CAD resources. It crosses the in-world Matter door in desktop and
+touch-landscape contexts and opens the native worktable. The actors
+publish revisions in both directions while preserving the desktop's
+local cut and camera. The check also covers stale revisions, revoked
+edit rights, clearing the selection, Escape at the table, the
+return door and denial of room reads after exit.
+
+Archive `2bda53bd2af101f6f63e4d5bdc8d697a0c6ac835aa47085733c7cc31febbdfa8`
+passed this check. It retained the desktop's local Alfa at cut 64 when
+touch published Beta. The desktop chose to follow Beta and observed
+clear revision 3. Evidence includes the two HUD views and the received
+HTTP statuses. Protected participant acceptance remains separate.
+
 ## Active tabletop lighting candidate
 
 [Holodeck #20](https://github.com/AlterMundi/holodeck/issues/20) tracks this
