@@ -16,8 +16,30 @@ cyan orbit, ivory walls, and a warm arched entrance. Keep the silhouette
 readable at waypoint size with a small mesh and flat material colors.
 The terrain reference sets the approach at player height: a curving warm-lit
 path, cool trees behind the house, and the armillary readable above the
-foreground vegetation. The concepts are separate from the installed house
-geometry and room layout.
+foreground vegetation. The November 26 follow-up adds the full-size estate: a circular plan, central
+projecting vestibule, wings with repeated bays, raised drum and dome with a
+brass armillary. The material sheet is a reference board. Author tileable
+ivory marble and teal roof finishes, plus a shared trim sheet for bronze,
+gold filigree, hardware and cyan emissive details. Reserve mesh for outlines,
+arches and recesses, dome ribs, steps, and drapery folds visible in silhouette.
+Use baked normal or roughness detail for flat ornament and share repeating bays.
+
+Model the estate exterior and its public entrance hall in the same exterior
+space. Walk from the path into the hall over continuous floor and collision.
+Start the existing scoped room travel at the destination doors and portals
+inside the house. A passage or tunnel can continue physically until its
+interior threshold. Keep the room graph, return anchors and permissions for
+existing creation spaces. Feed the footprint and visited doors into the
+minimap through the same estate layout used to place collision and wall
+modules. Keep stable room keys so later wings and tunnels can be connected
+without rebuilding the entrance. Load the distant shell first, prepare the
+public hall ahead of approach, and fetch individual creation rooms as needed.
+
+The exterior illustration is a visual target. A first playable trial needs
+one continuous path from the terrain through the actual doorway into the
+hall and one interior door with a round trip. Check map placement, walking
+and camera clearance, room admission, and frame pacing in both graphics
+profiles before adding more wings.
 
 ## Player-height review
 
