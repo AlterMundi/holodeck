@@ -28,6 +28,19 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+Candidate `82dd882` carries the exact gallery support changes from the
+protected release `de23bdf98e78`. Its staged archive is
+`dca37018d4f72373810fd9ad01a34e565c43c8d02d6458307efe104d49ba3873`.
+Node 24 passed 434 checks with two skips. Chromium entered from the
+foyer, opened the in-world worktable, and exercised the ground and
+flight studies. Two fixture visitors kept local frames 37 and 35 while
+the room presentation remained at 36. The second visitor read the
+shared note in a 568 × 320 emulated touch viewport. The viewer recovered
+its local pose and unsent note after WebGL restoration. This archive
+keeps the published alpha.16 renderer pin. The later renderer pointer
+fix is independently qualified in [Proyección PR #24](https://github.com/AlterMundi/proyeccion/pull/24).
+Protected activation and entry with a signed-in guest remain open.
+
 The protected release `9281853a628a` still redirects the Character
 foyer door to the standalone viewer. The candidate removes that redirect
 and mounts the worktable in the room. A read-only check of the selected
