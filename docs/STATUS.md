@@ -2,6 +2,27 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `4e17e82db42ad88e4c778f1257e8defeafdf8864` uses Proyección's
+published alpha.15 to anchor Conversation transitions to the actual
+toolbelt hit mesh. The locked HTTPS tarball and SHA-512 passed
+`check:holodeck-hud -- --host-lock` with the Holodeck checkout selected.
+The renderer SHA-256 is
+`702c1068c144f298eec6c918024b0fe5e7c486a245ee0580fb69eadd3a043e7b`.
+The packaged archive
+`832a68dd6ee65cbd2f6d38cfb67827dcf9b4e13b6d1e6e8e1d894f393797e353`
+matched 87 payloads. Only the browser bundle and notices changed from
+`9467e8904f4e`. The exact archive passed the canonical Conversation
+minimize and restore check, retained the draft and kept typing separate
+from locomotion. The locked renderer passed the Matter action and
+subscription exchange with two fixture identities and distinct rights.
+The short-landscape Chromium trial entered Matter, selected and cut a
+part with touch emulation, then reached Character through both doors
+and left its table without leaving the room. The packaged Character
+check received the flight-pose note in the browser. Holodeck passed
+422 tests with two skips. Protected Home selection and independent
+authenticated acceptance remain open.
+[Published renderer](https://github.com/AlterMundi/proyeccion/releases/tag/v0.1.0-alpha.15).
+
 Source `f5a87fc3cf4fddda6bdffdf2fdf7a65624ec410e` gives the canonical
 Conversation panel priority on compact screens. The world heading resumes
 when minimized, and temporary world notices do not cover the panel.
@@ -27,8 +48,7 @@ with the installed canonical Conversation assets. It kept the existing
 iframe and draft and verified typing and world movement separately. The
 trial bundle was `474a33f59689d7fd70de1a2d504dbccd684e82bf483f23a1d14596866be3fdd2`
 in archive `8d2c61a3df226ea9a0870048aa70b2316ba52049f816479c90acc8e2a474ecd0`.
-The production candidate still pins Proyección alpha.14. The compatibility
-result is available for the next owning renderer pin.
+This compatibility build preceded the immutable alpha.15 pin.
 [Renderer change](https://github.com/AlterMundi/proyeccion/pull/20).
 
 Source `60503cff1b2ec3eee9b6e8618f2c5b514a74f395` integrates the room
