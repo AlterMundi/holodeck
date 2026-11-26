@@ -45,6 +45,7 @@ import { bindHudPanelWindow } from './hud-panel-window.mjs';
 import { bindWorldOrbitInput } from './world-orbit-input.mjs';
 import { bindToroidalMinimap } from './toroidal-minimap.mjs';
 import {applyGallerySigns} from './gallery-display.mjs';
+import {createGalleryPlaqueBlob} from './gallery-plaque-art.mjs';
 import { BeaconControls } from './beacon-controls.mjs';
 import {pickedRepresentationVisit} from './node-representations.mjs';
 import { PlayableHUD } from './playable-hud.mjs';
@@ -248,7 +249,7 @@ function startInterior(space){
   const beaconControls=benchControls();
   let galleryModels;
   const visitor=new ContentVisitor({document,window,base,scoped:true,
-    onCatalog:entries=>{galleryModels?.sync(entries);applyGallerySigns(document.getElementById(space.id),entries);},
+    onCatalog:entries=>{galleryModels?.sync(entries);applyGallerySigns(document.getElementById(space.id),entries,createGalleryPlaqueBlob);},
     say:(message,options)=>notice.show(message,options)});
   let exhibitRevision=space.exhibitRevision===undefined?null:String(space.exhibitRevision);
   const exhibitObserver=new MutationObserver(()=>{
@@ -561,7 +562,7 @@ function mountScene(){
   if(!contentVisitor?.catalogFlight){
     const entries=contentVisitor?.entries??[];
     galleryModels?.sync(entries);
-    applyGallerySigns(remoteScene,entries);
+    applyGallerySigns(remoteScene,entries,createGalleryPlaqueBlob);
   }
   return true;
 }
@@ -1380,7 +1381,7 @@ notifyFullscreenError=message=>{
   return true;
 };
 contentVisitor=new ContentVisitor({document,window,base,say,scoped:inside,roomId:hot?activeSpace.id:null,onCatalog:entries=>{
-  if(remoteScene){galleryModels?.sync(entries);applyGallerySigns(remoteScene,entries);}
+  if(remoteScene){galleryModels?.sync(entries);applyGallerySigns(remoteScene,entries,createGalleryPlaqueBlob);}
 }});
 worldHistory=new WorldHistory({document,window,getState:()=>state,
   load:(query,{signal})=>api('activity?'+new URLSearchParams(query),undefined,{signal}),
