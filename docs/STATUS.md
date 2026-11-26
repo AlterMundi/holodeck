@@ -18,8 +18,13 @@ avatar stayed in place. A launch at altitude −11.25 remained below
 the water level −9, then crossed it in both directions with a single
 splash at each crossing. The blue emitter continued after separation,
 went dry while the player was still flying, and restarted on reentry.
-Both device traces reported no page errors. The device trials used
-fixtures. Peer vertical aim and independent human acceptance are open.
+Both device traces reported no page errors. Two separately authorized
+fixture visitors on RTX 2060 also verified the signed flight broadcast
+and the observer's water rendering. Repositioning into the basin
+produced no particles. The observer then saw exactly one outward splash
+and 14 blue trail updates during the other visitor's takeoff.
+Peer vertical aim and independently authenticated human acceptance
+are open.
 See [water-flight playtest](playtest-iteration.md#camera-facing-aim-and-flight-through-water)
 and [motion #21](https://github.com/AlterMundi/holodeck/issues/21).
 
