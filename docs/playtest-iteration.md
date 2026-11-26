@@ -2226,6 +2226,24 @@ physical device and matching atmosphere for the final comparison. Reconcile
 portrait treatment and the rest of the art direction against the selected
 private Gemini references before the visual acceptance.
 
+### World and application HUD in the Character candidate
+
+This inventory follows the host wiring in `908f26f`, which pins Proyección
+`02bf284`. Presentation remains conditional on the scene, visitor authority
+and a successfully painted HUD. The protected release has its own selection.
+
+| Surface | Spatial presentation and owning action path | Browser surface or remaining check |
+| --- | --- | --- |
+| Initial entry, passage and recovery | `PassageHud` and `RecoveryHud` use the world's room handoff and existing retry action when the overlay can paint. | Initial sign-in and boot are browser controls. Check retained focus after a real graphics loss and restored draw. |
+| World status, movement and dock | `WorldStatusHud` and the toolbelt project room labels, sound, notices, movement help and contextual actions. Locomotion uses separate HUD inputs for steering and vertical motion. | The browser controls take over before a successful draw or when the overlay is unavailable. Check pointer cancellation in a physical touch session. |
+| Minimap, doors and pointing | `WorldMapHud`, `DoorPromptHud` and `CreationHud` use the terrain raster, room exits, proximity and current pointed target. | The underlying browser controls preserve their existing actions and serve as fallback. Keep host-owned travel and selection checks in the two-visitor journey. |
+| Appearance and graphics | `SettingsHud` renders the selected appearance and video controls. `HudLookPreview` previews the local theme in the existing layer. | Theme and input choices are visitor-local where the host defines them that way. Confirm per-actor appearance readback after the protected selection. |
+| Creation and play | The toolbelt and `CreationHud` expose contextual creation and pointing actions. | Garden editing, layout authoring and playable forms retain browser UI. Verify create, edit, cancel and undo with a second visitor before migrating them. |
+| Conversation and Activity | `ConversationDisplay` draws the title and window controls around the canonical Conversation iframe. `WorldActivityHud` projects the existing history and selection. | The mounted composer, attachments and voice stay in canonical Conversation. Moving, resizing and minimizing remain local to the visitor. |
+| Matter, exhibits and visits | `MatterWorktableHud`, `CollectionHud` and `VisitHud` project the real scene, part inspection, edition choices and share/follow/clear actions. | A selected Nexus viewer retains its own presentation. The protected visit still needs separate authorized visitors and full entry, share, clear and return evidence. |
+| Beacon and Harmonic Lab | `BeaconHud` projects the existing launcher and controls on compatible viewports. | The browser fallback serves small or unavailable layers. The Harmonic Lab panel remains its selected embedded app. |
+| Character workshop | The world table and direct web viewer both use the Three.js renderer and the same typed pose and note operations. | Room entry, review authority and presentation are Holodeck-owned. Fixtures proved independent orbit and the exact shared frame. Protected visitor acceptance remains open. |
+
 ## Owner-selected exhibit revisit
 
 Candidate `96a0cbef5815` from `a6fe224` retains up to three earlier
