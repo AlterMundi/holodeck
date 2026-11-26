@@ -2,6 +2,17 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `64243ccd5c97ec1d0705f64315eb255d1e47b79e` exposes the exact
+Character pose to its retained Conversation turn. In the staged
+browser and native-port check, a paired daimon entered through the
+existing room authority, read frame 37 and added a note that the
+browser read on frame 37. A retry returned the same note. A wrong
+frame and missing edit rights refused the write. The shared pose
+stayed at frame 36. The archive
+`94e903f25722891eea6d05436a1b0613dc6baf11f6729fa0ab6c4db2268ad5c0`
+uses the same pose catalog as its predecessor. The suite passed
+425 tests with two skips. The staged native acceptance used a fixture.
+
 Source `5b9562bf3d8a8c96d56840e9387828a42ea71d67` preserves the selected
 Character pose when Conversation opens and the physical table suspends.
 The canonical machine context carries the rig, clip edition and exact
