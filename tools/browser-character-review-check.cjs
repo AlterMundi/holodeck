@@ -337,6 +337,23 @@ async function main(){
     await peerButton('−1').press('Enter');
     await frame(pose.frame-1,peerPage);
     await frame(pose.frame+1);
+    const cameraAngles=tab=>tab.evaluate(()=>{
+      const camera=holodeckDevelopment.client.getCameraManager();
+      return [camera.targetTheta,camera.targetPhi];
+    });
+    const firstCamera=await cameraAngles(page);
+    const peerCamera=await cameraAngles(peerPage);
+    await peerPage.mouse.move(610,406);
+    await peerPage.mouse.down({button:'right'});
+    try{await peerPage.mouse.move(730,446,{steps:12});}
+    finally{await peerPage.mouse.up({button:'right'});}
+    await peerPage.waitForFunction(yaw=>
+      Math.abs(holodeckDevelopment.client.getCameraManager().targetTheta-yaw)>.08,peerCamera[0]);
+    const peerOrbit=await cameraAngles(peerPage);
+    assert.ok(Math.abs(peerOrbit[0]-peerCamera[0])>.08);
+    assert.deepEqual(await cameraAngles(page),firstCamera);
+    await frame(pose.frame-1,peerPage);
+    await frame(pose.frame+1);
     const peerReadback=await peerPage.evaluate(()=>fetch('api/space/character-presentation').then(r=>r.json()));
     assert.equal(peerReadback.revision,committed.revision);
     assert.deepEqual(peerReadback.presentation.pose,pose);
@@ -443,7 +460,7 @@ async function main(){
     assert.equal(noGraphics.url(),retryURL);
     assert.deepEqual(errors,[]);
     console.log(JSON.stringify({pose,flightChapters,groundChapters,comparedHeldPose:heldPose,comparisonFrame:110,revision:committed.revision,visitor,observedNote:note,roomScope:true,
-      conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,sharedReceiptMatchesLocalFrame:true,notesWaitedForSharedPose:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
+      conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,independentTableOrbit:{firstCamera,peerCamera,peerOrbit},sharedReceiptMatchesLocalFrame:true,notesWaitedForSharedPose:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
       situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,reciprocalWorldDoors:true,openedTableFromWorldDoor:true,doorFromViewer:true,returnedToRoomFromViewer:true,noGraphicsRetryKeptPose:true,graphicsRestoreKeptLocalFrameAndDraft:true}));
   }finally{
     await browser?.close();

@@ -28,6 +28,14 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+On the same packaged candidate, two fixture visitors opened the
+in-world Character table at once. A right-mouse drag changed the second
+visitor's orbit target by two radians horizontally and one vertically.
+The first visitor's camera angles remained unchanged. Each local
+frame and the shared presentation revision also stayed intact. The
+maintained browser check captures the resulting table view. Package
+`51d7c26b482435f20b94b1bb0cec1a0882adaa15531d82979bc01feba2314d01`.
+
 Source `29b011b` incorporates the published ground gait from Holodeck
 release `4d87ebe3a88d`. The compiled sampler assigns new editions to
 the three generated studies. Stock clip identities and all frame limits
