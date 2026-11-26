@@ -11,6 +11,7 @@ confirmed the paired human's grants for the six current/pinned editions.
 The original browser response was unavailable and the person's live
 project picker remains unverified. The client, terrain worker, art and
 14 state files matched. The immediate rollback is `98f37f24b9c1`.
+The requested Opus review timed out without a verdict.
 
 ## November 26 — Continuous short cover on the western meadow
 
