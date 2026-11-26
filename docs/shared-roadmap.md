@@ -861,8 +861,14 @@ flight and two separate water effects. Crossing speed scales the radial
 burst. A low flight pass feeds the blue stream, and the individual drops
 fade shortly after the player moves away. The receiving composition
 keeps the Character Studio catalog byte-identical after comparing all
-670 sampled frames and their chapter indexes. Track live visitor and
-peer validation in [motion #21](https://github.com/AlterMundi/holodeck/issues/21)
+670 sampled frames and their chapter indexes. Two authorized fixtures
+on RTX 2060 passed the peer flight broadcast and remote water effects.
+The [selected longer wake](STATUS.md#november-26--longer-blue-wake-over-water)
+adds waterline spray behind the pilot and keeps the existing falling
+drops. Day and night captures in Normal and Livianos verified the ongoing
+skim and dry-off. The current RTX peer fixture confirmed the broadcast and
+another visitor's view. Independently signed-in acceptance remains open.
+Track live human acceptance and shared vertical aim in [motion #21](https://github.com/AlterMundi/holodeck/issues/21)
 and [Character Studio #24](https://github.com/AlterMundi/holodeck/issues/24).
 
 ### Talk about the live view

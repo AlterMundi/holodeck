@@ -39,13 +39,14 @@ test('the bounded blue trail sheds across frames and cannot bridge a reposition'
   const count=wake.cursor;
   tick({...water,feet:-7},false);
   assert.equal(wake.cursor,count);
-  for(let i=0;i<18;i++)tick({...water,feet:-6});
+  for(let i=0;i<22;i++)tick({...water,feet:-6});
   assert.equal(wake.cursor,count);
   assert.equal(wake.mesh.visible,false);
   for(let i=0;i<10;i++)tick(water,true,false);
   assert.equal(wake.cursor,count);
   wake.update(false);
   assert.equal(wake.tracks.size,0);
+  assert.equal(wake.timing.getX(0),-10);
   wake.dispose();
   assert.equal(scene.children.length,0);
 });
@@ -67,7 +68,10 @@ test('drops continue to shed after departure, then stop while flight keeps movin
   const wetDrops=wake.cursor;
   assert.ok(wetDrops>0);
   assert.equal(wake.mesh.material.uniforms.pixelRatio.value,1.5);
-  assert.ok(wake.launch.getY(0)>0,'skim drops should arc above the plane');
+  const kinds=new Set(Array.from({length:wetDrops},(_,i)=>wake.timing.getW(i)));
+  assert.deepEqual(kinds,new Set([1,0]),'mist and drops belong to the same geometry');
+  assert.ok(wake.launch.getY(0)>0,'skim spray should arc above the plane');
+  assert.ok(wake.launch.getY(1)>0,'skim drops should arc above the plane');
   for(let i=0;i<16;i++)frame(-7);
   assert.ok(wake.cursor>wetDrops);
   for(let i=0;i<20;i++)frame(-7);
@@ -77,5 +81,40 @@ test('drops continue to shed after departure, then stop while flight keeps movin
   assert.equal(wake.mesh.visible,false);
   for(let i=0;i<8;i++)frame(-8.4);
   assert.ok(wake.cursor>dryDrops);
+  wake.dispose();
+});
+
+
+test('surface spray stays on the waterline and slow peer frames preserve runoff',()=>{
+  let time=0;
+  const wake=new WaterWake(new Group(),{clock:()=>time});
+  const position=new Vector3(),up=new Vector3(0,1,0);
+  const frame=(feet,seconds,dx)=>{
+    time+=1000*seconds;
+    position.x+=dx;
+    position.y=feet;
+    wake.observe(2,position,up,{...water,feet},{flying:true,seconds,continuous:true,emit:true});
+    wake.update(true);
+  };
+  frame(-8.6,.05,0);
+  frame(-8.6,.05,.5);
+  assert.equal(wake.timing.getW(0),1);
+  assert.ok(Math.abs(wake.timing.getZ(0)-.1)<1e-5);
+  assert.ok(Math.abs(wake.positions.getY(0)-(-8.90))<1e-5);
+  const skimCount=wake.cursor;
+  frame(-7.6,.2,4);
+  assert.ok(wake.cursor>skimCount,'a 20 m/s peer still drips after a slow frame');
+  assert.ok(wake.cursor-skimCount<=15,'the slow frame respects the bounded rate');
+  for(let i=skimCount;i<wake.cursor;i++)assert.equal(wake.timing.getW(i),0);
+  frame(-8.6,.05,.5);
+  const prior=wake.cursor;
+  frame(-8.6,.32,4.9);
+  assert.equal(wake.cursor-prior,18);
+  assert.ok(wake.positions.getX(wake.cursor-1)>position.x-.25,'the capped frame covers its full path');
+  frame(-11,.2,2);
+  const submergedCount=wake.cursor;
+  frame(-11,.2,2);
+  assert.ok(wake.cursor>submergedCount);
+  for(let i=submergedCount;i<wake.cursor;i++)assert.equal(wake.timing.getW(i),0);
   wake.dispose();
 });

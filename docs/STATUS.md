@@ -1,8 +1,33 @@
 # Current MVP work
 
+## November 26 — Longer blue wake over water
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `6416a5246b17`
+from `11f2770`. The wake combines elongated waterline spray and falling
+drops in one bounded Points draw. The spray stays near the interface.
+Droplets persist briefly as the pilot climbs away. Slow peer frames
+preserve the trail and distribute capped emissions across the segment.
+
+Day and night hardware fixtures exercised the exact candidate browser
+bundle on RTX 2060 Normal and Raspberry Pi 5 Livianos. The sharper wake
+is visible in both; daylight is softer in Livianos. In the two-authorized-
+fixture RTX run the other visitor saw one crossing splash and 19 updates
+of the pilot's wake. Independently signed-in participant acceptance
+remains open. Fable High informed the implementation and Opus 5.5 High
+reviewed and rechecked the corrected code. Node passed 457 of 459 tests
+with two optional skips.
+
+Exact protected HTTPS client and health readback passed. Only the packed
+client and its manifest changed. The audience, receiver configuration,
+houses, room designs, avatar choices, and pose-review checkpoints matched.
+The room retained 30 entities and four creation nodes. Its checkpoint
+advanced with participant presence activity during activation.
+Immediate rollback is `58ce88972da7`.
+See [motion #21](https://github.com/AlterMundi/holodeck/issues/21).
+
 ## November 26 flight through water and blue wake
 
-[Holodeck](https://compaii.dmn.homes/holodeck/) serves `58ce88972da7`
+Holodeck previously served `58ce88972da7`
 from source `422b916`. Immediate code rollback is `2ee067ffd313`.
 Protected HTTPS health and the exact Brotli client passed readback. The
 audience matched the deployment request, and the world checkpoint
@@ -17,8 +42,20 @@ avatar stayed in place. A launch at altitude −11.25 remained below
 the water level −9, then crossed it in both directions with a single
 splash at each crossing. The blue emitter continued after separation,
 went dry while the player was still flying, and restarted on reentry.
-Both device traces reported no page errors. The device trials used
-fixtures. Peer vertical aim and independent human acceptance are open.
+Both device traces reported no page errors. Two separately authorized
+fixture visitors on RTX 2060 also verified the signed flight broadcast
+and the observer's water rendering. Repositioning into the basin
+produced no particles. The observer then saw exactly one outward splash
+and 14 blue trail updates during the other visitor's takeoff.
+Peer vertical aim and independently authenticated human acceptance
+are open.
+
+The exact archive passed the two-authorized-visitor Character Studio
+walkthrough. One visitor held frame 37 and the other frame 35. They
+kept separate camera angles, shared the intended note, and retained the
+local frame and draft through graphics recovery. The note remained
+available in the compact 568 × 320 review view. The test uses two
+independent fixture identities and the real MML and application routes.
 See [water-flight playtest](playtest-iteration.md#camera-facing-aim-and-flight-through-water)
 and [motion #21](https://github.com/AlterMundi/holodeck/issues/21).
 
