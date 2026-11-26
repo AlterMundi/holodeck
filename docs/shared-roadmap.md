@@ -1141,7 +1141,9 @@ remaining gaps and later device qualification are open. The
 [protected stone trial](environment-art-revamp.md#installed-meadow-stone-and-grass-contact-trial)
 adds irregular shapes and a grass transition around the same rooted rocks. The
 [protected pine trial](environment-art-revamp.md#installed-pine-needle-and-crown-trial)
-opens the close canopy, adds filtered needle detail and retains the same rooted tree through a measured detail transition.
+opens the close canopy, adds filtered needle detail and retains the same rooted tree through a measured detail transition. The
+[rooted pine shade trial](environment-art-revamp.md#rooted-pine-shade-trial)
+applies the same canopy cover to the ground and the grass at their contact.
 
 Use the arrival meadow and its wooded edge for one continuous first pass.
 Match the grass roots to a short-cover ground material and add dense low

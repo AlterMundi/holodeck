@@ -1,5 +1,21 @@
 # Current MVP work
 
+## November 26 — Rooted shade in the western pine grove
+
+Protected `0475d40c6496` serves `0d06e21` with `d4aebd19a991` as
+immediate rollback. One RTX 2060 browser verified matched noon and dusk
+views and a 6.44 m walk through the grove. The release retained the touch
+jump fix. [Art and validation](environment-art-revamp.md#rooted-pine-shade-trial).
+
+The existing deployment request initially found the Holodeck receipt limit
+full at 256. The scoped executor and gateway now accept up to 512 for this
+target, and the original request added one receipt to each. All 256
+prior runtime receipts and 333 gateway records matched their retained
+hashes. The first gateway activation could not import the staged package.
+Exact rollback restored access, then preflight as the gateway service user
+qualified the corrected activation. Other targets' limits and the total
+gateway bound were retained.
+
 ## November 26 — Short touch ground jump
 
 Protected `d4aebd19a991` serves `793bc80` with immediate rollback

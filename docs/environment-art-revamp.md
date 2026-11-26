@@ -124,6 +124,31 @@ quality and lightweight cost still available for later review.
 The protected runtime read matched 14 state files, terrain worker,
 server and room art. Immediate rollback is `de01619ab41c`.
 
+#### Rooted pine shade trial
+
+Protected `0475d40c6496` (`0d06e21`) shares a single locally generated
+256×256 shade map between the terrain and the base of nearby vegetation.
+It follows the authored pine roots through detail tiers. The existing
+daylight input reduces the shade after dark. The map adds no asset request
+or shadow draw pass. This trial darkens the ground immediately under the
+pines with a soft edge. It models local canopy cover, whose shape stays
+fixed as the sun moves.
+
+The exact packaged candidate was walked 6.44 m on one RTX 2060. Matched woodland
+poses at noon and dusk retained 135 draws and 545,590 triangles at an
+850×552 buffer. Frame-interval p95 was 16.7 ms at noon and 16.8 ms at
+dusk. GPU timings were unavailable. The first-pass goal is soft contact
+between the grass and ground. The next art comparison should check
+patches of needle litter and short understory between trunks while
+keeping the meadow approach continuous.
+
+The protected package read matched the served client and terrain worker,
+server, room art and 11 state files. The remaining files reflected a
+completed facade edit and live observation changes during the window.
+Immediate rollback is `d4aebd19a991`, which includes the touch jump fix.
+Fable recommended the shared rooted map. Two Opus art review invocations
+expired without a verdict.
+
 ### Air and light
 
 Link the horizon, the terrain's distant color and the low-angle sun.
