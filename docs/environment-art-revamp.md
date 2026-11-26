@@ -298,6 +298,27 @@ the installed version. Both reported a median animation-frame interval of
 16.7 ms. The test has no GPU timer readings. This candidate is local while
 the installed meadow trial is available for feedback.
 
+### Western pines and ground-cover transition (local candidate)
+
+Candidate `2264a32a81e8` from `eacc497` composes the curved blades, the
+extended grass field and the fern mixture on top of protected
+`81d51189874e`. The same rooted field crosses the western meadow and
+continues under the pines. It uses the terrain's woodland density to make
+the blades shorter and darker while retaining low cover in dense stands.
+Ferns share the existing 384 understory slots. No asset fetch was added.
+
+The matched noon and dusk views under the trees on one RTX 2060 showed
+more coverage toward the far ridge and distinguishable fern shapes.
+The first trial lost too much foreground cover under the canopy. The
+retained iteration recovers some of it with wider curved leaves and
+less thinning. The fern selection was 48 ferns and 27 shrubs in the
+observed path. A 6.56 m walk completed without client errors. The matched
+view peaked at 516,123 triangles and 135 draws against 272,822 and 114.
+Both had a 16.7 ms median animation-frame interval at 850×552. No GPU
+timer readings were available. At dusk, the lower understory still
+reads too dark and broad clearings remain between nearby clumps.
+The installed version remains the playable western meadow trial.
+
 ## Trial of short grass drifts at the arrival meadow
 
 Protected visual trial `4cf4d8b5a6d3` serves source `818502a`, with
