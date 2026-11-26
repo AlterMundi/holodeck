@@ -1,5 +1,51 @@
 # Current MVP work
 
+## Proyección alpha.20 receiving candidate
+
+The dependency lock selects Proyección
+`77d7d4c4db4996a8e7780296d422e24aacdf9d95`
+([alpha.20 prerelease](https://github.com/AlterMundi/proyeccion/releases/tag/v0.1.0-alpha.20)).
+The signed release source, published package source and receiving renderer
+sources matched. The release manifest records 571 passes and 120 documented
+skips across 28 suites of the pinned A2UI 1.0 corpus.
+
+The candidate service archive uses the protected `2ee067ffd313` release as
+its preimage and replaces its compressed client. The catalog, server and
+world resources match the preimage. Its SHA-256 is
+`c6b3f7ea0ebf95a9d05db3e9e1c6450e74a3a98df1176ac299105a043296969b`.
+Reproduce it with the lockfile, `node tools/build.mjs`, the existing service
+package builder and the previous release's exact non-client payload.
+The renderer Chromium check passed the blocked-and-restored modal gesture
+and equivalent reordering of the same interaction scope. Character's
+receiving browser check passed matching web and table controls, playback,
+and miniature camera displacement, orbit and zoom. Holodeck's Node 24 suite
+passed 447 tests with two skips.
+
+The exact service package also passed the Matter browser walkthrough with
+desktop and touch fixture visitors. Each published a different scope; the
+other visitor read it back while retaining independent camera and local
+cut. Rejoin recovered the shared scope. Stale and revoked writes returned
+409 and 403, clearing advanced revision, graphics fallback still shared,
+and leaving through the door restored world controls and removed room
+read access. The visual evidence includes both the desktop local cut
+after the touch write and the touch view of the shared result.
+
+The receiving source contains these additional surfaces beyond the earlier
+[HUD inventory](https://github.com/AlterMundi/proyeccion/blob/77d7d4c4db4996a8e7780296d422e24aacdf9d95/docs/holodeck-hud.md#holodeck-hud-inventory).
+
+| Host surface | Current projection and authority |
+| --- | --- |
+| Boot and passage | Browser boot remains available before the world can draw. Passage retry has a spatial panel when the frame can be presented and keeps the existing browser fallback. |
+| Uncertain submissions | The spatial recovery panel offers the existing check, retry and close actions. The original and its details stay with the canonical recovery writer. |
+| Pointing and creation | Spatial controls project the current tool and selection. Playable, layout and garden editors retain their owning interaction flows. |
+| Beacon | Spatial station and viewer controls wrap the owning instrument app. Launch and close respect current room and focus. |
+| Conversation | The optical spatial frame hosts canonical Conversation. Message entry and submission remain with that application. |
+| Review and collection | Character Studio, Matter, and exhibit visits use native spatial controls with the owning app's scoped state and permissions. |
+
+The candidate is retained for selection by the existing Holodeck work
+conversation. The protected deployment still serves `2ee067ffd313`.
+Real paired acceptance in Character Studio and Matter remains open.
+
 ## Character Studio controls and miniature camera in the live room
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves
