@@ -151,24 +151,51 @@ const terrainShading = {
         float width = mix(.74,1.42,towardPath);
         float end = smoothstep(-3.8,-2.55,apron.x)*(1.0-smoothstep(.97,1.24,apron.x));
         float apronMask = (1.0-smoothstep(width-.15,width+.18,abs(apron.y-curve)+edgeNoise*.18))*end;
-        float flags = smoothstep(-1.27,-.62,apron.x)*apronMask;
-        vec2 paving = apron/vec2(.51,.63);
-        paving.x += .47*mod(floor(paving.y),2.0);
-        paving += .17*vec2(ringNoise(apron*6.1),ringNoise(apron.yx*7.2+4.0));
+        // Warp the whole course before indexing it. Each row and slab
+        // has its own width, wear and rounded corners in the shared world frame.
+        vec2 paving = (apron+vec2(.16*edgeNoise,.19*(dust-.5)))/vec2(.51,.63);
+        float row = floor(paving.y);
+        float course = ringHash(vec2(row,7.1));
+        float rowWidth = mix(.83,1.23,course);
+        float rowOffset = .46*row+.38*course;
+        paving.x = paving.x/rowWidth+rowOffset+(fract(paving.y)-.5)*(.36*course-.18);
         vec2 cell = floor(paving);
-        vec2 rim = .5-abs(fract(paving)-.5);
-        float joint = min(rim.x,rim.y);
-        float footprint = max(flagFootprint.x,flagFootprint.y);
-        float aa = clamp(footprint,.012,.095);
-        float slab = smoothstep(.025-aa,.049+aa,joint);
-        float tint = ringNoise(cell*.71+vec2(17.0,4.0));
-        vec3 stone = mix(vec3(.173,.144,.108),vec3(.375,.331,.247),tint);
-        stone *= .90+.20*ringNoise(apron*11.0);
-        vec3 flagstone = mix(vec3(.117,.097,.068),stone,slab);
-        flagstone = mix(flagstone,vec3(.237,.204,.151),smoothstep(.35,.9,footprint));
-        vec3 apronEarth = mix(packedEarth,vec3(.273,.198,.122),.53);
-        diffuseColor.rgb = mix(diffuseColor.rgb,apronEarth,apronMask*.83);
-        diffuseColor.rgb = mix(diffuseColor.rgb,flagstone,flags*.95);
+        float wear = ringHash(cell+vec2(17.0,4.0));
+        // Fade whole courses into smaller worn stones at the dirt approach.
+        float middle = (cell.x+.5-rowOffset)*rowWidth*.51;
+        float paved = smoothstep(-1.42,-.61,middle);
+        float erosion = smoothstep(.12+.42*wear,.39+.42*wear,paved);
+        vec2 halfStone = mix(vec2(.10,.12),mix(vec2(.454,.462),vec2(.405,.436),wear),erosion);
+        float radius = mix(.08,.23,wear)*erosion+.04*(1.0-erosion);
+        vec2 corners = abs(fract(paving)-.5)-halfStone+radius;
+        float bevel = length(max(corners,0.0))+min(max(corners.x,corners.y),0.0)-radius;
+        float footprint = max(flagFootprint.x/.83+.29*flagFootprint.y,flagFootprint.y);
+        // Keep neighbouring cell parameters from bleeding into the grout.
+        // Fade the field before this filter is narrower than a pixel.
+        float aa = clamp(footprint*.65,.012,.034);
+        float slab = (1.0-smoothstep(-aa,aa,bevel))*smoothstep(.07,.25,erosion);
+        float face = 1.0-smoothstep(-.075-aa,-.036+aa,bevel);
+        float detail = 1.0-smoothstep(.055,.21,footprint);
+        float bed = smoothstep(-1.42,-.61,apron.x);
+        float earthAlpha = apronMask*.83;
+        float distantStone = .72*smoothstep(-1.07,-.42,apron.x);
+        float stoneAlpha = apronMask*.94*mix(distantStone,slab,detail);
+        vec3 apronEarth = mix(packedEarth,vec3(.273,.198,.122),.53)*mix(1.0,.71,bed);
+        vec3 stone = mix(vec3(.198,.172,.133),vec3(.397,.349,.279),wear);
+        stone *= 1.0+.18*(grit-.5)*grainFade;
+        vec3 wornLip = stone*1.09;
+        vec3 flagstone = mix(vec3(.299,.260,.206),mix(wornLip,stone,face),detail);
+        diffuseColor.rgb = mix(diffuseColor.rgb,apronEarth,earthAlpha);
+        diffuseColor.rgb = mix(diffuseColor.rgb,flagstone,stoneAlpha);
+
+        // Lay stone and joint earth over the existing trail as the same
+        // material weights used for colour.
+        float earthWeight = earthAlpha*(1.0-stoneAlpha);
+        float trailWeight = holoTrailMask*(1.0-earthAlpha)*(1.0-stoneAlpha);
+        float apronRoughness = mix(.78,mix(.67,.78,face)+.045*wear,detail);
+        holoTrailMask = trailWeight+earthWeight+stoneAlpha;
+        holoTrailRoughness = (holoTrailRoughness*trailWeight+.94*earthWeight+
+          apronRoughness*stoneAlpha)/max(.0001,holoTrailMask);
         holoMeadow *= 1.0-apronMask;
         holoApproachSkylight = max(holoApproachSkylight,apronMask*.85);
       }
