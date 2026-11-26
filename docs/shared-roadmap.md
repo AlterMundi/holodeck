@@ -839,6 +839,18 @@ contract for later rooms, objects and outdoor places.
    sensory observations to the spatial timeline. See the
    [initial research and experiment](research/2026-11-24-work-projection-replay.md).
 
+### Water-flight controls and effects
+
+The [camera-facing aim and water-flight candidate](playtest-iteration.md#camera-facing-aim-and-flight-through-water)
+adds right-drag heading and local vertical aim, submerged double-Space
+flight and two separate water effects. Crossing speed scales the radial
+burst. A low flight pass feeds the blue stream, and the individual drops
+fade shortly after the player moves away. The receiving composition
+keeps the Character Studio catalog byte-identical after comparing all
+670 sampled frames and their chapter indexes. Track live visitor and
+peer validation in [motion #21](https://github.com/AlterMundi/holodeck/issues/21)
+and [Character Studio #24](https://github.com/AlterMundi/holodeck/issues/24).
+
 ## First production world — continuous torus
 
 Build a shared seeded landscape for traversal. Both angular terrain coordinates
