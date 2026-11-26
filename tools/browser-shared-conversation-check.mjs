@@ -201,7 +201,9 @@ try{
   await evaluate('document.querySelector("#conversation-close").click();document.querySelector("#talk").click();true');
   if(!await evaluate('retainedConversation===document.querySelector("#shared-conversation iframe")'))throw Error('Hiding replaced canonical frame after acknowledgment');
  }
- if(await drafting()!=='Next canonical draft retained')throw Error('Canonical send erased newer draft');
+ const nextDraft='Next canonical draft retained';
+ if(await drafting()!==nextDraft)throw Error('Canonical send erased newer draft');
+ await frame(`(()=>{const draft=document.querySelector('#conversation-message');draft.focus();draft.setSelectionRange(5,9,'backward');return true})()`);
  const layouts=[];for(const [name,width,height,lane]of [['desktop',1100,800,''],['mobile',390,844,'bottom'],['landscape',844,390,'side']]){
   const mobile=Boolean(lane);
   await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile});
@@ -215,13 +217,21 @@ try{
   await wait(120);
   const outer=await evaluate('(()=>{const p=document.querySelector("#conversation-panel").getBoundingClientRect(),f=document.querySelector("#shared-conversation iframe").getBoundingClientRect();return{left:p.left,right:p.right,top:p.top,bottom:p.bottom,frameWidth:f.width,frameHeight:f.height}})()');
   const inner=await frame('(()=>{const e=document.querySelector("#conversation-compose").getBoundingClientRect(),s=document.querySelector("#conversation-send").getBoundingClientRect(),a=document.querySelector("#conversation-talk").getBoundingClientRect();return{audio:{left:a.left,right:a.right,top:a.top,bottom:a.bottom,width:a.width,height:a.height},width:innerWidth,height:innerHeight,scrollWidth:document.documentElement.scrollWidth,compose:{left:e.left,right:e.right,top:e.top,bottom:e.bottom},send:{left:s.left,right:s.right,top:s.top,bottom:s.bottom}}})()');
-  if(outer.left<0||outer.right>width||outer.top<0||outer.bottom>height||outer.frameHeight<150||inner.scrollWidth>inner.width+1||inner.send.right>inner.width||inner.send.left<0||inner.send.top<0||inner.send.bottom>inner.height||inner.audio.width<40||inner.audio.height<40||inner.audio.left<0||inner.audio.right>inner.width||inner.audio.top<0||inner.audio.bottom>inner.height)throw Error('Canonical frame layout overflow '+JSON.stringify({name,outer,inner}));layouts.push({name,outer,inner,worldHeader:await worldHeader()});
+  if(outer.left<0||outer.right>width||outer.top<0||outer.bottom>height||outer.frameHeight<150||inner.scrollWidth>inner.width+1||inner.send.right>inner.width||inner.send.left<0||inner.send.top<0||inner.send.bottom>inner.height||inner.audio.width<40||inner.audio.height<40||inner.audio.left<0||inner.audio.right>inner.width||inner.audio.top<0||inner.audio.bottom>inner.height)throw Error('Canonical frame layout overflow '+JSON.stringify({name,outer,inner}));
+  const draftState=await frame(`(()=>{const draft=document.querySelector('#conversation-message');return {focused:draft===document.activeElement,value:draft.value,selection:[draft.selectionStart,draft.selectionEnd,draft.selectionDirection]}})()`);
+  if(!await evaluate('document.activeElement===retainedConversation')||!draftState.focused||draftState.value!==nextDraft||JSON.stringify(draftState.selection)!=='[5,9,"backward"]')
+   throw Error('Conversation reflow lost draft input '+JSON.stringify({name,draftState}));
+  layouts.push({name,outer,inner,draftState,worldHeader:await worldHeader()});
   const shot=await cdp('Page.captureScreenshot',{format:'png'});await writeFile(join(directory,'layout-'+name+'.png'),Buffer.from(shot.data,'base64'));
  }
+ const reflowPosition=await position();
+ const reflowSprint=await holdShift(async()=>{await holdA(true);return running();});
+ if(reflowSprint||walked(reflowPosition,await position())>.02||await drafting()!==nextDraft.slice(0,5)+'A'+nextDraft.slice(9))
+  throw Error('Keyboard input after landscape reflow did not edit only the selected draft text');
  await evaluate('document.querySelector("#conversation-close").click();true');
  await until(()=>evaluate('document.querySelector("#hud").hasAttribute("data-native-status")'),8000,'compact world header restored after minimizing');
  const errors=await evaluate('checkErrors'),frameErrors=await frame('checkErrors');if(errors.length||frameErrors.length)throw Error('Browser errors '+JSON.stringify({errors,frameErrors}));
- const evidence={schema:'holodeck.shared-conversation-browser/v1',qualification:'Actual installed canonical full shell/assets and Holodeck MML world, synthetic loopback Home/context/files/original I/O; no real human/native/model/provider input or acceptance.',canonicalRelease:installed.split('/').at(-1),canonicalAssets:Object.fromEntries(served),loads,acceptedOriginals:accepted.length,exactOriginal:true,contextFiles:1,userFiles:1,fileUploads:fileWrites.length,draftRetained:true,operationalAlerts:'Canonical quiet frame intentionally hides the ordinary launcher; not an exercised capability.',recordingControlVisibleAndFits:true,recordingCountdownSounds:'Not exercised by this text/files fixture; use separate canonical recorder qualification.',forgeriesRefused:4,retainedOneFrame:true,submit,later,captured,positionError,layouts,keyboardHelp,errors,frameErrors};
+ const evidence={schema:'holodeck.shared-conversation-browser/v1',qualification:'Actual installed canonical full shell/assets and Holodeck MML world, synthetic loopback Home/context/files/original I/O; no real human/native/model/provider input or acceptance.',canonicalRelease:installed.split('/').at(-1),canonicalAssets:Object.fromEntries(served),loads,acceptedOriginals:accepted.length,exactOriginal:true,contextFiles:1,userFiles:1,fileUploads:fileWrites.length,draftRetained:true,operationalAlerts:'Canonical quiet frame intentionally hides the ordinary launcher; not an exercised capability.',recordingControlVisibleAndFits:true,recordingCountdownSounds:'Not exercised by this text/files fixture; use separate canonical recorder qualification.',forgeriesRefused:4,retainedOneFrame:true,submit,later,captured,positionError,layouts,reflowDraftAndFocusRetained:true,keyboardHelp,errors,frameErrors};
  if(loads!==1)throw Error('Canonical frame unexpectedly reloaded');await writeFile(join(directory,'evidence.json'),JSON.stringify({...evidence,clientSHA256,writingDistance,walkingDistance,minimizeMotion,restoreMotion,composerSprint,worldSprint,sentDraftLocked},null,2)+'\n');console.log(JSON.stringify(evidence));
  }
 }catch(error){console.error('diagnostic-world',JSON.stringify(await evaluate('({body:document.body.innerText.slice(-1200),messages:window.surfaceMessages,errors:window.checkErrors})').catch(e=>({error:e.message}))));console.error('requests',JSON.stringify(requests.slice(-35)));console.error('contexts',JSON.stringify(events.filter(e=>['Runtime.executionContextCreated','Runtime.exceptionThrown'].includes(e.method)).slice(-12)));throw error;

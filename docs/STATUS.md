@@ -28,6 +28,16 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+The combined alpha.16 candidate also passed reflow with the installed
+canonical Conversation shell `lock-submitted-draft-overlay-ecdee68d0610`.
+One iframe retained native focus, its draft and the exact backward
+selection at desktop, portrait and short landscape sizes. Typing
+after reflow replaced the selected text while the avatar stayed in
+place. The browser client hash matched archive
+`10880344b81ef1244b588a4e817690554f8da51dfa58fdfb4853fec14821e92d`.
+The check used the real canonical assets with fixture originals and
+accounts.
+
 The same maintained check alternates the ground and flight studies
 on the physical table with a shared timeline. At comparison frame
 110, switching to the shorter ground study holds frame 96. The
