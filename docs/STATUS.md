@@ -1,8 +1,25 @@
 # Current MVP work
 
+## Character Studio controls and miniature camera in the live room
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves
+`2ee067ffd313300a36287f820a6a19c9d3dac2e0a7a9dbe2a4362b06704bf23b`
+from client revision `5250ee61c1d99e57e4d9581c58ea329f295d5dbe`.
+The protected HTTPS client and health response matched the package.
+The package changes the client only on the `6692863a8f0a` release,
+which is the immediate rollback. The installed pose catalog is unchanged.
+
+The same Character Studio control tree selects a wide or compact layout
+in the standalone viewer and the in-world table. At 1480 × 928 Chromium
+exercised direct rig, cycle and speed choices and playback in both mounts.
+It verified that the table camera follows miniature travel, supports drag
+and wheel, and uses the viewer field of view. Playback stayed available
+in Notes at 550 × 490. These tests used fixture identities. Live review
+with two signed-in people remains a separate acceptance check.
+
 ## Character worktable deployed at the foyer door
 
-[Holodeck](https://compaii.dmn.homes/holodeck/) serves `15ed1ac8a65e`
+[Holodeck](https://compaii.dmn.homes/holodeck/) served `15ed1ac8a65e`
 from `04e0a57e61d9`, following Nicolás's direct instruction to connect
 the door to the table. The protected package activation completed.
 All 87 installed payloads matched. The protected HTTPS bundle and
