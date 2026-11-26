@@ -28,6 +28,16 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+The maintained Character check now exercises both motion studies from
+the actual in-world worktable. On archive
+`9dc0e9a15ee138c8b2dba7295cc563b6f6931048610a4a97820fbfde5fc9130e`,
+the flight phase picker reached ground, lift, hover, turn and landing
+at 0, 22, 36, 65 and 110. The ground study reached support, start, brake
+and settling at 0, 17, 57 and 63. The trial captured lift, landing and
+brake at the table, then reopened the shared flight pose and repeated
+two-visitor notes and graphics recovery. These are staged fixture
+results against the selected movement baseline.
+
 Source `cae9939` also handles loss of a running direct-viewer WebGL
 context. Chromium triggered the native loss and restoration events. The
 viewer retained its navigation during the interruption and recovered

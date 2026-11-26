@@ -226,6 +226,27 @@ async function main(){
     await tableButton('Pose').press('Enter');
     const frame=(expected,clientPage=page)=>clientPage.waitForFunction(value=>document.querySelector('input[aria-label="Fotograma"]')?.valueAsNumber===value,expected,{polling:100});
     await frame(pose.frame);
+    const chooseTable=(name,value)=>table.getByRole('combobox',{name,exact:true}).selectOption(value,{force:true});
+    const checkPhases=async (clip,expected,images)=>{
+      const observed={};
+      for(const [phase,expectedFrame] of Object.entries(expected)){
+        await chooseTable('Fase',phase);
+        await frame(expectedFrame);
+        observed[phase]=Number(await table.getByRole('slider',{name:'Fotograma',exact:true}).inputValue());
+        if(images.includes(phase))await page.screenshot({path:join(evidence,'character-'+clip+'-'+phase+'.png')});
+      }
+      return observed;
+    };
+    const flightChapters=await checkPhases('flight',{ground:0,lift:22,hover:36,turn:65,land:110},['lift','land']);
+    await tableButton('Clips').press('Enter');
+    await chooseTable('Ciclo','estudio-marcha');
+    await page.waitForFunction(()=>document.querySelector('select[aria-label="Ciclo"]')?.value==='estudio-marcha');
+    await tableButton('Pose').press('Enter');
+    const groundChapters=await checkPhases('ground',{ground:0,walk:17,brake:57,settled:63},['brake']);
+    await tableButton('Notas').press('Enter');
+    await tableButton('Ver pose del Taller').press('Enter');
+    await tableButton('Pose').press('Enter');
+    await frame(pose.frame);
     await tableButton('+1').press('Enter');
     await frame(pose.frame+1);
 
@@ -385,7 +406,7 @@ async function main(){
     assert.equal(await noteEditor.inputValue(),'Borrador durante la interrupción');
     assert.equal(noGraphics.url(),retryURL);
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({pose,revision:readback.revision,visitor,observedNote:note,roomScope:true,
+    console.log(JSON.stringify({pose,flightChapters,groundChapters,revision:readback.revision,visitor,observedNote:note,roomScope:true,
       conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,notesWaitedForSharedPose:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
       situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,reciprocalWorldDoors:true,openedTableFromWorldDoor:true,doorFromViewer:true,returnedToRoomFromViewer:true,noGraphicsRetryKeptPose:true,graphicsRestoreKeptLocalFrameAndDraft:true}));
   }finally{
