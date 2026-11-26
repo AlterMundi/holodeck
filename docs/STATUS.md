@@ -28,6 +28,19 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+Candidate `2535231` pins Proyección commit
+`36848c1898de12aa1a008fe8ebe819e441416e82` for the range pointer fix.
+The staged archive is
+`90fdc0c798dd5d5c9fc111025fcb4e898609dea1e11303e99f98bf5dd476643f`.
+Node 24 passed 434 checks with two skips. The staged Chromium run
+opened the in-world worktable via the foyer, exercised the ground and
+flight studies and 2× playback with and without looping, and preserved
+local frames 37 and 35 while both visitors could read the shared pose
+at frame 36. It also verified the same note in a 568 × 320 emulated
+touch view and preserved a local draft through WebGL restoration.
+Compared with the preceding archive, the server modules match after
+normalizing the generated chunk filenames. Protected activation remains open.
+
 Candidate `82dd882` carries the exact gallery support changes from the
 protected release `de23bdf98e78`. Its staged archive is
 `dca37018d4f72373810fd9ad01a34e565c43c8d02d6458307efe104d49ba3873`.
