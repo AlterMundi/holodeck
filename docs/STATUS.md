@@ -41,7 +41,13 @@ visitor's room note, and moved their camera without changing the first
 visitor's view. The short touch layout displayed the same note. The
 software-rendered run reached its 210-second deadline at the final
 touch frame-step check, before the remaining capture and recovery cases.
-The candidate remains staged for the owning Holodeck integration.
+A focused repeat on the same archive completed that step in touch
+emulation. The second visitor moved to frame 35 while the first stayed
+at 37 and the room retained the shared frame 36 at revision 3. It
+rechecked the exact clip edition, room note and independent orbit.
+The protected runtime still selected `d2a9b89a726d` when the human
+reported a black viewer. The corrected package remains staged for
+the owning Holodeck integration.
 
 The standalone viewer now retires the world's startup curtain when it
 mounts its own canvas. Before the change the package still accepted the
