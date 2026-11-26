@@ -274,23 +274,25 @@ const bankReflectionShading = `
         if(bankElevation>0.0){
           vec3 ray=transpose(mat3(viewMatrix))*viewRay;
           vec2 planarRay=vec2(dot(ray,holodeckBankAlong),dot(ray,holodeckBankAcross));
-          float run=max(length(planarRay),.001);
-          vec2 direction=planarRay/run;
-          float slope=dot(ray,holodeckBankUp)/run;
-          float start=dot(offset,holodeckBankUp);
-          float travel=1.75;
-          for(int tap=0;tap<7;tap++){
-            vec2 texel=(chart+direction*travel)/${glsl(REFLECTION_BANK.size)}+.5;
-            vec2 encoded=textureLod(holodeckBankHeight,texel,0.0).rg;
-            float height=(dot(encoded,vec2(256.0,1.0))/257.0-.5)*${glsl(REFLECTION_BANK.heightRange)};
-            float rayHeight=start+slope*travel;
-            float width=.10+.071*travel;
-            float hit=smoothstep(-.22*width,.78*width,height-rayHeight);
+          float invRun=inversesqrt(max(dot(planarRay,planarRay),.000001));
+          float slope=dot(ray,holodeckBankUp)*invRun;
+          vec2 uv=chart/${glsl(REFLECTION_BANK.size)}+.5;
+          vec2 stepUV=planarRay*(invRun/${glsl(REFLECTION_BANK.size)});
+          float start=dot(offset,holodeckBankUp)+.5*${glsl(REFLECTION_BANK.heightRange)};
+          const vec2 decodeHeight=vec2(256.0,1.0)*(${glsl(REFLECTION_BANK.heightRange)}/257.0);
+          // Retain a near sample for the contact and a far sample for the
+          // silhouette. The split was measured against the denser march.
+          const float samples[4]=float[4](2.4,7.1,25.0,49.0);
+          for(int tap=0;tap<4;tap++){
+            float travel=samples[tap];
+            vec2 encoded=textureLod(holodeckBankHeight,uv+stepUV*travel,0.0).rg;
+            float over=dot(encoded,decodeHeight)-start-slope*travel;
+            float width=1.04*(.10+.071*travel);
+            float hit=smoothstep(-.22*width,.78*width,over);
             float gain=hit*(1.0-bankOcc);
             bankOcc+=gain;
             bankDist+=gain*travel;
             if(bankOcc>.98)break;
-            travel*=1.74;
           }
           bankDist/=max(bankOcc,.001);
           bankOcc*=bankFade*holodeckBankViewerFade*smoothstep(.008,.08,bankEyeAbove)*
