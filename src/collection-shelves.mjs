@@ -131,9 +131,10 @@ export class CollectionShelves {
         {cache:'no-store',redirect:'error',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(6500)])});
       const data=response.ok?await response.json():null;
       if(controller.signal.aborted)return;
-      if(response.status>=500||response.status===408||response.status===429)this.retryCatalog();
-      else this.catalogUnavailable=false;
       const current=data?.room===this.room?data:null;
+      const partial=current?.partial===true;
+      if(partial||response.status>=500||response.status===408||response.status===429)this.retryCatalog(partial);
+      else this.catalogUnavailable=false;
       this.sync(current?.projects);
       this.archive.sync(current?.archive,this.root);
       this.worktable.sync(current?.projects,current?.worktable);
@@ -147,11 +148,11 @@ export class CollectionShelves {
     }
   }
 
-  retryCatalog(){
+  retryCatalog(partial=false){
     this.refreshAt=performance.now()+3000;
     if(this.catalogUnavailable)return;
     this.catalogUnavailable=true;
-    this.onCatalogUnavailable?.();
+    this.onCatalogUnavailable?.(partial);
   }
 
   sync(projects){

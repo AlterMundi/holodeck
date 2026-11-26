@@ -128,7 +128,7 @@ export function createCollectionReader(origin,{request=fetch}={}){
         return edition?{...edition,label}:null;
       })),
     ]);
-    const result={projects:projects.filter(Boolean),archive:archive.filter(Boolean)};
+    const result={projects:projects.filter(Boolean),archive:archive.filter(Boolean),partial:unavailable};
     return unavailable&&!result.projects.length&&!result.archive.length?null:result;
   };
 }

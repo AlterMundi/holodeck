@@ -951,6 +951,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     }:null;
     const canRestore=!!(archive.length&&mayCurate&&actor.rights.includes('edit')&&!archiveUnavailable&&availableSlot()!==undefined);
     res.json({room:collection.room,projects:[...projects,...restored],...(worktable?{worktable}:{}),
+      ...(projection.partial?{partial:true}:{}),
       ...(collection.archive&&art?.archive?{archive:{anchor:art.archive,editions:archive,...(canRestore?{canRestore}:{})}}:{})});
   }));
   app.post(route('api/space/avatar-pose'),(req,res)=>{

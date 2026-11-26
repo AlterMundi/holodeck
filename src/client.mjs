@@ -882,7 +882,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     }
     collectionShelves=new CollectionShelves({base,scene:renderer.mmlCompositionScene.group,panel:document.querySelector('#collection-shelf'),
       archivePanel:document.querySelector('#collection-archive'),worktablePanel:document.querySelector('#collection-worktable'),
-      onCatalogUnavailable:()=>say('No pude cargar la colección. Voy a volver a intentar.',{transient:true}),
+      onCatalogUnavailable:partial=>say(partial
+        ?'No pude cargar toda la colección. Voy a volver a intentar.'
+        :'No pude cargar la colección. Voy a volver a intentar.',{transient:true}),
       onTabletop:players=>{
         const id=client.getLocalCharacterState()?.connectionId;
         if(Number.isSafeInteger(id)&&players.has(id)!==tableFlight.active)void shareTabletopMode(tableFlight.active);

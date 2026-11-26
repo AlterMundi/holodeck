@@ -29,11 +29,14 @@ const selected={room:'matter',projects:[
 ]};
 
 test('collection retry reports upstream server errors and resets on denial',async t=>{
-  let status=504,notices=0;
-  t.mock.method(globalThis,'fetch',async()=>new Response(null,{status}));
+  let status=504,partial=false;
+  const notices=[];
+  t.mock.method(globalThis,'fetch',async()=>status===200
+    ?Response.json({room:'matter',partial})
+    :new Response(null,{status}));
   const view=Object.assign(Object.create(CollectionShelves.prototype),{
-    base:new URL('https://fixture.test/holodeck/'),sync(){},
-    archive:{sync(){}},worktable:{sync(){}},onCatalogUnavailable(){notices++;},
+    base:new URL('https://fixture.test/holodeck/'),room:'matter',sync(){},
+    archive:{sync(){}},worktable:{sync(){}},onCatalogUnavailable(partial){notices.push(partial);},
   });
   for(const transient of [504,502,500,503,408,429]){
     status=transient;
@@ -41,14 +44,17 @@ test('collection retry reports upstream server errors and resets on denial',asyn
     await view.refresh();
     assert.ok(view.refreshAt<began+5000);
   }
-  assert.equal(notices,1);
+  assert.deepEqual(notices,[false]);
   status=403;
   await view.refresh();
   assert.equal(view.catalogUnavailable,false);
   assert.ok(view.refreshAt>performance.now()+5000);
-  status=504;
+  status=200;
+  partial=true;
   await view.refresh();
-  assert.equal(notices,2);
+  assert.ok(view.refreshAt<performance.now()+5000);
+  await view.refresh();
+  assert.deepEqual(notices,[false,true]);
 });
 
 test('receiving appearance selection preserves the preceding package fallback',()=>{
@@ -477,6 +483,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
   unavailable=true;
   assert.equal((await visitor.catalog()).status,503);
   unavailable=false;
+  assert.equal((await author.share(main,4)).status,204);
   for(const failure of ['timeout',429,503]){
     manifestFailure=failure;
     assert.equal((await visitor.catalog()).status,503,String(failure));
@@ -484,8 +491,18 @@ test('collection projects stay grouped and editions follow each visitor and thei
   // Healthy independent editions still reach readers during a partial outage.
   const partial=await (await author.catalog()).json();
   assert.deepEqual(partial.projects.flatMap(project=>project.editions.map(edition=>edition.resource)),[component]);
+  assert.equal(partial.partial,true);
+  assert.deepEqual(partial.worktable,table(5,null,true));
+  manifestFailure=404;
+  const deniedPartial=await (await author.catalog()).json();
+  assert.equal(deniedPartial.partial,undefined);
+  assert.deepEqual(deniedPartial.worktable,table(5,null,true));
   manifestFailure=null;
-  assert.equal((await visitor.catalog()).status,200);
+  const recovered=await visitor.catalog();
+  assert.equal(recovered.status,200);
+  const recoveredProjection=await recovered.json();
+  assert.equal(recoveredProjection.partial,undefined);
+  assert.deepEqual(recoveredProjection.worktable,table(5,main));
 
   let started,release;
   const pending=new Promise(resolve=>{started=resolve;});
