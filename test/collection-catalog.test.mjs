@@ -14,6 +14,7 @@ import {poseKeyMaterial} from '../src/avatar-pose-presence.mjs';
 import {tabletopPointBroadcast,tabletopPointProofMessage} from '../src/tabletop-pointing.mjs';
 import {readMatterWorkshopArt} from '../src/matter-workshop-art.mjs';
 import {collectionSelection,selectMatterAppearance} from '../src/collection-catalog.mjs';
+import {CollectionShelves} from '../src/collection-shelves.mjs';
 import {createConversationContexts} from '../src/conversation-context.mjs';
 import {houseId} from '../src/houses.mjs';
 import {RoomStore} from '../src/room-store.mjs';
@@ -26,6 +27,29 @@ const selected={room:'matter',projects:[
   {id:'guitar',resources:[main,component]},
   {id:'lenses',resources:[lenses]},
 ]};
+
+test('collection retry reports upstream server errors and resets on denial',async t=>{
+  let status=504,notices=0;
+  t.mock.method(globalThis,'fetch',async()=>new Response(null,{status}));
+  const view=Object.assign(Object.create(CollectionShelves.prototype),{
+    base:new URL('https://fixture.test/holodeck/'),sync(){},
+    archive:{sync(){}},worktable:{sync(){}},onCatalogUnavailable(){notices++;},
+  });
+  for(const transient of [504,502,500,503]){
+    status=transient;
+    const began=performance.now();
+    await view.refresh();
+    assert.ok(view.refreshAt<began+5000);
+  }
+  assert.equal(notices,1);
+  status=403;
+  await view.refresh();
+  assert.equal(view.catalogUnavailable,false);
+  assert.ok(view.refreshAt>performance.now()+5000);
+  status=504;
+  await view.refresh();
+  assert.equal(notices,2);
+});
 
 test('receiving appearance selection preserves the preceding package fallback',()=>{
   const base={...selected,art:'matter-workshop-v1'};
