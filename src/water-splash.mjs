@@ -11,11 +11,12 @@ export function sampleWaterCrossing(previous,{draft,depth,seconds,planar,continu
   const side=depth>.12?(draft>.25?'wet':draft<-.05?'dry':previous?.side):'dry';
   const state={side,draft,cooldown:Math.max(0,(previous?.cooldown??0)-Math.max(0,seconds))};
   if(!continuous||!previous?.side||!side||side===previous.side||depth<=.12||
-     state.cooldown>0||!(seconds>0&&seconds<=.2))return {state,strength:0};
-  const vertical=Math.abs(draft-previous.draft)/seconds;
+     state.cooldown>0||!(seconds>0&&seconds<=.35))return {state,strength:0};
+  // Match the pinned simulation's advance cap when a draw stalls.
+  const vertical=Math.abs(draft-previous.draft)/Math.min(.1,seconds);
   if(vertical<.9)return {state,strength:0};
   state.cooldown=.30;
-  return {state,strength:.12+.88*clamp((vertical+.18*planar-.9)/8)};
+  return {state,strength:.12+.88*clamp((vertical+.18*planar*Math.max(1,seconds/.1)-.9)/8)};
 }
 
 export class WaterSplash {

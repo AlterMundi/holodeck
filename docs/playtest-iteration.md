@@ -2115,9 +2115,8 @@ reactivates the effect. Livianos has fewer and smaller droplets.
 Controlled Chromium on RTX 2060 and Raspberry Pi 5 exercised left orbit,
 standing right aim, submerged launch, both water crossings, drying and
 reactivation. Those were local fixtures. The continuous wet-runoff
-transition also passed in Chromium SwiftShader. The staged candidate is
-pending composition with the currently selected Character Studio
-package and exact note/presentation compatibility verification. See
+transition also passed in Chromium SwiftShader. The [selected release](STATUS.md#november-26-flight-through-water-and-blue-wake)
+compares the published Character Studio frames and preserves its exact catalog. See
 [motion #21](https://github.com/AlterMundi/holodeck/issues/21) and
 [Character Studio #24](https://github.com/AlterMundi/holodeck/issues/24).
 

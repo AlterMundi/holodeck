@@ -92,9 +92,12 @@ export class WaterWake{
     const start=track.previous;
     const delta=this.delta.subVectors(position,start);
     const distance=delta.length();
-    const speed=distance/Math.max(.001,seconds);
+    // Dropped frames can take longer than the fixed-step host allows its
+    // simulation to advance. Distance still reflects that capped step.
+    const step=Math.min(.1,seconds);
+    const speed=distance/Math.max(.001,step);
     const sameRun=continuous&&speed<=39;
-    const valid=sameRun&&seconds>0&&seconds<=.2;
+    const valid=sameRun&&seconds>0&&seconds<=.35;
     if(!sameRun)track.remainder=0;
     const wet=sampleWetFlight(sameRun?track.wet:null,sample,now);
     track.wet=wet;
@@ -122,14 +125,14 @@ export class WaterWake{
       const scatter=Math.sin(phase),spray=.45+.55*Math.cos(phase*2.17)**2;
       this.origin.copy(start).lerp(position,t)
         .addScaledVector(up,groundOffset+.14*spray).addScaledVector(this.side,scatter*.25);
-      this.velocity.copy(delta).multiplyScalar((.11+.08*spray)/seconds)
+      this.velocity.copy(delta).multiplyScalar((.11+.08*spray)/step)
         .addScaledVector(this.side,scatter*(.55+.55*spray))
         .addScaledVector(up,surface?.85+1.85*spray:-.18-.60*spray);
       this.positions.setXYZ(slot,this.origin.x,this.origin.y,this.origin.z);
       this.launch.setXYZ(slot,this.velocity.x,this.velocity.y,this.velocity.z);
       this.normals.setXYZ(slot,up.x,up.y,up.z);
       const aboveWater=surface?Math.max(0,groundOffset+.14*spray-wet.draft):-1;
-      this.timing.setXYZ(slot,now-seconds*(1-t),(.34+.39*spray)*Math.sqrt(wet.amount),aboveWater);
+      this.timing.setXYZ(slot,now-step*(1-t),(.34+.39*spray)*Math.sqrt(wet.amount),aboveWater);
     }
     track.remainder=available-Math.floor(available);
     start.copy(position);
