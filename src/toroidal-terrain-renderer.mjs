@@ -59,11 +59,12 @@ const varyings = `
   varying float vHoloHeight;
 `;
 // Each fragment takes the scene sun's colour with its own radial direction.
-const radialSunLights = `
+const radialSunLights = water => `
   vec3 holoUp = normalize(vHoloUp);
   vec3 holoSun = normalize(vHoloSun);
   ${ShaderChunk.lights_fragment_begin.replace(/getDirectionalLightInfo\([^;]*;/,
-    match => `${match}\n directLight.direction = holoSun;`)}
+    match => `${match}\n directLight.direction = holoSun;${water?
+      '\n if (holodeckDaylight <= 0.0) directLight.color = vec3(0.0);':''}`)}
 `;
 // Aerial perspective replaces the linear scene fog on the ring: nearby ridges
 // keep their dark value against the pale sky, each farther layer turns paler
@@ -372,7 +373,9 @@ function artDirect(material, name, shading, environment, bank=null) {
     shader.vertexShader = after(after(shader.vertexShader, 'common', varyings+'uniform vec3 holodeckSunLocal;'), 'project_vertex', vertexFrame);
     let fragment = after(shader.fragmentShader, 'common',varyings);
     if (shading.color) fragment = after(fragment, 'color_fragment', shading.color);
-    fragment = fragment.replace('#include <lights_fragment_begin>', () => radialSunLights);
+    // The night key shapes solid objects. Water retains its authored sky
+    // reflection and the existing direct porch light near the threshold.
+    fragment = fragment.replace('#include <lights_fragment_begin>', () => radialSunLights(name.startsWith('water')));
     if (shading.fill) fragment = before(fragment, 'lights_fragment_end', shading.fill);
     shader.uniforms.holodeckSunLocal=environment.sun;
     shader.uniforms.holodeckDaylight=environment.daylight;
@@ -520,8 +523,8 @@ export class ToroidalTerrainRenderer {
     this.environment.eyeHeight.value=terrainCoordinates([eye.x,eye.y,eye.z]).height;
   }
 
-  setSun(solar){
-    this.environment.sun.value.fromArray(solar.direction);
+  setSun(solar,direction=solar.direction){
+    this.environment.sun.value.fromArray(direction);
     this.environment.daylight.value=solar.daylight;
   }
 

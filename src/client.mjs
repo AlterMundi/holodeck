@@ -5,7 +5,7 @@ import {bindHudAppearance} from './hud-appearance.mjs';
 import {selectedHudLook} from './hud-look-preview.mjs';
 import {ToroidalScenery} from './toroidal-scenery.mjs';
 import {ToroidalAtmosphere,toroidalViewDepth} from './toroidal-atmosphere.mjs';
-import {argentineSun} from './toroidal-solar-clock.mjs';
+import {argentineSun,nightSkyKey} from './toroidal-solar-clock.mjs';
 import {bindToroidalHouseLight} from './toroidal-house-light.mjs';
 import {ToroidalCave} from './toroidal-cave.mjs';
 import {TOROIDAL_TERRAIN} from './toroidal-terrain.mjs';
@@ -1154,6 +1154,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     // shadow edges stay still between steps. Lightweight graphics keep the
     // shadow volume at the ring's empty centre and pay for no casters.
     let solarMinute=-1,solar;
+    let nightKey=null;
     const aimSun=position=>{
       const onRing=outsideRing();
       // Keep the last aim while the ring is shown without a confirmed position.
@@ -1163,8 +1164,12 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       if(onRing){
         const now=Date.now();
         const minute=Math.floor(now/60000);
-        if(minute!==solarMinute){solar=argentineSun(new Date(minute*60000));solarMinute=minute;}
-        ring?.setSun(solar);
+        if(minute!==solarMinute){
+          solar=argentineSun(new Date(minute*60000));
+          nightKey=nightSkyKey(solar);
+          solarMinute=minute;
+        }
+        ring?.setSun(solar,nightKey?.direction);
       }
       const key=near?`${near.x}:${near.y}:${near.z}:${rendererBudget.lightweight}:${solarMinute}`:null;
       if(key===ringSun)return;
@@ -1174,9 +1179,10 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         light.position.set(12,22,10);light.target.position.set(0,0,-6);
         return;
       }
-      const [x,y,z]=toroidalSunDirection(near,TOROIDAL_TERRAIN,solar.direction);
+      const [x,y,z]=toroidalSunDirection(near,TOROIDAL_TERRAIN,nightKey?.direction??solar.direction);
       const anchor=rendererBudget.lightweight?{x:0,y:0,z:0}:near;
-      light.color.setHex(TOROIDAL_SUN.color);light.intensity=TOROIDAL_SUN.intensity*solar.daylight;
+      light.color.setHex(nightKey?.color??TOROIDAL_SUN.color);
+      light.intensity=nightKey?.intensity??TOROIDAL_SUN.intensity*solar.daylight;
       light.target.position.set(anchor.x,anchor.y,anchor.z);
       light.position.set(anchor.x+x*40,anchor.y+y*40,anchor.z+z*40);
     };

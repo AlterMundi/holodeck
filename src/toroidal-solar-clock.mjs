@@ -2,10 +2,23 @@ const radians=Math.PI/180;
 // A shared Argentine reference meridian. UTC input keeps all clients aligned.
 const latitude=-34.60*radians;
 const longitude=-58.38;
-const daylightAt=up=>{
-  const n=Math.max(0,Math.min(1,(up+.15)/.37));
+const solarFadeEnd=-.15;
+const ease=value=>{
+  const n=Math.max(0,Math.min(1,value));
   return n*n*(3-2*n);
 };
+const daylightAt=up=>ease((up-solarFadeEnd)/.37);
+const skyDirection=[-.27,.72,-.64];
+const skyDirectionLength=Math.hypot(...skyDirection);
+const nightDirection=Object.freeze(skyDirection.map(axis=>axis/skyDirectionLength));
+
+// Reuse the scene's shadowed key only after sunlight has faded. This
+// three-quarter sky light stays on the same side of the radial path
+// through the night and does not imply a second visible sun.
+export function nightSkyKey(solar){
+  if(solar.daylight>0)return null;
+  return {direction:nightDirection,color:0xa4b8ff,intensity:.55*ease((solarFadeEnd-solar.direction[1])/.25)};
+}
 
 // NOAA Global Monitoring Laboratory's fractional-year approximation,
 // expressed as east/up/north so each radial frame has a consistent day.
