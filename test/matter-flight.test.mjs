@@ -113,7 +113,7 @@ function flightFixture(){
   let keyboard=null,touch=null,up=false,down=false;
   const position=new Vector3(0,.2,.55),quaternion=new Quaternion(),camera={theta:0,distance:2};
   const controller={config:{position,quaternion,
-    keyInputManager:{getOutput:()=>keyboard,getJump:()=>up,isKeyPressed:key=>key==='shift'&&down},
+    keyInputManager:{getOutput:()=>keyboard,getJump:()=>up,isKeyPressed:key=>key==='alt'&&down},
     additionalInputProvider:{getOutput:()=>touch},
     collisionsManager:{setCharacterPosition(){},applyColliders(){}}},
     capsuleInfo:{radius:.28,segment:{end:{y:1.56}}},

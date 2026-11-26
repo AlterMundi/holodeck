@@ -61,7 +61,7 @@ export class MatterFlight{
     const heading=Number.isFinite(control?.direction)?Math.PI/2-this.camera.theta+control.direction:null;
     const speed=control?.isSprinting?1.44:.94;
     const vertical=inputAllowed?(Number(Boolean(keyInputManager.getJump()||touch?.jump||touch?.vertical>0))-
-      Number(Boolean(keyInputManager.isKeyPressed('shift')||touch?.vertical<0)))*.76:0;
+      Number(Boolean(keyInputManager.isKeyPressed('alt')||touch?.vertical<0)))*.76:0;
     const vx=heading===null?0:Math.sin(heading)*speed;
     const vz=heading===null?0:Math.cos(heading)*speed;
     const {velocity}=this;

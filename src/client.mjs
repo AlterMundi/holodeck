@@ -106,17 +106,19 @@ document.querySelector('#appearance-form').onsubmit=event=>{
 window.addEventListener('keydown',event=>{
   if(appearanceDialog.open&&!appearanceDialog.hasAttribute('data-native-settings'))event.stopImmediatePropagation();
 },true);
-// Chrome may reserve Ctrl+W itself. R remains a sprint modifier in that case.
 const physicalMoves=new Map([['KeyW','w'],['KeyA','a'],['KeyS','s'],['KeyD','d']]);
 const editorOwns=event=>event.target?.closest?.('input,textarea,select,[contenteditable]');
 function bindWorldKeyShortcuts(keys){
   if(!keys)return;
-  const previous=keys.getRun;
-  const getRun=function(){return this.isKeyPressed('r')||this.isKeyPressed('control');};
-  keys.getRun=getRun;
   const listen=new AbortController(),pressed=new Set();
   document.addEventListener('keydown',event=>{
-    if(!event.altKey||event.getModifierState('AltGraph')||editorOwns(event)||!keys.shouldCaptureKeyPress())return;
+    if(editorOwns(event)||!keys.shouldCaptureKeyPress())return;
+    if(event.ctrlKey||event.metaKey||event.getModifierState('AltGraph')){
+      // Let the browser handle its shortcuts without feeding them into MML.
+      event.stopImmediatePropagation();
+      return;
+    }
+    if(!event.altKey)return;
     const key=physicalMoves.get(event.code);
     if(key){
       // With Alt, some keyboard layouts report a symbol as event.key.
@@ -127,6 +129,8 @@ function bindWorldKeyShortcuts(keys){
     }else if(['ArrowLeft','ArrowRight','Space'].includes(event.code))event.preventDefault();
   },{capture:true,signal:listen.signal});
   document.addEventListener('keyup',event=>{
+    if(['AltLeft','AltRight'].includes(event.code)&&!event.ctrlKey&&!event.metaKey&&
+       !editorOwns(event)&&keys.shouldCaptureKeyPress())event.preventDefault();
     const key=physicalMoves.get(event.code);
     if(key&&(pressed.delete(key)||event.altKey))keys.keys.set(key,false);
   },{capture:true,signal:listen.signal});
@@ -134,12 +138,11 @@ function bindWorldKeyShortcuts(keys){
   return ()=>{
     listen.abort();
     for(const key of pressed)keys.keys.set(key,false);
-    if(keys.getRun===getRun)keys.getRun=previous;
   };
 }
 function keepWorldTab(event){
   if(event.cancelable&&event.ctrlKey&&!event.altKey&&!event.metaKey&&
-     ['KeyW','KeyR'].includes(event.code)&&!editorOwns(event))event.preventDefault();
+     event.code==='KeyW'&&!editorOwns(event))event.preventDefault();
 }
 const touchControls={
   mount(container,experience){
@@ -406,7 +409,7 @@ function doubleSpace(event){
   if(previousSpacePress!==null&&now-previousSpacePress<340){
     flightEnabled=!flightEnabled;
     previousSpacePress=null;
-    say(flightEnabled?'Vuelo activo · Espacio sube, Shift baja y R acelera.':'Volvés a caminar.',{transient:true});
+    say(flightEnabled?'Vuelo activo · Espacio sube, Alt baja y Shift acelera.':'Volvés a caminar.',{transient:true});
   }else previousSpacePress=now;
 }
 
@@ -1228,8 +1231,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const pointed=atTable?points.gazes.get(tableConnection):null;
       tableGaze=pointed??tableAttention.sample(tableNow);
       const mode=outsideRing()?radialMovementMode:'ground';
-      const help=mode==='ground'?dryVerticalHelp:mode==='flight'?' · Shift para bajar · Espacio para subir · R para acelerar':
-        ' · Shift para sumergirte · Espacio para subir';
+      const help=mode==='ground'?dryVerticalHelp:mode==='flight'?' · Alt para bajar · Espacio para subir · Shift para acelerar':
+        ' · Alt para sumergirte · Espacio para subir · Shift para acelerar';
       if(help!==presentedHelp){
         presentedHelp=help;
         verticalHelp.textContent=help;
