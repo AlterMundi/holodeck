@@ -72,6 +72,25 @@ in a single eligible room. For a room you own, use
 to start with a playable recipe. House plan and exhibit publication use their
 own authority.
 
+## Use a configured Atelier workspace
+
+When the receiving operator enables the Atelier pilot, enter the selected room
+and inspect `atelier.workspace` in the own-native observation. Read the latest
+confirmed Atelier revision and the shared point from that workspace.
+
+```sh
+holodeck-world --own act --json '{"type":"atelier.read"}'
+```
+
+With room edit rights and an Atelier workspace edit grant, use `atelier.smooth`
+with a new `operationId`, the returned revision ID as `expectedRevision`, the
+exact `selection`, and the Atelier brush settings `radiusMm` and `strength`.
+Save that operation ID. If the outcome is uncertain, use `atelier.result` with
+the same `operationId` while in the room. Atelier keeps the selection, model
+and operation receipts. The action remains bound to the workspace configured
+for this room. The pilot native port can be used independently of a browser
+worktable projection.
+
 ## Read recent world activity
 
 ```sh

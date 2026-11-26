@@ -50,6 +50,7 @@ import {readMatterWorkshopArt} from './matter-workshop-art.mjs';
 import {readCollectionRepresentatives} from './collection-representatives.mjs';
 import {createNativeRoomAuthority,createNativeReviewAuthority} from './native-authority.mjs';
 import {loadOwnerRoomArt,ownerRoomCache} from './owner-room-art.mjs';
+import {createAtelierRoomAuthority} from './atelier-authority.mjs';
 import {WorldDocument} from './world-document.mjs';
 import {SessionBindings,SESSION_MS,sessionKey} from './session-bindings.mjs';
 import {installedRelease,releaseStatus} from './release-status.mjs';
@@ -57,7 +58,7 @@ import {HumanAvatarProfiles,humanWardrobeAssets} from './human-avatars.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
-export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,releaseControllerRef=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt,houseVisual,gardenVisual,gallerySelection,galleryAuthorization,matterCollection,collectionSourceRequest,nativeReviewAuthority=null,artProfile,worldTerrain,atelierLayoutWrites=ATELIER_EXPANSION_WRITES,lightExercise=false,ownerRoomArt=[],ownerArtRequest}={}){
+export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,releaseControllerRef=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt,houseVisual,gardenVisual,gallerySelection,galleryAuthorization,matterCollection,collectionSourceRequest,nativeReviewAuthority=null,artProfile,worldTerrain,atelierLayoutWrites=ATELIER_EXPANSION_WRITES,lightExercise=false,ownerRoomArt=[],ownerArtRequest,atelierWorkshop=null}={}){
   if(!/^\/(?:[a-z0-9-]+\/)*$/.test(basePath))throw Error('Select a bounded absolute base path');
   lightExercise=lightExercise===true;
   if(production&&(!identityResolver||!publicOrigin||!stateDir))throw Error('Shared identity, audience and state are required in production');
@@ -75,6 +76,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   if(nativeRoomAuthority!==null&&typeof nativeRoomAuthority!=='function')throw Error('Select the installed native service authority reader');
   if(nativeReviewAuthority!==null&&typeof nativeReviewAuthority!=='function')throw Error('Select the installed Nexus ownership reader');
   if(typeof ownNative!=='boolean'||ownNative&&!nativeRoomAuthority)throw Error('Own native access requires selected central authority and receiving socket policy');
+  if(atelierWorkshop!==null&&(!ownNative||!nativeRoomAuthority))throw Error('The Atelier room requires the selected own-native return lane');
+  const atelierAuthority=atelierWorkshop&&createAtelierRoomAuthority(atelierWorkshop);
   const route=path=>basePath+path;
   const app=express();
   // Express4 does not forward a rejected async handler. The upstream MML index
@@ -719,7 +722,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     currentLayout:actor=>layoutAuthority(actor).current(actor),
     draftLayout:(actor,input)=>room.commitUncertain||spaces.fenced||!layoutStore?null:layoutAuthority(actor).draft(actor,input),
     previewLayout:(actor,input)=>layoutAuthority(actor).preview(actor,input),
-    publishLayout,layoutResult:(actor,id)=>layoutAuthority(actor).result(actor,id),roomDesign,indoorGarden,
+    publishLayout,layoutResult:(actor,id)=>layoutAuthority(actor).result(actor,id),roomDesign,indoorGarden,atelierWorkshop:atelierAuthority,
     reviewCharacter:(actor,type,input)=>{
       const result=reviewCharacter(actor,type,input);
       return type==='character-review.current'&&result.status===200?
@@ -1540,7 +1543,7 @@ export async function main(){
   validateWorldPorts({...receiving});
   const nativeRoomAuthority=receiving&&Object.hasOwn(receiving,'authoritySocket')?createNativeRoomAuthority(receiving.authoritySocket):null;
   const nativeReviewAuthority=nativeRoomAuthority?createNativeReviewAuthority(receiving.authoritySocket):null;
-  const runtime=await createHolodeck({production,stateDir,releaseControllerRef:receiving?.releaseControllerRef,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,nativeReviewAuthority,contentVisits:receiving?.contentVisits,contentNodes:receiving?.contentNodes,nativeRoomAuthority,conversationOrigins:receiving?.conversationOrigins||[],ownNative:receiving?.ownNative??false,interiorSpaces:receiving?.interiorSpaces??[],gallerySelection:receiving?.gallery,matterCollection:selectMatterAppearance(receiving),artProfile:receiving?.artProfile,worldTerrain:receiving?.worldTerrain,ownerRoomArt:receiving?.ownerRoomArt??[]});
+  const runtime=await createHolodeck({production,stateDir,releaseControllerRef:receiving?.releaseControllerRef,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,nativeReviewAuthority,contentVisits:receiving?.contentVisits,contentNodes:receiving?.contentNodes,nativeRoomAuthority,conversationOrigins:receiving?.conversationOrigins||[],ownNative:receiving?.ownNative??false,interiorSpaces:receiving?.interiorSpaces??[],gallerySelection:receiving?.gallery,matterCollection:selectMatterAppearance(receiving),artProfile:receiving?.artProfile,worldTerrain:receiving?.worldTerrain,ownerRoomArt:receiving?.ownerRoomArt??[],atelierWorkshop:receiving?.atelierWorkshop??null});
   const port=Number(process.env.PORT||18940);
   if(!Number.isInteger(port)||port<1024||port>65535)throw Error('Select a valid loopback port');
   if(process.env.HOST&&process.env.HOST!=='127.0.0.1')throw Error('Use the existing loopback gateway');

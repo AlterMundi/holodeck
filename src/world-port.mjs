@@ -6,6 +6,8 @@ import {situatedGardenCommandId} from './indoor-gardens.mjs';
 import {MAX_WORLD_REQUEST_BYTES} from './world-limits.mjs';
 import {CHARACTER_STUDIO} from './house-review-rooms.mjs';
 
+const atelierActions=new Map([['atelier.read','read'],['atelier.smooth','smooth'],['atelier.result','result']]);
+
 const characterReviewCommands=new Set(['character-review.current','character-review.focus',
   'character-review.notes','character-review.add-note']);
 const characterReviewWrites=new Set(['character-review.focus','character-review.add-note']);
@@ -80,7 +82,7 @@ function situatedInterior({request,verified,actor,room,conversationPlace,indoorG
 
 // The receiving operator owns the directory/socket filesystem capability.
 // Native identity and current room rights are independently rechecked per request.
-export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,approachSpace,conversationPlace,readRenderedView,putExhibit,exhibitResult,currentLayout,draftLayout,previewLayout,publishLayout,layoutResult,roomDesign,indoorGarden,reviewCharacter}){
+export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,approachSpace,conversationPlace,readRenderedView,putExhibit,exhibitResult,currentLayout,draftLayout,previewLayout,publishLayout,layoutResult,roomDesign,indoorGarden,reviewCharacter,atelierWorkshop=null}){
   if(!socketPath?.startsWith('/')||!native?.authorizeWorldRequest||typeof resolveRights!=='function')
     throw Error('Select the installed native world port and authority resolver');
   let active=0;
@@ -133,7 +135,12 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
         const space=verified.capturedSpace?null:describeSpace?.(actor);
         let result;
         const savedExhibit=own&&request.operation==='result'?exhibitResult?.(actor,request.args.id):null;
-        if(request.operation==='observe'&&request.args.view===true){
+        if(request.operation==='act'&&atelierActions.has(request.args.type)){
+          const {type,...args}=request.args;
+          if(!own||!atelierWorkshop||space?.id!==atelierWorkshop.description.room)throw Error('Atelier requires its admitted own-native room');
+          const operation=atelierActions.get(type);
+          result=await atelierWorkshop.dispatch(actor,space,operation,operation==='smooth'?{type:'smooth',...args}:args);
+        }else if(request.operation==='observe'&&request.args.view===true){
           if(own||Object.keys(request.args).length!==1||!verified.humanRef||
             verified.capturedSpace&&!conversationPlace?.(actor,verified.capturedSpace))
             throw Error('The frame requires its original and current room access');
@@ -192,7 +199,7 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
         }else if(space&&space.id!=='outside'){
           if(!own||request.operation!=='observe')throw Error('Exterior operation unavailable inside');
           result={schema:'holodeck.space-observation/v1',run:room.run,edition:room.edition,
-            observer:actor.id,space};
+            observer:actor.id,space,...(atelierWorkshop?.description.room===space.id?{atelier:atelierWorkshop.description}:{})};
         }else if(request.operation==='observe'){
           result=await port.observe(null,request.args);
           if(space?.entrances.length)result.space=space;
