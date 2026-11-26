@@ -37,7 +37,7 @@ function gardenModel(part, prefix, sourceAttribute) {
 
 // Exported models are ground-registered in meters, with the entrance facing
 // +Z. Rotate this placement toward the aisle and check the measured footprint.
-function houseModel(part, plot, position, id, prefix, sourceAttribute) {
+function houseModel(part, plot, position, id, prefix, sourceAttribute, floor=.1) {
   if (!assetFile(part?.asset) ||
       !vector(part.bounds?.min) || !vector(part.bounds?.max) || !vector(position)) return '';
   const {min,max} = part.bounds;
@@ -47,10 +47,10 @@ function houseModel(part, plot, position, id, prefix, sourceAttribute) {
   const ends = [z+plot.side*min[0],z+plot.side*max[0]];
   if (sides.some(side => Math.abs(side)>plot.width/2) ||
       ends.some(end => Math.abs(end)>plot.depth/2)) return '';
-  return `<m-model id="${id}" ${sourceAttribute}="${attribute(prefix+'assets/'+part.asset)}" x="${x}" y="${y+.1}" z="${z}" ry="${-plot.side*90}" collide="false"></m-model>`;
+  return `<m-model id="${id}" ${sourceAttribute}="${attribute(prefix+'assets/'+part.asset)}" x="${x}" y="${y+floor}" z="${z}" ry="${-plot.side*90}" collide="false"></m-model>`;
 }
 
-function housingDocument(houses, prefix, houseVisual, site, sourceAttribute, onlyHouse) {
+function housingDocument(houses, prefix, houseVisual, site, sourceAttribute, onlyHouse, facadeFloor=.1) {
   const {houseWalk:walk,parcelTerrain:terrain,parcelGarden}=site??{};
   const authoredWalk = assetFile(walk?.asset) && /^[a-f0-9]{64}$/.test(walk.revision);
   const walkSource = authoredWalk ? prefix + 'assets/' + walk.asset + '?v=' + walk.revision.slice(0,12) : '';
@@ -83,7 +83,7 @@ function housingDocument(houses, prefix, houseVisual, site, sourceAttribute, onl
       const {title,width,depth,height,color} = facade;
       const doorHeight = Math.min(1.72,height-.16);
       const visual = houseVisual?.(house, plot);
-      const authored = houseModel(visual?.facade,plot,[0,0,0],`facade-${id}`,prefix,sourceAttribute);
+      const authored = houseModel(visual?.facade,plot,[0,0,0],`facade-${id}`,prefix,sourceAttribute,facadeFloor);
       const miniature = authored ? houseModel(visual?.miniature,plot,visual?.miniature?.at,`miniature-${id}`,prefix,sourceAttribute) : '';
       const proxy = authored ? ' opacity="0" cast-shadows="false"' : '';
       markup += `<m-group id="${id}" data-house-revision="${revision}">
@@ -234,7 +234,9 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
   if(toroidalHouse){
     const house=room.houses?.directory().filter(entry=>entry.id===toroidalHouse)??[];
     out+=`<m-group id="ring-house" x="${TOROIDAL_TERRAIN.majorRadius}" y="${TOROIDAL_PARCEL_Y}">`+
-      housingDocument(house,prefix,houseVisual,null,sourceAttribute,toroidalHouse)+'</m-group>';
+      // The torus is already paved at the group origin. The legacy .1 m
+      // art offset is for the older physical ground cubes.
+      housingDocument(house,prefix,houseVisual,null,sourceAttribute,toroidalHouse,0)+'</m-group>';
   } else if(valleyHouse)out+=valleyMarkup(prefix,valleyHouse,houseVisual,sourceAttribute,
     room.houses?.directory()??[]);
   else out+=workshopExterior(room,{prefix,sourceAttribute,includeVisits,includeCues,
