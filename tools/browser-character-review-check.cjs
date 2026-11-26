@@ -189,7 +189,7 @@ async function main(){
     const current=await native('character-review.current');
     assert.equal(current.room,studio);
     const pose={rig:'humanoid',clip:'estudio-vuelo',edition:current.catalog.humanoid['estudio-vuelo'].edition,frame:36};
-    const committed=await native('character-review.focus',{expectedRevision:current.revision,pose});
+    let committed=await native('character-review.focus',{expectedRevision:current.revision,pose});
     assert.equal(committed.status,200);
     assert.deepEqual(committed.presentation.pose,pose);
     await action('Ver pose del Taller').press('Enter');
@@ -245,7 +245,39 @@ async function main(){
     await page.waitForFunction(()=>document.querySelector('select[aria-label="Ciclo"]')?.value==='estudio-marcha');
     await tableButton('Pose').press('Enter');
     const groundChapters=await checkPhases('ground',{ground:0,walk:17,brake:57,settled:63},['brake']);
+
+    // Both clips use one comparison clock. Sharing the shorter clip pins its actual displayed hold.
+    await tableButton('Comparar').press('Enter');
+    await chooseTable('Clip B','estudio-vuelo');
+    await tableButton('Ver B').and(page.locator(':enabled')).waitFor({state:'attached'});
+    await tableButton('Ver B').press('Enter');
+    await tableButton('Pose').press('Enter');
+    await chooseTable('Fase','land');
+    await frame(110);
+    await tableButton('Comparar').press('Enter');
+    await tableButton('Ver A').press('Enter');
+    await tableButton('Pose').press('Enter');
+    await frame(110);
+    await table.getByText('Último fotograma de A · 96',{exact:true}).waitFor({state:'attached'});
+    await page.screenshot({path:join(evidence,'character-comparison-held-ground.png')});
     await tableButton('Notas').press('Enter');
+    const heldResponse=page.waitForResponse(response=>response.request().method()==='POST'&&
+      new URL(response.url()).pathname.endsWith('/character-presentation'));
+    await tableButton('Mostrar pose').press('Enter');
+    const heldReply=await heldResponse;
+    assert.equal(heldReply.status(),200);
+    const held=await heldReply.json();
+    const heldPose={rig:pose.rig,clip:'estudio-marcha',edition:current.catalog.humanoid['estudio-marcha'].edition,frame:96};
+    assert.deepEqual(held.presentation.pose,heldPose);
+    const heldNative=await native('character-review.current');
+    assert.deepEqual(heldNative.presentation,held.presentation);
+    assert.equal(heldNative.revision,held.revision);
+    committed=await native('character-review.focus',{expectedRevision:held.revision,pose});
+    assert.equal(committed.status,200);
+    assert.equal(committed.revision,held.revision+1);
+    assert.deepEqual(committed.presentation.pose,pose);
+
+    await tableButton('Ver pose del Taller').and(page.locator(':enabled')).waitFor({state:'attached'});
     await tableButton('Ver pose del Taller').press('Enter');
     await tableButton('Pose').press('Enter');
     await frame(pose.frame);
@@ -410,7 +442,7 @@ async function main(){
     assert.equal(await noteEditor.inputValue(),'Borrador durante la interrupción');
     assert.equal(noGraphics.url(),retryURL);
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({pose,flightChapters,groundChapters,revision:readback.revision,visitor,observedNote:note,roomScope:true,
+    console.log(JSON.stringify({pose,flightChapters,groundChapters,comparedHeldPose:heldPose,comparisonFrame:110,revision:committed.revision,visitor,observedNote:note,roomScope:true,
       conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,sharedReceiptMatchesLocalFrame:true,notesWaitedForSharedPose:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
       situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,reciprocalWorldDoors:true,openedTableFromWorldDoor:true,doorFromViewer:true,returnedToRoomFromViewer:true,noGraphicsRetryKeptPose:true,graphicsRestoreKeptLocalFrameAndDraft:true}));
   }finally{

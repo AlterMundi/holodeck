@@ -28,6 +28,15 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+The same maintained check alternates the ground and flight studies
+on the physical table with a shared timeline. At comparison frame
+110, switching to the shorter ground study holds frame 96. The
+worktable action publishes the exact ground edition at frame 96,
+which the independent native actor reads at the committed revision.
+Re-presenting flight at frame 36 preserves the visitor note and the
+independent local frames. Chromium passed these fixture checks on
+archive `10880344b81ef1244b588a4e817690554f8da51dfa58fdfb4853fec14821e92d`.
+
 Source `661afee` binds the received-pose indicator to the exact rig,
 clip edition and displayed frame. Chromium showed it upon following
 frame 36 and removed it when the visitor stepped locally to frame 37.
