@@ -1,5 +1,16 @@
 # Current MVP work
 
+## November 26 — Planted cave exit
+
+Protected `e1012ca963fb` serves `2349c0b` with immediate rollback
+`8f905c18ee6a2`. The cave outlet now has a planted slope and a
+worn centre tread. Normal and Lightweight rendered the matched exit
+and passed a walk on one RTX 2060. Protected client, worker, server,
+room art, health and access matched. Thirteen state files matched
+byte for byte. The room recorded presence events with its saved
+entities and nodes intact.
+[Visual and performance evidence](environment-art-revamp.md#planted-cave-exit).
+
 ## November 26 — Recessed cave mouths
 
 Protected `8f905c18ee6a2` serves `24319c7` with immediate rollback

@@ -267,6 +267,31 @@ past the object. Check daylight and dusk or night, where a dark terrain can
 hide sparse ground cover and leave an abrupt seam. Keep the matched view in
 the environment review evidence when resolving a reported example.
 
+### Planted cave exit
+
+Source `2349c0b` gives the outlet a larger uphill belt of rooted grass,
+a shorter belt on the other side and a lightly worn centre tread. The
+existing instanced meadow supplies the blades. A generated 8 KiB mask
+drives plants and filtered ground colour from the same toroidal field.
+Normal and Lightweight keep the same added candidate indices, while
+Lightweight uses the cheaper four-blade geometry. The reserve is bounded
+by the number of cells that can intersect the outlet. The terrain worker,
+cave geometry, gameplay and collisions remain byte-identical.
+
+Matched browser screenshots on one RTX 2060 covered noon and dusk in
+both profiles at 850×552. Median frame intervals stayed at 16.7 ms
+and p95 stayed at 16.7–16.8 ms with 101 draws in Normal and 89 in
+Lightweight. Compared with the preceding exit build, added plants
+accounted for 3,140 scene triangles in Normal and 1,428 in Lightweight.
+A walk near the exit passed in each profile. The full suite passed
+492 tests with two skips. A focused clearance test checked the planted
+roots against the existing shared
+rock surface and verified a clear tread through the middle. Opus
+identified an overlap between the tread and ground shading and a
+hard-coded shader bound. The final build reduces meadow shading
+in the tread and computes the bound from the outlet coordinates.
+Independent signed-in visits and multi-device optimization remain open.
+
 ### Recessed cave mouths
 
 Source `24319c7` shortens and buries the protruding low exterior feet at

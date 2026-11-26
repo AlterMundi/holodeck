@@ -401,9 +401,11 @@ The [weathered footing](environment-art-revamp.md#weathered-cave-footing)
 adds irregular damp contact outdoors and dry soil on the sheltered walls
 with identical shell and crown collision. The [recessed mouths](environment-art-revamp.md#recessed-cave-mouths)
 then shorten the projecting feet with collision following the new exterior.
-A controlled keyboard crossing through both mouths passed. Continue the
-nearby ground cover into the exit feet and compare it from the matched
-exit view at dusk.
+A controlled keyboard crossing through both mouths passed. The [planted
+exit](environment-art-revamp.md#planted-cave-exit) continues the grass
+around the feet and leaves a worn centre tread. The rest of the
+western meadow and the woodland still need the reference level of
+coverage, species layering and close-up detail.
 
 Start with the [foyer](../art/compaii-house/redesign/review/foyer-baked-light.jpg)
 and [Beacon room](../art/compaii-house/redesign/review/beacon-light-after.jpg).
