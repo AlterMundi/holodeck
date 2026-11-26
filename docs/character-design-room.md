@@ -20,6 +20,11 @@ world scene and uses the worktable's miniature movement and local camera.
 **Salir de la mesa** or Escape returns control to the visitor in the same
 room. The foyer door handles room exit.
 
+The direct viewer also offers **Entrar al taller** from the foyer when the
+world confirms the Character door. Inside the studio, **Abrir sala 3D**
+returns to the same room in the world projection, where the visitor can
+approach the physical table and select **Usar mesa**.
+
 The physical table and direct web projection use the same Three.js player
 for Navegante and the humanoid rig, Proyección A2UI controls and scoped
 review state. Both support compatible clips, play, pause, scrubbing at

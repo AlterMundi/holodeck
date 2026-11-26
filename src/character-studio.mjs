@@ -88,21 +88,23 @@ const studioStyle=`
 .character-studio{position:fixed;inset:0;background:#07121a;color:#f4f4e9}
 .character-studio canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
 .character-studio header{position:absolute;top:max(22px,env(safe-area-inset-top));left:clamp(18px,4vw,54px);
-  right:clamp(18px,4vw,54px);display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+  right:clamp(18px,4vw,54px);display:flex;justify-content:space-between;align-items:center;gap:12px;pointer-events:none}
+.character-studio header nav{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:2px 16px}
 .character-studio h1{font:500 clamp(19px,4.8vw,34px)/1.1 Georgia,serif;margin:0;color:#f5eccd}
 .character-studio a{pointer-events:auto;color:#c5e9e3;text-decoration:none;border-bottom:1px solid #82b7ad;padding:8px 0}
 .character-studio a:focus-visible{outline:2px solid #f2d393}
 .character-studio output{position:absolute;bottom:20px;left:clamp(18px,4vw,54px);font-size:12px;color:#c4dddb;pointer-events:none}
 .character-studio .studio-a11y{position:absolute;inset:0;pointer-events:none}
 .character-studio.studio-compact header{top:max(12px,env(safe-area-inset-top))}
-.character-studio.studio-compact output{top:max(54px,calc(env(safe-area-inset-top) + 42px));bottom:auto;
+.character-studio.studio-compact header nav{gap:8px;flex-wrap:nowrap;white-space:nowrap;font-size:12px}
+.character-studio.studio-compact output{top:max(60px,calc(env(safe-area-inset-top) + 48px));bottom:auto;
   right:18px;font-size:14px}
 `;
 
 function buildStage(document){
   const wrapper=document.createElement('main');
   wrapper.className='character-studio';
-  wrapper.innerHTML='<header><h1>Taller de personajes</h1><a href="./">Volver al mundo</a></header><output aria-live="polite"></output><div class="studio-a11y"></div>';
+  wrapper.innerHTML='<header><h1>Taller de personajes</h1><nav aria-label="Taller"><a href="./" data-studio-room hidden>Abrir sala 3D</a><a href="./" data-studio-return>Volver al mundo</a></nav></header><output aria-live="polite"></output><div class="studio-a11y"></div>';
   const style=document.createElement('style');
   style.textContent=studioStyle;
   wrapper.prepend(style);
@@ -110,42 +112,51 @@ function buildStage(document){
   return wrapper;
 }
 
-function bindStudioReturn(wrapper,space){
-  const link=wrapper.querySelector('header a');
-  link.onclick=null;
-  link.removeAttribute('aria-disabled');
-  link.textContent='Volver al mundo';
-  if(!space?.exits?.some(exit=>exit.to===ATELIER_FOYER))return;
-  link.textContent='Volver al vestíbulo';
-  let pending=false;
-  link.onclick=async event=>{
-    event.preventDefault();
-    if(pending)return;
-    pending=true;
-    link.setAttribute('aria-disabled','true');
-    const destination=new URL(link.href);
-    const move={from:space.id,to:ATELIER_FOYER};
-    let next;
-    try{
-      const result=await fetch(new URL('api/space',destination),{
-        method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(move),signal:AbortSignal.timeout(8000),
-      });
-      if(result.ok)next=await result.json();
-    }catch{}
-    if(!next){
-      try{next=await readSpace(AbortSignal.timeout(5000));}catch{}
-    }
-    if(next?.id===ATELIER_FOYER){
-      const arrival=arrivalDoor(space,next);
-      if(arrival)destination.hash=doorLocation(arrival);
-      location.replace(destination);
-      return;
-    }
-    wrapper.querySelector('output').textContent='No pude abrir la puerta. Volvé a intentar.';
+function bindStudioNavigation(wrapper,space){
+  const back=wrapper.querySelector('[data-studio-return]'),studio=wrapper.querySelector('[data-studio-room]');
+  for(const link of [back,studio]){
+    link.onclick=null;
     link.removeAttribute('aria-disabled');
-    pending=false;
+  }
+  back.textContent='Volver al mundo';
+  studio.textContent='Abrir sala 3D';
+  studio.hidden=space?.id!==CHARACTER_STUDIO;
+  const available=to=>space?.exits?.some(exit=>exit.to===to);
+  let pending=false;
+  const bindPassage=(link,to,label)=>{
+    link.textContent=label;
+    link.hidden=false;
+    link.onclick=async event=>{
+      event.preventDefault();
+      if(pending)return;
+      pending=true;
+      link.setAttribute('aria-disabled','true');
+      const destination=new URL(link.href);
+      const move={from:space.id,to};
+      let next;
+      try{
+        const result=await fetch(new URL('api/space',destination),{
+          method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify(move),signal:AbortSignal.timeout(8000),
+        });
+        if(result.ok)next=await result.json();
+      }catch{}
+      if(!next){
+        try{next=await readSpace(AbortSignal.timeout(5000));}catch{}
+      }
+      if(next?.id===to){
+        const arrival=arrivalDoor(space,next);
+        if(arrival)destination.hash=doorLocation(arrival);
+        location.replace(destination);
+        return;
+      }
+      wrapper.querySelector('output').textContent='No pude abrir la puerta. Volvé a intentar.';
+      link.removeAttribute('aria-disabled');
+      pending=false;
+    };
   };
+  if(space?.id===CHARACTER_STUDIO&&available(ATELIER_FOYER))bindPassage(back,ATELIER_FOYER,'Volver al vestíbulo');
+  if(space?.id===ATELIER_FOYER&&available(CHARACTER_STUDIO))bindPassage(studio,CHARACTER_STUDIO,'Entrar al taller');
 }
 
 function disposeFigure(figure){
@@ -271,7 +282,7 @@ export function openCharacterStudio(document,table=null){
       if(!visible)return;
       if(typeof space?.id!=='string'||!space.id)throw Error('Missing room');
       canReview=space.id===CHARACTER_STUDIO;
-      if(projected)bindStudioReturn(projected.stage,canReview?space:null);
+      if(projected)bindStudioNavigation(projected.stage,space);
     }catch{
       canReview=null;
     }finally{
@@ -530,7 +541,7 @@ export function openCharacterStudio(document,table=null){
       canReview=null;
       review=null;
       selectedNote='';
-      if(projected)bindStudioReturn(projected.stage,null);
+      if(projected)bindStudioNavigation(projected.stage,null);
       throw Error('Cambió el acceso al Taller. Comprobalo para continuar.');
     }
     const result=response.ok?await response.json().catch(()=>null):null;

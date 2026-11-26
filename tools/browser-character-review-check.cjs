@@ -125,10 +125,15 @@ async function main(){
     assert.deepEqual(await native('character-review.current'),{status:403});
     for(const [from,to] of [['outside',foyer],[foyer,studio]]){
       assert.equal((await native('space.move',{from,to})).id,to);
-      const status=await page.evaluate(async({from,to})=>(await fetch('api/space',{method:'POST',
-        headers:{'content-type':'application/json'},body:JSON.stringify({from,to})})).status,{from,to});
-      assert.equal(status,200);
     }
+    assert.equal(await page.evaluate(async foyer=>(await fetch('api/space',{method:'POST',
+      headers:{'content-type':'application/json'},body:JSON.stringify({from:'outside',to:foyer})})).status,foyer),200);
+    const worldLoaded=()=>page.waitForURL(value=>!value.searchParams.has('taller'));
+    await page.goto(url+'?taller=personajes',{waitUntil:'domcontentloaded'});
+    await page.getByRole('link',{name:'Entrar al taller',exact:true}).click();
+    await worldLoaded();
+    const currentSpace=()=>page.evaluate(()=>fetch('api/space?live=1').then(r=>r.json()));
+    assert.equal((await currentSpace()).id,studio);
     await page.goto(url+'?taller=personajes',{waitUntil:'domcontentloaded'});
     const panel=page.getByRole('group',{name:'Revisión de movimiento',exact:true});
     const action=name=>panel.getByRole('button',{name,exact:true});
@@ -161,10 +166,12 @@ async function main(){
     await page.screenshot({path:join(evidence,'character-review-roundtrip.png')});
 
     // The shared pose stays at frame 36. Frame 37 is a visitor-local choice.
-    await page.goto(url,{waitUntil:'domcontentloaded'});
+    await page.getByRole('link',{name:'Abrir sala 3D',exact:true}).click();
+    await worldLoaded();
     await page.waitForFunction(()=>window.holodeckDevelopment?.client.getLocalCharacterState()&&
       document.querySelector('#world-entry').hidden&&!document.body.classList.contains('room-transition'));
-    const roomView=await page.evaluate(()=>fetch('api/space?live=1').then(r=>r.json()));
+    const roomView=await currentSpace();
+    assert.equal(roomView.id,studio);
     const bench=roomView.objects.find(object=>object.id==='character-worktable');
     assert.ok(bench);
     await page.evaluate(({x,z})=>{
@@ -236,7 +243,7 @@ async function main(){
     assert.deepEqual(errors,[]);
     console.log(JSON.stringify({pose,revision:readback.revision,visitor,observedNote:note,roomScope:true,
       conversationPose:referredPose,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
-      situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true}));
+      situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,doorFromViewer:true,returnedToRoomFromViewer:true}));
   }finally{
     await browser?.close();
     runtime?.close();
