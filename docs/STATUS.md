@@ -28,6 +28,16 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+The in-world table also exposes a native retry when the initial
+character cannot load. The complete Chromium check forced a failed
+Navegante download after crossing the physical foyer door, retried
+from the table and reopened the controls without replacing the world
+document or changing rooms. The standalone viewer also recovered the
+exact pose after a forced model failure. The latest staged archive
+is `8a42f0c41b06b8d740c154093053aa437fed7daf7439c7253dbe6d526b8dbeaf`.
+It passed 435 Node checks with two skips. The private request below
+remains the prepared activation candidate.
+
 Candidate `2c4f220` adds the original-link model retry to the verified
 arrival baseline. Archive
 `c2622b55ec85e31311f19e30fb3586b877bc07fec06c5a6e9f1c44daea9dbd1c`

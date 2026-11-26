@@ -153,12 +153,18 @@ async function main(){
       assert.equal(new URL(page.url()).searchParams.has('taller'),false);
       return currentSpace();
     };
-    const openWorktable=async (space,clientPage=page,offset=0)=>{
+    const openWorktable=async (space,clientPage=page,offset=0,{retryModel=false}={})=>{
       const bench=space.objects.find(object=>object.id==='character-worktable');
       assert.ok(bench,'The Character room has no worktable');
       await placeAvatar({x:bench.position.x+offset,y:.25,z:bench.position.z+1.62},180,clientPage);
       await clientPage.getByRole('button',{name:'Usar mesa',exact:true}).press('Enter',{timeout:15000});
       const table=clientPage.getByRole('group',{name:'Mesa de Char Design',exact:true});
+      if(retryModel){
+        await table.getByText('No se pudo abrir el personaje. Volvé a probar.',{exact:true}).waitFor();
+        assert.equal(await table.getByRole('button',{name:'Salir de la mesa',exact:true}).isEnabled(),true);
+        await table.getByRole('button',{name:'Reintentar personaje',exact:true}).press('Enter');
+        await table.getByRole('button',{name:'Reintentar personaje',exact:true}).waitFor({state:'detached'});
+      }
       await table.getByRole('button',{name:'Pose',exact:true}).waitFor({state:'attached'});
       return table;
     };
@@ -172,7 +178,11 @@ async function main(){
     await page.goto(url,{waitUntil:'domcontentloaded'});
     await worldReady();
     const doorRoom=await approachDoor(studio);
-    const walkedInTable=await openWorktable(doorRoom);
+    const documentBeforeTable=await page.evaluate(()=>performance.timeOrigin);
+    await page.route('**/assets/avatar/navegante-blender.glb',route=>route.fulfill({status:503}),{times:1});
+    const walkedInTable=await openWorktable(doorRoom,page,0,{retryModel:true});
+    assert.equal(await page.evaluate(()=>performance.timeOrigin),documentBeforeTable);
+    assert.equal((await currentSpace()).id,studio);
     await page.screenshot({path:join(evidence,'character-room-world-door.png')});
     await page.keyboard.press('Escape');
     await walkedInTable.waitFor({state:'detached'});
@@ -540,7 +550,7 @@ async function main(){
     assert.deepEqual(errors,[]);
     console.log(JSON.stringify({pose,flightChapters,groundChapters,comparedHeldPose:heldPose,comparisonFrame:110,revision:committed.revision,visitor,observedNote:note,roomScope:true,
       conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,shortTableWithSharedNote:shortTable,tablePlayback:{speed:2,stoppedAt:lastFrame,loopWrapped:true},independentTableOrbit:{firstCamera,peerCamera,peerOrbit},sharedReceiptMatchesLocalFrame:true,notesWaitedForSharedPose:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
-      situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,reciprocalWorldDoors:true,openedTableFromWorldDoor:true,doorFromViewer:true,returnedToRoomFromViewer:true,rigRetryKeptPose:true,noGraphicsRetryKeptPose:true,graphicsRestoreKeptLocalFrameAndDraft:true}));
+      situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,reciprocalWorldDoors:true,openedTableFromWorldDoor:true,doorFromViewer:true,returnedToRoomFromViewer:true,tableRigRetriedInPlace:true,rigRetryKeptPose:true,noGraphicsRetryKeptPose:true,graphicsRestoreKeptLocalFrameAndDraft:true}));
   }finally{
     await browser?.close();
     runtime?.close();

@@ -248,6 +248,7 @@ export function openCharacterStudio(document,table=null){
   let view=Object.hasOwn(viewAngles,url.searchParams.get('vista'))?url.searchParams.get('vista'):'angle';
   let figure,playback,rig,clip,frame=0,playing=false,revision='',note='',message='',showedAt=-Infinity;
   let sequence=0,elapsed=0,previous=0,visible=true,loop=true,speed='1';
+  let loadingInitialRig=false,rigRetryAvailable=false;
   let compact=Boolean(table),section='Pose',panelWidth=table?2.20:widePanelWidth;
   let primary=null,reference=null,showingReference=false,referenceRequest=0,followedPose;
   let canReview=null,checkingAccess=false,review=null,selectedNote='',readingReview=false,savingNote=false,pendingNote,draftPose,noteReplaced=false,presentationBusy=false;
@@ -292,11 +293,13 @@ export function openCharacterStudio(document,table=null){
     children:['tableHeading',...root.children.filter(id=>id!=='title')]},
     ...controls.slice(1).map(control=>control.id==='title'?label('title','Char Design','title'):control),
     row('tableHeading',['title','close']),button('close','Salir de la mesa')]:null;
+  const loadingPanel=()=>({...tableControls[0],children:['tableHeading','status','retryRig']});
   if(table){
     receive('updateComponents',{components:[
-      {...tableControls[0],children:['tableHeading','status']},
+      loadingPanel(),
       ...tableControls.filter(component=>['tableHeading','title','close'].includes(component.id)),
       {...label('status',path('status'),'status'),lines:2},
+      {...button('retryRig','Reintentar personaje'),visible:path('rigRetryAvailable'),disabled:path('loadingInitialRig')},
     ]});
   }else{
     receive('createSurface',{catalogId:spatialHudCatalog.id});
@@ -494,7 +497,7 @@ export function openCharacterStudio(document,table=null){
     if(!visible)return;
     message=text;
     if(projected)projected.status.textContent=text;
-    if(table&&!clip)receive('updateDataModel',{value:{status:text}});
+    if(table&&!clip)receive('updateDataModel',{value:{status:text,rigRetryAvailable,loadingInitialRig}});
     refresh();
   }
   function refresh(){
@@ -665,6 +668,7 @@ export function openCharacterStudio(document,table=null){
   }
   async function activate(name,{value,clipEdition:expectedClip}={}){
     if(name==='close'&&table){table.close();return;}
+    if(name==='retryRig'&&table&&rigRetryAvailable)return openInitialRig();
     if(!name)return;
     if(name==='checkReviewAccess')return checkReviewAccess();
     if(Object.hasOwn(sectionControls,name)){section=name;refresh();return;}
@@ -764,21 +768,33 @@ export function openCharacterStudio(document,table=null){
 
   projected?.start(render);
   const initial=!table&&Object.hasOwn(rigs,url.searchParams.get('rig'))?url.searchParams.get('rig'):'companion';
-  void loadRig(initial,table?undefined:url.searchParams.get('clip'),
-    table?0:url.searchParams.get('fotograma'),table?null:url.searchParams.get('edicion'))
-    .then(()=>{if(visible){playing=!table&&!reduce.matches&&!url.searchParams.has('fotograma');refresh();}})
-    .catch(()=>{
+  async function openInitialRig(){
+    if(!visible||loadingInitialRig)return;
+    loadingInitialRig=true;
+    try{
+      await loadRig(initial,table?undefined:url.searchParams.get('clip'),
+        table?0:url.searchParams.get('fotograma'),table?null:url.searchParams.get('edicion'));
+      rigRetryAvailable=false;
+      if(visible){playing=!table&&!reduce.matches&&!url.searchParams.has('fotograma');refresh();}
+    }catch{
       if(!visible)return;
+      rigRetryAvailable=true;
+    }finally{
+      loadingInitialRig=false;
+    }
+    if(rigRetryAvailable&&visible){
       report(table?'No se pudo abrir el personaje. Volvé a probar.':'No se pudo abrir el personaje. Podés reintentar o volver al mundo.');
       if(projected)offerStudioRetry(projected.stage);
-    });
+    }
+  }
+  void openInitialRig();
   function setShortTableLayout(short){
     const width=short?3.10:2.20;
     if(!table||width===panelWidth)return;
     panelWidth=width;
     tableControls[0]={...tableControls[0],width};
     const panel=tableControls[0];
-    receive('updateComponents',{components:[playback?panel:{...panel,children:['tableHeading','status']}]});
+    receive('updateComponents',{components:[playback?panel:loadingPanel()]});
   }
   return {dispatch,render,dispose,setShortTableLayout,
     currentPose:()=>visible&&playback?reviewPose():null};
