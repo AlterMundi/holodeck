@@ -1,12 +1,12 @@
 import {
-  BoxGeometry, BufferGeometry, Color, Float32BufferAttribute, Group,
+  BoxGeometry, BufferGeometry, Color, Float32BufferAttribute, Group, IcosahedronGeometry,
   InstancedMesh, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, Vector3,
 } from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {toroidalAirColor} from './toroidal-air.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
 import {
-  INNER_WOODLANDS, TOROIDAL_TERRAIN, terrainElevation, terrainPosition, terrainTrail,
+  INNER_WOODLANDS, TOROIDAL_TERRAIN, terrainCoordinates, terrainElevation, terrainFrame, terrainPosition, terrainTrail,
   terrainWoodland, woodlandCoordinates,
 } from './toroidal-terrain.mjs';
 
@@ -173,6 +173,70 @@ function placeTree(transform,tree){
   transform.updateMatrix();
 }
 
+const undergrowthBudget=384;
+
+function undergrowthGeometry(){
+  const lobes=[
+    [-.39,.28,.10,.47,.39,.36,0x42663d],
+    [.32,.32,-.20,.52,.43,.41,0x456f43],
+    [-.15,.47,-.21,.44,.44,.34,0x567d47],
+    [.22,.20,.38,.43,.27,.34,0x355936],
+    [-.47,.16,-.32,.38,.29,.30,0x4c7040],
+  ];
+  const pieces=lobes.map(([x,y,z,w,h,d,tint],index)=>{
+    const geometry=new IcosahedronGeometry(1,0).rotateY(index*.76).scale(w,h,d).translate(x,y,z);
+    const vertices=geometry.getAttribute('position');
+    const color=new Color(tint),colors=[];
+    for(let vertex=0;vertex<vertices.count;vertex++){
+      const light=.57+.48*Math.max(0,vertices.getY(vertex));
+      colors.push(color.r*light,color.g*light,color.b*light);
+    }
+    geometry.setAttribute('color',new Float32BufferAttribute(colors,3));
+    return geometry;
+  });
+  const geometry=mergeGeometries(pieces);
+  for(const piece of pieces)piece.dispose();
+  return geometry;
+}
+
+function undergrowthFor(trees){
+  const plants=[],transform=new Object3D();
+  for(const {u,v,h,tint,point,yaw} of trees){
+    if(tint<.25)continue;
+    const {alongRing,aroundTube}=terrainFrame(u,v);
+    const pick=salt=>sample(Math.round(u*1e6),Math.round(v*1e6),salt);
+    const angle=yaw+pick(73);
+    const count=pick(86)>.38?2:1;
+    for(let index=0;index<count;index++){
+      const radius=(1.25+pick(301+index)*1.45)*(index+1);
+      const a=angle+index*2.21;
+      const offset=point.toArray().map((value,axis)=>value+
+        radius*(alongRing[axis]*Math.cos(a)+aroundTube[axis]*Math.sin(a)));
+      const at=terrainCoordinates(offset);
+      const elevation=terrainElevation(at.u,at.v);
+      if(Math.abs(elevation-h)>radius*.59||terrainTrail(at.u,at.v)>.012||
+         terrainWoodland(at.u,at.v,elevation)<.22)continue;
+      const width=.85+pick(141+index)*.92;
+      const ground=terrainPosition(at.u,at.v,elevation);
+      const frame=terrainFrame(at.u,at.v);
+      const nearbyHeight=(direction,sign)=>{
+        const sample=terrainCoordinates(ground.map((value,axis)=>value+direction[axis]*width*sign));
+        return terrainElevation(sample.u,sample.v);
+      };
+      const slope=Math.hypot(nearbyHeight(frame.alongRing,1)-nearbyHeight(frame.alongRing,-1),
+        nearbyHeight(frame.aroundTube,1)-nearbyHeight(frame.aroundTube,-1))/(2*width);
+      if(slope>.21)continue;
+      transform.position.fromArray(terrainPosition(at.u,at.v,elevation-.08));
+      toroidalRotation(transform.position,a,transform.quaternion);
+      transform.scale.set(width,.46+pick(414+index)*.67,width*.78);
+      transform.updateMatrix();
+      plants.push({matrix:transform.matrix.clone(),point:transform.position.clone(),
+        tint:.73+pick(911+index)*.35,primary:index===0});
+    }
+  }
+  return plants;
+}
+
 export class ToroidalWoodland{
   constructor(scene,colliders,useDaylight,daylight){
     this.colliders=colliders;
@@ -190,6 +254,26 @@ export class ToroidalWoodland{
       this.group.add(mesh);
       return mesh;
     });
+    const understoryMaterial=new MeshStandardMaterial({vertexColors:true,roughness:.96});
+    useDaylight(understoryMaterial,daylight);
+    this.undergrowthDistance={value:112};
+    const compile=understoryMaterial.onBeforeCompile;
+    understoryMaterial.customProgramCacheKey=()=> 'toroidal-understory';
+    understoryMaterial.onBeforeCompile=shader=>{
+      compile.call(understoryMaterial,shader);
+      shader.uniforms.undergrowthDistance=this.undergrowthDistance;
+      shader.vertexShader=shader.vertexShader
+        .replace('#include <common>','#include <common>\nuniform float undergrowthDistance;')
+        .replace('#include <begin_vertex>',`#include <begin_vertex>
+          vec3 root=(modelMatrix*instanceMatrix[3]).xyz;
+          float fade=1.0-smoothstep(undergrowthDistance-22.0,undergrowthDistance,distance(cameraPosition,root));
+          transformed*=fade;`);
+    };
+    this.undergrowth=new InstancedMesh(undergrowthGeometry(),understoryMaterial,undergrowthBudget);
+    this.undergrowth.name='Woodland understory';
+    this.undergrowth.count=0;
+    this.undergrowthSelection=[];
+    this.group.add(this.undergrowth);
     const transform=new Object3D();
     this.chunks=new Map();
     for(const tree of trees){
@@ -215,11 +299,22 @@ export class ToroidalWoodland{
     this.last.copy(position);
     this.lightweight=lightweight;
     for(const mesh of this.meshes)mesh.count=0;
+    const undergrowthRange=lightweight?66:112;
+    const undrawn=this.undergrowthSelection;
+    undrawn.length=0;
     for(const chunk of this.chunks.values()){
       const range=chunk.center.distanceToSquared(position);
       if(this.colliders){
         if(range<74**2&&!chunk.collider)this.addCollision(chunk);
         else if(range>96**2&&chunk.collider)this.removeCollision(chunk);
+      }
+      if(range<(undergrowthRange+58)**2){
+        chunk.undergrowth??=undergrowthFor(chunk.trees);
+        for(const plant of chunk.undergrowth){
+          if(lightweight&&!plant.primary)continue;
+          plant.distance=plant.point.distanceToSquared(position);
+          if(plant.distance<(undergrowthRange+16)**2)undrawn.push(plant);
+        }
       }
       const limit=chunk.inner?skylineRange:maxRange;
       if(range>(limit+chunkSize)**2)continue;
@@ -234,7 +329,19 @@ export class ToroidalWoodland{
         mesh.count++;
       }
     }
-    for(const mesh of this.meshes){
+    this.undergrowthDistance.value=undergrowthRange;
+    if(undrawn.length>undergrowthBudget){
+      undrawn.sort((a,b)=>a.distance-b.distance);
+      this.undergrowthDistance.value=Math.min(undergrowthRange,Math.max(22,Math.sqrt(undrawn[undergrowthBudget-1].distance)-7));
+    }
+    const undergrowth=this.undergrowth;
+    undergrowth.count=Math.min(undrawn.length,undergrowthBudget);
+    for(let index=0;index<undergrowth.count;index++){
+      const plant=undrawn[index];
+      undergrowth.setMatrixAt(index,plant.matrix);
+      undergrowth.setColorAt(index,this.tint.setRGB(plant.tint,plant.tint,plant.tint));
+    }
+    for(const mesh of [...this.meshes,undergrowth]){
       mesh.visible=mesh.count>0;
       if(!mesh.visible)continue;
       mesh.instanceMatrix.needsUpdate=true;
@@ -273,5 +380,8 @@ export class ToroidalWoodland{
     for(const geometry of this.geometry)geometry.dispose();
     this.material.dispose();
     this.skylineMaterial.dispose();
+    this.undergrowth.dispose();
+    this.undergrowth.geometry.dispose();
+    this.undergrowth.material.dispose();
   }
 }

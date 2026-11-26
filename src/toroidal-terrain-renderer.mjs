@@ -10,6 +10,7 @@ const profiles = Object.freeze({
   light: {budget: 64, segments: 12},
 });
 const ROOT_SEGMENTS = 16;
+const WATER_OPACITY = .8;
 
 // The sun is fixed in every local radial frame (along the ring, radial up,
 // around the tube) instead of in world axes: about 38° above the local
@@ -202,16 +203,17 @@ const waterShading = {
     vec3 reflectedRay = reflect(-holoView,normal);
     vec3 reflectedAir=toroidalAir(dot(reflectedRay,holoSun),holodeckDaylight);
     float skyHeight=clamp(dot(reflectedRay,holoUp),0.0,1.0);
-    float nightSky=(1.0-holodeckDaylight)*(1.0-smoothstep(.0,.08,holodeckWaterViewDepth));
+    float surfaceView=1.0-smoothstep(0.0,.08,holodeckWaterViewDepth);
+    float nightSky=(1.0-holodeckDaylight)*surfaceView;
     reflectedAir+=vec3(.022,.038,.061)*nightSky*mix(.40,1.0,skyHeight);
-    if(holodeckHasCosmos && gl_FrontFacing && holodeckWaterViewDepth<=.014 && holodeckDaylight<.85){
+    if(holodeckHasCosmos && gl_FrontFacing && surfaceView>0.0 && holodeckDaylight<.85){
       // View space normals add wave detail, then the celestial map is
       // sampled in the same world axes as the sky.
       vec3 worldRay=transpose(mat3(viewMatrix))*reflectedRay;
       float window=toroidalCosmosWindow(skyHeight,holodeckDaylight)*(1.0-smoothstep(.21,.85,holodeckDaylight));
       vec3 skyLight=toroidalCosmos(holodeckCosmos,worldRay);
       float radiance=max(max(skyLight.r,skyLight.g),skyLight.b);
-      reflectedAir=mix(reflectedAir,skyLight*1.12,window*smoothstep(.018,.24,radiance));
+      reflectedAir=mix(reflectedAir,skyLight*1.12,window*surfaceView*smoothstep(.018,.24,radiance));
     }
     vec3 depths=(outgoingLight-totalSpecular)*mix(.25,1.0,holodeckDaylight);
     depths+=holodeckDaylight*vec3(.025,.066,.084);
@@ -220,21 +222,18 @@ const waterShading = {
       .38*holoShallow*(1.0-.8*holoFresnel)*holodeckDaylight);
     ${aerialPerspective('',.68)}
     outgoingLight+=totalSpecular*(.65+.48*holoSwell)*(1.0-holoHaze*.68);
-  `,
-};
-
-const shoreShading={
-  output:waterShading.output+`
-    if(gl_FrontFacing && holodeckWaterViewDepth<=.014){
-      float depth=max(0.0,toroidalShoreDepth);
+    // Opacity follows the signed depth at the fragment everywhere. Camera
+    // submersion can change the lighting, never the transmission policy.
+    float depth=max(0.0,toroidalShoreDepth);
+    if(depth<3.5){
       float incident=max(.28,dot(normal,holoView));
       float transmission=exp(-.68*depth/incident);
       float edge=smoothstep(0.0,.075,depth);
-      float opticalOpacity=mix(1.0-transmission,.80,holoFresnel);
-      opticalOpacity=mix(max(.04,opticalOpacity),1.0,smoothstep(2.30,3.5,depth));
+      float opticalOpacity=mix(1.0-transmission,diffuseColor.a,holoFresnel);
+      opticalOpacity=mix(clamp(opticalOpacity,.04,diffuseColor.a),diffuseColor.a,smoothstep(2.30,3.5,depth));
       float contact=smoothstep(.026,.105,depth)*(1.0-smoothstep(.13,.39,depth));
       float ripple=smoothstep(.07,.28,holoSwell);
-      float whitewater=contact*ripple*.24*(1.0-smoothstep(16.0,49.0,distanceToWater));
+      float whitewater=gl_FrontFacing?surfaceView*contact*ripple*.24*(1.0-smoothstep(16.0,49.0,distanceToWater)):0.0;
       outgoingLight=mix(outgoingLight,vec3(.61,.75,.69)*mix(.25,1.0,holodeckDaylight),whitewater);
       diffuseColor.a=edge*max(opticalOpacity,whitewater);
     }
@@ -299,11 +298,10 @@ function meshFor(data, material) {
   return new Mesh(geometry,material);
 }
 
-function createTile(data, material, waterMaterial, shoreMaterial) {
+function createTile(data, material, waterMaterial) {
   const mesh = meshFor(data,material);
   if(data.water){
-    const shore=data.water.depth.some(depth=>depth<3.6);
-    const water=meshFor(data.water,shore?shoreMaterial:waterMaterial);
+    const water=meshFor(data.water,waterMaterial);
     water.name='Water surface';
     mesh.add(water);
   }
@@ -328,18 +326,14 @@ export class ToroidalTerrainRenderer {
     this.group = new Group();
     this.group.name = 'Toroidal terrain';
     this.material = new MeshStandardMaterial({vertexColors:true,roughness:.96});
-    this.waterMaterial = new MeshStandardMaterial({color:0x19606f,roughness:.34,metalness:0,side:DoubleSide});
-    this.shoreMaterial=this.waterMaterial.clone();
-    Object.assign(this.shoreMaterial,{transparent:true,depthWrite:false,forceSinglePass:true});
+    this.waterMaterial = new MeshStandardMaterial({color:0x19606f,roughness:.34,metalness:0,side:DoubleSide,
+      transparent:true,opacity:WATER_OPACITY,depthWrite:false,forceSinglePass:true});
     this.environment={water:{value:0},sun:{value:new Vector3(...SUN_LOCAL)},daylight:{value:1},
       cosmos:{value:null},hasCosmos:{value:false},approach:{value:1},eyeHeight:{value:0},sill:{value:new Vector3()},meadowGrain:{value:1},lightWater:{value:false}};
     useToroidalRockDetail(this.material,{meadow:true});
-    const openWaterTime=useToroidalWaterDetail(this.waterMaterial,this.environment.lightWater);
-    const shoreTime=useToroidalWaterDetail(this.shoreMaterial,this.environment.lightWater);
-    this.updateWaterTime=seconds=>{openWaterTime(seconds);shoreTime(seconds);};
+    this.updateWaterTime=useToroidalWaterDetail(this.waterMaterial,this.environment.lightWater);
     artDirect(this.material,'terrain',terrainShading,this.environment);
     artDirect(this.waterMaterial,'water',waterShading,this.environment);
-    artDirect(this.shoreMaterial,'water-shore',shoreShading,this.environment);
     this.active = new Map();
     this.target = null;
     this.requested = null;
@@ -348,7 +342,7 @@ export class ToroidalTerrainRenderer {
     this.disposed = false;
     for (let column = 0; column < TOROIDAL_TERRAIN.rootColumns; column += 1) {
       const tile = terrainTile(0, column, 0);
-      const mesh = createTile(buildTerrainTile(tile, ROOT_SEGMENTS), this.material, this.waterMaterial, this.shoreMaterial);
+      const mesh = createTile(buildTerrainTile(tile, ROOT_SEGMENTS), this.material, this.waterMaterial);
       this.active.set(tileKey(tile, ROOT_SEGMENTS), mesh);
       this.group.add(mesh);
     }
@@ -441,7 +435,7 @@ export class ToroidalTerrainRenderer {
       const missing = entries.filter(({key}) => !this.active.has(key));
       this.target = {key: job.request.key, entries, missing, segments, received: new Map()};
     } else if (job.kind === 'mesh' && job.target === this.target && job.target.key === this.requested.key) {
-      job.target.received.set(job.key, createTile(data.mesh, this.material, this.waterMaterial, this.shoreMaterial));
+      job.target.received.set(job.key, createTile(data.mesh, this.material, this.waterMaterial));
     }
     this.pump();
   }
@@ -491,7 +485,6 @@ export class ToroidalTerrainRenderer {
     this.environment.cosmos.value=null;
     this.environment.hasCosmos.value=false;
     this.waterMaterial.dispose();
-    this.shoreMaterial.dispose();
   }
 
   status() {

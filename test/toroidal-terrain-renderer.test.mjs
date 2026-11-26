@@ -71,6 +71,26 @@ test('streamed tiles replace visible terrain together and release superseded geo
   assert.equal(renderer.status().visibleTiles, 0);
 });
 
+test('water keeps one blended surface across the shore and deep tiles', () => {
+  const renderer = new ToroidalTerrainRenderer(new Scene(), base, TestWorker);
+  renderer.update(position(.0171,.258), true);
+  while (renderer.worker.pending) renderer.worker.answer();
+  const water = [];
+  renderer.group.traverse(mesh => {
+    if (mesh.name === 'Water surface') water.push(mesh);
+  });
+  const isShallow = mesh => mesh.geometry.getAttribute('shoreDepth').array.some(depth => depth < 3.6);
+  assert.ok(water.some(isShallow));
+  assert.ok(water.some(mesh => !isShallow(mesh)));
+  for (const {material} of water) {
+    assert.equal(material, renderer.waterMaterial);
+    assert.equal(material.transparent, true);
+    assert.equal(material.opacity, .8);
+    assert.equal(material.depthWrite, false);
+  }
+  renderer.dispose();
+});
+
 test('worker failure preserves usable distant terrain and releases queued work', () => {
   const renderer = new ToroidalTerrainRenderer(new Scene(), base, TestWorker);
   const worker = renderer.worker;
