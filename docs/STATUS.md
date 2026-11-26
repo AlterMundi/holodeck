@@ -28,6 +28,17 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+The protected viewer fix can be selected independently of room work.
+The exact installed archive `d2a9b89a726d2dc5766e00fdfa6701dd2f8faa8cfa6cd11832b8693d90dfa92a`
+produces candidate `9571f17ffca5ed7fe2ca1915665589068cfc9ccda0ed7c64109f6af643c04b50`
+by excluding `.character-studio canvas` from the world startup curtain
+in `public/index.html` and updating its manifest digest. The installed
+package validator accepted it and all 85 other payloads matched.
+Chromium reproduced the hidden, non-interactive canvas using the
+original HTML with the same assets. The corrected HTML showed Navegante
+and restored pointer hits while preserving the curtain for world canvas
+elements. Protected selection still belongs to Holodeck.
+
 Candidate `81cf08f05b0d08c7e63c47b32127a4f5a92c3a39` combines the
 Character branch with world revision `df402335541a2178c4c41e79d655bdfb8599f6bb`.
 It retains the exhibit edition actions and the exterior cave roof and
