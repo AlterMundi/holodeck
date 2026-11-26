@@ -5,7 +5,7 @@ import {Matrix4,OrthographicCamera,PerspectiveCamera,Raycaster,Scene,Vector2} fr
 import {WorldMapHud,worldMapId,worldBearingId} from './world-map-hud.mjs';
 import {DoorPromptHud,compactDoorPromptWidth,doorPromptId,doorPromptWidth} from './door-prompt-hud.mjs';
 import {CollectionHud,collectionHudId,collectionHudWidth} from './collection-hud.mjs';
-import {WorldStatusHud,worldHeaderId,worldNoticeId,worldHeaderWidth} from './world-status-hud.mjs';
+import {WorldStatusHud,worldHeaderId,worldNoticeId,worldControlsId,worldHeaderWidth,worldControlsWidth} from './world-status-hud.mjs';
 import {RecoveryHud,recoveryHudId} from './recovery-hud.mjs';
 import {CreationHud,creationHudId} from './creation-hud.mjs';
 import {BeaconHud,beaconStationId,beaconViewerId,beaconStationWidth,beaconViewerWidth} from './beacon-hud.mjs';
@@ -144,8 +144,9 @@ export class MatterWorktableHud{
       this.map?.markBearingPresented(false);
       this.door?.presented(false);
       this.collection?.presented(false);
-      this.status?.present(true,false);
-      this.status?.present(false,false);
+      this.status?.present(worldHeaderId,false);
+      this.status?.present(worldNoticeId,false);
+      this.status?.present(worldControlsId,false);
       this.recovery?.clear();
       this.creation?.clear();
       this.beacon?.present(false,false);
@@ -243,6 +244,7 @@ export class MatterWorktableHud{
         else if(id===visitHudId)this.visit.viewerGroup=group;
         else if(id===worldHeaderId)this.status.headerGroup=group;
         else if(id===worldNoticeId)this.status.noticeGroup=group;
+        else if(id===worldControlsId)this.status.controlsGroup=group;
         else if(id===recoveryHudId)this.recovery.group=group;
         else if(id===creationHudId)this.creation.group=group;
         else if(id===beaconStationId)this.beacon.stationGroup=group;
@@ -296,7 +298,7 @@ export class MatterWorktableHud{
 
   rayForPointer(event){
     if(this.priorInert!==undefined)return;
-    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.status.headerGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.movementGroups.size)return;
+    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.status.headerGroup&&!this.status.controlsGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.movementGroups.size)return;
     const rect=this.canvas.getBoundingClientRect();
     if(!rect.width||!rect.height)return;
     this.pointerPosition.set((event.clientX-rect.left)*2/rect.width-1,1-(event.clientY-rect.top)*2/rect.height);
@@ -805,7 +807,7 @@ export class MatterWorktableHud{
       !this.webgl.getContext().isContextLost()&&!this.document.querySelector(
         'dialog[open],#signal-editor:not([hidden]),#conversation-panel:not([hidden]),#content-visit:not([hidden]):not(.is-walking)');
     this.creation.update({visible:createClear,width:width-left-right-40,maxHeight:height-createTop-recoveryReserve});
-    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.status.headerGroup&&!this.status.noticeGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.movementGroups.size&&!additional){
+    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.status.headerGroup&&!this.status.noticeGroup&&!this.status.controlsGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.movementGroups.size&&!additional){
       this.releaseHudOverrides();
       this.windows.end();
       this.layer.hide();
@@ -956,6 +958,11 @@ export class MatterWorktableHud{
       const bottom=Number.parseFloat(this.noticeOffset)||100;
       this.place(this.status.noticeGroup,'noticePlacement',viewport,(width+left-right)/2,height-bottom-(.07+.188*lines.length)*scale,scale);
     }
+    if(this.status.controlsGroup){
+      const {right,top}=this.toolInsets(),scale=142;
+      this.place(this.status.controlsGroup,'controlsPlacement',viewport,
+        width-right-12-scale*(worldControlsWidth+.06)/2,Math.max(top,18),scale);
+    }
     if(this.map.group){
       const {left,right}=this.toolInsets();
       const top=width<700&&height>=610?132:76;
@@ -1034,6 +1041,7 @@ export class MatterWorktableHud{
     this.hud.update();
     this.windows.end();
     this.lookPreview.draw(worldHeaderId,this.status.headerGroup,this.hud.getSurfaceBounds(worldHeaderId));
+    this.lookPreview.draw(worldControlsId,this.status.controlsGroup,this.hud.getSurfaceBounds(worldControlsId));
     if(this.cockpit||!this.lookPreview.name||this.document.body.dataset.hudTheme==='light')this.lookPreview.draw(worldMapId,this.map.group,this.hud.getSurfaceBounds(worldMapId));
     this.lookPreview.draw(toolbeltId,this.toolGroup,this.hud.getSurfaceBounds(toolbeltId));
     this.lookPreview.draw(surfaceId,this.group,this.hud.getSurfaceBounds(surfaceId));
@@ -1050,8 +1058,9 @@ export class MatterWorktableHud{
       this.map.markBearingPresented(Boolean(painted&&this.map.bearingGroup&&this.hud.getSurfaceBounds(worldBearingId)));
       this.door.presented(Boolean(painted&&this.door.group&&this.toolGroup&&this.hud.getSurfaceBounds(doorPromptId)));
       this.collection.presented(Boolean(painted&&this.collection.group&&this.hud.getSurfaceBounds(collectionHudId)));
-      this.status.present(true,Boolean(painted&&this.status.headerGroup&&this.hud.getSurfaceBounds(worldHeaderId)));
-      this.status.present(false,Boolean(painted&&this.status.noticeGroup&&this.hud.getSurfaceBounds(worldNoticeId)));
+      this.status.present(worldHeaderId,Boolean(painted&&this.status.headerGroup&&this.hud.getSurfaceBounds(worldHeaderId)));
+      this.status.present(worldNoticeId,Boolean(painted&&this.status.noticeGroup&&this.hud.getSurfaceBounds(worldNoticeId)));
+      this.status.present(worldControlsId,Boolean(painted&&this.status.controlsGroup&&this.hud.getSurfaceBounds(worldControlsId)));
       this.recovery.present(Boolean(painted&&this.recovery.group&&this.hud.getSurfaceBounds(recoveryHudId)));
       this.creation.present(Boolean(painted&&this.creation.group&&this.hud.getSurfaceBounds(creationHudId)));
       this.beacon.present(Boolean(painted&&this.beacon.stationGroup&&this.hud.getSurfaceBounds(beaconStationId)),
