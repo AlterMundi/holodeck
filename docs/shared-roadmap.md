@@ -849,6 +849,9 @@ fade shortly after the player moves away. The receiving composition
 keeps the Character Studio catalog byte-identical after comparing all
 670 sampled frames and their chapter indexes. Two authorized fixtures
 on RTX 2060 passed the peer flight broadcast and remote water effects.
+Day and night captures in Normal and Livianos verified the ongoing skim
+and dry-off. The visible blue drops are too concentrated near the feet
+to read as a prominent trailing wake.
 Track live human acceptance and shared vertical aim in [motion #21](https://github.com/AlterMundi/holodeck/issues/21)
 and [Character Studio #24](https://github.com/AlterMundi/holodeck/issues/24).
 

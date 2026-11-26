@@ -2120,6 +2120,17 @@ compares the published Character Studio frames and preserves its exact catalog. 
 [motion #21](https://github.com/AlterMundi/holodeck/issues/21) and
 [Character Studio #24](https://github.com/AlterMundi/holodeck/issues/24).
 
+Day and night passes at 1120 × 650 on RTX 2060 Normal and Pi 5 Livianos used the
+byte-identical browser bundle from the selected release `58ce88972da7`.
+Both held a lateral flight path 0.19–0.42 m above the water and kept
+emitting. After climbing clear, the wake expired while flight remained
+active. The captures show distinct blue drops close to the feet, but
+there is no sustained, legible blue streak behind the pilot from that
+side view. Livianos is fainter, and the toolbar obscures part of the
+flight path at the original camera pitch. The daytime run used 13:00 Argentina time and preserved the moving
+clock. The bright water further reduces contrast. Increase the wake's
+readable length and coverage before considering the visual change complete.
+
 ## Underwater controls and companion posture
 
 The toroidal motion adapter reports the same local swimming and deep
