@@ -239,19 +239,27 @@ world.
 ## Protected receiving trial
 
 In the existing protected Holodeck, use the admitted human guest and the
-house owner's authenticated identity. Both enter through the foyer.
-The owner shows the humanoid landing frame from the physical worktable.
-The guest opens the same room's review in the direct web projection and
-follows that pose. Compare the rig, clip, edition and frame while each
-visitor adjusts their own camera. The guest adds an agreed note. The owner
-reopens that exact frame at the table, reads the attributed note and checks
-that leaving the table keeps the room active. Returning to the foyer ends
-access to the room review.
+house owner's authenticated identity. Both enter through the foyer. The
+owner uses the physical worktable and the guest opens the same room's
+direct review.
 
-Record the installed package digest and the observed room entry and
-readback. Keep fixture identities and temporary copies in technical
-qualification. The receiving trial uses the existing Home audience
-and room guest list.
+1. At the worktable, walk a short distance, drag to orbit and scroll to
+   approach the subject. The tabletop and room background should move
+   with the miniature's viewpoint. Leave and reopen the table to check
+   restoration of the room view.
+2. Open the humanoid ground study and pause at walking and braking.
+   Open the flight study and check takeoff, hover, turn and landing.
+   Share the landing frame and let the guest follow it in the direct
+   viewer. Compare the exact rig, clip, edition and frame. Each visitor
+   moves their own camera without moving the other's view.
+3. The guest adds an agreed note at that frame. The owner reopens it at
+   the table and reads the note and its author. Leaving the table keeps
+   the room active. Returning to the foyer ends access to its review.
+
+Record the installed package digest, the reviewed pose and the observed
+room entry, camera response and note readback. Fixture identities and
+temporary copies belong in technical qualification. The protected trial
+uses the existing Home audience and room guest list.
 
 ## Shared session and authored motion
 
