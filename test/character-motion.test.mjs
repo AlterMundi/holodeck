@@ -40,7 +40,9 @@ test('followers and keyed holds do not depend on the frame rate',()=>{
 
 for(const options of [{playerSpeed:.6},{playerSpeed:1.65},{playerSpeed:5},{playerSpeed:5,turn:1.2},
   {playerSpeed:5,outdoor:true,seconds:9},{playerSpeed:8,outdoor:true,seconds:10},
-  {playerSpeed:8,outdoor:true,seconds:10,fps:20}]){
+  {playerSpeed:8,outdoor:true,seconds:10,fps:20},
+  {playerSpeed:5,outdoor:true,seconds:10,hostSteps:[3]},
+  {playerSpeed:8,outdoor:true,seconds:10,hostSteps:[1,1,2,1,3]}]){
   test('companion contacts hold and keep pace '+JSON.stringify(options),async()=>{
     const result=await groundRoute(options);
     const note=JSON.stringify(result);

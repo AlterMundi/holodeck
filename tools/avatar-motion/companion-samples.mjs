@@ -6,7 +6,7 @@ import {TOROIDAL_SPAWN,terrainCoordinates,terrainElevation} from '../../src/toro
 
 const soleLocal=.126,toe=.115;
 
-export async function groundRoute({playerSpeed=5,outdoor=false,seconds=8,fps=60,turn=0,reduced=false,model}={}){
+export async function groundRoute({playerSpeed=5,outdoor=false,seconds=8,fps=60,turn=0,reduced=false,model,hostSteps=[1]}={}){
   const {avatar}=await loadCompanion({document:presentation({reduced}),...(model?{model}:{})});
   const {figure}=avatar,root=figure.root;
   const feet=figure.gait.limbs;
@@ -16,11 +16,14 @@ export async function groundRoute({playerSpeed=5,outdoor=false,seconds=8,fps=60,
   let heading=1.2,previous=null,teleports=0,lag=0,travelled=0,spread=0,worstDrift=0,contacts=0,lowest=Infinity,topSpeed=0,bothAir=0,frames=0,cost=0;
   const anchors=new Map();
   const heights=[];
-  for(let index=0;index<seconds*fps;index++){
-    const dt=1/fps,time=index*dt,going=time>1&&time<seconds-2;
+  for(let index=0,hostFrame=0;hostFrame<seconds*fps;index++){
+    // Several MML simulation steps can precede a single rendered frame.
+    const steps=hostSteps[index%hostSteps.length];
+    const time=hostFrame/fps,dt=steps/fps,going=time>1&&time<seconds-2;
+    hostFrame+=steps;
     if(going)heading+=turn*dt;
     if(outdoor){
-      motion.update(dt,{forward:going?1:0,yaw:heading,sprint:playerSpeed>5});
+      for(let step=0;step<steps;step++)motion.update(1/fps,{forward:going?1:0,yaw:heading,sprint:playerSpeed>5});
       player.set(...Object.values(motion.pose().position));
     }else if(going)player.addScaledVector(new Vector3(Math.sin(heading),0,Math.cos(heading)),playerSpeed*dt);
     const began=performance.now();
