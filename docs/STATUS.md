@@ -28,6 +28,24 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+Host revision `b90362e5e6e9238b481250e0e4952af74dbb4fb3` installs the
+published alpha.19 dependency with SHA-512 integrity. Its Home service
+archive SHA-256 is
+`cc870288d25a515e98e4eae64a2edff52310fbf71fdc9c51c12e639dd783969f`.
+The 86 runtime payloads match the previous framing candidate. The
+third-party notice and package manifest record the published dependency.
+
+The complete packaged Chromium check entered through the physical foyer
+door, reviewed ground, takeoff, hover, turn and landing poses, and
+reopened the shared hover frame 36 at review revision 3. Two fixture
+visitors kept local frames 37 and 35, used separate camera angles and
+read the attributed note in compact touch layout. The situated native
+actor read the speaker's exact displayed frame, added its own note
+idempotently, and the viewer recovered its frame and draft after WebGL
+context loss. The Node suite passed 443 cases with two skips. The live
+service still selected `d2a9b89a726d` at readback. Holodeck owns the
+selection and the authenticated visitor trial.
+
 Host revision `64e18b7646afbabad8bb4a10f167ea6e78c3f794` frames the
 review figure from the physical Character worktable. The exact package
 SHA-256 is `e4b9ee16963aeec0098cf11305aa218c434c921825450bb5eb38b9079c66932f`.
@@ -45,8 +63,7 @@ The published npm archive SHA-256 is
 The exact bytes passed the Chromium host check with one Three.js instance
 and two fixture Matter sessions with independent selections and permissions.
 The pinned specification comparison verified 571 passed and 120 excluded
-cases across 28 suites. The Character candidate still pins the tested
-source archive below.
+cases across 28 suites. The earlier candidate used the tested source archive below.
 
 The table timeline marks the chapter frames returned by the selected
 animation. It pins Proyección `52bdbe0f8eda561e1a068dff21f1eec99e9fe9c7`.
