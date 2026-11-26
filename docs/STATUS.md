@@ -1,5 +1,22 @@
 # Current MVP work
 
+## November 26 — Short touch ground jump
+
+Protected `d4aebd19a991` serves `793bc80` with immediate rollback
+`7cb8c7170403`. The same landscape Chromium touch fixture recorded no
+jump from a quick tap on the preceding package and one jump sample with
+0.47 m of observed rise on the candidate. Joystick motion passed in the
+portrait and landscape fixtures on the preceding package and on the
+landscape candidate. The original phone and entry path remain unknown.
+
+The build uses the fixes on the declared Proyección alpha.21 pin
+(`b3f505b`). The prior installed package used alpha.19. Besides the
+browser client and package manifest, the release updated the dependency
+notice to match the bundled version. Protected readback matched server,
+room art, terrain worker and all 14 state files. Three focused Proyección
+tests and 490 Holodeck tests passed, with two optional skips. The
+requested Opus patch review timed out without a verdict.
+
 ## November 26 — Pine needle and crown trial
 
 Protected `7cb8c7170403` serves `faa812f`. The rooted pine branchlets
