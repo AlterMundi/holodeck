@@ -2,6 +2,33 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `c2887039b1e86ece1dfb4b6c1c6e2e0898f8bd44` carries the selected
+protected package `49acf79b2a04` into the Character and alpha.15 branch.
+It keeps the live cave contacts, flight boost and wakes, and the Lab
+and Tower collision geometry. The Character table keeps its independent
+player state. Archive
+`d7bf43032e472fa595e8be8339ba2149a3f1e5f82df3a5a920808d01a777cde6`
+matched all 87 payloads. Render assets and workers matched the protected
+package. The combined live locomotion and animation adapter changed the
+generated study fingerprints. Stock clip editions and all frame counts
+were identical. Chromium reopened the new flight link at frame 78 and
+reported the older study edition without applying its frame.
+
+The candidate booted in production mode on loopback using temporary
+copies of the three protected layout/access checkpoints. The local guest
+fixture for an existing room grant reached Character, saw the table,
+read the pose state and returned through the reciprocal door.
+The uninvited fixture could not enter the foyer. The same archive passed
+the canonical Conversation transition and draft check with decoded
+bundle `ec0540f68b7ff42a29d525917eac5b1c58fde23b504ace7fe71be6bbcfa79410`.
+The two-browser table trial checked flight phases at frames 0, 22, 36,
+65 and 110, ground braking at frame 57, and flight notes across the
+native and web projections. It also measured the independent browser
+orbit and fixed physical table camera. Holodeck passed 424 tests with
+two skips. These qualifications used
+local identity fixtures. The protected selector was read as
+`49acf79b2a04`, whose installed package has no Character pose catalog.
+
 Source `4e17e82db42ad88e4c778f1257e8defeafdf8864` uses Proyección's
 published alpha.15 to anchor Conversation transitions to the actual
 toolbelt hit mesh. The locked HTTPS tarball and SHA-512 passed
