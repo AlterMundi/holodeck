@@ -1,5 +1,24 @@
 # Current MVP work
 
+## Range gesture ownership in the receiving candidate
+
+The renderer pin `09901297b78df95259af4363452d8c196f6b6250`
+includes [Proyección PR 35](https://github.com/AlterMundi/proyeccion/pull/35).
+During a scope transition, a range preview is cancelled even if the
+surface remains eligible. Equivalent scope reordering preserves an
+ongoing drag. Chromium reproduced an extra write before the fix and
+verified cancellation without passing the gesture to the world.
+The renderer passed 723 local tests and the GitHub package and
+A2UI conformance checks.
+
+The receiving archive SHA-256 is
+`c6410f2d9d8d2628e8ee1acd0e29ed020051da533ffc1271277dc7033133f8e2`.
+Building from the pinned merged source reproduced the archived client
+byte for byte. The Character viewer/table parity and miniature camera
+checks passed. The Matter desktop and landscape touch walkthrough shared
+in both directions and preserved independent cuts and cameras.
+The protected deployment remains `2ee067ffd313`.
+
 ## Readable Character cycle selection in both projections
 
 Client revision `229b847431515432191edea4637a30ad4d356c75` gives
