@@ -208,6 +208,17 @@ configuration and CLI routes are operator-selected. Native world actions use a
 separate application-owned world port, matched to the actual retained interaction
 and current room permission. Neither socket is a generic command executor.
 
+The optional `receiving.atelierWorkshop` selection binds one published room to
+one Atelier workspace. Its `room`, `workspace`, `socket` and `signingKey` values
+select a current own-native room, the Atelier workspace UUID, a fixed private
+Unix transport path and a service-owned Ed25519 signing key file. The Atelier
+receiver operator selects the matching public key and independent workspace
+grants. Use an admitted private route between the two service identities.
+Holodeck checks the actor's current room and permissions before forwarding
+`read`, `smooth` or `result`. Atelier owns edit validation and the stored
+revision. Install and verify both receivers and their access before connecting
+the browser worktable to the same workspace.
+
 ## Reproducible package
 
 Build the ordinary client, then the fully vendored receiving package:
