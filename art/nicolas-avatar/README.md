@@ -32,7 +32,8 @@ Check a new GLB against the shipping armature and its motion studies:
 node art/nicolas-avatar/check-rig.mjs .state/nicolas-avatar-blockout/explorer-blockout.glb --blockout
 ```
 
-This checks junction hierarchy, bind matrices and stock rest transforms,
+This checks joint hierarchy, relative bind matrices and stock rest transforms
+in both joint-local and world coordinates,
 loads the mesh in Three.js, and runs the same motion studies as the review room.
 It also reports skinned draw count, triangle count and exported morph names.
 Omit `--blockout` for an authored model. In each sampled frame, the

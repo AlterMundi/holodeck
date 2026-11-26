@@ -4,7 +4,7 @@ import {Group,Matrix4,Vector3} from 'three';
 import {clone} from 'three/addons/utils/SkeletonUtils.js';
 import {createHumanMotionStudy,humanMotionStudies,motionStudyRate} from '../../src/human-motion-study.mjs';
 import {bindHumanoidMicrophoneMouth} from '../../src/humanoid-microphone-mouth.mjs';
-import {parseGlb} from '../../tools/avatar-motion/rig.mjs';
+import {humanAvatar,parseGlb} from '../../tools/avatar-motion/rig.mjs';
 
 const assets=new URL('../../public/assets/',import.meta.url);
 const [candidate,mode]=process.argv.slice(2);
@@ -68,6 +68,15 @@ for(const rig of output.rigs){
 }
 
 const model=await parseGlb(candidate);
+const stockScene=humanAvatar('avatar-1-bodyA-skin01.glb').mesh;
+stockScene.updateMatrixWorld(true);
+model.scene.updateMatrixWorld(true);
+for(const name of stock.keys()){
+  const expected=stockScene.getObjectByName(name).matrixWorld;
+  const actual=model.scene.getObjectByName(name).matrixWorld;
+  assert.ok(distance(expected.elements,actual.elements)<1e-4,`World rest matrix ${name}`);
+}
+
 async function clip(file){
   const animation=(await parseGlb(new URL(file,assets))).animations[0];
   animation.tracks=animation.tracks.filter(track=>model.scene.getObjectByName(track.name.split('.')[0]));
@@ -164,5 +173,5 @@ model.scene.traverse(mesh=>{
   for(const name of Object.keys(mesh.morphTargetDictionary??{}))morphs.add(name);
 });
 console.log(JSON.stringify({bytes:output.bytes,triangles,skinnedDraws:draws.length,stockJoints:stock.size,
-  skinCount:output.rigs.length,stockLocalBindsMatch:true,morphs:[...morphs],studies,
+  skinCount:output.rigs.length,stockLocalBindsMatch:true,stockWorldRestMatch:true,morphs:[...morphs],studies,
   mouthMotion:mouthMotion.vertices?mouthMotion:null}));
