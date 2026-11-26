@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {Group,Matrix4} from 'three';
+import {Group,Matrix4,Vector3} from 'three';
 import {clone} from 'three/addons/utils/SkeletonUtils.js';
 import {createHumanMotionStudy,humanMotionStudies,motionStudyRate} from '../../src/human-motion-study.mjs';
 import {bindHumanoidMicrophoneMouth} from '../../src/humanoid-microphone-mouth.mjs';
@@ -77,19 +77,81 @@ async function clip(file){
 
 const [idle,walk]=await Promise.all([clip('anim_idle.glb'),clip('anim_jog.glb')]);
 const studies={};
+const probePoint=new Vector3();
+const toHead=new Matrix4();
+const mouthMotion={vertices:0,minimumOpening:Infinity};
+
 for(const [name,study] of Object.entries(humanMotionStudies)){
   const sample=createHumanMotionStudy(model.scene,idle.clone(),study,study.walking?walk.clone():undefined);
   assert.equal(sample.count,Math.round(study.duration*motionStudyRate));
   assert.ok(sample.landmarks.length>0);
   const target=clone(model.scene),orientation=new Group();
-  for(const frame of [0,...sample.landmarks,sample.count]){
+  const head=target.getObjectByName('head');
+  const mouth=bindHumanoidMicrophoneMouth(target);
+  if(mode!=='--blockout')assert.ok(mouth,'Missing skinned jawOpen target');
+
+  const targets=target.getObjectsByProperty('isSkinnedMesh',true).flatMap(mesh=>{
+    const index=mesh.morphTargetDictionary?.jawOpen;
+    if(index===undefined)return [];
+    assert.equal(mesh.morphTargetInfluences[index],0,'Default speech aperture');
+    const shape=mesh.geometry.morphAttributes.position?.[index];
+    assert.ok(shape,`Missing jawOpen positions on ${mesh.name}`);
+    const positions=mesh.geometry.attributes.position;
+    const vertices=[];
+    for(let vertex=0;vertex<shape.count;vertex++){
+      probePoint.fromBufferAttribute(shape,vertex);
+      if(!mesh.geometry.morphTargetsRelative){
+        probePoint.x-=positions.getX(vertex);
+        probePoint.y-=positions.getY(vertex);
+        probePoint.z-=positions.getZ(vertex);
+      }
+      if(probePoint.lengthSq()>1e-8)vertices.push(vertex);
+    }
+    assert.ok(vertices.length,`jawOpen moves no vertex on ${mesh.name}`);
+    return [{mesh,vertices,rest:null,neutral:new Float64Array(3*vertices.length)}];
+  });
+  mouthMotion.vertices=targets.reduce((total,part)=>total+part.vertices.length,0);
+  const bones=target.getObjectsByProperty('isBone',true);
+  function vertexInHead(mesh,vertex){
+    return mesh.getVertexPosition(vertex,probePoint).applyMatrix4(mesh.matrixWorld).applyMatrix4(toHead);
+  }
+
+  for(let frame=0;frame<=sample.count;frame++){
     const waterHeight=sample.apply(target,orientation,frame);
     if(study.wet)assert.ok(Number.isFinite(waterHeight));
     assert.ok(orientation.quaternion.toArray().every(Number.isFinite));
-    target.traverse(node=>{
-      if(node.isBone)assert.ok([...node.position.toArray(),...node.quaternion.toArray()].every(Number.isFinite),
-        `Non-finite ${name} pose at ${frame}: ${node.name}`);
-    });
+    for(const bone of bones){
+      assert.ok([...bone.position.toArray(),...bone.quaternion.toArray()].every(Number.isFinite),
+        `Non-finite ${name} pose at ${frame}: ${bone.name}`);
+    }
+    if(!mouth)continue;
+    target.updateMatrixWorld(true);
+    toHead.copy(head.matrixWorld).invert();
+    for(const part of targets){
+      const {mesh,vertices,neutral}=part;
+      for(const [i,vertex] of vertices.entries())vertexInHead(mesh,vertex).toArray(neutral,3*i);
+      part.rest??=neutral.slice();
+      assert.ok(neutral.every((value,i)=>Math.abs(value-part.rest[i])<0.0001),
+        `Neutral jaw drifts in head space: ${name} frame ${frame} on ${mesh.name}`);
+    }
+    mouth.apply(1,0.12);
+    for(const {mesh,vertices,neutral} of targets){
+      let opening=0;
+      for(const [i,vertex] of vertices.entries()){
+        const p=vertexInHead(mesh,vertex),k=3*i;
+        opening=Math.max(opening,Math.hypot(p.x-neutral[k],p.y-neutral[k+1],p.z-neutral[k+2]));
+      }
+      assert.ok(opening>0.001,`Speech does not move jaw vertices: ${name} frame ${frame} on ${mesh.name}`);
+      mouthMotion.minimumOpening=Math.min(mouthMotion.minimumOpening,opening);
+    }
+    mouth.reset();
+    for(const {mesh,vertices,neutral} of targets){
+      for(const [i,vertex] of vertices.entries()){
+        const p=vertexInHead(mesh,vertex),k=3*i;
+        assert.ok(p.x===neutral[k]&&p.y===neutral[k+1]&&p.z===neutral[k+2],
+          `Speech did not restore neutral: ${name} frame ${frame} on ${mesh.name}`);
+      }
+    }
   }
   studies[name]=sample.count;
 }
@@ -97,23 +159,10 @@ for(const [name,study] of Object.entries(humanMotionStudies)){
 const draws=output.document.meshes.flatMap(mesh=>mesh.primitives);
 assert.ok(draws.every(draw=>'JOINTS_0' in draw.attributes&&'WEIGHTS_0' in draw.attributes),'Unskinned geometry');
 const triangles=draws.reduce((count,draw)=>count+output.document.accessors[draw.indices].count/3,0);
-const morphs=new Set(),jawTargets=[];
+const morphs=new Set();
 model.scene.traverse(mesh=>{
-  const targets=mesh.morphTargetDictionary??{};
-  for(const name of Object.keys(targets))morphs.add(name);
-  if(Object.hasOwn(targets,'jawOpen')){
-    assert.ok(mesh.isSkinnedMesh,'The mouth driver requires a skinned mesh');
-    jawTargets.push({weights:mesh.morphTargetInfluences,index:targets.jawOpen});
-  }
+  for(const name of Object.keys(mesh.morphTargetDictionary??{}))morphs.add(name);
 });
-const mouth=bindHumanoidMicrophoneMouth(model.scene);
-if(mode!=='--blockout')assert.ok(mouth,'Missing skinned jawOpen target');
-if(mouth){
-  for(const {weights,index} of jawTargets)assert.equal(weights[index],0,'Default speech aperture');
-  mouth.apply(1,0.12);
-  for(const {weights,index} of jawTargets)assert.ok(weights[index]>0.5,'Speech must open the mouth');
-  mouth.reset();
-  for(const {weights,index} of jawTargets)assert.equal(weights[index],0,'Restored expression');
-}
 console.log(JSON.stringify({bytes:output.bytes,triangles,skinnedDraws:draws.length,stockJoints:stock.size,
-  skinCount:output.rigs.length,stockLocalBindsMatch:true,morphs:[...morphs],studies}));
+  skinCount:output.rigs.length,stockLocalBindsMatch:true,morphs:[...morphs],studies,
+  mouthMotion:mouthMotion.vertices?mouthMotion:null}));

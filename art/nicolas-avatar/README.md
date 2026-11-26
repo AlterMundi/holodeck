@@ -35,8 +35,15 @@ node art/nicolas-avatar/check-rig.mjs .state/nicolas-avatar-blockout/explorer-bl
 This checks junction hierarchy, bind matrices and stock rest transforms,
 loads the mesh in Three.js, and runs the same motion studies as the review room.
 It also reports skinned draw count, triangle count and exported morph names.
-Omit `--blockout` for an authored model to verify that its speech morph opens
-and restores the default expression through Holodeck’s mouth driver.
+Omit `--blockout` for an authored model. In each sampled frame, the
+check inspects the actual jaw vertices in head space before and during
+speech and after restoring the resting expression. It checks that the
+jaw stays attached to the head, that the live mouth driver moves the
+mesh and that every sampled vertex returns to its neutral position.
+A temporary Blender fixture validated both paths: a working target moved
+66 vertices while an identically named empty target was rejected.
+The check uses CPU skinning. Verify the face, lips, beard and costume
+visually on the rendered character.
 
 Develop the face from the resting smile with a separate expressive smile pose,
 movable lids and a jaw that carries the beard. Sculpt eyes, cheeks and nose to read at
