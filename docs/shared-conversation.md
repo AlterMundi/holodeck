@@ -568,6 +568,12 @@ table do not replace it. This observation grants no Home viewer permission
 and provides no geometry. Other originals and ordinary room observation
 do not include the speaker's reference.
 
+For the browser fixture, select the web release behind the actual
+Interaction reverse proxy. Verify its `conversation-surface.js` against the
+served asset. The internal Interaction service's working directory can
+select a different shell. The fixture rejects a shell that does not mount
+the canonical surface before it opens a browser.
+
 In a short landscape viewport, the workshop Conversation panel uses the
 available horizontal space within the display safe area. The regular
 side panel and the phone portrait rules continue to follow their respective

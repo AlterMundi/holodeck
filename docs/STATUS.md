@@ -1,5 +1,27 @@
 # Current MVP work
 
+## World dock alongside canonical Conversation
+
+Client revision `3fd7e11c2d270c404835f36559375ad58ac1870c` lays out
+the dock in the available side span when Conversation occupies its
+usual lower screen area. The host reuses its existing control rows
+and visitor-local input. On desktop and landscape touch, Chromium
+verified that map, conversation, bridge and undo were outside the
+frame. Portrait keeps its separate travel lane.
+
+Candidate archive SHA-256
+`ea436f5311145951bb98747e8c595875d68337555dc128a8d05ba1082a067d14`.
+The archive replaces the client only on the alpha.21 fixture base.
+The served canonical Conversation surface, composer and app script
+hashes matched the release selected by the public Interaction route.
+In the isolated browser, minimizing and restoring retained one frame.
+A draft and its backward text selection survived all three layouts.
+Keyboard input edited the draft without moving the avatar and returned
+to the world after focus moved. One fixture original retained both
+its world context and user attachment. Node 24 passed 447 tests with
+two skips. Protected Holodeck selection and signed-in device acceptance
+remain open.
+
 ## Released Proyección alpha.21 in the receiving candidate
 
 The lock selects released renderer source
