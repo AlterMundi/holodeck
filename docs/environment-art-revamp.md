@@ -59,6 +59,19 @@ walkable collision. Apply gradual visual detail transitions within that
 system. A clipmap is an option only if same-route measurements expose
 a sustained geometry or update bottleneck. [Geometry clipmaps](https://hhoppe.com/proj/geomclipmap/)
 
+The current open field keeps separate near and far instance batches. It
+caches deterministic plant samples by wrapped tile but rewrites the instance
+matrices and colors for the whole visible neighborhood when the field cell
+changes. The authored meadow banks already maintain bounded per-cell batches.
+Measure a running crossing and a low flight first, logging instance uploads,
+draw count and GPU time. If the whole-neighborhood upload is visible in frame
+pacing, try reusing bounded tile buffers and updating only entering tiles.
+Compare the extra draw calls with the CPU work saved. Keep opaque blade
+geometry and shader wind for the near field. Use simplified middle-distance
+tufts and match their root tint and lighting to distant ground coverage.
+Compare Normal and Livianos on the same route before increasing density.
+Instance counts and distance fade ranges are tuning outputs of that comparison.
+
 ### Air and light
 
 Link the horizon, the terrain's distant color and the low-angle sun.
@@ -99,6 +112,67 @@ past the object. Check daylight and dusk or night, where a dark terrain can
 hide sparse ground cover and leave an abrupt seam. Keep the matched view in
 the environment review evidence when resolving a reported example.
 
+### Cosmic sky reflected in water
+
+The November 26 water reference calls for a broken ribbon of amber and
+magenta following the planet, dark blue water outside that ribbon, a softer
+distant shoreline, and readable silhouettes where the characters meet water.
+The reference is an art target. Use the actual coast and sky orientation in
+the comparison.
+
+Start with the current water tiles, layered wave normals, Fresnel and
+depth-based shore transmission. Share the existing cosmic panorama and its
+daylight attenuation with the water shader. Sample it using the wave-perturbed
+reflection direction in world space, with the same radial horizon and underwater
+fade. Keep the reflected planet narrow enough to read against dark water.
+Compare the scene at eye level, in the shallows, underwater, and from flight.
+Check that the reflected planet follows camera motion and stays aligned across
+tile seams, and that the coast reads at day and dusk.
+
+Use existing light and haze controls for soft character contour light and
+distant relief. Try localized ripples and shading at the avatar waterline.
+Keep the HUD outside world effects. The shared panorama adds no new download
+or second scene render. Measure first visible frame and GPU frame time on
+Normal and Livianos. Consider a bounded local reflection target only if
+reflections of nearby characters or rocks still matter after that trial.
+A global planar mirror assumes flat water, while the world's up direction
+changes around the torus. Review bloom as a separate optional effect.
+
+### Visual review follow-up
+
+The independent Astra High review checked the estate previsualization,
+captured Holodeck coast and woodland views, and the current rendering path.
+It assessed Gemini's water and foliage recommendations from retained text.
+Both profiles should preserve the scene's composition and depth cues.
+Normal can add selective close detail where Livianos uses simpler shapes.
+
+Claude Code Fable 5.2 High inspected the estate previsualization and the
+terrain, sky, field and meadow-bank sources. Its alternative first water
+trial is a directional glint from the planet's position, angular size and
+palette, broadened by wave slope. Compare that with the shared panorama
+sample at the same coast and solar time. Choose the simplest variant that
+keeps the visible planet and reflection aligned and avoids shimmer. The
+estate and water studies show different skies. Use one in-game sky for each
+matched comparison, with a common directional reference for sky, water and
+character lighting.
+
+Fable also proposed feeding the same localized lantern falloff into the
+terrain path and nearby plant tint. Try that against the current lighting
+at a fixed player-height view. Evaluate present-view depth and soft shadow
+separately from the prior depth-of-field cost. Reserve further passes for
+specific measured gaps.
+
+Qualify water in a lateral shoreline turn, shallows crossing and short
+flight. The planet's reflection must move with view direction, retain dark
+gaps between glints and stay coherent across tile edges. Check character
+readability against the reflective band and check the same view with bloom
+disabled. For foliage, prefer shaded understory clusters, overlapping
+uneven crowns and readable clearings. Compare one passage from an open
+clearing into the trees and one near-ground flight. Track density jumps,
+alpha-edge shimmer, instance uploads and GPU time. Use the same internal
+render size and clock in each baseline and candidate. Keep phone validation
+distinct from Pi 5 Livianos and RTX 2060 Normal measurements.
+
 ### Background depth of field
 
 Try an optional exterior mode that keeps the avatar, nearby path and
@@ -117,6 +191,33 @@ transparent water does not inherit an implausible blur from the seabed.
 Compare matched renders at zero blur for color and antialiasing, then
 measure GPU cost and frame pacing while turning and flying at dusk.
 [Three.js BokehPass](https://threejs.org/docs/pages/BokehPass.html)
+
+The first local prototype captured half-float color and depth during
+the normal world draw and added one fullscreen triangle. It softened
+the distant shore but carried stale arrival geometry into later camera
+positions, including underwater. This candidate was withheld. On Pi 5
+Livianos with the preview requested, the fallback matched the direct
+path's draw, triangle and texture counts at the same render size. RTX
+timings used different adaptive resolutions and do not establish a
+matched GPU cost.
+
+The next candidate, `fdea015`, clears color and depth in its private target
+before each world draw. Both desktop RTX with MSAA and software Chromium
+without it confirmed the renderer has auto-clear disabled. The corrected
+shore and underwater captures no longer show previous arrival geometry.
+In a dusk coastal crop the sky and hill soften while nearby characters
+and A2UI remain readable. A controlled Pi 5 night run with the preview
+requested stayed on the lightweight direct path, with 22 textures and
+16.7 ms frame p95 in that short sample.
+
+An exact candidate run pinned both RTX buffers to 900 × 555 and compared
+90 flight frames at the same view. GPU median went from 3.11 to 13.68 ms
+and p95 from 10.60 to 16.20 ms. Frame p95 was 16.8 and 16.7 ms. The GPU
+numbers include the existing world and overlay draws. The trial is
+single-visitor and short, but this leaves too little GPU headroom for
+Normal. Keep the direct release. Isolate the multisampled capture cost
+from the blur kernel, and evaluate a lower-resolution effect against
+foreground edges and shore transparency before promoting a candidate.
 
 ## Screening route
 

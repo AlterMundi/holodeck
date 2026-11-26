@@ -146,6 +146,93 @@ Open before acceptance:
 - Nicolás's judgement of the motion.
 
 
+## Humanoid ground gait follows rendered travel
+
+The deployed build `4d87ebe3a88d` from `13b1c78` synchronizes the stock jog and run clips to the
+avatar's projected ground travel. The shared cycle aligns the approximate
+contact windows when the clips blend. The controller may advance several
+simulation steps between two draws. The gait uses the controller's clip
+clocks for those steps, then subtracts the renderer's single mixer step
+from the assigned time. A timed handoff keeps the current phase until the
+ground clips fade after takeoff or another medium change.
+
+Both published rig families were sampled with the MML track filter.
+During low moving-toe intervals the jog clip moved back at about 4.55 m/s
+and the run at about 6.15 m/s. The world targets 5 and 8 m/s.
+On the physical Pi the previous cadence experiment looked worse because
+it capped travel to one mixer step per draw. The exact corrected package
+passed the same walk, sprint and jump inputs on RTX 2060 Normal and
+Pi 5 V3D Livianos. Walk and sprint were sampled along the outside
+arrival route with 100 eligible render pairs per mode and build.
+
+| Device and mode | Median low-toe drift per selected interval, before → after | Drift as fraction of actor travel, before → after |
+| --- | --- | --- |
+| RTX 2060 Normal, jog | 2.61 → 0.54 cm | 27.5% → 7.2% |
+| RTX 2060 Normal, run | 2.82 → 1.42 cm | 30.0% → 7.7% |
+| Pi 5 V3D Livianos, jog | 1.43 → 0.88 cm | 8.6% → 7.0% |
+| Pi 5 V3D Livianos, run | 6.07 → 1.34 cm | 23.8% → 7.5% |
+
+The toe samples use low, rearward-moving bones as a stance proxy.
+Frame time and route distance vary within the measured intervals. This
+estimates skating and does not establish planted contacts on stairs,
+slopes or during tight turns. In a separate context on the physical
+RTX, a second fixture identity observed the first actor's jog and run
+through the shared world. Both physical profiles recorded actual
+ungrounded and grounded frames across a keyboard jump with finite bone
+positions. Real independently signed-in visitors and the interior
+threshold contact review remain open.
+
+The exact source passed 421 Node 24 checks with two optional skips.
+Actual owner readback accepted the current signed proof using the
+existing owner key. The retained retirement and deployment then
+continued under their original requests. One gateway restart caused
+a lost deployment response while its journal recorded
+`runtime-dispatching`. The exact retry observed or resumed that
+request. Receiving verified 86 files, 13 exact protected HTTPS reads,
+four expected denials, unchanged configuration and audience, and world
+sequence 463. Immediate rollback is `bf4886aafe4e`.
+See [motion #21](https://github.com/AlterMundi/holodeck/issues/21).
+
+### Matching curves and a downhill grade
+
+A second paired comparison of the same exact packages used the same
+arrival spawn, `W` locomotion and a distance-keyed camera target
+through a straight approach, a broad turn, a tighter reversal and a
+descent. Camera intent was scripted, while position and grounding still
+came from the running game. Both profiles covered about 59 m in each
+build, with approximately 79–82° of observed heading change in the broad
+turn. The final leg had a median signed grade of −22.6% across all four
+runs. This covers descent, with uphill and stairs still open.
+
+| Device/profile | Median low-toe slip in broad turn, before → after | Median low-toe slip on descent, before → after |
+| --- | --- | --- |
+| RTX 2060 Normal | 26.3% → 7.5% | 25.6% → 7.7% |
+| Pi 5 V3D Livianos | 10.8% → 6.9% | 19.5% → 8.1% |
+
+Slip is measured against planar actor travel while the ball of the foot
+is low and moving back in the rig. The tight turn had 8 candidate
+stance intervals on RTX and 3 on Pi. It showed less drift in this
+trace, with sparse downhill overlap and residual slip of 9.7% and
+12.3%. It remains a target for contact work. Fable reviewed the route
+design and Opus reviewed the actual samples and their limits.
+
+## Remote boost wake on the selected browser build
+
+A controlled two-client run of live package `394ab30b12c6` used RTX
+2060 Normal for the pilot and Pi 5 Livianos for a stationary observer.
+They had separate fixture actors, world connections, and hardware
+compositors. Each client received the exact decompressed browser bundle.
+At boost the observer's peer moved 15.1 m, and all 13 sampled particles
+projected inside the camera frame. They used the remote pilot's color,
+near the pilot rather than the observing avatar. The wake then hid and
+the active particle list emptied. The wake is faint at this distance in
+Livianos. The robot still follows the local character on each client.
+
+The test clock advances from the selected local daytime. Freezing
+`Date.now()` had prevented one client from sending subsequent movement.
+The successful fixture uses the normal movement and pose transports.
+Two signed-in Home visitors and human motion feedback remain open.
+
 ## Runtime and studio qualification
 
 The separate motion/studio candidate `3fd63da1fd1d` at source

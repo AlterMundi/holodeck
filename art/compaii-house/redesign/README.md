@@ -7,6 +7,44 @@ quiet planting point to a single house entrance. The lower stair opens into
 a broad chamber with one illuminated prototype and two offset working bays.
 The long, cooler gallery gives visitors room to look and pass one another.
 
+## Orbital house concept
+
+**Selected design.** Hold implementation of Casa Orbital until Nicolás
+explicitly requests it. Continue the separate world, HUD and animation
+revamp while this design is held.
+
+Nicolas selected a circular, observatory-like house as the visual direction
+on November 26 and supplied an architecture sheet and a night approach
+reference. The miniature uses a faceted dome, an open brass armillary with a
+cyan orbit, ivory walls, and a warm arched entrance. Keep the silhouette
+readable at waypoint size with a small mesh and flat material colors.
+The terrain reference sets the approach at player height: a curving warm-lit
+path, cool trees behind the house, and the armillary readable above the
+foreground vegetation. The November 26 follow-up adds the full-size estate: a circular plan, central
+projecting vestibule, wings with repeated bays, raised drum and dome with a
+brass armillary. The material sheet is a reference board. Author tileable
+ivory marble and teal roof finishes, plus a shared trim sheet for bronze,
+gold filigree, hardware and cyan emissive details. Reserve mesh for outlines,
+arches and recesses, dome ribs, steps, and drapery folds visible in silhouette.
+Use baked normal or roughness detail for flat ornament and share repeating bays.
+
+Model the estate exterior and its public entrance hall in the same exterior
+space. Walk from the path into the hall over continuous floor and collision.
+Start the existing scoped room travel at the destination doors and portals
+inside the house. A passage or tunnel can continue physically until its
+interior threshold. Keep the room graph, return anchors and permissions for
+existing creation spaces. Feed the footprint and visited doors into the
+minimap through the same estate layout used to place collision and wall
+modules. Keep stable room keys so later wings and tunnels can be connected
+without rebuilding the entrance. Load the distant shell first, prepare the
+public hall ahead of approach, and fetch individual creation rooms as needed.
+
+The exterior illustration is a visual target. A first playable trial needs
+one continuous path from the terrain through the actual doorway into the
+hall and one interior door with a round trip. Check map placement, walking
+and camera clearance, room admission, and frame pacing in both graphics
+profiles before adding more wings.
+
 ## Player-height review
 
 - [Arrival through the garden](review/garden.jpg)
@@ -329,6 +367,20 @@ the horizon water from the display, matching the existing review export. The
 immutable source, normal Nexus controls and publication audiences remain
 authoritative. Scenes without a supported static snapshot still have their
 ordinary versioned opening action when authorized.
+
+Both gallery exports have deck surfaces at 0.965 m, approximately 1.108 m,
+and 1.4075 m. The miniature is seated 2 mm above its anchor using rendered
+vertices. A 64 × 64 contact mask per mounted edition uses only geometry in
+the lowest part of the fitted model. Clean gaps between widely separated
+supports stay visible. It sits on the deck, works in Normal and Livianos,
+and disappears with the edition when access expires or is revoked.
+The collection shelf and turntable keep their separate fitting behavior.
+
+The gallery names sit in low double-sided enamel plaques at the aisle
+edge of each deck. Brass-colored feet meet the oak. Stage and authorized
+edition title share the same face, with up to two lines for the title.
+The entire plate can open the exact current edition at the same range
+as the miniature. The gallery removes its plate when access expires.
 
 Generate the retained surrounding scenery with
 `tools/create-island-scenery.mjs --atelier-surroundings` and a task-owned

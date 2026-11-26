@@ -91,12 +91,13 @@ export function createHumanMotionStudy(template,stock,scenario,walkingClip){
   const samples=new Float32Array((count+1)*(5+7*nodes.length));
   const rotation=new Quaternion(),dt=1/motionStudyRate;
   let offset=0;
-  const chapters=[],pending=new Set(scenario.chapters);
+  const chapters=[],landmarks=[],pending=new Set(scenario.chapters);
   try{
     for(let frame=0;frame<=count;frame++){
       const previousInput=input,wasGrounded=motion.grounded;
       const time=frame*dt;
       input=scenario.input(time);
+      if(frame&&Object.keys({...previousInput,...input}).some(key=>input[key]!==previousInput[key]))landmarks.push(frame);
       if(frame)motion.update(dt,input);
       const pose=motion.pose().position;
       const speed=Math.hypot(motion.ringSpeed,motion.crossSpeed);
@@ -138,7 +139,7 @@ export function createHumanMotionStudy(template,stock,scenario,walkingClip){
     mixer.uncacheRoot(mesh);
   }
   const targets=new WeakMap();
-  return {count,chapters,apply(target,offsetTarget,frame){
+  return {count,chapters,landmarks,apply(target,offsetTarget,frame){
     let destination=targets.get(target);
     if(!destination){destination=relevantNodes(target);targets.set(target,destination);}
     if(destination.length!==nodes.length)throw Error('Motion study needs the sampled rig');

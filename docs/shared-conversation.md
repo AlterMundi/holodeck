@@ -39,6 +39,29 @@ conversation acceptance. Nicolas explicitly resumed the full existing MVP22Novem
 active objective; specific acceptance observations remain separate and do not
 require another generic trial before implementation can continue.
 
+## Sending when world context is unavailable
+
+CompAII's hosted Conversation now includes the optional-context handling in
+[DaimonApp PR #1040](https://github.com/AlterMundi/DaimonApp/pull/1040).
+It waits at most three seconds for the machine situation. An explicit
+failure or timeout sends through the same canonical writer with the same
+original ID and human files. A separate notice after the canonical receipt
+reports that context could not be attached. A changed Conversation binding
+still keeps the draft. Late world context cannot attach to the original
+and the parent cleanup only addresses the optional context reservation.
+
+The serving overlay originally combined `091fa0f3` with the submitted-draft
+lock `d65f2a76`. The current CompAII overlay `ecdee68d` retains that fallback
+alongside exact-message recovery. Both current JavaScript assets matched the
+hosted readback. A controlled cross-origin Chromium test at 1011 and 375 px
+verified that text reached the writer once with the context on success, and
+once without it after either immediate error or timeout. It also exercised
+synthetic ordinary audio on explicit error. In this fixture, delivery to the
+writer took 53–134 ms standalone, 65–141 ms embedded with a prompt context
+response, and 3061–3076 ms when the context did not reply. These timings exclude
+production network and native ingress. Physical microphone, real native input
+latency and other receivers remain unverified.
+
 ## World input with Conversation open
 
 Keyboard ownership follows focus. Clicking the exposed world canvas brings

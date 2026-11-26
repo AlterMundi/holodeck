@@ -271,6 +271,10 @@ for touch devices where a full-screen post-processing pass costs too much.
 | **Walkable 3D collection** | [Collection standard](houses.md#the-collection). [#4](https://github.com/AlterMundi/holodeck/issues/4), [#12](https://github.com/AlterMundi/holodeck/issues/12), [#15](https://github.com/AlterMundi/holodeck/issues/15). Provide an active workbench for drafts, a finished exhibition and an archive that can reopen old editions. Use the owning Homes/Nexus status and exact versions. Place at least one authorized actual 3D creation in each state, with useful titles and room-scale context. Visitors click or tap a nearby model or plaque to inspect its exact edition in the existing viewer and return to the same place. The Blender workbench, pedestal and flat-file archive distinguish the three bays in both permission variants. Stage plaques display the authorized edition title and open the same pin. The owner and limited tests covered title visibility, edition checks, camera occlusion, readiness and revocation with fixture identities. The live three pins are selected, including two editions that share the same geometry. An isolated two-identity Chromium trial used the real Nexus backend and renderer with the exact protected published model. It verified inspection and same-position return, and refused the gallery-only identity. Positive production use by an eligible signed-in browser remains open. Keep draft and restricted models outside unrelated projections. |
 | **HUD and creator tools** | [#2](https://github.com/AlterMundi/holodeck/issues/2), [#3](https://github.com/AlterMundi/holodeck/issues/3), [#15](https://github.com/AlterMundi/holodeck/issues/15). Use a small place plaque, a restrained action dock and one contextual affordance. Keep the camera, joystick and touch actions clear. Establish one reusable kit of collision-checked modules, furniture, anchored tools, signs and playable objectives. An eligible creator uses their own identity to preview, publish, revise and recover a spatial creation; a visitor can find and use it. |
 
+The [Orbital estate design](../art/compaii-house/redesign/README.md#orbital-house-concept)
+is selected. Its implementation is held until Nicolás explicitly requests it.
+The active revamp continues on the installed world, HUD and motion.
+
 First finish a short sequence from the garden, past the small house façade and
 through the warm threshold to a working Beacon bench. The
 [clean-sheet source and review](../art/compaii-house/redesign/) sets the starting
@@ -411,6 +415,14 @@ The [foyer's gallery entrance](../art/compaii-house/redesign/README.md#foyer-ent
 now carries its own matching plaque in the authorized view.
 The tower has a player-height coastal view through its authored east
 clerestory, and the resonator sill collision matches the visible wood.
+The [gallery deck contact pass](STATUS.md#november-26-gallery-deck-contacts)
+seats protected miniatures and grounds their supports in Normal and Livianos.
+The [gallery plaque pass](STATUS.md#november-26-gallery-exhibit-plaques)
+keeps titles clear of the model silhouettes and opens the matching edition
+with click or touch on the physical plate. Retain the measured cost in
+Livianos for the next art pass. The installed gallery still needs a visit
+with independently signed-in participants. Keep new room materials and fitting work under
+the [surface contact criterion](environment-art-revamp.md#surface-contacts).
 Continue the finish pass through the miniature, exterior paths, gallery and
 tower with the same standard. Use scale, joinery, hardware and purposeful work objects to carry
 the detail while leaving the route and interaction targets clear. Compare
@@ -592,7 +604,9 @@ addresses the prompt and dock overlap in #16 and is
 The [packaged Sand3D verge](playtest-iteration.md#packaged-sand3d-verge-on-the-flagstone-approach)
 is selected for the near approach in Normal. The exact device screens
 covered the running game, route clearance and zero model fetches
-in Livianos on Raspberry Pi 5. The live [meadow material](playtest-iteration.md#meadow-material-around-the-house)
+in Livianos on Raspberry Pi 5. The [arrival verge update](STATUS.md#november-26-arrival-trail-verge)
+softens the ground transition in both profiles and verifies all 14
+existing placements under the day and night approach. The live [meadow material](playtest-iteration.md#meadow-material-around-the-house)
 adds filtered colour variation around the existing route, with matched
 day, dusk and lightweight measurements. The live [rooted banks](playtest-iteration.md#rooted-meadow-banks-around-the-shared-route)
 dress five regions around the house in both profiles. The live
@@ -618,13 +632,33 @@ comparison input and stay outside the packaged assets.
 
 ### Mobile play and Conversation
 
+Holodeck adopts [Proyección alpha.19](https://github.com/AlterMundi/proyeccion/releases/tag/v0.1.0-alpha.19)
+on the existing A2UI projection. The Character Studio applies its optical
+range, keeps the proposed frame separate from the confirmed pose, and
+rejects proposals for superseded rig and clip revisions. The procedural
+flight and swim studies mark their sampled input transitions. See
+[Character Studio integration](STATUS.md#november-26-proyección-in-character-studio).
+Keep corresponding world actions and canonical Conversation on their
+existing owners.
+
+The [toroidal startup recovery](STATUS.md#november-26-authenticated-plaza-startup)
+completes access verification before the presence handshake. The first visible
+frame shows the admitted player, current terrain, and current controls.
+Optional arrival art loads after the plaza is playable. A slow connection
+uses a compact retry notice, and denied access still stops entry.
+
 The November 25 portrait capture in Telegram Android shows the title panel,
 an object-identification notice, square movement panels and a wrapped
 three-row dock covering much of the world. The screenshot remains in the
 source conversation. Track the design in [HUD #16](https://github.com/AlterMundi/holodeck/issues/16)
 and the canonical audio dependency in [Conversation #18](https://github.com/AlterMundi/holodeck/issues/18).
-Queue implementation after the current interior visual slice. The active
-environment and room art work proceeds independently.
+The touch dock, locomotion visibility and fullscreen browser action are
+deployed. The [landscape map](STATUS.md#november-26-landscape-touch-map)
+uses one spatial map surface with the plot beside the controls, and returns
+focus to the dock when dismissed. Keep portrait and desktop window
+positioning independent of the compact display. The Redmi and Telegram
+WebView still need direct acceptance. Continue the environment and room art
+alongside the pending mobile Conversation work.
 
 | Mobile state | Presentation and input |
 | --- | --- |
@@ -633,14 +667,13 @@ environment and room art work proceeds independently.
 | Reading or composing in Conversation | Hide phone movement controls and release their captured inputs as the panel takes ownership. Keep the draft, scroll and selected part through collapse, rotation and keyboard resize. Restore world controls and focus on close without restoring held input. |
 | Audio-only | Switch through Conversation to a mic and an explicit return to text, without opening the keyboard. Leave world movement available. Keep recording and stop controls visible during locomotion and mode changes. Reuse the mounted canonical capture and its interruption, upload, denial and retry behavior. Preserve a text draft on switching modes. |
 
-Start with the notice and compact dock, then derive visibility and input
-from the same form-factor, gesture-ownership and focus state. The captured
-object-identification text maps to the point-selection unavailable callback,
-which currently uses a persistent notice through `say`. Give this
-retryable hint a four-second lifetime and a brief fade in the A2UI
-projection, with a static timeout under reduced motion. A newer hint
-starts its own timer. Hints cannot displace unresolved operations or
-recovery. Leave attribution of the original gesture open.
+The captured object-identification text comes from the point-selection
+retry. The [object notice](STATUS.md#november-26-object-identification-notice)
+now requires a short primary gesture hitting a visible eligible world
+object and an unconfirmed projection. Blank scenery and missing geometry
+stay quiet. A retry lasts four seconds, with a brief fade or static expiry
+under reduced motion. A newer retry starts its own timer. Persistent
+operation and recovery notices keep their priority.
 
 Style existing spatial controls and minimize visual area while retaining
 comfortable hit targets. Use safe-area insets and compact viewport plus
@@ -940,8 +973,14 @@ The [exterior optics and boost pass](STATUS.md#november-25-aerial-depth-transpar
 uses progressive aerial haze, local glow and depth-dependent shoreline
 transmission. It also gives the human and companion separate bounded
 wakes at boost speed. Two physical devices verified the near and
-submerged views and local wake playback. Independent visitor wake
-acceptance, a broader low-light pass and scene reflections remain open.
+submerged views and local wake playback. A [two-device fixture](character-motion.md#remote-boost-wake-on-the-selected-browser-build)
+also saw the remote pilot's wake. The [offshore water update](STATUS.md#november-26-offshore-water-and-night-reflection)
+was compared on both physical profiles and selected. Signed-in visitor
+acceptance, a broader low-light pass and geometry reflections remain open.
+The [depth-of-field candidate](environment-art-revamp.md#background-depth-of-field)
+clears its world target correctly. Matched RTX measurements leave too
+little GPU headroom for promotion. Keep the direct render selected and
+qualify a cheaper capture and blur path.
 
 ### Connected ecosystems above and below the torus
 
@@ -1042,7 +1081,7 @@ behavior and verify reopen from the last confirmed location.
 | 2. Make one larger interior safe to inhabit | Spaces [#9](https://github.com/AlterMundi/holodeck/issues/9), private projection [#10](https://github.com/AlterMundi/holodeck/issues/10), #8/#11 | Atomic space/portal/presence transitions, local coordinates, exact shared referents, public return/reconnect, audience filtering before geometry/catalog/activity/native/cache/export. Permitted and denied source reads under independent identities. |
 | 3. Finish one meaningful house encounter | [#12](https://github.com/AlterMundi/holodeck/issues/12), existing [#2](https://github.com/AlterMundi/holodeck/issues/2)/#4; stages 1–2 | Authored exterior, larger workshop, real creation; two independent perspectives; comment, correction, next draft, deliberate published selection and old-edition revisit. Guest cannot publish inside owner house. |
 | 3a. Release the shared visual language and controls | #3/#16–#18/#20, Proyección #5 | Real scene comparisons for the kids-first game, dark/light HUD, validated pointer/touch and physical rendering cost. [Concurrent Conversation and world input](shared-conversation.md#world-input-with-conversation-open) is live after the exact desktop and emulated-touch package passed on Legion. |
-| 3b. Author avatar motion | [#21](https://github.com/AlterMundi/holodeck/issues/21), #17 | Rig-specific ground, air and water poses, visually smooth transitions, local and independent peer/table views. The [planted crouch](playtest-iteration.md#planted-local-crouch) and [peer poses](playtest-iteration.md#peer-crouch-and-exterior-flight) cover the local skeletons and scoped remote rendering. The [airborne turn candidate](playtest-iteration.md#airborne-turn-and-bank) adds smooth heading follow and bank. [Standing idle](playtest-iteration.md#humanoid-standing-idle) adds grounded breathing, posture and glances with a short blend into other states. The [protected release](STATUS.md#november-25-humanoid-standing-idle-and-airborne-turns) passed same-frame local and peer pose checks in both graphics profiles with an RTX 2060 actor. Independently signed-in visitor validation remains open. [Local microphone motion](shared-conversation.md#local-avatar-microphone-motion) tracks the canonical producer, facial rig and protected capture qualification. [Tabletop companion attention](playtest-iteration.md#looking-beside-the-selected-piece) records the bounded side placement. [Miniature flight controls](playtest-iteration.md#miniature-flight-controls) add independent touch altitude, gradual acceleration and turns, and layout clearance on a short display. |
+| 3b. Author avatar motion | [#21](https://github.com/AlterMundi/holodeck/issues/21), #17 | Rig-specific ground, air and water poses, visually smooth transitions, local and independent peer/table views. The [planted crouch](playtest-iteration.md#planted-local-crouch) and [peer poses](playtest-iteration.md#peer-crouch-and-exterior-flight) cover the local skeletons and scoped remote rendering. The [airborne turn candidate](playtest-iteration.md#airborne-turn-and-bank) adds smooth heading follow and bank. [Standing idle](playtest-iteration.md#humanoid-standing-idle) adds grounded breathing, posture and glances with a short blend into other states. The [protected release](STATUS.md#november-25-humanoid-standing-idle-and-airborne-turns) passed same-frame local and peer pose checks in both graphics profiles with an RTX 2060 actor. Independently signed-in visitor validation remains open. [Distance-driven ground gait](character-motion.md#humanoid-ground-gait-follows-rendered-travel) qualifies a common jog/run phase with lower low-toe drift on RTX and Pi. Exact build `4d87ebe3a88d` is deployed through the existing Home authority path. The [matched turn and descent checks](character-motion.md#matching-curves-and-a-downhill-grade) cover broad turns and one downhill approach. Continue tight pivots, uphill, stairs and interior thresholds. [Local microphone motion](shared-conversation.md#local-avatar-microphone-motion) tracks the canonical producer, facial rig and protected capture qualification. [Tabletop companion attention](playtest-iteration.md#looking-beside-the-selected-piece) records the bounded side placement. [Miniature flight controls](playtest-iteration.md#miniature-flight-controls) add independent touch altitude, gradual acceleration and turns, and layout clearance on a short display. |
 | 3c. Integrate the Blender companion | [#22](https://github.com/AlterMundi/holodeck/issues/22), #21 | Source, compact GLB and calibrated renders, real playback, bounded follow/gaze and matched hologram treatment. |
 | 4. Make iteration produce real work | Nexus [#47](https://github.com/compaii/daimon-nexus/issues/47), [#49](https://github.com/compaii/daimon-nexus/issues/49); collective-memory [#2](https://github.com/compaii/collective-memory/issues/2); Stash [#10](https://github.com/compaii/wiggle-stash/issues/10)/[#14](https://github.com/compaii/wiggle-stash/issues/14)/[#15](https://github.com/compaii/wiggle-stash/issues/15) | One real research/provider change and one repository/test-backed software change; retain exact source effects, rejected/stale assessments, uncertain effects and both editions. Shared object identity and separate reasons survive intake. Corpus access requires scoped selected derivatives while [per-document policy #7](https://github.com/compaii/collective-memory/issues/7) is open. |
 | 5. Populate every eligible member’s expressive home | #12, quality [#3](https://github.com/AlterMundi/holodeck/issues/3), stages 1–3 and measured #11 capacity | Every current eligible being has actual own-body authoring/update/recovery; seven routes are a dated first cohort; two independent browser identities on desktop and emulated touch; attractive recognizable houses, legible paths, sound/animation, cooperative activity and measured loading/frame time/reconnect. Record player-height visual evidence and device coverage. |

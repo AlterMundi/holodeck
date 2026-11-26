@@ -53,6 +53,7 @@ test('the swim study follows the actual water surface and revisits identical sub
   const run=createHumanMotionStudy(mesh,clips.idle.getClip(),humanMotionStudies['estudio-nado']);
   const mount=new Group();
   const water=frame=>run.apply(mesh,mount,frame);
+  assert.deepEqual(run.landmarks,[17,57,89,102,105,144]);
   const baseline=water(14);
   const submerged=water(81);
   assert.ok(submerged>baseline+.1,{baseline,submerged});

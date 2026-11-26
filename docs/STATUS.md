@@ -1,5 +1,271 @@
 # Current MVP work
 
+## November 26 Proyección in Character Studio
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `54a0892119ec`
+from `340387b` with
+[Proyección alpha.19](https://github.com/AlterMundi/proyeccion/releases/tag/v0.1.0-alpha.19),
+commit `ccc9fe919234`. The Character Studio uses its optical range with a
+local preview and a confirmed frame. Flight and swim input transitions
+appear as landmarks. An interrupted gesture cannot seek a newly selected
+clip. The standalone studio now reveals its canvas after the first rendered
+character and HUD, correcting the startup visibility regression.
+
+RTX 2060 and Pi 5 Chromium fixtures reproduced exact flight and underwater
+poses in two identities, exercised keyboard seek, and refused an outdated
+revision link. On RTX the pointer drag kept the confirmed position until
+release. A second release after changing to the equally long swim study
+left the new timeline at frame zero. A touch-browser dock fixture opened
+and closed the minimap. The package uses one Three r182 instance.
+Node 24 ran 426 Holodeck checks and 21 upstream spatial HUD checks, with
+two optional Holodeck skips. Home readback matched 86 installed files, 13
+protected HTTPS reads and four expected denials. It retained the same world
+and audience. Immediate rollback is `bd625c3d10a0`.
+The wider Proyección and Holodeck visual roadmap remains active.
+
+## November 26 cosmic ocean reflection
+
+The preceding release `bd625c3d10a0` came from `6a08981`. The water now samples the sky's existing panorama in the
+direction reflected by the animated wave normals. The same horizon and
+daylight fade shape both. The view retains the previous underwater
+treatment. The shore and offshore surfaces share one existing texture
+upload and require no additional render pass.
+
+A matched 23:10 ART coast trial inspected two shore angles, a submerged
+camera and the view from flight. It made one panorama request and retained
+the same draw calls, triangle counts and texture counts in both profiles.
+RTX 2060 Normal at 1200 × 740 went from 16.7 to 16.8 ms frame p95.
+Pi 5 Livianos at 363 × 244 went from 16.8 to 16.7 ms. These are short
+fixture runs, with independent phone and signed-in play evidence still open.
+Opus 5.5 High reviewed texture visibility and lifetime. The corrected
+package was rerun on both devices. Receiving matched 86 installed files
+and 13 protected HTTPS reads, retained the same world and audience, and
+keeps `d2a9b89a726d` as immediate rollback.
+
+## November 26 authenticated plaza startup
+
+The preceding release `d2a9b89a726d` came from `e1bb0d3`. Home authorization now completes before the WebSocket
+upgrade. The presence transport can receive the first handshake as soon as
+the browser sends it. The exterior scene reuses the socket authorization.
+The first visible frame contains the admitted player and current terrain.
+The provisional checkerboard and the old island controls do not appear
+during toroidal startup. Optional scenery loads after the plaza is playable.
+
+A 300 ms delay in the upgrade authorization reproduced the lost first
+handshake on the old implementation. The fix accepts matching connections
+and refuses a token from another actor. Node 24 passed 426 tests with two
+optional skips. With 650 ms of upgrade delay and the house projection held,
+the packaged client entered in 6.5 seconds on Legion's RTX 2060 with Normal
+graphics and 7.0 seconds on Pi 5 with Livianos. Legion accepted movement
+before the house arrived. Both rendered the current toolbar on the first
+visible frame. The original signed-in Legion tab was outside these tests.
+Receiving matched 86 installed files, 13 protected HTTPS reads, four
+expected denials and world sequence 463. Immediate rollback is
+`c599c78afef3`.
+
+## November 26 visible plaza entry
+
+The preceding release `c599c78afef3` came from `841d5ef`. The terrain and admitted player can render while the
+toroidal house projection is pending. The exterior door waits for its
+projected world target. The upstream loading screen is hidden. A compact
+connection notice offers retry and lightweight graphics when entry is
+slow or fails. A delayed location check can finish after the notice.
+
+Holding the arrival projection reproduced the 25-second delay on
+Legion's physical RTX 2060. The preceding package stayed without a local
+avatar until release. The current package entered in 4.7 seconds with
+Normal and 8.5 seconds on Pi 5 Livianos while the projection was still
+held. Keyboard movement worked on the RTX before the house arrived.
+Both fixtures recovered a location lookup delayed by 14.5 seconds and
+displayed an error without a local avatar on an explicit 403. A separate
+RTX check entered directly into the foyer with the room model ready. These are
+controlled device checks. The original signed-in Legion tab was not used.
+
+Node 24 passed 426 checks with two optional skips. The index and client
+bundle changed. Receiving matched 86 files, 13 protected HTTPS reads and
+four expected denials. The application, audience, receiving configuration
+and world sequence 463 matched before and after. Immediate rollback is
+`c024dbda2833`. See [HUD #16](https://github.com/AlterMundi/holodeck/issues/16).
+
+## November 26 gallery exhibit plaques
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `c024dbda2833`
+from `6d73b91`. Low double-sided plaques sit on the three oak decks.
+They keep the artwork clear in the aisle view and show the stage and
+authorized edition title. A fitted long title wraps to two lines. The
+entire plate opens its exact current edition when the visitor is in reach.
+
+Compared four matching 980 × 620 camera poses on RTX 2060 Normal and
+Pi 5 V3D Livianos with the sealed-floor gallery asset. RTX medians
+stayed at 16.7 ms. In the paired Pi run, three medians stayed at
+33.3 ms and the overview moved from 16.7 to 33.3 ms. The 95th percentile
+moved from 33.4 to about 50 ms in the overview and return view. Earlier
+separate Pi runs varied by one refresh interval, so keep this art
+cost visible in future gallery passes. Click and emulated touch on
+the bronze rim opened the exact edition and retained the viewer and
+player position on return on both devices. Two controlled identities
+also verified restricted title and model visibility and archive
+revocation. An independently signed-in production visit remains open.
+
+Node 24 passed 426 checks with two optional skips. Only the client
+bundle changed. Receiving matched 86 files, 13 exact protected HTTPS
+reads, four expected denials, unchanged audience and configuration,
+and world sequence 463 before and after. Immediate rollback is
+`de23bdf98e78`. See [working house #12](https://github.com/AlterMundi/holodeck/issues/12).
+
+## November 26 gallery deck contacts
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `de23bdf98e78`
+from `da0a322`. The three permanent gallery decks now seat the exact
+edition model from its rendered geometry. A small soft contact mask
+follows its supports at the deck. Revoking or expiring access removes
+the exhibit and its shadow together. The mask uses one transparent
+draw per visible exhibit in either graphics preset.
+
+Compared three identical camera poses at 980 × 620 with physical RTX
+2060 Normal and Pi 5 V3D Livianos. The archive ring's contact is visible
+on both. RTX frames stayed at about 16.7 ms. A warm Pi repeat had the
+same p95 at all three poses (33.4–50 ms), with the archive median moving
+from 16.7 to 33.3 ms. An earlier Pi run had a transient overview stall
+that did not recur in the warm repeat. The protected owner and limited
+visitor were controlled Chromium identities. The owner saw three
+editions, the limited visitor fetched only the published one, and a
+revoked archive disappeared. Independently signed-in participants
+remain unverified for the installed gallery.
+
+Node 24 passed 426 checks with two optional skips. Only the client
+bundle changed. Receiving matched 86 files and 13 protected HTTPS
+reads, four expected denials, unchanged audience and configuration,
+and world sequence 463 before and after. Immediate rollback remains
+`9281853a628a`. See [working house #12](https://github.com/AlterMundi/holodeck/issues/12).
+
+## November 26 object identification notice
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `9281853a628a`
+from `f986646`. A short primary gesture must hit a visible eligible
+world object before an unconfirmed projection can produce the four-second
+retry notice. A blank or occluded hit stays quiet. The existing check
+still prevents stale records from opening a visit or selecting an
+object. The reduced-motion setting uses the same deadline with no fade.
+
+Matching prior and current browser packages ran on physical Pi 5 V3D
+Livianos at 390 × 780 with touch emulation and RTX 2060 Normal at
+1200 × 740 with mouse and reduced motion. Both prior builds showed the
+notice on a blank hit during a controlled projection mismatch. Both
+current builds kept blank hits silent and cleared the eligible retry
+after 4.01 s and 4.00 s, respectively. The mismatch and target were
+introduced in the loopback test fixture. The physical Redmi and a
+shared session with two signed-in visitors remain open.
+
+Node 24 passed 423 checks with two optional skips. Only the browser
+bundle changed. Receiving matched 86 files, 13 exact protected HTTPS
+reads, four expected denials, the same App audience and configuration,
+and the same world run at sequence 463. Immediate rollback is
+`4d87ebe3a88d`. See [HUD #16](https://github.com/AlterMundi/holodeck/issues/16).
+
+## November 26 ground gait and supported turns
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `4d87ebe3a88d`
+from `13b1c78`. Humanoid jog and run phase follow rendered travel, with
+a continuous handoff to the remaining animation blend. The
+[physical motion checks](character-motion.md#humanoid-ground-gait-follows-rendered-travel)
+cover straight jog and sprint, a wide turn and a downhill leg on RTX
+Normal and Pi 5 Livianos. A second fixture identity also observed the
+gait in the shared world. Independently signed-in visitors, uphill,
+interior thresholds and precise tight-pivot contact remain open.
+
+The same Home owner key was accepted after the signed proof caught up.
+Receiving matched 86 files, 13 protected asset responses, four expected
+denials, the same audience and configuration, and the same world run
+at sequence 463. The rollback package is `bf4886aafe4e`.
+See [motion #21](https://github.com/AlterMundi/holodeck/issues/21).
+
+## November 26 landscape touch map
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `bf4886aafe4e`
+from `49d8aed`. The short touch landscape map uses the existing spatial A2UI surface. The
+plot and controls sit side by side, and the map temporarily takes focus
+from the dock while it is open. The topography, circular and square
+formats, and room destination actions use their existing data. Rotation
+keeps the selected map format and the current destination page. The map
+can be moved in landscape. Its resize affordance returns in portrait
+and desktop, where the saved placement is separate.
+
+At 568 × 280, the exterior map grew from 95 px to 475 px wide and
+its button plates from 11.4 to 44.0 CSS px high. The desktop comparison
+at 1200 × 740 measured the same window in both builds and exercised
+keyboard move, resize, Escape and the focus return. Physical RTX 2060
+Normal and Pi 5 V3D Livianos each passed touch format changes, both
+orientations, dismissal, room pagination, destination selection and the
+resulting guidance in an emulated touch viewport. Redmi and Telegram
+WebView acceptance, and a joint session with independently signed-in
+visitors, remain open.
+
+The suite passed 418 checks with two optional skips. Only the browser
+bundle changed. Protected receiving matched 86 files, four expected
+denials, the existing audience and configuration, and the same world run
+at sequence 461. Immediate rollback is `e2b318f4b262`.
+See [HUD #16](https://github.com/AlterMundi/holodeck/issues/16).
+
+## November 26 arrival trail verge
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `e2b318f4b262`
+from `3d77414`. A broken verge of worn vegetation and exposed soil
+softens the transition between the compacted trail and meadow. The apron
+still uses the existing flagstone surface. On RTX Normal, all 14 Sand3D
+instances were grounded against the analytic terrain in three existing
+batches. Pi 5 Livianos rendered the verge without a Sand3D download.
+
+Controlled walks used the same initial view. RTX Normal at 1200 × 740
+measured 16.8 → 16.8 ms frame p95 at night and 33.3 → 33.4 ms on the
+day replay. Pi 5 Livianos at 363 × 244 measured 33.3 → 33.4 ms frame p95
+on the day replay and 16.50 → 16.74 ms GPU p95. Both held a 16.7 ms
+frame median. Standing GPU timings varied more across these short runs,
+so they do not establish equivalent GPU cost. Independently signed-in
+visitor acceptance is open.
+
+The suite passed 417 checks with two optional skips. Receiving matched
+86 files, four expected denials, the existing audience and world run
+through 458–459. Only the browser bundle changed. Rollback is
+`6affd43be714`.
+
+## November 26 offshore water and night reflection
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `6affd43be714`
+from `1ddb98a`. Water uses filtered surface slopes in multiple directions
+instead of painting the offshore wave height into its color. Normal uses
+a three-dimensional field, and Livianos uses a cheaper projected field.
+The new cool night reflection fades across the waterline. Existing
+shore transmission and underwater rendering were qualified from the
+same fixed cameras. Reflections represent sky illumination.
+
+At 1200 × 740, the controlled RTX 2060 dusk flight sample held 16.7 ms
+frame p95 before and after. GPU p95 was 10.22 → 10.34 ms. On Pi 5
+Livianos the initial 363 × 244 night intervals were variable. The
+consecutive baseline and final-candidate repeat measured 33.4 → 33.3 ms
+frame p95 and 15.09 → 15.11 ms GPU p95. Both had 16.7 ms frame median.
+The night shore's sampled water crop increased from 21 to 24 on an
+8-bit grayscale scale. Draw and triangle counts stayed the same.
+
+The suite passed 417 checks with two optional skips. Receiving matched
+86 files, existing access, and the same world run through 456–458.
+Only the compressed browser client changed. Rollback is `394ab30b12c6`.
+
+## November 26 Shift, Alt and Space controls
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `394ab30b12c6`
+from `6da6c2c`. Shift runs and boosts, Alt crouches, descends in flight
+and dives, and Space jumps or rises. The same Alt descent applies at
+the Matter worktable. Ctrl is no longer a locomotion modifier. The
+existing fullscreen keyboard-lock route is still separate from movement.
+
+Physical RTX 2060 Normal and Pi 5 Livianos browsers checked the mapping
+on ground, actual dive and ascent in water, airborne height changes and
+the gold/teal boost wakes at 25.07 and 25.01 m/s. The 417 passing checks
+include tabletop input with two optional suite skips. These are controlled
+single-visitor fixtures. Receiving matched 86 files, the existing audience
+and world run through 452–454, and four protected denial checks. Immediate
+rollback is `49acf79b2a04`.
 ## Renderer focus during HUD reflow
 
 [Proyección PR #22](https://github.com/AlterMundi/proyeccion/pull/22)

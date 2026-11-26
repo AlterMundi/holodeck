@@ -419,12 +419,12 @@ software-renderer timings.
 
 ### Lightweight graphics at entry
 
-The startup screen offers **Entrar con gráficos livianos**. The
+The compact connection recovery notice offers **Entrar con gráficos livianos** if entry is slow or fails. The
 [lightweight entrance](https://compaii.dmn.homes/holodeck/?graficos=livianos)
 allocates the 0.55× world buffer immediately, with a non-multisampled WebGL
 context and dynamic shadows disabled. The controls retain their CSS size.
 The selection stays in the URL across room passages and entry retries.
-The standard entrance uses automatic quality.
+The standard entrance uses automatic quality. An admitted toroidal arrival shows the traversable terrain and avatar before optional house art finishes, without an upstream loading screen. The exterior door offer waits for its world projection.
 
 In touch Chromium, the 390 × 844 controls stayed at CSS size while the
 actual world buffer was 214 × 464. The joystick moved the avatar by more

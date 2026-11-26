@@ -1,5 +1,5 @@
 import {BackSide, Color, HemisphereLight, Mesh, ShaderMaterial, SphereGeometry, SRGBColorSpace, TextureLoader, Vector3} from 'three';
-import {toroidalAirColor} from './toroidal-air.mjs';
+import {toroidalAirColor,toroidalCosmosColor} from './toroidal-air.mjs';
 import {TOROIDAL_TERRAIN,terrainCoordinates, terrainFrame,terrainWaterDepth} from './toroidal-terrain.mjs';
 
 import {toroidalSunDirection} from './toroidal-terrain-renderer.mjs';
@@ -31,6 +31,7 @@ const fragmentShader = `
   uniform sampler2D cosmos;
   uniform bool showCosmos;
   ${toroidalAirColor}
+  ${toroidalCosmosColor}
   // Adjacent cells must assign exactly the same value to shared corners.
   // Hash the integer lattice before converting its 24 high bits to a float.
   float cloudHash(highp uint h) {
@@ -58,16 +59,10 @@ const fragmentShader = `
     vec3 horizon = toroidalAir(facing,daylight);
     vec3 zenith = mix(vec3(.013,.021,.055),vec3(.080,.21,.44),daylight);
     vec3 sky = mix(horizon,zenith,crown);
-    float cosmosStrength=mix(.98,.15,smoothstep(.15,.82,daylight));
-    float skyWindow=smoothstep(.045,.48,elevation);
     if(showCosmos){
-      // Keep the generated panorama seam softened above the air layer.
-      float longitude=fract(atan(direction.z,direction.x)/6.2831853+.5);
-      vec2 uv=vec2(longitude,.5+asin(clamp(direction.y,-1.0,1.0))/3.1415927);
-      vec3 deep=texture2D(cosmos,uv).rgb;
-      deep=mix(vec3(.012,.005,.04),deep,smoothstep(0.0,.035,min(longitude,1.0-longitude)));
+      vec3 deep=toroidalCosmos(cosmos,direction);
       float deepLight=dot(deep,vec3(.2126,.7152,.0722));
-      float transmission=cosmosStrength*skyWindow;
+      float transmission=toroidalCosmosWindow(elevation,daylight);
       float nightWeight=1.0-smoothstep(.21,.85,daylight);
       sky=mix(sky,deep*1.19,transmission*nightWeight);
       sky+=deep*smoothstep(.27,.75,deepLight)*transmission*(.16+.35*daylight);
@@ -126,6 +121,11 @@ export class ToroidalAtmosphere {
     });
   }
 
+  get panorama() {
+    const {cosmos,showCosmos}=this.sky.material.uniforms;
+    return showCosmos.value?cosmos.value:null;
+  }
+
   update(eye,position,solar) {
     if (!this.sky.parent) {
       this.scene.add(this.sky,this.fill);
@@ -160,6 +160,8 @@ export class ToroidalAtmosphere {
 
   dispose() {
     this.disposed=true;
+    this.sky.material.uniforms.showCosmos.value=false;
+    this.sky.material.uniforms.cosmos.value=null;
     this.cosmos?.dispose();
     this.sky.removeFromParent();
     this.fill.removeFromParent();

@@ -52,7 +52,7 @@ const controls=[
   ...sectionIds.map(id=>({...button(id,id),pressed:path('selectedSection/'+id),weight:sectionWeights[id]})),
   label('title','Revisión de movimiento','title'),choice('rig','Personaje'),choice('clip','Ciclo'),
   {id:'clock',component:'HudRange',label:'Fotograma',min:0,max:path('lastFrame'),step:1,value:path('frame'),
-    draft:path('draft/frame'),gestureKey:path('clipEdition'),markers:path('chapterFrames'),
+    disabled:path('timelineDisabled'),draft:path('draft/frame'),gestureKey:path('clipEdition'),markers:path('chapterFrames'),
     action:{event:{name:'clock',context:{value:path('draft/frame'),clipEdition:path('clipEdition')}}}},
   label('heldPose',path('heldPose'),'status'),
   {...choice('chapter','Fase'),
@@ -113,7 +113,6 @@ function buildStage(document){
   style.textContent=studioStyle;
   wrapper.prepend(style);
   document.body.replaceChildren(wrapper);
-  document.body.removeAttribute('data-world-starting');
   return wrapper;
 }
 
@@ -252,7 +251,7 @@ export function openCharacterStudio(document,table=null){
   const viewAngles={front:0,angle:.62,side:Math.PI/2};
   let view=Object.hasOwn(viewAngles,url.searchParams.get('vista'))?url.searchParams.get('vista'):'angle';
   let figure,playback,rig,clip,frame=0,playing=false,revision='',note='',message='',showedAt=-Infinity;
-  let sequence=0,elapsed=0,previous=0,visible=true,loop=true,speed='1';
+  let sequence=0,readySequence=-1,elapsed=0,previous=0,visible=true,loop=true,speed='1';
   let loadingInitialRig=false,rigRetryAvailable=false;
   let compact=Boolean(table),section='Pose',panelWidth=table?2.20:widePanelWidth;
   let primary=null,reference=null,showingReference=false,referenceRequest=0,followedPose;
@@ -373,7 +372,13 @@ export function openCharacterStudio(document,table=null){
     playing=false;
     ++referenceRequest;
     report('Abriendo el personaje…');
-    const {model,digest}=await readAsset(profile.file);
+    let asset;
+    try{asset=await readAsset(profile.file);}
+    catch(error){
+      if(id===sequence&&playback){readySequence=id;refresh();}
+      throw error;
+    }
+    const {model,digest}=asset;
     const root=new Group(),orientation=new Group();
     root.add(orientation);
     orientation.add(model.group);
@@ -445,7 +450,8 @@ export function openCharacterStudio(document,table=null){
       }};
     }
     return {name,edition,duration:study?Math.round(study.duration*motionStudyRate)/motionStudyRate:selected.duration,
-      get chapters(){return studyRun?.chapters??[];},start};
+      get chapters(){return studyRun?.chapters??[];},
+      get landmarks(){return studyRun?.landmarks??[];},start};
   }
 
   function displayClip(isReference){
@@ -461,13 +467,20 @@ export function openCharacterStudio(document,table=null){
     const activeFigure=figure;
     if(!activeFigure||!next)return;
     playing=false;
-    const prepared=await preparePlayback(activeFigure,rigs[rig],next);
+    refresh();
+    let prepared;
+    try{prepared=await preparePlayback(activeFigure,rigs[rig],next);}
+    catch(error){
+      if(id===sequence&&playback){readySequence=id;refresh();}
+      throw error;
+    }
     if(figure!==activeFigure||id!==sequence)return;
     ++referenceRequest;
     reference=null;
     primary=prepared;
     revision=prepared.edition;
     clip=next;
+    readySequence=id;
     if(table)receive('updateComponents',{components:tableControls});
     displayClip(false);
     scrub(expected&&expected!==revision?0:requestedFrame);
@@ -486,7 +499,7 @@ export function openCharacterStudio(document,table=null){
   }
 
   function displayed(){return showingReference?reference:primary;}
-  function clipEdition(){return [rig,primary?.edition,reference?.edition,displayed()?.name].join(':');}
+  function clipEdition(){return JSON.stringify([rig,primary?.edition,reference?.edition,displayed()?.name,sequence]);}
   function timelineDuration(){return Math.max(primary?.duration??0,reference?.duration??0);}
   function frameLimit(duration=timelineDuration()){return Math.ceil(duration*motionStudyRate);}
   function availableChapters(){return displayed()?.chapters??[];}
@@ -536,9 +549,10 @@ export function openCharacterStudio(document,table=null){
       clipOptions:options.map(id=>({id,label:names[id]||id})),frame,pose:currentPose,poseKey,
       reference:reference?.name??'',referenceOptions:options.filter(id=>id!==clip).map(id=>({id,label:names[id]||id})),
       compareLabel:showingReference?'Ver A':'Ver B',showingReference,noReference:!reference,
-      lastFrame:frameLimit(),clipEdition:clipEdition(),speedOptions,speed,loop,
+      lastFrame:Math.max(1,frameLimit()),timelineDisabled:readySequence!==sequence||frameLimit()<1,
+      clipEdition:clipEdition(),speedOptions,speed,loop,
       heldPose:show.heldPose?'Último fotograma de '+(showingReference?'B':'A')+' · '+exactFrame:'',
-      chapter,chapterOptions:chapters,chapterFrames:chapters.map(entry=>entry.frame),
+      chapter,chapterOptions:chapters,chapterFrames:chapters.length?chapters.map(entry=>entry.frame):displayed().landmarks,
       canReview:canReview===true,presentationBusy,
       accessStatus:checkingAccess?'Comprobando acceso al Taller…':
         canReview===false?'Entrá al Taller para compartir notas.':'No pude confirmar el acceso al Taller.',
@@ -687,11 +701,11 @@ export function openCharacterStudio(document,table=null){
     if(name==='reference')return loadReference(value);
     if(name==='compare'&&reference)displayClip(!showingReference);
     if(name==='clock'){
-      if(expectedClip!==clipEdition())return;
+      if(readySequence!==sequence||expectedClip!==clipEdition()||!Number.isInteger(value)||value<0||value>frameLimit())return;
       playing=false;
-      scrub(value??frame);
+      scrub(value);
     }
-    if(name==='chapter'&&expectedClip===clipEdition()){
+    if(name==='chapter'&&readySequence===sequence&&expectedClip===clipEdition()){
       const chapter=availableChapters().find(entry=>entry.id===value);
       if(chapter){playing=false;scrub(chapter.frame);}
     }
@@ -790,7 +804,7 @@ export function openCharacterStudio(document,table=null){
     }
     if(rigRetryAvailable&&visible){
       report(table?'No se pudo abrir el personaje. Volvé a probar.':'No se pudo abrir el personaje. Podés reintentar o volver al mundo.');
-      if(projected)offerStudioRetry(projected.stage);
+      if(projected){projected.reveal();offerStudioRetry(projected.stage);}
     }
   }
   void openInitialRig();
@@ -811,8 +825,12 @@ function webStudioProjection(document,renderer,scene,dispatch,close,pause){
   renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));
   renderer.toneMapping=ACESFilmicToneMapping;
   renderer.toneMappingExposure=1.15;
-  window.dispatchEvent(new Event('holodeck:entered'));
   const stage=buildStage(document),status=stage.querySelector('output');
+  function reveal(){
+    if(!document.body.hasAttribute('data-world-starting'))return;
+    document.body.removeAttribute('data-world-starting');
+    window.dispatchEvent(new Event('holodeck:entered'));
+  }
   const canvas=renderer.domElement;
   stage.prepend(canvas);
   const hudScene=new Scene();
@@ -866,6 +884,12 @@ function webStudioProjection(document,renderer,scene,dispatch,close,pause){
     ray.setFromCamera(pointer,hudCamera);
     return {ray:ray.ray};
   }
+  const beginRangeDrag=hud.beginRangeDrag;
+  hud.beginRangeDrag=(pointerRay,options)=>{
+    const began=beginRangeDrag(pointerRay,options);
+    if(began)pause();
+    return began;
+  };
   const unbind=bindSpatialHudPointer({element:canvas,hud,rayForPointer});
   document.addEventListener('keydown',event=>{
     if(event.key!=='Escape'||event.defaultPrevented||event.isComposing||
@@ -925,10 +949,11 @@ function webStudioProjection(document,renderer,scene,dispatch,close,pause){
       renderer.autoClear=false;
       renderer.clearDepth();
       renderer.render(hudScene,hudCamera);
+      reveal();
     }
   }
 
-  return {stage,status,draw,ownsTextInput:hud.ownsTextInput,graphicsLost:()=>lost,
+  return {stage,status,draw,reveal,ownsTextInput:hud.ownsTextInput,graphicsLost:()=>lost,
     send:(type,value)=>hud.receive({version:'1.0',[type]:{surfaceId,...value}}),
     setAngle(angle){
       const distance=stage.clientWidth<670?4.7:4.4;
