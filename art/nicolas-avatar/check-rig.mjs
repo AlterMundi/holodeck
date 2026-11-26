@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {Matrix4} from 'three';
+import {Group,Matrix4} from 'three';
+import {clone} from 'three/addons/utils/SkeletonUtils.js';
 import {createHumanMotionStudy,humanMotionStudies,motionStudyRate} from '../../src/human-motion-study.mjs';
 import {parseGlb} from '../../tools/avatar-motion/rig.mjs';
 
@@ -77,6 +78,16 @@ for(const [name,study] of Object.entries(humanMotionStudies)){
   const sample=createHumanMotionStudy(model.scene,idle.clone(),study,study.walking?walk.clone():undefined);
   assert.equal(sample.count,Math.round(study.duration*motionStudyRate));
   assert.ok(sample.landmarks.length>0);
+  const target=clone(model.scene),orientation=new Group();
+  for(const frame of [0,...sample.landmarks,sample.count]){
+    const waterHeight=sample.apply(target,orientation,frame);
+    if(study.wet)assert.ok(Number.isFinite(waterHeight));
+    assert.ok(orientation.quaternion.toArray().every(Number.isFinite));
+    target.traverse(node=>{
+      if(node.isBone)assert.ok([...node.position.toArray(),...node.quaternion.toArray()].every(Number.isFinite),
+        `Non-finite ${name} pose at ${frame}: ${node.name}`);
+    });
+  }
   studies[name]=sample.count;
 }
 
@@ -85,7 +96,11 @@ assert.ok(draws.every(draw=>'JOINTS_0' in draw.attributes&&'WEIGHTS_0' in draw.a
 const triangles=draws.reduce((count,draw)=>count+output.document.accessors[draw.indices].count/3,0);
 const morphs=new Set();
 model.scene.traverse(mesh=>{
-  for(const name of Object.keys(mesh.morphTargetDictionary??{}))morphs.add(name);
+  const targets=mesh.morphTargetDictionary??{};
+  for(const name of Object.keys(targets))morphs.add(name);
+  if(Object.hasOwn(targets,'jawOpen')){
+    assert.equal(mesh.morphTargetInfluences[targets.jawOpen],0,'Default speech aperture');
+  }
 });
 console.log(JSON.stringify({bytes:output.bytes,triangles,skinnedDraws:draws.length,stockJoints:stock.size,
   skinCount:output.rigs.length,stockLocalBindsMatch:true,morphs:[...morphs],studies}));
