@@ -1114,6 +1114,35 @@ forest floor to the inner arc. A single distant batch tints their
 crowns with the sky palette, and the near representation preserves
 trunk collision. More species and longer physical traversal remain open.
 
+#### Make the meadow and forest feel inhabited at walking height
+
+The installed middle-distance pass widened existing tufts and stabilized their
+fade. The matched daylight view still shows isolated tall blades over broad
+areas of smooth ground. The retained woodland walk shows rooted conifers
+and small fern and shrub clusters, with long views across open ground under
+similar crowns. The next visual comparison should start at player height and
+show the experience inside the two habitats, including when the player stops.
+
+Use the arrival meadow and its wooded edge for one continuous first pass.
+Match the grass roots to a short-cover ground material and add dense low
+profiles in patches within roughly 15 metres. Keep taller seeded clumps,
+seedheads and flowers in irregular drifts. Toward the woods, trade that cover
+for shaded litter, grouped ferns and varied saplings. Start from the existing
+rooted foliage and terrain palette. Compare a bounded dapple-light pattern
+under the crowns and a common gust field across nearby foliage before adding
+per-instance shadows. Add a few authored silhouettes where they improve the
+view up close. Preserve clear walking routes and existing trunk collision.
+
+Use the existing rooted assets in Livianos with fewer foreground instances
+and the same palette and roots. Keep Sand3D on its already measured verge
+until a wider candidate passes. Compare the active build at standing height
+in foothill meadow, forest edge and under canopy, with the same daylight and
+at dusk. Record five seconds at rest and one continuous near-to-distance
+walk for each profile, including a turn. Judge visible bare gaps, night
+readability, matching shades where meshes meet the terrain, and streaming
+transitions. Measure first movement, p95, draw calls and decoded asset memory
+on RTX 2060 and Pi 5. Track results in [world art #3](https://github.com/AlterMundi/holodeck/issues/3).
+
 - **Near** — instance actual trunks and understory silhouettes, low-poly
   grass and alpha-cutout cards for leaves and small plants. Keep large,
   collidable objects tied to world geometry.
