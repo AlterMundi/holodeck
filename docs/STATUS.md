@@ -32,8 +32,10 @@ Source `bc17d92dbbe4df285b676a8320e18f28844f23ec` carries the deployed
 touch landscape map from `bf4886aafe4e` into the Character candidate.
 Review archive
 `0e2e9b19867a5313ee6306f81220521c15b722843871d314005ca91399b88060`
-was built with the exact alpha.16 PR package, SHA-256
-`428205a140fe8f73b95a60e633954118436c15399f15e5792d12637feb49edd6`.
+was reproduced byte for byte at source `5059589` with the published
+[Proyección alpha.16](https://github.com/AlterMundi/proyeccion/releases/tag/v0.1.0-alpha.16)
+archive pinned by its SHA-512 integrity. The verified download has
+SHA-256 `e184e8d53533d90db9b56e752f441277698b340a2a471d5d7363cf2f84d5a7c9`.
 Chromium measured 44.044 CSS px touch targets, retained map format
 through rotation, followed a room destination and restored launcher
 focus. The same archive passed reciprocal Character doors, delayed
