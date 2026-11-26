@@ -17,6 +17,8 @@ const trunkWidth=.048;
 const chunkSize=42;
 const maxRange=640;
 const skylineRange=3900;
+const skylineTransitionRange=96;
+const skylineReturnMargin=8;
 
 function sample(x,z,salt){
   let n=Math.imul(x,0x6d2b79f5)^Math.imul(z,0x85ebca6b)^TOROIDAL_TERRAIN.seed^salt;
@@ -160,19 +162,29 @@ function skylineGeometry(spreading=false){
   geometry.setAttribute('position',new Float32BufferAttribute(positions,3));
   geometry.setAttribute('color',new Float32BufferAttribute(colors,3));
   geometry.computeVertexNormals();
+  geometry.computeBoundingSphere();
+  const {center,radius}=geometry.boundingSphere;
+  // Include the widest point of the vertex shader's transition.
+  geometry.boundingSphere.radius=1.13*radius+.13*Math.hypot(center.x,center.z);
   return geometry;
 }
 
-function skylineMaterial(daylight,sun){
+function skylineMaterial(daylight,sun,viewer){
   const material=new MeshBasicMaterial({vertexColors:true,fog:false});
   material.onBeforeCompile=shader=>{
     shader.uniforms.woodlandDaylight=daylight;
     shader.uniforms.woodlandSun=sun;
+    shader.uniforms.woodlandViewer=viewer;
     const varyings='varying vec3 vWoodlandAir;';
     shader.vertexShader=shader.vertexShader
-      .replace('#include <common>','#include <common>\n'+varyings+'\nuniform vec3 woodlandSun;')
-      .replace('#include <project_vertex>',`#include <project_vertex>
+      .replace('#include <common>','#include <common>\n'+varyings+'\nuniform vec3 woodlandSun;\nuniform vec3 woodlandViewer;')
+      .replace('#include <begin_vertex>',`#include <begin_vertex>
         vec3 root=(modelMatrix*instanceMatrix[3]).xyz;
+        // The low lit mesh has a wider envelope. Ease it into the
+        // existing skyline silhouette without moving the tree's root.
+        float nearCrown=1.0-smoothstep(640.0,900.0,distance(root,woodlandViewer));
+        transformed.xz*=1.0+.13*nearCrown;`)
+      .replace('#include <project_vertex>',`#include <project_vertex>
         float radial=max(length(root.xz),.001);
         vec2 ring=root.xz/radial;
         vec2 tube=normalize(vec2(radial-${TOROIDAL_TERRAIN.majorRadius.toFixed(1)},root.y));
@@ -279,10 +291,14 @@ export class ToroidalWoodland{
     this.material=new MeshStandardMaterial({vertexColors:true,roughness:.95});
     useDaylight(this.material,daylight);
     this.sun={value:new Vector3(0,1,0)};
-    this.skylineMaterial=skylineMaterial(daylight,this.sun);
-    const trees=[...woodlandTrees(),...innerWoodlandTrees()].map(tree=>({...tree,
-      spreading:tree.height>=7.8&&sample(Math.round(tree.u*1e6),Math.round(tree.v*1e6),3941)>.59,
-    }));
+    this.viewer={value:new Vector3()};
+    this.skylineMaterial=skylineMaterial(daylight,this.sun,this.viewer);
+    const trees=[...woodlandTrees(),...innerWoodlandTrees()].map(tree=>{
+      const u=Math.round(tree.u*1e6),v=Math.round(tree.v*1e6);
+      const switchDistance=maxRange-skylineTransitionRange*sample(u,v,8467);
+      return {...tree,spreading:tree.height>=7.8&&sample(u,v,3941)>.59,
+        skylineDistanceSq:switchDistance**2,returnDistanceSq:(switchDistance-skylineReturnMargin)**2};
+    });
     const broad=trees.filter(tree=>tree.spreading).length;
     this.meshes=this.geometry.map((geometry,index)=>{
       const capacity=index<4?trees.length-broad:broad;
@@ -335,6 +351,7 @@ export class ToroidalWoodland{
 
   update(position,lightweight,sunDirection){
     if(sunDirection)this.sun.value.fromArray(sunDirection);
+    this.viewer.value.copy(position);
     if(this.last.distanceToSquared(position)<36&&this.lightweight===lightweight)return;
     this.last.copy(position);
     this.lightweight=lightweight;
@@ -361,7 +378,13 @@ export class ToroidalWoodland{
       for(const tree of chunk.trees){
         const distance=tree.point.distanceToSquared(position);
         if(distance>limit**2)continue;
-        const level=distance>maxRange**2?3:distance<(lightweight?23:39)**2?2:distance<(lightweight?81:126)**2?1:0;
+        // Switch at stable per-tree distances, with one mesh per tree.
+        // Returning across the band takes a slightly closer approach.
+        if(tree.inner){
+          const threshold=tree.skyline?tree.returnDistanceSq:tree.skylineDistanceSq;
+          tree.skyline=distance>threshold;
+        }
+        const level=tree.skyline?3:distance<(lightweight?23:39)**2?2:distance<(lightweight?81:126)**2?1:0;
         const mesh=this.meshes[level+(tree.spreading?4:0)];
         mesh.setMatrixAt(mesh.count,tree.matrix);
         const light=.85+.29*tree.tint;
