@@ -269,6 +269,39 @@ cut and retained its durable content across the adjacent saves.
 Independent participant acceptance and a controlled Normal frame-time
 comparison remain open.
 
+## Installed middle-distance meadow coverage
+
+Protected release `95d58169730b` serves `65344ee`, with `a051266d693e` as
+the immediate rollback. 13 state files matched by hash. Only presence events changed in the room journal. Exact readback matched the browser,
+terrain worker, server and room art. The release changes the browser
+bundle and its manifest.
+
+Wider root-fixed grass tufts and a rounded falloff in wrapped ground
+coordinates give the arrival meadow more visible coverage at mid distance.
+The falloff follows the avatar's position on the torus. Zoom, orbit and
+radial altitude leave the coverage unchanged while the avatar stays over
+the same patch. The GPU collapses grass before the streamed cells swap.
+The Normal and Livianos draw and instance budgets stay fixed.
+
+On Pi 5 Broadcom V3D, matched noon, dusk and night views reported
+127 draws / 262,218 triangles in Normal and 71 / 95,234 in Livianos
+in both builds. Candidate p95 frame intervals at those poses were
+33.4 ms and 16.7–16.8 ms, respectively. The Normal run ended at
+82.9 °C with a current thermal flag. These are fixed-pose samples.
+Native input in the controlled run moved the avatar 8.0 m and 8.9 m
+in low flight across the respective profiles. The separate controlled
+visitor resolved the same door and Livianos requested no Sand3D assets.
+The test suite passed 484 cases with two optional skips. Added tests
+verify deterministic root attributes, radial climbs and coverage before
+either wrapped streaming axis exchanges cells.
+
+Fable 5.2 High suggested the rounded distance in tile coordinates and
+a late, staggered fade. Opus 5.5 High checked the edge math and the
+per-geometry attribute bindings. Each mesh profile adds two floats per
+possible tuft. The grass stays opaque and uses no separate shadow pass.
+Longer routes, RTX Normal and independent participant acceptance remain
+open.
+
 ## Screening route
 
 Use identical graphics quality, resolution, seed, camera and solar clock

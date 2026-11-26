@@ -1,5 +1,14 @@
 # Current MVP work
 
+## November 26 — Middle-distance meadow coverage
+
+The protected release `95d58169730b` serves `65344ee`, with
+`a051266d693e` as immediate rollback. Grass stays rooted and holds more
+of the middle distance when the camera moves. The two physical Pi 5
+profiles kept their draw and triangle counts at three matched times of day
+and passed low flight. 13 state files matched by hash. Only presence events changed in the room journal.
+[Matched views and receiving evidence](environment-art-revamp.md#installed-middle-distance-meadow-coverage).
+
 ## November 26 — Arrival meadow colours
 
 The protected release `a051266d693e` serves `3c5f6a6` with

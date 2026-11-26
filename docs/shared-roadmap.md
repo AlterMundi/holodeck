@@ -1047,10 +1047,14 @@ little GPU headroom for promotion. Keep the direct render selected and
 qualify a cheaper capture and blur path.
 
 The [installed meadow colours](environment-art-revamp.md#installed-vertex-colours-for-the-arrival-meadow)
-use the existing terrain worker and RGB stream. Compare the colour
-changes along the arrival route before extending the field. Longer
-desktop and Normal flight runs and denser, rooted middle-distance plants
-remain in [#25](https://github.com/AlterMundi/holodeck/issues/25).
+use the existing terrain worker and RGB stream. The [installed grass
+coverage](environment-art-revamp.md#installed-middle-distance-meadow-coverage)
+follows the avatar over the two torus axes, retaining more middle-distance
+cover with the same draw and instance counts on both graphics profiles.
+Compare longer ground and flight routes on RTX Normal and Pi Livianos
+before extending the authored cover into the other biomes. Track the
+remaining density, silhouette and long-distance work in
+[#25](https://github.com/AlterMundi/holodeck/issues/25).
 
 ### Connected ecosystems above and below the torus
 
