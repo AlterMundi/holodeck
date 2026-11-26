@@ -120,6 +120,23 @@ past the object. Check daylight and dusk or night, where a dark terrain can
 hide sparse ground cover and leave an abrupt seam. Keep the matched view in
 the environment review evidence when resolving a reported example.
 
+### Weathered meadow stones (local candidate)
+
+Source `f236dc8`, archive `9dcfeec3efe5`, gives the existing instanced
+meadow stones world-space mineral grain with a darker foot and an
+irregular moss transition. The existing terrain positions, scale and
+opaque draw stay in place. The stone shader uses the same noise as
+the cave and stonework. The new contact height is radial and measured
+in metres from the seeded root.
+
+The same boulder was compared at noon and dusk on an RTX 2060 using the
+active woodland build as baseline. The surface and foot now read with
+more tonal variation. The faceted outline and some blades passing into
+the stone are still visible. The 6.51 m walk passed with no browser
+errors. Both versions gave 163 draws, 586,370 triangles and a 16.7 ms
+median animation-frame interval at an 850×552 draw buffer. The candidate
+remains local. It adds no external assets.
+
 ### Cosmic sky reflected in water
 
 The November 26 water reference calls for a broken ribbon of amber and
