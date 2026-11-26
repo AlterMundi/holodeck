@@ -141,7 +141,12 @@ try{
  await until(()=>evaluate('retainedContent.contentWindow.fixture.held.length===1'),10000,'content context held while canonical file upload awaits');
  await until(()=>!!releaseFile,10000,'original file acknowledgment held');const submit=await evaluate('submissionMoment');
  await frame('document.querySelector("#conversation-message").focus();document.querySelector("#conversation-message").setSelectionRange(0,document.querySelector("#conversation-message").value.length);true');await cdp('Input.insertText',{text:'Next canonical draft retained'});
- await evaluate('window.retainedConversation=document.querySelector("#shared-conversation iframe");window.frameIdentity=retainedConversation.src;document.querySelector("#conversation-close").click();true');
+ const minimizeMotion=await evaluate(`(()=>{
+  window.retainedConversation=document.querySelector('#shared-conversation iframe');
+  window.frameIdentity=retainedConversation.src;
+  document.querySelector('#conversation-close').click();
+  return document.querySelector('#conversation-panel').dataset.displayMotion;
+ })()`);
  if(await evaluate('document.querySelector("#conversation-panel").contains(document.activeElement)'))throw Error('Closing left keyboard focus inside Conversation');
  await holdA();
  const later=await evaluate('({capturedAt:Date.now(),local:structuredClone(holodeckDevelopment.client.getLocalCharacterState())})');
@@ -149,7 +154,12 @@ try{
  if(walkingDistance<.1)throw Error('World did not move independently during canonical preparation');
  await evaluate('retainedContent.contentWindow.fixture.hold=false;retainedContent.contentWindow.fixture.reply(retainedContent.contentWindow.fixture.held.shift());true');await until(()=>prepared.length===1,10000,'immutable machine context');
  if(accepted.length)throw Error('Canonical original admitted before file acknowledgment');releaseFile();await until(()=>accepted.length===1,10000,'one canonical original');
- await evaluate('document.querySelector("#talk").click();true');if(!await evaluate('retainedConversation===document.querySelector("#shared-conversation iframe")&&retainedConversation.src===frameIdentity'))throw Error('Hiding replaced canonical frame');
+ const restoreMotion=await evaluate(`(()=>{
+  document.querySelector('#talk').click();
+  return document.querySelector('#conversation-panel').dataset.displayMotion;
+ })()`);
+ if(minimizeMotion!=='minimize'||restoreMotion!=='restore')throw Error('Canonical panel did not animate to and from its toolbelt control');
+ if(!await evaluate('retainedConversation===document.querySelector("#shared-conversation iframe")&&retainedConversation.src===frameIdentity'))throw Error('Hiding replaced canonical frame');
  const captured=prepared[0].view,positionError=Math.hypot(...['x','y','z'].map(axis=>captured.local.position[axis]-submit.local.position[axis]));
  if(positionError>.0001||captured.capturedAt<submit.capturedAt-10||captured.capturedAt>submit.capturedAt+100)throw Error('Canonical preparation moved initial situation '+JSON.stringify({submit,later,captured}));
  if(accepted[0].text!=='Synthetic canonical situated original'||accepted[0].files.length!==2||accepted[0].files.filter(f=>f.name==='holodeck-situation.json').length!==1)throw Error('Canonical original/files changed');
@@ -174,7 +184,7 @@ try{
  await until(()=>evaluate('document.querySelector("#hud").hasAttribute("data-native-status")'),8000,'compact world header restored after minimizing');
  const errors=await evaluate('checkErrors'),frameErrors=await frame('checkErrors');if(errors.length||frameErrors.length)throw Error('Browser errors '+JSON.stringify({errors,frameErrors}));
  const evidence={schema:'holodeck.shared-conversation-browser/v1',qualification:'Actual installed canonical full shell/assets and Holodeck MML world, synthetic loopback Home/context/files/original I/O; no real human/native/model/provider input or acceptance.',canonicalRelease:installed.split('/').at(-1),canonicalAssets:Object.fromEntries(served),loads,acceptedOriginals:accepted.length,exactOriginal:true,contextFiles:1,userFiles:1,fileUploads:fileWrites.length,draftRetained:true,operationalAlerts:'Canonical quiet frame intentionally hides the ordinary launcher; not an exercised capability.',recordingControlVisibleAndFits:true,recordingCountdownSounds:'Not exercised by this text/files fixture; use separate canonical recorder qualification.',forgeriesRefused:4,retainedOneFrame:true,submit,later,captured,positionError,layouts,errors,frameErrors};
- if(loads!==1)throw Error('Canonical frame unexpectedly reloaded');await writeFile(join(directory,'evidence.json'),JSON.stringify({...evidence,clientSHA256,writingDistance,walkingDistance},null,2)+'\n');console.log(JSON.stringify(evidence));
+ if(loads!==1)throw Error('Canonical frame unexpectedly reloaded');await writeFile(join(directory,'evidence.json'),JSON.stringify({...evidence,clientSHA256,writingDistance,walkingDistance,minimizeMotion,restoreMotion},null,2)+'\n');console.log(JSON.stringify(evidence));
  }
 }catch(error){console.error('diagnostic-world',JSON.stringify(await evaluate('({body:document.body.innerText.slice(-1200),messages:window.surfaceMessages,errors:window.checkErrors})').catch(e=>({error:e.message}))));console.error('requests',JSON.stringify(requests.slice(-35)));console.error('contexts',JSON.stringify(events.filter(e=>['Runtime.executionContextCreated','Runtime.exceptionThrown'].includes(e.method)).slice(-12)));throw error;
 }finally{

@@ -1,7 +1,7 @@
 import {hudAppearanceKey,readHudAppearance} from './hud-appearance.mjs';
 import {PassageHud} from './passage-hud.mjs';
 import {HudLookPreview} from './hud-look-preview.mjs';
-import {Matrix4,OrthographicCamera,PerspectiveCamera,Raycaster,Scene,Vector2,Vector3} from 'three';
+import {Matrix4,OrthographicCamera,PerspectiveCamera,Raycaster,Scene,Vector2} from 'three';
 import {WorldMapHud,worldMapId,worldBearingId} from './world-map-hud.mjs';
 import {DoorPromptHud,compactDoorPromptWidth,doorPromptId,doorPromptWidth} from './door-prompt-hud.mjs';
 import {CollectionHud,collectionHudId,collectionHudWidth} from './collection-hud.mjs';
@@ -741,35 +741,13 @@ export class MatterWorktableHud{
     }
     this.hud.setTextDensity(group.name,{cssPixelsPerUnit:Math.round(scale*(bounds?1.12:1)),pixelRatio,
       fontSize});
-    this[key]={group,signature,x,y,scale,tilted:Boolean(bounds)};
+    this[key]={group,signature};
     this.layer.invalidate();
   }
 
   toolBounds(name){
     if(!this.toolGroup||this.toolPlacement?.group!==this.toolGroup)return null;
-    const {rows,width}=this.toolLayout;
-    const rowIndex=rows.findIndex(({ids})=>ids.includes(name));
-    if(rowIndex<0)return null;
-    const {ids}=rows[rowIndex],index=ids.indexOf(name);
-    const {x,y,scale}=this.toolPlacement;
-    const available=width-toolGap*(ids.length-1);
-    const total=ids.reduce((sum,id)=>sum+pixelsForTool(id,this.toolLayout),0);
-    const widthFor=id=>available*pixelsForTool(id,this.toolLayout)/total;
-    const xOffset=ids.slice(0,index).reduce((sum,id)=>sum+widthFor(id)+toolGap,-width/2);
-    const viewport=this.canvas.getBoundingClientRect();
-    const localTop=-rowIndex*(toolRowHeight+toolGap);
-    if(this.toolPlacement.tilted){
-      this.toolGroup.updateWorldMatrix(true,false);
-      const points=[xOffset,xOffset+widthFor(name)].flatMap(localX=>[localTop,localTop-toolRowHeight].map(localY=>{
-        const p=new Vector3(localX,localY,0).applyMatrix4(this.toolGroup.matrixWorld).project(this.camera);
-        return [viewport.left+(p.x+1)*viewport.width/2,viewport.top+(1-p.y)*viewport.height/2];
-      }));
-      const xs=points.map(([px])=>px),ys=points.map(([,py])=>py);
-      const left=Math.min(...xs),top=Math.min(...ys);
-      return {left,top,width:Math.max(...xs)-left,height:Math.max(...ys)-top};
-    }
-    return {left:viewport.left+x+xOffset*scale,top:viewport.top+y-localTop*scale,
-      width:widthFor(name)*scale,height:toolRowHeight*scale};
+    return this.hud.getControlViewportBounds(toolbeltId,name,this.camera,this.canvas.getBoundingClientRect());
   }
 
   beginPassage(){
