@@ -201,8 +201,14 @@ test('Sand3D stops invalid or exhausted attempts and aborts a late load on regio
   const scene=new Scene(),position=new Vector3(1799,498,23);
   const door={x:1797.925,y:498.11,z:15.5,facing:-1};
   const cover=new Sand3DTrail(scene,new URL('https://fixture.test/'),position.toArray(),()=>{},{value:1});
-  const loads=[],load=cover.load.bind(cover);
-  cover.load=(...args)=>loads.push(load(...args));
+  const loads=new Map(),load=cover.load.bind(cover);
+  cover.load=(name,...args)=>loads.set(name,load(name,...args));
+  const settleAvailable=()=>Promise.all([...loads].filter(([name])=>name!=='feather-reed-grass').map(([,task])=>task));
+  const settleAll=()=>{
+    const tasks=[...loads.values()];
+    loads.clear();
+    return Promise.all(tasks);
+  };
   let aborted=0;
   t.mock.method(globalThis,'fetch',(url,{signal})=>{
     if(url.pathname.includes('pumice'))return new Response('bad model');
@@ -214,22 +220,22 @@ test('Sand3D stops invalid or exhausted attempts and aborts a late load on regio
   });
   try{
     cover.update(position,false,door);
-    await Promise.all(loads.splice(1));
+    await settleAvailable();
     cover.update(new Vector3(1799,498,100),false,door);
-    await Promise.all(loads.splice(0));
+    await settleAll();
     assert.equal(aborted,1);
     assert.equal(cover.groups.size,0);
     for(let step=0;step<2;step++){
       cover.update(position,false,door,performance.now()+5000);
-      await Promise.all(loads.splice(1));
+      await settleAvailable();
       cover.update(position,true,door);
-      await Promise.all(loads.splice(0));
+      await settleAll();
     }
     assert.equal(cover.attempts.get('pumice').count,1);
     assert.equal(cover.attempts.get('sensitive-fern').count,3);
     assert.equal(aborted,3);
     cover.update(position,false,door,performance.now()+5000);
-    assert.equal(loads.length,0);
+    assert.equal(loads.size,0);
   }finally{cover.dispose();}
 });
 
