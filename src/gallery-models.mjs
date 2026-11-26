@@ -2,7 +2,9 @@ import {Box3,Group,Vector3} from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {sameVisitPin,validVisitPin} from './content-visits.mjs';
 import {GALLERY_STAGES} from './gallery-display.mjs';
+import {galleryContact,gallerySurface} from './gallery-contact.mjs';
 
+const displayContacts=new WeakMap();
 const MODEL_BYTES=4*1024*1024;
 const LEASE_MS=30000;
 const hex=(s,n)=>typeof s==='string'&&s.length===n&&/^[a-f0-9]+$/.test(s);
@@ -77,11 +79,13 @@ export function disposeModel(root){
     if(node.material)for(const material of [node.material].flat())materials.add(material);
   });
   root.removeFromParent();
+  displayContacts.get(root)?.dispose();
+  displayContacts.delete(root);
   for(const item of geometry)item.dispose();
   for(const item of materials)item.dispose();
 }
 
-export function placeGalleryModel(scene,plinth,{width=1.10,depth=.83,height=.65}={}){
+export function placeGalleryModel(scene,plinth,{width=1.10,depth=.83,height=.65,deckContact=false}={}){
   const model=new Group();model.add(scene);
   const omit=[];
   scene.traverse(node=>{
@@ -90,20 +94,40 @@ export function placeGalleryModel(scene,plinth,{width=1.10,depth=.83,height=.65}
   // Invisible meshes stay owned by the model for disposal.
   for(const node of omit)node.visible=false;
   model.updateMatrixWorld(true);
-  const bounds=new Box3();
-  scene.traverse(node=>{
+  const bounds=new Box3(),surfaces=[],point=new Vector3();
+  const measure=node=>{
     if(!node.isMesh||omit.includes(node))return;
     node.castShadow=true;
     node.receiveShadow=true;
-    node.geometry.computeBoundingBox();
-    bounds.union(node.geometry.boundingBox.clone().applyMatrix4(node.matrixWorld));
-  });
+    if(!deckContact){
+      node.geometry.computeBoundingBox();
+      bounds.union(node.geometry.boundingBox.clone().applyMatrix4(node.matrixWorld));
+      return;
+    }
+    const surface=gallerySurface(node);
+    // Seat on rendered vertices. A transformed bounding box can extend below
+    // a rotated mesh and unused vertices can extend below the actual support.
+    for(let i=surface.start;i<surface.end;i++)bounds.expandByPoint(surface.point(point,i));
+    surfaces.push(surface);
+  };
+  if(deckContact)scene.traverseVisible(measure);
+  else scene.traverse(measure);
   const size=bounds.getSize(new Vector3()),center=bounds.getCenter(new Vector3());
   const scale=Math.min(width/size.x,depth/size.z,height/size.y);
   if(bounds.isEmpty()||!Number.isFinite(scale)||scale<=0){disposeModel(model);throw Error('Gallery snapshot has no displayable bounds');}
+  let display=model;
+  if(deckContact){
+    display=new Group();
+    try{
+      // Sample pre-fit mesh matrices and keep the deck card at room scale.
+      const contact=galleryContact(surfaces,scale,center,bounds,plinth,{width,depth});
+      display.add(contact,model);
+      displayContacts.set(display,contact.material.map);
+    }catch(error){disposeModel(model);throw error;}
+  }
   model.scale.setScalar(scale);
-  model.position.set(plinth.x-center.x*scale,plinth.y+.015-bounds.min.y*scale,plinth.z-center.z*scale);
-  return model;
+  model.position.set(plinth.x-center.x*scale,plinth.y+(deckContact ? .002 : .015)-bounds.min.y*scale,plinth.z-center.z*scale);
+  return display;
 }
 
 export class GalleryModels{
@@ -129,7 +153,7 @@ export class GalleryModels{
     this.readModel(entry.pin,{signal:AbortSignal.any([controller.signal,AbortSignal.timeout(9000)])})
       .then(bytes=>this.loader.parseAsync(bytes,'')).then(({scene})=>{
         if(this.items.get(entry.id)!==item||this.now()>=item.expires){disposeModel(scene);return;}
-        const model=placeGalleryModel(scene,GALLERY_STAGES[entry.id].position);
+        const model=placeGalleryModel(scene,GALLERY_STAGES[entry.id].position,{deckContact:true});
         model.name=entry.id+'-display';
         this.scene.add(model);item.model=model;
       }).catch(()=>{item.failed=true;});

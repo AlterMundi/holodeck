@@ -1,8 +1,8 @@
 import {createHash} from 'node:crypto';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {Box3,BoxGeometry,Group,Mesh,MeshStandardMaterial,Vector3} from 'three';
-import {GalleryModels,placeGalleryModel,readGalleryModel} from '../src/gallery-models.mjs';
+import {Box3,BoxGeometry,BufferGeometry,Float32BufferAttribute,Group,Mesh,MeshStandardMaterial,Vector3} from 'three';
+import {GalleryModels,disposeModel,placeGalleryModel,readGalleryModel} from '../src/gallery-models.mjs';
 
 const pin={kind:'artifact_review',adapter:'interactive_3d',tableId:'table-1',reviewId:'workshop',revision:'pinned-1'};
 const source={resource:'a'.repeat(32),publicationVersion:'b'.repeat(64)};
@@ -52,13 +52,71 @@ function scene(){
 }
 test('fits actual geometry above the pedestal without the horizon plane',()=>{
   const {group,island,water}=scene(),plinth={x:2.5,y:.965,z:1.25};
-  const model=placeGalleryModel(group,plinth);
+  // The buffer can contain a point the index never renders.
+  const positions=island.geometry.attributes.position;
+  island.geometry.setAttribute('position',new Float32BufferAttribute([...positions.array,0,-100,0],3));
+  const model=placeGalleryModel(group,plinth,{deckContact:true});
   model.updateMatrixWorld(true);
-  const bounds=new Box3().setFromObject(island),center=bounds.getCenter(new Vector3());
+  const bounds=new Box3(),vertex=new Vector3();
+  for(let i=0;i<positions.count;i++)
+    bounds.expandByPoint(island.localToWorld(vertex.fromBufferAttribute(positions,i)));
+  const center=bounds.getCenter(new Vector3());
   assert.equal(water.visible,false);
-  for(const [actual,expected] of [[center.x,plinth.x],[bounds.min.y,plinth.y+.015],[center.z,plinth.z]])
+  for(const [actual,expected] of [[center.x,plinth.x],[bounds.min.y,plinth.y+.002],[center.z,plinth.z]])
     assert.ok(Math.abs(actual-expected)<1e-9);
   assert.ok(bounds.getSize(new Vector3()).x<=1.1);
+});
+
+test('preserves the collection shelf and archive fit without adding a deck shadow',()=>{
+  const {group,island}=scene(),plinth={x:0,y:1,z:0};
+  const model=placeGalleryModel(group,plinth,{width:.88,depth:.88,height:.62});
+  assert.equal(model.children[0],group);
+  assert.equal(model.getObjectByName('gallery-plinth-contact'),undefined);
+  model.updateMatrixWorld(true);
+  assert.ok(Math.abs(new Box3().setFromObject(island).min.y-plinth.y-.015)<1e-9);
+});
+
+test('plots separate supports on the deck and disposes the owned texture',()=>{
+  const group=new Group();
+  for(const x of [-.4,.4]){
+    const foot=new Mesh(new BoxGeometry(.14,.1,.2),new MeshStandardMaterial());
+    foot.position.set(x,.05,0);
+    group.add(foot);
+  }
+  const bridge=new Mesh(new BoxGeometry(.94,.12,.2),new MeshStandardMaterial());
+  bridge.position.y=.14;
+  group.add(bridge);
+  const model=placeGalleryModel(group,{x:0,y:1,z:0},{deckContact:true});
+  const contact=model.getObjectByName('gallery-plinth-contact');
+  const {map}=contact.material, {data,width}=map.image;
+  const middle=width/2;
+  const opacityAt=(x,y)=>data[(y*width+x)*4+3];
+  assert.ok(opacityAt(10,middle)>0&&opacityAt(53,middle)>0);
+  assert.equal(opacityAt(middle,middle),0);
+  assert.equal(opacityAt(0,middle),0);
+  assert.equal(contact.material.depthWrite,false);
+  const hits=[];
+  contact.raycast(null,hits);
+  assert.deepEqual(hits,[]);
+  let disposed=false;
+  map.addEventListener('dispose',()=>{disposed=true;});
+  disposeModel(model);
+  assert.equal(disposed,true);
+});
+
+test('preserves flat support faces behind dense upper geometry',()=>{
+  const geometry=new BufferGeometry();
+  geometry.setAttribute('position',new Float32BufferAttribute([
+    0,1,0, 1,1,0, 1,1,1, 0,0,0, 1,0,0, 1,0,1, 0,0,1,
+  ],3));
+  geometry.setIndex([...Array.from({length:2049},()=>[0,1,2]).flat(),3,4,5,5,6,3]);
+  const group=new Group();
+  group.add(new Mesh(geometry,new MeshStandardMaterial()));
+  const model=placeGalleryModel(group,{x:0,y:1,z:0},{deckContact:true});
+  const {data,width}=model.getObjectByName('gallery-plinth-contact').material.map.image;
+  const middle=width/2;
+  assert.ok(data[(middle*width+middle)*4+3]>0);
+  disposeModel(model);
 });
 
 test('never attaches a late or unauthorized model and removes expired or revoked assets',async()=>{
