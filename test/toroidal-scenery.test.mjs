@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {readFile} from 'node:fs/promises';
 import {Scene,Vector3} from 'three';
 import {approachCover,ToroidalScenery} from '../src/toroidal-scenery.mjs';
 import {meadowBankPlants} from '../src/toroidal-meadow-banks.mjs';
@@ -146,15 +147,90 @@ test('lightweight and distant approaches do not start optional trail downloads',
   assert.equal(requests,0);
   cover.update(position,false,door);
   cover.update(position,false,door);
-  assert.equal(requests,1);
+  assert.equal(requests,3);
   cover.update(new Vector3(1799,498,72),false,door);
   cover.update(position,false,door);
-  assert.equal(requests,1);
+  assert.equal(requests,3);
   cover.update(new Vector3(1799,498,100),false,door);
   cover.update(position,false,door);
-  assert.equal(requests,2);
+  assert.equal(requests,6);
   cover.dispose();
   assert.equal(scene.children.length,0);
+});
+
+test('a transient Sand3D failure preserves verified siblings and recovers only the missing batch',async t=>{
+  const {Sand3DTrail}=await import('../src/sand3d-trail.mjs');
+  const {sand3dTrailAssets}=await import('../src/sand3d-trail-assets.mjs');
+  const models=new Map(await Promise.all(Object.values(sand3dTrailAssets).map(async ({path})=>
+    [path,await readFile(new URL('../public/'+path,import.meta.url))])));
+  const scene=new Scene(),position=new Vector3(1799,498,23);
+  const door={x:1797.925,y:498.11,z:15.5,facing:-1};
+  const cover=new Sand3DTrail(scene,new URL('https://fixture.test/'),position.toArray(),()=>{},{value:1});
+  const requests=[],loads=[],load=cover.load.bind(cover);
+  cover.load=(...args)=>loads.push(load(...args));
+  let fernRequests=0;
+  t.mock.method(globalThis,'fetch',url=>{
+    const path=url.pathname.slice(1);
+    requests.push(path);
+    if(path.includes('sensitive-fern')&&fernRequests++===0)return new Response(null,{status:503});
+    return new Response(models.get(path));
+  });
+  try{
+    cover.update(position,false,door);
+    await Promise.all(loads.splice(0));
+    cover.update(position,false,door);
+    assert.equal(cover.group.visible,true);
+    assert.deepEqual([...cover.groups.keys()].sort(),['feather-reed-grass','pumice']);
+    assert.equal([...cover.groups.values()].reduce((sum,batch)=>sum+batch.count,0),10);
+    const retry=cover.attempts.get('sensitive-fern').retryAt;
+    cover.update(position,true,door,retry);
+    assert.equal(cover.group.visible,false);
+    assert.equal(requests.length,3);
+    cover.update(position,false,door,retry);
+    await Promise.all(loads.splice(0));
+    cover.update(position,false,door,retry);
+    assert.equal(requests.length,4);
+    assert.equal(cover.groups.size,3);
+    assert.equal([...cover.groups.values()].reduce((sum,batch)=>sum+batch.count,0),14);
+  }finally{cover.dispose();}
+  assert.equal(scene.children.length,0);
+});
+
+test('Sand3D stops invalid or exhausted attempts and aborts a late load on region exit',async t=>{
+  const {Sand3DTrail}=await import('../src/sand3d-trail.mjs');
+  const scene=new Scene(),position=new Vector3(1799,498,23);
+  const door={x:1797.925,y:498.11,z:15.5,facing:-1};
+  const cover=new Sand3DTrail(scene,new URL('https://fixture.test/'),position.toArray(),()=>{},{value:1});
+  const loads=[],load=cover.load.bind(cover);
+  cover.load=(...args)=>loads.push(load(...args));
+  let aborted=0;
+  t.mock.method(globalThis,'fetch',(url,{signal})=>{
+    if(url.pathname.includes('pumice'))return new Response('bad model');
+    if(url.pathname.includes('sensitive-fern'))return new Response(null,{status:429});
+    return new Promise((resolve,reject)=>signal.addEventListener('abort',()=>{
+      aborted++;
+      reject(signal.reason);
+    },{once:true}));
+  });
+  try{
+    cover.update(position,false,door);
+    await Promise.all(loads.splice(1));
+    cover.update(new Vector3(1799,498,100),false,door);
+    await Promise.all(loads.splice(0));
+    assert.equal(aborted,1);
+    assert.equal(cover.groups.size,0);
+    for(let step=0;step<2;step++){
+      cover.update(position,false,door,performance.now()+5000);
+      await Promise.all(loads.splice(1));
+      cover.update(position,true,door);
+      await Promise.all(loads.splice(0));
+    }
+    assert.equal(cover.attempts.get('pumice').count,1);
+    assert.equal(cover.attempts.get('sensitive-fern').count,3);
+    assert.equal(aborted,3);
+    cover.update(position,false,door,performance.now()+5000);
+    assert.equal(loads.length,0);
+  }finally{cover.dispose();}
 });
 
 test('meadow quality switches retain deterministic instances and keep the two draws bounded',()=>{

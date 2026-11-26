@@ -33,9 +33,33 @@ export function sand3dTrailPlacement(door){
   });
 }
 
+const retryDelay=[1000,4000];
+class InvalidTrailModel extends Error{}
+
+async function trailBytes(response,bytes){
+  if(!response.body||Number(response.headers.get('Content-Length'))>bytes){
+    await response.body?.cancel();
+    throw new InvalidTrailModel('Trail model size changed');
+  }
+  const result=new Uint8Array(bytes),reader=response.body.getReader();
+  let offset=0;
+  try{
+    for(;;){
+      const {done,value}=await reader.read();
+      if(done)break;
+      if(offset+value.byteLength>bytes)throw new InvalidTrailModel('Trail model size changed');
+      result.set(value,offset);
+      offset+=value.byteLength;
+    }
+  }finally{await reader.cancel().catch(()=>{});}
+  if(offset!==bytes)throw new InvalidTrailModel('Trail model size changed');
+  return result.buffer;
+}
+
 export class Sand3DTrail{
   constructor(scene,base,origin,applyDaylight,daylight){
-    Object.assign(this,{base,applyDaylight,daylight,active:false,attempted:false,groups:new Map()});
+    Object.assign(this,{base,applyDaylight,daylight,groups:new Map(),
+      attempts:new Map(Object.keys(sand3dTrailAssets).map(name=>[name,{count:0,retryAt:0}]))});
     this.group=new Group();
     this.group.name='Sand3D approach planting';
     this.group.position.fromArray(origin);
@@ -44,22 +68,19 @@ export class Sand3DTrail{
     scene.add(this.group);
   }
 
-  update(position,lightweight,door){
-    const radius=this.active?56:42;
-    const active=!lightweight&&!!door&&this.center.distanceToSquared(position)<radius**2;
-    if(active!==this.active){
-      this.active=active;
-      if(!active){
-        this.group.visible=false;
-        this.loading?.abort();
-        this.loading=null;
-        this.attempted=false;
-      }
+  update(position,lightweight,door,now=performance.now()){
+    const radius=this.activation?56:42;
+    if(lightweight||!door||this.center.distanceToSquared(position)>=radius**2){
+      this.suspend();
+      return;
     }
-    if(!active)return;
-    if(!this.attempted&&!this.groups.size){
-      this.attempted=true;
-      void this.load();
+    this.activation??=new AbortController();
+    for(const [name,attempt] of this.attempts){
+      if(!attempt.pending&&attempt.count<=retryDelay.length&&now>=attempt.retryAt){
+        attempt.pending=true;
+        attempt.count++;
+        void this.load(name,attempt,this.activation);
+      }
     }
     if(!this.groups.size)return;
     const doorKey=[door.x,door.z,door.facing].join(':');
@@ -70,34 +91,38 @@ export class Sand3DTrail{
     this.group.visible=true;
   }
 
-  async load(){
-    const loading=this.loading=new AbortController();
-    const signal=AbortSignal.any([loading.signal,AbortSignal.timeout(8000)]);
-    const loader=new GLTFLoader();
-    const results=await Promise.allSettled(Object.entries(sand3dTrailAssets).map(async ([name,{path,bytes,sha256}])=>{
-      const response=await fetch(new URL(path,this.base),{signal,redirect:'error'});
-      if(!response.ok){await response.body?.cancel();throw Error('Trail model unavailable');}
-      const buffer=await response.arrayBuffer();
-      if(buffer.byteLength!==bytes)throw Error('Trail model size changed');
+  suspend(){
+    if(!this.activation)return;
+    this.activation.abort();
+    this.activation=null;
+    this.group.visible=false;
+    for(const attempt of this.attempts.values())attempt.pending=false;
+  }
+
+  async load(name,attempt,activation){
+    const {path,bytes,sha256}=sand3dTrailAssets[name];
+    const signal=AbortSignal.any([activation.signal,AbortSignal.timeout(8000)]);
+    let scene;
+    try{
+      const response=await fetch(new URL(path,this.base),{signal,redirect:'manual'});
+      if(!response.ok){
+        await response.body?.cancel();
+        const {status}=response;
+        if(status===408||status===429||status>=500)throw Error('Trail model temporarily unavailable');
+        throw new InvalidTrailModel('Trail model unavailable');
+      }
+      const buffer=await trailBytes(response,bytes);
       const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',buffer)),
         byte=>byte.toString(16).padStart(2,'0')).join('');
-      if(digest!==sha256)throw Error('Trail model changed');
-      const {scene}=await loader.parseAsync(buffer,'');
-      return {name,scene};
-    }));
-    if(this.loading!==loading||signal.aborted||results.some(result=>result.status==='rejected')){
-      for(const result of results)if(result.status==='fulfilled')disposeModel(result.value.scene);
-      if(this.loading===loading)this.loading=null;
-      return;
-    }
-    this.loading=null;
-    const models=results.map(r=>r.value);
-    if(!models.every(({scene})=>scene.children.length===1&&scene.children[0].isMesh&&!Array.isArray(scene.children[0].material))){
-      for(const {scene} of models)disposeModel(scene);
-      return;
-    }
-    for(const {name,scene} of models){
-      const {geometry,material}=scene.children[0];
+      if(digest!==sha256)throw new InvalidTrailModel('Trail model changed');
+      signal.throwIfAborted();
+      try{({scene}=await new GLTFLoader().parseAsync(buffer,''));}
+      catch{throw new InvalidTrailModel('Trail model is not a valid GLB');}
+      signal.throwIfAborted();
+      const [mesh]=scene.children;
+      if(scene.children.length!==1||!mesh.isMesh||Array.isArray(mesh.material))
+        throw new InvalidTrailModel('Trail model must contain a single mesh');
+      const {geometry,material}=mesh;
       const count=clumps.filter(entry=>entry[0]===name).length;
       const batch=new InstancedMesh(geometry,material,count);
       batch.name='Trail '+name;
@@ -105,6 +130,17 @@ export class Sand3DTrail{
       this.applyDaylight(material,this.daylight);
       this.groups.set(name,batch);
       this.group.add(batch);
+      this.doorKey=null;
+      attempt.retryAt=Infinity;
+      scene=null; // The batch owns the validated geometry and material.
+    }catch(error){
+      if(!activation.signal.aborted){
+        const delay=retryDelay[attempt.count-1];
+        attempt.retryAt=error instanceof InvalidTrailModel||delay===undefined?Infinity:performance.now()+delay;
+      }
+    }finally{
+      if(scene)disposeModel(scene);
+      if(this.activation===activation)attempt.pending=false;
     }
   }
 
@@ -113,6 +149,7 @@ export class Sand3DTrail{
     for(const batch of this.groups.values())batch.count=0;
     for(const {name,u,v,scale,yaw} of placements){
       const batch=this.groups.get(name);
+      if(!batch)continue;
       point.fromArray(terrainPosition(u,v,terrainElevation(u,v)-.021));
       toroidalRotation(point,yaw,transform.quaternion);
       transform.position.copy(point).sub(this.center);
@@ -127,8 +164,7 @@ export class Sand3DTrail{
   }
 
   dispose(){
-    this.loading?.abort();
-    this.loading=null;
+    this.suspend();
     for(const batch of this.groups.values())batch.dispose();
     disposeModel(this.group);
     this.groups.clear();
