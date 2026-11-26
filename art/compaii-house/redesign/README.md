@@ -330,6 +330,14 @@ immutable source, normal Nexus controls and publication audiences remain
 authoritative. Scenes without a supported static snapshot still have their
 ordinary versioned opening action when authorized.
 
+Both gallery exports have deck surfaces at 0.965 m, approximately 1.108 m,
+and 1.4075 m. The miniature is seated 2 mm above its anchor using rendered
+vertices. A 64 × 64 contact mask per mounted edition uses only geometry in
+the lowest part of the fitted model. Clean gaps between widely separated
+supports stay visible. It sits on the deck, works in Normal and Livianos,
+and disappears with the edition when access expires or is revoked.
+The collection shelf and turntable keep their separate fitting behavior.
+
 Generate the retained surrounding scenery with
 `tools/create-island-scenery.mjs --atelier-surroundings` and a task-owned
 `.state` output path. This leaves the neighboring islands and horizon in

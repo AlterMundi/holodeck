@@ -1,5 +1,31 @@
 # Current MVP work
 
+## November 26 gallery deck contacts
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `de23bdf98e78`
+from `da0a322`. The three permanent gallery decks now seat the exact
+edition model from its rendered geometry. A small soft contact mask
+follows its supports at the deck. Revoking or expiring access removes
+the exhibit and its shadow together. The mask uses one transparent
+draw per visible exhibit in either graphics preset.
+
+Compared three identical camera poses at 980 × 620 with physical RTX
+2060 Normal and Pi 5 V3D Livianos. The archive ring's contact is visible
+on both. RTX frames stayed at about 16.7 ms. A warm Pi repeat had the
+same p95 at all three poses (33.4–50 ms), with the archive median moving
+from 16.7 to 33.3 ms. An earlier Pi run had a transient overview stall
+that did not recur in the warm repeat. The protected owner and limited
+visitor were controlled Chromium identities. The owner saw three
+editions, the limited visitor fetched only the published one, and a
+revoked archive disappeared. Independently signed-in participants
+remain unverified for the installed gallery.
+
+Node 24 passed 426 checks with two optional skips. Only the client
+bundle changed. Receiving matched 86 files and 13 protected HTTPS
+reads, four expected denials, unchanged audience and configuration,
+and world sequence 463 before and after. Immediate rollback remains
+`9281853a628a`. See [working house #12](https://github.com/AlterMundi/holodeck/issues/12).
+
 ## November 26 object identification notice
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `9281853a628a`
