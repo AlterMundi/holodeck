@@ -3,8 +3,8 @@ import {ToroidalWoodland} from './toroidal-woodland.mjs';
 import {ToroidalOverlook} from './toroidal-overlook.mjs';
 import {ToroidalMeadowBanks} from './toroidal-meadow-banks.mjs';
 import {
-  BufferGeometry, Color, DodecahedronGeometry, DoubleSide, Float32BufferAttribute, Group,
-  InstancedMesh, MeshStandardMaterial, Object3D, Vector3,
+  BufferGeometry, Color, DodecahedronGeometry, DoubleSide, DynamicDrawUsage, Float32BufferAttribute, Group,
+  InstancedBufferAttribute, InstancedMesh, MeshStandardMaterial, Object3D, Vector2, Vector3,
 } from 'three';
 import {CAVE} from './toroidal-cave.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
@@ -17,9 +17,12 @@ const RANGE=2;
 const CANDIDATES=12;
 const FIELD_LEVEL=9;
 const FIELD_RANGE=5;
+const FIELD_ROWS=2**FIELD_LEVEL;
+const FIELD_COLUMNS=FIELD_ROWS*TOROIDAL_TERRAIN.rootColumns;
 const FIELD_DENSITY=42;
 const FIELD_NEAR=2;
 const FIELD_LIMIT=(2*FIELD_RANGE+1)**2*FIELD_DENSITY;
+const FIELD_MAX_ELEVATION=51;
 const INSTANCE_LIMIT=(2*RANGE+1)**2*CANDIDATES;
 const GRASSES=[0x72874b,0x809154,0x667d48,0x99a35e,0xbaaa65];
 const FRESH_GRASS=[0x536f41,0x608445,0x426440,0x75964a];
@@ -67,7 +70,7 @@ export function sceneryForCell(cell,count=CANDIDATES) {
 // The cells use canonical torus indices. Their vegetation stays rooted on
 // the same metre of soil through movement, tile eviction and graphics changes.
 function fieldTile(column,row){
-  const rows=2**FIELD_LEVEL,columns=rows*TOROIDAL_TERRAIN.rootColumns;
+  const rows=FIELD_ROWS,columns=FIELD_COLUMNS;
   column=(column+columns)%columns;
   row=(row+rows)%rows;
   return {key:column+':'+row,column,row,columns,rows};
@@ -85,7 +88,7 @@ function meadowCell(cell,index,door){
   if(u>overlookStart.u&&u<overlookEnd.u&&v>overlookStart.v&&v<overlookEnd.v)return null;
   if(terrainTrail(u,v)>.12)return null;
   const h=terrainElevation(u,v);
-  if(h<TOROIDAL_TERRAIN.waterLevel+1.4||h>51)return null;
+  if(h<TOROIDAL_TERRAIN.waterLevel+1.4||h>FIELD_MAX_ELEVATION)return null;
   const fold=349*TAU*u+188*TAU*v+1.3*Math.sin(54*TAU*u-93*TAU*v);
   const pocket=287*TAU*u-420*TAU*v+.9*Math.sin(76*TAU*u+58*TAU*v);
   const moisture=terrainMeadowMoisture(u,v,h);
@@ -96,14 +99,17 @@ function meadowCell(cell,index,door){
     color:grassColor(moisture,pick(499))};
 }
 
-function meadowWind(material,clock,motion){
+function meadowWind(material,clock,motion,viewer){
   const compile=material.onBeforeCompile;
   material.onBeforeCompile=function(shader,renderer){
     compile.call(this,shader,renderer);
     shader.uniforms.fieldClock=clock;
     shader.uniforms.fieldMotion=motion;
+    shader.uniforms.fieldViewer=viewer;
     shader.vertexShader=`uniform float fieldClock;
 uniform float fieldMotion;
+uniform vec2 fieldViewer;
+attribute vec2 meadowRootUV;
 varying vec3 meadowUp;
 `+shader.vertexShader.replace('#include <begin_vertex>',
       `#include <begin_vertex>
@@ -114,9 +120,15 @@ varying vec3 meadowUp;
        float bend=clamp(position.y,0.0,1.0);
        transformed.x+=sway*bend*bend*.16*fieldMotion;
        transformed.z+=cos(sway+fieldClock*2.0)*bend*bend*.075*fieldMotion;
-       float distanceToTuft=distance(cameraPosition,root);
-       float offset=2.4*(fract(dot(root,vec3(.38,.19,.63)))-.5);
-       float retention=1.0-smoothstep(17.0+offset,27.0+offset,distanceToTuft);
+       // Toroidal UV gives the exact distance in tiles, independently along each axis.
+       vec2 tiles=abs(fract(meadowRootUV-fieldViewer+0.5)-0.5)*
+         vec2(${FIELD_COLUMNS.toFixed(1)},${FIELD_ROWS.toFixed(1)});
+       vec2 squared=tiles*tiles;
+       float distanceToTuft=sqrt(length(squared));
+       float stagger=.55*fract(dot(root,vec3(.38,.19,.63)));
+       // Both sides of a cell exchange are past the fade before geometry is recycled.
+       float end=${FIELD_RANGE.toFixed(1)}-.04-stagger;
+       float retention=1.0-smoothstep(end-.72,end,distanceToTuft);
        transformed.y=mix(-.16,transformed.y,retention);
        transformed.xz*=smoothstep(0.0,.76,retention);`);
     shader.fragmentShader=`varying vec3 meadowUp;
@@ -141,8 +153,8 @@ function meadowBlades(count,lightweight=false,fieldCoverage=0){
     const tall=blade<2;
     const tipHeight=.55+.28*(.5+.5*Math.sin(blade*6.34+blade*blade*.35));
     const height=field&&!tall ? tipHeight*.84 : tipHeight;
-    const spread=.21+.30*(.5+.5*Math.cos(blade*2.12));
-    const coverage=field ? (tall ? 1.42 : 1.98)*fieldCoverage : 1;
+    const spread=(field?.32:.21)+(field?.41:.30)*(.5+.5*Math.cos(blade*2.12));
+    const coverage=field ? (tall ? 1.42 : 2.17)*fieldCoverage : 1;
     const width=(.024+.013*(.5+.5*Math.cos(blade*3.09)))*coverage;
     const base=positions.length/3;
     for(let level=0;level<levels.length;level++){
@@ -264,11 +276,17 @@ export class ToroidalScenery {
     }),INSTANCE_LIMIT);
     this.fieldClock={value:0};
     this.fieldMotion={value:1};
+    this.fieldViewer={value:new Vector2()};
     this.reducedMotion=globalThis.matchMedia?.('(prefers-reduced-motion: reduce)');
     this.fieldGeometry=[meadowBlades(5,false,1),meadowBlades(5,true,1),meadowBlades(4,true,1.22)];
     const fieldMaterial=new MeshStandardMaterial({roughness:.94,vertexColors:true,side:DoubleSide});
     this.field=new InstancedMesh(this.fieldGeometry[0],fieldMaterial,(2*FIELD_NEAR+1)**2*FIELD_DENSITY);
     this.fieldFar=new InstancedMesh(this.fieldGeometry[1],fieldMaterial,FIELD_LIMIT);
+    for(const [index,geometry] of this.fieldGeometry.entries()){
+      const capacity=index===0?this.field.instanceMatrix.count:FIELD_LIMIT;
+      geometry.setAttribute('meadowRootUV',
+        new InstancedBufferAttribute(new Float32Array(capacity*2),2).setUsage(DynamicDrawUsage));
+    }
     this.field.name='Continuous meadow';
     this.fieldFar.name='Meadow outer tufts';
     this.ribbonGrass=new InstancedMesh(meadowBlades(6),new MeshStandardMaterial({
@@ -301,7 +319,7 @@ export class ToroidalScenery {
       this.group.add(mesh);
     }
     useSceneryDaylight(fieldMaterial,this.daylight);
-    meadowWind(fieldMaterial,this.fieldClock,this.fieldMotion);
+    meadowWind(fieldMaterial,this.fieldClock,this.fieldMotion,this.fieldViewer);
     this.fieldCells=new Map();
     scene.add(this.group);
     this.key=null;
@@ -324,6 +342,7 @@ export class ToroidalScenery {
     const cell=terrainTile(LEVEL,Math.floor(u*columns),Math.floor(v*rows));
     this.fieldClock.value=(performance.now()%18000)*TAU/18000;
     this.fieldMotion.value=this.reducedMotion?.matches?0:1;
+    this.fieldViewer.value.set(u,v);
     const doorKey=(door?.x??'')+':'+(door?.z??15.5)+':'+(door?.facing??-1);
     const distance=this.approach.distanceToSquared(position);
     const nearTrail=distance<105**2;
@@ -363,7 +382,7 @@ export class ToroidalScenery {
   }
 
   placeField(u,v,lightweight,door,doorKey,anchorChanged=false){
-    const rows=2**FIELD_LEVEL,columns=rows*TOROIDAL_TERRAIN.rootColumns;
+    const rows=FIELD_ROWS,columns=FIELD_COLUMNS;
     const cell=fieldTile(Math.floor(u*columns),Math.floor(v*rows));
     const key=[cell.key,lightweight,doorKey].join(':');
     if(key===this.fieldKey&&!anchorChanged)return;
@@ -386,6 +405,7 @@ export class ToroidalScenery {
       }
       retained.set(indexed,samples);
       const mesh=!lightweight&&Math.max(Math.abs(dx),Math.abs(dy))<=FIELD_NEAR?this.field:this.fieldFar;
+      const rootUV=mesh.geometry.getAttribute('meadowRootUV');
       for(const {u,v,h,size,yaw,color} of samples){
         const transform=this.transform;
         transform.position.fromArray(terrainPosition(u,v,h));
@@ -395,6 +415,7 @@ export class ToroidalScenery {
         transform.updateMatrix();
         mesh.setMatrixAt(mesh.count,transform.matrix);
         mesh.setColorAt(mesh.count,this.color.setHex(color));
+        rootUV.setXY(mesh.count,u,v);
         mesh.count++;
       }
     }
@@ -402,6 +423,7 @@ export class ToroidalScenery {
     for(const mesh of [this.field,this.fieldFar]){
       mesh.visible=mesh.count>0;
       mesh.instanceMatrix.needsUpdate=true;
+      mesh.geometry.getAttribute('meadowRootUV').needsUpdate=true;
       if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
     }
   }

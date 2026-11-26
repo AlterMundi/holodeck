@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {Scene,Vector3} from 'three';
 import {approachCover,ToroidalScenery} from '../src/toroidal-scenery.mjs';
 import {meadowBankPlants} from '../src/toroidal-meadow-banks.mjs';
-import {TOROIDAL_TERRAIN,terrainPosition,terrainTrail,TOROIDAL_SPAWN,TOROIDAL_OVERLOOK} from '../src/toroidal-terrain.mjs';
+import {TOROIDAL_TERRAIN,terrainFrame,terrainPosition,terrainTrail,TOROIDAL_SPAWN,TOROIDAL_OVERLOOK} from '../src/toroidal-terrain.mjs';
 import {approachCoordinates} from '../src/sand3d-trail.mjs';
 
 test('the lookout collider remains active while analytical plants wait for detailed terrain',()=>{
@@ -249,10 +249,19 @@ test('meadow quality switches retain deterministic instances and keep the two dr
       capacity:mesh.instanceMatrix.count,
       triangles:mesh.geometry.index.count/3,
       matrices:[...mesh.instanceMatrix.array.subarray(0,16*mesh.count)],
+      roots:[...mesh.geometry.getAttribute('meadowRootUV').array.subarray(0,2*mesh.count)],
     }));
   };
   try{
     const normal=profile(false),light=profile(true);
+    for(const latitude of [0,.25,.5]){
+      const onGround=new Vector3().fromArray(terrainPosition(.34,latitude,16));
+      const up=new Vector3().fromArray(terrainFrame(.34,latitude).up);
+      cover.update(onGround,true);
+      const groundUV=cover.fieldViewer.value.clone();
+      cover.update(onGround.clone().addScaledVector(up,8),true);
+      assert.ok(cover.fieldViewer.value.distanceTo(groundUV)<1e-9);
+    }
     assert.ok(normal.every(mesh=>mesh.count>0&&mesh.count<=mesh.capacity));
     assert.ok(light[1].count>0&&light[1].count<=light[1].capacity);
     assert.equal(light[0].count,0);
@@ -263,4 +272,36 @@ test('meadow quality switches retain deterministic instances and keep the two dr
   }finally{
     cover.dispose();
   }
+});
+
+test('grass settles before either field axis recycles tiles at a torus seam',()=>{
+  const cover=new ToroidalScenery(new Scene());
+  const sample=(u,v)=>{
+    cover.update(new Vector3().fromArray(terrainPosition(u,v,20)),false);
+    const roots=new Map();
+    for(const mesh of [cover.field,cover.fieldFar]){
+      const uv=mesh.geometry.getAttribute('meadowRootUV');
+      for(let i=0;i<mesh.count;i++){
+        const root=[uv.getX(i),uv.getY(i)];
+        roots.set(root.join(':'),root);
+      }
+    }
+    return {uv:cover.fieldViewer.value.toArray(),roots};
+  };
+  const distance=(root,viewer)=>Math.max(...root.map((coordinate,i)=>{
+    const delta=Math.abs(coordinate-viewer[i]);
+    return Math.min(delta,1-delta)*[2048,512][i];
+  }));
+  try{
+    for(const [left,right] of [
+      [sample(1-1e-7,.256),sample(1e-7,.256)],
+      [sample(.003,131/512-1e-7),sample(.003,131/512+1e-7)],
+    ]){
+      for(const [from,to] of [[left,right],[right,left]]){
+        const removed=[...from.roots].filter(([key])=>!to.roots.has(key)).map(([,root])=>root);
+        assert.ok(removed.length>0);
+        for(const root of removed)assert.ok(distance(root,from.uv)>=4.96);
+      }
+    }
+  }finally{cover.dispose();}
 });
