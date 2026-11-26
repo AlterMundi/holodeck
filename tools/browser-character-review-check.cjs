@@ -354,6 +354,47 @@ async function main(){
     assert.deepEqual(await cameraAngles(page),firstCamera);
     await frame(pose.frame-1,peerPage);
     await frame(pose.frame+1);
+
+    await peerButton('Clips').press('Enter');
+    const speed=peerTable.getByRole('combobox',{name:'Velocidad',exact:true});
+    await speed.selectOption('2',{force:true});
+    assert.equal(await speed.inputValue(),'2');
+    const loop=peerButton('Bucle');
+    assert.equal(await loop.getAttribute('aria-pressed'),'true');
+    await loop.press('Enter');
+    assert.equal(await loop.getAttribute('aria-pressed'),'false');
+    await peerButton('Pose').press('Enter');
+    const slider=peerTable.getByRole('slider',{name:'Fotograma',exact:true});
+    const lastFrame=Number(await slider.getAttribute('max'));
+    assert.equal(lastFrame,current.catalog.humanoid[pose.clip].maxFrame);
+    const seekNearEnd=async()=>{
+      await slider.press('End');
+      await frame(lastFrame,peerPage);
+      await peerButton('−1').press('Enter');
+      await frame(lastFrame-1,peerPage);
+    };
+    await seekNearEnd();
+    await peerButton('Reproducir').press('Enter');
+    await frame(lastFrame,peerPage);
+    await peerButton('Reproducir').waitFor({state:'attached'});
+    await frame(pose.frame+1);
+
+    await peerButton('Clips').press('Enter');
+    await loop.press('Enter');
+    assert.equal(await loop.getAttribute('aria-pressed'),'true');
+    await peerButton('Pose').press('Enter');
+    await seekNearEnd();
+    await peerButton('Reproducir').press('Enter');
+    await peerPage.waitForFunction(()=>document.querySelector('input[aria-label="Fotograma"]')?.valueAsNumber<120&&
+      document.querySelector('button[aria-label="Pausar"]'));
+    await peerButton('Pausar').press('Enter');
+    await peerButton('Notas').press('Enter');
+    await peerButton('Ver pose del Taller').press('Enter');
+    await peerButton('Pose').press('Enter');
+    await frame(pose.frame,peerPage);
+    await peerButton('−1').press('Enter');
+    await frame(pose.frame-1,peerPage);
+    await frame(pose.frame+1);
     const peerReadback=await peerPage.evaluate(()=>fetch('api/space/character-presentation').then(r=>r.json()));
     assert.equal(peerReadback.revision,committed.revision);
     assert.deepEqual(peerReadback.presentation.pose,pose);
@@ -460,7 +501,7 @@ async function main(){
     assert.equal(noGraphics.url(),retryURL);
     assert.deepEqual(errors,[]);
     console.log(JSON.stringify({pose,flightChapters,groundChapters,comparedHeldPose:heldPose,comparisonFrame:110,revision:committed.revision,visitor,observedNote:note,roomScope:true,
-      conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,independentTableOrbit:{firstCamera,peerCamera,peerOrbit},sharedReceiptMatchesLocalFrame:true,notesWaitedForSharedPose:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
+      conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,tablePlayback:{speed:2,stoppedAt:lastFrame,loopWrapped:true},independentTableOrbit:{firstCamera,peerCamera,peerOrbit},sharedReceiptMatchesLocalFrame:true,notesWaitedForSharedPose:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
       situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,reciprocalWorldDoors:true,openedTableFromWorldDoor:true,doorFromViewer:true,returnedToRoomFromViewer:true,noGraphicsRetryKeptPose:true,graphicsRestoreKeptLocalFrameAndDraft:true}));
   }finally{
     await browser?.close();

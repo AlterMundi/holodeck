@@ -28,6 +28,14 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+The maintained tabletop check also selects 2× through the speed
+control, seeks near the end by keyboard, and observes the animation
+stop at frame 180 with loop off and wrap with loop on. The first
+visitor remains at its local frame 37, and the room presentation
+remains on frame 36. The same staged fixture completed camera, note
+and graphics checks on archive
+`d03bafbf2837335f3ad1310903ba084682bf214e9871e38f38e4c2b51cc917ab`.
+
 Source `f98201d` carries the protected object-notice fix from
 Holodeck release `9281853a628a`. The combined package used the same
 pose catalog and passed the canonical Conversation reflow check.
