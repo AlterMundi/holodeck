@@ -15,6 +15,14 @@ camera and hardware. The shared release needs the resulting exact
 versions together. Keep the wider creation, conversation, authoring
 and XR milestones available to resume. [Environment research and screening route](environment-art-revamp.md)
 
+While Nicolás is actively playtesting, put a reachable visual iteration in
+his hands after one device verifies entry and the changed view. Share the
+existing playable URL and where to look. Keep the deployed audience, world
+state and recovery version. Use his visual feedback before optimizing and
+qualifying across profiles. Several accepted changes can share one
+cross-device pass. Record trial access, human approval and device
+qualification separately.
+
 ## Intended experience
 
 Walk from the common landscape to a recognizable daimon-authored house, meet its owner, enter a workshop larger than its exterior and explore what that human–daimon pair creates. Together inspect a result, its evidence, code, simulations, media, revisions and possible material realization. Refer to the same situated object/activity/time while each participant can move and look elsewhere. Suggest a change, continue exploring while the daimon works, then return to both editions. Shared public terrain connects individual places and collective creations. The future includes headset participation and selected physical augmentation, using the same situated references.

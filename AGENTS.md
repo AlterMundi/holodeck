@@ -5,14 +5,22 @@ Reuse MML locomotion, collision and presence; do not add a second writable world
 The room owns semantic activity; its MML document is a one-way projection.
 Never fabricate companion speech, understanding or native participation.
 Keep credentials, private conversations and receiving machine bindings out of Git.
-Run npm test and npm run build for behavior changes. Verify browser changes in a
-real browser. Native bridge changes also run
+Build behavior changes and check the affected behavior in a real browser.
+For release qualification run npm test and npm run build. Native bridge changes also run
 `python3 -m unittest discover -s test -p '*_test.py'`.
 Keep local trial loopback-only. Production requires receiving.json with the
 existing Home identity and service-audience endpoints; never fall back to local
 anonymous actors or browser-supplied identities. Review docs/deployment.md for the
 selected package/receiver and retain actual source/package/runtime receipts.
 Do not overwrite another Home service. No background native model invocations.
+
+When Nicolás is actively available to try a visual change, use one device to
+confirm he can enter the existing world and reach the changed view. Give him
+the stable playable link and location as soon as serving is confirmed. Keep
+the access, state and rollback checks that make the trial safe. Collect visual
+feedback before running the device matrix or optimizing the result. Combine
+approved changes into a single cross-device qualification pass when practical.
+Keep provisional, human-approved and fully qualified outcomes explicit.
 
 The pinned MML0.28 server dependencies need the maintained socket-context
 adaptation in tools/mml-server-auth-context.mjs. npm ci applies its idempotent
