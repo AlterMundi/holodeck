@@ -172,8 +172,18 @@ test('woodland representation changes preserve roots and release nearby trunk co
   const total=woodland.meshes.reduce((count,mesh)=>count+mesh.count,0);
   const collision=Array.from(active);
   assert.ok(nearCount>0&&collision.length>0);
+  const undergrowthCount=woodland.undergrowth.count;
+  assert.ok(undergrowthCount>0&&undergrowthCount<=384);
+  const transform=new Matrix4(),plantRoot=new Vector3();
+  for(let index=0;index<undergrowthCount;index++){
+    woodland.undergrowth.getMatrixAt(index,transform);
+    const {u,v,height}=terrainCoordinates(plantRoot.setFromMatrixPosition(transform).toArray());
+    near(height,terrainElevation(u,v)-.08,.0005);
+    assert.ok(terrainTrail(u,v)<=.0121);
+  }
   woodland.update(position,true);
   assert.ok(woodland.meshes[2].count<nearCount);
+  assert.ok(woodland.undergrowth.count>0&&woodland.undergrowth.count<undergrowthCount);
   assert.equal(woodland.meshes.reduce((count,mesh)=>count+mesh.count,0),total);
   assert.deepEqual(Array.from(active),collision);
   woodland.dispose();
