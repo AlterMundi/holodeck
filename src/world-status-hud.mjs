@@ -23,6 +23,8 @@ const controls=[
   {id:'root',component:'HudPanel',label:'Controles de teclado',width:worldControlsWidth,gap:.008,children:['move','mode']},
   text('move',{style:'status'}),text('mode',{style:'body'}),
 ];
+const noticeGraphemes=typeof Intl.Segmenter==='function'?
+  new Intl.Segmenter(undefined,{granularity:'grapheme'}):null;
 
 export function wrapNotice(message,measure,maxWidth){
   const lines=[];
@@ -32,13 +34,16 @@ export function wrapNotice(message,measure,maxWidth){
       const next=line?line+' '+word:word;
       if(measure(next)<=maxWidth){line=next;continue;}
       if(line)lines.push(line);
+      if(measure(word)<=maxWidth){line=word;continue;}
+      if(!noticeGraphemes)return [];
       line='';
-      for(const character of word){
-        if(line&&measure(line+character)>maxWidth){
+      for(const {segment} of noticeGraphemes.segment(word)){
+        if(measure(segment)>maxWidth)return [];
+        if(line&&measure(line+segment)>maxWidth){
           lines.push(line);line='';
           if(lines.length===8)return [];
         }
-        line+=character;
+        line+=segment;
       }
     }
     lines.push(line||' ');
