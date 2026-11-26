@@ -15,6 +15,7 @@ test('a sampled live flight pose plays on the same rig in either direction',asyn
     return [mount.quaternion.toArray(),mesh.getObjectByName('upperarm_l').quaternion.toArray()];
   };
   assert.equal(run.count,6*motionStudyRate);
+  assert.deepEqual(run.landmarks,[22,36,44,65,96]);
   const airborne=snapshot(78);
   assert.notDeepEqual(airborne,snapshot(0));
   assert.notDeepEqual(airborne,snapshot(run.count));
@@ -27,6 +28,7 @@ test('the swim study follows the actual water surface and revisits identical sub
   const run=createHumanMotionStudy(mesh,clips.idle.getClip(),humanMotionStudies['estudio-nado']);
   const mount=new Group();
   const water=frame=>run.apply(mesh,mount,frame);
+  assert.deepEqual(run.landmarks,[17,57,89,102,105,144]);
   const baseline=water(14);
   const submerged=water(81);
   assert.ok(submerged>baseline+.1,{baseline,submerged});

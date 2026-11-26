@@ -45,6 +45,7 @@ export function createHumanMotionStudy(template,stock,scenario){
     mixer.update(dt);
   }};
   let input={};
+  const landmarks=[];
   const unbind=bindFlightAvatarAnimation(manager,()=>({
     outdoor:true,flying:Boolean(input.flight),grounded:motion.grounded,glanceMotion:true,
   }));
@@ -55,7 +56,9 @@ export function createHumanMotionStudy(template,stock,scenario){
   let offset=0;
   try{
     for(let frame=0;frame<=count;frame++){
-      input=scenario.input(frame*dt);
+      const next=scenario.input(frame*dt);
+      if(frame&&Object.keys({...input,...next}).some(key=>next[key]!==input[key]))landmarks.push(frame);
+      input=next;
       if(frame)motion.update(dt,input);
       const pose=motion.pose().position;
       actor.position.set(pose.x,pose.y,pose.z);
@@ -78,7 +81,7 @@ export function createHumanMotionStudy(template,stock,scenario){
     mixer.uncacheRoot(mesh);
   }
   const targets=new WeakMap();
-  return {count,apply(target,offsetTarget,frame){
+  return {count,landmarks,apply(target,offsetTarget,frame){
     let destination=targets.get(target);
     if(!destination){destination=relevantNodes(target);targets.set(target,destination);}
     if(destination.length!==nodes.length)throw Error('Motion study needs the sampled rig');

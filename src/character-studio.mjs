@@ -35,12 +35,13 @@ const row=(id,children)=>({id,component:'HudRow',children});
 const button=(id,text,key)=>({id,component:'HudButton',label:text,action:action(id,key)});
 const choice=(id,name)=>({id,component:'HudChoice',label:name,options:path(id+'Options'),
   value:path(id),draft:path('draft/'+id),action:action(id,id)});
-const controls=frameCount=>[
+const controls=[
   {id:'root',component:'HudPanel',label:'Revisión de movimiento',width:1.85,gap:.025,
     children:['title','rig','clip','clock','playback','views','note','archive','status']},
   label('title','Revisión de movimiento','title'),choice('rig','Personaje'),choice('clip','Ciclo'),
-  {id:'clock',component:'HudRange',label:'Fotograma',min:0,max:Math.max(1,frameCount),step:1,value:path('frame'),
-    draft:path('draft/frame'),action:action('clock','frame')},
+  {id:'clock',component:'HudRange',label:'Fotograma',min:0,max:path('frameMax'),step:1,value:path('frame'),
+    disabled:path('timelineDisabled'),gestureKey:path('timelineKey'),markers:path('landmarks'),draft:path('draft/frame'),
+    action:{event:{name:'clock',context:{value:path('draft/frame'),timelineKey:path('timelineKey')}}}},
   row('playback',['back','play','forward']),button('back','−1'),button('play',path('playLabel')),button('forward','+1'),
   row('views',['front','angle','side']),button('front','Frente'),button('angle','Tres cuartos'),button('side','Perfil'),
   {id:'note',component:'HudTextInput',label:'Nota para este fotograma',value:path('note'),
@@ -160,7 +161,6 @@ export async function openCharacterStudio(document){
   renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));
   renderer.toneMapping=ACESFilmicToneMapping;
   renderer.toneMappingExposure=1.15;
-  window.dispatchEvent(new Event('holodeck:entered'));
   const stage=buildStage(document),status=stage.querySelector('output');
   void connectStudioReturn(stage);
   stage.prepend(renderer.domElement);
@@ -182,18 +182,27 @@ export async function openCharacterStudio(document){
   const viewAngles={front:0,angle:.62,side:Math.PI/2};
   let view=Object.hasOwn(viewAngles,url.searchParams.get('vista'))?url.searchParams.get('vista'):'angle';
   let figure,playback,group,rig,clip,frame=0,playing=false,revision='',note='',message='',showedAt=-Infinity;
-  let sequence=0,elapsed=0,previous=0,visible=true;
+  let sequence=0,readySequence=-1,elapsed=0,previous=0,visible=true;
   const reduce=window.matchMedia('(prefers-reduced-motion: reduce)');
 
-  const hud=createSpatialHud({document,parent:hudScene,accessibilityRoot:stage.querySelector('.studio-a11y'),
-    placeSurface(value){group=value;},send:({action:requested})=>void activate(requested?.name,requested?.context?.value).catch(()=>report('No se pudo aplicar el cambio.'))});
+  const hud=createSpatialHud({document,parent:hudScene,accessibilityRoot:stage.querySelector('.studio-a11y'),controlStyle:'optical',
+    placeSurface(value){group=value;},send:({action:requested})=>void activate(requested?.name,requested?.context).catch(()=>report('No se pudo aplicar el cambio.'))});
   document.body.addEventListener('focusin',event=>{
     if(playing&&hud.ownsTextInput(event.target)){playing=false;scrub(frame);}
   });
   const receive=(type,value)=>hud.receive({version:'1.0',[type]:{surfaceId,...value}});
   receive('createSurface',{catalogId:spatialHudCatalog.id});
-  receive('updateComponents',{components:controls(1)});
+  receive('updateComponents',{components:controls});
   hud.setPalette({background:'#102834e8',button:'#263e46',pressed:'#43766e',text:'#eff7f0',focus:'#ecc782',disabled:'#25353d'});
+  const beginRangeDrag=hud.beginRangeDrag;
+  hud.beginRangeDrag=(ray,options)=>{
+    const began=beginRangeDrag(ray,options);
+    if(began&&playing){
+      playing=false;
+      receive('updateDataModel',{path:'/playLabel',value:'Reproducir'});
+    }
+    return began;
+  };
   const unbind=bindSpatialHudPointer({element:renderer.domElement,hud,rayForPointer:event=>{
     const {left,top,width,height}=renderer.domElement.getBoundingClientRect();
     pointer.set((event.clientX-left)/width*2-1,1-(event.clientY-top)/height*2);
@@ -261,6 +270,7 @@ export async function openCharacterStudio(document){
     const activeFigure=figure,profile=rigs[rig];
     if(!activeFigure||!next)return;
     playing=false;
+    refresh();
     const study=profile.clips&&Object.hasOwn(humanMotionStudies,next)?humanMotionStudies[next]:null;
     let selected=activeFigure.clips.get(next),clipDigest=activeFigure.rigDigest;
     if(profile.clips){
@@ -286,7 +296,7 @@ export async function openCharacterStudio(document){
       activeFigure.model.traverse(node=>{
         if(node===activeFigure.model||node.isBone)neutral.push([node,node.position.clone(),node.quaternion.clone()]);
       });
-      playback={duration:run.count/motionStudyRate,
+      playback={duration:run.count/motionStudyRate,landmarks:run.landmarks,
         draw(time){
           const depth=run.apply(activeFigure.model,activeFigure.orientation,Math.round(time*motionStudyRate));
           waterline.visible=Number.isFinite(depth);
@@ -313,13 +323,14 @@ export async function openCharacterStudio(document){
     }
     revision=activeFigure.rigDigest+'.'+clipDigest;
     clip=next;
-    receive('updateComponents',{components:controls(frameLimit())});
+    readySequence=id;
     scrub(expected&&expected!==revision?0:requestedFrame);
     report(expected&&expected!==revision?'El enlace corresponde a otra edición del movimiento.':'');
     refresh();
   }
 
   function frameLimit(){return playback?Math.min(1000,Math.ceil(playback.duration*motionStudyRate)):0;}
+  function timelineKey(){return JSON.stringify([rig,clip,revision,sequence]);}
   function scrub(target){
     frame=Math.max(0,Math.min(Math.round(Number(target)||0),frameLimit()));
     elapsed=frame/motionStudyRate;
@@ -331,6 +342,8 @@ export async function openCharacterStudio(document){
     const options=clipOptions(rigs[rig],figure);
     receive('updateDataModel',{value:{rig,clip,rigOptions:choices(Object.fromEntries(Object.entries(rigs).map(([id,value])=>[id,value.label]))),
       clipOptions:choices(Object.fromEntries(options.map(id=>[id,names[id]||id]))),frame,
+      frameMax:Math.max(1,frameLimit()),timelineKey:timelineKey(),
+      timelineDisabled:readySequence!==sequence||frameLimit()<1,landmarks:playback?.landmarks??[],
       playLabel:playing?'Pausar':'Reproducir',note,status:message,
       draft:{rig,clip,frame,note}}});
   }
@@ -339,15 +352,30 @@ export async function openCharacterStudio(document){
     for(const [key,value] of Object.entries({rig,clip,fotograma:frame,vista:view,edicion:revision}))share.searchParams.set(key,value);
     return share.href;
   }
-  async function activate(name,value){
+  async function activate(name,{value,timelineKey:requestedTimeline}={}){
     if(!name)return;
-    if(name==='rig'&&Object.hasOwn(rigs,value)&&rig!==value)return loadRig(value);
-    if(name==='clip'&&typeof value==='string'&&(clip!==value||!playback))return loadClip(value);
-    if(!playback)return;
-    if(name==='clock'){playing=false;scrub(value??frame);}
+    const selectsRig=name==='rig'&&Object.hasOwn(rigs,value)&&rig!==value;
+    const selectsClip=name==='clip'&&typeof value==='string'&&figure&&clip!==value;
+    if(selectsRig||selectsClip){
+      const expected=sequence+1;
+      try{await (selectsRig?loadRig(value):loadClip(value));}
+      catch{
+        if(sequence===expected){
+          readySequence=sequence;
+          report('No se pudo abrir esta animación.');
+        }
+      }
+      return;
+    }
+    if(Object.hasOwn(viewAngles,name)){view=name;return;}
+    if(!playback||readySequence!==sequence)return;
+    if(name==='clock'){
+      if(requestedTimeline!==timelineKey()||!Number.isInteger(value)||value<0||value>frameLimit())return;
+      playing=false;
+      scrub(value);
+    }
     if(name==='play')playing=!playing;
     if(name==='back'||name==='forward'){playing=false;scrub(frame+(name==='back'?-1:1));}
-    if(Object.hasOwn(viewAngles,name))view=name;
     if(name==='copy'){
       await window.navigator.clipboard.writeText(exactUrl());
       report('Enlace copiado para esta edición y este fotograma.');
@@ -399,6 +427,10 @@ export async function openCharacterStudio(document){
       renderer.autoClear=false;
       renderer.clearDepth();
       renderer.render(hudScene,hudCamera);
+      if(document.body.hasAttribute('data-world-starting')){
+        document.body.removeAttribute('data-world-starting');
+        window.dispatchEvent(new Event('holodeck:entered'));
+      }
     }
   }
 
