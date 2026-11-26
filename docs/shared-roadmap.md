@@ -423,6 +423,11 @@ with click or touch on the physical plate. Retain the measured cost in
 Livianos for the next art pass. The installed gallery still needs a visit
 with independently signed-in participants. Keep new room materials and fitting work under
 the [surface contact criterion](environment-art-revamp.md#surface-contacts).
+The [finished foyer path](environment-art-revamp.md#installed-limestone-and-bronze-foyer-route)
+uses the existing meshes and baked light to give the limestone and the
+bronze border more detail. Both authorized room variants carry the
+finish and preserve their passage boundaries.
+
 Continue the finish pass through the miniature, exterior paths, gallery and
 tower with the same standard. Use scale, joinery, hardware and purposeful work objects to carry
 the detail while leaving the route and interaction targets clear. Compare

@@ -1,5 +1,13 @@
 # Current MVP work
 
+## November 26 — Limestone and bronze foyer route
+
+Protected release `6719339a8b57` serves `707a5b6`, with `f7528962fb8d`
+as rollback. The foyer floor gains staggered stone joints and a warm
+inlay. Both permission-specific room models retain their geometry,
+baked lighting and access. 13 state files matched by hash. The room journal changed only for presence.
+[Physical comparisons and visitor checks](environment-art-revamp.md#installed-limestone-and-bronze-foyer-route).
+
 ## November 26 — Directional water crossing spray
 
 The protected release `f7528962fb8d` serves `dc8ba7a`, with

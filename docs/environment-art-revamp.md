@@ -339,6 +339,36 @@ checked the production diff. 485 tests passed with two optional skips.
 14 state files matched by hash. The protected challenge and the exact installed client,
 server, worker, room art and health matched.
 
+## Installed limestone and bronze foyer route
+
+Protected release `6719339a8b57` serves `707a5b6`, with `f7528962fb8d`
+as immediate rollback. Honed limestone picks up staggered, low-contrast
+stone joints. The pale route and the bronze line in its basalt border
+lead around the orientation table. The original baked light and contact
+shadows provide the lighting. The browser applies the finish to the
+three matching floor heights in the authored foyer, keeping both
+permission-specific GLBs, the collision and the pose catalog unchanged.
+
+The same cameras at the entry, looking along the path and beside the
+bench were sampled on Pi 5 Livianos and RTX 2060 Normal. The entry crop
+partially intersects the live avatar in both captures; the lower angle
+and bench clearly show the floor treatment. Room draw/triangle counts
+matched at each camera. Pi 5 p95 was 16.7 / 16.8 / 16.7 ms before and
+33.4 / 16.7 / 16.7 ms after. On RTX 2060 the registered buffers were
+matched and p95 was 16.7 / 16.7 / 16.7 ms before and
+16.8 / 16.7 / 16.7 ms after. These are short camera samples.
+
+Two authorized Chromium fixture visitors loaded the finish on the
+correct open and sealed foyer models. The limited visitor's gallery
+passage was denied, and fetching the other variant was HTTP 404.
+The physical route entered the foyer with E. Independent participant
+acceptance and longer phone motion remain open.
+
+Fable 5.2 High informed the stone courses and bronze border. Opus 5.5
+High reviewed the scoped shader and lifecycle. 487 tests passed with
+two optional skips. 13 state files matched by hash. The room journal changed only for presence. Installed foyer variants, room art,
+client, worker, server and protected health matched.
+
 ## Screening route
 
 Use identical graphics quality, resolution, seed, camera and solar clock
