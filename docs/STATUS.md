@@ -28,6 +28,14 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+Source `f98201d` carries the protected object-notice fix from
+Holodeck release `9281853a628a`. The combined package used the same
+pose catalog and passed the canonical Conversation reflow check.
+Chromium found zero duplicate legacy controls among the seven checked
+in the native dock and installed composer across three layouts.
+Archive `d03bafbf2837335f3ad1310903ba084682bf214e9871e38f38e4c2b51cc917ab`
+passed 431 Node checks with two skips. These were staged fixtures.
+
 On the same packaged candidate, two fixture visitors opened the
 in-world Character table at once. A right-mouse drag changed the second
 visitor's orbit target by two radians horizontally and one vertically.
