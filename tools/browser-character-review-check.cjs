@@ -321,7 +321,12 @@ async function main(){
     assert.deepEqual(committed.presentation.pose,pose);
     await action('Ver pose del Taller').press('Enter');
     await page.waitForFunction(frame=>document.querySelector('input[aria-label="Fotograma"]')?.valueAsNumber===frame,pose.frame);
-    await panel.getByRole('button',{name:cycleNames[pose.clip],exact:true,pressed:true}).waitFor({state:'attached'});
+    const webCycle=panel.getByRole('combobox',{name:'Ciclo',exact:true});
+    if(await webCycle.count()){
+      assert.equal(await webCycle.inputValue(),pose.clip);
+    }else{
+      await panel.getByRole('button',{name:cycleNames[pose.clip],exact:true,pressed:true}).waitFor({state:'attached'});
+    }
     assert.equal((await page.evaluate(()=>fetch('api/space?live=1').then(r=>r.json()))).actorRef,visitor);
     const readback=await page.evaluate(()=>fetch('api/space/character-presentation').then(r=>r.json()));
     assert.deepEqual(readback.presentation,committed.presentation);
