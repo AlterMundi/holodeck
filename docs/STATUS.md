@@ -40,6 +40,15 @@ viewport. The renderer's mouse and touch checks confirmed that the fill
 changes only when the host confirms a value. The runtime server and pose
 catalog match the prior candidate. Protected selection remains open.
 
+On that exact archive, the situated Conversation check prepared a
+speaker's local frame 37 after another actor moved the room's shared
+presentation to frame 35. The admitted fixture actor observed frame 37
+and wrote one note there through the native action. A different frame,
+write without edit permission and reading after leaving the room were
+refused. Retrying the same native action returned its original receipt.
+This exercises the canonical capture and typed Holodeck path with a
+loopback Conversation fixture.
+
 The present and copy buttons bind the exact displayed pose to the
 pointer press and typed action. The renderer pin is Proyección
 `e9fc30ff943a5110b713f1b3c5c3a04b578430b9` with its archive SHA-512.
