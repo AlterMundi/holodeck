@@ -88,7 +88,8 @@ const terrainShading = {
     float holoApproachSkylight = 0.0;
     vec2 approach = vHoloWorld.xz - vec2(${glsl(TOROIDAL_TERRAIN.majorRadius)},0.0);
     vec2 flagFootprint = fwidth(approach)/vec2(.51,.63);
-    float edge = abs(length(vHoloWorld.xz) - ${glsl(TOROIDAL_TERRAIN.majorRadius)});
+    float across = length(vHoloWorld.xz) - ${glsl(TOROIDAL_TERRAIN.majorRadius)};
+    float edge = abs(across);
     // Paint the walkable meadow in local XZ metres. The old rock projection
     // compresses one axis on this horizontal shoulder, stretching its grain.
     float meadowFootprint = max(length(dFdx(approach)),length(dFdy(approach)));
@@ -127,13 +128,16 @@ const terrainShading = {
       // verge remain legible from a running camera and both graphics modes.
       float grainFade=1.0-smoothstep(.24,.50,4.8*meadowFootprint);
       float grit=grainFade>.001?ringNoise(approach*4.8):.5;
-      float chip=smoothstep(.64,.81,grit)*grainFade;
-      float hollow=(1.0-smoothstep(.26,.50,grit))*grainFade;
+      // Foot traffic compacts the middle of the track. The same broad
+      // variation bends the worn strip and breaks the exposed soil.
       float dust=ringNoise(approach*vec2(.54,.31)+vec2(7.4,11.0));
-      vec3 packedEarth=mix(vec3(.227,.157,.089),vec3(.427,.321,.195),dust*.58+.26);
-      packedEarth += vec3(.106,.089,.066)*chip-vec3(.053,.043,.025)*hollow;
+      float tread=1.0-smoothstep(.35,1.24,abs(across+.64*edgeNoise+.38*(dust-.5)));
+      float gravel=smoothstep(.62,.81,grit)*grainFade*(1.0-.68*tread);
+      float hollow=(1.0-smoothstep(.26,.50,grit))*grainFade;
+      vec3 packedEarth=mix(vec3(.227,.157,.089),vec3(.427,.321,.195),.575+.30*(dust-.5));
+      packedEarth=packedEarth*(1.065-.047*tread)+vec3(.106,.089,.066)*gravel-vec3(.053,.043,.025)*hollow;
       holoTrailMask=mask;
-      holoTrailRoughness=clamp(.87-.09*chip+.08*hollow,.73,.99);
+      holoTrailRoughness=clamp(.87-.05*tread+.06*gravel+.08*hollow,.73,.99);
       diffuseColor.rgb = mix(diffuseColor.rgb,packedEarth,mask*.88);
       // Worn vegetation and exposed soil meet the roots in the verge.
       float bareVerge = (1.0-smoothstep(2.58,4.55,vergeDistance)) *
