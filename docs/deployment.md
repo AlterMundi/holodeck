@@ -121,7 +121,10 @@ the exact version header and canonical review manifest before returning its
 title, immutable edition and gallery digest. Where available, it also returns
 the validated scene-index digest. Movement or admission change cancels the
 projection. The response uses `no-store`, and the source requests have a
-shared deadline and byte bounds. The compatible configuration can remain
+shared deadline and byte bounds. Archive curation eligibility is checked in
+parallel with a 1.4-second cancelable native read. A slow curation check
+omits the optional archive controls. The curation write still requires its
+normal fresh authority check. The compatible configuration can remain
 unselected while a room or thumbnail preparation is ongoing. The selected room
 keeps the worktable operable during a temporary catalog failure and shows retry
 status while unverified editions and their geometry are cleared. A denied room

@@ -1,5 +1,17 @@
 # Current MVP work
 
+## November 26 — Matter project reads during archive authority delays
+
+Protected package `81d51189874e` serves source `5d03de5`. The archive
+curation check now runs alongside collection reads with a 1.4 s bound.
+A Chromium visit on RTX 2060 and Node 24 opened a model while a fixture
+Unix bridge withheld its reply. The collection responded in 1.60 s, and
+all three delayed socket requests were canceled. Home separately
+confirmed the paired human's grants for the six current/pinned editions.
+The original browser response was unavailable and the person's live
+project picker remains unverified. The client, terrain worker, art and
+14 state files matched. The immediate rollback is `98f37f24b9c1`.
+
 ## November 26 — Continuous short cover on the western meadow
 
 Visual trial `98f37f24b9c1` is available at the existing Holodeck entrance.
