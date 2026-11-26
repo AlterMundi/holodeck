@@ -28,6 +28,15 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+Source `29b011b` incorporates the published ground gait from Holodeck
+release `4d87ebe3a88d`. The compiled sampler assigns new editions to
+the three generated studies. Stock clip identities and all frame limits
+are unchanged. Chromium passed the doors, the flight and ground phases,
+the exact held pose at frame 96, two-visitor note readback and graphics
+recovery with the new catalog. Archive
+`51d7c26b482435f20b94b1bb0cec1a0882adaa15531d82979bc01feba2314d01`
+passed 429 Node checks with two skips. These were fixture identities.
+
 The combined alpha.16 candidate also passed reflow with the installed
 canonical Conversation shell `lock-submitted-draft-overlay-ecdee68d0610`.
 One iframe retained native focus, its draft and the exact backward
