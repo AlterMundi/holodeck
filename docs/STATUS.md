@@ -35,10 +35,13 @@ passed the installed Home package validator and 434 Node checks with
 two skips. The Chromium fixture entered the physical workshop through
 the foyer and recovered the shared frame 36 and its note in a second
 touch view while retaining independent local frames 37 and 35. The
-private Home publisher acknowledged the archive and its stored bytes
-matched the digest. HTTPS readback under the daimon reader returned
-404. The owner artifact version is retained in the private receiving
-record. Protected activation and signed-in room entry remain open.
+private Home publication matches the current Registry digest. The
+deployment receiver read the exact immutable archive and accepted its
+SHA-256 and service schema. The owner request is prepared against
+`c024dbda2833` with the current App audience and metadata. The owner
+artifact version and prepared request are in the private receiving
+record. The request has not been submitted. Protected activation and
+signed-in room entry remain open.
 
 Candidate `2535231` pins Proyección commit
 `36848c1898de12aa1a008fe8ebe819e441416e82` for the range pointer fix.
