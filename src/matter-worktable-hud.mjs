@@ -493,10 +493,24 @@ export class MatterWorktableHud{
     return this.insets;
   }
 
-  conversationSideEdge(){
+  conversationDockSpan(){
     const panel=this.document.getElementById('conversation-panel');
-    return !panel.hidden&&panel.dataset.travelLane==='side'?
-      parseFloat(panel.style.getPropertyValue('--conversation-travel-edge')):NaN;
+    if(panel.hidden)return null;
+    const {left,right,bottom}=this.toolInsets();
+    if(panel.dataset.travelLane==='side'){
+      const edge=parseFloat(panel.style.getPropertyValue('--conversation-travel-edge'));
+      return Number.isFinite(edge)?{start:left,end:edge}:null;
+    }
+    const {clientWidth:width,clientHeight:height}=this.canvas;
+    if(width<720)return null;
+    const display=panel.getBoundingClientRect(),canvas=this.canvas.getBoundingClientRect();
+    const dockZone=(2*toolRowHeight+toolPadding)*toolScale;
+    if(display.bottom-canvas.top<=height-bottom-dockZone||display.top-canvas.top>=height-bottom)return null;
+    const before=Math.max(left,Math.min(width-right,display.left-canvas.left));
+    const after=Math.min(width-right,Math.max(left,display.right-canvas.left));
+    const gapLeft=before-left,gapRight=width-right-after;
+    if(Math.max(gapLeft,gapRight)<220)return null;
+    return gapLeft>=gapRight?{start:left,end:before}:{start:after,end:width-right};
   }
 
   conversationTravelInsets(){
@@ -553,14 +567,14 @@ export class MatterWorktableHud{
       this.document.getElementById('conversation-panel').hidden;
     const compact=this.compactDock(),scale=this.dockScale(compact,shortLandscape);
     tools.fullscreen.visible=shortLandscape&&tools.fullscreen.visible;
-    const sideEdge=this.conversationSideEdge();
+    const dockSpan=this.conversationDockSpan();
     const corners=shortLandscape?2*(.8*this.landscapeGrip()+10):0;
-    const available=Number.isFinite(sideEdge)?sideEdge-left-12:this.canvas.clientWidth-left-right-corners;
+    const available=dockSpan?dockSpan.end-dockSpan.start-12:this.canvas.clientWidth-left-right-corners;
     const maxWidth=available*toolScale/scale-toolPadding*toolScale;
     this.document.body.toggleAttribute('data-native-settings-available',maxWidth>=150);
     if(maxWidth<150){this.syncToolbelt(false);return;}
     const touchDevice=this.document.defaultView.navigator.maxTouchPoints>0;
-    const iconOnly=Boolean(touch)||touchDevice&&(compact||this.canvas.clientWidth<=600||Number.isFinite(sideEdge));
+    const iconOnly=Boolean(touch)||touchDevice&&(compact||this.canvas.clientWidth<=600||Boolean(dockSpan));
     const layout=layoutTools(tools,Math.min(this.lookPreview.stylesDock?720:670,maxWidth),{compact,iconOnly,shortLandscape});
     if(!this.toolGroup)this.send('createSurface',{catalogId:spatialHudCatalog.id},toolbeltId);
     if(this.toolGroup&&this.toolGroup.visible===this.quietTouch){
@@ -889,9 +903,9 @@ export class MatterWorktableHud{
       const dockClearance=this.usesCockpitDocks(viewport)?21:0;
       const {compact,shortLandscape}=this.toolLayout;
       const lane=this.movementLane;
-      const sideEdge=this.conversationSideEdge();
-      const dockScale=Number.isFinite(sideEdge)?
-        Math.min(this.dockScale(compact,shortLandscape),(sideEdge-left-12)/(this.toolLayout.width+toolPadding)):
+      const dockSpan=this.conversationDockSpan();
+      const dockScale=dockSpan?
+        Math.min(this.dockScale(compact,shortLandscape),(dockSpan.end-dockSpan.start-12)/(this.toolLayout.width+toolPadding)):
         this.dockScale(compact,shortLandscape);
       const barTop=height-bottom-dockClearance-(this.toolLayout.height+.035)*dockScale;
       const dockWidth=(this.toolLayout.width+toolPadding)*dockScale;
@@ -901,19 +915,8 @@ export class MatterWorktableHud{
       const promptPlate=(promptWidth+toolPadding)*promptScale;
       const beside=!shortLandscape&&this.door.group&&compact&&promptCompact&&this.toolLayout.rows.length===1&&
         dockWidth+promptPlate+8<=width-left-right;
-      let barCenter=Number.isFinite(sideEdge)?(left+sideEdge)/2:
+      const barCenter=dockSpan?(dockSpan.start+dockSpan.end)/2:
         beside?width-right-dockWidth/2:(width+left-right)/2;
-      if(!shortLandscape&&lane!=='side'&&this.lookPreview.stylesDock&&additional&&width>=720&&!additional.panel.hidden){
-        const display=additional.panel.getBoundingClientRect(), canvasLeft=this.canvas.getBoundingClientRect().left;
-        const half=dockWidth/2;
-        if(display.bottom>barTop&&display.top<height-bottom){
-          const start=display.left-canvasLeft, end=display.right-canvasLeft;
-          if(barCenter+half>start&&barCenter-half<end){
-            if(start-left>=half*2+18)barCenter=(left+start-12)/2;
-            else if(width-right-end>=half*2+18)barCenter=(end+12+width-right)/2;
-          }
-        }
-      }
       this.place(this.toolGroup,'toolPlacement',viewport,barCenter,barTop,dockScale);
       const preferredScale=lane?conversationMovementScale:width<380?145:166;
       let movementScale=this.movementVertical?Math.min(preferredScale,Math.max(95,(barTop-48)/1.23)):preferredScale;

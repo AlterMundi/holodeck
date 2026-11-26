@@ -16,6 +16,8 @@ if(stage){
 }
 const {createHolodeck}=await import(stage?pathToFileURL(join(stage,'src/server.mjs')):new URL('../src/server.mjs',import.meta.url));
 const installed=await realpath(conversationRelease),web=join(installed,'dashboard/web');
+if(!(await readFile(join(web,'index.html'),'utf8')).includes('assets/conversation-surface.js'))
+ throw Error('Selected Conversation release does not mount the canonical iframe surface');
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex'),served=new Map(),wait=ms=>new Promise(r=>setTimeout(r,ms));
 const frameOrigin='https://127.0.0.1:18945',worldOrigin='http://127.0.0.1:18944',actor='human:surface-fixture',binding='b'.repeat(64),being='dm:being:v1:'+'a'.repeat(43),home='home:'+'c'.repeat(32);
 const pin={tableId:'fixture-table',reportId:'fixture-report',revision:'r1'},accepted=[],prepared=[],released=[],requests=[],fileWrites=[];
@@ -230,7 +232,15 @@ try{
   const draftState=await frame(`(()=>{const draft=document.querySelector('#conversation-message');return {focused:draft===document.activeElement,value:draft.value,selection:[draft.selectionStart,draft.selectionEnd,draft.selectionDirection]}})()`);
   if(!await evaluate('document.activeElement===retainedConversation')||!draftState.focused||draftState.value!==nextDraft||JSON.stringify(draftState.selection)!=='[5,9,"backward"]')
    throw Error('Conversation reflow lost draft input '+JSON.stringify({name,draftState}));
-  layouts.push({name,outer,inner,draftState,worldHeader:await worldHeader()});
+  const toolBounds=await evaluate(`Object.fromEntries(['map','talk','bridge','undo'].map(id=>[id,holodeckDevelopment.toolBounds(id)]))`);
+  if(name!=='mobile'){
+   for(const [id,tool] of Object.entries(toolBounds)){
+    if(!tool)throw Error('Missing dock control '+name+' '+id);
+    if(tool.left<outer.right&&tool.left+tool.width>outer.left&&tool.top<outer.bottom&&tool.top+tool.height>outer.top)
+      throw Error('Conversation covers dock control '+JSON.stringify({name,id,tool,outer}));
+   }
+  }
+  layouts.push({name,outer,inner,draftState,toolBounds,worldHeader:await worldHeader()});
   const duplicate=await visibleLegacy();
   if(duplicate.length)throw Error('Duplicate host controls in '+name+': '+duplicate.join(', '));
   const shot=await cdp('Page.captureScreenshot',{format:'png'});await writeFile(join(directory,'layout-'+name+'.png'),Buffer.from(shot.data,'base64'));
