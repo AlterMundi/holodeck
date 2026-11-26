@@ -1,5 +1,16 @@
 # Current MVP work
 
+## November 26 — Weathered cave footing
+
+Protected `9a1ed6edf6db` serves `58cbd62` with immediate rollback
+`fae6c8604b6f`. The arch and the stone fins now pick up broken damp
+patina near their exposed feet. Sheltered walls have a shallower dry
+contact. Exact geometry and collision stayed the same. The package
+changed the client and its manifest. Health, server, room art, terrain
+worker and all 14 checked state files matched. The existing protected
+entry still challenges anonymous requests.
+[Art and device evidence](environment-art-revamp.md#weathered-cave-footing).
+
 ## November 26 — Western woodland trail material and motion pass
 
 Protected `fae6c8604b6f` serves `87835aa` with `17fc3bed2bc0` as

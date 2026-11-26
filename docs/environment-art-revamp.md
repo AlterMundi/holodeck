@@ -267,6 +267,34 @@ past the object. Check daylight and dusk or night, where a dark terrain can
 hide sparse ground cover and leave an abrupt seam. Keep the matched view in
 the environment review evidence when resolving a reported example.
 
+### Weathered cave footing
+
+`58cbd62` uses radial clearance in metres to wear the existing arch and
+crown where they meet the seeded ground. Rock grain breaks up dampness
+and patina along exposed feet. The interior has narrower dry soil
+color and softer contact shade. The same 2,368 shell and 624 crown
+triangles serve rendering and collision, with byte-identical positions
+and indices. No new asset, draw pass or terrain worker changes.
+
+On one physical RTX 2060, the exact candidate was compared against
+`fae6c8604b6f` from the same eye-height arrival view at Argentine noon
+and dusk in both graphics profiles. An ordinary keyboard walk near
+the entrance moved 6.39 m in Normal and 6.50 m in Lightweight. At
+850×552, frame intervals were 16.7 ms median and 16.7–16.8 ms p95
+in the matched runs. Both packages used 131 scene draws in Normal
+and 95 in Lightweight. These were short controlled browser runs.
+First-approach shader latency, the far-mouth visual view and independent
+signed-in visits remain unmeasured for this package.
+
+The exposed feet read darker and less uniform up close. The projecting
+corner still has a sharp silhouette. Shaping that outline and
+continuing grit or vegetation into the foot would address the remaining
+edge. Fable recommended varying the clearance by patch and keeping
+the interior dry. Opus identified the shader cache and interior
+wetness issues, which were fixed before the final browser comparison.
+The suite passed 490 tests with two skips.
+[Receiving selection](STATUS.md#november-26--weathered-cave-footing).
+
 ### Weathered meadow stones (local candidate)
 
 Source `f236dc8`, archive `9dcfeec3efe5`, gives the existing instanced
