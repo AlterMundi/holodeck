@@ -19,10 +19,10 @@ armature preserves existing pose compatibility. The stock surface is removed.
 The blockout geometry and materials are authored here. The mesh mostly uses rigid
 weights for proportions. The coat hems blend toward the thighs to study
 movement clearance. The 87 joints keep the stock names, hierarchy and rest
-transforms within 1 µm of translation. The first export measures 8,272
-triangles, eight skinned material draws and 426,124 bytes. It is a local study
-and is not registered under the current player's appearance. Blender rendered
-a three-quarter view, and Three.js loaded and sampled the current walk,
+transforms within 1 µm of translation. With the expression study, the export measures
+12,016 triangles, thirteen skinned material draws and 580,304 bytes. It is a local study
+and is not registered under the current player's appearance. Blender rendered the green-and-honey eyes and resting smile at
+frontal, three-quarter and game-scale framing. Three.js loaded and sampled the current walk,
 flight, boost and swim studies with their target bones. These are binding and
 pose-sampling checks, not visual acceptance of the final movement.
 
@@ -38,8 +38,8 @@ It also reports skinned draw count, triangle count and exported morph names.
 Omit `--blockout` for an authored model to verify that its speech morph opens
 and restores the default expression through Holodeck’s mouth driver.
 
-Develop the face with a neutral mouth and an expressive smile pose, movable
-lids and a jaw that carries the beard. Sculpt eyes, cheeks and nose to read at
+Develop the face from the resting smile with a separate expressive smile pose,
+movable lids and a jaw that carries the beard. Sculpt eyes, cheeks and nose to read at
 the ordinary game camera distance. Replace the blockout hair masses with
 solid swept locks. Weight the coat across torso joints and give the tails
 independent motion with thigh and boot clearance. Keep the armour and flight

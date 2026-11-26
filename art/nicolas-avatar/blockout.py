@@ -174,6 +174,33 @@ ellipsoid("Neck study", joint("neck_02"), (.048, .048, .075), skin, "neck_02")
 ellipsoid("Head proportions", head + Vector((0, -.012, .083)), (.089, .082, .113), skin, "head")
 ellipsoid("Jaw and cheeks study", head + Vector((0, -.035, .037)), (.069, .058, .067), skin, "head")
 ellipsoid("Nose volume", head + Vector((0, -.098, .079)), (.020, .021, .026), skin, "head")
+eye_white = material("Warm eye whites", (.58, .54, .44), .49)
+iris_green = material("Meadow green iris", (.17, .31, .11), .44)
+iris_honey = material("Honey around pupil", (.48, .27, .057), .46)
+pupil = material("Dark pupil", (.012, .009, .007), .42)
+lip = material("Soft smile", (.23, .071, .052), .68)
+
+for sign in (-1, 1):
+    x = sign * .036
+    for label, y, rx, ry, rz, mat in (
+        ("eye", -.085, .022, .011, .010, eye_white),
+        ("green iris", -.095, .0088, .0033, .0089, iris_green),
+        ("honey ring", -.098, .0058, .0020, .0060, iris_honey),
+        ("pupil", -.100, .0034, .0016, .0038, pupil),
+    ):
+        ellipsoid(f"{label} {sign}", head + Vector((x, y, .100)), (rx, ry, rz), mat, "head")
+    lid = ellipsoid(f"Relaxed upper eyelid {sign}", head + Vector((x, -.088, .107)),
+                    (.022, .007, .004), skin, "head")
+    lid.rotation_euler.y = -sign * .06
+    brow = ellipsoid(f"Soft brow {sign}", head + Vector((x, -.087, .120)),
+                     (.023, .005, .004), silver, "head")
+    brow.rotation_euler.y = sign * .04
+
+smile = ellipsoid("Resting smile", head + Vector((0, -.093, .043)), (.034, .007, .004), lip, "head")
+for vertex in smile.data.vertices:
+    across = vertex.co.x / .034
+    vertex.co.z += .007 * across * across
+    vertex.co.y += .010 * across * across
 for sign in (-1, 1):
     ellipsoid(f"Ear {sign}", head + Vector((sign * .081, .002, .072)), (.019, .023, .037), skin, "head")
     ellipsoid(f"Swept hair side {sign}", head + Vector((sign * .072, .025, .119)), (.035, .078, .061),
@@ -194,7 +221,7 @@ for i, (x, y, z, lean) in enumerate(((-.053, .027, .161, -.44), (-.020, .018, .1
 
 # The concept portrait is a private likeness reference, never a model texture.
 scene = bpy.context.scene
-scene["design_stage"] = "proportions and costume; facial likeness and deformation pending"
+scene["design_stage"] = "proportions, costume and expression study; facial likeness and deformation pending"
 bpy.ops.wm.save_as_mainfile(filepath=str(output / "explorer-blockout.blend"))
 
 # Review exports batch parts by material. The .blend retains separately editable parts.
