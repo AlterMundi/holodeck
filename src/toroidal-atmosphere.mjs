@@ -17,7 +17,8 @@ const vertexShader = `
   varying vec3 skyDirection;
   void main() {
     skyDirection = position;
-    vec4 projected = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    // Keep the sky at infinity for the camera used by this draw.
+    vec4 projected = projectionMatrix * vec4(mat3(viewMatrix) * position, 1.0);
     gl_Position = projected.xyww;
   }
 `;
