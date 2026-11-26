@@ -1,5 +1,27 @@
 # Current MVP work
 
+## November 26 arrival trail verge
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `e2b318f4b262`
+from `3d77414`. A broken verge of worn vegetation and exposed soil
+softens the transition between the compacted trail and meadow. The apron
+still uses the existing flagstone surface. On RTX Normal, all 14 Sand3D
+instances were grounded against the analytic terrain in three existing
+batches. Pi 5 Livianos rendered the verge without a Sand3D download.
+
+Controlled walks used the same initial view. RTX Normal at 1200 × 740
+measured 16.8 → 16.8 ms frame p95 at night and 33.3 → 33.4 ms on the
+day replay. Pi 5 Livianos at 363 × 244 measured 33.3 → 33.4 ms frame p95
+on the day replay and 16.50 → 16.74 ms GPU p95. Both held a 16.7 ms
+frame median. Standing GPU timings varied more across these short runs,
+so they do not establish equivalent GPU cost. Independently signed-in
+visitor acceptance is open.
+
+The suite passed 417 checks with two optional skips. Receiving matched
+86 files, four expected denials, the existing audience and world run
+through 458–459. Only the browser bundle changed. Rollback is
+`6affd43be714`.
+
 ## November 26 offshore water and night reflection
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `6affd43be714`

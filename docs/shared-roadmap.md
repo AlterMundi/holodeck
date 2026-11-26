@@ -586,7 +586,9 @@ addresses the prompt and dock overlap in #16 and is
 The [packaged Sand3D verge](playtest-iteration.md#packaged-sand3d-verge-on-the-flagstone-approach)
 is selected for the near approach in Normal. The exact device screens
 covered the running game, route clearance and zero model fetches
-in Livianos on Raspberry Pi 5. The live [meadow material](playtest-iteration.md#meadow-material-around-the-house)
+in Livianos on Raspberry Pi 5. The [arrival verge update](STATUS.md#november-26-arrival-trail-verge)
+softens the ground transition in both profiles and verifies all 14
+existing placements under the day and night approach. The live [meadow material](playtest-iteration.md#meadow-material-around-the-house)
 adds filtered colour variation around the existing route, with matched
 day, dusk and lightweight measurements. The live [rooted banks](playtest-iteration.md#rooted-meadow-banks-around-the-shared-route)
 dress five regions around the house in both profiles. The live
