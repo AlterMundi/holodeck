@@ -1,5 +1,14 @@
 # Current MVP work
 
+## November 26 — Pine litter in the western grove
+
+Protected `8f3cfee9adf7` serves `c9998d7` with immediate rollback
+`0475d40c6496`. Normal and Lightweight ran matched noon and dusk
+views and a walk on one RTX 2060. The served client, worker, server,
+room art, and all 14 checked state files matched. The build retains
+the touch jump fix and the existing access policy.
+[Art and evidence](environment-art-revamp.md#pine-litter-and-breaks-in-the-grass).
+
 ## November 26 — Rooted shade in the western pine grove
 
 Protected `0475d40c6496` serves `0d06e21` with `d4aebd19a991` as

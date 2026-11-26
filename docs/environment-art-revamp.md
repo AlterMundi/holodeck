@@ -149,6 +149,23 @@ Immediate rollback is `d4aebd19a991`, which includes the touch jump fix.
 Fable recommended the shared rooted map. Two Opus art review invocations
 expired without a verdict.
 
+#### Pine litter and breaks in the grass
+
+Package `8f3cfee9adf7` (`c9998d7`) gives the western pines warm earth
+and a filtered pattern of dry needles, with irregular edges. Grass keeps
+its same candidate roots and grows shorter and sparser in deep litter.
+The two existing sampled textures each pack grass or shade with a second
+litter channel, adding 80 KiB of base texture data. The scene adds no
+texture requests or geometry batches.
+
+One RTX 2060 ran matched noon and dusk views with both profiles at an
+850×552 buffer. Normal retained 135 draws and went from 545,590 to
+544,755 triangles. Lightweight retained 97 draws and went from 324,043
+to 323,815 triangles. Frame-interval p95 was between 16.7 and 16.8 ms
+and was limited by presentation rate. The candidate walked 6.55 m in
+Normal and 6.61 m in Lightweight. A fast transition past the grass fade,
+the Pi 5 and the paired human's acceptance remain open.
+
 ### Air and light
 
 Link the horizon, the terrain's distant color and the low-angle sun.
