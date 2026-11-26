@@ -740,7 +740,9 @@ export class MatterWorktableHud{
     const bounds=dock?this.hud.getSurfaceBounds(group.name):null;
     const compactText=(key==='toolPlacement'&&this.toolLayout?.compact)||
       (key==='doorPlacement'&&this.door.compact);
-    const fontSize=key==='workPlacement'&&this.compactCharacterTable?13:compactText?12:15;
+    const characterControls=key==='workPlacement'&&this.active&&this.table!==this.collectionTable;
+    const fontSize=characterControls&&this.compactCharacterTable?13:
+      characterControls&&viewport.width<=420?13:compactText?12:15;
     const signature=[viewport.width,viewport.height,x,y,scale,pixelRatio,fontSize,dock?.depth,
       bounds?.left,bounds?.right,bounds?.top,bounds?.bottom].join(':');
     if(this[key]?.group===group&&this[key].signature===signature)return;

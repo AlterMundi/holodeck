@@ -48,7 +48,7 @@ const compactControls=new Set(sectionIds.flatMap(id=>sectionControls[id]));
 const controls=[
   {id:'root',component:'HudPanel',label:'Revisión de movimiento',width:widePanelWidth,gap:.025,
     children:['sections','title','rig','clip','clock','heldPose','chapter','playback','playOptions','comparison','views','presentation','accessStatus','checkReviewAccess','noteTarget','note','archive','reviewNotes','reviewText','status']},
-  {...row('sections',sectionIds),visible:path('compact')},
+  {...row('sections',sectionIds),gap:.025,visible:path('compact')},
   ...sectionIds.map(id=>({...button(id,id),pressed:path('selectedSection/'+id),weight:sectionWeights[id]})),
   label('title','Revisión de movimiento','title'),choice('rig','Personaje'),choice('clip','Ciclo'),
   {id:'clock',component:'HudRange',label:'Fotograma',min:0,max:path('lastFrame'),step:1,value:path('frame'),
