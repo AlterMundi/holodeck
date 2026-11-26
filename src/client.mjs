@@ -25,6 +25,7 @@ import {matterInspectionNear} from './matter-contact.mjs';
 import {constrainInteriorCamera} from './interior-camera.mjs';
 import {capWorldPixelRatio,usesLightGraphics} from './render-pixel-budget.mjs';
 import {bindVideoSettings} from './video-settings.mjs';
+import {BackgroundFocus} from './background-focus.mjs';
 import {showSettingsDialog} from './settings-hud.mjs';
 import {WorldActionLabel} from './world-action-label.mjs';
 import {bindOrbitalMatterGlazing,useLightweightMatterGlazing} from './matter-glazing.mjs';
@@ -1062,6 +1063,10 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const draw=renderer.composer.render.bind(renderer.composer);
     const mainCamera=renderer.threeJSCameraManager.mainCamera;
     const worldNear=mainCamera.near;
+    const focusMode=new URLSearchParams(location.search).get('enfoque');
+    const focusReference=focusMode==='referencia'&&location.hostname==='127.0.0.1';
+    const backgroundFocus=focusMode==='fondo'||focusReference?new BackgroundFocus(
+      renderer.composer.renderer,renderer.scene,{strength:focusReference?0:1}):null;
     let drawWorld=true;
     // Keep the frame loop and collision running behind opaque overlays. Skip
     // drawing until Nexus yields or the destination can produce a room frame.
@@ -1075,7 +1080,11 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         const camera=roomModel.getScene().getGraphicsAdapter().getCamera();
         floorSplatScope.projection.sort(camera,false);
       }
-      draw();
+      if(backgroundFocus&&outsideRing()&&!rendererBudget.lightweight)backgroundFocus.draw(draw);
+      else{
+        backgroundFocus?.dispose();
+        draw();
+      }
       if(moving)matterHud.drawPassage();
       else matterHud.draw(display.draw());
     };
@@ -1453,7 +1462,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
       }
     };
-    renderer.dispose=()=>{poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();worldFocus.abort();tableAttention.dispose();pointRequest?.controller.abort();document.removeEventListener('visibilitychange',abortHiddenPoint);points.dispose();if(pointView===points)pointView=null;display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();actionLabel.dispose();flightWake.dispose();waterSplash.dispose();waterWake.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();houseLight.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{backgroundFocus?.dispose();poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();worldFocus.abort();tableAttention.dispose();pointRequest?.controller.abort();document.removeEventListener('visibilitychange',abortHiddenPoint);points.dispose();if(pointView===points)pointView=null;display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();actionLabel.dispose();flightWake.dispose();waterSplash.dispose();waterWake.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();houseLight.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
       if(client.keyInputManager){
         const keys=client.keyInputManager,shouldCapture=keys.shouldCaptureKeyPress;
