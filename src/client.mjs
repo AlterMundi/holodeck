@@ -1021,6 +1021,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       gallery:()=>inside?(moving||!remoteScene?new Map():contentVisitor.galleryTargets(galleryModels,remoteScene,
         client.getLocalCharacterState()?.position)):null,
       collection:()=>inside&&!moving&&remoteScene&&activeSpace.collectionShelves?collectionShelves.pickTargets():null,
+      worktable:()=>collectionShelves?.worktable.model?.group,
       companion:()=>companion.object,
       onPick:record=>{
         if(record.kind==='daimon-companion'){openConversation(true);return;}

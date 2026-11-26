@@ -1,4 +1,5 @@
 import {PerspectiveCamera,Raycaster,Vector2,BoxHelper} from 'three';
+import {firstMatterHit} from './matter-contact.mjs';
 import {entityLabel} from './focus.mjs';
 const unconfirmedTarget=Symbol('unconfirmed world target');
 const visible=object=>{for(let p=object;p;p=p.parent)if(!p.visible)return false;return true;};
@@ -11,8 +12,8 @@ export function selectionLabel(id,state){
   ?`${node.play?'el juego':'el contenido'} «${node.title}»`:entityLabel(id);
 }
 export class PublicWorldPicker{
- constructor({document,canvas,scene,cameraState,proof,onPick,onUnavailable=()=>{},gallery=()=>null,collection=()=>null,companion=()=>null}){
-  Object.assign(this,{document,canvas,scene,cameraState,proof,onPick,onUnavailable,gallery,collection,companion});this.ray=new Raycaster();this.camera=new PerspectiveCamera();this.gesture=null;
+ constructor({document,canvas,scene,cameraState,proof,onPick,onUnavailable=()=>{},gallery=()=>null,collection=()=>null,worktable=()=>null,companion=()=>null}){
+  Object.assign(this,{document,canvas,scene,cameraState,proof,onPick,onUnavailable,gallery,collection,worktable,companion});this.ray=new Raycaster();this.camera=new PerspectiveCamera();this.gesture=null;
   this.down=e=>{this.gesture=e.isPrimary!==false&&e.button===0?{id:e.pointerId,x:e.clientX,y:e.clientY,time:performance.now()}:null;};
   this.move=e=>{if(this.gesture&&Math.hypot(e.clientX-this.gesture.x,e.clientY-this.gesture.y)>6)this.gesture=null;};
   this.cancel=()=>{this.gesture=null;};
@@ -41,10 +42,11 @@ export class PublicWorldPicker{
   if(!targets?.size)return null;
   const parts=[...targets].filter(([,record])=>record.kind==='worktable-part').map(([mesh])=>mesh);
   if(!parts.length||!this.aim(x,y))return null;
-  const hit=this.ray.intersectObjects(parts,false).find(visibleHit);
+  const hit=firstMatterHit(parts,this.ray.ray);
   if(!hit)return null;
   const companion=this.companion();
-  const blockers=this.scene.children.filter(object=>object!==companion);
+  const worktable=this.worktable();
+  const blockers=this.scene.children.filter(object=>object!==companion&&object!==worktable&&!parts.includes(object));
   const far=this.ray.far;
   try{
    this.ray.far=hit.distance-.0005;

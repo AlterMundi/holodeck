@@ -75,12 +75,14 @@ test('only visible worktable parts take gaze through the companion hologram',()=
   const scene=new Scene(),canvas=new EventTarget(),companion=new Group();
   canvas.getBoundingClientRect=()=>({left:0,top:0,width:100,height:100});
   const tile=()=>new Mesh(new PlaneGeometry(2,2),new MeshBasicMaterial());
-  const part=tile(),occluder=tile(),companionShell=tile();
+  const part=tile(),occluder=tile(),companionShell=tile(),worktable=new Group();
+  part.raycast=()=>{throw Error('CAD part must use the index in both passes');};
+  worktable.add(part);
   companion.position.z=1;
   companion.add(companionShell);
   occluder.position.z=.5;
-  scene.add(part,companion);
-  const picker=new PublicWorldPicker({scene,canvas,companion:()=>companion,
+  scene.add(worktable,companion);
+  const picker=new PublicWorldPicker({scene,canvas,companion:()=>companion,worktable:()=>worktable,
     collection:()=>new Map([[part,{kind:'worktable-part',id:'test',mesh:part}]]),
     cameraState:()=>({fov:60,aspect:1,position:{x:0,y:0,z:3},rotation:{x:0,y:0,z:0,w:1}}),
   });

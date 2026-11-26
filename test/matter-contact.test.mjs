@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {BufferGeometry,Float32BufferAttribute,Group,Mesh,MeshStandardMaterial,Plane,Vector3} from 'three';
-import {MatterContact} from '../src/matter-contact.mjs';
+import {BufferGeometry,Float32BufferAttribute,Group,Mesh,MeshStandardMaterial,Plane,Ray,Vector3} from 'three';
+import {MeshBVH} from 'three-mesh-bvh/src/index.js';
+import {firstMatterHit,indexMatterPart,MatterContact} from '../src/matter-contact.mjs';
 
 const view={fov:64,aspect:16/9};
 const point=(x,y,z)=>new Vector3(x,y,z);
@@ -48,4 +49,28 @@ test('a section leaves contact only on the visible part of a transformed mesh',(
   assert.ok(contact.limit(parts,point(.8,.617,0),point(-.6,.617,0),view)<.5);
   part.visible=false;
   assert.equal(contact.limit(parts,point(.8,.5,0),point(-.6,.5,0),view),1);
+});
+
+
+test('a transferred part index serves contact and nearest visible pick through a transformed cut',()=>{
+  const {part,parts,contact}=plateFixture();
+  const original=part.geometry.clone();
+  const packed=MeshBVH.serialize(new MeshBVH(original,{indirect:true}),{cloneBuffers:false});
+  const transfer=[packed.index.buffer,packed.indirectBuffer.buffer,...packed.roots];
+  const received=structuredClone(packed,{transfer});
+  const tree=indexMatterPart(part.geometry,received);
+  const model=new Group();
+  model.add(part);
+  model.scale.setScalar(.6);
+  model.position.set(.2,.3,.45);
+  part.material.clippingPlanes=[new Plane(point(0,-1,0),.6)];
+  const ray=new Ray(point(.2,.45,1.45),point(0,0,-1));
+  const hit=firstMatterHit(parts.values(),ray);
+  assert.equal(hit?.object,part);
+  assert.ok(Math.abs(hit.distance-1)<1e-8);
+  assert.ok(contact.limit(parts,ray.origin,point(.2,.45,0),view)<1);
+  ray.origin.y=.72;
+  assert.equal(firstMatterHit(parts.values(),ray),null);
+  assert.equal(indexMatterPart(part.geometry),tree);
+  assert.deepEqual(Array.from(part.geometry.index.array),[0,1,2,0,2,3]);
 });

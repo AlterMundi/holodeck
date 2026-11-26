@@ -1,7 +1,57 @@
-import {Box3,Line3,Matrix4,Plane,Ray,Vector3} from 'three';
+import {Box3,FrontSide,Line3,Matrix4,Plane,Ray,Vector3} from 'three';
 import {ExtendedTriangle,MeshBVH} from 'three-mesh-bvh/src/index.js';
 
 export const matterInspectionNear=.02;
+
+const trees=new WeakMap();
+
+export function indexMatterPart(geometry,index){
+  let tree=trees.get(geometry);
+  if(!tree){
+    tree=index?MeshBVH.deserialize(index,geometry,{setIndex:false}):new MeshBVH(geometry,{indirect:true});
+    trees.set(geometry,tree);
+  }
+  return tree;
+}
+
+export function firstMatterHit(parts,ray){
+  const inverse=new Matrix4(),local=new Ray(),direction=new Vector3(),section=new Plane();
+  let best=null;
+  for(const mesh of parts){
+    if(!mesh.material.visible||mesh.material.opacity<=0)continue;
+    let visible=true;
+    for(let parent=mesh;parent;parent=parent.parent){
+      if(!parent.visible){visible=false;break;}
+    }
+    if(!visible)continue;
+    mesh.updateWorldMatrix(true,false);
+    const {geometry,matrixWorld}=mesh;
+    inverse.copy(matrixWorld).invert();
+    local.origin.copy(ray.origin).applyMatrix4(inverse);
+    direction.copy(ray.origin).add(ray.direction).applyMatrix4(inverse).sub(local.origin);
+    const localPerWorld=direction.length();
+    if(!localPerWorld)continue;
+    local.direction.copy(direction).divideScalar(localPerWorld);
+    if(!geometry.boundingBox)geometry.computeBoundingBox();
+    if(!local.intersectsBox(geometry.boundingBox))continue;
+    let near=0,far=(best?.distance??Infinity)*localPerWorld;
+    const cut=mesh.material.clippingPlanes?.[0];
+    if(cut){
+      section.copy(cut).applyMatrix4(inverse);
+      const side=section.distanceToPoint(local.origin),slope=section.normal.dot(local.direction);
+      if(slope>0)near=Math.max(near,-side/slope);
+      else if(slope<0)far=Math.min(far,-side/slope);
+      else if(side<0)continue;
+      if(near>far)continue;
+    }
+    const hit=indexMatterPart(geometry).raycastFirst(local,mesh.material.side??FrontSide,near,far);
+    if(hit){
+      const distance=hit.distance/localPerWorld;
+      if(!best||distance<best.distance)best={object:mesh,distance,point:hit.point.applyMatrix4(matrixWorld)};
+    }
+  }
+  return best;
+}
 
 const padding=.008;
 const inContact=(distance,radius)=>distance<radius-1e-6;
@@ -10,7 +60,6 @@ const inContact=(distance,radius)=>distance<radius-1e-6;
 // Index the existing part geometry without changing its triangle order.
 export class MatterContact{
   constructor(){
-    this.trees=new WeakMap();
     this.sweepBox=new Box3();
     this.worldBox=new Box3();
     this.segment=new Line3();
@@ -46,12 +95,7 @@ export class MatterContact{
       this.goal.copy(to).applyMatrix4(this.inverse);
       this.sweepBox.setFromPoints([this.segment.start,this.goal]).expandByScalar(radius);
       if(section)this.section.copy(section).applyMatrix4(this.inverse);
-      let tree=this.trees.get(geometry);
-      if(!tree){
-        tree=new MeshBVH(geometry,{indirect:true});
-        this.trees.set(geometry,tree);
-      }
-      tree.shapecast({
+      indexMatterPart(geometry).shapecast({
         intersectsBounds:box=>box.intersectsBox(this.sweepBox),
         intersectsTriangle:triangle=>{
           if(section){

@@ -717,9 +717,11 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   app.use(route('api/space/avatar-pose'),express.json({limit:'256b',strict:true}));
   app.use(route('api/space/collection/pointing'),express.json({limit:'2kb',strict:true}));
   app.use(express.json({limit:'48kb',strict:true}));
-  const packedClient=new URL('../runtime/client.js.br',import.meta.url);
-  if(existsSync(packedClient))
-    app.get(route('client/client.js'),packedClientHandler(readFileSync(packedClient)));
+  for(const name of ['client.js','collection-review-worker.js']){
+    const packedScript=new URL('../runtime/'+name+'.br',import.meta.url);
+    if(existsSync(packedScript))
+      app.get(route('client/'+name),packedClientHandler(readFileSync(packedScript)));
+  }
   for(const [path,art] of exteriorArt)
     app.get(route(path),(req,res)=>sendPackedArt(req,res,art,true));
   network.registerExpressRoutes(app);

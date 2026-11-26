@@ -43,14 +43,15 @@ for(const [path,revision] of Object.entries({...ATELIER_ASSET_REVISIONS,...VALLE
   await writeFile(output,packed);
   await rm(original);
 }
-// Keep one exact browser bundle in the archive. The receiving HTTP route
-// serves this wire representation or streams its identity representation.
-const clientBundle=join(stage,'build/client.js');
-const packedClient=brotliCompressSync(await readFile(clientBundle),{params:{
- [zlib.BROTLI_PARAM_MODE]:zlib.BROTLI_MODE_TEXT,[zlib.BROTLI_PARAM_QUALITY]:11,
-}});
-await writeFile(join(stage,'runtime/client.js.br'),packedClient);
-await rm(clientBundle);
+// Keep one exact representation of each packed script at its existing URL.
+for(const name of ['client.js','collection-review-worker.js']){
+  const script=join(stage,'build',name);
+  const packed=brotliCompressSync(await readFile(script),{params:{
+    [zlib.BROTLI_PARAM_MODE]:zlib.BROTLI_MODE_TEXT,[zlib.BROTLI_PARAM_QUALITY]:11,
+  }});
+  await writeFile(join(stage,'runtime',name+'.br'),packed);
+  await rm(script);
+}
 await copyFile(join(root,'deployment/entry.mjs'),join(stage,'entry.mjs'));
 // Retain notices for the actual installed runtime dependency closure used by
 // the server/client bundles, Canvas remains an upstream optional server capability and is not shipped.

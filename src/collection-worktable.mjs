@@ -1,3 +1,4 @@
+import {indexMatterPart} from './matter-contact.mjs';
 import {pointingBounds} from './tabletop-point-view.mjs';
 import {Box3,BufferAttribute,BufferGeometry,DoubleSide,Group,Mesh,MeshStandardMaterial,Plane,Vector3} from 'three';
 import {disposeModel} from './gallery-models.mjs';
@@ -33,6 +34,7 @@ function makeModel(review,anchor){
       geometry.setAttribute('position',new BufferAttribute(part.positions,3));
       geometry.setIndex(new BufferAttribute(part.indices,1));
       geometry.computeVertexNormals();geometry.computeBoundingBox();
+      indexMatterPart(geometry,part.contactIndex);
       const mesh=new Mesh(geometry,new MeshStandardMaterial({color:part.color,roughness:.54,metalness:.12,clipShadows:true}));
       mesh.name=part.id;mesh.castShadow=true;mesh.receiveShadow=true;
       inside.add(mesh);parts.set(part.id,mesh);
