@@ -399,7 +399,7 @@ async function main(){
     const heldPose={rig:pose.rig,clip:'estudio-marcha',edition:current.catalog.humanoid['estudio-marcha'].edition,frame:96};
     assert.deepEqual(held.presentation.pose,heldPose);
     await context.grantPermissions(['clipboard-read','clipboard-write']);
-    await tableButton('Copiar URL').press('Enter');
+    await table.getByRole('button',{name:/^Copiar (URL|enlace)$/}).press('Enter');
     await page.waitForFunction(async()=> (await navigator.clipboard.readText()).includes('fotograma=96'));
     const copiedPose=new URL(await page.evaluate(()=>navigator.clipboard.readText())).searchParams;
     assert.deepEqual({rig:copiedPose.get('rig'),clip:copiedPose.get('clip'),
