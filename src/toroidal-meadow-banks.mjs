@@ -15,7 +15,7 @@ const beds=[
 // Local metres from the arrival path through the western woodland edge.
 const COVER_TILE=9;
 const COVER_STEPS=27;
-const COVER_END=33;
+const COVER_END=43;
 const coverTileCenters=Array.from({length:8*12},(_,index)=>({
   x:(index%8-8)*COVER_TILE,
   z:(Math.floor(index/8)-1)*COVER_TILE,
@@ -75,9 +75,9 @@ export function shortMeadowPlants(x,z,lightweight){
   const tile=Math.imul(x,73856093)^Math.imul(z,19349663);
   for(let row=0;row<COVER_STEPS;row++){
     for(let column=0;column<COVER_STEPS;column++){
-      if(lightweight&&(column+row)%4===3)continue;
       const index=row*COVER_STEPS+column;
       const pick=salt=>random(tile,index,salt);
+      if(lightweight&&pick(251)<.22)continue;
       const px=x+COVER_TILE*((column+.08+.84*pick(71))/COVER_STEPS-.5);
       const pz=z+COVER_TILE*((row+.08+.84*pick(123))/COVER_STEPS-.5);
       if((px>-7.4&&pz<26)||pick(93)<Math.max(0,(px+10)/4))continue;
@@ -90,7 +90,7 @@ export function shortMeadowPlants(x,z,lightweight){
       const nearerEdge=Math.min(px+76.5, pz+13.5,94.5-pz);
       if(pick(83)>Math.min(1,nearerEdge/7))continue;
       const moisture=terrainMeadowMoisture(u,v,h);
-      const palette=moisture>.54?[0xa4b678,0x8da260,0xb4bc7b]:[0xb8b77b,0xa5ae6c,0xc5bd82];
+      const palette=moisture>.54?[0x96ac70,0x81935a,0xb0b286]:[0xb2ad77,0xa0a46c,0xc1b78e];
       plants.push({u,v,h,yaw:pick(64)*2*Math.PI,size:.68+.62*pick(48),
         color:palette[Math.floor(pick(12)*palette.length)]});
     }
@@ -98,20 +98,27 @@ export function shortMeadowPlants(x,z,lightweight){
   return plants;
 }
 
-function shortLeafGeometry(){
-  const positions=[],colors=[],color=new Color();
-  for(let i=0;i<5;i++){
+function shortLeafGeometry(lightweight){
+  const positions=[],colors=[],indices=[],color=new Color();
+  for(let i=0;i<(lightweight?4:6);i++){
     const angle=i*goldenAngle,x=Math.cos(angle),z=Math.sin(angle);
-    const lean=.20+.16*random(33,i,3),height=.13+.17*random(33,i,9);
-    const width=.031+.022*random(33,i,5);
-    positions.push(.06*x-width*z,-.035,.06*z+width*x,
-      .06*x+width*z,-.035,.06*z-width*x,lean*x,height,lean*z);
-    for(const shade of [0x637746,0x788a4e,0xc8cc80])
-      colors.push(...color.setHex(shade).toArray());
+    const lean=.12+.28*random(33,i,3),height=.16+.24*random(33,i,9);
+    const width=.009+.007*random(33,i,5);
+    const base=positions.length/3;
+    for(const [t,spread,shade] of [[0,width*.58,0x657341],[.55,width,0xb6ab74],[1,0,i%3?0xddd097:0xe6cda2]]){
+      const radius=.045+lean*t*t;
+      const rise=height*t*(1.17-.245*t)-.038;
+      for(const side of (spread?[-1,1]:[0])){
+        positions.push(radius*x+side*spread*z,rise,radius*z-side*spread*x);
+        colors.push(...color.setHex(shade).toArray());
+      }
+    }
+    indices.push(base,base+1,base+2,base+2,base+1,base+3,base+2,base+3,base+4);
   }
   const geometry=new BufferGeometry();
   geometry.setAttribute('position',new Float32BufferAttribute(positions,3));
   geometry.setAttribute('color',new Float32BufferAttribute(colors,3));
+  geometry.setIndex(indices);
   geometry.computeVertexNormals();
   return geometry;
 }
@@ -262,20 +269,26 @@ export class ToroidalMeadowBanks {
         shader.uniforms.coverViewer=this.viewer;
         shader.uniforms.coverSeconds=this.clock;
         shader.vertexShader=shader.vertexShader
-          .replace('#include <common>','#include <common>\nuniform vec3 coverViewer;\nuniform float coverSeconds;')
+          .replace('#include <common>','#include <common>\nuniform vec3 coverViewer;\nuniform float coverSeconds;\nvarying vec3 coverUp;')
           .replace('#include <begin_vertex>',`#include <begin_vertex>
-            vec3 root=(modelMatrix*instanceMatrix[3]).xyz;
+            mat4 grassTransform=modelMatrix*instanceMatrix;
+            vec3 root=grassTransform[3].xyz;
+            coverUp=mat3(viewMatrix)*grassTransform[1].xyz;
             float variation=fract(dot(root,vec3(.517,.337,.631)));
-            float end=${COVER_END.toFixed(1)}-variation*10.0;
-            float cover=1.0-smoothstep(end-7.0,end,distance(root,coverViewer));
+            float end=${COVER_END.toFixed(1)}-variation*12.0;
+            float cover=1.0-smoothstep(end-13.0,end,distance(root,coverViewer));
             float tip=clamp(transformed.y*3.0,0.0,1.0);
             transformed.x+=tip*tip*.035*sin(dot(root.xz,vec2(.53,.37))+coverSeconds*1.75);
             transformed.y=mix(-.08,transformed.y,cover);
             transformed.xz*=cover;`);
+        shader.fragmentShader=shader.fragmentShader
+          .replace('#include <common>','#include <common>\nvarying vec3 coverUp;')
+          .replace('#include <normal_fragment_begin>',`#include <normal_fragment_begin>
+            normal=normalize(mix(normal,normalize(coverUp),.56));`);
       };
       profile.materials.push(material);
       profile.coverMaterial=material;
-      profile.coverGeometry=shortLeafGeometry();
+      profile.coverGeometry=shortLeafGeometry(profile.lightweight);
       profile.geometries.push(profile.coverGeometry);
     }
 

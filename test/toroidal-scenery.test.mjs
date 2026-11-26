@@ -53,7 +53,7 @@ test('the meadow profiles share rooted banks outside the trail and dispose their
   const scene=new Scene(),cover=new ToroidalScenery(scene);
   const spawn=new Vector3(TOROIDAL_SPAWN.x,TOROIDAL_SPAWN.y,TOROIDAL_SPAWN.z);
   const batches=()=>cover.meadow.profiles.find(p=>p.group.visible).group.children;
-  const triangleCount=()=>batches().reduce((total,batch)=>total+batch.count*batch.geometry.attributes.position.count/3,0);
+  const triangleCount=()=>batches().reduce((total,batch)=>total+batch.count*(batch.geometry.index?.count??batch.geometry.attributes.position.count)/3,0);
   const normalRoots=shortMeadowPlants(-18,18,false);
   const lightRoots=shortMeadowPlants(-18,18,true);
   assert.deepEqual(shortMeadowPlants(-18,18,false),normalRoots);
@@ -64,11 +64,11 @@ test('the meadow profiles share rooted banks outside the trail and dispose their
   cover.update(spawn,false);
   const shortLayer=()=>batches().find(batch=>batch.name==='Short meadow grass');
   assert.ok(shortLayer()?.count>0);
-  assert.equal(triangleCount(),21342+5*shortLayer().count);
+  assert.equal(triangleCount(),21342+18*shortLayer().count);
   assert.equal(batches().length,11);
   const original=batches()[0];
   cover.update(spawn,true);
-  assert.equal(triangleCount(),4911+5*shortLayer().count);
+  assert.equal(triangleCount(),4911+12*shortLayer().count);
   cover.update(spawn,false);
   assert.equal(batches()[0],original);
   const threshold=spawn.clone().setZ(154);

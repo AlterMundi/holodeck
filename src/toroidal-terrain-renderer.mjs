@@ -96,7 +96,7 @@ const terrainShading = {
     // compresses one axis on this horizontal shoulder, stretching its grain.
     float meadowFootprint = max(length(dFdx(approach)),length(dFdy(approach)));
     float meadowSlope = dot(normalize(vNormal),normalize(vHoloUp));
-    float holoMeadowGround = (1.0-smoothstep(32.0,76.0,length(approach)))
+    float holoMeadowGround = (1.0-smoothstep(83.0,135.0,length(approach)))
       * smoothstep(.87,.98,meadowSlope)
       * smoothstep(4.0,12.0,vHoloHeight)
       * smoothstep(370.0,460.0,vHoloWorld.y);
@@ -107,6 +107,16 @@ const terrainShading = {
     float holoMeadowRoughness = .96;
     float holoTrailMask = 0.0;
     float holoTrailRoughness = .90;
+    // Low-frequency colours remain legible across the hill after leaves
+    // are too small to draw. Their frequencies stay fixed in world space.
+    if(holoMeadow>.001){
+      float soil=ringNoise(approach*vec2(.072,.11)+vec2(13.3,4.8));
+      float drift=ringNoise(approach*vec2(.22,.17)+vec2(2.7,8.1));
+      vec3 green=vec3(.74,.81,.72);
+      vec3 straw=vec3(1.10,1.02,.77);
+      vec3 meadowTone=mix(green,straw,smoothstep(.26,.86,soil*.72+drift*.28));
+      diffuseColor.rgb*=mix(vec3(1.0),meadowTone,holoMeadow*.85);
+    }
     // Keep the regional vertex colours and add filtered short leaf relief
     // where the camera can resolve it. Both profiles share the same pattern.
     vec2 coverUV=mat2(.8,-.6,.6,.8)*approach*.42;
