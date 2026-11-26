@@ -1,5 +1,6 @@
 import {PerspectiveCamera,Raycaster,Vector2,BoxHelper} from 'three';
 import {entityLabel} from './focus.mjs';
+const unconfirmedTarget=Symbol('unconfirmed world target');
 const visible=object=>{for(let p=object;p;p=p.parent)if(!p.visible)return false;return true;};
 const visibleHit=hit=>(hit.object.isMesh||hit.object.isSprite)&&visible(hit.object)&&
   [hit.object.material].flat().some(material=>material?.visible&&material.opacity>0&&
@@ -18,7 +19,9 @@ export class PublicWorldPicker{
   this.up=e=>{
    const g=this.gesture;this.gesture=null;
    if(!g||g.id!==e.pointerId||performance.now()-g.time>800||Math.hypot(e.clientX-g.x,e.clientY-g.y)>6)return;
-   const picked=this.pick(e.clientX,e.clientY);if(picked)this.onPick(picked);
+   const picked=this.resolvePick(e.clientX,e.clientY);
+   if(picked===unconfirmedTarget)this.onUnavailable();
+   else if(picked)this.onPick(picked);
   };
   for(const[type,listener]of [['pointerdown',this.down],['pointermove',this.move],['pointerup',this.up],['pointercancel',this.cancel]])canvas.addEventListener(type,listener);
  }
@@ -50,6 +53,10 @@ export class PublicWorldPicker{
   return {...targets.get(hit.object),point:hit.point};
  }
  pick(x,y){
+  const picked=this.resolvePick(x,y);
+  return picked===unconfirmedTarget?null:picked;
+ }
+ resolvePick(x,y){
   const companion=this.companion();
   let hit;
   if(companion){
@@ -68,8 +75,8 @@ export class PublicWorldPicker{
    }
    return null;
   }
-  const root=this.document.querySelector('m-group#workshop'),proof=this.proof();
-  if(!root||!proof||proof.run!==root.getAttribute('data-run')||proof.edition!==root.getAttribute('data-edition')||String(proof.sequence)!==root.getAttribute('data-semantic-sequence')){this.onUnavailable();return null;}
+  const root=this.document.querySelector('m-group#workshop');
+  if(!root)return null;
   const owners=new Map();
   for(const entity of root.querySelectorAll('m-group[data-entity-revision]')){
    if(!(entity.id==='bridge'||/^(?:garden|node)-[a-z0-9-]{1,40}$/.test(entity.id)))continue;
@@ -84,7 +91,16 @@ export class PublicWorldPicker{
   const communication=object=>{for(let p=object;p;p=p.parent)if(cues.has(p))return true;return false;};
   hit=this.hit(x,y,communication);
   if(!hit)return null;
-  for(let object=hit.object;object;object=object.parent){const owner=owners.get(object);if(owner)return {...owner,run:proof.run,edition:proof.edition};}
+  for(let object=hit.object;object;object=object.parent){
+   const owner=owners.get(object);
+   if(!owner)continue;
+   // Stale geometry can produce a retry hint for this hit. Only an applied
+   // projection may provide a record for selection or a content visit.
+   const proof=this.proof();
+   if(!proof||proof.run!==root.getAttribute('data-run')||proof.edition!==root.getAttribute('data-edition')||
+      String(proof.sequence)!==root.getAttribute('data-semantic-sequence'))return unconfirmedTarget;
+   return {...owner,run:proof.run,edition:proof.edition};
+  }
   return null; // Visible scenery/private preview occludes objects behind it.
  }
  dispose(){for(const[type,listener]of [['pointerdown',this.down],['pointermove',this.move],['pointerup',this.up],['pointercancel',this.cancel]])this.canvas.removeEventListener(type,listener);this.cancel();}

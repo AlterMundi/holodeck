@@ -12,15 +12,22 @@ function fixture({content=false}={}){
  const root={getAttribute:key=>({'data-run':'fixture','data-edition':'edition','data-semantic-sequence':'1'}[key]),
   querySelectorAll:selector=>selector.includes('data-entity-revision')?[e]:selector.includes('data-content-node')?entrances:[{getContainer:()=>cue}]};
  const canvas=new EventTarget();canvas.getBoundingClientRect=()=>({left:0,top:0,width:100,height:100});
- const picks=[];let unavailable=0,proof={run:'fixture',edition:'edition',sequence:1};
- const picker=new PublicWorldPicker({document:{querySelector:()=>root},canvas,scene,cameraState:()=>({position:{x:0,y:0,z:0},rotation:{x:0,y:0,z:0,w:1},fov:60,aspect:1}),proof:()=>proof,onPick:value=>picks.push(value),onUnavailable:()=>unavailable++});
- return {picker,scene,canvas,picks,get unavailable(){return unavailable;},invalidate(){proof=null;}};
+ const picks=[];let unavailable=0,hasRoot=true,reads=0,proof={run:'fixture',edition:'edition',sequence:1};
+ const picker=new PublicWorldPicker({document:{querySelector:()=>hasRoot?root:null},canvas,scene,cameraState:()=>({position:{x:0,y:0,z:0},rotation:{x:0,y:0,z:0,w:1},fov:60,aspect:1}),proof:()=>{reads++;return proof;},onPick:value=>picks.push(value),onUnavailable:()=>unavailable++});
+ const event=(type,extra={})=>{
+  const e=new Event(type);
+  Object.assign(e,{pointerId:1,clientX:50.25,clientY:50.25,button:0,isPrimary:true,...extra});
+  canvas.dispatchEvent(e);
+ };
+ return {picker,scene,canvas,picks,event,get unavailable(){return unavailable;},get reads(){return reads;},
+  invalidate(){proof=null;},setProof(value){proof=value;},removeRoot(){hasRoot=false;}};
+
 }
 test('actual Three picking skips communication cues but respects real scenery and private preview occlusion',()=>{
  const f=fixture();assert.equal(f.picker.pick(50.25,50.25).target,'garden-first');
  const wall=new Mesh(new BoxGeometry(1,1,.1),new MeshBasicMaterial());wall.position.z=-1;f.scene.add(wall);
  assert.equal(f.picker.pick(50.25,50.25),null);wall.removeFromParent();
- f.invalidate();assert.equal(f.picker.pick(50.25,50.25),null);assert.equal(f.unavailable,1);f.picker.dispose();
+ f.picker.dispose();
 });
 test('a visible research entrance resolves to a content visit rather than a mutable garden indication',()=>{
  const f=fixture({content:true}),picked=f.picker.pick(50.25,50.25);
@@ -30,13 +37,55 @@ test('a visible research entrance resolves to a content visit rather than a muta
  assert.equal(f.picker.pick(50.25,50.25),null);f.picker.dispose();
 });
 test('short stationary pointer gestures select locally, while camera drag/multi-touch/cancel never selects',()=>{
- const f=fixture(),event=(type,extra={})=>{const e=new Event(type);Object.assign(e,{pointerId:1,clientX:50.25,clientY:50.25,button:0,isPrimary:true,...extra});f.canvas.dispatchEvent(e);};
+ const f=fixture(),{event}=f;
  event('pointerdown');event('pointermove',{clientX:60});event('pointerup',{clientX:60});assert.equal(f.picks.length,0);
  event('pointerdown');event('pointerdown',{pointerId:2,isPrimary:false});event('pointerup');assert.equal(f.picks.length,0);
  event('pointerdown');event('pointercancel');event('pointerup');assert.equal(f.picks.length,0);
  event('pointerdown');event('pointerup');assert.equal(f.picks.length,1);assert.equal(f.picks[0].revision,1);
  f.picker.dispose();event('pointerdown');event('pointerup');assert.equal(f.picks.length,1);
 });
+test('an unconfirmed projection only hints for a visible target on an actual pointer gesture',()=>{
+ const f=fixture(),tap=(extra={})=>{f.event('pointerdown',extra);f.event('pointerup',extra);};
+ const wall=new Mesh(new BoxGeometry(1,1,.1),new MeshBasicMaterial());
+ wall.position.z=-1;
+ f.scene.add(wall);
+ f.invalidate();
+ tap({clientX:90,clientY:10});
+ tap();
+ assert.equal(f.reads,0);
+ assert.equal(f.unavailable,0);
+ wall.removeFromParent();
+ assert.equal(f.picker.pick(50.25,50.25),null);
+ assert.equal(f.unavailable,0);
+ tap();
+ assert.equal(f.unavailable,1);
+ assert.deepEqual(f.picks,[]);
+ f.removeRoot();
+ tap();
+ assert.equal(f.unavailable,1);
+ assert.equal(f.reads,2);
+ f.picker.dispose();
+});
+
+test('content gestures stay fenced across run and edition changes and recover on confirmation',()=>{
+ const f=fixture({content:true});
+ const tap=()=>{f.event('pointerdown');f.event('pointerup');};
+ for(const correction of [{run:'old-run'},{edition:'old-edition'}]){
+  f.setProof({run:'fixture',edition:'edition',sequence:1,...correction});
+  f.event('pointerdown');f.event('pointermove',{clientX:64});f.event('pointerup',{clientX:64});
+  f.event('pointerdown');f.event('pointercancel');f.event('pointerup');
+  tap();
+ }
+ assert.equal(f.unavailable,2);
+ assert.deepEqual(f.picks,[]);
+ f.setProof({run:'fixture',edition:'edition',sequence:1});
+ tap();
+ assert.equal(f.picks[0].kind,'content');
+ assert.equal(f.picks[0].run,'fixture');
+ assert.equal(f.picks[0].edition,'edition');
+ f.picker.dispose();
+});
+
 test('gallery picks require an authorized visible model or sign and respect opaque room geometry',()=>{
  const f=fixture(),entry={id:'house-exhibit',nodeRevision:2},target=f.scene.children[0],front=f.scene.children[1];
  f.picker.gallery=()=>new Map([[target,entry]]);
