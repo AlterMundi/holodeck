@@ -2,6 +2,24 @@
 
 ## Character Design Room review candidate on the selected world
 
+Source `5b9562bf3d8a8c96d56840e9387828a42ea71d67` preserves the selected
+Character pose when Conversation opens and the physical table suspends.
+The canonical machine context carries the rig, clip edition and exact
+local frame after the server checks the pose catalog and room authority.
+The staged browser fixture selected frame 37 while the shared
+presentation remained at 36. It prepared one machine context with
+frame 37. An outdated edition, revoked recipient access and an original
+prepared outside the review room all failed to produce a pose context.
+
+Archive `46c7228f8cad405c88f49e09657a07c11ac70c605a84b96d9043b175d4ee5be5`
+matched all 87 payloads and retained the exact pose catalog from
+`01c642c4af29`. A separate Chromium check against the installed
+Conversation assets observed the submitted draft locked until its exact
+receipt. The next draft survived minimizing and restoring the same
+iframe. Holodeck passed 424 JavaScript tests with two skips and 49
+Python bridge tests. The contextual pose test used local fixtures.
+Protected Home selection and authenticated joint acceptance remain open.
+
 Source `55e05fd1278d62af99fb5b70fc809b624e8bd4c5` carries the
 protected keyboard release `394ab30b12c6` into the Character candidate.
 Shift runs and Alt descends with world focus. The compact touch notice

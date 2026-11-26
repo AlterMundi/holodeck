@@ -148,7 +148,23 @@ try{
  await frame(`document.querySelector('#conversation-compose').addEventListener('submit',()=>{window.fixtureSubmitTime=Date.now();parent.postMessage({schema:'fixture.submit-point',capturedAt:fixtureSubmitTime},${JSON.stringify(worldOrigin)})},{capture:true,once:true});document.querySelector('#conversation-message').value='Synthetic canonical situated original';document.querySelector('#conversation-compose').requestSubmit();true`);
  await until(()=>evaluate('retainedContent.contentWindow.fixture.held.length===1'),10000,'content context held while canonical file upload awaits');
  await until(()=>!!releaseFile,10000,'original file acknowledgment held');const submit=await evaluate('submissionMoment');
- await frame('document.querySelector("#conversation-message").focus();document.querySelector("#conversation-message").setSelectionRange(0,document.querySelector("#conversation-message").value.length);true');await cdp('Input.insertText',{text:'Next canonical draft retained'});
+ async function replaceDraft(){
+  await frame(`(()=>{
+   const draft=document.querySelector('#conversation-message');
+   window.fixtureDraftLock=undefined;
+   draft.addEventListener('beforeinput',event=>{window.fixtureDraftLock=event.defaultPrevented;},{once:true});
+   draft.focus();
+   draft.setSelectionRange(0,draft.value.length);
+   return true;
+  })()`);
+  await cdp('Input.insertText',{text:'Next canonical draft retained'});
+  await until(()=>frame('typeof fixtureDraftLock==="boolean"'),4000,'canonical frame received the draft edit');
+  return frame('fixtureDraftLock');
+ }
+ const sentDraftLocked=await replaceDraft();
+ const drafting=()=>frame('document.querySelector("#conversation-message").value');
+ if(await drafting()!==(sentDraftLocked?'Synthetic canonical situated original':'Next canonical draft retained'))
+  throw Error('Unexpected canonical draft during preparation');
  const minimizeMotion=await evaluate(`(()=>{
   window.retainedConversation=document.querySelector('#shared-conversation iframe');
   window.frameIdentity=retainedConversation.src;
@@ -173,7 +189,13 @@ try{
  const captured=prepared[0].view,positionError=Math.hypot(...['x','y','z'].map(axis=>captured.local.position[axis]-submit.local.position[axis]));
  if(positionError>.0001||captured.capturedAt<submit.capturedAt-10||captured.capturedAt>submit.capturedAt+100)throw Error('Canonical preparation moved initial situation '+JSON.stringify({submit,later,captured}));
  if(accepted[0].text!=='Synthetic canonical situated original'||accepted[0].files.length!==2||accepted[0].files.filter(f=>f.name==='holodeck-situation.json').length!==1)throw Error('Canonical original/files changed');
- if(await frame('document.querySelector("#conversation-message").value')!=='Next canonical draft retained')throw Error('Canonical send erased newer draft');
+ if(sentDraftLocked){
+  await until(()=>frame('!document.querySelector("#conversation-send").disabled'),8000,'canonical draft unlocked after the original was accepted');
+  if(await replaceDraft())throw Error('Canonical frame kept the draft locked after acceptance');
+  await evaluate('document.querySelector("#conversation-close").click();document.querySelector("#talk").click();true');
+  if(!await evaluate('retainedConversation===document.querySelector("#shared-conversation iframe")'))throw Error('Hiding replaced canonical frame after acknowledgment');
+ }
+ if(await drafting()!=='Next canonical draft retained')throw Error('Canonical send erased newer draft');
  const layouts=[];for(const [name,width,height,lane]of [['desktop',1100,800,''],['mobile',390,844,'bottom'],['landscape',844,390,'side']]){
   const mobile=Boolean(lane);
   await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile});
@@ -194,7 +216,7 @@ try{
  await until(()=>evaluate('document.querySelector("#hud").hasAttribute("data-native-status")'),8000,'compact world header restored after minimizing');
  const errors=await evaluate('checkErrors'),frameErrors=await frame('checkErrors');if(errors.length||frameErrors.length)throw Error('Browser errors '+JSON.stringify({errors,frameErrors}));
  const evidence={schema:'holodeck.shared-conversation-browser/v1',qualification:'Actual installed canonical full shell/assets and Holodeck MML world, synthetic loopback Home/context/files/original I/O; no real human/native/model/provider input or acceptance.',canonicalRelease:installed.split('/').at(-1),canonicalAssets:Object.fromEntries(served),loads,acceptedOriginals:accepted.length,exactOriginal:true,contextFiles:1,userFiles:1,fileUploads:fileWrites.length,draftRetained:true,operationalAlerts:'Canonical quiet frame intentionally hides the ordinary launcher; not an exercised capability.',recordingControlVisibleAndFits:true,recordingCountdownSounds:'Not exercised by this text/files fixture; use separate canonical recorder qualification.',forgeriesRefused:4,retainedOneFrame:true,submit,later,captured,positionError,layouts,errors,frameErrors};
- if(loads!==1)throw Error('Canonical frame unexpectedly reloaded');await writeFile(join(directory,'evidence.json'),JSON.stringify({...evidence,clientSHA256,writingDistance,walkingDistance,minimizeMotion,restoreMotion,composerSprint,worldSprint},null,2)+'\n');console.log(JSON.stringify(evidence));
+ if(loads!==1)throw Error('Canonical frame unexpectedly reloaded');await writeFile(join(directory,'evidence.json'),JSON.stringify({...evidence,clientSHA256,writingDistance,walkingDistance,minimizeMotion,restoreMotion,composerSprint,worldSprint,sentDraftLocked},null,2)+'\n');console.log(JSON.stringify(evidence));
  }
 }catch(error){console.error('diagnostic-world',JSON.stringify(await evaluate('({body:document.body.innerText.slice(-1200),messages:window.surfaceMessages,errors:window.checkErrors})').catch(e=>({error:e.message}))));console.error('requests',JSON.stringify(requests.slice(-35)));console.error('contexts',JSON.stringify(events.filter(e=>['Runtime.executionContextCreated','Runtime.exceptionThrown'].includes(e.method)).slice(-12)));throw error;
 }finally{
