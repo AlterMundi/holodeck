@@ -14,6 +14,10 @@ import {
 } from './toroidal-terrain.mjs';
 
 const LEVEL=7;
+const STONE_SCALE=[1.30,.67,.87];
+const STONE_EDGE=1.15;
+const STONE_CLEARANCE=.58;
+const STONE_HALO=STONE_SCALE[0]*STONE_EDGE+STONE_CLEARANCE;
 const RANGE=2;
 const CANDIDATES=12;
 const FIELD_LEVEL=9;
@@ -45,9 +49,9 @@ function random(cell,index,salt) {
   return ((n^(n>>>16))>>>0)/4294967296;
 }
 
-export function sceneryForCell(cell,count=CANDIDATES) {
+function sceneryForCell(cell) {
   const instances=[];
-  for(let i=0;i<count;i++){
+  for(let i=0;i<CANDIDATES;i++){
     const pick=salt=>random(cell,i,salt);
     const u=(cell.column+pick(17))/cell.columns;
     const v=(cell.row+pick(41))/cell.rows;
@@ -61,11 +65,45 @@ export function sceneryForCell(cell,count=CANDIDATES) {
     const moisture=terrainMeadowMoisture(u,v,h);
     const stony=h>37||h<TOROIDAL_TERRAIN.waterLevel+2.5||pick(7)<.16+(1-moisture)*.17;
     const size=stony?.20+pick(53)**1.7*.79:.25+pick(53)**1.4*.41;
-    const tint=pick(97);
-    instances.push({kind:stony?'stone':'grass',u,v,h,size,yaw:pick(29)*Math.PI*2,
+    const tint=pick(97),yaw=pick(29)*TAU;
+    const footprint=stony?{
+      along:TAU*(TOROIDAL_TERRAIN.majorRadius+(TOROIDAL_TERRAIN.tubeRadius+h)*Math.cos(v*TAU)),
+      across:TAU*(TOROIDAL_TERRAIN.tubeRadius+h),
+      cosine:Math.cos(yaw),sine:Math.sin(yaw),
+    }:null;
+    instances.push({kind:stony?'stone':'grass',u,v,h,size,yaw,footprint,candidate:i,
       color:stony?STONES[Math.floor(tint*STONES.length)]:grassColor(moisture,tint)});
   }
   return instances;
+}
+
+function weatheredStone(){
+  const geometry=new DodecahedronGeometry(1,1);
+  const position=geometry.getAttribute('position');
+  for(let i=0;i<position.count;i++){
+    const x=position.getX(i),y=position.getY(i),z=position.getZ(i);
+    const wear=.96+.115*Math.sin(4.1*x+1.7*y+4.9*z)*Math.cos(5.9*y-2.7*z);
+    position.setXYZ(i,x*wear+.054*y,y*wear,z*wear-.035*y);
+  }
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+export function grassBesideStones(stones,u,v){
+  let scale=1;
+  for(const stone of stones){
+    const {along,across,cosine,sine}=stone.footprint;
+    const du=u-stone.u,dv=v-stone.v;
+    const x=(du-Math.round(du))*along,z=(dv-Math.round(dv))*across;
+    if(Math.abs(x)>STONE_HALO||Math.abs(z)>STONE_HALO)continue;
+    const width=stone.size*STONE_SCALE[0]*STONE_EDGE;
+    const depth=stone.size*STONE_SCALE[2]*STONE_EDGE;
+    const distance=Math.hypot((x*cosine-z*sine)/width,(x*sine+z*cosine)/depth);
+    if(distance<=1)return 0;
+    const clearance=Math.hypot(x,z)*(1-1/distance);
+    scale=Math.min(scale,Math.max(0,Math.min(1,clearance/STONE_CLEARANCE)));
+  }
+  return scale*scale*(3-2*scale);
 }
 
 // The cells use canonical torus indices. Their vegetation stays rooted on
@@ -302,7 +340,7 @@ export class ToroidalScenery {
   constructor(scene,base,colliders) {
     this.group=new Group();
     this.group.name='Toroidal ground cover';
-    this.stones=new InstancedMesh(new DodecahedronGeometry(1,0),new MeshStandardMaterial({roughness:.94}),INSTANCE_LIMIT);
+    this.stones=new InstancedMesh(weatheredStone(),new MeshStandardMaterial({roughness:.94}),INSTANCE_LIMIT);
     this.grasses=new InstancedMesh(meadowBlades(3,true),new MeshStandardMaterial({
       roughness:1,vertexColors:true,side:DoubleSide,
     }),INSTANCE_LIMIT);
@@ -330,7 +368,9 @@ export class ToroidalScenery {
     this.meshes=[this.stones,this.grasses,this.ribbonGrass,this.blooms];
     this.daylight={value:1};
     this.detail=base?new Sand3DTrail(scene,base,approach,useSceneryDaylight,this.daylight):null;
-    this.meadow=new ToroidalMeadowBanks(scene,useSceneryDaylight,this.daylight);
+    this.scatterCells=new Map();
+    this.meadow=new ToroidalMeadowBanks(scene,useSceneryDaylight,this.daylight,
+      (first,last)=>this.stoneCover(first,last));
     this.woodland=new ToroidalWoodland(scene,colliders,useSceneryDaylight,this.daylight);
     this.overlook=new ToroidalOverlook(scene,colliders);
     this.ribbonGrass.name='Trail-side tufts';
@@ -362,6 +402,32 @@ export class ToroidalScenery {
     this.color=new Color();
   }
 
+  scatter(column,row){
+    const cell=terrainTile(LEVEL,column,row);
+    let points=this.scatterCells.get(cell.key);
+    if(!points){
+      points=sceneryForCell(cell);
+      if(this.scatterCells.size===96)this.scatterCells.delete(this.scatterCells.keys().next().value);
+      this.scatterCells.set(cell.key,points);
+    }
+    return points;
+  }
+
+  stoneCover(first,last){
+    const columns=2**LEVEL*TOROIDAL_TERRAIN.rootColumns,rows=2**LEVEL;
+    // Cover the largest footprint and tapered verge on either arc of the torus.
+    const haloU=STONE_HALO/(TAU*(TOROIDAL_TERRAIN.majorRadius-TOROIDAL_TERRAIN.tubeRadius-60));
+    const haloV=STONE_HALO/(TAU*(TOROIDAL_TERRAIN.tubeRadius-60));
+    const index=(a,b,halo,steps)=>[Math.floor((Math.min(a,b)-halo)*steps),Math.floor((Math.max(a,b)+halo)*steps)];
+    const [west,east]=index(first.u,last.u,haloU,columns);
+    const [south,north]=index(first.v,last.v,haloV,rows);
+    const stones=[];
+    for(let row=south;row<=north;row++)for(let column=west;column<=east;column++){
+      for(const point of this.scatter(column,row))if(point.footprint)stones.push(point);
+    }
+    return (u,v)=>grassBesideStones(stones,u,v);
+  }
+
   update(position,lightweight,door,daylight=1,groundCoverReady=true,sunDirection) {
     this.daylight.value=daylight;
     this.overlook.update(position);
@@ -389,12 +455,16 @@ export class ToroidalScenery {
     this.anchor.set(position.x,position.y,position.z);
     this.group.position.copy(this.anchor);
     for(const mesh of this.meshes)mesh.count=0;
-    const count=lightweight?7:CANDIDATES;
     for(let y=-RANGE;y<=RANGE;y++){
       for(let x=-RANGE;x<=RANGE;x++){
-        const adjacent=terrainTile(LEVEL,cell.column+x,cell.row+y);
-        for(const item of sceneryForCell(adjacent,count)){
-          this.place(item);
+        const column=cell.column+x,row=cell.row+y;
+        const stoneScale=this.stoneCover({u:column/columns,v:row/rows},{u:(column+1)/columns,v:(row+1)/rows});
+        for(const item of this.scatter(column,row)){
+          if(item.footprint)this.place(item);
+          else if(!lightweight||item.candidate<7){
+            const scale=stoneScale(item.u,item.v);
+            if(scale>.01)this.place({...item,size:item.size*scale});
+          }
         }
       }
     }
@@ -431,9 +501,14 @@ export class ToroidalScenery {
       let samples=this.fieldCells.get(indexed);
       if(!samples){
         samples=[];
+        const stoneScale=this.stoneCover(
+          {u:tile.column/columns,v:tile.row/rows},
+          {u:(tile.column+1)/columns,v:(tile.row+1)/rows});
         for(let i=0;i<phase;i++){
           const plant=meadowCell(tile,i,door);
-          if(plant)samples.push(plant);
+          if(!plant)continue;
+          const scale=stoneScale(plant.u,plant.v);
+          if(scale>.01)samples.push({...plant,size:plant.size*scale});
         }
       }
       retained.set(indexed,samples);
@@ -470,7 +545,7 @@ export class ToroidalScenery {
     transform.position.fromArray(terrainPosition(u,v,h+lift));
     toroidalRotation(transform.position,yaw,transform.quaternion);
     transform.position.sub(this.anchor);
-    if(rock)transform.scale.set(size*1.3,size*.67,size*.87);
+    if(rock)transform.scale.set(...STONE_SCALE).multiplyScalar(size);
     else if(ribbon)transform.scale.set(size*.70,size,size*.70);
     else transform.scale.set(size*.89,size*.74,size*.89);
     transform.updateMatrix();
@@ -488,6 +563,7 @@ export class ToroidalScenery {
     this.field.dispose();
     this.fieldFar.dispose();
     this.fieldCells.clear();
+    this.scatterCells.clear();
     this.overlook.dispose();
     for(const mesh of this.meshes){
       mesh.geometry.dispose();

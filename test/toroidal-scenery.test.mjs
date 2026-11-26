@@ -2,10 +2,21 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFile} from 'node:fs/promises';
 import {Scene,Vector3} from 'three';
-import {approachCover,ToroidalScenery} from '../src/toroidal-scenery.mjs';
+import {approachCover,grassBesideStones,ToroidalScenery} from '../src/toroidal-scenery.mjs';
 import {meadowBankPlants,shortMeadowPlants} from '../src/toroidal-meadow-banks.mjs';
 import {TOROIDAL_TERRAIN,terrainFrame,terrainPosition,terrainTrail,TOROIDAL_SPAWN,TOROIDAL_OVERLOOK} from '../src/toroidal-terrain.mjs';
 import {approachCoordinates} from '../src/sand3d-trail.mjs';
+
+test('stone contact uses the wrapped footprint at each root and leaves distant grass alone',()=>{
+  const stone={u:.99999,v:.25,size:.8,footprint:{along:11500,across:3100,cosine:1,sine:0}};
+  const scale=(u,v=.25)=>grassBesideStones([stone],u,v);
+  assert.equal(scale(.00001),0);
+  assert.equal(scale(.99997),0);
+  const margin=scale(.00012);
+  assert.ok(margin>0&&margin<1);
+  assert.equal(scale(.0002),1);
+  assert.equal(scale(.00001,.251),1);
+});
 
 test('the lookout collider remains active while analytical plants wait for detailed terrain',()=>{
   const scene=new Scene(),colliders=new Set();

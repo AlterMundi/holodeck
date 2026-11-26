@@ -74,7 +74,7 @@ export function meadowBankPlants(lightweight) {
   });
 }
 
-export function shortMeadowPlants(x,z,lightweight){
+export function shortMeadowPlants(x,z,lightweight,stoneScale=()=>1){
   const plants=[];
   const tile=Math.imul(x,73856093)^Math.imul(z,19349663);
   for(let row=0;row<COVER_STEPS;row++){
@@ -86,6 +86,8 @@ export function shortMeadowPlants(x,z,lightweight){
       const pz=z+COVER_TILE*((row+.08+.84*pick(123))/COVER_STEPS-.5);
       if((px>-7.4&&pz<26)||pick(93)<Math.max(0,(px+10)/4))continue;
       const {u,v}=approachCoordinates(px,pz);
+      const contact=stoneScale(u,v);
+      if(contact<.01)continue;
       const h=terrainElevation(u,v);
       const aboveWater=h-TOROIDAL_TERRAIN.waterLevel;
       if(aboveWater<.30||h>51)continue;
@@ -99,7 +101,7 @@ export function shortMeadowPlants(x,z,lightweight){
       if(pick(277)<canopy*.10)continue;
       const moisture=terrainMeadowMoisture(u,v,h);
       const palette=moisture>.54?[0x96ac70,0x81935a,0xb0b286]:[0xb2ad77,0xa0a46c,0xc1b78e];
-      plants.push({u,v,h,yaw:pick(64)*2*Math.PI,size:(.68+.62*pick(48))*(1-canopy*.20),
+      plants.push({u,v,h,yaw:pick(64)*2*Math.PI,size:(.68+.62*pick(48))*(1-canopy*.20)*contact,
         color:palette[Math.floor(pick(12)*palette.length)],canopy});
     }
   }
@@ -195,7 +197,7 @@ function plantMesh(flowers,lightweight) {
 }
 
 export class ToroidalMeadowBanks {
-  constructor(scene,applyDaylight,daylight) {
+  constructor(scene,applyDaylight,daylight,stoneCover) {
     this.group=new Group();
     this.group.name='Toroidal meadow banks';
     this.group.visible=false;
@@ -215,6 +217,7 @@ export class ToroidalMeadowBanks {
     });
     this.applyDaylight=applyDaylight;
     this.daylight=daylight;
+    this.stoneCover=stoneCover;
   }
 
   build({lightweight,group,geometries,materials}) {
@@ -314,7 +317,9 @@ export class ToroidalMeadowBanks {
     for(const {tile} of viewTiles){
       if(batchBuilt)break;
       const {x,z,position:origin}=tile;
-      const plants=shortMeadowPlants(x,z,profile.lightweight);
+      const half=COVER_TILE*.5;
+      const stoneScale=this.stoneCover(approachCoordinates(x-half,z-half),approachCoordinates(x+half,z+half));
+      const plants=shortMeadowPlants(x,z,profile.lightweight,stoneScale);
       profile.cover.set(tile,null);
       if(!plants.length)continue;
       const batch=new InstancedMesh(profile.coverGeometry,profile.coverMaterial,plants.length);
