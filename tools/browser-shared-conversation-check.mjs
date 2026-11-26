@@ -21,7 +21,7 @@ const frameOrigin='https://127.0.0.1:18945',worldOrigin='http://127.0.0.1:18944'
 const pin={tableId:'fixture-table',reportId:'fixture-report',revision:'r1'},accepted=[],prepared=[],released=[],requests=[],fileWrites=[];
 let world,worldServer,frameServer,page,loads=0,releaseFile;
 let nextId=0,ws;const pending=new Map(),events=[];
-async function cdp(method,params={},sessionId){return new Promise((resolve,reject)=>{const id=++nextId,timer=setTimeout(()=>{pending.delete(id);reject(Error('CDP timeout '+method))},15000);pending.set(id,{resolve:v=>{clearTimeout(timer);resolve(v)},reject:e=>{clearTimeout(timer);reject(e)}});ws.send(JSON.stringify({id,method,params,sessionId}));});}
+async function cdp(method,params={},sessionId){const deadline=method==='Page.captureScreenshot'?45000:15000;return new Promise((resolve,reject)=>{const id=++nextId,timer=setTimeout(()=>{pending.delete(id);reject(Error('CDP timeout '+method))},deadline);pending.set(id,{resolve:v=>{clearTimeout(timer);resolve(v)},reject:e=>{clearTimeout(timer);reject(e)}});ws.send(JSON.stringify({id,method,params,sessionId}));});}
 async function evaluate(expression,contextId,sessionId){const value=await cdp('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true,...(contextId?{contextId}:{})},sessionId);if(value.exceptionDetails)throw Error(value.exceptionDetails.exception?.description||JSON.stringify(value.exceptionDetails));return value.result.value;}
 async function until(fn,ms=15000,label='condition'){const start=Date.now();while(Date.now()-start<ms){if(await fn())return;await wait(100)}throw Error('Timed out: '+label);}
 async function bytes(name){const value=await readFile(join(web,name));served.set(name,digest(value));return value;}

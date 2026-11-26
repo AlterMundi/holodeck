@@ -319,15 +319,16 @@ receiving checks.
 
 ## Native surface inventory
 
-This inventory describes the combined Character candidate with the published
-Proyección alpha.16 pin. A protected rollout and authenticated visitor
-acceptance have separate evidence.
+The combined Character candidate `04e0a57e61d9` retains the
+[Proyección alpha.19 pin](https://github.com/AlterMundi/proyeccion/releases/tag/v0.1.0-alpha.19)
+of the current Holodeck baseline. Its private archive is exact. A protected
+rollout and authenticated visitor acceptance have separate evidence.
 
 | Surface | Presentation and fallback | Authority and receiving check |
 | --- | --- | --- |
 | Entry and passage | `#world-entry` provides startup, retry and graphics selection before the renderer can draw. `PassageHud` presents travel and the same retry after a world frame is available. The retained passage controls cover failed draws. The direct Character viewer has its own startup retry and graphics-loss status. | The entry and room controllers own admission and travel. Exercise a startup failure, a committed passage retry and an exact Character pose link after recovery. |
 | Recovery | `RecoveryHud` presents eligible retained interventions. It hands back to `#recovery-panel` on loss of drawing or usable space. | Use the existing receipt and retry controller. Verify the original ID, its readback and the current recovery scope. |
-| Place and movement | `WorldStatusHud` renders location, sound, notices and wide-desktop keyboard help. `WorldMapHud` and `DoorPromptHud` present the map, bearing and passage actions. The touch stick and vertical buttons take over after a successful draw. | World state owns place and valid destinations. The visitor owns locomotion and device input. Verify map rotation, door reach, motion and return. |
+| Place and movement | `WorldStatusHud` renders location, sound, notices and wide-desktop keyboard help. `WorldMapHud` presents the full map and a read-only compact terrain minimap. `DoorPromptHud` presents bearing and passage actions. The touch stick and vertical buttons take over after a successful draw. | World state owns place and valid destinations. The visitor owns locomotion and device input. Verify map rotation, door reach, motion and return. |
 | Toolbelt and settings | The native dock exposes map, Conversation, appearance, video and contextual tools. `SettingsHud` represents the existing settings forms. The browser handles media, fullscreen and available fallback controls. | Local graphics, motion and appearance preferences remain actor- or device-local. Preserve a direct user gesture for fullscreen and audio. |
 | Matter and Character tables | `CollectionHud` presents the shelf and archive. `MatterWorktableHud` presents both tables. Project, edition, part and inspection controls accompany shared Matter revisions. Character review uses its own playback, pose, comparison and note actions on the same renderer. | The room and selected catalogs own confirmed effects. The tests cross the doors, open both tables, verify exact shared revisions and keep local camera, time and cutting state independent. |
 | Conversation | A native `ConversationChrome` surrounds the mounted canonical web composer. Host header and resize semantics and the legacy form have browser fallbacks. | Canonical Conversation owns message and draft state. The [packaged browser check](../tools/browser-shared-conversation-check.mjs) detects duplicate visible legacy launchers and compose controls while the native surfaces are active. It also tests reflow, focus and submission. |
@@ -341,6 +342,15 @@ legacy launchers and the two legacy compose controls across desktop,
 portrait and landscape. It used the installed canonical Conversation
 assets with fixture identities. Candidate archive
 `51d7c26b482435f20b94b1bb0cec1a0882adaa15531d82979bc01feba2314d01`.
+
+The current combined archive
+`15ed1ac8a65ea448d0abd7f168ce3f2032a6616e050faf1ee293cf014642ccce`
+also passed these checks with the installed canonical Holodeck Conversation
+overlay `ecdee68d0610`. Chromium observed one exact original with its
+context and user file, one retained frame, seven hidden duplicate controls,
+and the same focused draft and selection at desktop, portrait and short
+landscape sizes. The fixture used loopback I/O. The shared release still
+needs a signed-in round trip.
 
 ## Situated context implementation
 
