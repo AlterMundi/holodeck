@@ -150,6 +150,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
   const archivedThumbnail='/api/space/collection-model/'+main+'/'+oldVersion;
   let revoked=false,unavailable=false,manifestFailure=null,hold,expiredSession=false,mainVersion=version,historicalDenied=false;
   const requests=[];
+  let guestEdit=false,curatorDelayed=false,curatorCanceled=false;
   const socket=join(stateDir,'native.sock'),otherPort=join(stateDir,'foreign.sock');
   let admitted=true;
   async function observe(port,id){
@@ -166,7 +167,7 @@ test('collection projects stay grouped and editions follow each visitor and thei
     identityResolver:async req=>{
       if(expiredSession)return null;
       return req.headers.cookie?.includes('__Host-home=owner')?{id:owner,kind:'daimon',rights:['observe','edit']}:
-        req.headers.cookie?.includes('__Host-home=guest')?{id:'human:guest',ref:user,kind:'human',rights:['observe']}:null;
+        req.headers.cookie?.includes('__Host-home=guest')?{id:'human:guest',ref:user,kind:'human',rights:guestEdit?['observe','edit']:['observe']}:null;
     },
     nativeRoomAuthority:async()=>['observe'],
     worldPorts:[{socket,beingRef:owner},{socket:otherPort,beingRef:'dm:being:v1:'+'k'.repeat(43)}],
@@ -184,7 +185,17 @@ test('collection projects stay grouped and editions follow each visitor and thei
         },
       },
       });
-      return {contexts,authorizeWorldRequest:(...args)=>contexts.authorizeWorldRequest(...args)};
+      return {contexts,authorizeWorldRequest:(...args)=>contexts.authorizeWorldRequest(...args),
+        async conversationSurface(actor,{signal}={}){
+          if(curatorDelayed)await new Promise((_,reject)=>{
+            signal?.addEventListener('abort',()=>{
+              curatorCanceled=true;
+              reject(signal.reason);
+            },{once:true});
+          });
+          return {schema:'holodeck.conversation-surface/v1',actorRef:actor.ref,beingRef:owner};
+        },
+      };
     },
     collectionSourceRequest:async (url,{headers,redirect,cache,signal})=>{
       assert.equal(url.origin,'https://home.test');
@@ -279,6 +290,20 @@ test('collection projects stay grouped and editions follow each visitor and thei
   const table=(revision,resource,canShare=false)=>({revision,resource,canShare});
   assert.deepEqual(await response.json(),{room:'matter',projects:[guitar(main,component)],archive:{...archive,canRestore:true},worktable:table(0,null,true)});
   assert.deepEqual(await (await visitor.catalog()).json(),{room:'matter',projects:[guitar(main)],archive,worktable:table(0,null)});
+  guestEdit=true;
+  curatorDelayed=true;
+  const slowCurator=await fetch(base+'api/space/collection',{
+    headers:visitor.headers,signal:AbortSignal.timeout(3000),
+  });
+  assert.equal(slowCurator.status,200);
+  assert.equal(curatorCanceled,true);
+  assert.deepEqual(await slowCurator.json(),{
+    room:'matter',projects:[guitar(main)],archive,worktable:table(0,null,true),
+  });
+  curatorDelayed=false;
+  const recoveredCurator=await (await visitor.catalog()).json();
+  assert.equal(recoveredCurator.archive.canRestore,true);
+  guestEdit=false;
   assert.equal((await visitor.share(main,0)).status,403);
   const events=await visitor.events();
   assert.match(events.headers.get('content-type'),/^text\/event-stream/);

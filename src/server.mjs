@@ -913,21 +913,24 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const model=representatives.get(edition.resource+':'+edition.version);
     return model?{...edition,representative:{sha256:model.sha256,scene:model.scene}}:edition;
   }
-  async function canRestoreCollection(actor){
+  async function canRestoreCollection(actor,options){
     if(!actor.rights?.includes('edit')||!archiveStore||archiveUnavailable)
       return false;
     const owner=houses.directory().find(house=>house.id===spaces.rooms.get(collection.room)?.house)?.owner;
     if(!owner)return false;
     if(actor.kind==='daimon')return owner===actor.id;
     if(actor.kind!=='human'||!native?.conversationSurface)return false;
-    const pair=await native.conversationSurface(actor).catch(()=>null);
+    const pair=await native.conversationSurface(actor,options).catch(()=>null);
     return pair?.schema==='holodeck.conversation-surface/v1'&&pair.actorRef===actor.ref&&pair.beingRef===owner;
   }
   app.get(route('api/space/collection'),asyncRoute(async(req,res)=>{
     if(!collection||!inScope(req.actor,collection.room))return res.sendStatus(404);
     const session=req.holodeckSession;
-    const projection=await readCollection(req.headers.cookie,collection);
-    const mayCurate=projection?.archive.length&&await canRestoreCollection(req.actor);
+    // Optional archive controls must not hold up access to readable projects.
+    const [projection,mayCurate]=await Promise.all([
+      readCollection(req.headers.cookie,collection),
+      collection.archive?.length&&canRestoreCollection(req.actor,{signal:AbortSignal.timeout(1400)}),
+    ]);
     const actor=await currentActor(req,session);
     if(!inScope(actor,collection.room))return res.sendStatus(404);
     if(projection===null)return res.status(503).json({message:'La colección no está disponible en este momento.'});

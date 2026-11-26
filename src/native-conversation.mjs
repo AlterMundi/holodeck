@@ -85,11 +85,11 @@ export function captureNativeSituation(room,actor,request,{pairedBeing=null,pair
 // never select a command, socket, source directory, binding or paired being.
 export function createUnixNativeTransport(socketPath){
   if(typeof socketPath!=='string'||!socketPath.startsWith('/'))throw Error('Select the receiving native socket');
-  function call(operation,payload){
+  function call(operation,payload,{signal}={}){
     const request=Buffer.from(encode({operation,...payload})+'\n');
     if(request.length>131072)throw Error('Native request exceeds its bound');
     return new Promise((resolve,reject)=>{
-      const socket=net.createConnection({path:socketPath});let data=Buffer.alloc(0),done=false;
+      const socket=net.createConnection({path:socketPath,signal});let data=Buffer.alloc(0),done=false;
       function finish(error,value){if(done)return;done=true;socket.destroy();error?reject(error):resolve(value);}
       socket.setTimeout(45000,()=>finish(new Error('Native response unconfirmed')));
       socket.on('error',error=>finish(error));
@@ -108,7 +108,7 @@ export function createUnixNativeTransport(socketPath){
     });
   }
   return {inspect:actorRef=>call('inspect',{actorRef}),
-    surface:actorRef=>call('surface',{actorRef}),
+    surface:(actorRef,options)=>call('surface',{actorRef},options),
     prepareContext:payload=>call('prepare-context',payload),
     prepareMachineContext:payload=>call('prepare-machine-context',payload),
     machineContextStatus:payload=>call('machine-context-status',payload),
@@ -344,6 +344,6 @@ export async function nativeFactory({room,stateDir,receiving,allowInteriorSource
   const {createConversationContexts}=await import('./conversation-context.mjs');
   const contexts=await createConversationContexts({room,stateDir:join(stateDir,'conversation-context'),transport,allowInteriorSource});
   return {...legacy,contexts,
-    conversationSurface:actor=>transport.surface(actor.ref),
+    conversationSurface:(actor,options)=>transport.surface(actor.ref,options),
     authorizeWorldRequest:(id,being)=>contexts.hasWorldRequest(id)?contexts.authorizeWorldRequest(id,being):legacy.authorizeWorldRequest(id,being)};
 }
