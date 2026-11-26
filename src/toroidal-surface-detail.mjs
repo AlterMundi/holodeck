@@ -1,4 +1,4 @@
-import {DataTexture, LinearFilter, LinearMipmapLinearFilter, RedFormat, RepeatWrapping, UnsignedByteType} from 'three';
+import {DataTexture, LinearFilter, LinearMipmapLinearFilter, RGFormat, RepeatWrapping, UnsignedByteType} from 'three';
 
 // A small repeating relief pattern gives the gaps between tufts the read of
 // dense short leaves. Generate it once with the local renderer; no asset fetch.
@@ -26,8 +26,27 @@ export function createMeadowCoverTexture(){
       pixels[at]=pixels[at]*.35+(shade+(tip-shade)*t)*.65;
     }
   }
-  const texture=new DataTexture(pixels,size,size,RedFormat,UnsignedByteType);
-  texture.name='Short meadow cover';
+  // Keep the grass signal intact and pack a second, sharper pattern of dry
+  // needles and small gaps into the same filtered world-space sample.
+  const cover=new Uint8Array(2*size*size);
+  for(let index=0;index<pixels.length;index++){
+    cover[2*index]=pixels[index];
+    cover[2*index+1]=92+random()*25;
+  }
+  for(let needle=0;needle<870;needle++){
+    const x=random()*size,y=random()*size;
+    const angle=random()*Math.PI*2;
+    const dx=Math.cos(angle),dy=Math.sin(angle),length=3+random()*10;
+    const warmth=150+random()*77;
+    for(let i=0;i<length;i++){
+      const column=Math.round(x+dx*i)&mask,row=Math.round(y+dy*i)&mask;
+      const at=2*(row*size+column)+1;
+      const profile=Math.sin(Math.PI*i/length);
+      cover[at]=Math.max(cover[at],Math.round(warmth*(.54+.46*profile)));
+    }
+  }
+  const texture=new DataTexture(cover,size,size,RGFormat,UnsignedByteType);
+  texture.name='Meadow leaves and pine litter';
   texture.wrapS=texture.wrapT=RepeatWrapping;
   texture.magFilter=LinearFilter;
   texture.minFilter=LinearMipmapLinearFilter;

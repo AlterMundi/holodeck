@@ -105,7 +105,9 @@ const terrainShading = {
     float arrival = holodeckApproachArt * smoothstep(6.0,10.0,approach.y)
       * (1.0-smoothstep(37.0,51.0,approach.y));
     float holoMeadow = holoMeadowGround * smoothstep(1.15+arrival*.9,3.65+arrival*.7,edge);
-    float holoMeadowRoughness = .96;
+    vec2 woodlandFloor=holodeckWoodlandShade?woodlandFloorAt(vHoloWorld):vec2(0.0);
+    float litterWeight=smoothstep(.06,.92,woodlandFloor.g)*holoMeadow;
+    float holoMeadowRoughness = mix(.96,.995,litterWeight);
     float holoTrailMask = 0.0;
     float holoTrailRoughness = .90;
     // Low-frequency colours remain legible across the hill after leaves
@@ -122,11 +124,18 @@ const terrainShading = {
     // where the camera can resolve it. Both profiles share the same pattern.
     vec2 coverUV=mat2(.8,-.6,.6,.8)*approach*.42;
     vec2 coverDX=dFdx(coverUV),coverDY=dFdy(coverUV);
-    float coverWeight=holoMeadow*(1.0-smoothstep(.16,.54,meadowFootprint));
-    if(coverWeight>.001){
-      // Centre at the byte mean so the blurred cover keeps the region's hue.
-      float leaf=textureGrad(holodeckMeadowCover,coverUV,coverDX,coverDY).r-.491;
-      diffuseColor.rgb*=vec3(1.0)+leaf*coverWeight*vec3(1.42,1.74,1.55);
+    float coverDetail=1.0-smoothstep(.16,.54,meadowFootprint);
+    if(holoMeadow*coverDetail>.001||litterWeight>.001){
+      // Centre the patterns so each blurred surface keeps its regional hue.
+      vec2 relief=textureGrad(holodeckMeadowCover,coverUV,coverDX,coverDY).rg;
+      float leaf=(relief.r-.491)*holoMeadow*coverDetail;
+      diffuseColor.rgb*=vec3(1.0)+leaf*vec3(1.42,1.74,1.55);
+      if(litterWeight>.001){
+        float moss=ringNoise(approach*.77+vec2(9.3,16.7));
+        vec3 humus=mix(vec3(.15,.093,.045),vec3(.25,.18,.073),moss);
+        vec3 straw=vec3(.21,.125,.058)*(relief.g-.483)*coverDetail;
+        diffuseColor.rgb=mix(diffuseColor.rgb,humus+straw,litterWeight*.94);
+      }
     }
     if (holodeckApproachArt > .5 && abs(approach.x) < 14.0 &&
         approach.y > 6.0 && approach.y < 51.0 && vHoloWorld.y > 0.0) {
@@ -253,7 +262,7 @@ const terrainShading = {
     // after dark without washing out the rest of the landscape.
     outgoingLight += diffuseColor.rgb*vec3(.23,.31,.43)*holoApproachSkylight*(1.0-holodeckDaylight);
     outgoingLight *= 1.0-.36*holoFacadeContact;
-    if(holodeckWoodlandShade)outgoingLight*=1.0-woodlandShadeAt(vHoloWorld.xz)*mix(.12,.65,holodeckDaylight);
+    outgoingLight*=1.0-woodlandFloor.r*mix(.12,.65,holodeckDaylight);
     // Share the water mesh's radial datum. The smooth terrain normal
     // keeps the wet strip approximately the same width on sloping banks.
     float shoreDepth = ${glsl(TOROIDAL_TERRAIN.waterLevel)}-vHoloHeight;

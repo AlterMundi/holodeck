@@ -1,4 +1,4 @@
-import {DataTexture, LinearFilter, RedFormat, UnsignedByteType} from 'three';
+import {DataTexture, LinearFilter, RGFormat, UnsignedByteType} from 'three';
 import {TOROIDAL_TERRAIN,terrainPosition} from './toroidal-terrain.mjs';
 
 const SIZE=256;
@@ -6,13 +6,14 @@ const WEST=TOROIDAL_TERRAIN.majorRadius-112;
 const SOUTH=-16;
 const SPAN=152;
 const METRES=SPAN/SIZE;
+const FLOOR_Y=460;
 
 export const woodlandShadeShader=`
   uniform sampler2D woodlandShadeMap;
-  float woodlandShadeAt(vec2 worldXZ) {
-    vec2 uv=(worldXZ-vec2(${WEST.toFixed(1)},${SOUTH.toFixed(1)}))/${SPAN.toFixed(1)};
-    if(any(lessThan(uv,vec2(0.0)))||any(greaterThan(uv,vec2(1.0))))return 0.0;
-    return texture2D(woodlandShadeMap,uv).r;
+  vec2 woodlandFloorAt(vec3 world) {
+    vec2 uv=(world.xz-vec2(${WEST.toFixed(1)},${SOUTH.toFixed(1)}))/${SPAN.toFixed(1)};
+    if(world.y<${FLOOR_Y.toFixed(1)}||any(lessThan(uv,vec2(0.0)))||any(greaterThan(uv,vec2(1.0))))return vec2(0.0);
+    return texture2D(woodlandShadeMap,uv).rg;
   }
 `;
 
@@ -21,8 +22,21 @@ function smooth(value){
   return t*t*(3-2*t);
 }
 
+export function sampleWoodlandLitter(texture,[x,y,z]){
+  if(y<FLOOR_Y||x<WEST||x>WEST+SPAN||z<SOUTH||z>SOUTH+SPAN)return 0;
+  const clamp=value=>Math.max(0,Math.min(SIZE-1,value));
+  const column=clamp((x-WEST)/METRES-.5),row=clamp((z-SOUTH)/METRES-.5);
+  const left=Math.floor(column),top=Math.floor(row);
+  const right=Math.min(SIZE-1,left+1),bottom=Math.min(SIZE-1,top+1);
+  const tx=column-left,tz=row-top;
+  const pixels=texture.image.data;
+  const read=(col,r)=>pixels[2*(r*SIZE+col)+1];
+  return ((read(left,top)*(1-tx)+read(right,top)*tx)*(1-tz)
+    +(read(left,bottom)*(1-tx)+read(right,bottom)*tx)*tz)/255;
+}
+
 export function createWoodlandShade(trees){
-  const pixels=new Uint8Array(SIZE*SIZE);
+  const pixels=new Uint8Array(2*SIZE*SIZE);
   for(const tree of trees){
     if(tree.inner)continue;
     const [x,,z]=terrainPosition(tree.u,tree.v,tree.h);
@@ -43,12 +57,16 @@ export function createWoodlandShade(trees){
         const canopy=.62*dapple*(1-smooth((distance+margin-.08)/.87));
         const contact=.32*(1-smooth(Math.hypot(dx,dz)/.73));
         const fade=smooth(Math.min(col,row,SIZE-1-col,SIZE-1-row)/10);
-        const at=row*SIZE+col;
+        const at=2*(row*SIZE+col);
         pixels[at]=Math.max(pixels[at],Math.round(255*Math.min(.78,canopy+contact)*fade));
+        // Needle fall has its own broken edge and accumulates most under dense crowns.
+        const scatter=.14*Math.sin(dx*1.43+dz*.66)+.10*Math.sin(dx*.77-dz*1.93+tree.yaw);
+        const litter=1-smooth((distance+scatter-.14)/.75);
+        pixels[at+1]=Math.max(pixels[at+1],Math.round(255*litter*fade));
       }
     }
   }
-  const texture=new DataTexture(pixels,SIZE,SIZE,RedFormat,UnsignedByteType);
+  const texture=new DataTexture(pixels,SIZE,SIZE,RGFormat,UnsignedByteType);
   texture.magFilter=LinearFilter;
   texture.minFilter=LinearFilter;
   texture.needsUpdate=true;
@@ -67,7 +85,7 @@ export function useVegetationShade(material,texture){
       .replace('#include <common>','#include <common>\n'+varying+woodlandShadeShader)
       .replace('#include <project_vertex>',`#include <project_vertex>
         vec3 shadeRoot=(modelMatrix*instanceMatrix[3]).xyz;
-        woodlandShade=woodlandShadeAt(shadeRoot.xz);`);
+        woodlandShade=woodlandFloorAt(shadeRoot).r;`);
     shader.fragmentShader=shader.fragmentShader
       .replace('#include <common>','#include <common>\n'+varying)
       .replace('#include <opaque_fragment>',`

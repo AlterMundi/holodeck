@@ -1,6 +1,6 @@
 import {approachCoordinates,Sand3DTrail} from './sand3d-trail.mjs';
 import {ToroidalWoodland} from './toroidal-woodland.mjs';
-import {useVegetationShade} from './toroidal-woodland-shade.mjs';
+import {sampleWoodlandLitter,useVegetationShade} from './toroidal-woodland-shade.mjs';
 import {ToroidalOverlook} from './toroidal-overlook.mjs';
 import {ToroidalMeadowBanks} from './toroidal-meadow-banks.mjs';
 import {useToroidalRockDetail} from './toroidal-surface-detail.mjs';
@@ -512,15 +512,19 @@ export class ToroidalScenery {
           const plant=meadowCell(tile,i,door);
           if(!plant)continue;
           const scale=stoneScale(plant.u,plant.v);
-          if(scale>.01)samples.push({...plant,size:plant.size*scale});
+          if(scale<=.01)continue;
+          const root=terrainPosition(plant.u,plant.v,plant.h);
+          const litter=sampleWoodlandLitter(this.woodland.shadeTexture,root);
+          if(random(tile,i,1601)<litter*.67)continue;
+          samples.push({...plant,root,size:plant.size*scale*(1-.34*litter)});
         }
       }
       retained.set(indexed,samples);
       const mesh=!lightweight&&Math.max(Math.abs(dx),Math.abs(dy))<=FIELD_NEAR?this.field:this.fieldFar;
       const rootUV=mesh.geometry.getAttribute('meadowRootUV');
-      for(const {u,v,h,size,yaw,color} of samples){
+      for(const {u,v,root,size,yaw,color} of samples){
         const transform=this.transform;
-        transform.position.fromArray(terrainPosition(u,v,h));
+        transform.position.fromArray(root);
         toroidalRotation(transform.position,yaw,transform.quaternion);
         transform.position.sub(this.anchor);
         transform.scale.set(size*.86,size,size*.86);
