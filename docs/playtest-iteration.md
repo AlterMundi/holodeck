@@ -2094,6 +2094,33 @@ qualifies the timing defect in a controlled fixture. Joint-level jitter,
 physical Normal/Livianos and two independently authenticated visitors
 remain open in [#21](https://github.com/AlterMundi/holodeck/issues/21).
 
+## Camera-facing aim and flight through water
+
+A held right mouse button now drives the avatar's heading from the same
+orbit angle as forward input. The local torso and gaze follow vertical
+aim on foot, while flight aim is composed with its authored posture.
+Left drag controls the orbit alone. The radial capsule and collision
+solver keep their original basis. The native presence yaw is shared;
+vertical aim is local presentation.
+
+Double Space can enter or leave flight at the surface and beneath it.
+The fixed-step simulation keeps the current depth, permits normal and
+boost flight through water, and uses the actual bed as its lower limit.
+Returning to swimming retains depth. The waterline emits one radial
+burst per continuous crossing at speed. A separate blue stream tracks
+flight through or close above the surface. The emission fades for 1.6 s
+from the last contact and individual drops expire in .72 s. A later pass
+reactivates the effect. Livianos has fewer and smaller droplets.
+
+Controlled Chromium on RTX 2060 and Raspberry Pi 5 exercised left orbit,
+standing right aim, submerged launch, both water crossings, drying and
+reactivation. Those were local fixtures. The continuous wet-runoff
+transition also passed in Chromium SwiftShader. The staged candidate is
+pending composition with the currently selected Character Studio
+package and exact note/presentation compatibility verification. See
+[motion #21](https://github.com/AlterMundi/holodeck/issues/21) and
+[Character Studio #24](https://github.com/AlterMundi/holodeck/issues/24).
+
 ## Underwater controls and companion posture
 
 The toroidal motion adapter reports the same local swimming and deep

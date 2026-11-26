@@ -10,7 +10,7 @@ const FLOOR_SAMPLES=[[0,0],[1,0],[-1,0],[0,1],[0,-1]];
 // The MML host still owns input, network cadence, interpolation, avatar
 // animation and the orbit camera. Only the selected exterior uses a radial
 // surface and reconstructs the world-space orientation from tangent yaw.
-export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firstDoor=null, onMovementMode=()=>{}) {
+export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firstDoor=null, onMovementMode=()=>{}, aiming=()=>false) {
   const updateCharacters = manager.update;
   const updateCamera = camera.update;
   const adjustCamera = camera.adjustCameraPosition;
@@ -58,7 +58,8 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
     }
     lastLocal = controller;
     const moving = Number.isFinite(control?.direction);
-    const yaw = moving ? Math.PI / 2 - camera.theta + control.direction : motion.yaw;
+    const travelYaw = moving ? Math.PI / 2 - camera.theta + control.direction : motion.yaw;
+    const yaw = aiming() ? 3*Math.PI/2-camera.theta : travelYaw;
     const flying=flight();
     const wet=motion.atSwimSurface();
     const touchVertical=touch?.vertical??Number(Boolean(touch?.jump));
@@ -68,7 +69,7 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
     const jump=!flying&&!motion.swimming&&Boolean(control?.jump||touch?.jump||(wet&&vertical>0));
     const previousHeight=motion.height;
     if(flying)sweepStart.fromArray(terrainPosition(motion.u,motion.v,motion.height));
-    motion.update(seconds, {forward: moving ? 1 : 0, yaw,
+    motion.update(seconds, {forward: moving ? 1 : 0, yaw,travelYaw,
       sprint:flying?keyInputManager.getRun()||touch?.isSprinting:control?.isSprinting,
       jump,flight:flying,vertical,crouch:!flying&&!wet&&keyInputManager.isKeyPressed('alt')});
     let state = motion.pose();
@@ -174,7 +175,7 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
     controller.networkState = {
       position: state.position, rotation: state.rotation, state: controller.getTargetAnimation(),
     };
-    onMovementMode(state.swimming?'swim':flying?'flight':wet?'surface':'ground');
+    onMovementMode(flying?'flight':state.swimming?'swim':motion.atSwimSurface()?'surface':'ground');
   }
 
   function characterUpdate(...args) {
@@ -183,7 +184,17 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
       motion = lastLocal = lastPosition = null;
       onMovementMode('ground');
       clearance.reset();
-      return updateCharacters.apply(this, args);
+      if(!local||!aiming())return updateCharacters.apply(this,args);
+      const updateLocal=local.update;
+      local.update=function(seconds){
+        updateLocal.call(this,seconds);
+        const desired=3*Math.PI/2-camera.theta;
+        const yaw=Math.atan2(Math.sin(desired),Math.cos(desired)),half=yaw*.5;
+        this.config.quaternion.set(0,Math.sin(half),0,Math.cos(half));
+        this.networkState.rotation.eulerY=yaw;
+      };
+      try{return updateCharacters.apply(this,args);}
+      finally{local.update=updateLocal;}
     }
 
     let updateLocal;
