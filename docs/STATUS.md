@@ -1,8 +1,9 @@
 # Current MVP work
 
-## November 26 — Pitched flight and swimming candidate
+## November 26 — Pitched flight and swimming
 
-Candidate `e6093e9e889f` from `68d7170` adds vertical view steering to
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `e6093e9e889f` from
+`68d7170`, with vertical view steering for
 forward and backward movement while flying or swimming. Strafe stays level.
 Alt or Space takes priority for descent or ascent, and Shift boosts the
 three-dimensional input. Ordinary swimming at the surface remains level
@@ -26,15 +27,18 @@ releasing the passage response on both physical graphics profiles and
 verified W walked inward. The same-renderer route included Matter, the
 Lab stair in both directions, and return to the exterior.
 
-The candidate composes the independently staged Character table package
-`71e175bad8d1`. The package comparison changes only the packed browser
-bundle and its manifest. All 670 sampled poses and chapter positions,
-and the published catalog, match the current live build. The staged
-Character owner request still selects `71e175bad8d1`; the protected
-runtime remains on `6416a5246b17`, with rollback `58ce88972da7`.
-Activation of the combined candidate depends on reconciling that prepared
-release. Hardware browser fixtures do not establish acceptance by the
-paired human or another independently signed-in participant.
+The release composes the separately qualified Character table package
+`71e175bad8d1`, which was activated and retained as the immediate rollback.
+The package comparison changes only the packed browser bundle and its
+manifest. All 670 sampled poses, chapter positions and the published
+catalog match the prior edition. The two-fixture Character walkthrough
+retained independent frames and cameras, touch orbit and shared notes.
+In a separate RTX two-fixture run, the observer saw one splash and 19 water
+wake updates. The protected HTTPS client and health matched the installed
+package. Audience, world entities and creation nodes, house/design
+checkpoints, avatar choices and pose-review checkpoints matched before and
+after activation. Independently signed-in participant acceptance remains
+open.
 
 ## November 26 — Longer blue wake over water
 

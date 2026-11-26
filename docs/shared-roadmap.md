@@ -868,12 +868,12 @@ adds waterline spray behind the pilot and keeps the existing falling
 drops. Day and night captures in Normal and Livianos verified the ongoing
 skim and dry-off. The current RTX peer fixture confirmed the broadcast and
 another visitor's view. Independently signed-in acceptance remains open.
-The [pitched steering candidate](STATUS.md#november-26--pitched-flight-and-swimming-candidate)
+The [released pitched steering](STATUS.md#november-26--pitched-flight-and-swimming)
 adds camera-pitched flight and normal swimming, boosts manual ascent and
 descent, and aligns the camera after a confirmed passage. Both physical
 profiles qualified the main controls. Its package composes the staged
-Character framing without changing published poses. The protected
-release selection and independent participant feedback remain open.
+Character framing without changing published poses. The protected release
+is active and independently signed-in participant feedback remains open.
 
 Track live human acceptance and shared vertical aim in [motion #21](https://github.com/AlterMundi/holodeck/issues/21)
 and [Character Studio #24](https://github.com/AlterMundi/holodeck/issues/24).
