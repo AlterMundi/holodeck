@@ -204,9 +204,11 @@ function fallbackAvatarModel(fileUrl) {
 const browserPlugins=[modelCancellation,avatarRendering];
 const sampledMotionRevision=await buildMotionStudyRevision(browserPlugins);
 // Compare every published frame and chapter before aliasing a sampler build.
-// The water-flight changes leave all 670 Character Studio samples byte-identical.
+// Water flight and live camera steering retain all 670 Character Studio samples.
 const publishedMotionRevisions=new Map([
   ['c7e2b7d5579d45e73acdd6614b6e0f5e48f23dc0444e205dd24855848a2317ab',
+    '5a74c3383c834fca81920395084deff916b918e0fe31a4e9ddd7e608621ad7d4'],
+  ['46a2fdbea5c0ed743e8ef6128de7b6f35ac88d5db55d0bbacf5a2ccccb2fe90f',
     '5a74c3383c834fca81920395084deff916b918e0fe31a4e9ddd7e608621ad7d4'],
 ]);
 const motionStudyRevision=publishedMotionRevisions.get(sampledMotionRevision)??sampledMotionRevision;

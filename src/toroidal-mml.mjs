@@ -7,6 +7,22 @@ import {TOROIDAL_SPAWN, terrainCoordinates, terrainFrame, terrainPosition} from 
 const FLOOR_SKIN=.04;
 const FLOOR_SAMPLES=[[0,0],[1,0],[-1,0],[0,1],[0,-1]];
 
+const AIM_DEADBAND=8*Math.PI/180;
+const SURFACE_DIVE=25*Math.PI/180;
+
+export function steerToroidalFlight(direction,polarAngle,atSurface=false){
+  if(!Number.isFinite(direction))return {direction,forward:0,climb:0};
+  // The camera's polar angle belongs to the avatar's radial-up frame.
+  const pitch=(Number.isFinite(polarAngle)?polarAngle:Math.PI/2)-Math.PI/2;
+  const ahead=-Math.cos(direction);
+  if(Math.abs(ahead)<1e-10||Math.abs(pitch)<=AIM_DEADBAND||(atSurface&&Math.abs(pitch)<SURFACE_DIVE&&pitch*ahead<0))
+    return {direction,forward:1,climb:0};
+  const angle=Math.sign(pitch)*(Math.abs(pitch)-AIM_DEADBAND)*(Math.PI/2)/(Math.PI/2-AIM_DEADBAND);
+  const strafe=Math.sin(direction);
+  const projected=ahead*Math.cos(angle);
+  return {direction:Math.atan2(strafe,-projected),forward:Math.hypot(strafe,projected),climb:ahead*Math.sin(angle)};
+}
+
 // The MML host still owns input, network cadence, interpolation, avatar
 // animation and the orbit camera. Only the selected exterior uses a radial
 // surface and reconstructs the world-space orientation from tangent yaw.
@@ -54,24 +70,29 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
           }
         }
       }
-      motion = new ToroidalLocomotion({...start,yaw});
+      motion = new ToroidalLocomotion({...start,yaw,cameraSteering:true});
     }
     lastLocal = controller;
     const moving = Number.isFinite(control?.direction);
-    const travelYaw = moving ? Math.PI / 2 - camera.theta + control.direction : motion.yaw;
-    const yaw = aiming() ? 3*Math.PI/2-camera.theta : travelYaw;
     const flying=flight();
     const wet=motion.atSwimSurface();
+    const freeVertical=flying||motion.swimming||wet;
+    const ascend=keyInputManager.getJump();
+    const descend=keyInputManager.isKeyPressed('alt');
     const touchVertical=touch?.vertical??Number(Boolean(touch?.jump));
-    const vertical=flying||motion.swimming||wet?
-      Math.max(-1,Math.min(1,Number(Boolean(keyInputManager.getJump()))-
-        Number(keyInputManager.isKeyPressed('alt'))+touchVertical)):0;
-    const jump=!flying&&!motion.swimming&&Boolean(control?.jump||touch?.jump||(wet&&vertical>0));
+    const manual=ascend||descend?Number(ascend)-Number(descend):touchVertical;
+    const steer=freeVertical&&!ascend&&!descend&&!manual&&!camera.isFlyCameraOn()?
+      steerToroidalFlight(control?.direction,camera.phi,!flying&&!motion.swimming&&wet):
+      {direction:control?.direction,forward:Number(moving),climb:0};
+    const travelYaw=moving?Math.PI/2-camera.theta+steer.direction:motion.yaw;
+    const yaw=aiming()?3*Math.PI/2-camera.theta:travelYaw;
+    const jump=!flying&&!motion.swimming&&Boolean(control?.jump||touch?.jump||(wet&&manual>0));
+    const sprint=freeVertical?keyInputManager.getRun()||touch?.isSprinting:control?.isSprinting;
     const previousHeight=motion.height;
     if(flying)sweepStart.fromArray(terrainPosition(motion.u,motion.v,motion.height));
-    motion.update(seconds, {forward: moving ? 1 : 0, yaw,travelYaw,
-      sprint:flying?keyInputManager.getRun()||touch?.isSprinting:control?.isSprinting,
-      jump,flight:flying,vertical,crouch:!flying&&!wet&&keyInputManager.isKeyPressed('alt')});
+    motion.update(seconds,{forward:steer.forward,yaw,travelYaw,
+      sprint,
+      jump,flight:flying,vertical:freeVertical?manual:0,climb:steer.climb,crouch:!flying&&!wet&&descend});
     let state = motion.pose();
     const radius = controller.capsuleInfo.radius;
     const height = controller.capsuleInfo.segment.end.y;
@@ -175,7 +196,8 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
     controller.networkState = {
       position: state.position, rotation: state.rotation, state: controller.getTargetAnimation(),
     };
-    onMovementMode(flying?'flight':state.swimming?'swim':motion.atSwimSurface()?'surface':'ground');
+    onMovementMode(flying?'flight':state.swimming?'swim':motion.atSwimSurface()?'surface':'ground',
+      Boolean(flying&&sprint&&(moving||manual)));
   }
 
   function characterUpdate(...args) {

@@ -112,38 +112,48 @@ window.addEventListener('keydown',event=>{
   if(appearanceDialog.open&&!appearanceDialog.hasAttribute('data-native-settings'))event.stopImmediatePropagation();
 },true);
 const physicalMoves=new Map([['KeyW','w'],['KeyA','a'],['KeyS','s'],['KeyD','d']]);
+const physicalControls=new Map([['AltLeft','alt'],['AltRight','alt'],['ShiftLeft','shift'],['ShiftRight','shift'],['Space',' ']]);
 const editorOwns=event=>event.target?.closest?.('input,textarea,select,[contenteditable]');
 function bindWorldKeyShortcuts(keys){
   if(!keys)return;
-  const listen=new AbortController(),pressed=new Set();
+  const listen=new AbortController(),pressed=new Map();
+  const clear=()=>{
+    for(const key of pressed.values())keys.keys.set(key,false);
+    pressed.clear();
+  };
   document.addEventListener('keydown',event=>{
     if(editorOwns(event)||!keys.shouldCaptureKeyPress())return;
-    if(event.ctrlKey||event.metaKey||event.getModifierState('AltGraph')){
-      // Let the browser handle its shortcuts without feeding them into MML.
+    const control=physicalControls.get(event.code);
+    const physicalAlt=pressed.has('AltLeft')||pressed.has('AltRight');
+    // Some layouts report Shift+Alt as Meta even though the key code is
+    // AltLeft. Recognize the physical chord without claiming browser shortcuts.
+    if(event.ctrlKey||event.getModifierState('AltGraph')||
+       (event.metaKey&&control!=='alt'&&!physicalAlt)){
       event.stopImmediatePropagation();
       return;
     }
-    if(!event.altKey)return;
-    const key=physicalMoves.get(event.code);
+    const key=control??((event.altKey||physicalAlt)?physicalMoves.get(event.code):null);
     if(key){
-      // With Alt, some keyboard layouts report a symbol as event.key.
       keys.keys.set(key,true);
-      pressed.add(key);
+      pressed.set(event.code,key);
       event.preventDefault();
       event.stopImmediatePropagation();
-    }else if(['ArrowLeft','ArrowRight','Space'].includes(event.code))event.preventDefault();
+    }else if((event.altKey||physicalAlt)&&['ArrowLeft','ArrowRight'].includes(event.code))event.preventDefault();
   },{capture:true,signal:listen.signal});
   document.addEventListener('keyup',event=>{
-    if(['AltLeft','AltRight'].includes(event.code)&&!event.ctrlKey&&!event.metaKey&&
-       !editorOwns(event)&&keys.shouldCaptureKeyPress())event.preventDefault();
-    const key=physicalMoves.get(event.code);
-    if(key&&(pressed.delete(key)||event.altKey))keys.keys.set(key,false);
+    const key=pressed.get(event.code);
+    if(key){
+      pressed.delete(event.code);
+      keys.keys.set(key,[...pressed.values()].includes(key));
+      if(!editorOwns(event)&&keys.shouldCaptureKeyPress())event.preventDefault();
+      event.stopImmediatePropagation();
+    }else if(event.altKey){
+      const movement=physicalMoves.get(event.code);
+      if(movement)keys.keys.set(movement,false);
+    }
   },{capture:true,signal:listen.signal});
-  window.addEventListener('blur',()=>pressed.clear(),{signal:listen.signal});
-  return ()=>{
-    listen.abort();
-    for(const key of pressed)keys.keys.set(key,false);
-  };
+  window.addEventListener('blur',clear,{signal:listen.signal});
+  return ()=>{listen.abort();clear();};
 }
 function keepWorldTab(event){
   if(event.cancelable&&event.ctrlKey&&!event.altKey&&!event.metaKey&&
@@ -392,7 +402,7 @@ let inside=hot&&activeSpace.id!=='outside';
 const outsideRing=()=>!inside&&activeSpace.outdoorTerrain===TOROIDAL_TERRAIN.id;
 // Capture the fresh entry before MML initializes or writes a location hash.
 let firstExteriorDoor=outsideRing()&&!location.hash&&activeSpace.entrances?.length===1?activeSpace.entrances[0].door:null;
-let flightEnabled=false,previousSpacePress=null,radialMovementMode='ground';
+let flightEnabled=false,previousSpacePress=null,radialMovementMode='ground',radialBoosting=false;
 const verticalHelp=document.getElementById('world-vertical-help');
 const dryVerticalHelp=verticalHelp.textContent;
 let fitConversationWindow=()=>{};
@@ -670,10 +680,19 @@ function canFinishMove(){
   clearTimeout(moveDeadline);moveDeadline=null;
   if(inside?!entryRoomReady(remoteScene,roomModel):!outdoorReady())return false;
   if(arrival){
-    const {x,y,z,yaw,facing}=arrival;
-    client.updateConfig({spawnConfiguration:{spawnPosition:{x,y,z},spawnYRotation:-(yaw??facing*90),
+    const {x,y,z,yaw,facing,resumeExterior}=arrival;
+    const heading=yaw??facing*90;
+    client.updateConfig({spawnConfiguration:{spawnPosition:{x,y,z},spawnYRotation:-heading,
       ...(outsideRing()?{respawnTrigger:{minY:-2500}}:{})}});
-    client.respawn();arrival=null;
+    client.respawn();
+    // A scoped reconnect can spawn before the move response seeds the URL.
+    // Align the orbit to the same confirmed door as the avatar while masked.
+    if(!resumeExterior&&Number.isFinite(heading)){
+      const camera=client.getCameraManager();
+      camera.setOrbitAngle(3*Math.PI/2-heading*Math.PI/180);
+      camera.theta=camera.targetTheta;
+    }
+    arrival=null;
     return false;
   }
   // Called after rendering. The respawn branch above already waits for the
@@ -1076,11 +1095,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const tabletopPlayers=()=>activeSpace.id===CHARACTER_STUDIO?
       new Set([...poses.peers].filter(([,pose])=>pose==='table').map(([id])=>id)):
       collectionShelves.tabletopPlayers;
-    const localFlightBoost=()=>{
-      const control=client.getCharacterManager().localController?.controlState;
-      return Boolean(outsideRing()&&flightEnabled&&!entering&&!moving&&
-        control?.isSprinting&&Number.isFinite(control.direction));
-    };
+    const localFlightBoost=()=>outsideRing()&&flightEnabled&&!entering&&!moving&&radialBoosting;
     const releaseFlightAnimation=bindFlightAvatarAnimation(renderer.characterManager,()=>({
       outdoor:outsideRing(),flying:flightEnabled,boosting:localFlightBoost(),grounded:client.getCharacterManager().localController?.characterOnGround,table:tableFlight.active,tabletopPlayers:tabletopPlayers(),
       peerPoses:poses.peers,peerGaze:points.gazes,gaze:tableGaze,wake:!entering&&!moving&&drawWorld?flightWake:null,glanceMotion:!companion.motion.matches&&!document.hidden,
@@ -1262,8 +1277,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const pointed=atTable?points.gazes.get(tableConnection):null;
       tableGaze=pointed??tableAttention.sample(tableNow);
       const mode=outsideRing()?radialMovementMode:'ground';
-      const help=mode==='ground'?dryVerticalHelp:mode==='flight'?' · Alt para bajar · Espacio para subir · Shift para acelerar':
-        ' · Alt para sumergirte · Espacio para subir · Shift para acelerar';
+      const help=mode==='ground'?dryVerticalHelp:mode==='flight'?' · Apuntá para girar o cambiar de altura · Alt baja · Espacio sube · Shift acelera':
+        ' · Apuntá para nadar · Alt para sumergirte · Espacio para subir · Shift acelera';
       if(help!==presentedHelp){
         presentedHelp=help;
         verticalHelp.textContent=help;
@@ -1398,7 +1413,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       }
       releaseHeadroom=bindInteriorHeadroom(client.getCharacterManager(),()=>inside);
       releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing,
-        ()=>flightEnabled,firstExteriorDoor,mode=>{radialMovementMode=mode;},aiming);
+        ()=>flightEnabled,firstExteriorDoor,(mode,boost=false)=>{radialMovementMode=mode;radialBoosting=boost;},aiming);
       firstExteriorDoor=null;
       releaseTableFlight=bindMatterFlight(client.getCharacterManager(),options.coreCameraManager,tableFlight,tableInputAllowed,()=>matterHud.leave());
       options.onInitialized();

@@ -8,7 +8,6 @@ const STEP = 1 / 90;
 const MAX_FRAME = 9 * STEP;
 const GRAVITY = 19.6;
 const FLIGHT_CEILING = 70;
-const FLIGHT_VERTICAL_SPEED = 5;
 const JUMP_SPEED = 5.8;
 const WALK_SPEED = 5;
 const RUN_SPEED = 8;
@@ -18,6 +17,7 @@ const EDGE_DROP=.23;
 const FLOAT_DRAFT = .96;
 const WADE_DEPTH = .18;
 const SWIM_VERTICAL_SPEED = 2.8;
+const SWIM_PLANAR_FACTOR=.44;
 const wrap = turns => ((turns % 1) + 1) % 1;
 const wrapYaw = radians => Math.atan2(Math.sin(radians), Math.cos(radians));
 
@@ -41,10 +41,11 @@ export function toroidalRotation(position, yaw, out = new Quaternion(), terrain 
 // The fixed simulation step is shared across display refresh rates.
 export class ToroidalLocomotion {
   constructor({
-    u, v, terrain = TOROIDAL_TERRAIN, height, yaw = 0, ground = terrainElevation,
+    u, v, terrain = TOROIDAL_TERRAIN, height, yaw = 0, ground = terrainElevation, cameraSteering = false,
   }) {
     this.terrain = terrain;
     this.ground = ground;
+    this.cameraSteering=cameraSteering;
     this.u = wrap(u);
     this.v = wrap(v);
     this.waterLevel = terrain.waterLevel ?? -Infinity;
@@ -63,15 +64,24 @@ export class ToroidalLocomotion {
     this.jumpQueued = false;
   }
 
-  update(seconds, {right = 0, forward = 0, yaw = this.yaw, travelYaw = yaw, sprint = false, jump = false, flight = false, vertical = 0, crouch = false} = {}) {
-    if (!Number.isFinite(seconds) || seconds <= 0 || ![right, forward, yaw, travelYaw].every(Number.isFinite)) return;
+  update(seconds, {right = 0, forward = 0, yaw = this.yaw, travelYaw = yaw, sprint = false, jump = false, flight = false, vertical = 0, climb = 0, crouch = false} = {}) {
+    if (!Number.isFinite(seconds) || seconds <= 0 || ![right, forward, yaw, travelYaw, vertical, climb].every(Number.isFinite)) return;
     if(flight!==this.flightActive){
       this.flightActive=flight;
       this.swimming=!flight&&this.canDive(this.u,this.v)&&this.height<this.waterLevel-FLOAT_DRAFT-.05;
     }
-    const inputLength = Math.max(1, Math.hypot(right, forward));
-    const speed = (flight&&sprint?FLIGHT_BOOST_SPEED:
-      crouch&&!flight&&!this.swimming?CROUCH_SPEED:sprint?RUN_SPEED:WALK_SPEED) / inputLength;
+    const verticalInput=Math.min(1,Math.max(-1,vertical||climb));
+    // Published motion studies keep their authored thrust. The live controller
+    // uses one normalized three-dimensional input for camera steering.
+    const inputLength=this.cameraSteering?Math.max(1,Math.hypot(right,forward,verticalInput)):
+      Math.max(1,Math.hypot(right,forward));
+    const travelSpeed=flight&&sprint?FLIGHT_BOOST_SPEED:
+      crouch&&!flight&&!this.swimming?CROUCH_SPEED:sprint?RUN_SPEED:WALK_SPEED;
+    const speed=travelSpeed/inputLength;
+    const verticalSpeed=this.cameraSteering?
+      verticalInput*(flight?travelSpeed:vertical?
+        SWIM_VERTICAL_SPEED*(sprint?RUN_SPEED/WALK_SPEED:1):travelSpeed*SWIM_PLANAR_FACTOR)/inputLength:
+      verticalInput*(flight?WALK_SPEED:SWIM_VERTICAL_SPEED);
     const sine = Math.sin(travelYaw), cosine = Math.cos(travelYaw);
     const ringTarget = (right * cosine + forward * sine) * speed;
     const crossTarget = (forward * cosine - right * sine) * speed;
@@ -80,7 +90,7 @@ export class ToroidalLocomotion {
     this.jumpHeld = jump;
     this.accumulated += Math.min(seconds, MAX_FRAME);
     while (this.accumulated + 1e-10 >= STEP) {
-      this.step(ringTarget,crossTarget,flight,vertical,crouch);
+      this.step(ringTarget,crossTarget,flight,verticalSpeed,crouch);
       this.accumulated = Math.max(0, this.accumulated - STEP);
     }
   }
@@ -100,7 +110,7 @@ export class ToroidalLocomotion {
 
   step(ringTarget,crossTarget,flight,vertical,crouch) {
     const immersion = Math.max(0, Math.min(1,(this.waterLevel-this.height-WADE_DEPTH)/(FLOAT_DRAFT-WADE_DEPTH)));
-    const speedFactor = flight?1:1-.56*immersion;
+    const speedFactor = flight?1:1-(1-SWIM_PLANAR_FACTOR)*immersion;
     const response = this.grounded||this.colliderGrounded||flight ? .18 : .065;
     this.ringSpeed += (ringTarget * speedFactor - this.ringSpeed) * response;
     this.crossSpeed += (crossTarget * speedFactor - this.crossSpeed) * response;
@@ -115,7 +125,7 @@ export class ToroidalLocomotion {
     if(this.swimming){
       this.u=nextU;this.v=nextV;
       this.height=Math.max(nextGround,Math.min(this.waterLevel-FLOAT_DRAFT,this.height+
-        Math.min(1,Math.max(-1,vertical))*SWIM_VERTICAL_SPEED*STEP));
+        vertical*STEP));
       if(this.height>=this.waterLevel-FLOAT_DRAFT&&vertical>0)this.swimming=false;
       this.radialSpeed=0;
       this.grounded=false;
@@ -124,8 +134,7 @@ export class ToroidalLocomotion {
     }
     if(flight){
       this.u=nextU;this.v=nextV;
-      const speed=Math.min(1,Math.max(-1,vertical))*FLIGHT_VERTICAL_SPEED;
-      this.height=Math.max(nextGround,Math.min(Math.max(nextGround,this.waterLevel-FLOAT_DRAFT)+FLIGHT_CEILING,this.height+speed*STEP));
+      this.height=Math.max(nextGround,Math.min(Math.max(nextGround,this.waterLevel-FLOAT_DRAFT)+FLIGHT_CEILING,this.height+vertical*STEP));
       this.radialSpeed=0;
       this.grounded=this.height===nextGround;
       this.jumpQueued=false;

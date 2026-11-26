@@ -230,3 +230,35 @@ test('submerged flight keeps its speed and altitude until it is steered or relea
   assert.equal(pilot.swimming,false);
   assert.ok(pilot.height>terrain.waterLevel);
 });
+
+test('boost includes vertical thrust and keeps a diagonal dive within its speed',()=>{
+  const make=()=>new ToroidalLocomotion({u:.02,v:.25,height:30,ground:()=>-40,cameraSteering:true});
+  const vertical=make();
+  simulate(vertical,1,60,{flight:true,sprint:true,vertical:-1});
+  assert.ok(Math.abs(vertical.height-5)<1e-7);
+  const diagonal=make();
+  const component=Math.SQRT1_2;
+  const input={flight:true,sprint:true,forward:component,climb:-component};
+  simulate(diagonal,1,60,input);
+  const from=diagonal.pose().position;
+  const to=simulate(diagonal,.5,60,input).position;
+  assert.ok(Math.abs(new Vector3().copy(to).distanceTo(from)-12.5)<.15);
+  simulate(diagonal,5,60,input);
+  assert.equal(diagonal.height,-40);
+});
+
+test('camera-relative altitude steering projects forward only and leaves float cruising level',async()=>{
+  const {steerToroidalFlight}=await import('../src/toroidal-mml.mjs');
+  const steep=Math.PI/4;
+  const w=steerToroidalFlight(Math.PI,steep);
+  assert.ok(w.climb<-.5);
+  assert.ok(Math.abs(Math.hypot(w.forward,w.climb)-1)<EPS);
+  assert.ok(steerToroidalFlight(0,steep).climb>.5);
+  assert.equal(steerToroidalFlight(Math.PI/2,steep,true).climb,0);
+  const diagonal=steerToroidalFlight(3*Math.PI/4,steep);
+  assert.ok(diagonal.climb>w.climb&&diagonal.climb<0);
+  assert.ok(Math.abs(Math.hypot(diagonal.forward,diagonal.climb)-1)<EPS);
+  assert.equal(steerToroidalFlight(null,steep).forward,0);
+  assert.equal(steerToroidalFlight(Math.PI,1.26,true).climb,0);
+  assert.ok(steerToroidalFlight(Math.PI,steep,true).climb<-.5);
+});
