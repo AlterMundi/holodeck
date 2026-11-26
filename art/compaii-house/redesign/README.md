@@ -9,6 +9,10 @@ The long, cooler gallery gives visitors room to look and pass one another.
 
 ## Orbital house concept
 
+**Selected design.** Hold implementation of Casa Orbital until Nicolás
+explicitly requests it. Continue the separate world, HUD and animation
+revamp while this design is held.
+
 Nicolas selected a circular, observatory-like house as the visual direction
 on November 26 and supplied an architecture sheet and a night approach
 reference. The miniature uses a faceted dome, an open brass armillary with a
