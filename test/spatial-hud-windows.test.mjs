@@ -24,6 +24,23 @@ test('an inspection window leaves the chosen viewing and thumb zones clear',()=>
   assert.ok(y-bounds.bottom*scale<=143+.01);
 });
 
+test('portrait worktable placement survives rotation independently of other insets',()=>{
+  const windows=new SpatialHudWindows({canvas:new EventTarget(),invalidate(){}});
+  const bounds={left:-.6,right:.6,top:.04,bottom:-.54};
+  const portrait={width:390,height:780,insets:{top:88,bottom:413},placementVariant:'portrait'};
+  const landscape={width:568,height:320,insets:{left:245,bottom:138}};
+  const id='matter-worktable';
+  const defaultPortrait={x:195,y:108,scale:286};
+  windows.place(id,portrait,bounds,defaultPortrait,false);
+  windows.save(id,windows.geometry.get(id),{x:205,y:127,scale:250});
+  windows.place(id,landscape,bounds,{x:400,y:22,scale:200},false);
+  windows.save(id,windows.geometry.get(id),{x:439,y:31,scale:170});
+  assert.deepEqual(windows.place(id,portrait,bounds,defaultPortrait,false),{x:205,y:127,scale:250});
+  assert.equal(windows.geometry.get(id).placementKey,'matter-worktable:portrait');
+  assert.deepEqual(windows.place(id,landscape,bounds,{x:400,y:22,scale:200},false),{x:439,y:31,scale:170});
+  windows.dispose();
+});
+
 function dragFixture(dismissChoice){
   const canvas=new EventTarget();
   let capture;

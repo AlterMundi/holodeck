@@ -143,6 +143,16 @@ const lowWork=[
   row('views',[...workTabs.map(([id])=>id),'close'],{gap:.025}),
   button('close',path('closeLabel')),
 ];
+const portraitWork=[
+  ...lowWork.filter(({id})=>!['root','sharedTools','sharing','section','status'].includes(id)),
+  {id:'root',component:'HudPanel',label:'Mesa de trabajo',width:1,gap:.018,
+    children:['views','modelTools','viewTools','sharedTools','shortStatus','status']},
+  {id:'sharedTools',component:'HudColumn',visible:path('sharedTabSelected'),children:['sharing','attention']},
+  row('sharing',['share','follow','clear'],{gap:.025}),
+  {...work.find(({id})=>id==='section'),label:'Corte'},
+  text('shortStatus',path('status'),{style:'status',visible:path('shortStatus')}),
+  text('status',path('status'),{style:'status',lines:2,visible:path('longStatus')}),
+];
 const movement=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE']);
 
 export class MatterWorktableHud{
@@ -354,6 +364,7 @@ export class MatterWorktableHud{
       this.workTab='modelTab';
       this.workCompact=undefined;
       this.workLow=undefined;
+      this.workPortrait=undefined;
       this.send('createSurface',{catalogId:spatialHudCatalog.id});
       if(this.table.start){
         const scope=this.scope;
@@ -436,23 +447,33 @@ export class MatterWorktableHud{
 
   sync(){
     if(!this.active||this.table.start)return;
-    const short=this.compactTouch()==='landscape';
+    const touch=this.compactTouch();
+    const short=touch==='landscape';
+    const portrait=touch==='portrait'&&this.table===this.collectionTable;
+    const compact=short||portrait;
     const low=short&&this.canvas.clientHeight<300;
-    if(this.workCompact!==short||this.workLow!==low){
-      this.workCompact=short;
+    if(this.workCompact!==compact||this.workLow!==low||this.workPortrait!==portrait){
+      this.workCompact=compact;
       this.workLow=low;
+      this.workPortrait=portrait;
+      // Only short landscape suppresses the fallback room header.
       this.document.body.toggleAttribute('data-compact-matter',short);
-      this.hud.setChoicePresentation(surfaceId,short?'overlay':'inline');
-      this.hud.setChoicePageSize(surfaceId,low?2:short?3:undefined);
-      this.send('updateComponents',{components:low?lowWork:short?compactWork:work});
+      this.hud.setChoicePresentation(surfaceId,compact?'overlay':'inline');
+      this.hud.setChoicePageSize(surfaceId,low||portrait?2:short?3:undefined);
+      this.send('updateComponents',{components:portrait?portraitWork:low?lowWork:short?compactWork:work});
       this.workLayoutDirty=true;
     }
-    const state={scope:this.scope,closeLabel:short||this.lookPreview.name==='taller'&&
+    const state={scope:this.scope,closeLabel:compact||this.lookPreview.name==='taller'&&
       this.canvas.clientWidth<470?'Salir':'Salir de la mesa',...this.table.hudState()};
-    state.followLabel=short?'Seguir':'Seguir mesa';
-    state.pointLabel=short?'Señalar':'Señalar pieza';
-    state.discussLabel=short?'Hablar':state.hasPart?'Hablar de la pieza':'Hablar del modelo';
-    if(short){
+    state.followLabel=compact?'Seguir':'Seguir mesa';
+    state.pointLabel=compact?'Señalar':'Señalar pieza';
+    state.discussLabel=compact?'Hablar':state.hasPart?'Hablar de la pieza':'Hablar del modelo';
+    if(portrait){
+      state.shortStatus=state.status.length<=36;
+      state.longStatus=!state.shortStatus;
+      state.parts=state.parts.map(part=>part.id?part:{...part,label:'Todas'});
+    }
+    if(compact){
       for(const [id] of workTabs)state[id+'Selected']=this.workTab===id;
       state.showViewTools=state.viewTabSelected&&state.ready;
     }
@@ -776,7 +797,7 @@ export class MatterWorktableHud{
       (key==='doorPlacement'&&this.door.compact);
     const characterControls=key==='workPlacement'&&this.active&&this.table!==this.collectionTable;
     const fontSize=characterControls&&this.compactCharacterTable?13:
-      characterControls&&viewport.width<=420?13:compactText?12:15;
+      characterControls&&viewport.width<=420?13:compactText?12:viewport.placementVariant==='portrait'?14:15;
     const signature=[viewport.width,viewport.height,x,y,scale,pixelRatio,fontSize,dock?.depth,
       bounds?.left,bounds?.right,bounds?.top,bounds?.bottom].join(':');
     if(this[key]?.group===group&&this[key].signature===signature)return;
@@ -877,6 +898,16 @@ export class MatterWorktableHud{
     }
     const conversationSpan=this.group&&this.active&&this.table===this.collectionTable?
       this.conversationDockSpan():null;
+    if(this.group&&this.active&&this.table===this.collectionTable){
+      const conversation=this.document.getElementById('conversation-panel');
+      const yieldToConversation=this.workPortrait&&!conversation.hidden&&!conversationSpan;
+      if(this.group.visible===yieldToConversation){
+        this.group.visible=!yieldToConversation;
+        if(yieldToConversation)this.hud.dismissChoice(surfaceId);
+        this.workLayoutDirty=true;
+        this.layer.invalidate();
+      }
+    }
     if(conversationSpan){
       const bounds=this.hud.getSurfaceBounds(surfaceId);
       if(bounds){
@@ -886,6 +917,21 @@ export class MatterWorktableHud{
         const insets={left:conversationSpan.start,right:width-conversationSpan.end,top,bottom};
         this.place(this.group,'workPlacement',{...viewport,insets},
           conversationSpan.end-14-bounds.right*scale,workTop+bounds.top*scale,scale);
+      }
+    }else if(this.group&&this.active&&this.table===this.collectionTable&&this.workPortrait){
+      if(this.workLayoutDirty){this.hud.update();this.workLayoutDirty=false;}
+      const bounds=this.hud.getSurfaceBounds(surfaceId);
+      if(bounds){
+        const bandTop=Math.max(top+78,88);
+        const panelHeight=bounds.top-bounds.bottom;
+        const modelReserve=Math.max(bottom+156,Math.round(height*.53));
+        // Prefer a readable panel when the soft keyboard or split view shortens the viewport.
+        const bandBottom=Math.min(modelReserve,Math.max(bottom,height-bandTop-16-panelHeight*180));
+        const insets={left,right,top:bandTop,bottom:bandBottom};
+        const scale=Math.max(1,Math.min(toolScale,(width-left-right-16)/(bounds.right-bounds.left),
+          (height-bandTop-bandBottom-16)/panelHeight));
+        this.place(this.group,'workPlacement',{...viewport,insets,placementVariant:'portrait'},
+          (width+left-right-(bounds.left+bounds.right)*scale)/2,bandTop+8+bounds.top*scale,scale);
       }
     }else if(this.group&&this.workCompact){
       if(this.workLayoutDirty){this.hud.update();this.workLayoutDirty=false;}

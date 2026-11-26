@@ -36,7 +36,7 @@ export class SpatialHudWindows{
   begin(){this.geometry.clear();}
   place(id,view,bounds,placement,resizable){
     if(!bounds||view.width<=2*pad||view.height<=2*pad)return placement;
-    const placementKey=view.insets?id+':insets':id;
+    const placementKey=view.placementVariant?id+':'+view.placementVariant:view.insets?id+':insets':id;
     const saved=this.panels.get(placementKey);
     const requested=saved?{x:saved.x*view.width,y:saved.y*view.height,scale:saved.scale}:placement;
     const actual=placeHudWindow(view,bounds,requested);
