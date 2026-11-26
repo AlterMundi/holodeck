@@ -1,5 +1,13 @@
 # Current MVP work
 
+## November 26 — Western pine understory and twilight trial
+
+Protected `edc4063a617a` serves source `a6fec4f`. The trial is reachable
+from the arrival trail toward the western pines. One RTX 2060 browser
+verified the matched views and a walk through the grove. Rollback
+`81d51189874e` retains the earlier look and the Matter collection fix.
+[Evidence and trial scope](environment-art-revamp.md#installed-western-pines-and-twilight-trial).
+
 ## November 26 — Matter project reads during archive authority delays
 
 Protected package `81d51189874e` serves source `5d03de5`. The archive

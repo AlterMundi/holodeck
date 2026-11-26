@@ -319,6 +319,25 @@ timer readings were available. At dusk, the lower understory still
 reads too dark and broad clearings remain between nearby clumps.
 The installed version remains the playable western meadow trial.
 
+### Installed western pines and twilight trial
+
+Protected `edc4063a617a` (`a6fec4f`) makes the composed woodland field and
+fern trial available on the existing arrival route. The local vegetation
+shader now uses radial orientation and height to separate cooler leaf tips
+from darker roots around dusk. Root contact remains present in daylight.
+The scene's ambient light and exposure are shared with the rest of the world.
+
+The same RTX 2060 view at noon and dusk and a 6.44 m forest walk passed.
+In selected dusk regions, the fern and the trunk rose about 2.2 display luma
+levels on a 0–255 scale, while the surrounding floor rose 0.16. The noon
+regions stayed within 0.12 levels. This is a local lighting improvement,
+with darker vegetation and gaps still visible across the grove.
+The exact scene held 135 draws, 516,123 triangles and a 16.7 ms median
+animation-frame interval at 850×552. A subsequent wider device pass and
+player feedback are pending. Fourteen protected state files, the server,
+terrain worker and room art matched. The immediate rollback is
+`81d51189874e`.
+
 ## Trial of short grass drifts at the arrival meadow
 
 Protected visual trial `4cf4d8b5a6d3` serves source `818502a`, with

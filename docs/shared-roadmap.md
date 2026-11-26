@@ -1134,10 +1134,10 @@ show the experience inside the two habitats, including when the player stops.
 The [short-leaf surface](environment-art-revamp.md#installed-short-leaf-cover-at-the-arrival-meadow)
 is selected for the existing approach. The [western meadow trial](environment-art-revamp.md#continuous-short-cover-on-the-western-meadow)
 extends rooted short grass from the arrival trail toward the western pines.
-Nicolás can try it through the existing entrance. The [local woodland candidate](environment-art-revamp.md#western-pines-and-ground-cover-transition-local-candidate)
-continues the same field through the western pines. One-device comparison
-is recorded. Low-light understory, remaining gaps and later device
-qualification are open.
+The [protected woodland trial](environment-art-revamp.md#installed-western-pines-and-twilight-trial)
+continues the same field through the western pines with ferns and local
+twilight lighting. One-device comparison is recorded. Player feedback,
+remaining gaps and later device qualification are open.
 
 Use the arrival meadow and its wooded edge for one continuous first pass.
 Match the grass roots to a short-cover ground material and add dense low
