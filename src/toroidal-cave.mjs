@@ -1,12 +1,20 @@
 import {useToroidalRockDetail} from './toroidal-surface-detail.mjs';
 import {BufferAttribute, BufferGeometry, Mesh, MeshStandardMaterial} from 'three';
-import {TOROIDAL_TERRAIN, terrainElevation, terrainPosition} from './toroidal-terrain.mjs';
+import {TOROIDAL_TERRAIN, terrainColor, terrainElevation, terrainPosition, terrainTrail} from './toroidal-terrain.mjs';
 
 export const CAVE = Object.freeze({from: .0076, to: .0117, latitude: .265});
 export const CAVE_ENTRANCE = Object.freeze({u:CAVE.from,v:CAVE.latitude});
 const SECTION_COUNT = 36;
 const ARCH_SEGMENTS = 16;
 const TAU = 2 * Math.PI;
+
+function weatheredContact(rock, u, v, floor, clearance, transition, terrain) {
+  if (clearance >= transition) return rock;
+  const t = Math.max(0, clearance / transition);
+  const rockWeight = .24 + .76 * t * t * (3 - 2 * t);
+  const soil = terrainColor(u,v,floor,.08,terrain);
+  return rock.map((channel,i)=>soil[i] * .84 * (1 - rockWeight) + channel * rockWeight);
+}
 
 // The tunnel and its two chambers follow the seeded terrain at the same
 // elevation used by locomotion. Rock joins the underlying ground on both
@@ -53,7 +61,8 @@ export function buildToroidalCave(terrain = TOROIDAL_TERRAIN) {
         const brightness = shade * (outer ? .85 : .45);
         const mineral = outer ? bedding * .035 : 0;
         for (let axis = 0; axis < 3; axis += 1) positions[index + axis] = p[axis] - origin[axis];
-        colors.set([(.34 + mineral) * brightness,.265 * brightness,(.201 - .4 * mineral) * brightness],index);
+        const rock = [(.34 + mineral) * brightness,.265 * brightness,(.201 - .4 * mineral) * brightness];
+        colors.set(outer ? weatheredContact(rock,longitude,v,floor,height-floor,1.4,terrain) : rock,index);
       }
 
       if (arch < ARCH_SEGMENTS && section < SECTION_COUNT) {
@@ -96,18 +105,29 @@ export function buildCaveCrown(terrain = TOROIDAL_TERRAIN) {
       for(let side=0;side<sides;side++){
         const angle=TAU*(side+.28)/sides;
         const edge=.86+.12*Math.sin(side*6.1+ordinal*2.1)+.09*Math.cos(side*3.7);
-        const along=Math.cos(angle)*fin.length*radius*edge+fin.lean*rise*rise;
-        const across=Math.sin(angle)*fin.width*radius*edge;
-        const pointU=fin.u+(along*ca-across*sa)/(TAU*ringRadius);
-        const pointV=fin.v+(across*ca+along*sa)/(TAU*terrain.tubeRadius);
+        const along=Math.cos(angle)*fin.length*edge;
+        const across=Math.sin(angle)*fin.width*edge;
+        const du=(along*ca-across*sa)/(TAU*ringRadius);
+        const dv=(across*ca+along*sa)/(TAU*terrain.tubeRadius);
+        const lean=fin.lean*rise*rise;
+        let root=radius;
+        if(rise===0){
+          // Keep the buried buttress on the side away from the footpath.
+          const flare=1.20+.12*Math.sin(side*2.1+ordinal);
+          if(terrainTrail(fin.u+du*flare,fin.v+dv*flare,terrain)<.045)root=flare;
+        }
+        const pointU=fin.u+du*root+lean*ca/(TAU*ringRadius);
+        const pointV=fin.v+dv*root+lean*sa/(TAU*terrain.tubeRadius);
         const grade=.9*Math.cos(angle+ordinal*.72)*Math.sin(rise*Math.PI/2);
-        const height=terrainElevation(pointU,pointV,terrain)-1.65+rise*fin.height+rise*grade;
+        const floor=terrainElevation(pointU,pointV,terrain);
+        const height=floor-1.65+rise*fin.height+rise*grade;
         const point=terrainPosition(pointU,pointV,height,terrain);
         positions.push(...point.map((value,i)=>value-origin[i]));
         const shade=.82+rise*.24+.09*Math.sin(side*3.4+ordinal);
         const mineral=vein&&ordinal===0&&side<5?.64:0;
         const rose=.035*Math.sin(side+ordinal);
-        colors.push(shade*(.408+rose-mineral*.30),shade*(.227+mineral*.07),shade*(.12+mineral*.13));
+        const rock=[shade*(.408+rose-mineral*.30),shade*(.227+mineral*.07),shade*(.12+mineral*.13)];
+        colors.push(...weatheredContact(rock,pointU,pointV,floor,height-floor,1.65,terrain));
       }
     }
     for(let row=0;row<sections.length-1;row++){
