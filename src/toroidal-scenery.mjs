@@ -346,7 +346,7 @@ export class ToroidalScenery {
     const doorKey=(door?.x??'')+':'+(door?.z??15.5)+':'+(door?.facing??-1);
     const distance=this.approach.distanceToSquared(position);
     const nearTrail=distance<105**2;
-    this.meadow.update(distance<(this.meadow.group.visible?142:124)**2,Boolean(lightweight),performance.now());
+    this.meadow.update(distance<(this.meadow.group.visible?142:124)**2,Boolean(lightweight),performance.now(),position);
     const key=cell.key+':'+lightweight+':'+nearTrail+':'+doorKey;
     if(key===this.key){
       this.placeField(u,v,lightweight,door,doorKey);

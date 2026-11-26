@@ -1,7 +1,7 @@
 import {BufferGeometry,Color,DoubleSide,Float32BufferAttribute,Group,InstancedMesh,MeshStandardMaterial,Object3D,Vector3} from 'three';
 import {approachCoordinates} from './sand3d-trail.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
-import {terrainElevation,terrainPosition,terrainTrail,TOROIDAL_TERRAIN} from './toroidal-terrain.mjs';
+import {terrainElevation,terrainMeadowMoisture,terrainPosition,terrainTrail,TOROIDAL_TERRAIN} from './toroidal-terrain.mjs';
 
 // Offsets use the existing trail's local metres. Each pocket reads as one
 // bank, with a broken outline and open ground between pockets.
@@ -12,13 +12,14 @@ const beds=[
   {x:-34,z:8,across:5.5,along:9.3,heading:-.52,count:76},
   {x:-19,z:55,across:5.8,along:10.0,heading:-.57,count:71},
 ];
-// Short grass sits underneath the taller banks. Keep a broken outer edge
-// and longer open channels so the route reads at a person's eye height.
-const shortBeds=[
-  {x:-13,z:19,across:5,along:8},
-  {x:-20,z:28,across:6,along:9},
-  {x:-29,z:18,across:7,along:9},
-];
+// Local metres from the arrival path through the western woodland edge.
+const COVER_TILE=9;
+const COVER_STEPS=27;
+const COVER_END=33;
+const coverTileCenters=Array.from({length:8*12},(_,index)=>({
+  x:(index%8-8)*COVER_TILE,
+  z:(Math.floor(index/8)-1)*COVER_TILE,
+}));
 const goldenAngle=Math.PI*(3-Math.sqrt(5));
 const tint=[0xfff3d7,0xe4edd2,0xe5ebce,0xffeec4,0xf5f7de];
 
@@ -69,35 +70,43 @@ export function meadowBankPlants(lightweight) {
   });
 }
 
-export function shortMeadowPlants(lightweight){
-  return shortBeds.map(({x,z,across,along},bed)=>{
-    const plants=[];
-    for(let i=0;i<750;i++){
-      const pick=salt=>random(bed+19,i,salt);
-      if(lightweight&&i%3===2)continue;
-      const a=pick(71)*2-1,b=pick(123)*2-1;
-      if(a*a+b*b>.92+.12*Math.cos(b*13+a*7)||
-         pick(93)>.72+.23*Math.sin(a*10-b*8))continue;
-      const px=x+across*a,pz=z+along*b;
+export function shortMeadowPlants(x,z,lightweight){
+  const plants=[];
+  const tile=Math.imul(x,73856093)^Math.imul(z,19349663);
+  for(let row=0;row<COVER_STEPS;row++){
+    for(let column=0;column<COVER_STEPS;column++){
+      if(lightweight&&(column+row)%4===3)continue;
+      const index=row*COVER_STEPS+column;
+      const pick=salt=>random(tile,index,salt);
+      const px=x+COVER_TILE*((column+.08+.84*pick(71))/COVER_STEPS-.5);
+      const pz=z+COVER_TILE*((row+.08+.84*pick(123))/COVER_STEPS-.5);
+      if((px>-7.4&&pz<26)||pick(93)<Math.max(0,(px+10)/4))continue;
       const {u,v}=approachCoordinates(px,pz);
       const h=terrainElevation(u,v);
-      if(Math.abs(px)<7||terrainTrail(u,v)>.08||h<TOROIDAL_TERRAIN.waterLevel+3)continue;
-      plants.push({u,v,h,yaw:pick(64)*2*Math.PI,size:.68+.56*pick(48),
-        color:[0x9eaa72,0xc3c687,0x869955][Math.floor(pick(12)*3)]});
+      const aboveWater=h-TOROIDAL_TERRAIN.waterLevel;
+      if(aboveWater<.30||h>51)continue;
+      const trail=terrainTrail(u,v);
+      if(trail>.08||pick(113)<Math.max(trail*8,1-aboveWater/1.8))continue;
+      const nearerEdge=Math.min(px+76.5, pz+13.5,94.5-pz);
+      if(pick(83)>Math.min(1,nearerEdge/7))continue;
+      const moisture=terrainMeadowMoisture(u,v,h);
+      const palette=moisture>.54?[0xa4b678,0x8da260,0xb4bc7b]:[0xb8b77b,0xa5ae6c,0xc5bd82];
+      plants.push({u,v,h,yaw:pick(64)*2*Math.PI,size:.68+.62*pick(48),
+        color:palette[Math.floor(pick(12)*palette.length)]});
     }
-    return plants;
-  });
+  }
+  return plants;
 }
 
 function shortLeafGeometry(){
   const positions=[],colors=[],color=new Color();
   for(let i=0;i<5;i++){
     const angle=i*goldenAngle,x=Math.cos(angle),z=Math.sin(angle);
-    const lean=.16+.14*random(33,i,3),height=.11+.13*random(33,i,9);
-    const width=.026+.022*random(33,i,5);
+    const lean=.20+.16*random(33,i,3),height=.13+.17*random(33,i,9);
+    const width=.031+.022*random(33,i,5);
     positions.push(.06*x-width*z,-.035,.06*z+width*x,
       .06*x+width*z,-.035,.06*z-width*x,lean*x,height,lean*z);
-    for(const shade of [0x556b38,0x6a7d43,0xabb961])
+    for(const shade of [0x637746,0x788a4e,0xc8cc80])
       colors.push(...color.setHex(shade).toArray());
   }
   const geometry=new BufferGeometry();
@@ -177,12 +186,17 @@ export class ToroidalMeadowBanks {
     this.group.visible=false;
     scene.add(this.group);
     this.clock={value:0};
+    this.viewer={value:new Vector3()};
+    this.coverTiles=coverTileCenters.map(({x,z})=>{
+      const {u,v}=approachCoordinates(x,z);
+      return {x,z,position:new Vector3().fromArray(terrainPosition(u,v,terrainElevation(u,v)))};
+    });
     this.reducedMotion=globalThis.matchMedia?.('(prefers-reduced-motion: reduce)');
     this.profiles=[false,true].map(lightweight=>{
       const group=new Group();
       group.visible=false;
       this.group.add(group);
-      return {lightweight,group,geometries:[],materials:[]};
+      return {lightweight,group,geometries:[],materials:[],cover:new Map()};
     });
     this.applyDaylight=applyDaylight;
     this.daylight=daylight;
@@ -235,12 +249,55 @@ export class ToroidalMeadowBanks {
         group.add(batch);
       }
     });
-    const cover=shortLeafGeometry();
-    geometries.push(cover);
-    shortMeadowPlants(lightweight).forEach((plants,bed)=>{
-      const {x,z}=shortBeds[bed],{u,v}=approachCoordinates(x,z);
-      origin.fromArray(terrainPosition(u,v,terrainElevation(u,v)));
-      const batch=new InstancedMesh(cover,material,plants.length);
+  }
+
+  placeCover(profile,position){
+    if(!profile.coverGeometry){
+      const material=new MeshStandardMaterial({roughness:1,side:DoubleSide,vertexColors:true});
+      this.applyDaylight(material,this.daylight);
+      const before=material.onBeforeCompile;
+      material.customProgramCacheKey=()=> 'holodeck-meadow-cover';
+      material.onBeforeCompile=(shader,renderer)=>{
+        before.call(material,shader,renderer);
+        shader.uniforms.coverViewer=this.viewer;
+        shader.uniforms.coverSeconds=this.clock;
+        shader.vertexShader=shader.vertexShader
+          .replace('#include <common>','#include <common>\nuniform vec3 coverViewer;\nuniform float coverSeconds;')
+          .replace('#include <begin_vertex>',`#include <begin_vertex>
+            vec3 root=(modelMatrix*instanceMatrix[3]).xyz;
+            float variation=fract(dot(root,vec3(.517,.337,.631)));
+            float end=${COVER_END.toFixed(1)}-variation*10.0;
+            float cover=1.0-smoothstep(end-7.0,end,distance(root,coverViewer));
+            float tip=clamp(transformed.y*3.0,0.0,1.0);
+            transformed.x+=tip*tip*.035*sin(dot(root.xz,vec2(.53,.37))+coverSeconds*1.75);
+            transformed.y=mix(-.08,transformed.y,cover);
+            transformed.xz*=cover;`);
+      };
+      profile.materials.push(material);
+      profile.coverMaterial=material;
+      profile.coverGeometry=shortLeafGeometry();
+      profile.geometries.push(profile.coverGeometry);
+    }
+
+    let batchBuilt=false;
+    // Start with the closest tiles so distant foliage cannot delay the foreground.
+    const viewTiles=[];
+    for(const tile of this.coverTiles){
+      const distance=tile.position.distanceToSquared(position);
+      const visible=distance<(COVER_END+11)**2;
+      const batch=profile.cover.get(tile);
+      if(batch)batch.visible=visible;
+      if(visible&&!profile.cover.has(tile))viewTiles.push({tile,distance});
+    }
+    viewTiles.sort((a,b)=>a.distance-b.distance);
+    for(const {tile} of viewTiles){
+      if(batchBuilt)break;
+      const {x,z,position:origin}=tile;
+      const plants=shortMeadowPlants(x,z,profile.lightweight);
+      profile.cover.set(tile,null);
+      if(!plants.length)continue;
+      const batch=new InstancedMesh(profile.coverGeometry,profile.coverMaterial,plants.length);
+      const transform=new Object3D(),color=new Color();
       batch.name='Short meadow grass';
       batch.position.copy(origin);
       for(const [index,plant] of plants.entries()){
@@ -254,18 +311,23 @@ export class ToroidalMeadowBanks {
       }
       batch.computeBoundingSphere();
       batch.boundingSphere.radius+=.10;
-      group.add(batch);
-    });
+      profile.group.add(batch);
+      profile.cover.set(tile,batch);
+      batchBuilt=true;
+    }
   }
 
-  update(visible,lightweight,time) {
+  update(visible,lightweight,time,position) {
     this.group.visible=visible;
     if(!visible)return;
+    this.viewer.value.copy(position);
+    this.clock.value=this.reducedMotion?.matches?0:time*.001;
     for(const profile of this.profiles){
       profile.group.visible=profile.lightweight===lightweight;
-      if(profile.group.visible&&!profile.materials.length)this.build(profile);
+      if(!profile.group.visible)continue;
+      if(!profile.materials.length)this.build(profile);
+      this.placeCover(profile,position);
     }
-    this.clock.value=this.reducedMotion?.matches?0:time*.001;
   }
 
   dispose() {
