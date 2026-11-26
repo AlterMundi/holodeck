@@ -812,6 +812,20 @@ scene continues to describe the same objects in every presentation.
 [Official MML documentation](https://mml.io/docs/guides/get-started) ·
 [PlayCanvas splat streaming reference](https://github.com/playcanvas/developer-site/blob/main/docs/user-manual/gaussian-splatting/building/lod-streaming.md)
 
+### Playable explorer appearance
+
+The [explorer study](../art/nicolas-avatar/README.md) is the first editable
+candidate for Nicolás's avatar. The expression study uses green-and-honey
+irises, relaxed lids and a soft smile. Its 580,304-byte GLB matches the stock
+87-joint hierarchy and local bind poses. The Three.js harness sampled the
+walk, flight, boost and swim studies. It does not establish visual gait or
+facial animation acceptance. Continue the rig-compatible authored face and
+costume through [motion #21](https://github.com/AlterMundi/holodeck/issues/21)
+and the [Character Design Room #24](https://github.com/AlterMundi/holodeck/issues/24).
+The current appearance remains selected in production. Candidate qualification
+still needs speech, deforming accessories, and two authorized viewpoints on
+Normal and Livianos.
+
 ## Live work and conversations in the world
 
 See [Live work in shared spaces](architecture.md#live-work-in-shared-spaces).
