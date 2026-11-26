@@ -469,6 +469,8 @@ async function main(){
     const newerPresentation=await native('character-review.focus',{expectedRevision:committed.revision,pose:newerPose});
     assert.equal(newerPresentation.status,200);
     const conversation=page.frameLocator('#shared-conversation iframe');
+    await page.getByRole('button',{name:'Siguiente',exact:true}).press('Enter');
+    await page.waitForFunction(()=>document.querySelector('#room-topic-choice')?.value==='character-worktable');
     await conversation.getByRole('button',{name:'Preparar contexto'}).click();
     await conversation.locator('output').filter({hasText:'prepared'}).waitFor();
     assert.equal(contexts.length,1);
@@ -477,6 +479,8 @@ async function main(){
       evidence:'Client-reported frame matched the current pose catalog in the authorized Character Design Room.'});
     assert.equal(contexts[0].scope,'structured-interior-room');
     assert.equal(contexts[0].place.id,studio);
+    assert.equal(contexts[0].referredRoomObject.id,'character-worktable');
+    assert.equal(contexts[0].referredRoomObject.revision,1);
     assert.deepEqual((await native('character-review.current')).presentation.pose,newerPose);
     const interactionId=contexts[0].inputAssociation.humanInputId;
     const situated=(operation,args={})=>port({interactionId,operation,args});

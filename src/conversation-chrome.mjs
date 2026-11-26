@@ -40,6 +40,7 @@ export class ConversationChrome{
     panel.prepend(this.a11y);
     this.lookPreview=new HudLookPreview({document,parent,invalidate});
     this.hud=createSpatialHud({parent,document,accessibilityRoot:this.a11y,controlStyle:'optical',controlRole:()=>'utility',
+      controlIconOnly:(surface,id)=>surface===header&&(id==='previous'||id==='next'),
       placeSurface:(group,id)=>this.groups.set(id,group),
       send:({action})=>{if(action)this.activate(action.name,action.context);},
     });
@@ -77,11 +78,20 @@ export class ConversationChrome{
     const elements=this.elements,select=elements['room-topic-choice'];
     const references=this.readReferences();
     const enabled=Array.from(select.options).filter(option=>!option.disabled);
+    const current=select.selectedOptions[0],index=enabled.indexOf(current);
+    const topics=!elements['room-topic'].hidden&&!select.disabled&&enabled.length>1;
+    const routes={};
+    if(topics){
+      const pin=option=>[option?.value,option?.dataset.revision];
+      for(const [name,offset] of [['previous',-1],['next',1]]){
+        const target=enabled[(index<0?(offset===1?0:enabled.length-1):index+offset+enabled.length)%enabled.length];
+        routes[name]={value:target.value,key:JSON.stringify([select.dataset.topicScope,pin(current),pin(target)])};
+      }
+    }
     const history=references.history&&!elements['history-reference-clear'].hidden?JSON.stringify(references.history):'';
     const worktable=references.worktable&&!elements['worktable-reference-clear'].hidden?JSON.stringify(references.worktable):'';
     const shared=this.panel.classList.contains('shared-conversation');
-    return {shared,topics:!shared&&!elements['room-topic'].hidden&&!select.disabled&&enabled.length>1,
-      topic:select.selectedOptions[0]?.textContent??'Este lugar',history,worktable,
+    return {shared,topics,routes,topic:current?.textContent??'Este lugar',history,worktable,
       hint:elements['conversation-hint'].hidden?'':elements['conversation-hint'].textContent.trim(),
     };
   }
@@ -97,13 +107,10 @@ export class ConversationChrome{
       elements[clear].click();
       if(this.a11y?.contains(this.panel.ownerDocument.activeElement))this.hud.focusAccessibleControl(header,'minimize');
     }
-    if(state.topics&&(name==='previous'||name==='next')){
+    const route=Object.hasOwn(state.routes,name)?state.routes[name]:null;
+    if(route&&route.key===context?.selection){
       const select=elements['room-topic-choice'];
-      const options=Array.from(select.options).filter(option=>!option.disabled);
-      const index=options.indexOf(select.selectedOptions[0]);
-      const step=name==='previous'?-1:1;
-      const next=index<0?(step===1?0:options.length-1):(index+step+options.length)%options.length;
-      select.value=options[next].value;
+      select.value=route.value;
       select.dispatchEvent(new select.ownerDocument.defaultView.Event('change',{bubbles:true}));
     }
     this.invalidate();
@@ -122,9 +129,13 @@ export class ConversationChrome{
         button('minimize','Minimizar conversación',{icon:'minimize',weight:.65,quiet:true})];
       if(topics){
         children.push('topics');
+        const move=(id,text)=>{
+          const key=path('routes/'+id+'/key');
+          return button(id,text,{gestureKey:key,icon:id==='previous'?'previousFrame':'nextFrame'},{selection:key});
+        };
         entries.push(row('topics',['previous','topic','next']),
-          button('previous','Atrás',{weight:1}),label('topic',path('topic'),{weight:2}),
-          button('next','Otro',{weight:1}));
+          move('previous','Anterior'),label('topic',path('topic'),{weight:2.2,lines:2}),
+          move('next','Siguiente'));
       }
       if(hint||history||worktable){
         children.push('reference');
@@ -132,17 +143,17 @@ export class ConversationChrome{
         if(hint){controls.push('hint');entries.push(label('hint',path('hint'),{weight:2.1,lines:2,style:'body'}));}
         if(history){
           controls.push('clearHistory');
-          entries.push(button('clearHistory','Quitar tema',{weight:1.1},{source:path('history')}));
+          entries.push(button('clearHistory','Quitar tema',{weight:1.1,gestureKey:path('history')},{source:path('history')}));
         }
         if(worktable){
           controls.push('clearWorktable');
-          entries.push(button('clearWorktable','Quitar pieza',{weight:1.1},{source:path('worktable')}));
+          entries.push(button('clearWorktable','Quitar pieza',{weight:1.1,gestureKey:path('worktable')},{source:path('worktable')}));
         }
         entries.push(row('reference',controls));
       }
       if(!this.groups.has(header))this.receive(header,'createSurface',{catalogId:spatialHudCatalog.id});
       this.receive(header,'updateComponents',{components:[panelRoot((rect.width-42)/unit,children),...entries]});
-      const headerHeight=children.length*.18+(children.length-1)*.015+(hint ? .053 : 0);
+      const headerHeight=children.length*.18+(children.length-1)*.015+(hint ? .053 : 0)+(topics ? .053 : 0);
       this.panel.style.setProperty('--conversation-header-height',Math.ceil(headerHeight*unit)+'px');
     }
     const data=JSON.stringify(state);

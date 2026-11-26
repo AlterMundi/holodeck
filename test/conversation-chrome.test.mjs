@@ -4,10 +4,10 @@ import {JSDOM} from 'jsdom';
 import {ConversationChrome} from '../src/conversation-chrome.mjs';
 
 function chrome(){
-  const {window}=new JSDOM('<section><button id="conversation-close"></button>'+
+  const {window}=new JSDOM('<section class="shared-conversation"><button id="conversation-close"></button>'+
     '<button id="history-reference-clear"></button><button id="worktable-reference-clear"></button>'+
-    '<label id="room-topic"><select id="room-topic-choice"><option value="">Este lugar</option>'+
-    '<option disabled value="private">Otra sala</option><option value="bench">Mesa de trabajo</option>'+
+    '<label id="room-topic"><select id="room-topic-choice" data-topic-scope="studio"><option value="" data-revision="0">Este lugar</option>'+
+    '<option disabled value="private">Otra sala</option><option value="bench" data-revision="1">Mesa de trabajo</option>'+
     '</select></label><p id="conversation-hint">Mesa de trabajo</p></section>');
   const panel=window.document.querySelector('section');
   const elements=Object.fromEntries([...panel.querySelectorAll('[id]')].map(el=>[el.id,el]));
@@ -37,9 +37,19 @@ test('topic actions preserve the original select route and skip disabled entries
   t.after(dispose);
   const select=elements['room-topic-choice'],changed=[];
   select.onchange=()=>changed.push(select.value);
-  instance.activate('next');
-  instance.activate('previous');
+  const visible=instance.state();
+  assert.equal(visible.topics,true);
+  const old=visible.routes.next.key;
+  select.options[2].dataset.revision='2';
+  instance.activate('next',{selection:old});
+  assert.deepEqual(changed,[]);
+  instance.activate('next',{selection:instance.state().routes.next.key});
+  assert.equal(instance.state().topic,'Mesa de trabajo');
+  const previous=instance.state().routes.previous.key;
+  select.dataset.topicScope='another-room';
+  instance.activate('previous',{selection:previous});
+  instance.activate('previous',{selection:instance.state().routes.previous.key});
   select.disabled=true;
-  instance.activate('next');
+  instance.activate('next',{selection:old});
   assert.deepEqual(changed,['bench','']);
 });

@@ -1600,12 +1600,15 @@ function syncRoomTopic(){
   const objects=roomObjects(),label=$('#room-topic'),select=$('#room-topic-choice');
   label.hidden=!sharedSurface()||!objects.length;
   if(label.hidden)return;
-  const entries=[['','Este lugar'],...objects.map(object=>[object.id,object.title])];
+  select.dataset.topicScope=activeSpace.id;
+  const entries=[['','Este lugar',0],...objects.map(object=>[object.id,object.title,object.revision])];
   const signature=JSON.stringify(entries);
   if(signature!==select.dataset.topics){
     select.dataset.topics=signature;
-    select.replaceChildren(...entries.map(([id,title])=>{
-      const option=document.createElement('option');option.value=id;option.textContent=title;return option;
+    select.replaceChildren(...entries.map(([id,title,revision])=>{
+      const option=document.createElement('option');
+      option.value=id;option.textContent=title;option.dataset.revision=revision;
+      return option;
     }));
   }
   select.value=roomSubject(objects)?.id??'';

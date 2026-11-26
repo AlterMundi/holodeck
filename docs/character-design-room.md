@@ -206,6 +206,11 @@ checks the reported pose against its installed catalog and requires
 current room access for both sender and recipient. The capture leaves the
 shared presentation alone and grants no new editing rights.
 
+The Conversation surround can also select the table as the room topic.
+This is a separate, visitor-local room object reference. The capture
+checks the room and the table's current revision, so the recipient can
+resolve both the table and the exact animation frame.
+
 The world port exposes the reference on the retained Conversation original
 after canonical admission. The paired daimon can use the ordinary room
 approach and, once in the studio, call `character-review.notes` for that

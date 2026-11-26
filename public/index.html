@@ -126,8 +126,8 @@ body:has(#conversation-panel[data-hud-chrome]:not([hidden])) .touch-controls{vis
 }
 #conversation-panel.shared-conversation header{flex:none;flex-wrap:nowrap}
 #conversation-panel.shared-conversation header h2{flex:none;white-space:nowrap}
-#conversation-panel.shared-conversation #room-topic{display:none}
-#conversation-panel.shared-conversation:not([data-hud-chrome]) header{min-height:36px}
+#conversation-panel.shared-conversation:not([data-hud-chrome]) header{min-height:36px;flex-wrap:wrap}
+#conversation-panel.shared-conversation:not([data-hud-chrome]) #room-topic{flex-basis:100%;min-width:0;order:1}
 #conversation-panel.shared-conversation:not([data-hud-chrome]) #conversation-close{min-height:36px;padding:4px 9px}
 #conversation-panel.shared-conversation[data-hud-chrome] #conversation-move{height:36px}
 #conversation-panel.shared-conversation #conversation-close{flex:none}
