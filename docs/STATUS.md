@@ -25,6 +25,13 @@ produced no particles. The observer then saw exactly one outward splash
 and 14 blue trail updates during the other visitor's takeoff.
 Peer vertical aim and independently authenticated human acceptance
 are open.
+
+The exact archive passed the two-authorized-visitor Character Studio
+walkthrough. One visitor held frame 37 and the other frame 35. They
+kept separate camera angles, shared the intended note, and retained the
+local frame and draft through graphics recovery. The note remained
+available in the compact 568 × 320 review view. The test uses two
+independent fixture identities and the real MML and application routes.
 See [water-flight playtest](playtest-iteration.md#camera-facing-aim-and-flight-through-water)
 and [motion #21](https://github.com/AlterMundi/holodeck/issues/21).
 
