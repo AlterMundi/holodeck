@@ -1,5 +1,29 @@
 # Current MVP work
 
+## Character and Matter package on the current water and woodland release
+
+Candidate `04e0a57e61d948df505af9dec0d108570859e954` combines the qualified
+Character worktable with deployed Holodeck `df929b9352b3` and its
+water and woodland revisions. The candidate retains the installed
+Proyección alpha.19 pin and the same deployment manifest outside the
+payload inventory. The current receiving room graph, including the
+adopted Matter room, derives reciprocal Character foyer doors and
+preserves Matter's guest policy without a configuration change.
+
+The staged archive SHA-256 is `15ed1ac8a65ea448d0abd7f168ce3f2032a6616e050faf1ee293cf014642ccce`.
+The existing private Home deployment reader resolved its immutable
+version and matched all 33,341,440 archive bytes. The previous two private
+versions remain available. The retired gallery-era copy has an exact local
+archive and the current shared Holodeck service still serves its selected
+release. The prepared owner request pins that live predecessor and remains
+unsubmitted.
+
+Node 24 passed 446 checks with two optional skips. The two loopback
+Chromium runs verified the Character table from the world door, two
+independent views and frames, scoped notes, situated Conversation and
+the desktop and touch Matter round trip with stale and revoked writes
+refused. Live signed-in acceptance remains open.
+
 ## Combined Character worktable on the installed alpha.19 baseline
 
 Candidate source `602355faab3c44d7b9be2b828d71679482647a5d` combines the
