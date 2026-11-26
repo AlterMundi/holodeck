@@ -208,6 +208,8 @@ const sampledMotionRevision=await buildMotionStudyRevision(browserPlugins);
 const publishedMotionRevisions=new Map([
   ['c7e2b7d5579d45e73acdd6614b6e0f5e48f23dc0444e205dd24855848a2317ab',
     '5a74c3383c834fca81920395084deff916b918e0fe31a4e9ddd7e608621ad7d4'],
+  ['c99c9d2c9510df179d0c5ef80a6e09e394bf4ba9eac167b43a37b27de4d90d3c',
+    '5a74c3383c834fca81920395084deff916b918e0fe31a4e9ddd7e608621ad7d4'],
 ]);
 const motionStudyRevision=publishedMotionRevisions.get(sampledMotionRevision)??sampledMotionRevision;
 await build({entryPoints:['src/browser-entry.mjs'],outfile:'build/client.js',bundle:true,
