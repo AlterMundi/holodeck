@@ -26,6 +26,19 @@ canonical Conversation across desktop and compact layouts with one
 fixture original, one retained frame and no browser errors. The Node
 suite passed 425 checks with two skips. This candidate is staged locally.
 
+## Compact exterior terrain minimap
+
+Host revision `09c49c59ba03ed869ca15d27e2f17d8100ade505` shows a
+read-only circular A2UI minimap during compact outdoor exploration.
+It reuses the full map's terrain raster and viewer heading. Opening the
+full map replaces the compact view. Holding the locomotion stick hides
+it until release. Chromium on the toroidal terrain fixture verified
+portrait 390 × 844 and landscape 844 × 390, full-map circle selection,
+and restoration after close and touch release. The package SHA-256 is
+`343e5bee651a63a97cc79ebaaea13b73239437ffe6e4a9e52c3a36c6c4d13a17`.
+The Node suite passed 444 checks with two skips. Real Android and
+protected selection remain open.
+
 ## Character Design Room review candidate on the selected world
 
 Host revision `ed2077601d378dde5336e48c7ca27d9a513941e6`
