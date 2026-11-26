@@ -41,9 +41,11 @@ const text=(id,label,fields={})=>({id,component:'HudText',label,...fields});
 const choice=(id,label,options,value)=>({id,component:'HudChoice',label,
   options:path(options),value:path(value),draft:path(id+'Draft'),action:action(id,{value:path(id+'Draft')})});
 const landscapeMapScale=286; // 44 CSS px for Proyección's .154-unit button plate.
-const toolScale=286,toolGap=.035,toolRowHeight=.18,toolPadding=.12;
+const toolScale=286; // Proyección's .154-unit button target is 44 CSS px at this scale.
+const toolGap=.035,touchToolGap=.018,toolRowHeight=.18,toolPadding=.12,dockBottomMargin=.035;
+const iconToolPixels=48;
 const toolNames=['map','open','talk','appearance','video','bridge','plant','undo','activity','visit','endVisit','fullscreen'];
-const toolPixels={map:130,open:154,talk:134,appearance:138,video:96,bridge:182,plant:100,undo:92,activity:126,visit:124,endVisit:140};
+const toolPixels={map:130,open:154,talk:134,appearance:138,video:96,bridge:182,plant:100,undo:92,activity:126,visit:124,endVisit:140,fullscreen:48};
 
 function opticalRole(surface,id,component){
   if(surface===worldMapId||surface===worldBearingId||id==='map')return 'navigation';
@@ -54,17 +56,23 @@ const toolIcons={map:'map',talk:'conversation',appearance:'appearance',video:'vi
   fullscreen:'resize'};
 const compactToolPixels={map:110,talk:116,appearance:122,video:82,activity:110};
 function pixelsForTool(id,{compact,iconOnly}){
-  if(iconOnly&&Object.hasOwn(toolIcons,id))return 48;
+  if(iconOnly&&Object.hasOwn(toolIcons,id))return iconToolPixels;
   return compact?(compactToolPixels[id]??toolPixels[id]):toolPixels[id];
 }
 
 function layoutTools(tools,maxWidth,appearance){
-  const gap=toolGap*toolScale;
+  const gap=appearance.gap*toolScale;
+  const ids=toolNames.filter(name=>tools[name]?.visible);
+  let iconsPerRow=Infinity;
+  if(appearance.iconOnly&&ids.length&&ids.every(id=>Object.hasOwn(toolIcons,id))){
+    const capacity=Math.max(1,Math.floor((maxWidth+gap)/(iconToolPixels+gap)));
+    iconsPerRow=Math.ceil(ids.length/Math.ceil(ids.length/capacity));
+  }
   const rows=[];
-  for(const id of toolNames.filter(name=>tools[name]?.visible)){
+  for(const id of ids){
     let row=rows.at(-1);
     const pixels=pixelsForTool(id,appearance);
-    if(!row||row.width+gap+pixels>maxWidth){
+    if(!row||row.ids.length>=iconsPerRow||row.width+gap+pixels>maxWidth){
       row={ids:[],width:0};
       rows.push(row);
     }
@@ -72,16 +80,16 @@ function layoutTools(tools,maxWidth,appearance){
     row.ids.push(id);
   }
   const width=Math.min(maxWidth,Math.max(150,...rows.map(item=>item.width)))/toolScale;
-  return {width,rows,...appearance,height:rows.length*toolRowHeight+Math.max(0,rows.length-1)*toolGap};
+  return {width,rows,...appearance,height:rows.length*toolRowHeight+Math.max(0,rows.length-1)*appearance.gap};
 }
 
 function toolComponents(layout){
-  const {width,rows}=layout;
+  const {width,rows,gap}=layout;
   const rowIds=rows.map((_,index)=>'toolRow'+index);
   return [
-    {id:'root',component:'HudPanel',label:'Herramientas de Holodeck',width,gap:toolGap,children:rowIds},
+    {id:'root',component:'HudPanel',label:'Herramientas de Holodeck',width,gap,children:rowIds},
     ...rows.flatMap(({ids},index)=>[
-      row(rowIds[index],ids,{gap:toolGap}),
+      row(rowIds[index],ids,{gap}),
       ...ids.map(id=>button(id,path(id+'Label'),{
         disabled:path(id+'Disabled'),...(['map','talk','appearance','video','fullscreen'].includes(id)?{pressed:path(id+'Pressed')}:{}),
         weight:pixelsForTool(id,layout)/66,...(toolIcons[id]?{icon:toolIcons[id]}:{}),
@@ -484,11 +492,14 @@ export class MatterWorktableHud{
 
   toolInsets(){
     const width=this.canvas.clientWidth,height=this.canvas.clientHeight;
-    if(this.insetWidth!==width||this.insetHeight!==height){
-      const style=this.document.defaultView.getComputedStyle(this.toolInset);
+    const view=this.document.defaultView;
+    const orientation=view.screen.orientation?.angle??view.orientation;
+    if(this.insetWidth!==width||this.insetHeight!==height||this.insetOrientation!==orientation){
+      const style=view.getComputedStyle(this.toolInset);
       this.insets={left:parseFloat(style.paddingLeft),right:parseFloat(style.paddingRight),top:parseFloat(style.paddingTop),bottom:parseFloat(style.height)};
       this.insetWidth=width;
       this.insetHeight=height;
+      this.insetOrientation=orientation;
     }
     return this.insets;
   }
@@ -518,7 +529,7 @@ export class MatterWorktableHud{
     const movementReady=Boolean(this.toolGroup&&this.toolLayout)&&!this.webgl.getContext().isContextLost();
     const viewport={width:this.canvas.clientWidth,height:this.canvas.clientHeight};
     const dockClearance=this.usesCockpitDocks(viewport)?21:0;
-    const dockHeight=this.toolLayout?(this.toolLayout.height+.035)*this.dockScale(this.toolLayout.compact):0;
+    const dockHeight=this.toolLayout?(this.toolLayout.height+dockBottomMargin)*this.toolLayout.scale:0;
     return {...insets,movementReady,travelBottom:Math.ceil(insets.bottom+dockClearance+dockHeight+
       .64*conversationMovementScale+26)};
   }
@@ -535,11 +546,6 @@ export class MatterWorktableHud{
     if(width>height&&height<496)return 'landscape';
     if(width<=480&&width<height)return 'portrait';
     return null;
-  }
-
-  dockScale(compact,shortLandscape=false){
-    if(shortLandscape)return 246;
-    return compact&&this.document.defaultView.navigator.maxTouchPoints===0?248:toolScale;
   }
 
   landscapeGrip(){
@@ -565,17 +571,25 @@ export class MatterWorktableHud{
     const {left,right}=this.toolInsets();
     const touch=this.compactTouch(),shortLandscape=touch==='landscape'&&
       this.document.getElementById('conversation-panel').hidden;
-    const compact=this.compactDock(),scale=this.dockScale(compact,shortLandscape);
+    const compact=this.compactDock();
+    const touchDevice=this.document.defaultView.navigator.maxTouchPoints>0;
+    const scale=compact&&!touchDevice?248:toolScale;
     tools.fullscreen.visible=shortLandscape&&tools.fullscreen.visible;
     const dockSpan=this.conversationDockSpan();
-    const corners=shortLandscape?2*(.8*this.landscapeGrip()+10):0;
-    const available=dockSpan?dockSpan.end-dockSpan.start-12:this.canvas.clientWidth-left-right-corners;
-    const maxWidth=available*toolScale/scale-toolPadding*toolScale;
-    this.document.body.toggleAttribute('data-native-settings-available',maxWidth>=150);
-    if(maxWidth<150){this.syncToolbelt(false);return;}
-    const touchDevice=this.document.defaultView.navigator.maxTouchPoints>0;
     const iconOnly=Boolean(touch)||touchDevice&&(compact||this.canvas.clientWidth<=600||Boolean(dockSpan));
-    const layout=layoutTools(tools,Math.min(this.lookPreview.stylesDock?720:670,maxWidth),{compact,iconOnly,shortLandscape});
+    const gap=iconOnly?touchToolGap:toolGap;
+    const appearance={compact,iconOnly,shortLandscape,gap,scale};
+    const minimum=touchDevice?Math.max(150,...toolNames.filter(id=>tools[id]?.visible)
+      .map(id=>pixelsForTool(id,appearance))):150;
+    const usable=dockSpan?dockSpan.end-dockSpan.start-12:this.canvas.clientWidth-left-right;
+    const fit=reserve=>(usable-reserve)*toolScale/scale-toolPadding*toolScale;
+    const corners=2*(.8*this.landscapeGrip()+10);
+    const sideGrips=shortLandscape&&this.movementGroups.size>0&&fit(corners)>=minimum;
+    const maxWidth=fit(sideGrips?corners:0);
+    if(maxWidth<minimum){this.syncToolbelt(false);return;}
+    this.toolDockSpan=dockSpan;
+    this.document.body.setAttribute('data-native-settings-available','');
+    const layout=layoutTools(tools,Math.min(this.lookPreview.stylesDock?720:670,maxWidth),{...appearance,sideGrips});
     if(!this.toolGroup)this.send('createSurface',{catalogId:spatialHudCatalog.id},toolbeltId);
     if(this.toolGroup&&this.toolGroup.visible===this.quietTouch){
       this.toolGroup.visible=!this.quietTouch;
@@ -913,13 +927,10 @@ export class MatterWorktableHud{
     if(this.toolGroup){
       const {left,right,bottom}=this.toolInsets();
       const dockClearance=this.usesCockpitDocks(viewport)?21:0;
-      const {compact,shortLandscape}=this.toolLayout;
+      const {compact,shortLandscape,sideGrips,scale:dockScale}=this.toolLayout;
       const lane=this.movementLane;
-      const dockSpan=this.conversationDockSpan();
-      const dockScale=dockSpan?
-        Math.min(this.dockScale(compact,shortLandscape),(dockSpan.end-dockSpan.start-12)/(this.toolLayout.width+toolPadding)):
-        this.dockScale(compact,shortLandscape);
-      const barTop=height-bottom-dockClearance-(this.toolLayout.height+.035)*dockScale;
+      const dockSpan=this.toolDockSpan;
+      const barTop=height-bottom-dockClearance-(this.toolLayout.height+dockBottomMargin)*dockScale;
       const dockWidth=(this.toolLayout.width+toolPadding)*dockScale;
       const promptCompact=this.door.group?this.door.compact:compact;
       const promptWidth=this.door.width??compactDoorPromptWidth;
@@ -934,7 +945,7 @@ export class MatterWorktableHud{
       const preferredScale=lane?conversationMovementScale:width<380?145:166;
       let movementScale=this.movementVertical?Math.min(preferredScale,Math.max(95,(barTop-48)/1.23)):preferredScale;
       let movementTop=Math.max(34,barTop-(this.movementVertical?1.23:.64)*movementScale-14);
-      if(this.movementGroups.size&&shortLandscape){
+      if(this.movementGroups.size&&sideGrips){
         const grip=this.landscapeGrip(),floor=height-bottom;
         const stickTop=floor-.70*grip,jumpTop=floor-.57*grip;
         const rightGrip=width-right-.34*grip;
