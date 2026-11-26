@@ -1,5 +1,28 @@
 # Current MVP work
 
+
+## November 26 flight through water and blue wake
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `58ce88972da7`
+from source `422b916`. Immediate code rollback is `2ee067ffd313`.
+Protected HTTPS health and the exact Brotli client passed readback. The
+audience matched the deployment request, and the world checkpoint
+matched before and after cutover. The 87-payload inventory replaces only
+the client. The Character Studio catalog is byte-identical, backed by a
+comparison of all 670 published sampled frames and chapter indexes.
+
+In controlled Chromium on RTX 2060 Normal and Raspberry Pi 5 Livianos,
+left drag orbited without turning the avatar. Holding right drag
+aligned the avatar's yaw and changed local vertical aim while the
+avatar stayed in place. A launch at altitude −11.25 remained below
+the water level −9, then crossed it in both directions with a single
+splash at each crossing. The blue emitter continued after separation,
+went dry while the player was still flying, and restarted on reentry.
+Both device traces reported no page errors. The device trials used
+fixtures. Peer vertical aim and independent human acceptance are open.
+See [water-flight playtest](playtest-iteration.md#camera-facing-aim-and-flight-through-water)
+and [motion #21](https://github.com/AlterMundi/holodeck/issues/21).
+
 ## Character worktable deployed at the foyer door
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `15ed1ac8a65e`
