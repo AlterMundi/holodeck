@@ -4,7 +4,7 @@ import {MatterFlight,matterAvatarScale,matterEyeHeight} from './matter-flight.mj
 // Both projections use the same framing, expressed in units of the web rig.
 export const characterReviewCamera=Object.freeze({
   rigHeight:1.48,fov:36,front:0,angle:.62,side:Math.PI/2,
-  eyeHeight:1.95,targetHeight:.78,distance:4.4,compactDistance:4.7,
+  eyeHeight:1.95,targetHeight:.78,tableTargetHeight:.69,distance:4.4,compactDistance:4.7,
   minDistance:2.2,maxDistance:8,maxPolarAngle:Math.PI*.56,
 });
 

@@ -236,7 +236,7 @@ async function main(){
         const {position,fov}=camera.getCameraState();
         const {x,y,z}=camera.target;
         const horizontal=Math.hypot(x-position.x,z-position.z);
-        const low=y-.58*.78/1.48;
+        const low=y-.58*.69/1.48;
         const elevation=height=>Math.atan2(height-position.y,horizontal);
         return {top:elevation(low+.58)-elevation(y),bottom:elevation(y)-elevation(low),
           limit:fov*Math.PI/360};
