@@ -12,6 +12,13 @@ const beds=[
   {x:-34,z:8,across:5.5,along:9.3,heading:-.52,count:76},
   {x:-19,z:55,across:5.8,along:10.0,heading:-.57,count:71},
 ];
+// Short grass sits underneath the taller banks. Keep a broken outer edge
+// and longer open channels so the route reads at a person's eye height.
+const shortBeds=[
+  {x:-13,z:19,across:5,along:8},
+  {x:-20,z:28,across:6,along:9},
+  {x:-29,z:18,across:7,along:9},
+];
 const goldenAngle=Math.PI*(3-Math.sqrt(5));
 const tint=[0xfff3d7,0xe4edd2,0xe5ebce,0xffeec4,0xf5f7de];
 
@@ -60,6 +67,44 @@ export function meadowBankPlants(lightweight) {
     }
     return plants;
   });
+}
+
+export function shortMeadowPlants(lightweight){
+  return shortBeds.map(({x,z,across,along},bed)=>{
+    const plants=[];
+    for(let i=0;i<750;i++){
+      const pick=salt=>random(bed+19,i,salt);
+      if(lightweight&&i%3===2)continue;
+      const a=pick(71)*2-1,b=pick(123)*2-1;
+      if(a*a+b*b>.92+.12*Math.cos(b*13+a*7)||
+         pick(93)>.72+.23*Math.sin(a*10-b*8))continue;
+      const px=x+across*a,pz=z+along*b;
+      const {u,v}=approachCoordinates(px,pz);
+      const h=terrainElevation(u,v);
+      if(Math.abs(px)<7||terrainTrail(u,v)>.08||h<TOROIDAL_TERRAIN.waterLevel+3)continue;
+      plants.push({u,v,h,yaw:pick(64)*2*Math.PI,size:.68+.56*pick(48),
+        color:[0x9eaa72,0xc3c687,0x869955][Math.floor(pick(12)*3)]});
+    }
+    return plants;
+  });
+}
+
+function shortLeafGeometry(){
+  const positions=[],colors=[],color=new Color();
+  for(let i=0;i<5;i++){
+    const angle=i*goldenAngle,x=Math.cos(angle),z=Math.sin(angle);
+    const lean=.16+.14*random(33,i,3),height=.11+.13*random(33,i,9);
+    const width=.026+.022*random(33,i,5);
+    positions.push(.06*x-width*z,-.035,.06*z+width*x,
+      .06*x+width*z,-.035,.06*z-width*x,lean*x,height,lean*z);
+    for(const shade of [0x556b38,0x6a7d43,0xabb961])
+      colors.push(...color.setHex(shade).toArray());
+  }
+  const geometry=new BufferGeometry();
+  geometry.setAttribute('position',new Float32BufferAttribute(positions,3));
+  geometry.setAttribute('color',new Float32BufferAttribute(colors,3));
+  geometry.computeVertexNormals();
+  return geometry;
 }
 
 function plantMesh(flowers,lightweight) {
@@ -189,6 +234,27 @@ export class ToroidalMeadowBanks {
         batch.boundingSphere.radius+=.22;
         group.add(batch);
       }
+    });
+    const cover=shortLeafGeometry();
+    geometries.push(cover);
+    shortMeadowPlants(lightweight).forEach((plants,bed)=>{
+      const {x,z}=shortBeds[bed],{u,v}=approachCoordinates(x,z);
+      origin.fromArray(terrainPosition(u,v,terrainElevation(u,v)));
+      const batch=new InstancedMesh(cover,material,plants.length);
+      batch.name='Short meadow grass';
+      batch.position.copy(origin);
+      for(const [index,plant] of plants.entries()){
+        transform.position.fromArray(terrainPosition(plant.u,plant.v,plant.h));
+        toroidalRotation(transform.position,plant.yaw,transform.quaternion);
+        transform.position.sub(origin);
+        transform.scale.setScalar(plant.size);
+        transform.updateMatrix();
+        batch.setMatrixAt(index,transform.matrix);
+        batch.setColorAt(index,color.setHex(plant.color));
+      }
+      batch.computeBoundingSphere();
+      batch.boundingSphere.radius+=.10;
+      group.add(batch);
     });
   }
 
