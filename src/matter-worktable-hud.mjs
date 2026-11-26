@@ -43,7 +43,7 @@ const choice=(id,label,options,value)=>({id,component:'HudChoice',label,
 const landscapeMapScale=286; // 44 CSS px for Proyección's .154-unit button plate.
 const toolScale=286,toolGap=.035,toolRowHeight=.18,toolPadding=.12;
 const toolNames=['map','open','talk','appearance','video','bridge','plant','undo','activity','visit','endVisit','fullscreen'];
-const toolPixels={map:130,open:154,talk:134,appearance:138,video:96,bridge:153,plant:100,undo:92,activity:126,visit:124,endVisit:140};
+const toolPixels={map:130,open:154,talk:134,appearance:138,video:96,bridge:182,plant:100,undo:92,activity:126,visit:124,endVisit:140};
 
 function opticalRole(surface,id,component){
   if(surface===worldMapId||surface===worldBearingId||id==='map')return 'navigation';
