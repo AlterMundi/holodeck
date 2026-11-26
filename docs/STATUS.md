@@ -26,6 +26,20 @@ canonical Conversation across desktop and compact layouts with one
 fixture original, one retained frame and no browser errors. The Node
 suite passed 425 checks with two skips. This candidate is staged locally.
 
+## Materializador de Materia on the private combined candidate
+
+The Matter browser journey passed on the same exact private archive
+`005ebe7b7869d4f134da364e1189c008f03ec6353d08b01e0e78e03dc4f962fe`.
+Two fixture visitors crossed from the foyer and activated the table in
+desktop and short touch-emulated layouts. The first shared Alfa, and
+the second shared Beta. The first visitor kept the local Alfa model,
+cut at 64 and independent camera until choosing **Seguir la mesa**.
+A stale revision returned 409 and an edit after revocation returned
+403. Clearing the table produced revision 3 in both browser reads.
+The second closed the table, stayed in Matter, then crossed back to
+the foyer and lost collection read access. Protected Holodeck
+activation and the authenticated visit remain open.
+
 ## Situated room topics in the Conversation surround
 
 Host revision `26cb1dafd7a23b973b627b79c1a10443c298656c` displays the active
