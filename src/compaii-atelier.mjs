@@ -141,8 +141,10 @@ const foyerKey={position:[4.87,3.15,1.75],target:[-2.30,.80,-2.3],color:'#ffe3bf
 const chamberKey={position:[-.44,4.35,1.9],target:[-.44,1.07,1.9],color:'#ffe0b6',intensity:68};
 const chamberRig=[
   {id:'stair-bounce',x:-3,y:2.6,z:-4.5,distance:8,intensity:13,color:'#a2c2f6'},
-  {id:'spatializer-practical',x:3.79,y:2.72,z:-.8,distance:5,intensity:15,color:'#ffd6a2'},
-  {id:'weaver-practical',x:-3.76,y:2.72,z:2.67,distance:5,intensity:15,color:'#ffd6a2'},
+  // Put the brightest part of each pool on the controls and the front edge
+  // of the worktop, with a shorter throw onto the surrounding acoustic wall.
+  {id:'spatializer-practical',x:3.47,y:2.55,z:-.66,distance:3.55,intensity:19,color:'#ffdfa9'},
+  {id:'weaver-practical',x:-3.46,y:2.55,z:2.72,distance:3.55,intensity:19,color:'#ffdfa9'},
 ].map(softLight).join('');
 const galleryColliders=[
   {x:2.5,y:.529,z:1.25,w:1.32,h:.858,d:1.04},
