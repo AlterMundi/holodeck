@@ -28,6 +28,21 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+Candidate `81cf08f05b0d08c7e63c47b32127a4f5a92c3a39` combines the
+Character branch with world revision `df402335541a2178c4c41e79d655bdfb8599f6bb`.
+It retains the exhibit edition actions and the exterior cave roof and
+tunnel behavior. The archive SHA-256 is
+`1947c5b3d79251943805e1b76dacae713cea032cb629102fb670d39bab01def4`.
+The complete Node suite passed 441 cases with two skips. Chromium
+entered the table through the foyer and exercised the ground transition,
+takeoff, hover, turn, landing, clip comparison and the visible web
+viewer. A second fixture visitor followed frame 36, read the first
+visitor's room note, and moved their camera without changing the first
+visitor's view. The short touch layout displayed the same note. The
+software-rendered run reached its 210-second deadline at the final
+touch frame-step check, before the remaining capture and recovery cases.
+The candidate remains staged for the owning Holodeck integration.
+
 The standalone viewer now retires the world's startup curtain when it
 mounts its own canvas. Before the change the package still accepted the
 shared frame and note, but the world's CSS hid the visible canvas and
