@@ -172,6 +172,7 @@ export class CompanionAvatar{
     if(reset||!moving){
       root.position.copy(this.target);
       this.followVelocity.set(0,0,0);
+      this.followResting=true;
     }else if(this.transfer.active){
       this.followVelocity.set(0,0,0);
     }else if(dt>0){
@@ -181,19 +182,30 @@ export class CompanionAvatar{
       const distance=this.direction.length();
       const deadZone=(small?.22:.25)*scale;
       const pace=this.leaderVelocity.length();
+      const groundFollow=!small&&!flying&&!water&&!swimming;
       const speedLimit=small?5.2*scale:swimming?5.4:
         explicitFlight?clamp(pace+4,maximumFollowSpeed,29):outdoor?maximumFollowSpeed:clamp(pace+1.4,6.4,maximumFollowSpeed);
-      const deceleration=small?6:explicitFlight?24:gliding?9.5:10;
-      const approach=Math.min(speedLimit,Math.sqrt(2*deceleration*Math.max(0,distance-deadZone)));
-      this.wantedVelocity.copy(this.direction).setLength(distance>1e-6?approach:0);
-      if(this.leaderVelocity.lengthSq()>.04)this.wantedVelocity.addScaledVector(this.leaderVelocity,explicitFlight?.85:.25).clampLength(0,speedLimit);
+      const braking=small?6*scale*1.4:groundFollow?14:explicitFlight?24:gliding?9.5:10;
+      const curve=groundFollow?12:small?braking*.85:braking;
       this.followVelocity.addScaledVector(root.up,-this.followVelocity.dot(root.up));
+      if(groundFollow){
+        if(distance>.55||pace>.35)this.followResting=false;
+        else if(distance<=deadZone&&this.followVelocity.lengthSq()<.15**2)this.followResting=true;
+      }else this.followResting=false;
+      const gap=this.followResting?0:Math.max(0,distance-deadZone);
+      // Leave enough room to brake over the next realised step.
+      const reserve=groundFollow||small?curve*dt:0;
+      const approach=Math.min(speedLimit,Math.sqrt(2*curve*gap+reserve*reserve)-reserve);
+      this.wantedVelocity.copy(this.direction).setLength(approach);
+      if(!groundFollow&&pace>.2)this.wantedVelocity.addScaledVector(this.leaderVelocity,explicitFlight?.85:.25).clampLength(0,speedLimit);
       const accelerating=this.followVelocity.dot(this.wantedVelocity)>=this.followVelocity.lengthSq();
+      const acceleration=small?4.5*scale*1.4:explicitFlight?39:7.5;
       this.velocityChange.subVectors(this.wantedVelocity,this.followVelocity)
-        .clampLength(0,dt*(small?scale*1.4:1)*(accelerating?(small?4.5:explicitFlight?39:7.5):deceleration));
+        .clampLength(0,dt*(accelerating?acceleration:braking));
       this.followVelocity.add(this.velocityChange);
       let travel=this.followVelocity.length()*dt;
-      if(travel>distance&&this.followVelocity.dot(this.direction)>0)travel=distance;
+      if(!groundFollow&&(distance<1e-6||travel>distance&&this.followVelocity.dot(this.direction)>0))
+        travel=Math.min(travel,distance);
       if(travel>0){
         this.relative.copy(root.position).addScaledVector(this.followVelocity,travel/this.followVelocity.length());
         if(small&&this.perch.blocked(root.position,this.relative)||
@@ -201,11 +213,12 @@ export class CompanionAvatar{
           this.followVelocity.set(0,0,0);
           travel=0;
         }else{
-          if(avoidFurniture&&this.roomClearance.detouring)
-            this.followVelocity.subVectors(this.relative,root.position).setLength(travel/dt);
+          // Clipping and detours must update the velocity used on the next frame.
+          this.followVelocity.subVectors(this.relative,root.position).divideScalar(dt);
+          travel=this.followVelocity.length()*dt;
           root.position.copy(this.relative);
         }
-      }
+      }else this.followVelocity.set(0,0,0);
       if(flying||diving)rise=vertical*ease(dt,vertical<-1?9:5);
       root.position.addScaledVector(root.up,rise);
       if(small)table.bounds.clampPoint(root.position,root.position);
@@ -284,9 +297,17 @@ export class CompanionAvatar{
   face({root,position,point,small,speed,reset,moving,dt}){
     const {up}=root;
     const look=point||(small&&this.perch.ready?this.perch.center:null);
-    const travelling=speed>.25&&this.followVelocity.lengthSq()>1e-6;
+    if(reset||!moving||speed>=.55){
+      this.travelHeading=speed>=.55;
+      this.headingStill=0;
+    }else if(speed<=.35){
+      this.headingStill+=dt;
+      if(this.headingStill>=.18)this.travelHeading=false;
+    }else this.headingStill=0;
+    const travelling=this.travelHeading&&speed>.35&&this.followVelocity.lengthSq()>1e-6;
+    const waitingToFace=moving&&!reset&&!travelling&&this.headingStill<.35;
     this.facingDirection.copy(look&&!(travelling&&!small)?this.direction.subVectors(look,root.position):
-      travelling?this.followVelocity:this.direction.subVectors(position,root.position));
+      travelling?this.followVelocity:waitingToFace?this.heading:this.direction.subVectors(position,root.position));
     this.facingDirection.addScaledVector(up,-this.facingDirection.dot(up));
     this.heading.addScaledVector(up,-this.heading.dot(up));
     if(this.facingDirection.lengthSq()<4e-4)this.facingDirection.copy(this.heading);
@@ -305,7 +326,9 @@ export class CompanionAvatar{
       else if(Math.abs(residual)<.05&&Math.abs(this.turning.velocity)<.1)this.turnEngaged=false;
       this.turning.value=0;
       const advance=this.turning.update(this.turnEngaged?residual:0,dt,travelling?8.5:6);
-      this.heading.applyAxisAngle(up,advance);
+      const turnLimit=(travelling?300:200)*Math.PI/180;
+      this.turning.velocity=clamp(this.turning.velocity,-turnLimit,turnLimit);
+      this.heading.applyAxisAngle(up,clamp(advance,-turnLimit*dt,turnLimit*dt));
     }
     this.heading.normalize();
     // lookAt uses the current up, which follows the ring at this place.
