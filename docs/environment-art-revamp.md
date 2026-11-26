@@ -97,6 +97,13 @@ triangles at an 850×552 buffer. Median animation frame interval was
 triangles. The draft remains local for refinement and a subsequent
 check of the silhouette while crossing detail transitions.
 
+The next local archive `11fc02fe5faa` (`f38df5a`) connects the stem of
+broad pines to their leaning branch hubs. A targeted noon/dusk view
+looking up into a broad pine and a 6.56 m walk passed on the same RTX
+2060. That camera differs from the first pair. The focused test also
+checks that the stem ring crosses an upper whorl hub. Both archives
+remain drafts.
+
 ### Air and light
 
 Link the horizon, the terrain's distant color and the low-angle sun.

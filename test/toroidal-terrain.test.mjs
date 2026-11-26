@@ -183,6 +183,26 @@ test('woodland roots are deterministic and agree with the periodic terrain field
   assert.equal(terrainWoodland(0,.25,18),0);
 });
 
+test('the spreading stem passes through the upper whorl hubs', () => {
+  const grove=new ToroidalWoodland(new Group(),null,()=>{},{value:1});
+  try{
+    const position=grove.geometry[6].getAttribute('position');
+    const expectedLean=.12*.75**2;
+    const ringHeight=.27+.45*.75+.008;
+    const ring=new Map();
+    for(let i=0;i<position.count;i++){
+      if(Math.abs(position.getY(i)-ringHeight)>1e-6)continue;
+      const point=[position.getX(i),position.getZ(i)];
+      if(Math.hypot(point[0]-expectedLean,point[1]+.4*expectedLean)>.01)ring.set(point.join(','),point);
+    }
+    const points=[...ring.values()];
+    assert.equal(points.length,9);
+    const centre=points.reduce(([x,z],[a,b])=>[x+a/points.length,z+b/points.length],[0,0]);
+    assert.ok(Math.abs(centre[0]-expectedLean)<1e-6);
+    assert.ok(Math.abs(centre[1]+.4*expectedLean)<1e-6);
+  }finally{grove.dispose();}
+});
+
 test('woodland representation changes preserve roots and release nearby trunk collision', () => {
   const scene=new Group(),active=new Set();
   const woodland=new ToroidalWoodland(scene,{
