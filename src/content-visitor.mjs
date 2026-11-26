@@ -1,6 +1,6 @@
 import {CONTENT_NODE,validateContentNodes,sameVisitPin,visitResponseMatches,knownVisitState,visitVersion,visitEntryMatches,contextVisitSnapshotMatches} from './content-visits.mjs';
 import {ExhibitionIndex} from './exhibition-index.mjs';
-import {GALLERY_STAGES} from './gallery-display.mjs';
+import {GALLERY_STAGES,renderedGalleryPlaque} from './gallery-display.mjs';
 
 const ROOM_VISIT_REACH=2.25;
 
@@ -185,10 +185,9 @@ export class ContentVisitor{
     if(display.id===entry.id&&display.nodeRevision===entry.nodeRevision&&sameVisitPin(display.pin,entry.pin))
      targets.set(model,entry);
    }
-   for(const suffix of ['sign-front','sign-back','edition-front','edition-back']){
-    const plaque=scene?.querySelector('#'+entry.id+'-'+suffix);
-    if(plaque?.getContainer)targets.set(plaque.getContainer(),entry);
-   }
+   const plaque=renderedGalleryPlaque(scene,entry.id);
+   if(plaque?.container&&plaque.nodeRevision===entry.nodeRevision&&sameVisitPin(plaque.pin,entry.pin))
+    targets.set(plaque.container,entry);
   }
   return targets;
  }
