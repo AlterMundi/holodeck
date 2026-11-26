@@ -1,5 +1,24 @@
 # Current MVP work
 
+## Released Proyección alpha.21 in the receiving candidate
+
+The lock selects released renderer source
+`8da5ac9f4148197e4823817eecee14c2fb6d942e`.
+The [alpha.21 prerelease](https://github.com/AlterMundi/proyeccion/releases/tag/v0.1.0-alpha.21)
+includes the CI-tested installable package and pinned A2UI manifest.
+The tagged source reproduced the archived Holodeck client byte for byte.
+
+Candidate archive SHA-256
+`0ce3905575af253af74e7d5a4f59ebfe733cf6ab9b62781e573a06fc1c79e7f6`.
+It replaces the compressed client of protected release `2ee067ffd313`.
+The Character note button uses a short label, and the browser
+walkthrough shared the draft through that action and read it back
+against the same authored pose. The second fixture visitor saw the note
+while keeping its independent frame and orbit. The walk also covered
+the world door, ground and flight phases, and room-scoped review.
+Node 24 passed 447 tests with two skips. Production activation and a
+paired review with real participants remain open.
+
 ## Range gesture ownership in the receiving candidate
 
 The renderer pin `09901297b78df95259af4363452d8c196f6b6250`
