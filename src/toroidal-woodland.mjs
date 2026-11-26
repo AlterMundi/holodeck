@@ -5,6 +5,7 @@ import {
 } from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {createWoodlandShade} from './toroidal-woodland-shade.mjs';
+import {usePineBark} from './toroidal-pine-bark.mjs';
 import {toroidalAirColor} from './toroidal-air.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
 import {
@@ -81,12 +82,13 @@ export function innerWoodlandTrees(){
 }
 
 function evergreenGeometry(detail,spreading=false){
-  const positions=[],colors=[],needles=[];
+  const positions=[],colors=[],needles=[],bark=[];
   const shade=new Color();
   const trunk=0x534134;
   const foliage=[0x375443,0x425d45,0x4a674a,0x587348,0x668155,0x738c58];
-  const triangle=(a,b,c,tint,value,chart)=>{
+  const triangle=(a,b,c,tint,value,chart,barkChart)=>{
     positions.push(...a,...b,...c);
+    bark.push(...(barkChart??[0,-1,0,-1,0,-1]));
     if(detail===2)needles.push(...(chart??[0,-1,0,-1,0,-1]));
     shade.setHex(tint);
     for(const light of typeof value==='number'?[value,value,value]:value){
@@ -116,8 +118,10 @@ function evergreenGeometry(detail,spreading=false){
       const a=i*TAU/sides,b=(i+1)*TAU/sides;
       const foot=ring(stem[segment-1],a),nextFoot=ring(stem[segment-1],b);
       const top=ring(stem[segment],a),nextTop=ring(stem[segment],b);
-      triangle(foot,top,nextFoot,trunk,.85+i%3*.10);
-      triangle(top,nextTop,nextFoot,trunk,.85+i%3*.10);
+      const u=i/sides,right=(i+1)/sides;
+      const baseV=stem[segment-1].height+.055,topV=stem[segment].height+.055;
+      triangle(foot,top,nextFoot,trunk,.95,undefined,[u,baseV,u,topV,right,baseV]);
+      triangle(top,nextTop,nextFoot,trunk,.95,undefined,[u,topV,right,topV,right,baseV]);
     }
   }
   for(let band=0;band<whorls;band++){
@@ -184,8 +188,17 @@ function evergreenGeometry(detail,spreading=false){
   const geometry=new BufferGeometry();
   geometry.setAttribute('position',new Float32BufferAttribute(positions,3));
   geometry.setAttribute('color',new Float32BufferAttribute(colors,3));
+  geometry.setAttribute('pineBarkUV',new Float32BufferAttribute(bark,2));
   if(detail===2)geometry.setAttribute('pineNeedleUV',new Float32BufferAttribute(needles,2));
   geometry.computeVertexNormals();
+  const normal=geometry.getAttribute('normal');
+  const stemSlope=(trunkWidth*.68-.008)/(stemHeight+.055);
+  const radial=new Vector3();
+  for(let index=0;bark[index*2+1]>=0;index++){
+    const angle=bark[index*2]*TAU;
+    radial.set(Math.cos(angle),stemSlope,Math.sin(angle)).normalize();
+    normal.setXYZ(index,radial.x,radial.y,radial.z);
+  }
   return geometry;
 }
 
@@ -453,6 +466,9 @@ export class ToroidalWoodland{
     useDaylight(this.nearMaterial,daylight,.95);
     this.needles={value:null};
     usePineNeedles(this.nearMaterial,this.needles);
+    this.bark={value:null};
+    usePineBark(this.material,this.bark);
+    usePineBark(this.nearMaterial,this.bark);
     this.sun={value:new Vector3(0,1,0)};
     this.viewer={value:new Vector3()};
     this.skylineMaterial=skylineMaterial(daylight,this.sun,this.viewer);
@@ -614,6 +630,7 @@ export class ToroidalWoodland{
     this.material.dispose();
     this.nearMaterial.dispose();
     this.needles.value?.dispose();
+    this.bark.value?.dispose();
     this.shadeTexture.dispose();
     this.skylineMaterial.dispose();
     this.undergrowth.dispose();
