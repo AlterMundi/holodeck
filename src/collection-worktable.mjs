@@ -37,6 +37,7 @@ function makeModel(review,anchor){
       indexMatterPart(geometry,part.contactIndex);
       const mesh=new Mesh(geometry,new MeshStandardMaterial({color:part.color,roughness:.54,metalness:.12,clipShadows:true}));
       mesh.name=part.id;mesh.castShadow=true;mesh.receiveShadow=true;
+      mesh.userData.matterClosed=part.closed;
       inside.add(mesh);parts.set(part.id,mesh);
       bounds.union(geometry.boundingBox);
     }

@@ -14,6 +14,41 @@ export function indexMatterPart(geometry,index){
   return tree;
 }
 
+// Require a positively wound watertight surface. CAD exporters can repeat the
+// same position for face normals, so compare exact positions rather than indices.
+export function closedMatterPart(positions,indices){
+  const vertices=new Map(),welded=new Uint32Array(positions.length/3),edges=new Map();
+  const stride=welded.length+1;
+  const vertex=i=>{
+    if(welded[i])return welded[i];
+    const at=3*i,key=positions[at]+','+positions[at+1]+','+positions[at+2];
+    let id=vertices.get(key);
+    if(id===undefined){id=vertices.size+1;vertices.set(key,id);}
+    return welded[i]=id;
+  };
+  const edge=(a,b)=>{
+    const forward=a<b,key=forward?a*stride+b:b*stride+a;
+    const orientation=forward?1:-1,prior=edges.get(key);
+    if(prior===undefined){edges.set(key,orientation);return true;}
+    if(prior===-orientation){edges.set(key,0);return true;}
+    return false;
+  };
+  let volume=0;
+  const ox=positions[0],oy=positions[1],oz=positions[2];
+  for(let i=0;i<indices.length;i+=3){
+    const a=indices[i],b=indices[i+1],c=indices[i+2];
+    const wa=vertex(a),wb=vertex(b),wc=vertex(c);
+    if(wa===wb||wb===wc||wc===wa||!edge(wa,wb)||!edge(wb,wc)||!edge(wc,wa))return false;
+    const ax=positions[3*a]-ox,ay=positions[3*a+1]-oy,az=positions[3*a+2]-oz;
+    const bx=positions[3*b]-ox,by=positions[3*b+1]-oy,bz=positions[3*b+2]-oz;
+    const cx=positions[3*c]-ox,cy=positions[3*c+1]-oy,cz=positions[3*c+2]-oz;
+    volume+=ax*(by*cz-bz*cy)+ay*(bz*cx-bx*cz)+az*(bx*cy-by*cx);
+  }
+  if(!(volume>0))return false;
+  for(const orientation of edges.values())if(orientation)return false;
+  return true;
+}
+
 export function firstMatterHit(parts,ray){
   const inverse=new Matrix4(),local=new Ray(),direction=new Vector3(),section=new Plane();
   let best=null;
@@ -66,6 +101,7 @@ export class MatterContact{
     this.goal=new Vector3();
     this.closest=new Vector3();
     this.hit=new Vector3();
+    this.normal=new Vector3();
     this.ray=new Ray();
     this.inverse=new Matrix4();
     this.section=new Plane();
@@ -95,6 +131,7 @@ export class MatterContact{
       this.goal.copy(to).applyMatrix4(this.inverse);
       this.sweepBox.setFromPoints([this.segment.start,this.goal]).expandByScalar(radius);
       if(section)this.section.copy(section).applyMatrix4(this.inverse);
+      const solid=mesh.userData.matterClosed===true;
       indexMatterPart(geometry).shapecast({
         intersectsBounds:box=>box.intersectsBox(this.sweepBox),
         intersectsTriangle:triangle=>{
@@ -103,9 +140,9 @@ export class MatterContact{
             for(let i=1;i+1<count;i++){
               this.clipped.set(this.polygon[0],this.polygon[i],this.polygon[i+1]);
               this.clipped.needsUpdate=true;
-              fraction=this.limitTriangle(this.clipped,radius,fraction);
+              fraction=this.limitTriangle(this.clipped,radius,fraction,solid);
             }
-          }else fraction=this.limitTriangle(triangle,radius,fraction);
+          }else fraction=this.limitTriangle(triangle,radius,fraction,solid);
           return fraction===0;
         },
       });
@@ -127,8 +164,11 @@ export class MatterContact{
     return count;
   }
 
-  limitTriangle(triangle,radius,fraction){
+  limitTriangle(triangle,radius,fraction,solid){
     const {start,end}=this.segment;
+    // Closed CAD renders its outward faces. If it appeared around the eye,
+    // let the visitor leave along an unseen back face without moving them.
+    if(solid&&triangle.getNormal(this.normal).dot(this.hit.subVectors(start,triangle.a))<0)return fraction;
     triangle.closestPointToPoint(start,this.closest);
     if(inContact(start.distanceTo(this.closest),radius)){
       // An incoming model or rotated part can overlap a stationary visitor.

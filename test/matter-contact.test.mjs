@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {BufferGeometry,Float32BufferAttribute,Group,Mesh,MeshStandardMaterial,Plane,Ray,Vector3} from 'three';
+import {BoxGeometry,BufferGeometry,Float32BufferAttribute,Group,Mesh,MeshStandardMaterial,Plane,Ray,Vector3} from 'three';
 import {MeshBVH} from 'three-mesh-bvh/src/index.js';
-import {firstMatterHit,indexMatterPart,MatterContact} from '../src/matter-contact.mjs';
+import {closedMatterPart,firstMatterHit,indexMatterPart,MatterContact} from '../src/matter-contact.mjs';
 
 const view={fov:64,aspect:16/9};
 const point=(x,y,z)=>new Vector3(x,y,z);
@@ -73,4 +73,25 @@ test('a transferred part index serves contact and nearest visible pick through a
   assert.equal(firstMatterHit(parts.values(),ray),null);
   assert.equal(indexMatterPart(part.geometry),tree);
   assert.deepEqual(Array.from(part.geometry.index.array),[0,1,2,0,2,3]);
+});
+
+
+test('only a positively wound watertight CAD part lets the eye back out through hidden faces',()=>{
+  const geometry=new BoxGeometry(1,1,1);
+  geometry.computeBoundingBox();
+  const vertices=geometry.getAttribute('position').array,indices=geometry.index.array;
+  assert.equal(closedMatterPart(vertices,indices),true);
+  assert.equal(closedMatterPart(vertices,indices.slice(3)),false);
+  const inverted=indices.slice();
+  for(let i=0;i<inverted.length;i+=3)[inverted[i],inverted[i+1]]=[inverted[i+1],inverted[i]];
+  assert.equal(closedMatterPart(vertices,inverted),false);
+
+  const part=new Mesh(geometry,new MeshStandardMaterial());
+  const parts=new Map([['box',part]]),contact=new MatterContact();
+  const inside=point(0,0,.39),exterior=point(0,0,.8);
+  assert.ok(contact.limit(parts,inside,exterior,view)<1);
+  part.userData.matterClosed=true;
+  assert.equal(contact.limit(parts,inside,exterior,view),1);
+  const stop=exterior.clone().lerp(inside,contact.limit(parts,exterior,inside,view));
+  assert.ok(stop.z>.53&&stop.z<.55,stop);
 });
