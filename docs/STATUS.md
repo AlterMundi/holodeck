@@ -1,5 +1,19 @@
 # Current MVP work
 
+## November 26 — Matter worktable continuity during collection outages
+
+The protected release `3cbae5663c6b` uses source `a742056` with
+`a07a6a2a6dc5` as the immediate rollback. A forced Home manifest
+timeout emptied the shelves and closed the previous worktable. The new
+client keeps the table and retry status open, discards unverified content,
+and loads the confirmed edition again after recovery. Two Chromium
+visitors reproduced the failure and verified in-place recovery to the
+other visitor's latest shared selection. An edit-denied write remained
+denied. The exact protected serving checks matched the selected package
+and 14 state files. Home confirmed access for the paired human to the four
+shelf and two archive editions. The original affected browser response
+was unavailable.
+
 ## November 26 — Pitched flight and swimming
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `e6093e9e889f` from
