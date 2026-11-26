@@ -186,7 +186,7 @@ function fallbackAvatarModel(fileUrl) {
 const motionStudyHash=createHash('sha256');
 for(const file of ['human-motion-study','flight-avatar-animation','humanoid-flight-poses',
   'avatar-medium','avatar-motion-curves','humanoid-standing-idle','humanoid-ground-accents',
-  'humanoid-crouch','toroidal-locomotion','toroidal-terrain']){
+  'humanoid-crouch','humanoid-ground-gait','toroidal-locomotion','toroidal-terrain']){
   motionStudyHash.update(file+'\0').update(await readFile(new URL('../src/'+file+'.mjs',import.meta.url)));
 }
 const motionStudyRevision=motionStudyHash.digest('hex');
