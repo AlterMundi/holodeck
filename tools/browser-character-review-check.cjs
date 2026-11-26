@@ -586,10 +586,10 @@ async function main(){
 
     const touch=await peerContext.newCDPSession(peerPage);
     await touch.send('Emulation.setDeviceMetricsOverride',{width:568,height:320,deviceScaleFactor:1,mobile:true});
-    await touch.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
+    await touch.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:2});
     await peerPage.waitForFunction(()=>{
       const window=holodeckDevelopment.hudWindow('matter-worktable');
-      return matchMedia('(pointer: coarse)').matches&&navigator.maxTouchPoints===1&&
+      return matchMedia('(pointer: coarse)').matches&&navigator.maxTouchPoints===2&&
         window?.view.width===568&&window.view.height===320&&window.bounds.right-window.bounds.left>3;
     });
     const shortTable=await peerPage.evaluate(()=>holodeckDevelopment.hudWindow('matter-worktable').rect);
@@ -611,6 +611,48 @@ async function main(){
     await peerButton('−1').press('Enter');
     await frame(pose.frame-1,peerPage);
     await frame(pose.frame+1);
+    const beforePeerTouch=await cameraAngles(page);
+    const peerView=()=>peerPage.evaluate(()=>{
+      const {client}=holodeckDevelopment;
+      const camera=client.getCameraManager();
+      const feet=client.getCharacterManager().localController.config.position;
+      const {position:eye}=camera.getCameraState();
+      return {orbit:camera.targetTheta,distance:camera.targetDistance,feet:[feet.x,feet.y,feet.z],
+        atEye:Math.hypot(eye.x-feet.x,eye.y-feet.y-1.75*.19,eye.z-feet.z)<1e-5};
+    });
+    const startOrbit=await peerView();
+    const worldPoints=[{x:111,y:136,id:1},{x:166,y:146,id:1}];
+    const pinchStart=[{x:115,y:130,id:1},{x:156,y:130,id:2}];
+    const pinchFinish=[{x:85,y:130,id:1},{x:190,y:130,id:2}];
+    assert.equal(await peerPage.evaluate(points=>points.every(({x,y})=>
+      document.elementFromPoint(x,y)?.classList.contains('world-interaction-canvas')),
+    [...worldPoints,...pinchStart,...pinchFinish]),true);
+    const touchGesture=async(start,finish)=>{
+      await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:start});
+      try{
+        await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:finish});
+      }finally{
+        await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+      }
+    };
+    const waitForTouchTravel=({feet})=>peerPage.waitForFunction(expected=>{
+      const p=holodeckDevelopment.client.getCharacterManager().localController.config.position;
+      return Math.hypot(p.x-expected[0],p.y-expected[1],p.z-expected[2])>.03;
+    },feet,{timeout:5000});
+    await touchGesture([worldPoints[0]],[worldPoints[1]]);
+    await peerPage.waitForFunction(yaw=>
+      Math.abs(holodeckDevelopment.client.getCameraManager().targetTheta-yaw)>.1,startOrbit.orbit,{timeout:5000});
+    await waitForTouchTravel(startOrbit);
+    const startPinch=await peerView();
+    assert.equal(startPinch.atEye,true);
+    await touchGesture(pinchStart,pinchFinish);
+    await peerPage.waitForFunction(distance=>
+      holodeckDevelopment.client.getCameraManager().targetDistance<distance-.02,startPinch.distance,{timeout:5000});
+    await waitForTouchTravel(startPinch);
+    const afterPinch=await peerView();
+    assert.equal(afterPinch.atEye,true);
+    await peerPage.waitForFunction(()=>holodeckDevelopment.client.getCameraManager().activePointers.size===0);
+    assert.deepEqual(await cameraAngles(page),beforePeerTouch);
     await touch.detach();
 
     const peerReadback=await peerPage.evaluate(()=>fetch('api/space/character-presentation').then(r=>r.json()));
@@ -738,7 +780,7 @@ async function main(){
     assert.equal(noGraphics.url(),retryURL);
     assert.deepEqual(errors,[]);
     console.log(JSON.stringify({pose,flightChapters,boostChapters,groundChapters,comparedHeldPose:heldPose,comparisonFrame:110,revision:committed.revision,visitor,observedNote:note,roomScope:true,
-      conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,shortTableWithSharedNote:shortTable,tablePlayback:{speed:2,stoppedAt:lastFrame,loopWrapped:true},independentTableOrbit:{firstCamera,peerCamera,peerOrbit},sharedReceiptMatchesLocalFrame:true,notesWaitedForSharedPose:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
+      conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,shortTableWithSharedNote:shortTable,tablePlayback:{speed:2,stoppedAt:lastFrame,loopWrapped:true},independentTableOrbit:{firstCamera,peerCamera,peerOrbit},touchOrbitAndPinchMoveMiniature:true,sharedReceiptMatchesLocalFrame:true,notesWaitedForSharedPose:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
       situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,reciprocalWorldDoors:true,openedTableFromWorldDoor:true,doorFromViewer:true,returnedToRoomFromViewer:true,tableRigRetriedInPlace:true,rigRetryKeptPose:true,noGraphicsRetryKeptPose:true,graphicsRestoreKeptLocalFrameAndDraft:true}));
   }finally{
     await browser?.close();

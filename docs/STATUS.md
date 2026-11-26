@@ -78,6 +78,11 @@ Both the generated and packed pose catalogs match the installed catalog.
 The exact archive also passed the complete two-visitor Chromium walkthrough,
 including independent cameras and frames, reviewed ground and flight
 chapters, shared notes, the situated native action and graphics recovery.
+A follow-up 568 × 320 touch trial on the same immutable archive drove
+real Chromium touch events into the world canvas. A one-finger drag
+rotated the miniature view and a two-finger spread brought it closer.
+Both moved the miniature, kept the camera at eye height, and released
+pointer ownership. The other visitor's camera and frame stayed local.
 The existing private runtime artifact now retains the exact immutable
 package. Authenticated byte readback matched its SHA-256, and an anonymous
 read returned 404. The prepared owner request pins `6416a5246b17` and
