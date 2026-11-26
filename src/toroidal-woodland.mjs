@@ -85,15 +85,18 @@ function evergreenGeometry(detail,spreading=false){
   const foliage=[0x375443,0x425d45,0x4a674a,0x587348,0x668155,0x738c58];
   const triangle=(a,b,c,tint,value)=>{
     positions.push(...a,...b,...c);
-    shade.setHex(tint).multiplyScalar(value);
-    for(let i=0;i<3;i++)colors.push(shade.r,shade.g,shade.b);
+    shade.setHex(tint);
+    for(const light of typeof value==='number'?[value,value,value]:value){
+      colors.push(shade.r*light,shade.g*light,shade.b*light);
+    }
   };
   const sides=[5,7,9][detail];
   const ring=(radius,height,angle)=>[Math.cos(angle)*radius,height,Math.sin(angle)*radius];
   for(let i=0;i<sides;i++){
     const a=i*TAU/sides,b=(i+1)*TAU/sides;
     const foot=ring(trunkWidth*.68,-.055,a),nextFoot=ring(trunkWidth*.68,-.055,b);
-    const top=ring(.009,trunkDepth+.12,a),nextTop=ring(.009,trunkDepth+.12,b);
+    const stemHeight=detail?.88:trunkDepth+.12;
+    const top=ring(.008,stemHeight,a),nextTop=ring(.008,stemHeight,b);
     triangle(foot,top,nextFoot,trunk,.85+i%3*.10);
     triangle(top,nextTop,nextFoot,trunk,.85+i%3*.10);
   }
@@ -118,6 +121,40 @@ function evergreenGeometry(detail,spreading=false){
       const left=crown(radius*(spreading?.73:.64),base+.042,a-span*.5);
       const right=crown(radius*(spreading?.73:.64),base+.042,a+span*.5);
       const scale=canopyShade*(.81+.25*Math.sin(i*2.71+band)**2);
+      if(detail&&band<whorls-1){
+        // Offset the needle lobes from their branch so the sky breaks
+        // through the whorl. The low tier still carries the original trunk.
+        const branchLength=radius*spread;
+        const cos=Math.cos(a),sin=Math.sin(a);
+        const point=(along,side,lift)=>[
+          lean+branchLength*(along*cos-side*sin),
+          base+.042+along*drop+lift,
+          -.4*lean+branchLength*(along*sin+side*cos),
+        ];
+        if(detail===2){
+          const startLeft=point(0,-.018,-.034),startRight=point(0,.018,-.034);
+          const branchTip=point(.79,0,-.043);
+          triangle(startLeft,startRight,branchTip,trunk,.42);
+          triangle(startRight,startLeft,branchTip,trunk,.53);
+        }
+        const lobes=detail===2?[[.37,-.06,.20],[.65,.08,.18],[.96,-.02,.13]]:
+          [[.45,-.035,.21],[.94,.06,.20]];
+        for(const [order,[reach,offset,width]] of lobes.entries()){
+          const flip=(i+band)%2?1:-1;
+          const side=offset*flip;
+          const ridge=point(reach-.29,side,.103-.018*order);
+          const lobeTip=point(reach+(.025*Math.sin(i*4+band+order)),side,-.035-.011*order);
+          const left=point(reach-.21,side-width,-.025);
+          const right=point(reach-.18,side+width,-.011);
+          const belly=point(reach-.29,side,.020);
+          const value=scale*(.91+.09*Math.sin(i*4.71+band+order*2.2));
+          triangle(ridge,lobeTip,left,tint,[.74*value,1.22*value,.96*value]);
+          triangle(ridge,right,lobeTip,tint,[.74*value,.99*value,1.22*value]);
+          triangle(belly,left,lobeTip,tint,[.56*value,.86*value,1.06*value]);
+          triangle(belly,lobeTip,right,tint,[.56*value,1.06*value,.86*value]);
+        }
+        continue;
+      }
       triangle(apex,tip,left,tint,scale);
       triangle(apex,right,tip,tint,scale*1.13);
       const center=[lean,base+.047,-.4*lean];
