@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {Group, RedFormat, RepeatWrapping, Scene, Vector3} from 'three';
+import {Group, RGFormat, RepeatWrapping, Scene, Vector3} from 'three';
 import {buildTerrainTile, selectTerrainTiles, terrainCoordinates, terrainElevation, terrainPosition} from '../src/toroidal-terrain.mjs';
 import {ToroidalTerrainRenderer} from '../src/toroidal-terrain-renderer.mjs';
 import {buildReflectionBank,REFLECTION_BANK} from '../src/toroidal-bank-reflection.mjs';
@@ -34,19 +34,22 @@ class TestWorker {
 const position = (u, v) => new Vector3(...terrainPosition(u, v, 10));
 const base = 'http://127.0.0.1/holodeck/';
 
-test('short meadow detail is deterministic, repeating and disposed with its terrain', () => {
+test('meadow leaves and pine litter are deterministic, filtered and disposed with their terrain', () => {
   const renderer=new ToroidalTerrainRenderer(new Scene(),base,TestWorker);
   const other=new ToroidalTerrainRenderer(new Scene(),base,TestWorker);
   const texture=renderer.environment.meadowCover.value;
-  assert.equal(texture.format,RedFormat);
+  assert.equal(texture.format,RGFormat);
   assert.equal(texture.wrapS,RepeatWrapping);
   assert.equal(texture.wrapT,RepeatWrapping);
   assert.equal(texture.generateMipmaps,true);
-  assert.equal(texture.image.data.length,128*128);
+  assert.equal(texture.image.data.length,2*128*128);
   assert.deepEqual(texture.image.data,other.environment.meadowCover.value.image.data);
-  assert.ok(Math.abs(texture.image.data.reduce((sum,byte)=>sum+byte,0)/(128*128*255)-.491)<.001);
-  assert.ok(texture.image.data.some(value=>value<95));
-  assert.ok(texture.image.data.some(value=>value>160));
+  for(const [channel,mean] of [[0,.491],[1,.483]]){
+    const samples=texture.image.data.filter((_,index)=>index%2===channel);
+    assert.ok(Math.abs(samples.reduce((sum,byte)=>sum+byte,0)/(samples.length*255)-mean)<.001);
+    assert.ok(samples.some(value=>value<95));
+    assert.ok(samples.some(value=>value>160));
+  }
   let released=false;
   texture.addEventListener('dispose',()=>{released=true;});
   renderer.dispose();
