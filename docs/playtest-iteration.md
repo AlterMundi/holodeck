@@ -2043,6 +2043,27 @@ pose, the companion has no distinct water locomotion state, and the
 desktop key prompt still advertises crouch and jump.
 
 
+## Companion cadence under dropped frames
+
+The pinned MML client advances the player through as many fixed 60 Hz
+simulation steps as fit before a draw. Its render callback still reports one
+fixed step. Passing that duration to the companion caused it to fall behind
+at low display rates until the distance recovery relocated it. On one
+controlled straight walk at 20 fps it relocated twice and fell 14.76 m
+behind. With elapsed presentation time the same route had no relocations
+and stayed within 1.36 m. The client now times the follower and its wake
+from the monotonic render clock, capped to the pinned MML advance limit.
+
+The Node 24 source suite passed 449 tests with two optional skips and the
+client build passed. Playwright drove the rebuilt lightweight toroidal
+fixture through a 53 m walk in local Chromium software WebGL. It recorded
+152 frames at 13.76 fps, no jumps over 1.5 m, a maximum follow distance of
+1.36 m and no page errors. Opus 5.5 High reviewed the actual change. Its wake
+timing correction was applied and included in the browser build. This
+qualifies the timing defect in a controlled fixture. Joint-level jitter,
+physical Normal/Livianos and two independently authenticated visitors
+remain open in [#21](https://github.com/AlterMundi/holodeck/issues/21).
+
 ## Underwater controls and companion posture
 
 The toroidal motion adapter reports the same local swimming and deep
