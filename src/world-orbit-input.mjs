@@ -103,7 +103,8 @@ export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false,
   };
   document.addEventListener('pointerup',event=>{
     touchIds.delete(event.pointerId);
-    if(event.button===2||pan?.id===event.pointerId)release();
+    if(event.button===2)release();
+    else if(event.button===1&&pan?.id===event.pointerId)pan=null;
   },capture);
   document.addEventListener('pointercancel',event=>{
     touchIds.delete(event.pointerId);

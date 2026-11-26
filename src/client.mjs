@@ -1431,7 +1431,11 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         soundBlocked:moving||needsSync,
         width:matterHud.canvas.clientWidth-statusLeft-statusRight,height:matterHud.canvas.clientHeight,
       });
-      mainCamera.near=tableFlight.inspectParts?matterInspectionNear:worldNear;
+      const near=tableFlight.inspectParts?matterInspectionNear:worldNear;
+      if(mainCamera.near!==near){
+        mainCamera.near=near;
+        mainCamera.updateProjectionMatrix();
+      }
       render(renderState);
       if(drawWorld)presentWorldFrame();
       if(!inside&&drawWorld)geometryProbe.afterRender();

@@ -102,10 +102,12 @@ export class CharacterReviewFlight extends MatterFlight{
 
   syncInspectionOrbit(eye,distance){
     this.forward.subVectors(this.reviewAnchor,eye).normalize();
+    const radius=Math.min(this.camera.maxDistance,Math.max(this.camera.minDistance,distance));
+    if(radius!==distance)this.reviewAnchor.copy(eye).addScaledVector(this.forward,radius);
     const theta=Math.atan2(-this.forward.z,-this.forward.x);
     const phi=Math.acos(Math.max(-1,Math.min(1,-this.forward.y)));
     Object.assign(this.camera,{theta,targetTheta:theta,phi,targetPhi:phi,
-      distance,targetDistance:distance,desiredDistance:distance});
+      distance:radius,targetDistance:radius,desiredDistance:radius});
   }
 
   translateInspection(controller,x,y,inward=0){
