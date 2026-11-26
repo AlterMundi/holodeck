@@ -160,6 +160,16 @@ Retries of the same actor's submission are idempotent. Notes remain stored
 across editions. Reading historical notes needs the corresponding edition
 to be selected by the application.
 
+With the exact candidate archive `15ed1ac8a65e` and its protected
+predecessor `df929b9352b3`, an isolated rollout wrote a presentation and
+one note at flight frame 36. The predecessor reopened the same room
+placement, served reciprocal travel to the foyer and left the review
+checkpoint byte-for-byte intact. Reinstalling the candidate restored the
+exact presentation revision, edition, frame and attributed note. A retry
+with the original note ID still returned one note. This covers code
+rollback with retained state. Protected activation and authorized world
+participation remain open.
+
 ## Own-native review on the same room state
 
 Use the existing Holodeck world port in own-native mode while present in
