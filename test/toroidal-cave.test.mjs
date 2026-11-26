@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {DoubleSide, MeshBasicMaterial, Raycaster, Scene, Vector3} from 'three';
-import {buildCaveCrown, CAVE, ToroidalCave} from '../src/toroidal-cave.mjs';
+import {buildCaveCrown, buildToroidalCave, CAVE, ToroidalCave} from '../src/toroidal-cave.mjs';
 import {TOROIDAL_SPAWN, terrainCoordinates, terrainElevation, terrainFrame, terrainPosition, terrainTrail} from '../src/toroidal-terrain.mjs';
 
 const point = (u,v,offset=0) => new Vector3(...terrainPosition(u,v,terrainElevation(u,v)+offset));
@@ -42,6 +42,21 @@ test('the shared collision shell has two open mouths and two covered chambers', 
   assert.equal(colliders.size,0);
   assert.equal(cave.mesh,null);
   assert.equal(cave.crown,null);
+});
+
+test('low rock feet keep the outer sections ordered with room between them',()=>{
+  const {origin,positions}=buildToroidalCave();
+  const verticesPerArch=17;
+  const sections=positions.length/(6*verticesPerArch);
+  const minimumStep=.45*(CAVE.to-CAVE.from)/(sections-1);
+  const coordinate=index=>terrainCoordinates(origin.map((base,axis)=>base+positions[index*3+axis]));
+  for(let row=0;row<sections-1;row++){
+    for(let arch=0;arch<verticesPerArch;arch++){
+      const vertex=row*verticesPerArch+arch;
+      const along=coordinate(vertex+verticesPerArch).u-coordinate(vertex).u;
+      assert.ok(along>=minimumStep,`outer section ${row}, arch vertex ${arch}, step ${along}`);
+    }
+  }
 });
 
 test('visible crown triangles and collision share one footprint off the path and the arch',()=>{

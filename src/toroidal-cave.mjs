@@ -36,27 +36,34 @@ export function buildToroidalCave(terrain = TOROIDAL_TERRAIN) {
     const tunnelWidth = 2.8 + 2 * chambers;
     const ceiling = 2.65 + 2.4 * chambers;
     const walls = 1.6 + 1.8 * Math.sin(Math.PI * t);
+    const fromEntrance = t < .5;
+    const towardChambers = fromEntrance ? 1 : -1;
+    const mouth = Math.max(0, 1 - 7 * Math.min(t, 1 - t)) ** 2;
     for (let arch = 0; arch <= ARCH_SEGMENTS; arch += 1) {
       const radialAngle = Math.PI * arch / ARCH_SEGMENTS;
       const roughness = .34 * Math.sin(23 * t + .7 * arch) + .17 * Math.sin(51 * t - 1.8 * arch);
-      const mouth = Math.max(0, 1 - 7 * Math.min(t, 1 - t)) ** 2;
       const transverse = Math.cos(radialAngle);
       const lift = Math.sin(radialAngle);
-      // Recede at the crown and advance the scattered feet into the slope.
-      // Leave the walkable inner arch on its original, clear route.
-      const mouthOffset = (t < .5 ? 1 : -1) * mouth *
-        (1.75 * lift - 2.7 * transverse ** 2 + .75 * Math.cos(6 * radialAngle));
+      // Roll exposed toes into the slope. Fade out below the shoulder of
+      // each arch so the roof and the complete inner surface keep their shape.
+      const low = Math.max(0, 1 - lift / .62);
+      const toe = mouth * low * low * (3 - 2 * low);
+      const trailSide = fromEntrance ? transverse < 0 : transverse > 0;
+      const retreat = trailSide ? 2.5 : 1.6;
+      const mouthOffset = towardChambers * (mouth *
+        (1.75 * lift - 2.7 * transverse ** 2 + .75 * Math.cos(6 * radialAngle)) + toe * retreat);
       const bedding = Math.sin(9 * radialAngle + 3 * t) + .46 * Math.sin(19 * radialAngle - 11 * t);
       const shade = .83 + .08 * Math.sin(18 * t + .65 * arch) + .07 * bedding;
       for (let skin = 0; skin < 2; skin += 1) {
         const outer = skin === 0;
-        const skirt = mouth * (1 - lift) * (2.1 + .6 * bedding);
+        const skirt = mouth * (1 - lift) * (2.1 + .6 * bedding) - toe * (trailSide ? 1.3 : .8);
         const metersAcross = transverse * (tunnelWidth + (outer ? walls + roughness + skirt : .25 * roughness));
         const v = center + metersAcross / (TAU * terrain.tubeRadius);
         const longitude = outer ? u + mouthOffset / (TAU * terrain.majorRadius) : u;
         const floor = terrainElevation(longitude, v, terrain);
         const shell = walls + roughness * 2 + (.45 + .55 * mouth) * bedding;
-        const height = floor - 1.1 + lift * (ceiling + 1.1 + (outer ? shell : roughness * .2));
+        const height = floor - 1.1 + lift * (ceiling + 1.1 + (outer ? shell : roughness * .2)) -
+          (outer ? toe * (trailSide ? .74 : .49) : 0);
         const p = terrainPosition(longitude,v,height,terrain);
         const vertex = skin * stride + section * width + arch;
         const index = vertex * 3;
