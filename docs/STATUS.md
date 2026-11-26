@@ -50,7 +50,12 @@ at local frames 37 and 35 with separate cameras. Conversation captured the
 speaker's exact worktable revision and local frame 37 while the shared
 presentation changed to frame 35. Native note replay retained one note.
 Rig retry and WebGL recovery restored the same edition, draft and frame.
-The protected receiver still selects archive `d2a9b89a726d`; selection
+The package is published to the existing private candidate artifact.
+The installed Home deployment reader verified the exact immutable
+version and archive digest. The private candidate record selects its
+validated, unsubmitted owner request against `d2a9b89a726d`. Two older
+upload copies were retired after matching their project archives, and
+the previous candidate remains in private history. Protected selection
 and participation by authenticated visitors remain with Holodeck.
 
 ## Compact exterior terrain minimap
