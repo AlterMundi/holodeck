@@ -1139,7 +1139,9 @@ continues the same field through the western pines with ferns and local
 twilight lighting. One-device comparison is recorded. Player feedback,
 remaining gaps and later device qualification are open. The
 [protected stone trial](environment-art-revamp.md#installed-meadow-stone-and-grass-contact-trial)
-adds irregular shapes and a grass transition around the same rooted rocks.
+adds irregular shapes and a grass transition around the same rooted rocks. The
+[local pine branchlet draft](environment-art-revamp.md#branchlets-in-nearby-pine-crowns-local-draft)
+opens the close canopy while raising the need for a moving detail-transition check.
 
 Use the arrival meadow and its wooded edge for one continuous first pass.
 Match the grass roots to a short-cover ground material and add dense low

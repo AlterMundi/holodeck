@@ -80,6 +80,23 @@ tufts and match their root tint and lighting to distant ground coverage.
 Compare Normal and Livianos on the same route before increasing density.
 Instance counts and distance fade ranges are tuning outputs of that comparison.
 
+#### Branchlets in nearby pine crowns (local draft)
+
+Candidate `2f857516e807` from `81b7210` splits the nearby and middle
+whorls into staggered branchlets, with quieter stems and tip-to-root
+colour. The same instancing, root positions and distant canopy tiers
+remain. The trees use no new asset requests.
+
+A same-camera upward view on one RTX 2060 opened more sky between the
+leaves. A fixed blue-channel proxy in the upper 450 rows rose from
+22.6% to 35.8% of the image at noon. It estimates relative openness
+for this particular view. A 6.50 m walk and matched dusk view passed.
+The scene used 106 draws in both versions and 527,342 versus 505,818
+triangles at an 850×552 buffer. Median animation frame interval was
+16.7 ms in both. The closest branchlets still read as occasional flat
+triangles. The draft remains local for refinement and a subsequent
+check of the silhouette while crossing detail transitions.
+
 ### Air and light
 
 Link the horizon, the terrain's distant color and the low-angle sun.
