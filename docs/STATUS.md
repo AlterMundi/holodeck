@@ -35,8 +35,10 @@ from the table and reopened the controls without replacing the world
 document or changing rooms. The standalone viewer also recovered the
 exact pose after a forced model failure. The latest staged archive
 is `8a42f0c41b06b8d740c154093053aa437fed7daf7439c7253dbe6d526b8dbeaf`.
-It passed 435 Node checks with two skips. The private request below
-remains the prepared activation candidate.
+It passed 435 Node checks with two skips. The private Home receiver
+read the exact archive. The private Character candidate record now
+points to the prepared owner request for `8e9c781` against
+`d2a9b89a726d`. The request has not been submitted.
 
 Candidate `2c4f220` adds the original-link model retry to the verified
 arrival baseline. Archive
