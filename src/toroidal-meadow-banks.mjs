@@ -96,10 +96,10 @@ export function shortMeadowPlants(x,z,lightweight){
       // Use the same continuous field as the woodland and its baked ground.
       // The floor stays covered in dense stands while lower leaves let ferns read.
       const canopy=terrainWoodland(u,v,h);
-      if(pick(277)<canopy*.26)continue;
+      if(pick(277)<canopy*.10)continue;
       const moisture=terrainMeadowMoisture(u,v,h);
       const palette=moisture>.54?[0x96ac70,0x81935a,0xb0b286]:[0xb2ad77,0xa0a46c,0xc1b78e];
-      plants.push({u,v,h,yaw:pick(64)*2*Math.PI,size:(.68+.62*pick(48))*(1-canopy*.31),
+      plants.push({u,v,h,yaw:pick(64)*2*Math.PI,size:(.68+.62*pick(48))*(1-canopy*.20),
         color:palette[Math.floor(pick(12)*palette.length)],canopy});
     }
   }
@@ -108,10 +108,10 @@ export function shortMeadowPlants(x,z,lightweight){
 
 function shortLeafGeometry(lightweight){
   const positions=[],colors=[],indices=[],color=new Color();
-  for(let i=0;i<(lightweight?4:6);i++){
+  for(let i=0;i<(lightweight?4:5);i++){
     const angle=i*goldenAngle,x=Math.cos(angle),z=Math.sin(angle);
     const lean=.12+.28*random(33,i,3),height=.16+.24*random(33,i,9);
-    const width=.009+.007*random(33,i,5);
+    const width=.015+.008*random(33,i,5);
     const base=positions.length/3;
     for(const [t,spread,shade] of [[0,width*.58,0x657341],[.55,width,0xb6ab74],[1,0,i%3?0xddd097:0xe6cda2]]){
       const radius=.045+lean*t*t;
@@ -328,7 +328,7 @@ export class ToroidalMeadowBanks {
         transform.scale.setScalar(plant.size);
         transform.updateMatrix();
         batch.setMatrixAt(index,transform.matrix);
-        batch.setColorAt(index,color.setHex(plant.color).lerp(shade,plant.canopy*.70));
+        batch.setColorAt(index,color.setHex(plant.color).lerp(shade,plant.canopy*.45));
       }
       batch.computeBoundingSphere();
       batch.boundingSphere.radius+=.10;

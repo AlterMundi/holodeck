@@ -61,14 +61,14 @@ test('the meadow profiles share rooted banks outside the trail and dispose their
   const woodlandRoots=shortMeadowPlants(-81,81,false);
   assert.ok(woodlandRoots.length>450);
   assert.ok(woodlandRoots.filter(root=>root.canopy>.6).length>150);
-  assert.ok(woodlandRoots.every(root=>root.size<=1.3*(1-root.canopy*.31)+1e-8));
+  assert.ok(woodlandRoots.every(root=>root.size<=1.3*(1-root.canopy*.20)+1e-8));
   const identities=new Set(normalRoots.map(p=>p.u+':'+p.v));
   assert.ok(lightRoots.every(p=>identities.has(p.u+':'+p.v)));
   assert.ok(normalRoots.every(p=>terrainTrail(p.u,p.v)<=.08));
   cover.update(spawn,false);
   const shortLayer=()=>batches().find(batch=>batch.name==='Short meadow grass');
   assert.ok(shortLayer()?.count>0);
-  assert.equal(triangleCount(),21342+18*shortLayer().count);
+  assert.equal(triangleCount(),21342+15*shortLayer().count);
   assert.equal(batches().length,11);
   const original=batches()[0];
   cover.update(spawn,true);
