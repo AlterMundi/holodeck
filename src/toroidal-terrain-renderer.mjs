@@ -676,6 +676,9 @@ export class ToroidalTerrainRenderer {
     this.worker = null;
     this.inFlight = null;
     this.discardTarget();
+    this.bankBuild = null;
+    this.bankWanted = false;
+    this.selectWaterMaterial();
   }
 
   dispose() {

@@ -149,6 +149,15 @@ test('the bank data follows the curved terrain and stays off the lightweight wat
 
   renderer.update(near,true);
   assert.equal(renderer.visibleWaterMaterial,renderer.waterMaterial);
+  renderer.update(near,false);
+  drain();
+  renderer.update(near,false);
+  assert.equal(renderer.visibleWaterMaterial,reflected);
+  worker.onerror({preventDefault() {}});
+  assert.equal(renderer.visibleWaterMaterial,renderer.waterMaterial);
+  renderer.update(near,true);
+  for(const mesh of renderer.active.values())
+    for(const water of mesh.children)assert.equal(water.material,renderer.waterMaterial);
   let disposals=0;
   for(const target of [texture,reflected])target.addEventListener('dispose',()=>disposals++);
   renderer.dispose();
