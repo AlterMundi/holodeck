@@ -28,6 +28,19 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+The table timeline marks the chapter frames returned by the selected
+animation. It pins Proyección `52bdbe0f8eda561e1a068dff21f1eec99e9fe9c7`.
+The package SHA-256 is
+`24754cf9748313fcb2beae1340da6c3a82e600e6504925fdbdfbb46c470f56f7`.
+Chromium captured five marks for the standard flight study
+and ten for fast flight. It switched studies in a 390 CSS pixel
+touch-emulated view and selected release at frame 105. The marks are
+visual references. The existing phase and seek controls still own
+activation. The compact controls fit, while the review figure can fall
+outside the initial portrait camera frame. Protected selection and
+the narrow review framing remain open. The full Node suite passed 442
+cases with two skips.
+
 The optical timeline now fills the track through the confirmed frame and
 retains a separate marker for a local drag proposal. Proyección
 `f0893cba1d27e569202b68a410706892cec76f3a` is pinned with the archive SHA-512.

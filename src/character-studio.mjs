@@ -50,7 +50,7 @@ const controls=[
   ...sectionIds.map(id=>({...button(id,id),pressed:path('selectedSection/'+id),weight:id==='Comparar'?1.36:1})),
   label('title','Revisión de movimiento','title'),choice('rig','Personaje'),choice('clip','Ciclo'),
   {id:'clock',component:'HudRange',label:'Fotograma',min:0,max:path('lastFrame'),step:1,value:path('frame'),
-    draft:path('draft/frame'),gestureKey:path('clipEdition'),
+    draft:path('draft/frame'),gestureKey:path('clipEdition'),markers:path('chapterFrames'),
     action:{event:{name:'clock',context:{value:path('draft/frame'),clipEdition:path('clipEdition')}}}},
   label('heldPose',path('heldPose'),'status'),
   {...choice('chapter','Fase'),
@@ -536,7 +536,7 @@ export function openCharacterStudio(document,table=null){
       compareLabel:showingReference?'Ver A':'Ver B',showingReference,noReference:!reference,
       lastFrame:frameLimit(),clipEdition:clipEdition(),speedOptions,speed,loop,
       heldPose:show.heldPose?'Último fotograma de '+(showingReference?'B':'A')+' · '+exactFrame:'',
-      chapter,chapterOptions:chapters,
+      chapter,chapterOptions:chapters,chapterFrames:chapters.map(entry=>entry.frame),
       canReview:canReview===true,presentationBusy,
       accessStatus:checkingAccess?'Comprobando acceso al Taller…':
         canReview===false?'Entrá al Taller para compartir notas.':'No pude confirmar el acceso al Taller.',
