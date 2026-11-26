@@ -28,6 +28,15 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+Source `d8b4706` keeps the direct pose viewer recoverable when the
+initial WebGL context fails. Chromium rejected all WebGL contexts for
+the first load, inspected the confirmed foyer link and focused retry,
+then retried the exact flight URL and restored frame 36. The package
+`b9afcba42fdc7c7adbc0d1e969aac66274807660f5418b4b5a07cc09037b8831`
+also passed the physical doors and independent tabletop and note
+checks. The pose catalog is unchanged. The Node suite passed 426
+checks with two skips. This was a staged fixture trial.
+
 Source `bc17d92dbbe4df285b676a8320e18f28844f23ec` carries the deployed
 touch landscape map from `bf4886aafe4e` into the Character candidate.
 Review archive
