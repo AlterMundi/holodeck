@@ -146,6 +146,53 @@ Open before acceptance:
 - Nicolás's judgement of the motion.
 
 
+## Humanoid ground gait follows rendered travel
+
+Candidate `4d87ebe3a88d` from `13b1c78` synchronizes the stock jog and run clips to the
+avatar's projected ground travel. The shared cycle aligns the approximate
+contact windows when the clips blend. The controller may advance several
+simulation steps between two draws. The gait uses the controller's clip
+clocks for those steps, then subtracts the renderer's single mixer step
+from the assigned time. A timed handoff keeps the current phase until the
+ground clips fade after takeoff or another medium change.
+
+Both published rig families were sampled with the MML track filter.
+During low moving-toe intervals the jog clip moved back at about 4.55 m/s
+and the run at about 6.15 m/s. The world targets 5 and 8 m/s.
+On the physical Pi the previous cadence experiment looked worse because
+it capped travel to one mixer step per draw. The exact corrected package
+passed the same walk, sprint and jump inputs on RTX 2060 Normal and
+Pi 5 V3D Livianos. Walk and sprint were sampled along the outside
+arrival route with 100 eligible render pairs per mode and build.
+
+| Device and mode | Median low-toe drift per selected interval, before → after | Drift as fraction of actor travel, before → after |
+| --- | --- | --- |
+| RTX 2060 Normal, jog | 2.61 → 0.54 cm | 27.5% → 7.2% |
+| RTX 2060 Normal, run | 2.82 → 1.42 cm | 30.0% → 7.7% |
+| Pi 5 V3D Livianos, jog | 1.43 → 0.88 cm | 8.6% → 7.0% |
+| Pi 5 V3D Livianos, run | 6.07 → 1.34 cm | 23.8% → 7.5% |
+
+The toe samples use low, rearward-moving bones as a stance proxy.
+Frame time and route distance vary within the measured intervals. This
+estimates skating and does not establish planted contacts on stairs,
+slopes or during tight turns. In a separate context on the physical
+RTX, a second fixture identity observed the first actor's jog and run
+through the shared world. Both physical profiles recorded actual
+ungrounded and grounded frames across a keyboard jump with finite bone
+positions. Real independently signed-in visitors and the interior
+threshold contact review remain open.
+
+The exact source passed 421 Node 24 checks with two optional skips.
+The protected receiver still selects `bf4886aafe4e` with
+`e2b318f4b262` as its previous package. Home denied publisher
+authorization before candidate activation. The installed authority
+reader detected a stale CompAII actor proof. The same owner key is
+registered and unrevoked. Resume the retained prepared package
+retirement through the same publisher after the signed Home proof is
+reconciled. The exact candidate and both protected package selectors
+remain available.
+See [motion #21](https://github.com/AlterMundi/holodeck/issues/21).
+
 ## Remote boost wake on the selected browser build
 
 A controlled two-client run of live package `394ab30b12c6` used RTX
