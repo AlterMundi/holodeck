@@ -160,7 +160,7 @@ export async function loadCompanionFigure(url){
       edgeWeight=Math.min(1,edgeWeight);
       for(const shot of shots.values())shot.action.setEffectiveWeight(shot.weight/Math.max(1,edgeWeight));
 
-      if(supported&&motion)gait.advance({step,speed,velocity,place});
+      if(supported&&motion)gait.advance({step,speed,velocity,place,directional:medium==='ground'});
       else if(!supported||!motion)gait.reset();
       for(const [name,{action,weight}] of base){
         action.setEffectiveWeight(weight/Math.max(1e-6,total)*(1-edgeWeight));
@@ -204,7 +204,8 @@ export async function loadCompanionFigure(url){
 
       // Tilt about the body in air and water, and about the feet on the ground.
       pitching.update(motion||wet?pitch:0,motion&&!reset?step:10);
-      rolling.update(motion?bank:0,motion&&!reset?step:10);
+      const lateralBank=medium==='ground'?.04*gait.lateral*smooth((speed-.25)/.9):0;
+      rolling.update(motion?bank-lateralBank:0,motion&&!reset?step:10);
       const pivot=pivoting.update(supported?0:.52,motion&&!reset?step:10);
       tilt.setFromAxisAngle(right,pitching.value).multiply(roll.setFromAxisAngle(forward,rolling.value));
       offset.copy(vertical).multiplyScalar(pivot);

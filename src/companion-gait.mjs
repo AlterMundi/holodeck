@@ -2,7 +2,7 @@ import {Matrix4,Quaternion,Vector3} from 'three';
 import {clamp,smooth} from './avatar-motion-curves.mjs';
 
 const localUp=new Vector3(0,1,0),localForward=new Vector3(0,0,1),localRight=new Vector3(1,0,0);
-const ankleHeight=.126,stance=.113,toe=.115;
+const ankleHeight=.126,stance=.113,toe=.115,lateralToeClearance=.13;
 const legs=[['leg-left','shin-left','foot-L',-1,0],['leg-right','shin-right','foot-R',1,.5]];
 
 // Cadence rises with speed and the stance covers only what the legs can reach.
@@ -23,13 +23,13 @@ export function bindCompanionGait(root){
     sole:new Vector3(),from:new Vector3(),target:new Vector3(),ankle:new Vector3(),toe:new Vector3(),
     facing:new Quaternion(),fromFacing:new Quaternion(),rest:new Quaternion(),
     clipThigh:new Quaternion(),clipShin:new Quaternion(),clipFoot:new Quaternion(),
-    planted:true,swing:0,duration:.25,height:0,pitch:0,fromPitch:0,idle:0,error:0,
+    planted:true,swing:0,duration:.25,height:0,pitch:0,fromPitch:0,forwardSwing:1,lateralSwing:0,lateralContact:0,idle:0,error:0,
   }));
   if(!hips||limbs.some(limb=>!limb.thigh||!limb.shin||!limb.foot))return null;
   root.updateWorldMatrix(true,true);
   const world=new Quaternion(),parent=new Quaternion(),turn=new Quaternion(),desired=new Quaternion();
   const hip=new Vector3(),knee=new Vector3(),axis=new Vector3(),pole=new Vector3(),point=new Vector3();
-  const from=new Vector3(),to=new Vector3(),up=new Vector3(),forward=new Vector3(),direction=new Vector3();
+  const from=new Vector3(),to=new Vector3(),up=new Vector3(),sideAxis=new Vector3(),forward=new Vector3(),direction=new Vector3();
   const stage=new Matrix4(),landing=new Quaternion();
   root.getWorldQuaternion(world).invert();
   const size=root.getWorldScale(new Vector3()).x;
@@ -40,6 +40,7 @@ export function bindCompanionGait(root){
   }
   const clipHips=new Vector3();
   let phase=0,walking=false,fresh=true,still=0,rise=0,drop=0,posed=false;
+  let side=0,lateral=0,forwardSwing=1;
 
   function home(limb,out,advance=0){
     out.set(limb.side*stance,0,.004).multiplyScalar(root.scale.x).applyQuaternion(root.quaternion).add(root.position);
@@ -58,13 +59,15 @@ export function bindCompanionGait(root){
     home(limb,limb.sole);
     place?.(limb.sole,up);
     stand(limb,limb.facing,limb.sole,place);
-    Object.assign(limb,{planted:true,swing:0,height:0,pitch:0,idle:0,cycle:undefined});
+    Object.assign(limb,{planted:true,swing:0,height:0,pitch:0,forwardSwing:1,lateralSwing:0,idle:0,cycle:undefined});
   }
   function liftOff(limb,duration){
     Object.assign(limb,{planted:false,swing:0,duration});
     limb.from.copy(limb.sole);
     limb.fromFacing.copy(limb.facing);
     limb.fromPitch=limb.pitch;
+    limb.forwardSwing=walking?forwardSwing:1;
+    limb.lateralSwing=walking?lateral:0;
   }
   const heading=limb=>{
     from.copy(localForward).applyQuaternion(limb.facing);
@@ -77,9 +80,10 @@ export function bindCompanionGait(root){
     limbs,
     get phase(){return ((phase%1)+1)%1;},
     get walking(){return walking;},
-    reset(){fresh=true;walking=false;phase=0;still=0;rise=drop=0;},
+    get lateral(){return walking?side*lateral:0;},
+    reset(){fresh=true;walking=false;phase=0;still=0;rise=drop=side=lateral=0;forwardSwing=1;},
     // Advance contacts before the mixer runs, so the body clips share the phase.
-    advance({step,speed,velocity,place}){
+    advance({step,speed,velocity,place,directional}){
       const scale=root.scale.x;
       up.copy(localUp).applyQuaternion(root.quaternion);
       if(fresh){
@@ -87,13 +91,20 @@ export function bindCompanionGait(root){
         fresh=false;
       }
       const planar=direction.copy(velocity).addScaledVector(up,-velocity.dot(up)).length();
-      if(planar>1e-5)direction.divideScalar(planar);
+      sideAxis.copy(localRight).applyQuaternion(root.quaternion);
+      if(planar>1e-5){
+        direction.divideScalar(planar);
+        side=directional?direction.dot(sideAxis):0;
+        lateral=smooth((Math.abs(side)-.55)/.3);
+        const along=direction.dot(forward.copy(localForward).applyQuaternion(root.quaternion));
+        forwardSwing=directional?smooth((along-.2)/.6):1;
+      }
       const moves=speed>(walking?.05:.09);
       const {cadence,length,duty}=companionStride(Math.max(.09,speed));
       if(moves&&!walking){
-        // The foot that trails the direction of travel takes the first step.
         const trailing=limbs.map(limb=>point.subVectors(limb.sole,root.position).dot(direction));
-        const first=trailing[0]<=trailing[1]?0:1;
+        // The near foot opens a sidestep. The trailing foot leads a straight stride.
+        const first=lateral>.5?Number(side>0):Number(trailing[0]>trailing[1]);
         phase=Math.floor(phase)+duty-limbs[first].offset+(limbs[first].offset?1:0);
         limbs[1-first].cycle=Math.floor(phase+limbs[1-first].offset);
         limbs[first].cycle=undefined;
@@ -102,8 +113,10 @@ export function bindCompanionGait(root){
       still=moves?0:still+step;
       if(walking)phase+=cadence*step;
       const lead=Math.min(length*duty,.33)/2*scale;
+      for(const limb of limbs)limb.lateralContact=limb.sole.dot(sideAxis);
       let swinging=limbs.filter(limb=>!limb.planted).length;
       for(const limb of limbs){
+        const other=limbs[limb===limbs[0]?1:0];
         if(limb.planted){
           const strayed=point.subVectors(limb.sole,home(limb,to)).addScaledVector(up,-point.dot(up)).length()/scale;
           if(walking){
@@ -120,7 +133,6 @@ export function bindCompanionGait(root){
             const turned=heading(limb);
             const error=strayed/.05+turned/.34;
             limb.idle=error>(still>.45?.6:1)?limb.idle+step:0;
-            const other=limbs[limb===limbs[0]?1:0];
             if(limb.idle>.05&&!swinging&&(other.idle===0||other.error<=error)){
               liftOff(limb,.25);
               swinging++;
@@ -132,6 +144,14 @@ export function bindCompanionGait(root){
         const elapsed=limb.swing+step/limb.duration;
         limb.swing=Math.min(1,elapsed);
         home(limb,limb.target,walking?Math.max(-lead*.4,(1-elapsed)*limb.duration*planar+lead):0);
+        // A swing can turn sideways after lift-off. Keep the clearance until landing.
+        if(directional)limb.lateralSwing=Math.max(lateral,limb.lateralSwing);
+        if(limb.lateralSwing>0){
+          // Each swing uses the same snapshot, even when both feet leave the ground.
+          const separation=limb.side*(limb.target.dot(sideAxis)-other.lateralContact);
+          const correction=Math.max(0,lateralToeClearance*scale-separation)*limb.lateralSwing;
+          limb.target.addScaledVector(sideAxis,limb.side*correction);
+        }
         place?.(limb.target,up);
         const s=limb.swing,travel=smooth(s);
         limb.sole.lerpVectors(limb.from,limb.target,travel);
@@ -143,9 +163,12 @@ export function bindCompanionGait(root){
         stand(limb,landing,limb.target,place);
         limb.facing.slerpQuaternions(limb.fromFacing,landing,travel);
         const arc=Math.sin(Math.PI*s**.82);
-        limb.height=(walking?Math.min(.15,.05+.026*speed):.038)*arc*arc;
+        const stride=limb.forwardSwing;
+        limb.height=(walking?Math.min(.15,.05+.026*speed)*(.75+.25*stride):.038)*arc*arc;
         const kick=clamp(speed/4);
-        limb.pitch=limb.fromPitch*(1-smooth(s/.35))+(.30+.65*kick)*Math.sin(Math.PI*clamp(s/.62))-(.12+.16*kick)*Math.sin(Math.PI*clamp((s-.55)/.45));
+        const peel=(.30+.65*kick)*Math.sin(Math.PI*clamp(s/.62));
+        const strike=(.12+.16*kick)*Math.sin(Math.PI*clamp((s-.55)/.45));
+        limb.pitch=limb.fromPitch*(1-smooth(s/.35))+peel*(.25+.75*stride)-strike*stride;
         if(s>=1){
           limb.sole.copy(limb.target);
           limb.facing.copy(landing);

@@ -163,3 +163,75 @@ test('close passes animate the companion using the ground distance it actually m
     }
   }
 });
+
+test('a lateral step leads with the near foot and keeps the rendered toes apart',async()=>{
+  for(const hz of [20,60,90]){
+    for(const side of [1,-1]){
+      const {avatar}=await loadCompanion();
+      try{
+        const {figure}=avatar,root=figure.root,seconds=1/hz,speed=1.4;
+        const up=new Vector3(0,1,0);
+        root.quaternion.setFromAxisAngle(up,side>0?.65:1.57);
+        const right=new Vector3(1,0,0).applyQuaternion(root.quaternion);
+        const velocity=right.clone().multiplyScalar(side*speed),still=new Vector3();
+        const frame=root.getObjectByName('root'),rest=frame.quaternion.clone().invert();
+        const bank=new Vector3();
+        const feet=figure.gait.limbs,anchors=new Map();
+        figure.pose({seconds,velocity:still,reset:true});
+        let first=null,stance=Infinity,lean=0,plantedDrift=0;
+        for(let index=0;index<2*hz;index++){
+          root.position.addScaledVector(velocity,seconds);
+          figure.pose({seconds,speed,velocity});
+          if(first===null)first=feet.find(foot=>!foot.planted)?.side??null;
+          root.updateWorldMatrix(true,true);
+          const toes=feet.map(limb=>{
+            const toe=limb.foot.localToWorld(new Vector3(0,-.115,-.126));
+            if(!limb.planted)anchors.delete(limb);
+            else if(anchors.has(limb))plantedDrift=Math.max(plantedDrift,anchors.get(limb).distanceTo(toe));
+            else anchors.set(limb,toe.clone());
+            return toe;
+          });
+          stance=Math.min(stance,toes[1].sub(toes[0]).dot(right));
+          bank.copy(up).applyQuaternion(frame.quaternion.clone().multiply(rest));
+          lean=Math.max(lean,side*bank.x);
+        }
+        assert.equal(first,side,`${hz} Hz: the foot toward travel steps first`);
+        assert.ok(stance>.085,`${hz} Hz: rendered toe separation ${stance} m`);
+        assert.ok(plantedDrift<.005,`${hz} Hz: planted contact drifts ${plantedDrift} m`);
+        assert.ok(lean>.035,`${hz} Hz: torso leans into the sidestep`);
+        for(let index=0;index<hz;index++)figure.pose({seconds,velocity:still});
+        bank.copy(up).applyQuaternion(frame.quaternion.clone().multiply(rest));
+        assert.ok(Math.abs(bank.x)<.005,`${hz} Hz: torso settles after stopping`);
+      }finally{
+        avatar.dispose();
+      }
+    }
+  }
+});
+
+test('a swing opens for a lateral move that starts before the body turns',async()=>{
+  const {avatar}=await loadCompanion();
+  try{
+    const {figure}=avatar,root=figure.root,seconds=1/60,speed=1.4;
+    const up=new Vector3(0,1,0),right=new Vector3(),velocity=new Vector3();
+    const turnAt=.54,headingDelay=.08;
+    figure.pose({seconds,velocity,reset:true});
+    let clearance=Infinity;
+    for(let index=0;index<60;index++){
+      const time=index*seconds;
+      const turn=Math.max(0,Math.min(1,(time-turnAt-headingDelay)/.44));
+      const lateral=time>=turnAt;
+      root.quaternion.setFromAxisAngle(up,turn*Math.PI/2);
+      velocity.set(lateral?speed:0,0,lateral?0:speed);
+      root.position.addScaledVector(velocity,seconds);
+      figure.pose({seconds,speed,velocity});
+      if(!lateral||time>turnAt+headingDelay+.14)continue;
+      const [leftToe,rightToe]=figure.gait.limbs.map(limb=>limb.foot.localToWorld(new Vector3(0,-.115,-.126)));
+      right.set(1,0,0).applyQuaternion(root.quaternion);
+      clearance=Math.min(clearance,rightToe.sub(leftToe).dot(right));
+    }
+    assert.ok(Number.isFinite(clearance)&&clearance>.11,`toe clearance after turn: ${clearance} m`);
+  }finally{
+    avatar.dispose();
+  }
+});
