@@ -28,6 +28,15 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+Source `661afee` binds the received-pose indicator to the exact rig,
+clip edition and displayed frame. Chromium showed it upon following
+frame 36 and removed it when the visitor stepped locally to frame 37.
+A second visitor still read the shared frame and its note. Archive
+`10880344b81ef1244b588a4e817690554f8da51dfa58fdfb4853fec14821e92d`
+also passed both motion studies, graphics recovery, and reciprocal
+doors with staged fixture identities. The Node suite passed 426
+checks with two skips.
+
 The maintained Character check now exercises both motion studies from
 the actual in-world worktable. On archive
 `9dc0e9a15ee138c8b2dba7295cc563b6f6931048610a4a97820fbfde5fc9130e`,
