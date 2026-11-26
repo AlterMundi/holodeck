@@ -35,7 +35,7 @@ test('collection retry reports upstream server errors and resets on denial',asyn
     base:new URL('https://fixture.test/holodeck/'),sync(){},
     archive:{sync(){}},worktable:{sync(){}},onCatalogUnavailable(){notices++;},
   });
-  for(const transient of [504,502,500,503]){
+  for(const transient of [504,502,500,503,408,429]){
     status=transient;
     const began=performance.now();
     await view.refresh();

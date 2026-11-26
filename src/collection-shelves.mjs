@@ -131,7 +131,7 @@ export class CollectionShelves {
         {cache:'no-store',redirect:'error',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(6500)])});
       const data=response.ok?await response.json():null;
       if(controller.signal.aborted)return;
-      if(response.status>=500)this.retryCatalog();
+      if(response.status>=500||response.status===408||response.status===429)this.retryCatalog();
       else this.catalogUnavailable=false;
       const current=data?.room===this.room?data:null;
       this.sync(current?.projects);
