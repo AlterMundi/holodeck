@@ -196,6 +196,10 @@ async function main(){
     const panel=page.getByRole('group',{name:'Revisión de movimiento',exact:true});
     const action=name=>panel.getByRole('button',{name,exact:true});
     await action('Ver pose del Taller').waitFor({state:'attached',timeout:28000});
+    const webCanvas=page.locator('main.character-studio > canvas');
+    await webCanvas.waitFor({state:'visible'});
+    assert.equal(await webCanvas.evaluate(canvas=>
+      document.elementFromPoint(innerWidth/2,innerHeight/2)===canvas),true);
     const current=await native('character-review.current');
     assert.equal(current.room,studio);
     const pose={rig:'humanoid',clip:'estudio-vuelo',edition:current.catalog.humanoid['estudio-vuelo'].edition,frame:36};

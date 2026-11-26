@@ -109,6 +109,7 @@ function buildStage(document){
   style.textContent=studioStyle;
   wrapper.prepend(style);
   document.body.replaceChildren(wrapper);
+  document.body.removeAttribute('data-world-starting');
   return wrapper;
 }
 

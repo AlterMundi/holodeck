@@ -28,6 +28,16 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+The standalone viewer now retires the world's startup curtain when it
+mounts its own canvas. Before the change the package still accepted the
+shared frame and note, but the world's CSS hid the visible canvas and
+blocked its pointer surface. Chromium on the corrected package verified
+the visible canvas and center hit, followed the humanoid flight study to
+frame 36 and saved a note read back by the independent own-native actor.
+The resulting screenshot shows the rig, HUD and room note together. The
+browser regression now asserts the visible pointer surface. Protected
+world selection and acceptance remain open.
+
 The in-world table also exposes a native retry when the initial
 character cannot load. The complete Chromium check forced a failed
 Navegante download after crossing the physical foyer door, retried
