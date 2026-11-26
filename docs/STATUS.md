@@ -28,6 +28,18 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+The optical timeline now fills the track through the confirmed frame and
+retains a separate marker for a local drag proposal. Proyección
+`f0893cba1d27e569202b68a410706892cec76f3a` is pinned with the archive SHA-512.
+The candidate archive SHA-256 is
+`40bf7218b58c4059d3267230f18150ead52146238e63d90b392700e64b4f9f95`.
+Chromium walked through the physical door, opened the table and selected
+flight frame 36. Captures retain the same frame at desktop width and
+390 CSS pixels with touch emulation. The narrow panel stayed within the
+viewport. The renderer's mouse and touch checks confirmed that the fill
+changes only when the host confirms a value. The runtime server and pose
+catalog match the prior candidate. Protected selection remains open.
+
 The present and copy buttons bind the exact displayed pose to the
 pointer press and typed action. The renderer pin is Proyección
 `e9fc30ff943a5110b713f1b3c5c3a04b578430b9` with its archive SHA-512.
