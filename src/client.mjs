@@ -13,7 +13,7 @@ import {TOROIDAL_SUN,ToroidalTerrainRenderer,toroidalSunDirection} from './toroi
 import {bindToroidalMml} from './toroidal-mml.mjs';
 import {FlightWake} from './flight-wake.mjs';
 import {bindFlightAvatarAnimation} from './flight-avatar-animation.mjs';
-import {RemoteDocumentWrapper} from '@mml-io/mml-web';
+import {LoadingProgressManager,RemoteDocumentWrapper} from '@mml-io/mml-web';
 import {RoomSceneCache,roomArtURL} from './room-scene-cache.mjs';
 import {bindInteriorHeadroom} from './avatar-headroom.mjs';
 import {MatterFlight,bindMatterFlight,bindMatterHologram} from './matter-flight.mjs';
@@ -231,7 +231,7 @@ function entryRoomReady(root,model=root?.querySelector('m-model#room-art[src]'))
 }
 
 const entryLocation=new AbortController();
-const entryDeadline=setTimeout(()=>entryLocation.abort(),12000);
+const entryDeadline=setTimeout(()=>entryLocation.abort(),30000);
 let activeSpace;
 try{activeSpace=await readSpace(entryLocation.signal);}
 finally{clearTimeout(entryDeadline);}
@@ -414,6 +414,7 @@ function doubleSpace(event){
 }
 
 let outdoorReady=()=>Boolean(geometryProbe?.snapshot());
+let outdoorArrivalReady=()=>outdoorReady();
 let confirmedRingPose=null;
 let updateDoor=()=>{},remoteScene=null,roomModel=null,networkScope=null,arrival=null;
 let releaseLightweightGlazing=null;
@@ -794,7 +795,11 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const position=client.getLocalCharacterState()?.position;
       return position&&position.x>21&&position.x<32&&position.z<-6&&position.z>-26?'valley-cave':null;
     });
-    const renderer=new ThreeJSWorldRenderer({...options,config:{...options.config,spawnSun:false}});
+    // The ring's terrain and ground movement are local. MML scenery may
+    // reconnect or finish later without holding the presence spawn behind it.
+    const dressingProgress=outsideRing()?new LoadingProgressManager():options.loadingProgressManager;
+    const renderer=new ThreeJSWorldRenderer({...options,loadingProgressManager:dressingProgress,
+      config:{...options.config,spawnSun:false}});
     // MML still selects the deprecated soft-map enum. Three r182 needs the
     // current PCF enum for comparison sampling and per-light shadow radii.
     renderer.composer.renderer.shadowMap.type=PCFShadowMap;
@@ -1096,9 +1101,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       light.target.position.set(anchor.x,anchor.y,anchor.z);
       light.position.set(anchor.x+x*40,anchor.y+y*40,anchor.z+z*40);
     };
-    outdoorReady=()=>outsideRing()?
-      ring?.group.children.length>0&&Boolean(document.querySelector('#workshop #ring-house')?.isConnected):
-      Boolean(geometryProbe?.snapshot());
+    const houseProjected=()=>Boolean(document.querySelector('#workshop #ring-house')?.isConnected);
+    outdoorArrivalReady=()=>outsideRing()?ring?.group.children.length>0:Boolean(geometryProbe?.snapshot());
+    outdoorReady=()=>outdoorArrivalReady()&&(!outsideRing()||houseProjected());
     renderer.render=renderState=>{
       const character=client.getLocalCharacterState(),position=character?.position;
       if(position&&!moving&&activeSpace.avatarPosePresence){
@@ -1277,7 +1282,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       if(!moving){
         if(inside)contentVisitor?.refreshScopedCatalog();
         contentVisitor?.update(position);
-        updateDoor(position,()=>options.coreCameraManager.getCameraState().rotation);
+        updateDoor(entering||outsideRing()&&!houseProjected()?null:position,
+          ()=>options.coreCameraManager.getCameraState().rotation);
       }
       if(!conversation.hidden)fitConversationWindow();
       const worldToolsVisible=!entering&&!moving&&!needsSync&&drawWorld&&!opaqueVisit&&!toolModal&&!settingsOpen;
@@ -1321,8 +1327,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       if(!inside&&drawWorld)geometryProbe.afterRender();
       else if(inside)keepRoomArt();
       if(hot&&moving&&canFinishMove())setMoving(false);
-      if(entering&&drawWorld&&position&&!moving&&!needsSync&&
-         (inside?entryRoomReady(remoteScene,roomModel):outdoorReady()))worldEntered();
+      if(entering&&drawWorld&&position&&!moving&&!needsSync&&(!hot||networkScope===activeSpace.id)&&
+         (inside?entryRoomReady(remoteScene,roomModel):outdoorArrivalReady()))worldEntered();
       const now=performance.now();
       if(coldExterior&&position&&!inside&&!moving&&!needsSync&&networkScope===activeSpace.id&&now>=nextDressing){
         nextDressing=now+350;
