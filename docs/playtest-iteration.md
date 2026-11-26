@@ -319,19 +319,28 @@ receiving checks.
 
 ## Native surface inventory
 
-| Surface | Current presentation and behavior to preserve | Authority and receiving fixture |
-| --- | --- | --- |
-| Entry, passage and recovery | Entry status and graphics/retry; room-passage retry; generated retained-intervention cards and their inspect/retry/close actions | Entry and routing controller, exact canonical receipts. Force startup timeout, blocked passage and uncertain original. |
-| Place and movement | Room title, direction, door/return, world/room map and generated destination controls; help and touch joystick | World scope and local placement. Exercise walking from exterior to Matter and return with keyboard and touch. |
-| Toolbelt and video | Dock (map, talk, context tools), video quality, sensitivity, fullscreen, sound, transient notices | Local device settings, synchronous user gestures for fullscreen, audio unlock and capture. Verify safe areas and hotkeys. |
-| Appearance | Room style selection and author appearance form | Local style and canonical authorized appearance save. Verify theme changes on native HUD and identity-specific mutations. |
-| Matter | Generated shelf rows and reviews, archive carousel/actions, available/active bench modes, worktable status and input | Collection catalog and worktable actions; local selection, pose and inspect state. Verify owner/read-only/revoked actors, revisions, follow and room exit. |
-| Conversation shell | Persistent launcher, move/resize/minimize, room/topic/reference controls and status from the embed. The legacy native composer and recovery affordances are owned native UI wherever reachable. | Canonical Conversation, local window geometry. Verify exact selected part, draft, device permission and session across display operations. |
-| Creation and editing | Point and discuss, preview and confirm supported world creations, and inspect exact revisions. Light planting and signal gardens are retired playtest surfaces. | World, layout and exhibit commands. Verify local draft, validated publish, owner access and another player's observed result. |
-| Activity, exhibition and visits | History filters/paging/revisions, generated exhibit entries, generated visit selector and navigation, pointing and discussion actions | Shared world/activity and original result owner. Verify exact selected result identity, independent session layout, and no private result leaks across visitors. |
-| Beacon | In-world affordance, surrounding launch/status/close controls; authorized Harmonic Lab iframe payload when selected | Beacon owner and existing authorized route. Exercise opening and exiting within the room and preserve authorization. |
-| Embedded content | Canonical Conversation, deliberately visited Nexus content and the existing Harmonic Lab payload retain the content app renderer. All frames, navigation and host actions belong to Holodeck. | Verify origin, stable mounts where needed, native shell and browser-owned device prompts. |
+This inventory describes the combined Character candidate with the published
+Proyección alpha.16 pin. A protected rollout and authenticated visitor
+acceptance have separate evidence.
 
+| Surface | Presentation and fallback | Authority and receiving check |
+| --- | --- | --- |
+| Entry and passage | `#world-entry` provides startup, retry and graphics selection before the renderer can draw. `PassageHud` presents travel and the same retry after a world frame is available. The retained passage controls cover failed draws. The direct Character viewer has its own startup retry and graphics-loss status. | The entry and room controllers own admission and travel. Exercise a startup failure, a committed passage retry and an exact Character pose link after recovery. |
+| Recovery | `RecoveryHud` presents eligible retained interventions. It hands back to `#recovery-panel` on loss of drawing or usable space. | Use the existing receipt and retry controller. Verify the original ID, its readback and the current recovery scope. |
+| Place and movement | `WorldStatusHud` renders location, sound, notices and wide-desktop keyboard help. `WorldMapHud` and `DoorPromptHud` present the map, bearing and passage actions. The touch stick and vertical buttons take over after a successful draw. | World state owns place and valid destinations. The visitor owns locomotion and device input. Verify map rotation, door reach, motion and return. |
+| Toolbelt and settings | The native dock exposes map, Conversation, appearance, video and contextual tools. `SettingsHud` represents the existing settings forms. The browser handles media, fullscreen and available fallback controls. | Local graphics, motion and appearance preferences remain actor- or device-local. Preserve a direct user gesture for fullscreen and audio. |
+| Matter and Character tables | `CollectionHud` presents the shelf and archive. `MatterWorktableHud` presents both tables. Project, edition, part and inspection controls accompany shared Matter revisions. Character review uses its own playback, pose, comparison and note actions on the same renderer. | The room and selected catalogs own confirmed effects. The tests cross the doors, open both tables, verify exact shared revisions and keep local camera, time and cutting state independent. |
+| Conversation | A native `ConversationChrome` surrounds the mounted canonical web composer. Host header and resize semantics and the legacy form have browser fallbacks. | Canonical Conversation owns message and draft state. The [packaged browser check](../tools/browser-shared-conversation-check.mjs) detects duplicate visible legacy launchers and compose controls while the native surfaces are active. It also tests reflow, focus and submission. |
+| Creation and pointing | `CreationHud` presents pointing and eligible light-preview actions while space and input ownership permit. The retained light and signal-garden exercise forms are gated by the exercise setting. The indoor receipt follow-up remains a browser control for visitors with an existing pending intent. | World commands own changes. Keep the exact target and revision, preview locality and any durable receipt. |
+| Activity, exhibitions and visiting | `WorldActivityHud` presents the history panel and filters. `VisitHud` presents the scoped exhibition, edition choice and controls around the visited content. Their browser controls support unavailable native presentation. | World history and the resource owner supply the result or exact edition. Verify scopes, focus handoff, returning to the world and restoration of the same visit. |
+| Beacon and embedded applications | `BeaconHud` presents the station and viewer surround when it fits. The Beacon viewer has a browser surround fallback. The canonical Conversation iframe, deliberately visited Nexus viewers and the Harmonic Lab payload keep their application-owned presentation. | Host controls own entry, dismiss and return. Embedded applications own their content, data and permissions. Verify authorized origins, retained frames and the departure gesture. |
+
+The published-gait candidate passed the duplicate-control check at the
+initial world dock and with Conversation open. Chromium checked five
+legacy launchers and the two legacy compose controls across desktop,
+portrait and landscape. It used the installed canonical Conversation
+assets with fixture identities. Candidate archive
+`51d7c26b482435f20b94b1bb0cec1a0882adaa15531d82979bc01feba2314d01`.
 
 ## Situated context implementation
 

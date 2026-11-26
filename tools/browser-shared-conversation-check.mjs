@@ -99,6 +99,14 @@ try{
  await cdp('Page.navigate',{url:worldOrigin+'/'});await cdp('Page.bringToFront');
  await until(()=>evaluate('!!window.holodeckDevelopment?.client.getLocalCharacterState()?.position'),30000,'walkable world');
  await until(()=>evaluate(`(()=>{const help=document.querySelector('#help');return help.hasAttribute('data-native-status')&&getComputedStyle(help).clipPath==='inset(50%)';})()`),10000,'native desktop keyboard help');
+ const legacyControls=['#dock #talk','#dock #map-tool','#appearance-open','#video-open',
+  '#activity-open','#conversation-form #message','#conversation-form #send'];
+ const visibleLegacy=()=>evaluate(`(${JSON.stringify(legacyControls)}).filter(selector=>{
+  const element=document.querySelector(selector);
+  return element?.checkVisibility({checkOpacity:true,checkVisibilityCSS:true});
+ })`);
+ await until(()=>evaluate('document.body.hasAttribute("data-a2ui-toolbelt")'),8000,'native world dock painted');
+ await until(async()=>!(await visibleLegacy()).length,8000,'native dock hides duplicate world launchers');
  const keyboardHelp=await evaluate(`document.querySelector('#help').textContent.trim()`);
  if(!['W','A','S','D','Shift','Alt','Espacio'].every(key=>keyboardHelp.includes(key)))throw Error('Keyboard help omits existing bindings '+keyboardHelp);
  const keyboardShot=await cdp('Page.captureScreenshot',{format:'png'});
@@ -114,6 +122,7 @@ try{
  const frameContext=findFrame();
  const frame=expression=>evaluate(expression,frameContext.params.context.id,frameContext.sessionId);
  await until(()=>frame('!!window.Conversation&&!!window.ConversationSurface&&!document.querySelector("#conversation-send").disabled'),15000,'actual canonical composer');
+ await until(async()=>!(await visibleLegacy()).length,8000,'native dock and canonical compose hide duplicate host controls');
  await until(()=>evaluate('surfaceMessages.some(m=>m.type==="ready")'),10000,'bound canonical ready');
  const ready=await evaluate('surfaceMessages.findLast(m=>m.type==="ready")');
  if(process.env.HOLODECK_LAYOUT_ONLY==='1'){
@@ -222,6 +231,8 @@ try{
   if(!await evaluate('document.activeElement===retainedConversation')||!draftState.focused||draftState.value!==nextDraft||JSON.stringify(draftState.selection)!=='[5,9,"backward"]')
    throw Error('Conversation reflow lost draft input '+JSON.stringify({name,draftState}));
   layouts.push({name,outer,inner,draftState,worldHeader:await worldHeader()});
+  const duplicate=await visibleLegacy();
+  if(duplicate.length)throw Error('Duplicate host controls in '+name+': '+duplicate.join(', '));
   const shot=await cdp('Page.captureScreenshot',{format:'png'});await writeFile(join(directory,'layout-'+name+'.png'),Buffer.from(shot.data,'base64'));
  }
  const reflowPosition=await position();
@@ -231,7 +242,7 @@ try{
  await evaluate('document.querySelector("#conversation-close").click();true');
  await until(()=>evaluate('document.querySelector("#hud").hasAttribute("data-native-status")'),8000,'compact world header restored after minimizing');
  const errors=await evaluate('checkErrors'),frameErrors=await frame('checkErrors');if(errors.length||frameErrors.length)throw Error('Browser errors '+JSON.stringify({errors,frameErrors}));
- const evidence={schema:'holodeck.shared-conversation-browser/v1',qualification:'Actual installed canonical full shell/assets and Holodeck MML world, synthetic loopback Home/context/files/original I/O; no real human/native/model/provider input or acceptance.',canonicalRelease:installed.split('/').at(-1),canonicalAssets:Object.fromEntries(served),loads,acceptedOriginals:accepted.length,exactOriginal:true,contextFiles:1,userFiles:1,fileUploads:fileWrites.length,draftRetained:true,operationalAlerts:'Canonical quiet frame intentionally hides the ordinary launcher; not an exercised capability.',recordingControlVisibleAndFits:true,recordingCountdownSounds:'Not exercised by this text/files fixture; use separate canonical recorder qualification.',forgeriesRefused:4,retainedOneFrame:true,submit,later,captured,positionError,layouts,reflowDraftAndFocusRetained:true,keyboardHelp,errors,frameErrors};
+ const evidence={schema:'holodeck.shared-conversation-browser/v1',qualification:'Actual installed canonical full shell/assets and Holodeck MML world, synthetic loopback Home/context/files/original I/O; no real human/native/model/provider input or acceptance.',canonicalRelease:installed.split('/').at(-1),canonicalAssets:Object.fromEntries(served),loads,acceptedOriginals:accepted.length,exactOriginal:true,contextFiles:1,userFiles:1,fileUploads:fileWrites.length,draftRetained:true,operationalAlerts:'Canonical quiet frame intentionally hides the ordinary launcher; not an exercised capability.',recordingControlVisibleAndFits:true,recordingCountdownSounds:'Not exercised by this text/files fixture; use separate canonical recorder qualification.',forgeriesRefused:4,retainedOneFrame:true,submit,later,captured,positionError,layouts,reflowDraftAndFocusRetained:true,legacyDuplicateControlsHidden:legacyControls,keyboardHelp,errors,frameErrors};
  if(loads!==1)throw Error('Canonical frame unexpectedly reloaded');await writeFile(join(directory,'evidence.json'),JSON.stringify({...evidence,clientSHA256,writingDistance,walkingDistance,minimizeMotion,restoreMotion,composerSprint,worldSprint,sentDraftLocked},null,2)+'\n');console.log(JSON.stringify(evidence));
  }
 }catch(error){console.error('diagnostic-world',JSON.stringify(await evaluate('({body:document.body.innerText.slice(-1200),messages:window.surfaceMessages,errors:window.checkErrors})').catch(e=>({error:e.message}))));console.error('requests',JSON.stringify(requests.slice(-35)));console.error('contexts',JSON.stringify(events.filter(e=>['Runtime.executionContextCreated','Runtime.exceptionThrown'].includes(e.method)).slice(-12)));throw error;
