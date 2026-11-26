@@ -1,0 +1,287 @@
+{
+  "shell": {
+    "width": 3.2,
+    "depth": 1.4,
+    "height": 2.35
+  },
+  "facade": {
+    "roofOverhang": 0.08,
+    "totalHeight": 2.62,
+    "thresholdReach": 0.35,
+    "thresholdWidth": 0.92,
+    "doorWidth": 0.82,
+    "doorHeight": 1.85,
+    "oculusDiameter": 0.41,
+    "oculusHeight": 2.12
+  },
+  "roomSize": 12,
+  "roomHeight": 3.3,
+  "rooms": {
+    "atlas": {
+      "objects": [
+        {
+          "key": "1",
+          "shape": "circle",
+          "x": 0,
+          "z": -0.15,
+          "r": 1.6,
+          "style": "atlas"
+        },
+        {
+          "key": "2",
+          "shape": "rect",
+          "x": -4.85,
+          "z": 1,
+          "w": 0.95,
+          "d": 3.65,
+          "style": "bench"
+        },
+        {
+          "key": "3",
+          "shape": "rect",
+          "x": 4.7,
+          "z": 0.65,
+          "w": 1.5,
+          "d": 3,
+          "style": "seats"
+        },
+        {
+          "key": "4",
+          "shape": "rect",
+          "x": -4.7,
+          "z": 4.25,
+          "w": 1.25,
+          "d": 0.65,
+          "style": "hooks"
+        }
+      ],
+      "doors": [
+        {
+          "x": -3,
+          "z": -6,
+          "label": "Gabinete",
+          "link": "A"
+        },
+        {
+          "x": 3,
+          "z": -6,
+          "label": "Taller",
+          "link": "B"
+        },
+        {
+          "x": 0,
+          "z": 6,
+          "label": "Afuera",
+          "link": "E"
+        }
+      ],
+      "routes": [
+        [
+          [
+            0,
+            4.9
+          ],
+          [
+            0,
+            3.65
+          ],
+          [
+            -3,
+            3.65
+          ],
+          [
+            -3,
+            -4.81
+          ]
+        ],
+        [
+          [
+            0,
+            3.65
+          ],
+          [
+            3,
+            3.65
+          ],
+          [
+            3,
+            -4.81
+          ]
+        ],
+        [
+          [
+            0,
+            3.65
+          ],
+          [
+            0,
+            2.5
+          ]
+        ]
+      ]
+    },
+    "archive": {
+      "objects": [
+        {
+          "key": "1",
+          "shape": "rect",
+          "x": -4.9,
+          "z": 0.5,
+          "w": 0.9,
+          "d": 4.3,
+          "style": "shelf"
+        },
+        {
+          "key": "2",
+          "shape": "rect",
+          "x": 0,
+          "z": 0.45,
+          "w": 2.55,
+          "d": 1.4,
+          "style": "specimens"
+        },
+        {
+          "key": "3",
+          "shape": "circle",
+          "x": 1.4,
+          "z": 4.65,
+          "r": 0.55,
+          "style": "seat"
+        },
+        {
+          "key": "3",
+          "shape": "circle",
+          "x": 3.15,
+          "z": 4.65,
+          "r": 0.55,
+          "style": "seat"
+        },
+        {
+          "key": "4",
+          "shape": "rect",
+          "x": 4.75,
+          "z": -0.75,
+          "w": 0.8,
+          "d": 3.3,
+          "style": "shelf"
+        }
+      ],
+      "doors": [
+        {
+          "x": -3,
+          "z": -6,
+          "label": "Al Atlas",
+          "link": "A"
+        }
+      ],
+      "routes": [
+        [
+          [
+            -3,
+            -4.81
+          ],
+          [
+            -3,
+            0.45
+          ],
+          [
+            -2,
+            0.45
+          ]
+        ],
+        [
+          [
+            -3,
+            0.45
+          ],
+          [
+            -3,
+            3.25
+          ],
+          [
+            2.25,
+            3.25
+          ]
+        ]
+      ]
+    },
+    "workshop": {
+      "objects": [
+        {
+          "key": "1",
+          "shape": "rect",
+          "x": 0,
+          "z": -2,
+          "w": 2.6,
+          "d": 1.45,
+          "style": "worktable"
+        },
+        {
+          "key": "2",
+          "shape": "rect",
+          "x": 4.75,
+          "z": -0.25,
+          "w": 0.9,
+          "d": 3.25,
+          "style": "shelf"
+        },
+        {
+          "key": "3",
+          "shape": "rect",
+          "x": 1.35,
+          "z": 3.45,
+          "w": 2.85,
+          "d": 1.25,
+          "style": "bench"
+        },
+        {
+          "key": "4",
+          "shape": "rect",
+          "x": -4.85,
+          "z": 2.6,
+          "w": 0.85,
+          "d": 2.65,
+          "style": "shelf"
+        }
+      ],
+      "doors": [
+        {
+          "x": -3,
+          "z": -6,
+          "label": "Al Atlas",
+          "link": "B"
+        }
+      ],
+      "routes": [
+        [
+          [
+            -3,
+            -4.81
+          ],
+          [
+            -3,
+            -2
+          ],
+          [
+            -2.05,
+            -2
+          ]
+        ],
+        [
+          [
+            -3,
+            -2
+          ],
+          [
+            -3,
+            1.7
+          ],
+          [
+            1.35,
+            1.7
+          ]
+        ]
+      ]
+    }
+  }
+}
