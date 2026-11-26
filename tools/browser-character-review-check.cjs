@@ -226,6 +226,8 @@ async function main(){
     await tableButton('Pose').press('Enter');
     const frame=(expected,clientPage=page)=>clientPage.waitForFunction(value=>document.querySelector('input[aria-label="Fotograma"]')?.valueAsNumber===value,expected,{polling:100});
     await frame(pose.frame);
+    const followedStatus=table.getByText('Pose recibida de '+committed.presentation.author+'.',{exact:true});
+    await followedStatus.waitFor({state:'attached'});
     const chooseTable=(name,value)=>table.getByRole('combobox',{name,exact:true}).selectOption(value,{force:true});
     const checkPhases=async (clip,expected,images)=>{
       const observed={};
@@ -247,8 +249,10 @@ async function main(){
     await tableButton('Ver pose del Taller').press('Enter');
     await tableButton('Pose').press('Enter');
     await frame(pose.frame);
+    await followedStatus.waitFor({state:'attached'});
     await tableButton('+1').press('Enter');
     await frame(pose.frame+1);
+    await followedStatus.waitFor({state:'detached'});
 
     // A second visitor with a distinct fixture identity reviews the same presentation.
     const peerContext=await browser.newContext({viewport:{width:1200,height:800},reducedMotion:'reduce'});
@@ -407,7 +411,7 @@ async function main(){
     assert.equal(noGraphics.url(),retryURL);
     assert.deepEqual(errors,[]);
     console.log(JSON.stringify({pose,flightChapters,groundChapters,revision:readback.revision,visitor,observedNote:note,roomScope:true,
-      conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,notesWaitedForSharedPose:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
+      conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,sharedReceiptMatchesLocalFrame:true,notesWaitedForSharedPose:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
       situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,reciprocalWorldDoors:true,openedTableFromWorldDoor:true,doorFromViewer:true,returnedToRoomFromViewer:true,noGraphicsRetryKeptPose:true,graphicsRestoreKeptLocalFrameAndDraft:true}));
   }finally{
     await browser?.close();

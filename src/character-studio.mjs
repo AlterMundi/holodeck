@@ -243,7 +243,7 @@ export function openCharacterStudio(document,table=null){
   let figure,playback,rig,clip,frame=0,playing=false,revision='',note='',message='',showedAt=-Infinity;
   let sequence=0,elapsed=0,previous=0,visible=true,loop=true,speed='1';
   let compact=Boolean(table),section='Pose',panelWidth=table?2.20:widePanelWidth;
-  let primary=null,reference=null,showingReference=false,referenceRequest=0;
+  let primary=null,reference=null,showingReference=false,referenceRequest=0,followedPose;
   let canReview=null,checkingAccess=false,review=null,selectedNote='',readingReview=false,savingNote=false,pendingNote,draftPose,noteReplaced=false,presentationBusy=false;
   const projected=table?null:webStudioProjection(document,renderer,scene,dispatch,dispose,()=>{
     playing=false;
@@ -495,7 +495,10 @@ export function openCharacterStudio(document,table=null){
     if(!visible||!figure||!playback||!clip)return;
     const options=clipOptions(rigs[rig],figure);
     const chapters=availableChapters();
-    const exactFrame=reviewPose().frame;
+    const currentPose=reviewPose(),exactFrame=currentPose.frame;
+    const poseKey=keyForPose(currentPose);
+    const displayStatus=message||(canReview===true&&followedPose?.key===poseKey?'Pose recibida de '+followedPose.author+'.':'');
+    if(projected&&projected.status.textContent!==displayStatus)projected.status.textContent=displayStatus;
     const chapter=chapters.find(entry=>entry.frame===exactFrame)?.id??'';
     const viewedReview=currentReview();
     const notes=viewedReview?.notes??[];
@@ -503,7 +506,7 @@ export function openCharacterStudio(document,table=null){
     const reviewText=selected?selected.author+' · '+selected.text:'';
     const show=Object.fromEntries([...compactControls].map(id=>[id,!compact||sectionControls[section].includes(id)]));
     show.title=show.status=!compact;
-    if(table){show.views=false;show.status=Boolean(message);}
+    if(table){show.views=false;show.status=Boolean(displayStatus);}
     show.chapter&&=chapters.length>0;
     show.heldPose&&=frame>exactFrame;
     const canWriteNote=canReview===true||canSaveLocal();
@@ -511,7 +514,7 @@ export function openCharacterStudio(document,table=null){
     show.accessStatus&&=!canWriteNote;
     show.checkReviewAccess&&=canReview!==true&&!checkingAccess;
     show.note&&=canWriteNote;
-    show.noteTarget&&=Boolean(draftPose&&playback&&keyForPose(draftPose)!==keyForPose(reviewPose()));
+    show.noteTarget&&=Boolean(draftPose&&playback&&keyForPose(draftPose)!==poseKey);
     show.reviewNotes&&=notes.length>0;
     show.reviewText&&=notes.length>0;
     const selectedSection=Object.fromEntries(sectionIds.map(id=>[id,id===section]));
@@ -534,7 +537,7 @@ export function openCharacterStudio(document,table=null){
       reviewAction:viewedReview?(compact?'Ocultar':'Ocultar notas'):'Ver notas',
       reviewText,reviewNotes:selected?.id??'',
       reviewNotesOptions:notes.map(item=>({id:item.id,label:item.author+' · '+item.text})),
-      playLabel:playing?'Pausar':'Reproducir',playIcon:playing?'pause':'play',note,status:message,
+      playLabel:playing?'Pausar':'Reproducir',playIcon:playing?'pause':'play',note,status:displayStatus,
       draft:{rig,clip,frame,note,speed,chapter,reference:reference?.name??'',reviewNotes:selected?.id??''}}});
   }
   function reviewPose(){
@@ -601,7 +604,11 @@ export function openCharacterStudio(document,table=null){
       const {pose,author}=state.presentation;
       if(rig===pose.rig)await loadClip(pose.clip,pose.frame,pose.edition);
       else await loadRig(pose.rig,pose.clip,pose.frame,pose.edition);
-      if(visible&&playback&&keyForPose(reviewPose())===keyForPose(pose))report('Pose mostrada por '+author+'.');
+      const followedKey=keyForPose(pose);
+      if(visible&&playback&&keyForPose(reviewPose())===followedKey){
+        followedPose={key:followedKey,author};
+        message='';
+      }
     }catch(error){if(visible)report(error.message);}
     finally{presentationBusy=false;if(visible)refresh();}
   }
