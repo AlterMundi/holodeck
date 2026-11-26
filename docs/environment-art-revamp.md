@@ -118,6 +118,16 @@ Compare matched renders at zero blur for color and antialiasing, then
 measure GPU cost and frame pacing while turning and flying at dusk.
 [Three.js BokehPass](https://threejs.org/docs/pages/BokehPass.html)
 
+The first local prototype captured half-float color and depth during
+the normal world draw and added one fullscreen triangle. It softened
+the distant shore but carried stale arrival geometry into later camera
+positions, including underwater. This candidate was withheld. On Pi 5
+Livianos with the preview requested, the fallback matched the direct
+path's draw, triangle and texture counts at the same render size. RTX
+timings used different adaptive resolutions and do not establish a
+matched GPU cost. Resolve world-target clearing and repeat movement,
+shore and zero-radius comparisons before selecting a build.
+
 ## Screening route
 
 Use identical graphics quality, resolution, seed, camera and solar clock

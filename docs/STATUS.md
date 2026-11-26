@@ -1,5 +1,21 @@
 # Current MVP work
 
+## November 26 Shift, Alt and Space controls
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `394ab30b12c6`
+from `6da6c2c`. Shift runs and boosts, Alt crouches, descends in flight
+and dives, and Space jumps or rises. The same Alt descent applies at
+the Matter worktable. Ctrl is no longer a locomotion modifier. The
+existing fullscreen keyboard-lock route is still separate from movement.
+
+Physical RTX 2060 Normal and Pi 5 Livianos browsers checked the mapping
+on ground, actual dive and ascent in water, airborne height changes and
+the gold/teal boost wakes at 25.07 and 25.01 m/s. The 417 passing checks
+include tabletop input with two optional suite skips. These are controlled
+single-visitor fixtures. Receiving matched 86 files, the existing audience
+and world run through 452–454, and four protected denial checks. Immediate
+rollback is `49acf79b2a04`.
+
 ## November 26 cave rock contacts
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `49acf79b2a04`
