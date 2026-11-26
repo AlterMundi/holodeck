@@ -5,6 +5,23 @@ the water and flight changes through source revision `9fc4090`. That exact
 source is incorporated here to keep later Character work compatible with
 the selected world.
 
+## Character table navigation from the miniature's eyes
+
+Client source `ea084a5c99bff4a9cdfc8b3f01e7e34d903daea6` uses the review
+orbit and dolly to move the miniature visitor through the existing worktable
+collision bounds. The rendered camera is at the resulting eye position.
+Keyboard travel carries the view, while the standalone viewer keeps its
+own framing. Browser checks on the receiving archive passed for keyboard
+travel, primary drag and wheel. Both surfaces passed playback and direct
+choice checks. Node 24 passed 456 tests with two skips.
+
+Receiving candidate SHA-256
+`f05516e2ef2f60c1d37a31455feb35cb0f4ee03be879e938e36bc570f6bf7b8f`.
+It replaces only the client and its manifest hash on
+`58ce88972da7`. The live pose catalog and remaining runtime assets
+matched byte for byte. The protected deployment still selected
+`58ce88972da7` at verification.
+
 ## Narrow desktop dock and Conversation pointer check
 
 Client revision `4ad1781` widens the bridge control so the full label
