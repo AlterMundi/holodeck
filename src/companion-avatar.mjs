@@ -190,7 +190,7 @@ export class CompanionAvatar{
       this.followVelocity.addScaledVector(root.up,-this.followVelocity.dot(root.up));
       if(groundFollow){
         if(distance>.55||pace>.35)this.followResting=false;
-        else if(distance<=deadZone&&this.followVelocity.lengthSq()<.15**2)this.followResting=true;
+        else if(distance<=deadZone+.01&&this.followVelocity.lengthSq()<.15**2)this.followResting=true;
       }else this.followResting=false;
       const gap=this.followResting?0:Math.max(0,distance-deadZone);
       // Leave enough room to brake over the next realised step.
@@ -204,10 +204,11 @@ export class CompanionAvatar{
         .clampLength(0,dt*(accelerating?acceleration:braking));
       this.followVelocity.add(this.velocityChange);
       let travel=this.followVelocity.length()*dt;
-      if(!groundFollow&&(distance<1e-6||travel>distance&&this.followVelocity.dot(this.direction)>0))
+      if(distance<1e-6||travel>distance&&this.followVelocity.dot(this.direction)>0)
         travel=Math.min(travel,distance);
       if(travel>0){
         this.relative.copy(root.position).addScaledVector(this.followVelocity,travel/this.followVelocity.length());
+        if(small)table.bounds.clampPoint(this.relative,this.relative);
         if(small&&this.perch.blocked(root.position,this.relative)||
             avoidFurniture&&!this.roomClearance.step(root.position,this.relative,colliders)){
           this.followVelocity.set(0,0,0);

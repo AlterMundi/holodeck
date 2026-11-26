@@ -103,7 +103,7 @@ test('a straight exterior sprint settles without a rebound at 20 or 60 Hz',async
     const {avatar}=await loadCompanion();
     try{
       const motion=new ToroidalLocomotion({...start,height:start.height});
-      let close=false,previousHeading;
+      let close=false,previousHeading,previousPosition;
       for(let frame=0;frame<7*hz;frame++){
         const time=frame/hz;
         motion.update(1/hz,{forward:time>=1&&time<4?1:0,yaw,sprint:true});
@@ -116,12 +116,17 @@ test('a straight exterior sprint settles without a rebound at 20 or 60 Hz',async
           gap.addScaledVector(root.up,-root.up.dot(gap));
           if(gap.length()<.27)close=true;
           if(close)assert.ok(gap.length()<.35,'moves away again after reaching the target');
-          assert.ok(previousHeading.angleTo(root.quaternion)*180/Math.PI*hz<=301,
-            'turns faster than the travel heading limit after release');
+          const step=root.position.clone().sub(previousPosition);
+          assert.ok(step.dot(gap)>=-1e-6,'travels away from a settled follow target');
+          const turnLimit=avatar.travelHeading?301:201;
+          assert.ok(previousHeading.angleTo(root.quaternion)*180/Math.PI*hz<=turnLimit,
+            'turns faster than the selected heading limit after release');
         }
         previousHeading=root.quaternion.clone();
+        previousPosition=root.position.clone();
       }
       assert.ok(close,'reaches the target after the stop');
+      assert.equal(avatar.followResting,true,'latches rest once the player and companion settle');
     }finally{
       avatar.dispose();
     }
