@@ -58,6 +58,10 @@ test('the meadow profiles share rooted banks outside the trail and dispose their
   const lightRoots=shortMeadowPlants(-18,18,true);
   assert.deepEqual(shortMeadowPlants(-18,18,false),normalRoots);
   assert.ok(normalRoots.length>600);
+  const woodlandRoots=shortMeadowPlants(-81,81,false);
+  assert.ok(woodlandRoots.length>450);
+  assert.ok(woodlandRoots.filter(root=>root.canopy>.6).length>150);
+  assert.ok(woodlandRoots.every(root=>root.size<=1.3*(1-root.canopy*.31)+1e-8));
   const identities=new Set(normalRoots.map(p=>p.u+':'+p.v));
   assert.ok(lightRoots.every(p=>identities.has(p.u+':'+p.v)));
   assert.ok(normalRoots.every(p=>terrainTrail(p.u,p.v)<=.08));

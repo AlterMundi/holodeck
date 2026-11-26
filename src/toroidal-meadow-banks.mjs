@@ -1,7 +1,7 @@
 import {BufferGeometry,Color,DoubleSide,Float32BufferAttribute,Group,InstancedMesh,MeshStandardMaterial,Object3D,Vector3} from 'three';
 import {approachCoordinates} from './sand3d-trail.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
-import {terrainElevation,terrainMeadowMoisture,terrainPosition,terrainTrail,TOROIDAL_TERRAIN} from './toroidal-terrain.mjs';
+import {terrainElevation,terrainMeadowMoisture,terrainPosition,terrainTrail,terrainWoodland,TOROIDAL_TERRAIN} from './toroidal-terrain.mjs';
 
 // Offsets use the existing trail's local metres. Each pocket reads as one
 // bank, with a broken outline and open ground between pockets.
@@ -16,10 +16,14 @@ const beds=[
 const COVER_TILE=9;
 const COVER_STEPS=27;
 const COVER_END=43;
-const coverTileCenters=Array.from({length:8*12},(_,index)=>({
-  x:(index%8-8)*COVER_TILE,
-  z:(Math.floor(index/8)-1)*COVER_TILE,
+const COVER_COLUMNS=11,COVER_ROWS=14;
+const coverTileCenters=Array.from({length:COVER_COLUMNS*COVER_ROWS},(_,index)=>({
+  x:(index%COVER_COLUMNS-COVER_COLUMNS)*COVER_TILE,
+  z:(Math.floor(index/COVER_COLUMNS)-1)*COVER_TILE,
 }));
+const coverWest=-(COVER_COLUMNS+.5)*COVER_TILE;
+const coverSouth=-1.5*COVER_TILE;
+const coverNorth=(COVER_ROWS-1.5)*COVER_TILE;
 const goldenAngle=Math.PI*(3-Math.sqrt(5));
 const tint=[0xfff3d7,0xe4edd2,0xe5ebce,0xffeec4,0xf5f7de];
 
@@ -87,12 +91,16 @@ export function shortMeadowPlants(x,z,lightweight){
       if(aboveWater<.30||h>51)continue;
       const trail=terrainTrail(u,v);
       if(trail>.08||pick(113)<Math.max(trail*8,1-aboveWater/1.8))continue;
-      const nearerEdge=Math.min(px+76.5, pz+13.5,94.5-pz);
+      const nearerEdge=Math.min(px-coverWest,pz-coverSouth,coverNorth-pz);
       if(pick(83)>Math.min(1,nearerEdge/7))continue;
+      // Use the same continuous field as the woodland and its baked ground.
+      // The floor stays covered in dense stands while lower leaves let ferns read.
+      const canopy=terrainWoodland(u,v,h);
+      if(pick(277)<canopy*.26)continue;
       const moisture=terrainMeadowMoisture(u,v,h);
       const palette=moisture>.54?[0x96ac70,0x81935a,0xb0b286]:[0xb2ad77,0xa0a46c,0xc1b78e];
-      plants.push({u,v,h,yaw:pick(64)*2*Math.PI,size:.68+.62*pick(48),
-        color:palette[Math.floor(pick(12)*palette.length)]});
+      plants.push({u,v,h,yaw:pick(64)*2*Math.PI,size:(.68+.62*pick(48))*(1-canopy*.31),
+        color:palette[Math.floor(pick(12)*palette.length)],canopy});
     }
   }
   return plants;
@@ -310,7 +318,7 @@ export class ToroidalMeadowBanks {
       profile.cover.set(tile,null);
       if(!plants.length)continue;
       const batch=new InstancedMesh(profile.coverGeometry,profile.coverMaterial,plants.length);
-      const transform=new Object3D(),color=new Color();
+      const transform=new Object3D(),color=new Color(),shade=new Color(0x61784e);
       batch.name='Short meadow grass';
       batch.position.copy(origin);
       for(const [index,plant] of plants.entries()){
@@ -320,7 +328,7 @@ export class ToroidalMeadowBanks {
         transform.scale.setScalar(plant.size);
         transform.updateMatrix();
         batch.setMatrixAt(index,transform.matrix);
-        batch.setColorAt(index,color.setHex(plant.color));
+        batch.setColorAt(index,color.setHex(plant.color).lerp(shade,plant.canopy*.70));
       }
       batch.computeBoundingSphere();
       batch.boundingSphere.radius+=.10;
