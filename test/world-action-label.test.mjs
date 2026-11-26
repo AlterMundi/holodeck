@@ -27,6 +27,10 @@ test('a floating label uses a gold leader and hides near-clipped or off-screen a
   const endpoints=label.leader.geometry.attributes.position;
   assert.ok(Math.abs(endpoints.getX(0)-label.sprite.position.x)<1e-6);
   assert.deepEqual(Array.from(endpoints.array.slice(3)),[0,0,-3]);
+  const placement=label.update(bench,camera,800,{card:false,feet:{x:0,y:-1.4,z:-2}});
+  assert.ok(placement.x>650&&Math.abs(placement.y-405)<=1);
+  assert.equal(label.sprite.visible,false);
+  assert.equal(label.leader.visible,true);
   wall=true;
   label.update(bench,camera,800);
   assert.equal(label.sprite.visible,false);

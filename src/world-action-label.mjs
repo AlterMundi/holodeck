@@ -88,7 +88,7 @@ export class WorldActionLabel{
     if(this.sprite)this.sprite.visible=this.leader.visible=false;
   }
 
-  update(offer,camera,height,{light=false,feet}={}){
+  update(offer,camera,height,{light=false,feet,card=true}={}){
     if(!this.sprite)return;
     if(!offer||!camera||!height){this.hide();return;}
     const {anchor,label,key=''}=offer;
@@ -142,6 +142,9 @@ export class WorldActionLabel{
     }
     base.x=Math.min(side,Math.max(-side,base.x));
     base.y=Math.min(halfHeight*.58,Math.max(-halfHeight*.55,base.y));
+    const pixelScale=height/(2*halfHeight);
+    const placement=card?undefined:{x:Math.round((base.x+halfHeight*aspect)*pixelScale),
+      y:Math.round((halfHeight-base.y)*pixelScale)};
     base.applyQuaternion(this.rotation).add(position);
     this.sprite.position.copy(base);
     this.sprite.scale.set(width,size,1);
@@ -149,7 +152,9 @@ export class WorldActionLabel{
     ends.setXYZ(0,base.x,base.y,base.z);
     ends.setXYZ(1,this.target.x,this.target.y,this.target.z);
     ends.needsUpdate=true;
-    this.sprite.visible=this.leader.visible=true;
+    this.sprite.visible=card;
+    this.leader.visible=true;
+    return placement;
   }
 
   dispose(){

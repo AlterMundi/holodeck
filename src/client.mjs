@@ -1368,21 +1368,25 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       beaconControls.update(inside&&!moving&&!needsSync&&remoteScene?activeSpace.objects:null,position);
       const passageAvailable=worldToolsVisible&&!quietTouch&&!matterHud.map.landscape&&(conversation.hidden||concurrentRoomDoors())&&
         !matterHud.active&&Boolean(matterHud.toolGroup)&&!signalEditor.active;
-      matterHud.door.update(passageAvailable,Boolean(matterHud.toolLayout?.compact));
-      let label=null;
+      const compactDoor=Boolean(matterHud.toolLayout?.compact);
+      let label=null,anchoredDoor=false;
       if(inside&&passageAvailable&&!matterHud.coarsePointer.matches){
         // Keep the same precedence as E. The label never runs an action.
         const door=updateDoor.doorOffer?.();
         const bench=characterRoom?characterTable.anchor:collectionShelves.worktable.anchor;
-        if(door?.anchor&&!door.busy)label={anchor:door.anchor,label:door.title,key:'E'};
+        if(door?.anchor&&!door.busy){
+          label={anchor:door.anchor,label:door.title,key:'E'};
+          anchoredDoor=true;
+        }
         else if(!door&&bench&&matterHud.nearbyTableAvailable&&
             !options.coreCameraManager.isFlyCameraOn()&&client.getCharacterManager().localController){
           const anchor=characterRoom?bench:{...bench,y:bench.y+.78};
           label={anchor,label:'Usar mesa',key:'E'};
         }else if(beaconWorldAvailable())label=beaconControls.nearbyAction();
       }
-      actionLabel.update(label,options.coreCameraManager.getCameraState(),matterHud.canvas.clientHeight,
-        {light:document.body.dataset.hudTheme==='light',feet:position});
+      const actionPlacement=actionLabel.update(label,options.coreCameraManager.getCameraState(),matterHud.canvas.clientHeight,
+        {light:document.body.dataset.hudTheme==='light',feet:position,card:!anchoredDoor});
+      matterHud.door.update(passageAvailable,compactDoor,anchoredDoor?actionPlacement:null);
       matterHud.collection.update(navigationVisible&&!matterHud.active&&!mapPanel.open&&!signalEditor.active);
       const {left:statusLeft,right:statusRight}=matterHud.toolInsets();
       const compactConversation=!conversation.hidden&&conversationFirst.matches;

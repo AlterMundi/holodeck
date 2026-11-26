@@ -3,7 +3,7 @@ import {PassageHud} from './passage-hud.mjs';
 import {HudLookPreview} from './hud-look-preview.mjs';
 import {Matrix4,OrthographicCamera,PerspectiveCamera,Raycaster,Scene,Vector2} from 'three';
 import {WorldMapHud,worldMapId,worldBearingId,terrainPeekId} from './world-map-hud.mjs';
-import {DoorPromptHud,compactDoorPromptWidth,doorPromptId,doorPromptWidth} from './door-prompt-hud.mjs';
+import {DoorPromptHud,compactDoorPromptWidth,doorPromptId} from './door-prompt-hud.mjs';
 import {CollectionHud,collectionHudId,collectionHudWidth} from './collection-hud.mjs';
 import {WorldStatusHud,worldHeaderId,worldNoticeId,worldControlsId,worldHeaderWidth,worldControlsWidth} from './world-status-hud.mjs';
 import {RecoveryHud,recoveryHudId} from './recovery-hud.mjs';
@@ -910,10 +910,11 @@ export class MatterWorktableHud{
       const barTop=height-bottom-dockClearance-(this.toolLayout.height+.035)*dockScale;
       const dockWidth=(this.toolLayout.width+toolPadding)*dockScale;
       const promptCompact=this.door.group?this.door.compact:compact;
-      const promptWidth=promptCompact?compactDoorPromptWidth:doorPromptWidth;
-      const promptScale=Math.min(promptCompact?dockScale:200,(width-left-right)/(promptWidth+toolPadding));
+      const promptWidth=this.door.width??compactDoorPromptWidth;
+      const promptAnchor=this.door.anchor;
+      const promptScale=Math.min(promptAnchor?138:promptCompact?dockScale:200,(width-left-right)/(promptWidth+toolPadding));
       const promptPlate=(promptWidth+toolPadding)*promptScale;
-      const beside=!shortLandscape&&this.door.group&&compact&&promptCompact&&this.toolLayout.rows.length===1&&
+      const beside=!promptAnchor&&!shortLandscape&&this.door.group&&compact&&promptCompact&&this.toolLayout.rows.length===1&&
         dockWidth+promptPlate+8<=width-left-right;
       const barCenter=dockSpan?(dockSpan.start+dockSpan.end)/2:
         beside?width-right-dockWidth/2:(width+left-right)/2;
@@ -964,8 +965,12 @@ export class MatterWorktableHud{
         const promptGap=shortLandscape?.25*promptScale+9:this.movementGroups.size
           ? barTop-movementTop+(promptCompact ? .21*promptScale+9 : 51)
           : idleGap;
-        const promptCenter=promptCompact&&!shortLandscape?left+promptPlate/2:(width+left-right)/2;
-        promptTop=besideFinal?barTop:Math.max(36,barTop-promptGap);
+        const promptCenter=promptAnchor
+          ? Math.max(left+promptPlate/2,Math.min(width-right-promptPlate/2,promptAnchor.x))
+          : promptCompact&&!shortLandscape?left+promptPlate/2:(width+left-right)/2;
+        promptTop=promptAnchor
+          ? Math.max(top+76,Math.min(barTop-47,promptAnchor.y-29))
+          : besideFinal?barTop:Math.max(36,barTop-promptGap);
         this.place(this.door.group,'doorPlacement',viewport,promptCenter,promptTop,promptScale);
       }
       const noticeTop=this.movementGroups.size?Math.min(promptTop,movementTop):promptTop;

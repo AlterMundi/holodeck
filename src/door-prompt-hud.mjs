@@ -4,6 +4,7 @@ export const doorPromptId = 'world-door';
 export const doorPromptWidth = 2.38;
 const model = key => ({'@path': '/' + key});
 export const compactDoorPromptWidth = .52;
+export const anchoredDoorPromptWidth = 1.46;
 const components = width => [
   {id: 'root', component: 'HudPanel', label: 'Cruzar un paso', width, children: ['cross']},
   {id: 'cross', component: 'HudButton', label: model('label'), disabled: model('busy'),
@@ -15,8 +16,9 @@ export class DoorPromptHud {
     Object.assign(this, {adapter, send, read, cross, focusControl, hasFocus, finePointer});
   }
 
-  update(visible, compact = false) {
+  update(visible, compact = false, anchor) {
     const current = visible ? this.read() : null;
+    this.anchor=current?anchor:null;
     if (!current) {
       this.presented(false);
       if (this.group) this.send('deleteSurface', {}, doorPromptId);
@@ -36,13 +38,14 @@ export class DoorPromptHud {
       this.send('createSurface', {catalogId: spatialHudCatalog.id}, doorPromptId);
       this.compact = null;
     }
-    if (this.compact !== compact) {
+    const width = this.anchor ? anchoredDoorPromptWidth : compact ? compactDoorPromptWidth : doorPromptWidth;
+    if (this.compact !== compact || this.width !== width) {
       this.compact = compact;
-      const width = compact ? compactDoorPromptWidth : doorPromptWidth;
+      this.width = width;
       this.send('updateComponents', {components: components(width)}, doorPromptId);
     }
-    const shortcut = compact ? ' [E]' : '   [E]';
-    const label = current.title + (this.finePointer() ? shortcut : '');
+    const shortcut = compact || this.anchor ? ' [E]' : '   [E]';
+    const label = current.title + (this.anchor || this.finePointer() ? shortcut : '');
     const value = {label, scope: current.scope, revision: current.revision, busy: current.busy};
     const signature = JSON.stringify(value);
     if (signature !== this.signature) {
