@@ -28,6 +28,19 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+Source `bc17d92dbbe4df285b676a8320e18f28844f23ec` carries the deployed
+touch landscape map from `bf4886aafe4e` into the Character candidate.
+Review archive
+`0e2e9b19867a5313ee6306f81220521c15b722843871d314005ca91399b88060`
+was built with the exact alpha.16 PR package, SHA-256
+`428205a140fe8f73b95a60e633954118436c15399f15e5792d12637feb49edd6`.
+Chromium measured 44.044 CSS px touch targets, retained map format
+through rotation, followed a room destination and restored launcher
+focus. The same archive passed reciprocal Character doors, delayed
+note readback and independent table frames 37 and 35 with a shared
+frame 36. The pose catalog matches the previous archive byte for byte.
+The staged browser tests used fixture identities.
+
 Source `bc5e70d2d562d2ddda0f4b95ef429c0bbb2d0a7a` carries the selected
 arrival trail from release `e2b318f4b262` and disables note reads while the
 requested shared pose loads. Chromium held the presentation request open,
