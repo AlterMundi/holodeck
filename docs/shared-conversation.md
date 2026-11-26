@@ -50,13 +50,17 @@ reports that context could not be attached. A changed Conversation binding
 still keeps the draft. Late world context cannot attach to the original
 and the parent cleanup only addresses the optional context reservation.
 
-The serving overlay combines `091fa0f3` with the active submitted-draft lock
-`d65f2a76`. Exact served JavaScript matched both qualified assets.
-Controlled Chromium at desktop and compact widths exercised text on both
-error and timeout, and synthetic ordinary audio on explicit error.
-Each original reached the controlled writer once. Physical microphone,
-real native input latency and other receivers remain unverified. The
-previous web package is retained for rollback.
+The serving overlay originally combined `091fa0f3` with the submitted-draft
+lock `d65f2a76`. The current CompAII overlay `ecdee68d` retains that fallback
+alongside exact-message recovery. Both current JavaScript assets matched the
+hosted readback. A controlled cross-origin Chromium test at 1011 and 375 px
+verified that text reached the writer once with the context on success, and
+once without it after either immediate error or timeout. It also exercised
+synthetic ordinary audio on explicit error. In this fixture, delivery to the
+writer took 53–134 ms standalone, 65–141 ms embedded with a prompt context
+response, and 3061–3076 ms when the context did not reply. These timings exclude
+production network and native ingress. Physical microphone, real native input
+latency and other receivers remain unverified.
 
 ## World input with Conversation open
 
