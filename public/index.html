@@ -346,6 +346,7 @@ body[data-a2ui-toolbelt] #view-tools,dialog[data-native-settings]{display:none!i
 body:has(#conversation-panel:not([hidden])) #view-tools,body:has(#content-visit:not([hidden]):not(.is-walking)) #view-tools{display:none}
 @media(max-width:740px){#view-tools{right:12px;top:12px;bottom:auto}#appearance-open{padding:8px 12px;font-size:14px}#hud{max-width:calc(100vw - 168px)}}
 #loading-screen{display:none!important}
+body[data-world-starting] :is(canvas,#hud,#dock,#view-tools,#world-tools,#visit-controls,#companion-status,#notice,#room-passage,.touch-controls,#house-door){visibility:hidden!important;pointer-events:none!important}
 #world-entry{position:fixed;z-index:100;top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));width:max-content;max-width:calc(100vw - 24px);padding:12px 14px;border-radius:13px;background:var(--panel)}
 #world-entry p{margin:0;color:var(--ink)}
 .world-entry-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
@@ -354,7 +355,7 @@ body:has(#conversation-panel:not([hidden])) #view-tools,body:has(#content-visit:
   color:#f6f8f4;background:#071621ec;
 }
 :is(.world-entry-actions,#room-passage) button:focus-visible{outline:2px solid #ffe2ac;outline-offset:3px}
-</style></head><body>
+</style></head><body data-world-starting>
 <section id="world-entry" class="glass" aria-label="Conexión con Holodeck" hidden>
   <p id="world-entry-status" role="status"></p>
   <div class="world-entry-actions"><button id="world-entry-retry" class="primary" type="button">Volver a intentar</button><button id="world-entry-graphics" type="button">Entrar con gráficos livianos</button></div>
@@ -407,7 +408,7 @@ body:has(#conversation-panel:not([hidden])) #view-tools,body:has(#content-visit:
 <div id="companion-status" class="glass" role="status">Exploración compartida</div>
 <div id="notice" class="glass" role="status"></div>
 <div id="room-passage" tabindex="-1"><span class="passage-energy" aria-hidden="true"></span><div class="passage-copy"><p id="room-passage-message" role="status"></p><span class="passage-orbit" aria-hidden="true"></span><button id="room-passage-retry" type="button" hidden>Reintentar</button></div></div>
-<nav id="dock" class="glass" aria-label="Acciones del taller"><button id="bridge" class="primary">Conectar islas</button><button id="plant" hidden>Crear luz</button><button id="map-tool" type="button" aria-expanded="false" aria-controls="space-travel" disabled>Minimapa</button><button id="talk" aria-expanded="false" aria-controls="conversation-panel">Conversar</button><button id="undo" class="icon" title="Deshacer mi último cambio" aria-label="Deshacer mi último cambio" disabled>↶</button></nav>
+<nav id="dock" class="glass" aria-label="Acciones del taller"><button id="bridge" class="primary" hidden>Conectar islas</button><button id="plant" hidden>Crear luz</button><button id="map-tool" type="button" aria-expanded="false" aria-controls="space-travel" disabled>Minimapa</button><button id="talk" aria-expanded="false" aria-controls="conversation-panel">Conversar</button><button id="undo" hidden class="icon" title="Deshacer mi último cambio" aria-label="Deshacer mi último cambio" disabled>↶</button></nav>
 <section id="pointing" class="glass" aria-label="Indicar un objeto" hidden><p id="point-label"></p><div class="row"><button id="point-visit" class="primary" type="button" hidden>Visitar contenido</button><button id="point-send" class="primary" type="button">Señalar</button><button id="point-edit" type="button" hidden>Editar luz</button><button id="point-clear" type="button">Cancelar</button></div></section>
 <details id="play-near" class="glass" hidden><summary><strong id="play-title"></strong> · Cómo jugar<span id="play-progress" role="status"></span></summary><p id="play-instruction"></p><button id="play-edit" type="button" hidden>Editar jardín</button></details>
 <div id="indoor-design-tools" hidden><button id="indoor-design" type="button">Diseñar jardín</button><button id="indoor-design-forget" type="button" hidden>Cerrar seguimiento</button></div>

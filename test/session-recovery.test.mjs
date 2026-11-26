@@ -84,13 +84,13 @@ test('a binding persistence failure exposes no new session cookie',async()=>{
 test('actual MML handshake cannot use another actor token with its own valid Home socket',async()=>{
  const dir=mkdtempSync(join(tmpdir(),'holodeck-handshake-owner-')),clients=[];
  const runtime=await createHolodeck({production:true,basePath:'/holodeck/',publicOrigin:'https://world.test',stateDir:dir,
-  identityResolver:async req=>{const who=req.headers.cookie?.match(/(?:^|; )home=([ab])(?:;|$)/)?.[1];return who?{id:'human:'+who,kind:'human',rights:['observe','edit']}:null;}});
+  identityResolver:async req=>{if(req.headers.upgrade==='websocket')await new Promise(resolve=>setTimeout(resolve,300));const who=req.headers.cookie?.match(/(?:^|; )home=([ab])(?:;|$)/)?.[1];return who?{id:'human:'+who,kind:'human',rights:['observe','edit']}:null;}});
  const listener=runtime.app.listen(0,'127.0.0.1');await new Promise(resolve=>listener.once('listening',resolve));
  const base=`http://127.0.0.1:${listener.address().port}/holodeck/`;
  async function joinClient(cookie,token){
   let finish;const result=new Promise(resolve=>finish=resolve);
   const timer=setTimeout(()=>finish({timeout:true}),4000);
-  const client=new UserNetworkingClient({url:base.replace('http:','ws:')+'network',sessionToken:token,
+  const client=new UserNetworkingClient({url:base.replace('http:','ws:')+'active/network',sessionToken:token,
    websocketFactory:url=>new WebSocket(url,'3d-web-experience-v0.1',{headers:{Cookie:cookie,Origin:'https://world.test'}}),
    resolveProtocol:experienceProtocolToDeltaNetSubProtocol,statusUpdateCallback(){},onUpdate(){},
    assignedIdentity:id=>finish({id}),onServerError:error=>finish({error})},undefined,undefined,{debug(){},info(){},warn(){},error(){}});
