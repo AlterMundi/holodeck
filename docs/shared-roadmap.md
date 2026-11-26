@@ -935,8 +935,9 @@ uses progressive aerial haze, local glow and depth-dependent shoreline
 transmission. It also gives the human and companion separate bounded
 wakes at boost speed. Two physical devices verified the near and
 submerged views and local wake playback. A [two-device fixture](character-motion.md#remote-boost-wake-on-the-selected-browser-build)
-also saw the remote pilot's wake. Signed-in visitor acceptance, a
-broader low-light pass and scene reflections remain open.
+also saw the remote pilot's wake. The [offshore water update](STATUS.md#november-26-offshore-water-and-night-reflection)
+was compared on both physical profiles and selected. Signed-in visitor
+acceptance, a broader low-light pass and geometry reflections remain open.
 The [depth-of-field candidate](environment-art-revamp.md#background-depth-of-field)
 clears its world target correctly. Matched RTX measurements leave too
 little GPU headroom for promotion. Keep the direct render selected and

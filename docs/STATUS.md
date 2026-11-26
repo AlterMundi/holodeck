@@ -1,5 +1,27 @@
 # Current MVP work
 
+## November 26 offshore water and night reflection
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `6affd43be714`
+from `1ddb98a`. Water uses filtered surface slopes in multiple directions
+instead of painting the offshore wave height into its color. Normal uses
+a three-dimensional field, and Livianos uses a cheaper projected field.
+The new cool night reflection fades across the waterline. Existing
+shore transmission and underwater rendering were qualified from the
+same fixed cameras. Reflections represent sky illumination.
+
+At 1200 × 740, the controlled RTX 2060 dusk flight sample held 16.7 ms
+frame p95 before and after. GPU p95 was 10.22 → 10.34 ms. On Pi 5
+Livianos the initial 363 × 244 night intervals were variable. The
+consecutive baseline and final-candidate repeat measured 33.4 → 33.3 ms
+frame p95 and 15.09 → 15.11 ms GPU p95. Both had 16.7 ms frame median.
+The night shore's sampled water crop increased from 21 to 24 on an
+8-bit grayscale scale. Draw and triangle counts stayed the same.
+
+The suite passed 417 checks with two optional skips. Receiving matched
+86 files, existing access, and the same world run through 456–458.
+Only the compressed browser client changed. Rollback is `394ab30b12c6`.
+
 ## November 26 Shift, Alt and Space controls
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `394ab30b12c6`
