@@ -1,5 +1,25 @@
 # Current MVP work
 
+## Matter worktable readability on the alpha.20 candidate
+
+Client revision `a0225316402228db379ecee8370bd7bc454407c4` puts
+Compartir on its own row in the landscape touch layout, preserves
+Seguir and Despejar side by side, and uses short contextual labels for
+pointing and conversation. The desktop layout names the model or part.
+Chromium captures verify complete labels and tabs at 568 × 320 and
+the desktop layout at 1200 × 800.
+
+The service candidate SHA-256 is
+`ff0cd6187c4e5527fa6c851eaa0055e6b95c4e0005fbaf6d3fa8c0eb3fa9f76c`.
+It replaces only the compressed client from protected `2ee067ffd313`
+and retains Proyección alpha.20. The remaining package payloads,
+including the pose catalog and server, match the protected release.
+Character web/table playback and miniature camera parity passed
+against the same archive. The two-fixture Matter walkthrough replayed
+sharing in both directions, retained each visitor's camera and local cut,
+and left the room through its existing door. The Node 24 suite passed
+447 tests with two skips. Activation remains with Holodeck.
+
 ## Proyección alpha.20 receiving candidate
 
 The dependency lock selects Proyección
