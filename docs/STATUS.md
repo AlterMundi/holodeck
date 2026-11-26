@@ -1,5 +1,17 @@
 # Current MVP work
 
+## Desktop movement help in the spatial HUD
+
+Source `aab91b5b494af8a23e3cbe0b3949d74246089036` projects the current
+desktop keyboard hints in the world HUD using the active movement mode
+and the existing optical theme. The browser retains the readable text
+and its fallback presentation. Chromium served the package with SHA-256
+`25de9871d9609122b46200f844cabc0914758452e5f28b416ee79dbbf95bacbc`,
+captured the desktop hints at 1280 × 800 and exercised the mounted
+canonical Conversation across desktop and compact layouts with one
+fixture original, one retained frame and no browser errors. The Node
+suite passed 425 checks with two skips. This candidate is staged locally.
+
 ## Character Design Room review candidate on the selected world
 
 Nicolás confirmed that the published foyer door opens the same full-screen
