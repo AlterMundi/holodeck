@@ -407,8 +407,11 @@ The tower has a player-height coastal view through its authored east
 clerestory, and the resonator sill collision matches the visible wood.
 The [gallery deck contact pass](STATUS.md#november-26-gallery-deck-contacts)
 seats protected miniatures and grounds their supports in Normal and Livianos.
-The current pass still needs a visit with independently signed-in participants
-using the installed gallery. Keep new room materials and fitting work under
+The [gallery plaque pass](STATUS.md#november-26-gallery-exhibit-plaques)
+keeps titles clear of the model silhouettes and opens the matching edition
+with click or touch on the physical plate. Retain the measured cost in
+Livianos for the next art pass. The installed gallery still needs a visit
+with independently signed-in participants. Keep new room materials and fitting work under
 the [surface contact criterion](environment-art-revamp.md#surface-contacts).
 Continue the finish pass through the miniature, exterior paths, gallery and
 tower with the same standard. Use scale, joinery, hardware and purposeful work objects to carry

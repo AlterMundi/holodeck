@@ -1,5 +1,31 @@
 # Current MVP work
 
+## November 26 gallery exhibit plaques
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `c024dbda2833`
+from `6d73b91`. Low double-sided plaques sit on the three oak decks.
+They keep the artwork clear in the aisle view and show the stage and
+authorized edition title. A fitted long title wraps to two lines. The
+entire plate opens its exact current edition when the visitor is in reach.
+
+Compared four matching 980 × 620 camera poses on RTX 2060 Normal and
+Pi 5 V3D Livianos with the sealed-floor gallery asset. RTX medians
+stayed at 16.7 ms. In the paired Pi run, three medians stayed at
+33.3 ms and the overview moved from 16.7 to 33.3 ms. The 95th percentile
+moved from 33.4 to about 50 ms in the overview and return view. Earlier
+separate Pi runs varied by one refresh interval, so keep this art
+cost visible in future gallery passes. Click and emulated touch on
+the bronze rim opened the exact edition and retained the viewer and
+player position on return on both devices. Two controlled identities
+also verified restricted title and model visibility and archive
+revocation. An independently signed-in production visit remains open.
+
+Node 24 passed 426 checks with two optional skips. Only the client
+bundle changed. Receiving matched 86 files, 13 exact protected HTTPS
+reads, four expected denials, unchanged audience and configuration,
+and world sequence 463 before and after. Immediate rollback is
+`de23bdf98e78`. See [working house #12](https://github.com/AlterMundi/holodeck/issues/12).
+
 ## November 26 gallery deck contacts
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `de23bdf98e78`

@@ -338,6 +338,12 @@ supports stay visible. It sits on the deck, works in Normal and Livianos,
 and disappears with the edition when access expires or is revoked.
 The collection shelf and turntable keep their separate fitting behavior.
 
+The gallery names sit in low double-sided enamel plaques at the aisle
+edge of each deck. Brass-colored feet meet the oak. Stage and authorized
+edition title share the same face, with up to two lines for the title.
+The entire plate can open the exact current edition at the same range
+as the miniature. The gallery removes its plate when access expires.
+
 Generate the retained surrounding scenery with
 `tools/create-island-scenery.mjs --atelier-surroundings` and a task-owned
 `.state` output path. This leaves the neighboring islands and horizon in
