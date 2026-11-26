@@ -1,4 +1,4 @@
-// Verify the packaged world with an independent browser and own-native actor.
+// Verify the packaged world with two independent visitors and an own-native actor.
 const assert=require('node:assert/strict');
 const {once}=require('node:events');
 const {mkdtempSync,mkdirSync,rmSync}=require('node:fs');
@@ -13,12 +13,17 @@ if(!HOLODECK_STAGE||!HOLODECK_PLAYWRIGHT||!HOLODECK_EVIDENCE_DIR)
   throw Error('Select the built package, Playwright module and a bounded evidence directory');
 const {chromium}=require(resolve(HOLODECK_PLAYWRIGHT));
 const stage=resolve(HOLODECK_STAGE),evidence=resolve(HOLODECK_EVIDENCE_DIR);
-const visitor='human:character-review';
+const visitor='human:character-review',peer='human:character-peer';
 const foyer='compaii-vestibulo',studio='compaii-character-studio',matter='matter';
 const lab='compaii-lab',gallery='compaii-galeria',tower='compaii-torre';
 const origin='https://fixture.test';
 const conversationURL=origin+'/conversation-fixture/';
 const binding='b'.repeat(64);
+
+async function moveVisitor(page,from,to){
+  return page.evaluate(async body=>(await fetch('api/space',{method:'POST',
+    headers:{'content-type':'application/json'},body:JSON.stringify(body)})).status,{from,to});
+}
 
 async function main(){
   process.env.HOLODECK_JSDOM_HELPERS=join(stage,'runtime/jsdom/lib/jsdom/living/helpers');
@@ -36,7 +41,7 @@ async function main(){
   mkdirSync(evidence,{recursive:true});
   const dir=mkdtempSync(join(tmpdir(),'holodeck-characters-'));
   const socketPath=join(dir,'review.sock');
-  const room=(id,title,level,entry,links)=>({id,title,level,entry,house,guests:[visitor],
+  const room=(id,title,level,entry,links)=>({id,title,level,entry,house,guests:[visitor,peer],
     links:links.map(([kind,to])=>({kind,to}))});
   const port=body=>new Promise((accept,reject)=>{
     const socket=createConnection(socketPath);
@@ -90,8 +95,12 @@ async function main(){
       },
       nativeRoomAuthority:async verified=>roomGrant&&verified.actor.id===owner?(writeGrant?['observe','edit']:['observe']):[],
       ownNative:true,worldPorts:[{socket:socketPath,beingRef:owner}],
-      identityResolver:async req=>req.headers.cookie?.includes('fixture=reviewer')?
-        {id:visitor,ref:visitor,kind:'human',name:'Visitante',rights:['observe']}:null,
+      identityResolver:async req=>{
+        const token=(req.headers.cookie??'').match(/(?:^|;\s*)fixture=(reviewer|peer)(?:;|$)/)?.[1];
+        if(!token)return null;
+        const id=token==='reviewer'?visitor:peer;
+        return {id,ref:id,kind:'human',name:token==='reviewer'?'Visitante':'Segunda visitante',rights:['observe']};
+      },
     });
     server=runtime.app.listen(0,'127.0.0.1');
     server.prependListener('request',req=>{if(req.method==='POST')req.headers.origin=origin;});
@@ -102,6 +111,7 @@ async function main(){
       args:['--enable-unsafe-swiftshader']});
     const context=await browser.newContext({viewport:{width:1200,height:800},reducedMotion:'reduce'});
     await context.addCookies([{name:'fixture',value:'reviewer',url}]);
+    context.setDefaultTimeout(30000);
     const page=await context.newPage(),errors=[];
     page.on('pageerror',error=>errors.push(error.message));
     await page.route(conversationURL+'*',route=>route.fulfill({contentType:'text/html',body:`
@@ -121,10 +131,10 @@ async function main(){
         parent.postMessage({...base,type:'ready'},target);
       </script>`}));
     await page.goto(url,{waitUntil:'domcontentloaded'});
-    const currentSpace=()=>page.evaluate(()=>fetch('api/space?live=1').then(r=>r.json()));
-    const worldReady=()=>page.waitForFunction(()=>window.holodeckDevelopment?.client.getLocalCharacterState()&&
+    const currentSpace=(clientPage=page)=>clientPage.evaluate(()=>fetch('api/space?live=1').then(r=>r.json()));
+    const worldReady=(clientPage=page)=>clientPage.waitForFunction(()=>window.holodeckDevelopment?.client.getLocalCharacterState()&&
       document.querySelector('#world-entry').hidden&&!document.body.classList.contains('room-transition'));
-    const placeAvatar=(position,yaw=180)=>page.evaluate(({position,yaw})=>{
+    const placeAvatar=(position,yaw=180,clientPage=page)=>clientPage.evaluate(({position,yaw})=>{
       const client=holodeckDevelopment.client;
       client.updateConfig({spawnConfiguration:{spawnPosition:position,spawnYRotation:yaw,respawnTrigger:{minY:-2500}}});
       client.respawn();
@@ -143,12 +153,12 @@ async function main(){
       assert.equal(new URL(page.url()).searchParams.has('taller'),false);
       return currentSpace();
     };
-    const openWorktable=async space=>{
+    const openWorktable=async (space,clientPage=page,offset=0)=>{
       const bench=space.objects.find(object=>object.id==='character-worktable');
       assert.ok(bench,'The Character room has no worktable');
-      await placeAvatar({x:bench.position.x,y:.25,z:bench.position.z+1.62});
-      await page.getByRole('button',{name:'Usar mesa',exact:true}).press('Enter',{timeout:15000});
-      const table=page.getByRole('group',{name:'Mesa de Char Design',exact:true});
+      await placeAvatar({x:bench.position.x+offset,y:.25,z:bench.position.z+1.62},180,clientPage);
+      await clientPage.getByRole('button',{name:'Usar mesa',exact:true}).press('Enter',{timeout:15000});
+      const table=clientPage.getByRole('group',{name:'Mesa de Char Design',exact:true});
       await table.getByRole('button',{name:'Pose',exact:true}).waitFor({state:'attached'});
       return table;
     };
@@ -157,8 +167,7 @@ async function main(){
     for(const [from,to] of [['outside',foyer],[foyer,studio]]){
       assert.equal((await native('space.move',{from,to})).id,to);
     }
-    assert.equal(await page.evaluate(async foyer=>(await fetch('api/space',{method:'POST',
-      headers:{'content-type':'application/json'},body:JSON.stringify({from:'outside',to:foyer})})).status,foyer),200);
+    assert.equal(await moveVisitor(page,'outside',foyer),200);
     const worldLoaded=()=>page.waitForURL(value=>!value.searchParams.has('taller'));
     await page.goto(url,{waitUntil:'domcontentloaded'});
     await worldReady();
@@ -215,10 +224,55 @@ async function main(){
     await tableButton('Notas').press('Enter');
     await tableButton('Ver pose del Taller').press('Enter');
     await tableButton('Pose').press('Enter');
-    const frame=expected=>page.waitForFunction(value=>document.querySelector('input[aria-label="Fotograma"]')?.valueAsNumber===value,expected);
+    const frame=(expected,clientPage=page)=>clientPage.waitForFunction(value=>document.querySelector('input[aria-label="Fotograma"]')?.valueAsNumber===value,expected,{polling:100});
     await frame(pose.frame);
     await tableButton('+1').press('Enter');
     await frame(pose.frame+1);
+
+    // A second visitor with a distinct fixture identity reviews the same presentation.
+    const peerContext=await browser.newContext({viewport:{width:1200,height:800},reducedMotion:'reduce'});
+    peerContext.setDefaultTimeout(30000);
+    await peerContext.addCookies([{name:'fixture',value:'peer',url}]);
+    const peerPage=await peerContext.newPage();
+    peerPage.on('pageerror',error=>errors.push(error.message));
+    await peerPage.bringToFront();
+    await peerPage.goto(url,{waitUntil:'domcontentloaded'});
+    assert.equal(await moveVisitor(peerPage,'outside',foyer),200);
+    assert.equal(await moveVisitor(peerPage,foyer,studio),200);
+    await peerPage.goto(url,{waitUntil:'domcontentloaded'});
+    await worldReady(peerPage);
+    const peerSpace=await currentSpace(peerPage);
+    assert.equal(peerSpace.actorRef,peer);
+    assert.equal(peerSpace.id,studio);
+    const peerTable=await openWorktable(peerSpace,peerPage,-.65);
+    const peerButton=name=>peerTable.getByRole('button',{name,exact:true});
+    await peerButton('Notas').press('Enter');
+    await peerButton('Ver pose del Taller').press('Enter');
+    await peerButton('Pose').press('Enter');
+    await frame(pose.frame,peerPage);
+    await peerButton('Notas').press('Enter');
+    const peerNotesResponse=peerPage.waitForResponse(response=>
+      new URL(response.url()).pathname.endsWith('/character-pose-review'));
+    await peerButton('Ver notas').press('Enter');
+    const peerNotes=await peerNotesResponse;
+    assert.equal(peerNotes.status(),200);
+    assert.equal(new URL(peerNotes.url()).searchParams.get('frame'),String(pose.frame));
+    assert.deepEqual((await peerNotes.json()).notes.map(({author,text})=>[author,text]),[['Visitante',note]]);
+    const peerNote=peerTable.getByRole('combobox',{name:'Notas de esta pose',exact:true});
+    await peerNote.locator('option').filter({hasText:'Visitante · '+note}).waitFor({state:'attached'});
+    await peerButton('Pose').press('Enter');
+    await frame(pose.frame,peerPage);
+    await frame(pose.frame+1);
+    await peerButton('−1').press('Enter');
+    await frame(pose.frame-1,peerPage);
+    await frame(pose.frame+1);
+    const peerReadback=await peerPage.evaluate(()=>fetch('api/space/character-presentation').then(r=>r.json()));
+    assert.equal(peerReadback.revision,committed.revision);
+    assert.deepEqual(peerReadback.presentation.pose,pose);
+    await peerPage.screenshot({path:join(evidence,'character-peer-local-frame.png')});
+    await peerContext.close();
+    await page.bringToFront();
+
     await page.getByRole('button',{name:'Conversar',exact:true}).press('Enter');
     const conversation=page.frameLocator('#shared-conversation iframe');
     await conversation.getByRole('button',{name:'Preparar contexto'}).click();
@@ -264,15 +318,14 @@ async function main(){
     roomGrant=false;
     assert.deepEqual(await prepare(randomUUID(),studio,referredPose),{status:409,scope:'machine-context'});
     roomGrant=true;
-    assert.equal(await page.evaluate(async({from,to})=>(await fetch('api/space',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({from,to})})).status,{from:studio,to:foyer}),200);
+    assert.equal(await moveVisitor(page,studio,foyer),200);
     assert.equal((await prepare(randomUUID(),foyer,referredPose)).status,409);
     assert.equal(contexts.length,1);
     assert.equal((await native('space.move',{from:studio,to:foyer})).id,foyer);
     assert.deepEqual(await native('character-review.notes',{pose}),{status:403});
     assert.deepEqual(errors,[]);
     console.log(JSON.stringify({pose,revision:readback.revision,visitor,observedNote:note,roomScope:true,
-      conversationPose:referredPose,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
+      conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
       situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,reciprocalWorldDoors:true,openedTableFromWorldDoor:true,doorFromViewer:true,returnedToRoomFromViewer:true}));
   }finally{
     await browser?.close();

@@ -42,6 +42,14 @@ catalog is byte-identical to the earlier keyboard HUD candidate. The
 Node suite passed 425 checks with two skips. The protected water
 release does not ship the Character review catalog.
 
+The same archive also passed the two-visitor tabletop check with
+independent browser contexts and distinct fixture identities. Both opened
+the shared flight study at frame 36. The second visitor read the first
+visitor's authored note at frame 36, then stepped to frame 35 while the
+first stayed at frame 37. Holodeck still returned the original shared
+pose and revision. The existing situated note round trip still passed.
+This used loopback identity fixtures, with protected live review pending.
+
 Source `64243ccd5c97ec1d0705f64315eb255d1e47b79e` exposes the exact
 Character pose to its retained Conversation turn. In the staged
 browser and native-port check, a paired daimon entered through the
