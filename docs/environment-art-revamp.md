@@ -269,6 +269,24 @@ cut and retained its durable content across the adjacent saves.
 Independent participant acceptance and a controlled Normal frame-time
 comparison remain open.
 
+## Trial of short grass drifts at the arrival meadow
+
+Protected visual trial `4cf4d8b5a6d3` serves source `818502a`, with
+`b16825cfa1d6` available for rollback. Three seeded drifts put rooted short grass
+between the existing tall plants along the arrival meadow toward the trees.
+The geometry is opaque, uses the existing ground and daylight, and has no
+asset fetch. Normal admits 1,112 short clumps, with 740 of the same roots
+selected in Livianos. Only the client bundle and manifest changed.
+
+The single-device trial used RTX 2060 Normal. It showed all three drifts
+and completed a 7.8 m keyboard walk. The matched daylight view added three
+draws and 5,560 triangles. This was a readiness and visual comparison,
+with participant acceptance and cross-device optimisation open. Fable 5.2
+High informed the density layer. Opus 5.5 High reviewed the exact art patch.
+The 10 scoped scenery tests passed. Protected receiving readback matched
+the running client, server, terrain worker and scoped art. The existing
+audience and rollback remain selected.
+
 ## Installed short-leaf cover at the arrival meadow
 
 Protected release `b16825cfa1d6` serves `0a22901`, with `ccd70257f992`

@@ -1,5 +1,10 @@
 # Current MVP work
 
+## November 26 — Short 3D grass beside the arrival trail
+
+Visual trial `4cf4d8b5a6d3` is available at the existing Holodeck entrance.
+[Readiness and visual evidence](environment-art-revamp.md#trial-of-short-grass-drifts-at-the-arrival-meadow).
+
 ## November 26 — Short grass material at the arrival meadow
 
 Protected release `b16825cfa1d6` serves `0a22901` with
