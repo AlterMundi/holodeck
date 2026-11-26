@@ -13,7 +13,7 @@ try{
 await fetch(origin+'/json/version',{signal:AbortSignal.timeout(3000)});
 const acceptedOriginals=[],records=new Map();
 function missing(){const e=new NativeConversationError('not-retained','Test fixture has no original');Object.assign(e,{retained:false,knownNotSubmitted:true,retryable:true});throw e;}
-service=await createHolodeck({identityResolver:async()=>({id:'fixture-human',kind:'human',name:'Fixture',rights:['observe','edit','project']}),nativeFactory:async()=>({
+service=await createHolodeck({lightExercise:true,identityResolver:async()=>({id:'fixture-human',kind:'human',name:'Fixture',rights:['observe','edit','project']}),nativeFactory:async()=>({
  availability:async()=>({available:true,active:null}),
  submit:async(_actor,body)=>{acceptedOriginals.push(structuredClone(body));const result={id:body.id,phase:'completed',retained:true,updates:[],knownNotSubmitted:false,retryable:false};records.set(body.id,result);return result;},
  status:async(_actor,id)=>records.get(id)||missing(),
@@ -40,7 +40,7 @@ async function evaluate(expression){const r=await cdp('Runtime.evaluate',{expres
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(expression,ms=15000){
  const start=Date.now();while(Date.now()-start<ms){if(await evaluate(expression))return;await wait(250)}
- const observed=await evaluate('({errors:checkErrors,panel:document.querySelector("#recovery-panel")?.textContent,ready:Boolean(window.holodeckDevelopment?.client.getLocalCharacterState())})');
+ const observed=await evaluate('({errors:checkErrors,panel:document.querySelector("#recovery-panel")?.textContent,focus:document.activeElement?.getAttribute("aria-label")??document.activeElement?.dataset.action,ready:Boolean(window.holodeckDevelopment?.client.getLocalCharacterState())})');
  throw Error('Condition failed: '+expression+' '+JSON.stringify(observed));
 }
 async function stats(){return(await fetch('http://127.0.0.1:18944/fixture/stats')).json()}
@@ -82,8 +82,17 @@ async function stats(){return(await fetch('http://127.0.0.1:18944/fixture/stats'
  if(accepted.length!==1||JSON.stringify(accepted[0])!==JSON.stringify(turn.body)||accepted[0].text!==text)throw Error('Native retry replaced original/capture/ID');
  failCommand=true;await evaluate('document.querySelector("#bridge").click()');
  await until('!!document.querySelector(".recovery-item[data-kind=command]")');
+ await until(presented);
+ const closeLabel=await evaluate('document.querySelector(".recovery-item[data-kind=command] button[data-action=close").textContent');
+ if(!await evaluate(`(()=>{const close=document.querySelector(${JSON.stringify(hudButton(closeLabel))});close.focus();return close===document.activeElement;})()`))
+   throw Error('The spatial recovery action could not receive focus');
  await cdp('Emulation.setDeviceMetricsOverride',{width:360,height:580,deviceScaleFactor:2,mobile:true});
  await until(`!(${presented})&&document.querySelector("#recovery-panel").getClientRects().length>0`);
+ await until('document.activeElement?.dataset?.action==="close"');
+ await cdp('Emulation.setDeviceMetricsOverride',{width:1100,height:860,deviceScaleFactor:1.5,mobile:false});
+ await until(`(${presented})&&document.activeElement===document.querySelector(${JSON.stringify(hudButton(closeLabel))})`);
+ await cdp('Emulation.setDeviceMetricsOverride',{width:360,height:580,deviceScaleFactor:2,mobile:true});
+ await until(`!(${presented})&&document.activeElement?.dataset?.action==='close'`);
  const discarded=await evaluate('JSON.parse(sessionStorage.getItem("holodeck.pending:/"))');
  await evaluate('document.querySelector(".recovery-item[data-kind=command] button[data-action=close]").click()');
  const warning=await evaluate('document.querySelector(".recovery-warning").textContent');
@@ -134,7 +143,7 @@ async function stats(){return(await fetch('http://127.0.0.1:18944/fixture/stats'
  if(retriedLights.length!==2||retriedLights.some(r=>JSON.stringify(r.body)!==JSON.stringify(lightCommand)))
    throw Error('Light recovery did not reuse the exact original');
  if((await stats()).outcomes.length!==first.outcomes.length+1)throw Error('Light preview created the wrong number of results');
- const evidence={commandInitialNeverArrived:true,reloadDidNotAutoResend:true,explicitCommandRetryExact:true,nativeInitialNeverArrived:true,explicitNativeRetryExactOriginalAndView:true,capturedAtUnchanged:accepted[0].view.capturedAt===turn.body.view.capturedAt,closeTrackingPreservedOriginal:true,closeTrackingDidNotCancel:true,newActionUnlocked:true,lightRecoveredExactlyOnce:true,errors:await evaluate('checkErrors'),nativeProvider:'fixture only; no real provider/session input'};
+ const evidence={commandInitialNeverArrived:true,reloadDidNotAutoResend:true,explicitCommandRetryExact:true,nativeInitialNeverArrived:true,explicitNativeRetryExactOriginalAndView:true,capturedAtUnchanged:accepted[0].view.capturedAt===turn.body.view.capturedAt,focusSurvivedFallback:true,closeTrackingPreservedOriginal:true,closeTrackingDidNotCancel:true,newActionUnlocked:true,lightRecoveredExactlyOnce:true,errors:await evaluate('checkErrors'),nativeProvider:'fixture only; no real provider/session input'};
  console.log(JSON.stringify(evidence));
 }finally{
  ws?.close();

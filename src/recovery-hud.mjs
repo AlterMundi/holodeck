@@ -7,6 +7,7 @@ const label=(id,key,fields={})=>({id,component:'HudText',label:path(key),...fiel
 const button=(id,caption)=>({id,component:'HudButton',label:caption,disabled:path(id+'Disabled'),
   action:{event:{name:id,context:{revision:path('revision')}}}});
 const row=(id,children)=>({id,component:'HudRow',children});
+const controlLabel=(id,element)=>id==='retry'?'Reintentar':id==='reveal'?'Ver original':element.textContent;
 
 function components(width,count,actions,browse){
   const lines=Array.from({length:count},(_,index)=>'line'+index);
@@ -23,8 +24,8 @@ function components(width,count,actions,browse){
 }
 
 export class RecoveryHud{
-  constructor({document,send,focus,isFocused,invalidate}){
-    Object.assign(this,{document,send,focus,isFocused,invalidate,revision:0});
+  constructor({document,send,focus,ownsAccessibleInput,invalidate}){
+    Object.assign(this,{document,send,focus,ownsAccessibleInput,invalidate,revision:0});
     this.panel=document.getElementById('recovery-panel');
     this.measure=document.createElement('canvas').getContext('2d');
     if(this.measure)this.measure.font='600 15px system-ui';
@@ -66,7 +67,7 @@ export class RecoveryHud{
     const data={title:card.querySelector('.recovery-title')?.textContent??'Envíos por confirmar',lines,revision:this.revision};
     if(browse)data.nextLabel=this.selected==='command'?'Ver mensaje pendiente':'Ver cambio pendiente';
     for(const [key,element] of controls){
-      data[key+'Label']=key==='retry'?'Reintentar':key==='reveal'?'Ver original':element.textContent;
+      data[key+'Label']=controlLabel(key,element);
       data[key+'Disabled']=Boolean(element.disabled);
     }
     if(!this.group)this.send('createSurface',{catalogId:spatialHudCatalog.id},recoveryHudId);
@@ -104,10 +105,17 @@ export class RecoveryHud{
     if(!this.panel)return;
     const active=this.document.activeElement;
     const previous=active?.closest?.('button[data-action],summary');
+    const fromNative=!visible&&restoreFocus&&this.ownsAccessibleInput(active)&&
+      active.closest('[role="group"]')?.getAttribute('aria-label')===this.panel.getAttribute('aria-label');
     this.panel.toggleAttribute('data-native-recovery',visible);
     if(visible&&previous&&this.card?.contains(previous)){
       this.focus(previous.dataset.action??'reveal');
-    }else if(!visible&&restoreFocus&&this.isFocused()&&!this.panel.hidden){
+    }else if(fromNative&&!this.panel.hidden){
+      const target=[...(this.controls??[])].find(([id,element])=>controlLabel(id,element)===active.getAttribute('aria-label'))?.[1];
+      if(target?.isConnected&&!target.disabled&&target.getClientRects().length){
+        target.focus({preventScroll:true});
+        return;
+      }
       const selector='button[data-action="check"]:not([disabled])';
       (this.card?.querySelector(selector)??this.panel.querySelector(selector))?.focus({preventScroll:true});
     }

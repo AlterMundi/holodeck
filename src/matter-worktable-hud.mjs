@@ -207,7 +207,7 @@ export class MatterWorktableHud{
       hasSoundFocus:()=>this.ownsAccessibleInput(this.document.activeElement)&&this.hud.currentFocus()?.surfaceId===worldHeaderId});
     this.recovery=new RecoveryHud({document,send:(type,content,id)=>this.send(type,content,id),
       focus:name=>this.hud.focusAccessibleControl(recoveryHudId,name),invalidate:this.layer.invalidate,
-      isFocused:()=>this.ownsAccessibleInput(this.document.activeElement)&&this.hud.currentFocus()?.surfaceId===recoveryHudId});
+      ownsAccessibleInput:element=>this.ownsAccessibleInput(element)});
     this.creation=new CreationHud({document,context:creatorContext,send:(type,content,id)=>this.send(type,content,id),
       focus:name=>this.hud.focusAccessibleControl(creationHudId,name),
       isFocused:()=>this.hud?.ownsAccessibleInput(this.document.activeElement)&&this.hud.currentFocus()?.surfaceId===creationHudId,
