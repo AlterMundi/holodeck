@@ -78,7 +78,12 @@ Both the generated and packed pose catalogs match the installed catalog.
 The exact archive also passed the complete two-visitor Chromium walkthrough,
 including independent cameras and frames, reviewed ground and flight
 chapters, shared notes, the situated native action and graphics recovery.
-The candidate awaits selection by the protected host.
+The existing private runtime artifact now retains the exact immutable
+package. Authenticated byte readback matched its SHA-256, and an anonymous
+read returned 404. The prepared owner request pins `6416a5246b17` and
+the existing application audience. It has not been submitted. The registry
+retains the selected live archive and its rollback. The exact older
+superseded archive is available in the local recovery record.
 
 ## Character table navigation from the miniature's eyes
 
