@@ -1,5 +1,13 @@
 # Current MVP work
 
+## November 26 — Meadow stone shape and grass contact trial
+
+Protected `de01619ab41c` serves source `3cc63b3`. The trial is visible
+beside the western pines and retains the existing woodland lighting.
+One RTX 2060 browser compared the same stone at noon and dusk and
+walked 6.51 m. The immediate rollback is `edc4063a617a`.
+[Evidence and limits](environment-art-revamp.md#installed-meadow-stone-and-grass-contact-trial).
+
 ## November 26 — Western pine understory and twilight trial
 
 Protected `edc4063a617a` serves source `a6fec4f`. The trial is reachable

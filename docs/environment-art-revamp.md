@@ -137,6 +137,23 @@ errors. Both versions gave 163 draws, 586,370 triangles and a 16.7 ms
 median animation-frame interval at an 850×552 draw buffer. The candidate
 remains local. It adds no external assets.
 
+### Installed meadow stone and grass contact trial
+
+Protected `de01619ab41c` (`3cc63b3)) adds a worn, irregular outline to
+the same rooted stones. Ground cover uses an oriented approximation of
+each rock's footprint to taper blades near the base. A broad first
+taper made the rock look surrounded by bare turf. The installed pass
+uses a 0.29 m taper to make the transition smaller. Some contact on
+steep surfaces and next to authored plant banks can still need work.
+
+The forest-edge pose and a 6.51 m walk passed in Chromium on an RTX 2060.
+Both matched cameras recorded 163 draws and a 16.7 ms median frame
+interval at 850×552. The measured triangle count changed from 586,370
+to 590,354. Both profiles use the same stone roots. The lightweight
+cost and live player feedback are still to be checked. The protected
+receiver matched 14 state files, server, other room art and terrain
+worker. The immediate rollback is `edc4063a617a`.
+
 ### Cosmic sky reflected in water
 
 The November 26 water reference calls for a broken ribbon of amber and
