@@ -247,13 +247,27 @@ async function main(){
     const peerTable=await openWorktable(peerSpace,peerPage,-.65);
     const peerButton=name=>peerTable.getByRole('button',{name,exact:true});
     await peerButton('Notas').press('Enter');
-    await peerButton('Ver pose del Taller').press('Enter');
+    const presentationRoute='**/api/space/character-presentation';
+    let releasePresentation;
+    const presentationGate=new Promise(resolve=>{releasePresentation=resolve;});
+    await peerPage.route(presentationRoute,async route=>{
+      await presentationGate;
+      await route.continue();
+    },{times:1});
+    const reviewButton=peerButton('Ver notas');
+    try{
+      await peerButton('Ver pose del Taller').press('Enter');
+      assert.equal(await reviewButton.isDisabled(),true,'Notes must wait for the shared pose to finish loading');
+    }finally{
+      releasePresentation();
+    }
     await peerButton('Pose').press('Enter');
     await frame(pose.frame,peerPage);
     await peerButton('Notas').press('Enter');
     const peerNotesResponse=peerPage.waitForResponse(response=>
       new URL(response.url()).pathname.endsWith('/character-pose-review'));
-    await peerButton('Ver notas').press('Enter');
+    assert.equal(await reviewButton.isEnabled(),true);
+    await reviewButton.press('Enter');
     const peerNotes=await peerNotesResponse;
     assert.equal(peerNotes.status(),200);
     assert.equal(new URL(peerNotes.url()).searchParams.get('frame'),String(pose.frame));
@@ -325,7 +339,7 @@ async function main(){
     assert.deepEqual(await native('character-review.notes',{pose}),{status:403});
     assert.deepEqual(errors,[]);
     console.log(JSON.stringify({pose,revision:readback.revision,visitor,observedNote:note,roomScope:true,
-      conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
+      conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,notesWaitedForSharedPose:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
       situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,reciprocalWorldDoors:true,openedTableFromWorldDoor:true,doorFromViewer:true,returnedToRoomFromViewer:true}));
   }finally{
     await browser?.close();

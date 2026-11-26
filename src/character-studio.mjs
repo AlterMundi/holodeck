@@ -76,7 +76,7 @@ const controls=[
   {...button('pin',path('noteAction'),'note'),submitFor:'note',disabled:path('savingNote'),visible:path('canSubmitNote'),weight:1.06},
   {...button('retryNote','Reintentar'),visible:path('canRetryNote'),weight:1.06},
   {...button('copy',path('copyLabel')),weight:1.23},
-  {...button('review',path('reviewAction')),visible:path('canReview')},
+  {...button('review',path('reviewAction')),visible:path('canReview'),disabled:path('presentationBusy')},
   choice('reviewNotes','Notas de esta pose'),
   {...label('reviewText',path('reviewText')),lines:3},
   {...label('status',path('status'),'status'),lines:2},
@@ -636,7 +636,7 @@ export function openCharacterStudio(document,table=null){
     if(name==='clip'&&typeof value==='string'&&(clip!==value||!playback))return loadClip(value);
     if(!playback)return;
     if((name==='present'||name==='follow')&&canReview)return usePresentation(name==='present');
-    if(name==='review'&&canReview)return toggleReview();
+    if(name==='review'&&canReview&&!presentationBusy)return toggleReview();
     if(name==='reviewNotes'&&currentReview()?.notes.some(item=>item.id===value))selectedNote=value;
     if(name==='reference')return loadReference(value);
     if(name==='compare'&&reference)displayClip(!showingReference);
