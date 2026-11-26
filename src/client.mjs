@@ -1396,7 +1396,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const peekTerrain=Boolean(terrainPosition&&compactTouch&&navigationVisible&&!mapPanel.open&&
         !matterHud.active&&!updateDoor.bearing?.());
       const paintedRaster=minimap(terrainPosition,yaw,activeSpace.entrances,peekTerrain);
-      matterHud.map.update(navigationVisible,paintedRaster,compactTouch==='landscape');
+      const shortMapHeight=matterHud.map.layout==='portrait-short'?448:430;
+      const compactMap=compactTouch==='portrait'&&matterHud.canvas.clientHeight<shortMapHeight?'portrait-short':compactTouch;
+      matterHud.map.update(navigationVisible,paintedRaster,compactMap);
       matterHud.map.updatePeek(peekTerrain);
       const touchAvailable=worldToolsVisible&&(conversation.hidden||!compactTouch&&!!conversation.dataset.travelLane)&&
         !mapPanel.open&&!signalEditor.active&&!document.hidden&&document.hasFocus();
@@ -1407,7 +1409,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       touchControls.pause(!touchLocomotion||!conversation.hidden&&!matterHud.movementPresented);
       matterHud.updateBearing(navigationVisible&&!matterHud.active);
       beaconControls.update(inside&&!moving&&!needsSync&&remoteScene?activeSpace.objects:null,position);
-      const passageAvailable=worldToolsVisible&&!quietTouch&&!matterHud.map.landscape&&(conversation.hidden||concurrentRoomDoors())&&
+      const passageAvailable=worldToolsVisible&&!quietTouch&&!matterHud.map.compact&&(conversation.hidden||concurrentRoomDoors())&&
         !matterHud.active&&Boolean(matterHud.toolGroup)&&!signalEditor.active;
       const compactDoor=Boolean(matterHud.toolLayout?.compact);
       let label=null,anchoredDoor=false;

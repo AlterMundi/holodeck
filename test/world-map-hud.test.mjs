@@ -74,18 +74,23 @@ test('rotating an open room map keeps its current destination and action scope',
   const updates=[];
   panel.querySelector=()=>({hidden:true});
   hud.send=(type,content)=>updates.push({type,...content});
-  hud.update(true,false,true);
+  hud.update(true,false,'landscape');
   action('next');
-  hud.update(true,false,true);
-  hud.update(true,false,false);
+  hud.update(true,false,'landscape');
+  hud.update(true,false,'portrait');
+  hud.update(true,false,'portrait-short');
+  hud.update(true,false);
   assert.equal(hud.scope,4);
   assert.equal(hud.index,1);
   assert.deepEqual(updates.map(({type})=>type),[
-    'updateComponents','updateDataModel','updateDataModel','updateComponents',
+    'updateComponents','updateDataModel','updateDataModel','updateComponents','updateComponents','updateComponents',
   ]);
   assert.deepEqual(updates[0].components.find(({id})=>id==='body').children,['map','controls']);
   assert.equal(updates[2].value.destination,'1');
   assert.equal(updates[3].components[0].children.includes('map'),true);
+  assert.ok(updates[4].components[0].width<updates[3].components[0].width);
+  for(const update of updates.slice(3))assert.deepEqual(update.components.filter(item=>item.action)
+    .map(item=>item.id).sort(),['close','exit','format','navigation','next','previous']);
 });
 
 test('bearing dismissal is bound to the selection, room and presentation epoch',()=>{

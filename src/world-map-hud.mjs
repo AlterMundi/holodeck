@@ -32,6 +32,20 @@ const landscapeComponents=[
   ...components.slice(1).map(component=>component.id==='map'?{...component,weight:.68}:component),
 ];
 
+const portraitComponents=[
+  {...components[0],width:1,children:['heading','map','destinations','exit']},
+  {...row('heading',['title','format','close']),gap:.025},
+  {...label('title','Mapa'),visible:path('hasRoomMap')},
+  {...row('destinations',['previous','navigation','next']),visible:path('hasDestinations'),gap:.018},
+  ...components.filter(({id})=>!['root','heading','title','pagination','count'].includes(id)).map(component=>{
+    if(component.id==='navigation')return {...component,weight:2.4};
+    if(component.id==='previous'||component.id==='next')return {...component,visible:path('hasPages')};
+    return component;
+  }),
+];
+const shortPortraitComponents=portraitComponents.map(component=>component.id==='root'
+  ?{...component,width:.74}:component);
+
 const peekComponents=[
   {id:'root',component:'HudPanel',label:'Minimapa',width:.96,chrome:'none',children:['map']},
   {id:'map',component:'HudMap',label:'Relieve y rumbo actual',marks:[]},
@@ -53,19 +67,22 @@ export class WorldMapHud{
     this.send(type,content,worldMapId);
   }
 
+  get landscape(){return this.layout==='landscape';}
+  get compact(){return Boolean(this.layout);}
+
   reset(){
     this.releaseTerrain('mesh');
     if(this.group)this.message('deleteSurface',{});
     this.group=null;
     this.mesh=null;
     this.signature=null;
-    this.landscape=null;
+    this.layout=null;
     this.index=0;
     this.scope++;
     delete this.panel.dataset.nativeMap;
   }
 
-  update(visible,rasterUpdated,landscape=false){
+  update(visible,rasterUpdated,layout=null){
     if(rasterUpdated&&this.texture){
       this.texture.needsUpdate=true;
       this.invalidate();
@@ -77,9 +94,11 @@ export class WorldMapHud{
     const {scope,busy,canExit,map}=this.mapState();
     if(this.mapScope!==scope){this.reset();this.mapScope=scope;}
     if(!this.group)this.message('createSurface',{catalogId:spatialHudCatalog.id});
-    if(this.landscape!==landscape){
-      this.landscape=landscape;
-      this.message('updateComponents',{components:landscape?landscapeComponents:components});
+    if(this.layout!==layout||!this.signature){
+      this.layout=layout;
+      const schema=layout==='portrait-short'?shortPortraitComponents:
+        layout==='portrait'?portraitComponents:layout==='landscape'?landscapeComponents:components;
+      this.message('updateComponents',{components:schema});
     }
     const destinations=map?.destinations??[];
     const count=destinations.length;
@@ -88,7 +107,7 @@ export class WorldMapHud{
     const canvas=this.panel.querySelector('#world-minimap');
     this.raster=!map&&!canvas.hidden;
     const mapLabel=(this.raster&&canvas.getAttribute('aria-label'))||'Mapa y posición actual';
-    const value={scope:this.scope,mapLabel,hasTerrain:this.raster,
+    const value={scope:this.scope,mapLabel,hasTerrain:this.raster,hasRoomMap:!this.raster,
       formatLabel:this.circular?'Vista cuadrada':'Vista circular',marks:map?.marks??[],viewer:map?.viewer??null,selected:map?.selected??'',
       bounds:{minX:-6,maxX:6,minZ:-6,maxZ:6},destination:current?.id??'',
       destinationLabel:current?.title??'',destinationSelected:!!current&&map.selected===current.id,

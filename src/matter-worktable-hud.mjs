@@ -40,7 +40,6 @@ const row=(id,children,fields={})=>({id,component:'HudRow',children,...fields});
 const text=(id,label,fields={})=>({id,component:'HudText',label,...fields});
 const choice=(id,label,options,value)=>({id,component:'HudChoice',label,
   options:path(options),value:path(value),draft:path(id+'Draft'),action:action(id,{value:path(id+'Draft')})});
-const landscapeMapScale=286; // 44 CSS px for Proyección's .154-unit button plate.
 const toolScale=286; // Proyección's .154-unit button target is 44 CSS px at this scale.
 const toolGap=.035,touchToolGap=.018,toolRowHeight=.18,toolPadding=.12,dockBottomMargin=.035;
 const iconToolPixels=48;
@@ -659,7 +658,7 @@ export class MatterWorktableHud{
   syncSettingsInput(){
     const scope=this.beacon.viewerGroup?beaconViewerId:this.activity.owner()?.native?activityHudId:this.visit.indexActive?exhibitionHudId:
       this.visit.viewerGroup?visitHudId:this.settings.group?settingsId:null;
-    const mapTakesFocus=Boolean(this.map.group&&this.map.landscape);
+    const mapTakesFocus=Boolean(this.map.group&&this.map.compact);
     for(const group of [this.toolGroup,this.status.headerGroup]){
       if(group&&group.visible===mapTakesFocus){
         group.visible=!mapTakesFocus;
@@ -1071,13 +1070,14 @@ export class MatterWorktableHud{
         width-right-12-scale*(worldControlsWidth+.06)/2,Math.max(top,18),scale);
     }
     if(this.map.group){
-      if(this.mapPlacement?.group!==this.map.group||this.mapPlacement?.landscape!==this.map.landscape)this.hud.update();
-      if(this.map.landscape){
-        const view={...viewport,insets:{left,right,top,bottom}};
+      if(this.mapPlacement?.group!==this.map.group||this.mapPlacement?.layout!==this.map.layout)this.hud.update();
+      if(this.map.compact){
+        const view={...viewport,insets:{left,right,top,bottom},
+          ...(!this.map.landscape?{placementVariant:'portrait'}:{})};
         const bounds=this.hud.getSurfaceBounds(worldMapId);
         if(bounds){
           const centerX=(width+left-right)/2,centerY=(height+top-bottom)/2;
-          const {scale}=placeHudWindow(view,bounds,{x:centerX,y:centerY,scale:landscapeMapScale});
+          const {scale}=placeHudWindow(view,bounds,{x:centerX,y:centerY,scale:toolScale});
           this.place(this.map.group,'mapPlacement',view,centerX,centerY+(bounds.top+bounds.bottom)*scale/2,scale);
         }
       }else{
@@ -1085,7 +1085,7 @@ export class MatterWorktableHud{
         const scale=Math.min(250,(width-left-right)/1.28,Math.max(30,height-top-69)/1.82);
         this.place(this.map.group,'mapPlacement',viewport,width-right-scale*.64,top,scale);
       }
-      if(this.mapPlacement?.group===this.map.group)this.mapPlacement.landscape=this.map.landscape;
+      if(this.mapPlacement?.group===this.map.group)this.mapPlacement.layout=this.map.layout;
     }
     if(this.map.peekGroup){
       const scale=90,margin=12;
@@ -1181,7 +1181,7 @@ export class MatterWorktableHud{
       this.map.markBearingPresented(Boolean(painted&&this.map.bearingGroup&&this.hud.getSurfaceBounds(worldBearingId)));
       this.door.presented(Boolean(painted&&this.door.group&&this.toolGroup&&this.hud.getSurfaceBounds(doorPromptId)));
       this.collection.presented(Boolean(painted&&this.collection.group&&this.hud.getSurfaceBounds(collectionHudId)));
-      this.status.present(worldHeaderId,Boolean(painted&&this.status.headerGroup&&(this.map.landscape||this.hud.getSurfaceBounds(worldHeaderId))));
+      this.status.present(worldHeaderId,Boolean(painted&&this.status.headerGroup&&(this.map.compact||this.hud.getSurfaceBounds(worldHeaderId))));
       this.status.present(worldNoticeId,Boolean(painted&&this.status.noticeGroup&&this.hud.getSurfaceBounds(worldNoticeId)));
       this.status.present(worldControlsId,Boolean(painted&&this.status.controlsGroup&&this.hud.getSurfaceBounds(worldControlsId)));
       this.recovery.present(Boolean(painted&&this.recovery.group&&this.hud.getSurfaceBounds(recoveryHudId)));
