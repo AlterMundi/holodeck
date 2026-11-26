@@ -125,8 +125,25 @@ positions, including underwater. This candidate was withheld. On Pi 5
 Livianos with the preview requested, the fallback matched the direct
 path's draw, triangle and texture counts at the same render size. RTX
 timings used different adaptive resolutions and do not establish a
-matched GPU cost. Resolve world-target clearing and repeat movement,
-shore and zero-radius comparisons before selecting a build.
+matched GPU cost.
+
+The next candidate, `fdea015`, clears color and depth in its private target
+before each world draw. Both desktop RTX with MSAA and software Chromium
+without it confirmed the renderer has auto-clear disabled. The corrected
+shore and underwater captures no longer show previous arrival geometry.
+In a dusk coastal crop the sky and hill soften while nearby characters
+and A2UI remain readable. A controlled Pi 5 night run with the preview
+requested stayed on the lightweight direct path, with 22 textures and
+16.7 ms frame p95 in that short sample.
+
+An exact candidate run pinned both RTX buffers to 900 × 555 and compared
+90 flight frames at the same view. GPU median went from 3.11 to 13.68 ms
+and p95 from 10.60 to 16.20 ms. Frame p95 was 16.8 and 16.7 ms. The GPU
+numbers include the existing world and overlay draws. The trial is
+single-visitor and short, but this leaves too little GPU headroom for
+Normal. Keep the direct release. Isolate the multisampled capture cost
+from the blur kernel, and evaluate a lower-resolution effect against
+foreground edges and shore transparency before promoting a candidate.
 
 ## Screening route
 
