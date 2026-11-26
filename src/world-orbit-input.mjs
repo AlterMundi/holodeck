@@ -1,9 +1,29 @@
 // Keep the host's picking gestures and touch orbit. Mouse look can use raw
 // movement while locked so a sustained drag can pass the edge of the screen.
-export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false){
+export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false,inspection){
   const document=canvas.ownerDocument;
   const abort=new AbortController(),capture={capture:true,signal:abort.signal};
-  let rightHeld=false,locked=false;
+  let rightHeld=false,locked=false,pan=null;
+  const touchIds=new Set();
+  const inspect=event=>inspection?.available(event);
+  const dolly=(delta,clientX,clientY)=>{
+    const rect=canvas.getBoundingClientRect();
+    if(!rect.width||!rect.height)return;
+    inspection.dolly(delta,2*(clientX-rect.left)/rect.width-1,
+      1-2*(clientY-rect.top)/rect.height,clientX,clientY);
+  };
+  canvas.addEventListener('wheel',event=>{
+    if(!inspection?.active())return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if(!inspect(event))return;
+    const rect=canvas.getBoundingClientRect();
+    const delta=event.deltaY*(event.deltaMode===1?16:event.deltaMode===2?rect.height:1);
+    dolly(delta,event.clientX,event.clientY);
+  },{...capture,passive:false});
+  canvas.addEventListener('mousedown',event=>{
+    if(event.button===1&&inspect(event))event.preventDefault();
+  },capture);
   const turn=(x,y)=>{
     const scale=20*sensitivity();
     camera.targetTheta+=x/canvas.clientWidth*scale;
@@ -11,12 +31,52 @@ export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false)
       camera.targetPhi-y/canvas.clientHeight*scale));
   };
   canvas.addEventListener('pointerdown',event=>{
-    if(blocked()||event.pointerType!=='mouse'||event.button!==2)return;
+    if(event.pointerType==='touch'&&inspect(event)){
+      touchIds.add(event.pointerId);
+      return;
+    }
+    if(blocked()||event.pointerType!=='mouse')return;
+    if(event.button===1&&inspect(event)){
+      pan={id:event.pointerId,x:event.clientX,y:event.clientY};
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return;
+    }
+    if(event.button!==2)return;
     rightHeld=true;
     try{canvas.requestPointerLock?.()?.catch(()=>{});}catch{}
   },capture);
   document.addEventListener('pointermove',event=>{
+    if(event.pointerType==='touch'&&inspection?.active()&&touchIds.has(event.pointerId)&&camera.activePointers.size===2){
+      const pointer=camera.activePointers.get(event.pointerId);
+      const other=[...camera.activePointers].find(([id])=>id!==event.pointerId&&touchIds.has(id))?.[1];
+      if(!pointer||!other)return;
+      const x=(event.clientX+other.x)/2,y=(event.clientY+other.y)/2;
+      if(!inspect({clientX:x,clientY:y})){
+        releaseTouches();
+        return;
+      }
+      const priorSpread=Math.hypot(pointer.x-other.x,pointer.y-other.y);
+      const spread=Math.hypot(event.clientX-other.x,event.clientY-other.y);
+      pointer.x=event.clientX;
+      pointer.y=event.clientY;
+      if(priorSpread>5&&spread>5){
+        dolly(-Math.log(spread/priorSpread)/.0018,x,y);
+      }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return;
+    }
     if(event.pointerType!=='mouse')return;
+    if(pan?.id===event.pointerId){
+      if(!(event.buttons&4)||!inspect(event)||!canvas.clientWidth||!canvas.clientHeight){pan=null;return;}
+      inspection.pan(-2*(event.clientX-pan.x)/canvas.clientWidth,2*(event.clientY-pan.y)/canvas.clientHeight);
+      pan.x=event.clientX;
+      pan.y=event.clientY;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return;
+    }
     if(rightHeld&&!(event.buttons&2))release();
     if(blocked()||camera.isFlyCameraOn()||!canvas.clientWidth||!canvas.clientHeight)return;
     const pointer=camera.activePointers.get(event.pointerId);
@@ -30,13 +90,27 @@ export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false)
     event.preventDefault();
     if(document.pointerLockElement===canvas)event.stopImmediatePropagation();
   },capture);
+  const releaseTouches=()=>{
+    for(const id of touchIds)camera.activePointers.delete(id);
+    touchIds.clear();
+    if(!camera.activePointers.size)document.body.style.cursor='';
+  };
   const release=()=>{
+    pan=null;
+    releaseTouches();
     rightHeld=false;
     if(document.pointerLockElement===canvas)document.exitPointerLock();
   };
-  document.addEventListener('pointerup',event=>{if(event.button===2)release();},capture);
-  document.addEventListener('pointercancel',event=>{if(event.pointerType==='mouse')release();},capture);
+  document.addEventListener('pointerup',event=>{
+    touchIds.delete(event.pointerId);
+    if(event.button===2||pan?.id===event.pointerId)release();
+  },capture);
+  document.addEventListener('pointercancel',event=>{
+    touchIds.delete(event.pointerId);
+    if(event.pointerType==='mouse')release();
+  },capture);
   document.defaultView?.addEventListener('blur',release,{signal:abort.signal});
+  document.addEventListener('visibilitychange',release,{signal:abort.signal});
   document.addEventListener('pointerlockchange',()=>{
     if(document.pointerLockElement===canvas){
       if(rightHeld)locked=true;
@@ -51,5 +125,6 @@ export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false)
     release();
   };
   dispose.aiming=()=>rightHeld&&!blocked()&&!camera.isFlyCameraOn();
+  dispose.release=release;
   return dispose;
 }

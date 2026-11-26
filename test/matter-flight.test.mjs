@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Bone, BoxGeometry, Group, Mesh, MeshStandardMaterial, Quaternion, Vector3} from 'three';
 import {MatterFlight,bindMatterFlight,bindMatterHologram,matterAvatarScale,matterEyeHeight} from '../src/matter-flight.mjs';
-import {CharacterReviewFlight,characterReviewCamera} from '../src/character-review-camera.mjs';
+import {CharacterReviewFlight,characterReviewCamera,matterInspectionCamera} from '../src/character-review-camera.mjs';
 import {bindFlightAvatarAnimation} from '../src/flight-avatar-animation.mjs';
 
 test('a late-loading peer becomes translucent and restores its own material on exit',()=>{
@@ -241,4 +241,106 @@ test('miniature collision separation never becomes extra travel speed',()=>{
   const cleared=f.position.x;
   f.step();
   assert.ok(f.position.x>cleared&&f.position.x-cleared<.004);
+});
+
+test('ordinary Matter starts at the current miniature eyes and dollies the body',()=>{
+  const {camera,controller,flight,position}=flightFixture(CharacterReviewFlight);
+  flight.exit(controller);
+  const bench=new Vector3(),focus=new Vector3(0,.4,0);
+  assert.ok(flight.enter(controller,bench,{reviewTarget:focus,cameraProfile:matterInspectionCamera}));
+  assert.equal(camera.fov,65);
+  assert.equal(camera.minFOV,65);
+  assert.equal(camera.maxFOV,65);
+  assert.equal(camera.maxPolarAngle,Math.PI/2);
+  assert.equal(camera.zoomScale,.04);
+  assert.ok(position.distanceTo(new Vector3(0,.27,.55))<1e-12);
+  const before=position.clone(),eye=new Vector3(0,.58,.35);
+  const state={position:eye,rotation:new Quaternion()};
+  flight.placeReviewEye(state,controller);
+  assert.ok(position.distanceTo(before)>.1);
+  assert.ok(eye.distanceTo(position.clone().add(new Vector3(0,matterEyeHeight,0)))<1e-12);
+  assert.ok(new Vector3(0,0,-1).applyQuaternion(state.rotation)
+    .distanceTo(focus.clone().sub(eye).normalize())<1e-12);
+  const requestedDistance=camera.desiredDistance;
+  state.position.set(0,.58,1.5);
+  flight.placeReviewEye(state,controller);
+  assert.equal(position.z,flight.bounds.max.z);
+  assert.equal(camera.desiredDistance,requestedDistance);
+  flight.exit(controller);
+  assert.ok(position.distanceTo(new Vector3(0,.2,.55))<1e-12);
+  assert.equal(camera.distance,2);
+  assert.equal(camera.targetTheta,.21);
+  assert.equal(camera.targetPhi,1.4);
+});
+
+test('inspection dollies along the cursor and reverses as soon as a part stops it',()=>{
+  const {camera,controller,flight,position}=flightFixture(CharacterReviewFlight);
+  flight.exit(controller);
+  const barrier=new Mesh(new BoxGeometry(2,1,.002),new MeshStandardMaterial());
+  barrier.position.set(0,.5,.2);
+  barrier.geometry.computeBoundingBox();
+  const parts=new Map([['barrier',barrier]]);
+  camera.aspect=16/9;
+  camera.getMainCameraState=()=>({
+    position:position.clone().add(new Vector3(0,matterEyeHeight,0)),
+    rotation:new Quaternion(),fov:camera.fov,aspect:camera.aspect,
+  });
+  assert.ok(flight.enter(controller,new Vector3(),{reviewTarget:new Vector3(0,.4,0),
+    cameraProfile:matterInspectionCamera,inspectParts:()=>parts}));
+  const start=position.clone();
+  const target={point:new Vector3(.15,.6025,.2)};
+  flight.dollyInspection(controller,-120,.36,0,target);
+  assert.ok(position.x>start.x&&position.z<start.z);
+  for(let i=0;i<12;i++)flight.dollyInspection(controller,-120,.36,0,target);
+  const stopped=position.clone();
+  assert.ok(stopped.z>.23&&stopped.z<.25);
+  flight.dollyInspection(controller,120,.36,0,target);
+  assert.ok(position.z>stopped.z+.01);
+  assert.equal(camera.targetTheta,Math.PI/2);
+  barrier.visible=false;
+  for(let i=0;i<8;i++)flight.dollyInspection(controller,-120,.36,0,target);
+  assert.ok(position.z<.2);
+  flight.exit(controller);
+  assert.equal(flight.inspectParts,null);
+  assert.ok(position.distanceTo(start.clone().setY(.2))<1e-12);
+});
+
+test('first-person hides only the local mesh and restores it after leaving',()=>{
+  const model=()=>{
+    const character=new Group(),root=new Group();
+    character.add(root);
+    return {root,character:Object.assign(character,{getMesh:()=>root})};
+  };
+  const local=model(),peer=model();
+  const manager={loadedCharacters:new Map([[1,local],[2,peer]]),update(){}};
+  const flight={active:true,inspectParts:()=>null};
+  const restore=bindMatterHologram(manager,flight,()=>[2]);
+  manager.update({localCharacterId:1});
+  assert.equal(local.root.visible,false);
+  assert.equal(peer.root.visible,true);
+  assert.equal(peer.character.scale.x,matterAvatarScale);
+  flight.inspectParts=null;
+  flight.active=false;
+  manager.update({localCharacterId:1});
+  assert.equal(local.root.visible,true);
+  assert.equal(local.character.scale.x,1);
+  restore();
+});
+
+test('an inspection orbit stopped by a wall discards the unreachable position',()=>{
+  const {camera,controller,flight,position}=flightFixture(CharacterReviewFlight);
+  flight.exit(controller);
+  assert.ok(flight.enter(controller,new Vector3(),{reviewTarget:new Vector3(0,.4,0),
+    cameraProfile:matterInspectionCamera,inspectParts:()=>null}));
+  controller.config.collisionsManager.raycastFirst=()=>[.12];
+  const start=position.clone();
+  const state={position:new Vector3(1.1,start.y+matterEyeHeight,start.z),rotation:new Quaternion()};
+  flight.placeReviewEye(state,controller);
+  assert.ok(position.x>.06&&position.x<.08);
+  const frameEye=new Vector3().setFromSphericalCoords(camera.targetDistance,camera.targetPhi,Math.PI/2-camera.targetTheta)
+    .add(flight.reviewTarget);
+  assert.ok(frameEye.distanceTo(state.position)<1e-8);
+  controller.config.collisionsManager.raycastFirst=()=>null;
+  flight.placeReviewEye({position:frameEye,rotation:new Quaternion()},controller);
+  assert.ok(position.distanceTo(frameEye.clone().add(new Vector3(0,-matterEyeHeight,0)))<1e-8);
 });

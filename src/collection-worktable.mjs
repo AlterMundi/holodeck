@@ -88,6 +88,11 @@ export class CollectionWorktable{
       button.onclick=()=>this.turn(Number(button.dataset.turn));
   }
 
+  get reviewCameraTarget(){
+    const anchor=this.anchor;
+    return anchor?new Vector3(anchor.x,anchor.y+.4,anchor.z):null;
+  }
+
   referenceFor(part){
     const {review,shown}=this;
     return review&&shown?{resource:shown.resource,version:shown.version,scene:review.id,

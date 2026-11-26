@@ -214,7 +214,8 @@ export function bindMatterHologram(manager,flight,tabletopPlayers=()=>[]){
   const saved=new Map();
 
   function restore(id){
-    const {character,scale,hologram}=saved.get(id);
+    const {character,root,scale,hologram,hidden}=saved.get(id);
+    if(hidden!==undefined)root.visible=hidden;
     character.scale.copy(scale);
     hologram.restore();
     saved.delete(id);
@@ -239,6 +240,16 @@ export function bindMatterHologram(manager,flight,tabletopPlayers=()=>[]){
         entry={character,root,hologram:new MatterHologram(root),scale:character.scale.clone(),nextScan:now};
         saved.set(id,entry);
         character.scale.multiplyScalar(matterAvatarScale);
+      }
+      const inspecting=id===state.localCharacterId&&flight.inspectParts;
+      if(inspecting){
+        if(entry.hidden===undefined)entry.hidden=entry.root.visible;
+        entry.root.visible=false;
+        continue;
+      }
+      if(entry.hidden!==undefined){
+        entry.root.visible=entry.hidden;
+        entry.hidden=undefined;
       }
       // The SDK can attach or replace a model after admitting its empty root.
       if(!entry.hologram.appearance.size||now>=entry.nextScan){

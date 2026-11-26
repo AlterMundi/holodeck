@@ -861,7 +861,19 @@ export class MatterWorktableHud{
       this.hud.setChoicePresentation(surfaceId,short?'overlay':'inline');
       this.hud.setChoicePageSize(surfaceId,short?(height<300?1:2):undefined);
     }
-    if(this.group&&this.workCompact){
+    const conversationSpan=this.group&&this.active&&this.table===this.collectionTable?
+      this.conversationDockSpan():null;
+    if(conversationSpan){
+      const bounds=this.hud.getSurfaceBounds(surfaceId);
+      if(bounds){
+        const workTop=Math.max(top+58,height<520?54:95);
+        const scale=Math.min(170,(conversationSpan.end-conversationSpan.start-28)/(bounds.right-bounds.left),
+          (height-workTop-bottom-74)/(bounds.top-bounds.bottom));
+        const insets={left:conversationSpan.start,right:width-conversationSpan.end,top,bottom};
+        this.place(this.group,'workPlacement',{...viewport,insets},
+          conversationSpan.end-14-bounds.right*scale,workTop+bounds.top*scale,scale);
+      }
+    }else if(this.group&&this.workCompact){
       if(this.workLayoutDirty){this.hud.update();this.workLayoutDirty=false;}
       const reservedBottom=bottom+1.21*this.landscapeGrip()+6;
       const insets={left:left+(width-left-right)*.44,right,top,bottom:reservedBottom};

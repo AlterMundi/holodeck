@@ -19,8 +19,9 @@ import {bindFlightAvatarAnimation} from './flight-avatar-animation.mjs';
 import {LoadingProgressManager,RemoteDocumentWrapper} from '@mml-io/mml-web';
 import {RoomSceneCache,roomArtURL} from './room-scene-cache.mjs';
 import {bindInteriorHeadroom} from './avatar-headroom.mjs';
-import {CharacterReviewFlight} from './character-review-camera.mjs';
+import {CharacterReviewFlight,matterInspectionCamera} from './character-review-camera.mjs';
 import {bindMatterFlight,bindMatterHologram} from './matter-flight.mjs';
+import {matterInspectionNear} from './matter-contact.mjs';
 import {constrainInteriorCamera} from './interior-camera.mjs';
 import {capWorldPixelRatio,usesLightGraphics} from './render-pixel-budget.mjs';
 import {bindVideoSettings} from './video-settings.mjs';
@@ -826,7 +827,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       if(activeSpace?.outdoorTerrain!==true)return null;
       const position=client.getLocalCharacterState()?.position;
       return position&&position.x>21&&position.x<32&&position.z<-6&&position.z>-26?'valley-cave':null;
-    });
+    },()=>Boolean(tableFlight.inspectParts));
     // The ring's terrain and ground movement are local. MML scenery may
     // reconnect or finish later without holding the presence spawn behind it.
     const dressingProgress=outsideRing()?new LoadingProgressManager():options.loadingProgressManager;
@@ -835,7 +836,15 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     // MML still selects the deprecated soft-map enum. Three r182 needs the
     // current PCF enum for comparison sampling and per-light shadow radii.
     renderer.composer.renderer.shadowMap.type=PCFShadowMap;
-    const releaseOrbit=bindWorldOrbitInput(options.coreCameraManager,renderer.composer.renderer.domElement,()=>mouseSensitivity);
+    const worldInteractionCanvas=renderer.composer.renderer.domElement;
+    const releaseOrbit=bindWorldOrbitInput(options.coreCameraManager,worldInteractionCanvas,()=>mouseSensitivity,undefined,{
+      active:()=>Boolean(tableFlight.inspectParts),
+      available:pointer=>Boolean(tableFlight.inspectParts&&tableInputAllowed()&&!needsSync&&
+        !matterHud.overControl(pointer)&&document.elementFromPoint(pointer.clientX,pointer.clientY)===worldInteractionCanvas),
+      dolly:(delta,x,y,pointerX,pointerY)=>tableFlight.dollyInspection(client.getCharacterManager().localController,
+        delta,x,y,worldPicker.worktableHit(pointerX,pointerY)),
+      pan:(x,y)=>tableFlight.translateInspection(client.getCharacterManager().localController,x,y),
+    });
     const aiming=()=>releaseOrbit.aiming()&&!entering&&!moving&&!tableFlight.active&&!document.hidden;
     const mapPanel=document.querySelector('#space-travel');
     const minimap=bindToroidalMinimap(mapPanel);
@@ -955,9 +964,14 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       bearingAdapter:document.getElementById('door-guidance'),
       door:{adapter:document.getElementById('house-door'),read:()=>updateDoor.doorOffer?.(),
         cross:(scope,revision)=>updateDoor.followDoor?.(scope,revision)}},
-      canEnter:()=>!options.coreCameraManager.isFlyCameraOn()&&
-        tableFlight.enter(client.getCharacterManager().localController,matterHud.table.anchor,
-          {reviewTarget:matterHud.table.reviewCameraTarget,reviewScale:matterHud.table.reviewScale}),
+      canEnter:()=>{
+        if(options.coreCameraManager.isFlyCameraOn())return false;
+        const table=matterHud.table,ordinary=table===collectionShelves.worktable;
+        return tableFlight.enter(client.getCharacterManager().localController,table.anchor,
+          {reviewTarget:table.reviewCameraTarget,reviewScale:table.reviewScale,
+            cameraProfile:ordinary?matterInspectionCamera:undefined,
+            inspectParts:ordinary?()=>table.model?.parts:null});
+      },
       onActive:active=>{
         document.body.classList.toggle('is-operating-matter',active);
         if(!active){
@@ -1045,6 +1059,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     conversationDisplay=display;
     const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
     const draw=renderer.composer.render.bind(renderer.composer);
+    const mainCamera=renderer.threeJSCameraManager.mainCamera;
+    const worldNear=mainCamera.near;
     let drawWorld=true;
     // Keep the frame loop and collision running behind opaque overlays. Skip
     // drawing until Nexus yields or the destination can produce a room frame.
@@ -1119,8 +1135,10 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       crouch:!moving&&client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt'),
     }),{clock:()=>performance.now()});
     const releaseHologram=bindMatterHologram(renderer.characterManager,tableFlight,tabletopPlayers);
+    let matterComposerHadFocus=false;
     const tableInputAllowed=()=>!moving&&!entering&&!document.hidden&&document.hasFocus()&&!mapPanel.open&&
-      document.querySelector('#conversation-panel').hidden&&!document.querySelector('dialog[open]')&&!signalEditor?.active;
+      !document.querySelector('#conversation-panel').contains(document.activeElement)&&
+      !document.querySelector('dialog[open]')&&!signalEditor?.active;
     // On the ring the sun keeps one direction in the traveler's radial frame,
     // matching the terrain's own per-place sunlight. It moves in 4 m steps so
     // shadow edges stay still between steps. Lightweight graphics keep the
@@ -1340,7 +1358,15 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         activeSpace.objects.find(object=>object.id===characterWorktable.id)?.position:null;
       characterTable.update(position,characterBench);
       matterHud.selectTable(characterRoom?characterTable:collectionShelves.worktable);
-      matterHud.update((!collectionRoom&&!characterRoom)||needsSync||!conversation.hidden||
+      const matterComposerFocused=Boolean(tableFlight.inspectParts&&conversation.contains(document.activeElement));
+      if(matterComposerFocused&&!matterComposerHadFocus){
+        client.keyInputManager?.handleUnfocus();
+        options.coreCameraManager.activePointers.clear();
+        releaseOrbit.release();
+      }
+      matterComposerHadFocus=matterComposerFocused;
+      const conversationDisplacesTable=!conversation.hidden&&!(collectionRoom&&tableFlight.inspectParts);
+      matterHud.update((!collectionRoom&&!characterRoom)||needsSync||conversationDisplacesTable||
         opaqueVisit||toolModal||settingsOpen,!entering&&!moving&&drawWorld&&!opaqueVisit&&!toolModal,quietTouch&&!settingsOpen);
       characterTable.render(tableNow);
       garden.update(inside&&!moving&&activeSpace.playableInterior?activeSpace.id:null);gardenMarkers();
@@ -1404,6 +1430,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         soundBlocked:moving||needsSync,
         width:matterHud.canvas.clientWidth-statusLeft-statusRight,height:matterHud.canvas.clientHeight,
       });
+      mainCamera.near=tableFlight.inspectParts?matterInspectionNear:worldNear;
       render(renderState);
       if(drawWorld)presentWorldFrame();
       if(!inside&&drawWorld)geometryProbe.afterRender();
@@ -2002,8 +2029,7 @@ function openConversation(open){
   const panel=$('#conversation-panel'),talk=$('#talk');
   const wasHidden=panel.hidden;
   const restoreFocus=!open&&panel.contains(document.activeElement);
-  // Opening Conversation suspends the physical table. Keep the local pose
-  // selected at that boundary for originals prepared from this panel.
+  // Character Studio captures its selected pose before the panel takes focus.
   if(open&&wasHidden&&inside&&activeSpace.id===CHARACTER_STUDIO&&matterHud?.active)
     conversationCharacterPose=matterHud.table?.currentPose?.()??null;
   if(!open)conversationCharacterPose=null;
