@@ -395,6 +395,32 @@ async function main(){
     await peerButton('−1').press('Enter');
     await frame(pose.frame-1,peerPage);
     await frame(pose.frame+1);
+
+    const touch=await peerContext.newCDPSession(peerPage);
+    await touch.send('Emulation.setDeviceMetricsOverride',{width:568,height:320,deviceScaleFactor:1,mobile:true});
+    await touch.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
+    await peerPage.waitForFunction(()=>{
+      const window=holodeckDevelopment.hudWindow('matter-worktable');
+      return matchMedia('(pointer: coarse)').matches&&navigator.maxTouchPoints===1&&
+        window?.view.width===568&&window.view.height===320&&window.bounds.right-window.bounds.left>3;
+    });
+    const shortTable=await peerPage.evaluate(()=>holodeckDevelopment.hudWindow('matter-worktable').rect);
+    assert.ok(shortTable.left>=0&&shortTable.right<=568&&shortTable.top>=0&&shortTable.bottom<=320);
+    await frame(pose.frame-1,peerPage);
+    await peerButton('Notas').press('Enter');
+    await peerButton('Ver pose del Taller').press('Enter');
+    await peerButton('Pose').press('Enter');
+    await frame(pose.frame,peerPage);
+    await peerButton('Notas').press('Enter');
+    if(await reviewButton.count())await reviewButton.press('Enter');
+    await peerNote.locator('option').filter({hasText:'Visitante · '+note}).waitFor({state:'attached'});
+    await peerPage.screenshot({path:join(evidence,'character-peer-landscape-note.png')});
+    await peerButton('Pose').press('Enter');
+    await peerButton('−1').press('Enter');
+    await frame(pose.frame-1,peerPage);
+    await frame(pose.frame+1);
+    await touch.detach();
+
     const peerReadback=await peerPage.evaluate(()=>fetch('api/space/character-presentation').then(r=>r.json()));
     assert.equal(peerReadback.revision,committed.revision);
     assert.deepEqual(peerReadback.presentation.pose,pose);
@@ -501,7 +527,7 @@ async function main(){
     assert.equal(noGraphics.url(),retryURL);
     assert.deepEqual(errors,[]);
     console.log(JSON.stringify({pose,flightChapters,groundChapters,comparedHeldPose:heldPose,comparisonFrame:110,revision:committed.revision,visitor,observedNote:note,roomScope:true,
-      conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,tablePlayback:{speed:2,stoppedAt:lastFrame,loopWrapped:true},independentTableOrbit:{firstCamera,peerCamera,peerOrbit},sharedReceiptMatchesLocalFrame:true,notesWaitedForSharedPose:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
+      conversationPose:referredPose,peer,independentTableFrames:[pose.frame+1,pose.frame-1],peerSawVisitorNote:true,shortTableWithSharedNote:shortTable,tablePlayback:{speed:2,stoppedAt:lastFrame,loopWrapped:true},independentTableOrbit:{firstCamera,peerCamera,peerOrbit},sharedReceiptMatchesLocalFrame:true,notesWaitedForSharedPose:true,sharedFramePreserved:true,invalidPoseDenied:true,recipientGrantChecked:true,outsidePoseDenied:true,
       situatedNativeNote:notes.notes[0].text,situatedRetryKeptOneNote:true,reciprocalWorldDoors:true,openedTableFromWorldDoor:true,doorFromViewer:true,returnedToRoomFromViewer:true,noGraphicsRetryKeptPose:true,graphicsRestoreKeptLocalFrameAndDraft:true}));
   }finally{
     await browser?.close();

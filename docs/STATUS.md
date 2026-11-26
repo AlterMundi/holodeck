@@ -28,6 +28,14 @@ suite passed 425 checks with two skips. This candidate is staged locally.
 
 ## Character Design Room review candidate on the selected world
 
+The same staged archive opened the physical table through the foyer
+door. In Chromium, a second visitor switched to an emulated 568 × 320
+touch viewport while keeping local frame 35. The visitor followed the
+room presentation to frame 36 and read the existing pose note. The
+desktop visitor remained at local frame 37, and the shared revision
+stayed fixed. The maintained browser check retains the touch capture.
+Archive `d03bafbf2837335f3ad1310903ba084682bf214e9871e38f38e4c2b51cc917ab`.
+
 The maintained tabletop check also selects 2× through the speed
 control, seeks near the end by keyboard, and observes the animation
 stop at frame 180 with loop off and wrap with loop on. The first
