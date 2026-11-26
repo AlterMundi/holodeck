@@ -1,3 +1,42 @@
+import {DataTexture, LinearFilter, LinearMipmapLinearFilter, RedFormat, RepeatWrapping, UnsignedByteType} from 'three';
+
+// A small repeating relief pattern gives the gaps between tufts the read of
+// dense short leaves. Generate it once with the local renderer; no asset fetch.
+export function createMeadowCoverTexture(){
+  const size=128,mask=size-1;
+  const pixels=new Uint8Array(size*size).fill(122);
+  let state=0x69ba1da3;
+  const random=()=>{
+    state=(Math.imul(state,1664525)+1013904223)>>>0;
+    return state/4294967296;
+  };
+  for(let blade=0;blade<1900;blade++){
+    const x=random()*size,y=random()*size;
+    const angle=random()*Math.PI*2;
+    const dx=Math.cos(angle),dy=Math.sin(angle);
+    const length=3+random()*8;
+    const bend=random()*2-1;
+    const tip=153+random()*65;
+    const shade=59+random()*45;
+    for(let i=0;i<=length;i++){
+      const t=i/length;
+      const px=Math.round(x+dx*i-dy*bend*t*t)&mask;
+      const py=Math.round(y+dy*i+dx*bend*t*t)&mask;
+      const at=py*size+px;
+      pixels[at]=pixels[at]*.35+(shade+(tip-shade)*t)*.65;
+    }
+  }
+  const texture=new DataTexture(pixels,size,size,RedFormat,UnsignedByteType);
+  texture.name='Short meadow cover';
+  texture.wrapS=texture.wrapT=RepeatWrapping;
+  texture.magFilter=LinearFilter;
+  texture.minFilter=LinearMipmapLinearFilter;
+  texture.anisotropy=2;
+  texture.generateMipmaps=true;
+  texture.needsUpdate=true;
+  return texture;
+}
+
 // Material detail is evaluated in absolute world coordinates so adjacent
 // streamed tiles and different LODs cannot slide the grain or ripple phase.
 const worldPosition = 'varying vec3 toroidalWorld;';

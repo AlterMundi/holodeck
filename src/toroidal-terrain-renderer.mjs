@@ -1,6 +1,6 @@
 import {toroidalAirColor,toroidalCosmosColor} from './toroidal-air.mjs';
 import {REFLECTION_BANK} from './toroidal-bank-reflection.mjs';
-import {useToroidalRockDetail,useToroidalWaterDetail} from './toroidal-surface-detail.mjs';
+import {createMeadowCoverTexture,useToroidalRockDetail,useToroidalWaterDetail} from './toroidal-surface-detail.mjs';
 import {BufferAttribute, BufferGeometry, DataTexture, DoubleSide, Group, LinearFilter, MathUtils, Mesh, MeshStandardMaterial, RGFormat, ShaderChunk, UnsignedByteType, Vector3, Vector4} from 'three';
 import {
   TOROIDAL_PARCEL_Y, TOROIDAL_TERRAIN, buildTerrainTile, terrainCoordinates, terrainFrame, terrainTile,
@@ -107,15 +107,15 @@ const terrainShading = {
     float holoMeadowRoughness = .96;
     float holoTrailMask = 0.0;
     float holoTrailRoughness = .90;
-    // Vertex colours carry the same field as the rooted cover. Keep
-    // local grain small and screen-filtered instead of adding another
-    // projected palette over the authored regional colours.
-    if (holoMeadow > .001 && holodeckMeadowGrain > .5) {
-      float grainWeight = 1.0-smoothstep(.32,.62,4.1*meadowFootprint);
-      if(grainWeight > .001){
-        float grain=ringNoise(approach*4.1+vec2(5.8,17.0))-.5;
-        diffuseColor.rgb *= 1.0+grain*grainWeight*.24*holoMeadow;
-      }
+    // Keep the regional vertex colours and add filtered short leaf relief
+    // where the camera can resolve it. Both profiles share the same pattern.
+    vec2 coverUV=mat2(.8,-.6,.6,.8)*approach*.42;
+    vec2 coverDX=dFdx(coverUV),coverDY=dFdy(coverUV);
+    float coverWeight=holoMeadow*(1.0-smoothstep(.16,.54,meadowFootprint));
+    if(coverWeight>.001){
+      // Centre at the byte mean so the blurred cover keeps the region's hue.
+      float leaf=textureGrad(holodeckMeadowCover,coverUV,coverDX,coverDY).r-.491;
+      diffuseColor.rgb*=vec3(1.0)+leaf*coverWeight*vec3(1.42,1.74,1.55);
     }
     if (holodeckApproachArt > .5 && abs(approach.x) < 14.0 &&
         approach.y > 6.0 && approach.y < 51.0 && vHoloWorld.y > 0.0) {
@@ -398,9 +398,9 @@ function artDirect(material, name, shading, environment, bank=null) {
       `);
     }
     if(name==='terrain'){
-      shader.uniforms.holodeckMeadowGrain=environment.meadowGrain;
+      shader.uniforms.holodeckMeadowCover=environment.meadowCover;
       shader.uniforms.holodeckFacadeGround=environment.facadeGround;
-      fragment=after(fragment,'common','uniform float holodeckMeadowGrain; uniform vec4 holodeckFacadeGround;');
+      fragment=after(fragment,'common','uniform sampler2D holodeckMeadowCover; uniform vec4 holodeckFacadeGround;');
     }
     shader.fragmentShader=before(fragment,'opaque_fragment',shading.output+`
       if (holodeckWaterViewDepth > .014) {
@@ -461,7 +461,7 @@ export class ToroidalTerrainRenderer {
     this.waterMaterial = new MeshStandardMaterial({color:0x19606f,roughness:.34,metalness:0,side:DoubleSide,
       transparent:true,opacity:WATER_OPACITY,depthWrite:false,forceSinglePass:true});
     this.environment={water:{value:0},sun:{value:new Vector3(...SUN_LOCAL)},daylight:{value:1},
-      cosmos:{value:null},hasCosmos:{value:false},approach:{value:1},eyeHeight:{value:0},sill:{value:new Vector3()},facadeGround:{value:new Vector4(0,0,0,0)},meadowGrain:{value:1},lightWater:{value:false}};
+      cosmos:{value:null},hasCosmos:{value:false},approach:{value:1},eyeHeight:{value:0},sill:{value:new Vector3()},facadeGround:{value:new Vector4(0,0,0,0)},meadowCover:{value:createMeadowCoverTexture()},lightWater:{value:false}};
     useToroidalRockDetail(this.material,{meadow:true});
     this.updateWaterTime=useToroidalWaterDetail(this.waterMaterial,this.environment.lightWater);
     artDirect(this.material,'terrain',terrainShading,this.environment);
@@ -579,7 +579,6 @@ export class ToroidalTerrainRenderer {
   }
 
   update(position, lightweight = false) {
-    this.environment.meadowGrain.value=lightweight?0:1;
     this.environment.lightWater.value=lightweight;
     if (!this.worker || ![position.x, position.y, position.z].every(Number.isFinite)) return;
     const viewer = terrainCoordinates([position.x, position.y, position.z]);
@@ -697,6 +696,8 @@ export class ToroidalTerrainRenderer {
     this.group.clear();
     this.group.removeFromParent();
     this.material.dispose();
+    this.environment.meadowCover.value.dispose();
+    this.environment.meadowCover.value=null;
     this.environment.cosmos.value=null;
     this.environment.hasCosmos.value=false;
     this.bankBuild=null;
