@@ -4,6 +4,7 @@ import {TabletopGlance} from './tabletop-attention.mjs';
 import {bindHumanoidFlightRig} from './humanoid-flight-poses.mjs';
 import {bindHumanoidCrouch} from './humanoid-crouch.mjs';
 import {bindHumanoidStandingIdle} from './humanoid-standing-idle.mjs';
+import {groundGaitSample} from './humanoid-ground-gait.mjs';
 import {bindHumanoidGroundAccents} from './humanoid-ground-accents.mjs';
 import {bindHumanoidMicrophoneMouth} from './humanoid-microphone-mouth.mjs';
 import {HUMAN_BODY,avatarMedium,exteriorSample} from './avatar-medium.mjs';
@@ -66,7 +67,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       lowerWeight:0,airTime:0,rise:0,flightAge:0,poseTime:0,observedFlight:false,
       mode:null,poseMode:null,idleDwell:0,idleTime:0,idleWeight:0,
       medium:null,loopTime:0,strokeTime:1.40,wadeWeight:0,phase:0,
-      unsupported:0,fall:0,absorbAge:Infinity,absorb:0,brakeAge:Infinity,brake:0,lastSpeed:0});
+      gaitPhase:null,unsupported:0,fall:0,absorbAge:Infinity,absorb:0,brakeAge:Infinity,brake:0,lastSpeed:0});
     for(const follower of [entry.turn,entry.pitch,entry.bank,entry.lift,entry.sink,
       entry.thrust,entry.lean,entry.sway,entry.lead])follower.reset();
     entry.heading.set(0,0,0);
@@ -75,12 +76,49 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
   function animatedUpdate(state,dt){
     // Remove last frame's extra limb rotations before the base mixer runs.
     for(const entry of actors.values())restore(entry);
-    const result=update.call(this,state,dt);
     const {outdoor,flying,grounded:localGrounded,table,crouch,gaze,peerGaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null,wake=null}=context();
     const now=clock?.();
     const elapsed=now!==undefined&&previousTime!==undefined?(now-previousTime)/1000:dt;
     previousTime=now;
     const step=Math.min(.15,Math.max(0,elapsed));
+    let renderedCharacters;
+    for(const [id,actor] of state.characters){
+      const entry=actors.get(id);
+      if(!entry)continue;
+      const isLocal=id===state.localCharacterId;
+      const peerPose=isLocal?null:peerPoses?.get(id);
+      const atTable=isLocal?table:tabletopPlayers.has?.(id)||tabletopPlayers.includes?.(id);
+      const onGround=isLocal?localGrounded:actor.animationState>=0&&actor.animationState<=2||actor.animationState===5;
+      const followTravel=glanceMotion&&onGround&&!atTable&&!entry.table&&
+        !(isLocal?crouch||flying:peerPose==='crouch'||peerPose==='fly')&&
+        (!outdoor||entry.medium==='ground')&&elapsed<=.15;
+      const character=this.loadedCharacters.get(id)?.character;
+      if(character?.getMesh()!==entry.mesh||!actor.animationTimes||!actor.animationWeights){
+        entry.gaitPhase=null;
+        entry.jogClock=entry.runClock=undefined;
+        continue;
+      }
+      const times=actor.animationTimes;
+      // The controller can take multiple simulation steps before one render.
+      // The model still advances by the renderer's single mixer delta.
+      const simulationStep=Math.max(dt,times[1]-(entry.jogClock??times[1]),times[2]-(entry.runClock??times[2]));
+      entry.jogClock=times[1];
+      entry.runClock=times[2];
+      let distance=null;
+      if(followTravel){
+        up.set(0,1,0).applyQuaternion(character.quaternion);
+        displacement.subVectors(actor.position,entry.last);
+        displacement.addScaledVector(up,-displacement.dot(up));
+        distance=displacement.length();
+      }
+      const gait=groundGaitSample(entry.gaitPhase,times,actor.animationWeights,distance,dt,simulationStep);
+      entry.gaitPhase=gait?.phase??null;
+      if(gait){
+        renderedCharacters??=new Map(state.characters);
+        renderedCharacters.set(id,{...actor,animationTimes:gait.times});
+      }
+    }
+    const result=update.call(this,renderedCharacters?{...state,characters:renderedCharacters}:state,dt);
     for(const [id,actor] of state.characters){
       const character=this.loadedCharacters.get(id)?.character;
       const mesh=character?.getMesh();
