@@ -236,7 +236,7 @@ export function openCharacterStudio(document,table=null){
   }
   const scene=table?new Group():new Scene();
   if(table){
-    scene.position.set(table.anchor.x+.34,table.anchor.y+.025,table.anchor.z);
+    scene.position.copy(table.origin);
     table.scene.add(scene);
   }
   const waterline=new Mesh(new PlaneGeometry(3.5,3.5),new MeshBasicMaterial({

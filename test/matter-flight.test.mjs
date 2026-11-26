@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Bone, BoxGeometry, Group, Mesh, MeshStandardMaterial, Quaternion, Vector3} from 'three';
-import {MatterFlight,bindMatterHologram,matterAvatarScale} from '../src/matter-flight.mjs';
+import {MatterFlight,bindMatterFlight,bindMatterHologram,matterAvatarScale} from '../src/matter-flight.mjs';
 import {bindFlightAvatarAnimation} from '../src/flight-avatar-animation.mjs';
 
 test('a late-loading peer becomes translucent and restores its own material on exit',()=>{
@@ -143,6 +143,31 @@ test('miniature flight combines keyboard travel and vertical touch, then arrests
   f.flight.exit(f.controller);
   assert.ok(f.position.distanceTo(new Vector3(0,.2,.55))<1e-12);
   assert.equal(f.camera.distance,2);
+});
+
+test('a review pivots one visitor around the model and restores avatar-centered flight',()=>{
+  const {camera,controller,flight}=flightFixture();
+  flight.exit(controller);
+  const manager={localController:controller,update(){}};
+  const target=new Vector3();
+  camera.setTarget=point=>target.copy(point);
+  const release=bindMatterFlight(manager,camera,flight,()=>true);
+  const avatarPoint=new Vector3(0,2,0),modelCentre={x:.34,y:.315,z:0};
+  assert.equal(flight.enter(controller,new Vector3(),{reviewTarget:modelCentre}),true);
+  camera.setTarget(avatarPoint);
+  assert.deepEqual(target.toArray(),[.34,.315,0]);
+  assert.deepEqual(avatarPoint.toArray(),[0,2,0]);
+  const peer=flightFixture();
+  assert.equal(peer.camera.distance,.68);
+  assert.equal(peer.flight.reviewTarget,null);
+  flight.exit(controller);
+  camera.setTarget(avatarPoint);
+  assert.deepEqual(target.toArray(),[0,2,0]);
+  assert.equal(camera.distance,2);
+  flight.enter(controller,new Vector3());
+  camera.setTarget(avatarPoint);
+  assert.ok(Math.abs(target.y-(2-1.75*(1-matterAvatarScale)))<1e-9);
+  release();
 });
 
 test('miniature heading turns along the shortest arc at a bounded angular rate',()=>{

@@ -1,5 +1,7 @@
 import {openCharacterStudio} from './character-studio.mjs';
 
+const previewHeight=.58;
+
 export class CharacterWorktable {
   constructor({document,scene}){
     Object.assign(this,{document,scene,available:false,anchor:null});
@@ -11,8 +13,21 @@ export class CharacterWorktable {
     this.available=Boolean(player&&anchor&&Math.hypot(player.x-anchor.x,player.z-anchor.z)<2.05);
   }
 
+  get previewOrigin(){
+    const {x,y,z}=this.anchor;
+    return {x:x+.34,y:y+.025,z};
+  }
+
+  get reviewCameraTarget(){
+    if(!this.anchor)return null;
+    const origin=this.previewOrigin;
+    // Leave the top of the figure clear of the compact HUD.
+    return {...origin,y:origin.y+previewHeight*2/3};
+  }
+
   start({send,close,ownsTextInput}){
-    this.viewer=openCharacterStudio(this.document,{scene:this.scene,anchor:this.anchor,height:.58,send,close,ownsTextInput});
+    this.viewer=openCharacterStudio(this.document,{scene:this.scene,origin:this.previewOrigin,
+      height:previewHeight,send,close,ownsTextInput});
   }
 
   stop(){

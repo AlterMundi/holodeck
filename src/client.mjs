@@ -919,7 +919,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       door:{adapter:document.getElementById('house-door'),read:()=>updateDoor.doorOffer?.(),
         cross:(scope,revision)=>updateDoor.followDoor?.(scope,revision)}},
       canEnter:()=>!options.coreCameraManager.isFlyCameraOn()&&
-        tableFlight.enter(client.getCharacterManager().localController,matterHud.table.anchor),
+        tableFlight.enter(client.getCharacterManager().localController,matterHud.table.anchor,
+          {reviewTarget:matterHud.table.reviewCameraTarget}),
       onActive:active=>{
         document.body.classList.toggle('is-operating-matter',active);
         if(!active){

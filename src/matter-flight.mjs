@@ -11,13 +11,14 @@ export class MatterFlight{
   constructor(camera){
     this.camera=camera;
     this.active=false;
+    this.reviewTarget=null;
     this.bounds=new Box3();
     this.point=new Vector3();
     this.capsule=new Line3();
     this.velocity=new Vector3();
   }
 
-  enter(controller,bench){
+  enter(controller,bench,{reviewTarget=null}={}){
     if(this.active||!controller||!bench)return false;
     const {position,quaternion}=controller.config;
     this.returnPose={controller,position:{...position},rotation:{...quaternion}};
@@ -31,7 +32,9 @@ export class MatterFlight{
     position.copy(this.point);
     controller.characterVelocity.set(0,0,0);
     this.cameraRanges=Object.fromEntries(cameraFields.map(key=>[key,this.camera[key]]));
-    Object.assign(this.camera,{minDistance:.27,maxDistance:1.25,distance:.68,targetDistance:.68,desiredDistance:.68});
+    this.reviewTarget=reviewTarget;
+    const distance=reviewTarget ? .96 : .68;
+    Object.assign(this.camera,{minDistance:.27,maxDistance:1.25,distance,targetDistance:distance,desiredDistance:distance});
     this.active=true;
     return true;
   }
@@ -39,6 +42,7 @@ export class MatterFlight{
   exit(controller){
     if(!this.active)return;
     this.active=false;
+    this.reviewTarget=null;
     this.velocity.set(0,0,0);
     const pose=this.returnPose;
     this.returnPose=null;
@@ -109,6 +113,7 @@ export class MatterFlight{
 export function bindMatterFlight(manager,camera,flight,inputAllowed,onLost){
   const update=manager.update,setTarget=camera.setTarget;
   function target(point){
+    if(flight.reviewTarget)return setTarget.call(this,flight.reviewTarget);
     if(flight.active)point.y-=1.75*(1-matterAvatarScale);
     return setTarget.call(this,point);
   }
