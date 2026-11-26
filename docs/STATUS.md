@@ -39,7 +39,19 @@ reopened the existing iframe. Keyboard focus returned to the world launcher.
 At 390 CSS pixels, both Three.js navigation buttons responded to emulated
 touch. The same draft survived the changes. The fixture bridge prepared one
 authorized context containing the exact table, revision 1. The Node suite
-passed 444 checks with two skips. Protected activation remains open.
+passed 444 checks with two skips.
+
+The installed Home validator accepted all 88 entries of that same combined
+archive. The complete browser run used those archive bytes with the compact
+minimap, view presets and Conversation topic selector installed together.
+It traversed the foyer door, reviewed ground and the complete flight sequence,
+reopened the room's shared frame 36 at revision 3, and kept the two visitors
+at local frames 37 and 35 with separate cameras. Conversation captured the
+speaker's exact worktable revision and local frame 37 while the shared
+presentation changed to frame 35. Native note replay retained one note.
+Rig retry and WebGL recovery restored the same edition, draft and frame.
+The protected receiver still selects archive `d2a9b89a726d`; selection
+and participation by authenticated visitors remain with Holodeck.
 
 ## Compact exterior terrain minimap
 
