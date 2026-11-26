@@ -1,5 +1,32 @@
 # Current MVP work
 
+## November 26 landscape touch map
+
+[Holodeck](https://compaii.dmn.homes/holodeck/) serves `bf4886aafe4e`
+from `49d8aed`. The short touch landscape map uses the existing spatial A2UI surface. The
+plot and controls sit side by side, and the map temporarily takes focus
+from the dock while it is open. The topography, circular and square
+formats, and room destination actions use their existing data. Rotation
+keeps the selected map format and the current destination page. The map
+can be moved in landscape. Its resize affordance returns in portrait
+and desktop, where the saved placement is separate.
+
+At 568 × 280, the exterior map grew from 95 px to 475 px wide and
+its button plates from 11.4 to 44.0 CSS px high. The desktop comparison
+at 1200 × 740 measured the same window in both builds and exercised
+keyboard move, resize, Escape and the focus return. Physical RTX 2060
+Normal and Pi 5 V3D Livianos each passed touch format changes, both
+orientations, dismissal, room pagination, destination selection and the
+resulting guidance in an emulated touch viewport. Redmi and Telegram
+WebView acceptance, and a joint session with independently signed-in
+visitors, remain open.
+
+The suite passed 418 checks with two optional skips. Only the browser
+bundle changed. Protected receiving matched 86 files, four expected
+denials, the existing audience and configuration, and the same world run
+at sequence 461. Immediate rollback is `e2b318f4b262`.
+See [HUD #16](https://github.com/AlterMundi/holodeck/issues/16).
+
 ## November 26 arrival trail verge
 
 [Holodeck](https://compaii.dmn.homes/holodeck/) serves `e2b318f4b262`

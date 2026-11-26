@@ -619,8 +619,13 @@ an object-identification notice, square movement panels and a wrapped
 three-row dock covering much of the world. The screenshot remains in the
 source conversation. Track the design in [HUD #16](https://github.com/AlterMundi/holodeck/issues/16)
 and the canonical audio dependency in [Conversation #18](https://github.com/AlterMundi/holodeck/issues/18).
-Queue implementation after the current interior visual slice. The active
-environment and room art work proceeds independently.
+The touch dock, locomotion visibility and fullscreen browser action are
+deployed. The [landscape map](STATUS.md#november-26-landscape-touch-map)
+uses one spatial map surface with the plot beside the controls, and returns
+focus to the dock when dismissed. Keep portrait and desktop window
+positioning independent of the compact display. The Redmi and Telegram
+WebView still need direct acceptance. Continue the environment and room art
+alongside the pending mobile Conversation work.
 
 | Mobile state | Presentation and input |
 | --- | --- |
