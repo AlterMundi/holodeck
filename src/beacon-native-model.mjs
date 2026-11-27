@@ -106,7 +106,7 @@ export class BeaconNativeModel {
     const input=this.input.get(id);
     if(!input||input.kind!==kind)return;
     if(kind==='tab'){
-      if(input.options.includes(value)){this.tabs.set(id,value);this.page=0;}
+      if(input.options.includes(value))this.tabs.set(id,value);
       return;
     }
     if(kind==='button'){

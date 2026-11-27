@@ -114,3 +114,20 @@ test('pagination keeps an instrument field with its apply action and links the v
  assert.ok(next.components.some(node=>node.id==='gain'));
  assert.ok(next.components.some(node=>node.id==='apply'));
 });
+
+test('selecting an instrument section stays on the page where it was opened',()=>{
+ const model=new BeaconNativeModel('weaver');
+ const before=Array.from({length:7},(_,i)=>({id:'before_'+i,component:'Text',text:String(i)}));
+ model.receive([{version:'1.0',createSurface:{surfaceId:'weaver',dataModel:{},components:[
+  {id:'root',component:'Column',children:[...before.map(row=>row.id),'voice_tabs']},...before,
+  {id:'voice_tabs',component:'Tabs',tabs:[{title:'Voz 1',child:'first'},{title:'Voz 2',child:'second'}]},
+  {id:'first',component:'Text',text:'Primera voz'},{id:'second',component:'Text',text:'Segunda voz'},
+ ]}}]);
+ model.render('Weaver');
+ model.action('station_pages','page',1);
+ model.render('Weaver');
+ model.action('voice_tabs','tab','second');
+ const result=model.render('Weaver');
+ assert.ok(result.components.some(node=>node.id==='second'));
+ assert.ok(result.components.some(node=>node.id==='voice_tabs'));
+});
