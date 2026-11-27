@@ -32,7 +32,7 @@ test('a nearby bench mounts one owner panel only on open and discards it when ac
   link.onclick(click);
   assert.equal(click.handled,true);
   assert.equal(controls.opened,true);
-  assert.equal(stage.children[0].src,link.href+'&projection=spatializer');
+  assert.equal(stage.children[0].src,link.href);
   assert.equal(stage.children[0].allow,"camera 'none'; microphone 'none'");
   assert.equal(elements.a.href,link.href);
   assert.deepEqual(controls.reference(),{id:spatial.id,revision:1});
@@ -60,6 +60,8 @@ test('a nearby bench mounts one owner panel only on open and discards it when ac
   assert.equal(controls.reference(),null);
   controls.update(objects,guitar.position);
   assert.equal(link.href,'/harmonic_lab/?service=guitar');
+  link.onclick(click);
+  assert.equal(stage.children[0].src,link.href+'&projection=guitar');
   controls.update(objects,shaper.position);
   assert.equal(link.href,'/harmonic_lab/?service=body&view=instrumento');
   assert.deepEqual(stage.children,[]);
