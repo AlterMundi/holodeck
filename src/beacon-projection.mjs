@@ -52,6 +52,10 @@ export function openBeaconProjection(stage, {host, surface, title, csrf, onReady
   async function send(envelope){
     if(viewport.inert||envelope?.action?.surfaceId!==surface||
        (surface==='router'&&envelope.action.context?.sessionId!==session))return;
+    if(surface==='harmocap'&&envelope.action.name==='reviewPreparedTake'){
+      videoPreview?.review(envelope.action.context.take);
+      return;
+    }
     try{
       const response=await fetch(root+'/actions'+query(),{
         method:'POST',credentials:'same-origin',redirect:'manual',signal:lifecycle.signal,

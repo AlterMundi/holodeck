@@ -79,21 +79,24 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
     if(!width||!height)return;
     const bounds=outbound.getSurfaceBounds(nativeId);
     if(!bounds)return;
-    const side=surface==='guitar'&&width>=740;
-    const stacked=surface==='guitar'&&!side;
+    const videoVisible=preview?.visible()??false;
+    const hasCompanion=surface==='guitar'||videoVisible;
+    const side=hasCompanion&&width>=740;
+    const stacked=hasCompanion&&!side;
+    const sideWidth=videoVisible?2.03:1.75;
     const panelWidth=bounds.right-bounds.left;
     const panelHeight=bounds.top-bounds.bottom;
-    const span=side?panelWidth+1.75:panelWidth;
+    const span=side?panelWidth+sideWidth:panelWidth;
     const total=panelHeight+(stacked?1.15:0);
     const scale=Math.min((width-24)/span,(height-24)/total,side?245:260);
     if(scale<=0)return;
-    const key=[width,height,scale,bounds.bottom,layer.pixelRatio].join(':');
+    const key=[width,height,scale,bounds.bottom,videoVisible,layer.pixelRatio].join(':');
     if(key!==placement){
       stackedGuitar=stacked;
       placement=key;
       viewCamera.aspect=width/height;
       viewCamera.updateProjectionMatrix();
-      placeHudInViewport(parent,viewCamera,{width,height,x:width/2-(side?.83*scale:0),
+      placeHudInViewport(parent,viewCamera,{width,height,x:width/2-(side?sideWidth*.5*scale:0),
         y:(height-total*scale)*.43+bounds.top*scale,pixelsPerUnit:scale,depth:3});
       outbound.setTextDensity(nativeId,{cssPixelsPerUnit:Math.round(scale),pixelRatio:layer.pixelRatio,fontSize:width<520?14:17});
       outbound.setChoicePresentation(nativeId,'overlay');
@@ -106,13 +109,18 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
       showGuitarLink();
       layer.invalidate();
     }
+    if(videoVisible){
+      preview.layout(bounds,side);
+      if(preview.frameChanged())layer.invalidate();
+    }
     layer.draw(viewScene,viewCamera);
   }
   function edit(id,kind,value){
     if(signal.aborted||!latestView)return;
     const envelope=model.action(id,kind,value);
     editProblem=model.actionConflict?'El valor cambió en otra vista. Revisá el ajuste antes de aplicarlo.':'';
-    if(envelope)void write(envelope);
+    if(envelope?.action.name==='reviewPreparedTake')preview?.review(envelope.action.context.take);
+    else if(envelope)void write(envelope);
     else showModel();
   }
   const attempted=new Set();
@@ -164,10 +172,24 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
     plane.position.set(2.35,-.63,0);
     parent.add(plane);
     const player=bindHarMoCAPPreview(video,panel+'api/a2ui/'+surface,query,{
-      visible(value){plane.visible=value;},
+      visible(value){plane.visible=value;layer?.invalidate();},
       notice(text){if(text){lastProblem=text;if(latestView)showModel(false);}},
     });
-    return {...player,dispose(){player.dispose();plane.removeFromParent();plane.material.dispose();plane.geometry.dispose();texture.dispose();}};
+    let lastFrame;
+    return {...player,
+      visible:()=>plane.visible,
+      frameChanged(){
+        if(video.readyState<2)return false;
+        const frame=video.requestVideoFrameCallback?texture.version:video.currentTime;
+        if(frame===lastFrame)return false;
+        lastFrame=frame;
+        return true;
+      },
+      layout(bounds,side){
+        plane.position.set(side?bounds.right+1.06:(bounds.right+bounds.left)/2,
+          side?(bounds.top+bounds.bottom)/2:bounds.bottom-.64,0);
+      },
+      dispose(){player.dispose();plane.removeFromParent();plane.material.dispose();plane.geometry.dispose();texture.dispose();}};
   }
   function clearGuitar(){
     guitarRequest?.abort();

@@ -28,6 +28,11 @@ export function mountHarMoCAPPreview(wrapper, root, query){
 
 export function bindHarMoCAPPreview(video,root,query,{visible,notice}){
   let source='', target=null, epoch=null, pending=false;
+  let tracking=null, prepared=null, reviewing=false;
+  function takeUrl(take){
+    return take&&[take.sessionId,take.exportId,take.mp4].every(idPart)
+      ?`${root}/preview/${take.sessionId}/${take.exportId}/${take.mp4}${query()}`:'';
+  }
   function sync(){
     if(!target||!source||video.readyState<1)return;
     if(!target.playing)video.pause();
@@ -45,26 +50,37 @@ export function bindHarMoCAPPreview(video,root,query,{visible,notice}){
           notice('El navegador no pudo reproducir este video.');
       }).finally(()=>{
         pending=false;
-        if(!target?.playing)video.pause();
+        if(source===selected&&!target?.playing)video.pause();
+        if(source!==selected&&!reviewing)sync();
       });
     }
+  }
+  function present(url){
+    if(url===source)return;
+    source=url;
+    epoch=null;
+    visible(!!source);
+    notice('');
+    video.pause();
+    if(url)video.src=url;
+    else video.removeAttribute('src');
+    video.load();
   }
   function show(next){
     const valid=next&&[next.sessionId,next.jobId,next.generation].every(idPart)&&
       typeof next.playing==='boolean'&&Number.isFinite(next.position)&&Number.isInteger(next.epoch);
     target=valid?next:null;
     const url=valid?`${root}/preview/${next.sessionId}/${next.jobId}/${next.generation}${query()}`:'';
-    if(url!==source){
-      source=url;
-      epoch=null;
-      visible(!!source);
-      notice('');
-      video.pause();
-      if(url)video.src=url;
-      else video.removeAttribute('src');
-      video.load();
-    }
+    video.muted=true;
+    present(url);
     sync();
+  }
+  function observeTake(next){
+    if(reviewing&&takeUrl(next)!==takeUrl(prepared)){
+      reviewing=false;
+      show(tracking);
+    }
+    prepared=next;
   }
   video.onloadedmetadata=sync;
   video.onseeked=sync;
@@ -74,15 +90,42 @@ export function bindHarMoCAPPreview(video,root,query,{visible,notice}){
   return {
     receive(messages){
       for(const message of messages){
-        if(message.createSurface)show(message.createSurface.dataModel?.videoPreview);
+        const initial=message.createSurface?.dataModel;
         const update=message.updateDataModel;
-        if(update?.path==='/')show(update.value?.videoPreview);
-        if(update?.path==='/videoPreview')show(update.value);
+        const root=initial??(update?.path==='/'?update.value:undefined);
+        if(root){
+          tracking=root.videoPreview;
+          observeTake(root.preparedTake);
+        }
+        if(update?.path==='/preparedTake')observeTake(update.value);
+        if(update?.path==='/videoPreview')tracking=update.value;
+        if(!reviewing)show(tracking);
       }
     },
-    clear:()=>show(null),
-    dispose(){
+    review(take){
+      const url=takeUrl(take);
+      if(!url||url!==takeUrl(prepared))return;
+      if(reviewing){
+        reviewing=false;
+        show(tracking);
+        return;
+      }
+      reviewing=true;
+      target=null;
+      video.muted=false;
+      present(url);
+      void video.play().catch(error=>{
+        if(reviewing&&source===url&&error.name!=='AbortError')
+          notice('No se pudo reproducir la toma.');
+      });
+    },
+    clear(){
+      reviewing=false;
+      prepared=tracking=null;
       show(null);
+    },
+    dispose(){
+      this.clear();
       video.onloadedmetadata=video.onseeked=video.onerror=null;
     },
   };
