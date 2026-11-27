@@ -6,6 +6,43 @@ The receiving origin, service grant, private access and exact receipts remain in
 its operator record. Source publication, runtime selection, real native effects,
 browser/device acceptance and human acceptance are separate observations.
 
+## Preserve a live visit during releases
+
+The selected Home executor currently restarts one Node service when it
+activates a package. Its MML presence and world-document connections live
+inside that process, which closes them when it stops. Durable room and
+session recovery preserve only part of an active visit. A connected browser
+can still return to entry or fail to recover. A persisted world or a healthy
+new process alone does not qualify uninterrupted rollout.
+
+1. Use the existing revisioned resource and room writers for ordinary
+   publication, exhibit placement and room edits. Push confirmed updates to
+   both projections through the existing clients. These operations need no
+   engine deployment.
+2. Put client and art bytes behind immutable release URLs. Let existing tabs
+   keep their compatible release while new tabs choose the selected one.
+   Close the retention bound through actual connected version use. An
+   incompatible version must reach an explicit recovery screen rather than
+   silently fetching a new bundle into an old scene.
+3. Keep the live world socket owner stable across compatible releases.
+   Prepare and check the successor before selecting it. Transfer session
+   claims, world sequence and unacknowledged operation IDs through the
+   existing owner. If a successor must replace the world process, briefly
+   fence new mutations, checkpoint and verify the new reader, switch the
+   writer once, then resume or roll back. A second writable copy is unsafe.
+4. If a change genuinely requires interruption, the connected client should
+   get a notice before the switch and preserve location, camera, room,
+   unsent draft and unresolved operation IDs. Show an explicit reconnect
+   or useful recovery action while resuming at the same place.
+
+Qualification uses two independently authorized visitors already in different
+rooms, including one actively writing. Run a content change, a compatible
+client release and a bounded world-process handoff. Measure socket survival,
+time without input, lost or replayed commands, preservation of draft and
+camera, room identity, access and transition notice. Exercise rollback and
+a failed successor. Keep this release work scoped to Holodeck and its own
+Home receiver.
+
 ## Receiving contracts
 
 The existing Home publisher accepts the closed `dm.home-service-package/v1`

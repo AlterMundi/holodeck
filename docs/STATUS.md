@@ -1,5 +1,25 @@
 # Current MVP work
 
+## November 27 — Casa Linterna receiving candidate
+
+Candidate `5ffac47d3604` from `b264aae` preserves all other authored
+houses when projecting the compact CompAII rooms onto the torus.
+Their façades, door positions and existing per-room authorization
+use the same shared world. The old exterior sandbox stays disabled.
+A packaged Chromium fixture rendered Casa Linterna once, passed an
+authorized entrance, gallery and reciprocal exit, and refused a
+second actor without its guest grant. Production still selects
+`315024952954`. Oliva's own read returned the live world and both
+parcels, and her saved layout contains three rooms. No actual guest
+walk or exhibit publication has been performed on her behalf.
+
+[Shared web and world discovery](co-creation.md#shared-apps-and-holodeck-discovery)
+and [live visit continuity](deployment.md#preserve-a-live-visit-during-releases)
+record the next acceptance work. The current runtime activation
+restarts Node. Selection of this candidate was deferred while a human
+was using the world. The visual objective remains paused.
+
+
 ## November 27 — Curved woodland fronds
 
 Protected `315024952954` serves `5cc90a2` with immediate rollback

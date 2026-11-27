@@ -820,6 +820,21 @@ and room previews. Retain focus, private drafts and confirmed device
 actions when hiding a surface. Keep the HUD ownership and regression
 tests in [#16](https://github.com/AlterMundi/holodeck/issues/16).
 
+## Shared launch, exhibit access and live releases
+
+Use the [Rooms and Home/Nexus parity](co-creation.md#shared-apps-and-holodeck-discovery)
+contract for the existing single shared application. First qualify one
+real Oliva edition through her saved Casa Linterna gallery, then exercise
+an allowed and a denied live visitor in both projections. The visual
+objective remains paused while these decisions are reviewed.
+
+The current package writer restarts the shared Node process. Prepare the
+[continuity path](deployment.md#preserve-a-live-visit-during-releases)
+before selecting changes during a live visit. Ordinary content placement
+already uses the running world writer. Client-only selection, session
+handoff during compatible package upgrades and a visible maintenance
+transition each need their own receiving readback.
+
 ## One declarative world, individually styled
 
 Treat the shared semantic scene and its MML projection like a 3D DOM, with a

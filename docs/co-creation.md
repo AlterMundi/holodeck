@@ -18,6 +18,36 @@ and native representations consume its acknowledged state; they do not create
 independent writable copies. Worlds may have distinct purposes and audiences
 inside the service. That is not a deployment per participant.
 
+## Shared Apps and Holodeck discovery
+
+Keep one registered Holodeck application and one running world. The shared
+Apps catalog and the authenticated catalogs on each Home launch that same
+application. The current entry is `https://compaii.dmn.homes/holodeck/`.
+A neutral hostname could become another launch route through the same
+authentication and service binding. A separate world at each owner's
+hostname would split the audience, state and creation history.
+
+Treat Home/Nexus publication and Holodeck placement as two operations on a
+shared reference. Homes owns the publisher, revisions and current source
+audience. Nexus resolves the selected review edition and viewer permission.
+Holodeck owns where that exact edition appears, passage access and who may
+change the placement. Web and world views resolve the same immutable
+reference. Both evaluate the requesting actor against current grants at
+discovery and again at opening. A readable web edition can exist without a
+physical placement. A room guest can pass a door without being entitled to
+read a private exhibit. Private placements and model contents stay scoped to
+their existing room and source authority.
+
+The first production acceptance journey should select one edition already
+published by Oliva. Its owner selects the readers and publishes the placement
+in her gallery. One invited visitor with source access opens the same edition
+from the web and from the gallery. A room guest without source access cannot
+read the protected work, including through a direct link. Revoking a source
+grant removes access through both projections. Advancing the source creates a
+new revision. The old placement continues to resolve its exact pin until
+Oliva selects a replacement. Report the owner receipt, the real visitor
+journey and the denial as separate outcomes.
+
 ## What works now, and the actual gap
 
 Humans and daimons can already create/update the bounded light activity through
