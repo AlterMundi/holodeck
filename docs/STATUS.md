@@ -1,5 +1,19 @@
 # Current MVP work
 
+## November 27 — Shaper mixer in the Beacon chamber
+
+Protected release `2de3b1a412a0` enables the Shaper table's dedicated
+A2UI mixer. Immediate rollback is `ddaa5df2cb82`. The mixer and Weaver
+share a preset revision through the same Legion backend. The Shaper
+table presents output level, gain, mute and solo by voice.
+
+In Chromium the table reused the actual Legion receiver with audio
+disabled. Two independent Home streams, one per surface, received the
+same output-level update and restore. The backend refused a stale write.
+The temporary session closed with both ports released and the JACK
+profile unchanged. An authenticated human visit and acoustic
+verification remain pending.
+
 ## November 27 — Weaver in the Beacon chamber
 
 Protected release `ddaa5df2cb82` enables Weaver's A2UI station at its
@@ -31,8 +45,8 @@ mechanism, switch door and neck support from exact Home edition
 repository tests passed and two were skipped. The Home technical reader
 can read the protected bundle and is refused at the human page.
 An authenticated human visit in the live room and use with the physical
-board remain pending. Spatializer and Shaper retain their existing
-panel handoffs while their receiving projections are qualified.
+board remain pending. Spatializer retains its existing panel handoff
+while its receiving projection is qualified.
 
 ## November 27 — Paired-human DND for planned restarts
 

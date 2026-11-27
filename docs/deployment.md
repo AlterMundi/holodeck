@@ -138,10 +138,11 @@ with the same visitor session. It presents the controller's state next
 to the selected Home review edition. The mechanism, power switch and
 neck support each select the exact scene and part from that edition.
 Continue to use the device-local controller for writes to the board.
-Weaver uses the same handoff with its own selected surface. Its table
-reuses a ready receiver and opens the live controls that write through
-the existing Lab authority. Spatializer and Shaper keep their existing
-links until their receiving A2UI surfaces are selected.
+Weaver and Shaper reuse the same body receiver through their respective
+surfaces. Their live controls mutate the same confirmed preset.
+Shaper presents mix controls. Weaver also presents body and video
+controls. Spatializer keeps its existing link while its receiving
+projection is qualified.
 
 The optional `gallery` receiving selection names an existing interior
 `room` and two distinct exact `artifact_review` pins (`draft` and `archive`,
