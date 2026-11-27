@@ -373,29 +373,51 @@ function undergrowthGeometry(){
 
 function fernGeometry(){
   const positions=[],colors=[];
-  const root=new Color(0x345835),tip=new Color(0x9cad60),color=new Color();
-  const vertex=(p,t)=>{
-    positions.push(...p);
-    colors.push(...color.copy(root).lerp(tip,t).toArray());
+  const root=new Color(0x2c4b34),tip=new Color(0x93ac64),color=new Color();
+  const vertex=(point,t,value)=>{
+    positions.push(...point);
+    colors.push(...color.copy(root).lerp(tip,t).multiplyScalar(value).toArray());
+  };
+  const triangle=(a,b,c,t,values)=>{
+    const up=(b[2]-a[2])*(c[0]-a[0])-(b[0]-a[0])*(c[2]-a[2]);
+    vertex(a,t,values[0]);
+    vertex(up>=0?b:c,t,values[up>=0?1:2]);
+    vertex(up>=0?c:b,t,values[up>=0?2:1]);
   };
   for(let i=0;i<7;i++){
-    const angle=i*2.39996,x=Math.cos(angle),z=Math.sin(angle);
-    const length=.64+.14*sample(i,19,63);
-    const lift=.63+.33*sample(i,25,81);
-    const point=(t,side=0)=>{
+    const angle=i*2.39996+.26*(sample(i,31,97)-.5);
+    const x=Math.cos(angle),z=Math.sin(angle);
+    const length=.57+.24*sample(i,19,63);
+    const lift=i<2?.43+.12*sample(i,25,81):.61+.32*sample(i,25,81);
+    const curve=.20*(sample(i,26,91)-.5);
+    const point=(t,side=0,fold=0)=>{
       const radius=length*t;
-      return [x*radius-z*side,lift*(.34*t+.68*Math.sin(t*Math.PI*.84)),z*radius+x*side];
+      const cross=side+curve*t*t;
+      const height=lift*(.24*t+.79*Math.sin(Math.PI*.97*t));
+      return [x*radius-z*cross,height+fold+side*.19*t,z*radius+x*cross];
     };
-    const start=point(0),end=point(1);
-    vertex(start,.02);vertex(point(.47,.023),.44);vertex(point(.47,-.023),.44);
-    vertex(point(.47,-.023),.44);vertex(point(.47,.023),.44);vertex(end,.92);
-    for(let step=0;step<6;step++){
-      const t=.20+step*.11;
-      const width=.205*Math.sin(Math.PI*t)*Math.sqrt(1-t);
-      const back=point(t-.055),front=point(t+.056),bend=.11*(1-t);
-      const left=point(t+bend,-width),right=point(t+bend,width);
-      vertex(back,t*.52);vertex(front,t*.70);vertex(left,.45+t*.42);
-      vertex(back,t*.52);vertex(right,.45+t*.42);vertex(front,t*.70);
+    // A narrow curved rib connects staggered pinnae to the same grounded crown.
+    const rib=[0,.20,.42,.65,.84,1];
+    for(let station=1;station<rib.length;station++){
+      const j=rib[station-1],k=rib[station];
+      const a=point(j,-.021*(1-j)),b=point(j,.021*(1-j));
+      const c=point(k,-.021*(1-k)),d=point(k,.021*(1-k));
+      triangle(a,b,c,k*.72,[.74,.88,.88]);
+      if(k<1)triangle(c,b,d,k*.72,[.83,.94,.92]);
+    }
+    const rows=i<2?4:5;
+    for(let leaf=0;leaf<rows;leaf++)for(const side of [-1,1]){
+      const t=.18+leaf*.137+(side===1?.022:0);
+      const span=side*(.073+.164*Math.sin(Math.PI*t))*Math.sqrt(1-t);
+      const base=point(t);
+      const outer=point(t+.087*(1-t)+.028,span,.012);
+      const lead=point(t+.075,span*.48,-.026);
+      const trail=point(t-.034,span*.57,-.035);
+      // Fold the leaflet across the rib-to-tip line. Adjacent opaque faces
+      // carry two values and the gaps between leaves keep a notched outline.
+      const maturity=.32+t*.62;
+      triangle(base,lead,outer,maturity,[.76,.90,1.03]);
+      triangle(base,outer,trail,maturity,[.73,1.03,.78]);
     }
   }
   const geometry=new BufferGeometry();
