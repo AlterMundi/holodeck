@@ -1,5 +1,25 @@
 # Current MVP work
 
+## November 27 — Explorer flight, camera and toolbar
+
+Protected release `e0ed95d65c16` supports sustained vertical loops with
+enough momentum and clearance. Hold forward and boost, aim with the
+right mouse button and pull upward or downward. Two short Space presses
+during flight perform a flip and disengage flight. The landing layers
+the planted boot contact into the existing gait.
+
+Shift-wheel adjusts the avatar-relative camera height. The local model
+is culled as a whole when the camera comes close and returns on zoom out.
+The toolbar starts folded and retains its chosen state in the tab.
+The companion settles behind the last moving heading at varying offsets,
+including after a flight stop.
+
+Chromium exercised the final client through the loop, flip, ground
+contact, close zoom, framing, toolbar and walking/flying follow. The
+Node suite passed 533 checks with two skips. All 92 installed files
+matched the package, and the authenticated HTTPS client matched its
+built bytes. The immediate rollback is `e93cf79631b1`.
+
 ## November 27 — Protected Weaver preset download
 
 Protected release `e93cf79631b1` downloads the exact saved JSON edition

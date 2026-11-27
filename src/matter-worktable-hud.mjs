@@ -45,8 +45,8 @@ const toolPanelMinWidth=.5; // Minimum in the Proyección HudPanel catalog.
 const toolScale=286; // Proyección's .154-unit button target is 44 CSS px at this scale.
 const toolGap=.035,touchToolGap=.018,toolRowHeight=.18,toolPadding=.12,dockBottomMargin=.035;
 const iconToolPixels=48;
-const toolNames=['map','open','talk','mic','speaker','appearance','video','bridge','plant','undo','activity','visit','endVisit','fullscreen','more'];
-const toolPixels={map:130,open:154,talk:134,mic:105,speaker:110,appearance:138,video:96,bridge:182,plant:100,undo:92,activity:126,visit:124,endVisit:140,fullscreen:48,more:48};
+const toolNames=['toggle','map','open','talk','mic','speaker','appearance','video','bridge','plant','undo','activity','visit','endVisit','fullscreen','more'];
+const toolPixels={toggle:148,map:130,open:154,talk:134,mic:105,speaker:110,appearance:138,video:96,bridge:182,plant:100,undo:92,activity:126,visit:124,endVisit:140,fullscreen:48,more:48};
 
 function opticalRole(surface,id,component){
   if(surface===worldMapId||surface===worldBearingId||id==='map')return 'navigation';
@@ -93,7 +93,7 @@ function toolComponents(layout){
     ...rows.flatMap(({ids},index)=>[
       row(rowIds[index],ids,{gap}),
       ...ids.map(id=>button(id,path(id+'Label'),{
-        disabled:path(id+'Disabled'),...(['map','talk','mic','speaker','appearance','video','fullscreen','more'].includes(id)?{pressed:path(id+'Pressed')}:{}),
+        disabled:path(id+'Disabled'),...(['toggle','map','talk','mic','speaker','appearance','video','fullscreen','more'].includes(id)?{pressed:path(id+'Pressed')}:{}),
         weight:pixelsForTool(id,layout)/66,...(toolIcons[id]?{icon:toolIcons[id]}:{}),
       })),
     ]),
@@ -500,8 +500,9 @@ export class MatterWorktableHud{
   toolState(){
     const tools=this.readTools(this.active);
     for(const name of ['appearance','video'])tools[name].pressed=this.settings.current===name;
-    return {...tools,
-      open:{label:'Usar mesa',visible:this.mode==='enter',disabled:false}};
+    const open={label:'Usar mesa',visible:this.mode==='enter',disabled:false};
+    if(!tools.toggle.pressed)return {toggle:tools.toggle,open};
+    return {...tools,open};
   }
 
   handleTool({name,context}){
@@ -509,6 +510,13 @@ export class MatterWorktableHud{
       name==='fullscreen'&&!this.toolLayout?.shortLandscape)return;
     const selected=name==='more'?this.toolAvailability?.more:this.toolState()[name];
     if(!selected?.visible||selected.disabled)return;
+    if(name==='toggle'){
+      this.toolOverflowOpen=false;
+      this.activateTool(name);
+      this.syncToolbelt(this.toolsVisible);
+      this.focusTool('toggle');
+      return;
+    }
     if(name==='more'){
       this.lookPreview.hit(toolbeltId);
       this.toolOverflowOpen=!this.toolOverflowOpen;
@@ -533,7 +541,8 @@ export class MatterWorktableHud{
 
   focusTool(name){
     const visible=this.toolLayout?.rows.some(row=>row.ids.includes(name));
-    return this.hud.focusAccessibleControl(toolbeltId,!visible&&this.toolOverflow?'more':name);
+    const target=visible?name:!this.toolAvailability?.toggle.pressed?'toggle':this.toolOverflow?'more':name;
+    return this.hud.focusAccessibleControl(toolbeltId,target);
   }
 
   toolInsets(){
@@ -623,7 +632,7 @@ export class MatterWorktableHud{
     const compact=this.compactDock();
     const touchDevice=this.document.defaultView.navigator.maxTouchPoints>0;
     const scale=compact&&!touchDevice?248:toolScale;
-    tools.fullscreen.visible=shortLandscape&&tools.fullscreen.visible;
+    if(tools.fullscreen)tools.fullscreen.visible=shortLandscape&&tools.fullscreen.visible;
     const dockSpan=this.conversationDockSpan();
     const iconOnly=Boolean(touch)||touchDevice&&(compact||this.canvas.clientWidth<=600||Boolean(dockSpan));
     const gap=iconOnly?touchToolGap:toolGap;
@@ -643,7 +652,7 @@ export class MatterWorktableHud{
     const fullLayout=layoutTools(tools,maxWidth,{...appearance,sideGrips});
     this.toolOverflow=sideGrips&&fullLayout.rows.length>1;
     const overflowViewport=this.canvas.clientWidth;
-    if(!this.toolOverflow||this.quietTouch||this.overflowViewport!==overflowViewport)this.toolOverflowOpen=false;
+    if(!this.toolOverflow||this.overflowViewport!==overflowViewport)this.toolOverflowOpen=false;
     this.overflowViewport=overflowViewport;
 
     let layout=fullLayout;
@@ -652,8 +661,8 @@ export class MatterWorktableHud{
       if(this.toolOverflowOpen){
         layout=layoutTools(tools,available,{...appearance,sideGrips:false});
       }else{
-        let budget=maxWidth-iconToolPixels;
-        const visible=new Set(['more']);
+        let budget=maxWidth-iconToolPixels-pixelsForTool('toggle',appearance)-gapPx;
+        const visible=new Set(['toggle','more']);
         for(const id of toolPriority){
           const cost=pixelsForTool(id,appearance)+gapPx;
           if(tools[id]?.visible&&cost<=budget){
@@ -669,10 +678,7 @@ export class MatterWorktableHud{
     this.toolAvailability=tools;
     this.document.body.setAttribute('data-native-settings-available','');
     if(!this.toolGroup)this.send('createSurface',{catalogId:spatialHudCatalog.id},toolbeltId);
-    if(this.toolGroup&&this.toolGroup.visible===this.quietTouch){
-      this.toolGroup.visible=!this.quietTouch;
-      this.layer.invalidate();
-    }
+
     const layoutKey=JSON.stringify(layout);
     let priorFocus;
     if(this.toolLayoutKey!==layoutKey){
@@ -1269,10 +1275,10 @@ export class MatterWorktableHud{
       this.beacon.present(Boolean(painted&&this.beacon.stationGroup&&this.hud.getSurfaceBounds(beaconStationId)),
         Boolean(painted&&beaconViewerPlaced));
       this.activity.present(painted,Boolean(!this.activity.owner()?.opened&&this.toolGroup&&
-        (this.toolOverflow&&this.toolAvailability.activity?.visible||this.toolLayout?.rows.some(row=>row.ids.includes('activity')))));
+        (this.toolOverflow&&this.toolAvailability?.activity?.visible||this.toolLayout?.rows.some(row=>row.ids.includes('activity')))));
       this.visit.present({painted,index:Boolean(this.visit.indexGroup&&this.hud.getSurfaceBounds(exhibitionHudId)),launcher:this.visit.indexActive||Boolean(this.toolGroup&&this.toolLayout?.rows.some(row=>
         row.ids.includes('visit')||row.ids.includes('endVisit'))||this.toolGroup&&this.toolOverflow&&
-          (this.toolAvailability.visit?.visible||this.toolAvailability.endVisit?.visible)),
+          (this.toolAvailability?.visit?.visible||this.toolAvailability?.endVisit?.visible)),
         viewer:Boolean(this.visit.viewerGroup&&this.visitPlacement?.group===this.visit.viewerGroup&&this.hud.getSurfaceBounds(visitHudId))});
       const controlsReady=movementPanels(this.movementVertical).every(([id])=>
         this.movementGroups.has(id)&&this.hud.getSurfaceBounds(id));

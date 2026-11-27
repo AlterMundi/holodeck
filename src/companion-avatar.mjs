@@ -13,6 +13,7 @@ import {CompanionTransfer} from './companion-transfer.mjs';
 const appearance='compaii-navegante-white-v1';
 const localUp=new Vector3(0,1,0);
 const localForward=new Vector3(0,0,1);
+const rearOffsets=[[.74,1.23],[.97,1.12],[.59,1.45]];
 const floatDraft=.86;
 const maximumFollowSpeed=9.2;
 // A jump is over before the companion would finish its own launch.
@@ -32,6 +33,11 @@ export class CompanionAvatar{
     Object.assign(this,{scene,document});
     this.relative=new Vector3();
     this.followAngle=new Quaternion();
+    this.followBasis=new Quaternion();
+    this.followUp=new Vector3();
+    this.followSlot=0;
+    this.followSide=1;
+    this.leaderMoving=false;
     this.followVelocity=new Vector3();
     this.lastVelocity=new Vector3();
     this.groundStepStart=new Vector3();
@@ -125,16 +131,37 @@ export class CompanionAvatar{
     const resolve=this.attention?.resolve;
     const point=resolve&&this.attention.until>now&&resolve(this.attentionPoint);
     if(!point)this.attention=null;
-    // Choose the side on arrival and carry it with the local terrain frame.
-    // Looking around with a stationary player must not move the companion.
+    // Follow the last moving heading. Looking around after a stop doesn't
+    // make the companion orbit, and the next leg may use either shoulder.
     const frame=outdoor?toroidalRotation(position,0,this.localHeading):this.localHeading.identity();
     const samePlace=this.previous===scale&&this.previousOutdoor===outdoor;
-    if(!samePlace){this.followYaw=yaw;this.roomClearance.reset();}
-    const angle=this.followAngle.setFromAxisAngle(localUp,this.followYaw??yaw).premultiply(frame);
-    const step=(small?1.36:1.35)*scale;
     const moving=!this.motion.matches&&!this.document.hidden;
+    this.followUp.copy(localUp).applyQuaternion(frame);
+    if(!samePlace){
+      this.followYaw=yaw;
+      this.leaderMoving=false;
+      this.roomClearance.reset();
+    }else if(!small&&dt>0){
+      this.direction.subVectors(position,this.lastLeader);
+      this.direction.addScaledVector(this.followUp,-this.direction.dot(this.followUp));
+      const speed=this.direction.length()/dt;
+      const travelling=speed>(this.leaderMoving ? .25 : .6)&&speed<(explicitFlight?48:18);
+      if(travelling){
+        this.followYaw=yaw;
+        if(!this.leaderMoving){
+          this.followSlot=(this.followSlot+1)%rearOffsets.length;
+          this.followBasis.setFromAxisAngle(localUp,yaw).premultiply(frame).invert();
+          const side=this.relative.subVectors(root.position,position).applyQuaternion(this.followBasis).x;
+          if(Math.abs(side)>.25)this.followSide=Math.sign(side);
+        }
+      }
+      this.leaderMoving=travelling;
+    }
+    const angle=this.followAngle.setFromAxisAngle(localUp,this.followYaw??yaw).premultiply(frame);
     const height=(diving?.25:flying?.16:water?0:-.037)*scale;
-    this.target.copy(position).add(this.relative.set(step,height,.45*step).applyQuaternion(angle));
+    const [shoulder,trail]=rearOffsets[this.followSlot];
+    this.relative.set(small?1.36*scale:shoulder*this.followSide,height,small?.612*scale:-trail);
+    this.target.copy(position).add(this.relative.applyQuaternion(angle));
     if(avoidFurniture&&!this.roomClearance.chooseTarget(position,this.target,colliders,grounded||!samePlace)){
       root.visible=false;
       this.transfer.cancel();

@@ -307,3 +307,35 @@ test('the second tap adds one airborne jump and does not arm a third',()=>{
   assert.equal(motion.doubleJumpCount,1);
   assert.equal(motion.grounded,true);
 });
+
+test('a sustained pull converts existing thrust into a moving loop and leaves along the entry heading',()=>{
+  for(const pull of [-1,1]){
+    const motion=new ToroidalLocomotion({u:.4,v:.25,height:33,ground:()=>0,cameraSteering:true});
+    simulate(motion,.8,90,{flight:true,sprint:true,forward:1,travelYaw:0});
+    const entryHeight=motion.height;
+    const path=[];
+    for(let frame=0;frame<315;frame++){
+      motion.update(1/90,{flight:true,sprint:true,forward:1,travelYaw:0,loopPull:pull});
+      if(motion.verticalLoop.pose)path.push({pitch:motion.verticalLoop.pose.pitch,position:motion.pose().position,
+        up:motion.height,cross:motion.crossSpeed});
+    }
+    assert.ok(path.length>200);
+    const beginning=path[0],half=path.at(Math.floor(path.length/2)),exit=path.at(-1);
+    assert.ok((half.up-entryHeight)*pull>18);
+    assert.ok(half.cross<-19);
+    assert.ok(exit.cross>19);
+    assert.ok(Math.abs(exit.up-beginning.up)<.6);
+    assert.ok(path.some(p=>Math.hypot(p.position.x-beginning.position.x,p.position.z-beginning.position.z)>8));
+    assert.equal(motion.verticalLoop.pose,null);
+  }
+});
+
+test('hover cannot start a loop, and a downward pull requires space under the avatar',()=>{
+  const input={flight:true,forward:1,loopPull:-1};
+  const hover=new ToroidalLocomotion({u:.4,v:.25,height:30,ground:()=>0});
+  simulate(hover,1,90,input);
+  assert.equal(hover.verticalLoop.pose,null);
+  const low=new ToroidalLocomotion({u:.4,v:.25,height:7,ground:()=>0,cameraSteering:true});
+  simulate(low,1,90,{...input,sprint:true});
+  assert.equal(low.verticalLoop.pose,null);
+});
