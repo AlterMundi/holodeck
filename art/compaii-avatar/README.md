@@ -25,6 +25,21 @@ blender -b --python-exit-code 19 --python navegante.py -- OUTPUT CERAMIC RELIEF 
 Validate the exported asset and update its registry digest together. Preserve
 the unkeyed `anchor-mouth` speech joint and the existing NLA clip names.
 
+## Mouth of light
+
+`mouth.py` replaces the old static visor smile with a luminous lens on the
+glass and adds the `mouth-open` morph target (lower lip slides down the
+curved visor, corners widen). It edits the packed `navegante.blend` once;
+then run `motion.py` to export. The runtime drives the morph and the glow
+strength from the speech level; the ceramic chin only follows at a third of
+its former travel. `tools/browser-companion-mouth-check.cjs` checks it in
+the running client.
+
+```sh
+blender -b art/compaii-avatar/navegante.blend --python-exit-code 19 \
+  --python art/compaii-avatar/mouth.py -- art/compaii-avatar/navegante.blend
+```
+
 ## Motion
 
 `motion.py` holds every pose and its timing. It replaces the NLA tracks of the

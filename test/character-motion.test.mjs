@@ -108,25 +108,37 @@ test('attention interrupts idle, leads with the head and then turns the body',as
   assert.ok(new Vector3(0,0,1).applyQuaternion(root.quaternion).dot(direction)>.95);
 });
 
-test('speech owns the jaw at either size, and reduced motion keeps it and the body still',async()=>{
+test('speech opens the luminous mouth at either size, and reduced motion keeps it and the body still',async()=>{
   const {avatar,document}=await loadCompanion();
   const jaw=avatar.figure.root.getObjectByName('anchor-mouth');
+  const mouths=[];
+  avatar.figure.root.traverse(object=>{
+    const index=object.morphTargetDictionary?.['mouth-open'];
+    if(index!==undefined)mouths.push(()=>object.morphTargetInfluences[index]);
+  });
+  assert.ok(mouths.length>0,'the visor mouth is a morph target on the skin');
+  const opening=()=>Math.max(...mouths.map(read=>read()));
   const rest=jaw.position.z;
   const speak=()=>avatar.setSpeechLevel(1);
   still(avatar,.6,{},speak);
+  assert.ok(opening()>.97&&opening()<=1,String(opening()));
   const full=rest-jaw.position.z;
-  assert.ok(Math.abs(full-12/515)<.0004,String(full));
+  // the ceramic chin only follows the light, a third of its former travel
+  assert.ok(Math.abs(full-4/515)<.0004,String(full));
   avatar.setSpeechLevel(0);
   still(avatar,.8);
   assert.ok(Math.abs(jaw.position.z-rest)<1e-6);
+  assert.ok(opening()<.004);
   const {Box3}=await import('three');
   const table={active:true,bounds:new Box3(new Vector3(-1,.8,-.7),new Vector3(1,2,.7))};
   still(avatar,.8,{table,position:new Vector3(0,1,0)},speak);
   const miniature=rest-jaw.position.z;
   assert.ok(miniature>full*1.3&&miniature<full*1.5);
+  assert.ok(opening()>1.15&&opening()<=1.2,'a wider, bounded opening at tabletop scale');
   document.media.matches=true;
   still(avatar,.2,{},speak);
   assert.equal(jaw.position.z,rest);
+  assert.equal(opening(),0);
   const bones=[];
   avatar.figure.root.traverse(object=>{if(object.isBone)bones.push([object,object.quaternion.clone(),object.position.clone()]);});
   still(avatar,6,{},speak);
