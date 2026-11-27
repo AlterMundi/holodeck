@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
-import {Euler,Object3D,Vector3} from 'three';
+import {Euler,Object3D,Texture,Vector3} from 'three';
 import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {batchModel} from './batch.mjs';
+import {embedFinishMaps} from './finish-maps.mjs';
 import dimensions from '../dimensions.json' with {type:'json'};
 import {floorClearance,makeHefestoSliceScenes} from './model.mjs';
 import {hall,makeJourneys,makeStops,pavilionDoor,pavilions,place,roomCenters,roomPartition} from './plan.mjs';
@@ -167,11 +168,22 @@ files.set(workshopName,workshopBytes);
 cells.atelier.models=[{file:workshopName,bytes:workshopBytes.length,sha256:workshopDigest}];
 cells.atelier.colliders=atelierObstacles.map(collider);
 for (const {cell,name,group,obstacles} of layers) {
-  const model=batchModel(group);
-  const binary=await new GLTFExporter().parseAsync(model,{binary:true,onlyVisible:true});
+  const model=batchModel(group,{finishUV:true});
+  const exporter=new GLTFExporter().register(embedFinishMaps);
+  const binary=await exporter.parseAsync(model,{binary:true,onlyVisible:true});
   const bytes=Buffer.from(binary);
   assert.ok(bytes.length<=MAX_PART_BYTES,name+' exceeds the per-file art bound');
-  const glb=await new GLTFLoader().parseAsync(binary,'');
+  // Node reopens geometry and materials. The browser check separately decodes
+  // the embedded JPEGs using the same GLBs seen by the receiving engine.
+  const loader=new GLTFLoader().register(()=>({name:'Linterna offline inspection',
+    loadTexture:()=>Promise.resolve(new Texture()),
+  }));
+  const glb=await loader.parseAsync(binary,'');
+  for(const primitive of glb.parser.json.meshes.flatMap(mesh=>mesh.primitives)){
+    const material=glb.parser.json.materials[primitive.material];
+    if(material.pbrMetallicRoughness.baseColorTexture)
+      assert.ok(Number.isInteger(primitive.attributes.TEXCOORD_0),'a textured surface must have UVs');
+  }
   if(cell!=='printing')glb.scene.traverse(mesh=>{
     if(mesh.isMesh)assert.ok(!['slate','terracotta'].includes(mesh.material.name),
         'AnyPrinter fixtures must remain in its own scene');

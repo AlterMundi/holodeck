@@ -74,6 +74,17 @@ visible turntable sits at `(0, 1.146, -2)`. The actual projected model
 comes from the existing Atelier workspace. Its authorization is a
 receiving selection.
 
+The finish pass keeps the approved annular terrain on its timber table. It
+embeds PBR base-color maps for the dressed stone, timber and water using
+the existing room-art export. The stone and timber images are the existing
+[CC0 workshop derivatives](../workshop/README.md#material-sources).
+The tileable water pattern and two site plaques are authored for the precinct.
+The Pompeian red panels and frieze in Hefesto are built per solid wall bay
+from the same opening dimensions as the shell. Sea, ground and rooms from
+the HD study are outside this export. The visible closed leaves in the
+receiving edition stand at the native door transitions. Plaques identify
+those doors while Holodeck owns their actions, authorization and landing.
+
 The precinct entrances use the authored XZ frames. Claymon is a separate
 room with its own return door at XZ `(-3, -5.82)` and landing at
 `(-3, -4.81)`. Each side of a passage records its threshold, landing,

@@ -1,15 +1,25 @@
-import {Group, Mesh} from 'three';
+import {Float32BufferAttribute, Group, Mesh} from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-export function batchModel(root, {retainUV = false} = {}) {
+export function batchModel(root, {retainUV = false, finishUV = false} = {}) {
   const batches=new Map();
   root.updateMatrixWorld(true);
   root.traverse(source=>{
     if (!source.isMesh) return;
     const geometry=source.geometry.clone();
+    const textured=finishUV && source.material.userData.linternaMap;
     for (const attr of Object.keys(geometry.attributes)) {
-      if (attr!=='position' && attr!=='normal' && !(retainUV && attr==='uv'))
+      if (attr!=='position' && attr!=='normal' && !((retainUV||textured) && attr==='uv'))
         geometry.deleteAttribute(attr);
+    }
+    if (textured && !geometry.hasAttribute('uv')) {
+      const positions=geometry.getAttribute('position');
+      const uv=new Float32Array(positions.count*2);
+      for(let index=0;index<positions.count;index++){
+        uv[index*2]=positions.getX(index);
+        uv[index*2+1]=positions.getY(index);
+      }
+      geometry.setAttribute('uv',new Float32BufferAttribute(uv,2));
     }
     geometry.applyMatrix4(source.matrixWorld);
     if (!batches.has(source.material)) batches.set(source.material,[]);
