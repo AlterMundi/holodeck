@@ -2397,14 +2397,49 @@ and a successfully painted HUD. The protected release has its own selection.
 | Surface | Spatial presentation and owning action path | Browser surface or remaining check |
 | --- | --- | --- |
 | Initial entry, passage and recovery | `PassageHud` and `RecoveryHud` use the world's room handoff and existing retry action when the overlay can paint. | Initial sign-in and boot are browser controls. Check retained focus after a real graphics loss and restored draw. |
-| World status, movement and dock | `WorldStatusHud` and the toolbelt project room labels, sound, notices, movement help and contextual actions. Locomotion uses separate HUD inputs for steering and vertical motion. | The browser controls take over before a successful draw or when the overlay is unavailable. Check pointer cancellation in a physical touch session. |
+| World status, movement and dock | `WorldStatusHud` and the toolbelt project notices, movement help and contextual actions. Locomotion uses separate HUD inputs for steering and vertical motion. | The browser controls take over before a successful draw or when the overlay is unavailable. The small active room label remains browser-rendered. Check pointer cancellation in a physical touch session. |
 | Minimap, doors and pointing | `WorldMapHud`, `DoorPromptHud` and `CreationHud` use the terrain raster, room exits, proximity and current pointed target. | The underlying browser controls preserve their existing actions and serve as fallback. Keep host-owned travel and selection checks in the two-visitor journey. |
-| Appearance and graphics | `SettingsHud` renders the selected appearance and video controls. `HudLookPreview` previews the local theme in the existing layer. | Theme and input choices are visitor-local where the host defines them that way. Confirm per-actor appearance readback after the protected selection. |
+| Appearance and graphics | `SettingsHud` renders the selected appearance, sound and video controls. `HudLookPreview` previews the local theme in the existing layer. | Theme and input choices are visitor-local where the host defines them that way. Confirm per-actor appearance readback after the protected selection. |
 | Creation and play | The toolbelt and `CreationHud` expose contextual creation and pointing actions. | Garden editing, layout authoring and playable forms retain browser UI. Verify create, edit, cancel and undo with a second visitor before migrating them. |
 | Conversation and Activity | `ConversationDisplay` draws the title and window controls around the canonical Conversation iframe. `WorldActivityHud` projects the existing history and selection. | The mounted composer, attachments and voice stay in canonical Conversation. Moving, resizing and minimizing remain local to the visitor. |
 | Matter, exhibits and visits | `MatterWorktableHud`, `CollectionHud` and `VisitHud` project the real scene, part inspection, edition choices and share/follow/clear actions. | A selected Nexus viewer retains its own presentation. The protected visit still needs separate authorized visitors and full entry, share, clear and return evidence. |
 | Beacon and Harmonic Lab | `BeaconHud` projects the existing launcher and controls on compatible viewports. | The browser fallback serves small or unavailable layers. The Harmonic Lab panel remains its selected embedded app. |
 | Character workshop | The world table and direct web viewer both use the Three.js renderer and the same typed pose and note operations. | Room entry, review authority and presentation are Holodeck-owned. Fixtures proved independent orbit and the exact shared frame. Protected visitor acceptance remains open. |
+
+### A2UI HUD visual continuity
+
+The target for [Holodeck #16](https://github.com/AlterMundi/holodeck/issues/16)
+is the whole Holodeck-owned interface with its existing visual direction.
+A2UI carries each surface's controls, state and actions. Holodeck retains
+the typography, silhouettes, materials, accents, spacing, visual depth and
+motion that give the world its look. Extend the registered Proyección theme
+or component when the existing projection cannot reproduce a needed effect.
+Keep canonical Conversation and other embedded applications in charge of
+their content. Their Holodeck surrounds and controls belong to this migration.
+
+The selected release `d35a9404d82b` is the current receiving baseline. Its
+native surfaces include the toolbelt, minimap, room passage controls, Matter
+and Character inspection, Settings, Activity, the visit and Conversation
+surrounds, and the Pendings book. Pendings uses the native HUD and can open
+the existing Conversation panel. Native controls retain the browser fallback
+until the selected projection has drawn and the input owner is ready.
+The normal visible interface has one active control per action.
+
+Remaining ordinary browser-owned UI includes pre-world entry, the release
+indicator and DND controls, the compact room label, and portions of the in-world
+editing flows. The browser entry and recovery surfaces must remain usable
+before graphics initialization or after graphics loss. Complete the migration
+of their in-world equivalents independently of that recovery path.
+
+Compare each changed surface against the receiving predecessor at a matched
+camera, room, theme and input state. Check text and icon sharpness, material
+contrast, borders, focus, layering, usable hit areas, and clipping or
+overlaps. Include a compact touch case when the surface appears there. Scene
+resolution in Livianos must leave HUD text and icons readable. The HUD's own
+raster scale, rather than the world buffer, controls that rendering. Verify
+the action through the painted control and check that fallback preserves
+focus and the same authority. Retain frame timing, physical-device evidence
+and an actual receiving capture before claiming full parity.
 
 ## Owner-selected exhibit revisit
 
