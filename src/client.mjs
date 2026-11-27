@@ -1342,7 +1342,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         atmosphere??=new ToroidalAtmosphere(renderer.mmlCompositionScene.group.parent,base);
         const eye=options.coreCameraManager.getCameraState().position;
         atmosphere.update(eye,position,solar);
-        ring?.setView(eye,toroidalViewDepth(eye),atmosphere.panorama);
+        ring?.setView(eye,toroidalViewDepth(eye),atmosphere.panorama,atmosphere.celestialTurn);
       }else if(atmosphere){
         atmosphere.dispose();
         atmosphere=null;

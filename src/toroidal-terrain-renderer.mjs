@@ -3,7 +3,7 @@ import {toroidalAirColor,toroidalCosmosColor} from './toroidal-air.mjs';
 import {caveExitCoverShader,createCaveExitCoverTexture} from './toroidal-cave-verge.mjs';
 import {REFLECTION_BANK} from './toroidal-bank-reflection.mjs';
 import {createMeadowCoverTexture,useToroidalRockDetail,useToroidalWaterDetail} from './toroidal-surface-detail.mjs';
-import {BufferAttribute, BufferGeometry, DataTexture, DoubleSide, Group, LinearFilter, MathUtils, Mesh, MeshStandardMaterial, RGFormat, ShaderChunk, UnsignedByteType, Vector3, Vector4} from 'three';
+import {BufferAttribute, BufferGeometry, DataTexture, DoubleSide, Group, LinearFilter, MathUtils, Mesh, MeshStandardMaterial, RGFormat, ShaderChunk, UnsignedByteType, Vector2, Vector3, Vector4} from 'three';
 import {
   TOROIDAL_OVERLOOK, TOROIDAL_PARCEL_Y, TOROIDAL_RESIDENCE, TOROIDAL_TERRAIN, buildTerrainTile, residenceFrame, terrainCoordinates, terrainFrame, terrainTile,
 } from './toroidal-terrain.mjs';
@@ -414,7 +414,7 @@ const waterShading = (reflectBank=false) => ({
       // sampled in the same world axes as the sky.
       vec3 worldRay=transpose(mat3(viewMatrix))*reflectedRay;
       float window=toroidalCosmosWindow(skyHeight,holodeckDaylight)*(1.0-smoothstep(.21,.85,holodeckDaylight));
-      vec3 skyLight=toroidalCosmos(holodeckCosmos,worldRay);
+      vec3 skyLight=toroidalCosmos(holodeckCosmos,worldRay,holodeckCelestialTurn);
       float radiance=max(max(skyLight.r,skyLight.g),skyLight.b);
       reflectedAir=mix(reflectedAir,skyLight*1.12,window*surfaceView*smoothstep(.018,.24,radiance));
     }
@@ -479,7 +479,8 @@ function artDirect(material, name, shading, environment, bank=null) {
     if(name.startsWith('water')){
       shader.uniforms.holodeckCosmos=environment.cosmos;
       shader.uniforms.holodeckHasCosmos=environment.hasCosmos;
-      fragment=after(fragment,'common','uniform sampler2D holodeckCosmos; uniform bool holodeckHasCosmos;'+toroidalCosmosColor);
+      shader.uniforms.holodeckCelestialTurn=environment.celestialTurn;
+      fragment=after(fragment,'common','uniform sampler2D holodeckCosmos; uniform bool holodeckHasCosmos; uniform vec2 holodeckCelestialTurn;'+toroidalCosmosColor);
     }
     if(bank){
       Object.assign(shader.uniforms,bank);
@@ -558,7 +559,7 @@ export class ToroidalTerrainRenderer {
     this.waterMaterial = new MeshStandardMaterial({color:0x19606f,roughness:.34,metalness:0,side:DoubleSide,
       transparent:true,opacity:WATER_OPACITY,depthWrite:false,forceSinglePass:true});
     this.environment={water:{value:0},sun:{value:new Vector3(...SUN_LOCAL)},daylight:{value:1},
-      cosmos:{value:null},hasCosmos:{value:false},approach:{value:1},eyeHeight:{value:0},sill:{value:new Vector3()},facadeGround:{value:new Vector4(0,0,0,0)},residenceContact:{value:false},meadowCover:{value:createMeadowCoverTexture()},caveExitCover:{value:createCaveExitCoverTexture()},woodlandShade:{value:null},hasWoodlandShade:{value:false},lightWater:{value:false}};
+      cosmos:{value:null},hasCosmos:{value:false},celestialTurn:{value:new Vector2(1,0)},approach:{value:1},eyeHeight:{value:0},sill:{value:new Vector3()},facadeGround:{value:new Vector4(0,0,0,0)},residenceContact:{value:false},meadowCover:{value:createMeadowCoverTexture()},caveExitCover:{value:createCaveExitCoverTexture()},woodlandShade:{value:null},hasWoodlandShade:{value:false},lightWater:{value:false}};
     useToroidalRockDetail(this.material,{meadow:true});
     this.updateWaterTime=useToroidalWaterDetail(this.waterMaterial,this.environment.lightWater);
     artDirect(this.material,'terrain',terrainShading,this.environment);
@@ -617,7 +618,8 @@ export class ToroidalTerrainRenderer {
       Math.abs(m[2])*ATELIER_PLINTH.x+Math.abs(m[10])*ATELIER_PLINTH.z);
   }
 
-  setView(eye,waterDepth,panorama=null){
+  setView(eye,waterDepth,panorama=null,celestialTurn){
+    if(celestialTurn)this.environment.celestialTurn.value.copy(celestialTurn);
     this.environment.cosmos.value=panorama;
     this.environment.hasCosmos.value=panorama!==null;
     this.environment.water.value=waterDepth;

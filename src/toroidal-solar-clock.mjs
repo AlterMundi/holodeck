@@ -1,7 +1,27 @@
 const radians=Math.PI/180;
-// A shared Argentine reference meridian. UTC input keeps all clients aligned.
-const latitude=-34.60*radians;
-const longitude=-58.38;
+// Córdoba Observatorio, Servicio Meteorológico Nacional.
+const latitude=-31.40*radians;
+const longitude=-64.18;
+const tau=2*Math.PI;
+const utcDayMs=86400000;
+const j2000=Date.UTC(2000,0,1,12);
+// At the arrival plaza the local north points along -X and up along +Y.
+export const celestialPole=Object.freeze([-Math.cos(latitude),Math.sin(latitude),0]);
+const phase=(instant,period)=>tau*((instant%period)/period);
+
+// US Naval Observatory mean sidereal approximation. UTC is a sufficient
+// substitute for UT1 for the movement of this authored celestial panorama.
+export function celestialRotation(instant=Date.now()){
+  const days=(instant-j2000)/utcDayMs;
+  const hours=18.697375+24.065709824279*days+longitude/15;
+  const angle=tau*(hours%24)/24;
+  return [Math.cos(angle),Math.sin(angle)];
+}
+
+export function cloudWind(instant=Date.now()){
+  const low=phase(instant,73*60000),high=phase(instant,119*60000);
+  return [7*Math.cos(low),7*Math.sin(low),8*Math.cos(high),8*Math.sin(high)];
+}
 const solarFadeEnd=-.15;
 const ease=value=>{
   const n=Math.max(0,Math.min(1,value));

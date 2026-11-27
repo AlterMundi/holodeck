@@ -1,7 +1,8 @@
-import {BackSide, Color, HemisphereLight, Mesh, ShaderMaterial, SphereGeometry, SRGBColorSpace, TextureLoader, Vector3} from 'three';
+import {BackSide, Color, HemisphereLight, Mesh, ShaderMaterial, SphereGeometry, SRGBColorSpace, TextureLoader, Vector2, Vector3, Vector4} from 'three';
 import {toroidalAirColor,toroidalCosmosColor} from './toroidal-air.mjs';
 import {TOROIDAL_TERRAIN,terrainCoordinates, terrainFrame,terrainWaterDepth} from './toroidal-terrain.mjs';
 
+import {celestialRotation,cloudWind} from './toroidal-solar-clock.mjs';
 import {toroidalSunDirection} from './toroidal-terrain-renderer.mjs';
 
 const groundHaze = new Color().setRGB(.46,.57,.70);
@@ -26,7 +27,8 @@ const vertexShader = `
 const fragmentShader = `
   uniform vec3 radialUp;
   uniform vec3 sun;
-  uniform float time;
+  uniform vec4 wind;
+  uniform vec2 celestialTurn;
   uniform float waterDepth;
   uniform float daylight;
   uniform sampler2D cosmos;
@@ -61,7 +63,7 @@ const fragmentShader = `
     vec3 zenith = mix(vec3(.013,.021,.055),vec3(.080,.21,.44),daylight);
     vec3 sky = mix(horizon,zenith,crown);
     if(showCosmos){
-      vec3 deep=toroidalCosmos(cosmos,direction);
+      vec3 deep=toroidalCosmos(cosmos,direction,celestialTurn);
       float deepLight=dot(deep,vec3(.2126,.7152,.0722));
       float transmission=toroidalCosmosWindow(elevation,daylight);
       float nightWeight=1.0-smoothstep(.21,.85,daylight);
@@ -70,14 +72,25 @@ const fragmentShader = `
     }
     float cloud=0.0;
     if(elevation>-.035){
-      vec3 p=direction*vec3(5.8,10.2,5.8)+vec3(time*.006,0.0,time*.004);
-      float density=cloudNoise(p)*.64+cloudNoise(p*2.05)*.24+cloudNoise(p*4.12)*.12;
-      cloud=smoothstep(.49,.71,density)*smoothstep(-.035,.18,elevation)
-        *(1.0-.65*smoothstep(.25,.83,elevation));
-      vec3 under=mix(vec3(.037,.052,.098),vec3(.56,.65,.77),daylight);
-      vec3 light=mix(vec3(.085,.10,.18),mix(vec3(.83,.88,.94),vec3(.93,.72,.59),facing*facing),daylight);
-      vec3 vapor=mix(under,light,smoothstep(.48,.72,density));
-      sky=mix(sky,vapor,.86*cloud);
+      // Large billows bend and join along the lower layer, with dry
+      // breaks between them. A higher layer drifts independently.
+      vec3 p=direction*vec3(5.1,8.4,5.1)+vec3(wind.x,0.0,wind.y);
+      float bend=cloudNoise(p*.62+vec3(-2.4,4.3,3.7))-.5;
+      vec3 folded=p+vec3(.85*bend,-.56*bend,1.05*bend);
+      float mass=cloudNoise(folded);
+      float lobes=cloudNoise(folded*2.58+vec3(7.2,2.4,-3.5));
+      float density=mass*.77+lobes*.23;
+      float billows=smoothstep(.514,.652,density);
+      vec3 q=direction*vec3(7.4,19.4,5.2)+vec3(wind.z,3.6,wind.w);
+      float streaks=smoothstep(.57,.79,cloudNoise(q))*.30;
+      float cover=smoothstep(-.027,.16,elevation);
+      cloud=(billows+streaks*(1.0-billows))*cover
+        *(1.0-.48*smoothstep(.30,.92,elevation));
+      vec3 under=mix(vec3(.037,.052,.098),vec3(.49,.58,.71),daylight);
+      vec3 light=mix(vec3(.085,.10,.18),mix(vec3(.91,.94,.985),vec3(.96,.75,.64),facing*facing),daylight);
+      float shaping=smoothstep(.51,.69,density+lobes*.053+elevation*.024);
+      vec3 vapor=mix(under,light,shaping);
+      sky=mix(sky,vapor,.92*cloud);
     }
     float veil=exp(-max(0.0,elevation)*7.0);
     sky=mix(sky,horizon,veil*.52);
@@ -105,7 +118,7 @@ export class ToroidalAtmosphere {
     this.sunlight = new Vector3(.56,.64,-.52).normalize();
     const material = new ShaderMaterial({
       side:BackSide, depthWrite:false, fog:false, vertexShader, fragmentShader,
-      uniforms:{radialUp:{value:this.radialUp},sun:{value:this.sunlight},time:{value:0},
+      uniforms:{radialUp:{value:this.radialUp},sun:{value:this.sunlight},wind:{value:new Vector4()},celestialTurn:{value:new Vector2(1,0)},
         waterDepth:{value:0},daylight:{value:1},showCosmos:{value:false},cosmos:{value:null}},
     });
     this.sky = new Mesh(new SphereGeometry(10,24,12),material);
@@ -127,7 +140,11 @@ export class ToroidalAtmosphere {
     return showCosmos.value?cosmos.value:null;
   }
 
-  update(eye,position,solar) {
+  get celestialTurn() {
+    return this.sky.material.uniforms.celestialTurn.value;
+  }
+
+  update(eye,position,solar,instant=Date.now()) {
     if (!this.sky.parent) {
       this.scene.add(this.sky,this.fill);
     }
@@ -143,7 +160,8 @@ export class ToroidalAtmosphere {
     const depth=toroidalViewDepth(eye);
     const drowned=depth>.025;
     this.sky.material.uniforms.waterDepth.value=depth;
-    this.sky.material.uniforms.time.value=performance.now()/1000;
+    this.celestialTurn.set(...celestialRotation(instant));
+    this.sky.material.uniforms.wind.value.set(...cloudWind(instant));
     const daylight=solar?.daylight??1;
     if(this.fog?.object===this.scene.fog&&this.fog){
       const fog=this.fog.object;
