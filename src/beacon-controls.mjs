@@ -124,8 +124,7 @@ export class BeaconControls{
     const frame=this.panel.ownerDocument.createElement('iframe');
     frame.title='Panel de '+this.current.title;
     frame.allow="camera 'none'; microphone 'none'";
-    const {title}=this.current;
-    const surface=this.current.surface==='spatializer'?null:this.current.surface;
+    const {surface,title}=this.current;
     frame.src=surface?href+'&projection='+encodeURIComponent(surface):href;
     this.frameEvents?.abort();
     this.frameEvents=new AbortController();
