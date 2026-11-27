@@ -16,6 +16,17 @@ export function mountHarMoCAPPreview(wrapper, root, query){
   preview.append(video,status);
   wrapper.prepend(preview);
 
+  const player=bindHarMoCAPPreview(video,root,query,{
+    visible(value){
+      preview.hidden=!value;
+      wrapper.classList.toggle('has-video-preview',value);
+    },
+    notice(text){status.textContent=text;},
+  });
+  return {...player,dispose(){player.dispose();preview.remove();}};
+}
+
+export function bindHarMoCAPPreview(video,root,query,{visible,notice}){
   let source='', target=null, epoch=null, pending=false;
   function sync(){
     if(!target||!source||video.readyState<1)return;
@@ -31,7 +42,7 @@ export function mountHarMoCAPPreview(wrapper, root, query){
       const selected=source;
       void video.play().catch(error=>{
         if(source===selected&&error.name!=='AbortError')
-          status.textContent='El navegador no pudo reproducir este video.';
+          notice('El navegador no pudo reproducir este video.');
       }).finally(()=>{
         pending=false;
         if(!target?.playing)video.pause();
@@ -39,16 +50,15 @@ export function mountHarMoCAPPreview(wrapper, root, query){
     }
   }
   function show(next){
-    const visible=next&&[next.sessionId,next.jobId,next.generation].every(idPart)&&
+    const valid=next&&[next.sessionId,next.jobId,next.generation].every(idPart)&&
       typeof next.playing==='boolean'&&Number.isFinite(next.position)&&Number.isInteger(next.epoch);
-    target=visible?next:null;
-    const url=visible?`${root}/preview/${next.sessionId}/${next.jobId}/${next.generation}${query()}`:'';
+    target=valid?next:null;
+    const url=valid?`${root}/preview/${next.sessionId}/${next.jobId}/${next.generation}${query()}`:'';
     if(url!==source){
       source=url;
       epoch=null;
-      preview.hidden=!source;
-      wrapper.classList.toggle('has-video-preview',!!source);
-      status.textContent='';
+      visible(!!source);
+      notice('');
       video.pause();
       if(url)video.src=url;
       else video.removeAttribute('src');
@@ -59,7 +69,7 @@ export function mountHarMoCAPPreview(wrapper, root, query){
   video.onloadedmetadata=sync;
   video.onseeked=sync;
   video.onerror=()=>{
-    if(source&&video.error)status.textContent='El video no está disponible en esta mesa.';
+    if(source&&video.error)notice('El video no está disponible en esta mesa.');
   };
   return {
     receive(messages){
@@ -73,7 +83,7 @@ export function mountHarMoCAPPreview(wrapper, root, query){
     clear:()=>show(null),
     dispose(){
       show(null);
-      preview.remove();
+      video.onloadedmetadata=video.onseeked=video.onerror=null;
     },
   };
 }

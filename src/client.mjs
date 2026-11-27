@@ -332,6 +332,8 @@ function startInterior(space){
       // current PCF enum for comparison sampling and per-light shadow radii.
       renderer.composer.renderer.shadowMap.type=PCFShadowMap;
       const frameBudget=createFrameBudget(renderer);
+      beaconControls.setWorld({scene:renderer.mmlCompositionScene.group,
+        camera:renderer.threeJSCameraManager.mainCamera,canvas:renderer.composer.renderer.domElement});
       const actionLabel=new WorldActionLabel({scene:renderer.mmlCompositionScene.group,document,colliders:options.coreCameraManager.collisionsManager});
       galleryModels=new GalleryModels(renderer.mmlCompositionScene.group);
       galleryModels.sync(visitor.entries);
@@ -1076,6 +1078,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
     const draw=renderer.composer.render.bind(renderer.composer);
     const mainCamera=renderer.threeJSCameraManager.mainCamera;
+    beaconControls.setWorld({scene:renderer.mmlCompositionScene.group,camera:mainCamera,canvas:worldPicker.canvas});
     const pendingGaze=new Vector3(),pendingSpeaker=new Vector3();
     const worldNear=mainCamera.near;
     const focusMode=new URLSearchParams(location.search).get('enfoque');

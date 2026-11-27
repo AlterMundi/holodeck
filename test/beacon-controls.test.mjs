@@ -16,14 +16,14 @@ test('a control requires a current room object and nearby player position',()=>{
   assert.equal(nearbyBeaconControl(objects.filter(object=>object.id!==guitar.id),guitar.position),null);
 });
 
-test('a nearby bench mounts one owner panel only on open and discards it when access changes',()=>{
+test('a nearby bench opens local controls without embedding the web app',()=>{
   const link={hidden:true,getAttribute:name=>link[name],removeAttribute:name=>delete link[name]};
   const routerLink={hidden:true,getAttribute:()=>'/harmonic_lab/?service=router'};
   const rostroLink={hidden:true,getAttribute:()=>'/harmonic_lab/?service=body&projection=rostro'};
   const harmocapLink={hidden:true,getAttribute:()=>'/harmonic_lab/?service=body&projection=harmocap'};
   const stage={children:[],replaceChildren(...children){this.children=children;}};
   const elements={'.beacon-panel-stage':stage,h2:{},a:{},button:{}};
-  const panel={open:false,querySelector:selector=>elements[selector],ownerDocument:{createElement:()=>({})},
+  const panel={open:false,querySelector:selector=>elements[selector],ownerDocument:{createElement:tag=>({tag})},
     showModal(){this.open=true;},close(){this.open=false;},removeAttribute(){},addEventListener(type,listener){this[type]=listener;}};
   const controls=new BeaconControls(link,panel,{routerLink,rostroLink,harmocapLink});
   const click={button:0,preventDefault(){this.handled=true;}};
@@ -38,8 +38,8 @@ test('a nearby bench mounts one owner panel only on open and discards it when ac
   link.onclick(click);
   assert.equal(click.handled,true);
   assert.equal(controls.opened,true);
-  assert.equal(stage.children[0].src,link.href+'&projection=spatializer');
-  assert.equal(stage.children[0].allow,"camera 'none'; microphone 'none'");
+  assert.equal(stage.children[0].tag,'p');
+  assert.equal(stage.children[0].src,undefined);
   assert.equal(elements.a.href,link.href);
   assert.deepEqual(controls.reference(),{id:spatial.id,revision:1});
   link.onclick(click);
@@ -59,20 +59,20 @@ test('a nearby bench mounts one owner panel only on open and discards it when ac
   assert.deepEqual(controls.reference(),{id:weaver.id,revision:1});
   assert.equal(controls.opened,false);
   link.onclick(click);
-  assert.equal(stage.children[0].src,link.href+'&projection=weaver');
+  assert.equal(elements.a.href,link.href);
   controls.close();
   routerLink.onclick(click);
-  assert.equal(stage.children[0].src,'/harmonic_lab/?service=router&projection=router');
+  assert.equal(elements.a.href,routerLink.getAttribute('href'));
   assert.deepEqual(controls.reference(),{id:weaver.id,revision:1});
   controls.close();
   rostroLink.onclick(click);
-  assert.equal(stage.children[0].src,'/harmonic_lab/?service=body&projection=rostro');
-  assert.equal(stage.children[0].allow,"camera 'none'; microphone 'none'");
+  assert.equal(elements.a.href,rostroLink.getAttribute('href'));
+  assert.equal(stage.children[0].tag,'p');
   assert.deepEqual(controls.reference(),{id:weaver.id,revision:1});
   controls.close();
   harmocapLink.onclick(click);
-  assert.equal(stage.children[0].src,'/harmonic_lab/?service=body&projection=harmocap');
-  assert.equal(stage.children[0].allow,"camera 'none'; microphone 'none'");
+  assert.equal(elements.a.href,harmocapLink.getAttribute('href'));
+  assert.equal(stage.children[0].tag,'p');
   assert.deepEqual(controls.reference(),{id:weaver.id,revision:1});
   controls.clear();
   assert.equal(routerLink.hidden,true);
@@ -88,7 +88,7 @@ test('a nearby bench mounts one owner panel only on open and discards it when ac
   controls.update(objects,guitar.position);
   assert.equal(link.href,'/harmonic_lab/?service=guitar');
   link.onclick(click);
-  assert.equal(stage.children[0].src,link.href+'&projection=guitar');
+  assert.equal(stage.children[0].tag,'p');
   controls.update(objects,shaper.position);
   assert.equal(link.href,'/harmonic_lab/?service=body&view=instrumento');
   assert.deepEqual(stage.children,[]);
@@ -99,7 +99,7 @@ test('a nearby bench mounts one owner panel only on open and discards it when ac
   assert.equal(controls.useNearby({...shortcut,repeat:true},objects,shaper.position),false);
   assert.equal(controls.useNearby({...shortcut,composedPath:()=>[{matches:()=>true}]},objects,shaper.position),false);
   assert.equal(controls.useNearby(shortcut,objects,shaper.position),true);
-  assert.equal(stage.children[0].src,link.href+'&projection=shaper');
+  assert.equal(stage.children[0].tag,'p');
   assert.equal(controls.nearbyAction(),null);
   assert.equal(controls.reference().id,shaper.id);
 });

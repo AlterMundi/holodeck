@@ -1,0 +1,269 @@
+import {Group,Mesh,MeshBasicMaterial,PlaneGeometry,Raycaster,SRGBColorSpace,Vector2,Vector3,VideoTexture} from 'three';
+import {bindSpatialHudPointer,createSpatialHud,spatialHudCatalog} from 'proyeccion/spatial-hud';
+import {BeaconNativeModel} from './beacon-native-model.mjs';
+import {readWorktableReview} from './collection-review.mjs';
+import {makeModel} from './collection-worktable.mjs';
+import {disposeModel} from './gallery-models.mjs';
+import {bindHarMoCAPPreview} from './beacon-video-preview.mjs';
+
+const panel='/harmonic_lab/';
+const nativeId='lab-worktable';
+const terminal=new Set(['queued','starting']);
+const readFlag={shaper:'shaperProjectionReady',rostro:'rostroProjectionReady',harmocap:'harmocapProjectionReady'};
+const nativeAction=(name,context={})=>({event:{name,context}});
+
+export function openBeaconNative(stage,{world,station,surface,title,readStatus}){
+  const document=stage.ownerDocument;
+  const controller=new AbortController();
+  const {signal}=controller;
+  const parent=new Group();
+  parent.name='Harmonic Lab · '+station.id;
+  parent.position.set(station.position.x,station.position.y+1.6,station.position.z);
+  const eye=world.camera.getWorldPosition(new Vector3());
+  parent.rotation.y=Math.atan2(eye.x-parent.position.x,eye.z-parent.position.z);
+  parent.scale.setScalar(.57);
+  world.scene.add(parent);
+  const model=new BeaconNativeModel(surface);
+  let selected,source,csrf,stream,binding,timer,latestView,lastProblem='',viewKey,refreshing=false;
+  const outbound=createSpatialHud({parent,document,accessibilityRoot:stage,controlStyle:'optical',
+    send(message){
+      const action=message.action;
+      if(signal.aborted||action?.surfaceId!==nativeId)return;
+      if(action.name==='chooseStation'){
+        selected=action.context.host;
+        void refresh();
+      }else if(action.name==='retryStation'){
+        if(stream){stream.close();stream=null;}
+        explicit=true;
+        attempted.delete(selected);
+        void refresh();
+      }else if(action.name==='stationInput'&&latestView){
+        const {id,kind,value}=action.context;
+        const envelope=model.action(id,kind,value);
+        if(envelope)void write(envelope);
+        else showModel();
+      }
+    }});
+  const attempted=new Set();
+  let guitar, guitarRequest, guitarSelection;
+  const preview=surface==='harmocap'?mountVideo():null;
+  function mountVideo(){
+    const video=document.createElement('video');
+    video.muted=true;
+    video.playsInline=true;
+    video.preload='metadata';
+    const texture=new VideoTexture(video);
+    texture.colorSpace=SRGBColorSpace;
+    const plane=new Mesh(new PlaneGeometry(1.8,1.0125),new MeshBasicMaterial({map:texture,toneMapped:false}));
+    plane.name='HarMoCAP preview';
+    plane.visible=false;
+    plane.position.set(2.35,-.63,0);
+    parent.add(plane);
+    const player=bindHarMoCAPPreview(video,panel+'api/a2ui/'+surface,query,{
+      visible(value){plane.visible=value;},
+      notice(text){if(text){lastProblem=text;if(latestView)showModel(false);}},
+    });
+    return {...player,dispose(){player.dispose();plane.removeFromParent();plane.material.dispose();plane.geometry.dispose();texture.dispose();}};
+  }
+  function clearGuitar(){
+    guitarRequest?.abort();
+    guitarRequest=null;
+    guitarSelection=null;
+    if(guitar){
+      guitar.group.removeFromParent();
+      disposeModel(guitar.group);
+      guitar=null;
+    }
+  }
+  async function syncGuitar(){
+    const edition=model.data.model;
+    const section=model.tabs.get('sections')??model.nodes.get('sections')?.tabs?.[0]?.child;
+    const anchor=edition?.anchors?.[section];
+    const selection=anchor&&JSON.stringify([edition.resource,edition.version,anchor.scene,anchor.part]);
+    if(!selection||selection===guitarSelection)return;
+    clearGuitar();
+    guitarSelection=selection;
+    const controller=new AbortController();
+    guitarRequest=controller;
+    try{
+      const review=await readWorktableReview(edition,anchor.scene,{
+        signal:AbortSignal.any([controller.signal,AbortSignal.timeout(12000)]),
+      });
+      if(controller.signal.aborted||signal.aborted)return;
+      if(review.id!==anchor.scene||!review.parts.some(part=>part.id===anchor.part))throw Error();
+      guitar=makeModel(review,{x:2.03,y:-.43,z:0});
+      guitar.group.name='H.B. Guitar';
+      const material=guitar.parts.get(anchor.part).material;
+      material.emissive.set('#208d79');
+      material.emissiveIntensity=.58;
+      parent.add(guitar.group);
+    }catch{
+      if(!controller.signal.aborted&&!signal.aborted){
+        lastProblem='No se pudo abrir la pieza de guitarra.';
+        if(latestView)showModel(false);
+      }
+    }
+  }
+  const ray=new Raycaster();
+  const ndc=new Vector2();
+  const release=bindSpatialHudPointer({element:stage,hud:outbound,rayForPointer:event=>{
+    const rect=world.canvas.getBoundingClientRect();
+    if(!rect.width||!rect.height)return;
+    ndc.set((event.clientX-rect.left)*2/rect.width-1,1-(event.clientY-rect.top)*2/rect.height);
+    ray.setFromCamera(ndc,world.camera);
+    return {ray:ray.ray};
+  }});
+  outbound.receive({version:'1.0',createSurface:{surfaceId:nativeId,catalogId:spatialHudCatalog.id}});
+  function update(view){
+    if(signal.aborted)return;
+    const key=JSON.stringify(view.components);
+    if(key!==viewKey){
+      viewKey=key;
+      outbound.receive({version:'1.0',updateComponents:{surfaceId:nativeId,components:view.components}},{allowOrphanComponents:true});
+    }
+    outbound.receive({version:'1.0',updateDataModel:{surfaceId:nativeId,path:'/',value:view.data}});
+    outbound.update();
+  }
+  function status(label,buttons=[]){
+    latestView=false;
+    if(surface==='guitar')clearGuitar();
+    preview?.clear();
+    const components=[{id:'title',component:'HudText',label:title,style:'title'},
+      {id:'notice',component:'HudText',label,lines:3},...buttons];
+    update({data:{},components:[{id:'root',component:'HudPanel',width:2.65,children:components.map(row=>row.id)},...components]});
+  }
+  function retry(label){
+    status(label,[{id:'retry',component:'HudButton',label:'Reintentar',action:nativeAction('retryStation')}]);
+  }
+  function showModel(syncModel=true){
+    latestView=true;
+    const view=model.render(title);
+    if(lastProblem){
+      view.components[0].children.splice(1,0,'station_error');
+      view.components.push({id:'station_error',component:'HudText',label:lastProblem,lines:2});
+    }
+    update(view);
+    if(syncModel&&surface==='guitar')void syncGuitar();
+  }
+  function query(){
+    const params=new URLSearchParams({host:selected});
+    if(binding)params.set('session',binding);
+    return '?'+params;
+  }
+  function url(suffix=''){return panel+'api/a2ui/'+surface+suffix+query();}
+  async function write(envelope){
+    if(!source||!latestView||(surface==='router'&&envelope.action.context.sessionId!==binding))return;
+    try{
+      const response=await fetch(url('/actions'),{method:'POST',credentials:'same-origin',signal,
+        headers:{'Content-Type':'application/json','X-Lab-CSRF':csrf},body:JSON.stringify(envelope)});
+      await response.body?.cancel().catch(()=>{});
+      lastProblem=response.status===409?'Cambió el instrumento. Revisá los controles y volvé a intentar.':
+        response.ok?'':'No se pudo confirmar el cambio.';
+    }catch{
+      if(!signal.aborted)lastProblem='No se pudo confirmar el cambio.';
+    }
+    if(!signal.aborted&&latestView)showModel();
+  }
+  function connect(){
+    stream?.close();
+    stream=new EventSource(url('/events'));
+    stream.onerror=()=>{
+      source=null;
+      retry('Se perdió la conexión con el instrumento.');
+    };
+    stream.onmessage=event=>{
+      if(signal.aborted)return;
+      try{
+        const messages=JSON.parse(event.data);
+        if(!Array.isArray(messages)||!messages.length)throw Error();
+        if(messages[0]?.createSurface?.surfaceId===surface)source=true;
+        if(!source)return;
+        model.receive(messages);
+        preview?.receive(messages);
+        showModel();
+      }catch{source=null;retry('No se pudo leer el estado del instrumento.');}
+    };
+  }
+  async function refresh(){
+    clearTimeout(timer);
+    if(signal.aborted||refreshing)return;
+    refreshing=true;
+    try{
+      const summary=await readStatus(AbortSignal.any([signal,AbortSignal.timeout(18000)]));
+      if(signal.aborted)return;
+      if(summary?.denied){status('Se necesita acceso a Harmonic Lab.');return;}
+      if(!summary?.hosts?.length){retry('No se pudo consultar el laboratorio.');return;}
+      if(!selected&&summary.hosts.length===1)selected=summary.hosts[0].id;
+      if(!selected){
+        status('Elegí la estación que querés usar.',summary.hosts.map((host,i)=>({
+          id:'host_'+i,component:'HudButton',label:host.label,action:nativeAction('chooseStation',{host:host.id})})));
+        return;
+      }
+      const host=summary.hosts.find(host=>host.id===selected);
+      const service=host?.services?.find(service=>service.id===station.service);
+      if(!host?.online){retry('La estación no responde.');return;}
+      if(!host.projectionSurfaces?.includes(surface)||!service?.installed){
+        status('Este instrumento no está disponible en esta estación.');return;
+      }
+      csrf=summary.csrf;
+      if(service.status==='ready'&&service[readFlag[surface]??'projectionReady']&&csrf){
+        binding=surface==='router'?service.projectionSession:undefined;
+        if(surface==='router'&&!/^[a-f0-9]{16}$/.test(binding??'')){
+          retry('No se pudo identificar la sesión de Ruteos.');return;
+        }
+        status('Conectando con el instrumento…');
+        connect();
+        return;
+      }
+      if(!service.enabled){status('El instrumento está desactivado en esta estación.');return;}
+      if(terminal.has(host.job?.phase)){
+        status(host.job.services?.includes(service.id)?'Preparando el instrumento…':'La estación está preparando otro instrumento.');
+      }else if(!attempted.has(selected)&&(service.status==='stopped'||surface==='spatializer')&&csrf){
+        const failure=host.job?.results?.[service.id];
+        if(failure?.status==='failed'&&!explicit){
+          retry('No se pudo preparar el instrumento. Revisá la estación y reintentá.');return;
+        }
+        explicit=false;
+        attempted.add(selected);
+        status('Preparando el instrumento…');
+        const response=await fetch(panel+'api/start',{method:'POST',credentials:'same-origin',signal,
+          headers:{'Content-Type':'application/json','X-Lab-CSRF':csrf},
+          body:JSON.stringify({host:selected,service:service.id,id:crypto.randomUUID(),
+            ...(surface==='spatializer'?{projection:surface}:{})})});
+        if(!response.ok){retry('No se pudo confirmar el inicio.');return;}
+      }else{
+        retry('Los controles del instrumento todavía no están disponibles.');return;
+      }
+      timer=setTimeout(refresh,1800);
+    }catch{
+      if(!signal.aborted)retry('No se pudo confirmar el estado de la estación.');
+    }finally{
+      refreshing=false;
+    }
+  }
+  let explicit=false;
+  status('Consultando al laboratorio…');
+  void refresh();
+  return {
+    focus(){stage.tabIndex=-1;stage.focus({preventScroll:true});},
+    contains(event){
+      return event.composedPath().includes(stage)||outbound.ownsAccessibleInput(event.target)||outbound.ownsTextInput(event.target);
+    },
+    key(event){
+      if(outbound.ownsTextInput(event.target))return true;
+      if(event.key==='Escape')return false;
+      if(outbound.handleKey(event,{surfaceId:nativeId}))event.preventDefault();
+      return true;
+    },
+    dispose(){
+      controller.abort();
+      clearTimeout(timer);
+      stream?.close();
+      release();
+      clearGuitar();
+      preview?.dispose();
+      outbound.dispose();
+      parent.removeFromParent();
+    },
+  };
+}
