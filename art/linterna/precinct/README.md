@@ -137,19 +137,27 @@ precinct, expanded manifest, and facade are separate selections in a receiving
 release. Use the existing exterior offer and keep all shared layout IDs,
 grants and live app bindings under their owning integration.
 
-### Importing the HD portico
+### Reviewing the repaired HD scene and importing the portico
 
 ```sh
+node art/linterna/precinct/build-hd-review.mjs AUTHORIZED_HD_SRC AUTHORIZED_TEMPLATE OUTPUT_HTML
 node art/linterna/precinct/import-hd-portico.mjs AUTHORIZED_HD_SRC OUTPUT_DIR [BAKED_MASONRY_JPEG]
 ```
 
-Pass a local copy of the selected Drive edition's editable `src` directory.
-The importer calls the original shrine generator for masonry, columns and
-door and lantern details, with reduced subdivisions. The shared portico
-beam and roof provide a continuous volume with seated roof trim. The door
-leaves are represented closed at the same threshold. The build records the
-input hashes and both triangle counts. It exports only the exterior mesh.
-Holodeck retains the East 1 approach, door action and collision authority.
+Pass a local copy of the selected Drive edition's editable `src` directory
+and its HTML template. Both builds call the original geometry generators.
+The roof fits its tile grid and ridge within the deck and joins the raking
+trim and stepped corner cornices in place. The visual tour also splits
+painted wall skins into bays and lintels around the original door
+dimensions and restores the annular terrain in the carved atlas tray.
+The review keeps the source lights, shadows, vegetation and tour with
+site URLs omitted. Open the generated preview in a WebGL browser.
+
+The portico importer reduces subdivisions and quantizes its exported
+attributes. Its report records the source hashes and both triangle counts.
+It exports the exterior mesh. Holodeck retains the East 1 approach, native
+door action and collision authority. The standalone review runs the visual
+tour independently of the shared world.
 
 The portico uses the HD palette in standard glTF materials. The optional
 masonry map samples the original ashlar shader's base color on a +Z-facing

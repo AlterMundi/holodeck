@@ -3,13 +3,13 @@ import {createHash} from 'node:crypto';
 import {mkdir,readFile,realpath,writeFile} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {build} from 'esbuild';
-import {Box3,Float32BufferAttribute,Group,Int16BufferAttribute,Mesh,MeshStandardMaterial,Texture,Vector3} from 'three';
+import {Box3,Float32BufferAttribute,Group,Int16BufferAttribute,Mesh,MeshStandardMaterial,Texture,Uint8BufferAttribute,Vector3} from 'three';
 import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {mergeVertices} from 'three/addons/utils/BufferGeometryUtils.js';
 import {batchModel} from './batch.mjs';
 import {embedFinishMaps} from './finish-maps.mjs';
-import {makePorticoBeam,makePorticoCrown} from './model.mjs';
+import {repairArchitecture,repairScene,replaceSource} from './repair-hd-source.mjs';
 
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 const sourceFiles=['architecture.js','scene.js','materials.js','layout.js','nature.js','sculpture.js'];
@@ -31,20 +31,13 @@ const segments=[
   ['0.1 * r, 12, 8','0.1 * r, 8, 5'],
   ['a0, a1, n = 10','a0, a1, n = 3'],
   ['lathe(pts, 56)','lathe(pts, 10)'],
+  ['L / (0.34 * m)','L / (0.46 * m)'],
+  ['0.075, 0.085, 0.5, 10, 1, false','0.075, 0.085, 0.5, 5, 1, true'],
+  ['bevelSegments: 2, curveSegments: 6','bevelSegments: 1, curveSegments: 2'],
 ];
 
-function replaceSource(source,replacements){
-  for(const [from,to] of replacements){
-    const at=source.indexOf(from);
-    assert.ok(at>=0&&source.indexOf(from,at+from.length)<0,
-      'The HD generator revision changed at: '+from);
-    source=source.slice(0,at)+to+source.slice(at+from.length);
-  }
-  return source;
-}
-
 function architecturalSource(source,low) {
-  if(low)source=replaceSource(source,segments);
+  if(low)source=replaceSource(repairArchitecture(source),segments);
   // Roof tile variation is the only stochastic input in the shrine.
   return `let seed=41;
     const tileRandom=()=>((seed=Math.imul(seed,1664525)+1013904223>>>0)/4294967296);
@@ -52,15 +45,11 @@ function architecturalSource(source,low) {
 }
 
 function shrineSource(source,low){
-  if(!low)return source+'\nexport {streetShrine};';
-  const roof=source.indexOf('  entabRect(B, f, -0.88, 0.88, -1.1, 1.38,');
-  const door=source.indexOf('  // doorway with bronze doors');
-  assert.ok(roof>0&&door>roof,'The HD shrine roof and opening must match the selected source');
-  source=source.slice(0,roof)+source.slice(door);
-  return replaceSource(source,[
-    ['colH, x > 0.5 ? r : r * 0.9)','colH - 0.105, x > 0.5 ? r * 1.18 : r * 1.06)'],
-    ['0, s * -0.55, 0','0, 0, 0'],
-  ])+'\nexport {streetShrine};';
+  if(low)source=replaceSource(repairScene(source),[
+    ['0.085, 0.018, 10, 32','0.085, 0.018, 8, 20'],
+    ['0.04, 0.008, 8, 18','0.04, 0.008, 6, 14'],
+  ]);
+  return source+'\nexport {streetShrine};';
 }
 
 async function hdGenerators(directory,sources,low) {
@@ -143,10 +132,10 @@ const triangles=group=>group.children.reduce((sum,mesh)=>
 
 function fitToEntrance(group){
   const {min,max}=new Box3().setFromObject(group);
-  const protectedX=.43, protectedZ=1.46, lintelStart=2.00, roofSeat=2.183;
+  const protectedX=.43, protectedZ=1.46, corniceStart=2.12;
   const sx=Math.min(1,(envelope.x-protectedX)/(Math.max(max.x,-min.x)-protectedX));
   const sz=Math.min(1,(envelope.z-protectedZ)/(Math.max(max.z,-min.z)-protectedZ));
-  const sy=max.y>roofSeat?(roofSeat-lintelStart)/(max.y-lintelStart):1;
+  const sy=Math.min(1,(envelope.y-corniceStart)/(max.y-corniceStart));
   assert.ok(sx>.52&&sz>.5&&sy>.5&&min.y>=-.001,
     'The HD porch cannot fit this entrance: '+JSON.stringify([min.toArray(),max.toArray()]));
   const uvNormal=new Vector3();
@@ -155,10 +144,10 @@ function fitToEntrance(group){
     const uv=new Float32Array(position.count*2);
     for(let i=0;i<position.count;i++){
       const x=position.getX(i), y=position.getY(i), z=position.getZ(i);
-      const dx=Math.abs(x)>protectedX?sx:1, dz=Math.abs(z)>protectedZ?sz:1, dy=y>lintelStart?sy:1;
+      const dx=Math.abs(x)>protectedX?sx:1, dz=Math.abs(z)>protectedZ?sz:1, dy=y>corniceStart?sy:1;
       const xx=dx===1?x:Math.sign(x)*(protectedX+(Math.abs(x)-protectedX)*dx);
       const zz=dz===1?z:Math.sign(z)*(protectedZ+(Math.abs(z)-protectedZ)*dz);
-      const yy=dy===1?y:lintelStart+(y-lintelStart)*dy;
+      const yy=dy===1?y:corniceStart+(y-corniceStart)*dy;
       position.setXYZ(i,xx,yy,zz);
       uvNormal.set(normal.getX(i)/dx,normal.getY(i)/dy,normal.getZ(i)/dz).normalize();
       normal.setXYZ(i,uvNormal.x,uvNormal.y,uvNormal.z);
@@ -190,7 +179,6 @@ const sources=Object.fromEntries(await Promise.all(sourceFiles.map(async name=>[
 const original=triangles(collect(await hdGenerators(directory,sources,false)));
 const candidate=collect(await hdGenerators(directory,sources,true),Boolean(masonryBytes));
 fitToEntrance(candidate);
-candidate.add(makePorticoBeam(),makePorticoCrown());
 const model=batchModel(candidate,{finishUV:true,retainColors:true});
 for(const mesh of model.children){
   if(!mesh.geometry.index){
@@ -206,6 +194,14 @@ for(const mesh of model.children){
     if(!attribute)continue;
     mesh.geometry.setAttribute(name,new Int16BufferAttribute(
       Int16Array.from(attribute.array,value=>Math.round(value/divisor*32767)),attribute.itemSize,true));
+  }
+  const colors=mesh.geometry.getAttribute('color');
+  if(colors){
+    // Preserve highlights above 1 when storing the source tile variation.
+    const brightest=1.14;
+    mesh.geometry.setAttribute('color',new Uint8BufferAttribute(
+      Uint8Array.from(colors.array,value=>Math.round(Math.min(1,value/brightest)*255)),3,true));
+    mesh.material.color.multiplyScalar(brightest);
   }
   mesh.scale.setScalar(metreScale);
 }
