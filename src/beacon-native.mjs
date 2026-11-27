@@ -484,6 +484,10 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
       if(surface==='operator'){
         lastProblem=response.ok?(envelope.action.name==='saveProfile'?'Configuración guardada.':'Inicio solicitado.'):
           response.status===409?'Cambió el estado del equipo. Revisalo antes de continuar.':'No se pudo confirmar la operación.';
+      }else if(response.status===503&&envelope.action.name==='controlSpatializerRecord'){
+        lastProblem=envelope.action.context.operation==='stop'
+          ?'Spatializer todavía no confirmó el cierre de la toma.'
+          :'Spatializer todavía no confirmó el inicio de la toma.';
       }else{
         lastProblem=response.status===409?'Cambió el instrumento. Revisá los controles y volvé a intentar.':
           response.ok?'':'No se pudo confirmar el cambio.';
