@@ -5,6 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { brotliCompressSync, constants as zlib } from 'node:zlib';
 import {SAND3D_TRAIL_REVISIONS} from '../src/sand3d-trail-assets.mjs';
+import {RESIDENCE_REVISIONS} from '../src/toroidal-residence-assets.mjs';
 import {ANIMATION_ASSET_REVISIONS} from '../src/packed-art.mjs';
 import {VALLEY_ASSET_REVISIONS} from '../src/continuous-valley.mjs';
 import {ATELIER_ASSET_REVISIONS} from '../src/compaii-atelier.mjs';
@@ -32,7 +33,7 @@ const digest=b=>createHash('sha256').update(b).digest('hex');
 async function copyTree(from,to){await mkdir(to,{recursive:true});for(const entry of await readdir(from,{withFileTypes:true})){const src=join(from,entry.name),dst=join(to,entry.name);if(entry.isDirectory())await copyTree(src,dst);else if(entry.isFile())await copyFile(src,dst);else throw Error('Regular selected files only');}}
 await copyTree(join(root,'public'),join(stage,'public'));await copyTree(join(root,'build'),join(stage,'build'));
 // Preserve the qualified bytes and their existing URLs with one disk representation.
-for(const [path,revision] of Object.entries({...ATELIER_ASSET_REVISIONS,...VALLEY_ASSET_REVISIONS,...ANIMATION_ASSET_REVISIONS,...OWNED_PACKED_ART_REVISIONS,...MATTER_ART_REVISIONS,...SAND3D_TRAIL_REVISIONS})){
+for(const [path,revision] of Object.entries({...ATELIER_ASSET_REVISIONS,...VALLEY_ASSET_REVISIONS,...ANIMATION_ASSET_REVISIONS,...OWNED_PACKED_ART_REVISIONS,...MATTER_ART_REVISIONS,...SAND3D_TRAIL_REVISIONS,...RESIDENCE_REVISIONS})){
   if(!path.endsWith('.glb'))continue;
   const original=join(stage,'public',path),bytes=await readFile(original);
   if(bytes.length>4*1024*1024||digest(bytes)!==revision)throw Error('Unqualified art export: '+path);

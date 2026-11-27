@@ -2,6 +2,7 @@ import {approachCoordinates,Sand3DTrail} from './sand3d-trail.mjs';
 import {ToroidalWoodland} from './toroidal-woodland.mjs';
 import {sampleWoodlandLitter,useVegetationShade} from './toroidal-woodland-shade.mjs';
 import {ToroidalOverlook} from './toroidal-overlook.mjs';
+import {ToroidalResidence} from './toroidal-residence.mjs';
 import {ToroidalMeadowBanks} from './toroidal-meadow-banks.mjs';
 import {useToroidalRockDetail} from './toroidal-surface-detail.mjs';
 import {
@@ -12,7 +13,8 @@ import {CAVE} from './toroidal-cave.mjs';
 import {caveExitCellCapacity,caveExitCover,intersectsCaveExitCover} from './toroidal-cave-verge.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
 import {
-  overlookCoordinates, TOROIDAL_TERRAIN, terrainCoordinates, terrainElevation, terrainMeadowMoisture, terrainPosition, terrainTile, terrainTrail, terrainWoodland,
+  overlookCoordinates, residenceLocal, TOROIDAL_RESIDENCE, TOROIDAL_TERRAIN, terrainCoordinates,
+  terrainElevation, terrainMeadowMoisture, terrainPosition, terrainTile, terrainTrail, terrainWoodland,
 } from './toroidal-terrain.mjs';
 
 const LEVEL=7;
@@ -53,6 +55,16 @@ function random(cell,index,salt) {
   return ((n^(n>>>16))>>>0)/4294967296;
 }
 
+// Keep ground cover out of the palace, its podium and fan stair.
+function insideResidence(u,v){
+  const near=Math.abs(wrapTurn(u-TOROIDAL_RESIDENCE.u))*TOROIDAL_TERRAIN.majorRadius*6.3<70&&
+    Math.abs(v-TOROIDAL_RESIDENCE.v)*TOROIDAL_TERRAIN.tubeRadius*6.3<70;
+  if(!near)return false;
+  const {x,y}=residenceLocal(u,v);
+  return Math.hypot(x,y)<31||(Math.abs(x)<11.5&&y<-24&&y>-51);
+}
+const wrapTurn=value=>value-Math.round(value);
+
 function sceneryForCell(cell) {
   const instances=[];
   for(let i=0;i<CANDIDATES;i++){
@@ -66,6 +78,7 @@ function sceneryForCell(cell) {
       (v-.25)*TOROIDAL_TERRAIN.tubeRadius);
     if(distanceFromHouse<5.4)continue;
     if(u>CAVE.from-.00025&&u<CAVE.to+.00025&&Math.abs(v-CAVE.latitude)<.0029)continue;
+    if(insideResidence(u,v))continue;
     const moisture=terrainMeadowMoisture(u,v,h);
     const stony=h>37||h<TOROIDAL_TERRAIN.waterLevel+2.5||pick(7)<.16+(1-moisture)*.17;
     const size=stony?.20+pick(53)**1.7*.79:.25+pick(53)**1.4*.41;
@@ -388,6 +401,7 @@ export class ToroidalScenery {
     this.meadow=new ToroidalMeadowBanks(scene,floorDaylight,this.daylight,
       (first,last)=>this.stoneCover(first,last));
     this.overlook=new ToroidalOverlook(scene,colliders);
+    this.residence=new ToroidalResidence(scene,base,colliders);
     this.ribbonGrass.name='Trail-side tufts';
     this.blooms.name='Trail-edge wildflowers';
     this.stones.name='Weathered stone';
@@ -446,6 +460,7 @@ export class ToroidalScenery {
   update(position,lightweight,door,daylight=1,groundCoverReady=true,sunDirection) {
     this.daylight.value=daylight;
     this.overlook.update(position);
+    this.residence.update(position);
     // Authored landmarks and their colliders are independent of ground cover.
     if(!groundCoverReady)return;
     this.woodland.update(position,lightweight,sunDirection);
