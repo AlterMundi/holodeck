@@ -151,6 +151,9 @@ trim and stepped corner cornices in place. The fluted shafts face outward
 and seat inside the top collar of each attic base. The visual tour also splits
 painted wall skins into bays and lintels around the original door
 dimensions and restores the annular terrain in the carved atlas tray.
+The tour repairs the joints between plinths, platforms and rails, seats
+sculptures and room props on their actual supports, and fits the Atlas
+landmarks to the terrain height at their footprints.
 The review keeps the source lights, shadows, vegetation and tour with
 site URLs omitted. Open the generated preview in a WebGL browser.
 

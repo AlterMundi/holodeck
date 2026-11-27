@@ -30,6 +30,12 @@ export function repairArchitecture(source) {
       'const seat = plinthH + base.height - 0.04 * r;\n  const shaftH = h - seat - cap.height;'],
     ['flutedShaft(shaftH, r), mat(f, x, plinthH + base.height, z)',
       'flutedShaft(shaftH, r), mat(f, x, seat, z)'],
+    [`    // threshold
+    box(B, f, 'marbleWarm', x, 0.015, z, w + 0.1, 0.03, T + 0.12);
+  }`, `  }
+  box(B, f, 'marbleWarm', x, 0.015, z, w + 0.1, 0.03, T + 0.12);`],
+    ["B.add('gold', STAR, mat(f, cx, y + 0.02, cz,",
+      "B.add('gold', STAR, mat(f, cx, y + 0.033, cz,"],
     ['s.moveTo(-A + 0.25, 0); s.lineTo(0, H - 0.12); s.lineTo(A - 0.25, 0); s.closePath();',
       'const seat = H + 0.12 - 0.08 / Math.cos(slope);\n    s.moveTo(-A, 0); s.lineTo(0, seat); s.lineTo(A, 0); s.closePath();'],
     ["B.add('marble', moulding(prof, hyp + 0.55), mat(sf, sx * A / 2, H / 2 - 0.05, 0.15, 0, 0, -sx * slope));",
@@ -125,6 +131,48 @@ export function repairScene(source) {
     ["pediment(B, f, a + 0.42, H + 0.02, 1.3, 4.98, r, t.icon);",
       "pediment(B, f, a + 0.42, colH + r * 3.91 - 0.008, 1.3, 4.98, r, t.icon);"],
     ['const H = 4.36, colH = 3.6,', 'const colH = 3.6,'],
+    // Preserve the temple threshold and extend only the front of the platform.
+    ["0, -0.06, 0.15, W + 0.9, 0.16, 9.5", "0, -0.06, 0.19, W + 0.9, 0.16, 9.58"],
+    ["  for (let i = 0; i < 3; i++) B.add('marbleWarm', new THREE.CylinderGeometry(2.25 - i * 0.28, 2.25 - i * 0.28, 0.12, 64)",
+      "  const stepRadii = [2.25, 1.97, 1.84];\n  for (let i = 0; i < stepRadii.length; i++) B.add('marbleWarm', new THREE.CylinderGeometry(stepRadii[i], stepRadii[i], 0.12, 64)"],
+    ["  acroterion(B, mat(f, 0, top + 1.3, 0), 0.5);\n  acroterion(B, mat(f, 0, top + 1.3, 0,",
+      "  acroterion(B, mat(f, 0, top + 1.26, 0), 0.5);\n  acroterion(B, mat(f, 0, top + 1.26, 0,"],
+    ["(i + 0.5) * (L / n), 0.12, 0));",
+      "(i + 0.5) * (L / n), 0.118, 0, 0, 0, 0, 1, 1.04, 1));"],
+    ["mat(null, x, 1.15, -36.6)", "mat(null, x, 1.078, -36.6)"],
+    ["  ctx.B.add(material, ctx.S[name], mat(f, x, y, z, 0, ry, 0, s, s, s));",
+      `  const sculpture = ctx.S[name];
+  if (!sculpture.boundingBox) sculpture.computeBoundingBox();
+  const foot = sculpture.boundingBox.min.y * s;
+  ctx.B.add(material, sculpture, mat(f, x, y - foot - 0.002, z, 0, ry, 0, s, s, s));`],
+    ["mp.matrixAutoUpdate = false; mp.matrix.copy(mat(tf, x, 1.95, -4.29 + 0.13)); ctx.extra.push(mp);\n    box(B, tf, 'cedarH', x, 2.53, -4.29 + 0.13, 1.72, 0.06, 0.04); box(B, tf, 'cedarH', x, 1.37, -4.29 + 0.13, 1.72, 0.06, 0.04);",
+      `const mapZ = -4.05;
+    box(B, tf, 'cedar', x, 1.95, mapZ - 0.015, 1.64, 1.12, 0.027);
+    mp.matrixAutoUpdate = false;
+    mp.matrix.copy(mat(tf, x, 1.95, mapZ));
+    ctx.extra.push(mp);
+    box(B, tf, 'cedarH', x, 2.53, mapZ - 0.008, 1.72, 0.06, 0.04);
+    box(B, tf, 'cedarH', x, 1.37, mapZ - 0.008, 1.72, 0.06, 0.04);`],
+    ["box(B, lf, 'cedar', 0, 0.5, 0, 0.12, 1.0, 0.12);",
+      "box(B, lf, 'cedar', 0, 0.535, 0, 0.12, 1.07, 0.12);"],
+    ["ctx.B.add('clay', ctx.S.bust, mat(sf, 0, 0.92, 0, 0, 0.4, 0, 1.05, 1.05, 1.05));",
+      "statue(ctx, 'bust', sf, 0, 0.92, 0, 0.4, 1.05, 'clay');"],
+    ["    box(B, tf, 'slate', x - 0.4, 0.83, z + 0.5, 0.4, 0.02, 0.3);",
+      "    table(B, tf, x - 0.4, 0.82, z + 0.5, 0.58, 0.4);\n    box(B, tf, 'slate', x - 0.4, 0.829, z + 0.5, 0.4, 0.02, 0.3);"],
+    ["new THREE.CylinderGeometry(0.05, 0.05, 0.36, 14), mat(pf, 0, 1.3, 0)",
+      "new THREE.CylinderGeometry(0.05, 0.05, 0.384, 14), mat(pf, 0, 1.29, 0)"],
+    ["new THREE.CylinderGeometry(0.018, 0.018, 0.5, 10), mat(bf, s * 0.06, 1.55, 0)",
+      "new THREE.CylinderGeometry(0.018, 0.018, 0.555, 10), mat(bf, s * 0.06, 1.5775, 0)"],
+    ["new THREE.CylinderGeometry(0.012, 0.012, 0.9, 6), mat(df, Math.cos(a) * 0.15, 0.42,",
+      "new THREE.CylinderGeometry(0.012, 0.012, 0.93, 6), mat(df, Math.cos(a) * 0.15, 0.432,"],
+    ["new THREE.CylinderGeometry(0.28, 0.28, 0.08, 40, 1, true), mat(df, 0, 0.92, 0)",
+      "new THREE.CylinderGeometry(0.28, 0.28, 0.08, 40), mat(df, 0, 0.92, 0)"],
+    ["  box(B, f, 'bronze', 0, 1.0, 0, 3.8, 0.06, 2.88);",
+      `  for (const side of [-1, 1]) {
+    box(B, f, 'bronze', side * 1.855, 1.0, 0, 0.09, 0.06, 2.88);
+    box(B, f, 'bronze', 0, 1.0, side * 1.40, 3.62, 0.06, 0.08);
+  }`],
+    ["sea.position.set(0, 1.045, 6.5);", "sea.position.set(0, 1.025, 6.5);"],
   ]);
   source=replaceSection(source,'function entabRect(', 'function scrolls',
     `function entabRect(B, f, x0, x1, z0, z1, y, m, sides = 'nsew', back = 0.9) {
@@ -169,13 +217,32 @@ export function repairScene(source) {
     points.setXYZ(i, x * 1.14 * coast, -0.009 + bank * (0.19 + rough * 0.18), z * 0.83 * coast);
   }
   terrain.computeVertexNormals();
-  B.add('islands', terrain, mat(f, 0, 1.046, 0));
+  const terrainLevel = 1.026;
+  B.add('islands', terrain, mat(f, 0, terrainLevel, 0));
+  const land = new THREE.Mesh(terrain);
+  const probe = new THREE.Raycaster(new V3(), new V3(0, -1, 0));
+  const groundY = (x, z) => {
+    probe.ray.origin.set(x, 2, z);
+    const [hit] = probe.intersectObject(land);
+    if (!hit) throw new Error('An atlas landmark is outside the annular terrain');
+    return terrainLevel + hit.point.y;
+  };
   for (const [i, angle] of [0.29, 2.22, 4.12, 5.16].entries()) {
     const x = 0.89 * Math.cos(angle), z = 0.65 * Math.sin(angle);
-    const bf = mat(f, x, 1.22, z);
-    B.add('gold', new THREE.CylinderGeometry(0.006, 0.01, 0.14, 8), mat(bf, 0, 0.13, 0));
-    B.add('lampGlass', new THREE.SphereGeometry(0.022, 12, 8), mat(bf, 0, 0.21, 0));
-    const tf = mat(bf, 0.065, 0.028, 0.02, 0, i, 0);
+    const bf = mat(f, x, groundY(x, z), z);
+    B.add('gold', new THREE.CylinderGeometry(0.006, 0.01, 0.217, 8), mat(bf, 0, 0.105, 0));
+    B.add('lampGlass', new THREE.SphereGeometry(0.022, 12, 8), mat(bf, 0, 0.213, 0));
+    const tx = x + 0.065, tz = z + 0.02;
+    const levels = [groundY(tx, tz)];
+    const along = Math.cos(i), across = Math.sin(i);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      levels.push(groundY(tx + sx * 0.04 * along + sz * 0.05 * across,
+        tz - sx * 0.04 * across + sz * 0.05 * along));
+    }
+    const bottom = Math.min(...levels) - 0.003;
+    const top = Math.max(...levels) + 0.006;
+    const tf = mat(f, tx, top, tz, 0, i, 0);
+    box(B, tf, 'marbleWhite', 0, (bottom - top) / 2, 0, 0.08, top - bottom, 0.1);
     for (const sx of [-1, 1]) for (const sz of [-1, 1])
       B.add('marbleWhite', new THREE.CylinderGeometry(0.006, 0.006, 0.07, 6), mat(tf, sx * 0.03, 0.035, sz * 0.04));
     box(B, tf, 'marbleWhite', 0, 0.075, 0, 0.08, 0.012, 0.1);
