@@ -10,6 +10,7 @@ environment, path and Blender lights are left out. Metres; glTF Y up, the
 entrance faces +Z.
 """
 import json
+import numpy as np
 import sys
 from pathlib import Path
 
@@ -57,7 +58,46 @@ for o in meshes:  # bake modifiers/instances, apply transforms
         collision_meshes[o.name] = collision_mesh
     o.data.transform(o.matrix_world); o.matrix_world.identity()
 
-# simple glTF materials, one per finish
+# glTF materials, one per finish. Large finishes carry a tileable texture with
+# world-scale box-projected UVs (TILE metres per repeat); small trim stays plain.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from finish_textures import TEXTURES  # noqa: E402
+TEXTURED = {"Mármol marfil envejecido": ("marble", 3.0), "Tejas de metal teal": ("tiles", 2.4),
+            "Oro champagne": ("gold", 1.2), "Filigrana de oro": ("gold", .8)}
+FLOOR_NAMES = {"Piso interior", "Podio", "Terraza", "Atrio semicircular", "Escalinata"}
+images = {}
+
+
+def texture_image(kind):
+    if kind not in images:
+        px = TEXTURES[kind]()
+        n = px.shape[0]
+        img = bpy.data.images.new("residencia-" + kind, n, n, alpha=False)
+        rgba = np.ones((n, n, 4), np.float32); rgba[..., :3] = px[::-1] / 255.0
+        img.pixels.foreach_set(rgba.ravel())
+        img.file_format = "JPEG"
+        images[kind] = img
+    return images[kind]
+
+
+def textured(name, kind):
+    m = plain[name].copy(); m.name = name + " · " + kind
+    nt = m.node_tree; b = nt.nodes["Principled BSDF"]
+    tex = nt.nodes.new("ShaderNodeTexImage"); tex.image = texture_image(kind); tex.interpolation = "Linear"
+    nt.links.new(tex.outputs["Color"], b.inputs["Base Color"])
+    return m
+
+
+def box_uv(me, tile):
+    uv = me.uv_layers.new(name="UVMap")
+    for poly in me.polygons:
+        n = poly.normal; ax = max(range(3), key=lambda i: abs(n[i]))
+        a, b = [(1, 2), (0, 2), (0, 1)][ax]
+        for li in poly.loop_indices:
+            co = me.vertices[me.loops[li].vertex_index].co
+            uv.data[li].uv = (co[a] / tile, co[b] / tile)
+
+
 plain = {}
 for name, (hexc, metal, rough, emit) in FINISH.items():
     m = bpy.data.materials.new(name + " · glTF"); m.use_nodes = True
@@ -84,7 +124,17 @@ coll_ob = bpy.data.objects.new("Residencia colisión", coll_me)
 groups = {}
 for o in meshes:
     mat = o.data.materials[0].name if o.data.materials else "Mármol marfil envejecido"
+    if mat == "Mármol marfil envejecido" and o.name in FLOOR_NAMES:
+        mat = "Piso de piedra pulida"
     groups.setdefault(mat, []).append(o)
+TEXTURED["Piso de piedra pulida"] = ("floor", 4.0)
+plain["Piso de piedra pulida"] = plain["Mármol marfil envejecido"].copy()
+plain["Piso de piedra pulida"].node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = .22
+# the chamber threshold reads as a translucent light curtain rather than a solid panel
+portal = plain.get("Umbral de portal")
+if portal:
+    portal.blend_method = "BLEND"
+    portal.node_tree.nodes["Principled BSDF"].inputs["Alpha"].default_value = .45
 visual = []
 for mat, objs in groups.items():
     me = bpy.data.meshes.new("Residencia · " + mat)
@@ -93,7 +143,13 @@ for mat, objs in groups.items():
         bm.from_mesh(o.data)
     bmesh.ops.triangulate(bm, faces=bm.faces)
     bm.to_mesh(me); bm.free()
-    me.materials.clear(); me.materials.append(plain.get(mat, plain["Mármol marfil envejecido"]))
+    me.materials.clear()
+    if mat in TEXTURED:
+        kind, tile = TEXTURED[mat]
+        box_uv(me, tile)
+        me.materials.append(textured(mat if mat in plain else "Mármol marfil envejecido", kind))
+    else:
+        me.materials.append(plain.get(mat, plain["Mármol marfil envejecido"]))
     ob = bpy.data.objects.new("Residencia · " + mat, me)
     visual.append(ob)
 portals = [{"id": o["holodeck_portal"], "role": o["holodeck_role"],
@@ -113,7 +169,7 @@ def export(objs, path):
         scene.collection.objects.link(o)
     bpy.ops.export_scene.gltf(filepath=str(path), export_format="GLB", export_yup=True, export_apply=True,
                               export_lights=False, export_cameras=False, export_materials="EXPORT",
-                              export_normals=True, export_texcoords=False,
+                              export_normals=True, export_texcoords=True, export_image_format="JPEG", export_jpeg_quality=82,
                               export_meshopt_compression_enable=True, export_meshopt_extension="EXT_meshopt_compression")
 
 
