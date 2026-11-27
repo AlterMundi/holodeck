@@ -430,7 +430,9 @@ const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
 let inside=hot&&activeSpace.id!=='outside';
 const outsideRing=()=>!inside&&activeSpace.outdoorTerrain===TOROIDAL_TERRAIN.id;
 // Capture the fresh entry before MML initializes or writes a location hash.
-let firstExteriorDoor=outsideRing()&&!location.hash&&activeSpace.entrances?.length===1?activeSpace.entrances[0].door:null;
+// Arrival frames the house door; the Residencia's chamber portals are additional entrances.
+const houseEntrances=space=>space?.entrances?.filter(entrance=>!entrance.portal)??[];
+let firstExteriorDoor=outsideRing()&&!location.hash&&houseEntrances(activeSpace).length===1?houseEntrances(activeSpace)[0].door:null;
 let flightEnabled=false,previousSpacePress=null,radialMovementMode='ground',radialBoosting=false;
 const verticalHelp=document.getElementById('world-vertical-help');
 const dryVerticalHelp=verticalHelp.textContent;
@@ -1253,7 +1255,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const yaw=client.getCharacterManager().localController?.networkState.rotation?.eulerY;
       if(outsideRing()){
         ring??=new ToroidalTerrainRenderer(renderer.mmlCompositionScene.group,base,undefined,{bankReflection});
-        const door=activeSpace.entrances?.[0]?.door;
+        const door=houseEntrances(activeSpace)[0]?.door;
         ring.setEntrance(door);
         ring.setResidenceContact(scenery?.residence.root.visible === true);
         if(position){

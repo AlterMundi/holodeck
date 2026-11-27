@@ -23,7 +23,8 @@ const label = value => typeof value === 'string' && value.trim().length > 0 &&
   value.length <= 60 && !/[\u0000-\u001f\u007f]/.test(value);
 
 export class InteriorSpaces {
-  constructor({definitions = [], houses, state, persist, clock = Date.now, guestAccess, upperLanding}) {
+  constructor({definitions = [], houses, state, persist, clock = Date.now, guestAccess, upperLanding, exteriorPortals = new Set()}) {
+    this.exteriorPortals = exteriorPortals;
     if (!Array.isArray(definitions) || definitions.length > MAX_SPACES)
       throw Error('Select bounded authored interior rooms');
     this.houses = houses;
@@ -141,7 +142,7 @@ export class InteriorSpaces {
     if (this.fenced || !exact(request,'from,to') || !allowedActor(actor?.id) ||
         typeof request.to!=='string' || this.current(actor)!==request.from ||
         request.from===request.to || !this.allows(actor,request.to)) return false;
-    if (request.from===OUTSIDE) return this.rooms.get(request.to)?.entry===true;
+    if (request.from===OUTSIDE) return this.rooms.get(request.to)?.entry===true || this.exteriorPortals.has(request.to);
     return request.to===OUTSIDE || this.rooms.get(request.from)?.links.some(link=>link.to===request.to);
   }
 

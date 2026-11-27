@@ -154,6 +154,12 @@ function residencePlaneHeight(u,v,offset,terrain){
 }
 
 // Palace-local Blender coordinates (X east, Y north, entrance toward -Y) of (u, v).
+// World position of a palace-local Blender point (X east, Y north, Z up from the palace ground).
+export function residenceWorld(x,y,z){
+  const {origin,up,ex,ez}=residenceFrame;
+  return origin.map((value,axis)=>value+ex[axis]*x+up[axis]*z-ez[axis]*y);
+}
+
 export function residenceLocal(u,v,terrain=TOROIDAL_TERRAIN){
   const h=residencePlaneHeight(u,v,0,terrain);
   const p=terrainPosition(u,v,h,terrain), {origin,ex,ez}=residenceFrame;
