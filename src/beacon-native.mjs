@@ -54,6 +54,7 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
   const model=new BeaconNativeModel(surface);
   let selected,source,csrf,stream,binding,timer,latestView,lastProblem='',editProblem='',viewKey,refreshing=false;
   let downloadingPreset=false;
+  let presetFile,importingPreset=false;
   const outbound=createSpatialHud({parent,document,accessibilityRoot:stage,controlStyle:'optical',
     send(message){
       const action=message.action;
@@ -68,6 +69,10 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
         void refresh();
       }else if(action.name==='downloadWeaverPreset'&&source&&latestView&&surface==='weaver'){
         void downloadPreset(action.context.edition);
+      }else if(action.name==='chooseWeaverPresetFile'&&source&&latestView&&surface==='weaver'&&!importingPreset){
+        choosePresetFile();
+      }else if(action.name==='importWeaverPresetFile'&&source&&latestView&&surface==='weaver'){
+        void importPresetFile();
       }else if(action.name==='downloadPreparedTake'&&source&&latestView&&surface==='harmocap'){
         const {take,format}=action.context;
         const root=panel+'api/a2ui/'+surface;
@@ -292,6 +297,61 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
   function retry(label){
     status(label,[{id:'retry',component:'HudButton',label:'Reintentar',action:nativeAction('retryStation')}]);
   }
+  function choosePresetFile(){
+    const session=model.data.sessionId,host=selected;
+    if(!/^[a-f0-9]{32}$/.test(session??''))return;
+    const picker=document.createElement('input');
+    picker.type='file';
+    picker.accept='application/json,.json';
+    picker.addEventListener('change',()=>{
+      const file=picker.files?.[0];
+      if(!file||signal.aborted||!latestView||host!==selected||session!==model.data.sessionId)return;
+      if(!file.size||file.size>256*1024){
+        presetFile=null;
+        lastProblem='Elegí un JSON de hasta 256 KiB.';
+      }else{
+        presetFile={file,host,session};
+        lastProblem='';
+      }
+      showModel(false);
+    },{once:true,signal});
+    picker.click();
+  }
+  async function importPresetFile(){
+    if(!presetFile||importingPreset)return;
+    const {file,host,session}=presetFile;
+    if(host!==selected||session!==model.data.sessionId){
+      presetFile=null;
+      lastProblem='Cambió la sesión. Volvé a elegir el archivo.';
+      showModel(false);
+      return;
+    }
+    importingPreset=true;
+    lastProblem='';
+    showModel(false);
+    try{
+      const params=new URLSearchParams({host,session_id:session});
+      const response=await fetch(panel+'api/a2ui/weaver/preset-file?'+params,{
+        method:'POST',credentials:'same-origin',signal,body:file,
+        headers:{'Content-Type':'application/json','X-Lab-CSRF':csrf},
+      });
+      if(response.status===201){
+        presetFile=null;
+        lastProblem='Preset nuevo guardado.';
+      }else if(response.status===409){
+        presetFile=null;
+        lastProblem='Cambió la sesión. Volvé a elegir el archivo.';
+      }else{
+        const details=await response.json().catch(()=>null);
+        lastProblem=typeof details?.message==='string'?details.message:'No se pudo confirmar si se guardó el preset. Revisá la lista.';
+      }
+    }catch{
+      if(!signal.aborted)lastProblem='No se pudo confirmar si se guardó el preset. Revisá la lista.';
+    }finally{
+      importingPreset=false;
+      if(!signal.aborted&&latestView)showModel(false);
+    }
+  }
   async function downloadPreset(edition){
     if(downloadingPreset||typeof edition!=='string')return;
     const match=/^([a-z0-9][a-z0-9_-]{0,79}):([a-f0-9]{64})$/.exec(edition);
@@ -358,6 +418,18 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
         view.components[0].children.push('download_preset');
         view.components.push({id:'download_preset',component:'HudButton',label:'Descargar preset seleccionado',
           disabled:!edition||downloadingPreset,action:nativeAction('downloadWeaverPreset',{edition})});
+      }
+      if(field||view.components.some(node=>node.id==='preset_library_title')){
+        view.components[0].children.push('preset_file_controls');
+        const controls=[{id:'choose_preset_file',component:'HudButton',label:'Elegir JSON de preset',
+          disabled:importingPreset,action:nativeAction('chooseWeaverPresetFile')},
+        {id:'import_preset_file',component:'HudButton',label:'Guardar preset nuevo',
+          disabled:!presetFile||importingPreset,action:nativeAction('importWeaverPresetFile')}];
+        view.components.push({id:'preset_file_controls',component:'HudRow',children:controls.map(control=>control.id)},...controls);
+        if(presetFile){
+          view.components[0].children.push('preset_file_name');
+          view.components.push({id:'preset_file_name',component:'HudText',label:presetFile.file.name.slice(0,70)});
+        }
       }
     }
     const problem=guitarProblem||(editProblem||lastProblem);
