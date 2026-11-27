@@ -53,6 +53,7 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
   viewScene.add(parent);
   const model=new BeaconNativeModel(surface);
   let selected,source,csrf,stream,binding,timer,latestView,lastProblem='',editProblem='',viewKey,refreshing=false;
+  let downloadingPreset=false;
   const outbound=createSpatialHud({parent,document,accessibilityRoot:stage,controlStyle:'optical',
     send(message){
       const action=message.action;
@@ -65,6 +66,8 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
         explicit=true;
         attempted.delete(selected);
         void refresh();
+      }else if(action.name==='downloadWeaverPreset'&&source&&latestView&&surface==='weaver'){
+        void downloadPreset(action.context.edition);
       }else if(action.name==='downloadPreparedTake'&&source&&latestView&&surface==='harmocap'){
         const {take,format}=action.context;
         const root=panel+'api/a2ui/'+surface;
@@ -289,6 +292,43 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
   function retry(label){
     status(label,[{id:'retry',component:'HudButton',label:'Reintentar',action:nativeAction('retryStation')}]);
   }
+  async function downloadPreset(edition){
+    if(downloadingPreset||typeof edition!=='string')return;
+    const match=/^([a-z0-9][a-z0-9_-]{0,79}):([a-f0-9]{64})$/.exec(edition);
+    if(!match||!model.nodes.get('preset_choice')?.options?.some(option=>option.value===edition)){
+      lastProblem='Cambió el preset guardado. Volvé a elegirlo.';
+      showModel(false);
+      return;
+    }
+    downloadingPreset=true;
+    lastProblem='';
+    showModel(false);
+    try{
+      const response=await fetch(url('/preset-file/'+match[1]+'/'+match[2]),{credentials:'same-origin',signal});
+      if(response.status===409){
+        lastProblem='Cambió el preset guardado. Volvé a elegirlo.';
+      }else if(response.ok&&response.headers.get('Content-Type')?.startsWith('application/json')){
+        const file=await response.blob();
+        if(!file.size||file.size>256*1024)throw Error();
+        if(signal.aborted)return;
+        const object=URL.createObjectURL(file);
+        const link=document.createElement('a');
+        link.href=object;
+        link.download='Weaver-'+match[1]+'.json';
+        document.body.append(link);
+        link.click();
+        link.remove();
+        setTimeout(()=>URL.revokeObjectURL(object),30000);
+      }else{
+        lastProblem='No se pudo descargar el preset.';
+      }
+    }catch{
+      if(!signal.aborted)lastProblem='No se pudo descargar el preset.';
+    }finally{
+      downloadingPreset=false;
+      if(!signal.aborted&&latestView)showModel(false);
+    }
+  }
   function showModel(syncModel=true){
     latestView=true;
     const view=model.render(title);
@@ -309,6 +349,15 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
           children.push('take_downloads');
           view.components.push({id:'take_downloads',component:'HudRow',children:buttons.map(button=>button.id)},...buttons);
         }
+      }
+    }
+    if(surface==='weaver'){
+      const field=view.components.find(node=>node.id==='preset_choice');
+      if(field){
+        const edition=view.data[field.value['@path'].slice(1)];
+        view.components[0].children.push('download_preset');
+        view.components.push({id:'download_preset',component:'HudButton',label:'Descargar preset seleccionado',
+          disabled:!edition||downloadingPreset,action:nativeAction('downloadWeaverPreset',{edition})});
       }
     }
     const problem=guitarProblem||(editProblem||lastProblem);
