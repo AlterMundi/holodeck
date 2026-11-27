@@ -1,5 +1,18 @@
 # Current MVP work
 
+## November 27 — Reconnect to the same Weaver Stage
+
+Protected release `d35a9404d82b` serves the routing session binding from
+`37c6e3b` with immediate rollback `812d52266022`. The release replaces only
+the browser bundle and its inventory digest. All 88 package files matched
+the installed revision and the protected HTTPS bundle matched exactly.
+
+The routing qualification used two Stage processes and observed a confirmed
+edit, loss of the original service, and a reconnect to the same session.
+The room fixture on the rebuilt client also passed the native Pendings
+checks. A participant's authenticated room visit and physical devices were
+outside these trials.
+
 ## November 27 — A2UI Pendings and Navegante notification
 
 Protected `812d52266022` serves the isolated candidate `55042c5` with

@@ -13,8 +13,10 @@ import {MATTER_ART_REVISIONS} from '../src/matter-workshop-art.mjs';
 import {ensureMmlServerAuthContext} from '../tools/mml-server-auth-context.mjs';
 ensureMmlServerAuthContext({check:true});
 const root=resolve(new URL('..',import.meta.url).pathname);
-const stage=process.argv[2];
-if(!stage || !resolve(stage).startsWith(root+'/.state/'))throw Error('Stage must be task-owned .state subdirectory');
+const stage=process.argv[2]&&resolve(process.argv[2]);
+if(!stage || !stage.startsWith(root+'/.state/'))throw Error('Stage must be task-owned .state subdirectory');
+process.chdir(root);
+await import('../tools/build.mjs');
 await rm(stage,{recursive:true,force:true});await mkdir(join(stage,'src'),{recursive:true});
 const resourcePlugin={name:'qualified-jsdom-sidecars',setup(api){
  api.onLoad({filter:/style-rules\.js$/},async args=>{const source=await readFile(args.path,'utf8');if((source.match(/__dirname/g)||[]).length!==1)throw Error('JSDOM stylesheet source changed');return{contents:source.replace('__dirname','process.env.HOLODECK_JSDOM_HELPERS'),loader:'js'};});

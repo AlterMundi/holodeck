@@ -321,10 +321,10 @@ leaves the world data and browser-local theme preferences available.
 
 ## Reproducible package
 
-Build the ordinary client, then the fully vendored receiving package:
+Build the fully vendored receiving package. The package builder rebuilds
+the browser assets from the selected checkout before assembling the package.
 
 ```sh
-node tools/build.mjs
 node deployment/build-package.mjs "$PWD/.state/deploy-stage"
 python3 deployment/archive.py .state/deploy-stage .state/holodeck-package.tar
 ```
