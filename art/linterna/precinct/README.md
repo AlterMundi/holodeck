@@ -40,6 +40,27 @@ second review-build argument is a JSON file mapping a site room ID to an
 optional `title` and `url`. Keep any private selection with the authorized
 review. The linked site continues to handle sign-in and data access.
 
+### Apply the HD finishes to the functional model
+
+```sh
+node art/linterna/precinct/apply-hd-finishes.mjs BASE_EDITION_DIR BASE_FACADE_GLB BAKED_MAP_DIR OUTPUT_DIR
+```
+
+Use the all-temples manifest and the corresponding facade export of the
+functional model. Apply maps sampled from the selected source shaders as
+base color and tangent-space normals to the existing UV slots. Use paired
+`NAME.jpg` and `NAME-normal.jpg` files for `marble`, `cedar`, `terracotta`,
+`paving`, and `fresco`. Keep those maps with the authorized edition. The
+profiles use the existing UV scale, including 1.6 m for stone and 1.32 m
+for cedar on most architectural faces.
+
+This pass preserves the original binary geometry, node transforms, meshes
+and accessors. The manifest changes only model filenames, checksums and byte
+counts. Floors, colliders, passages and the Claymon GLB retain their exact
+previous selections. The normal maps add relief at shading time. The
+exporter checks each part against the receiver's budget and records the
+source and finish digests.
+
 ## Receiving integration
 
 The precinct is larger than the existing 12 m room shell and exceeds the
