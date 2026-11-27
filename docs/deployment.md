@@ -331,6 +331,11 @@ leaves the world data and browser-local theme preferences available.
 
 ## Reproducible package
 
+Install the lockfile-selected Proyección package in the build checkout.
+A directory linked from another Holodeck worktree can contain an older
+renderer and silently remove its optical controls. The client build checks
+the installed renderer version against the lockfile.
+
 Build the fully vendored receiving package. The package builder rebuilds
 the browser assets from the selected checkout before assembling the package.
 

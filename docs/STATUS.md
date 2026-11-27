@@ -1,5 +1,25 @@
 # Current MVP work
 
+## November 27 — Residence, personal Explorer, and optical HUD
+
+Protected release `55c1e6699cee` places the Residencia de la Nobleza IA
+beside the Atelier plaza and selects Explorer v29 for the configured
+paired human. The 36,321,280-byte package preserves the existing Atelier
+art inventory. Protected HTTP served the exact model, collision shell and
+avatar hashes. Immediate rollback is `ce218c622b83`.
+
+The Chromium fixture loaded the exact package, reached the residence
+atrium and hall, and observed the authored idle and landing clips on the
+personal avatar. Earlier wardrobe preferences remain selectable through
+Appearance. Other paired visitors keep their existing profile rules.
+
+The client uses lockfile-selected Proyección alpha.21. An older installed
+renderer had removed the optical presentation. The Pendings book uses the
+shared glass surround and full-width, paginated desktop text. The narrow
+layout makes detail text a scrollable reader with its actions in view.
+Chromium verified the two layouts, page navigation and the existing
+Pendings actions. The Node suite passed 507 tests with two skips.
+
 ## November 27 — Conversation header and Escape
 
 Protected release `ce218c622b83` leaves the embedded Conversation header
