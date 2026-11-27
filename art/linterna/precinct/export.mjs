@@ -24,6 +24,8 @@ const stops=makeStops();
 const journeys=makeJourneys();
 const metres={approach:{min:[-.99,0,-1.98],max:[.99,2.75,1.98]}};
 const report={units:'m',up:'+Y',facadeEntrance:'+Z',edgesChecked:0,models:{}};
+const atlas=scenes.get('precinct').group.getObjectByName('Raised ring terrain');
+assert.equal(atlas?.geometry.parameters.closed,true,'the original Atlas terrain must form a closed ring');
 const free=floorClearance(scenes.get('precinct').obstacles);
 
 for (const [from,edges] of Object.entries(journeys)) {

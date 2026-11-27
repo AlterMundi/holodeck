@@ -11,6 +11,14 @@ opens to a foyer with a statue and one separate door per project. The return
 uses the same thresholds. Both the model and the review path derive pavilion
 origins, orientations and room widths from `plan.mjs`.
 
+The hall imports the Atlas furniture from the original Casa Linterna study.
+It retains the round table, annular terrain and water, survey markers,
+pendant, bench, paired seats and hook rail. The original horizon mural now
+faces into the hall from the east wall, leaving the opening to the garden.
+The first study also retains the standalone field cabinet and full Claymon
+workshop furniture layouts for their room art. The precinct's compact project
+interiors depict the thresholds and a first view of the rooms.
+
 ## Build and review
 
 ```sh
