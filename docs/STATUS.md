@@ -1,23 +1,21 @@
 # Current MVP work
 
-## Prepared — HarMoCAP video at the worktable
+## November 27 — HarMoCAP video at the worktable
 
-Candidate `743e5670d304` was built with the lockfile-selected Proyección
-and published through the existing private runtime package writer. Its
-36,321,280-byte archive replaces only the browser bundle and the page
-from selected release `55c1e6699cee`. All other runtime and room files
-match that predecessor. The existing Harmonic Lab gateway and Legion
-transport serve the protected route. A generated video reached the table
-through the isolated browser, gateway and receiving agent, and followed
-the shared play, pause and seek operations.
+Protected release `743e5670d304` is active. The 36,321,280-byte
+archive replaces only the browser bundle and page from release
+`55c1e6699cee`, which remains the immediate rollback. The supported
+release notice preceded activation. All 91 installed files matched and
+the exact protected client returned HTTP 200 for the existing Home
+reader. The release retains the existing human browser access boundary.
 
-The live Holodeck release remains `55c1e6699cee`. There were established
-connections to its service during preparation, so the package was left
-pending with its exact predecessor. Use the existing release notice and
-cutover route when it can preserve the visit. Legion now serves the
-updated JACK Lab and its HarMoCAP projection through the protected
-gateway. Video from an actual selected Lab source and paired browser
-acceptance remain pending.
+A Chromium worktable fixture loaded the current station source and
+mounted HarMoCAP from the real Home gateway and Legion. It reused the
+running body service, sent zero start or control requests and released
+the view on close. With no video selected, the preview stayed hidden
+and opened no media connection. The separate generated-MP4 fixture
+verified synchronization and protected range handling. Live playback
+with a selected source and a paired human visit remain unverified.
 
 ## November 27 — Residence, personal Explorer, and optical HUD
 
