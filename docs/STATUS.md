@@ -1,5 +1,20 @@
 # Current MVP work
 
+## November 27 — Protected HarMoCAP downloads
+
+Protected release `c90201a588ae` offers MP4 or MKV downloads beside
+the prepared-take controls in the native Three.js worktable. The action
+targets the session, export and digest visible at the time of the click.
+The selected workstation authorizes the artifact and the existing gateway
+streams it without starting a device or editing the session.
+
+An isolated Chromium trial downloaded the exact MP4 from the worktable.
+The gateway streamed a matching 6 MiB fixture, refused a mismatched host
+and revoked the prepared link after selection changed. The live fixed
+receiver returned 404 for an unbound take and anonymous HTTPS returned
+401. No live recording was copied in qualification. The previous release
+`b1eb5c79f533` is the immediate Holodeck rollback.
+
 ## November 27 — Prepared HarMoCAP takes
 
 Protected release `b1eb5c79f533` plays the current prepared MP4 on the
