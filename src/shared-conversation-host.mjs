@@ -43,7 +43,10 @@ export class SharedConversationHost{
     if(!page)return;
     this.voiceObserver=new page.defaultView.MutationObserver(()=>this.syncVoiceControls());
     for(const node of page.querySelectorAll('#conversation-talk,#conversation-voice-replies'))
-      this.voiceObserver.observe(node,{attributes:true,attributeFilter:['aria-pressed','disabled']});
+      this.voiceObserver.observe(node,{attributes:true,attributeFilter:['aria-pressed','disabled','data-capture-phase']});
+    const caption=page.querySelector('#conversation-voice-state');
+    if(caption)this.voiceObserver.observe(caption,{attributes:true,attributeFilter:['data-voice-transcript','data-live-caption','data-attention'],
+      childList:true,subtree:true,characterData:true});
     this.syncVoiceControls();
     // Older same-origin shells can share the shortcut without forwarding any
     // data. Once the child negotiates dismissal it owns the key.
@@ -66,16 +69,23 @@ export class SharedConversationHost{
 
   voiceControls(){
     const page=this.composerDocument();
-    return {page,mic:page?.querySelector('#conversation-talk'),speaker:page?.querySelector('#conversation-voice-replies')};
+    return {page,mic:page?.querySelector('#conversation-talk'),speaker:page?.querySelector('#conversation-voice-replies'),caption:page?.querySelector('#conversation-voice-state')};
   }
 
   syncVoiceControls(){
-    const {mic,speaker}=this.voiceControls();
+    const {mic,speaker,caption}=this.voiceControls();
+    const recording=mic?.getAttribute('aria-pressed')==='true';
+    const owned=this.toolbarCaptureActive;
+    const phase=owned?(mic?.dataset.capturePhase??(recording?'recording':null)):null;
+    const words=owned&&recording&&caption?.dataset.voiceTranscript==='true'?
+      Array.from(caption.textContent.trim().replace(/\s+/g,' ')).slice(-145).join(''):'';
     this.onVoiceControls({
-      recording:mic?.getAttribute('aria-pressed')==='true',
+      recording,phase,words,previewUnavailable:owned&&recording&&caption?.textContent==='Recording… Live text unavailable.',
+      needsReview:owned&&caption?.dataset.attention==='true',
       speaking:speaker?.getAttribute('aria-pressed')==='true',
       speakerReady:!!speaker&&!this.closed,
     });
+    if(owned&&(phase==='idle'||phase==='ready'))this.toolbarCaptureActive=false;
     if(mic&&!mic.disabled&&this.channel)this.toolbarVoiceReady?.();
   }
 
@@ -91,7 +101,7 @@ export class SharedConversationHost{
       page.defaultView.PcmSpeech?.unlock();
       if(mic.getAttribute('aria-pressed')==='true'){
         if(this.lastAudioRecord)this.lastAudioRecord.toolbarMic=true;
-      }else this.toolbarRecording=true;
+      }else{this.toolbarRecording=true;this.toolbarCaptureActive=true;}
       mic.click();
       return true;
     };
