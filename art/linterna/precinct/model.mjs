@@ -199,11 +199,10 @@ function statue(group, out, icon) {
   }
 }
 
-function workstations(group, out, rooms, furnitureOnly=false) {
+function workstations(group, out, rooms) {
   for (const {id,x} of rooms) {
     solid(out,group,'oak',x,.41,-3.58,1.53,.82,.62);
     box(group,'warmWood',x,.85,-3.58,1.71,.12,.73);
-    if (furnitureOnly) continue;
     if (id==='printing') {
       box(group,'slate',x,.96,-3.57,.72,.12,.44);
       for (const sx of [-.31,.31]) box(group,'oak',x+sx,1.26,-3.57,.085,.55,.42);
@@ -433,24 +432,21 @@ export function makeHefestoSliceScenes() {
     gabledRoof(roof,edge+.37,2.52,3.4,1.22,hefesto.roof);
     statue(group,out,hefesto.icon);
   });
-  for (const room of rooms) {
-    layer(room.id,room.id,[room.x,-1.58],(group,out)=>{
-      const half=roomWidth/2;
-      floorPavers(group,width,-4.38,4.68,[room.x-half,room.x+half,-4.38,roomPartition]);
-      const local=new T.Group();
-      local.position.x=room.x;
-      group.add(local);
-      doorway(out,local,roomWidth,roomPartition,3.12,[0],'plaster');
-      closedDoor(local,out,0,roomPartition,1.46);
-      solid(out,local,'chalk',0,1.57,-4.29,roomWidth,3.14,.21);
-      for (const side of [-1,1])
-        solid(out,local,'chalk',side*half,1.57,(-4.29+roomPartition)/2,.17,3.14,3.59);
-      box(local,'plaster',0,3.24,-2.5,roomWidth,.18,3.59);
-      // The projected worktable supplies the actual Claymon. The printing room
-      // keeps its own stand-in fixture from the design study.
-      workstations(local,out,[{id:room.id,x:0}],room.id==='atelier');
-    });
-  }
+  const printing=rooms.find(room=>room.id==='printing');
+  layer(printing.id,printing.id,[printing.x,-1.58],(group,out)=>{
+    const half=roomWidth/2;
+    floorPavers(group,width,-4.38,4.68,[printing.x-half,printing.x+half,-4.38,roomPartition]);
+    const local=new T.Group();
+    local.position.x=printing.x;
+    group.add(local);
+    doorway(out,local,roomWidth,roomPartition,3.12,[0],'plaster');
+    closedDoor(local,out,0,roomPartition,1.46);
+    solid(out,local,'chalk',0,1.57,-4.29,roomWidth,3.14,.21);
+    for (const side of [-1,1])
+      solid(out,local,'chalk',side*half,1.57,(-4.29+roomPartition)/2,.17,3.14,3.59);
+    box(local,'plaster',0,3.24,-2.5,roomWidth,.18,3.59);
+    workstations(local,out,[{id:printing.id,x:0}]);
+  });
   return cells;
 }
 

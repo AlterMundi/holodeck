@@ -59,24 +59,26 @@ existing authorized data while qualifying the new room and return paths.
 ### Hefesto first slice
 
 ```sh
-node art/linterna/precinct/hefesto-slice.mjs OUTPUT_DIR
+node art/linterna/precinct/hefesto-slice.mjs OUTPUT_DIR REVIEWED_WORKSHOP_GLB
 ```
 
 The offline build emits room-local GLBs and a digest manifest for the common
 hall and garden, Hefesto's foyer, Claymon's Atelier room and the separate
 AnyPrinter room. Four bounded art pieces share the arrival cell. The other
 temples appear there as exterior shells. The generator checks room-local
-floors, solid walls and reciprocal landing clearance. It reopens each GLB
-and measures the Atelier wood surface at local XZ `(0, -2)`, top Y `0.91`
-and yaw `0°`. The actual projected model comes from the existing Atelier
-workspace. Its location and authorization are receiving selections.
+floors, solid walls and reciprocal landing clearance. It reopens the
+generated parts and uses the exact hash and embedded metadata of the
+reviewed [textured Claymon workshop](../workshop/README.md). The workshop
+keeps its full footprint and the `room-marker` at `(0, 0.45, -2)`. The
+visible turntable sits at `(0, 1.146, -2)`. The actual projected model
+comes from the existing Atelier workspace. Its authorization is a
+receiving selection.
 
-Passage thresholds and cell origins use precinct XZ metres. Each landing
-uses its own cell's XZ and floor surface height. Yaw is in degrees about +Y
-and describes the landing view, facing into the destination cell. The
-table's suggested 1.1 m interaction radius leaves the arrival stand outside
-table range in this compact room. Runtime profile and browser verification
-are required before selecting this value. Bind logical cells to approved
-room IDs through a revision-checked owning migration. Bind each asset part
-through the existing room authorization and test departure, re-entry and
-access revocation. The exporter writes no runtime state.
+The precinct entrances use the authored XZ frames. Claymon is a separate
+room with its own return door at XZ `(-3, -5.82)` and landing at
+`(-3, -4.81)`. Each side of a passage records its threshold, landing,
+floor height and yaw in its own frame. The stock 2.4 m interaction radius
+keeps the Atelier action separate from the entrance. Bind logical cells
+to approved room IDs through a revision-checked owning migration. Bind each
+asset part through the existing room authorization and test departure,
+re-entry and access revocation. The exporter writes no runtime state.

@@ -1,17 +1,41 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {mkdir,writeFile} from 'node:fs/promises';
+import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
-import {Box3,Euler,Vector3} from 'three';
+import {Euler,Object3D,Vector3} from 'three';
 import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {batchModel} from './batch.mjs';
+import dimensions from '../dimensions.json' with {type:'json'};
 import {floorClearance,makeHefestoSliceScenes} from './model.mjs';
 import {hall,makeJourneys,makeStops,pavilionDoor,pavilions,place,roomCenters,roomPartition} from './plan.mjs';
 
-const directory=process.argv[2];
-if (!directory) throw Error('Usage: node art/linterna/precinct/hefesto-slice.mjs OUTPUT_DIR');
+const [directory,workshopFile]=process.argv.slice(2);
+if (!directory||!workshopFile)
+  throw Error('Usage: node art/linterna/precinct/hefesto-slice.mjs OUTPUT_DIR REVIEWED_WORKSHOP_GLB');
 const MAX_PART_BYTES=768*1024;
+const workshopDigest='fd17011c6e2caf35c2804f353fc4ac658b88ffd4739149d0e1bf63d95225bace';
+const workshopBytes=await readFile(workshopFile);
+assert.ok(workshopBytes.length<=MAX_PART_BYTES);
+assert.equal(createHash('sha256').update(workshopBytes).digest('hex'),workshopDigest);
+const jsonLength=workshopBytes.readUInt32LE(12);
+assert.equal(workshopBytes.toString('ascii',0,4),'glTF');
+assert.equal(workshopBytes.toString('ascii',16,20),'JSON');
+const gltf=JSON.parse(workshopBytes.toString('utf8',20,20+jsonLength));
+const workshopRoot=gltf.nodes[gltf.scenes[gltf.scene].nodes[0]];
+const {worktable,datumY}=workshopRoot.extras;
+assert.deepEqual(worktable,{id:'room-marker',anchor:[0,.45,-2],turntable:[0,1.146,-2]});
+assert.equal(datumY,.1);
+assert.equal(gltf.images.length,4);
+assert.ok(gltf.images.every(image=>image.mimeType==='image/jpeg'&&Number.isInteger(image.bufferView)));
+assert.ok(gltf.buffers.every(buffer=>!buffer.uri));
+
+const workshop=dimensions.rooms.workshop;
+const workshopHalf=dimensions.roomSize/2;
+const [landing]=workshop.routes[0];
+const [{x:returnX,z:returnZ}]=workshop.doors;
+// The visual door is in front of the wall plane in the reviewed GLB.
+const workshopThreshold=[returnX,returnZ+.18];
 const FLOOR_TOP=.0215;
 const pavers={top:FLOOR_TOP,depth:.2};
 const land={top:-.015,depth:.2};
@@ -22,8 +46,9 @@ const cells={
   arrival:{origin:[0,0],floor:[{...land,x:[-25.5,25.5],z:[-33,21]},
     {...pavers,x:[-hall.halfWidth,hall.halfWidth],z:[.9,12.63]}]},
   hefesto:{origin:hefesto.origin,floor:[{...pavers,x:[-halfRoom*2,halfRoom*2],z:[roomPartition,pavilionDoor+.82]}]},
-  ...Object.fromEntries(rooms.map(({id,x})=>[id,{origin:place(hefesto,x,-1.58),
-    floor:[{...pavers,x:[-halfRoom,halfRoom],z:[-2.8,.88]}]}])),
+  atelier:{floor:[{top:datumY,depth:.2,x:[-workshopHalf,workshopHalf],z:[-workshopHalf,workshopHalf]}]},
+  printing:{origin:place(hefesto,rooms.find(room=>room.id==='printing').x,-1.58),
+    floor:[{...pavers,x:[-halfRoom,halfRoom],z:[-2.8,.88]}]},
 };
 const round=value=>Number(value.toFixed(4));
 const point=(cell,precinct)=>precinct.map((value,index)=>round(value-cells[cell].origin[index]));
@@ -32,33 +57,55 @@ function floorTop(cell,[x,z]) {
   const surfaces=cells[cell].floor.filter(floor=>x>=floor.x[0]&&x<=floor.x[1]&&z>=floor.z[0]&&z<=floor.z[1]);
   return surfaces.length ? Math.max(...surfaces.map(floor=>floor.top)) : null;
 }
-function side(cell,threshold,xz) {
-  const degrees=Math.atan2(xz[0]-threshold[0],xz[1]-threshold[1])*180/Math.PI;
-  const stand=point(cell,xz);
-  return {cell,stand,surfaceY:floorTop(cell,stand),yaw:round((degrees+360)%360)};
+function side(cell,threshold,stand) {
+  const degrees=Math.atan2(stand[0]-threshold[0],stand[1]-threshold[1])*180/Math.PI;
+  return {cell,threshold,stand,surfaceY:floorTop(cell,stand),yaw:round((degrees+360)%360)};
+}
+function precinctSide(cell,threshold,stand) {
+  return side(cell,point(cell,threshold),point(cell,stand));
 }
 const exteriorThreshold=[0,hall.entrance];
 const hefestoThreshold=place(hefesto,0,pavilionDoor);
 const passages=[
   {threshold:exteriorThreshold,sides:[{cell:'street',keepParcelOffer:true},
-    side('arrival',exteriorThreshold,[0,11.35])]},
+    precinctSide('arrival',exteriorThreshold,[0,11.35])]},
   {threshold:hefestoThreshold,sides:[
-    side('arrival',hefestoThreshold,place(hefesto,0,pavilionDoor+halfClearance)),
-    side('hefesto',hefestoThreshold,place(hefesto,0,pavilionDoor-halfClearance))]},
+    precinctSide('arrival',hefestoThreshold,place(hefesto,0,pavilionDoor+halfClearance)),
+    precinctSide('hefesto',hefestoThreshold,place(hefesto,0,pavilionDoor-halfClearance))]},
   ...rooms.map(({id,x})=>{
     const threshold=place(hefesto,x,roomPartition);
     return {threshold,sides:[
-      side('hefesto',threshold,place(hefesto,x,roomPartition+halfClearance)),
-      side(id,threshold,place(hefesto,x,roomPartition-halfClearance))]};
+      precinctSide('hefesto',threshold,place(hefesto,x,roomPartition+halfClearance)),
+      id==='atelier'?side(id,workshopThreshold,landing):
+        precinctSide(id,threshold,place(hefesto,x,roomPartition-halfClearance))]};
   }),
 ];
 const table={
-  cell:'atelier',center:[0,.85,-2],workSurfaceY:.91,topSize:[1.71,.73],rotationY:0,
-  proposedInteractionRadius:1.1,
+  cell:'atelier',id:worktable.id,anchor:worktable.anchor,turntable:worktable.turntable,
+  rotationY:0,interactionRadius:2.4,
 };
 const layers=makeHefestoSliceScenes();
+function boxCollider(x,y,z,width,height,depth) {
+  const box=new Object3D();
+  box.position.set(x,y,z);
+  box.scale.set(width,height,depth);
+  box.updateMatrixWorld();
+  return box;
+}
+const furnitureHeights={worktable:.92,bench:.95,shelf:2.1};
+const atelierObstacles=workshop.objects.map(({x,z,w,d,style})=>{
+  const height=furnitureHeights[style];
+  assert.ok(height>0);
+  return boxCollider(x,datumY+height/2,z,w,height,d);
+});
+for(const sign of [-1,1]){
+  const edge=sign*(workshopHalf-.075),height=dimensions.roomHeight;
+  atelierObstacles.push(boxCollider(edge,height/2,0,.15,height,dimensions.roomSize),
+    boxCollider(0,height/2,edge,dimensions.roomSize,height,.15));
+}
+atelierObstacles.push(boxCollider(returnX,1.12,workshopThreshold[1],1.48,2.05,.07));
 for (const cell of Object.keys(cells)) {
-  const solids=layers.filter(layer=>layer.cell===cell).flatMap(layer=>layer.obstacles);
+  const solids=cell==='atelier'?atelierObstacles:layers.filter(layer=>layer.cell===cell).flatMap(layer=>layer.obstacles);
   const passable=floorClearance(solids);
   const hasFloor=xz=>floorTop(cell,xz)!==null;
   assert.ok(solids.length>0);
@@ -83,19 +130,20 @@ for (const cell of Object.keys(cells)) {
     const entry=passages[1].sides[1].stand;
     for (const room of passages.slice(2))
       checkPath([entry,[room.sides[0].stand[0],1.38],room.sides[0].stand]);
+  } else if(cell==='atelier'){
+    for(const route of workshop.routes)checkPath(route);
+    assert.ok(!passable([table.anchor[0],table.anchor[2]]),'the table must remain solid');
+    const distance=([x,z])=>Math.hypot(x-table.anchor[0],z-table.anchor[2]);
+    assert.ok(distance(landing)>table.interactionRadius &&
+      distance(workshop.routes[0].at(-1))<table.interactionRadius,'door and table use areas must stay separate');
   } else {
     const entry=passages.find(passage=>passage.sides[1].cell===cell).sides[1].stand;
     const workPosition=[0,-1.1];
     checkPath([entry,workPosition]);
-    assert.ok(!passable([table.center[0],table.center[2]]),'the table must remain solid');
-    if(cell==='atelier'){
-      const distance=([x,z])=>Math.hypot(x-table.center[0],z-table.center[2]);
-      assert.ok(distance(entry)>table.proposedInteractionRadius&&distance(workPosition)<table.proposedInteractionRadius,
-        'the compact room needs separate door and table approach areas');
-    }
+    assert.ok(!passable([0,-2]),'the printing bench must remain solid');
   }
-  for (const passage of passages.slice(1).filter(passage=>passage.sides.some(entry=>entry.cell===cell)))
-    assert.ok(!passable(point(cell,passage.threshold)),cell+' must require an authorized door transition');
+  for (const entry of passages.slice(1).flatMap(passage=>passage.sides).filter(entry=>entry.cell===cell))
+    assert.ok(!passable(entry.threshold),cell+' must require an authorized door transition');
 }
 
 globalThis.FileReader ??= class {
@@ -114,6 +162,10 @@ function collider(mesh) {
 }
 
 const files=new Map();
+const workshopName=`linterna-atelier-${workshopDigest.slice(0,12)}.glb`;
+files.set(workshopName,workshopBytes);
+cells.atelier.models=[{file:workshopName,bytes:workshopBytes.length,sha256:workshopDigest}];
+cells.atelier.colliders=atelierObstacles.map(collider);
 for (const {cell,name,group,obstacles} of layers) {
   const model=batchModel(group);
   const binary=await new GLTFExporter().parseAsync(model,{binary:true,onlyVisible:true});
@@ -124,24 +176,6 @@ for (const {cell,name,group,obstacles} of layers) {
     if(mesh.isMesh)assert.ok(!['slate','terracotta'].includes(mesh.material.name),
         'AnyPrinter fixtures must remain in its own scene');
   });
-  if (cell==='atelier') {
-    const bounds=new Box3().setFromObject(glb.scene);
-    const min=new Vector3(-table.topSize[0]/2,table.workSurfaceY-.12,-2-table.topSize[1]/2);
-    const max=new Vector3(table.topSize[0]/2,table.workSurfaceY,-2+table.topSize[1]/2);
-    let topFound=false;
-    const vertex=new Vector3();
-    glb.scene.updateMatrixWorld(true);
-    glb.scene.traverse(mesh=>{
-      if (mesh.isMesh && mesh.material.name==='warmWood') {
-        const positions=mesh.geometry.attributes.position;
-        const wood=new Box3();
-        for(let i=0;i<positions.count;i++)wood.expandByPoint(vertex.fromBufferAttribute(positions,i).applyMatrix4(mesh.matrixWorld));
-        topFound=wood.min.distanceTo(min)<.001&&wood.max.distanceTo(max)<.001;
-      }
-    });
-    assert.ok(topFound,'the reopened GLB must have the selected table center, height and unrotated tabletop');
-    assert.ok(bounds.min.x>=-2.2&&bounds.max.x<=2.2,'Atelier may not include AnyPrinter geometry');
-  }
   const sha256=createHash('sha256').update(bytes).digest('hex');
   const file=`linterna-${name}-${sha256.slice(0,12)}.glb`;
   files.set(file,bytes);
@@ -151,7 +185,7 @@ for (const {cell,name,group,obstacles} of layers) {
 
 await mkdir(directory,{recursive:true});
 for (const [file,bytes] of files) await writeFile(join(directory,file),bytes);
-const manifest={schema:'holodeck.linterna.hefesto-slice/v1',units:'m',up:'+Y',cells,passages,table};
+const manifest={schema:'holodeck.linterna.hefesto-slice/v2',units:'m',up:'+Y',cells,passages,table};
 await writeFile(join(directory,'linterna-hefesto-slice.json'),JSON.stringify(manifest,null,2)+'\n');
 console.log(JSON.stringify({models:Object.values(cells).flatMap(cell=>cell.models).length,
   largestPart:Math.max(...Array.from(files.values(),bytes=>bytes.length)),
