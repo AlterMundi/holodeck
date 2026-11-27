@@ -2,7 +2,8 @@ import {MeshDepthMaterial,RGBADepthPacking} from 'three';
 
 function maskFlame(material,active){
   const compile=material.onBeforeCompile;
-  const cacheKey=material.customProgramCacheKey();
+  const programKey=material.customProgramCacheKey;
+  const cacheKey=programKey.call(material);
   material.onBeforeCompile=function(shader,renderer){
     compile.call(this,shader,renderer);
     shader.uniforms.explorerThrust=active;
@@ -19,7 +20,11 @@ function maskFlame(material,active){
   };
   material.customProgramCacheKey=()=>cacheKey+':explorer-thrust';
   material.needsUpdate=true;
-  return material;
+  return ()=>{
+    material.onBeforeCompile=compile;
+    material.customProgramCacheKey=programKey;
+    material.needsUpdate=true;
+  };
 }
 
 export function bindExplorerThrusters(root){
@@ -35,10 +40,13 @@ export function bindExplorerThrusters(root){
   if(!palette)return null;
   const active={value:0};
   const main=palette.material,depth=palette.customDepthMaterial;
-  palette.material=maskFlame(main.clone(),active);
-  palette.customDepthMaterial=maskFlame(new MeshDepthMaterial({depthPacking:RGBADepthPacking,side:main.side}),active);
+  // MML owns the character material, including its view-dependent uniforms.
+  const restore=maskFlame(main,active);
+  const maskedDepth=new MeshDepthMaterial({depthPacking:RGBADepthPacking,side:main.side});
+  maskFlame(maskedDepth,active);
+  palette.customDepthMaterial=maskedDepth;
   return {set(value){active.value=value?1:0;},dispose(){
-    palette.material.dispose();palette.customDepthMaterial.dispose();
-    palette.material=main;palette.customDepthMaterial=depth;
+    restore();maskedDepth.dispose();
+    if(palette.customDepthMaterial===maskedDepth)palette.customDepthMaterial=depth;
   }};
 }
