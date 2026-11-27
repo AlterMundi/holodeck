@@ -28,7 +28,9 @@ export class ConversationDisplay {
     this.camera=new OrthographicCamera(0,1,1,0,.1,12);
     this.camera.position.z=5;
     this.camera.updateMatrixWorld();
-    this.chrome=new ConversationChrome({panel,canvas:webgl.domElement,parent:this.layers,camera:this.camera,
+    this.chromeParent=new Group();
+    this.layers.add(this.chromeParent);
+    this.chrome=new ConversationChrome({panel,canvas:webgl.domElement,parent:this.chromeParent,camera:this.camera,
       invalidate:layer.invalidate,readReferences});
   }
 
@@ -112,7 +114,10 @@ export class ConversationDisplay {
       this.appearance=appearance;
       this.style=readHudAppearance(panel.ownerDocument);
     }
-    this.chrome.update(rect,viewport,this.layer.pixelRatio,appearance,this.style);
+    const shared=panel.classList.contains('shared-conversation');
+    this.chromeParent.visible=!shared;
+    if(shared)delete panel.dataset.hudChrome;
+    else this.chrome.update(rect,viewport,this.layer.pixelRatio,appearance,this.style);
     const display=panel.querySelector('iframe');
     const screen=display?.getBoundingClientRect();
     const hasScreen=Boolean(screen?.width&&screen.height);

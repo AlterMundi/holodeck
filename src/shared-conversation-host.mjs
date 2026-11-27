@@ -6,8 +6,8 @@ const microphoneLifetime=300;
 const machineMode='owner-journal/v1';
 const bounded=value=>{try{return JSON.stringify(value).length<=8192;}catch{return false;}};
 export class SharedConversationHost{
-  constructor({window,document,container,api,capture,currentActor,onStatus=()=>{},onError=()=>{},onSpeechLevel,avatarMicrophone=false}){
-    Object.assign(this,{window,document,container,api,capture,currentActor,onStatus,onError,onSpeechLevel,avatarMicrophone});
+  constructor({window,document,container,api,capture,currentActor,onDismiss,onStatus=()=>{},onError=()=>{},onSpeechLevel,avatarMicrophone=false}){
+    Object.assign(this,{window,document,container,api,capture,currentActor,onDismiss,onStatus,onError,onSpeechLevel,avatarMicrophone});
     this.records=new Map();this.visit=window.crypto.randomUUID();this.receive=this.receive.bind(this);
     window.addEventListener('message',this.receive);
     this.clearMicrophone=()=>{this.microphoneSample=null;};
@@ -31,7 +31,26 @@ export class SharedConversationHost{
     target.searchParams.set('surface_visit',this.visit);
     const frame=this.document.createElement('iframe');frame.title='Conversación con tu daimon';
     frame.allow=`microphone ${this.origin}; autoplay ${this.origin}`;frame.referrerPolicy='origin';
+    if(target.origin===this.window.location.origin&&typeof this.onDismiss==='function')
+      frame.addEventListener('load',()=>this.bindLocalDismiss(frame,target));
     this.frame=frame;frame.src=target.href;this.container.append(frame);
+  }
+  bindLocalDismiss(frame,target){
+    this.localDismiss?.abort();
+    if(this.closed||frame!==this.frame)return;
+    const page=frame.contentDocument;
+    if(!page)return;
+    const url=new URL(page.URL);
+    if(url.origin!==target.origin||url.pathname!==target.pathname||url.searchParams.get('surface_visit')!==this.visit)return;
+    // Older same-origin shells can share the shortcut without forwarding any
+    // data. Once the child negotiates dismissal it owns the key.
+    this.localDismiss=new page.defaultView.AbortController();
+    page.defaultView.addEventListener('keydown',event=>{
+      if(this.closed||event.key!=='Escape'||event.isComposing)return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if(!event.repeat)this.onDismiss();
+    },{capture:true,signal:this.localDismiss.signal});
   }
   envelope(d){return {schema:SCHEMA,type:d.type,visit:this.visit,channel:d.channel,actor:this.selected.actorRef,binding:this.selected.binding};}
   send(d,type,fields={}){if(!this.closed)this.frame.contentWindow.postMessage({...this.envelope(d),type,...fields},this.origin);}
@@ -48,15 +67,18 @@ export class SharedConversationHost{
       // A reload establishes a fresh channel; old async replies stay on the old channel.
       this.onSpeechLevel?.(0);
       this.clearMicrophone();
+      this.dismissBound=typeof this.onDismiss==='function'&&d.features?.dismiss===true;
       this.microphoneBound=this.avatarMicrophone&&d.features?.avatarMicrophone===true;
       if(this.channel!==d.channel){
         this.channel=d.channel;
         this.mode=d.features?.machineSource===true&&this.selected.machineSource===machineMode?machineMode:undefined;
       }
-      this.send(d,'connect',{features:{...(this.onSpeechLevel?{avatarPlayback:true}:{}),...(this.microphoneBound?{avatarMicrophone:true}:{}),...(this.mode?{machineSource:this.mode}:{})}});return;
+      this.send(d,'connect',{features:{...(this.onSpeechLevel?{avatarPlayback:true}:{}),...(this.microphoneBound?{avatarMicrophone:true}:{}),...(this.mode?{machineSource:this.mode}:{}),...(this.dismissBound?{dismiss:true}:{})}});return;
     }
     if(d.channel!==this.channel)return;
-    if(d.type==='avatar-playback'&&typeof d.level==='number'&&Number.isFinite(d.level)&&d.level>=0&&d.level<=1){
+    if(d.type==='dismiss'&&this.dismissBound&&Object.keys(d).length===6){
+      this.onDismiss();
+    }else if(d.type==='avatar-playback'&&typeof d.level==='number'&&Number.isFinite(d.level)&&d.level>=0&&d.level<=1){
       this.onSpeechLevel?.(d.level);
     }else if(d.type==='avatar-microphone'){
       if(this.microphoneBound&&!this.document.hidden&&Object.keys(d).length===7&&typeof d.level==='number'&&
@@ -117,6 +139,7 @@ export class SharedConversationHost{
   }
   dispose(){
     this.closed=true;
+    this.localDismiss?.abort();
     this.clearMicrophone();
     if(this.avatarMicrophone)this.document.removeEventListener('visibilitychange',this.clearMicrophone);
     this.onSpeechLevel?.(0);this.window.removeEventListener('message',this.receive);this.frame?.remove();}

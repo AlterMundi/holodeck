@@ -37,6 +37,7 @@ export class ConversationChrome{
       'room-topic','room-topic-choice','history-reference-clear','worktable-reference-clear','conversation-hint']
       .map(id=>[id,panel.querySelector('#'+id)]));
     this.a11y=document.createElement('div');
+    this.a11y.className='conversation-spatial-controls';
     panel.prepend(this.a11y);
     this.lookPreview=new HudLookPreview({document,parent,invalidate});
     this.hud=createSpatialHud({parent,document,accessibilityRoot:this.a11y,controlStyle:'optical',controlRole:()=>'utility',
@@ -60,7 +61,7 @@ export class ConversationChrome{
     },options);
     const ray=new Raycaster(),cursor=new Vector2();
     this.unbind=bindSpatialHudPointer({element:panel,hud:this.hud,rayForPointer:event=>{
-      if(this.contextLost||panel.hidden||panel.dataset.displayMotion==='restore'||event.target.closest?.('#conversation-move,#conversation-resize,input,textarea,select,[contenteditable]'))return;
+      if(this.contextLost||panel.hidden||panel.classList.contains('shared-conversation')||panel.dataset.displayMotion==='restore'||event.target.closest?.('#conversation-move,#conversation-resize,input,textarea,select,[contenteditable]'))return;
       const rect=canvas.getBoundingClientRect();
       if(!rect.width||!rect.height)return;
       cursor.set((event.clientX-rect.left)/rect.width*2-1,1-(event.clientY-rect.top)/rect.height*2);

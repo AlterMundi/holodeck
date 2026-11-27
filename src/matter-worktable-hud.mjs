@@ -882,7 +882,7 @@ export class MatterWorktableHud{
 
   toolBounds(name){
     if(!this.toolGroup||this.toolPlacement?.group!==this.toolGroup)return null;
-    return this.hud.getControlViewportBounds(toolbeltId,name,this.camera,this.canvas.getBoundingClientRect());
+    return this.hud.getControlViewportBounds?.(toolbeltId,name,this.camera,this.canvas.getBoundingClientRect())??null;
   }
 
   beginPassage(){

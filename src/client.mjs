@@ -2094,7 +2094,8 @@ $('#undo').onclick=async()=>{
 function openConversation(open){
   const panel=$('#conversation-panel'),talk=$('#talk');
   const wasHidden=panel.hidden;
-  const restoreFocus=!open&&panel.contains(document.activeElement);
+  const focused=document.activeElement;
+  const restoreFocus=!open&&panel.contains(focused);
   // Character Studio captures its selected pose before the panel takes focus.
   if(open&&wasHidden&&inside&&activeSpace.id===CHARACTER_STUDIO&&matterHud?.active)
     conversationCharacterPose=matterHud.table?.currentPose?.()??null;
@@ -2103,6 +2104,7 @@ function openConversation(open){
     const target=matterHud?.toolBounds('talk')??talk.getBoundingClientRect();
     if(target.width&&target.height)conversationDisplay?.minimize(target);
   }
+  if(restoreFocus)focused.blur();
   panel.hidden=!open;
   if(wasHidden===open)resetFlightTap();
   talk.setAttribute('aria-expanded',String(open));
@@ -2115,14 +2117,14 @@ function openConversation(open){
   if(open&&sharedSurface()){
     if(!sharedConversation)sharedConversation=new SharedConversationHost({window,document,container:$('#shared-conversation'),api,
       capture:captureInteractionContext,currentActor:()=>activeSpace?.actorRef??state?.actorRef,
-      avatarMicrophone:true,onSpeechLevel:level=>companionAvatar?.setSpeechLevel(level),
+      avatarMicrophone:true,onDismiss:()=>{if(!panel.hidden)openConversation(false);},onSpeechLevel:level=>companionAvatar?.setSpeechLevel(level),
       onStatus:({phase,busy})=>{$('#companion-status').textContent=phases[phase]||(busy?'La conversación está procesando tu intervención.':'Tu intervención quedó en la conversación.');},onError:say});
     sharedConversation.mount().catch(()=>say('No pude abrir tu conversación. Volvé a tocar Conversar para intentarlo.'));
   }else if(open&&!flightEnabled)$('#message').focus();
   let didFocusWorld=false;
   if(flightEnabled&&(open&&wasHidden||restoreFocus)){
     const canvas=client.getRenderer()?.composer.renderer.domElement;
-    if(canvas){canvas.tabIndex=-1;canvas.focus({preventScroll:true});didFocusWorld=true;}
+    if(canvas){canvas.tabIndex=-1;canvas.focus({preventScroll:true});didFocusWorld=document.activeElement===canvas;}
   }
   if(!open)fitConversationWindow(true);
   if(restoreFocus&&!didFocusWorld&&!matterHud?.focusTool('talk'))talk.focus({preventScroll:true});
@@ -2225,8 +2227,14 @@ $('#conversation-form').onsubmit=async event=>{
     await readTurn();
   }catch(error){if(sameRequest(nativeTurn,body.id)){$('#companion-status').textContent=phases.unknown;noteRecovery('native',error);}}
 };
-// Escape closes panels; it does not interrupt a native turn or stop the world.
-window.addEventListener('keydown',event=>{if(event.key==='Escape'){openConversation(false);if(preview)closePreview();signalEditor.close();}});
+// Close Conversation before world controls or focused HUD widgets consume Escape.
+window.addEventListener('keydown',event=>{
+  if(event.key!=='Escape'||event.isComposing||$('#conversation-panel').hidden)return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  if(!event.repeat)openConversation(false);
+},true);
+window.addEventListener('keydown',event=>{if(event.key==='Escape'){if(preview)closePreview();signalEditor.close();}});
 let refreshing=false;
 const interval=setInterval(async()=>{
   if(closed||inside||document.hidden||refreshing)return;refreshing=true;
