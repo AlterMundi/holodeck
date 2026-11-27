@@ -43,7 +43,10 @@ export async function characterPoseCatalog(studyRevision){
       return [clip,identity(sample.digest,sample.clips[0].maxFrame)];
     })));
     const stockDigest=name=>stock[name].edition.split('.')[1];
-    catalog[id]={...stock,...Object.fromEntries(Object.entries(humanMotionStudies).map(([name,study])=>{
+    // A rig's own authored clips (the Explorer's hero clips) sit beside the stock ones.
+    const own=Object.fromEntries(asset.clips.filter(({name})=>!Object.hasOwn(rig.clips,name))
+      .map(({name,maxFrame})=>[name,identity(asset.digest,maxFrame)]));
+    catalog[id]={...own,...stock,...Object.fromEntries(Object.entries(humanMotionStudies).map(([name,study])=>{
       const inputs=[studyRevision,name,stockDigest('idle')];
       if(study.walking)inputs.push(stockDigest('jog'));
       return [name,identity(digest(inputs.join(' ')),Math.round(study.duration*motionStudyRate))];

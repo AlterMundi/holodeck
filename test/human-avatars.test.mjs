@@ -202,3 +202,10 @@ test('each human skin exposes a neutral sparse mouth pose with bounded deformati
     assert.ok(position.min[1]<-.012&&position.max[1]>.001);
   }
 });
+
+test('the Character Studio opens the same personal Explorer file the world uses',async()=>{
+  const {rigs}=await import('../src/character-studio-rigs.mjs');
+  const {personalAvatarFile}=await import('../src/human-avatars.mjs');
+  assert.equal(rigs.explorer.file,'assets/'+personalAvatarFile);
+  assert.equal(rigs.explorer.clips,rigs.humanoid.clips);
+});
