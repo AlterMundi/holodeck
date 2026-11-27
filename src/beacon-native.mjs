@@ -8,7 +8,23 @@ import {bindHarMoCAPPreview} from './beacon-video-preview.mjs';
 
 const panel='/harmonic_lab/';
 const nativeId='lab-worktable';
-const terminal=new Set(['queued','starting']);
+const pendingPhases=new Set(['queued','starting']);
+const audioTrouble=Object.freeze({
+  input:'La entrada de audio seleccionada no está disponible. Revisá su conexión y reintentá.',
+  output:'La salida de audio seleccionada no está disponible. Revisá su conexión y reintentá.',
+  microphone:'El micrófono seleccionado no está disponible. Revisá su conexión y reintentá.',
+  profile:'Completá la selección de entrada y salidas de audio en esta estación.',
+  jack:'El sistema de audio de esta estación no está disponible. Revisalo y reintentá.',
+});
+function startFailure(job,service){
+  if(!job?.services?.includes(service))return;
+  const result=job.results?.[service];
+  if(result?.status!=='failed'&&job.phase!=='failed')return;
+  if(Object.hasOwn(audioTrouble,result?.audioIssue))return audioTrouble[result.audioIssue];
+  if(result?.projection==='failed')return 'Spatializer está abierto. Revisá el audio para recuperar sus controles.';
+  if(job.phase==='failed')return 'La estación tardó demasiado en preparar el instrumento.';
+  return 'No se pudo preparar el instrumento. Revisá la estación y reintentá.';
+}
 const readFlag={shaper:'shaperProjectionReady',rostro:'rostroProjectionReady',harmocap:'harmocapProjectionReady'};
 const nativeAction=(name,context={})=>({event:{name,context}});
 
@@ -166,22 +182,44 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
   }
   function connect(){
     stream?.close();
-    stream=new EventSource(url('/events'));
-    stream.onerror=()=>{
+    source=null;
+    const opening=new EventSource(url('/events'));
+    stream=opening;
+    const timeout=setTimeout(()=>{
+      if(stream!==opening||source||signal.aborted)return;
+      opening.close();
+      stream=null;
+      retry('No llegaron los controles del instrumento. Reintentá.');
+    },18000);
+    signal.addEventListener('abort',()=>clearTimeout(timeout),{once:true});
+    opening.onerror=()=>{
+      if(stream!==opening||signal.aborted)return;
+      clearTimeout(timeout);
+      opening.close();
+      stream=null;
       source=null;
       retry('Se perdió la conexión con el instrumento.');
     };
-    stream.onmessage=event=>{
-      if(signal.aborted)return;
+    opening.onmessage=event=>{
+      if(signal.aborted||stream!==opening)return;
       try{
         const messages=JSON.parse(event.data);
         if(!Array.isArray(messages)||!messages.length)throw Error();
-        if(messages[0]?.createSurface?.surfaceId===surface)source=true;
+        if(messages[0]?.createSurface?.surfaceId===surface){
+          clearTimeout(timeout);
+          source=true;
+        }
         if(!source)return;
         model.receive(messages);
         preview?.receive(messages);
         showModel();
-      }catch{source=null;retry('No se pudo leer el estado del instrumento.');}
+      }catch{
+        clearTimeout(timeout);
+        opening.close();
+        stream=null;
+        source=null;
+        retry('No se pudo leer el estado del instrumento.');
+      }
     };
   }
   async function refresh(){
@@ -216,21 +254,27 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
         return;
       }
       if(!service.enabled){status('El instrumento está desactivado en esta estación.');return;}
-      if(terminal.has(host.job?.phase)){
+      const failure=startFailure(host.job,service.id);
+      if(pendingPhases.has(host.job?.phase)){
         status(host.job.services?.includes(service.id)?'Preparando el instrumento…':'La estación está preparando otro instrumento.');
+      }else if(failure&&!explicit){
+        retry(failure);return;
       }else if(!attempted.has(selected)&&(service.status==='stopped'||surface==='spatializer')&&csrf){
-        const failure=host.job?.results?.[service.id];
-        if(failure?.status==='failed'&&!explicit){
-          retry('No se pudo preparar el instrumento. Revisá la estación y reintentá.');return;
-        }
         explicit=false;
         attempted.add(selected);
         status('Preparando el instrumento…');
-        const response=await fetch(panel+'api/start',{method:'POST',credentials:'same-origin',signal,
-          headers:{'Content-Type':'application/json','X-Lab-CSRF':csrf},
-          body:JSON.stringify({host:selected,service:service.id,id:crypto.randomUUID(),
-            ...(surface==='spatializer'?{projection:surface}:{})})});
-        if(!response.ok){retry('No se pudo confirmar el inicio.');return;}
+        const id=crypto.randomUUID();
+        try{
+          const response=await fetch(panel+'api/start',{method:'POST',credentials:'same-origin',
+            signal:AbortSignal.any([signal,AbortSignal.timeout(18000)]),
+            headers:{'Content-Type':'application/json','X-Lab-CSRF':csrf},
+            body:JSON.stringify({host:selected,service:service.id,id,
+              ...(surface==='spatializer'?{projection:surface}:{})})});
+          if(response.status===401||response.status===403){status('Se necesita acceso a Harmonic Lab.');return;}
+        }catch{
+          if(signal.aborted)return;
+          // A missing receipt can hide an accepted start. Observe the station before showing retry.
+        }
       }else{
         retry('Los controles del instrumento todavía no están disponibles.');return;
       }
