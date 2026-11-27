@@ -828,12 +828,13 @@ real Oliva edition through her saved Casa Linterna gallery, then exercise
 an allowed and a denied live visitor in both projections. The visual
 objective remains paused while these decisions are reviewed.
 
-The current package writer restarts the shared Node process. Prepare the
-[continuity path](deployment.md#preserve-a-live-visit-during-releases)
-before selecting changes during a live visit. Ordinary content placement
-already uses the running world writer. Client-only selection, session
-handoff during compatible package upgrades and a visible maintenance
-transition each need their own receiving readback.
+Deploy each requested change or significant qualified batch for immediate
+playtesting. The current package writer restarts the shared Node process.
+Build the [continuity path](deployment.md#preserve-a-live-visit-during-releases)
+alongside those releases. Ordinary content placement already uses the
+running world writer. Client-only selection, session handoff during
+compatible package upgrades and a visible maintenance transition each
+need their own receiving readback.
 
 ## One declarative world, individually styled
 

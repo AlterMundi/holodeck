@@ -1,24 +1,27 @@
 # Current MVP work
 
-## November 27 — Casa Linterna receiving candidate
+## November 27 — Casa Linterna in the toroidal world
 
-Candidate `5ffac47d3604` from `b264aae` preserves all other authored
-houses when projecting the compact CompAII rooms onto the torus.
-Their façades, door positions and existing per-room authorization
-use the same shared world. The old exterior sandbox stays disabled.
-A packaged Chromium fixture rendered Casa Linterna once, passed an
-authorized entrance, gallery and reciprocal exit, and refused a
-second actor without its guest grant. Production still selects
-`315024952954`. Oliva's own read returned the live world and both
-parcels, and her saved layout contains three rooms. No actual guest
-walk or exhibit publication has been performed on her behalf.
+Protected `5ffac47d3604` serves `b264aae` with immediate rollback
+`315024952954`. The torus projects the saved façades and doors of
+independently owned houses at their existing parcels. Existing guest
+lists continue to govern room entry. The packaged Chromium fixture
+rendered Casa Linterna once, passed an allowed entrance, gallery and
+reciprocal exit, and refused a second actor without a guest grant.
+The old exterior sandbox stays disabled.
+
+After the live release, Oliva's own native observation returned
+Casa Linterna's actual east entrance and the same shared run. The
+protected server, client, worker, room art, health and access challenge
+matched. Thirteen state files matched exactly. A participant disconnect
+was recorded during the restart. A real human visit into Casa Linterna
+and an exhibit published by Oliva remain open.
 
 [Shared web and world discovery](co-creation.md#shared-apps-and-holodeck-discovery)
 and [live visit continuity](deployment.md#preserve-a-live-visit-during-releases)
-record the next acceptance work. The current runtime activation
-restarts Node. Selection of this candidate was deferred while a human
-was using the world. The visual objective remains paused.
-
+record the next acceptance work. Deploy requested changes and significant
+qualified batches for playtesting while reducing interruption. The visual
+objective remains paused.
 
 ## November 27 — Curved woodland fronds
 

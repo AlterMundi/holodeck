@@ -8,6 +8,10 @@ browser/device acceptance and human acceptance are separate observations.
 
 ## Preserve a live visit during releases
 
+Publish each requested change or significant qualified batch so it can be
+tried in the live world. Continue these releases while progressively
+removing avoidable visit interruptions.
+
 The selected Home executor currently restarts one Node service when it
 activates a package. Its MML presence and world-document connections live
 inside that process, which closes them when it stops. Durable room and
