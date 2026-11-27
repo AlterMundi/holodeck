@@ -17,6 +17,36 @@ and opened no media connection. The separate generated-MP4 fixture
 verified synchronization and protected range handling. Live playback
 with a selected source and a paired human visit remain unverified.
 
+## November 27 — Residence entrance and grove
+
+Protected release `bea793358846` moves the displaced evergreens around
+the perimeter and adds five araucarias between 29 and 36 metres tall. A
+shared site frame leans the residence and its walkable grade about two
+degrees toward the approach. The stair and podium visual contact is clipped
+under the visible stone after the asset loads. The continuous walking grade
+remains available for collision and stair traversal.
+
+Chromium confirmed that the five trees render, that the centre stair and
+interior floor support the character, and that the frontal view has no
+terrain bleed over the treads. The selected host matched all 91 package
+files and the protected client and model assets. Immediate rollback is
+`c2a58eab44f1`.
+
+## November 27 — Shared world view and toolbar voice
+
+Protected release `c2a58eab44f1` adds **Mic** and the nearby spoken-reply
+toggle, explicit capture of one world frame into canonical Conversation,
+whole-header drag, and actionable workshop connection recovery. Its
+rollback is `743e5670d304`. Three faces shared the original portal panel's
+plane. The Char Design revision moves the panel and glyph 8 cm toward the
+entrance and leaves the collision model byte-identical.
+
+The packaged Chromium test verified the A2UI toolbar, exact vision attachment
+with text and with synthetic voice, mute and re-enable, header drag, and
+connection retry without sending the original again. The receiving host
+matched all 91 package files and the protected HTTPS client and residence.
+Real microphone and audible reply acceptance remain device checks.
+
 ## November 27 — Residence, personal Explorer, and optical HUD
 
 Protected release `55c1e6699cee` places the Residencia de la Nobleza IA

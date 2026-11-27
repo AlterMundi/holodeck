@@ -13,7 +13,7 @@ import {CAVE} from './toroidal-cave.mjs';
 import {caveExitCellCapacity,caveExitCover,intersectsCaveExitCover} from './toroidal-cave-verge.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
 import {
-  overlookCoordinates, residenceLocal, TOROIDAL_RESIDENCE, TOROIDAL_TERRAIN, terrainCoordinates,
+  overlookCoordinates, residencePlantClearance, TOROIDAL_TERRAIN, terrainCoordinates,
   terrainElevation, terrainMeadowMoisture, terrainPosition, terrainTile, terrainTrail, terrainWoodland,
 } from './toroidal-terrain.mjs';
 
@@ -55,16 +55,6 @@ function random(cell,index,salt) {
   return ((n^(n>>>16))>>>0)/4294967296;
 }
 
-// Keep ground cover out of the palace, its podium and fan stair.
-function insideResidence(u,v){
-  const near=Math.abs(wrapTurn(u-TOROIDAL_RESIDENCE.u))*TOROIDAL_TERRAIN.majorRadius*6.3<70&&
-    Math.abs(v-TOROIDAL_RESIDENCE.v)*TOROIDAL_TERRAIN.tubeRadius*6.3<70;
-  if(!near)return false;
-  const {x,y}=residenceLocal(u,v);
-  return Math.hypot(x,y)<31||(Math.abs(x)<11.5&&y<-24&&y>-51);
-}
-const wrapTurn=value=>value-Math.round(value);
-
 function sceneryForCell(cell) {
   const instances=[];
   for(let i=0;i<CANDIDATES;i++){
@@ -78,7 +68,7 @@ function sceneryForCell(cell) {
       (v-.25)*TOROIDAL_TERRAIN.tubeRadius);
     if(distanceFromHouse<5.4)continue;
     if(u>CAVE.from-.00025&&u<CAVE.to+.00025&&Math.abs(v-CAVE.latitude)<.0029)continue;
-    if(insideResidence(u,v))continue;
+    if(residencePlantClearance(u,v,2.6))continue;
     const moisture=terrainMeadowMoisture(u,v,h);
     const stony=h>37||h<TOROIDAL_TERRAIN.waterLevel+2.5||pick(7)<.16+(1-moisture)*.17;
     const size=stony?.20+pick(53)**1.7*.79:.25+pick(53)**1.4*.41;
@@ -145,7 +135,7 @@ function meadowCell(cell,index,door,atCaveExit){
   if(index>=FIELD_DENSITY&&turf===0)return null;
   if(turf===0&&u>CAVE.from-.00029&&u<CAVE.to+.00029&&Math.abs(v-CAVE.latitude)<.0031)return null;
   if(u>overlookStart.u&&u<overlookEnd.u&&v>overlookStart.v&&v<overlookEnd.v)return null;
-  if(terrainTrail(u,v)>.12)return null;
+  if(residencePlantClearance(u,v,1.8)||terrainTrail(u,v)>.12)return null;
   const h=terrainElevation(u,v);
   if(h<TOROIDAL_TERRAIN.waterLevel+1.4||h>FIELD_MAX_ELEVATION)return null;
   const fold=349*TAU*u+188*TAU*v+1.3*Math.sin(54*TAU*u-93*TAU*v);

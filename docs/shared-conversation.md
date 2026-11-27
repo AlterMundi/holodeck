@@ -39,6 +39,29 @@ conversation acceptance. Nicolas explicitly resumed the full existing MVP22Novem
 active objective; specific acceptance observations remain separate and do not
 require another generic trial before implementation can continue.
 
+## Toolbar voice and a shared world frame
+
+The toolbar Mic opens the paired canonical composer and runs its ordinary
+voice recording and send control. The adjacent speaker reflects canonical
+spoken replies. It can be muted from the toolbar and turns on again when
+another toolbar recording is accepted. A local recording awaiting review
+remains in Conversation for explicit recovery.
+
+**Incluir vista con Mic** takes one frame from the rendered world when a
+toolbar recording starts. **Adjuntar vista** selects the same kind of frame
+for the current text or voice draft. Capture uses the displayed world camera
+and excludes other tabs and browser or operating-system chrome. The card
+is previewed in the canonical draft, where it can be removed before sending.
+Only the ordinary Conversation writer sends the selected image with the
+human original. Capture ends with the single frame, and a room change or
+panel close cancels a capture still in progress. There is no continuous feed.
+
+The toolbar controls and frame attachment use the exact authorized composer
+on the same origin. The parent checks the selected actor, iframe URL and
+visit, and current room. The child retains recording, provider integration,
+speech playback, image encoding for submission, and delivery receipts.
+Cross-origin Conversation continues using its own composer controls.
+
 ## Sending when world context is unavailable
 
 CompAII's hosted Conversation now includes the optional-context handling in

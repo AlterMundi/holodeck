@@ -6,7 +6,7 @@
 import {Group, Matrix4, Quaternion, Vector3} from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
-import {TOROIDAL_RESIDENCE, terrainFrame, terrainPosition} from './toroidal-terrain.mjs';
+import {residenceFrame} from './toroidal-terrain.mjs';
 import {disposeModel} from './gallery-models.mjs';
 import {residenceAssets} from './toroidal-residence-assets.mjs';
 
@@ -15,16 +15,10 @@ export {residenceAssets};
 const SHOW_DISTANCE=900, COLLIDE_DISTANCE=95, RELEASE_DISTANCE=110;
 
 export function residencePlacement(){
-  const {u,v,base,yaw}=TOROIDAL_RESIDENCE;
-  const f=terrainFrame(u,v);
-  const origin=new Vector3().fromArray(terrainPosition(u,v,base));
-  const c=Math.cos(yaw), s=Math.sin(yaw);
-  const ring=new Vector3().fromArray(f.alongRing), up=new Vector3().fromArray(f.up), tube=new Vector3().fromArray(f.aroundTube);
-  // local X = cos·ring − sin·tube, local Z = sin·ring + cos·tube (same yaw as the grade)
-  const x=ring.clone().multiplyScalar(c).addScaledVector(tube,-s);
-  const z=ring.clone().multiplyScalar(s).addScaledVector(tube,c);
-  const quaternion=new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(x,up,z));
-  return {origin,quaternion};
+  const {origin,up,ex,ez}=residenceFrame;
+  const basis=new Matrix4().makeBasis(new Vector3(...ex),new Vector3(...up),new Vector3(...ez));
+  const quaternion=new Quaternion().setFromRotationMatrix(basis);
+  return {origin:new Vector3(...origin),quaternion};
 }
 
 async function fetchExact(base,{path,bytes,sha256},signal){

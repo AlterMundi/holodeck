@@ -9,7 +9,7 @@ import {usePineBark} from './toroidal-pine-bark.mjs';
 import {toroidalAirColor} from './toroidal-air.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
 import {
-  INNER_WOODLANDS, TOROIDAL_TERRAIN, terrainCoordinates, terrainElevation, terrainFrame, terrainPosition, terrainTrail,
+  INNER_WOODLANDS, TOROIDAL_TERRAIN, residenceCoordinates, residenceLocal, residencePlantClearance, terrainCoordinates, terrainElevation, terrainFrame, terrainPosition, terrainTrail,
   terrainWoodland, woodlandCoordinates,
 } from './toroidal-terrain.mjs';
 
@@ -53,6 +53,46 @@ export function woodlandTrees(){
   return trees;
 }
 
+export function plantedWoodlandTrees(){
+  const trees=woodlandTrees();
+  const place=(tree,x,y)=>{
+    const {u,v}=residenceCoordinates(x,y);
+    const {majorRadius,tubeRadius}=TOROIDAL_TERRAIN;
+    return {...tree,u,v,x:(.25-v)*TAU*(tubeRadius+18),z:(u-Math.round(u))*TAU*majorRadius,h:terrainElevation(u,v)};
+  };
+  const araucarias=[
+    [-43,-16,31,29],[42,-24,29,25],[-40,28,36,30],[38,35,34,31],[4,46,32,27],
+  ].map(([x,y,height,width],index)=>place({height,width,araucaria:true,yaw:index*.87,tint:.65},x,y));
+  const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
+  const open=[],displaced=[];
+  for(const tree of trees){
+    if(residencePlantClearance(tree.u,tree.v,2.4+tree.width*.28)||
+      araucarias.some(tall=>distance(tree,tall)<5.5))displaced.push(tree);
+    else open.push(tree);
+  }
+  const occupied=[...open,...araucarias];
+  const candidates=[];
+  for(const radius of [39,46,53,60,67,74]){
+    const count=Math.floor(TAU*radius/7);
+    for(let index=0;index<count;index++){
+      const angle=TAU*(index+.38)/count;
+      const x=Math.cos(angle)*radius,y=Math.sin(angle)*radius;
+      const position=place({},x,y);
+      if((y<-24&&Math.abs(x)<18)||residencePlantClearance(position.u,position.v,6)||
+        position.h<TOROIDAL_TERRAIN.waterLevel+4||terrainTrail(position.u,position.v)>.025)continue;
+      candidates.push({x,y,position});
+    }
+  }
+  for(const tree of displaced){
+    const from=residenceLocal(tree.u,tree.v);
+    const ordered=candidates.map(candidate=>({position:candidate.position,distance:Math.hypot(candidate.x-from.x,candidate.y-from.y)}))
+      .sort((a,b)=>a.distance-b.distance);
+    const next=ordered.find(({position})=>occupied.every(other=>distance(position,other)>6.1));
+    if(next)occupied.push({...tree,...next.position});
+  }
+  return occupied;
+}
+
 // Fixed angular cells make the far crowns and walkable trunks use the same
 // roots. Overlapping stands cover one set of cells without duplicate trees.
 export function innerWoodlandTrees(){
@@ -81,7 +121,7 @@ export function innerWoodlandTrees(){
   return trees;
 }
 
-function evergreenGeometry(detail,spreading=false){
+function evergreenGeometry(detail,spreading=false,araucaria=false){
   const positions=[],colors=[],needles=[],bark=[];
   const shade=new Color();
   const trunk=0x534134;
@@ -96,10 +136,10 @@ function evergreenGeometry(detail,spreading=false){
     }
   };
   const sides=[5,7,9][detail];
-  const whorls=(spreading?[3,4,5]:[3,5,6])[detail];
-  const whorlBase=t=>spreading?.27+.45*t:.21+.51*t;
+  const whorls=(araucaria?[4,5,7]:spreading?[3,4,5]:[3,5,6])[detail];
+  const whorlBase=t=>araucaria?.43+.48*t:spreading?.27+.45*t:.21+.51*t;
   const whorlLean=t=>spreading?.12*t*t:0;
-  const stemHeight=detail?.88:trunkDepth+.12;
+  const stemHeight=araucaria?.99:detail?.88:trunkDepth+.12;
   const stem=[{height:-.055,x:0,z:0}];
   if(detail&&spreading){
     for(let band=0;band<whorls;band++){
@@ -127,10 +167,11 @@ function evergreenGeometry(detail,spreading=false){
   for(let band=0;band<whorls;band++){
     const t=band/(whorls-1);
     const base=whorlBase(t);
-    const radius=spreading?.345*(1-.76*t**1.6):.254*(1-.79*t);
+    const radius=araucaria?.34*(.60+.40*Math.sin(Math.PI*t))*(1-.55*t**4):
+      spreading?.345*(1-.76*t**1.6):.254*(1-.79*t);
     const lean=whorlLean(t);
     const crown=(r,y,a)=>[Math.cos(a)*r+lean,y,Math.sin(a)*r-.4*lean];
-    const apex=[lean+.025*t,band===whorls-1?1:base+(spreading?.18:.23),-.026*t-.4*lean];
+    const apex=[lean+.025*t,band===whorls-1?1:base+(araucaria?.054:spreading?.18:.23),-.026*t-.4*lean];
     const spokeCount=detail===2?10:detail===1?7:4;
     const turn=.47*band;
     const tint=foliage[Math.round(t*(foliage.length-1))];
@@ -138,7 +179,7 @@ function evergreenGeometry(detail,spreading=false){
     for(let i=0;i<spokeCount;i++){
       const a=turn+i*TAU/spokeCount;
       const spread=spreading?.94+.22*Math.cos(a-.7)+.13*Math.sin(a*3+band):.88+.17*Math.sin(i*3.7+band*4.4);
-      const drop=spreading?-.065+.030*Math.cos(3*a+band):-.032+.037*Math.cos(i*2.9+band);
+      const drop=araucaria?.032*Math.sin(i*3.7+band*4.4):spreading?-.065+.030*Math.cos(3*a+band):-.032+.037*Math.cos(i*2.9+band);
       const tip=crown(radius*spread,base+drop,a);
       const span=TAU/spokeCount;
       const left=crown(radius*(spreading?.73:.64),base+.042,a-span*.5);
@@ -450,7 +491,7 @@ function undergrowthFor(trees){
         radius*(alongRing[axis]*Math.cos(a)+aroundTube[axis]*Math.sin(a)));
       const at=terrainCoordinates(offset);
       const elevation=terrainElevation(at.u,at.v);
-      if(Math.abs(elevation-h)>radius*.59||terrainTrail(at.u,at.v)>.012||
+      if(residencePlantClearance(at.u,at.v,1.5)||Math.abs(elevation-h)>radius*.59||terrainTrail(at.u,at.v)>.012||
          terrainWoodland(at.u,at.v,elevation)<.22)continue;
       const width=.85+pick(141+index)*.92;
       const ground=terrainPosition(at.u,at.v,elevation);
@@ -481,6 +522,7 @@ export class ToroidalWoodland{
     this.geometry=[
       ...[0,1,2].map(detail=>evergreenGeometry(detail)),skylineGeometry(),
       ...[0,1,2].map(detail=>evergreenGeometry(detail,true)),skylineGeometry(true),
+      ...[0,1,2].map(detail=>evergreenGeometry(detail,false,true)),
     ];
     this.material=new MeshStandardMaterial({vertexColors:true,roughness:.95});
     useDaylight(this.material,daylight,.95);
@@ -494,21 +536,23 @@ export class ToroidalWoodland{
     this.sun={value:new Vector3(0,1,0)};
     this.viewer={value:new Vector3()};
     this.skylineMaterial=skylineMaterial(daylight,this.sun,this.viewer);
-    const trees=[...woodlandTrees(),...innerWoodlandTrees()].map(tree=>{
+    const trees=[...plantedWoodlandTrees(),...innerWoodlandTrees()].map(tree=>{
       const u=Math.round(tree.u*1e6),v=Math.round(tree.v*1e6);
       const switchDistance=maxRange-skylineTransitionRange*sample(u,v,8467);
-      return {...tree,spreading:tree.height>=7.8&&sample(u,v,3941)>.59,
+      return {...tree,spreading:!tree.araucaria&&tree.height>=7.8&&sample(u,v,3941)>.59,
         skylineDistanceSq:switchDistance**2,returnDistanceSq:(switchDistance-skylineReturnMargin)**2};
     });
     this.shadeTexture=createWoodlandShade(trees);
     const broad=trees.filter(tree=>tree.spreading).length;
+    const tall=trees.filter(tree=>tree.araucaria).length;
     this.meshes=this.geometry.map((geometry,index)=>{
-      const capacity=index<4?trees.length-broad:broad;
+      const capacity=index<4?trees.length-broad-tall:index<8?broad:tall;
       const level=index%4;
       const material=level===3?this.skylineMaterial:level===2?this.nearMaterial:this.material;
       const mesh=new InstancedMesh(geometry,material,capacity);
       mesh.name=['Woodland distant','Woodland middle','Woodland near','Inner arc canopy',
-        'Woodland spreading distant','Woodland spreading middle','Woodland spreading near','Inner arc spreading canopy'][index];
+        'Woodland spreading distant','Woodland spreading middle','Woodland spreading near','Inner arc spreading canopy',
+        'Araucarias distant','Araucarias middle','Araucarias near'][index];
       mesh.count=0;
       this.group.add(mesh);
       return mesh;
@@ -592,7 +636,7 @@ export class ToroidalWoodland{
           tree.skyline=distance>threshold;
         }
         const level=tree.skyline?3:distance<(lightweight?23:39)**2?2:distance<(lightweight?81:126)**2?1:0;
-        const mesh=this.meshes[level+(tree.spreading?4:0)];
+        const mesh=this.meshes[level+(tree.araucaria?8:tree.spreading?4:0)];
         mesh.setMatrixAt(mesh.count,tree.matrix);
         const light=.85+.29*tree.tint;
         mesh.setColorAt(mesh.count,this.tint.setRGB(light,light,.94*light+.06));

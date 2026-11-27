@@ -45,8 +45,8 @@ const toolPanelMinWidth=.5; // Minimum in the Proyección HudPanel catalog.
 const toolScale=286; // Proyección's .154-unit button target is 44 CSS px at this scale.
 const toolGap=.035,touchToolGap=.018,toolRowHeight=.18,toolPadding=.12,dockBottomMargin=.035;
 const iconToolPixels=48;
-const toolNames=['map','open','talk','appearance','video','bridge','plant','undo','activity','visit','endVisit','fullscreen','more'];
-const toolPixels={map:130,open:154,talk:134,appearance:138,video:96,bridge:182,plant:100,undo:92,activity:126,visit:124,endVisit:140,fullscreen:48,more:48};
+const toolNames=['map','open','talk','mic','speaker','appearance','video','bridge','plant','undo','activity','visit','endVisit','fullscreen','more'];
+const toolPixels={map:130,open:154,talk:134,mic:105,speaker:110,appearance:138,video:96,bridge:182,plant:100,undo:92,activity:126,visit:124,endVisit:140,fullscreen:48,more:48};
 
 function opticalRole(surface,id,component){
   if(surface===worldMapId||surface===worldBearingId||id==='map')return 'navigation';
@@ -55,7 +55,7 @@ function opticalRole(surface,id,component){
 }
 const toolIcons={map:'map',talk:'conversation',appearance:'appearance',video:'video',activity:'activity',
   fullscreen:'resize'};
-const toolPriority=['open','talk','map','activity','video','appearance','fullscreen','visit','endVisit','bridge','plant','undo'];
+const toolPriority=['open','mic','speaker','talk','map','activity','video','appearance','fullscreen','visit','endVisit','bridge','plant','undo'];
 const compactToolPixels={open:86,map:110,talk:116,appearance:122,video:82,activity:110};
 function pixelsForTool(id,{compact,iconOnly}){
   if(iconOnly&&Object.hasOwn(toolIcons,id))return iconToolPixels;
@@ -93,7 +93,7 @@ function toolComponents(layout){
     ...rows.flatMap(({ids},index)=>[
       row(rowIds[index],ids,{gap}),
       ...ids.map(id=>button(id,path(id+'Label'),{
-        disabled:path(id+'Disabled'),...(['map','talk','appearance','video','fullscreen','more'].includes(id)?{pressed:path(id+'Pressed')}:{}),
+        disabled:path(id+'Disabled'),...(['map','talk','mic','speaker','appearance','video','fullscreen','more'].includes(id)?{pressed:path(id+'Pressed')}:{}),
         weight:pixelsForTool(id,layout)/66,...(toolIcons[id]?{icon:toolIcons[id]}:{}),
       })),
     ]),

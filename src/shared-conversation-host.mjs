@@ -6,8 +6,8 @@ const microphoneLifetime=300;
 const machineMode='owner-journal/v1';
 const bounded=value=>{try{return JSON.stringify(value).length<=8192;}catch{return false;}};
 export class SharedConversationHost{
-  constructor({window,document,container,api,capture,currentActor,onDismiss,onStatus=()=>{},onError=()=>{},onSpeechLevel,avatarMicrophone=false}){
-    Object.assign(this,{window,document,container,api,capture,currentActor,onDismiss,onStatus,onError,onSpeechLevel,avatarMicrophone});
+  constructor({window,document,container,api,capture,currentActor,onDismiss,onVoiceControls=()=>{},onStatus=()=>{},onError=()=>{},onSpeechLevel,avatarMicrophone=false}){
+    Object.assign(this,{window,document,container,api,capture,currentActor,onDismiss,onVoiceControls,onStatus,onError,onSpeechLevel,avatarMicrophone});
     this.records=new Map();this.visit=window.crypto.randomUUID();this.receive=this.receive.bind(this);
     window.addEventListener('message',this.receive);
     this.clearMicrophone=()=>{this.microphoneSample=null;};
@@ -32,16 +32,19 @@ export class SharedConversationHost{
     const frame=this.document.createElement('iframe');frame.title='Conversación con tu daimon';
     frame.allow=`microphone ${this.origin}; autoplay ${this.origin}`;frame.referrerPolicy='origin';
     if(target.origin===this.window.location.origin&&typeof this.onDismiss==='function')
-      frame.addEventListener('load',()=>this.bindLocalDismiss(frame,target));
-    this.frame=frame;frame.src=target.href;this.container.append(frame);
+      frame.addEventListener('load',()=>this.bindLocalDismiss(frame));
+    this.target=target;this.frame=frame;frame.src=target.href;this.container.append(frame);
   }
-  bindLocalDismiss(frame,target){
+  bindLocalDismiss(frame){
     this.localDismiss?.abort();
     if(this.closed||frame!==this.frame)return;
-    const page=frame.contentDocument;
+    this.voiceObserver?.disconnect();
+    const page=this.composerDocument();
     if(!page)return;
-    const url=new URL(page.URL);
-    if(url.origin!==target.origin||url.pathname!==target.pathname||url.searchParams.get('surface_visit')!==this.visit)return;
+    this.voiceObserver=new page.defaultView.MutationObserver(()=>this.syncVoiceControls());
+    for(const node of page.querySelectorAll('#conversation-talk,#conversation-voice-replies'))
+      this.voiceObserver.observe(node,{attributes:true,attributeFilter:['aria-pressed','disabled']});
+    this.syncVoiceControls();
     // Older same-origin shells can share the shortcut without forwarding any
     // data. Once the child negotiates dismissal it owns the key.
     this.localDismiss=new page.defaultView.AbortController();
@@ -52,6 +55,95 @@ export class SharedConversationHost{
       if(!event.repeat)this.onDismiss();
     },{capture:true,signal:this.localDismiss.signal});
   }
+  composerDocument(){
+    if(this.closed||!this.frame||this.origin!==this.window.location.origin)return null;
+    const page=this.frame.contentDocument;
+    if(!page)return null;
+    const url=new URL(page.URL);
+    return url.origin===this.origin&&url.pathname===this.target.pathname&&
+      url.searchParams.get('surface_visit')===this.visit?page:null;
+  }
+
+  voiceControls(){
+    const page=this.composerDocument();
+    return {page,mic:page?.querySelector('#conversation-talk'),speaker:page?.querySelector('#conversation-voice-replies')};
+  }
+
+  syncVoiceControls(){
+    const {mic,speaker}=this.voiceControls();
+    this.onVoiceControls({
+      recording:mic?.getAttribute('aria-pressed')==='true',
+      speaking:speaker?.getAttribute('aria-pressed')==='true',
+      speakerReady:!!speaker&&!this.closed,
+    });
+    if(mic&&!mic.disabled&&this.channel)this.toolbarVoiceReady?.();
+  }
+
+  async pressToolbarMic(){
+    await this.mount();
+    const start=()=>{
+      const {page,mic}=this.voiceControls();
+      if(!this.channel||!mic||mic.disabled||this.currentActor()!==this.selected?.actorRef)return false;
+      if(mic.getAttribute('aria-pressed')!=='true'&&mic.title==='Retry sending the same recording')
+        throw Error('Hay una grabación pendiente. Revisala en Conversar.');
+      // Prime the canonical playback from the microphone gesture when the
+      // composer already exists. Enable its queue only after the audio receipt.
+      page.defaultView.PcmSpeech?.unlock();
+      if(mic.getAttribute('aria-pressed')==='true'){
+        if(this.lastAudioRecord)this.lastAudioRecord.toolbarMic=true;
+      }else this.toolbarRecording=true;
+      mic.click();
+      return true;
+    };
+    if(start())return;
+    await new Promise((resolve,reject)=>{
+      const done=()=>{clearTimeout(timer);this.toolbarVoiceReady=null;this.cancelToolbarVoice=null;};
+      const timer=setTimeout(()=>{done();reject(Error('El micrófono todavía no está disponible.'));},3500);
+      this.toolbarVoiceReady=()=>{
+        try{if(start()){done();resolve();}}
+        catch(error){done();reject(error);}
+      };
+      this.cancelToolbarVoice=()=>{done();reject(Error('Se cerró la conversación antes de grabar.'));};
+    });
+  }
+
+  toggleToolbarSpeaker(){
+    const {speaker}=this.voiceControls();
+    if(speaker&&!speaker.disabled&&this.currentActor()===this.selected?.actorRef)speaker.click();
+  }
+
+  async selectWorldView(blob){
+    if(!blob.size||blob.type!=='image/png'||!this.channel||this.currentActor()!==this.selected?.actorRef)
+      throw Error('Abrí tu conversación antes de adjuntar la vista.');
+    const page=this.composerDocument(),input=page?.querySelector('#conversation-image');
+    const selection=page?.querySelector('#conversation-visual');
+    const shell=page?.defaultView;
+    if(!input||input.type!=='file'||input.disabled||!selection||!shell?.DataTransfer)
+      throw Error('No pude adjuntar la vista a esta conversación.');
+    const count=Number(selection.querySelector('summary')?.dataset.count??0);
+    // Hand off to the canonical image chooser. It owns the preview, upload,
+    // image limits, and the decision to include it in the next original.
+    if(count>=8)throw Error('Quitá una de las ocho imágenes para adjuntar la vista.');
+    const files=new shell.DataTransfer();
+    files.items.add(new shell.File([blob],'Vista de Holodeck.png',{type:'image/png'}));
+    input.files=files.files;
+    selection.open=true;
+    input.dispatchEvent(new shell.Event('change',{bubbles:true}));
+    const rail=selection.querySelector('#conversation-image-list');
+    if(!rail)return;
+    await new Promise((resolve,reject)=>{
+      const observer=new shell.MutationObserver(check);
+      const timer=setTimeout(()=>{observer.disconnect();reject(Error('No pude abrir la vista en el borrador.'));},3500);
+      function check(){
+        const choices=rail.querySelectorAll('.image-thumbnail');
+        if(choices.length!==count+1||!choices[count].querySelector('canvas'))return;
+        observer.disconnect();clearTimeout(timer);resolve();
+      }
+      observer.observe(rail,{childList:true,subtree:true});
+      check();
+    });
+  }
+
   envelope(d){return {schema:SCHEMA,type:d.type,visit:this.visit,channel:d.channel,actor:this.selected.actorRef,binding:this.selected.binding};}
   send(d,type,fields={}){if(!this.closed)this.frame.contentWindow.postMessage({...this.envelope(d),type,...fields},this.origin);}
   valid(event){
@@ -71,9 +163,10 @@ export class SharedConversationHost{
       this.microphoneBound=this.avatarMicrophone&&d.features?.avatarMicrophone===true;
       if(this.channel!==d.channel){
         this.channel=d.channel;
+        this.toolbarRecording=false;this.lastAudioRecord=null;
         this.mode=d.features?.machineSource===true&&this.selected.machineSource===machineMode?machineMode:undefined;
       }
-      this.send(d,'connect',{features:{...(this.onSpeechLevel?{avatarPlayback:true}:{}),...(this.microphoneBound?{avatarMicrophone:true}:{}),...(this.mode?{machineSource:this.mode}:{}),...(this.dismissBound?{dismiss:true}:{})}});return;
+      this.send(d,'connect',{features:{...(this.onSpeechLevel?{avatarPlayback:true}:{}),...(this.microphoneBound?{avatarMicrophone:true}:{}),...(this.mode?{machineSource:this.mode}:{}),...(this.dismissBound?{dismiss:true}:{})}});this.syncVoiceControls();return;
     }
     if(d.channel!==this.channel)return;
     if(d.type==='dismiss'&&this.dismissBound&&Object.keys(d).length===6){
@@ -88,6 +181,12 @@ export class SharedConversationHost{
     }else if(d.type==='prepare')this.prepare(d).catch(()=>{});
     else if(d.type==='status'&&this.records.has(d.id)&&typeof d.phase==='string'&&d.phase.length<=64&&typeof d.busy==='boolean'){
       this.onStatus({phase:d.phase,busy:d.busy});
+      const record=this.records.get(d.id);
+      if(record.toolbarMic&&['accepted','queued','foreground','routed','completed','matrix_requested'].includes(d.phase)){
+        record.toolbarMic=false;
+        const {speaker}=this.voiceControls();
+        if(speaker&&speaker.getAttribute('aria-pressed')!=='true')this.toggleToolbarSpeaker();
+      }
       // This is a UI hint only. The server verifies real canonical terminal state.
       if(!d.busy)this.api(`conversation-contexts/${d.id}/release`,{}).then(value=>{if(value.released)this.records.delete(d.id);}).catch(()=>{});
     }else if(d.type==='discard'&&this.records.has(d.id)&&['capture-cancelled','preparation-failed'].includes(d.reason)){
@@ -110,6 +209,10 @@ export class SharedConversationHost{
       if(this.records.size>=128){this.send(d,'error',{request:d.request,id:d.id,message:'Hay intervenciones por confirmar. Conservá tu borrador.'});return;}
       // capture() copies world position synchronously before its first await.
       record={request:d.request,channel:d.channel,modality:d.modality,mode:d.mode};this.records.set(d.id,record);
+      if(d.modality==='audio'){
+        record.toolbarMic=this.toolbarRecording===true;
+        this.toolbarRecording=false;this.lastAudioRecord=record;
+      }
       record.work=(async()=>{
         const view=await this.capture();
         if(record.discarded||this.currentActor()!==d.actor||this.closed)throw Error('El acceso al mundo cambió.');
@@ -140,6 +243,8 @@ export class SharedConversationHost{
   dispose(){
     this.closed=true;
     this.localDismiss?.abort();
+    this.voiceObserver?.disconnect();
+    this.cancelToolbarVoice?.();
     this.clearMicrophone();
     if(this.avatarMicrophone)this.document.removeEventListener('visibilitychange',this.clearMicrophone);
     this.onSpeechLevel?.(0);this.window.removeEventListener('message',this.receive);this.frame?.remove();}

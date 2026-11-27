@@ -110,15 +110,41 @@ const residenceSite=(()=>{
 // The walking grade sits a few centimetres under the modelled marble (podium top 1.8 m,
 // interior floor 1.85 m, step noses) so the terrain never shows through it.
 export const TOROIDAL_RESIDENCE=Object.freeze({...residenceSite,podium:1.77,floor:1.82,
-  podiumRadius:29.2,wallRadius:25.9,stair:{halfWidth:10.3,top:-38.5,bottom:-49.8},atrium:{halfWidth:8.4,from:-38.5,to:-25}});
-const residenceFrame=(()=>{
-  const {u,v,base,yaw}=residenceSite, f=terrainFrame(u,v);
-  const c=Math.cos(yaw), s=Math.sin(yaw);
-  const ex=f.alongRing.map((value,axis)=>c*value-s*f.aroundTube[axis]);
-  const ez=f.alongRing.map((value,axis)=>s*value+c*f.aroundTube[axis]);
-  return {origin:terrainPosition(u,v,base),up:f.up,ex,ez};
-})();
+  podiumRadius:29.2,wallRadius:25.9,stair:{topWidth:7.5362,halfWidth:10.1739,top:-38.4348,bottom:-49.7391,steps:10},
+  atrium:{halfWidth:8.29,center:-30.1449,from:-38.4348,to:-25}});
 const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const normal=vector=>{
+  const length=Math.hypot(...vector);
+  return vector.map(value=>value/length);
+};
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+export const residenceFrame=(()=>{
+  const {u,v,base,yaw}=residenceSite, f=terrainFrame(u,v);
+  const c=Math.cos(yaw),s=Math.sin(yaw),origin=terrainPosition(u,v,base);
+  const front=f.alongRing.map((value,axis)=>s*value+c*f.aroundTube[axis]);
+  // Ease the local horizon toward the foot of the front stair. The building
+  // and walking grade use the same basis, including the collision shell.
+  const arrival=terrainCoordinates(origin.map((value,axis)=>value+front[axis]*48));
+  const approachUp=terrainFrame(arrival.u,arrival.v).up;
+  const up=normal(f.up.map((value,axis)=>mix(value,approachUp[axis],.42)));
+  const ez=normal(front.map((value,axis)=>value-up[axis]*dot(front,up)));
+  const ex=cross(up,ez);
+  return {origin,up,ex,ez};
+})();
+
+export function residenceCoordinates(x,y){
+  const {origin,ex,ez}=residenceFrame;
+  return terrainCoordinates(origin.map((value,axis)=>value+x*ex[axis]-y*ez[axis]));
+}
+
+export function residencePlantClearance(u,v,margin=0){
+  const {u:siteU,v:siteV,podiumRadius,stair}=TOROIDAL_RESIDENCE;
+  if(wrappedDistance(u,siteU)*TAU*TOROIDAL_TERRAIN.majorRadius>85+margin||
+    Math.abs(v-siteV)*TAU*TOROIDAL_TERRAIN.tubeRadius>85+margin)return false;
+  const {x,y}=residenceLocal(u,v);
+  return Math.hypot(x,y)<podiumRadius+margin||
+    Math.abs(x)<stair.halfWidth+1.4+margin&&y>stair.bottom-margin&&y<-24;
+}
 
 // Radial height at (u, v) of the plane lying `offset` metres above the palace ground.
 function residencePlaneHeight(u,v,offset,terrain){
@@ -141,14 +167,18 @@ function residencePad(x,y){
   if(radial<=wallRadius)return {offset:floor,distance:0};
   if(radial<=podiumRadius)return {offset:podium,distance:0};
   if(Math.abs(x)<=atrium.halfWidth&&y>=atrium.from&&y<=atrium.to)return {offset:podium,distance:0};
-  if(Math.abs(x)<=stair.halfWidth&&y>=stair.bottom&&y<atrium.from){
-    const t=(y-stair.bottom)/(atrium.from-stair.bottom);
-    return {offset:Math.max(0,podium*t-.08*Math.min(1,(1-t)*8)),distance:0};
-  }
-  const box=Math.hypot(Math.max(0,Math.abs(x)-stair.halfWidth),Math.max(0,stair.bottom-y,y-atrium.to));
-  const distance=Math.min(radial-podiumRadius,box);
-  // A short bank wraps the podium so the walking grade meets it without a gap.
-  return {offset:podium*Math.max(0,1-distance/2.4)*(box<radial-podiumRadius?(y-stair.bottom)/(atrium.to-stair.bottom):1),distance};
+  const stairProgress=Math.max(0,Math.min(1,(stair.top-y)/(stair.top-stair.bottom)));
+  const stairWidth=mix(stair.topWidth,stair.halfWidth,stairProgress);
+  const stairOffset=podium*(1-stairProgress);
+  if(Math.abs(x)<=stairWidth&&y>=stair.bottom&&y<stair.top)return {offset:stairOffset,distance:0};
+  const stairDistance=Math.hypot(Math.max(0,Math.abs(x)-stairWidth),
+    Math.max(0,stair.bottom-y,y-stair.top));
+  const atriumDistance=Math.hypot(Math.max(0,Math.abs(x)-atrium.halfWidth),
+    Math.max(0,atrium.from-y,y-atrium.to));
+  const podiumDistance=radial-podiumRadius;
+  const distance=Math.min(podiumDistance,atriumDistance,stairDistance);
+  const edgeHeight=distance===stairDistance?stairOffset:podium;
+  return {offset:edgeHeight*(1-fade(Math.min(1,distance/4.2))),distance};
 }
 
 function residenceGrade(u,v,elevation,terrain){
@@ -158,7 +188,9 @@ function residenceGrade(u,v,elevation,terrain){
   const {x,y}=residenceLocal(u,v,terrain);
   const {offset,distance}=residencePad(x,y);
   if(distance>=36)return elevation;
-  const weight=1-fade(Math.max(0,Math.min(1,(distance-3)/33)));
+  const foot=Math.hypot(x,y-TOROIDAL_RESIDENCE.stair.bottom);
+  const landing=1-fade(Math.min(1,foot/18));
+  const weight=Math.max(landing,1-fade(Math.max(0,Math.min(1,(distance-3)/33))));
   return mix(elevation,residencePlaneHeight(u,v,Math.max(0,offset),terrain),weight);
 }
 

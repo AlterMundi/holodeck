@@ -52,7 +52,7 @@ function dragFixture(dismissChoice){
   });
   const windows=new SpatialHudWindows({canvas,hit:()=> 'background',dismissChoice});
   const geometry={rect:{left:310,right:548,top:8,bottom:153},resizable:true,
-    placementKey:'matter',view:{width:568,height:320}};
+    placementKey:'matter',view:{width:568,height:320},actual:{scale:180}};
   windows.geometry.set('matter',geometry);
   const press={button:0,isPrimary:true,clientX:342,clientY:20,pointerId:7,
     preventDefault(){this.prevented=true;},stopImmediatePropagation(){}};
@@ -72,6 +72,17 @@ test('a press on the drag strip dismisses the choice without moving its panel',(
   windows.dispose();
 });
 
+
+test('the scaled title row owns background drags while buttons keep their clicks',()=>{
+  const {canvas,windows,press}=dragFixture();
+  windows.pointerdown({...press,clientY:45});
+  assert.equal(canvas.hasPointerCapture(press.pointerId),true);
+  windows.pointerup(press);
+  windows.hit=()=> 'matter:close';
+  windows.pointerdown({...press,clientY:45});
+  assert.equal(canvas.hasPointerCapture(press.pointerId),false);
+  windows.dispose();
+});
 
 test('disappearing or resized windows release a held pointer before the next gesture',()=>{
   const {canvas,windows,geometry,press}=dragFixture();

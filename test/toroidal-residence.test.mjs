@@ -4,9 +4,11 @@ import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import {Group, Mesh, BoxGeometry, Scene, Vector3} from 'three';
 import {residenceAssets} from '../src/toroidal-residence-assets.mjs';
+import {plantedWoodlandTrees, woodlandTrees} from '../src/toroidal-woodland.mjs';
 import {residencePlacement, ToroidalResidence} from '../src/toroidal-residence.mjs';
 import {
-  residenceLocal, terrainElevation, terrainPosition, TOROIDAL_RESIDENCE, TOROIDAL_TERRAIN,
+  residenceCoordinates, residenceLocal, residencePlantClearance, terrainElevation, terrainFrame, terrainPosition,
+  TOROIDAL_RESIDENCE, TOROIDAL_TERRAIN,
 } from '../src/toroidal-terrain.mjs';
 
 const {origin, quaternion} = residencePlacement();
@@ -65,6 +67,23 @@ test('the entrance faces the house plaza', () => {
   toward.addScaledVector(up, -toward.dot(up)).normalize();
   assert.ok(entrance.dot(toward) > .99);
   assert.ok(origin.distanceTo(plaza) > 100 && origin.distanceTo(plaza) < 135);
+});
+
+test('the approach grade and building share an upright basis, with a clear planted perimeter', () => {
+  const {u, v, stair} = TOROIDAL_RESIDENCE;
+  const arrival = residenceCoordinates(0, stair.bottom);
+  const approachUp = new Vector3(...terrainFrame(arrival.u, arrival.v).up);
+  const originalUp = new Vector3(...terrainFrame(u, v).up);
+  assert.ok(up.angleTo(approachUp) < originalUp.angleTo(approachUp));
+  const top = residenceCoordinates(0, stair.top);
+  assert.ok(residencePlantClearance(top.u, top.v));
+  const trees = plantedWoodlandTrees();
+  const tall = trees.filter(tree => tree.araucaria);
+  assert.equal(tall.length, 5);
+  assert.equal(trees.length, woodlandTrees().length + tall.length);
+  assert.ok(tall.every(tree => tree.height >= 26 && tree.height < 44));
+  for (const tree of trees)
+    assert.ok(!residencePlantClearance(tree.u, tree.v, 2.4 + tree.width * .28));
 });
 
 test('the shipped models are the exact Blender exports', () => {
