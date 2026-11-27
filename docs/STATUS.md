@@ -1,5 +1,19 @@
 # Current MVP work
 
+## November 27 — Manual flight pitch
+
+Protected release `85fcadf01672` gives the pilot direct control of
+pitch through both verticals. Forward thrust follows the chosen pitch,
+including when inverted. Releasing the mouse preserves that pitch.
+The flight camera follows the same rotation with no automatic turn
+or recentering during flight.
+
+Chromium completed both directions with pauses at each quarter-turn
+and a mouse release after each turn. All 92 installed files and the
+protected HTTPS client matched the package. The Node suite passed 535
+checks with two optional skips. All 1,340 published Studio frames were
+identical. The immediate rollback is `0ad8302ae071`.
+
 ## November 27 — Wait for Lab controls after the service opens
 
 Protected release `0ad8302ae071` keeps the instrument table in its
