@@ -1,17 +1,18 @@
-import {Mesh,PlaneGeometry,PointLight,Ray,ShaderMaterial,Vector3} from 'three';
+import {Mesh,PlaneGeometry,PointLight,SpotLight,Ray,ShaderMaterial,Vector3} from 'three';
 import {TOROIDAL_TERRAIN,terrainCoordinates,terrainElevation,terrainFrame} from './toroidal-terrain.mjs';
 
 import {matterAvatarScale} from './matter-flight.mjs';
 
 const normal=new Vector3(0,0,1);
 const antennaTip=new Vector3(.037,.136,-.024); // Navegante's Receiver light, relative to its antenna joint.
+const forwardTarget=new Vector3(0,.65,1.36);
 const beltFront=new Vector3(0,1.032,.140); // Explorer v29's buckle in model space.
 
 export function bindAvatarPracticals(group,colliders){
-  const lanterns=[new PointLight(0xffe5b1,0,6,2),new PointLight(0x9cf7ff,0,5,2)];
+  const lanterns=[new SpotLight(0xffe8c7,0,10,.89,.98,.88),new PointLight(0xbfe9ef,0,9,.65)];
   lanterns[0].name='Explorer buckle light';
   lanterns[1].name='Navegante antenna light';
-  group.add(...lanterns);
+  group.add(...lanterns,lanterns[0].target);
   const geometry=new PlaneGeometry(2,2);
   const ground=[];
   for(const name of ['Explorer contact shadow','Navegante contact shadow']){
@@ -58,17 +59,21 @@ export function bindAvatarPracticals(group,colliders){
     const antenna=visible&&companion?.getObjectByName('antenna');
     const scale=table?matterAvatarScale:1;
     const brightness=outdoor?1-.63*daylight:1;
-    lanterns[0].intensity=explorer?24*brightness*scale**2:0;
-    lanterns[1].intensity=antenna?15*brightness*scale**2:0;
-    lanterns[0].distance=6*scale;
-    lanterns[1].distance=5*scale;
-    if(explorer)lanterns[0].position.copy(group.worldToLocal(player.localToWorld(world.copy(beltFront))));
+    lanterns[0].intensity=explorer?3.9*brightness*scale**.88:0;
+    lanterns[1].intensity=antenna?1.9*brightness*scale**.65:0;
+    lanterns[0].distance=10*scale;
+    lanterns[1].distance=9*scale;
+    if(explorer){
+      lanterns[0].position.copy(group.worldToLocal(player.localToWorld(world.copy(beltFront))));
+      lanterns[0].target.position.copy(group.worldToLocal(player.localToWorld(world.copy(forwardTarget))));
+    }
     if(antenna)lanterns[1].position.copy(group.worldToLocal(antenna.localToWorld(world.copy(antennaTip))));
     contact(ground[0],visible?feet:null,outdoor,scale);
     contact(ground[1],visible?companion?.position:null,outdoor,scale);
   },dispose(){
     for(const shadow of ground){shadow.removeFromParent();shadow.material.dispose();}
     for(const light of lanterns){light.removeFromParent();light.dispose();}
+    lanterns[0].target.removeFromParent();
     geometry.dispose();
   }};
 }

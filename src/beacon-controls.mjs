@@ -125,7 +125,7 @@ export class BeaconControls{
     this.title.textContent=title;
     this.external.href=(view?this.weaverLinks[view]:this.link).getAttribute('href');
     const world=this.world;
-    const focused=Boolean(world?.renderer&&['weaver','guitar'].includes(surface));
+    const focused=Boolean(world?.renderer&&(surface==='guitar'||surface==='weaver'&&world.canvas.clientWidth<740));
     this.panel.toggleAttribute?.('data-beacon-focused',focused);
     if(focused)native=false;
     this.panel.toggleAttribute?.('data-beacon-world',!!world);
