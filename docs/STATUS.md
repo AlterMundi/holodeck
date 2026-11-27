@@ -1,5 +1,21 @@
 # Current MVP work
 
+## November 27 — Front-facing Weaver and Shaper worktables
+
+Protected release `b5dcf2d5853f` uses the same viewport-aligned Three.js
+worktable as Guitar for Weaver and Shaper at desktop and narrow widths.
+Proyección `b3958a8` keeps its keyboard input inside the open instrument
+dialog. Escape cancels a field edit before it can close the worktable.
+
+Chromium opened the actual worktable entry point with fixture data at 1450
+and 390 pixels, clicked the focused mesh and verified keyboard cancellation.
+Both tables rendered without iframes and detached when closed. A separate
+Legion test confirmed shared Shaper output settings with a simulated device.
+Legion then became unreachable through both the protected agent and its
+established SSH route. The table displayed the failed connection in place.
+Physical output and the paired browser visit remain unverified. The prior
+Holodeck release `0cdc7930136d` remains the immediate rollback.
+
 ## November 27 — Continuous flight past either pitch pole
 
 Protected release `0cdc7930136d` carries a sustained forward input through
