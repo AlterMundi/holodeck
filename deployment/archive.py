@@ -7,10 +7,14 @@ import json
 from pathlib import Path
 import tarfile
 
+HOLODECK_ARCHIVE_LIMIT = 40 * 1024**2
+
 
 def build(stage, output):
     stage=stage.resolve()
     manifest=json.loads((stage/'service.json').read_text())
+    if manifest.get('service') != 'holodeck':
+        raise ValueError('Select a Holodeck deployment stage')
     files={'service.json':json.dumps(manifest,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()}
     for row in manifest['files']:
         relative=Path(row['path'])
@@ -28,7 +32,7 @@ def build(stage, output):
             member=tarfile.TarInfo(name);member.size=len(data);member.mode=0o444;member.uid=member.gid=0;member.mtime=0
             archive.addfile(member,io.BytesIO(data))
     size=output.stat().st_size
-    if size>32*1024**2:output.unlink();raise ValueError('Archive exceeds receiving bound')
+    if size>HOLODECK_ARCHIVE_LIMIT:output.unlink();raise ValueError('Archive exceeds the 40 MiB Holodeck receiving bound')
     return {'files':len(files),'bytes':size,'sha256':hashlib.sha256(output.read_bytes()).hexdigest()}
 
 if __name__=='__main__':
