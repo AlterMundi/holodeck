@@ -5,6 +5,12 @@ const panel='/harmonic_lab/';
 const STATUS_LIMIT=128*1024;
 const STATUS_LIFETIME=30000;
 const weaverViews=Object.freeze({operator:{title:'Operación del laboratorio',surface:'operator'},router:{title:'Ruteos de Weaver',surface:'router'},rostro:{title:'Rostro',surface:'rostro'},harmocap:{title:'HarMoCAP',surface:'harmocap'}});
+
+function stationHref({service,surface,view}){
+  const query=new URLSearchParams({service,projection:surface});
+  if(view)query.set('view',view);
+  return panel+'?'+query;
+}
 export function nearbyBeaconControl(objects,position){
   if(!position)return null;
   let distance=1.85,nearest=null;
@@ -118,14 +124,15 @@ export class BeaconControls{
   setWorld(world){this.world=world;}
 
   open({native=false,view}={}){
-    if(this.opened||!this.current||(view&&(!this.weaverLinks[view]||this.current.surface!=='weaver')))return;
+    if(this.opened||!this.current||(view&&(!Object.hasOwn(weaverViews,view)||
+      !this.weaverLinks[view]||this.current.surface!=='weaver')))return;
     const station=this.current;
     this.last=station;
     const {surface,title}=view?weaverViews[view]:station;
     this.title.textContent=title;
     this.external.href=(view?this.weaverLinks[view]:this.link).getAttribute('href');
     const world=this.world;
-    const focused=Boolean(world?.renderer&&['guitar','weaver','shaper'].includes(surface));
+    const focused=Boolean(world?.renderer);
     this.panel.toggleAttribute?.('data-beacon-focused',focused);
     if(focused)native=false;
     this.panel.toggleAttribute?.('data-beacon-world',!!world);
@@ -220,9 +227,7 @@ export class BeaconControls{
     for(const anchor of Object.values(this.weaverLinks))if(anchor)anchor.hidden=next?.surface!=='weaver';
     if(this.statusButton)this.statusButton.hidden=!next;
     if(!next){this.link.removeAttribute('href');return;}
-    const target=new URLSearchParams({service:next.service});
-    if(next.view)target.set('view',next.view);
-    this.link.href=panel+'?'+target;
+    this.link.href=stationHref(next);
     this.link.textContent='Abrir '+next.title;
   }
 

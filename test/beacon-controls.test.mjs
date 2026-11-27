@@ -18,7 +18,7 @@ test('a control requires a current room object and nearby player position',()=>{
 
 test('a nearby bench opens local controls without embedding the web app',()=>{
   const link={hidden:true,getAttribute:name=>link[name],removeAttribute:name=>delete link[name]};
-  const routerLink={hidden:true,getAttribute:()=>'/harmonic_lab/?service=router'};
+  const routerLink={hidden:true,getAttribute:()=>'/harmonic_lab/?service=router&projection=router'};
   const rostroLink={hidden:true,getAttribute:()=>'/harmonic_lab/?service=body&projection=rostro'};
   const harmocapLink={hidden:true,getAttribute:()=>'/harmonic_lab/?service=body&projection=harmocap'};
   const stage={children:[],replaceChildren(...children){this.children=children;}};
@@ -32,7 +32,7 @@ test('a nearby bench opens local controls without embedding the web app',()=>{
   assert.equal(rostroLink.hidden,true);
   assert.equal(harmocapLink.hidden,true);
   assert.equal(link.hidden,false);
-  assert.equal(link.href,'/harmonic_lab/?service=audio');
+  assert.equal(link.href,'/harmonic_lab/?service=audio&projection=spatializer');
   assert.equal(controls.reference(),null);
   assert.deepEqual(stage.children,[]);
   link.onclick(click);
@@ -53,7 +53,7 @@ test('a nearby bench opens local controls without embedding the web app',()=>{
   assert.equal(routerLink.hidden,false);
   assert.equal(rostroLink.hidden,false);
   assert.equal(harmocapLink.hidden,false);
-  assert.equal(link.href,'/harmonic_lab/?service=body');
+  assert.equal(link.href,'/harmonic_lab/?service=body&projection=weaver');
   assert.equal(controls.reference(),null);
   link.onclick({button:0,ctrlKey:true,preventDefault(){throw Error('ordinary link navigation must remain available');}});
   assert.deepEqual(controls.reference(),{id:weaver.id,revision:1});
@@ -86,11 +86,11 @@ test('a nearby bench opens local controls without embedding the web app',()=>{
   controls.update(objects,weaver.position);
   assert.equal(controls.reference(),null);
   controls.update(objects,guitar.position);
-  assert.equal(link.href,'/harmonic_lab/?service=guitar');
+  assert.equal(link.href,'/harmonic_lab/?service=guitar&projection=guitar');
   link.onclick(click);
   assert.equal(stage.children[0].tag,'p');
   controls.update(objects,shaper.position);
-  assert.equal(link.href,'/harmonic_lab/?service=body&view=instrumento');
+  assert.equal(link.href,'/harmonic_lab/?service=body&projection=shaper&view=instrumento');
   assert.deepEqual(stage.children,[]);
   assert.equal(controls.nearbyAction().label,'Abrir Shaper');
   const shortcut={code:'KeyE',composedPath:()=>[]};
