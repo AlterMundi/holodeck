@@ -64,6 +64,15 @@ latency and other receivers remain unverified.
 
 ## World input with Conversation open
 
+The embedded Conversation title and minimize button use the panel's HTML
+header and existing HUD theme. The header stays clickable independently of
+the world renderer. Escape hides the panel and returns keyboard focus to the
+world, keeping the canonical frame and its draft mounted. Existing same-origin
+Conversation shells share this shortcut directly after an exact origin, path and
+visit check. An updated cross-origin shell can opt in over the bound
+`conversation.surface/v1` channel with `features.dismiss`. Neither route sends
+an original or interrupts a native turn.
+
 Keyboard ownership follows focus. Clicking the exposed world canvas brings
 control back to the scene and a new double Space toggles flight there.
 Moving focus into the mounted frame ends a pending world tap. Space belongs
