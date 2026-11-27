@@ -1,5 +1,23 @@
 # Current MVP work
 
+## November 27 — Native entries for every Lab table
+
+Protected release `37052cb47623` at source `144b373` places Ruteos,
+Rostro, HarMoCAP and Operation on Weaver's in-world HUD. All Lab tables
+open in the same front-facing Three.js view. **Abrir aparte** preserves
+the selected instrument in its web link. The visit still uses the
+existing per-user Home access and selected Lab workstation.
+
+Chromium opened the secondary tables, Weaver and Spatializer from the
+native entrance at 1450 and 390 pixels. A read-only fixture served A2UI
+documents and a prepared sample video, which HarMoCAP drew beside the
+controls on desktop and below them on narrow screens. No service start
+or device action was sent in this trial. The build passed with 536 tests
+passing and two skipped. All 92 installed files matched and protected
+HTTPS delivered the new client. Rollback is `d7945693e484`. The Lab
+gateway still reports Legion offline, so a live instrument visit remains
+unverified.
+
 ## November 27 — Native H.B. Guitar sections
 
 Protected release `d7945693e484` at source `f06e17d` puts Mecanismo,
