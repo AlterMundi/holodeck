@@ -15,3 +15,5 @@ The test uses synthetic identities to traverse and return from the two annexes, 
 
 The [precinct study](precinct/README.md) adds the small classical entrance,
 the Templo del Mundo, and the connected internal garden and deity pavilions.
+The [finished Claymon room study](workshop/README.md) develops the materials
+and daylight of the workshop while reusing its original furniture layout.

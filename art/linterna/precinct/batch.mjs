@@ -1,14 +1,15 @@
 import {Group, Mesh} from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-export function batchModel(root) {
+export function batchModel(root, {retainUV = false} = {}) {
   const batches=new Map();
   root.updateMatrixWorld(true);
   root.traverse(source=>{
     if (!source.isMesh) return;
     const geometry=source.geometry.clone();
     for (const attr of Object.keys(geometry.attributes)) {
-      if (attr!=='position' && attr!=='normal') geometry.deleteAttribute(attr);
+      if (attr!=='position' && attr!=='normal' && !(retainUV && attr==='uv'))
+        geometry.deleteAttribute(attr);
     }
     geometry.applyMatrix4(source.matrixWorld);
     if (!batches.has(source.material)) batches.set(source.material,[]);
@@ -16,6 +17,7 @@ export function batchModel(root) {
   });
   const group=new Group();
   group.name=root.name;
+  group.userData={...root.userData};
   for (const [material,geometries] of batches) {
     // Extruded gables arrive without indices. Preserve indices on all other parts.
     for (const indexed of [true,false]) {
