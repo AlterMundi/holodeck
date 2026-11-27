@@ -35,7 +35,20 @@ function sceneMetadata(scene){
     throw Error('Invalid review scene');
   const parts=scene.parts.map(partMetadata);
   if(new Set(parts.map(part=>part.id)).size!==parts.length)throw Error('Duplicate review part');
-  return {id:scene.id,version:scene.version,title:scene.title,parts};
+  return {id:scene.id,version:scene.version,title:scene.title,parts,...(scene.model?{model:sceneModel(scene.model)}:{})};
+}
+
+// Optional complete presentation of the same scene: an exact glTF binary in the
+// same Home publication, with its own materials, textures, skin and clips. The
+// part meshes stay authoritative for identity, picking and the inspection cut.
+export const MAX_SCENE_MODEL_BYTES=8*1024*1024;
+function sceneModel(model){
+  if(!model||typeof model!=='object'||Array.isArray(model)||
+     typeof model.file!=='string'||!/^[a-z0-9][a-z0-9._-]{0,80}\.glb$/i.test(model.file)||
+     !hex(model.sha256,64)||!Number.isSafeInteger(model.bytes)||model.bytes<20||model.bytes>MAX_SCENE_MODEL_BYTES||
+     (model.clip!==undefined&&!name(model.clip)))
+    throw Error('Invalid review scene model');
+  return {file:model.file,sha256:model.sha256,bytes:model.bytes,...(model.clip?{clip:model.clip}:{})};
 }
 
 function transform(positions,i,x,y,z,offset){

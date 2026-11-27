@@ -74,15 +74,21 @@ export async function readGalleryModel(pin,{request=fetch,signal}={}){
 
 export function disposeModel(root){
   const geometry=new Set(),materials=new Set();
+  const textures=new Set();
   root.traverse(node=>{
     if(node.geometry)geometry.add(node.geometry);
-    if(node.material)for(const material of [node.material].flat())materials.add(material);
+    if(node.material)for(const material of [node.material].flat()){
+      materials.add(material);
+      for(const slot of ['map','normalMap','emissiveMap','roughnessMap','metalnessMap','aoMap','alphaMap'])
+        if(material[slot]?.isTexture)textures.add(material[slot]);
+    }
   });
   root.removeFromParent();
   displayContacts.get(root)?.dispose();
   displayContacts.delete(root);
   for(const item of geometry)item.dispose();
   for(const item of materials)item.dispose();
+  for(const item of textures)item.dispose();
 }
 
 export function placeGalleryModel(scene,plinth,{width=1.10,depth=.83,height=.65,deckContact=false}={}){

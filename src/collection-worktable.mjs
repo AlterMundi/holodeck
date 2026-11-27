@@ -1,6 +1,8 @@
 import {indexMatterPart} from './matter-contact.mjs';
 import {pointingBounds} from './tabletop-point-view.mjs';
-import {Box3,BufferAttribute,BufferGeometry,DoubleSide,Group,Mesh,MeshStandardMaterial,Plane,Vector3} from 'three';
+import {AnimationMixer,Box3,BufferAttribute,BufferGeometry,DoubleSide,Group,Mesh,MeshStandardMaterial,Plane,Vector3} from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {disposeModel} from './gallery-models.mjs';
 
 const key=edition=>edition.resource+':'+edition.version+':'+edition.gallerySha256;
@@ -25,6 +27,42 @@ function loadReview(base,edition,scene,signal){
     worker.postMessage({edition,scene});
   });
 }
+const hexDigest=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),
+  byte=>byte.toString(16).padStart(2,'0')).join('');
+
+// Fetch and parse the scene's complete glTF presentation from the same edition.
+export async function loadSceneModel(edition,model,{request=fetch,signal,loader}={}){
+  const response=await request(reviewPrefix(edition)+model.file,{cache:'no-store',credentials:'same-origin',redirect:'error',signal});
+  if(!response.ok||response.headers.get('X-Home-Version')!==edition.version){
+    await response.body?.cancel();throw Error('Scene model unavailable');
+  }
+  const bytes=await response.arrayBuffer();
+  if(bytes.byteLength!==model.bytes||await hexDigest(bytes)!==model.sha256)throw Error('Scene model changed');
+  return (loader??new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)).parseAsync(bytes,'');
+}
+
+// Mount the complete presentation in the parts' frame (glTF Y up, metres, the
+// same axes the review transform produces) and turn the parts into invisible
+// pick and cut proxies. The selected part keeps a faint highlight.
+export function presentModel(model,gltf,clip){
+  const {scene,animations=[]}=gltf;
+  scene.name='collection-worktable-presentation';
+  scene.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;node.frustumCulled=false;}});
+  model.group.children[0].add(scene);
+  for(const mesh of model.parts.values()){
+    mesh.material.transparent=true;mesh.material.opacity=0;mesh.material.depthWrite=false;
+    mesh.castShadow=false;mesh.userData.matterProxy=true;
+  }
+  const chosen=animations.find(item=>item.name===clip)??animations[0];
+  if(chosen){
+    model.mixer=new AnimationMixer(scene);
+    model.mixer.clipAction(chosen).play();
+    model.clip=chosen.name;
+  }
+  model.presentation=scene;
+  return model;
+}
+
 export function makeModel(review,anchor){
   const group=new Group(),inside=new Group(),bounds=new Box3(),parts=new Map();
   group.add(inside);
@@ -190,6 +228,9 @@ export class CollectionWorktable{
   }
 
   update(player,anchor,canDiscuss){
+    const now=performance.now();
+    if(this.model?.mixer)this.model.mixer.update(Math.min(.1,(now-(this.lastFrame??now))/1000));
+    this.lastFrame=now;
     this.anchor=anchor;
     this.discuss.hidden=!canDiscuss;
     const near=!!(player&&anchor&&Math.hypot(player.x-anchor.x,player.z-anchor.z)<2.05);
@@ -320,6 +361,16 @@ export class CollectionWorktable{
         AbortSignal.any([controller.signal,AbortSignal.timeout(26000)]));
       if(this.flight!==flight||controller.signal.aborted)return;
       const replacement=makeModel(review,this.anchor);
+      if(review.model){
+        try{
+          presentModel(replacement,await loadSceneModel(edition,review.model,
+            {signal:AbortSignal.any([controller.signal,AbortSignal.timeout(26000)]),loader:this.loader}),review.model.clip);
+        }catch(error){
+          if(controller.signal.aborted){disposeModel(replacement.group);throw error;}
+          // The part view remains a faithful fallback when the full model is unavailable.
+        }
+        if(this.flight!==flight||controller.signal.aborted){disposeModel(replacement.group);return;}
+      }
       const priorPart=this.part.value;
       this.removeModel();
       this.model=replacement;this.review=review;this.shown=edition;
@@ -349,8 +400,14 @@ export class CollectionWorktable{
     const clipping=fraction<1;
     this.webgl.localClippingEnabled=clipping;
     const plane=clipping?[new Plane(new Vector3(0,-1,0),group.position.y+height*fraction)]:null;
+    if(this.model.presentation){
+      // Hiding a part of a skinned model is not meaningful; keep the whole figure
+      // and show the selection as a translucent highlight over its proxy.
+      this.model.presentation.visible=true;
+    }
     for(const [id,mesh] of parts){
       mesh.visible=!this.hidden.has(id);
+      if(mesh.userData.matterProxy)mesh.material.opacity=id===this.part.value?.35:0;
       mesh.material.emissive.setHex(id===this.part.value?0x7a4f19:0);
       mesh.material.emissiveIntensity=.65;
       mesh.material.clippingPlanes=plane;
@@ -363,6 +420,7 @@ export class CollectionWorktable{
   }
 
   removeModel(){
+    this.model?.mixer?.stopAllAction();
     if(this.model)disposeModel(this.model.group);
     this.model=null;this.shown=null;this.review=null;
     this.controls.disabled=true;this.webgl.localClippingEnabled=false;

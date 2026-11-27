@@ -43,3 +43,40 @@ test('worktable rejects changed reader versions and bad publication bytes before
     request:async()=>new Response(data,{headers:{'X-Home-Version':version}}),
   }),/checksum changed/);
 });
+
+test('a scene can carry its exact complete model, which the worktable animates over invisible part proxies',async()=>{
+  const {AnimationClip,NumberKeyframeTrack,BoxGeometry,Group,Mesh,MeshStandardMaterial}=await import('three');
+  const {loadSceneModel,makeModel,presentModel}=await import('../src/collection-worktable.mjs');
+  const glb=Buffer.from('glTF fixture bytes for the exact presentation');
+  const model={file:'explorer-hero-v29.glb',sha256:sha(glb),bytes:glb.length,clip:'hero_idle'};
+  const data=content({scenes:[{...scene,model}]});
+  const edition={resource,version,gallerySha256:sha(data)};
+  const request=async path=>new Response(path.endsWith('.glb')?glb:data,{headers:{'X-Home-Version':version}});
+  const review=await readWorktableReview(edition,null,{request});
+  assert.deepEqual(review.model,model);
+  for(const bad of [{...model,file:'../x.glb'},{...model,bytes:9e9},{...model,sha256:'z'},{file:'a.glb'}]){
+    const broken=content({scenes:[{...scene,model:bad}]});
+    await assert.rejects(readWorktableReview({...edition,gallerySha256:sha(broken)},null,{
+      request:async()=>new Response(broken,{headers:{'X-Home-Version':version}})}),/scene model/);
+  }
+  // exact bytes from the same edition reach the loader; anything else is refused
+  const seen=[];
+  const loader={parseAsync:async bytes=>{seen.push(Buffer.from(bytes).equals(glb));
+    const root=new Group();root.add(new Mesh(new BoxGeometry(1,1,1),new MeshStandardMaterial()));
+    const wave=new NumberKeyframeTrack('.position[x]',[0,1],[0,.2]);
+    return {scene:root,animations:[new AnimationClip('other',1,[wave]),new AnimationClip('hero_idle',1,[wave])]};}};
+  const gltf=await loadSceneModel(edition,model,{request,loader});
+  assert.deepEqual(seen,[true]);
+  await assert.rejects(loadSceneModel(edition,{...model,sha256:'0'.repeat(64)},{request,loader}),/changed/);
+  await assert.rejects(loadSceneModel(edition,model,{loader,
+    request:async()=>new Response(glb,{headers:{'X-Home-Version':'a'.repeat(64)}})}),/unavailable/);
+  const table=makeModel(review,{x:0,y:1,z:0});
+  presentModel(table,gltf,model.clip);
+  assert.equal(table.clip,'hero_idle');
+  assert.ok(table.presentation.parent===table.group.children[0],'shares the parts frame and scale');
+  const proxy=table.parts.get('edge');
+  assert.equal(proxy.material.opacity,0);
+  assert.equal(proxy.userData.matterProxy,true);
+  table.mixer.update(.5);
+  assert.ok(table.presentation.position.x>.05,'the chosen clip plays');
+});
