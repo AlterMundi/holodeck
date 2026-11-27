@@ -37,6 +37,19 @@ The fixture did not contact the model or voice provider.
 
 ## November 27 — A2UI modules on the instrument benches
 
+Protected release `4c4bc6b7433a` delivers the physical modules and the
+revised avatar lights. All 92 installed files matched after selection,
+including the protected HTTPS client, photographic atlas, and both tested
+avatar assets. Immediate rollback is `1793365dfb6f`.
+
+The Explorer buckle uses a soft, forward, slightly down-angled cone.
+Navegante's antenna keeps a diffuse point light. Their falloff reaches
+10 m and 9 m, respectively. A lightweight Chromium night render verified
+the light direction and both contact shadows. A controlled weather feed
+produced rain and increased cloud cover. The same signed-pitch motion
+was also exercised through an upward and downward loop in simulated
+clear air and deep water.
+
 The existing station map owns bench coordinates. On an in-world bench,
 numeric A2UI ranges use a brass knob or linear fader. Actions use physical
 keys. Remaining fields, selectors, navigation, and status stay on the panel.

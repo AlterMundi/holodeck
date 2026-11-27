@@ -275,3 +275,22 @@ test('signed pitch gives continuous thrust past vertical into both loops',async(
     assert.ok(Math.cos(steering(sign*359).direction)<0);
   }
 });
+
+test('the same loop steering traces a loop through clear air and deep water',async()=>{
+  const {steerToroidalFlight}=await import('../src/toroidal-mml.mjs');
+  for(const flight of [true,false])for(const sign of [-1,1]){
+    const height=flight?12:-18;
+    const motion=new ToroidalLocomotion({u:.4,v:.2,height,ground:()=>-35,cameraSteering:true});
+    const path=[];
+    for(let frame=0;frame<240;frame++){
+      const {direction,forward,climb}=steerToroidalFlight(Math.PI,Math.PI/2,false,sign*Math.PI*2*frame/240);
+      motion.update(1/60,{flight,travelYaw:Math.PI+direction,forward,climb});
+      path.push({height:motion.height,cross:motion.crossSpeed});
+    }
+    assert.ok((path[119].height-height)*sign>(flight?5:2));
+    assert.ok(path[119].cross<-.6);
+    assert.ok(path[239].cross>.6);
+    assert.ok(Math.abs(path[239].height-height)<.03);
+    assert.equal(motion.swimming,!flight);
+  }
+});
