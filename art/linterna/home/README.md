@@ -21,10 +21,20 @@ Use the existing admitted room graph. The native house editor and room
 admission keep authority over visitor assignments. Scene selections pin
 model sizes and hashes, local colliders, and the two sides of each door.
 The renderer fetches the model parts through the existing room-scoped
-endpoint. The receiver fetches the selected edition from the same Home
-origin. It sends no actor references or browser credentials. A protected
-Home source needs a supported read grant for that receiver before
-selection. Verify both visitors and the full return in the receiving world.
+endpoint. The receiving operator stages the edition through their existing
+authorized Home reader:
+
+```sh
+node tools/stage-owner-room-art.mjs MANIFEST_URL MANIFEST_SHA OWNER_CACHE_DIR
+node deployment/build-package.mjs .state/RELEASE_STAGE OWNER_CACHE_DIR
+```
+
+The asset stage contains only the selected manifest and model bytes, pinned
+by digest. Production loads it from the package at startup and serves it
+under normal room authorization. The Holodeck service receives neither
+reader credentials nor visitor cookies for the Home origin. An edition
+update follows the same staging contract. Verify both visitors and the full
+return in the receiving world.
 
 ## Standalone review
 

@@ -38,7 +38,7 @@ import {readCollectionRepresentatives} from './collection-representatives.mjs';
 import {createNativeRoomAuthority,createNativeReviewAuthority} from './native-authority.mjs';
 import {createAtelierRoomAuthority} from './atelier-authority.mjs';
 import {atelierProjectionHandler} from './atelier-projection.mjs';
-import {loadOwnerRoomArt} from './owner-room-art.mjs';
+import {loadOwnerRoomArt,ownerRoomCache} from './owner-room-art.mjs';
 import {WorldDocument} from './world-document.mjs';
 import {SessionBindings,SESSION_MS,sessionKey} from './session-bindings.mjs';
 import {HumanAvatarProfiles,humanWardrobeAssets} from './human-avatars.mjs';
@@ -144,7 +144,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     persist:spaceStore ? state=>spaceStore.save(state) : null,guestAccess:interiorGuestAccess});
   if(ownerArtRequest!==undefined&&(production||typeof ownerArtRequest!=='function'))
     throw Error('Select the installed Home asset reader');
-  const ownerArt=await loadOwnerRoomArt(ownerRoomArt,spaces.rooms,ownerArtRequest);
+  const ownerReader=production?ownerRoomCache(new URL('../runtime/owner-room-art/',import.meta.url)):ownerArtRequest;
+  const ownerArt=await loadOwnerRoomArt(ownerRoomArt,spaces.rooms,ownerReader);
   function ownerArtFor(room){
     const selected=ownerArt.get(room?.id);
     return selected&&selected.house===room.house&&Boolean(selected.exterior)===room.entry&&

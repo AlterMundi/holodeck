@@ -11,7 +11,7 @@ import {MATTER_ART_REVISIONS} from '../src/matter-workshop-art.mjs';
 import {ensureMmlServerAuthContext} from '../tools/mml-server-auth-context.mjs';
 ensureMmlServerAuthContext({check:true});
 const root=resolve(new URL('..',import.meta.url).pathname);
-const stage=process.argv[2];
+const [stage,ownerCache]=process.argv.slice(2);
 if(!stage || !resolve(stage).startsWith(root+'/.state/'))throw Error('Stage must be task-owned .state subdirectory');
 await rm(stage,{recursive:true,force:true});await mkdir(join(stage,'src'),{recursive:true});
 const resourcePlugin={name:'qualified-jsdom-sidecars',setup(api){
@@ -27,6 +27,24 @@ await copyFile(join(root,'node_modules/jsdom/lib/jsdom/browser/default-styleshee
 const digest=b=>createHash('sha256').update(b).digest('hex');
 async function copyTree(from,to){await mkdir(to,{recursive:true});for(const entry of await readdir(from,{withFileTypes:true})){const src=join(from,entry.name),dst=join(to,entry.name);if(entry.isDirectory())await copyTree(src,dst);else if(entry.isFile())await copyFile(src,dst);else throw Error('Regular selected files only');}}
 await copyTree(join(root,'public'),join(stage,'public'));await copyTree(join(root,'build'),join(stage,'build'));
+if(ownerCache){
+  const names=await readdir(ownerCache);
+  if(!names.length||names.length>33)throw Error('Select a bounded owner room edition');
+  const target=join(stage,'runtime/owner-room-art');
+  await mkdir(target,{recursive:true});
+  let total=0;
+  for(const name of names){
+    const match=/^([a-f0-9]{64})\.(json|glb)$/.exec(name);
+    const info=await lstat(join(ownerCache,name));
+    if(!match||!info.isFile()||info.size>(match[2]==='json'?96000:768*1024))
+      throw Error('Owner room edition contains an unexpected file');
+    total+=info.size;
+    if(total>12*1024*1024)throw Error('Owner room edition exceeds the archive budget');
+    const data=await readFile(join(ownerCache,name));
+    if(data.length!==info.size||digest(data)!==match[1])throw Error('Owner room edition does not match the staged bytes');
+    await writeFile(join(target,name),data);
+  }
+}
 // Preserve the qualified bytes and their existing URLs with one disk representation.
 for(const [path,revision] of Object.entries({...ATELIER_ASSET_REVISIONS,...ANIMATION_ASSET_REVISIONS,...OWNED_PACKED_ART_REVISIONS,...MATTER_ART_REVISIONS})){
   if(!path.endsWith('.glb'))continue;

@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
+import {mkdtemp,rm,writeFile} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {pathToFileURL} from 'node:url';
 import {test} from 'node:test';
-import {loadOwnerRoomArt} from '../src/owner-room-art.mjs';
+import {loadOwnerRoomArt,ownerRoomCache} from '../src/owner-room-art.mjs';
 import {arrivalDoor} from '../src/space-travel.mjs';
 
 const sha=content=>createHash('sha256').update(content).digest('hex');
@@ -33,4 +37,17 @@ test('corrupt bytes, off-Home URLs and missing reciprocal graph fail closed',asy
   await assert.rejects(loadOwnerRoomArt([{...select(),manifest:'https://other.example/data.json'}],rooms,reply()),/Home manifest/);
   const changed=new Map([['atlas',{...rooms.get('atlas'),links:[{to:'workshop',kind:'door'}]}]]);
   await assert.rejects(loadOwnerRoomArt([select()],changed,reply()),/every published door/);
+});
+
+test('the packaged reader loads only exact staged bytes without fetching Home',async t=>{
+  const directory=await mkdtemp(join(tmpdir(),'holodeck-owner-room-'));
+  t.after(()=>rm(directory,{recursive:true,force:true}));
+  const selection=select();
+  const asset=join(directory,model.sha256+'.glb');
+  await writeFile(join(directory,selection.sha256+'.json'),JSON.stringify(manifest));
+  await writeFile(asset,glb);
+  const read=ownerRoomCache(pathToFileURL(directory+'/'));
+  assert.equal((await loadOwnerRoomArt([selection],rooms,read)).get('atlas').models.size,1);
+  await writeFile(asset,Buffer.alloc(glb.length));
+  await assert.rejects(loadOwnerRoomArt([selection],rooms,read),/selected revision/);
 });
