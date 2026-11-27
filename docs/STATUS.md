@@ -1,5 +1,15 @@
 # Current MVP work
 
+## November 27 — Continuous flight past either pitch pole
+
+Protected release `0cdc7930136d` carries a sustained forward input through
+the vertical in either direction, including at normal flight speed.
+Clearance still limits loops near the ground or the flight ceiling.
+Chromium completed both loops starting at the exact camera limits. All
+92 installed files and the protected HTTPS client matched the package.
+The Node suite passed 534 checks with two skips, and all 1,340 existing
+Studio frames matched. The immediate rollback is `bde2306debc1`.
+
 ## November 27 — Protected Weaver preset import
 
 Protected release `bde2306debc1` adds a local JSON chooser and a separate

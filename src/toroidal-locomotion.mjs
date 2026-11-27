@@ -70,7 +70,7 @@ export class ToroidalLocomotion {
     this.flightVerticalSpeed=0;
   }
 
-  update(seconds, {right = 0, forward = 0, yaw = this.yaw, travelYaw = yaw, sprint = false, jump = false, flight = false, vertical = 0, climb = 0, crouch = false, doubleJump=false, loopPull=0} = {}) {
+  update(seconds, {right = 0, forward = 0, yaw = this.yaw, travelYaw = yaw, sprint = false, jump = false, flight = false, vertical = 0, climb = 0, crouch = false, doubleJump=false, loopPull=0, loopAtPole=false} = {}) {
     if (!Number.isFinite(seconds) || seconds <= 0 || ![right, forward, yaw, travelYaw, vertical, climb].every(Number.isFinite)) return;
     if(flight!==this.flightActive){
       this.flightActive=flight;
@@ -95,7 +95,7 @@ export class ToroidalLocomotion {
     const crossTarget = (forward * cosine - right * sine) * speed;
     if(flight){
       const support=this.supportAt(this.u,this.v);
-      this.verticalLoop.arm(Math.min(seconds,MAX_FRAME),{pull:loopPull,ring:this.ringSpeed,cross:this.crossSpeed,
+      this.verticalLoop.arm(Math.min(seconds,MAX_FRAME),{pull:loopPull,atPole:loopAtPole,heading:travelYaw,ring:this.ringSpeed,cross:this.crossSpeed,
         vertical:this.flightVerticalSpeed,aboveGround:this.height-Math.max(support,this.waterLevel-FLOAT_DRAFT),
         belowCeiling:Math.max(support,this.waterLevel-FLOAT_DRAFT)+FLIGHT_CEILING-this.height});
     }
