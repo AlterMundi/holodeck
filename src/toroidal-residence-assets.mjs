@@ -1,7 +1,7 @@
 // Exact Blender exports of art/residencia-nobleza (see toroidal-residence.mjs).
 export const residenceAssets=Object.freeze({
-  visual:{path:'assets/residencia/residencia.glb',bytes:1790772,
-    sha256:'8bf3558cada58c86f85e002d69d40c53ae3a5c7d77fdebb86c4d6a6b1099e4b8'},
+  visual:{path:'assets/residencia/residencia.glb',bytes:2561308,
+    sha256:'5486116c3b95d5756846d2d8085be000778468f886ee7f7b422a68a55a37f660'},
   collision:{path:'assets/residencia/residencia-colision.glb',bytes:393192,
     sha256:'89110ccfea393f49dd0dd71f376cdfebf88101265cbb5f5a2b860bb35714f3f1'},
 });
