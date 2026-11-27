@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {Quaternion, Vector3} from 'three';
 import {ToroidalLocomotion, toroidalRotation} from '../src/toroidal-locomotion.mjs';
+import {flightLoopIntent,steerToroidalFlight} from '../src/toroidal-mml.mjs';
 import {
   TOROIDAL_OVERLOOK, TOROIDAL_TERRAIN, terrainElevation, terrainFrame, terrainPosition, terrainWaterDepth, toroidalSpurPoint,
 } from '../src/toroidal-terrain.mjs';
@@ -338,4 +339,31 @@ test('hover cannot start a loop, and a downward pull requires space under the av
   const low=new ToroidalLocomotion({u:.4,v:.25,height:7,ground:()=>0,cameraSteering:true});
   simulate(low,1,90,{...input,sprint:true});
   assert.equal(low.verticalLoop.pose,null);
+});
+
+test('holding forward at either camera pole turns a near-vertical cruise through a complete loop',()=>{
+  for(const sign of [-1,1]){
+    const polarAngle=(sign===1?.95:.05)*Math.PI;
+    const direction=Math.PI;
+    const intent=flightLoopIntent(direction,polarAngle,false);
+    assert.deepEqual(intent,{pull:sign,atPole:true});
+    const {forward,climb}=steerToroidalFlight(direction,polarAngle);
+    const input={flight:true,forward,climb,travelYaw:.8};
+    const motion=new ToroidalLocomotion({u:.4,v:.25,height:33,ground:()=>0,cameraSteering:true});
+    simulate(motion,.5,90,input);
+    assert.ok(Math.hypot(motion.ringSpeed,motion.crossSpeed)<1);
+    const path=[];
+    for(let frame=0;frame<305;frame++){
+      motion.update(1/90,{...input,loopPull:intent.pull,loopAtPole:intent.atPole});
+      if(motion.verticalLoop.pose)path.push({...motion.verticalLoop.pose,
+        along:motion.ringSpeed*Math.sin(.8)+motion.crossSpeed*Math.cos(.8),vertical:motion.flightVerticalSpeed});
+    }
+    assert.ok(path[0].pitch*sign>1.35);
+    assert.ok(path.some(p=>p.along<-4));
+    assert.ok(path.some(p=>p.vertical*sign<-4));
+    assert.ok(path.at(-1).turned>6.2);
+    assert.equal(motion.verticalLoop.pose,null);
+  }
+  assert.equal(flightLoopIntent(Math.PI,Math.PI/2,false),null);
+  assert.equal(flightLoopIntent(undefined,Math.PI*.95,true),null);
 });

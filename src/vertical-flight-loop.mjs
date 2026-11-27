@@ -14,25 +14,28 @@ export class VerticalFlightLoop {
   cancel(){
     this.arc=null;
     this.held=0;
+    this.pull=0;
     this.authorized=false;
   }
 
-  arm(seconds,{pull,ring,cross,vertical=0,aboveGround,belowCeiling}){
+  arm(seconds,{pull,atPole=false,heading,ring,cross,vertical=0,aboveGround,belowCeiling}){
     if(this.arc)return;
-    if(!pull){this.held=0;this.authorized=false;return;}
+    if(!pull){this.held=0;this.pull=0;this.authorized=false;return;}
     if(this.authorized)return;
+    if(pull!==this.pull){this.held=0;this.pull=pull;}
     this.held+=seconds;
     const planar=Math.hypot(ring,cross);
     const speed=Math.hypot(planar,vertical);
-    if(speed<minimumSpeed||planar<minimumSpeed*.65){this.held=0;return;}
-    const start=Math.max(-.68,Math.min(.68,Math.atan2(vertical,planar)));
+    const minimum=atPole?4.2:minimumSpeed;
+    if(speed<minimum||(!atPole&&planar<minimumSpeed*.65)){this.held=0;return;}
+    const start=Math.atan2(vertical,planar);
     if(this.held<.18)return;
     const radius=speed/turnRate;
     const climb=radius*(1+pull*Math.cos(start));
     const drop=radius*(1-pull*Math.cos(start));
     if(belowCeiling<climb+3||aboveGround<drop+2.6)return;
     this.authorized=true;
-    this.arc={yaw:Math.atan2(ring,cross),start,pull,speed,turned:0};
+    this.arc={yaw:planar>speed*.12?Math.atan2(ring,cross):heading,start,pull,speed,turned:0};
   }
 
   step(seconds){

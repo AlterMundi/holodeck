@@ -28,6 +28,15 @@ export function steerToroidalFlight(direction,polarAngle,atSurface=false,loopPit
   return {direction:Math.atan2(strafe,-projected),forward:Math.hypot(strafe,projected),climb:ahead*Math.sin(angle)};
 }
 
+// At the pole a held forward input is still asking to turn, even though
+// the orbit angle cannot go any farther and horizontal thrust is small.
+export function flightLoopIntent(direction,polarAngle,aiming){
+  const pitch=polarAngle-Math.PI/2;
+  const atPole=Math.abs(pitch)>=1.10;
+  return Number.isFinite(direction)&&-Math.cos(direction)>.84&&(atPole||aiming&&Math.abs(pitch)>.43)?
+    {pull:Math.sign(pitch),atPole}:null;
+}
+
 // The MML host still owns input, network cadence, interpolation, avatar
 // animation and the orbit camera. Only the selected exterior uses a radial
 // surface and reconstructs the world-space orientation from tangent yaw.
@@ -98,14 +107,12 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
     const firstJump=wantsFirstJump();
     const jump=!flying&&!motion.swimming&&Boolean(firstJump||control?.jump||touch?.jump||(wet&&manual>0));
     const sprint=freeVertical?keyInputManager.getRun()||touch?.isSprinting:control?.isSprinting;
-    const pitch=camera.phi-Math.PI/2;
-    const loopPull=flying&&aiming()&&!manual&&moving&&-Math.cos(control.direction)>.84&&Math.abs(pitch)>.43?
-      Math.sign(pitch):0;
+    const loop=flying&&!manual&&!camera.isFlyCameraOn()?flightLoopIntent(control?.direction,camera.phi,aiming()):null;
     const previousHeight=motion.height;
     if(flying)sweepStart.fromArray(terrainPosition(motion.u,motion.v,motion.height));
     const jumps=motion.doubleJumpCount;
     motion.update(seconds,{forward:steer.forward,yaw,travelYaw,doubleJump:wantsDoubleJump(),
-      sprint,loopPull,
+      sprint,loopPull:loop?.pull,loopAtPole:loop?.atPole,
       jump,flight:flying,vertical:freeVertical?manual:0,climb:steer.climb,crouch:!flying&&!wet&&descend});
     if(motion.doubleJumpCount!==jumps)onDoubleJump();
     let state = motion.pose();
