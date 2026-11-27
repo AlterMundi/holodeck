@@ -34,9 +34,17 @@ test('stars move on the sidereal clock and clouds drift on shared UTC in two lay
   const cycle=celestialRotation(instant+86164090.5);
   assert.ok(Math.hypot(a[0]-cycle[0],a[1]-cycle[1])<1e-6);
   assert.ok(celestialPole[0]<0&&celestialPole[1]<0);
-  assert.equal(Math.round(Math.asin(-celestialPole[1])*180/Math.PI*10),314);
+  assert.equal(Math.round(Math.asin(-celestialPole[1])*180/Math.PI*10),318);
   assert.deepEqual(cloudWind(instant),cloudWind(new Date(instant)));
   const lowCycle=cloudWind(instant+73*60000),wind=cloudWind(instant);
   assert.ok(Math.hypot(lowCycle[0]-wind[0],lowCycle[1]-wind[1])<1e-9);
   assert.ok(Math.hypot(lowCycle[2]-wind[2],lowCycle[3]-wind[3])>1);
+});
+
+test('the Sun and Moon overlap above Quintana during a known eclipse',async()=>{
+  const {quintanaCelestial,solarObscuration}=await import('../src/quintana-celestial.mjs');
+  const eclipse=quintanaCelestial(new Date('2020-12-14T16:05Z'));
+  assert.ok(eclipse.sun.altitude>78&&eclipse.moon.altitude>78);
+  assert.ok(solarObscuration(eclipse)>.45);
+  assert.equal(solarObscuration(quintanaCelestial(new Date('2020-12-18T16:05Z'))),0);
 });

@@ -6,6 +6,7 @@ import {bindHudAppearance} from './hud-appearance.mjs';
 import {selectedHudLook} from './hud-look-preview.mjs';
 import {ToroidalScenery} from './toroidal-scenery.mjs';
 import {ToroidalAtmosphere,toroidalViewDepth} from './toroidal-atmosphere.mjs';
+import {quintanaCelestial,solarObscuration} from './quintana-celestial.mjs';
 import {argentineSun,nightSkyKey} from './toroidal-solar-clock.mjs';
 import {bindLocalRain} from './local-rain.mjs';
 import {bindAvatarPracticals} from './avatar-practicals.mjs';
@@ -1206,7 +1207,10 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         const now=Date.now();
         const minute=Math.floor(now/60000);
         if(minute!==solarMinute){
-          solar=argentineSun(new Date(minute*60000));
+          const clock=new Date(minute*60000);
+          solar=argentineSun(clock);
+          const coverage=solarObscuration(quintanaCelestial(clock));
+          solar.daylight*=1-.98*coverage**2;
           nightKey=nightSkyKey(solar);
           solarMinute=minute;
         }
