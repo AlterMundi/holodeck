@@ -18,6 +18,21 @@ cutover route when it can preserve the visit. Legion's current JACK Lab
 still serves its previous body release. Video from an actual selected Lab
 source and paired browser acceptance remain pending.
 
+## November 27 — Residence entrance and grove
+
+Protected release `bea793358846` moves the displaced evergreens around
+the perimeter and adds five araucarias between 29 and 36 metres tall. A
+shared site frame leans the residence and its walkable grade about two
+degrees toward the approach. The stair and podium visual contact is clipped
+under the visible stone after the asset loads. The continuous walking grade
+remains available for collision and stair traversal.
+
+Chromium confirmed that the five trees render, that the centre stair and
+interior floor support the character, and that the frontal view has no
+terrain bleed over the treads. The selected host matched all 91 package
+files and the protected client and model assets. Immediate rollback is
+`c2a58eab44f1`.
+
 ## November 27 — Shared world view and toolbar voice
 
 Protected release `c2a58eab44f1` adds **Mic** and the nearby spoken-reply
