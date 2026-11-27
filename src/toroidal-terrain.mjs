@@ -99,6 +99,69 @@ function overlookGrade(u,v,elevation){
   return mix(elevation,overlookHeight+.025*z,weight);
 }
 
+// Residencia de la Nobleza IA: CompAII's walkable palace beside the house plaza.
+// The building is rigid, so its pad is a true plane in the palace's tangent frame:
+// each (u, v) gets the radial height that puts it on that plane. Floors, podium,
+// atrium and the fan stair are carried by this grade; walls come from the model.
+const residenceSite=(()=>{
+  const u=-60/(TAU*TOROIDAL_TERRAIN.majorRadius), v=.25+100/(TAU*TOROIDAL_TERRAIN.tubeRadius);
+  return {u:wrap(u),v,base:19,yaw:Math.atan2(60,-100)};
+})();
+// The walking grade sits a few centimetres under the modelled marble (podium top 1.8 m,
+// interior floor 1.85 m, step noses) so the terrain never shows through it.
+export const TOROIDAL_RESIDENCE=Object.freeze({...residenceSite,podium:1.77,floor:1.82,
+  podiumRadius:29.2,wallRadius:25.9,stair:{halfWidth:10.3,top:-38.5,bottom:-49.8},atrium:{halfWidth:8.4,from:-38.5,to:-25}});
+const residenceFrame=(()=>{
+  const {u,v,base,yaw}=residenceSite, f=terrainFrame(u,v);
+  const c=Math.cos(yaw), s=Math.sin(yaw);
+  const ex=f.alongRing.map((value,axis)=>c*value-s*f.aroundTube[axis]);
+  const ez=f.alongRing.map((value,axis)=>s*value+c*f.aroundTube[axis]);
+  return {origin:terrainPosition(u,v,base),up:f.up,ex,ez};
+})();
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+
+// Radial height at (u, v) of the plane lying `offset` metres above the palace ground.
+function residencePlaneHeight(u,v,offset,terrain){
+  const f=terrainFrame(u,v,terrain), {origin,up}=residenceFrame;
+  const relative=f.center.map((value,axis)=>value-origin[axis]);
+  return (offset-dot(up,relative))/dot(up,f.up)-terrain.tubeRadius;
+}
+
+// Palace-local Blender coordinates (X east, Y north, entrance toward -Y) of (u, v).
+export function residenceLocal(u,v,terrain=TOROIDAL_TERRAIN){
+  const h=residencePlaneHeight(u,v,0,terrain);
+  const p=terrainPosition(u,v,h,terrain), {origin,ex,ez}=residenceFrame;
+  const d=p.map((value,axis)=>value-origin[axis]);
+  return {x:dot(d,ex),y:-dot(d,ez)};
+}
+
+function residencePad(x,y){
+  const {podiumRadius,wallRadius,podium,floor,stair,atrium}=TOROIDAL_RESIDENCE;
+  const radial=Math.hypot(x,y);
+  if(radial<=wallRadius)return {offset:floor,distance:0};
+  if(radial<=podiumRadius)return {offset:podium,distance:0};
+  if(Math.abs(x)<=atrium.halfWidth&&y>=atrium.from&&y<=atrium.to)return {offset:podium,distance:0};
+  if(Math.abs(x)<=stair.halfWidth&&y>=stair.bottom&&y<atrium.from){
+    const t=(y-stair.bottom)/(atrium.from-stair.bottom);
+    return {offset:Math.max(0,podium*t-.08*Math.min(1,(1-t)*8)),distance:0};
+  }
+  const box=Math.hypot(Math.max(0,Math.abs(x)-stair.halfWidth),Math.max(0,stair.bottom-y,y-atrium.to));
+  const distance=Math.min(radial-podiumRadius,box);
+  // A short bank wraps the podium so the walking grade meets it without a gap.
+  return {offset:podium*Math.max(0,1-distance/2.4)*(box<radial-podiumRadius?(y-stair.bottom)/(atrium.to-stair.bottom):1),distance};
+}
+
+function residenceGrade(u,v,elevation,terrain){
+  const across=Math.abs(wrap(v-residenceSite.v+.5)-.5)*TAU*terrain.tubeRadius;
+  const along=wrappedDistance(u,residenceSite.u)*TAU*terrain.majorRadius*.9;
+  if(across>110||along>110)return elevation;
+  const {x,y}=residenceLocal(u,v,terrain);
+  const {offset,distance}=residencePad(x,y);
+  if(distance>=36)return elevation;
+  const weight=1-fade(Math.max(0,Math.min(1,(distance-3)/33)));
+  return mix(elevation,residencePlaneHeight(u,v,Math.max(0,offset),terrain),weight);
+}
+
 // Widely spaced ridges break up the opposite arc and give the traveler
 // landmarks on both sides of its opening. Their relief is part of the
 // terrain sampler, so the silhouette and traversal share the same shape.
@@ -132,9 +195,11 @@ export function terrainElevation(u, v, terrain = TOROIDAL_TERRAIN) {
   const elevation = 52 * landform + 15 * foothills + 5 * detail + 1.25 * grit + ridgeRelief(u,v,terrain);
   const distance = Math.hypot(wrappedDistance(u, 0) * TAU * terrain.majorRadius,
     wrappedDistance(v, .25) * TAU * terrain.tubeRadius);
-  if (distance >= 76) return terrain.id===TOROIDAL_TERRAIN.id?overlookGrade(u,v,elevation):elevation;
+  const own = terrain.id===TOROIDAL_TERRAIN.id;
+  if (distance >= 76) return own?residenceGrade(u,v,overlookGrade(u,v,elevation),terrain):elevation;
   const pavedGrade = (terrain.tubeRadius + 18) / Math.sin(wrap(v) * TAU) - terrain.tubeRadius;
-  return mix(pavedGrade, elevation, fade(Math.max(0, distance - 32) / 44));
+  const graded = mix(pavedGrade, elevation, fade(Math.max(0, distance - 32) / 44));
+  return own?residenceGrade(u,v,graded,terrain):graded;
 }
 
 // The low-contrast worn route wraps around the broad shoulder. A spur
