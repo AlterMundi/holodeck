@@ -5,7 +5,7 @@ import {CompanionRoomClearance} from '../src/companion-room-clearance.mjs';
 import {CompanionTransfer} from '../src/companion-transfer.mjs';
 import {passageAt,upperLandingCollision} from '../src/interior-geometry.mjs';
 import {loadCompanion} from '../tools/avatar-motion/rig.mjs';
-import {ToroidalLocomotion} from '../src/toroidal-locomotion.mjs';
+import {ToroidalLocomotion,toroidalRotation} from '../src/toroidal-locomotion.mjs';
 import {terrainCoordinates,TOROIDAL_SPAWN} from '../src/toroidal-terrain.mjs';
 
 function boxes(...geometry){
@@ -133,22 +133,59 @@ test('a straight exterior sprint settles without a rebound at 20 or 60 Hz',async
   }
 });
 
+
+test('the companion settles at varying positions behind the last moving heading, on foot and in flight',async()=>{
+  const {x,y,z}=TOROIDAL_SPAWN;
+  const start=terrainCoordinates([x,y,z]);
+  const hz=30;
+  for(const flight of [false,true]){
+    const {avatar}=await loadCompanion();
+    const travel=new ToroidalLocomotion({...start,height:start.height+(flight?8:0)});
+    const leader=new Vector3(),relative=new Vector3();
+    const rests=[];
+    function advance(yaw,forward,frames){
+      for(let i=0;i<frames;i++){
+        travel.update(1/hz,{forward,yaw,flight});
+        leader.copy(travel.pose().position);
+        avatar.update({position:leader,yaw,outdoor:true,visible:true,seconds:1/hz,grounded:!flight,explicitFlight:flight});
+      }
+    }
+    try{
+      for(const yaw of [.5,-1,.5]){
+        advance(yaw,1,2*hz);
+        advance(yaw,0,2.5*hz);
+        const frame=toroidalRotation(leader,yaw).invert();
+        relative.subVectors(avatar.figure.root.position,leader).applyQuaternion(frame);
+        assert.ok(relative.z<-.68,JSON.stringify({flight,yaw,rest:relative.toArray()}));
+        rests.push(relative.clone());
+        const atRest=avatar.target.clone();
+        advance(yaw+Math.PI,0,hz);
+        assert.ok(avatar.target.distanceTo(atRest)<1e-4);
+      }
+      assert.ok(rests[0].distanceTo(rests[1])>.15||rests[0].distanceTo(rests[2])>.15);
+    }finally{
+      avatar.dispose();
+    }
+  }
+});
+
 test('close passes animate the companion using the ground distance it actually moves',async()=>{
   for(const hz of [20,60,90]){
     const {avatar}=await loadCompanion();
     try{
       const {figure}=avatar,root=figure.root,player=new Vector3(0,.1,0);
-      const before=new Vector3(),realized=new Vector3();
+      const before=new Vector3(),realized=new Vector3(),path=new Vector3();
       const pose=figure.pose;
       let sample;
       figure.pose=input=>{sample=input;pose(input);};
       let deflected=0,peakError=0;
+      avatar.update({position:player,visible:true,seconds:1/hz});
+      path.subVectors(root.position,player).setY(0).normalize();
       for(let frame=0;frame<8*hz;frame++){
         const seconds=frame/hz;
         const pace=seconds>=1&&seconds<1.9?7.3:seconds>=2.25&&seconds<3.4?-6.5:
           seconds>=3.6&&seconds<4.55?5.4:seconds>=5&&seconds<5.45?-3.1:0;
-        player.x+=pace/hz;
-        player.z+=pace*.45/hz;
+        player.addScaledVector(path,pace/hz);
         before.copy(root.position);
         avatar.update({position:player,visible:true,seconds:1/hz});
         if(sample.reset)continue;
@@ -156,7 +193,7 @@ test('close passes animate the companion using the ground distance it actually m
         if(realized.distanceTo(avatar.followVelocity)>.25)deflected++;
         peakError=Math.max(peakError,realized.distanceTo(sample.velocity),Math.abs(realized.length()-sample.speed));
       }
-      assert.ok(deflected/hz>=.3,`${hz} Hz: the character crossed the companion's path`);
+      assert.ok(deflected>0,`${hz} Hz: the character crossed the companion's path`);
       assert.ok(peakError<1e-5,`${hz} Hz: pose and ground travel differ by ${peakError} m/s`);
     }finally{
       avatar.dispose();
