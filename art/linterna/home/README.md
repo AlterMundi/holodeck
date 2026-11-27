@@ -1,18 +1,36 @@
 # Casa Linterna on its own Home
 
-East 1 represents the entrance. An operator can configure
-`receiving.hostedEntrances` with entries of the form
-`{"room":"existing-entry-id","home":"https://owner.dmn.homes/taller/house/"}`.
-An authorized crossing returns the configured HTTPS Home address without
-writing an interior location to the shared world. The published house and
-its existing admission checks continue to supply the entrance. The Home
-authenticates the visitor separately. It receives neither the world session
-nor an identity claim in the URL.
+East 1 uses Holodeck's ordinary room crossing, avatar, presence, and return.
+The room scene comes from a pinned edition on the owner's Home. An operator
+can select `receiving.ownerRoomArt` with an entry of the following form:
 
-The Linterna walkthrough starts at Atlas. Its object and site links retain
-the normal site grants. The standalone route offers a link back to the
-shared world. This first release has a local walking view. Shared presence
-and the live Atelier table require their application integrations.
+```json
+{
+  "manifest": "https://owner.dmn.homes/editions/house/manifest.json",
+  "sha256": "<manifest SHA-256>",
+  "rooms": {
+    "arrival": "published-atlas-id",
+    "hefesto": "published-foyer-id",
+    "atelier": "published-atelier-id",
+    "printing": "published-printing-id"
+  }
+}
+```
+
+Use the existing admitted room graph. The native house editor and room
+admission keep authority over visitor assignments. Scene selections pin
+model sizes and hashes, local colliders, and the two sides of each door.
+The renderer fetches the model parts through the existing room-scoped
+endpoint. The receiver fetches the selected edition from the same Home
+origin. It sends no actor references or browser credentials. A protected
+Home source needs a supported read grant for that receiver before
+selection. Verify both visitors and the full return in the receiving world.
+
+## Standalone review
+
+The walkable standalone review starts at Atlas. It is published separately
+as a protected review. Its app links take the visitor to their canonical
+sites. The live Atelier table uses its existing room-workspace connector.
 
 ```sh
 node art/linterna/precinct/build-review.mjs --home ASSET_DIR SITES_JSON
@@ -32,5 +50,4 @@ The builder preserves the existing workshop payload and adds a route to
 the same package. The route checks the paired Home session and reads only
 the three pinned files. Its production path is
 `/taller-oliva/casa-linterna/`. Use the existing managed workshop grant,
-audience, capacity and predecessor guard when selecting a package. Activate
-the shared-world entrance after the protected route is serving.
+audience, capacity and predecessor guard if selecting the standalone route.

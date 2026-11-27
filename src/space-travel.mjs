@@ -1,4 +1,3 @@
-import {hostedHomeUrl} from './hosted-entrances.mjs';
 import {showRoomMap} from './room-map.mjs';
 
 const base=()=>new URL('./',document.baseURI);
@@ -22,11 +21,13 @@ export function arrivalDoor(from,next){
   if(next.id===from.id)return null;
   if(next.id==='outside')return from.exteriorDoor??null;
   if(from.id==='outside'){
+    if(next.entryLanding)return next.entryLanding;
     const door=next.exitDoor;
     // Keep the landing inside the threshold, looking into the room.
     return door?{x:door.x,y:door.y,z:door.z-.9,yaw:180}:null;
   }
-  return next.exits.find(exit=>exit.to===from.id)?.door??null;
+  const exit=next.exits.find(exit=>exit.to===from.id);
+  return exit?.landing??exit?.door??null;
 }
 
 export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving,revision,onNear,onAccessLost,onDoorDenied,
@@ -63,11 +64,6 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
     }catch{
       try{next=await readSpace();}catch{}
       if(!next||next.id===space.id)onError('No pude confirmar el cambio de lugar.');
-    }
-    if(space.id==='outside'&&next?.id==='outside'&&next.hostedEntrance!==undefined){
-      const home=hostedHomeUrl(next.hostedEntrance);
-      if(home){location.assign(home);return;}
-      onError('No pude confirmar la dirección de esta casa.');
     }
     if(next&&next.id!==space.id){
       const arrival=arrivalDoor(space,next);
