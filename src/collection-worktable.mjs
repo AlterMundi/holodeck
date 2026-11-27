@@ -54,6 +54,7 @@ export function presentModel(model,gltf,clip){
     mesh.castShadow=false;mesh.userData.matterProxy=true;
   }
   const chosen=animations.find(item=>item.name===clip)??animations[0];
+  model.animations=animations;model.clips=animations.map(item=>item.name);
   if(chosen){
     model.mixer=new AnimationMixer(scene);
     model.mixer.clipAction(chosen).play();
@@ -173,6 +174,12 @@ export class CollectionWorktable{
     this.load(id);
   }
 
+  chooseClip(name){
+    const model=this.model,clip=model?.animations?.find(item=>item.name===name);
+    if(!clip||!model.mixer||model.clip===name)return;
+    model.mixer.stopAllAction();model.mixer.clipAction(clip).play();model.clip=name;
+  }
+
   choosePart(id){
     if(id!==''&&!this.model?.parts.has(id))return;
     this.part.value=id;
@@ -211,6 +218,7 @@ export class CollectionWorktable{
       pointDisabled:this.pointingPending===true||!this.canPoint(reference,this.shared?.revision),
       projects:choices(this.project),project:this.project.value,scenes:choices(this.sceneChoice),scene:this.review?.id??'',
       parts:choices(this.part),part:this.part.value,section:Number(this.section.value),
+      animated:(this.model?.clips?.length??0)>1,clips:(this.model?.clips??[]).map(id=>({id,label:id})),clip:this.model?.clip??'',
       ready:!!this.model,hasPart:!!this.part.value,visibility:this.visibility.textContent,
       canShare:!this.share.hidden,canClear:!this.clearTable.hidden,canFollow:!this.follow.hidden,
       canDiscuss:!!this.model&&!this.discuss.hidden,

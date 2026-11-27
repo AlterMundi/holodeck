@@ -274,6 +274,15 @@ const {once}=require('node:events');
   assert.ok(a.skinned>0&&a.textured>0,'skinned and textured');
   assert.ok(a.bone.some((v,i)=>Math.abs(v-b.bone[i])>1e-4),'the clip animates the skeleton on the table');
   await page.screenshot({path:join(process.env.SHOTS||__dirname,'mesa-explorer.png')});
+  // the A2UI worktable HUD switches the clip
+  await bench.getByRole('combobox',{name:'Animación'}).selectOption('hero_landing');
+  await page.waitForFunction(()=>{const m=holodeckDevelopment.client.getRenderer().mmlCompositionScene.group.getObjectByName('collection-worktable-model');
+    return m?.getObjectByName('collection-worktable-presentation')&&[...m.parent.children].length>=0;},null,{timeout:5000});
+  await page.waitForTimeout(1500);
+  await page.screenshot({path:join(process.env.SHOTS||__dirname,'mesa-explorer-landing.png')});
+  const pelvis=await page.evaluate(()=>{const m=holodeckDevelopment.client.getRenderer().mmlCompositionScene.group.getObjectByName('collection-worktable-model');
+    let y=null;m.traverse(n=>{if(n.isBone&&n.name==='pelvis')y=n.getWorldPosition(n.position.clone()).y-m.position.y;});return y;});
+  console.log('pelvis after landing clip',pelvis);
   assert.deepEqual(errors,[]);
   console.log('MESA CHECK PASS');
  }finally{await browser?.close();listener?.close();app?.close?.();rmSync(directory,{recursive:true,force:true});}
