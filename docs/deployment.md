@@ -256,8 +256,9 @@ ordinary projection. No receiving selection or state migration is needed.
 
 
 
-The archive remains below the existing 32 MiB limit and its declared unpacked
-inventory below 128 MiB. Validate the exact archive using the maintained receiving
+The Holodeck builder, Home gateway and executor accept archives up to 40 MiB.
+Other Home services retain the 32 MiB archive limit. The individual file limit
+remains 32 MiB and the aggregate unpacked limit remains 128 MiB. Validate the exact archive using the maintained receiving
 package verifier before publication. Publish the package as one stable private
 operator artifact, not an App card; deploy it through the ordinary owner command.
 Every release reuses the existing App/resource/URL and retains actual predecessor
@@ -320,7 +321,8 @@ native conversation, another app or a device capture. No timer, model poller,
 inbox reader, autonomous attention or global Stop is installed.
 
 Keep current, publisher-protected previous, one necessary compatible recovery
-and at most one candidate within the existing96MiB total artifact-history bound.
+and at most one candidate within the 120 MiB total Holodeck artifact-history
+bound. Use at most three retained archives in ordinary rotation.
 Usually current/previous suffice; retain the third role only while the immediate
 predecessor cannot read current state. Reassess and retire it through the writer
 once a compatible predecessor is selected. Runtime code independently retains current/
