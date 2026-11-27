@@ -6,8 +6,8 @@ const microphoneLifetime=300;
 const machineMode='owner-journal/v1';
 const bounded=value=>{try{return JSON.stringify(value).length<=8192;}catch{return false;}};
 export class SharedConversationHost{
-  constructor({window,document,container,api,capture,currentActor,onDismiss,onVoiceControls=()=>{},onStatus=()=>{},onError=()=>{},onSpeechLevel,avatarMicrophone=false}){
-    Object.assign(this,{window,document,container,api,capture,currentActor,onDismiss,onVoiceControls,onStatus,onError,onSpeechLevel,avatarMicrophone});
+  constructor({window,document,container,api,capture,captureRender,currentActor,onDismiss,onVoiceControls=()=>{},onStatus=()=>{},onError=()=>{},onSpeechLevel,avatarMicrophone=false}){
+    Object.assign(this,{window,document,container,api,capture,captureRender,currentActor,onDismiss,onVoiceControls,onStatus,onError,onSpeechLevel,avatarMicrophone});
     this.records=new Map();this.visit=window.crypto.randomUUID();this.receive=this.receive.bind(this);
     window.addEventListener('message',this.receive);
     this.clearMicrophone=()=>{this.microphoneSample=null;};
@@ -112,38 +112,6 @@ export class SharedConversationHost{
     if(speaker&&!speaker.disabled&&this.currentActor()===this.selected?.actorRef)speaker.click();
   }
 
-  async selectWorldView(blob){
-    if(!blob.size||blob.type!=='image/png'||!this.channel||this.currentActor()!==this.selected?.actorRef)
-      throw Error('Abrí tu conversación antes de adjuntar la vista.');
-    const page=this.composerDocument(),input=page?.querySelector('#conversation-image');
-    const selection=page?.querySelector('#conversation-visual');
-    const shell=page?.defaultView;
-    if(!input||input.type!=='file'||input.disabled||!selection||!shell?.DataTransfer)
-      throw Error('No pude adjuntar la vista a esta conversación.');
-    const count=Number(selection.querySelector('summary')?.dataset.count??0);
-    // Hand off to the canonical image chooser. It owns the preview, upload,
-    // image limits, and the decision to include it in the next original.
-    if(count>=8)throw Error('Quitá una de las ocho imágenes para adjuntar la vista.');
-    const files=new shell.DataTransfer();
-    files.items.add(new shell.File([blob],'Vista de Holodeck.png',{type:'image/png'}));
-    input.files=files.files;
-    selection.open=true;
-    input.dispatchEvent(new shell.Event('change',{bubbles:true}));
-    const rail=selection.querySelector('#conversation-image-list');
-    if(!rail)return;
-    await new Promise((resolve,reject)=>{
-      const observer=new shell.MutationObserver(check);
-      const timer=setTimeout(()=>{observer.disconnect();reject(Error('No pude abrir la vista en el borrador.'));},3500);
-      function check(){
-        const choices=rail.querySelectorAll('.image-thumbnail');
-        if(choices.length!==count+1||!choices[count].querySelector('canvas'))return;
-        observer.disconnect();clearTimeout(timer);resolve();
-      }
-      observer.observe(rail,{childList:true,subtree:true});
-      check();
-    });
-  }
-
   envelope(d){return {schema:SCHEMA,type:d.type,visit:this.visit,channel:d.channel,actor:this.selected.actorRef,binding:this.selected.binding};}
   send(d,type,fields={}){if(!this.closed)this.frame.contentWindow.postMessage({...this.envelope(d),type,...fields},this.origin);}
   valid(event){
@@ -214,9 +182,12 @@ export class SharedConversationHost{
         this.toolbarRecording=false;this.lastAudioRecord=record;
       }
       record.work=(async()=>{
-        const view=await this.capture();
+        const frozenView=this.capture();
+        const frozenRender=this.captureRender?.();
+        const view=await frozenView;
+        const frame=await frozenRender;
         if(record.discarded||this.currentActor()!==d.actor||this.closed)throw Error('El acceso al mundo cambió.');
-        const result=await this.api('conversation-contexts',{id:d.id,binding:d.binding,displayedSequence:null,view,...(inline?{mode:machineMode}:{})});
+        const result=await this.api('conversation-contexts',{id:d.id,binding:d.binding,displayedSequence:null,view,...(frame?{frame}:{}),...(inline?{mode:machineMode}:{})});
         if(result.id!==d.id||result.binding!==d.binding||result.work_admitted!==false||(inline?
           !UUID.test(result.machine_source||'')||result.files?.length!==0:
           result.files?.length!==1||result.machine_source!==undefined))throw Error('No pude conservar el contexto.');

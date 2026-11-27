@@ -115,12 +115,12 @@ export async function createConversationContexts({room,stateDir,transport,allowI
   }
   async function prepareSource(actor,request,retryRecord=null,capturePlace=null){
       const ref=actorRef(actor);
-      if(!request||Object.keys(request).some(k=>!['id','binding','view','displayedSequence','mode'].includes(k))||!uuid(request.id)
+      if(!request||Object.keys(request).some(k=>!['id','binding','view','displayedSequence','mode','renderedView'].includes(k))||!uuid(request.id)
         ||request.mode!==undefined&&request.mode!==machineMode
         ||!/^[a-f0-9]{64}$/.test(request.binding))throw fail('input','Select the shared original and current binding');
       if(fenced)throw fail('context-recovery','Context source ledger needs receiving recovery');
       const mode=retryRecord?retryRecord.mode:request.mode;
-      const requestHash=retryRecord?retryRecord.requestHash:digest({id:request.id,binding:request.binding,view:request.view??null,displayedSequence:request.displayedSequence??null,mode});
+      const requestHash=retryRecord?retryRecord.requestHash:digest({id:request.id,binding:request.binding,view:request.view??null,displayedSequence:request.displayedSequence??null,mode,...(request.renderedView?{renderedView:request.renderedView}:{})});
       if(receipts[request.id])throw fail('id-reuse','Recover the existing canonical original before preparing another source');
       const existing=records[request.id];
       if(existing&&(existing.actorRef!==ref||existing.requestHash!==requestHash))throw fail('id-reuse','Preserve the originally captured source');

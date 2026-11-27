@@ -80,7 +80,7 @@ function situatedInterior({request,verified,actor,room,conversationPlace,indoorG
 
 // The receiving operator owns the directory/socket filesystem capability.
 // Native identity and current room rights are independently rechecked per request.
-export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,approachSpace,conversationPlace,putExhibit,exhibitResult,currentLayout,draftLayout,previewLayout,publishLayout,layoutResult,roomDesign,indoorGarden,reviewCharacter}){
+export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,approachSpace,conversationPlace,readRenderedView,putExhibit,exhibitResult,currentLayout,draftLayout,previewLayout,publishLayout,layoutResult,roomDesign,indoorGarden,reviewCharacter}){
   if(!socketPath?.startsWith('/')||!native?.authorizeWorldRequest||typeof resolveRights!=='function')
     throw Error('Select the installed native world port and authority resolver');
   let active=0;
@@ -133,7 +133,13 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
         const space=verified.capturedSpace?null:describeSpace?.(actor);
         let result;
         const savedExhibit=own&&request.operation==='result'?exhibitResult?.(actor,request.args.id):null;
-        if(verified.capturedSpace){
+        if(request.operation==='observe'&&request.args.view===true){
+          if(own||Object.keys(request.args).length!==1||!verified.humanRef||
+            verified.capturedSpace&&!conversationPlace?.(actor,verified.capturedSpace))
+            throw Error('The frame requires its original and current room access');
+          result=readRenderedView?.({id:request.interactionId,verified});
+          if(!result)throw new ActivityError('view-unavailable',404,'La vista guardada de ese mensaje no está disponible.');
+        }else if(verified.capturedSpace){
           result=situatedInterior({request,verified,actor,room,conversationPlace,indoorGarden,approachSpace,moveSpace,describeSpace,reviewCharacter});
         }else if(request.operation==='act'&&characterReviewCommands.has(request.args.type)){
           const {type,...input}=request.args;

@@ -21,6 +21,9 @@ export function captureNativeSituation(room,actor,request,{pairedBeing=null,pair
   const capturedAt=request.view?.capturedAt;
   const clientReportedCaptureTime=Number.isSafeInteger(capturedAt)?capturedAt:null;
   const extra={inputAssociation:{humanInputId:request.id,serverCapture,clientReportedCaptureTime}};
+  if(request.renderedView)extra.renderedView={...request.renderedView,space:interior?.place.id??'outside',
+    replay:{operation:'observe',args:{view:true},interactionId:request.id,tool:'holodeck-world'},
+    evidence:'Client-rendered world frame at conversation capture. For an explicit request to look, replay the frame through the authorized Holodeck world port. Separate document surfaces and browser controls are excluded.'};
   if(interior&&roomVisit)extra.referredRoomVisit={id:roomVisit.id,revision:roomVisit.revision,
     evidence:'client-reported reference matched the room placement and the speaker had source access'};
   if(interior&&worktable)extra.referredWorktable={...worktable,fixture:'worktable',
@@ -56,7 +59,7 @@ export function captureNativeSituation(room,actor,request,{pairedBeing=null,pair
   if(!interior&&request.view&&Object.hasOwn(request.view,'historyReference'))extra.selectedActivity=resolveHistoryReference(room,actor,request.view.historyReference);
   // Keep the canonical world and exact speaker/paired indications ahead of an
   // optional client-reported view. The cached capture never contains this view.
-  const reserve={inputAssociation:extra.inputAssociation,...(extra.selectedActivity?{selectedActivity:extra.selectedActivity}:{})};
+  const reserve={inputAssociation:extra.inputAssociation,...(extra.selectedActivity?{selectedActivity:extra.selectedActivity}:{}),...(extra.renderedView?{renderedView:extra.renderedView}:{})};
   const observation=interior?{
     schema:'holodeck.situation/v1',id:interior.id,run:interior.run,edition:interior.edition,
     capturedAt:interior.capturedAt,observer:actor.id,scope:'structured-interior-room',
