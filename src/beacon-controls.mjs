@@ -124,10 +124,39 @@ export class BeaconControls{
     const frame=this.panel.ownerDocument.createElement('iframe');
     frame.title='Panel de '+this.current.title;
     frame.allow="camera 'none'; microphone 'none'";
-    frame.src=href;
+    const projectsWeaver=this.current.service==='body';
+    frame.src=projectsWeaver?href+'&projection=weaver':href;
     this.frameEvents?.abort();
     this.frameEvents=new AbortController();
     const {signal}=this.frameEvents;
+    const ownerWindow=this.panel.ownerDocument.defaultView;
+    if(projectsWeaver)ownerWindow?.addEventListener('message',async event=>{
+      const data=event.data;
+      if(signal.aborted||event.origin!==ownerWindow.location.origin||
+          event.source!==frame.contentWindow||data?.surface!=='weaver')return;
+      if(data.type==='harmonic-lab-host-changed'){
+        this.disposeProjection();
+        return;
+      }
+      if(data.type!=='harmonic-lab-ready'||typeof data.host!=='string'||!data.host||
+          typeof data.csrf!=='string'||!data.csrf)return;
+      if(this.projecting?.host===data.host)return;
+      this.disposeProjection();
+      const attempt={host:data.host};
+      this.projecting=attempt;
+      try{
+        const {openBeaconProjection}=await import('./beacon-projection.mjs');
+        if(signal.aborted||this.projecting!==attempt)return;
+        this.projection=openBeaconProjection(this.stage,{host:data.host,surface:'weaver',csrf:data.csrf,
+          onReady:()=>{
+            this.projection.focus();
+            frame.remove();
+            this.frame=null;
+          }});
+      }catch{
+        if(this.projecting===attempt)this.disposeProjection();
+      }
+    },{signal});
     frame.addEventListener?.('load',()=>{
       try{
         frame.contentDocument?.addEventListener('keydown',event=>{
@@ -159,7 +188,23 @@ export class BeaconControls{
     this.panel.removeAttribute('data-beacon-hud');
     this.panel.close();
     this.panel.showModal();
-    (frameHadFocus?this.frame:this.closeControl)?.focus({preventScroll:true});
+    if(this.projection)this.projection.focus();
+    else (frameHadFocus?this.frame:this.closeControl)?.focus({preventScroll:true});
+  }
+
+  focusContent(){
+    if(this.projection)this.projection.focus();
+    else this.frame?.focus();
+  }
+
+  handleProjectionKey(event){
+    if(!this.projection?.contains(event))return false;
+    if(event.key==='Escape'){
+      event.preventDefault();
+      this.close();
+    }
+    event.stopImmediatePropagation();
+    return true;
   }
 
   close(){
@@ -168,9 +213,16 @@ export class BeaconControls{
     this.panel.removeAttribute('data-beacon-hud');
     this.frameEvents?.abort();
     this.frameEvents=null;
+    this.disposeProjection();
     this.frame=null;
     this.stage.replaceChildren();
     this.panel.close();
+  }
+
+  disposeProjection(){
+    this.projecting=null;
+    this.projection?.dispose();
+    this.projection=null;
   }
 
   update(objects,position){

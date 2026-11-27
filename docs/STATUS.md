@@ -5227,6 +5227,24 @@ revision and state to an independent Lab control read, restore the reversible
 change at the current revision, and preserve the player's location and inputs.
 [Proyección Weaver host contract](https://github.com/AlterMundi/proyeccion/blob/1496887ee9e7fe118e839307210f0a3a3304c9a5/docs/conformance.md#weaver-host-contract).
 
+The `harmonic-lab-stations` candidate now mounts Weaver's Basic Catalog
+surface with the installed Proyección renderer in the existing station
+dialog. The Lab panel owns workstation selection, service start and startup
+feedback. After it observes the selected service ready, the station accepts
+its same-origin handoff and renders the instrument's authoritative event
+stream. Closing the station disposes the projection and the subscription.
+The Lab panel remains visible if transport setup cannot finish.
+
+In a local Chromium fixture using the actual station markup and modules,
+the normal Lab panel handed the selected, ready Weaver session to the
+station. A domain action updated both the existing Weaver web view and the
+station, a genuine Proyección slider and button changed the same session,
+and the readback and restoration appeared in both views. Escape closed the
+station and removed its projection. The fixture substituted a local process
+for the restricted SSH hop and used a disposable Weaver session without
+devices. Full-world approach, real workstation startup and protected HTTPS
+streaming remain receiving checks.
+
 The room look also selects the HUD palette in the host document. Apply
 the palette only after the room's material selection succeeds, update
 mounted controls in place and clear it when leaving the room. The

@@ -294,6 +294,7 @@ function startInterior(space){
   const beaconAvailable=()=>!entering&&!document.hidden&&!updateDoor.doorOffer?.()&&
     (!visitor.frame||visitor.panel.classList.contains('is-walking'))&&!document.querySelector('dialog[open]');
   window.addEventListener('keydown',event=>{
+    if(beaconControls.handleProjectionKey(event))return;
     keepWorldTab(event);
     if(beaconControls.opened&&!event.defaultPrevented&&!event.isComposing&&
        (event.key==='Escape'||event.target===beaconControls.closeControl&&['Enter',' '].includes(event.key))){
@@ -765,6 +766,7 @@ function beaconWorldAvailable(){
 // MML captures document keys by default. Preserve ordinary text editing and
 // keyboard activation of the HUD without turning typed words into locomotion.
 document.addEventListener('keydown',event=>{
+  if(beaconControls.handleProjectionKey(event))return;
   if(matterHud?.hud.ownsTextInput?.(event.target))return;
   keepWorldTab(event);
   if(matterHud?.settings.group||worldHistory?.native||matterHud?.visit.indexActive||matterHud?.visit.viewerActive||(beaconControls.opened&&beaconControls.native)){

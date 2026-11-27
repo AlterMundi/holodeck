@@ -118,7 +118,7 @@ export class BeaconHud{
       const focus=hud.currentFocus();
       const inChrome=focus?.surfaceId===beaconViewerId&&hud.ownsAccessibleInput(event.target);
       if(inChrome&&((event.shiftKey&&focus.instanceId==='external')||(!event.shiftKey&&focus.instanceId==='close'))){
-        this.owner.frame?.focus();
+        this.owner.focusContent();
       }else this.focus(beaconViewerId,inChrome&&!event.shiftKey?'close':'external');
       return true;
     }
