@@ -141,14 +141,15 @@ export class BeaconControls{
       }
       if(data.type!=='harmonic-lab-ready'||typeof data.host!=='string'||!data.host||
           typeof data.csrf!=='string'||!data.csrf)return;
-      if(this.projecting?.host===data.host)return;
+      const session=surface==='router'&&/^[0-9a-f]{16}$/.test(data.session)?data.session:undefined;
+      if(this.projecting?.host===data.host&&this.projecting?.session===session)return;
       this.disposeProjection();
-      const attempt={host:data.host};
+      const attempt={host:data.host,session};
       this.projecting=attempt;
       try{
         const {openBeaconProjection}=await import('./beacon-projection.mjs');
         if(signal.aborted||this.projecting!==attempt)return;
-        this.projection=openBeaconProjection(this.stage,{host:data.host,surface,title,csrf:data.csrf,
+        this.projection=openBeaconProjection(this.stage,{host:data.host,surface,title,csrf:data.csrf,session,
           onReady:()=>{
             this.projection.focus();
             frame.remove();

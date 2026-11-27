@@ -1,7 +1,7 @@
 import {Group, PerspectiveCamera} from 'three';
 import {createProyeccion} from 'proyeccion';
 
-export function openBeaconProjection(stage, {host, surface, title, csrf, onReady}){
+export function openBeaconProjection(stage, {host, surface, title, csrf, onReady, session}){
   const doc=stage.ownerDocument;
   const wrapper=doc.createElement('section');
   wrapper.className='beacon-projection';
@@ -24,7 +24,8 @@ export function openBeaconProjection(stage, {host, surface, title, csrf, onReady
   stage.append(wrapper);
 
   const root='/harmonic_lab/api/a2ui/'+surface;
-  const query='?host='+encodeURIComponent(host);
+  const query=()=>'?host='+encodeURIComponent(host)+
+    (surface==='router'&&session?'&session='+encodeURIComponent(session):'');
   const parent=new Group();
   const camera=new PerspectiveCamera(45,1,.001,20);
   const lifecycle=new AbortController();
@@ -46,9 +47,10 @@ export function openBeaconProjection(stage, {host, surface, title, csrf, onReady
     retry.hidden=!offerRetry;
   }
   async function send(envelope){
-    if(viewport.inert||envelope?.action?.surfaceId!==surface)return;
+    if(viewport.inert||envelope?.action?.surfaceId!==surface||
+       (surface==='router'&&envelope.action.context?.sessionId!==session))return;
     try{
-      const response=await fetch(root+'/actions'+query,{
+      const response=await fetch(root+'/actions'+query(),{
         method:'POST',credentials:'same-origin',redirect:'manual',signal:lifecycle.signal,
         headers:{'Content-Type':'application/json','X-Lab-CSRF':csrf},
         body:JSON.stringify(envelope),
@@ -65,7 +67,9 @@ export function openBeaconProjection(stage, {host, surface, title, csrf, onReady
   }
   function unavailable(){
     viewport.inert=true;
-    notice('Se perdió la conexión con '+title+'.',true);
+    notice(surface==='router'&&session?
+      'Se perdió la conexión con esta sesión de Ruteos. Si terminó, volvé a abrir la mesa.':
+      'Se perdió la conexión con '+title+'.',true);
   }
   async function showGuitarModel(edition){
     if(!edition?.version||modelVersion===edition.version)return;
@@ -84,7 +88,7 @@ export function openBeaconProjection(stage, {host, surface, title, csrf, onReady
     stream?.close();
     viewport.inert=true;
     notice('Conectando con '+title+'…');
-    const selected=new EventSource(root+'/events'+query);
+    const selected=new EventSource(root+'/events'+query());
     stream=selected;
     selected.onerror=()=>{
       if(stream===selected)unavailable();
@@ -95,6 +99,16 @@ export function openBeaconProjection(stage, {host, surface, title, csrf, onReady
         const messages=JSON.parse(event.data);
         if(!Array.isArray(messages)||!messages.length)throw Error('Missing A2UI messages');
         if(messages[0]?.createSurface?.surfaceId===surface){
+          if(surface==='router'){
+            const identity=messages[0].createSurface.dataModel?.confirmed?.sessionId;
+            if(typeof identity!=='string'||!/^[0-9a-f]{16}$/.test(identity)||(session&&session!==identity))
+              throw Error('Unexpected Stage session');
+            if(!session){
+              session=identity;
+              connect();
+              return;
+            }
+          }
           view?.dispose();
           view=createProyeccion({parent,viewport,send,onTransportError:unavailable});
           for(const message of messages)view.receive(message);
