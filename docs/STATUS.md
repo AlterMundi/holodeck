@@ -1,8 +1,23 @@
 # Current MVP work
 
+## November 27 — Guitar readouts linked to physical parts
+
+Protected release `43395c543894` links the selected A2UI readout to its
+source-bound Guitar mesh with native Three.js geometry. The immediate
+rollback is `6b7814e46800`. The deployment replaced only the browser
+bundle. All 91 installed files and the protected HTTPS bundle matched.
+
+Chromium used the actual Legion status stream and the authorized Home
+review edition `750753c3`. It changed sections and checked each line's
+endpoint against the corresponding mesh. Mecanismo targets the four-channel
+base, Arranque the switch access door, and Soporte the fixed neck half.
+The closure check removed the scene group. The test recorded zero start
+requests, control writes or iframes. The local controller still owns
+typed hardware actions. Physical and paired-human acceptance remain open.
+
 ## November 27 — Shared Harmonic Lab operator controls
 
-Protected Holodeck release `9ec79492c207` adds **Operación del Lab** at
+Protected Holodeck release `9ec79492c207` added **Operación del Lab** at
 the Weaver worktable. The same A2UI document also renders in the existing
 web panel. It lists services, starts selected services on request and
 saves configuration for subsequent launches through the existing

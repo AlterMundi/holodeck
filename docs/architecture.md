@@ -192,7 +192,11 @@ instrument when needed. Readiness, unavailable workstations and start failures
 are displayed in the worktable. This does not select hardware or activate camera,
 recording or the guitar motor. Leaving the worktable releases its event stream,
 models and media. The Guitar section selects the matching part of the protected
-model edition. HarMoCAP uses the selected protected video as a texture in the room.
+model edition. A Three.js line links the selected status row to the actual
+mesh in the review scene. It changes with the selected section and is visible
+once the protected model has loaded. The device-local controller owns the
+typed motor, stop and save commands. HarMoCAP uses the selected protected video
+as a texture in the room.
 The explicit external link remains available for the separate web projection.
 
 Holodeck application controls use native Three.js projections. An embedded
