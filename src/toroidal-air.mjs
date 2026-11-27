@@ -1,5 +1,3 @@
-import {quintana} from './toroidal-solar-clock.mjs';
-
 // Linear-light horizon radiance shared by the sky, terrain and water.
 // Low-altitude sun warms the air without tinting the entire sky orange.
 export const toroidalAirColor = `
@@ -16,13 +14,8 @@ vec3 toroidalAir(float facing, float daylight) {
 // The camera sky and the water use the same world-space equirectangular
 // coordinates, seam and night visibility.
 export const toroidalCosmosColor = `
-vec3 toroidalCosmos(sampler2D panorama, vec3 direction, vec2 rotation) {
-  const float latSin=${Math.sin(quintana.latitude*Math.PI/180).toFixed(9)};
-  const float latCos=${Math.cos(quintana.latitude*Math.PI/180).toFixed(9)};
-  float north=-direction.x, east=direction.z, up=direction.y;
-  float meridian=up*latCos-north*latSin;
-  vec3 eq=vec3(meridian*rotation.x-east*rotation.y,
-    meridian*rotation.y+east*rotation.x,up*latSin+north*latCos);
+vec3 toroidalCosmos(sampler2D panorama, vec3 direction, mat3 equatorial) {
+  vec3 eq=equatorial*direction;
   // ICRS to Galactic, with Galactic centre in the middle of ESO eso0932a.
   vec3 gal=vec3(dot(eq,vec3(-.05487556,-.87343709,-.48383502)),
     dot(eq,vec3(.49410943,-.44482963,.74698224)),

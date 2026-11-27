@@ -6,8 +6,8 @@ import {bindHudAppearance} from './hud-appearance.mjs';
 import {selectedHudLook} from './hud-look-preview.mjs';
 import {ToroidalScenery} from './toroidal-scenery.mjs';
 import {ToroidalAtmosphere,toroidalViewDepth} from './toroidal-atmosphere.mjs';
-import {quintanaCelestial,solarObscuration} from './quintana-celestial.mjs';
-import {argentineSun,nightSkyKey} from './toroidal-solar-clock.mjs';
+import {toroidalSky} from './quintana-celestial.mjs';
+import {nightSkyKey} from './toroidal-solar-clock.mjs';
 import {bindLocalRain} from './local-rain.mjs';
 import {bindAvatarPracticals} from './avatar-practicals.mjs';
 import {bindToroidalHouseLight} from './toroidal-house-light.mjs';
@@ -1198,7 +1198,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     // matching the terrain's own per-place sunlight. It moves in 4 m steps so
     // shadow edges stay still between steps. Lightweight graphics keep the
     // shadow volume at the ring's empty centre and pay for no casters.
-    let solarMinute=-1,solar;
+    let solarKey,solar;
     let nightKey=null;
     const aimSun=position=>{
       const onRing=outsideRing();
@@ -1207,19 +1207,17 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const step=value=>Math.round(value/4)*4;
       const near=onRing?{x:step(position.x),y:step(position.y),z:step(position.z)}:null;
       if(onRing){
-        const now=Date.now();
-        const minute=Math.floor(now/60000);
-        if(minute!==solarMinute){
-          const clock=new Date(minute*60000);
-          solar=argentineSun(clock);
-          const coverage=solarObscuration(quintanaCelestial(clock));
-          solar.daylight*=1-.98*coverage**2;
+        const time=Math.floor(Date.now()/1000);
+        const key=[time,position.x,position.y,position.z].join(':');
+        if(key!==solarKey){
+          solar=toroidalSky(new Date(time*1000),position);
           nightKey=nightSkyKey(solar);
-          solarMinute=minute;
+          solarKey=key;
         }
         ring?.setSun(solar,nightKey?.direction);
       }
-      const key=near?`${near.x}:${near.y}:${near.z}:${rendererBudget.lightweight}:${solarMinute}`:null;
+      const lightBucket=Math.floor(Date.now()/3000);
+      const key=near?`${near.x}:${near.y}:${near.z}:${rendererBudget.lightweight}:${lightBucket}`:null;
       if(key===ringSun)return;
       ringSun=key;
       if(!near){
@@ -1227,7 +1225,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         light.position.set(12,22,10);light.target.position.set(0,0,-6);
         return;
       }
-      const [x,y,z]=toroidalSunDirection(near,TOROIDAL_TERRAIN,nightKey?.direction??solar.direction);
+      const [x,y,z]=nightKey?toroidalSunDirection(near,TOROIDAL_TERRAIN,nightKey.direction):solar.sun;
       const anchor=rendererBudget.lightweight?{x:0,y:0,z:0}:near;
       light.color.setHex(nightKey?.color??TOROIDAL_SUN.color);
       light.intensity=nightKey?.intensity??TOROIDAL_SUN.intensity*solar.daylight;
@@ -1375,7 +1373,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         atmosphere.update(eye,solar,now,currentWeather,skyExposure,companion.motion.matches);
         rain.update(eye,atmosphere.sky.material.uniforms.waterDepth.value<.03?currentWeather:null,
           performance.now(),companion.motion.matches);
-        ring?.setView(eye,toroidalViewDepth(eye),atmosphere.panorama,atmosphere.celestialTurn);
+        ring?.setView(eye,toroidalViewDepth(eye),atmosphere.panorama,atmosphere.celestialBasis);
       }else if(atmosphere){
         atmosphere.dispose();
         atmosphere=null;
@@ -1423,6 +1421,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         player:renderer.characterManager.loadedCharacters.get(character?.connectionId)?.character.getMesh(),
         feet:position,companion:companion.object,outdoor:outsideRing(),table:tableFlight.active,
         daylight:solar?.daylight,visible:!entering&&!moving&&drawWorld,
+        thrust:flightEnabled&&radialMovementMode==='flight'&&!client.getCharacterManager().localController?.characterOnGround,
+        boost:localFlightBoost(),
       });
       const wakesVisible=outsideRing()&&!entering&&!moving&&drawWorld&&!document.hidden&&!companion.motion.matches;
       if(wakesVisible&&companion.object){

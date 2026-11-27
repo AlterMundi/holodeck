@@ -28,7 +28,7 @@ const ease=value=>{
   const n=Math.max(0,Math.min(1,value));
   return n*n*(3-2*n);
 };
-const daylightAt=up=>ease((up-solarFadeEnd)/.37);
+export const daylightAt=up=>ease((up-solarFadeEnd)/.37);
 const skyDirection=[-.27,.72,-.64];
 const skyDirectionLength=Math.hypot(...skyDirection);
 const nightDirection=Object.freeze(skyDirection.map(axis=>axis/skyDirectionLength));

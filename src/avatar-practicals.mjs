@@ -1,17 +1,20 @@
 import {Mesh,PlaneGeometry,PointLight,SpotLight,Ray,ShaderMaterial,Vector3} from 'three';
 import {TOROIDAL_TERRAIN,terrainCoordinates,terrainElevation,terrainFrame} from './toroidal-terrain.mjs';
 
+import {bindExplorerThrusters} from './explorer-thrusters.mjs';
 import {matterAvatarScale} from './matter-flight.mjs';
 
 const normal=new Vector3(0,0,1);
 const antennaTip=new Vector3(.037,.136,-.024); // Navegante's Receiver light, relative to its antenna joint.
-const forwardTarget=new Vector3(0,.65,1.36);
-const beltFront=new Vector3(0,1.032,.140); // Explorer v29's buckle in model space.
+const forwardTarget=new Vector3(0,.52,1.36);
+const beltFront=new Vector3(0,1.032,.176); // Explorer v29's buckle in model space.
 
 export function bindAvatarPracticals(group,colliders){
-  const lanterns=[new SpotLight(0xffe8c7,0,10,.89,.98,.88),new PointLight(0xbfe9ef,0,9,.65)];
+  const lanterns=[new SpotLight(0xffe8c7,0,10,.64,.98,.90),new PointLight(0xbfe9ef,0,9,.65),
+    new PointLight(0x549eff,0,3.5,1.15)];
   lanterns[0].name='Explorer buckle light';
   lanterns[1].name='Navegante antenna light';
+  lanterns[2].name='Explorer thruster light';
   group.add(...lanterns,lanterns[0].target);
   const geometry=new PlaneGeometry(2,2);
   const ground=[];
@@ -53,13 +56,24 @@ export function bindAvatarPracticals(group,colliders){
     shadow.material.uniforms.opacity.value=.39*(1-drop/(2.4*scale));
   }
 
-  return {update({player,feet,companion,outdoor,visible,table,daylight=0}){
+  const exhaust=new Vector3(0,1.04,-.245);
+  let selectedPlayer,thrusters;
+  return {update({player,feet,companion,outdoor,visible,table,daylight=0,thrust=false,boost=false}){
+    if(selectedPlayer!==player){
+      thrusters?.dispose();
+      thrusters=player?.animations?.some(clip=>clip.name==='hero_idle')?bindExplorerThrusters(player):null;
+      selectedPlayer=player;
+    }
+    const firing=Boolean(visible&&outdoor&&!table&&thrusters&&thrust);
+    thrusters?.set(firing);
+    lanterns[2].intensity=firing?(boost?.92:.55):0;
+    if(firing)lanterns[2].position.copy(group.worldToLocal(player.localToWorld(world.copy(exhaust))));
     // Keep the lights in the same scene through room and graphics-tier transitions.
     const explorer=visible&&player?.animations?.some(clip=>clip.name==='hero_idle');
     const antenna=visible&&companion?.getObjectByName('antenna');
     const scale=table?matterAvatarScale:1;
     const brightness=outdoor?1-.63*daylight:1;
-    lanterns[0].intensity=explorer?3.9*brightness*scale**.88:0;
+    lanterns[0].intensity=explorer?3.9*brightness*scale**.90:0;
     lanterns[1].intensity=antenna?1.9*brightness*scale**.65:0;
     lanterns[0].distance=10*scale;
     lanterns[1].distance=9*scale;
@@ -71,6 +85,7 @@ export function bindAvatarPracticals(group,colliders){
     contact(ground[0],visible?feet:null,outdoor,scale);
     contact(ground[1],visible?companion?.position:null,outdoor,scale);
   },dispose(){
+    thrusters?.dispose();
     for(const shadow of ground){shadow.removeFromParent();shadow.material.dispose();}
     for(const light of lanterns){light.removeFromParent();light.dispose();}
     lanterns[0].target.removeFromParent();
