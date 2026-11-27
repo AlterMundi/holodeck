@@ -18,6 +18,21 @@ cutover route when it can preserve the visit. Legion's current JACK Lab
 still serves its previous body release. Video from an actual selected Lab
 source and paired browser acceptance remain pending.
 
+## November 27 — Shared world view and toolbar voice
+
+Protected release `c2a58eab44f1` adds **Mic** and the nearby spoken-reply
+toggle, explicit capture of one world frame into canonical Conversation,
+whole-header drag, and actionable workshop connection recovery. Its
+rollback is `743e5670d304`. Three faces shared the original portal panel's
+plane. The Char Design revision moves the panel and glyph 8 cm toward the
+entrance and leaves the collision model byte-identical.
+
+The packaged Chromium test verified the A2UI toolbar, exact vision attachment
+with text and with synthetic voice, mute and re-enable, header drag, and
+connection retry without sending the original again. The receiving host
+matched all 91 package files and the protected HTTPS client and residence.
+Real microphone and audible reply acceptance remain device checks.
+
 ## November 27 — Residence, personal Explorer, and optical HUD
 
 Protected release `55c1e6699cee` places the Residencia de la Nobleza IA
