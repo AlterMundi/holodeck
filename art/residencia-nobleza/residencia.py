@@ -40,7 +40,7 @@ PODIUM = 1.8
 H_COL = (550 - 360) * E            # column top (capital) above podium
 H_ENT = (550 - 300) * E            # main entablature / roof terrace
 H_DRUM = (550 - 215) * E           # drum cornice
-R_DRUM = 310 / 2 * E
+R_DRUM = R_ARC_OUT + 0.9          # drum stands on the thick arc wall (elevation: 310 px of 535)
 H_DOME = 120 * E
 H_INT = 0.55 * H_ENT               # interior partition height
 print("scale", dict(R_OUT=R_OUT, H_COL=H_COL, H_ENT=H_ENT, H_DRUM=H_DRUM, R_DRUM=R_DRUM, H_DOME=H_DOME))
@@ -70,7 +70,7 @@ def marble(nt, b):
     r = nt.nodes.new("ShaderNodeValToRGB"); e = r.color_ramp.elements
     e[0].position, e[0].color = 0.0, (0.55, 0.52, 0.47, 1)
     e[1].position, e[1].color = 0.10, (0.92, 0.89, 0.82, 1)
-    g = e.new(0.025); g.color = (0.80, 0.64, 0.32, 1)
+    g = e.new(0.012); g.color = (0.86, 0.74, 0.48, 1)
     link(nt, w.outputs["Fac"], r.inputs["Fac"]); link(nt, r.outputs["Color"], b.inputs["Base Color"])
     b.inputs["Roughness"].default_value = 0.32
 
@@ -140,11 +140,13 @@ M = {
     "titanium": node_mat("Aleación de titanio", metal((0.62, 0.63, 0.65), 0.3, brushed=True)),
     "tiles": node_mat("Tejas de metal teal", teal_tiles),
     "cyan": node_mat("Conectores de éter", emissive((0.15, 0.85, 1.0), 9.0)),
-    "window": node_mat("Ventanal cálido", emissive((1.0, 0.62, 0.28), 3.5)),
+    "window": node_mat("Ventanal cálido", emissive((1.0, 0.62, 0.28), 9.0)),
     "glass": node_mat("Vidrio de ojo de buey", emissive((0.05, 0.12, 0.2), 0.4)),
     "cloth": node_mat("Cortinado teal bordado", cloth),
     "stone": node_mat("Piedra del camino", stone),
     "sun": node_mat("Núcleo de la esfera armilar", emissive((1.0, 0.78, 0.35), 14.0)),
+    "panel": node_mat("Panel teal oscuro", metal((0.05, 0.16, 0.19), 0.4)),
+    "portal": node_mat("Umbral de portal", emissive((0.10, 0.55, 0.75), 2.2)),
 }
 
 COLL = {}
@@ -220,6 +222,28 @@ def disk(bm, centre, r0, r1, z0, z1, a0=0, a1=360, step=4):
     arc_wall(bm, r0, r1, a0, a1, z0, z1, step, centre)
 
 
+def lancet_outline(w, h, n=8):
+    pts = [(-w / 2, 0), (w / 2, 0), (w / 2, h - w * 0.87)]
+    for i in range(1, n + 1):
+        t = math.radians(60 * i / n)
+        pts.append((w / 2 - w * (1 - math.cos(t)), h - w * 0.87 + w * math.sin(t)))
+    return pts + [(-x, y) for x, y in reversed(pts[2:-1])]
+
+
+def lancet_frame(bm, centre, facing, w, h, band, depth):
+    """Open pointed-arch frame (jambs + arch), leaving the opening passable."""
+    rot = Matrix.Rotation(math.radians(-facing), 3, "Z")
+    out = rot @ Vector((0, 1, 0))
+    o, i = lancet_outline(w + 2 * band, h + band), lancet_outline(w, h)
+    o, i = o[1:] + o[:1], i[1:] + i[:1]       # start at right jamb foot, end at left jamb foot
+    V = lambda p, d: bm.verts.new(centre + rot @ Vector((p[0], 0, p[1])) + out * d)  # noqa: E731
+    of, ob = [V(p, depth) for p in o], [V(p, 0) for p in o]
+    inf, inb = [V(p, depth) for p in i], [V(p, 0) for p in i]
+    for k in range(len(o) - 1):
+        bm.faces.new((inf[k], inf[k + 1], of[k + 1], of[k])); bm.faces.new((ob[k], ob[k + 1], inb[k + 1], inb[k]))
+        bm.faces.new((of[k], of[k + 1], ob[k + 1], ob[k])); bm.faces.new((inb[k], inb[k + 1], inf[k + 1], inf[k]))
+
+
 def lancet(bm, centre, facing, w, h, depth=0.12, inset=0.0):
     """Pointed (equilateral) gothic arch panel standing on its sill at centre, facing +direction angle."""
     pts = [(-w / 2, 0), (w / 2, 0), (w / 2, h - w * 0.87)]
@@ -288,21 +312,29 @@ obj("Incrustaciones de oro", bm, "gold", "Estructura")
 ring_wall("Muro perimetral", R_OUT - T_OUT, R_OUT, Z0, H_ENT, [(180, HALL_GAP(R_OUT))])
 door = lambda r, w=2.4: half_angle(w, r)  # noqa: E731
 room_angles = [a for a in range(0, 360, 24) if abs(((a - 180 + 180) % 360) - 180) > 14]
-ring_wall("Muro de cámaras", R_ROOMS_IN - px(8), R_ROOMS_IN, Z0, H_INT,
-          [(180, HALL_GAP(R_ROOMS_IN))] + [((a + 12) % 360, door(R_ROOMS_IN)) for a in room_angles if (a + 12) % 360 not in (180,)])
+DOOR_W, DOOR_H = 3.2, 6.4
+H_ROOF = H_ENT - 0.4
+room_doors = [(a + 12) % 360 for a in room_angles if (a + 12) % 360 != 180]
+ring_wall("Muro de cámaras", R_ROOMS_IN - px(8), R_ROOMS_IN, Z0, H_ROOF,
+          [(180, HALL_GAP(R_ROOMS_IN))] + [(a, door(R_ROOMS_IN, DOOR_W)) for a in room_doors])
+bm = bmesh.new()
+for a in room_doors:
+    h = door(R_ROOMS_IN, DOOR_W)
+    arc_wall(bm, R_ROOMS_IN - px(8), R_ROOMS_IN, a - h, a + h, Z0 + DOOR_H, H_ROOF, 1.0)
+obj("Dinteles de puertas", bm, "marble", "Estructura")
 ring_wall("Muro portante del tambor", R_ARC_IN, R_ARC_OUT, Z0, H_ENT,
           [(0, 9), (90, 9), (270, 9), (180, HALL_GAP(R_ARC_OUT))], coll="Estructura")
 ring_wall("Muro del núcleo", R_CORE_WALL - 0.45, R_CORE_WALL, Z0, H_INT, [(a, 6) for a in (45, 135, 225, 315)] + [(180, HALL_GAP(R_CORE_WALL))])
 bm = bmesh.new()
 for a in room_angles:
     r0, r1 = R_ROOMS_IN, R_OUT - T_OUT
-    box(bm, polar((r0 + r1) / 2, a) + Vector((0, 0, Z0 + H_INT / 2 - PODIUM / 2)), (0.4, r1 - r0, H_INT - PODIUM), a)
+    box(bm, polar((r0 + r1) / 2, a) + Vector((0, 0, (Z0 + H_ROOF) / 2)), (0.4, r1 - r0, H_ROOF - Z0), a)
 obj("Tabiques de cámaras", bm, "marble", "Estructura")
 # entrance hall walls from core to gatehouse
 bm = bmesh.new()
-y0, y1 = -R_CORE_WALL, -(R_OUT + px(30))
+y0, y1 = -R_ROOMS_IN, -(R_OUT - T_OUT)     # the ring corridors stay continuous across the hall
 for x in (-HALL_W / 2 - 0.3, HALL_W / 2 + 0.3):
-    box(bm, Vector((x, (y0 + y1) / 2, Z0 + (H_INT - PODIUM) / 2)), (0.6, abs(y1 - y0), H_INT - PODIUM))
+    box(bm, Vector((x, (y0 + y1) / 2, (Z0 + H_ROOF) / 2)), (0.6, abs(y1 - y0), H_ROOF - Z0))
 obj("Muros del gran pasillo", bm, "marble", "Estructura")
 # server core dais
 bm = bmesh.new()
@@ -416,10 +448,15 @@ for s in (-1, 1):
 box(bm, Vector((0, (GATE_Y0 + GATE_Y1) / 2, (H_COL + 2 + H_ENT + 2) / 2)), (HALL_W, abs(GATE_Y1 - GATE_Y0), H_ENT - H_COL))
 obj("Pabellón de entrada", bm, "marble", "Portal")
 door_h = (550 - 430) * E * 1.15
-lancet(bm_c, Vector((0, GATE_Y1, Z0)), 180, HALL_W * 0.75, door_h, 0.3)
+lancet_frame(bm_c, Vector((0, GATE_Y1, Z0)), 180, HALL_W * 0.98, door_h, 0.55, 0.4)
 obj("Arco del portal", bm_c, "gold", "Portal")
-bm = bmesh.new(); lancet(bm, Vector((0, GATE_Y1 + 0.6, Z0)), 180, HALL_W * 0.62, door_h - 0.6, 0.2)
-obj("Puerta de bronce", bm, "bronze", "Portal")
+bm = bmesh.new()
+leaf = HALL_W * 0.48
+for s in (-1, 1):                                       # bronze leaves standing open into the hall
+    hinge = Vector((s * HALL_W * 0.49, GATE_Y1 + 0.9, Z0))
+    d = Vector((-s * math.cos(math.radians(72)), math.sin(math.radians(72)), 0)) * (leaf / 2)
+    box(bm, hinge + d + Vector((0, 0, (door_h - 3.5) / 2)), (leaf, 0.25, door_h - 3.5), math.degrees(math.atan2(d.x, d.y)) - 90)
+obj("Puertas de bronce abiertas", bm, "bronze", "Portal")
 bm = bmesh.new()
 torus(bm, Vector((0, GATE_Y1 - 0.4, Z0 + door_h + 2.2)), 1.7, 0.18, Matrix.Rotation(math.pi / 2, 3, "X"), 48, 8)
 obj("Rosetón", bm, "gold", "Portal")
@@ -547,6 +584,7 @@ obj("Rejillas de ventilación", bm_v, "titanium", "Cubierta")
 
 # ------------------------------------------------------------------ path with lanterns
 bm = bmesh.new(); bm_l, bm_lw = bmesh.new(), bmesh.new()
+lantern_points = []
 y, x = STAIR_Y1, 0.0
 pts = []
 for i in range(30):
@@ -562,9 +600,141 @@ for i, p in enumerate(pts[:-1]):
             cyl(bm_l, c, 0.08, 1.6, 8)
             box(bm_l, c + Vector((0, 0, 1.9)), (0.45, 0.45, 0.05))
             box(bm_lw, c + Vector((0, 0, 1.68)), (0.34, 0.34, 0.42))
+            lantern_points.append(c + Vector((0, 0, 1.68)))
 obj("Camino de piedra", bm, "stone", "Entorno")
 obj("Faroles", bm_l, "bronze", "Entorno")
 obj("Luz de faroles", bm_lw, "window", "Entorno")
+
+# ================================================================== detail pass toward the reference perspective
+# chamber doors: gold frames with a cyan threshold plane; each is a stable portal anchor for its room
+for n, a in enumerate(room_doors, 1):
+    bm = bmesh.new()
+    c = polar(R_ROOMS_IN, a) + Vector((0, 0, Z0))
+    lancet_frame(bm, c, a + 180, DOOR_W, DOOR_H, 0.35, 0.3)
+    obj(f"Marco de puerta · cámara {n:02d}", bm, "gold", "Portales")
+    bm = bmesh.new(); lancet(bm, polar(R_ROOMS_IN - px(4), a) + Vector((0, 0, Z0)), a + 180, DOOR_W - 0.1, DOOR_H - 0.05, 0.02)
+    o = obj(f"Portal · cámara {n:02d}", bm, "portal", "Portales")
+    o["holodeck_portal"] = f"camara-{n:02d}"; o["holodeck_role"] = "room-portal"
+
+# monumental portal tower rising above the cornice, with the cyan glyph of the reference
+TW = HALL_W + 3.0
+bm = bmesh.new()
+box(bm, Vector((0, GATE_Y1 + 1.2, H_ENT + 4.6)), (TW + 1.6, 3.2, 0.6))
+for s_ in (-1, 1):
+    box(bm, Vector((s_ * (TW / 2 + 0.4), GATE_Y1 - 0.3, (Z0 + H_ENT + 4.3) / 2)), (1.2, 1.2, H_ENT + 4.3 - Z0))
+obj("Torre del portal", bm, "marble", "Portal")
+bm = bmesh.new(); box(bm, Vector((0, GATE_Y1 + 0.2, (H_COL + 2 + H_ENT + 4.3) / 2)), (TW - 0.4, 0.4, H_ENT + 4.3 - H_COL - 2))
+obj("Panel teal del portal", bm, "panel", "Portal")
+bm = bmesh.new()
+g = Vector((0, GATE_Y1 - 0.05, H_ENT + 1.2))
+torus(bm, g, 2.2, 0.16, Matrix.Rotation(math.pi / 2, 3, "X"), 64, 6)
+torus(bm, g, 1.2, 0.12, Matrix.Rotation(math.pi / 2, 3, "X"), 48, 6)
+for k, dx in enumerate((-1.6, -0.8, 0, 0.8, 1.6)):
+    top = g.z - 2.2 if k != 2 else g.z - 1.2
+    length = 4.0 + abs(dx) * 1.5
+    box(bm, Vector((dx, GATE_Y1 - 0.05, top - length / 2)), (0.16, 0.08, length))
+    cyl(bm, Vector((dx, GATE_Y1 - 0.1, top - length - 0.15)), 0.28, 0.1, 12)
+obj("Glifo de éter del portal", bm, "cyan", "Portal")
+
+# dome: gold base ring, gold lattice belt and stronger ribs
+bm = bmesh.new()
+disk(bm, Vector(), R_DRUM - 0.5, R_DRUM + 0.4, H_DRUM, H_DRUM + 0.7)
+for k in range(1, 4):
+    t = math.radians(18 * k)
+    r = (R_DRUM - 0.25) * math.cos(t); z = H_DRUM + H_DOME * math.sin(t)
+    torus(bm, Vector((0, 0, z)), r, 0.12, Matrix(), 96, 6)
+obj("Anillos de oro de la cúpula", bm, "gold", "Cúpula")
+
+# balustrade around the drum terrace, small armillaries on the towers
+bm = bmesh.new()
+for i in range(90):
+    cyl(bm, polar(R_DRUM + 2.2, i * 4) + Vector((0, 0, H_ENT)), 0.12, 0.95, 8)
+disk(bm, Vector(), R_DRUM + 2.0, R_DRUM + 2.4, H_ENT + 0.95, H_ENT + 1.15)
+obj("Balaustrada del tambor", bm, "marble", "Cúpula")
+bm = bmesh.new()
+for a in (64, -64, 136, -136):
+    c = polar(R_OUT + px(6), a) + Vector((0, 0, H_ENT + 2.0 + px(22) + 2.6))
+    for rot in (Matrix(), Matrix.Rotation(math.pi / 2, 3, "X"), Matrix.Rotation(math.pi / 2, 3, "Y"),
+                Matrix.Rotation(0.4, 3, "X") @ Matrix.Rotation(math.pi / 2, 3, "Y")):
+        torus(bm, c, 1.3, 0.07, rot, 40, 6)
+obj("Armilares de los torreones", bm, "gold", "Torreones")
+
+# ground-level drone/transit bays (dark arches with cyan glow) on the sides, from the plan legend
+bm_f, bm_g = bmesh.new(), bmesh.new()
+for a in (118, 128, -118, -128, 62, -62):
+    c = polar(R_OUT + 0.1, a) + Vector((0, 0, Z0))
+    lancet_frame(bm_f, c, a, 3.6, 5.2, 0.3, 0.35)
+    lancet(bm_g, polar(R_OUT + 0.05, a) + Vector((0, 0, Z0)), a, 3.5, 5.1, 0.04)
+obj("Arcos de puertos de tránsito", bm_f, "titanium", "Fachada")
+obj("Umbrales de puertos de tránsito", bm_g, "portal", "Fachada")
+
+# window tracery: a gold mullion and an oculus in every main lancet
+bm = bmesh.new()
+for a in win_angles:
+    sill = Z0 + 3.0
+    h = H_COL - sill - 3.0
+    o = polar(1, a)
+    c = polar(R_OUT + 0.26, a)
+    box(bm, c + Vector((0, 0, sill + (h - 2.3) / 2)), (0.12, 0.08, h - 2.3), a)
+    torus(bm, c + Vector((0, 0, sill + h - 1.6)), 0.55, 0.07,
+          Matrix.Rotation(math.radians(-a), 3, "Z") @ Matrix.Rotation(math.pi / 2, 3, "X"), 24, 5)
+obj("Tracería de ventanales", bm, "gold", "Fachada")
+
+# interior pilasters with gold capitals along the common corridors, and a gold cornice under the roof
+bm_p, bm_g = bmesh.new(), bmesh.new()
+for r, face, n, h in ((R_ROOMS_IN - px(8) - 0.25, 180, 30, H_ROOF), (R_ARC_OUT + 0.25, 0, 24, H_ROOF), (R_ARC_IN - 0.25, 180, 16, H_ROOF)):
+    for i in range(n):
+        a = i * 360 / n + 360 / n / 2
+        if near(a, [180], 14) or near(a, room_doors, 4) or near(a, [0, 90, 270], 10):
+            continue
+        c = polar(r, a)
+        box(bm_p, c + Vector((0, 0, (Z0 + h) / 2)), (1.0, 0.5, h - Z0), a)
+        box(bm_g, c + Vector((0, 0, h - 1.6)), (1.4, 0.8, 0.9), a)
+for r0, r1 in ((R_ARC_OUT, R_ARC_OUT + 0.6), (R_ROOMS_IN - px(8) - 0.6, R_ROOMS_IN - px(8))):
+    disk(bm_g, Vector(), r0, r1, H_ROOF - 1.0, H_ROOF - 0.6)
+obj("Pilastras interiores", bm_p, "marble", "Interior común")
+obj("Capiteles y cornisa interior", bm_g, "gold", "Interior común")
+bm = bmesh.new()
+for i in range(48):
+    a = i * 7.5
+    box(bm, polar((R_ROOMS_IN + R_ARC_OUT) / 2, a) + Vector((0, 0, Z0 + 0.06)), (0.12, R_ROOMS_IN - R_ARC_OUT - 1.0, 0.03), a)
+disk(bm, Vector(), (R_ROOMS_IN + R_ARC_OUT) / 2 - 0.08, (R_ROOMS_IN + R_ARC_OUT) / 2 + 0.08, Z0 + 0.05, Z0 + 0.08)
+obj("Taraceas del corredor", bm, "cyan", "Interior común")
+
+# ================================================================== lighting fixtures (exported as punctual lights)
+def light(name, kind, loc, energy, color, coll="Iluminación", rot=None, size=None, spot=None, shadow=False):
+    d = bpy.data.lights.new(name, kind); d.energy = energy; d.color = color; d.use_shadow = shadow
+    if size is not None:
+        d.shadow_soft_size = size
+    if spot is not None:
+        d.spot_size, d.spot_blend = math.radians(spot), 0.6
+    o = bpy.data.objects.new(name, d); collection(coll).objects.link(o); o.location = loc
+    if rot is not None:
+        o.rotation_euler = rot
+    return o
+
+
+WARM, CYAN = (1.0, 0.72, 0.45), (0.3, 0.85, 1.0)
+for i, a in enumerate(win_angles):                       # facade uplights between the columns
+    p = polar(R_OUT + 4.2, a) + Vector((0, 0, Z0 + 0.3))
+    aim = (polar(R_OUT, a) + Vector((0, 0, H_COL)) - p)
+    light(f"Bañador de fachada {i:02d}", "SPOT", p, 6000, WARM, rot=aim.to_track_quat("-Z", "Y").to_euler(), size=0.6, spot=55)
+for s_ in (-1, 1):
+    p = Vector((s_ * 6.0, GATE_Y1 - 7, 0.5))
+    aim = Vector((0, GATE_Y1, 12)) - p
+    light(f"Bañador del portal {s_:+d}", "SPOT", p, 20000, WARM, rot=aim.to_track_quat("-Z", "Y").to_euler(), size=0.5, spot=50, shadow=True)
+for i in range(12):                                      # ring corridor and inner ring lamps
+    light(f"Lámpara del corredor {i:02d}", "POINT", polar((R_ROOMS_IN + R_ARC_OUT) / 2, i * 30 + 15) + Vector((0, 0, Z0 + 9)), 700, WARM, size=1.0)
+for i in range(8):
+    light(f"Lámpara del anillo interior {i:02d}", "POINT", polar((R_CORE_WALL + R_ARC_IN) / 2, i * 45 + 22.5) + Vector((0, 0, Z0 + 7)), 450, WARM, size=0.8)
+light("Resplandor del núcleo", "POINT", Vector((0, 0, Z0 + 6)), 2500, CYAN, size=1.5)
+for i in range(8):
+    light(f"Luz del tambor {i:02d}", "POINT", polar(R_DRUM - 3, i * 45) + Vector((0, 0, H_ENT + 3)), 1200, WARM, size=1.5)
+light("Luz de la linterna", "POINT", Vector((0, 0, TOP + 1.2)), 3000, WARM, size=0.8)
+light("Luz del sol armilar", "POINT", ARM, 60000, (1.0, 0.8, 0.45), size=2.2)
+light("Estrella", "POINT", ARM + Vector((0, 0, 13.2)), 8000, CYAN, size=0.4)
+for i, p in enumerate(lantern_points):
+    light(f"Farol {i:02d}", "POINT", p, 120, WARM, size=0.2)
 
 bpy.ops.wm.save_as_mainfile(filepath=str(OUT / "residencia.blend"))
 tris = sum(len(o.data.polygons) for o in bpy.data.objects if o.type == "MESH")
