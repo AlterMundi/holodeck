@@ -1284,7 +1284,6 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         }
       }else if(ring){
         flightEnabled=false;doubleJumpPending=false;trickStarted=-Infinity;resetFlightTap();
-        previousSpacePress=null;
         ring.dispose();
         cave?.dispose();
         scenery?.dispose();
