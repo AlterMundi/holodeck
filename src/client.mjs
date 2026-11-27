@@ -287,7 +287,8 @@ bindVideoSettings({document,window,lightweight:rendererBudget.lightweight,onFull
 }});
 
 function entryRoomReady(root,model=root?.querySelector('m-model#room-art[src]')){
-  return root?.isConnected===true&&(!model||model.modelGraphics?.hasLoadedModel()===true);
+  return root?.isConnected===true&&(!model||model.modelGraphics?.hasLoadedModel()===true)&&
+    Array.from(root.querySelectorAll('m-model[data-owner-room-art]')).every(part=>part.modelGraphics?.hasLoadedModel()===true);
 }
 
 const entryLocation=new AbortController();
