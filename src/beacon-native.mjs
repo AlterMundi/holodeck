@@ -6,7 +6,7 @@ import {BeaconNativeModel} from './beacon-native-model.mjs';
 import {readWorktableReview} from './collection-review.mjs';
 import {makeModel} from './collection-worktable.mjs';
 import {disposeModel} from './gallery-models.mjs';
-import {bindHarMoCAPPreview} from './beacon-video-preview.mjs';
+import {bindHarMoCAPPreview,preparedDownloadUrl,takeFormats} from './beacon-video-preview.mjs';
 
 const panel='/harmonic_lab/';
 const nativeId='lab-worktable';
@@ -65,6 +65,18 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
         explicit=true;
         attempted.delete(selected);
         void refresh();
+      }else if(action.name==='downloadPreparedTake'&&source&&latestView&&surface==='harmocap'){
+        const {take,format}=action.context;
+        const root=panel+'api/a2ui/'+surface;
+        const url=preparedDownloadUrl(root,query,take,format);
+        if(url&&url===preparedDownloadUrl(root,query,model.data.preparedTake,format)){
+          const link=document.createElement('a');
+          link.href=url;
+          link.download='';
+          document.body.append(link);
+          link.click();
+          link.remove();
+        }
       }else if(action.name==='stationInput'&&latestView){
         const {id,kind,value}=action.context;
         edit(id,kind,value);
@@ -282,6 +294,22 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
     const view=model.render(title);
     if(focused&&surface==='guitar')for(const node of view.components){
       if(node.id==='settings'||node.id==='savedSettings')node.lines=2;
+    }
+    if(surface==='harmocap'){
+      const children=view.components[0].children;
+      const controls=children.includes('review_prepared_take') ||
+        (!model.data.preparedTake?.mp4&&children.includes('export_status'));
+      if(controls){
+        const buttons=takeFormats.filter(format=>preparedDownloadUrl(
+          panel+'api/a2ui/'+surface,query,model.data.preparedTake,format)).map(format=>({
+          id:'download_take_'+format,component:'HudButton',label:'Descargar '+format.toUpperCase(),
+          action:nativeAction('downloadPreparedTake',{format,take:model.data.preparedTake}),
+        }));
+        if(buttons.length){
+          children.push('take_downloads');
+          view.components.push({id:'take_downloads',component:'HudRow',children:buttons.map(button=>button.id)},...buttons);
+        }
+      }
     }
     const problem=guitarProblem||(editProblem||lastProblem);
     if(problem){

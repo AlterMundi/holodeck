@@ -1,4 +1,10 @@
 const idPart = value => typeof value === 'string' && /^[0-9a-f]{32}$/.test(value);
+export const takeFormats = ['mp4','mkv'];
+
+export function preparedDownloadUrl(root,query,take,format){
+  if(!takeFormats.includes(format)||!take||![take.sessionId,take.exportId,take[format]].every(idPart))return '';
+  return `${root}/take/${take.sessionId}/${take.exportId}/${take[format]}/${format}${query()}`;
+}
 
 export function mountHarMoCAPPreview(wrapper, root, query){
   const doc=wrapper.ownerDocument;
@@ -14,7 +20,10 @@ export function mountHarMoCAPPreview(wrapper, root, query){
   const status=doc.createElement('p');
   status.setAttribute('role','status');
   preview.append(video,status);
-  wrapper.prepend(preview);
+  const downloads=doc.createElement('nav');
+  downloads.hidden=true;
+  downloads.setAttribute('aria-label','Descargas de la toma preparada');
+  wrapper.prepend(preview,downloads);
 
   const player=bindHarMoCAPPreview(video,root,query,{
     visible(value){
@@ -22,11 +31,24 @@ export function mountHarMoCAPPreview(wrapper, root, query){
       wrapper.classList.toggle('has-video-preview',value);
     },
     notice(text){status.textContent=text;},
+    prepared(take){
+      downloads.replaceChildren();
+      for(const format of takeFormats){
+        const url=preparedDownloadUrl(root,query,take,format);
+        if(!url)continue;
+        const link=doc.createElement('a');
+        link.href=url;
+        link.download='';
+        link.textContent='Descargar '+format.toUpperCase();
+        downloads.append(link,' ');
+      }
+      downloads.hidden=!downloads.children.length;
+    },
   });
-  return {...player,dispose(){player.dispose();preview.remove();}};
+  return {...player,dispose(){player.dispose();preview.remove();downloads.remove();}};
 }
 
-export function bindHarMoCAPPreview(video,root,query,{visible,notice}){
+export function bindHarMoCAPPreview(video,root,query,{visible,notice,prepared:showPrepared}){
   let source='', target=null, epoch=null, pending=false;
   let tracking=null, prepared=null, reviewing=false;
   function takeUrl(take){
@@ -76,6 +98,8 @@ export function bindHarMoCAPPreview(video,root,query,{visible,notice}){
     sync();
   }
   function observeTake(next){
+    if(takeFormats.some(format=>preparedDownloadUrl(root,query,next,format)!==preparedDownloadUrl(root,query,prepared,format)))
+      showPrepared?.(next);
     if(reviewing&&takeUrl(next)!==takeUrl(prepared)){
       reviewing=false;
       show(tracking);
@@ -122,6 +146,7 @@ export function bindHarMoCAPPreview(video,root,query,{visible,notice}){
     clear(){
       reviewing=false;
       prepared=tracking=null;
+      showPrepared?.(null);
       show(null);
     },
     dispose(){
