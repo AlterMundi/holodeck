@@ -1,5 +1,20 @@
 # Current MVP work
 
+## November 27 — H.B. Guitar tabs and the installed 3D model
+
+Protected release `5c5e67bd3276` uses the Guitar A2UI tabs to select parts
+of the same Home model edition `750753c3`. The mechanism tab highlights
+the four-slot base, startup highlights the switch access door, and support
+highlights the fixed neck half. The duplicate model selector was removed.
+Immediate rollback is `8e71bc158ad6`.
+
+Chromium used the installed Legion projection and exact authorized model
+files. Pointer and keyboard selection loaded the three corresponding
+parts while the station reported the observed disconnected USB state.
+Closing the station ended the feed without sending a Guitar command.
+Board operation remains in the device-local controller and needs physical
+acceptance.
+
 ## November 27 — HarMoCAP at the Weaver table
 
 Protected release `8e71bc158ad6` adds **Abrir HarMoCAP** to the existing

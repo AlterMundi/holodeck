@@ -3,26 +3,22 @@ import {readWorktableReview} from './collection-review.mjs';
 import {makeModel} from './collection-worktable.mjs';
 import {disposeModel} from './gallery-models.mjs';
 
-const sections=[['mechanism','Mecanismo'],['startup','Arranque'],['support','Soporte']];
-
-export function mountGuitarModel(wrapper,edition){
+export function mountGuitarModel(wrapper,edition,initialSection){
   const doc=wrapper.ownerDocument;
   const panel=doc.createElement('aside');
   panel.className='beacon-guitar-model';
   panel.setAttribute('aria-label','Modelo de H.B. Guitar');
-  const views=doc.createElement('div');
-  views.className='beacon-guitar-views';
   const viewport=doc.createElement('div');
   viewport.className='beacon-guitar-viewport';
   const status=doc.createElement('p');
   status.setAttribute('role','status');
-  panel.append(views,viewport,status);
+  panel.append(viewport,status);
   wrapper.prepend(panel);
 
   let renderer;
   try{renderer=new WebGLRenderer({antialias:true,alpha:true});}catch{
     status.textContent='El modelo 3D no está disponible en este navegador.';
-    return ()=>panel.remove();
+    return {select(){},dispose:()=>panel.remove()};
   }
   renderer.setPixelRatio(Math.min(doc.defaultView.devicePixelRatio||1,2));
   viewport.append(renderer.domElement);
@@ -35,7 +31,6 @@ export function mountGuitarModel(wrapper,edition){
   camera.position.set(1.65,1.32,2.31);
   camera.lookAt(0,.35,0);
   let pending, display, active;
-  const buttons=new Map();
   const observer=new ResizeObserver(render);
   observer.observe(viewport);
 
@@ -57,7 +52,6 @@ export function mountGuitarModel(wrapper,edition){
     const anchor=edition.anchors?.[section];
     if(!anchor||active===section)return;
     active=section;
-    for(const [id,button] of buttons)button.setAttribute('aria-pressed',String(id===section));
     pending?.abort();
     const controller=new AbortController();
     pending=controller;
@@ -79,26 +73,19 @@ export function mountGuitarModel(wrapper,edition){
     }catch{
       if(controller.signal.aborted)return;
       active=null;
-      buttons.get(section)?.setAttribute('aria-pressed','false');
       status.textContent='No se pudo abrir esa pieza del modelo.';
     }
   }
-  for(const [section,title] of sections){
-    const button=doc.createElement('button');
-    button.type='button';
-    button.textContent=title;
-    button.setAttribute('aria-pressed','false');
-    button.onclick=()=>void choose(section);
-    buttons.set(section,button);
-    views.append(button);
-  }
-  void choose('mechanism');
-  return ()=>{
-    pending?.abort();
-    observer.disconnect();
-    clearModel();
-    renderer.dispose();
-    renderer.forceContextLoss();
-    panel.remove();
+  void choose(initialSection);
+  return {
+    select:section=>void choose(section),
+    dispose(){
+      pending?.abort();
+      observer.disconnect();
+      clearModel();
+      renderer.dispose();
+      renderer.forceContextLoss();
+      panel.remove();
+    },
   };
 }

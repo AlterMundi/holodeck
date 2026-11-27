@@ -29,7 +29,8 @@ export function openBeaconProjection(stage, {host, surface, title, csrf, onReady
   const parent=new Group();
   const camera=new PerspectiveCamera(45,1,.001,20);
   const lifecycle=new AbortController();
-  let stream,view,presented=false,modelVersion,disposeModelPanel;
+  let stream,view,presented=false,modelVersion,guitarModel;
+  let guitarTabs=[], guitarSection;
   const resize=new ResizeObserver(render);
   resize.observe(viewport);
 
@@ -71,15 +72,34 @@ export function openBeaconProjection(stage, {host, surface, title, csrf, onReady
       'Se perdió la conexión con esta sesión de Ruteos. Si terminó, volvé a abrir la mesa.':
       'Se perdió la conexión con '+title+'.',true);
   }
-  async function showGuitarModel(edition){
-    if(!edition?.version||modelVersion===edition.version)return;
+  if(surface==='guitar')viewport.addEventListener('click',event=>{
+    const tab=event.composedPath().find(node=>node.getAttribute?.('role')==='tab');
+    const tablist=tab?.parentElement;
+    if(tablist?.getAttribute('role')!=='tablist')return;
+    const tabs=[...tablist.querySelectorAll(':scope > [role="tab"]')];
+    const section=tabs.length===guitarTabs.length && guitarTabs[tabs.indexOf(tab)];
+    if(typeof section!=='string')return;
+    guitarSection=section;
+    guitarModel?.select(section);
+  },{signal:lifecycle.signal});
+
+  async function showGuitarModel({dataModel,components}){
+    const edition=dataModel?.model;
+    if(!edition?.version)return;
+    const sections=components?.find(component=>component.id==='sections'&&component.component==='Tabs');
+    guitarTabs=sections?.tabs.map(tab=>tab.child)??[];
+    guitarSection=guitarTabs[0]??'mechanism';
+    if(modelVersion===edition.version){
+      guitarModel?.select(guitarSection);
+      return;
+    }
     modelVersion=edition.version;
-    disposeModelPanel?.();
-    disposeModelPanel=null;
+    guitarModel?.dispose();
+    guitarModel=null;
     try{
       const {mountGuitarModel}=await import('./beacon-guitar-model.mjs');
       if(!lifecycle.signal.aborted&&modelVersion===edition.version)
-        disposeModelPanel=mountGuitarModel(wrapper,edition);
+        guitarModel=mountGuitarModel(wrapper,edition,guitarSection);
     }catch{
       if(!lifecycle.signal.aborted)notice('El modelo 3D no se pudo cargar.');
     }
@@ -116,7 +136,7 @@ export function openBeaconProjection(stage, {host, surface, title, csrf, onReady
           viewport.inert=false;
           if(!presented){presented=true;onReady();}
           notice('');
-          if(surface==='guitar')void showGuitarModel(messages[0].createSurface.dataModel?.model);
+          if(surface==='guitar')void showGuitarModel(messages[0].createSurface);
           render();
         }else if(view&&!viewport.inert){
           for(const message of messages)view.receive(message);
@@ -139,7 +159,7 @@ export function openBeaconProjection(stage, {host, surface, title, csrf, onReady
       previous?.close();
       resize.disconnect();
       view?.dispose();
-      disposeModelPanel?.();
+      guitarModel?.dispose();
       wrapper.remove();
     },
   };
