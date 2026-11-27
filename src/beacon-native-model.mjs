@@ -261,10 +261,17 @@ export class BeaconNativeModel {
         if(!options.length)return;
         const selected=options.find(option=>option.id===this.tabs.get(id))?.id??options[0].id;
         data[modelKey]=data[draftKey]=selected;
-        const fixed=area?.children.includes(id)??false;
+        const guitarSections=this.surface==='guitar'&&id==='sections'&&options.length<=3;
+        const fixed=guitarSections||(area?.children.includes(id)??false);
         input('tab',{options:options.map(item=>item.id),fixed});
-        (fixed?navigation:rows).push({...field,label:'Sección',component:'HudChoice',options,
-                                      action:localAction(id,'tab',path(draftKey))});
+        if(guitarSections){
+          const buttons=options.map(option=>({id:id+'_'+option.id,component:'HudButton',label:option.label,
+            pressed:option.id===selected,action:localAction(id,'tab',option.id)}));
+          navigation.push({id,component:'HudRow',children:buttons.map(button=>button.id),buttons});
+        }else{
+          (fixed?navigation:rows).push({...field,label:'Sección',component:'HudChoice',options,
+                                        action:localAction(id,'tab',path(draftKey))});
+        }
         visit(selected,nested);
       }
     };
@@ -286,7 +293,7 @@ export class BeaconNativeModel {
     const retained=new Set(visible.map(row=>row.id));
     for(const id of this.input.keys())if(!retained.has(id))this.input.delete(id);
     const header=text('station_title',title,'title');
-    const components=[header,...visible];
+    const components=[header,...visible.flatMap(({buttons,...row})=>[row,...(buttons??[])])];
     if(maxPage){
       for(const [name,label,step] of [['back','Anterior',-1],['next','Siguiente',1]]){
         const page=this.page+step;

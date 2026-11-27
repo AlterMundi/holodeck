@@ -69,6 +69,9 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
         explicit=true;
         attempted.delete(selected);
         void refresh();
+      }else if(action.name==='reloadGuitarModel'&&surface==='guitar'&&latestView){
+        clearGuitar();
+        showModel();
       }else if(action.name==='downloadWeaverPreset'&&source&&latestView&&surface==='weaver'){
         void downloadPreset(action.context.edition);
       }else if(action.name==='chooseWeaverPresetFile'&&source&&latestView&&surface==='weaver'&&!importingPreset){
@@ -127,7 +130,8 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
     }
     if(guitar?.placement!==placement&&guitar){
       guitar.placement=placement;
-      guitar.group.position.set(side?2.44:0,side?-1.14:bounds.bottom-.94,0);
+      guitar.group.position.set(side?bounds.right+sideWidth*.51:0,
+        side?(bounds.top+bounds.bottom-guitar.height)*.5:bounds.bottom-1.02,0);
       showGuitarLink();
       layer.invalidate();
     }
@@ -179,22 +183,22 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
   function showGuitarLink(){
     if(!guitarLink)return;
     const panel=outbound.group.getObjectByName(nativeId);
-    const row=panel?.getObjectByName(guitarRows[guitar?.section])??panel?.getObjectByName('sections');
+    const row=panel?.getObjectByName(focused?'guitar_part':guitarRows[guitar?.section]);
     const part=guitar?.part;
-    guitarLink.visible=Boolean(row&&part);
+    const bounds=outbound.getSurfaceBounds(nativeId);
+    guitarLink.visible=Boolean(row&&part&&bounds);
     if(!guitarLink.visible)return;
     const label=parent.worldToLocal(row.getWorldPosition(new Vector3()));
     const center=part.geometry.boundingBox.getCenter(new Vector3());
     center.z=part.geometry.boundingBox.max.z;
     const target=parent.worldToLocal(part.localToWorld(center));
-    const bottom=panel&&outbound.getSurfaceBounds(nativeId)?.bottom;
-    const points=stackedGuitar&&bottom!==undefined?[
-      new Vector3(label.x+.98,bottom,label.z+.03),
-      new Vector3(label.x+.98,bottom-.16,label.z+.03),
+    const points=stackedGuitar?[
+      new Vector3(bounds.right-.24,bounds.bottom,label.z+.03),
+      new Vector3(bounds.right-.24,bounds.bottom-.16,label.z+.03),
       target,
     ]:[
-      new Vector3(label.x+1.26,label.y,label.z+.03),
-      new Vector3(label.x+1.44,label.y,label.z+.03),
+      new Vector3(bounds.right,label.y,label.z+.03),
+      new Vector3(bounds.right+.18,label.y,label.z+.03),
       target,
     ];
     guitarLink.geometry.setFromPoints(points);
@@ -247,14 +251,20 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
       guitar=null;
     }
   }
-  async function syncGuitar(){
+  function selectedGuitarPart(){
     const edition=model.data.model;
     const section=model.tabs.get('sections')??model.nodes.get('sections')?.tabs?.[0]?.child;
     const anchor=edition?.anchors?.[section];
-    const selection=anchor&&JSON.stringify([edition.resource,edition.version,anchor.scene,anchor.part]);
-    if(!selection||selection===guitarSelection)return;
+    if(anchor)return {edition,section,anchor,key:JSON.stringify([edition.resource,edition.version,
+      edition.gallerySha256,edition.sceneIndexSha256,anchor.scene,anchor.part])};
+  }
+  async function syncGuitar(){
+    const selected=selectedGuitarPart();
+    if(!selected){clearGuitar();return;}
+    const {edition,section,anchor,key}=selected;
+    if(key===guitarSelection)return;
     clearGuitar();
-    guitarSelection=selection;
+    guitarSelection=key;
     const controller=new AbortController();
     guitarRequest=controller;
     try{
@@ -262,16 +272,22 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
         signal:AbortSignal.any([controller.signal,AbortSignal.timeout(12000)]),
       });
       if(controller.signal.aborted||signal.aborted)return;
-      if(review.id!==anchor.scene||!review.parts.some(part=>part.id===anchor.part))throw Error();
+      const detail=review.parts.find(part=>part.id===anchor.part);
+      if(review.id!==anchor.scene||!detail)throw Error();
       guitar=makeModel(review,{x:2.03,y:-.43,z:0});
       guitar.group.name='H.B. Guitar';
+      if(focused){
+        guitar.group.rotation.set(.26,-.38,0);
+        guitar.group.scale.setScalar(1.16);
+      }
       guitar.part=guitar.parts.get(anchor.part);
+      guitar.label=detail.label;
       guitar.section=section;
       const material=guitar.part.material;
       material.emissive.set('#208d79');
       material.emissiveIntensity=.58;
       parent.add(guitar.group);
-      showGuitarLink();
+      showModel(false);
       layer?.invalidate();
     }catch{
       if(!controller.signal.aborted&&!signal.aborted){
@@ -420,8 +436,17 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
   function showModel(syncModel=true){
     latestView=true;
     const view=model.render(title);
-    if(focused&&surface==='guitar')for(const node of view.components){
-      if(node.id==='settings'||node.id==='savedSettings')node.lines=2;
+    if(focused&&surface==='guitar'){
+      for(const node of view.components){
+        if(node.id==='settings'||node.id==='savedSettings')node.lines=2;
+      }
+      const selected=selectedGuitarPart();
+      if(selected&&!(guitarProblem&&selected.key===guitarSelection)){
+        const label=selected.key===guitarSelection&&guitar?guitar.label:'Cargando pieza del modelo…';
+        const children=view.components[0].children;
+        children.splice(children.indexOf('sections')+1,0,'guitar_part');
+        view.components.push({id:'guitar_part',component:'HudText',label,lines:2});
+      }
     }
     if(surface==='harmocap'){
       const children=view.components[0].children;
@@ -460,10 +485,16 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
         }
       }
     }
-    const problem=guitarProblem||(editProblem||lastProblem);
+    const unresolvedGuitarPart=guitarProblem&&selectedGuitarPart()?.key===guitarSelection;
+    const problem=unresolvedGuitarPart?guitarProblem:(editProblem||lastProblem);
     if(problem){
       view.components[0].children.splice(1,0,'station_error');
       view.components.push({id:'station_error',component:'HudText',label:problem,lines:2});
+      if(unresolvedGuitarPart){
+        view.components[0].children.splice(2,0,'guitar_retry');
+        view.components.push({id:'guitar_retry',component:'HudButton',label:'Reintentar modelo',
+          action:nativeAction('reloadGuitarModel')});
+      }
     }
     update(view);
     if(syncModel&&surface==='guitar')void syncGuitar();
