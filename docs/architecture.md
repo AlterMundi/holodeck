@@ -176,3 +176,24 @@ context/version rather than masquerade as a report. Knowledge relationships stay
 in Nexus; Room remains the spatial authority. The owned-house/parcel direction
 requires a real creator namespace and space contract, not another server per
 participant or implicit publication rights from visiting a place.
+
+## Harmonic Lab projections
+
+The Lab service owns instrument state and actions. Holodeck subscribes to the
+selected workstation's A2UI 1.0 surface. Proyección maps its control catalog to
+Three.js meshes in the room. Buttons and sliders use the world camera's
+pointer rays. Confirmed A2UI updates are applied to the same controls regardless
+of which client produced them. Tool actions keep the original surface,
+component, session and confirmed revision. Local field drafts stay with the
+current visit.
+
+Opening a worktable asks the existing authorized service to prepare the selected
+instrument when needed. Readiness, unavailable workstations and start failures
+are displayed in the worktable. This does not select hardware or activate camera,
+recording or the guitar motor. Leaving the worktable releases its event stream,
+models and media. The Guitar section selects the matching part of the protected
+model edition. HarMoCAP uses the selected protected video as a texture in the room.
+The explicit external link remains available for the separate web projection.
+
+Holodeck application controls use native Three.js projections. An embedded
+browser is reserved for experiences whose content is a webpage.

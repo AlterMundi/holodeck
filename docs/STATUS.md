@@ -1,8 +1,26 @@
 # Current MVP work
 
+## November 27 — Harmonic Lab controls in the Three.js world
+
+Protected release `23fe0a220065` is active. It changes the client bundle
+and page only, with `bea793358846` retained as immediate rollback.
+All 91 installed files matched. The authenticated HTTPS client read
+returned the exact deployed bundle and the existing access boundary held.
+
+Holodeck renders the Lab's A2UI surfaces as Three.js controls at its
+worktables. The Guitar uses the selected protected model and its section
+anchors. HarMoCAP maps a selected protected clip to a world texture.
+Chromium sent two canonical actions by clicking scene geometry against a
+loopback instrument and used the second revision received through SSE.
+Live Legion feeds rendered Weaver, HarMoCAP and Guitar, including the
+protected Guitar model, with zero iframe mounts, starts or control writes.
+No HarMoCAP clip was selected during the Legion check. Physical effects,
+live clip playback on this release and visits with the paired human remain
+unverified. The Node suite passed 510 tests with two skips.
+
 ## November 27 — HarMoCAP video at the worktable
 
-Protected release `743e5670d304` is active. The 36,321,280-byte
+Protected release `743e5670d304` introduced the video preview. The 36,321,280-byte
 archive replaces only the browser bundle and page from release
 `55c1e6699cee`, which remains the immediate rollback. The supported
 release notice preceded activation. All 91 installed files matched and
