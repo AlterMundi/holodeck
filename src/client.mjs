@@ -388,6 +388,7 @@ function benchControls(){
     statusButton:document.querySelector('#beacon-status-check'),statusText:document.querySelector('#beacon-status-text'),
     routerLink:document.querySelector('#beacon-router'),
     rostroLink:document.querySelector('#beacon-rostro'),
+    harmocapLink:document.querySelector('#beacon-harmocap'),
   });
 }
 

@@ -1,5 +1,21 @@
 # Current MVP work
 
+## November 27 — HarMoCAP at the Weaver table
+
+Protected release `8e71bc158ad6` adds **Abrir HarMoCAP** to the existing
+Weaver table. Rollback is `3ab07a91c1e3`. The table uses the authenticated
+Harmonic Lab panel to prepare or reuse the selected workstation's body
+service and waits for the HarMoCAP projection. The station handles
+playback and calibration for already tracked video. Camera and input
+selection stay in the native body lab.
+
+A Chromium trial through the installed Home transport used a disposable
+tracked-video session on Legion. HarMoCAP started playback, Weaver
+observed and paused it, and the native Lab confirmed the calibration
+from HarMoCAP. The fixture was removed and Legion returned to idle.
+The trial used no camera or microphone. Participant sign-in and live
+tracking remain to be verified.
+
 ## November 27 — Rostro tuning at the Weaver table
 
 Protected release `3ab07a91c1e3` adds **Abrir Rostro** to the existing Weaver
