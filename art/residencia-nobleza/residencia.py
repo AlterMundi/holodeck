@@ -624,7 +624,10 @@ for s_ in (-1, 1):
     box(bm, Vector((s_ * (TW / 2 + 0.4), GATE_Y1 - 0.3, (Z0 + H_ENT + 4.3) / 2)), (1.2, 1.2, H_ENT + 4.3 - Z0))
 obj("Torre del portal", bm, "marble", "Portal")
 bm = bmesh.new(); box(bm, Vector((0, GATE_Y1 + 0.2, (H_COL + 2 + H_ENT + 4.3) / 2)), (TW - 0.4, 0.4, H_ENT + 4.3 - H_COL - 2))
-obj("Panel teal del portal", bm, "panel", "Portal")
+panel = obj("Panel teal del portal", bm, "panel", "Portal")
+# Keep the cladding clear of the pavilion's coplanar front face.
+panel["holodeck_collision_y"] = panel.location.y
+panel.location.y -= 0.08
 bm = bmesh.new()
 g = Vector((0, GATE_Y1 - 0.05, H_ENT + 1.2))
 torus(bm, g, 2.2, 0.16, Matrix.Rotation(math.pi / 2, 3, "X"), 64, 6)
@@ -634,7 +637,8 @@ for k, dx in enumerate((-1.6, -0.8, 0, 0.8, 1.6)):
     length = 4.0 + abs(dx) * 1.5
     box(bm, Vector((dx, GATE_Y1 - 0.05, top - length / 2)), (0.16, 0.08, length))
     cyl(bm, Vector((dx, GATE_Y1 - 0.1, top - length - 0.15)), 0.28, 0.1, 12)
-obj("Glifo de éter del portal", bm, "cyan", "Portal")
+glyph = obj("Glifo de éter del portal", bm, "cyan", "Portal")
+glyph.location.y = panel.location.y
 
 # dome: gold base ring, gold lattice belt and stronger ribs
 bm = bmesh.new()

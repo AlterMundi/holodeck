@@ -45,8 +45,16 @@ def srgb_to_linear(c):
 for o in [o for o in bpy.data.objects if o.type == "LIGHT" or any(c.name in DROP_COLLECTIONS for c in o.users_collection)]:
     bpy.data.objects.remove(o)
 meshes = [o for o in bpy.data.objects if o.type == "MESH"]
+collision_meshes = {}
 for o in meshes:  # bake modifiers/instances, apply transforms
     o.data = o.data.copy()
+    if "holodeck_collision_y" in o:
+        # Preserve the structural collision plane beneath the visual cladding.
+        matrix = o.matrix_world.copy()
+        matrix.translation.y = o["holodeck_collision_y"]
+        collision_mesh = o.data.copy()
+        collision_mesh.transform(matrix)
+        collision_meshes[o.name] = collision_mesh
     o.data.transform(o.matrix_world); o.matrix_world.identity()
 
 # simple glTF materials, one per finish
@@ -67,7 +75,7 @@ coll_me = bpy.data.meshes.new("Residencia colisión")
 import bmesh  # noqa: E402
 bm = bmesh.new()
 for o in collide:
-    bm.from_mesh(o.data)
+    bm.from_mesh(collision_meshes.get(o.name, o.data))
 bmesh.ops.triangulate(bm, faces=bm.faces)
 bm.to_mesh(coll_me); bm.free()
 coll_me.materials.clear()
