@@ -1,7 +1,7 @@
 import {Group, PerspectiveCamera} from 'three';
 import {createProyeccion} from 'proyeccion';
 
-export function openBeaconProjection(stage, {host, surface, csrf, onReady}){
+export function openBeaconProjection(stage, {host, surface, title, csrf, onReady}){
   const doc=stage.ownerDocument;
   const wrapper=doc.createElement('section');
   wrapper.className='beacon-projection';
@@ -9,7 +9,7 @@ export function openBeaconProjection(stage, {host, surface, csrf, onReady}){
   viewport.className='beacon-projection-view';
   viewport.tabIndex=-1;
   viewport.inert=true;
-  viewport.setAttribute('aria-label','Controles de Weaver');
+  viewport.setAttribute('aria-label','Controles de '+title);
   const feedback=doc.createElement('div');
   feedback.className='beacon-projection-feedback';
   const status=doc.createElement('span');
@@ -64,12 +64,12 @@ export function openBeaconProjection(stage, {host, surface, csrf, onReady}){
   }
   function unavailable(){
     viewport.inert=true;
-    notice('Se perdió la conexión con Weaver.',true);
+    notice('Se perdió la conexión con '+title+'.',true);
   }
   function connect(){
     stream?.close();
     viewport.inert=true;
-    notice('Conectando con Weaver…');
+    notice('Conectando con '+title+'…');
     const selected=new EventSource(root+'/events'+query);
     stream=selected;
     selected.onerror=()=>{

@@ -5245,6 +5245,15 @@ for the restricted SSH hop and used a disposable Weaver session without
 devices. Full-world approach, real workstation startup and protected HTTPS
 streaming remain receiving checks.
 
+The Spatializer bench now uses the same station handoff with its own
+surface. The Lab can prepare the Spatializer projection without starting
+Weaver, Shaper or the guitar controller. The local Chromium with the station
+fixture requested the Spatializer service only, waited for projection
+readiness, received a direct OSC-backed change, applied a change from the
+station and restored the previous value. The fixture used the standalone
+Lab adapter with an OSC test peer. It did not start the receiving audio
+engine or pass through the installed SSH route.
+
 The room look also selects the HUD palette in the host document. Apply
 the palette only after the room's material selection succeeds, update
 mounted controls in place and clear it when leaving the room. The

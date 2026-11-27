@@ -1,12 +1,12 @@
 const panel='/harmonic_lab/';
 const STATUS_LIMIT=128*1024;
 const STATUS_LIFETIME=30000;
-const station=(id,title,service,x,z,view)=>Object.freeze({id,title,service,view,revision:1,
+const station=(id,title,service,x,z,view,surface)=>Object.freeze({id,title,service,view,surface,revision:1,
   position:Object.freeze({x,y:.1,z})});
 
 export const BEACON_CONTROLS=Object.freeze([
-  station('beacon-spatializer','Spatializer','audio',3.802,-.791),
-  station('beacon-weaver','Weaver','body',-3.758,2.659),
+  station('beacon-spatializer','Spatializer','audio',3.802,-.791,undefined,'spatializer'),
+  station('beacon-weaver','Weaver','body',-3.758,2.659,undefined,'weaver'),
   station('beacon-guitar','Guitarra','guitar',-4.49,-.35),
   station('beacon-shaper','Shaper','body',3.51,2.78,'instrumento'),
 ]);
@@ -124,16 +124,16 @@ export class BeaconControls{
     const frame=this.panel.ownerDocument.createElement('iframe');
     frame.title='Panel de '+this.current.title;
     frame.allow="camera 'none'; microphone 'none'";
-    const projectsWeaver=this.current.service==='body';
-    frame.src=projectsWeaver?href+'&projection=weaver':href;
+    const {surface,title}=this.current;
+    frame.src=surface?href+'&projection='+encodeURIComponent(surface):href;
     this.frameEvents?.abort();
     this.frameEvents=new AbortController();
     const {signal}=this.frameEvents;
     const ownerWindow=this.panel.ownerDocument.defaultView;
-    if(projectsWeaver)ownerWindow?.addEventListener('message',async event=>{
+    ownerWindow?.addEventListener('message',async event=>{
       const data=event.data;
       if(signal.aborted||event.origin!==ownerWindow.location.origin||
-          event.source!==frame.contentWindow||data?.surface!=='weaver')return;
+          event.source!==frame.contentWindow||data?.surface!==surface)return;
       if(data.type==='harmonic-lab-host-changed'){
         this.disposeProjection();
         return;
@@ -147,7 +147,7 @@ export class BeaconControls{
       try{
         const {openBeaconProjection}=await import('./beacon-projection.mjs');
         if(signal.aborted||this.projecting!==attempt)return;
-        this.projection=openBeaconProjection(this.stage,{host:data.host,surface:'weaver',csrf:data.csrf,
+        this.projection=openBeaconProjection(this.stage,{host:data.host,surface,title,csrf:data.csrf,
           onReady:()=>{
             this.projection.focus();
             frame.remove();
