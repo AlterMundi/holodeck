@@ -141,7 +141,7 @@ function identifyPlace(id) {
     button.textContent=next===previous ? 'Volver · '+labels[next][0] : actionText[next]??'Entrar · '+labels[next][0];
     options.append(button);
   }
-  if (id==='promenade'||id==='world') {
+  if (!document.body.dataset.homeEntry && (id==='promenade'||id==='world')) {
     const button=document.createElement('button');
     button.type='button';
     button.dataset.to=id==='promenade'?'world':'promenade';
@@ -321,5 +321,5 @@ document.querySelectorAll('[data-move]').forEach(button=>{
 renderer.domElement.addEventListener('webglcontextlost',()=>{
   state.textContent='Se perdió la vista 3D. Recargá el archivo para volver al paseo.';
 });
-arrive('promenade');
+arrive(document.body.dataset.homeEntry==='world'?'world':'promenade');
 requestAnimationFrame(step);

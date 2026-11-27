@@ -1,3 +1,4 @@
+import {hostedHomeUrl} from './hosted-entrances.mjs';
 import {showRoomMap} from './room-map.mjs';
 
 const base=()=>new URL('./',document.baseURI);
@@ -62,6 +63,11 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
     }catch{
       try{next=await readSpace();}catch{}
       if(!next||next.id===space.id)onError('No pude confirmar el cambio de lugar.');
+    }
+    if(space.id==='outside'&&next?.id==='outside'&&next.hostedEntrance!==undefined){
+      const home=hostedHomeUrl(next.hostedEntrance);
+      if(home){location.assign(home);return;}
+      onError('No pude confirmar la dirección de esta casa.');
     }
     if(next&&next.id!==space.id){
       const arrival=arrivalDoor(space,next);
