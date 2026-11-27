@@ -1,3 +1,4 @@
+import {VerticalFlightLoop} from './vertical-flight-loop.mjs';
 import {Matrix4, Quaternion, Vector3} from 'three';
 import {
   TOROIDAL_TERRAIN, terrainCoordinates, terrainElevation, terrainFrame, terrainPosition,
@@ -65,12 +66,15 @@ export class ToroidalLocomotion {
     this.doubleJumpQueued=false;
     this.doubleJumpCount=0;
     this.airJumpReady=false;
+    this.verticalLoop=new VerticalFlightLoop();
+    this.flightVerticalSpeed=0;
   }
 
-  update(seconds, {right = 0, forward = 0, yaw = this.yaw, travelYaw = yaw, sprint = false, jump = false, flight = false, vertical = 0, climb = 0, crouch = false, doubleJump=false} = {}) {
+  update(seconds, {right = 0, forward = 0, yaw = this.yaw, travelYaw = yaw, sprint = false, jump = false, flight = false, vertical = 0, climb = 0, crouch = false, doubleJump=false, loopPull=0} = {}) {
     if (!Number.isFinite(seconds) || seconds <= 0 || ![right, forward, yaw, travelYaw, vertical, climb].every(Number.isFinite)) return;
     if(flight!==this.flightActive){
       this.flightActive=flight;
+      if(!flight)this.verticalLoop.cancel();
       this.swimming=!flight&&this.canDive(this.u,this.v)&&this.height<this.waterLevel-FLOAT_DRAFT-.05;
     }
     const verticalInput=Math.min(1,Math.max(-1,vertical||climb));
@@ -89,7 +93,13 @@ export class ToroidalLocomotion {
     const sine = Math.sin(travelYaw), cosine = Math.cos(travelYaw);
     const ringTarget = (right * cosine + forward * sine) * speed;
     const crossTarget = (forward * cosine - right * sine) * speed;
-    this.yaw = wrapYaw(yaw);
+    if(flight){
+      const support=this.supportAt(this.u,this.v);
+      this.verticalLoop.arm(Math.min(seconds,MAX_FRAME),{pull:loopPull,ring:this.ringSpeed,cross:this.crossSpeed,
+        vertical:this.flightVerticalSpeed,aboveGround:this.height-Math.max(support,this.waterLevel-FLOAT_DRAFT),
+        belowCeiling:Math.max(support,this.waterLevel-FLOAT_DRAFT)+FLIGHT_CEILING-this.height});
+    }
+    this.yaw = wrapYaw(this.verticalLoop.pose?.yaw??yaw);
     if (jump && !this.jumpHeld) this.jumpQueued = true;
     this.jumpHeld = jump;
     this.doubleJumpQueued||=Boolean(doubleJump&&!flight&&!this.swimming);
@@ -118,8 +128,15 @@ export class ToroidalLocomotion {
     const immersion = Math.max(0, Math.min(1,(this.waterLevel-this.height-WADE_DEPTH)/(FLOAT_DRAFT-WADE_DEPTH)));
     const speedFactor = flight?1:1-(1-SWIM_PLANAR_FACTOR)*immersion;
     const response = this.grounded||this.colliderGrounded||flight ? .18 : .065;
-    this.ringSpeed += (ringTarget * speedFactor - this.ringSpeed) * response;
-    this.crossSpeed += (crossTarget * speedFactor - this.crossSpeed) * response;
+    const aerobatic=flight?this.verticalLoop.step(STEP):null;
+    if(aerobatic){
+      this.ringSpeed=aerobatic.ring;
+      this.crossSpeed=aerobatic.cross;
+      vertical=aerobatic.vertical;
+    }else{
+      this.ringSpeed += (ringTarget * speedFactor - this.ringSpeed) * response;
+      this.crossSpeed += (crossTarget * speedFactor - this.crossSpeed) * response;
+    }
     const {tubeRadius, majorRadius} = this.terrain;
     const tubeDistance = tubeRadius + this.height;
     const ringDistance = majorRadius + tubeDistance * Math.cos(this.v * TAU);
@@ -140,7 +157,10 @@ export class ToroidalLocomotion {
     }
     if(flight){
       this.u=nextU;this.v=nextV;
-      this.height=Math.max(nextGround,Math.min(Math.max(nextGround,this.waterLevel-FLOAT_DRAFT)+FLIGHT_CEILING,this.height+vertical*STEP));
+      const previous=this.height,next=previous+vertical*STEP;
+      this.height=Math.max(nextGround,Math.min(Math.max(nextGround,this.waterLevel-FLOAT_DRAFT)+FLIGHT_CEILING,next));
+      this.flightVerticalSpeed=(this.height-previous)/STEP;
+      if(aerobatic&&this.height!==next)this.verticalLoop.cancel();
       this.radialSpeed=0;
       this.grounded=this.height===nextGround;
       this.jumpQueued=false;
@@ -192,6 +212,7 @@ export class ToroidalLocomotion {
   }
 
   applyCollision(point) {
+    if(this.verticalLoop.pose)this.verticalLoop.cancel();
     const {u, v, height} = terrainCoordinates([point.x, point.y, point.z], this.terrain);
     this.u = u;
     this.v = v;

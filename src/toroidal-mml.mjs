@@ -1,4 +1,4 @@
-import {Line3, Quaternion, Ray, Vector3} from 'three';
+import {Line3, Matrix4, Quaternion, Ray, Vector3} from 'three';
 import {createAvatarHeadroom} from './avatar-headroom.mjs';
 import {createToroidalCameraClearance} from './toroidal-camera-clearance.mjs';
 import {ToroidalLocomotion, toroidalRotation} from './toroidal-locomotion.mjs';
@@ -39,6 +39,9 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
   const rotation = new Quaternion();
   const viewRotation = new Quaternion();
   const viewOffset = new Vector3();
+  const chaseOffset=new Vector3(),chaseEye=new Vector3(),chaseTarget=new Vector3(),chaseBasis=new Matrix4();
+  const tangent=new Vector3(),heading=new Vector3(),worldUp=new Vector3(),cameraRight=new Vector3();
+  const chaseRotation=new Quaternion();
   const radialAxis = new Vector3(),right=new Vector3(),side=new Vector3(),feet=new Vector3();
   const headroom=createAvatarHeadroom(),contact=new Vector3();
   const capsule = new Line3();
@@ -87,18 +90,21 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
     const touchVertical=touch?.vertical??Number(Boolean(touch?.jump));
     const manual=ascend||descend?Number(ascend)-Number(descend):touchVertical;
     const steer=freeVertical&&!ascend&&!descend&&!manual&&!camera.isFlyCameraOn()?
-      steerToroidalFlight(control?.direction,camera.phi,!flying&&!motion.swimming&&wet,loopPitch()):
+      steerToroidalFlight(control?.direction,camera.phi,!flying&&!motion.swimming&&wet,flying?null:loopPitch()):
       {direction:control?.direction,forward:Number(moving),climb:0};
     const travelYaw=moving?Math.PI/2-camera.theta+steer.direction:motion.yaw;
     const yaw=aiming()?3*Math.PI/2-camera.theta:travelYaw;
     const firstJump=wantsFirstJump();
     const jump=!flying&&!motion.swimming&&Boolean(firstJump||control?.jump||touch?.jump||(wet&&manual>0));
     const sprint=freeVertical?keyInputManager.getRun()||touch?.isSprinting:control?.isSprinting;
+    const pitch=Math.PI/2-camera.phi;
+    const loopPull=flying&&aiming()&&!manual&&moving&&-Math.cos(control.direction)>.84&&Math.abs(pitch)>.43?
+      Math.sign(pitch):0;
     const previousHeight=motion.height;
     if(flying)sweepStart.fromArray(terrainPosition(motion.u,motion.v,motion.height));
     const jumps=motion.doubleJumpCount;
     motion.update(seconds,{forward:steer.forward,yaw,travelYaw,doubleJump:wantsDoubleJump(),
-      sprint,
+      sprint,loopPull,
       jump,flight:flying,vertical:freeVertical?manual:0,climb:steer.climb,crouch:!flying&&!wet&&descend});
     if(motion.doubleJumpCount!==jumps)onDoubleJump();
     let state = motion.pose();
@@ -205,7 +211,7 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
       position: state.position, rotation: state.rotation, state: controller.getTargetAnimation(),
     };
     onMovementMode(flying?'flight':state.swimming?'swim':motion.atSwimSurface()?'surface':'ground',
-      Boolean(flying&&sprint&&(moving||manual)));
+      Boolean(flying&&sprint&&(moving||manual)),motion.verticalLoop.pose);
   }
 
   function characterUpdate(...args) {
@@ -258,6 +264,28 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
     viewOffset.set(state.position.x - target.x, state.position.y - target.y, state.position.z - target.z)
       .applyQuaternion(rotation);
     viewRotation.set(state.rotation.x, state.rotation.y, state.rotation.z, state.rotation.w).premultiply(rotation);
+    const loop=motion?.verticalLoop.pose;
+    if(loop){
+      const facing=toroidalRotation(lastPosition,loop.yaw,rotation);
+      heading.set(0,0,1).applyQuaternion(facing);
+      worldUp.set(0,1,0).applyQuaternion(facing);
+      cameraRight.crossVectors(worldUp,heading);
+      tangent.copy(heading).multiplyScalar(Math.cos(loop.pitch)).addScaledVector(worldUp,Math.sin(loop.pitch));
+      const distance=Math.max(2.6,viewOffset.length());
+      // A shoulder offset keeps the sight line away from the horizon
+      // singularity at the top of the loop without rolling the view.
+      chaseOffset.copy(tangent).multiplyScalar(-distance*.76)
+        .addScaledVector(heading,-distance*.42).addScaledVector(worldUp,distance*.23)
+        .addScaledVector(cameraRight,distance*.32);
+      viewOffset.lerp(chaseOffset,loop.blend);
+      chaseEye.copy(target).add(chaseOffset);
+      chaseTarget.copy(target).addScaledVector(tangent,distance*.17);
+      chaseRotation.setFromRotationMatrix(chaseBasis.lookAt(chaseEye,chaseTarget,worldUp));
+      viewRotation.slerp(chaseRotation,loop.blend);
+      if(loop.turned>4.65){
+        this.targetPhi+=(Math.PI/2+.14-this.targetPhi)*.13;
+      }
+    }
     clearance.constrain(target,viewOffset,viewRotation,state.fov,state.aspect,this.collisionsManager);
     state.position.set(target.x + viewOffset.x, target.y + viewOffset.y, target.z + viewOffset.z);
     state.rotation.set(viewRotation.x, viewRotation.y, viewRotation.z, viewRotation.w);
