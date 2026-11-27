@@ -33,6 +33,8 @@ import {bindAvatarFraming,bindCloseAvatar} from './avatar-camera.mjs';
 import {capWorldPixelRatio,usesLightGraphics} from './render-pixel-budget.mjs';
 import {bindVideoSettings} from './video-settings.mjs';
 import {BackgroundFocus} from './background-focus.mjs';
+import {CinematicGrade} from './cinematic-grade.mjs';
+import {ToroidalGrass} from './toroidal-grass.mjs';
 import {showSettingsDialog} from './settings-hud.mjs';
 import {WorldActionLabel} from './world-action-label.mjs';
 import {bindOrbitalMatterGlazing,useLightweightMatterGlazing} from './matter-glazing.mjs';
@@ -1193,6 +1195,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const focusReference=focusMode==='referencia'&&location.hostname==='127.0.0.1';
     const backgroundFocus=focusMode==='fondo'||focusReference?new BackgroundFocus(
       renderer.composer.renderer,renderer.scene,{strength:focusReference?0:1}):null;
+    // ?acabado=plano keeps the previous direct output for side-by-side review.
+    const cinematicGrade=new URLSearchParams(location.search).get('acabado')==='plano'?null:
+      new CinematicGrade(renderer.composer.renderer,renderer.scene);
     let drawWorld=true;
     // Keep the frame loop and collision running behind opaque overlays. Skip
     // drawing until Nexus yields or the destination can produce a room frame.
@@ -1211,7 +1216,11 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(backgroundFocus&&outsideRing()&&!rendererBudget.lightweight)backgroundFocus.draw(draw);
         else{
           backgroundFocus?.dispose();
-          draw();
+          if(cinematicGrade&&!rendererBudget.lightweight)cinematicGrade.draw(draw);
+          else{
+            cinematicGrade?.dispose();
+            draw();
+          }
         }
         if(!moving&&!entering)worldView.present(renderer.composer.renderer.domElement,mainCamera);
       };
@@ -1240,7 +1249,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         return configure({...configuration,workshop:{...configuration.workshop,url:arrivalAddress}},token);
       };
     }
-    let nextDressing=0, ring=null, cave=null, scenery=null, atmosphere=null, releaseRadialMovement=null, releaseHeadroom=null, ringSun=null;
+    let nextDressing=0, ring=null, cave=null, scenery=null, grass=null, atmosphere=null, releaseRadialMovement=null, releaseHeadroom=null, ringSun=null;
     let presentedHelp=verticalHelp.textContent;
     let sceneryAfter=null,releaseTableFlight=null,releaseSearchKeys=null;
     const worldCanvas=worldPicker.canvas;
@@ -1364,6 +1373,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
                 ring.setWoodlandShade(scenery.woodland.shadeTexture);
               }
               scenery.update(position,rendererBudget.lightweight,door,solar?.daylight,ring.hasDetailedTerrain,solar?.direction);
+              grass??=new ToroidalGrass(renderer.mmlCompositionScene.group);
+              grass.update(position,rendererBudget.lightweight,solar?.daylight,presentationSeconds);
             }
           }
         }
@@ -1379,8 +1390,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         ring.dispose();
         cave?.dispose();
         scenery?.dispose();
+        grass?.dispose();
         sceneryAfter=null;
-        ring=cave=scenery=null;
+        ring=cave=scenery=grass=null;
       }
       const roomReady=inside&&networkScope===activeSpace.id&&entryRoomReady(remoteScene,roomModel);
       const waitingForRoomFrame=inside&&moving&&!roomReady;
@@ -1646,7 +1658,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
       }
     };
-    renderer.dispose=()=>{weatherRequest?.abort();rain.dispose();avatarPracticals.dispose();backgroundFocus?.dispose();poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseFraming();releaseOrbit();worldFocus.abort();tableAttention.dispose();pointRequest?.controller.abort();document.removeEventListener('visibilitychange',abortHiddenPoint);points.dispose();if(pointView===points)pointView=null;display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseCloseAvatar();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();actionLabel.dispose();flightWake.dispose();waterSplash.dispose();waterWake.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();houseLight.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{weatherRequest?.abort();rain.dispose();avatarPracticals.dispose();backgroundFocus?.dispose();poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();grass?.dispose();cinematicGrade?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseFraming();releaseOrbit();worldFocus.abort();tableAttention.dispose();pointRequest?.controller.abort();document.removeEventListener('visibilitychange',abortHiddenPoint);points.dispose();if(pointView===points)pointView=null;display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseCloseAvatar();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();actionLabel.dispose();flightWake.dispose();waterSplash.dispose();waterWake.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();houseLight.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
       if(client.keyInputManager){
         const keys=client.keyInputManager,shouldCapture=keys.shouldCaptureKeyPress;
