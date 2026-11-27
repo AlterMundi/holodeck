@@ -1,3 +1,4 @@
+import {createQuintanaWeather} from './quintana-weather.mjs';
 import {parseRenderedView,RenderedViews} from './rendered-view.mjs';
 import {SAND3D_TRAIL_REVISIONS} from './sand3d-trail-assets.mjs';
 import {TOROIDAL_SPAWN, TOROIDAL_TERRAIN, toroidalParcelPoint} from './toroidal-terrain.mjs';
@@ -810,6 +811,11 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(!spaceRoute&&spaces.current(actor)!==OUTSIDE)
       return res.status(409).json({message:'Volvé al exterior para usar esta acción.'});
     req.actor=actor;req.holodeckSession=session;next();
+  }));
+  const quintanaWeather=createQuintanaWeather();
+  app.get(route('api/quintana-weather'),asyncRoute(async(req,res)=>{
+    if(!req.actor.rights?.includes('observe'))return res.sendStatus(403);
+    res.json(await quintanaWeather());
   }));
   const controlsRelease=actor=>Boolean(releaseHold&&actor.kind==='human'&&actor.id===releaseControllerRef);
   app.get(route('api/release-dnd'),(req,res)=>res.json({canControl:controlsRelease(req.actor)}));

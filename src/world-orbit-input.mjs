@@ -1,9 +1,9 @@
 // Keep the host's picking gestures and touch orbit. Mouse look can use raw
 // movement while locked so a sustained drag can pass the edge of the screen.
-export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false,inspection){
+export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false,inspection,canLoop=()=>false){
   const document=canvas.ownerDocument;
   const abort=new AbortController(),capture={capture:true,signal:abort.signal};
-  let rightHeld=false,locked=false,pan=null;
+  let rightHeld=false,locked=false,pan=null,loopPitch=null,loopPole=0;
   const touchIds=new Set();
   const inspect=event=>inspection?.available(event);
   const dolly=(delta,clientX,clientY)=>{
@@ -27,8 +27,23 @@ export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false,
   const turn=(x,y)=>{
     const scale=20*sensitivity();
     camera.targetTheta+=x/canvas.clientWidth*scale;
-    camera.targetPhi=Math.max(camera.minPolarAngle,Math.min(camera.maxPolarAngle,
-      camera.targetPhi-y/canvas.clientHeight*scale));
+    const next=camera.targetPhi-y/canvas.clientHeight*scale;
+    if(!rightHeld||!canLoop())loopPitch=null;
+    else if(loopPitch===null&&(next<camera.minPolarAngle||next>camera.maxPolarAngle)){
+      loopPitch=Math.PI/2-camera.targetPhi;
+      loopPole=Math.sign(loopPitch)||Math.sign(y);
+    }
+    if(loopPitch!==null&&y!==0){
+      let angle=loopPitch+y/canvas.clientHeight*scale;
+      angle=Math.atan2(Math.sin(angle),Math.cos(angle));
+      if(Math.abs(angle)<1.36)loopPitch=null;
+      else loopPitch=angle;
+      // Stay on the same camera side during the maneuver. The signed flight
+      // direction can continue turning without orbiting to the opposite pole.
+      camera.targetPhi=loopPitch===null?Math.PI/2-angle:
+        loopPole>0?camera.minPolarAngle:camera.maxPolarAngle;
+    }else if(loopPitch===null)camera.targetPhi=next;
+    camera.targetPhi=Math.max(camera.minPolarAngle,Math.min(camera.maxPolarAngle,camera.targetPhi));
   };
   canvas.addEventListener('pointerdown',event=>{
     if(event.pointerType==='touch'&&inspect(event)){
@@ -99,6 +114,7 @@ export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false,
     pan=null;
     releaseTouches();
     rightHeld=false;
+    loopPitch=null;
     if(document.pointerLockElement===canvas)document.exitPointerLock();
   };
   document.addEventListener('pointerup',event=>{
@@ -126,6 +142,7 @@ export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false,
     release();
   };
   dispose.aiming=()=>rightHeld&&!blocked()&&!camera.isFlyCameraOn();
+  dispose.pitch=()=>dispose.aiming()&&canLoop()?loopPitch:null;
   dispose.release=release;
   return dispose;
 }

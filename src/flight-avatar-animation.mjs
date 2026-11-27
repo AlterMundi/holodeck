@@ -78,7 +78,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
   function animatedUpdate(state,dt){
     // Remove last frame's extra limb rotations before the base mixer runs.
     for(const entry of actors.values())restore(entry);
-    const {outdoor,flying,boosting,grounded:localGrounded,table,crouch,gaze,peerGaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null,wake=null,splash=null,waterWake=null,aimPitch=null}=context();
+    const {outdoor,flying,boosting,grounded:localGrounded,table,crouch,gaze,peerGaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null,wake=null,splash=null,waterWake=null,aimPitch=null,loopPitch=null}=context();
     const now=clock?.();
     const elapsed=now!==undefined&&previousTime!==undefined?(now-previousTime)/1000:dt;
     previousTime=now;
@@ -328,7 +328,10 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       // ground pose. This avoids turning its planted feet with the air pose.
       const groundBlend=Math.max(0,1-Math.abs(pitchValue)/.08);
       entry.crouchRig?.apply(character,crouchWeight*groundBlend);
-      pitch.setFromAxisAngle(pitchAxis,pitchValue);
+      // The movement controller keeps a signed pitch through the vertical.
+      // The model's vertical rest frame starts 90 degrees from cruise.
+      const aerobatic=isLocal&&floating&&Number.isFinite(loopPitch);
+      pitch.setFromAxisAngle(pitchAxis,aerobatic?Math.PI/2-loopPitch:pitchValue);
       entry.rotation=character.quaternion;
       entry.unpitched.copy(entry.rotation);
       if(airYaw)entry.rotation.multiply(yaw.setFromAxisAngle(yawAxis,airYaw));

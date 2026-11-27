@@ -10,11 +10,15 @@ const FLOOR_SAMPLES=[[0,0],[1,0],[-1,0],[0,1],[0,-1]];
 const AIM_DEADBAND=8*Math.PI/180;
 const SURFACE_DIVE=25*Math.PI/180;
 
-export function steerToroidalFlight(direction,polarAngle,atSurface=false){
+export function steerToroidalFlight(direction,polarAngle,atSurface=false,loopPitch=null){
   if(!Number.isFinite(direction))return {direction,forward:0,climb:0};
   // The camera's polar angle belongs to the avatar's radial-up frame.
   const pitch=(Number.isFinite(polarAngle)?polarAngle:Math.PI/2)-Math.PI/2;
   const ahead=-Math.cos(direction);
+  if(Number.isFinite(loopPitch)){
+    const strafe=Math.sin(direction),projected=ahead*Math.cos(loopPitch);
+    return {direction:Math.atan2(strafe,-projected),forward:Math.hypot(strafe,projected),climb:ahead*Math.sin(loopPitch)};
+  }
   if(Math.abs(ahead)<1e-10||Math.abs(pitch)<=AIM_DEADBAND||
      (atSurface&&(pitch*ahead>=0||Math.abs(pitch)<SURFACE_DIVE)))
     return {direction,forward:1,climb:0};
@@ -27,7 +31,7 @@ export function steerToroidalFlight(direction,polarAngle,atSurface=false){
 // The MML host still owns input, network cadence, interpolation, avatar
 // animation and the orbit camera. Only the selected exterior uses a radial
 // surface and reconstructs the world-space orientation from tangent yaw.
-export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firstDoor=null, onMovementMode=()=>{}, aiming=()=>false) {
+export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firstDoor=null, onMovementMode=()=>{}, aiming=()=>false,loopPitch=()=>null) {
   const updateCharacters = manager.update;
   const updateCamera = camera.update;
   const adjustCamera = camera.adjustCameraPosition;
@@ -83,7 +87,7 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
     const touchVertical=touch?.vertical??Number(Boolean(touch?.jump));
     const manual=ascend||descend?Number(ascend)-Number(descend):touchVertical;
     const steer=freeVertical&&!ascend&&!descend&&!manual&&!camera.isFlyCameraOn()?
-      steerToroidalFlight(control?.direction,camera.phi,!flying&&!motion.swimming&&wet):
+      steerToroidalFlight(control?.direction,camera.phi,!flying&&!motion.swimming&&wet,loopPitch()):
       {direction:control?.direction,forward:Number(moving),climb:0};
     const travelYaw=moving?Math.PI/2-camera.theta+steer.direction:motion.yaw;
     const yaw=aiming()?3*Math.PI/2-camera.theta:travelYaw;

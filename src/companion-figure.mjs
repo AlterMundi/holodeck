@@ -5,7 +5,10 @@ import {bindCompanionGait} from './companion-gait.mjs';
 import {TabletopGlance} from './tabletop-attention.mjs';
 import {Follower,clamp,ease,pulse,smooth} from './avatar-motion-curves.mjs';
 
-const jawTravel=12/515;
+// The luminous visor mouth carries the speech; the ceramic chin only follows
+// it slightly so the face, not the body, reads as talking.
+const jawTravel=4/515;
+const MOUTH_MORPH='mouth-open';
 const gaitClips=['walk','run','bound','wade'];
 const cycles=['calm',...gaitClips,'hover','glide','tread','swim'];
 const edges=['lift','landing'];
@@ -75,6 +78,20 @@ export async function loadCompanionFigure(url){
     layers.set(name,{action,weight:0,live:false});
   }
   const jawHeight=hinge.position.z,jawAngle=hinge.rotation.x;
+  // Every primitive of the joined skin carries the same "mouth-open" morph.
+  const mouths=[];
+  let mouthGlow=null;
+  root.traverse(object=>{
+    const index=object.morphTargetDictionary?.[MOUTH_MORPH];
+    if(index===undefined||!object.morphTargetInfluences)return;
+    mouths.push({influences:object.morphTargetInfluences,index});
+    for(const material of [object.material].flat())
+      if(/^Luminous mouth/.test(material.name))mouthGlow={material,base:material.emissiveIntensity};
+  });
+  if(!mouths.length){
+    dispose();
+    throw Error('Invalid Navegante asset');
+  }
   const eyes=['eye-L','eye-R'].map(name=>root.getObjectByName(name)).filter(Boolean);
   const frameRest=frame.quaternion.clone(),frameSpot=frame.position.clone();
   const tilt=new Quaternion(),roll=new Quaternion(),offset=new Vector3();
@@ -225,7 +242,9 @@ export async function loadCompanionFigure(url){
       jaw=motion?jaw+(aperture-jaw)*ease(step,aperture>jaw?30:15):0;
       if(jaw<.004&&!aperture)jaw=0;
       hinge.position.z=jawHeight-jawTravel*jaw;
-      hinge.rotation.x=jawAngle+.10*jaw;
+      hinge.rotation.x=jawAngle+.03*jaw;
+      for(const {influences,index} of mouths)influences[index]=Math.min(jaw,1.2);
+      if(mouthGlow)mouthGlow.material.emissiveIntensity=mouthGlow.base*(1+.9*jaw);
       if(clock>nextBlink+.17)nextBlink=clock+1.9+3.6*scatter(Math.floor(clock*7));
       const closed=motion?pulse(clock-nextBlink,.05,.025,.09):0;
       for(const eye of eyes)eye.scale.z=(1-.9*closed)*(1+.10*jaw);

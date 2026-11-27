@@ -1,6 +1,6 @@
 import {showSettingsDialog} from './settings-hud.mjs';
 
-export function bindVideoSettings({document,window,lightweight,onGraphics,onSensitivity,onFullscreenError}){
+export function bindVideoSettings({document,window,lightweight,onGraphics,onSensitivity,onSkyExposure,onFullscreenError}){
   const dialog=document.querySelector('#video-dialog');
   const open=document.querySelector('#video-open');
   const close=document.querySelector('#video-close');
@@ -73,6 +73,18 @@ export function bindVideoSettings({document,window,lightweight,onGraphics,onSens
     };
     mouse.oninput=sync;
     sync();
+  }
+  const exposure=document.querySelector('#sky-exposure');
+  if(exposure){
+    try{
+      const saved=window.localStorage.getItem('holodeck.skyExposure');
+      if(saved!==null)exposure.value=saved;
+    }catch{}
+    exposure.oninput=()=>{
+      onSkyExposure?.(exposure.valueAsNumber/100);
+      try{window.localStorage.setItem('holodeck.skyExposure',exposure.value);}catch{}
+    };
+    exposure.oninput();
   }
   quality.value=lightweight?'light':'auto';
   quality.onchange=()=>onGraphics(quality.value==='light');

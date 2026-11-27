@@ -457,6 +457,11 @@ body[data-world-starting] #pending-book-tool{visibility:hidden;pointer-events:no
   <select id="video-quality"><option value="auto">Automáticos</option><option value="light">Livianos</option></select>
   <label for="mouse-sensitivity">Sensibilidad del mouse <output id="mouse-sensitivity-value" for="mouse-sensitivity">100 %</output></label>
   <input id="mouse-sensitivity" type="range" min="30" max="240" step="5" value="100">
+  <label for="sky-exposure">Exposición del cielo</label>
+  <input id="sky-exposure" type="range" min="25" max="400" step="25" value="150">
+  <p id="quintana-weather-status"></p>
+  <p>Cielo fotográfico · <a href="https://www.eso.org/public/images/eso0932a/" target="_blank" rel="noopener">ESO/S. Brunier</a><br>
+  Clima estimado · <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></p>
   <button id="video-fullscreen" type="button" aria-pressed="false" aria-keyshortcuts="Control+Alt+F">Pantalla completa</button>
   <div><kbd>Ctrl + Alt + F</kbd></div>
   <p id="video-status" role="status"></p>

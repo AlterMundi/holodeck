@@ -262,3 +262,16 @@ test('camera-relative altitude steering projects forward only and leaves float c
   assert.equal(steerToroidalFlight(Math.PI,1.26,true).climb,0);
   assert.ok(steerToroidalFlight(Math.PI,steep,true).climb<-.5);
 });
+
+test('signed pitch gives continuous thrust past vertical into both loops',async()=>{
+  const {steerToroidalFlight}=await import('../src/toroidal-mml.mjs');
+  const steering=degrees=>steerToroidalFlight(Math.PI,Math.PI/2,false,degrees*Math.PI/180);
+  for(const sign of [-1,1]){
+    assert.ok(steering(sign*89).climb*sign>.99);
+    assert.ok(steering(sign*91).climb*sign>.99);
+    assert.ok(Math.cos(steering(sign*89).direction)<0);
+    assert.ok(Math.cos(steering(sign*91).direction)>0);
+    assert.ok(steering(sign*269).climb*sign<-.99);
+    assert.ok(Math.cos(steering(sign*359).direction)<0);
+  }
+});
