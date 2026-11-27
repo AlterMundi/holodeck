@@ -1,5 +1,23 @@
 # Current MVP work
 
+## Prepared — HarMoCAP video at the worktable
+
+Candidate `743e5670d304` was built with the lockfile-selected Proyección
+and published through the existing private runtime package writer. Its
+36,321,280-byte archive replaces only the browser bundle and the page
+from selected release `55c1e6699cee`. All other runtime and room files
+match that predecessor. The existing Harmonic Lab gateway and Legion
+transport serve the protected route. A generated video reached the table
+through the isolated browser, gateway and receiving agent, and followed
+the shared play, pause and seek operations.
+
+The live Holodeck release remains `55c1e6699cee`. There were established
+connections to its service during preparation, so the package was left
+pending with its exact predecessor. Use the existing release notice and
+cutover route when it can preserve the visit. Legion's current JACK Lab
+still serves its previous body release. Video from an actual selected Lab
+source and paired browser acceptance remain pending.
+
 ## November 27 — Residence, personal Explorer, and optical HUD
 
 Protected release `55c1e6699cee` places the Residencia de la Nobleza IA
