@@ -1,6 +1,8 @@
 const panel='/harmonic_lab/';
 const STATUS_LIMIT=128*1024;
 const STATUS_LIFETIME=30000;
+const routerView=Object.freeze({service:'router',title:'Ruteos de Weaver',surface:'router'});
+const hasRouter=station=>station?.surface==='weaver';
 const station=(id,title,service,x,z,view,surface)=>Object.freeze({id,title,service,view,surface,revision:1,
   position:Object.freeze({x,y:.1,z})});
 
@@ -65,9 +67,15 @@ async function readBeaconStatus(signal){
 }
 
 export class BeaconControls{
-  constructor(link,panel,{statusButton,statusText,readStatus=readBeaconStatus}={}){
+  constructor(link,panel,{statusButton,statusText,routerLink,readStatus=readBeaconStatus}={}){
     this.link=link;this.panel=panel;
     this.statusButton=statusButton;this.statusText=statusText;this.readStatus=readStatus;
+    this.routerLink=routerLink;
+    if(routerLink)routerLink.onclick=event=>{
+      if(!hasRouter(this.current)||event.button||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+      event.preventDefault();
+      this.open({router:true});
+    };
     if(statusButton)statusButton.onclick=()=>void this.checkStatus();
     this.stage=panel.querySelector('.beacon-panel-stage');
     this.title=panel.querySelector('h2');
@@ -115,16 +123,16 @@ export class BeaconControls{
     this.statusExpiry=setTimeout(()=>this.resetStatus(),STATUS_LIFETIME);
   }
 
-  open({native=false}={}){
-    if(this.opened||!this.current)return;
+  open({native=false,router=false}={}){
+    if(this.opened||!this.current||(router&&(!this.routerLink||!hasRouter(this.current))))return;
     this.last=this.current;
-    this.title.textContent=this.current.title;
-    const href=this.link.getAttribute('href');
+    const {surface,title}=router?routerView:this.current;
+    this.title.textContent=title;
+    const href=(router?this.routerLink:this.link).getAttribute('href');
     this.external.href=href;
     const frame=this.panel.ownerDocument.createElement('iframe');
-    frame.title='Panel de '+this.current.title;
+    frame.title='Panel de '+title;
     frame.allow="camera 'none'; microphone 'none'";
-    const {surface,title}=this.current;
     frame.src=surface?href+'&projection='+encodeURIComponent(surface):href;
     this.frameEvents?.abort();
     this.frameEvents=new AbortController();
@@ -233,6 +241,7 @@ export class BeaconControls{
     this.current=next;
     if(this.last!==next)this.last=null;
     this.link.hidden=!next;
+    if(this.routerLink)this.routerLink.hidden=!hasRouter(next);
     if(this.statusButton)this.statusButton.hidden=!next;
     if(!next){this.link.removeAttribute('href');return;}
     const target=new URLSearchParams({service:next.service});
