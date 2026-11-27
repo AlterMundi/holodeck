@@ -47,6 +47,23 @@ camera, room identity, access and transition notice. Exercise rollback and
 a failed successor. Keep this release work scoped to Holodeck and its own
 Home receiver.
 
+## Release indicator and planned updates
+
+Pass the prepared Home deployment request through
+`deployment/release-with-notice.sh --request <request.json>` on the
+receiving host. It verifies the selected predecessor, publishes a short-lived
+announcement there and waits 12 seconds before invoking Home. For a coordinated
+in-place operation use `deployment/release-with-notice.sh --announce-live`
+and remove the announcement when the operation settles. Ordinary changes made
+through the room or collection itself need no announcement. Unplanned failures
+cannot be announced in advance.
+
+The bottom-left code is the installed page release, abbreviated from its
+package SHA-256. An existing tab keeps that code until its page changes and
+indicates when a newer release is available. The notice does not force a reload.
+A tab opened before this feature was installed needs to open the updated page
+once to receive announcements.
+
 ## Receiving contracts
 
 The existing Home publisher accepts the closed `dm.home-service-package/v1`

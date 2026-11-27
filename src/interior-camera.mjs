@@ -8,7 +8,7 @@ const EYE_EXIT=.98;
 
 // MML's collision pass follows the previous boom direction. Recheck the new
 // frame after orbit/zoom, including the corners of the rendered near plane.
-export function constrainInteriorCamera({coreCameraManager:camera,collisionsManager},getRoom,firstPerson=()=>false){
+export function constrainInteriorCamera({coreCameraManager:camera,collisionsManager},getRoom,firstPerson=()=>false,getArrival=()=>null){
   const update=camera.update.bind(camera);
   const adjust=camera.adjustCameraPosition;
   if(adjust)camera.adjustCameraPosition=function(...args){
@@ -56,6 +56,20 @@ export function constrainInteriorCamera({coreCameraManager:camera,collisionsMana
       ray.set(destination,back);
       const hit=collisionsManager.raycastFirst(ray,boom+CLEARANCE);
       if(hit)limit=Math.min(limit,Math.max(0,hit[0]-CLEARANCE));
+    }
+    // Door art and its physics representation can be mounted separately.
+    // Keep the boom on the receiving side of the threshold during arrival.
+    const arrival=getArrival();
+    if(arrival){
+      const heading=arrival.yaw*Math.PI/180;
+      const inwardX=Math.sin(heading),inwardZ=Math.cos(heading);
+      const dx=focus.x-arrival.x,dz=focus.z-arrival.z;
+      const inward=dx*inwardX+dz*inwardZ;
+      const lateral=dx*inwardZ-dz*inwardX;
+      const towardDoor=-back.x*inwardX-back.z*inwardZ;
+      if(Math.abs(lateral)<1.3&&inward>-.55&&inward<2.6&&towardDoor>.05){
+        limit=Math.min(limit,Math.max(0,inward+.62)/towardDoor);
+      }
     }
     if(room!==lastRoom)eyeView=false;
     if(room!==lastRoom||lastDistance===undefined||limit<=lastDistance)lastDistance=limit;

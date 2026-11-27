@@ -45,6 +45,7 @@ import {readCollectionRepresentatives} from './collection-representatives.mjs';
 import {createNativeRoomAuthority,createNativeReviewAuthority} from './native-authority.mjs';
 import {WorldDocument} from './world-document.mjs';
 import {SessionBindings,SESSION_MS,sessionKey} from './session-bindings.mjs';
+import {installedRelease,releaseStatus} from './release-status.mjs';
 import {HumanAvatarProfiles,humanWardrobeAssets} from './human-avatars.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
@@ -659,7 +660,10 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     onClientDisconnect(connection){dropPose(OUTSIDE,connection,outsidePosePeers,network);for(const s of sessions.values())if(s.connection===connection){s.connection=null;if(!room.commitUncertain)room.atomic(()=>room.event(s.actor,'participant.left',{}));}},
     onClientUserIdentityUpdate(){return false;}
   };
-  const index=readFileSync(new URL('../public/index.html',import.meta.url),'utf8').replace('<head>','<head><base href="'+basePath+'">');
+  const version=installedRelease(new URL('../',import.meta.url));
+  const index=readFileSync(new URL('../public/index.html',import.meta.url),'utf8')
+    .replace('<head>','<head><base href="'+basePath+'">')
+    .replace('HOL0DECK_RELEASE_PLACEHOLDER',version?.slice(0,12)??'Desarrollo');
   function cellFor(id){
     const existing=cellTransports.get(id);
     if(existing)return existing;
@@ -727,6 +731,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     app.get(route(path),(req,res)=>sendPackedArt(req,res,art,true));
   network.registerExpressRoutes(app);
   if(basePath!=='/')app.get(basePath.slice(0,-1),(_req,res)=>res.redirect(308,basePath));
+  app.get(route('release-status'),(_req,res)=>res.json(releaseStatus(version,stateDir)));
   app.get(route('health'),(_req,res)=>res.status(projectionHealthy&&!room.commitUncertain&&!spaces.fenced?200:503).json({ok:projectionHealthy&&!room.commitUncertain&&!spaces.fenced}));
   app.ws(activeNetworkPath,(ws)=>{
     const record=sockets.get(ws);

@@ -24,9 +24,10 @@ export async function readSpace(signal){
 }
 
 // MML's fourteen-value location format holds the avatar and camera transforms.
-export function doorLocation({x,y,z,facing,yaw=facing*90}) {
+export function doorLocation({x,y,z,facing,yaw=facing*90,doorway=false}) {
   const rotation=yaw*Math.PI/180, s=Math.sin(rotation/2), c=Math.cos(rotation/2);
-  return [x,y,z,0,s,0,c,x-Math.sin(rotation)*2.7,y+1.7,z-Math.cos(rotation)*2.7,0,s,0,c].join(',');
+  const boom=doorway ? .52 : 2.7;
+  return [x,y,z,0,s,0,c,x-Math.sin(rotation)*boom,y+1.7,z-Math.cos(rotation)*boom,0,s,0,c].join(',');
 }
 
 export function arrivalDoor(from,next){
@@ -35,14 +36,14 @@ export function arrivalDoor(from,next){
   if(from.id==='outside'){
     const door=next.exitDoor;
     // Keep the landing inside the threshold, looking into the room.
-    return door?{x:door.x,y:door.y,z:door.z-.9,yaw:180}:null;
+    return door?{x:door.x,y:door.y,z:door.z-.9,yaw:180,doorway:true}:null;
   }
   const passage=next.exits.find(exit=>exit.to===from.id);
   const door=passage?.door;
   // The offer faces the doorway. Arrival uses the opposite heading so
   // walking continues into the destination instead of toward the return.
-  return passage?.kind==='door'&&Number.isFinite(door?.yaw)?
-    {...door,yaw:(door.yaw+180)%360}:door??null;
+  return ['door','portal'].includes(passage?.kind)&&Number.isFinite(door?.yaw)?
+    {...door,yaw:(door.yaw+180)%360,doorway:true}:door??null;
 }
 
 export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving,revision,onNear,onAccessLost,onDoorDenied,

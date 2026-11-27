@@ -99,3 +99,19 @@ test('closed fitted doors block the boom from the wall to the handle',()=>{
   assert.match(returnDoor,/y="2.06".*depth="0.43".*opacity="0"/);
   assert.equal(envelope(passageMarkup({...passage,kind:'portal'},{houseDoor:true})),undefined);
 });
+
+test('the first frame stays on the room side of an authored door with no raycast hit',()=>{
+  const focus=new Vector3(-3,1.75,-4.81);
+  const state={position:new Vector3(),rotation:new Quaternion(0,1,0,0),fov:65,aspect:16/9};
+  const camera={distance:2.7,target:focus,getMainCameraState:()=>state,isFlyCameraOn:()=>false,
+    update(){state.position.copy(focus);state.position.z-=this.distance;}};
+  const collisionsManager={raycastFirst:()=>null};
+  const arrival={x:-3,z:-4.81,yaw:0};
+  constrainInteriorCamera({coreCameraManager:camera,collisionsManager},()=> 'foyer',undefined,()=>arrival);
+
+  camera.update();
+  assert.equal(state.position.z,focus.z);
+  focus.z+=3;
+  for(let frame=0;frame<20;frame++)camera.update();
+  assert.equal(state.position.z,focus.z-camera.distance);
+});

@@ -355,6 +355,8 @@ body[data-world-starting] :is(canvas,#hud,#dock,#view-tools,#world-tools,#visit-
   color:#f6f8f4;background:#071621ec;
 }
 :is(.world-entry-actions,#room-passage) button:focus-visible{outline:2px solid #ffe2ac;outline-offset:3px}
+#release-version{position:fixed;z-index:28;left:max(8px,env(safe-area-inset-left));bottom:max(5px,env(safe-area-inset-bottom));padding:2px 6px;border-radius:5px;background:#0b1b24df;color:#f6ebd9;font:11px ui-monospace,monospace;pointer-events:none}
+#release-update{position:fixed;z-index:31;top:max(5px,env(safe-area-inset-top));left:50%;translate:-50% 0;width:max-content;max-width:calc(100vw - 20px);padding:6px 10px;border:1px solid #ffd18a;border-radius:8px;background:#ffdf9f;color:#302217;font:600 13px system-ui;pointer-events:none}
 </style></head><body data-world-starting>
 <section id="world-entry" class="glass" aria-label="Conexión con Holodeck" hidden>
   <p id="world-entry-status" role="status"></p>
@@ -407,6 +409,8 @@ body[data-world-starting] :is(canvas,#hud,#dock,#view-tools,#world-tools,#visit-
 <aside id="door-guidance" class="glass" aria-label="Salida marcada" hidden><span class="door-guide-arrow" aria-hidden="true">↑</span><span><span class="door-guide-title"></span><span class="door-guide-distance"></span></span><button type="button" aria-label="Quitar salida marcada">×</button></aside>
 <div id="companion-status" class="glass" role="status">Exploración compartida</div>
 <div id="notice" class="glass" role="status"></div>
+<small id="release-version" aria-label="Versión de Holodeck">HOL0DECK_RELEASE_PLACEHOLDER</small>
+<div id="release-update" role="status" hidden></div>
 <div id="room-passage" tabindex="-1"><span class="passage-energy" aria-hidden="true"></span><div class="passage-copy"><p id="room-passage-message" role="status"></p><span class="passage-orbit" aria-hidden="true"></span><button id="room-passage-retry" type="button" hidden>Reintentar</button></div></div>
 <nav id="dock" class="glass" aria-label="Acciones del taller"><button id="bridge" class="primary" hidden>Conectar islas</button><button id="plant" hidden>Crear luz</button><button id="map-tool" type="button" aria-expanded="false" aria-controls="space-travel" disabled>Minimapa</button><button id="talk" aria-expanded="false" aria-controls="conversation-panel">Conversar</button><button id="undo" hidden class="icon" title="Deshacer mi último cambio" aria-label="Deshacer mi último cambio" disabled>↶</button></nav>
 <section id="pointing" class="glass" aria-label="Indicar un objeto" hidden><p id="point-label"></p><div class="row"><button id="point-visit" class="primary" type="button" hidden>Visitar contenido</button><button id="point-send" class="primary" type="button">Señalar</button><button id="point-edit" type="button" hidden>Editar luz</button><button id="point-clear" type="button">Cancelar</button></div></section>
@@ -447,6 +451,38 @@ body[data-world-starting] :is(canvas,#hud,#dock,#view-tools,#world-tools,#visit-
 <dialog id="activity-dialog" aria-labelledby="activity-title"><header><div><small>Historia compartida</small><h2 id="activity-title">Actividad del mundo</h2></div><button id="activity-close" type="button">Volver al mundo</button></header><div class="activity-toolbar"><button id="activity-refresh" type="button">Ver recientes</button><span id="activity-updates" hidden>Hay cambios nuevos</span><span id="activity-count"></span></div><p id="activity-status" role="status"></p><p id="activity-gap" hidden></p><div class="activity-body"><div class="activity-index"><ol id="activity-list" aria-label="Cambios registrados"></ol><nav aria-label="Recorrer la actividad"><button id="activity-newer" type="button" disabled>Más recientes</button><button id="activity-older" type="button" disabled>Más antiguos</button></nav></div><section class="activity-inspection" aria-label="Detalle del cambio"><div id="activity-detail"><p>Elegí un cambio para verlo.</p></div><div class="activity-actions"><button id="activity-point" type="button" hidden>Señalar cómo está ahora</button><button id="activity-discuss" class="primary" type="button" hidden>Conversar sobre este cambio</button></div></section></div></dialog>
 <script>
 window.SESSION_TOKEN="SESSION.TOKEN.PLACEHOLDER";
+{
+  const running=document.querySelector('#release-version').textContent;
+  const flag=document.querySelector('#release-update');
+  let timer,busy=false;
+  async function readRelease(){
+    if(busy||document.hidden)return;
+    busy=true;
+    try{
+      const response=await fetch('release-status',{cache:'no-store',signal:AbortSignal.timeout?.(3500)});
+      if(!response.ok)return;
+      const {version,update}=await response.json();
+      const message=version&&version!==running?'Holodeck se actualizó. Si hace falta, volvé a entrar.':
+        update?.kind==='restart'?'Holodeck se reiniciará en breve. Puede interrumpirse la conexión.':
+        update?.kind==='live'?'Holodeck recibirá una actualización en breve.':'';
+      if(flag.textContent!==message)flag.textContent=message;
+      flag.hidden=!message;
+    }catch{
+      // Keep the last announcement through a brief disconnect.
+    }finally{busy=false;}
+  }
+  function track(){
+    clearInterval(timer);
+    if(document.hidden)return;
+    void readRelease();
+    timer=setInterval(readRelease,4000);
+  }
+  document.addEventListener('visibilitychange',track);
+  window.addEventListener('pageshow',track);
+  window.addEventListener('pagehide',()=>clearInterval(timer));
+  track();
+}
+
 {
   const entry=document.querySelector('#world-entry');
   const status=document.querySelector('#world-entry-status');

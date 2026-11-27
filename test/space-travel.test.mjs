@@ -18,7 +18,7 @@ test('crossing a house threshold uses both sides of the same door',()=>{
   const interior={id:'studio',exitDoor:{x:0,y:.11,z:4.9},
     exteriorDoor:{x:-2.65,y:.11,z:15.5,facing:-1},exits:[]};
   const landing=arrivalDoor(exterior,interior);
-  assert.deepEqual(landing,{x:0,y:.11,z:4,yaw:180});
+  assert.deepEqual(landing,{x:0,y:.11,z:4,yaw:180,doorway:true});
   assert.ok(doorLocation(landing).split(',').map(Number).every(Number.isFinite));
   assert.deepEqual(arrivalDoor(interior,exterior),interior.exteriorDoor);
   assert.equal(arrivalDoor(interior,interior),null);
@@ -29,9 +29,10 @@ test('an interior crossing uses the authorized return passage in the destination
   const from={id:'gallery'};
   const next={id:'tower',exits:[{to:'workshop',door:{x:4}},{to:'gallery',door}]};
   assert.deepEqual(arrivalDoor(from,next),door);
-  assert.deepEqual(arrivalDoor(from,{...next,exits:[{to:'gallery',kind:'door',door}]}),{...door,yaw:270});
+  assert.deepEqual(arrivalDoor(from,{...next,exits:[{to:'gallery',kind:'door',door}]}),{...door,yaw:270,doorway:true});
   assert.deepEqual(arrivalDoor(from,{...next,exits:[{to:'gallery',kind:'door',door:{...door,yaw:180}}]}),
-    {...door,yaw:0});
+    {...door,yaw:0,doorway:true});
+  assert.deepEqual(arrivalDoor(from,{...next,exits:[{to:'gallery',kind:'portal',door}]}),{...door,yaw:270,doorway:true});
   assert.equal(arrivalDoor({id:'unlinked'},next),null);
 });
 

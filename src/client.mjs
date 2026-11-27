@@ -443,7 +443,7 @@ function doubleSpace(event){
 let outdoorReady=()=>Boolean(geometryProbe?.snapshot());
 let outdoorArrivalReady=()=>outdoorReady();
 let confirmedRingPose=null;
-let updateDoor=()=>{},remoteScene=null,roomModel=null,networkScope=null,arrival=null;
+let updateDoor=()=>{},remoteScene=null,roomModel=null,networkScope=null,arrival=null,doorwayArrival=null;
 let releaseLightweightGlazing=null;
 let releaseFoyerFloor=null;
 let matterStyleScope=null;
@@ -645,6 +645,7 @@ function applySpace(next,anchor){
   const changed=next.id!==activeSpace.id;
   const leavingOutside=activeSpace.id==='outside'&&next.id!=='outside';
   activeSpace=next;inside=next.id!=='outside';arrival=anchor;
+  doorwayArrival=anchor?.doorway?anchor:null;
   if(leavingOutside){
     closePreview({settled:true});
     client.getRenderer()?.setMMLConfiguration({},window.SESSION_TOKEN);
@@ -831,7 +832,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       if(activeSpace?.outdoorTerrain!==true)return null;
       const position=client.getLocalCharacterState()?.position;
       return position&&position.x>21&&position.x<32&&position.z<-6&&position.z>-26?'valley-cave':null;
-    },()=>Boolean(tableFlight.inspectParts));
+    },()=>Boolean(tableFlight.inspectParts),()=>doorwayArrival);
     // The ring's terrain and ground movement are local. MML scenery may
     // reconnect or finish later without holding the presence spawn behind it.
     const dressingProgress=outsideRing()?new LoadingProgressManager():options.loadingProgressManager;
