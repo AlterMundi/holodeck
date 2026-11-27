@@ -1,5 +1,57 @@
 # Current MVP work
 
+## November 27 — Quintana sky and companion speech
+
+Protected release `f57d1caec24e` shipped the photographic sky, local-weather
+projection, avatar practicals and contact shadows, vertical steering, and
+Navegante's luminous mouth. The source astronomy uses José de la Quintana
+and a fixed north/east/up frame. The Milky Way photograph is a calibrated
+visual approximation for exploration. Telescope pointing needs a
+separately validated astrometric catalog and alignment. The Sun and Moon
+use topocentric ephemerides, with solar-disc occlusion and daylight
+attenuation. The local-weather projection uses the latest available
+Open-Meteo model interval. Its precipitation and storm effects express
+modeled conditions. Exact lightning observations still need a source.
+
+Reading and rendering use one bounded weather sample. The exterior client
+checks at most every five minutes. The server shares one in-flight read,
+keeps no history, rejects oversized or invalid replies, and clears
+effects once the last sample reaches 30 minutes. The astronomy and
+procedural cloud motion continue during a weather outage.
+
+ESO/S. Brunier's `eso0932a` is credited with its source link in Ajustes.
+The shipped 4096 × 2048 WebP derives from the 6000 × 3000 JPEG public
+release under [ESO's published terms](https://www.eso.org/public/outreach/copyright/).
+Its source SHA-256 is `60400c92c54b7c1bd12299c69e83b16e5b6256e7dabacc478c021758ecd28179`.
+To recreate the derivative, use FFmpeg with Lanczos resampling and
+`-c:v libwebp -q:v 85`. Attribution and the photographic approximation
+travel with the panorama.
+
+The shipped Navegante asset is `ace626f00c00bcf1f0439d7712e8106c7cceaa36078e3c1d8b55656639ba8ced`.
+Char Design's mouth commit builds on the existing authored gait export.
+A Chromium fixture used the installed canonical Conversation audio
+analysis and the real Holodeck surface bridge. A controlled local audio
+signal opened the morph to 0.9975, and silence returned it to zero.
+The deployed HTTPS bundle and served GLB matched the tested package.
+The fixture did not contact the model or voice provider.
+
+## November 27 — A2UI modules on the instrument benches
+
+The existing station map owns bench coordinates. On an in-world bench,
+numeric A2UI ranges use a brass knob or linear fader. Actions use physical
+keys. Remaining fields, selectors, navigation, and status stay on the panel.
+The narrow Weaver layout keeps its dedicated accessible reading area.
+The physical modules share the same model, revision guards and action
+writer. A pointer drag previews locally. Release stages the range;
+the published Apply action owns the write. Keyboard users can reach the
+same controls through native range inputs and buttons.
+
+Shaper's WebGL fixture staged a fader edit and applied it from the
+3D key. A newer server revision invalidated the stale draft, and the
+next action used the new authoritative value. The scene groups detached on
+exit. The fixture used a controlled instrument service without hardware.
+The existing benches accommodate the current modules and their access aisles.
+
 ## November 27 — Concurrent edits in Harmonic Lab
 
 Protected release `c1e8d2d4d88c` ties local native drafts to the

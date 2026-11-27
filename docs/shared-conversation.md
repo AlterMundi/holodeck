@@ -8,6 +8,12 @@ not a new goal or a claim of delivery.
 
 ## Current state
 
+The toolbar Mic keeps the conversation panel closed. The world HUD shows
+opening, recording, processing and the available partial transcript. A
+successful toolbar recording enables spoken replies; the speaker control
+can mute them. The regular Conversation composer and its canonical delivery
+receipt remain the owners of capture and playback.
+
 Holodeck directly embeds canonical Conversation at the
 [protected entrance](https://compaii.dmn.homes/holodeck/).
 [Current package and receiving evidence](STATUS.md#selected-receiving-release)
