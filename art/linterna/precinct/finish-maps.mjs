@@ -12,20 +12,22 @@ const files={
 // Embed the selected JPEG bytes using the exporter writer. The offline build
 // does not need a canvas or resample the textures. The GLB uses ordinary PBR
 // material textures and has no external texture URLs or shader dependency.
-export function embedFinishMaps(writer){
+export function embedFinishMaps(writer, privateMaps={}){
   const indices=new Map();
   return {
     async writeMaterialAsync(material,definition){
       const name=material.userData.linternaMap;
       if(!name)return;
-      if(!files[name])throw Error('Unknown precinct finish '+name);
       if(!indices.has(name)){
+        const supplied=privateMaps[name];
+        const file=files[name];
+        if(!supplied&&!file)throw Error('Unknown precinct finish '+name);
         const json=writer.json;
         json.images??=[];
         json.samplers??=[];
         json.textures??=[];
         const image=json.images.length;
-        const jpeg=await readFile(files[name]);
+        const jpeg=supplied??await readFile(file);
         const bufferView=await writer.processBufferViewImage(new Blob([jpeg],{type:'image/jpeg'}));
         json.images.push({name,bufferView,mimeType:'image/jpeg'});
         const sampler=json.samplers.length;

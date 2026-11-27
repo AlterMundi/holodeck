@@ -115,3 +115,25 @@ Its envelope and corridor use the existing approach geometry. The walkable
 precinct, expanded manifest, and facade are separate selections in a receiving
 release. Use the existing exterior offer and keep all shared layout IDs,
 grants and live app bindings under their owning integration.
+
+### Importing the HD portico
+
+```sh
+node art/linterna/precinct/import-hd-portico.mjs AUTHORIZED_HD_SRC OUTPUT_DIR [BAKED_MASONRY_JPEG]
+```
+
+Pass a local copy of the selected Drive edition's editable `src` directory.
+The importer calls its original shrine and architectural generators offline,
+using reduced subdivisions and roof-tile density. It records the input
+hashes and the original and resulting triangle counts. Only the exterior
+mesh is exported. The HD viewer, terrain, lights and walkthrough remain
+outside this build. The visual model fits the East 1 envelope and leaves the
+threshold position, native door actions and existing collision authority
+with Holodeck.
+
+The portico uses the HD palette in standard glTF materials. The optional
+masonry map samples the original ashlar shader's base color on a +Z-facing
+plane spanning X `[-2, 2]` and Y `[0, 2.5]` metres, stored top-down in an
+sRGB JPEG under 48,000 bytes. Keep the authorized source and derived art in
+their selected storage. The importer does not bundle the Drive source into
+the runtime or replace the established facade automatically.

@@ -1,7 +1,7 @@
 import {Float32BufferAttribute, Group, Mesh} from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-export function batchModel(root, {retainUV = false, finishUV = false} = {}) {
+export function batchModel(root, {retainUV = false, finishUV = false, retainColors = false} = {}) {
   const batches=new Map();
   root.updateMatrixWorld(true);
   root.traverse(source=>{
@@ -9,7 +9,8 @@ export function batchModel(root, {retainUV = false, finishUV = false} = {}) {
     const geometry=source.geometry.clone();
     const textured=finishUV && source.material.userData.linternaMap;
     for (const attr of Object.keys(geometry.attributes)) {
-      if (attr!=='position' && attr!=='normal' && !((retainUV||textured) && attr==='uv'))
+      if (attr!=='position' && attr!=='normal' && !((retainUV||textured) && attr==='uv') &&
+          !(retainColors && attr==='color'))
         geometry.deleteAttribute(attr);
     }
     if (textured && !geometry.hasAttribute('uv')) {
