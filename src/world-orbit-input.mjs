@@ -1,6 +1,6 @@
 // Keep the host's picking gestures and touch orbit. Mouse look can use raw
 // movement while locked so a sustained drag can pass the edge of the screen.
-export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false,inspection,canLoop=()=>false){
+export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false,inspection,canLoop=()=>false,canPitch=()=>false){
   const document=canvas.ownerDocument;
   const abort=new AbortController(),capture={capture:true,signal:abort.signal};
   let rightHeld=false,locked=false,pan=null,loopPitch=null,loopPole=0;
@@ -27,7 +27,15 @@ export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false,
   const turn=(x,y)=>{
     const scale=20*sensitivity();
     camera.targetTheta+=x/canvas.clientWidth*scale;
-    const next=camera.targetPhi-y/canvas.clientHeight*scale;
+    const delta=y/canvas.clientHeight*scale;
+    if(canPitch()){
+      // Apply only the pilot's displacement. There is no pitch timer,
+      // pole threshold, or queued turn when the pointer stops.
+      camera.phi-=delta;
+      camera.targetPhi=camera.phi;
+      return;
+    }
+    const next=camera.targetPhi-delta;
     if(!rightHeld||!canLoop())loopPitch=null;
     else if(loopPitch===null&&(next<camera.minPolarAngle||next>camera.maxPolarAngle)){
       loopPitch=Math.PI/2-camera.targetPhi;
@@ -82,6 +90,18 @@ export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false,
       event.stopImmediatePropagation();
       return;
     }
+    if(event.pointerType==='touch'&&canPitch()&&!blocked()&&!camera.isFlyCameraOn()&&
+        canvas.clientWidth&&canvas.clientHeight&&camera.activePointers.size===1){
+      const pointer=camera.activePointers.get(event.pointerId);
+      if(pointer){
+        turn(event.clientX-pointer.x,event.clientY-pointer.y);
+        pointer.x=event.clientX;
+        pointer.y=event.clientY;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+      return;
+    }
     if(event.pointerType!=='mouse')return;
     if(pan?.id===event.pointerId){
       if(!(event.buttons&4)||!inspect(event)||!canvas.clientWidth||!canvas.clientHeight){pan=null;return;}
@@ -103,7 +123,7 @@ export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false,
       pointer.y=event.clientY;
     }else return;
     event.preventDefault();
-    if(document.pointerLockElement===canvas)event.stopImmediatePropagation();
+    if(canPitch()||document.pointerLockElement===canvas)event.stopImmediatePropagation();
   },capture);
   const releaseTouches=()=>{
     for(const id of touchIds)camera.activePointers.delete(id);

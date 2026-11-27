@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {Quaternion, Vector3} from 'three';
 import {ToroidalLocomotion, toroidalRotation} from '../src/toroidal-locomotion.mjs';
-import {flightLoopIntent,steerToroidalFlight} from '../src/toroidal-mml.mjs';
+import {steerToroidalFlight} from '../src/toroidal-mml.mjs';
 import {
   TOROIDAL_OVERLOOK, TOROIDAL_TERRAIN, terrainElevation, terrainFrame, terrainPosition, terrainWaterDepth, toroidalSpurPoint,
 } from '../src/toroidal-terrain.mjs';
@@ -309,61 +309,23 @@ test('the second tap adds one airborne jump and does not arm a third',()=>{
   assert.equal(motion.grounded,true);
 });
 
-test('a sustained pull converts existing thrust into a moving loop and leaves along the entry heading',()=>{
-  for(const pull of [-1,1]){
-    const motion=new ToroidalLocomotion({u:.4,v:.25,height:33,ground:()=>0,cameraSteering:true});
-    simulate(motion,.8,90,{flight:true,sprint:true,forward:1,travelYaw:0});
-    const entryHeight=motion.height;
-    const path=[];
-    for(let frame=0;frame<315;frame++){
-      motion.update(1/90,{flight:true,sprint:true,forward:1,travelYaw:0,loopPull:pull});
-      if(motion.verticalLoop.pose)path.push({pitch:motion.verticalLoop.pose.pitch,position:motion.pose().position,
-        up:motion.height,cross:motion.crossSpeed});
-    }
-    assert.ok(path.length>200);
-    const beginning=path[0],half=path.at(Math.floor(path.length/2)),exit=path.at(-1);
-    assert.ok((half.up-entryHeight)*pull>18);
-    assert.ok(half.cross<-19);
-    assert.ok(exit.cross>19);
-    assert.ok(Math.abs(exit.up-beginning.up)<.6);
-    assert.ok(path.some(p=>Math.hypot(p.position.x-beginning.position.x,p.position.z-beginning.position.z)>8));
-    assert.equal(motion.verticalLoop.pose,null);
-  }
-});
-
-test('hover cannot start a loop, and a downward pull requires space under the avatar',()=>{
-  const input={flight:true,forward:1,loopPull:-1};
-  const hover=new ToroidalLocomotion({u:.4,v:.25,height:30,ground:()=>0});
-  simulate(hover,1,90,input);
-  assert.equal(hover.verticalLoop.pose,null);
-  const low=new ToroidalLocomotion({u:.4,v:.25,height:7,ground:()=>0,cameraSteering:true});
-  simulate(low,1,90,{...input,sprint:true});
-  assert.equal(low.verticalLoop.pose,null);
-});
-
-test('holding forward at either camera pole turns a near-vertical cruise through a complete loop',()=>{
+test('holding a fixed pitch keeps climbing or descending until the pilot changes it',()=>{
   for(const sign of [-1,1]){
-    const polarAngle=(sign===1?.95:.05)*Math.PI;
-    const direction=Math.PI;
-    const intent=flightLoopIntent(direction,polarAngle,false);
-    assert.deepEqual(intent,{pull:sign,atPole:true});
-    const {forward,climb}=steerToroidalFlight(direction,polarAngle);
-    const input={flight:true,forward,climb,travelYaw:.8};
-    const motion=new ToroidalLocomotion({u:.4,v:.25,height:33,ground:()=>0,cameraSteering:true});
-    simulate(motion,.5,90,input);
-    assert.ok(Math.hypot(motion.ringSpeed,motion.crossSpeed)<1);
-    const path=[];
-    for(let frame=0;frame<305;frame++){
-      motion.update(1/90,{...input,loopPull:intent.pull,loopAtPole:intent.atPole});
-      if(motion.verticalLoop.pose)path.push({...motion.verticalLoop.pose,
-        along:motion.ringSpeed*Math.sin(.8)+motion.crossSpeed*Math.cos(.8),vertical:motion.flightVerticalSpeed});
+    const motion=new ToroidalLocomotion({u:.4,v:.25,height:35,ground:()=>0,cameraSteering:true});
+    function fly(pitch,duration){
+      const {direction,forward,climb}=steerToroidalFlight(Math.PI,Math.PI/2,false,pitch);
+      const start=motion.height;
+      simulate(motion,duration,90,{flight:true,forward,climb,yaw:0,travelYaw:direction-Math.PI});
+      assert.equal(motion.yaw,0);
+      return motion.height-start;
     }
-    assert.ok(path[0].pitch*sign>1.35);
-    assert.ok(path.some(p=>p.along<-4));
-    assert.ok(path.some(p=>p.vertical*sign<-4));
-    assert.ok(path.at(-1).turned>6.2);
-    assert.equal(motion.verticalLoop.pose,null);
+    // A fixed vertical intent remains vertical and doesn't reverse on its own.
+    assert.ok(fly(sign*Math.PI/2,2)*sign>9.9);
+    assert.ok(Math.hypot(motion.ringSpeed,motion.crossSpeed)<1e-10);
+    assert.ok(fly(sign*Math.PI,.6)**2<1e-8);
+    assert.ok(motion.crossSpeed<-4.9);
+    assert.ok(fly(sign*3*Math.PI/2,2)*sign<-9.9);
+    assert.ok(fly(sign*2*Math.PI,.6)**2<1e-8);
+    assert.ok(motion.crossSpeed>4.9);
   }
-  assert.equal(flightLoopIntent(Math.PI,Math.PI/2,false),null);
-  assert.equal(flightLoopIntent(undefined,Math.PI*.95,true),null);
 });

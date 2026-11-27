@@ -78,7 +78,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
   function animatedUpdate(state,dt){
     // Remove last frame's extra limb rotations before the base mixer runs.
     for(const entry of actors.values())restore(entry);
-    const {outdoor,flying,boosting,grounded:localGrounded,table,crouch,gaze,peerGaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null,wake=null,splash=null,waterWake=null,aimPitch=null,loopPitch=null,verticalLoop=null,trickAge=Infinity}=context();
+    const {outdoor,flying,boosting,grounded:localGrounded,table,crouch,gaze,peerGaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null,wake=null,splash=null,waterWake=null,aimPitch=null,loopPitch=null,trickAge=Infinity}=context();
     const now=clock?.();
     const elapsed=now!==undefined&&previousTime!==undefined?(now-previousTime)/1000:dt;
     previousTime=now;
@@ -334,24 +334,19 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       // The movement controller keeps a signed pitch through the vertical.
       // The model's vertical rest frame starts 90 degrees from cruise.
       const aerobatic=isLocal&&floating&&Number.isFinite(loopPitch);
-      const arc=isLocal&&explicitFlight?verticalLoop:null;
+      const pilot=isLocal&&explicitFlight&&aerobatic;
       const tuck=trick?.88*Math.sin(Math.PI*trickAge/.53):0;
       const flip=trick?2*Math.PI*smooth(trickAge/.53):0;
       pitch.setFromAxisAngle(pitchAxis,(aerobatic?Math.PI/2-loopPitch:pitchValue)+flip);
-      if(arc){
-        const target=Math.PI/2-arc.pitch;
-        const difference=Math.atan2(Math.sin(target-pitchValue),Math.cos(target-pitchValue));
-        pitch.setFromAxisAngle(pitchAxis,arc.blend>=.999?target:pitchValue+difference*arc.blend);
-      }
       entry.rotation=character.quaternion;
       entry.unpitched.copy(entry.rotation);
-      if(airYaw)entry.rotation.multiply(yaw.setFromAxisAngle(yawAxis,airYaw*(1-(arc?.blend??0))));
+      if(airYaw&&!pilot)entry.rotation.multiply(yaw.setFromAxisAngle(yawAxis,airYaw));
       if(entry.lowWeight>0||entry.hoverWeight>0||w>0){
         character.getWorldQuaternion(bodyFacing);
         right.copy(pitchAxis).applyQuaternion(bodyFacing);
       }
       tilt.copy(pitch);
-      if(bankValue&&!arc)tilt.multiply(roll.setFromAxisAngle(rollAxis,bankValue));
+      if(bankValue)tilt.multiply(roll.setFromAxisAngle(pilot?yawAxis:rollAxis,bankValue));
       entry.rotation.multiply(tilt);
       entry.applied.copy(entry.rotation);
       if(entry.airRig&&(lift>.002||sink>.002||trick)){
