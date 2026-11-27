@@ -97,7 +97,7 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
       viewCamera.updateProjectionMatrix();
       placeHudInViewport(parent,viewCamera,{width,height,x:width/2-(side?.83*scale:0),
         y:(height-total*scale)*.43+bounds.top*scale,pixelsPerUnit:scale,depth:3});
-      outbound.setTextDensity(nativeId,{cssPixelsPerUnit:Math.round(scale),pixelRatio:layer.pixelRatio,fontSize:17});
+      outbound.setTextDensity(nativeId,{cssPixelsPerUnit:Math.round(scale),pixelRatio:layer.pixelRatio,fontSize:width<520?14:17});
       outbound.setChoicePresentation(nativeId,'overlay');
       outbound.update();
       layer.invalidate();
