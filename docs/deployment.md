@@ -131,6 +131,16 @@ leaves the bench. The panel supplies service readiness. Actual device output is 
 observation. The Holodeck server does not
 proxy panel requests or actuate instruments.
 
+The installed Guitar station requests the existing panel's Guitar
+projection. Once the panel confirms the selected receiver, the station
+closes that frame and subscribes directly to its read-only A2UI stream
+with the same visitor session. It presents the controller's state next
+to the selected Home review edition. The mechanism, power switch and
+neck support each select the exact scene and part from that edition.
+Continue to use the device-local controller for writes to the board.
+The other benches keep their existing launch links until their
+receiving A2UI surfaces are selected.
+
 The optional `gallery` receiving selection names an existing interior
 `room` and two distinct exact `artifact_review` pins (`draft` and `archive`,
 both with adapter `interactive_3d`). The finished edition continues to come

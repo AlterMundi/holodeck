@@ -1,5 +1,23 @@
 # Current MVP work
 
+## November 27 — H.B. Guitar in the Beacon chamber
+
+Protected release `39ebfc7a2325` adds the live Guitar A2UI station at the
+existing chamber workstation and retains `6ec058a43fc7` for rollback.
+The package uses the deployed DND baseline and changes only the page and
+browser bundle. All 88 installed files matched, and the protected HTTPS
+bundle matched for the existing Home technical reader.
+
+A Chromium station trial consumed the real Legion state through the
+installed panel, displayed the missing USB board and loaded the
+mechanism, switch door and neck support from exact Home edition
+`750753c3`. It closed the live view without sending a command. 495
+repository tests passed and two were skipped. The Home technical reader
+can read the protected bundle and is refused at the human page.
+An authenticated human visit in the live room and use with the physical
+board remain pending. Spatializer, Weaver and Shaper retain their
+existing panel handoffs while their receiving projections are qualified.
+
 ## November 27 — Paired-human DND for planned restarts
 
 Protected `6ec058a43fc7` serves `23c68fe` with immediate rollback
