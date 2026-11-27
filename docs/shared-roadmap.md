@@ -1162,7 +1162,10 @@ exposed a green strip at the [western woodland spur](environment-art-revamp.md#w
 where the existing path removes grass. The new dirt material follows that
 segment. Exact paired dusk renders covered Normal on RTX 2060 and
 Lightweight on a Raspberry Pi 5. Frame-resolved visual review and longer
-thermal and participant checks remain open.
+thermal and participant checks remain open. The [curved woodland
+fronds](environment-art-revamp.md#curved-woodland-fronds) improve the
+existing fern silhouette with the same roots and instanced draw.
+The objective is paused pending a review of the action plan.
 
 Use the arrival meadow and its wooded edge for one continuous first pass.
 Match the grass roots to a short-cover ground material and add dense low

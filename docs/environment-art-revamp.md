@@ -267,6 +267,24 @@ past the object. Check daylight and dusk or night, where a dark terrain can
 hide sparse ground cover and leave an abrupt seam. Keep the matched view in
 the environment review evidence when resolving a reported example.
 
+### Curved woodland fronds
+
+Source `5cc90a2` gives the existing ferns irregular arching ribs,
+staggered pinnae and colour that rises from a cool core to lighter tips.
+The mesh uses 195 opaque triangles per fern with the existing instanced
+draw and existing roots in both graphics profiles. It adds no assets
+and changes no collision. Fable recommended curved crowns, notched
+outlines and a folded leaflet. Opus verified the winding and triangle
+count against the final function.
+
+One RTX 2060 browser compared the exact same fern and woodland walk
+at Argentine noon and dusk. Normal and Lightweight both held 16.7 ms
+median and 16.7–16.8 ms p95 at 850×552, with the same respective draw
+counts of 135 and 97. Both completed a controlled keyboard walk. The
+suite passed 492 tests with two skips. Participant and additional
+device checks remain open. This is a local foliage improvement within
+the wider meadow and woodland work.
+
 ### Planted cave exit
 
 Source `2349c0b` gives the outlet a larger uphill belt of rooted grass,

@@ -1,5 +1,17 @@
 # Current MVP work
 
+## November 27 — Curved woodland fronds
+
+Protected `315024952954` serves `5cc90a2` with immediate rollback
+`e1012ca963fb`. The existing ferns use arching ribs and folded
+leaflets in the same opaque instanced draw. An RTX 2060 compared
+the same forest and fern by day and dusk in both graphics profiles.
+The protected client, worker, server, room art, health and access
+matched. Thirteen state files matched exactly and the room changed
+only through participant presence. The visual revamp objective
+remains paused.
+[Visual and device evidence](environment-art-revamp.md#curved-woodland-fronds).
+
 ## November 26 — Planted cave exit
 
 Protected `e1012ca963fb` serves `2349c0b` with immediate rollback
