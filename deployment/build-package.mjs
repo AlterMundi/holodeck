@@ -5,6 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { brotliCompressSync, constants as zlib } from 'node:zlib';
 import {SAND3D_TRAIL_REVISIONS} from '../src/sand3d-trail-assets.mjs';
+import {personalAvatarFile,personalAvatarSha256} from '../src/human-avatars.mjs';
 import {RESIDENCE_REVISIONS} from '../src/toroidal-residence-assets.mjs';
 import {ANIMATION_ASSET_REVISIONS} from '../src/packed-art.mjs';
 import {VALLEY_ASSET_REVISIONS} from '../src/continuous-valley.mjs';
@@ -30,6 +31,8 @@ await build({entryPoints:{server:join(root,'src/server.mjs'),'xhr-sync-worker':j
 await mkdir(join(stage,'runtime/jsdom/lib/jsdom/browser'),{recursive:true});
 await copyFile(join(root,'node_modules/jsdom/lib/jsdom/browser/default-stylesheet.css'),join(stage,'runtime/jsdom/lib/jsdom/browser/default-stylesheet.css'));
 const digest=b=>createHash('sha256').update(b).digest('hex');
+if(digest(await readFile(join(root,'public/assets',personalAvatarFile)))!==personalAvatarSha256)
+  throw Error('The personal avatar must match its qualified GLB');
 async function copyTree(from,to){await mkdir(to,{recursive:true});for(const entry of await readdir(from,{withFileTypes:true})){const src=join(from,entry.name),dst=join(to,entry.name);if(entry.isDirectory())await copyTree(src,dst);else if(entry.isFile())await copyFile(src,dst);else throw Error('Regular selected files only');}}
 await copyTree(join(root,'public'),join(stage,'public'));await copyTree(join(root,'build'),join(stage,'build'));
 // Preserve the qualified bytes and their existing URLs with one disk representation.

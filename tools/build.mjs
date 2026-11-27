@@ -4,9 +4,13 @@ import { createHash } from 'node:crypto';
 import { readFile,writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { avatarModelFiles } from '../src/human-avatars.mjs';
+import { avatarModelFiles, personalAvatarFile } from '../src/human-avatars.mjs';
 import {ensureMmlServerAuthContext} from './mml-server-auth-context.mjs';
 ensureMmlServerAuthContext({check:true});
+const lock=JSON.parse(await readFile(new URL('../package-lock.json',import.meta.url),'utf8'));
+const renderer=JSON.parse(await readFile(new URL('../package.json',import.meta.resolve('proyeccion/spatial-hud')),'utf8'));
+if(renderer.version!==lock.packages['node_modules/proyeccion'].version)
+  throw Error('Install the locked Proyección renderer before building Holodeck');
 
 // The pinned MML model resource aborts its own fetch when its last handle is
 // removed. Handle that specific rejection when a room is unmounted mid-load.
@@ -158,12 +162,20 @@ const avatarRendering={
         this.retireWorker(worker);
       }`],
         ['    this.workerPool = new GLTFLoadingWorkerPool();','    this.workerPool = null;'],
+        ['      this.setAnimationFromFile(animationConfig.idleAnimation, AnimationState.idle, true);',
+          '      const authoredIdle = this.mesh.animations.find(clip => clip.name === "hero_idle");\n      this.setAnimationFromFile(authoredIdle ?? animationConfig.idleAnimation, AnimationState.idle, true);'],
         [`      const processedBuffer = await this.processGLTFInWorker(
         fileUrl,
         maxTextureSize,
         abortController
       );
-      return await this.loadFromBuffer(processedBuffer, fileUrl);`,`      let processedBuffer;
+      return await this.loadFromBuffer(processedBuffer, fileUrl);`,`      if (new URL(fileUrl, document.baseURI).href === new URL(holodeckPersonalAvatar, document.baseURI).href) {
+        const direct = await this.modelLoader.load(fileUrl, undefined, abortController);
+        if (abortController?.signal.aborted) return null;
+        direct.group.animations = direct.animations.filter(clip => clip.name === "hero_idle" || clip.name === "hero_landing");
+        return direct.group;
+      }
+      let processedBuffer;
       try {
         processedBuffer = await this.processGLTFInWorker(fileUrl, maxTextureSize, abortController);
       } catch (error) {
@@ -186,6 +198,7 @@ const avatarRendering={
       const graphicsModule=fileURLToPath(new URL('../src/render-pixel-budget.mjs',import.meta.url));
       const prelude=`import { playerNameplate } from ${JSON.stringify(nameplateModule)};
 import { usesLightGraphics } from ${JSON.stringify(graphicsModule)};
+const holodeckPersonalAvatar = ${JSON.stringify('assets/'+personalAvatarFile)};
 const holodeckAvatarFiles = new Set(${JSON.stringify(avatarModelFiles)});
 function fallbackAvatarModel(fileUrl) {
   if (fileUrl === lowPolyLoDModelURL) return true;

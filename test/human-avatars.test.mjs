@@ -4,7 +4,7 @@ import {mkdirSync,mkdtempSync,readFileSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {test} from 'node:test';
-import {HumanAvatarProfiles,humanWardrobeAssets} from '../src/human-avatars.mjs';
+import {HumanAvatarProfiles,humanWardrobeAssets,personalAvatarFile} from '../src/human-avatars.mjs';
 import {createHolodeck} from '../src/server.mjs';
 
 const session=(id,kind='human')=>({actor:{kind,id}});
@@ -54,6 +54,24 @@ test('explicit avatar choices outlive session leases and have bounded durable re
   assert.equal(saved.choices.length,64);
   assert.equal(restored.preference(session('human:fixture-0').actor),null);
   assert.equal(restored.preference(session('human:fixture-64').actor),3);
+});
+
+test('only the configured paired human gets Explorer by default and can still choose a wardrobe',()=>{
+  const paired=session('human:paired').actor,guest=session('human:guest').actor;
+  let saved;
+  const previous=new HumanAvatarProfiles(null,null,null,value=>{saved=value;});
+  previous.choose(paired,4);
+  previous.choose(guest,6);
+  const entering=new HumanAvatarProfiles(null,null,saved,value=>{saved=value;},paired.id);
+  assert.equal(entering.model(paired),personalAvatarFile);
+  assert.equal(entering.preference(paired),null);
+  assert.equal(entering.model(guest),'avatar-wardrobe-v1-3.glb');
+  assert.equal(entering.choose(paired,4),true);
+  const returning=new HumanAvatarProfiles(null,null,saved,value=>{saved=value;},paired.id);
+  assert.equal(returning.model(paired),'avatar-wardrobe-v1-1.glb');
+  assert.equal(returning.choose(paired,null),true);
+  assert.equal(returning.model(paired),personalAvatarFile);
+  assert.equal(new HumanAvatarProfiles(null,null,saved).model(guest),'avatar-wardrobe-v1-3.glb');
 });
 
 test('appearance writes require the authenticated actor and survive a runtime restart',async t=>{

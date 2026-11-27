@@ -2,6 +2,7 @@ import {Euler,Quaternion,Vector3} from 'three';
 import {matterAvatarScale} from './matter-flight.mjs';
 import {TabletopGlance} from './tabletop-attention.mjs';
 import {bindHumanoidFlightRig} from './humanoid-flight-poses.mjs';
+import {bindPersonalAvatarLanding} from './personal-avatar-landing.mjs';
 import {bindHumanoidCrouch} from './humanoid-crouch.mjs';
 import {bindHumanoidStandingIdle} from './humanoid-standing-idle.mjs';
 import {groundGaitSample} from './humanoid-ground-gait.mjs';
@@ -52,6 +53,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
   }
   function restore(entry){
     entry.glance?.restore();
+    entry.landing?.restore();
     entry.mouth?.restore();
     entry.accents?.restore();
     entry.idleRig?.restore();
@@ -67,7 +69,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       boost:0,boostRelease:0,lowerWeight:0,airTime:0,rise:0,flightAge:0,poseTime:0,observedFlight:false,
       mode:null,poseMode:null,idleDwell:0,idleTime:0,idleWeight:0,
       medium:null,loopTime:0,strokeTime:1.40,wadeWeight:0,phase:0,
-      gaitPhase:null,unsupported:0,fall:0,absorbAge:Infinity,absorb:0,brakeAge:Infinity,brake:0,lastSpeed:0});
+      gaitPhase:null,unsupported:0,fall:0,landingAge:Infinity,absorbAge:Infinity,absorb:0,brakeAge:Infinity,brake:0,lastSpeed:0});
     for(const follower of [entry.turn,entry.pitch,entry.bank,entry.lift,entry.sink,
       entry.thrust,entry.lean,entry.sway,entry.lead,entry.aim])follower.reset();
     entry.heading.set(0,0,0);
@@ -128,7 +130,8 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       if(entry?.mesh!==mesh){
         entry={mesh,last:new Vector3().copy(position),modified:new Map(),
           airRig:bindHumanoidFlightRig(mesh),crouchRig:bindHumanoidCrouch(mesh),
-          idleRig:bindHumanoidStandingIdle(mesh),accents:bindHumanoidGroundAccents(mesh),
+          idleRig:mesh.animations?.some(clip=>clip.name==='hero_idle')?null:bindHumanoidStandingIdle(mesh),
+          landing:bindPersonalAvatarLanding(mesh),accents:bindHumanoidGroundAccents(mesh),
           idlePhase:(id%10000)*2.3999632297,
           unpitched:new Quaternion(),applied:new Quaternion(),heading:new Vector3(),shift:new Vector3(),
           turn:new Follower(8.5),pitch:new Follower(7.5),bank:new Follower(10),lift:new Follower(9),sink:new Follower(4.5),
@@ -213,12 +216,21 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
         entry.unsupported+=step;
         entry.fall=Math.max(entry.fall*(1-ease(step,3)),-rising);
       }else{
+        if(entry.landing&&(touchedDown||entry.unsupported>.16)&&standing&&!underwater&&glanceMotion&&!atTable)entry.landingAge=0;
         if(entry.unsupported>.16&&standing&&!underwater&&glanceMotion&&!atTable){
           entry.absorb=.28+.56*clamp((entry.fall-1)/6);
           entry.absorbAge=0;
         }
         entry.unsupported=0;entry.fall=0;
       }
+      if(!standing||!glanceMotion||atTable)entry.landingAge=Infinity;
+      const playLanding=()=>{
+        if(!entry.landing||entry.landingAge>=entry.landing.duration)return;
+        entry.landingAge+=step;
+        const remaining=entry.landing.duration-entry.landingAge;
+        entry.landing.apply(entry.landingAge,
+          smooth(entry.landingAge/.09)*smooth(remaining/.23)*Math.max(.25,1-speed/7));
+      };
       entry.absorbAge+=step;
       const previousSpeed=entry.planarSpeed;
       entry.planarSpeed+=(speed-entry.planarSpeed)*fade;
@@ -300,6 +312,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       };
       if(settled){
         idle();
+        playLanding();
         entry.glance?.apply(character,entry.head,glanceTarget,dt);
         continue;
       }
@@ -361,6 +374,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       }
       idle();
       entry.accents?.apply(character,trunkPitch+(floating?0:aim*.35),trunkLead,trunkRoll,floating?0:aim*.88);
+      playLanding();
       entry.glance?.apply(character,entry.head,glanceTarget,dt,1-w*.8);
       const airSwing=entry.airRig?0:w,hoverSwing=entry.airRig?0:entry.hoverWeight;
       if(entry.airRig&&entry.crouchRig)continue;

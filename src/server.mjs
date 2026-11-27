@@ -107,8 +107,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     }catch{avatarChoices=null;avatarChoicesUnavailable=true;console.error('Holodeck avatar choices could not be restored');}
   }
   let avatars;
-  try{avatars=new HumanAvatarProfiles(avatarAssignments,saveAvatarAssignments,avatarChoices,saveAvatarChoices);}
-  catch{avatars=new HumanAvatarProfiles(null,null,avatarChoices,saveAvatarChoices);console.error('Holodeck avatar assignments could not be restored');}
+  try{avatars=new HumanAvatarProfiles(avatarAssignments,saveAvatarAssignments,avatarChoices,saveAvatarChoices,releaseControllerRef);}
+  catch{avatars=new HumanAvatarProfiles(null,null,avatarChoices,saveAvatarChoices,releaseControllerRef);console.error('Holodeck avatar assignments could not be restored');}
   avatars.retain(sessions.values());
   const avatarProfile=actor=>({meshFileUrl:route('assets/'+avatars.model(actor))});
   const wardrobeAssets=humanWardrobeAssets();
@@ -860,7 +860,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   });
   app.get(route('api/appearance'),(req,res)=>{
     if(req.actor.kind!=='human')return res.sendStatus(403);
-    res.json({choice:avatars.preference(req.actor)});
+    res.json({choice:avatars.preference(req.actor),...(avatars.ownsPersonalAvatar(req.actor)?{personalDefault:true}:{})});
   });
   app.post(route('api/appearance'),(req,res)=>{
     const actor=req.actor;
@@ -884,7 +884,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
         if(peer.actor.id===actor.id)cell.network.userNetworkingServer.updateUserCharacterDescription(connection,profile);
       }
     }
-    res.json({choice:avatars.preference(actor)});
+    res.json({choice:avatars.preference(actor),...(avatars.ownsPersonalAvatar(actor)?{personalDefault:true}:{})});
   });
   app.get(route('api/space/art/:revision'),(req,res)=>{
     const id=spaces.current(req.actor);

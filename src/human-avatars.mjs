@@ -9,7 +9,9 @@ const rigs=[
 ];
 const outfits=rigs.map((_,index)=>`avatar-wardrobe-v1-${index+1}.glb`);
 const profiles=Object.freeze([...rigs.map(rig=>rig+'.glb'),...outfits]);
-export {profiles as avatarModelFiles};
+export const personalAvatarFile='avatar/explorer-hero-v29.glb';
+export const personalAvatarSha256='f12f53803a6f0b3a754ad185c8319fbc020f627c01a14195e0603fe6534b3ef7';
+export const avatarModelFiles=Object.freeze([...profiles,personalAvatarFile]);
 const preferenceLimit=64;
 const preferenceSchema='holodeck.avatar-choices/v1';
 const validSlot=slot=>Number.isInteger(slot)&&slot>=0&&slot<profiles.length;
@@ -17,9 +19,11 @@ const validSlot=slot=>Number.isInteger(slot)&&slot>=0&&slot<profiles.length;
 const actorKey=actor=>createHash('sha256').update(actor.id).digest('hex');
 
 export class HumanAvatarProfiles {
-  constructor(state=null,save=null,preferences=null,savePreferences=null){
+  constructor(state=null,save=null,preferences=null,savePreferences=null,personalOwnerRef=null){
     this.save=save;
     this.savePreferences=savePreferences;
+    this.personalOwnerRef=personalOwnerRef;
+    this.standardAvatarFor=preferences?.standardAvatarFor??null;
     if(state===null)state={schema:'holodeck.human-avatars/v1',assignments:[]};
     if(state.schema!=='holodeck.human-avatars/v1'||!Array.isArray(state.assignments)||
        state.assignments.length>profiles.length)throw Error('Invalid avatar assignments');
@@ -30,6 +34,7 @@ export class HumanAvatarProfiles {
          !validSlot(slot)))throw Error('Invalid avatar assignments');
     this.preferences=new Map(preferences?.choices);
     if(preferences&&(preferences.schema!==preferenceSchema||!Array.isArray(preferences.choices)||
+       (this.standardAvatarFor!==null&&!/^[a-f0-9]{64}$/.test(this.standardAvatarFor))||
        this.preferences.size!==preferences.choices.length||this.preferences.size>preferenceLimit||
        [...this.preferences].some(([key,slot])=>!/^[a-f0-9]{64}$/.test(key)||!validSlot(slot))))
       throw Error('Invalid avatar choices');
@@ -53,24 +58,38 @@ export class HumanAvatarProfiles {
     this.save?.({schema:'holodeck.human-avatars/v1',assignments:[...selected]});
   }
 
+  ownsPersonalAvatar(actor){
+    return actor.kind==='human'&&actor.id===this.personalOwnerRef;
+  }
+
+  usesPersonalAvatar(actor){
+    return this.ownsPersonalAvatar(actor)&&this.standardAvatarFor!==actorKey(actor);
+  }
+
   model(actor){
+    if(this.usesPersonalAvatar(actor))return personalAvatarFile;
     return profiles[this.preference(actor)??(actor.kind==='human'?this.assignments.get(actorKey(actor)):0)]??profiles[0];
   }
 
   preference(actor){
-    return actor.kind==='human'?this.preferences.get(actorKey(actor))??null:null;
+    return actor.kind==='human'&&!this.usesPersonalAvatar(actor)?this.preferences.get(actorKey(actor))??null:null;
   }
 
   choose(actor,slot){
     if(actor.kind!=='human'||(slot!==null&&!validSlot(slot)))return false;
-    const key=actorKey(actor),current=this.preferences.get(key)??null;
-    if(slot===current)return true;
+    const key=actorKey(actor);
+    const standardAvatarFor=this.ownsPersonalAvatar(actor)?(slot===null?null:key):this.standardAvatarFor;
+    if(this.preference(actor)===slot&&standardAvatarFor===this.standardAvatarFor)return true;
     const choices=new Map(this.preferences);
-    choices.delete(key);
-    if(slot!==null)choices.set(key,slot);
+    if(slot===null)choices.delete(key);
+    else {
+      choices.delete(key);
+      choices.set(key,slot);
+    }
     if(choices.size>preferenceLimit)choices.delete(choices.keys().next().value);
-    this.savePreferences?.({schema:preferenceSchema,choices:[...choices]});
+    this.savePreferences?.({schema:preferenceSchema,choices:[...choices],...(standardAvatarFor?{standardAvatarFor}:{})});
     this.preferences=choices;
+    this.standardAvatarFor=standardAvatarFor;
     return true;
   }
 }
