@@ -798,7 +798,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(session[budget].length>=(pointing?1:4))return res.status(429).json({message:'Esperá un momento antes de intentar otra acción.'});
       session[budget].push(now);
     }
-    const spaceRoute=['/space','/space/character-pose-review','/space/character-presentation','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/avatar-pose','/space/collection/tabletop-presence','/space/collection/pointing','/space/matter-look','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
+    const spaceRoute=['/space','/space/jump','/space/character-pose-review','/space/character-presentation','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/avatar-pose','/space/collection/tabletop-presence','/space/collection/pointing','/space/matter-look','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
       req.path==='/release-dnd'||req.path==='/appearance'||req.path==='/conversation-surface'||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
@@ -1240,6 +1240,17 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const moved=moveSpace(req.actor,live?move:input);
     if(!moved)return res.status(409).json({message:'No podés entrar por acá. Revisá las salidas de este lugar.'});
     res.json(live?liveSpace(req.actor,cachedRevision):moved);
+  });
+  app.post(route('api/space/jump'),(req,res)=>{
+    const input=req.body;
+    const {live,cachedRevision,...request}=input??{};
+    if(live!==1||(cachedRevision!==undefined&&
+       (typeof cachedRevision!=='string'||!/^[a-f0-9]{64}$/.test(cachedRevision))))return res.sendStatus(400);
+    const moved=!room.commitUncertain&&spaces.jump(req.actor,request,id=>
+      !singleHouse||spaces.rooms.get(id)?.house===COMPAII_HOUSE);
+    if(!moved)return res.status(409).json({message:'Ese lugar ya no está disponible desde acá.'});
+    closeOutOfScope(req.actor);
+    res.json({...liveSpace(req.actor,cachedRevision),...moved});
   });
   app.get(route('api/state'),asyncRoute(async(req,res)=>{
     if(room.commitUncertain||spaces.fenced)return res.status(503).json({message:'Holodeck necesita recuperar su último cambio antes de continuar.'});

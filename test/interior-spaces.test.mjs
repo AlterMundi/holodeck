@@ -61,6 +61,18 @@ test('room links, scoped discovery, durable moves and uncertain saves',()=>{
   assert.equal(disconnected.move(guest,{from:'gallery',to:'outside'}).id,'outside');
 });
 
+test('a room jump checks the whole accessible path and commits only its destination',()=>{
+  const saves=[];
+  const spaces=new InteriorSpaces({houses:{directory:()=>[house]},definitions,persist:state=>saves.push(state)});
+  assert.equal(spaces.jump(guest,{from:'outside',to:'lab'}),null);
+  assert.equal(spaces.jump(guest,{from:'outside',to:'gallery'},()=>false),null);
+  assert.equal(spaces.jump(guest,{from:'foyer',to:'gallery'}),null);
+  assert.deepEqual(spaces.jump(guest,{from:'outside',to:'gallery'}),{arrivalFrom:'foyer'});
+  assert.equal(spaces.current(guest),'gallery');
+  assert.equal(saves.length,1);
+  assert.equal(saves[0].positions[0].space,'gallery');
+});
+
 test('HTTP, real geometry upgrades and native observation share active room and current grants',async()=>{
   const stateDir=mkdtempSync(join(tmpdir(),'holodeck-spaces-')),socketPath=join(stateDir,'native.sock'),foreignSocket=join(stateDir,'foreign.sock');
   const foreignBeing='dm:being:v1:'+'z'.repeat(43);

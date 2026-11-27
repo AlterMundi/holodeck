@@ -103,24 +103,38 @@ export class InteriorSpaces {
       this.savePositions(this.positions.filter(entry=>entry!==saved));
   }
 
-  approach(actor,destination) {
+  routeTo(actor,destination,mayEnter=()=>true) {
     const target=this.rooms.get(destination),from=this.current(actor);
-    if(this.fenced||!target||from===destination||!this.allows(actor,destination))return null;
-    const seen=new Set([from]),queue=[{id:from,first:null}];
-    for(const {id,first} of queue){
-      if(id===destination)return {from,to:first};
+    if(this.fenced||!target||!this.allows(actor,destination))return null;
+    const seen=new Set([from]),queue=[[from]];
+    for(const path of queue){
+      const id=path.at(-1);
+      if(id===destination)return path;
       const room=this.rooms.get(id);
       const adjacent=this.view(actor,id);
       const neighbors=room?[
         ...adjacent.exits.map(exit=>exit.to),
         ...(adjacent.exitDoor||adjacent.emergencyExit?[OUTSIDE]:[]),
-      ]:adjacent.entrances.filter(entry=>this.rooms.get(entry.id).house===target.house).map(entry=>entry.id);
+      ]:adjacent.entrances.filter(entry=>this.rooms.get(entry.id).house===target.house&&mayEnter(entry.id)).map(entry=>entry.id);
       for(const next of neighbors){
         if(seen.has(next))continue;
-        seen.add(next);queue.push({id:next,first:first??next});
+        seen.add(next);queue.push([...path,next]);
       }
     }
     return null;
+  }
+
+  approach(actor,destination) {
+    const path=this.routeTo(actor,destination);
+    return path?.length>1?{from:path[0],to:path[1]}:null;
+  }
+
+  jump(actor,request,mayEnter) {
+    if(!exact(request,'from,to')||typeof request.to!=='string'||this.current(actor)!==request.from)
+      return null;
+    const path=this.routeTo(actor,request.to,mayEnter);
+    if(!path||path.length<2)return null;
+    return this.place(actor,request.to)?{arrivalFrom:path.at(-2)}:null;
   }
 
   canMove(actor,request) {
@@ -133,7 +147,11 @@ export class InteriorSpaces {
 
   move(actor, request) {
     if (!this.canMove(actor,request)) return null;
-    const there=this.rooms.get(request.to);
+    return this.place(actor,request.to);
+  }
+
+  place(actor,destination) {
+    const there=this.rooms.get(destination);
     const now=this.clock();
     const positions=this.positions.filter(p=>p.actor!==actor.id&&now-p.at<WINDOW_MS);
     if (there) {

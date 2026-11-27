@@ -62,7 +62,7 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
     'dialog[open],.room-transition,.is-operating-matter,#world-entry:not([hidden]),'+
     '#creator:not([hidden]),#signal-editor:not([hidden]),#content-visit:not([hidden]):not(.is-walking)')||
     !allowWithConversation()&&document.querySelector('#conversation-panel:not([hidden])');
-  async function move(destination,proximityRevision) {
+  async function move(destination,proximityRevision,jump=false) {
     if(busy||suspended)return;
     busy=true;
     try{if(!await canLeave()){busy=false;return;}}
@@ -74,9 +74,9 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
     for(const control of list.children)control.disabled=true;
     let next;
     try{
-      const result=await fetch(new URL('api/space',base()),{
+      const result=await fetch(new URL(jump?'api/space/jump':'api/space',base()),{
         method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({from:space.id,to:destination.to,...(onMoved?{live:1,cachedRevision:revision(destination.to)}:{})}),
+        body:JSON.stringify({from:space.id,to:destination.to,...(onMoved||jump?{live:1,cachedRevision:revision?.(destination.to)}:{})}),
       });
       if(result.ok)next=await result.json();
       else{
@@ -89,7 +89,7 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
       if(!next||next.id===space.id)onError('No pude confirmar el cambio de lugar.');
     }
     if(next&&next.id!==space.id){
-      const arrival=arrivalDoor(space,next);
+      const arrival=arrivalDoor(jump?{id:next.arrivalFrom??next.exits?.[0]?.to??'outside'}:space,next);
       if(onMoved&&next.live===1){onMoved(next,arrival);return;}
       const target=new URL(location.href);
       target.hash=arrival?doorLocation(arrival):'';
@@ -175,6 +175,7 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
   update.navigation=()=>({scope:space.id,busy,canExit:!suspended&&links.length>0,map:suspended?null:map?.state()});
   update.doorOffer=doorOffer;
   update.followDoor=followDoor;
+  update.jump=to=>to===space.id?false:move({to},undefined,true);
   update.key=hotkey;
   update.buttonKey=buttonKey;
   update.bearing=()=>suspended||travel.open?null:map?.bearing();

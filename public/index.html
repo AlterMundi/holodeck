@@ -381,6 +381,18 @@ body[data-world-starting] :is(canvas,#hud,#dock,#view-tools,#world-tools,#visit-
 #release-dnd:disabled{cursor:wait;opacity:.8}
 #release-update{border-color:#ffd18a;background:#ffdf9f;color:#302217}
 @media(max-width:900px){#release-hud:has(#release-dnd:not([hidden])){flex-wrap:wrap;max-width:calc(100vw - 32px)}}
+#pending-book-tool{position:fixed;z-index:26;right:max(14px,env(safe-area-inset-right));bottom:max(110px,calc(env(safe-area-inset-bottom) + 92px));display:flex;align-items:center;gap:6px;padding:6px 11px;min-width:44px;color:var(--hud-ink,#f6ebd9);background:var(--hud-panel,#0b1b24);border-color:var(--hud-rim,#587980)}
+#pending-book-tool>strong{font:700 25px/1 Georgia,serif}
+#pending-book-tool[data-attention]>strong{color:var(--hud-brass,#ffd18a);text-shadow:0 0 10px #ffd18a80}
+#pending-book-tool [data-count]{font-size:12px;font-variant-numeric:tabular-nums}
+#pending-book{width:min(430px,calc(100vw - 28px));max-height:min(70dvh,540px);padding:18px;border:1px solid var(--hud-rim,#587980);border-radius:16px;background:var(--hud-panel,#0b1b24);color:var(--hud-ink,#f6ebd9)}
+#pending-book::backdrop{background:#07111974}
+#pending-book header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#pending-book ul{list-style:none;padding:0;margin:10px 0}
+#pending-book li{margin:8px 0}
+#pending-book li button{display:block;width:100%;text-align:left}
+#pending-book li small{display:block;margin:2px 8px;color:inherit;opacity:.72}
+#pending-book a,#pending-book [role=status]{color:inherit}
 </style></head><body data-world-starting>
 <section id="world-entry" class="glass" aria-label="Conexión con Holodeck" hidden>
   <p id="world-entry-status" role="status"></p>
@@ -434,6 +446,11 @@ body[data-world-starting] :is(canvas,#hud,#dock,#view-tools,#world-tools,#visit-
 <div id="companion-status" class="glass" role="status">Exploración compartida</div>
 <div id="notice" class="glass" role="status"></div>
 <small id="release-version" aria-label="Versión de Holodeck">HOL0DECK_RELEASE_PLACEHOLDER</small>
+<button id="pending-book-tool" type="button" aria-label="Pendientes" aria-haspopup="dialog" hidden><strong aria-hidden="true">?</strong><span data-count></span></button>
+<dialog id="pending-book" aria-labelledby="pending-book-title">
+  <header><h2 id="pending-book-title">Pendientes</h2><button type="button" data-close autofocus>Cerrar</button></header>
+  <p role="status"></p><div data-items></div><a target="_blank" rel="noopener noreferrer">Abrir Conversación</a>
+</dialog>
 <div id="release-hud">
   <button id="release-dnd" type="button" aria-pressed="false" aria-label="No molestar con reinicios" title="Controlar cuándo puede reiniciarse Holodeck" hidden>⚑ Disponible</button>
   <div id="release-update" role="status" hidden></div>

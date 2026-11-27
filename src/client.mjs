@@ -60,6 +60,7 @@ import { indoorGardenContains,validIndoorGardenRecipe } from './indoor-garden-re
 import { OutdoorSky } from './outdoor-sky.mjs';
 import { SignalGardenEditor } from './signal-garden-editor.mjs';
 import { AppliedGeometryProbe } from './applied-geometry.mjs';
+import {mountPendingBook} from './pending-book.mjs';
 import { SharedConversationHost } from './shared-conversation-host.mjs';
 import { WorldAudio } from './world-audio.mjs';
 import {WorldHistory} from './world-history.mjs';
@@ -1593,6 +1594,14 @@ async function api(path,body,{signal}={}){
   if(!response.ok){const error=Error(value.message||value.detail||'La acción no se pudo completar.');Object.assign(error,value,{httpStatus:response.status});throw error;}
   return value;
 }
+const pendingBook=mountPendingBook({window,document,world:new URL(base),
+  currentActor:()=>activeSpace?.actorRef??state?.actorRef,
+  select:()=>api('conversation-surface',undefined,{signal:AbortSignal.timeout(4500)}),
+  onJump:async room=>{
+    if(room===activeSpace?.id){say('Ya estás en ese lugar.');return;}
+    if(entering||moving||needsSync){say('Esperá a que termine el viaje.');return;}
+    await updateDoor.jump?.(room);
+  }});
 function noteRecovery(kind,result={}){
   const expiredCommand=kind==='command'&&result.code==='not-recorded'&&pending&&
     ((Number.isFinite(result.serverTime)&&Number.isFinite(result.retryWindowMs)&&result.serverTime-pending.issuedAt>result.retryWindowMs)||
@@ -2207,7 +2216,7 @@ const interval=setInterval(async()=>{
   try{await refresh();}catch{say('La conexión con el taller se interrumpió. Los cambios no se repetirán solos.');}
   finally{refreshing=false;}
 },1500);
-window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();beaconControls.clear();garden.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);if(signalPreview)URL.revokeObjectURL(signalPreview);worldAudio.dispose();client.dispose();});
+window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();pendingBook.dispose();beaconControls.clear();garden.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);if(signalPreview)URL.revokeObjectURL(signalPreview);worldAudio.dispose();client.dispose();});
 refresh().catch(()=>say('No pude conectar con el taller.'));
 resetDoor();
 syncIndoorDesign();

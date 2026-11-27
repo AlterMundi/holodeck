@@ -2,7 +2,7 @@ import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {COMPAII_HOUSE,interiorArt} from './interior-art.mjs';
 import {readPackedArt} from './packed-art.mjs';
-import {BEACON_CONTROLS} from './beacon-controls.mjs';
+import {BEACON_CONTROLS} from './beacon-stations.mjs';
 import {upperLandingCollision} from './interior-geometry.mjs';
 
 export const ATELIER_PROFILE='compaii-atelier-v1';
