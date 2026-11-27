@@ -5254,6 +5254,17 @@ station and restored the previous value. The fixture used the standalone
 Lab adapter with an OSC test peer. It did not start the receiving audio
 engine or pass through the installed SSH route.
 
+The H.B. Guitar station beside the existing prototype platform now mounts
+the controller's read-only A2UI surface. Its model pane reads the existing
+protected Home review edition through the Collection decoder. Its three
+views highlight the mechanism wheel, the switch access door and the fixed
+neck support in the exact project geometry. A local Chromium station
+fixture rendered all three authorized source scenes, then showed a saved
+program update from the actual controller server with a guarded board
+fixture. It reused the ready controller without starting a device. Control
+changes still use the device-local panel. Full-world and installed receiver
+qualification remain open.
+
 The room look also selects the HUD palette in the host document. Apply
 the palette only after the room's material selection succeeds, update
 mounted controls in place and clear it when leaving the room. The

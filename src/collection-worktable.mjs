@@ -25,7 +25,7 @@ function loadReview(base,edition,scene,signal){
     worker.postMessage({edition,scene});
   });
 }
-function makeModel(review,anchor){
+export function makeModel(review,anchor){
   const group=new Group(),inside=new Group(),bounds=new Box3(),parts=new Map();
   group.add(inside);
   try{

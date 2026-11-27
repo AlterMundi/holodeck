@@ -5,6 +5,7 @@ export function openBeaconProjection(stage, {host, surface, title, csrf, onReady
   const doc=stage.ownerDocument;
   const wrapper=doc.createElement('section');
   wrapper.className='beacon-projection';
+  if(surface==='guitar')wrapper.classList.add('is-guitar');
   const viewport=doc.createElement('div');
   viewport.className='beacon-projection-view';
   viewport.tabIndex=-1;
@@ -27,7 +28,7 @@ export function openBeaconProjection(stage, {host, surface, title, csrf, onReady
   const parent=new Group();
   const camera=new PerspectiveCamera(45,1,.001,20);
   const lifecycle=new AbortController();
-  let stream,view,presented=false;
+  let stream,view,presented=false,modelVersion,disposeModelPanel;
   const resize=new ResizeObserver(render);
   resize.observe(viewport);
 
@@ -66,6 +67,19 @@ export function openBeaconProjection(stage, {host, surface, title, csrf, onReady
     viewport.inert=true;
     notice('Se perdió la conexión con '+title+'.',true);
   }
+  async function showGuitarModel(edition){
+    if(!edition?.version||modelVersion===edition.version)return;
+    modelVersion=edition.version;
+    disposeModelPanel?.();
+    disposeModelPanel=null;
+    try{
+      const {mountGuitarModel}=await import('./beacon-guitar-model.mjs');
+      if(!lifecycle.signal.aborted&&modelVersion===edition.version)
+        disposeModelPanel=mountGuitarModel(wrapper,edition);
+    }catch{
+      if(!lifecycle.signal.aborted)notice('El modelo 3D no se pudo cargar.');
+    }
+  }
   function connect(){
     stream?.close();
     viewport.inert=true;
@@ -88,6 +102,7 @@ export function openBeaconProjection(stage, {host, surface, title, csrf, onReady
           viewport.inert=false;
           if(!presented){presented=true;onReady();}
           notice('');
+          if(surface==='guitar')void showGuitarModel(messages[0].createSurface.dataModel?.model);
           render();
         }else if(view&&!viewport.inert){
           for(const message of messages)view.receive(message);
@@ -110,6 +125,7 @@ export function openBeaconProjection(stage, {host, surface, title, csrf, onReady
       previous?.close();
       resize.disconnect();
       view?.dispose();
+      disposeModelPanel?.();
       wrapper.remove();
     },
   };
