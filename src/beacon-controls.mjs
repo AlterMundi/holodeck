@@ -125,7 +125,7 @@ export class BeaconControls{
     this.title.textContent=title;
     this.external.href=(view?this.weaverLinks[view]:this.link).getAttribute('href');
     const world=this.world;
-    const focused=Boolean(world?.renderer&&(surface==='guitar'||surface==='weaver'&&world.canvas.clientWidth<740));
+    const focused=Boolean(world?.renderer&&['guitar','weaver','shaper'].includes(surface));
     this.panel.toggleAttribute?.('data-beacon-focused',focused);
     if(focused)native=false;
     this.panel.toggleAttribute?.('data-beacon-world',!!world);
@@ -180,7 +180,7 @@ export class BeaconControls{
 
   handleProjectionKey(event){
     if(!this.projection?.contains(event))return false;
-    if(event.key==='Escape'){
+    if(event.key==='Escape'&&!event.defaultPrevented&&!event.isComposing){
       event.preventDefault();
       this.close();
     }
