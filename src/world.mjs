@@ -50,13 +50,13 @@ function houseModel(part, plot, position, id, prefix, sourceAttribute, floor=.1)
   return `<m-model id="${id}" ${sourceAttribute}="${attribute(prefix+'assets/'+part.asset)}" x="${x}" y="${y+floor}" z="${z}" ry="${-plot.side*90}" collide="false"></m-model>`;
 }
 
-function housingDocument(houses, prefix, houseVisual, site, sourceAttribute, onlyHouse, facadeFloor=.1) {
+function housingDocument(houses, prefix, houseVisual, site, sourceAttribute, onlyHouse, facadeFloor=.1, facadesOnly=Boolean(onlyHouse)) {
   const {houseWalk:walk,parcelTerrain:terrain,parcelGarden}=site??{};
   const authoredWalk = assetFile(walk?.asset) && /^[a-f0-9]{64}$/.test(walk.revision);
   const walkSource = authoredWalk ? prefix + 'assets/' + walk.asset + '?v=' + walk.revision.slice(0,12) : '';
   const authoredTerrain = assetFile(terrain?.asset) && /^[a-f0-9]{64}$/.test(terrain.revision);
   const hiddenGround = authoredTerrain ? ' opacity="0" cast-shadows="false"' : '';
-  let markup = (onlyHouse ? [] : HOUSE_GROUND).map(({id,minX,maxX,minZ,maxZ}) =>
+  let markup = (facadesOnly ? [] : HOUSE_GROUND).map(({id,minX,maxX,minZ,maxZ}) =>
     `<m-cube id="${id}" x="${(minX+maxX)/2}" y="0" z="${(minZ+maxZ)/2}" width="${maxX-minX}" height=".2" depth="${maxZ-minZ}" color="#6a8d7b"${hiddenGround}></m-cube>`
   ).join('');
   if(authoredTerrain){
@@ -70,14 +70,14 @@ function housingDocument(houses, prefix, houseVisual, site, sourceAttribute, onl
   }
   // The visual centerline has no collider. The two solid ground pieces
   // overlap and meet the existing arrival island at the same walking height.
-  if(!onlyHouse)markup += authoredWalk ?
+  if(!facadesOnly)markup += authoredWalk ?
     `<m-model id="house-walk" src="${attribute(walkSource)}" collide="false" cast-shadows="false"></m-model>` :
     '<m-cube x="0" y=".101" z="17.42" width="2.8" height=".006" depth="15.24" color="#c8b695" collide="false"></m-cube>';
   for (const plot of HOUSE_PLOTS) {
     const house = houses.find(entry => entry.parcel === plot.id);
-    if(onlyHouse&&house?.id!==onlyHouse)continue;
+    if((onlyHouse&&house?.id!==onlyHouse)||(facadesOnly&&!house))continue;
     markup += `<m-group id="${plot.id}" x="${plot.x}" z="${plot.z}">
-      ${authoredTerrain||onlyHouse?'':`<m-cube y=".105" width="${plot.width}" height=".01" depth="${plot.depth}" color="${house?'#82735a':'#839c81'}" collide="false"></m-cube>`}`;
+      ${authoredTerrain||facadesOnly?'':`<m-cube y=".105" width="${plot.width}" height=".01" depth="${plot.depth}" color="${house?'#82735a':'#839c81'}" collide="false"></m-cube>`}`;
     if (house) {
       const {id,revision,facade} = house;
       const {title,width,depth,height,color} = facade;
@@ -232,11 +232,11 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
   if(manifest.length>16384)throw Error('Geometry manifest exceeds bound');
   let out=`<m-group id="workshop" data-run="${attribute(room.run)}" data-edition="${attribute(room.edition)}" data-semantic-sequence="${room.sequence}" data-layout-version="${layout}" data-geometry-state="${attribute(manifest)}">`;
   if(toroidalHouse){
-    const house=room.houses?.directory().filter(entry=>entry.id===toroidalHouse)??[];
+    const houses=room.houses?.directory()??[];
     out+=`<m-group id="ring-house" x="${TOROIDAL_TERRAIN.majorRadius}" y="${TOROIDAL_PARCEL_Y}">`+
       // The torus is already paved at the group origin. The legacy .1 m
       // art offset is for the older physical ground cubes.
-      housingDocument(house,prefix,houseVisual,null,sourceAttribute,toroidalHouse,0)+'</m-group>';
+      housingDocument(houses,prefix,houseVisual,null,sourceAttribute,undefined,0,true)+'</m-group>';
   } else if(valleyHouse)out+=valleyMarkup(prefix,valleyHouse,houseVisual,sourceAttribute,
     room.houses?.directory()??[]);
   else out+=workshopExterior(room,{prefix,sourceAttribute,includeVisits,includeCues,

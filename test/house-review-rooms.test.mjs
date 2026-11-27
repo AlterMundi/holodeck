@@ -52,3 +52,26 @@ test('Char Design has a physical worktable scoped to its room',()=>{
   assert.doesNotMatch(markup,/id="room-marker"/);
   for(const room of rooms.filter(room=>room!==studio))assert.doesNotMatch(interiorDocument(room),expected);
 });
+
+
+test('the torus keeps an independently owned house and its visitor permissions',()=>{
+  const otherOwner='dm:being:v1:'+'S'.repeat(43), otherHouse=houseId(otherOwner);
+  const entry={id:'other-foyer',house:otherHouse,entry:true,title:'Other foyer',level:0,
+    guests:[guest],links:[{kind:'door',to:'other-gallery'}]};
+  const gallery={...entry,id:'other-gallery',entry:false,title:'Other gallery',
+    links:[{kind:'door',to:entry.id}]};
+  const rooms=houseReviewRooms([foyer,matter,lab,entry,gallery],house,matter.id,lab.id);
+  assert.deepEqual(rooms.slice(-2),[entry,gallery]);
+  const spaces=new InteriorSpaces({definitions:rooms,houses:{directory:()=>[
+    {id:house,owner,facade:{title:'Casa'},parcel:'parcel-west-1'},
+    {id:otherHouse,owner:otherOwner,facade:{title:'Casa Linterna'},parcel:'parcel-east-1'},
+  ]}});
+  assert.equal(spaces.view({kind:'daimon',id:otherOwner}).entrances[0].id,entry.id);
+  assert.equal(spaces.move(actor(labGuest),{from:'outside',to:entry.id}),null);
+  const outside=spaces.view(actor(guest)).entrances.find(door=>door.id===entry.id);
+  assert.equal(spaces.move(actor(guest),{from:'outside',to:entry.id}).id,entry.id);
+  assert.equal(spaces.move(actor(guest),{from:entry.id,to:gallery.id}).id,gallery.id);
+  const returned=spaces.move(actor(guest),{from:gallery.id,to:entry.id});
+  assert.deepEqual(returned.exteriorDoor,outside.door);
+  assert.equal(spaces.move(actor(guest),{from:entry.id,to:'outside'}).id,'outside');
+});

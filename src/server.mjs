@@ -159,7 +159,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const authoredRooms=()=>toroidal?new Map(authoredLayout().map(room=>[room.id,room])):spaces.rooms;
   const atelier=selectAtelier(artProfile,authoredRooms(),houses.directory(),exteriorArt);
   const valley=Boolean(atelier)&&!toroidal;
-  const singleHouse=valley||toroidal;
+  const singleHouse=valley;
+  const hideWorkshop=valley||toroidal;
   const outdoorHouse=house=>!singleHouse||house.id===COMPAII_HOUSE;
   const exteriorEntrances=actor=>spaces.view(actor,OUTSIDE).entrances.filter(
     entrance=>!singleHouse||spaces.rooms.get(entrance.id)?.house===COMPAII_HOUSE).map(
@@ -1215,8 +1216,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   app.get(route('api/state'),asyncRoute(async(req,res)=>{
     if(room.commitUncertain||spaces.fenced)return res.status(503).json({message:'Holodeck necesita recuperar su último cambio antes de continuar.'});
     const canEdit=projectionHealthy&&['observe','edit'].every(right=>req.actor.rights?.includes(right));
-    res.json({run:room.run,edition:room.edition,sequence:room.sequence,actorRef:req.actor.id,canEdit:!singleHouse&&canEdit,lightExercise:lightExercise&&!singleHouse,layout:publicWorld,entities:singleHouse?{}:room.entities,
-      focus:singleHouse?[]:room.focusState(),nodes:singleHouse?{}:room.nodeState(),entrances:exteriorEntrances(req.actor),
+    res.json({run:room.run,edition:room.edition,sequence:room.sequence,actorRef:req.actor.id,canEdit:!hideWorkshop&&canEdit,lightExercise:lightExercise&&!hideWorkshop,layout:publicWorld,entities:hideWorkshop?{}:room.entities,
+      focus:hideWorkshop?[]:room.focusState(),nodes:hideWorkshop?{}:room.nodeState(),entrances:exteriorEntrances(req.actor),
       native:native?{...await native.availability(req.actor),sharedConversation:!!native.contexts}:{available:false}});
   }));
   app.get(route('api/places'),(req,res)=>{
@@ -1234,7 +1235,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     catch(error){if(!(error instanceof ActivityError))throw error;
       res.status(error.status).json({code:error.code,message:error.message,...(error.code==='stale-run'?{run:room.run}:{})});}
   });
-  app.get(route('api/content-visits'),(req,res)=>res.json(singleHouse?{nodes:[],visits:[]}:{nodes:selectedContentNodes,visits:[...visitsForActor(selectedContentVisits,req.actor),...nodeVisits(room.nodes,req.actor)]}));
+  app.get(route('api/content-visits'),(req,res)=>res.json(hideWorkshop?{nodes:[],visits:[]}:{nodes:selectedContentNodes,visits:[...visitsForActor(selectedContentVisits,req.actor),...nodeVisits(room.nodes,req.actor)]}));
   app.get(route('api/conversation-surface'),asyncRoute(async(req,res)=>{
     if(!native?.contexts||!native?.conversationSurface)return res.status(503).json({message:'La conversación compartida todavía no está disponible en este mundo.'});
     const value=await native.conversationSurface(req.actor);

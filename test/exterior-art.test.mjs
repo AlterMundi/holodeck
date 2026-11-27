@@ -50,6 +50,9 @@ test('the torus facade sits on the terrain without moving its proxy or entrance'
   const door=new RegExp(`<m-group id="entrance-${west.id}"[^>]*>`);
   assert.equal(ring.match(proxy)?.[0],valley.match(proxy)?.[0]);
   assert.equal(ring.match(door)?.[0],valley.match(door)?.[0]);
+  assert.ok(ring.includes(`id="entrance-${east.id}"`));
+  assert.ok(!valley.includes(`id="entrance-${east.id}"`));
+  assert.doesNotMatch(ring,/id="house-commons"/);
 });
 
 test('invalid or out-of-parcel art keeps the legacy facade and omits only an invalid miniature', () => {
