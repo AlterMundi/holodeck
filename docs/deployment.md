@@ -138,8 +138,10 @@ with the same visitor session. It presents the controller's state next
 to the selected Home review edition. The mechanism, power switch and
 neck support each select the exact scene and part from that edition.
 Continue to use the device-local controller for writes to the board.
-The other benches keep their existing launch links until their
-receiving A2UI surfaces are selected.
+Weaver uses the same handoff with its own selected surface. Its table
+reuses a ready receiver and opens the live controls that write through
+the existing Lab authority. Spatializer and Shaper keep their existing
+links until their receiving A2UI surfaces are selected.
 
 The optional `gallery` receiving selection names an existing interior
 `room` and two distinct exact `artifact_review` pins (`draft` and `archive`,

@@ -1,5 +1,21 @@
 # Current MVP work
 
+## November 27 — Weaver in the Beacon chamber
+
+Protected release `ddaa5df2cb82` enables Weaver's A2UI station at its
+existing Beacon table. Immediate rollback is `39ebfc7a2325`. The new
+release changes only the browser bundle. The station hands off to the
+selected receiver once it confirms the Weaver projection.
+
+The ordinary Legion launcher started Weaver and its owned Shaper with
+audio disabled and a disposable session. In Chromium, the table reused
+the ready service, showed audio as disabled, and closed without issuing
+a start or control request. Two live readers through Home's installed
+Legion transport received the same gain change. A stale write was
+refused and the original value restored. These trials exercised the
+station component with the actual receiver. A human visit in the
+protected room and physical listening or tracking remain pending.
+
 ## November 27 — H.B. Guitar in the Beacon chamber
 
 Protected release `39ebfc7a2325` adds the live Guitar A2UI station at the
@@ -15,8 +31,8 @@ mechanism, switch door and neck support from exact Home edition
 repository tests passed and two were skipped. The Home technical reader
 can read the protected bundle and is refused at the human page.
 An authenticated human visit in the live room and use with the physical
-board remain pending. Spatializer, Weaver and Shaper retain their
-existing panel handoffs while their receiving projections are qualified.
+board remain pending. Spatializer and Shaper retain their existing
+panel handoffs while their receiving projections are qualified.
 
 ## November 27 — Paired-human DND for planned restarts
 
