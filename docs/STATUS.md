@@ -1,5 +1,18 @@
 # Current MVP work
 
+## November 27 — Protected Weaver preset import
+
+Protected release `bde2306debc1` adds a local JSON chooser and a separate
+save action to the native Weaver table. Import creates a library entry
+under the observed workstation session. The current mix remains under
+the existing Weaver owner.
+
+The isolated Chromium table imported a 79,298-byte fixture. The installed
+route refused stale, malformed and unauthorized requests. The live
+library and active revision were preserved during verification. The
+release retains the selected Explorer flight and framing update, which
+remains available as rollback `e0ed95d65c16`.
+
 ## November 27 — Explorer flight, camera and toolbar
 
 Protected release `e0ed95d65c16` supports sustained vertical loops with
