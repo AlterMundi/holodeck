@@ -14,9 +14,10 @@ the shared play, pause and seek operations.
 The live Holodeck release remains `55c1e6699cee`. There were established
 connections to its service during preparation, so the package was left
 pending with its exact predecessor. Use the existing release notice and
-cutover route when it can preserve the visit. Legion's current JACK Lab
-still serves its previous body release. Video from an actual selected Lab
-source and paired browser acceptance remain pending.
+cutover route when it can preserve the visit. Legion now serves the
+updated JACK Lab and its HarMoCAP projection through the protected
+gateway. Video from an actual selected Lab source and paired browser
+acceptance remain pending.
 
 ## November 27 — Residence, personal Explorer, and optical HUD
 
