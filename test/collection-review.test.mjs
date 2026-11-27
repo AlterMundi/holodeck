@@ -79,4 +79,5 @@ test('a scene can carry its exact complete model, which the worktable animates o
   assert.equal(proxy.userData.matterProxy,true);
   table.mixer.update(.5);
   assert.ok(table.presentation.position.x>.05,'the chosen clip plays');
+  assert.deepEqual(table.clips,['other','hero_idle']);
 });
