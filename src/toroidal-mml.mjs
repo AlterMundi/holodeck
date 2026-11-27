@@ -31,7 +31,7 @@ export function steerToroidalFlight(direction,polarAngle,atSurface=false,loopPit
 // The MML host still owns input, network cadence, interpolation, avatar
 // animation and the orbit camera. Only the selected exterior uses a radial
 // surface and reconstructs the world-space orientation from tangent yaw.
-export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firstDoor=null, onMovementMode=()=>{}, aiming=()=>false,loopPitch=()=>null,wantsDoubleJump=()=>false,onDoubleJump=()=>{}) {
+export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firstDoor=null, onMovementMode=()=>{}, aiming=()=>false,loopPitch=()=>null,wantsDoubleJump=()=>false,onDoubleJump=()=>{},wantsFirstJump=()=>false) {
   const updateCharacters = manager.update;
   const updateCamera = camera.update;
   const adjustCamera = camera.adjustCameraPosition;
@@ -91,7 +91,8 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
       {direction:control?.direction,forward:Number(moving),climb:0};
     const travelYaw=moving?Math.PI/2-camera.theta+steer.direction:motion.yaw;
     const yaw=aiming()?3*Math.PI/2-camera.theta:travelYaw;
-    const jump=!flying&&!motion.swimming&&Boolean(control?.jump||touch?.jump||(wet&&manual>0));
+    const firstJump=wantsFirstJump();
+    const jump=!flying&&!motion.swimming&&Boolean(firstJump||control?.jump||touch?.jump||(wet&&manual>0));
     const sprint=freeVertical?keyInputManager.getRun()||touch?.isSprinting:control?.isSprinting;
     const previousHeight=motion.height;
     if(flying)sweepStart.fromArray(terrainPosition(motion.u,motion.v,motion.height));

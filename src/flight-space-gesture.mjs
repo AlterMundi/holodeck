@@ -1,7 +1,7 @@
 const doubleTapWindow=340;
 const holdTime=180;
 
-export function bindFlightSpaceGesture({allowed,onFlight,onDoubleJump,clock=()=>performance.now()}){
+export function bindFlightSpaceGesture({allowed,onFlight,onDoubleJump,onFirst=()=>{},clock=()=>performance.now()}){
   let first=-Infinity,second=null;
   function cancel(){
     if(second)clearTimeout(second.timer);
@@ -11,7 +11,7 @@ export function bindFlightSpaceGesture({allowed,onFlight,onDoubleJump,clock=()=>
   function down(event){
     if(event.code!=='Space'||event.repeat||!allowed(event))return;
     const now=clock();
-    if(now-first>=doubleTapWindow){first=now;return;}
+    if(now-first>=doubleTapWindow){first=now;onFirst();return;}
     second={started:now,timer:setTimeout(()=>{
       const armed=second;
       cancel();

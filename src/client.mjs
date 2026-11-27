@@ -434,7 +434,7 @@ const outsideRing=()=>!inside&&activeSpace.outdoorTerrain===TOROIDAL_TERRAIN.id;
 // Arrival frames the house door; the Residencia's chamber portals are additional entrances.
 const houseEntrances=space=>space?.entrances?.filter(entrance=>!entrance.portal)??[];
 let firstExteriorDoor=outsideRing()&&!location.hash&&houseEntrances(activeSpace).length===1?houseEntrances(activeSpace)[0].door:null;
-let flightEnabled=false,doubleJumpPending=false,trickStarted=-Infinity,radialMovementMode='ground',radialBoosting=false;
+let flightEnabled=false,firstJumpPending=false,doubleJumpPending=false,trickStarted=-Infinity,radialMovementMode='ground',radialBoosting=false;
 const verticalHelp=document.getElementById('world-vertical-help');
 const dryVerticalHelp=verticalHelp.textContent;
 let fitConversationWindow=()=>{};
@@ -448,9 +448,10 @@ const spaceGesture=bindFlightSpaceGesture({
     flightEnabled=!flightEnabled;
     say(flightEnabled?'Vuelo activo · Espacio sube, Alt baja y Shift acelera.':'Vuelo desactivado.',{transient:true});
   },
+  onFirst(){if(!flightEnabled)firstJumpPending=true;},
   onDoubleJump(){if(!flightEnabled)doubleJumpPending=true;},
 });
-const resetFlightTap=spaceGesture.cancel;
+const resetFlightTap=()=>{spaceGesture.cancel();firstJumpPending=doubleJumpPending=false;};
 window.addEventListener('blur',resetFlightTap);
 document.addEventListener('visibilitychange',resetFlightTap);
 document.addEventListener('keyup',spaceGesture.up,true);
@@ -1567,7 +1568,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing,
         ()=>flightEnabled,firstExteriorDoor,(mode,boost=false)=>{radialMovementMode=mode;radialBoosting=boost;},aiming,releaseOrbit.pitch,
         ()=>{const requested=doubleJumpPending;doubleJumpPending=false;return requested;},
-        ()=>{trickStarted=performance.now();});
+        ()=>{trickStarted=performance.now();},
+        ()=>{const requested=firstJumpPending;firstJumpPending=false;return requested;});
       firstExteriorDoor=null;
       releaseTableFlight=bindMatterFlight(client.getCharacterManager(),options.coreCameraManager,tableFlight,tableInputAllowed,()=>matterHud.leave());
       options.onInitialized();
