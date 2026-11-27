@@ -9,7 +9,7 @@ export function conversationTravelLane({width,height,visualHeight,touch,zoom},pr
 }
 
 /** Local placement for a floating HUD panel with explicit drag and resize grips. */
-export function bindHudPanelWindow(panel,{move,resize,readInsets=()=>({})}){
+export function bindHudPanelWindow(panel,{move=panel.querySelector('header'),resize,canMove=()=>true,readInsets=()=>({})}){
   const window=panel.ownerDocument.defaultView;
   const abort=new AbortController();
   const listener={signal:abort.signal};
@@ -74,8 +74,9 @@ export function bindHudPanelWindow(panel,{move,resize,readInsets=()=>({})}){
       ?{...start,width:Math.min(limits().right-start.left,start.width+x),
         height:Math.min(limits().bottom-start.top,start.height+y)}
       :{...start,left:start.left+x,top:start.top+y};
+    const owns=event=>resizing||(!event.target?.closest?.('button,input,select,textarea,a,[role="button"],[contenteditable]')&&canMove(event));
     grip.addEventListener('pointerdown',event=>{
-      if(!event.isPrimary||event.button!==0)return;
+      if(!event.isPrimary||event.button!==0||!owns(event))return;
       drag={id:event.pointerId,x:event.clientX,y:event.clientY,start:rect()};
       grip.setPointerCapture(event.pointerId);
       event.preventDefault();
@@ -89,6 +90,7 @@ export function bindHudPanelWindow(panel,{move,resize,readInsets=()=>({})}){
     for(const type of ['pointerup','pointercancel','lostpointercapture'])
       grip.addEventListener(type,event=>{if(drag?.id===event.pointerId)drag=null;},listener);
     grip.addEventListener('keydown',event=>{
+      if(!owns(event))return;
       const direction={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[event.key];
       if(!direction||event.altKey||event.ctrlKey||event.metaKey){
         if(event.code==='Space')event.stopPropagation();

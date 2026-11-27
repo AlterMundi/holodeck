@@ -99,7 +99,9 @@ export class SpatialHudWindows{
       const {rect,resizable}=info;
       if(x<rect.left||x>rect.right||y<rect.top||y>rect.bottom)continue;
       const resizing=resizable&&x>=rect.right-26&&y>=rect.bottom-26;
-      if(!resizing&&y>rect.top+26)return;
+      // The title row and its frame have the same scale as the window.
+      const titleHeight=Math.max(26,info.actual.scale*.30);
+      if(!resizing&&y>rect.top+titleHeight)return;
       const dismissed=this.dismissChoice?.(id)===true;
       this.drag={id,pointer:event.pointerId,x:event.clientX,y:event.clientY,info,resizing,dismissed};
       this.canvas.setPointerCapture(event.pointerId);
