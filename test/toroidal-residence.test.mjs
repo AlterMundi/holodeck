@@ -125,3 +125,22 @@ test('the palace loads once, owns one collision shell and releases it away from 
   residence.dispose();
   assert.equal(scene.children.length, 0);
 });
+
+test('three chamber thresholds open the rooms off the foyer from the corridor floor', async () => {
+  const {RESIDENCE_PORTALS, residenceEntrances} = await import('../src/residence-portals.mjs');
+  const entrances = residenceEntrances({matter: 'matter-room', character: 'studio', lab: 'lab'}, id => 'T·' + id);
+  assert.deepEqual(entrances.map(e => [e.id, e.portal]),
+    [['matter-room', 'camara-07'], ['studio', 'camara-08'], ['lab', 'camara-06']]);
+  for (const [i, entrance] of entrances.entries()) {
+    const p = new Vector3(entrance.door.x, entrance.door.y, entrance.door.z);
+    assert.ok(Math.abs(p.clone().sub(origin).dot(up) - TOROIDAL_RESIDENCE.floor) < 1e-6, 'stands on the floor');
+    const local = p.clone().sub(origin), [x, y] = RESIDENCE_PORTALS[i].centre;
+    const r = Math.hypot(x, y);
+    const ex = new Vector3(1, 0, 0).applyQuaternion(quaternion), ez = new Vector3(0, 0, 1).applyQuaternion(quaternion);
+    assert.ok(Math.abs(Math.hypot(local.dot(ex), -local.dot(ez)) - (r - 1.1)) < 1e-6, 'on the corridor side');
+  }
+  assert.equal(residenceEntrances({character: 'studio'}, String).length, 1, 'absent rooms offer no threshold');
+  const {InteriorSpaces, OUTSIDE} = await import('../src/interior-spaces.mjs');
+  assert.equal(typeof InteriorSpaces, 'function');
+  assert.equal(OUTSIDE, 'outside');
+});

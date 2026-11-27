@@ -6,6 +6,7 @@ import {COMPAII_HOUSE,interiorArt} from './interior-art.mjs';
 import {ATELIER_EXPANSION_WRITES,ATELIER_PROFILE,ATELIER_ROOMS,atelierLabReturn,matchesAtelierLayout,packedExteriorArt,selectAtelier} from './compaii-atelier.mjs';
 import {RoomExhibits,EXHIBIT_ARCHIVE_SAVE_BYTES,EXHIBIT_SAVE_BYTES} from './room-exhibits.mjs';
 import {ATELIER_FOYER,CHARACTER_STUDIO,characterWorktable,houseReviewRooms} from './house-review-rooms.mjs';
+import {residenceEntrances} from './residence-portals.mjs';
 import {createCharacterPoseReview,resolveReviewPose} from './character-pose-review.mjs';
 import {InteriorSpaces, OUTSIDE, SPACE_SAVE_BYTES, interiorDocument} from './interior-spaces.mjs';
 import {InteriorLayouts,LAYOUT_SAVE_BYTES} from './interior-layouts.mjs';
@@ -152,7 +153,12 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(!toroidal)return combined;
     return houseReviewRooms(combined,COMPAII_HOUSE,matterCollection?.room,ATELIER_ROOMS.lab);
   };
+  // The Residencia's chamber thresholds open the rooms off the foyer directly from the world.
+  const definedRooms=new Set(layoutDefinitions().map(room=>room.id));
+  const portalRooms=toroidal?Object.fromEntries([['matter',matterCollection?.room],['character',CHARACTER_STUDIO],
+    ['lab',ATELIER_ROOMS.lab]].filter(([,id])=>id&&definedRooms.has(id)&&id!==ATELIER_FOYER)):{};
   const spaces=new InteriorSpaces({definitions:layoutDefinitions(),houses,state:spaceStore?.load(),
+    exteriorPortals:new Set(Object.values(portalRooms)),
     upperLanding:toroidal&&artProfile===ATELIER_PROFILE?atelierLabReturn:undefined,
     persist:spaceStore ? state=>spaceStore.save(state) : null,guestAccess:interiorGuestAccess});
   const exteriorArt=packedExteriorArt();
@@ -164,9 +170,11 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const singleHouse=valley;
   const hideWorkshop=valley||toroidal;
   const outdoorHouse=house=>!singleHouse||house.id===COMPAII_HOUSE;
-  const exteriorEntrances=actor=>spaces.view(actor,OUTSIDE).entrances.filter(
+  const exteriorEntrances=actor=>[...spaces.view(actor,OUTSIDE).entrances.filter(
     entrance=>!singleHouse||spaces.rooms.get(entrance.id)?.house===COMPAII_HOUSE).map(
-    entrance=>toroidal?{...entrance,door:toroidalParcelPoint(entrance.door)}:entrance);
+    entrance=>toroidal?{...entrance,door:toroidalParcelPoint(entrance.door)}:entrance),
+    ...(toroidal?residenceEntrances(Object.fromEntries(Object.entries(portalRooms).filter(([,id])=>spaces.allows(actor,id))),
+      id=>spaces.rooms.get(id)?.title??'Cámara'):[])];
   const publicWorld=toroidal?TOROIDAL_TERRAIN.id:valley?VALLEY_LAYOUT:'island-workshop';
   for(const [path,revision] of Object.entries({...ANIMATION_ASSET_REVISIONS,...(valley?VALLEY_ASSET_REVISIONS:{}),...SAND3D_TRAIL_REVISIONS,...(toroidal?RESIDENCE_REVISIONS:{})})){
     const asset=readPackedArt(path,revision);
