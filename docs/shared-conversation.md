@@ -39,28 +39,36 @@ conversation acceptance. Nicolas explicitly resumed the full existing MVP22Novem
 active objective; specific acceptance observations remain separate and do not
 require another generic trial before implementation can continue.
 
-## Toolbar voice and a shared world frame
+## Toolbar voice and replayable world state
 
-The toolbar Mic opens the paired canonical composer and runs its ordinary
-voice recording and send control. The adjacent speaker reflects canonical
-spoken replies. It can be muted from the toolbar and turns on again when
-another toolbar recording is accepted. A local recording awaiting review
-remains in Conversation for explicit recovery.
+Mic uses the ordinary paired Conversation recorder without opening the chat.
+The first press starts recording and the next sends it. The adjacent speaker
+controls canonical spoken replies and turns on after another toolbar recording
+is accepted. A recording awaiting review stays in the canonical composer.
 
-**Incluir vista con Mic** takes one frame from the rendered world when a
-toolbar recording starts. **Adjuntar vista** selects the same kind of frame
-for the current text or voice draft. Capture uses the displayed world camera
-and excludes other tabs and browser or operating-system chrome. The card
-is previewed in the canonical draft, where it can be removed before sending.
-Only the ordinary Conversation writer sends the selected image with the
-human original. Capture ends with the single frame, and a room change or
-panel close cancels a capture still in progress. There is no continuous feed.
+A text submission or the start of a voice input prepares a situated state for
+that original. It contains the world and room edition, the observed camera
+transform and projection, and a digest of one frame from the actual renderer
+when available. The frame excludes HUD, browser chrome and separate document
+surfaces. There is no capture control, speech trigger list or continuous feed.
+The frame is machine context, separate from the person's original files. The
+native input keeps an explicit reference if an addressed daimon needs to look.
 
-The toolbar controls and frame attachment use the exact authorized composer
-on the same origin. The parent checks the selected actor, iframe URL and
-visit, and current room. The child retains recording, provider integration,
-speech playback, image encoding for submission, and delivery receipts.
-Cross-origin Conversation continues using its own composer controls.
+Use the existing receiving world lane and the exact interaction ID from that
+source. For example, from the authorized body:
+
+```sh
+holodeck-world --interaction "$interaction_id" observe --json '{"view":true}' |
+  jq -er '.result.jpeg' | base64 -d > "$private_frame_file"
+```
+
+The response also includes the frame digest, dimensions, capture time and camera.
+The world port checks the current pairing, observed native admission, and access
+to the captured room. There is no public read route and own-native requests
+cannot borrow someone else's interaction. The last 40 successful frames are held
+in service memory, up to 45 minutes each, with no long-term pixel storage. A
+service restart or eviction makes the frame unavailable. The scoped context can
+still be used, with its evidence limits, if no frame was rendered or retained.
 
 ## Sending when world context is unavailable
 

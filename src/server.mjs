@@ -1,3 +1,4 @@
+import {parseRenderedView,RenderedViews} from './rendered-view.mjs';
 import {SAND3D_TRAIL_REVISIONS} from './sand3d-trail-assets.mjs';
 import {TOROIDAL_SPAWN, TOROIDAL_TERRAIN, toroidalParcelPoint} from './toroidal-terrain.mjs';
 import {RESIDENCE_REVISIONS} from './toroidal-residence-assets.mjs';
@@ -292,6 +293,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     }}catch{projectionHealthy=false;}finally{projectionRunning=false;}
   };
   await project();if(!projectionHealthy){document.dispose();arrivalDocument?.dispose();throw Error('The initial world representation could not load');}room.on('change',project);
+  const renderedViews=new RenderedViews();
   const native=nativeFactory?await nativeFactory({room,stateDir,allowInteriorSource}):null;
   const installedWorldPorts=[];
   let poseReview,poseCatalog;
@@ -604,6 +606,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const selectedWorldPorts=validateWorldPorts({worldSocket,worldSocketBeingRef,worldPorts});
   if(selectedWorldPorts.length&&!native)throw Error('Native authority is required for world return ports');
   for(const selected of selectedWorldPorts)installedWorldPorts.push(await createWorldPort({socketPath:selected.socket,expectedBeingRef:selected.beingRef,room,native,describeSpace,moveSpace,conversationPlace,
+    readRenderedView:({id,verified})=>renderedViews.read({id,human:verified.humanRef,space:verified.capturedSpace??OUTSIDE,run:room.run}),
     approachSpace:(actor,destination)=>room.commitUncertain?null:spaces.approach(actor,destination),
     putExhibit,exhibitResult:(actor,id)=>exhibits.result(actor,id),
     currentLayout:actor=>layoutAuthority(actor).current(actor),
@@ -722,6 +725,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   });
   app.use(route('api/space/avatar-pose'),express.json({limit:'256b',strict:true}));
   app.use(route('api/space/collection/pointing'),express.json({limit:'2kb',strict:true}));
+  app.post(route('api/conversation-contexts'),express.json({limit:'128kb',strict:true}));
   app.use(express.json({limit:'48kb',strict:true}));
   for(const name of ['client.js','collection-review-worker.js']){
     const packedScript=new URL('../runtime/'+name+'.br',import.meta.url);
@@ -1292,9 +1296,21 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     res.status(503).json({scope:'machine-context',work_admitted:false,message:'Todavía no pude conectar el contexto de este lugar con la conversación.'});return false;
   };
   app.post(route('api/conversation-contexts'),asyncRoute(async(req,res)=>{
-    if(requireContext(req,res))res.json(await native.contexts.prepare(req.actor,req.body,
-      (actor,request)=>captureConversationPlace(actor,request,req.headers.cookie,
-        ()=>currentActor(req,req.holodeckSession))));
+    if(!requireContext(req,res))return;
+    const {frame,...request}=req.body??{};
+    if(Object.hasOwn(request,'renderedView'))return res.sendStatus(400);
+    const parsed=req.actor.kind==='human'?parseRenderedView(frame,request.view):null;
+    const run=room.run,space=spaces.current(req.actor);
+    if(parsed&&space===request.view.spaceId){
+      parsed.descriptor.release=version?.slice(0,12)??null;
+      request.renderedView=parsed.descriptor;
+    }
+    const result=await native.contexts.prepare(req.actor,request,
+      (actor,original)=>captureConversationPlace(actor,original,req.headers.cookie,
+        ()=>currentActor(req,req.holodeckSession)));
+    if(request.renderedView&&run===room.run)
+      renderedViews.put({id:request.id,human:req.actor.id,space,run,frame:parsed});
+    res.json(result);
   }));
   app.get(route('api/conversation-contexts/:id'),asyncRoute(async(req,res)=>{
     if(requireContext(req,res))res.json(await native.contexts.recover(req.actor,req.params.id,req.query.binding));
@@ -1306,7 +1322,10 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(requireContext(req,res))res.json(await native.contexts.release(req.actor,req.params.id));
   }));
   app.post(route('api/conversation-contexts/:id/discard'),asyncRoute(async(req,res)=>{
-    if(requireContext(req,res))res.json(await native.contexts.discard(req.actor,req.params.id,req.body?.binding,req.body?.reason));
+    if(!requireContext(req,res))return;
+    const discarded=await native.contexts.discard(req.actor,req.params.id,req.body?.binding,req.body?.reason);
+    if(discarded.released)renderedViews.remove(req.params.id,req.actor.id);
+    res.json(discarded);
   }));
   app.post(route('api/observe'),(req,res)=>res.json(room.observe(req.actor,req.body)));
   app.post(route('api/commands'),(req,res)=>projectionHealthy?res.json(room.command(req.actor,req.body)):res.status(503).json({message:'La vista del taller necesita recuperarse antes de agregar cambios.'}));

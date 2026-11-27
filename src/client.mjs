@@ -1106,7 +1106,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         backgroundFocus?.dispose();
         draw();
       }
-      if(!moving&&!entering)worldView.present(renderer.composer.renderer.domElement);
+      if(!moving&&!entering)worldView.present(renderer.composer.renderer.domElement,mainCamera);
       if(moving)matterHud.drawPassage();
       else matterHud.draw(display.draw());
     };
@@ -1788,7 +1788,6 @@ function updateNativeAvailability(){
   $('#conversation-panel').classList.toggle('shared-conversation',shared);
   $('#conversation-form').hidden=shared;$('#conversation-log').hidden=shared;
   $('#shared-conversation').hidden=!shared;
-  $('#conversation-share-view').hidden=$('#conversation-view-option').hidden=!shared;
   const historyLabel=inside?null:worldHistory?.conversationLabel();$('#history-reference-clear').hidden=!historyLabel;
   const worktableLabel=inside&&shared?worktableTopic?.label:null;
   $('#worktable-reference-clear').hidden=!worktableLabel;
@@ -2111,7 +2110,14 @@ $('#undo').onclick=async()=>{
   else if(change.type==='garden.place')await action('garden.remove',change.target,{},entity.revision,{undo:true});
   else if(change.type==='garden.update'&&change.previous)await action('garden.update',change.target,{x:change.previous.x,z:change.previous.z,color:change.previous.color},entity.revision,{undo:true});
 };
-let conversationViewGeneration=0;
+function ensureSharedConversation(){
+  sharedConversation??=new SharedConversationHost({window,document,container:$('#shared-conversation'),api,
+    capture:captureInteractionContext,captureRender:captureConversationView,currentActor:()=>activeSpace?.actorRef??state?.actorRef,
+    avatarMicrophone:true,onVoiceControls:projectVoiceControls,onDismiss:()=>{if(!$('#conversation-panel').hidden)openConversation(false);},
+    onSpeechLevel:level=>companionAvatar?.setSpeechLevel(level),
+    onStatus:({phase,busy})=>{$('#companion-status').textContent=phases[phase]||(busy?'La conversación está procesando tu intervención.':'Tu intervención quedó en la conversación.');},onError:say});
+  return sharedConversation;
+}
 function openConversation(open){
   const panel=$('#conversation-panel'),talk=$('#talk');
   const wasHidden=panel.hidden;
@@ -2120,7 +2126,7 @@ function openConversation(open){
   // Character Studio captures its selected pose before the panel takes focus.
   if(open&&wasHidden&&inside&&activeSpace.id===CHARACTER_STUDIO&&matterHud?.active)
     conversationCharacterPose=matterHud.table?.currentPose?.()??null;
-  if(!open){conversationCharacterPose=null;conversationViewGeneration++;worldView.cancel();sharedConversation?.cancelToolbarVoice?.();}
+  if(!open)conversationCharacterPose=null;
   if(!open&&!panel.hidden){
     const target=matterHud?.toolBounds('talk')??talk.getBoundingClientRect();
     if(target.width&&target.height)conversationDisplay?.minimize(target);
@@ -2136,11 +2142,7 @@ function openConversation(open){
     if(wasHidden)conversationDisplay?.restore(matterHud?.toolBounds('talk'));
   }
   if(open&&sharedSurface()){
-    if(!sharedConversation)sharedConversation=new SharedConversationHost({window,document,container:$('#shared-conversation'),api,
-      capture:captureInteractionContext,currentActor:()=>activeSpace?.actorRef??state?.actorRef,
-      avatarMicrophone:true,onVoiceControls:projectVoiceControls,onDismiss:()=>{if(!panel.hidden)openConversation(false);},onSpeechLevel:level=>companionAvatar?.setSpeechLevel(level),
-      onStatus:({phase,busy})=>{$('#companion-status').textContent=phases[phase]||(busy?'La conversación está procesando tu intervención.':'Tu intervención quedó en la conversación.');},onError:say});
-    sharedConversation.mount().catch(()=>say('No pude abrir tu conversación. Volvé a tocar Conversar para intentarlo.'));
+    ensureSharedConversation().mount().catch(()=>say('No pude abrir tu conversación. Volvé a tocar Conversar para intentarlo.'));
   }else if(open&&!flightEnabled)$('#message').focus();
   let didFocusWorld=false;
   if(flightEnabled&&(open&&wasHidden||restoreFocus)){
@@ -2164,39 +2166,26 @@ mapTool.onclick=()=>{
 mapPanel.addEventListener('toggle',()=>mapTool.setAttribute('aria-expanded',String(mapPanel.open)));
 
 async function captureConversationView(){
-  const generation=conversationViewGeneration;
-  const actor=activeSpace?.actorRef??state?.actorRef,room=activeSpace?.id;
-  if(!actor||moving||entering||document.hidden||!sharedConversation)
-    throw Error('Esperá a que carguen la escena y la conversación.');
-  const {blob}=await worldView.request();
-  if($('#conversation-panel').hidden||document.hidden||moving||entering||generation!==conversationViewGeneration||
-    actor!==(activeSpace?.actorRef??state?.actorRef)||room!==activeSpace?.id)
-    throw Error('La escena cambió. Volvé a elegir la vista.');
-  await sharedConversation.selectWorldView(blob);
+  const actor=activeSpace?.actorRef??state?.actorRef,room=activeSpace?.id,run=state?.run;
+  if(!actor||moving||entering||document.hidden||contentVisitor.frame&&!contentVisitor.panel.classList.contains('is-walking'))
+    return null;
+  const frame=await worldView.request();
+  if(!frame||document.hidden||moving||entering||actor!==(activeSpace?.actorRef??state?.actorRef)||
+    room!==activeSpace?.id||run!==state?.run)return null;
+  return frame;
 }
 $('#tool-mic').onclick=async()=>{
   if(!sharedSurface()||moving||entering)return;
   const button=$('#tool-mic');
   button.disabled=true;
   try{
-    const recording=button.getAttribute('aria-pressed')==='true';
-    openConversation(true);
-    const generation=conversationViewGeneration;
-    if(!recording&&$('#conversation-mic-view').checked)await captureConversationView();
-    if(!$('#conversation-panel').hidden&&generation===conversationViewGeneration)await sharedConversation.pressToolbarMic();
+    if(inside&&activeSpace.id===CHARACTER_STUDIO&&matterHud?.active)
+      conversationCharacterPose=matterHud.table?.currentPose?.()??null;
+    await ensureSharedConversation().pressToolbarMic();
   }catch(error){say(error.message,{transient:true});}
   finally{button.disabled=false;}
 };
 $('#tool-speaker').onclick=()=>sharedConversation?.toggleToolbarSpeaker();
-$('#conversation-share-view').onclick=async event=>{
-  const control=event.currentTarget;
-  control.disabled=true;
-  try{
-    await captureConversationView();
-    say('Vista en el borrador. Podés hablar o escribir sobre ella.',{transient:true});
-  }catch(error){say(error.message,{transient:true});}
-  finally{control.disabled=false;}
-};
 $('#conversation-close').onclick=()=>openConversation(false);
 $('#worktable-reference-clear').onclick=()=>{worktableTopic=undefined;updateNativeAvailability();};
 function boundConversation(){
