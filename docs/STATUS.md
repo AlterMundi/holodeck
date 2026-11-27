@@ -1,5 +1,28 @@
 # Current MVP work
 
+## November 27 — Prepared HarMoCAP takes
+
+Protected release `b1eb5c79f533` plays the current prepared MP4 on the
+native Three.js worktable after an explicit review action. The player
+uses the existing protected range relay and keeps local review separate
+from the shared transport. A wide table places the video beside the
+controls. A narrow table places it below them. A different prepared
+export or a closed table releases the video.
+
+The deployed package retains the previous Observatory and Residence
+files. Only the compiled client and its manifest entry changed. All 92
+installed files and the protected HTTPS client matched the archive;
+`97dc4a0f2600` remains the immediate rollback. The receiving source's
+Node suite passed 527 tests with two skips.
+
+The isolated Legion trial played a generated clip through the range
+gateway and the integrated Three.js renderer. Two frames on the
+worktable differed, the local MP4 download matched the original, a
+cleared export revoked the route, and no instrument control write was
+sent. The installed Legion session is ready with no prepared export
+selected. Positive media through the actual protected path remains to
+be observed with a receiving clip.
+
 ## November 27 — Traveling sky, flight gesture and Residence chambers
 
 Protected release `97dc4a0f2600` keeps the neighborhood at José de la
