@@ -1,5 +1,18 @@
 # Current MVP work
 
+## November 27 — Protected Weaver preset download
+
+Protected release `e93cf79631b1` downloads the exact saved JSON edition
+selected on the native Weaver table. A stale edition is reported in the
+table without saving an error document. The shared relay is read-only for
+this operation and leaves the applied preset with the existing owner.
+
+The protected client and all 92 installed files matched the archive. The
+fixed Legion route returned the same bytes as the workstation route and
+rejected stale and out-of-scope requests. A Chromium worktable using the
+live receiver downloaded the selected JSON without sending a write. The immediate
+Holodeck rollback is `c90201a588ae`.
+
 ## November 27 — Protected HarMoCAP downloads
 
 Protected release `c90201a588ae` offers MP4 or MKV downloads beside
