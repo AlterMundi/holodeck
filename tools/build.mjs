@@ -208,6 +208,9 @@ const sampledMotionRevision=await buildMotionStudyRevision(browserPlugins);
 // Compare every published frame and chapter before aliasing a sampler build.
 // Water flight and live camera steering retain all 670 Character Studio samples.
 const publishedMotionRevisions=new Map([
+  // The live flight and landing controls preserve all four Studio studies on both rigs.
+  ['104ba0910fc54d34209f4fdc68d738ebfbf35ecc505f9408e6a24f19ccffe5ee',
+    '20d0ee6c449d3a5ae48ade689ef6016fb48f93481f94fc7b2bc4e18c78d4dbb6'],
   ['c7e2b7d5579d45e73acdd6614b6e0f5e48f23dc0444e205dd24855848a2317ab',
     '5a74c3383c834fca81920395084deff916b918e0fe31a4e9ddd7e608621ad7d4'],
   ['c99c9d2c9510df179d0c5ef80a6e09e394bf4ba9eac167b43a37b27de4d90d3c',
