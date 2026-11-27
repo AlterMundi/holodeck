@@ -1,5 +1,6 @@
 import {Group, PerspectiveCamera} from 'three';
 import {createProyeccion} from 'proyeccion';
+import {mountHarMoCAPPreview} from './beacon-video-preview.mjs';
 
 export function openBeaconProjection(stage, {host, surface, title, csrf, onReady, session}){
   const doc=stage.ownerDocument;
@@ -26,6 +27,7 @@ export function openBeaconProjection(stage, {host, surface, title, csrf, onReady
   const root='/harmonic_lab/api/a2ui/'+surface;
   const query=()=>'?host='+encodeURIComponent(host)+
     (surface==='router'&&session?'&session='+encodeURIComponent(session):'');
+  const videoPreview=surface==='harmocap'?mountHarMoCAPPreview(wrapper,root,query):null;
   const parent=new Group();
   const camera=new PerspectiveCamera(45,1,.001,20);
   const lifecycle=new AbortController();
@@ -67,6 +69,7 @@ export function openBeaconProjection(stage, {host, surface, title, csrf, onReady
     }
   }
   function unavailable(){
+    videoPreview?.clear();
     viewport.inert=true;
     notice(surface==='router'&&session?
       'Se perdió la conexión con esta sesión de Ruteos. Si terminó, volvé a abrir la mesa.':
@@ -136,10 +139,12 @@ export function openBeaconProjection(stage, {host, surface, title, csrf, onReady
           viewport.inert=false;
           if(!presented){presented=true;onReady();}
           notice('');
+          videoPreview?.receive(messages);
           if(surface==='guitar')void showGuitarModel(messages[0].createSurface);
           render();
         }else if(view&&!viewport.inert){
           for(const message of messages)view.receive(message);
+          videoPreview?.receive(messages);
         }else throw Error('Missing initial instrument surface');
       }catch{
         selected.close();
@@ -160,6 +165,7 @@ export function openBeaconProjection(stage, {host, surface, title, csrf, onReady
       resize.disconnect();
       view?.dispose();
       guitarModel?.dispose();
+      videoPreview?.dispose();
       wrapper.remove();
     },
   };
