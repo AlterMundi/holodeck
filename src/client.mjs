@@ -29,6 +29,7 @@ import {CharacterReviewFlight,matterInspectionCamera} from './character-review-c
 import {bindMatterFlight,bindMatterHologram} from './matter-flight.mjs';
 import {matterInspectionNear} from './matter-contact.mjs';
 import {constrainInteriorCamera} from './interior-camera.mjs';
+import {bindAvatarFraming,bindCloseAvatar} from './avatar-camera.mjs';
 import {capWorldPixelRatio,usesLightGraphics} from './render-pixel-budget.mjs';
 import {bindVideoSettings} from './video-settings.mjs';
 import {BackgroundFocus} from './background-focus.mjs';
@@ -79,6 +80,21 @@ if(reviewedHudLook)document.body.dataset.hudLook=reviewedHudLook;
 bindHudAppearance(document,window);
 
 const base=new URL('./',document.baseURI);
+const dockToggle=document.getElementById('dock-toggle');
+const dockPreference='holodeck.tools.expanded';
+function showTools(expanded){
+  document.body.toggleAttribute('data-tools-expanded',expanded);
+  dockToggle.setAttribute('aria-expanded',String(expanded));
+  dockToggle.textContent=expanded?'Ocultar':'Herramientas';
+  dockToggle.setAttribute('aria-label',expanded?'Ocultar herramientas':'Mostrar herramientas');
+}
+try{showTools(sessionStorage.getItem(dockPreference)==='true');}catch{showTools(false);}
+dockToggle.addEventListener('click',()=>{
+  const expanded=dockToggle.getAttribute('aria-expanded')!=='true';
+  showTools(expanded);
+  try{sessionStorage.setItem(dockPreference,String(expanded));}catch{}
+});
+
 const url=path=>new URL(path,base);
 const socket=path=>{const target=url(path);target.protocol=location.protocol==='https:'?'wss:':'ws:';return target.href;};
 const animations={airAnimationFileUrl:url('assets/anim_air.glb').href,idleAnimationFileUrl:url('assets/anim_idle.glb').href,
@@ -365,12 +381,15 @@ function startInterior(space){
       };
       let releaseHeadroom,releaseRun;
       const reducedMotion=document.defaultView.matchMedia('(prefers-reduced-motion: reduce)');
+      const releaseFraming=bindAvatarFraming(options.coreCameraManager,renderer.composer.renderer.domElement,
+        ()=>client.getCharacterManager().localController?.config.quaternion,()=>!entering&&!visitor.isOpeningOverWorld());
       const releaseAnimation=bindFlightAvatarAnimation(renderer.characterManager,()=>({
         peerPoses:poses.peers,grounded:client.getCharacterManager().localController?.characterOnGround,
         glanceMotion:!reducedMotion.matches&&!document.hidden,
         crouch:client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt'),
       }));
-      renderer.dispose=()=>{poses.dispose();releaseRun?.();releaseHeadroom?.();releaseAnimation();frameBudget.dispose();picker.dispose();actionLabel.dispose();galleryModels.clear();dispose();};
+      const releaseCloseAvatar=bindCloseAvatar(renderer.characterManager,options.coreCameraManager);
+      renderer.dispose=()=>{releaseFraming();releaseCloseAvatar();poses.dispose();releaseRun?.();releaseHeadroom?.();releaseAnimation();frameBudget.dispose();picker.dispose();actionLabel.dispose();galleryModels.clear();dispose();};
       queueMicrotask(()=>{
         releaseRun=bindWorldKeyShortcuts(client.keyInputManager);
         releaseHeadroom=bindInteriorHeadroom(client.getCharacterManager(),()=>true);
@@ -877,6 +896,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       pan:(x,y)=>tableFlight.translateInspection(client.getCharacterManager().localController,x,y),
     },()=>outsideRing()&&!flightEnabled&&(radialMovementMode==='swim'||radialMovementMode==='surface')&&
       !entering&&!moving&&!tableFlight.active&&!document.hidden);
+    const releaseFraming=bindAvatarFraming(options.coreCameraManager,worldInteractionCanvas,
+      ()=>client.getCharacterManager().localController?.config.quaternion,
+      ()=>!entering&&!moving&&!tableFlight.inspectParts&&!document.hidden);
     const aiming=()=>releaseOrbit.aiming()&&!entering&&!moving&&!tableFlight.active&&!document.hidden;
     const mapPanel=document.querySelector('#space-travel');
     const minimap=bindToroidalMinimap(mapPanel);
@@ -934,7 +956,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(moving||!inside||!sharedSurface())return;
         worktableTopic={reference,label};openConversation(true);
       }});
-    const tools={map:document.getElementById('map-tool'),talk:document.getElementById('talk'),
+    const tools={toggle:dockToggle,map:document.getElementById('map-tool'),talk:document.getElementById('talk'),
       mic:document.getElementById('tool-mic'),speaker:document.getElementById('tool-speaker'),
       appearance:document.getElementById('appearance-open'),video:document.getElementById('video-open'),
       bridge:document.getElementById('bridge'),plant:document.getElementById('plant'),undo:document.getElementById('undo'),
@@ -945,10 +967,10 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const activityAllowed=()=>!inside&&document.getElementById('conversation-panel').hidden&&
       document.getElementById('creator').hidden;
     const readTools=operating=>Object.fromEntries(Object.entries(tools).map(([id,element])=>[id,{
-      label:['mic','speaker'].includes(id)?element.textContent.trim():id==='undo'?'Deshacer':id==='visit'&&element.textContent.startsWith('Visitar ')?'Visitar':
+      label:['toggle','mic','speaker'].includes(id)?element.textContent.trim():id==='undo'?'Deshacer':id==='visit'&&element.textContent.startsWith('Visitar ')?'Visitar':
         element.getAttribute('aria-label')??element.textContent.trim(),
       visible:(id==='activity'?activityAllowed():id==='fullscreen'?element.hasAttribute('data-fullscreen-available'):!element.hidden)&&
-        (['map','talk','mic','speaker','appearance','video','fullscreen'].includes(id)||['visit','endVisit'].includes(id)&&visitAllowed()&&!operating||!inside&&!operating&&
+        (['toggle','map','talk','mic','speaker','appearance','video','fullscreen'].includes(id)||['visit','endVisit'].includes(id)&&visitAllowed()&&!operating||!inside&&!operating&&
           !['visit','endVisit'].includes(id))
         &&(!['appearance','video'].includes(id)||document.getElementById('conversation-panel').hidden),
       disabled:element.disabled,
@@ -1198,6 +1220,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       crouch:!moving&&client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt'),
     }),{clock:()=>performance.now()});
     const releaseHologram=bindMatterHologram(renderer.characterManager,tableFlight,tabletopPlayers);
+    const releaseCloseAvatar=bindCloseAvatar(renderer.characterManager,options.coreCameraManager,()=>!tableFlight.active);
     let matterComposerHadFocus=false;
     const tableInputAllowed=()=>!moving&&!entering&&!document.hidden&&document.hasFocus()&&!mapPanel.open&&
       !document.querySelector('#conversation-panel').contains(document.activeElement)&&
@@ -1561,7 +1584,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
       }
     };
-    renderer.dispose=()=>{weatherRequest?.abort();rain.dispose();avatarPracticals.dispose();backgroundFocus?.dispose();poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();worldFocus.abort();tableAttention.dispose();pointRequest?.controller.abort();document.removeEventListener('visibilitychange',abortHiddenPoint);points.dispose();if(pointView===points)pointView=null;display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();actionLabel.dispose();flightWake.dispose();waterSplash.dispose();waterWake.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();houseLight.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{weatherRequest?.abort();rain.dispose();avatarPracticals.dispose();backgroundFocus?.dispose();poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseFraming();releaseOrbit();worldFocus.abort();tableAttention.dispose();pointRequest?.controller.abort();document.removeEventListener('visibilitychange',abortHiddenPoint);points.dispose();if(pointView===points)pointView=null;display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseCloseAvatar();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();actionLabel.dispose();flightWake.dispose();waterSplash.dispose();waterWake.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();houseLight.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
       if(client.keyInputManager){
         const keys=client.keyInputManager,shouldCapture=keys.shouldCaptureKeyPress;

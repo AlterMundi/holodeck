@@ -101,7 +101,7 @@ body:has(#beacon-panel[data-beacon-hud]) canvas[data-hud-render-layer]{z-index:3
 
 .world-interaction-canvas{touch-action:none}
 .touch-controls[data-native-locomotion],.touch-controls[data-touch-paused]{display:none!important}
-body[data-touch-moving] :is(#hud,#companion-status,#dock,#view-tools,#world-tools){display:none!important}
+body[data-touch-moving] :is(#hud,#companion-status,#world-tools){display:none!important}
 body[data-compact-matter] #hud{display:none!important}
 .touch-legacy-lane button{font-size:0!important}
 .touch-legacy-lane button::before{content:"";display:inline-block;width:.85rem;height:.85rem;border:solid currentColor;border-width:2px 0 0 2px;transform:translateY(.2rem) rotate(45deg)}
@@ -358,7 +358,7 @@ body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-controls
 .inside-house #creator,.inside-house #pointing,.inside-house #play-near,.inside-house #recovery-panel{display:none!important}
 .inside-house #world-tools,.inside-house #dock,.inside-house #companion-status{display:none}
 body.inside-house #dock{display:flex;left:50%;right:auto;bottom:max(24px,env(safe-area-inset-bottom));transform:translateX(-50%)}
-.inside-house #dock button:not(#talk):not(#map-tool):not(#tool-mic):not(#tool-speaker),.inside-house:not(.has-situated-conversation) #talk{display:none}
+.inside-house #dock button:not(#dock-toggle):not(#talk):not(#map-tool):not(#tool-mic):not(#tool-speaker),.inside-house:not(.has-situated-conversation) #talk{display:none}
 #world-minimap{display:block;width:min(224px,65vw);height:auto;border:1px solid var(--line);border-radius:9px;margin-bottom:8px}
 #space-travel:not([open]){display:none}
 body.is-operating-matter #dock{visibility:visible;pointer-events:auto}
@@ -371,7 +371,7 @@ body.is-operating-matter #dock #map-tool{display:none}
   body:not(.inside-house):has(#garden-create:not([hidden])) #play-near{top:265px}
   body:not(.inside-house):has(#garden-create:not([hidden])):has(#visit-near[hidden]) #play-near{top:205px}
 }
-body[data-a2ui-toolbelt] #view-tools,dialog[data-native-settings]{display:none!important}
+body:not([data-tools-expanded]) :is(#dock button:not(#dock-toggle),#view-tools,#activity-open),body[data-a2ui-toolbelt] #view-tools,dialog[data-native-settings]{display:none!important}
 #view-tools{position:fixed;right:22px;bottom:max(24px,env(safe-area-inset-bottom));z-index:20;display:flex;gap:8px}
 #video-open{display:grid;place-items:center;width:44px;padding:0}
 .video-icon{display:block;width:20px;height:14px;border:1.5px solid currentColor;border-radius:3px;position:relative}
@@ -513,7 +513,7 @@ body[data-world-starting] #pending-book-tool{visibility:hidden;pointer-events:no
   <div id="release-update" role="status" hidden></div>
 </div>
 <div id="room-passage" tabindex="-1"><span class="passage-energy" aria-hidden="true"></span><div class="passage-copy"><p id="room-passage-message" role="status"></p><span class="passage-orbit" aria-hidden="true"></span><button id="room-passage-retry" type="button" hidden>Reintentar</button></div></div>
-<nav id="dock" class="glass" aria-label="Acciones del taller"><button id="bridge" class="primary" hidden>Conectar islas</button><button id="plant" hidden>Crear luz</button><button id="map-tool" type="button" aria-expanded="false" aria-controls="space-travel" disabled>Minimapa</button><button id="talk" aria-expanded="false" aria-controls="conversation-panel">Conversar</button><button id="tool-mic" type="button" aria-pressed="false" hidden>Mic</button><button id="tool-speaker" type="button" aria-label="Activar respuestas habladas" aria-pressed="false" hidden disabled>🔇 Audio</button><button id="undo" hidden class="icon" title="Deshacer mi último cambio" aria-label="Deshacer mi último cambio" disabled>↶</button></nav>
+<nav id="dock" class="glass" aria-label="Acciones del taller"><button id="dock-toggle" type="button" aria-expanded="false" aria-label="Mostrar herramientas">Herramientas</button><button id="bridge" class="primary" hidden>Conectar islas</button><button id="plant" hidden>Crear luz</button><button id="map-tool" type="button" aria-expanded="false" aria-controls="space-travel" disabled>Minimapa</button><button id="talk" aria-expanded="false" aria-controls="conversation-panel">Conversar</button><button id="tool-mic" type="button" aria-pressed="false" hidden>Mic</button><button id="tool-speaker" type="button" aria-label="Activar respuestas habladas" aria-pressed="false" hidden disabled>🔇 Audio</button><button id="undo" hidden class="icon" title="Deshacer mi último cambio" aria-label="Deshacer mi último cambio" disabled>↶</button></nav>
 <section id="pointing" class="glass" aria-label="Indicar un objeto" hidden><p id="point-label"></p><div class="row"><button id="point-visit" class="primary" type="button" hidden>Visitar contenido</button><button id="point-send" class="primary" type="button">Señalar</button><button id="point-edit" type="button" hidden>Editar luz</button><button id="point-clear" type="button">Cancelar</button></div></section>
 <details id="play-near" class="glass" hidden><summary><strong id="play-title"></strong> · Cómo jugar<span id="play-progress" role="status"></span></summary><p id="play-instruction"></p><button id="play-edit" type="button" hidden>Editar jardín</button></details>
 <div id="indoor-design-tools" hidden><button id="indoor-design" type="button">Diseñar jardín</button><button id="indoor-design-forget" type="button" hidden>Cerrar seguimiento</button></div>
