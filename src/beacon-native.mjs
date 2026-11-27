@@ -13,6 +13,7 @@ const nativeId='lab-worktable';
 const guitarRows={mechanism:'settings',startup:'startupStatus',support:'supportLabel'};
 const routeViewPattern=/^[a-z0-9][a-z0-9_-]{0,79}(?:\.(?:[0-9]|[12][0-9]|3[01]))?$/;
 const pendingPhases=new Set(['queued','starting']);
+const projectionGraceMs=12000;
 const audioTrouble=Object.freeze({
   input:'La entrada de audio seleccionada no está disponible. Revisá su conexión y reintentá.',
   output:'La salida de audio seleccionada no está disponible. Revisá su conexión y reintentá.',
@@ -54,6 +55,7 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
   viewScene.add(parent);
   const model=new BeaconNativeModel(surface);
   let selected,source,csrf,stream,binding,timer,latestView,lastProblem='',editProblem='',viewKey,refreshing=false,voiceRoute='';
+  let projectionDeadline=0;
   let downloadingPreset=false;
   let presetFile,importingPreset=false;
   const outbound=createSpatialHud({parent,document,accessibilityRoot:stage,controlStyle:'optical',
@@ -63,11 +65,13 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
       if(action.name==='chooseStation'){
         selected=action.context.host;
         voiceRoute='';
+        projectionDeadline=0;
         void refresh();
       }else if(action.name==='retryStation'){
         if(stream){stream.close();stream=null;}
         explicit=true;
         attempted.delete(selected);
+        projectionDeadline=0;
         void refresh();
       }else if(action.name==='reloadGuitarModel'&&surface==='guitar'&&latestView){
         clearGuitar();
@@ -614,7 +618,8 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
         status('Este instrumento no está disponible en esta estación.');return;
       }
       csrf=summary.csrf;
-      if(service.status==='ready'&&service[readFlag[surface]??'projectionReady']&&csrf){
+      if(!csrf){status('Se necesita acceso a Harmonic Lab.');return;}
+      if(service.status==='ready'&&service[readFlag[surface]??'projectionReady']){
         binding=surface==='router'?service.projectionSession:undefined;
         if(surface==='router'&&!/^[a-f0-9]{16}$/.test(binding??'')){
           retry('No se pudo identificar la sesión de Ruteos.');return;
@@ -629,7 +634,7 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
         status(host.job.services?.includes(service.id)?'Preparando el instrumento…':'La estación está preparando otro instrumento.');
       }else if(failure&&!explicit){
         retry(failure);return;
-      }else if(!attempted.has(selected)&&(service.status==='stopped'||surface==='spatializer')&&csrf){
+      }else if(!attempted.has(selected)&&(service.status==='stopped'||surface==='spatializer')){
         explicit=false;
         attempted.add(selected);
         status('Preparando el instrumento…');
@@ -645,6 +650,12 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
           if(signal.aborted)return;
           // A missing receipt can hide an accepted start. Observe the station before showing retry.
         }
+      }else if(service.status==='ready'){
+        projectionDeadline||=performance.now()+projectionGraceMs;
+        if(performance.now()>=projectionDeadline){
+          retry('El servicio está en marcha, pero sus controles todavía no responden.');return;
+        }
+        status('El servicio está en marcha. Esperando sus controles…');
       }else{
         retry('Los controles del instrumento todavía no están disponibles.');return;
       }
