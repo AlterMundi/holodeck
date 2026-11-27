@@ -30,9 +30,69 @@ test('Three.js catalog controls use the original A2UI action and confirmed model
  assert.deepEqual(action.context,{sessionId:'test',revision:7,gain:1.3});
  model.receive([{version:'1.0',updateDataModel:{surfaceId:'shaper',path:'/',value:{gain:2,sessionId:'test',revision:8,preset:''}}}]);
  model.render('Shaper');
- assert.deepEqual(model.action('save','button').action.context,{sessionId:'test',revision:8,gain:2});
+ assert.equal(model.action('save','button'),undefined);
+ assert.equal(model.actionConflict,true);
+ model.render('Shaper');
+ model.action('gain','range',2.1);
+ assert.deepEqual(model.action('save','button').action.context,{sessionId:'test',revision:8,gain:2.1});
  model.action('tabs','tab','preset');
  view=model.render('Shaper');
  assert.equal(view.components.find(node=>node.id==='preset').component,'HudTextInput');
  assert.equal(model.action('save','button'),undefined);
+});
+
+test('an edit cannot claim a newer revision even if the changed control value matches',()=>{
+ const model=new BeaconNativeModel('shaper');
+ model.receive([initial]);
+ model.render('Shaper');
+ model.action('gain','range',1.2);
+ model.receive([{version:'1.0',updateDataModel:{surfaceId:'shaper',path:'/revision',value:8}}]);
+ model.render('Shaper');
+ assert.equal(model.action('save','button'),undefined);
+ assert.equal(model.actionConflict,true);
+ assert.equal(model.drafts.size,0);
+});
+
+test('independent Spatializer bands do not invalidate each other',()=>{
+ const model=new BeaconNativeModel('spatializer');
+ model.receive([{version:'1.0',createSurface:{surfaceId:'spatializer',
+  dataModel:{stream:'engine',bands:{gain6:{observed:1,desired:1},gain7:{observed:0,desired:0}}},
+  components:[
+   {id:'root',component:'Column',children:['gain6','apply']},
+   {id:'gain6',component:'Slider',label:'Ganancia',min:0,max:4,steps:40,value:at('/bands/gain6/desired')},
+   {id:'apply',component:'Button',action:{event:{name:'setSpatializerControl',context:{
+    expected:at('/bands/gain6/observed'),target:at('/bands/gain6/desired'),stream:at('/stream'),control:'gain6',
+   }}}},
+  ],
+ }}]);
+ model.render('Spatializer');
+ model.action('gain6','range',1.3);
+ model.receive([{version:'1.0',updateDataModel:{surfaceId:'spatializer',path:'/bands/gain7/observed',value:2}}]);
+ model.render('Spatializer');
+ assert.deepEqual(model.action('apply','button').action.context,{expected:1,target:1.3,stream:'engine',control:'gain6'});
+ model.receive([{version:'1.0',updateDataModel:{surfaceId:'spatializer',path:'/bands/gain6/observed',value:2}}]);
+ model.render('Spatializer');
+ assert.equal(model.action('apply','button'),undefined);
+ assert.equal(model.actionConflict,true);
+});
+
+test('a profile draft nested under an action binding retains the original profile version',()=>{
+ const model=new BeaconNativeModel('operator');
+ model.receive([{version:'1.0',createSurface:{surfaceId:'operator',
+  dataModel:{enabled:{audio:false,body:true},profileVersion:'old'},
+  components:[
+   {id:'root',component:'Column',children:['audio','save']},
+   {id:'audio',component:'CheckBox',label:'Audio',value:at('/enabled/audio')},
+   {id:'save',component:'Button',action:{event:{name:'saveProfile',context:{
+    enabled:at('/enabled'),profileVersion:at('/profileVersion'),
+   }}}},
+  ],
+ }}]);
+ model.render('Operación del Lab');
+ model.action('audio','check');
+ assert.deepEqual(model.action('save','button').action.context,{enabled:{audio:true,body:true},profileVersion:'old'});
+ model.receive([{version:'1.0',updateDataModel:{surfaceId:'operator',path:'/profileVersion',value:'new'}}]);
+ model.render('Operación del Lab');
+ assert.equal(model.action('save','button'),undefined);
+ assert.equal(model.actionConflict,true);
 });

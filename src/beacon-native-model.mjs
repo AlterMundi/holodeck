@@ -32,6 +32,23 @@ function resolve(value,model){
   return value;
 }
 
+function bindings(value,paths=new Set()){
+  if(!value||typeof value!=='object')return paths;
+  if(typeof value['@path']==='string'&&segments(value['@path']))paths.add(value['@path']);
+  else for(const entry of Object.values(value))bindings(entry,paths);
+  return paths;
+}
+
+function containsBinding(binding,pointer){
+  return binding==='/'||binding===pointer||pointer.startsWith(binding+'/');
+}
+
+function draftGuard(event,paths,pointer,data){
+  if(![...paths].some(path=>containsBinding(path,pointer)))return;
+  const authority=[...paths].filter(path=>!containsBinding(path,pointer)).map(path=>get(data,path));
+  return JSON.stringify([event.name,event.context,authority]);
+}
+
 export class BeaconNativeModel {
   constructor(surface){
     this.surface=surface;
@@ -39,6 +56,7 @@ export class BeaconNativeModel {
     this.input=new Map();
     this.tabs=new Map();
     this.drafts=new Map();
+    this.actionConflict=false;
     this.data={};
     this.page=0;
   }
@@ -50,6 +68,7 @@ export class BeaconNativeModel {
       if(initial?.surfaceId===this.surface){
         this.nodes.clear();
         this.drafts.clear();
+        this.actionConflict=false;
         this.tabs.clear();
         this.page=0;
         this.data=structuredClone(initial.dataModel??{});
@@ -62,8 +81,12 @@ export class BeaconNativeModel {
         const before=structuredClone(this.data);
         if(model.path==='/')this.data=structuredClone(model.value??{});
         else put(this.data,model.path,structuredClone(model.value));
-        for(const pointer of this.drafts.keys())
-          if(JSON.stringify(get(before,pointer))!==JSON.stringify(get(this.data,pointer)))this.drafts.delete(pointer);
+        for(const [pointer,draft] of this.drafts){
+          const observed=JSON.stringify(get(this.data,pointer));
+          if(observed===JSON.stringify(get(before,pointer)))continue;
+          if(observed===JSON.stringify(draft.value))this.drafts.delete(pointer);
+          else draft.invalid=true;
+        }
       }
     }
   }
@@ -75,6 +98,7 @@ export class BeaconNativeModel {
   }
 
   action(id,kind,value){
+    this.actionConflict=false;
     if(kind==='page'){
       if(Number.isInteger(value)&&value>=0)this.page=value;
       return;
@@ -86,15 +110,27 @@ export class BeaconNativeModel {
       return;
     }
     if(kind==='button'){
-      const data=structuredClone(this.data);
-      for(const [pointer,change] of this.drafts)put(data,pointer,change);
       const event=input.node.action?.event;
       if(typeof event?.name!=='string')return;
+      const paths=bindings(event.context);
+      const changes=[];
+      for(const [pointer,draft] of this.drafts){
+        const expected=draftGuard(event,paths,pointer,this.data);
+        if(expected===undefined)continue;
+        if(draft.invalid||draft.guards.get(id)!==expected){
+          this.actionConflict=true;
+          this.drafts.delete(pointer);
+        }else changes.push([pointer,draft.value]);
+      }
+      if(this.actionConflict)return;
+      const data=structuredClone(this.data);
+      for(const [pointer,value] of changes)put(data,pointer,value);
       return {version:'1.0',action:{name:event.name,surfaceId:this.surface,sourceComponentId:id,
         timestamp:new Date().toISOString(),context:resolve(event.context??{},data)}};
     }
     if(kind==='check'){
-      const prior=this.drafts.has(input.pointer)?this.drafts.get(input.pointer):get(this.data,input.pointer);
+      const draft=this.drafts.get(input.pointer);
+      const prior=draft&&!draft.invalid?draft.value:get(this.data,input.pointer);
       value=!prior;
     }
     if(kind==='choice'){
@@ -106,12 +142,20 @@ export class BeaconNativeModel {
       value=Number(value);
     }
     if((kind==='range'&&!Number.isFinite(value))||(kind==='text'&&typeof value!=='string'))return;
-    this.drafts.set(input.pointer,value);
+    const guards=new Map();
+    for(const [buttonId,node] of this.nodes){
+      const event=node.component==='Button'&&node.action?.event;
+      if(!event)continue;
+      const guard=draftGuard(event,bindings(event.context),input.pointer,this.data);
+      if(guard!==undefined)guards.set(buttonId,guard);
+    }
+    this.drafts.set(input.pointer,{value,guards,invalid:false});
   }
 
   render(title){
     const rows=[];
     const data={};
+    const gestureKey=JSON.stringify([this.data.sessionId,this.data.stream,this.data.revision,this.data.profileVersion]);
     this.input.clear();
     const text=(id,label,style='body')=>({id,component:'HudText',label:String(label??''),style});
     const visit=(id,ancestors=new Set())=>{
@@ -125,7 +169,8 @@ export class BeaconNativeModel {
       }
       const label=String(resolve(node.label,this.data)??'');
       const pointer=node.value?.['@path'];
-      const shown=this.drafts.has(pointer)?this.drafts.get(pointer):resolve(node.value,this.data);
+      const draft=this.drafts.get(pointer);
+      const shown=draft&&!draft.invalid?draft.value:resolve(node.value,this.data);
       const modelKey='value'+rows.length;
       const draftKey='draft'+rows.length;
       const field={id,label,value:path(modelKey),draft:path(draftKey)};
@@ -142,7 +187,7 @@ export class BeaconNativeModel {
         if(!Number.isFinite(min)||!Number.isFinite(max)||max<=min) return;
         data[modelKey]=data[draftKey]=shown;
         input('range');
-        rows.push({...field,component:'HudRange',min,max,step:(max-min)/(steps||100),
+        rows.push({...field,component:'HudRange',min,max,step:(max-min)/(steps||100),gestureKey,
           action:localAction(id,'range',path(draftKey))});
       }else if(node.component==='TextField'&&segments(pointer)?.length){
         const kind=node.variant==='number'?'number':'text';

@@ -41,7 +41,7 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
   parent.scale.setScalar(.57);
   world.scene.add(parent);
   const model=new BeaconNativeModel(surface);
-  let selected,source,csrf,stream,binding,timer,latestView,lastProblem='',viewKey,refreshing=false;
+  let selected,source,csrf,stream,binding,timer,latestView,lastProblem='',editProblem='',viewKey,refreshing=false;
   const outbound=createSpatialHud({parent,document,accessibilityRoot:stage,controlStyle:'optical',
     send(message){
       const action=message.action;
@@ -57,6 +57,7 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
       }else if(action.name==='stationInput'&&latestView){
         const {id,kind,value}=action.context;
         const envelope=model.action(id,kind,value);
+        editProblem=model.actionConflict?'El valor cambió en otra vista. Revisá el ajuste antes de aplicarlo.':'';
         if(envelope)void write(envelope);
         else showModel();
       }
@@ -189,7 +190,7 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
   function showModel(syncModel=true){
     latestView=true;
     const view=model.render(title);
-    const problem=guitarProblem??lastProblem;
+    const problem=guitarProblem||(editProblem||lastProblem);
     if(problem){
       view.components[0].children.splice(1,0,'station_error');
       view.components.push({id:'station_error',component:'HudText',label:problem,lines:2});
@@ -208,20 +209,13 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
     try{
       const response=await fetch(url('/actions'),{method:'POST',credentials:'same-origin',signal,
         headers:{'Content-Type':'application/json','X-Lab-CSRF':csrf},body:JSON.stringify(envelope)});
+      await response.body?.cancel().catch(()=>{});
+      // The ordered instrument stream owns readback. A late action receipt
+      // must not replace state this visit already received from another view.
       if(surface==='operator'){
-        const receipt=await response.json();
-        if(response.ok&&Array.isArray(receipt)){
-          const confirmed=receipt[0]?.createSurface;
-          if(confirmed?.surfaceId===surface){
-            model.receive([{version:'1.0',updateDataModel:{surfaceId:surface,path:'/',value:confirmed.dataModel}},
-              {version:'1.0',updateComponents:{surfaceId:surface,components:confirmed.components}}]);
-            if(envelope.action.name==='saveProfile')model.drafts.clear();
-          }
-        }
         lastProblem=response.ok?(envelope.action.name==='saveProfile'?'Configuración guardada.':'Inicio solicitado.'):
           response.status===409?'Cambió el estado del equipo. Revisalo antes de continuar.':'No se pudo confirmar la operación.';
       }else{
-        await response.body?.cancel().catch(()=>{});
         lastProblem=response.status===409?'Cambió el instrumento. Revisá los controles y volvé a intentar.':
           response.ok?'':'No se pudo confirmar el cambio.';
       }
