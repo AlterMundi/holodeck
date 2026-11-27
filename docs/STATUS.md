@@ -1,5 +1,33 @@
 # Current MVP work
 
+## November 27 — Traveling sky, flight gesture and Residence chambers
+
+Protected release `97dc4a0f2600` keeps the neighborhood at José de la
+Quintana. The major ring spans terrestrial longitude and the tube spans
+latitude, reflecting across the poles. Solar and lunar sight lines use
+the local horizon and the current UTC instant. The atlas orientation
+uses the same horizon to equatorial rotation in the sky and water.
+The local-weather feed still represents the base in Quintana.
+
+Two short Space taps add one airborne impulse and a tucked rotation. A
+held second press selects flight. Brief first presses survive to the next
+simulation step. The landing clip preserves ground position and yields
+to the walking or running blend after initial contact. The Explorer
+buckle cone reaches forward. The authored flame cells and blue local
+light follow airborne flight.
+
+Cámara 06 enters Harmonic Lab, 07 enters the Matter workroom, and 08
+enters Character Studio. The Matter selector now includes the existing
+protected Explorer review. Chromium entered the three rooms, showed the
+studio hero clips, and selected `hero_landing` from the A2UI worktable
+against the exact Home GLB. Another fixture moved between night and day
+at one instant, observed thrust on and off, and landed while walking
+after two short taps. The full Node suite passed 527 tests with two skips.
+
+The deployed runtime and all 92 installed files matched. Protected
+HTTPS served the exact client, atlas, avatar and Residence assets.
+The immediate code rollback is `4c4bc6b7433a`.
+
 ## November 27 — Quintana sky and companion speech
 
 Protected release `f57d1caec24e` shipped the photographic sky, local-weather
