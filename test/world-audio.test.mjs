@@ -91,3 +91,17 @@ test('an actual newer light edit cues once while same-revision repeats stay sile
  assert.equal(audio.observe(edited),'light-place');assert.equal(audio.status().cueCount,1);
  advance();audio.observe(edited);assert.equal(audio.status().cueCount,1);await audio.dispose();
 });
+
+
+test('the pending cue is a distinct, bounded ascending chirp under the existing sound opt-in',async()=>{
+ const {audio}=setup();
+ assert.equal(audio.playCue('pending-new'),false);
+ await audio.enableFromGesture();
+ assert.equal(audio.playCue('pending-new'),true);
+ const notes=[...audio.cues].map(({osc})=>[osc.type,osc.frequency.value]);
+ assert.deepEqual(notes,[['triangle',523.25],['triangle',783.99]]);
+ assert.equal(audio.playCue('pending-new'),false);
+ await audio.disable();
+ assert.equal(audio.playCue('pending-new'),false);
+ await audio.dispose();
+});

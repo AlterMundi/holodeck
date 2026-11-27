@@ -94,7 +94,7 @@ export class CompanionAvatar{
     if(offset!==null&&Math.abs(offset)<.5)point.addScaledVector(up,offset);
   }
 
-  update({position,yaw=0,outdoor,table,gaze,gazeMesh,eye,visible,seconds,water=null,grounded=true,explicitFlight=false,crouch=false,colliders}){
+  update({position,yaw=0,outdoor,table,gaze,gazeMesh,eye,notification=0,notificationTarget,visible,seconds,water=null,grounded=true,explicitFlight=false,crouch=false,colliders}){
     const root=this.figure?.root;
     if(!root)return;
     root.visible=Boolean(position&&visible);
@@ -296,11 +296,11 @@ export class CompanionAvatar{
     const bank=small&&speed<.2?0:airborne?clamp(-turnRate*(.07+.055*speed),-.52,.52):
       wet?clamp(-turnRate*.10,-.30,.30):clamp(-turnRate*speed*.022,-.17,.17);
     const level=moving&&now-(this.speechAt??-Infinity)<300?this.level:0;
-    const strolling=small?gaze:point||null;
+    const strolling=notificationTarget??(small?gaze:point||null);
     if(reset&&!small&&moving&&!relocated)this.figure.greet();
     const useGroundTravel=groundSpeed!==null&&!airborne&&!wet;
     this.figure.pose({seconds:dt,level,speed:useGroundTravel?groundSpeed:speed,
-      velocity:useGroundTravel?this.groundPoseVelocity:this.followVelocity,motion:moving,medium:small?'air':this.medium,
+      velocity:useGroundTravel?this.groundPoseVelocity:this.followVelocity,motion:moving,notification,medium:small?'air':this.medium,
       wading:sample?immersion(COMPANION_BODY,measured):0,gaze:strolling,attending:Boolean(point||small&&gaze),reset,
       liftAllowed:flying,place:this.place,pitch,bank,crouch:crouch&&supported?1:0,braking:Math.max(0,-thrust),miniature:small});
     this.transfer.paint(root,relocated);

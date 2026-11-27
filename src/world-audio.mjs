@@ -26,7 +26,7 @@ export class WorldAudio{
   notify(){try{this.onChange(this.status());}catch{}}
   breakContinuity(){this.baseline=null;this.lastObservation=-Infinity;this.continuityVersion++;}
   node(value){this.nodes.add(value);return value;}
-  stopCues(){for(const cue of [...this.cues]){try{cue.osc.stop();}catch{}cue.osc.disconnect();cue.gain.disconnect();this.nodes.delete(cue.osc);this.nodes.delete(cue.gain);this.cues.delete(cue);}}
+  stopCues(){for(const cue of [...this.cues]){try{cue.osc.stop();}catch{}cue.osc.disconnect();cue.gain.disconnect();cue.panner?.disconnect();this.nodes.delete(cue.panner);this.nodes.delete(cue.osc);this.nodes.delete(cue.gain);this.cues.delete(cue);}}
   mute(){
     if(this.master&&this.context){try{this.master.gain.cancelScheduledValues(this.context.currentTime);this.master.gain.setValueAtTime(0,this.context.currentTime);}catch{}}
     this.stopCues();
@@ -100,16 +100,21 @@ export class WorldAudio{
     try{if(cue&&this.playCue(cue))return cue;}catch{this.stopCues();this.notify();}
     return null;
   }
-  playCue(kind){
+  playCue(kind,{pan=0}={}){
     if(!this.status().active||this.context.currentTime-this.lastCue<COOLDOWN_SECONDS)return false;
-    const frequencies=kind==='bridge-open'?[392,587.33]:kind==='bridge-close'?[587.33,392]:kind==='light-remove'?[440]:[659.25];
+    const signal=kind==='pending-new';
+    const frequencies=signal?[523.25,783.99]:kind==='bridge-open'?[392,587.33]:kind==='bridge-close'?[587.33,392]:kind==='light-remove'?[440]:[659.25];
     if(this.cues.size+frequencies.length>MAX_CUE_NODES)return false;
     this.lastCue=this.context.currentTime;
     frequencies.forEach((frequency,index)=>{
-      const osc=this.node(this.context.createOscillator()),gain=this.node(this.context.createGain());const at=this.context.currentTime+index*.09,end=at+.2;
-      osc.type='sine';osc.frequency.value=frequency;gain.gain.setValueAtTime(.0001,at);gain.gain.linearRampToValueAtTime(.035,at+.012);gain.gain.exponentialRampToValueAtTime(.0001,end);
-      osc.connect(gain);gain.connect(this.master);const cue={osc,gain};this.cues.add(cue);
-      osc.onended=()=>{osc.disconnect();gain.disconnect();this.nodes.delete(osc);this.nodes.delete(gain);this.cues.delete(cue);};
+      const osc=this.node(this.context.createOscillator()),gain=this.node(this.context.createGain());const at=this.context.currentTime+index*(signal?.075:.09),end=at+(signal?.115:.2);
+      osc.type=signal?'triangle':'sine';osc.frequency.value=frequency;gain.gain.setValueAtTime(.0001,at);gain.gain.linearRampToValueAtTime(.035,at+.012);gain.gain.exponentialRampToValueAtTime(.0001,end);
+      osc.connect(gain);
+      const panner=signal&&this.context.createStereoPanner?this.node(this.context.createStereoPanner()):null;
+      if(panner){panner.pan.value=Math.max(-1,Math.min(1,pan||0));gain.connect(panner);panner.connect(this.master);}
+      else gain.connect(this.master);
+      const cue={osc,gain,panner};this.cues.add(cue);
+      osc.onended=()=>{osc.disconnect();gain.disconnect();panner?.disconnect();this.nodes.delete(panner);this.nodes.delete(osc);this.nodes.delete(gain);this.cues.delete(cue);};
       osc.start(at);osc.stop(end+.02);
     });
     this.cueCount++;return true;

@@ -18,7 +18,8 @@ const panel = (label, children) => [
   button('close', 'Cerrar'),
 ];
 const video = [
-  ...panel('Video', ['quality', 'sensitivity', 'fullscreen', 'shortcut', 'status']),
+  ...panel('Ajustes', ['sound', 'quality', 'sensitivity', 'fullscreen', 'shortcut', 'status']),
+  button('sound', path('soundLabel'), {disabled:path('soundDisabled'),pressed:path('soundActive')}),
   choice('quality', 'Gráficos'),
   {id: 'sensitivity', component: 'HudRange', label: 'Sensibilidad (%)', min: 30, max: 240, step: 5,
     value: path('sensitivity'), draft: path('sensitivityDraft'), action: action('sensitivity', {value: path('sensitivityDraft')})},
@@ -54,8 +55,8 @@ function change(input, value, event) {
 // Keep the browser settings adapters as the behavior owners. The visible
 // controls use their live state and invoke the same actions and persistence.
 export class SettingsHud {
-  constructor({document, send, focusControl, focusLauncher, onSurfaceChange}) {
-    Object.assign(this, {send, focusControl, focusLauncher, onSurfaceChange, scope: 0});
+  constructor({document, send, focusControl, focusLauncher, onSurfaceChange,onSound}) {
+    Object.assign(this, {send, focusControl, focusLauncher, onSurfaceChange, onSound, scope: 0});
     const find = id => document.getElementById(id);
     this.dialogs = {appearance: find('appearance-dialog'), video: find('video-dialog')};
     this.launchers = {appearance: find('appearance-open'), video: find('video-open')};
@@ -69,6 +70,7 @@ export class SettingsHud {
     this.quality = find('video-quality');
     this.sensitivity = find('mouse-sensitivity');
     this.fullscreen = find('video-fullscreen');
+    this.sound = find('sound');
     this.videoStatus = find('video-status');
   }
 
@@ -104,6 +106,7 @@ export class SettingsHud {
       return;
     }
     const value = {scope: this.scope, ...(current === 'video' ? {
+      soundLabel:this.sound.textContent,soundDisabled:this.sound.disabled,soundActive:this.sound.getAttribute('aria-pressed')==='true',
       quality: this.quality.value, qualityOptions: options(this.quality),
       qualityDisabled: this.quality.disabled,
       sensitivity: this.sensitivity.valueAsNumber,
@@ -135,6 +138,7 @@ export class SettingsHud {
     if (name === 'close') { this.close(); return; }
     const {value} = context;
     if (active === 'video') {
+      if (name === 'sound') this.onSound?.();
       if (name === 'quality') change(this.quality, value, 'change');
       if (name === 'sensitivity' && Number.isFinite(value) && value >= 30 && value <= 240 && value % 5 === 0)
         change(this.sensitivity, value, 'input');

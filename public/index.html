@@ -21,8 +21,7 @@ body[data-hud-look]{--a2ui-color-primary:var(--gold)}
 body[data-room-look]{--a2ui-color-primary:var(--gold)}
 body[data-room-look] button:not(.primary):not(:disabled):hover{background:var(--control-hover,#245153)}
 .tp-dfwv,.tp-rotv{display:none!important}*{box-sizing:border-box}body{margin:0;background:#abc6c9;color:var(--ink);font:16px/1.45 system-ui,sans-serif;overflow:hidden}button,input,textarea{font:inherit}button{min-height:44px;border:1px solid var(--line);border-radius:13px;background:var(--panel);color:var(--ink);padding:9px 16px;cursor:pointer;box-shadow:0 3px 16px #15383c13}button:hover{border-color:#dce7d380;background:#245153}button:disabled{opacity:.55;cursor:default}button.primary{background:var(--gold);color:#264440;border-color:transparent;font-weight:600}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--mint);outline-offset:3px}button.icon{padding:8px 13px;min-width:44px}.glass{background:var(--panel);border:1px solid var(--line);box-shadow:0 14px 44px #173b3b25;backdrop-filter:blur(16px)}[hidden]{display:none!important}
-#help[data-native-status]:not([hidden]),#hud[data-native-status]:not([hidden]),#companion-status[data-native-status]:not([hidden]),#notice:is([data-native-status],[data-compact-suppressed]):not([hidden]){display:block!important;width:1px!important;height:1px!important;min-width:0!important;max-width:1px!important;padding:0!important;margin:0!important;overflow:hidden;clip-path:inset(50%);pointer-events:none}
-#hud[data-native-status] :is(.brand-mark,small,#people,#sound){display:none!important}
+#help[data-native-status]:not([hidden]),#notice:is([data-native-status],[data-compact-suppressed]):not([hidden]){display:block!important;width:1px!important;height:1px!important;min-width:0!important;max-width:1px!important;padding:0!important;margin:0!important;overflow:hidden;clip-path:inset(50%);pointer-events:none}
 #recovery-panel[data-native-recovery]{display:none!important}
 body:has(dialog[open]) :is(#hud,#companion-status){visibility:hidden}
 #hud{position:fixed;z-index:20;top:max(20px,env(safe-area-inset-top));left:max(20px,env(safe-area-inset-left));display:flex;align-items:center;gap:15px;padding:13px 18px;border-radius:18px;max-width:calc(100vw - 40px);pointer-events:none}.brand-mark{width:34px;height:34px;border:1px solid #e6c995;transform:rotate(45deg);border-radius:8px;display:grid;place-items:center}.brand-mark:after{content:'';width:13px;height:13px;border:1px solid #a4d3bd;border-radius:50%}h1{font:25px/1.1 Georgia,serif;margin:3px 0 2px}small{color:var(--muted);font-size:12px;letter-spacing:.15em;text-transform:uppercase}#people{font-size:14px;color:var(--muted)}#sound{pointer-events:auto;flex:none;min-width:76px;padding:8px 11px;font-size:14px}#sound[aria-pressed=true]{border-color:var(--gold);color:var(--gold)}
@@ -329,7 +328,7 @@ body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-controls
   .passage-copy{color:CanvasText;text-shadow:none}
 }
 .inside-house #creator,.inside-house #pointing,.inside-house #play-near,.inside-house #recovery-panel{display:none!important}
-.inside-house #world-tools,.inside-house #dock,.inside-house #companion-status,.inside-house #sound:not([aria-pressed="true"]){display:none}
+.inside-house #world-tools,.inside-house #dock,.inside-house #companion-status{display:none}
 body.inside-house #dock{display:flex;left:50%;right:auto;bottom:max(24px,env(safe-area-inset-bottom));transform:translateX(-50%)}
 .inside-house #dock button:not(#talk):not(#map-tool),.inside-house:not(.has-situated-conversation) #talk{display:none}
 #world-minimap{display:block;width:min(224px,65vw);height:auto;border:1px solid var(--line);border-radius:9px;margin-bottom:8px}
@@ -381,7 +380,7 @@ body[data-world-starting] :is(canvas,#hud,#dock,#view-tools,#world-tools,#visit-
 #release-dnd:disabled{cursor:wait;opacity:.8}
 #release-update{border-color:#ffd18a;background:#ffdf9f;color:#302217}
 @media(max-width:900px){#release-hud:has(#release-dnd:not([hidden])){flex-wrap:wrap;max-width:calc(100vw - 32px)}}
-#pending-book-tool{position:fixed;z-index:26;right:max(14px,env(safe-area-inset-right));bottom:max(110px,calc(env(safe-area-inset-bottom) + 92px));display:flex;align-items:center;gap:6px;padding:6px 11px;min-width:44px;color:var(--hud-ink,#f6ebd9);background:var(--hud-panel,#0b1b24);border-color:var(--hud-rim,#587980)}
+#pending-book-tool{position:fixed;z-index:26;left:max(14px,env(safe-area-inset-left));top:max(14px,env(safe-area-inset-top));display:flex;align-items:center;gap:6px;padding:6px 11px;min-width:44px;color:var(--hud-ink,#f6ebd9);background:var(--hud-panel,#0b1b24);border-color:var(--hud-rim,#587980)}
 #pending-book-tool>strong{font:700 25px/1 Georgia,serif}
 #pending-book-tool[data-attention]>strong{color:var(--hud-brass,#ffd18a);text-shadow:0 0 10px #ffd18a80}
 #pending-book-tool [data-count]{font-size:12px;font-variant-numeric:tabular-nums}
@@ -393,18 +392,29 @@ body[data-world-starting] :is(canvas,#hud,#dock,#view-tools,#world-tools,#visit-
 #pending-book li button{display:block;width:100%;text-align:left}
 #pending-book li small{display:block;margin:2px 8px;color:inherit;opacity:.72}
 #pending-book a,#pending-book [role=status]{color:inherit}
+#hud{display:none}
+body.inside-house #hud{display:block;left:max(14px,env(safe-area-inset-left));top:max(62px,calc(env(safe-area-inset-top) + 48px));padding:3px 7px;border-radius:7px;background:#10232bd8;color:#f3efdf}
+#hud h1{font:600 12px system-ui;margin:0}
+#hud #people{font-size:10px;margin:1px 0 0}
+#companion-status:empty{display:none}
+#pending-book-tool[data-new]{border-color:var(--hud-brass,#ffd18a);box-shadow:0 0 0 2px #ffd18a60}
+@media(prefers-reduced-motion:no-preference){#pending-book-tool[data-new]{animation:pending-signal .65s ease-out 2}}
+@keyframes pending-signal{50%{box-shadow:0 0 15px #ffd18ab0}}
+body[data-world-starting] #pending-book-tool{visibility:hidden;pointer-events:none}
+#pending-book-tool[data-native-pending],#pending-book[data-native-pending]{display:none!important}
 </style></head><body data-world-starting>
 <section id="world-entry" class="glass" aria-label="Conexión con Holodeck" hidden>
   <p id="world-entry-status" role="status"></p>
   <div class="world-entry-actions"><button id="world-entry-retry" class="primary" type="button">Volver a intentar</button><button id="world-entry-graphics" type="button">Entrar con gráficos livianos</button></div>
 </section>
-<header id="hud" class="glass"><span class="brand-mark" aria-hidden="true"></span><div><small>Holodeck</small><h1>Plaza de llegada</h1><div id="people"></div></div><button id="sound" type="button" aria-pressed="false" aria-label="Activar sonido del mundo">Sonido</button></header>
+<div id="hud"><h1>Plaza de llegada</h1><div id="people"></div></div>
 <div id="view-tools">
   <button id="appearance-open" type="button" class="glass" aria-haspopup="dialog">Apariencia</button>
-  <button id="video-open" type="button" class="glass" aria-label="Video" title="Video" aria-haspopup="dialog"><span class="video-icon" aria-hidden="true"></span></button>
+  <button id="video-open" type="button" class="glass" aria-label="Ajustes" title="Ajustes" aria-haspopup="dialog"><span class="video-icon" aria-hidden="true"></span></button>
 </div>
 <dialog id="video-dialog" aria-labelledby="video-title">
-  <h2 id="video-title">Video</h2>
+  <h2 id="video-title">Ajustes</h2>
+  <button id="sound" type="button" aria-pressed="false" aria-label="Activar sonido del mundo">Activar sonido</button>
   <label for="video-quality">Gráficos</label>
   <select id="video-quality"><option value="auto">Automáticos</option><option value="light">Livianos</option></select>
   <label for="mouse-sensitivity">Sensibilidad del mouse <output id="mouse-sensitivity-value" for="mouse-sensitivity">100 %</output></label>
@@ -443,13 +453,13 @@ body[data-world-starting] :is(canvas,#hud,#dock,#view-tools,#world-tools,#visit-
 <button id="house-door" type="button" class="primary" hidden>Entrar</button>
 <details id="space-travel" class="glass" hidden><summary>Mapa</summary><canvas id="world-minimap" width="384" height="384" role="img" aria-label="Minimapa topográfico con la casa y la cueva cercanas" hidden></canvas><section class="room-map" aria-label="Mapa de la sala" hidden><div class="room-map-plot" aria-hidden="true"></div><p class="room-map-hint">Marcá una salida y cerrá el mapa para seguir la flecha.</p><div class="room-map-destinations" role="group" aria-label="Salidas"></div></section><nav aria-label="Regreso al exterior"></nav></details>
 <aside id="door-guidance" class="glass" aria-label="Salida marcada" hidden><span class="door-guide-arrow" aria-hidden="true">↑</span><span><span class="door-guide-title"></span><span class="door-guide-distance"></span></span><button type="button" aria-label="Quitar salida marcada">×</button></aside>
-<div id="companion-status" class="glass" role="status">Exploración compartida</div>
+<div id="companion-status" class="glass" role="status"></div>
 <div id="notice" class="glass" role="status"></div>
 <small id="release-version" aria-label="Versión de Holodeck">HOL0DECK_RELEASE_PLACEHOLDER</small>
 <button id="pending-book-tool" type="button" aria-label="Pendientes" aria-haspopup="dialog" hidden><strong aria-hidden="true">?</strong><span data-count></span></button>
 <dialog id="pending-book" aria-labelledby="pending-book-title">
   <header><h2 id="pending-book-title">Pendientes</h2><button type="button" data-close autofocus>Cerrar</button></header>
-  <p role="status"></p><div data-items></div><a target="_blank" rel="noopener noreferrer">Abrir Conversación</a>
+  <p role="status"></p><div data-items></div><button type="button" data-conversation>Conversar acá</button>
 </dialog>
 <div id="release-hud">
   <button id="release-dnd" type="button" aria-pressed="false" aria-label="No molestar con reinicios" title="Controlar cuándo puede reiniciarse Holodeck" hidden>⚑ Disponible</button>

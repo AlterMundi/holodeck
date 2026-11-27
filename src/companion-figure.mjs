@@ -80,7 +80,7 @@ export async function loadCompanionFigure(url){
   const tilt=new Quaternion(),roll=new Quaternion(),offset=new Vector3();
   const pitching=new Follower(8),rolling=new Follower(9),pivoting=new Follower(9);
   let contact=1,jaw=0,prior=null,clock=0,lively=0,choice=0,lastIdle=null,nextIdle=4.2,nextBlink=1.6,greeting=0;
-  let wasAttending=false,attendedAt=-Infinity,lastSpeed=0;
+  let wasAttending=false,attendedAt=-Infinity,lastSpeed=0,lastNotification=0;
 
   function start(name){
     const layer=layers.get(name);
@@ -123,7 +123,7 @@ export async function loadCompanionFigure(url){
     gestures:()=>[...layers].filter(([,layer])=>layer.live).map(([name])=>name),
     greet(){greeting=3.2;},
     pose({seconds,level=0,speed=0,velocity,motion=true,medium='ground',wading=0,gaze=null,attending=false,
-      reset=false,liftAllowed=true,place=null,pitch=0,bank=0,crouch=0,braking=0,miniature=false}){
+      reset=false,notification=0,liftAllowed=true,place=null,pitch=0,bank=0,crouch=0,braking=0,miniature=false}){
       glance.restore();
       gait.restore();
       const step=Math.min(.1,Math.max(0,seconds));
@@ -174,6 +174,7 @@ export async function loadCompanionFigure(url){
       if(motion){
         if(lastSpeed>1.9&&braking>5.2&&supported&&!layers.get('brace').live)start('brace');
         if(attending&&(!wasAttending||clock-attendedAt>5.4)&&speed<.6){start('curious');attendedAt=clock;}
+        if(notification&&notification!==lastNotification){lastNotification=notification;start('chirp');}
         const calm=speed<.06&&!attending&&level<.02&&!miniature&&(medium==='ground'||airborne)&&crouch<.05;
         lively=calm?lively+step:0;
         if(greeting>0){
@@ -190,7 +191,7 @@ export async function loadCompanionFigure(url){
         for(const [name,layer] of layers){
           if(!layer.live&&layer.weight<.002)continue;
           const ended=!layer.action.isRunning();
-          const allowed=name==='brace'||(name==='curious'?attending:calm);
+          const allowed=name==='brace'||name==='chirp'&&Boolean(notification)||(name==='curious'?attending:calm);
           const target=layer.live&&allowed&&!ended?1:0;
           layer.weight+=(target-layer.weight)*ease(step,target?16:8);
           if(ended||!allowed&&layer.weight<.01){layer.live=false;layer.weight=0;layer.action.stop();}

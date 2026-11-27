@@ -1,23 +1,10 @@
 import {spatialHudCatalog} from 'proyeccion/spatial-hud';
 
-export const worldHeaderId='world-header',worldNoticeId='world-notice',worldControlsId='world-controls';
-export const worldHeaderWidth=2.5,worldControlsWidth=3.45;
-const parts={[worldHeaderId]:'header',[worldNoticeId]:'notice',[worldControlsId]:'controls'};
+export const worldNoticeId='world-notice',worldControlsId='world-controls';
+export const worldControlsWidth=3.45;
+const parts={[worldNoticeId]:'notice',[worldControlsId]:'controls'};
 const path=key=>({'@path':'/'+key});
 const text=(id,fields={})=>({id,component:'HudText',label:path(id),...fields});
-const header=[
-  {id:'root',component:'HudPanel',label:'Lugar actual',width:worldHeaderWidth,children:['heading','people','conversation']},
-  {id:'heading',component:'HudRow',children:['title','sound']},
-  text('title',{style:'title',weight:3}),
-  {id:'sound',component:'HudButton',label:path('sound'),visible:path('hasSound'),
-    disabled:path('soundDisabled'),pressed:path('soundActive'),action:{event:{name:'sound'}}},
-  text('people',{style:'body',visible:path('hasPeople')}),
-  text('conversation',{style:'body',visible:path('hasConversation')}),
-];
-const compactHeaderWidth=.94;
-const compactHeader=header.slice(0,4).map(component=>component.id==='root'?
-  {...component,width:compactHeaderWidth,children:['heading']}:component.id==='title'?
-  {...component,weight:1.44}:component);
 const notice=(width,count)=>[
   {id:'root',component:'HudPanel',label:'Aviso del mundo',width,gap:.008,
     children:Array.from({length:count},(_,i)=>'line'+i)},
@@ -57,15 +44,9 @@ export function wrapNotice(message,measure,maxWidth){
 }
 
 export class WorldStatusHud{
-  constructor({document,send,toggleSound,focusSound,hasSoundFocus,focusWorld,invalidate}){
-    Object.assign(this,{send,toggleSound,focusSound,hasSoundFocus,focusWorld,invalidate});
-    this.headerWidth=worldHeaderWidth;
+  constructor({document,send,invalidate}){
+    Object.assign(this,{send,invalidate});
     this.noticeMaterials=new WeakMap();
-    this.headerAdapter=document.getElementById('hud');
-    this.sound=this.headerAdapter.querySelector('#sound');
-    this.title=this.headerAdapter.querySelector('h1');
-    this.people=this.headerAdapter.querySelector('#people');
-    this.conversation=document.getElementById('companion-status');
     this.noticeAdapter=document.getElementById('notice');
     this.controlsAdapter=document.getElementById('help');
     this.verticalHelp=document.getElementById('world-vertical-help');
@@ -100,24 +81,7 @@ export class WorldStatusHud{
     this.send('updateDataModel',{value},id);
   }
 
-  update({headerVisible,showExterior,noticeVisible,controlsVisible,soundBlocked,width,height,shortTouch=false,noticeOpacity=1}){
-    this.showExterior=showExterior;
-    this.soundBlocked=soundBlocked;
-    const people=this.people.hidden?'':this.people.textContent;
-    const conversation=showExterior&&!this.conversation.hidden?this.conversation.textContent:'';
-    const soundActive=this.sound.getAttribute('aria-pressed')==='true';
-    const soundAvailable=headerVisible&&(showExterior||soundActive);
-    const moveFocus=this.hasSound&&!soundAvailable&&this.hasSoundFocus();
-    this.hasSound=soundAvailable;
-    this.compactHeader=shortTouch&&showExterior&&width>=286&&(!conversation||conversation==='Exploración compartida');
-    this.headerWidth=this.compactHeader?compactHeaderWidth:worldHeaderWidth;
-    this.updateSurface(worldHeaderId,this.compactHeader?compactHeader:header,headerVisible?{
-      title:this.title.textContent,people,hasPeople:Boolean(people),
-      conversation,hasConversation:Boolean(conversation),
-      sound:this.sound.hasAttribute('data-audio-unavailable')?'Sin audio':this.sound.textContent,
-      hasSound:this.hasSound,soundDisabled:this.sound.disabled||soundBlocked,soundActive,
-    }:null,this.compactHeader);
-    if(moveFocus&&this.headerGroup)this.focusWorld();
+  update({noticeVisible,controlsVisible,width,height,noticeOpacity=1}){
     this.updateSurface(worldControlsId,controls,controlsVisible?{
       move:'W  A  S  D · Moverte',mode:this.verticalHelp.textContent.replace(/^\s*·\s*/,''),
     }:null);
@@ -160,29 +124,11 @@ export class WorldStatusHud{
     this.noticeOpacity=noticeOpacity;
   }
 
-  activate({name}){
-    if(name==='sound'&&this.headerGroup&&this.hasSound&&!this.soundBlocked&&!this.sound.disabled)this.toggleSound();
-  }
-
   present(id,visible){
-    const isHeader=id===worldHeaderId;
-    const adapter=this[parts[id]+'Adapter'];
-    if(isHeader)this.conversation.toggleAttribute('data-native-status',visible&&this.showExterior);
-    if(adapter.hasAttribute('data-native-status')===visible)return;
-    const active=adapter.ownerDocument.activeElement;
-    const fromNative=isHeader&&!visible&&this.hasSoundFocus();
-    adapter.toggleAttribute('data-native-status',visible);
-    if(!isHeader)return;
-    if(visible&&active===this.sound){if(this.hasSound)this.focusSound();else this.focusWorld();}
-    if(fromNative){
-      if(this.sound.getClientRects().length&&adapter.ownerDocument.defaultView.getComputedStyle(this.sound).visibility==='visible')
-        this.sound.focus({preventScroll:true});
-      else this.focusWorld();
-    }
+    this[parts[id]+'Adapter'].toggleAttribute('data-native-status',visible);
   }
 
   dispose(){
-    this.updateSurface(worldHeaderId,header,null);
     this.updateSurface(worldNoticeId,null,null);
     this.updateSurface(worldControlsId,controls,null);
     for(const id of Object.keys(parts))this.present(id,false);

@@ -46,11 +46,28 @@ export async function readPendings(read,binding){
   return {items,more:feeds.some(feed=>feed.more)};
 }
 
-export function mountPendingBook({window,document,select,currentActor,onJump,world}){
+export class PendingSignals {
+  observe(binding,items){
+    const fresh=this.binding!==binding;
+    if(fresh){this.binding=binding;this.seen=new Set();}
+    let count=0;
+    for(const {kind,id} of items){
+      const key=kind+':'+id;
+      if(this.seen.has(key))continue;
+      this.seen.add(key);
+      count++;
+    }
+    while(this.seen.size>1600)this.seen.delete(this.seen.values().next().value);
+    return fresh?0:count;
+  }
+}
+
+export function mountPendingBook({window,document,select,currentActor,onJump,onConversation=()=>{},onNew=()=>{},world}){
   const button=document.querySelector('#pending-book-tool'),badge=button.querySelector('[data-count]');
   const dialog=document.querySelector('#pending-book'),list=dialog.querySelector('[data-items]');
-  const status=dialog.querySelector('[role=status]'),conversation=dialog.querySelector('a');
-  let refreshing=false,selected,disposed=false,detailTurn=0,showingDetail=false,readiness;
+  const status=dialog.querySelector('[role=status]'),conversation=dialog.querySelector('[data-conversation]');
+  let refreshing=false,selected,disposed=false,detailTurn=0,showingDetail=false,readiness,signalTimer,countLabel='';
+  const signals=new PendingSignals();
   const read=async(path,surface)=>{
     const response=await window.fetch(new URL('api/interaction/'+path,surface.url),{
       credentials:'same-origin',cache:'no-store',redirect:'error',signal:AbortSignal.timeout(7500)});
@@ -67,6 +84,7 @@ export function mountPendingBook({window,document,select,currentActor,onJump,wor
     for(const item of items){
       const row=document.createElement('li'),open=document.createElement('button');
       open.type='button';
+      open.dataset.pendingId=item.id+':'+item.revision;
       open.textContent=item.title;
       row.append(open);
       if(typeof item.label==='string'){
@@ -120,13 +138,17 @@ export function mountPendingBook({window,document,select,currentActor,onJump,wor
         showingDetail=false;
       }
       selected=surface;
-      const entry=new URL(target);
-      entry.searchParams.set('view','conversation');
-      entry.searchParams.set('client','standalone');
-      conversation.href=entry.href;
       button.hidden=false;
       const data=await readPendings(path=>read(path,surface),surface.binding);
       if(!disposed&&currentActor()===actor){
+        const added=signals.observe(surface.binding,data.items);
+        countLabel=data.items.length+(data.more?'+':'');
+        if(added){
+          button.setAttribute('data-new','');
+          window.clearTimeout(signalTimer);
+          signalTimer=window.setTimeout(()=>button.removeAttribute('data-new'),1500);
+          onNew(added);
+        }
         if(dialog.open&&!showingDetail&&readiness!==JSON.stringify(data))
           paint(data,surface);
         else{
@@ -145,18 +167,38 @@ export function mountPendingBook({window,document,select,currentActor,onJump,wor
       }
     }finally{refreshing=false;}
   }
-  button.onclick=()=>{
+  function back(){
     list.replaceChildren();
     readiness=undefined;
     showingDetail=false;
+    detailTurn++;
     status.textContent='Buscando pendientes…';
-    dialog.showModal();
     void refresh();
+  }
+  button.onclick=()=>{
+    if(dialog.open)return;
+    if(button.hasAttribute('data-native-pending')){
+      dialog.setAttribute('data-native-pending','');
+      dialog.show();
+    }else dialog.showModal();
+    back();
   };
   dialog.querySelector('[data-close]').onclick=()=>dialog.close();
+  conversation.onclick=()=>{dialog.close();onConversation();};
+  const escape=event=>{
+    if(event.key!=='Escape'||!dialog.open)return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    dialog.close();
+  };
+  document.addEventListener('keydown',escape,true);
   dialog.addEventListener('close',()=>{detailTurn++;button.focus({preventScroll:true});});
   const timer=window.setInterval(refresh,30000);
   document.addEventListener('visibilitychange',refresh);
   void refresh();
-  return {refresh,dispose(){disposed=true;window.clearInterval(timer);document.removeEventListener('visibilitychange',refresh);}};
+  return {refresh,back,button,dialog,list,status,
+    get count(){return countLabel;},
+    get fresh(){return button.hasAttribute('data-new');},
+    open:()=>button.click(),close:()=>dialog.close(),conversation:()=>conversation.click(),
+    dispose(){disposed=true;window.clearInterval(timer);window.clearTimeout(signalTimer);document.removeEventListener('visibilitychange',refresh);document.removeEventListener('keydown',escape,true);}};
 }

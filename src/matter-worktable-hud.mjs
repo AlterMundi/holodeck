@@ -1,3 +1,4 @@
+import {PendingBookHud,pendingToolId,pendingBookId} from './pending-book-hud.mjs';
 import {hudAppearanceKey,readHudAppearance} from './hud-appearance.mjs';
 import {PassageHud} from './passage-hud.mjs';
 import {HudLookPreview} from './hud-look-preview.mjs';
@@ -5,7 +6,7 @@ import {Matrix4,OrthographicCamera,PerspectiveCamera,Raycaster,Scene,Vector2} fr
 import {WorldMapHud,worldMapId,worldBearingId,terrainPeekId} from './world-map-hud.mjs';
 import {DoorPromptHud,compactDoorPromptWidth,doorPromptId} from './door-prompt-hud.mjs';
 import {CollectionHud,collectionHudId,collectionHudWidth} from './collection-hud.mjs';
-import {WorldStatusHud,worldHeaderId,worldNoticeId,worldControlsId,worldControlsWidth} from './world-status-hud.mjs';
+import {WorldStatusHud,worldNoticeId,worldControlsId,worldControlsWidth} from './world-status-hud.mjs';
 import {RecoveryHud,recoveryHudId} from './recovery-hud.mjs';
 import {CreationHud,creationHudId} from './creation-hud.mjs';
 import {BeaconHud,beaconStationId,beaconViewerId,beaconStationWidth,beaconViewerWidth} from './beacon-hud.mjs';
@@ -162,10 +163,10 @@ export class MatterWorktableHud{
     this.canvas=webgl.domElement;
     const releaseHudOverrides=()=>{
       this.passage?.fallback(true);
+      this.pending?.present(false,false);
       this.map?.markBearingPresented(false);
       this.door?.presented(false);
       this.collection?.presented(false);
-      this.status?.present(worldHeaderId,false);
       this.status?.present(worldNoticeId,false);
       this.status?.present(worldControlsId,false);
       this.recovery?.clear();
@@ -220,11 +221,8 @@ export class MatterWorktableHud{
         const focus=this.hud.currentFocus();
         if(focus?.surfaceId===collectionHudId)return focus.instanceId;
       }});
-    this.status=new WorldStatusHud({document,toggleSound,send:(type,content,id)=>this.send(type,content,id),
-      invalidate:this.layer.invalidate,
-      focusSound:()=>this.hud.focusAccessibleControl(worldHeaderId,'sound'),
-      focusWorld:()=>this.focusTool('map')||this.focusTool('talk'),
-      hasSoundFocus:()=>this.ownsAccessibleInput(this.document.activeElement)&&this.hud.currentFocus()?.surfaceId===worldHeaderId});
+    this.status=new WorldStatusHud({document,send:(type,content,id)=>this.send(type,content,id),invalidate:this.layer.invalidate});
+    this.pending=new PendingBookHud((type,content,id)=>this.send(type,content,id));
     this.recovery=new RecoveryHud({document,send:(type,content,id)=>this.send(type,content,id),
       focus:name=>this.hud.focusAccessibleControl(recoveryHudId,name),invalidate:this.layer.invalidate,
       ownsAccessibleInput:element=>this.ownsAccessibleInput(element)});
@@ -239,7 +237,7 @@ export class MatterWorktableHud{
       }});
     this.settings=new SettingsHud({document,send:(type,content,id)=>this.send(type,content,id),
       focusControl:name=>this.hud.focusAccessibleControl(settingsId,name),focusLauncher:name=>this.focusTool(name),
-      onSurfaceChange:()=>this.syncSettingsInput()});
+      onSurfaceChange:()=>this.syncSettingsInput(),onSound:toggleSound});
     this.activity=new WorldActivityHud({owner:history,send:(type,content,id)=>this.send(type,content,id),
       focus:name=>this.hud.focusAccessibleControl(activityHudId,name)});
     this.visit=new VisitHud({owner:visitor,send:(type,content,id)=>this.send(type,content,id),
@@ -261,10 +259,11 @@ export class MatterWorktableHud{
         else if(id===doorPromptId)this.door.group=group;
         else if(id===collectionHudId)this.collection.group=group;
         else if(id===settingsId)this.settings.group=group;
+        else if(id===pendingToolId)this.pending.toolGroup=group;
+        else if(id===pendingBookId)this.pending.bookGroup=group;
         else if(id===activityHudId)this.activity.group=group;
         else if(id===exhibitionHudId)this.visit.indexGroup=group;
         else if(id===visitHudId)this.visit.viewerGroup=group;
-        else if(id===worldHeaderId)this.status.headerGroup=group;
         else if(id===worldNoticeId)this.status.noticeGroup=group;
         else if(id===worldControlsId)this.status.controlsGroup=group;
         else if(id===recoveryHudId)this.recovery.group=group;
@@ -282,9 +281,9 @@ export class MatterWorktableHud{
         else if(requested.surfaceId===doorPromptId)this.door.activate(requested);
         else if(requested.surfaceId===collectionHudId)this.collection.activate(requested);
         else if(requested.surfaceId===settingsId)this.settings.activate(requested);
+        else if([pendingToolId,pendingBookId].includes(requested.surfaceId))this.pending.activate(requested);
         else if(requested.surfaceId===activityHudId)this.activity.activate(requested);
         else if([exhibitionHudId,visitHudId].includes(requested.surfaceId))this.visit.activate(requested);
-        else if(requested.surfaceId===worldHeaderId)this.status.activate(requested);
         else if(requested.surfaceId===recoveryHudId)this.recovery.activate(requested);
         else if(requested.surfaceId===creationHudId)this.creation.activate(requested);
         else if([beaconStationId,beaconViewerId].includes(requested.surfaceId))this.beacon.activate(requested);
@@ -328,7 +327,7 @@ export class MatterWorktableHud{
 
   rayForPointer(event){
     if(this.priorInert!==undefined)return;
-    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.status.headerGroup&&!this.status.controlsGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.movementGroups.size)return;
+    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.pending.toolGroup&&!this.pending.bookGroup&&!this.status.controlsGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.movementGroups.size)return;
     const rect=this.canvas.getBoundingClientRect();
     if(!rect.width||!rect.height)return;
     this.pointerPosition.set((event.clientX-rect.left)*2/rect.width-1,1-(event.clientY-rect.top)*2/rect.height);
@@ -717,7 +716,7 @@ export class MatterWorktableHud{
     const scope=this.beacon.viewerGroup?beaconViewerId:this.activity.owner()?.native?activityHudId:this.visit.indexActive?exhibitionHudId:
       this.visit.viewerGroup?visitHudId:this.settings.group?settingsId:null;
     const mapTakesFocus=Boolean(this.map.group&&this.map.compact);
-    for(const group of [this.toolGroup,this.status.headerGroup]){
+    for(const group of [this.toolGroup]){
       if(group&&group.visible===mapTakesFocus){
         group.visible=!mapTakesFocus;
         this.layer.invalidate();
@@ -941,7 +940,7 @@ export class MatterWorktableHud{
       !this.webgl.getContext().isContextLost()&&!this.document.querySelector(
         'dialog[open],#signal-editor:not([hidden]),#conversation-panel:not([hidden]),#content-visit:not([hidden]):not(.is-walking)');
     this.creation.update({visible:createClear,width:width-left-right-40,maxHeight:height-createTop-recoveryReserve});
-    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.status.headerGroup&&!this.status.noticeGroup&&!this.status.controlsGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.movementGroups.size&&!additional){
+    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.pending.toolGroup&&!this.pending.bookGroup&&!this.status.noticeGroup&&!this.status.controlsGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.movementGroups.size&&!additional){
       this.releaseHudOverrides();
       this.windows.end();
       this.layer.hide();
@@ -1115,16 +1114,14 @@ export class MatterWorktableHud{
         this.document.body.style.setProperty('--holodeck-notice-bottom',noticeOffset);
       }
     }
-    if(this.status.headerGroup){
-      const {left,right,top}=this.toolInsets();
-      const margin=this.usesCockpitDocks(viewport)?16:0;
-      const work=this.active&&height<520?this.windows.geometry.get(surfaceId)?.rect:null;
-      const roomWidth=work?.left>left+200?work.left-left-margin-12:width-left-right;
-      const {headerWidth,compactHeader}=this.status;
-      const headerRoom=compactHeader?Math.max(120,roomWidth-96):roomWidth;
-      const headerScale=Math.min(compactHeader?250:152,headerRoom/(headerWidth+.12));
-      this.place(this.status.headerGroup,'headerPlacement',viewport,left+margin+headerScale*(headerWidth+.06)/2,
-        Math.max(top,width<700?18:24)+margin,headerScale);
+    if(this.pending.toolGroup){
+      const insets=this.toolInsets(),scale=Math.min(152,width*.29);
+      this.place(this.pending.toolGroup,'pendingToolPlacement',viewport,insets.left+14+scale*.30,
+        Math.max(insets.top,14),scale);
+    }
+    if(this.pending.bookGroup){
+      const scale=Math.min(148,(width-24)/2.68,(height-28)/(1.65+.13*this.pending.lineCount));
+      this.place(this.pending.bookGroup,'pendingBookPlacement',viewport,width/2,Math.max(14,(height-1.8*scale)/3),scale);
     }
     if(this.status.noticeGroup){
       const {left,right}=this.toolInsets();
@@ -1231,10 +1228,11 @@ export class MatterWorktableHud{
     }
     this.hud.update();
     this.windows.end();
-    this.lookPreview.draw(worldHeaderId,this.status.headerGroup,this.hud.getSurfaceBounds(worldHeaderId));
     this.lookPreview.draw(worldControlsId,this.status.controlsGroup,this.hud.getSurfaceBounds(worldControlsId));
     if(this.cockpit||!this.lookPreview.name||this.document.body.dataset.hudTheme==='light')this.lookPreview.draw(worldMapId,this.map.group,this.hud.getSurfaceBounds(worldMapId));
     this.lookPreview.draw(toolbeltId,this.toolGroup,this.hud.getSurfaceBounds(toolbeltId));
+    this.lookPreview.draw(pendingToolId,this.pending.toolGroup,this.hud.getSurfaceBounds(pendingToolId));
+    this.lookPreview.draw(pendingBookId,this.pending.bookGroup,this.hud.getSurfaceBounds(pendingBookId));
     this.lookPreview.draw(surfaceId,this.group,this.hud.getSurfaceBounds(surfaceId));
     if(!this.lookPreview.name||this.document.body.dataset.hudTheme==='light')this.lookPreview.draw(settingsId,this.settings.group,this.hud.getSurfaceBounds(settingsId));
     this.map.decoration();
@@ -1249,7 +1247,8 @@ export class MatterWorktableHud{
       this.map.markBearingPresented(Boolean(painted&&this.map.bearingGroup&&this.hud.getSurfaceBounds(worldBearingId)));
       this.door.presented(Boolean(painted&&this.door.group&&this.toolGroup&&this.hud.getSurfaceBounds(doorPromptId)));
       this.collection.presented(Boolean(painted&&this.collection.group&&this.hud.getSurfaceBounds(collectionHudId)));
-      this.status.present(worldHeaderId,Boolean(painted&&this.status.headerGroup&&(this.map.compact||this.hud.getSurfaceBounds(worldHeaderId))));
+      this.pending.present(Boolean(painted&&this.pending.toolGroup&&this.hud.getSurfaceBounds(pendingToolId)),
+        Boolean(painted&&this.pending.bookGroup&&this.hud.getSurfaceBounds(pendingBookId)));
       this.status.present(worldNoticeId,Boolean(painted&&this.status.noticeGroup&&this.hud.getSurfaceBounds(worldNoticeId)));
       this.status.present(worldControlsId,Boolean(painted&&this.status.controlsGroup&&this.hud.getSurfaceBounds(worldControlsId)));
       this.recovery.present(Boolean(painted&&this.recovery.group&&this.hud.getSurfaceBounds(recoveryHudId)));

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {pendingRoom,readPendings} from '../src/pending-book.mjs';
+import {PendingSignals,pendingRoom,readPendings} from '../src/pending-book.mjs';
 
 const world=new URL('https://world.test/holodeck/');
 const binding='c'.repeat(64),revision='b'.repeat(64);
@@ -28,4 +28,14 @@ test('only explicit destinations on this Holodeck entrance are jumpable',()=>{
     'https://elsewhere.test/holodeck/?sala=gallery', world+'?sala=gallery&other=1',
     world+'?sala=../gallery', world+'?sala=gallery#pose', world+'?sala=outside',
   ])assert.equal(pendingRoom({url},world),null);
+});
+
+
+test('the notification baseline is quiet and repeated or returning IDs stay quiet',()=>{
+  const signal=new PendingSignals(),a=make('a'),b=make('b'),c=make('d');
+  assert.equal(signal.observe(binding,[a]),0);
+  assert.equal(signal.observe(binding,[a,b,c]),2);
+  assert.equal(signal.observe(binding,[]),0);
+  assert.equal(signal.observe(binding,[b]),0);
+  assert.equal(signal.observe('other',[c]),0);
 });

@@ -61,6 +61,7 @@ import { OutdoorSky } from './outdoor-sky.mjs';
 import { SignalGardenEditor } from './signal-garden-editor.mjs';
 import { AppliedGeometryProbe } from './applied-geometry.mjs';
 import {mountPendingBook} from './pending-book.mjs';
+import {pendingToolId} from './pending-book-hud.mjs';
 import { SharedConversationHost } from './shared-conversation-host.mjs';
 import { WorldAudio } from './world-audio.mjs';
 import {WorldHistory} from './world-history.mjs';
@@ -266,7 +267,7 @@ function entryRoomReady(root,model=root?.querySelector('m-model#room-art[src]'))
 
 const entryLocation=new AbortController();
 const entryDeadline=setTimeout(()=>entryLocation.abort(),30000);
-let activeSpace;
+let activeSpace,pendingBook,pendingSignal=null,pendingSerial=0;
 try{activeSpace=await readSpace(entryLocation.signal);}
 finally{clearTimeout(entryDeadline);}
 if(activeSpace.id!=='outside'&&activeSpace.live!==1)startInterior(activeSpace);
@@ -954,7 +955,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     matterHud=new MatterWorktableHud({document,webgl:renderer.composer.renderer,table:collectionShelves.worktable,collection:collectionShelves,
       creatorContext:()=>({draft:preview,point:worldIndication?.selected,shared:worldIndication?.own()?.sequence}),
       beaconControls,onBeaconOpen:()=>releaseBeaconInput(client),
-      toggleSound:()=>{if(!moving&&!entering&&navigator.userActivation?.isActive&&(!inside||worldAudio.status().active))void toggleWorldSound();},
+      toggleSound:()=>{if(!moving&&!entering&&navigator.userActivation?.isActive)void toggleWorldSound();},
       readTools,history:()=>worldHistory,visitor:()=>contentVisitor,activateTool:id=>{
         if(id==='endVisit'){if(visitAllowed())void contentVisitor?.endVisit();return;}
         if(id!=='activity'&&id!=='visit'){tools[id]?.click();return;}
@@ -1072,6 +1073,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const render=renderer.render.bind(renderer),dispose=renderer.dispose.bind(renderer);
     const draw=renderer.composer.render.bind(renderer.composer);
     const mainCamera=renderer.threeJSCameraManager.mainCamera;
+    const pendingGaze=new Vector3(),pendingSpeaker=new Vector3();
     const worldNear=mainCamera.near;
     const focusMode=new URLSearchParams(location.search).get('enfoque');
     const focusReference=focusMode==='referencia'&&location.hostname==='127.0.0.1';
@@ -1349,7 +1351,22 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         presentedHelp=help;
         verticalHelp.textContent=help;
       }
-      companion.update({position,yaw,outdoor:outsideRing(),table:tableFlight,gaze:tableGaze,
+      const signal=pendingSignal?.until>performance.now()&&!document.hidden&&!moving&&!entering&&drawWorld?pendingSignal:null;
+      let signalTarget;
+      if(signal){
+        const mark=matterHud.hud.getSurfaceBounds(pendingToolId)??pendingBook?.button.getBoundingClientRect();
+        const canvas=worldCanvas.getBoundingClientRect();
+        if(mark?.width&&canvas.width&&canvas.height)
+          signalTarget=pendingGaze.set((mark.left+mark.width/2-canvas.left)*2/canvas.width-1,
+            1-(mark.top+mark.height/2-canvas.top)*2/canvas.height,.15).unproject(mainCamera);
+        if(!signal.sounded){
+          signal.sounded=true;
+          const robot=companion.object;
+          const pan=robot?pendingSpeaker.copy(robot.position).project(mainCamera).x:0;
+          worldAudio.playCue('pending-new',{pan:Number.isFinite(pan)?pan:0});
+        }
+      }
+      companion.update({position,yaw,notification:signal?.id,notificationTarget:signalTarget,outdoor:outsideRing(),table:tableFlight,gaze:tableGaze,
         gazeMesh:pointed?points.cues.get(tableConnection)?.mesh:tableAttention.part(),eye:tableFlight.active?options.coreCameraManager.getCameraState().position:null,
         water:mode==='swim'?'submerged':mode==='surface'?'surface':null,
         colliders:options.coreCameraManager.collisionsManager,
@@ -1458,13 +1475,11 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       conversation.toggleAttribute('data-compact-priority',compactConversation);
       const suppressNotice=compactConversation&&worldNotice.temporary;
       worldNotice.element.toggleAttribute('data-compact-suppressed',suppressNotice);
+      matterHud.pending.update(pendingBook,!entering&&drawWorld&&!opaqueVisit&&!settingsOpen&&
+        (!toolModal||pendingBook?.dialog.open));
       matterHud.status.update({
-        headerVisible:!compactConversation&&!entering&&drawWorld&&!opaqueVisit&&!settingsOpen&&!quietTouch&&
-          !(matterHud.active&&(matterHud.workCompact||matterHud.compactCharacterTable))&&(!toolModal||worldHistory?.native)&&(inside||Boolean(navigator.userActivation)),
-        shortTouch:matterHud.compactTouch()==='landscape'&&matterHud.canvas.clientHeight<400,
-        showExterior:!inside,noticeVisible:!suppressNotice&&!entering&&drawWorld&&!opaqueVisit,noticeOpacity:worldNotice.opacity,
+        noticeVisible:!suppressNotice&&!entering&&drawWorld&&!opaqueVisit,noticeOpacity:worldNotice.opacity,
         controlsVisible:!inside&&navigationVisible&&!mapPanel.open&&!matterHud.coarsePointer.matches&&matterHud.canvas.clientWidth>1150,
-        soundBlocked:moving||needsSync,
         width:matterHud.canvas.clientWidth-statusLeft-statusRight,height:matterHud.canvas.clientHeight,
       });
       const near=tableFlight.inspectParts?matterInspectionNear:worldNear;
@@ -1539,7 +1554,7 @@ worldHistory=new WorldHistory({document,window,getState:()=>state,
 $('#history-reference-clear').onclick=()=>{worldHistory.clearReference();updateNativeAvailability();};
 function updateSoundButton(){
   const status=worldAudio.status(),button=$('#sound');
-  button.textContent=status.active?'Silenciar':status.selected?'Reanudar':'Sonido';
+  button.textContent=status.active?'Silenciar':status.selected?'Reanudar sonido':'Activar sonido';
   button.setAttribute('aria-pressed',String(status.active));
   button.setAttribute('aria-label',status.active?'Silenciar sonido del mundo':status.selected?'Reanudar sonido del mundo':'Activar sonido del mundo');
   button.title=status.supported?'Ambiente suave y sonidos de los cambios del mundo':'El sonido no está disponible en este navegador';
@@ -1594,7 +1609,9 @@ async function api(path,body,{signal}={}){
   if(!response.ok){const error=Error(value.message||value.detail||'La acción no se pudo completar.');Object.assign(error,value,{httpStatus:response.status});throw error;}
   return value;
 }
-const pendingBook=mountPendingBook({window,document,world:new URL(base),
+pendingBook=mountPendingBook({window,document,world:new URL(base),
+  onConversation:()=>openConversation(true),
+  onNew:()=>{pendingSignal={id:++pendingSerial,until:performance.now()+2300,sounded:false};},
   currentActor:()=>activeSpace?.actorRef??state?.actorRef,
   select:()=>api('conversation-surface',undefined,{signal:AbortSignal.timeout(4500)}),
   onJump:async room=>{
@@ -1759,9 +1776,7 @@ function updateNativeAvailability(){
   hint.textContent=(historyHint?historyHint+' ':'')+((available||nativeTurn)?'Podés seguir recorriendo el mundo mientras transcurre mi turno.':'La conversación todavía no está conectada a este mundo.');
   $('#send').disabled=!available||!!nativeTurn||preparingConversation;
   if(preparingConversation){$('#companion-status').textContent='Conservando el punto que estamos mirando…';return;}
-  if(!nativeTurn){
-    $('#companion-status').textContent=available?'Podemos conversar desde este lugar':'Exploración compartida';
-  }
+  if(!nativeTurn)$('#companion-status').textContent='';
 }
 async function refresh(){
   if(inside)return;
