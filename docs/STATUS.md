@@ -1,5 +1,16 @@
 # Current MVP work
 
+## November 27 — Paired-human DND for planned restarts
+
+Protected `6ec058a43fc7` serves `23c68fe` with immediate rollback
+`c7b52d60dbb2`. The paired human controls the persistent HUD flag.
+The qualified Chromium trial held a pending release, re-enabled DND
+during the warning, then released it and observed one submission to
+the fixture operator. Another visitor could not change the hold.
+The production receiver serves the checked package and exact release
+status. Use the [DND-aware operator](deployment.md#release-indicator-and-planned-updates)
+for subsequent live deployments.
+
 ## November 27 — Visible release and Matter exit camera
 
 Protected `c7b52d60dbb2` serves `f9e1110` with immediate rollback
