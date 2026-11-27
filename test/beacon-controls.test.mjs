@@ -73,6 +73,7 @@ test('a nearby bench mounts one owner panel only on open and discards it when ac
   assert.equal(controls.useNearby({...shortcut,repeat:true},objects,shaper.position),false);
   assert.equal(controls.useNearby({...shortcut,composedPath:()=>[{matches:()=>true}]},objects,shaper.position),false);
   assert.equal(controls.useNearby(shortcut,objects,shaper.position),true);
+  assert.equal(stage.children[0].src,link.href+'&projection=shaper');
   assert.equal(controls.nearbyAction(),null);
   assert.equal(controls.reference().id,shaper.id);
 });
