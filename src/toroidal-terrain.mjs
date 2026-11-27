@@ -110,7 +110,8 @@ const residenceSite=(()=>{
 // The walking grade sits a few centimetres under the modelled marble (podium top 1.8 m,
 // interior floor 1.85 m, step noses) so the terrain never shows through it.
 export const TOROIDAL_RESIDENCE=Object.freeze({...residenceSite,podium:1.77,floor:1.82,
-  podiumRadius:29.2,wallRadius:25.9,stair:{topWidth:7.54,halfWidth:10.3,top:-38.5,bottom:-49.8},atrium:{halfWidth:8.4,from:-38.5,to:-25}});
+  podiumRadius:29.2,wallRadius:25.9,stair:{topWidth:7.5362,halfWidth:10.1739,top:-38.4348,bottom:-49.7391,steps:10},
+  atrium:{halfWidth:8.29,center:-30.1449,from:-38.4348,to:-25}});
 const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
 const normal=vector=>{
   const length=Math.hypot(...vector);

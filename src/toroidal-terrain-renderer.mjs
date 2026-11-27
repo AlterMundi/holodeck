@@ -5,7 +5,7 @@ import {REFLECTION_BANK} from './toroidal-bank-reflection.mjs';
 import {createMeadowCoverTexture,useToroidalRockDetail,useToroidalWaterDetail} from './toroidal-surface-detail.mjs';
 import {BufferAttribute, BufferGeometry, DataTexture, DoubleSide, Group, LinearFilter, MathUtils, Mesh, MeshStandardMaterial, RGFormat, ShaderChunk, UnsignedByteType, Vector3, Vector4} from 'three';
 import {
-  TOROIDAL_OVERLOOK, TOROIDAL_PARCEL_Y, TOROIDAL_TERRAIN, buildTerrainTile, terrainCoordinates, terrainFrame, terrainTile,
+  TOROIDAL_OVERLOOK, TOROIDAL_PARCEL_Y, TOROIDAL_RESIDENCE, TOROIDAL_TERRAIN, buildTerrainTile, residenceFrame, terrainCoordinates, terrainFrame, terrainTile,
 } from './toroidal-terrain.mjs';
 
 const profiles = Object.freeze({
@@ -101,8 +101,25 @@ const aerialPerspective = (attenuation,strength=1) => `
   vec3 holoAir = toroidalAir(dot(-holoView,holoSun),holodeckDaylight);
   outgoingLight = mix(outgoingLight ${attenuation}, holoAir, holoHaze*${strength.toFixed(2)});
 `;
+const glslVector = values => 'vec3('+values.map(glsl).join(',')+')';
+const {podiumRadius, stair, atrium} = TOROIDAL_RESIDENCE;
+// The traversable grade is continuous while the visible staircase has treads.
+// Clip ground only inside the loaded stone footprint, leaving both grade and contact edges.
+const residenceStoneContact = `
+    if (holodeckResidenceContact) {
+      vec3 offset = vHoloWorld - ${glslVector(residenceFrame.origin)};
+      float east = dot(offset,${glslVector(residenceFrame.ex)});
+      float north = -dot(offset,${glslVector(residenceFrame.ez)});
+      float progress = (${glsl(stair.top)}-north)/${glsl(stair.top-stair.bottom)};
+      float tread = ceil(clamp(progress,0.0,1.0)*${glsl(stair.steps)})/${glsl(stair.steps)};
+      float stairWidth = mix(${glsl(stair.topWidth)},${glsl(stair.halfWidth)},tread);
+      if (length(vec2(east,north)) < ${glsl(podiumRadius-.08)} ||
+          (north <= ${glsl(atrium.center)} && length(vec2(east,north-(${glsl(atrium.center)}))) < ${glsl(atrium.halfWidth-.08)}) ||
+          (progress >= 0.0 && progress <= 1.0 && abs(east) < stairWidth-.06)) discard;
+    }
+`;
 const terrainShading = {
-  color: `
+  color: `${residenceStoneContact}
     float holoAltitude = smoothstep(-6.0, 58.0, vHoloHeight);
     float holoLuma = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
     diffuseColor.rgb = max(mix(vec3(holoLuma), diffuseColor.rgb, 1.22), 0.0);
@@ -476,10 +493,11 @@ function artDirect(material, name, shading, environment, bank=null) {
       shader.uniforms.holodeckMeadowCover=environment.meadowCover;
       shader.uniforms.holodeckCaveExitCover=environment.caveExitCover;
       shader.uniforms.holodeckFacadeGround=environment.facadeGround;
+      shader.uniforms.holodeckResidenceContact=environment.residenceContact;
       shader.uniforms.woodlandShadeMap=environment.woodlandShade;
       shader.uniforms.holodeckWoodlandShade=environment.hasWoodlandShade;
       fragment=after(fragment,'common','uniform bool holodeckWoodlandShade;'+woodlandShadeShader+spurTrack+caveExitCoverShader);
-      fragment=after(fragment,'common','uniform sampler2D holodeckMeadowCover; uniform vec4 holodeckFacadeGround;');
+      fragment=after(fragment,'common','uniform sampler2D holodeckMeadowCover; uniform vec4 holodeckFacadeGround; uniform bool holodeckResidenceContact;');
     }
     shader.fragmentShader=before(fragment,'opaque_fragment',shading.output+`
       if (holodeckWaterViewDepth > .014) {
@@ -540,7 +558,7 @@ export class ToroidalTerrainRenderer {
     this.waterMaterial = new MeshStandardMaterial({color:0x19606f,roughness:.34,metalness:0,side:DoubleSide,
       transparent:true,opacity:WATER_OPACITY,depthWrite:false,forceSinglePass:true});
     this.environment={water:{value:0},sun:{value:new Vector3(...SUN_LOCAL)},daylight:{value:1},
-      cosmos:{value:null},hasCosmos:{value:false},approach:{value:1},eyeHeight:{value:0},sill:{value:new Vector3()},facadeGround:{value:new Vector4(0,0,0,0)},meadowCover:{value:createMeadowCoverTexture()},caveExitCover:{value:createCaveExitCoverTexture()},woodlandShade:{value:null},hasWoodlandShade:{value:false},lightWater:{value:false}};
+      cosmos:{value:null},hasCosmos:{value:false},approach:{value:1},eyeHeight:{value:0},sill:{value:new Vector3()},facadeGround:{value:new Vector4(0,0,0,0)},residenceContact:{value:false},meadowCover:{value:createMeadowCoverTexture()},caveExitCover:{value:createCaveExitCoverTexture()},woodlandShade:{value:null},hasWoodlandShade:{value:false},lightWater:{value:false}};
     useToroidalRockDetail(this.material,{meadow:true});
     this.updateWaterTime=useToroidalWaterDetail(this.waterMaterial,this.environment.lightWater);
     artDirect(this.material,'terrain',terrainShading,this.environment);
@@ -583,6 +601,10 @@ export class ToroidalTerrainRenderer {
       return;
     }
     sill.set(x,door.z,door.facing);
+  }
+
+  setResidenceContact(visible){
+    this.environment.residenceContact.value=visible;
   }
 
   setFacadeContact(facade){

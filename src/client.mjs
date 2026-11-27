@@ -1228,6 +1228,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         ring??=new ToroidalTerrainRenderer(renderer.mmlCompositionScene.group,base,undefined,{bankReflection});
         const door=activeSpace.entrances?.[0]?.door;
         ring.setEntrance(door);
+        ring.setResidenceContact(scenery?.residence.root.visible === true);
         if(position){
           ring.update(position,rendererBudget.lightweight);
           cave??=new ToroidalCave(renderer.mmlCompositionScene.group,renderer.mmlCompositionScene.mmlScene);

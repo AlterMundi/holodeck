@@ -135,7 +135,7 @@ function meadowCell(cell,index,door,atCaveExit){
   if(index>=FIELD_DENSITY&&turf===0)return null;
   if(turf===0&&u>CAVE.from-.00029&&u<CAVE.to+.00029&&Math.abs(v-CAVE.latitude)<.0031)return null;
   if(u>overlookStart.u&&u<overlookEnd.u&&v>overlookStart.v&&v<overlookEnd.v)return null;
-  if(terrainTrail(u,v)>.12)return null;
+  if(residencePlantClearance(u,v,1.8)||terrainTrail(u,v)>.12)return null;
   const h=terrainElevation(u,v);
   if(h<TOROIDAL_TERRAIN.waterLevel+1.4||h>FIELD_MAX_ELEVATION)return null;
   const fold=349*TAU*u+188*TAU*v+1.3*Math.sin(54*TAU*u-93*TAU*v);
