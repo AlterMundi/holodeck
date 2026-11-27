@@ -1,5 +1,17 @@
 # Current MVP work
 
+## November 27 — Visible release and Matter exit camera
+
+Protected `c7b52d60dbb2` serves `f9e1110` with immediate rollback
+`5ffac47d3604`. The HUD shows its own package identifier. The existing
+Home deploy now has a [notice wrapper](deployment.md#release-indicator-and-planned-updates).
+Chromium with the packaged client showed restart and in-place notices, then
+crossed the Matter door and rendered the receiving foyer on the first visible
+frame. Installed server, HTML, client, health and access challenge matched.
+
+The cause of the reported lost Matter selection remains unconfirmed.
+The service still restarts the running world on package activation.
+
 ## November 27 — Casa Linterna in the toroidal world
 
 Protected `5ffac47d3604` serves `b264aae` with immediate rollback
