@@ -356,7 +356,14 @@ body[data-world-starting] :is(canvas,#hud,#dock,#view-tools,#world-tools,#visit-
 }
 :is(.world-entry-actions,#room-passage) button:focus-visible{outline:2px solid #ffe2ac;outline-offset:3px}
 #release-version{position:fixed;z-index:28;left:max(8px,env(safe-area-inset-left));bottom:max(5px,env(safe-area-inset-bottom));padding:2px 6px;border-radius:5px;background:#0b1b24df;color:#f6ebd9;font:11px ui-monospace,monospace;pointer-events:none}
-#release-update{position:fixed;z-index:31;top:max(5px,env(safe-area-inset-top));left:50%;translate:-50% 0;width:max-content;max-width:calc(100vw - 20px);padding:6px 10px;border:1px solid #ffd18a;border-radius:8px;background:#ffdf9f;color:#302217;font:600 13px system-ui;pointer-events:none}
+#release-hud{position:fixed;z-index:31;top:max(7px,env(safe-area-inset-top));left:50%;translate:-50% 0;display:flex;align-items:center;justify-content:center;gap:6px;width:max-content;max-width:calc(100vw - 24px);pointer-events:none}
+#release-dnd,#release-update{padding:5px 9px;border:1px solid #587980;border-radius:8px;font:600 12px system-ui}
+#release-dnd{background:#0b1b24ed;color:#f6ebd9;pointer-events:auto;cursor:pointer}
+#release-dnd[aria-pressed="true"]{background:#542c39;border-color:#ffb7a9;color:#fff2e7}
+#release-dnd[data-request]{box-shadow:0 0 10px #ffd18a94}
+#release-dnd:disabled{cursor:wait;opacity:.8}
+#release-update{border-color:#ffd18a;background:#ffdf9f;color:#302217}
+@media(max-width:900px){#release-hud:has(#release-dnd:not([hidden])){flex-wrap:wrap;max-width:calc(100vw - 32px)}}
 </style></head><body data-world-starting>
 <section id="world-entry" class="glass" aria-label="Conexión con Holodeck" hidden>
   <p id="world-entry-status" role="status"></p>
@@ -410,7 +417,10 @@ body[data-world-starting] :is(canvas,#hud,#dock,#view-tools,#world-tools,#visit-
 <div id="companion-status" class="glass" role="status">Exploración compartida</div>
 <div id="notice" class="glass" role="status"></div>
 <small id="release-version" aria-label="Versión de Holodeck">HOL0DECK_RELEASE_PLACEHOLDER</small>
-<div id="release-update" role="status" hidden></div>
+<div id="release-hud">
+  <button id="release-dnd" type="button" aria-pressed="false" aria-label="No molestar con reinicios" title="Controlar cuándo puede reiniciarse Holodeck" hidden>⚑ Disponible</button>
+  <div id="release-update" role="status" hidden></div>
+</div>
 <div id="room-passage" tabindex="-1"><span class="passage-energy" aria-hidden="true"></span><div class="passage-copy"><p id="room-passage-message" role="status"></p><span class="passage-orbit" aria-hidden="true"></span><button id="room-passage-retry" type="button" hidden>Reintentar</button></div></div>
 <nav id="dock" class="glass" aria-label="Acciones del taller"><button id="bridge" class="primary" hidden>Conectar islas</button><button id="plant" hidden>Crear luz</button><button id="map-tool" type="button" aria-expanded="false" aria-controls="space-travel" disabled>Minimapa</button><button id="talk" aria-expanded="false" aria-controls="conversation-panel">Conversar</button><button id="undo" hidden class="icon" title="Deshacer mi último cambio" aria-label="Deshacer mi último cambio" disabled>↶</button></nav>
 <section id="pointing" class="glass" aria-label="Indicar un objeto" hidden><p id="point-label"></p><div class="row"><button id="point-visit" class="primary" type="button" hidden>Visitar contenido</button><button id="point-send" class="primary" type="button">Señalar</button><button id="point-edit" type="button" hidden>Editar luz</button><button id="point-clear" type="button">Cancelar</button></div></section>
@@ -454,23 +464,55 @@ window.SESSION_TOKEN="SESSION.TOKEN.PLACEHOLDER";
 {
   const running=document.querySelector('#release-version').textContent;
   const flag=document.querySelector('#release-update');
-  let timer,busy=false;
+  const hold=document.querySelector('#release-dnd');
+  let timer,reading=false,writing=false,status=null,actionError='';
+  function renderRelease(){
+    if(!status)return;
+    const {version,update,dnd}=status;
+    const waiting=update?.kind==='request'&&dnd===true;
+    const applying=update?.kind==='applying';
+    hold.setAttribute('aria-pressed',dnd===true);
+    hold.textContent=dnd===true?'⚑ DND':'⚑ Disponible';
+    hold.toggleAttribute('data-request',waiting);
+    hold.disabled=writing||typeof dnd!=='boolean'||applying;
+    const message=actionError||(version&&version!==running?'Holodeck se actualizó. Si hace falta, volvé a entrar.':
+      waiting&&!hold.hidden?'Tengo un cambio listo. Desactivá DND cuando pueda reiniciar.':
+      applying?'Holodeck se está actualizando.':
+      update?.kind==='restart'?'Holodeck se reiniciará en breve. Puede interrumpirse la conexión.':
+      update?.kind==='live'?'Holodeck recibirá una actualización en breve.':'');
+    if(flag.textContent!==message)flag.textContent=message;
+    flag.hidden=!message;
+  }
   async function readRelease(){
-    if(busy||document.hidden)return;
-    busy=true;
+    if(reading||writing||document.hidden)return;
+    reading=true;
     try{
       const response=await fetch('release-status',{cache:'no-store',signal:AbortSignal.timeout?.(3500)});
-      if(!response.ok)return;
-      const {version,update}=await response.json();
-      const message=version&&version!==running?'Holodeck se actualizó. Si hace falta, volvé a entrar.':
-        update?.kind==='restart'?'Holodeck se reiniciará en breve. Puede interrumpirse la conexión.':
-        update?.kind==='live'?'Holodeck recibirá una actualización en breve.':'';
-      if(flag.textContent!==message)flag.textContent=message;
-      flag.hidden=!message;
+      if(response.ok){
+        const next=await response.json();
+        if(!writing){status=next;renderRelease();}
+      }
     }catch{
       // Keep the last announcement through a brief disconnect.
-    }finally{busy=false;}
+    }finally{reading=false;}
   }
+  fetch('api/release-dnd',{cache:'no-store'}).then(response=>response.ok?response.json():null).then(access=>{
+    hold.hidden=access?.canControl!==true;
+    renderRelease();
+  }).catch(()=>{});
+  hold.onclick=async()=>{
+    if(writing||!status||typeof status.dnd!=='boolean')return;
+    writing=true;
+    actionError='';
+    renderRelease();
+    try{
+      const response=await fetch('api/release-dnd',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({dnd:!status.dnd}),signal:AbortSignal.timeout?.(5000)});
+      if(response.ok||response.status===409)status=await response.json();
+      else actionError='No pude cambiar la bandera. Volvé a intentar.';
+    }catch{actionError='No pude confirmar la bandera. Volvé a intentar.';}
+    finally{writing=false;renderRelease();void readRelease();}
+  };
   function track(){
     clearInterval(timer);
     if(document.hidden)return;

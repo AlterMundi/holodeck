@@ -20,6 +20,10 @@ test('only the selected release advertises a current planned update',t=>{
   assert.equal(releaseStatus(running,state,notice.expires).update,null);
   save({...notice,to:running,kind:'live'});
   assert.deepEqual(releaseStatus(running,state,now).update,{kind:'live'});
+  for(const kind of ['request','applying']){
+    save({...notice,kind});
+    assert.deepEqual(releaseStatus(running,state,now).update,{kind});
+  }
   save({...notice,unexpected:'invalid'});
   assert.equal(releaseStatus(running,state,now).update,null);
 });

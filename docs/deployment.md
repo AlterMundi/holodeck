@@ -51,12 +51,24 @@ Home receiver.
 
 Pass the prepared Home deployment request through
 `deployment/release-with-notice.sh --request <request.json>` on the
-receiving host. It verifies the selected predecessor, publishes a short-lived
-announcement there and waits 12 seconds before invoking Home. For a coordinated
-in-place operation use `deployment/release-with-notice.sh --announce-live`
-and remove the announcement when the operation settles. Ordinary changes made
-through the room or collection itself need no announcement. Unplanned failures
-cannot be announced in advance.
+receiving host. The paired human selected by `releaseControllerRef` in
+`receiving.json` owns the central HUD flag. Take its exact actor ref from the
+existing `daimon-home human` result. The flag applies across their tabs and
+survives a reload. Other visitors cannot change it.
+
+The operator reads the live flag and waits in the foreground for up to four
+minutes if DND is on. A pending request highlights the same flag. If the
+human releases it, a 12-second warning precedes the cutover. If DND returns
+during that warning, the cutover waits again. After the final check, a
+restart in progress is already committed. If the wait expires, keep the
+exact request for the next foreground attempt. A status error halts the
+command before submission. Use `--status` to inspect the receiver state.
+
+Use `--announce-live` before a coordinated in-place update that preserves the
+visit. Such an update does not need to wait for DND. Ordinary actions in the
+world need no notice. For the first installation only, a receiver predating
+DND must use its previously selected publication procedure. Once DND is live,
+use this wrapper for every package cutover.
 
 The bottom-left code is the installed page release, abbreviated from its
 package SHA-256. An existing tab keeps that code until its page changes and

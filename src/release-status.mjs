@@ -21,7 +21,7 @@ export function releaseStatus(version,stateDir,now=Date.now()){
     if(count>1024)return result;
     const notice=JSON.parse(buffer.toString('utf8',0,count));
     if(Object.keys(notice).sort().join(',')!=='expires,from,kind,to'||
-       !['restart','live'].includes(notice.kind)||notice.from!==version||
+       !['request','restart','applying','live'].includes(notice.kind)||notice.from!==version||
        typeof notice.to!=='string'||!digest.test(notice.to)||
        !Number.isSafeInteger(notice.expires)||notice.expires<=now||
        notice.expires>now+5*60*1000)return result;
