@@ -1,4 +1,4 @@
-import {Group,Mesh,MeshBasicMaterial,PlaneGeometry,Raycaster,SRGBColorSpace,Vector2,Vector3,VideoTexture} from 'three';
+import {BufferGeometry,Group,Line,LineBasicMaterial,Mesh,MeshBasicMaterial,PlaneGeometry,Raycaster,SRGBColorSpace,Vector2,Vector3,VideoTexture} from 'three';
 import {bindSpatialHudPointer,createSpatialHud,spatialHudCatalog} from 'proyeccion/spatial-hud';
 import {BeaconNativeModel} from './beacon-native-model.mjs';
 import {readWorktableReview} from './collection-review.mjs';
@@ -8,6 +8,7 @@ import {bindHarMoCAPPreview} from './beacon-video-preview.mjs';
 
 const panel='/harmonic_lab/';
 const nativeId='lab-worktable';
+const guitarRows={mechanism:'settings',startup:'startupStatus',support:'supportLabel'};
 const pendingPhases=new Set(['queued','starting']);
 const audioTrouble=Object.freeze({
   input:'La entrada de audio seleccionada no está disponible. Revisá su conexión y reintentá.',
@@ -61,7 +62,35 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
       }
     }});
   const attempted=new Set();
-  let guitar, guitarRequest, guitarSelection;
+  let guitar, guitarRequest, guitarSelection, guitarProblem;
+  const guitarLink=surface==='guitar'?new Line(new BufferGeometry(),
+    new LineBasicMaterial({color:0x58d8b0,transparent:true,opacity:.85})):null;
+  if(guitarLink){
+    guitarLink.name='Guitar part reference';
+    guitarLink.visible=false;
+    parent.add(guitarLink);
+  }
+  function showGuitarLink(){
+    if(!guitarLink)return;
+    const panel=outbound.group.getObjectByName(nativeId);
+    const row=panel?.getObjectByName(guitarRows[guitar?.section])??panel?.getObjectByName('sections');
+    const part=guitar?.part;
+    guitarLink.visible=Boolean(row&&part);
+    if(!guitarLink.visible)return;
+    const label=parent.worldToLocal(row.getWorldPosition(new Vector3()));
+    const center=part.geometry.boundingBox.getCenter(new Vector3());
+    center.z=part.geometry.boundingBox.max.z;
+    const target=parent.worldToLocal(part.localToWorld(center));
+    const points=[
+      new Vector3(label.x+1.26,label.y,label.z+.03),
+      new Vector3(label.x+1.44,label.y,label.z+.03),
+      target,
+    ];
+    guitarLink.geometry.setFromPoints(points);
+    guitarLink.geometry.computeBoundingSphere();
+    guitarLink.userData.part=part.name;
+    guitarLink.userData.section=guitar.section;
+  }
   const preview=surface==='harmocap'?mountVideo():null;
   function mountVideo(){
     const video=document.createElement('video');
@@ -85,6 +114,8 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
     guitarRequest?.abort();
     guitarRequest=null;
     guitarSelection=null;
+    guitarProblem=null;
+    if(guitarLink)guitarLink.visible=false;
     if(guitar){
       guitar.group.removeFromParent();
       disposeModel(guitar.group);
@@ -109,13 +140,16 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
       if(review.id!==anchor.scene||!review.parts.some(part=>part.id===anchor.part))throw Error();
       guitar=makeModel(review,{x:2.03,y:-.43,z:0});
       guitar.group.name='H.B. Guitar';
-      const material=guitar.parts.get(anchor.part).material;
+      guitar.part=guitar.parts.get(anchor.part);
+      guitar.section=section;
+      const material=guitar.part.material;
       material.emissive.set('#208d79');
       material.emissiveIntensity=.58;
       parent.add(guitar.group);
+      showGuitarLink();
     }catch{
       if(!controller.signal.aborted&&!signal.aborted){
-        lastProblem='No se pudo abrir la pieza de guitarra.';
+        guitarProblem='No se pudo abrir la pieza de guitarra.';
         if(latestView)showModel(false);
       }
     }
@@ -139,6 +173,7 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
     }
     outbound.receive({version:'1.0',updateDataModel:{surfaceId:nativeId,path:'/',value:view.data}});
     outbound.update();
+    showGuitarLink();
   }
   function status(label,buttons=[]){
     latestView=false;
@@ -154,9 +189,10 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
   function showModel(syncModel=true){
     latestView=true;
     const view=model.render(title);
-    if(lastProblem){
+    const problem=guitarProblem??lastProblem;
+    if(problem){
       view.components[0].children.splice(1,0,'station_error');
-      view.components.push({id:'station_error',component:'HudText',label:lastProblem,lines:2});
+      view.components.push({id:'station_error',component:'HudText',label:problem,lines:2});
     }
     update(view);
     if(syncModel&&surface==='guitar')void syncGuitar();
@@ -326,6 +362,10 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
       stream?.close();
       release();
       clearGuitar();
+      if(guitarLink){
+        guitarLink.geometry.dispose();
+        guitarLink.material.dispose();
+      }
       preview?.dispose();
       outbound.dispose();
       parent.removeFromParent();
