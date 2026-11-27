@@ -1,5 +1,17 @@
 # Current MVP work
 
+## November 27 — Conversation header and Escape
+
+Protected release `ce218c622b83` leaves the embedded Conversation header
+and its minimize button available independent of spatial HUD drawing.
+The local Chromium probe opened Conversation from Pendings, used the actual
+canonical shell, closed it by mouse, by Escape from the host, and by Escape
+from the focused editor. It reopened the same frame with the retained draft
+and sent no original. The receiving package changes only the client bundle
+and HTML. Immediate rollback is `5c5e67bd3276`. The on-origin shortcut works
+with the installed Conversation shell. The negotiated cross-origin shortcut
+passed separately with the compatible child candidate.
+
 ## November 27 — H.B. Guitar tabs and the installed 3D model
 
 Protected release `5c5e67bd3276` uses the Guitar A2UI tabs to select parts
