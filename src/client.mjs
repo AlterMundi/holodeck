@@ -790,6 +790,14 @@ function resetDoor(){
         if(value){prefetchRequest?.abort();prefetchRequest=null;}
         if(!value&&needsSync){setMoving(true);syncCurrent();}
       },
+      onArrival:(next,anchor)=>{
+        requestingMove=false;
+        if(next.actorRef!==activeSpace.actorRef){location.reload();return;}
+        confirmedRingPose=null;doorwayArrival=null;arrival=anchor;
+        const page=new URL(location.href);
+        page.hash=doorLocation(anchor);
+        history.replaceState(history.state,'',page);
+      },
       onMoved:(next,anchor)=>{
         requestingMove=false;needsSync=false;
         confirmedRingPose=null;
@@ -800,6 +808,14 @@ function resetDoor(){
     }:{})
   });
 }
+function toggleTeleport(){
+  if(matterHud?.teleport.group){matterHud.teleport.close();return true;}
+  if(!matterHud||entering||moving||needsSync||matterHud.active||matterHud.modalScope||mapPanel.open||beaconControls.opened||
+     signalEditor.active||contentVisitor?.index?.opened||worldHistory?.opened||
+     document.querySelector('dialog[open],#creator:not([hidden]),#content-visit:not([hidden]):not(.is-walking)'))return false;
+  void matterHud.teleport.open(activeSpace);
+  return true;
+}
 function beaconWorldAvailable(){
   return inside&&remoteScene&&!moving&&!entering&&!needsSync&&!document.hidden&&
     !!matterHud?.nearbyBeaconAvailable&&!matterHud.nearbyTableAvailable&&!signalEditor?.active&&
@@ -809,10 +825,16 @@ function beaconWorldAvailable(){
 // MML captures document keys by default. Preserve ordinary text editing and
 // keyboard activation of the HUD without turning typed words into locomotion.
 document.addEventListener('keydown',event=>{
+  if(event.code==='KeyQ'&&!event.defaultPrevented&&!event.isComposing&&!event.altKey&&!event.metaKey&&!event.ctrlKey&&
+     !editorOwns(event)&&!matterHud?.hud.ownsTextInput?.(event.target)){
+    if(event.repeat?matterHud?.teleport.group:toggleTeleport()){
+      event.preventDefault();event.stopImmediatePropagation();return;
+    }
+  }
   if(beaconControls.handleProjectionKey(event))return;
   if(matterHud?.hud.ownsTextInput?.(event.target))return;
   keepWorldTab(event);
-  if(matterHud?.settings.group||worldHistory?.native||matterHud?.visit.indexActive||matterHud?.visit.viewerActive||(beaconControls.opened&&beaconControls.native)){
+  if(matterHud?.teleport.group||matterHud?.settings.group||worldHistory?.native||matterHud?.visit.indexActive||matterHud?.visit.viewerActive||(beaconControls.opened&&beaconControls.native)){
     if(matterHud.settingsKey(event))event.preventDefault();
     event.stopImmediatePropagation();
     return;
@@ -967,7 +989,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       document.getElementById('creator').hidden&&!signalEditor?.active;
     const activityAllowed=()=>!inside&&document.getElementById('conversation-panel').hidden&&
       document.getElementById('creator').hidden;
-    const readTools=operating=>Object.fromEntries(Object.entries(tools).map(([id,element])=>[id,{
+    const readTools=operating=>Object.assign(Object.fromEntries(Object.entries(tools).map(([id,element])=>[id,{
       label:['toggle','mic','speaker'].includes(id)?element.textContent.trim():id==='undo'?'Deshacer':id==='visit'&&element.textContent.startsWith('Visitar ')?'Visitar':
         element.getAttribute('aria-label')??element.textContent.trim(),
       visible:(id==='activity'?activityAllowed():id==='fullscreen'?element.hasAttribute('data-fullscreen-available'):!element.hidden)&&
@@ -976,7 +998,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         &&(!['appearance','video'].includes(id)||document.getElementById('conversation-panel').hidden),
       disabled:element.disabled,
       pressed:element.getAttribute(['fullscreen','mic','speaker'].includes(id)?'aria-pressed':'aria-expanded')==='true',
-    }]));
+    }])),{teleport:{label:'Teletransporte',visible:!operating,disabled:moving||entering,
+      pressed:Boolean(matterHud?.teleport.group)}});
     let settingsInputCaptured=false;
     let tabletopRevision=0;
     async function shareTabletopMode(active){
@@ -1002,7 +1025,20 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       creatorContext:()=>({draft:preview,point:worldIndication?.selected,shared:worldIndication?.own()?.sequence}),
       beaconControls,onBeaconOpen:()=>releaseBeaconInput(client),
       toggleSound:()=>{if(!moving&&!entering&&navigator.userActivation?.isActive)void toggleWorldSound();},
+      teleport:{
+        read:async()=>{
+          const response=await fetch(new URL('api/space/destinations',base),{credentials:'same-origin',
+            signal:AbortSignal.timeout(6000)});
+          if(!response.ok)throw Error('Location unavailable');
+          return response.json();
+        },
+        go:destination=>void updateDoor.teleport?.(destination),
+        storage:{getItem:key=>window.localStorage.getItem(key),setItem:(key,value)=>window.localStorage.setItem(key,value)},
+        onOpen:()=>{releaseBeaconInput(client);touchControls.pause(true);},
+        onClose:()=>{touchControls.pause(false);if(!matterHud?.focusTool('teleport'))matterHud?.canvas.focus();},
+      },
       readTools,history:()=>worldHistory,visitor:()=>contentVisitor,activateTool:id=>{
+        if(id==='teleport'){toggleTeleport();return;}
         if(id==='endVisit'){if(visitAllowed())void contentVisitor?.endVisit();return;}
         if(id!=='activity'&&id!=='visit'){tools[id]?.click();return;}
         if(id==='activity'?!activityAllowed():!visitAllowed())return;
@@ -1472,7 +1508,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         activeSpace?.sharedConversation===true,matterStyleScope?.style.contactShadows===true,
         options.coreCameraManager.getCameraState(),renderer.composer.renderer.domElement.clientHeight,inspectionMix);
       const opaqueVisit=contentVisitor?.frame&&!contentVisitor.panel.classList.contains('is-walking');
-      const settingsOpen=Boolean(document.querySelector('#appearance-dialog[open],#video-dialog[open]'));
+      const settingsOpen=Boolean(matterHud.teleport.group||document.querySelector('#appearance-dialog[open],#video-dialog[open]'));
       const toolModal=Boolean(worldHistory?.opened||contentVisitor?.index?.opened||document.querySelector('dialog[open]:not([data-native-settings])'));
       if(settingsOpen!==settingsInputCaptured){
         settingsInputCaptured=settingsOpen;

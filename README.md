@@ -34,6 +34,8 @@ Open http://127.0.0.1:18940 in two independent browser tabs. This development
 entrance is anonymous and loopback-only; production uses the existing Home
 identity and service audience, with no alternate login.
 WASD/arrow keys move, mouse drag looks, Space jumps; mobile controls come from MML.
+Press **Q** or choose **Teletransporte** in the A2UI toolbar to travel to an
+accessible location. Favorites are saved for your identity in this browser.
 The selected shared runtime includes native-authored result nodes and cooperative
 signal gardens. See the [native creator quickstart](docs/native-creation-quickstart.md)
 and [recipe contract](docs/playable-creations.md): creators change the running

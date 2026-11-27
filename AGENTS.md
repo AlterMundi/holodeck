@@ -14,6 +14,14 @@ anonymous actors or browser-supplied identities. Review docs/deployment.md for t
 selected package/receiver and retain actual source/package/runtime receipts.
 Do not overwrite another Home service. No background native model invocations.
 
+Build every new or revised Holodeck game interface with A2UI, unless
+Nicolás explicitly requests an exception for that interface. Use Proyección's
+shared schema and spatial renderer, derive accessibility controls from the same
+surface, and bind actions to the existing domain owner. When touching a legacy
+game interface, move its visible controls to A2UI as part of the change. Keep
+private state, permissions, media playback and application-owned content in
+their existing owners. The migration inventory is in docs/a2ui-migration.md.
+
 When Nicolás is actively available to try a visual change, use one device to
 confirm he can enter the existing world and reach the changed view. Give him
 the stable playable link and location as soon as serving is confirmed. Keep

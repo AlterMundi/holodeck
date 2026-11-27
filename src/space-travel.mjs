@@ -46,7 +46,7 @@ export function arrivalDoor(from,next){
     {...door,yaw:(door.yaw+180)%360,doorway:true}:door??null;
 }
 
-export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving,revision,onNear,onAccessLost,onDoorDenied,
+export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onArrival,onMoving,revision,onNear,onAccessLost,onDoorDenied,
   mapEnabled=true,manageShortcut=true,allowWithConversation=()=>false}){
   const travel=document.querySelector('#space-travel'),button=document.querySelector('#house-door');
   const inside=space.id!=='outside';
@@ -72,24 +72,30 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
     }
     button.disabled=true;onMoving?.(true);
     for(const control of list.children)control.disabled=true;
-    let next;
+    let next,confirmed=false;
     try{
       const result=await fetch(new URL(jump?'api/space/jump':'api/space',base()),{
         method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({from:space.id,to:destination.to,...(onMoved||jump?{live:1,cachedRevision:revision?.(destination.to)}:{})}),
+        body:JSON.stringify({from:space.id,to:destination.to,...(destination.node?{node:destination.node}:{}),...(onMoved||jump?{live:1,cachedRevision:revision?.(destination.to)}:{})}),
       });
-      if(result.ok)next=await result.json();
+      if(result.ok){next=await result.json();confirmed=true;}
       else{
         if(result.status===401||result.status===403)onAccessLost?.();
-        else if(result.status===409)onDoorDenied?.(destination.to);
-        onError('Esta salida no está disponible. Podés volver a intentar.');
+        else if(result.status===409&&!destination.node)onDoorDenied?.(destination.to);
+        onError(destination.node?'Ese destino ya no está disponible.':'Esta salida no está disponible. Podés volver a intentar.');
       }
     }catch{
       try{next=await readSpace();}catch{}
       if(!next||next.id===space.id)onError('No pude confirmar el cambio de lugar.');
     }
-    if(next&&next.id!==space.id){
-      const arrival=arrivalDoor(jump?{id:next.arrivalFrom??next.exits?.[0]?.to??'outside'}:space,next);
+    if(next&&(next.id!==space.id||(confirmed&&next.arrival))){
+      const arrival=next.arrival??arrivalDoor(jump?{id:next.arrivalFrom??next.exits?.[0]?.to??'outside'}:space,next);
+      if(destination.node&&!confirmed)onError('Cambiaste de lugar. No pude confirmar el punto de llegada.');
+      if(next.id===space.id&&onArrival){
+        busy=false;button.disabled=false;
+        for(const control of list.children)control.disabled=false;
+        onArrival(next,arrival);return;
+      }
       if(onMoved&&next.live===1){onMoved(next,arrival);return;}
       const target=new URL(location.href);
       target.hash=arrival?doorLocation(arrival):'';
@@ -176,6 +182,7 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
   update.doorOffer=doorOffer;
   update.followDoor=followDoor;
   update.jump=to=>to===space.id?false:move({to},undefined,true);
+  update.teleport=({to,id})=>move({to,node:id},undefined,true);
   update.key=hotkey;
   update.buttonKey=buttonKey;
   update.bearing=()=>suspended||travel.open?null:map?.bearing();

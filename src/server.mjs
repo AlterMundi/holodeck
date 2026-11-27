@@ -1,7 +1,7 @@
 import {createQuintanaWeather} from './quintana-weather.mjs';
 import {parseRenderedView,RenderedViews} from './rendered-view.mjs';
 import {SAND3D_TRAIL_REVISIONS} from './sand3d-trail-assets.mjs';
-import {TOROIDAL_SPAWN, TOROIDAL_TERRAIN, toroidalParcelPoint} from './toroidal-terrain.mjs';
+import {TOROIDAL_SPAWN, TOROIDAL_TERRAIN, TOROIDAL_RESIDENCE, residenceWorld, toroidalParcelPoint} from './toroidal-terrain.mjs';
 import {RESIDENCE_REVISIONS} from './toroidal-residence-assets.mjs';
 import {indoorGardenTemplates} from './indoor-garden-recipe.mjs';
 import {COMPAII_HOUSE,interiorArt} from './interior-art.mjs';
@@ -16,7 +16,7 @@ import {RoomDesigns,DESIGN_SAVE_BYTES} from './room-designs.mjs';
 import {IndoorGardens,INDOOR_GARDEN_BYTES} from './indoor-gardens.mjs';
 import {GardenEditors} from './garden-editors.mjs';
 import {readOwnedRoomArt} from './owned-room-art.mjs';
-import {Houses, HOUSE_SAVE_BYTES,houseId} from './houses.mjs';
+import {Houses, HOUSE_SAVE_BYTES,exteriorDoor,houseId} from './houses.mjs';
 import {readActivity,ActivityError} from './activity.mjs';
 import {nodeVisits} from './content-nodes.mjs';
 import express from 'express';
@@ -37,7 +37,7 @@ import { RoomStore } from './room-store.mjs';
 import { homeIdentityResolver } from './home-identity.mjs';
 import { worldDocument } from './world.mjs';
 import { VALLEY_ASSET_REVISIONS,VALLEY_LAYOUT } from './continuous-valley.mjs';
-import { TERRACE_TOP } from './world-layout.mjs';
+import { TERRACE_TOP, TERRACES } from './world-layout.mjs';
 import { createWorldPort } from './world-port.mjs';
 import {sameVisitPin,validateContentNodes,validateContentVisits,visitsForActor} from './content-visits.mjs';
 import {allowedGalleryVisits,gallerySlots} from './gallery-catalog.mjs';
@@ -479,6 +479,60 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     return [...objects,...fixtures,...stations.map(station=>({id:station.id,kind:'workstation',title:station.title,
       position:station.position,revision:station.revision}))];
   }
+  const mayTeleportThrough=id=>!singleHouse||spaces.rooms.get(id)?.house===COMPAII_HOUSE;
+  function teleportDestinations(actor){
+    const destinations=[];
+    const publicPlace=(id,title,arrival)=>destinations.push({id,title,to:OUTSIDE,arrival});
+    const plaza=toroidal?TOROIDAL_SPAWN:{x:0,y:TERRACE_TOP+.001,z:6};
+    publicPlace('terrain:arrival','Plaza de llegada',{...plaza,yaw:180});
+    if(toroidal){
+      const [x,y,z]=residenceWorld(0,-21,TOROIDAL_RESIDENCE.floor);
+      publicPlace('terrain:residence','Residencia de la Nobleza IA',{x,y,z,yaw:180});
+    }else if(!hideWorkshop){
+      const names={overlook:'Mirador',gallery:'Isla de la galería',garden:'Isla del jardín'};
+      for(const {id,x,z} of TERRACES){
+        if(names[id])publicPlace('terrain:'+id,names[id],{x,y:TERRACE_TOP+.001,z,yaw:180});
+      }
+      for(const node of Object.values(room.nodes)){
+        if(node.deleted)continue;
+        const {x,z}=node.position;
+        // Leave space between the landing point and the node's pedestal.
+        const offset=z>0?-1:1;
+        publicPlace(node.id,node.title,{x,y:TERRACE_TOP+.001,z:z+offset,yaw:offset>0?180:0});
+      }
+    }
+    const directory=room.houses.directory();
+    const availableEntrances=exteriorEntrances(actor);
+    const houses=new Set();
+    for(const candidate of spaces.rooms.values()){
+      const to=candidate.id;
+      const path=spaces.routeTo(actor,to,mayTeleportThrough);
+      const portal=!path&&availableEntrances.some(entrance=>entrance.id===to&&entrance.portal);
+      if(!path&&!portal)continue;
+      const house=directory.find(item=>item.id===candidate.house);
+      if(!house)continue;
+      const group={house:house.id,houseTitle:house.facade.title};
+      if(!houses.has(house.id)){
+        houses.add(house.id);
+        const door=exteriorDoor(house);
+        destinations.push({id:'house:'+house.id,to:OUTSIDE,title:'Entrada exterior',...group,
+          arrival:toroidal?toroidalParcelPoint(door):door});
+      }
+      const view=spaces.view(actor,to);
+      const details={...group,room:candidate.title,to};
+      const roomArrival=portal?{x:0,y:.11,z:4,yaw:180}:null;
+      destinations.push({id:'room:'+to,title:candidate.title,...details,arrival:roomArrival,
+        current:to===spaces.current(actor),portal});
+      for(const object of roomObjects(view)){
+        if(!object.position||!(object.kind==='workstation'||/worktable|orientation-table|archive-turntable/.test(object.id)))continue;
+        const {x,z}=object.position;
+        const offset=z>2?-1.35:1.45;
+        destinations.push({id:'object:'+to+':'+object.id,title:object.title,...details,portal,
+          arrival:{x,y:.12,z:z+offset,yaw:offset>0?180:0}});
+      }
+    }
+    return destinations;
+  }
   function conversationPlace(actor,id){
     const selected=spaces.rooms.get(id);
     if(!actor.rights?.includes('observe')||!selected||spaces.fenced||room.commitUncertain||!spaces.allows(actor,id))return null;
@@ -812,7 +866,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(session[budget].length>=(pointing?1:4))return res.status(429).json({message:'Esperá un momento antes de intentar otra acción.'});
       session[budget].push(now);
     }
-    const spaceRoute=['/space','/space/jump','/space/character-pose-review','/space/character-presentation','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/avatar-pose','/space/collection/tabletop-presence','/space/collection/pointing','/space/matter-look','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
+    const spaceRoute=['/space','/space/destinations','/space/jump','/space/character-pose-review','/space/character-presentation','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/avatar-pose','/space/collection/tabletop-presence','/space/collection/pointing','/space/matter-look','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
       req.path==='/release-dnd'||req.path==='/appearance'||req.path==='/conversation-surface'||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
@@ -1243,6 +1297,11 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(spaces.fenced||room.commitUncertain)return res.status(503).json({message:'No pude confirmar tu ubicación.'});
     res.json(req.query.live==='1'?liveSpace(req.actor):describeSpace(req.actor));
   });
+  app.get(route('api/space/destinations'),(req,res)=>{
+    if(spaces.fenced||room.commitUncertain)return res.sendStatus(503);
+    const destinations=teleportDestinations(req.actor).map(({arrival,portal,...destination})=>destination);
+    res.json({space:spaces.current(req.actor),destinations});
+  });
   app.get(route('api/space/scene'),(req,res)=>{
     const {room:destination}=req.query;
     const from=spaces.current(req.actor);
@@ -1262,12 +1321,25 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   });
   app.post(route('api/space/jump'),(req,res)=>{
     const input=req.body;
-    const {live,cachedRevision,...request}=input??{};
+    const {live,cachedRevision,node,...request}=input??{};
     if(live!==1||(cachedRevision!==undefined&&
        (typeof cachedRevision!=='string'||!/^[a-f0-9]{64}$/.test(cachedRevision))))return res.sendStatus(400);
-    const moved=!room.commitUncertain&&spaces.jump(req.actor,request,id=>
-      !singleHouse||spaces.rooms.get(id)?.house===COMPAII_HOUSE);
-    if(!moved)return res.status(409).json({message:'Ese lugar ya no está disponible desde acá.'});
+    const unavailable=()=>res.status(409).json({message:'Ese lugar ya no está disponible desde acá.'});
+    if(room.commitUncertain||spaces.fenced)return unavailable();
+    if(node!==undefined){
+      const {from,to}=request;
+      if(Object.keys(request).length!==2||from!==spaces.current(req.actor)||typeof node!=='string')return unavailable();
+      const destination=teleportDestinations(req.actor).find(item=>item.id===node&&item.to===to);
+      if(!destination||destination.current)return unavailable();
+      if(from===to)return res.json({id:to,actorRef:req.actor.id,arrival:destination.arrival});
+      const moved=to===OUTSIDE||destination.portal?spaces.place(req.actor,to):
+        spaces.jump(req.actor,request,mayTeleportThrough);
+      if(!moved)return unavailable();
+      closeOutOfScope(req.actor);
+      return res.json({...liveSpace(req.actor,cachedRevision),arrivalFrom:moved.arrivalFrom,arrival:destination.arrival});
+    }
+    const moved=spaces.jump(req.actor,request,mayTeleportThrough);
+    if(!moved)return unavailable();
     closeOutOfScope(req.actor);
     res.json({...liveSpace(req.actor,cachedRevision),...moved});
   });

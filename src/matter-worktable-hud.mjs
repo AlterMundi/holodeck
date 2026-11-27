@@ -2,7 +2,7 @@ import {PendingBookHud,pendingToolId,pendingBookId,pendingBookWidth} from './pen
 import {hudAppearanceKey,readHudAppearance} from './hud-appearance.mjs';
 import {PassageHud} from './passage-hud.mjs';
 import {HudLookPreview} from './hud-look-preview.mjs';
-import {Matrix4,OrthographicCamera,PerspectiveCamera,Raycaster,Scene,Vector2} from 'three';
+import {BufferGeometry,Float32BufferAttribute,Line,LineBasicMaterial,Matrix4,OrthographicCamera,PerspectiveCamera,Raycaster,Scene,Vector2} from 'three';
 import {WorldMapHud,worldMapId,worldBearingId,terrainPeekId} from './world-map-hud.mjs';
 import {DoorPromptHud,compactDoorPromptWidth,doorPromptId} from './door-prompt-hud.mjs';
 import {CollectionHud,collectionHudId,collectionHudWidth} from './collection-hud.mjs';
@@ -11,6 +11,7 @@ import {RecoveryHud,recoveryHudId} from './recovery-hud.mjs';
 import {CreationHud,creationHudId} from './creation-hud.mjs';
 import {BeaconHud,beaconStationId,beaconViewerId,beaconStationWidth,beaconViewerWidth} from './beacon-hud.mjs';
 import {SettingsHud,settingsId} from './settings-hud.mjs';
+import {TeleportHud,teleportHudId,teleportHudWidth} from './teleport-hud.mjs';
 import {HudRenderLayer} from './hud-render-layer.mjs';
 import {WorldActivityHud,activityHudId,activityHudWidth} from './world-activity-hud.mjs';
 import {VisitHud,exhibitionHudId,visitHudId,exhibitionHudWidth,visitHudWidth} from './visit-hud.mjs';
@@ -45,18 +46,18 @@ const toolPanelMinWidth=.5; // Minimum in the Proyección HudPanel catalog.
 const toolScale=286; // Proyección's .154-unit button target is 44 CSS px at this scale.
 const toolGap=.035,touchToolGap=.018,toolRowHeight=.18,toolPadding=.12,dockBottomMargin=.035;
 const iconToolPixels=48;
-const toolNames=['toggle','map','open','talk','mic','speaker','appearance','video','bridge','plant','undo','activity','visit','endVisit','fullscreen','more'];
-const toolPixels={toggle:148,map:130,open:154,talk:134,mic:105,speaker:110,appearance:138,video:96,bridge:182,plant:100,undo:92,activity:126,visit:124,endVisit:140,fullscreen:48,more:48};
+const toolNames=['toggle','map','teleport','open','talk','mic','speaker','appearance','video','bridge','plant','undo','activity','visit','endVisit','fullscreen','more'];
+const toolPixels={toggle:148,map:130,teleport:120,open:154,talk:134,mic:105,speaker:110,appearance:138,video:96,bridge:182,plant:100,undo:92,activity:126,visit:124,endVisit:140,fullscreen:48,more:48};
 
 function opticalRole(surface,id,component){
   if(surface===worldMapId||surface===worldBearingId||id==='map')return 'navigation';
   if(['talk','open','share','discuss'].includes(id))return 'primary';
   if(surface===toolbeltId||component==='HudRange'||component==='HudChoice')return 'utility';
 }
-const toolIcons={map:'map',talk:'conversation',appearance:'appearance',video:'video',activity:'activity',
+const toolIcons={map:'map',teleport:'map',talk:'conversation',appearance:'appearance',video:'video',activity:'activity',
   fullscreen:'resize'};
-const toolPriority=['open','mic','speaker','talk','map','activity','video','appearance','fullscreen','visit','endVisit','bridge','plant','undo'];
-const compactToolPixels={open:86,map:110,talk:116,appearance:122,video:82,activity:110};
+const toolPriority=['open','mic','speaker','talk','map','teleport','activity','video','appearance','fullscreen','visit','endVisit','bridge','plant','undo'];
+const compactToolPixels={open:86,map:110,teleport:95,talk:116,appearance:122,video:82,activity:110};
 function pixelsForTool(id,{compact,iconOnly}){
   if(iconOnly&&Object.hasOwn(toolIcons,id))return iconToolPixels;
   return compact?(compactToolPixels[id]??toolPixels[id]):toolPixels[id];
@@ -93,7 +94,7 @@ function toolComponents(layout){
     ...rows.flatMap(({ids},index)=>[
       row(rowIds[index],ids,{gap}),
       ...ids.map(id=>button(id,path(id+'Label'),{
-        disabled:path(id+'Disabled'),...(['toggle','map','talk','mic','speaker','appearance','video','fullscreen','more'].includes(id)?{pressed:path(id+'Pressed')}:{}),
+        disabled:path(id+'Disabled'),...(['toggle','map','teleport','talk','mic','speaker','appearance','video','fullscreen','more'].includes(id)?{pressed:path(id+'Pressed')}:{}),
         weight:pixelsForTool(id,layout)/66,...(toolIcons[id]?{icon:toolIcons[id]}:{}),
       })),
     ]),
@@ -159,7 +160,7 @@ const portraitWork=[
 const movement=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE']);
 
 export class MatterWorktableHud{
-  constructor({document,webgl,table,collection,toggleSound,onActive,canEnter=()=>true,onError,readTools,activateTool,navigation,presentMovement,history,visitor,creatorContext,beaconControls,onBeaconOpen}){
+  constructor({document,webgl,table,collection,toggleSound,onActive,canEnter=()=>true,onError,readTools,activateTool,navigation,presentMovement,history,visitor,creatorContext,beaconControls,onBeaconOpen,teleport}){
     Object.assign(this,{document,webgl,table,onActive,canEnter,readTools,activateTool,presentMovement,movementGroups:new Map(),scope:0,toolScope:0,mode:null,blocked:false});
     this.canvas=webgl.domElement;
     const releaseHudOverrides=()=>{
@@ -239,6 +240,29 @@ export class MatterWorktableHud{
     this.settings=new SettingsHud({document,send:(type,content,id)=>this.send(type,content,id),
       focusControl:name=>this.hud.focusAccessibleControl(settingsId,name),focusLauncher:name=>this.focusTool(name),
       onSurfaceChange:()=>this.syncSettingsInput(),onSound:toggleSound});
+    this.teleport=new TeleportHud({...teleport,send:(type,content,id)=>this.send(type,content,id),
+      focus:name=>this.hud.focusAccessibleControl(teleportHudId,name),
+      onOpen:()=>{
+        this.teleportOpenedAt=performance.now();
+        this.syncSettingsInput();this.layer.invalidate();teleport.onOpen();
+      },
+      onClose:()=>{
+        this.teleportCurl.visible=false;
+        this.syncSettingsInput();this.layer.invalidate();teleport.onClose();
+      }});
+    const spiral=[],colors=[];
+    for(let i=0;i<=100;i++){
+      const ratio=i/100,phase=ratio*Math.PI*2.35;
+      spiral.push(Math.cos(phase)*ratio*1.56,Math.sin(phase)*ratio*1.03,-.09);
+      colors.push(.10+.52*ratio,.36+.50*ratio,.36+.47*ratio);
+    }
+    const geometry=new BufferGeometry();
+    geometry.setAttribute('position',new Float32BufferAttribute(spiral,3));
+    geometry.setAttribute('color',new Float32BufferAttribute(colors,3));
+    this.teleportCurl=new Line(geometry,new LineBasicMaterial({vertexColors:true,transparent:true,
+      depthTest:false,depthWrite:false}));
+    this.teleportCurl.visible=false;
+    this.scene.add(this.teleportCurl);
     this.activity=new WorldActivityHud({owner:history,send:(type,content,id)=>this.send(type,content,id),
       focus:name=>this.hud.focusAccessibleControl(activityHudId,name)});
     this.visit=new VisitHud({owner:visitor,send:(type,content,id)=>this.send(type,content,id),
@@ -263,6 +287,7 @@ export class MatterWorktableHud{
         else if(id===pendingToolId)this.pending.toolGroup=group;
         else if(id===pendingBookId)this.pending.bookGroup=group;
         else if(id===activityHudId)this.activity.group=group;
+        else if(id===teleportHudId)this.teleport.group=group;
         else if(id===exhibitionHudId)this.visit.indexGroup=group;
         else if(id===visitHudId)this.visit.viewerGroup=group;
         else if(id===worldNoticeId)this.status.noticeGroup=group;
@@ -287,6 +312,7 @@ export class MatterWorktableHud{
           this.pending.activate(requested);
         }
         else if(requested.surfaceId===activityHudId)this.activity.activate(requested);
+        else if(requested.surfaceId===teleportHudId)this.teleport.activate(requested);
         else if([exhibitionHudId,visitHudId].includes(requested.surfaceId))this.visit.activate(requested);
         else if(requested.surfaceId===recoveryHudId)this.recovery.activate(requested);
         else if(requested.surfaceId===creationHudId)this.creation.activate(requested);
@@ -295,7 +321,7 @@ export class MatterWorktableHud{
       },onTransportError:onError,
     });
     const consumeSettingsPointer=event=>{
-      if((!this.settings.group&&!this.activity.owner()?.native&&!this.visit.indexActive&&!this.visit.viewerActive&&!(this.beacon.owner.opened&&this.beacon.owner.native))||(event.type==='pointerdown'&&event.button===0))return;
+      if((!this.settings.group&&!this.teleport.group&&!this.activity.owner()?.native&&!this.visit.indexActive&&!this.visit.viewerActive&&!(this.beacon.owner.opened&&this.beacon.owner.native))||(event.type==='pointerdown'&&event.button===0))return;
       event.preventDefault();
       event.stopImmediatePropagation();
     };
@@ -331,7 +357,7 @@ export class MatterWorktableHud{
 
   rayForPointer(event){
     if(this.priorInert!==undefined)return;
-    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.pending.toolGroup&&!this.pending.bookGroup&&!this.status.controlsGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.movementGroups.size)return;
+    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.teleport.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.pending.toolGroup&&!this.pending.bookGroup&&!this.status.controlsGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.movementGroups.size)return;
     const rect=this.canvas.getBoundingClientRect();
     if(!rect.width||!rect.height)return;
     this.pointerPosition.set((event.clientX-rect.left)*2/rect.width-1,1-(event.clientY-rect.top)*2/rect.height);
@@ -724,9 +750,9 @@ export class MatterWorktableHud{
   }
 
   syncSettingsInput(){
-    const scope=this.beacon.viewerGroup?beaconViewerId:this.activity.owner()?.native?activityHudId:this.visit.indexActive?exhibitionHudId:
+    const scope=this.teleport.group?teleportHudId:this.beacon.viewerGroup?beaconViewerId:this.activity.owner()?.native?activityHudId:this.visit.indexActive?exhibitionHudId:
       this.visit.viewerGroup?visitHudId:this.settings.group?settingsId:null;
-    const mapTakesFocus=Boolean(this.map.group&&this.map.compact);
+    const mapTakesFocus=Boolean(this.teleport.group||this.map.group&&this.map.compact);
     for(const group of [this.toolGroup]){
       if(group&&group.visible===mapTakesFocus){
         group.visible=!mapTakesFocus;
@@ -776,7 +802,7 @@ export class MatterWorktableHud{
     if(this.beacon.viewerPresented)return this.beacon.key(event,this.hud);
     const history=this.activity.owner();
     const visit=this.visit.indexActive||this.visit.viewerActive;
-    const surface=history?.native?activityHudId:this.visit.indexActive?exhibitionHudId:visit?visitHudId:settingsId;
+    const surface=this.teleport.group?teleportHudId:history?.native?activityHudId:this.visit.indexActive?exhibitionHudId:visit?visitHudId:settingsId;
     if(event.defaultPrevented)return false;
     if((history?.native||visit)&&!this.ownsAccessibleInput(event.target)&&
       event.target?.closest?.('input,textarea,button,select,[contenteditable]')){
@@ -807,7 +833,7 @@ export class MatterWorktableHud{
     const handled=this.hud.handleKey(event,{surfaceId:surface});
     if(event.key==='Escape'){
       if(!handled||!this.hud.currentFocus()){
-        if(visit)this.visit.close();else if(history?.native)history.close();else this.settings.close();
+        if(this.teleport.group)this.teleport.close();else if(visit)this.visit.close();else if(history?.native)history.close();else this.settings.close();
       }
       return true;
     }
@@ -951,7 +977,7 @@ export class MatterWorktableHud{
       !this.webgl.getContext().isContextLost()&&!this.document.querySelector(
         'dialog[open],#signal-editor:not([hidden]),#conversation-panel:not([hidden]),#content-visit:not([hidden]):not(.is-walking)');
     this.creation.update({visible:createClear,width:width-left-right-40,maxHeight:height-createTop-recoveryReserve});
-    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.pending.toolGroup&&!this.pending.bookGroup&&!this.status.noticeGroup&&!this.status.controlsGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.movementGroups.size&&!additional){
+    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.teleport.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.pending.toolGroup&&!this.pending.bookGroup&&!this.status.noticeGroup&&!this.status.controlsGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.movementGroups.size&&!additional){
       this.releaseHudOverrides();
       this.windows.end();
       this.layer.hide();
@@ -1189,6 +1215,24 @@ export class MatterWorktableHud{
       const scale=Math.min(178,(width-left-right)/2.25,Math.max(70,height-top-reserved)/2.0);
       this.place(this.settings.group,'settingsPlacement',viewport,(width+left-right)/2,top,scale);
     }
+    if(this.teleport.group){
+      const scale=Math.min(188,(width-32)/teleportHudWidth,(height-32)/2.50);
+      const reduced=this.document.defaultView.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const progress=reduced?1:Math.min(1,(performance.now()-this.teleportOpenedAt)/540);
+      const tail=(1-progress)**2;
+      const phase=progress*Math.PI*2.25;
+      const x=width/2+Math.cos(phase)*scale*.33*tail;
+      const y=Math.max(16,(height-1.66*scale)/2)+Math.sin(phase)*scale*.23*tail;
+      this.place(this.teleport.group,'teleportPlacement',viewport,x,y,scale*(1-.28*tail));
+      const curl=this.teleportCurl;
+      curl.visible=progress<1;
+      if(curl.visible){
+        placeHudInViewport(curl,this.camera,{...viewport,x:width/2,y:y+scale*.77,pixelsPerUnit:scale,depth:1.02});
+        curl.geometry.setDrawRange(0,Math.max(2,Math.round(101*progress)));
+        curl.material.opacity=.85*Math.sin(Math.PI*progress);
+        this.layer.invalidate();
+      }
+    }
     if(this.activity.group){
       const activityScale=Math.min(176,(width-24)/activityHudWidth,(height-24)/2.47);
       if(activityScale<92){
@@ -1297,6 +1341,8 @@ export class MatterWorktableHud{
     this.unbind();
     this.windows.dispose();
     this.events.abort();
+    this.teleport.close();
+    this.teleportCurl.geometry.dispose();this.teleportCurl.material.dispose();
     this.passage.dispose();
     this.layer.dispose();
     this.map.dispose();
