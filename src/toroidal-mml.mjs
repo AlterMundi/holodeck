@@ -41,7 +41,8 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
   const viewOffset = new Vector3();
   const chaseOffset=new Vector3(),chaseEye=new Vector3(),chaseTarget=new Vector3(),chaseBasis=new Matrix4();
   const tangent=new Vector3(),heading=new Vector3(),worldUp=new Vector3(),cameraRight=new Vector3();
-  const chaseRotation=new Quaternion();
+  const chaseRotation=new Quaternion(),orbitTurn=new Quaternion(),identity=new Quaternion();
+  const orbitDirection=new Vector3(),chaseDirection=new Vector3();
   const radialAxis = new Vector3(),right=new Vector3(),side=new Vector3(),feet=new Vector3();
   const headroom=createAvatarHeadroom(),contact=new Vector3();
   const capsule = new Line3();
@@ -276,9 +277,17 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
       // singularity at the top of the loop without rolling the view.
       chaseOffset.copy(tangent).multiplyScalar(-distance*.76)
         .addScaledVector(heading,-distance*.42).addScaledVector(worldUp,distance*.23)
-        .addScaledVector(cameraRight,distance*.32);
-      viewOffset.lerp(chaseOffset,loop.blend);
-      chaseEye.copy(target).add(chaseOffset);
+        .addScaledVector(cameraRight,distance*.32).setLength(distance);
+      const orbitDistance=viewOffset.length(),chaseDistance=chaseOffset.length();
+      orbitDirection.copy(viewOffset).normalize();
+      chaseDirection.copy(chaseOffset).normalize();
+      orbitTurn.setFromUnitVectors(orbitDirection,chaseDirection);
+      orbitTurn.slerp(identity,1-loop.blend);
+      // Blend the viewing directions on a sphere so opposite offsets
+      // cannot cancel and send the camera through the character.
+      viewOffset.copy(orbitDirection).applyQuaternion(orbitTurn)
+        .multiplyScalar(orbitDistance+(chaseDistance-orbitDistance)*loop.blend);
+      chaseEye.copy(target).add(viewOffset);
       chaseTarget.copy(target).addScaledVector(tangent,distance*.17);
       chaseRotation.setFromRotationMatrix(chaseBasis.lookAt(chaseEye,chaseTarget,worldUp));
       viewRotation.slerp(chaseRotation,loop.blend);
