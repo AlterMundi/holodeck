@@ -76,6 +76,16 @@ indicates when a newer release is available. The notice does not force a reload.
 A tab opened before this feature was installed needs to open the updated page
 once to receive announcements.
 
+## Holodeck package and history size
+
+The Holodeck builder and its selected Home gateway and executor accept archives
+through 40 MiB. Other Home services retain their ordinary 32 MiB archive limit.
+The host still verifies the exact package manifest, checksum, predecessor and
+unchanged file limits. The state filesystem has its own separate allocation.
+Keep at most three retained code archives in the ordinary rotation under
+120 MiB, including the selected package and its exact rollback. Use the
+existing Home retire-version writer only for a superseded archive.
+
 ## Receiving contracts
 
 The existing Home publisher accepts the closed `dm.home-service-package/v1`
@@ -442,7 +452,7 @@ native conversation, another app or a device capture. No timer, model poller,
 inbox reader, autonomous attention or global Stop is installed.
 
 Keep current, publisher-protected previous, one necessary compatible recovery
-and at most one candidate within the existing96MiB total artifact-history bound.
+and at most one candidate within the 120 MiB total Holodeck artifact-history bound.
 Usually current/previous suffice; retain the third role only while the immediate
 predecessor cannot read current state. Reassess and retire it through the writer
 once a compatible predecessor is selected. Runtime code independently retains current/
