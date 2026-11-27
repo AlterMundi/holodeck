@@ -1771,7 +1771,15 @@ $('#room-topic-choice').onchange=event=>{
   const item=roomObjects().find(object=>object.id===event.target.value);
   roomTopic=item?{id:item.id,revision:item.revision}:null;
 };
-function projectVoiceControls({recording=false,speaking=false,speakerReady=false}={}){
+let toolbarCaption='';
+function showToolbarCaption(text,settled=false){
+  if(text===toolbarCaption)return;
+  if(!text){
+    if(!settled&&worldNotice.element.textContent===toolbarCaption)worldNotice.clear();
+  }else worldNotice.show(text,{transient:settled});
+  toolbarCaption=settled?'':text;
+}
+function projectVoiceControls({recording=false,speaking=false,speakerReady=false,phase,words,previewUnavailable,needsReview}={}){
   const mic=$('#tool-mic'),speaker=$('#tool-speaker');
   mic.textContent=recording?'Enviar audio':'Mic';
   mic.setAttribute('aria-pressed',String(recording));
@@ -1779,6 +1787,15 @@ function projectVoiceControls({recording=false,speaking=false,speakerReady=false
   speaker.setAttribute('aria-pressed',String(speaking));
   speaker.setAttribute('aria-label',speaking?'Silenciar respuestas habladas':'Activar respuestas habladas');
   speaker.disabled=!speakerReady;
+  if(recording&&phase){
+    const label=words?'● Grabando · '+words:
+      previewUnavailable?'● Grabando · transcripción en vivo no disponible':'● Grabando · te estoy escuchando';
+    showToolbarCaption(label);
+  }else if(phase==='permission')showToolbarCaption('Abriendo el micrófono…');
+  else if(phase==='finalizing'||phase==='sending')showToolbarCaption('Enviando audio…');
+  else if(phase==='ready'||phase==='idle'&&needsReview)
+    showToolbarCaption('Tu grabación quedó en Conversar para revisar.',true);
+  else if(phase==='idle')showToolbarCaption('');
 }
 function updateNativeAvailability(){
   const available=state?.native?.available===true;
@@ -2182,8 +2199,9 @@ $('#tool-mic').onclick=async()=>{
   try{
     if(inside&&activeSpace.id===CHARACTER_STUDIO&&matterHud?.active)
       conversationCharacterPose=matterHud.table?.currentPose?.()??null;
+    if(button.getAttribute('aria-pressed')!=='true')showToolbarCaption('Abriendo el micrófono…');
     await ensureSharedConversation().pressToolbarMic();
-  }catch(error){say(error.message,{transient:true});}
+  }catch(error){showToolbarCaption('');say(error.message,{transient:true});}
   finally{button.disabled=false;}
 };
 $('#tool-speaker').onclick=()=>sharedConversation?.toggleToolbarSpeaker();
