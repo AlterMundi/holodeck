@@ -3,6 +3,7 @@ import test from 'node:test';
 import {Quaternion, Vector3} from 'three';
 import {ToroidalLocomotion, toroidalRotation} from '../src/toroidal-locomotion.mjs';
 import {steerToroidalFlight} from '../src/toroidal-mml.mjs';
+import {bindWorldOrbitInput} from '../src/world-orbit-input.mjs';
 import {
   TOROIDAL_OVERLOOK, TOROIDAL_TERRAIN, terrainElevation, terrainFrame, terrainPosition, terrainWaterDepth, toroidalSpurPoint,
 } from '../src/toroidal-terrain.mjs';
@@ -328,4 +329,42 @@ test('holding a fixed pitch keeps climbing or descending until the pilot changes
     assert.ok(fly(sign*2*Math.PI,.6)**2<1e-8);
     assert.ok(motion.crossSpeed>4.9);
   }
+});
+
+test('flight look consumes only the pointer displacement without snapping back on release',()=>{
+  const document=new EventTarget(),canvas=new EventTarget();
+  Object.assign(document,{
+    defaultView:new EventTarget(),
+    body:{style:{}},
+    exitPointerLock(){this.pointerLockElement=null;},
+  });
+  Object.assign(canvas,{
+    ownerDocument:document,clientWidth:600,clientHeight:400,
+    requestPointerLock(){document.pointerLockElement=this;},
+  });
+  const camera={
+    isFlyCameraOn:()=>false,activePointers:new Map(),
+    phi:Math.PI/2,targetPhi:Math.PI/2,targetTheta:0,minPolarAngle:.15,maxPolarAngle:3,
+  };
+  const release=bindWorldOrbitInput(camera,canvas,()=>.5,undefined,undefined,undefined,()=>true);
+  const emit=(target,type,fields)=>{
+    const event=new Event(type,{cancelable:true});
+    Object.assign(event,{pointerType:'mouse',pointerId:1,...fields});
+    target.dispatchEvent(event);
+  };
+  for(const sign of [-1,1]){
+    camera.phi=camera.targetPhi=Math.PI/2;
+    emit(canvas,'pointerdown',{button:2});
+    const turn={buttons:2,movementX:0,movementY:-100*sign};
+    emit(document,'pointermove',turn);
+    assert.equal(camera.phi,Math.PI/2+2.5*sign);
+    assert.equal(camera.targetPhi,camera.phi);
+    emit(document,'pointermove',{...turn,movementY:0});
+    assert.equal(camera.phi,Math.PI/2+2.5*sign);
+    emit(document,'pointermove',turn);
+    emit(document,'pointerup',{button:2});
+    assert.equal(camera.phi,Math.PI/2+5*sign);
+    assert.equal(camera.targetPhi,camera.phi);
+  }
+  release();
 });
