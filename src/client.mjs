@@ -15,6 +15,7 @@ import {bindFoyerFloorFinish} from './foyer-floor-finish.mjs';
 import {ToroidalCave} from './toroidal-cave.mjs';
 import {TOROIDAL_TERRAIN} from './toroidal-terrain.mjs';
 import {TOROIDAL_SUN,ToroidalTerrainRenderer,toroidalSunDirection} from './toroidal-terrain-renderer.mjs';
+import {bindFlightSpaceGesture} from './flight-space-gesture.mjs';
 import {bindToroidalMml} from './toroidal-mml.mjs';
 import {FlightWake} from './flight-wake.mjs';
 import {WaterSplash} from './water-splash.mjs';
@@ -433,30 +434,29 @@ const outsideRing=()=>!inside&&activeSpace.outdoorTerrain===TOROIDAL_TERRAIN.id;
 // Arrival frames the house door; the Residencia's chamber portals are additional entrances.
 const houseEntrances=space=>space?.entrances?.filter(entrance=>!entrance.portal)??[];
 let firstExteriorDoor=outsideRing()&&!location.hash&&houseEntrances(activeSpace).length===1?houseEntrances(activeSpace)[0].door:null;
-let flightEnabled=false,previousSpacePress=null,radialMovementMode='ground',radialBoosting=false;
+let flightEnabled=false,doubleJumpPending=false,trickStarted=-Infinity,radialMovementMode='ground',radialBoosting=false;
 const verticalHelp=document.getElementById('world-vertical-help');
 const dryVerticalHelp=verticalHelp.textContent;
 let fitConversationWindow=()=>{};
 const conversationFirst=matchMedia('(max-width:740px), (max-width:1180px) and (max-height:540px)');
 let conversationCharacterPose=null;
-const resetFlightTap=()=>{previousSpacePress=null;};
+const spaceGesture=bindFlightSpaceGesture({
+  allowed:event=>!event.altKey&&!event.ctrlKey&&!event.metaKey&&outsideRing()&&!entering&&!moving&&
+    !document.hidden&&!document.querySelector('dialog[open]')&&
+    !event.target?.closest?.('#conversation-panel,button,input,select,summary,textarea,[contenteditable]'),
+  onFlight(){
+    flightEnabled=!flightEnabled;
+    say(flightEnabled?'Vuelo activo · Espacio sube, Alt baja y Shift acelera.':'Vuelo desactivado.',{transient:true});
+  },
+  onDoubleJump(){if(!flightEnabled)doubleJumpPending=true;},
+});
+const resetFlightTap=spaceGesture.cancel;
 window.addEventListener('blur',resetFlightTap);
 document.addEventListener('visibilitychange',resetFlightTap);
+document.addEventListener('keyup',spaceGesture.up,true);
 document.addEventListener('focusin',event=>{
   if(event.target?.closest?.('iframe,#conversation-panel,button,input,select,summary,textarea,[contenteditable]'))resetFlightTap();
 });
-function doubleSpace(event){
-  if(event.code!=='Space'||event.repeat||event.altKey||event.ctrlKey||event.metaKey||
-     !outsideRing()||entering||moving||
-     document.querySelector('dialog[open]')||event.target?.closest?.('#conversation-panel,button,input,select,summary,textarea,[contenteditable]'))return;
-  const now=performance.now();
-  if(previousSpacePress!==null&&now-previousSpacePress<340){
-    flightEnabled=!flightEnabled;
-    previousSpacePress=null;
-    const flightNotice=touchControls.native?'Vuelo activo':'Vuelo activo · Espacio sube, Alt baja y Shift acelera.';
-    say(flightEnabled?flightNotice:'Vuelo desactivado.',{transient:true});
-  }else previousSpacePress=now;
-}
 
 let outdoorReady=()=>Boolean(geometryProbe?.snapshot());
 let outdoorArrivalReady=()=>outdoorReady();
@@ -804,7 +804,7 @@ document.addEventListener('keydown',event=>{
     return;
   }
   if(matterHud?.ownsAccessibleInput(event.target))return;
-  doubleSpace(event);
+  spaceGesture.down(event);
   if(event.target instanceof Element&&event.target.closest('#exhibition-index')){event.stopImmediatePropagation();return;}
   if((beaconControls.opened||hot&&(moving||inside&&contentVisitor?.frame&&!contentVisitor.panel.classList.contains('is-walking')))&&
      ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE'].includes(event.code)){
@@ -1183,6 +1183,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const releaseFlightAnimation=bindFlightAvatarAnimation(renderer.characterManager,()=>({
       outdoor:outsideRing(),flying:flightEnabled,boosting:localFlightBoost(),grounded:client.getCharacterManager().localController?.characterOnGround,table:tableFlight.active,tabletopPlayers:tabletopPlayers(),
       peerPoses:poses.peers,peerGaze:points.gazes,gaze:tableGaze,wake:!entering&&!moving&&drawWorld?flightWake:null,glanceMotion:!companion.motion.matches&&!document.hidden,
+      trickAge:(performance.now()-trickStarted)/1000,
       aimPitch:aiming()?Math.PI/2-options.coreCameraManager.phi:null,loopPitch:releaseOrbit.pitch(),
       splash:!entering&&!moving&&drawWorld&&!document.hidden?waterSplash:null,
       waterWake:!entering&&!moving&&drawWorld&&!document.hidden?waterWake:null,
@@ -1282,7 +1283,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
           }
         }
       }else if(ring){
-        flightEnabled=false;
+        flightEnabled=false;doubleJumpPending=false;trickStarted=-Infinity;resetFlightTap();
         previousSpacePress=null;
         ring.dispose();
         cave?.dispose();
@@ -1565,7 +1566,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       }
       releaseHeadroom=bindInteriorHeadroom(client.getCharacterManager(),()=>inside);
       releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing,
-        ()=>flightEnabled,firstExteriorDoor,(mode,boost=false)=>{radialMovementMode=mode;radialBoosting=boost;},aiming,releaseOrbit.pitch);
+        ()=>flightEnabled,firstExteriorDoor,(mode,boost=false)=>{radialMovementMode=mode;radialBoosting=boost;},aiming,releaseOrbit.pitch,
+        ()=>{const requested=doubleJumpPending;doubleJumpPending=false;return requested;},
+        ()=>{trickStarted=performance.now();});
       firstExteriorDoor=null;
       releaseTableFlight=bindMatterFlight(client.getCharacterManager(),options.coreCameraManager,tableFlight,tableInputAllowed,()=>matterHud.leave());
       options.onInitialized();

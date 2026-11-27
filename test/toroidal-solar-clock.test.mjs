@@ -48,3 +48,23 @@ test('the Sun and Moon overlap above Quintana during a known eclipse',async()=>{
   assert.ok(solarObscuration(eclipse)>.45);
   assert.equal(solarObscuration(quintanaCelestial(new Date('2020-12-18T16:05Z'))),0);
 });
+
+test('travel changes the local day while the neighborhood keeps Quintana and the Moon follows its phase',async()=>{
+  const {ringEarthLocation,toroidalSky}=await import('../src/quintana-celestial.mjs');
+  const {terrainPosition}=await import('../src/toroidal-terrain.mjs');
+  const {SearchMoonPhase}=await import('astronomy-engine');
+  const sky=(u,date,v=.25)=>{const [x,y,z]=terrainPosition(u,v,20);return toroidalSky(date,{x,y,z});};
+  const date=new Date('2026-11-27T16:00:00Z');
+  const atHome=sky(0,date);
+  assert.ok(Math.abs(atHome.latitude+31.80349305)<1e-8);
+  assert.ok(Math.abs(atHome.longitude+64.41885653)<1e-8);
+  assert.equal(atHome.daylight,1);
+  assert.equal(sky(.5,date).daylight,0);
+  assert.deepEqual(ringEarthLocation(0,.25),ringEarthLocation(1,.25));
+  const pole=.25+(90+31.80349305)/360;
+  const before=sky(.1,date,pole-1e-6),after=sky(.1,date,pole+1e-6);
+  assert.ok(Math.hypot(...before.sun.map((value,i)=>value-after.sun[i]))<1e-4);
+  const event=degrees=>SearchMoonPhase(degrees,new Date('2026-11-01T00:00Z'),35).date;
+  assert.ok(sky(0,event(0)).illuminated<.01);
+  assert.ok(sky(0,event(180)).illuminated>.99);
+});

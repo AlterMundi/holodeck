@@ -58,7 +58,7 @@ export function presentModel(model,gltf,clip){
   if(chosen){
     model.mixer=new AnimationMixer(scene);
     model.mixer.clipAction(chosen).play();
-    model.clip=chosen.name;
+    model.clip=scene.userData.clip=chosen.name;
   }
   model.presentation=scene;
   return model;
@@ -177,7 +177,7 @@ export class CollectionWorktable{
   chooseClip(name){
     const model=this.model,clip=model?.animations?.find(item=>item.name===name);
     if(!clip||!model.mixer||model.clip===name)return;
-    model.mixer.stopAllAction();model.mixer.clipAction(clip).play();model.clip=name;
+    model.mixer.stopAllAction();model.mixer.clipAction(clip).play();model.clip=model.presentation.userData.clip=name;
   }
 
   choosePart(id){

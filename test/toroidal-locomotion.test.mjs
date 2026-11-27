@@ -294,3 +294,16 @@ test('the same loop steering traces a loop through clear air and deep water',asy
     assert.equal(motion.swimming,!flight);
   }
 });
+
+test('the second tap adds one airborne jump and does not arm a third',()=>{
+  const motion=new ToroidalLocomotion({u:.42,v:.25,ground:()=>0});
+  simulate(motion,.12,60,{jump:true});
+  assert.equal(motion.grounded,false);
+  assert.equal(motion.doubleJumpCount,0);
+  simulate(motion,.05,60,{doubleJump:true});
+  assert.equal(motion.doubleJumpCount,1);
+  assert.ok(motion.radialSpeed>4);
+  simulate(motion,.9,60,{doubleJump:true});
+  assert.equal(motion.doubleJumpCount,1);
+  assert.equal(motion.grounded,true);
+});

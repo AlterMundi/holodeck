@@ -277,7 +277,7 @@ const {once}=require('node:events');
   // the A2UI worktable HUD switches the clip
   await bench.getByRole('combobox',{name:'Animación'}).selectOption('hero_landing');
   await page.waitForFunction(()=>{const m=holodeckDevelopment.client.getRenderer().mmlCompositionScene.group.getObjectByName('collection-worktable-model');
-    return m?.getObjectByName('collection-worktable-presentation')&&[...m.parent.children].length>=0;},null,{timeout:5000});
+    return m?.getObjectByName('collection-worktable-presentation')?.userData.clip==='hero_landing';},null,{timeout:5000});
   await page.waitForTimeout(1500);
   await page.screenshot({path:join(process.env.SHOTS||__dirname,'mesa-explorer-landing.png')});
   const pelvis=await page.evaluate(()=>{const m=holodeckDevelopment.client.getRenderer().mmlCompositionScene.group.getObjectByName('collection-worktable-model');

@@ -2,7 +2,7 @@ import {Euler,Quaternion,Vector3} from 'three';
 import {matterAvatarScale} from './matter-flight.mjs';
 import {TabletopGlance} from './tabletop-attention.mjs';
 import {bindHumanoidFlightRig} from './humanoid-flight-poses.mjs';
-import {bindPersonalAvatarLanding} from './personal-avatar-landing.mjs';
+import {bindPersonalAvatarLanding,landingBlendWeight} from './personal-avatar-landing.mjs';
 import {bindHumanoidCrouch} from './humanoid-crouch.mjs';
 import {bindHumanoidStandingIdle} from './humanoid-standing-idle.mjs';
 import {groundGaitSample} from './humanoid-ground-gait.mjs';
@@ -78,7 +78,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
   function animatedUpdate(state,dt){
     // Remove last frame's extra limb rotations before the base mixer runs.
     for(const entry of actors.values())restore(entry);
-    const {outdoor,flying,boosting,grounded:localGrounded,table,crouch,gaze,peerGaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null,wake=null,splash=null,waterWake=null,aimPitch=null,loopPitch=null}=context();
+    const {outdoor,flying,boosting,grounded:localGrounded,table,crouch,gaze,peerGaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null,wake=null,splash=null,waterWake=null,aimPitch=null,loopPitch=null,trickAge=Infinity}=context();
     const now=clock?.();
     const elapsed=now!==undefined&&previousTime!==undefined?(now-previousTime)/1000:dt;
     previousTime=now;
@@ -227,9 +227,8 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const playLanding=()=>{
         if(!entry.landing||entry.landingAge>=entry.landing.duration)return;
         entry.landingAge+=step;
-        const remaining=entry.landing.duration-entry.landingAge;
-        entry.landing.apply(entry.landingAge,
-          smooth(entry.landingAge/.09)*smooth(remaining/.23)*Math.max(.25,1-speed/7));
+        const gaitWeight=(actor.animationWeights?.[1]??0)+(actor.animationWeights?.[2]??0);
+        entry.landing.apply(entry.landingAge,landingBlendWeight(entry.landingAge,entry.landing.duration,speed,gaitWeight));
       };
       entry.absorbAge+=step;
       const previousSpeed=entry.planarSpeed;
@@ -240,8 +239,9 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
         entry.brake=.12+.26*clamp(previousSpeed/7);
       }
       entry.brakeAge+=step;
-      const dip=glanceMotion&&standing?Math.max(entry.absorb*pulse(entry.absorbAge,...absorbTiming),
-        entry.brake*pulse(entry.brakeAge,...brakeTiming)):0;
+      const authoredContact=entry.landing&&entry.landingAge<entry.landing.duration;
+      const dip=glanceMotion&&standing?Math.max(authoredContact?0:entry.absorb*pulse(entry.absorbAge,...absorbTiming),
+        authoredContact?0:entry.brake*pulse(entry.brakeAge,...brakeTiming)):0;
 
       const airborne=grounded!==true&&(atTable||outdoor&&(mode==='lift'||mode==='hover'||mode==='descend'));
       const running=outdoor&&!atTable&&standing&&!underwater;
@@ -295,7 +295,8 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const trunkRoll=entry.sway.update(trunk*clamp(-turnRate*entry.planarSpeed*.010,-.17,.17),step);
       const trunkLead=entry.lead.update(trunk*clamp(-airYaw*.45,-.5,.5),step);
 
-      const settled=w<.01&&entry.hoverWeight<.01&&entry.lowWeight<.01&&entry.airWeight<.01&&
+      const trick=isLocal&&outdoor&&glanceMotion&&!explicitFlight&&grounded===false&&trickAge<.53;
+      const settled=!trick&&w<.01&&entry.hoverWeight<.01&&entry.lowWeight<.01&&entry.airWeight<.01&&
         entry.lowerWeight<.01&&entry.wadeWeight<.01&&dip<.002&&sink<.002&&
         Math.abs(pitchValue)<.002&&Math.abs(bankValue)<.001&&Math.abs(airYaw)<.001&&
         Math.abs(trunkPitch)+Math.abs(trunkRoll)+Math.abs(trunkLead)+Math.abs(aim)<.003;
@@ -331,7 +332,9 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       // The movement controller keeps a signed pitch through the vertical.
       // The model's vertical rest frame starts 90 degrees from cruise.
       const aerobatic=isLocal&&floating&&Number.isFinite(loopPitch);
-      pitch.setFromAxisAngle(pitchAxis,aerobatic?Math.PI/2-loopPitch:pitchValue);
+      const tuck=trick?.88*Math.sin(Math.PI*trickAge/.53):0;
+      const flip=trick?2*Math.PI*smooth(trickAge/.53):0;
+      pitch.setFromAxisAngle(pitchAxis,(aerobatic?Math.PI/2-loopPitch:pitchValue)+flip);
       entry.rotation=character.quaternion;
       entry.unpitched.copy(entry.rotation);
       if(airYaw)entry.rotation.multiply(yaw.setFromAxisAngle(yawAxis,airYaw));
@@ -343,18 +346,18 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       if(bankValue)tilt.multiply(roll.setFromAxisAngle(rollAxis,bankValue));
       entry.rotation.multiply(tilt);
       entry.applied.copy(entry.rotation);
-      if(entry.airRig&&(lift>.002||sink>.002)){
+      if(entry.airRig&&(lift>.002||sink>.002||trick)){
         // Offset the model inside its character, so the hips hold their place
         // and the physical position, camera target and name stay untouched.
         tilt.invert();
-        pivot.set(0,hipHeight*lift,0);
+        pivot.set(0,hipHeight*(trick?1:lift),0);
         shift.copy(pivot).applyQuaternion(tilt).sub(pivot);
         shift.add(cross.set(0,-sink,0).applyQuaternion(tilt));
         entry.shift.copy(shift);
         mesh.position.add(shift);
         entry.shifted=true;
       }
-      const armWeight=Math.min(1,entry.airWeight+entry.wadeWeight);
+      const armWeight=Math.max(tuck,Math.min(1,entry.airWeight+entry.wadeWeight));
       if(entry.airRig&&Math.max(armWeight,entry.lowerWeight)>.01){
         const wading=entry.airWeight<entry.wadeWeight;
         if(mode){
@@ -368,8 +371,8 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
           water.point.copy(position).addScaledVector(up,draft);
           character.parent?.localToWorld(water.point);
         }
-        entry.airRig.apply(character,{mode:wading?'wade':entry.poseMode,time:wading?entry.loopTime:entry.poseTime,
-          forward:w,weight:armWeight,lowerWeight:entry.lowerWeight,torsoWeight:entry.airWeight,step,
+        entry.airRig.apply(character,{mode:trick?'lift':wading?'wade':entry.poseMode,time:trick?.29:wading?entry.loopTime:entry.poseTime,
+          forward:w,weight:armWeight,lowerWeight:Math.max(entry.lowerWeight,tuck),torsoWeight:entry.airWeight,step,
           bank:entry.airWeight*clamp(bankValue,-.5,.5),boost,boostRelease,
           // Reach overhead only once the body lies along the surface.
           stroke:mode==='swim'?smooth((pitchValue-.45)/.5):0,strokeTime:entry.strokeTime,

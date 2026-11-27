@@ -62,9 +62,12 @@ export class ToroidalLocomotion {
     this.accumulated = 0;
     this.jumpHeld = false;
     this.jumpQueued = false;
+    this.doubleJumpQueued=false;
+    this.doubleJumpCount=0;
+    this.airJumpReady=false;
   }
 
-  update(seconds, {right = 0, forward = 0, yaw = this.yaw, travelYaw = yaw, sprint = false, jump = false, flight = false, vertical = 0, climb = 0, crouch = false} = {}) {
+  update(seconds, {right = 0, forward = 0, yaw = this.yaw, travelYaw = yaw, sprint = false, jump = false, flight = false, vertical = 0, climb = 0, crouch = false, doubleJump=false} = {}) {
     if (!Number.isFinite(seconds) || seconds <= 0 || ![right, forward, yaw, travelYaw, vertical, climb].every(Number.isFinite)) return;
     if(flight!==this.flightActive){
       this.flightActive=flight;
@@ -89,6 +92,8 @@ export class ToroidalLocomotion {
     this.yaw = wrapYaw(yaw);
     if (jump && !this.jumpHeld) this.jumpQueued = true;
     this.jumpHeld = jump;
+    this.doubleJumpQueued||=Boolean(doubleJump&&!flight&&!this.swimming);
+    if(flight||this.swimming){this.doubleJumpQueued=false;this.airJumpReady=false;}
     this.accumulated += Math.min(seconds, MAX_FRAME);
     while (this.accumulated + 1e-10 >= STEP) {
       this.step(ringTarget,crossTarget,flight,verticalSpeed,crouch);
@@ -147,8 +152,17 @@ export class ToroidalLocomotion {
     if (this.jumpQueued && (this.grounded || this.colliderGrounded)) {
       this.radialSpeed = JUMP_SPEED * (1-.7*immersion);
       this.grounded = this.colliderGrounded = false;
+      this.airJumpReady=true;
     }
     this.jumpQueued = false;
+    if(this.doubleJumpQueued){
+      this.doubleJumpQueued=false;
+      if(this.airJumpReady&&!this.grounded&&immersion<.2){
+        this.airJumpReady=false;
+        this.radialSpeed=5.6;
+        this.doubleJumpCount++;
+      }
+    }
 
     if(crouch&&this.grounded&&groundDelta<-EDGE_DROP){
       this.ringSpeed=this.crossSpeed=0;
@@ -170,6 +184,7 @@ export class ToroidalLocomotion {
       if (this.grounded) {
         this.height = nextGround;
         this.radialSpeed = 0;
+        this.airJumpReady=false;
       }
     }
     this.u = nextU;
