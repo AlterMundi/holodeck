@@ -93,3 +93,25 @@ keeps the Atelier action separate from the entrance. Bind logical cells
 to approved room IDs through a revision-checked owning migration. Bind each
 asset part through the existing room authorization and test departure,
 re-entry and access revocation. The exporter writes no runtime state.
+
+### Complete temple art edition
+
+```sh
+node art/linterna/precinct/hefesto-slice.mjs OUTPUT_DIR REVIEWED_WORKSHOP_GLB --all-temples
+```
+
+`linterna-all-temples.json` includes Athena's ochre foyer, its three study
+rooms, Apollo's ivory and blue foyer, and its two sound and movement rooms.
+The study and music room scenes have furnishings and an authorized door
+placement contract. They carry no application endpoints or data.
+The front of each temple appears in the arrival cell. Its foyer and site
+interiors use their own room-local coordinates and are fetched in their own
+authorization scopes. The original command still exports the four-cell
+Hefesto edition.
+
+`linterna-approach.glb`, built by `export.mjs`, contains the separate East 1
+facade art with clay tiles, amber glass, dressed stone and cedar finishes.
+Its envelope and corridor use the existing approach geometry. The walkable
+precinct, expanded manifest, and facade are separate selections in a receiving
+release. Use the existing exterior offer and keep all shared layout IDs,
+grants and live app bindings under their owning integration.

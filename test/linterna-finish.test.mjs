@@ -4,23 +4,38 @@ import {Mesh,Raycaster,Vector3} from 'three';
 import {makeScene,makeHefestoSliceScenes} from '../art/linterna/precinct/model.mjs';
 import {pavilionDoor,pavilions,roomCenters,roomPartition} from '../art/linterna/precinct/plan.mjs';
 
-const hefesto=pavilions.find(pavilion=>pavilion.id==='hephaestus');
-const roomDoors=roomCenters(hefesto);
-
-test('Hefesto wall paint and frames leave the existing visual openings clear',()=>{
+test('all three foyer finishes leave the existing visual openings clear in both directions',()=>{
   const {group}=makeScene('precinct');
-  const temple=group.getObjectByName(hefesto.id);
-  const openings=[{x:0,z:pavilionDoor},...roomDoors.map(({x})=>({x,z:roomPartition}))];
-  const forward=new Vector3(0,0,-1);
-  for(const {x,z} of openings){
-    for(const offset of [-.66,0,.66]){
-      for(const y of [.18,.92,1.64,2.27]){
-        const eye=new Vector3(x+offset,y,hefesto.origin[1]+z+.25);
-        const ray=new Raycaster(eye,forward,0,.5);
-        assert.equal(ray.intersectObject(temple,true).length,0,
-          `opening at ${x},${z} must be clear at ${offset},${y}`);
+  for(const pavilion of pavilions){
+    const temple=group.getObjectByName(pavilion.id);
+    const openings=[{x:0,z:pavilionDoor},...roomCenters(pavilion).map(({x})=>({x,z:roomPartition}))];
+    for(const {x,z} of openings){
+      for(const offset of [-.66,0,.66]){
+        for(const y of [.18,.92,1.64,2.27]){
+          for(const side of [-1,1]){
+            const eye=temple.localToWorld(new Vector3(x+offset,y,z+side*.25));
+            const direction=new Vector3(0,0,-side).transformDirection(temple.matrixWorld);
+            const ray=new Raycaster(eye,direction,0,.5);
+            assert.equal(ray.intersectObject(temple,true).length,0,
+              `${pavilion.id} opening at ${x},${z} must be clear at ${offset},${y}`);
+          }
+        }
       }
     }
+  }
+});
+
+test('side temple interiors are offered only by the expanded room-art edition',()=>{
+  const first=makeHefestoSliceScenes();
+  const expanded=makeHefestoSliceScenes({allTemples:true});
+  assert.deepEqual(expanded.filter(layer=>!first.some(original=>original.cell===layer.cell)).map(layer=>layer.cell),
+    ['athena','planning','reading','library','apollo','instrument','movement']);
+  const hall=expanded.find(layer=>layer.name==='pavilion-exteriors').group;
+  assert.equal(hall.getObjectByName('Athena wayfinding sculpture'),undefined);
+  assert.equal(hall.getObjectByName('Apollo wayfinding sculpture'),undefined);
+  for(const [cell,figure] of [['athena','Athena'],['apollo','Apollo']]){
+    const foyer=expanded.find(layer=>layer.cell===cell).group;
+    assert.ok(foyer.getObjectByName(figure+' wayfinding sculpture'));
   }
 });
 

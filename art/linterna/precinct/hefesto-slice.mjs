@@ -11,9 +11,10 @@ import dimensions from '../dimensions.json' with {type:'json'};
 import {floorClearance,makeHefestoSliceScenes} from './model.mjs';
 import {hall,makeJourneys,makeStops,pavilionDoor,pavilions,place,roomCenters,roomPartition} from './plan.mjs';
 
-const [directory,workshopFile]=process.argv.slice(2);
-if (!directory||!workshopFile)
-  throw Error('Usage: node art/linterna/precinct/hefesto-slice.mjs OUTPUT_DIR REVIEWED_WORKSHOP_GLB');
+const [directory,workshopFile,edition]=process.argv.slice(2);
+if (!directory||!workshopFile||(edition&&edition!=='--all-temples'))
+  throw Error('Usage: node art/linterna/precinct/hefesto-slice.mjs OUTPUT_DIR REVIEWED_WORKSHOP_GLB [--all-temples]');
+const allTemples=edition==='--all-temples';
 const MAX_PART_BYTES=768*1024;
 const workshopDigest='fd17011c6e2caf35c2804f353fc4ac658b88ffd4739149d0e1bf63d95225bace';
 const workshopBytes=await readFile(workshopFile);
@@ -81,11 +82,30 @@ const passages=[
         precinctSide(id,threshold,place(hefesto,x,roomPartition-halfClearance))]};
   }),
 ];
+const sidePavilions=allTemples?pavilions.filter(pavilion=>pavilion!==hefesto):[];
+for(const pavilion of sidePavilions){
+  const siteRooms=roomCenters(pavilion), width=siteRooms[1].x-siteRooms[0].x;
+  const edge=width*siteRooms.length/2;
+  cells[pavilion.id]={origin:pavilion.origin,
+    floor:[{...pavers,x:[-edge,edge],z:[roomPartition,pavilionDoor+.82]}]};
+  const front=place(pavilion,0,pavilionDoor);
+  passages.push({threshold:front,sides:[
+    precinctSide('arrival',front,place(pavilion,0,pavilionDoor+halfClearance)),
+    side(pavilion.id,[0,pavilionDoor],[0,pavilionDoor-halfClearance]),
+  ]});
+  for(const {id,x} of siteRooms){
+    cells[id]={origin:place(pavilion,x,-1.58),floor:[{...pavers,x:[-width/2,width/2],z:[-2.8,.88]}]};
+    passages.push({threshold:place(pavilion,x,roomPartition),sides:[
+      side(pavilion.id,[x,roomPartition],[x,roomPartition+halfClearance]),
+      side(id,[0,.88],[0,.20]),
+    ]});
+  }
+}
 const table={
   cell:'atelier',id:worktable.id,anchor:worktable.anchor,turntable:worktable.turntable,
   rotationY:0,interactionRadius:2.4,
 };
-const layers=makeHefestoSliceScenes();
+const layers=makeHefestoSliceScenes({allTemples});
 function boxCollider(x,y,z,width,height,depth) {
   const box=new Object3D();
   box.position.set(x,y,z);
@@ -125,11 +145,16 @@ for (const cell of Object.keys(cells)) {
   };
   if (cell==='arrival') {
     const {world,garden}=makeStops(), journeys=makeJourneys();
-    checkPath([world.point,...journeys.world.garden,...journeys.garden.hephaestus.slice(0,-2),passages[1].sides[0].stand]);
+    checkPath([world.point,...journeys.world.garden]);
+    for(const pavilion of [hefesto,...sidePavilions]){
+      const to=pavilion===hefesto?'hefesto':pavilion.id;
+      const leg=passages.find(({sides})=>sides[0].cell==='arrival'&&sides[1].cell===to);
+      checkPath([garden.point,...journeys.garden[pavilion.id].slice(0,-2),leg.sides[0].stand]);
+    }
     assert.ok(!passable([0,6.5]),'the map table must remain solid');
-  } else if (cell==='hefesto') {
-    const entry=passages[1].sides[1].stand;
-    for (const room of passages.slice(2))
+  } else if (cell==='hefesto'||sidePavilions.some(pavilion=>pavilion.id===cell)) {
+    const entry=passages.find(({sides})=>sides[0].cell==='arrival'&&sides[1].cell===cell).sides[1].stand;
+    for (const room of passages.filter(({sides})=>sides[0].cell===cell))
       checkPath([entry,[room.sides[0].stand[0],1.38],room.sides[0].stand]);
   } else if(cell==='atelier'){
     for(const route of workshop.routes)checkPath(route);
@@ -141,7 +166,7 @@ for (const cell of Object.keys(cells)) {
     const entry=passages.find(passage=>passage.sides[1].cell===cell).sides[1].stand;
     const workPosition=[0,-1.1];
     checkPath([entry,workPosition]);
-    assert.ok(!passable([0,-2]),'the printing bench must remain solid');
+    assert.ok(!passable([0,-2]),cell+' bench must remain solid');
   }
   for (const entry of passages.slice(1).flatMap(passage=>passage.sides).filter(entry=>entry.cell===cell))
     assert.ok(!passable(entry.threshold),cell+' must require an authorized door transition');
@@ -198,7 +223,11 @@ for (const {cell,name,group,obstacles} of layers) {
 await mkdir(directory,{recursive:true});
 for (const [file,bytes] of files) await writeFile(join(directory,file),bytes);
 const manifest={schema:'holodeck.linterna.hefesto-slice/v2',units:'m',up:'+Y',cells,passages,table};
-await writeFile(join(directory,'linterna-hefesto-slice.json'),JSON.stringify(manifest,null,2)+'\n');
+const totalBytes=Array.from(files.values()).reduce((sum,bytes)=>sum+bytes.length,0);
+assert.ok(totalBytes<=12*1024*1024,'the edition must fit the receiver budget');
+const serialized=JSON.stringify(manifest,null,2)+'\n';
+assert.ok(Buffer.byteLength(serialized)<=96000,'the manifest must fit the receiver bound');
+await writeFile(join(directory,allTemples?'linterna-all-temples.json':'linterna-hefesto-slice.json'),serialized);
 console.log(JSON.stringify({models:Object.values(cells).flatMap(cell=>cell.models).length,
-  largestPart:Math.max(...Array.from(files.values(),bytes=>bytes.length)),
+  largestPart:Math.max(...Array.from(files.values(),bytes=>bytes.length)),totalBytes,
   cells:Object.keys(cells),doors:passages.length,table}));

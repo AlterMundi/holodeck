@@ -5,6 +5,8 @@ const files={
   timber:new URL('../workshop/materials/bench.jpg',import.meta.url),
   water:new URL('./water.jpg',import.meta.url),
   plaque:new URL('./hefesto-plaques.jpg',import.meta.url),
+  athenaPlaque:new URL('./athena-plaques.jpg',import.meta.url),
+  apolloPlaque:new URL('./apollo-plaques.jpg',import.meta.url),
 };
 
 // Embed the selected JPEG bytes using the exporter writer. The offline build

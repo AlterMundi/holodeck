@@ -12,6 +12,9 @@ const colors = {
   leaf:0x607b4f, olive:0x7d905a, brightLeaf:0x95a267, palePath:0xc9b593,
   warmPath:0xc1ac8d, darkPath:0xaf9a7d, lavender:0x77638f, lavenderTip:0xa491b4,
   pompeian:0xa53629, soot:0x282320, gilt:0xd5a55b, agedBronze:0x93653d, plaque:0xffffff,
+  ochre:0xbd853c, ultramarine:0x28477e, ivory:0xedddc2, porticoTile:0xad6342,
+  porticoRidge:0xc57c54, polishedBronze:0xb3824e, warmGlass:0xffcc77,
+  athenaPlaque:0xffffff, apolloPlaque:0xffffff,
 };
 const materials = Object.fromEntries(Object.entries(colors).map(([name,color]) =>
   [name,new T.MeshStandardMaterial({name,color,roughness:.91})]));
@@ -20,11 +23,23 @@ materials.amber.emissiveIntensity = .55;
 materials.gilt.roughness = .56;
 materials.agedBronze.roughness = .49;
 materials.agedBronze.metalness = .45;
-for (const name of ['chalk','limestone','trim','pompeian','soot','palePath','warmPath','darkPath'])
+materials.polishedBronze.roughness = .45;
+materials.polishedBronze.metalness = .52;
+materials.warmGlass.emissive.setHex(0xffb245);
+materials.warmGlass.emissiveIntensity = 1.45;
+for (const name of ['chalk','limestone','trim','pompeian','soot','palePath','warmPath','darkPath',
+  'ochre','ultramarine','ivory','porticoTile'])
   materials[name].userData.linternaMap='stone';
 for (const name of ['cedar','oak','warmWood'])
   materials[name].userData.linternaMap='timber';
 materials.plaque.userData.linternaMap='plaque';
+materials.athenaPlaque.userData.linternaMap='athenaPlaque';
+materials.apolloPlaque.userData.linternaMap='apolloPlaque';
+const foyerPalettes={
+  hephaestus:{base:'soot',panel:'pompeian',frieze:'soot',trim:'gilt',spacing:.22,plaque:'plaque'},
+  athena:{base:'soot',panel:'ochre',frieze:'soot',trim:'ivory',spacing:.36,plaque:'athenaPlaque'},
+  apollo:{base:'ultramarine',panel:'ivory',frieze:'ultramarine',trim:'gilt',spacing:.36,plaque:'apolloPlaque'},
+};
 const cube = new T.BoxGeometry(1,1,1);
 const round = new T.CylinderGeometry(1,1,1,14);
 const taper = new T.CylinderGeometry(.81,1,1,18);
@@ -86,7 +101,7 @@ function pillar(out, group, x,z,height,radius) {
   boxCollider(out,group,x,height/2,z,radius*2.26,height,radius*2.26);
 }
 
-function gabledRoof(group, halfWidth, halfDepth, spring, rise, finish='sage') {
+function gabledRoof(group, halfWidth, halfDepth, spring, rise, finish='sage', ridge='roofLine') {
   const shape = new T.Shape();
   shape.moveTo(-halfWidth,spring);
   shape.lineTo(0,spring+rise);
@@ -100,7 +115,7 @@ function gabledRoof(group, halfWidth, halfDepth, spring, rise, finish='sage') {
     const plane = box(group,finish,side*halfWidth/2,spring+rise/2+.061,0,slope+.29,.09,halfDepth*2+.26);
     plane.rotation.z = -side*angle;
     for (let z=-halfDepth+.12; z<halfDepth; z+=.31) {
-      const rib = box(group,'roofLine',side*halfWidth/2,spring+rise/2+.114,z,slope+.26,.018,.03);
+      const rib = box(group,ridge,side*halfWidth/2,spring+rise/2+.114,z,slope+.26,.018,.03);
       rib.rotation.z = -side*angle;
     }
     const facade = box(group,'trim',side*halfWidth/2,spring+rise/2,halfDepth,.99*slope,.10,.08);
@@ -109,24 +124,25 @@ function gabledRoof(group, halfWidth, halfDepth, spring, rise, finish='sage') {
   box(group,finish,0,spring+rise+.083,0,.12,.11,2*halfDepth+.29);
 }
 
-function paintedBay(group, left, right, z, face) {
+function paintedBay(group, left, right, z, face, palette) {
   const width=right-left-.048;
   if (width<.10) return;
   const x=(left+right)/2, depth=z+face*.117;
-  box(group,'soot',x,.36,depth,width,.68,.012);
-  box(group,'pompeian',x,1.51,depth,width,1.62,.012);
-  box(group,'gilt',x,.71,depth+face*.008,width,.018,.010);
-  box(group,'soot',x,2.40,depth,width,.16,.014);
-  for(let u=x-width/2+.095;u+.125<x+width/2;u+=.22){
-    box(group,'gilt',u+.054,2.453,depth+face*.009,.106,.016,.010);
-    box(group,'gilt',u+.107,2.415,depth+face*.009,.016,.092,.010);
-    box(group,'gilt',u+.045,2.369,depth+face*.009,.111,.016,.010);
-    box(group,'gilt',u-.009,2.395,depth+face*.009,.016,.062,.010);
+  const {base,panel,frieze,trim,spacing}=palette;
+  box(group,base,x,.36,depth,width,.68,.012);
+  box(group,panel,x,1.51,depth,width,1.62,.012);
+  box(group,trim,x,.71,depth+face*.008,width,.018,.010);
+  box(group,frieze,x,2.40,depth,width,.16,.014);
+  for(let u=x-width/2+.095;u+.125<x+width/2;u+=spacing){
+    box(group,trim,u+.054,2.453,depth+face*.009,.106,.016,.010);
+    box(group,trim,u+.107,2.415,depth+face*.009,.016,.092,.010);
+    box(group,trim,u+.045,2.369,depth+face*.009,.111,.016,.010);
+    box(group,trim,u-.009,2.395,depth+face*.009,.016,.062,.010);
   }
   if(width<.42)return;
-  for(const y of [.81,2.23]) box(group,'gilt',x,y,depth+face*.006,width-.15,.019,.010);
+  for(const y of [.81,2.23]) box(group,trim,x,y,depth+face*.006,width-.15,.019,.010);
   for(const side of [-1,1])
-    box(group,'gilt',x+side*(width/2-.075),1.52,depth+face*.006,.019,1.42,.010);
+    box(group,trim,x+side*(width/2-.075),1.52,depth+face*.006,.019,1.42,.010);
 }
 
 function carvedPortal(group,x,z,gapWidth,face) {
@@ -140,13 +156,13 @@ function carvedPortal(group,x,z,gapWidth,face) {
   box(group,'limestone',x,2.512,z+face*.183,gapWidth+.47,.042,.118);
 }
 
-function doorway(out, group, width, z, height, openings, finish='chalk', paintedFace=0) {
+function doorway(out, group, width, z, height, openings, finish='chalk', paintedFace=0, palette) {
   const gapWidth = height>4 ? 1.92 : 1.46;
   let last = -width/2;
   function wallBay(left,right){
     if (right<=left) return;
     solid(out,group,finish,(left+right)/2,height/2,z,right-left,height,.23);
-    if(paintedFace)paintedBay(group,left,right,z,paintedFace);
+    if(paintedFace)paintedBay(group,left,right,z,paintedFace,palette);
   }
   for (const x of openings) {
     const edge = x-gapWidth/2;
@@ -176,13 +192,34 @@ function closedDoor(group,out,x,z,width,finished=false) {
   }
 }
 
-function hefestoCeiling(group,width){
+function cofferedCeiling(group,width){
   const front=pavilionDoor-.13, back=roomPartition+.13;
   box(group,'oak',0,3.19,(front+back)/2,width-.29,.09,front-back);
   for(let x=-width/2+.30;x<width/2;x+=.96)
     box(group,'cedar',x,3.10,(front+back)/2,.125,.19,front-back);
   for(let z=back+.06;z<front;z+=.89)
     box(group,'warmWood',0,3.106,z,width-.29,.17,.094);
+}
+
+function sideFoyerDetails(group,icon){
+  cyl(group,'agedBronze',0,2.94,1.4,.019,.34);
+  cyl(group,'polishedBronze',0,2.741,1.4,.189,.092);
+  cyl(group,'warmGlass',0,2.686,1.4,.139,.051);
+  const athena=icon==='owl';
+  const depth=roomPartition+.153;
+  for(const x of athena?[-1.5,1.5]:[0]){
+    const frame=cyl(group,'agedBronze',x,1.53,depth,.246,.021);
+    frame.rotation.x=Math.PI/2;
+    const inlay=cyl(group,athena?'ochre':'ultramarine',x,1.53,depth+.016,.219,.015);
+    inlay.rotation.x=Math.PI/2;
+    for(const side of [-1,1]){
+      for(let i=0;i<4;i++){
+        const leaf=part(group,flower,'gilt',x+side*(.065+i*.025),1.41+i*.047,depth+.031,
+          .018,.044,.010);
+        leaf.rotation.z=side*-.68;
+      }
+    }
+  }
 }
 
 function hefestoRelief(group){
@@ -197,13 +234,60 @@ function hefestoRelief(group){
   box(group,'agedBronze',.038,1.423,z+.032,.16,.031,.025);
 }
 
-function hefestoDoorPlaques(group,rooms){
+function roomPlaques(group,rooms,palette){
   for(const [index,{x}] of rooms.entries()){
     box(group,'gilt',x,2.69,roomPartition+.163,1.63,.238,.036);
     const face=new T.PlaneGeometry(1.585,.198);
     const uv=face.getAttribute('uv');
-    for(let i=0;i<uv.count;i++)uv.setY(i,(index+1-uv.getY(i))/2);
-    part(group,face,'plaque',x,2.69,roomPartition+.184,1,1,1);
+    for(let i=0;i<uv.count;i++)uv.setY(i,(index+1-uv.getY(i))/rooms.length);
+    part(group,face,palette.plaque,x,2.69,roomPartition+.184,1,1,1);
+  }
+}
+
+function wayfindingSculpture(group,x,z,icon) {
+  const figure=new T.Group();
+  figure.name=icon==='owl'?'Athena wayfinding sculpture':'Apollo wayfinding sculpture';
+  figure.position.set(x,0,z);
+  group.add(figure);
+  const stone='ivory';
+  const profile=[[.19,.46],[.16,.51],[.126,.70],[.102,.91],[.115,1.03],
+    [.151,1.13],[.12,1.20],[.085,1.23]];
+  const drapery=new T.LatheGeometry(profile.map(([r,y])=>new T.Vector2(r,y)),20);
+  part(figure,drapery,stone,0,0,0,1,1,.68);
+  for(const angle of [-1.06,-.53,0,.53,1.06]){
+    const fold=part(figure,taper,'chalk',.12*Math.sin(angle),.67,.087*Math.cos(angle),.012,.37,.012);
+    fold.rotation.z=.11*Math.sin(angle);
+  }
+  cyl(figure,stone,0,1.247,0,.051,.083);
+  part(figure,sphere,stone,.012,1.395,.009,.092,.122,.083);
+  part(figure,sphere,stone,.012,1.384,.089,.018,.031,.020);
+  for(const side of [-1,1])
+    part(figure,sphere,stone,side*.154,1.056,.015,.052,.14,.049).rotation.z=side*.46;
+  if(icon==='owl'){
+    part(figure,sphere,'polishedBronze',0,1.474,-.027,.111,.063,.106);
+    part(figure,flower,'polishedBronze',0,1.563,-.028,.024,.106,.083);
+    cyl(figure,'agedBronze',-.248,1.17,.073,.012,1.44);
+    part(figure,flower,'polishedBronze',-.248,1.91,.073,.028,.081,.019);
+    const shield=cyl(figure,'polishedBronze',.207,.742,.202,.158,.029);
+    shield.rotation.x=Math.PI/2;
+    part(figure,sphere,'agedBronze',.207,.742,.224,.112,.112,.022);
+    part(figure,sphere,'gilt',.207,.768,.246,.043,.036,.018);
+    for(const dx of [-.017,.017])
+      part(figure,flower,'soot',.207+dx,.775,.264,.007,.008,.006);
+  } else {
+    part(figure,sphere,stone,.006,1.472,-.024,.091,.065,.082);
+    for(const dx of [-.064,-.039,-.013,.013,.039,.064])
+      part(figure,flower,'chalk',dx,1.482-.28*Math.abs(dx),.049,.022,.024,.019);
+    const lx=.196,ly=1.04,lz=.171;
+    for(const side of [-1,1]){
+      const arm=new T.CatmullRomCurve3([[.024,-.117],[.105,-.080],[.116,-.008],
+        [.086,.055],[.105,.111],[.133,.135]].map(([u,v])=>new T.Vector3(lx+side*u,ly+v,lz)));
+      part(figure,new T.TubeGeometry(arm,14,.012,6,false),'polishedBronze',0,0,0,1,1,1);
+    }
+    box(figure,'gilt',lx,ly+.10,lz,.245,.016,.018);
+    part(figure,sphere,'polishedBronze',lx,ly-.115,lz,.065,.028,.030);
+    for(const dx of [-.036,-.018,0,.018,.036])
+      box(figure,'gilt',lx+dx,ly-.008,lz+.009,.003,.195,.003);
   }
 }
 
@@ -292,23 +376,19 @@ function statue(group, out, icon) {
   const x=1.04, z=.25;
   solid(out,group,'foundation',x,.20,z,.63,.40,.58);
   box(group,'trim',x,.41,z,.67,.064,.61);
+  if(icon!=='hammer'){
+    wayfindingSculpture(group,x,z,icon);
+    return;
+  }
   box(group,'limestone',x-.087,.67,z,.124,.48,.16).rotation.z=.13;
   box(group,'limestone',x+.10,.66,z,.12,.46,.15).rotation.z=-.07;
   part(group,foliage,'chalk',x,1.02,z,.23,.31,.146);
   part(group,sphere,'limestone',x,1.33,z,.12,.163,.119);
   const arm = box(group,'chalk',x-.21,1.08,z,.12,.35,.115);
-  arm.rotation.z= icon==='hammer' ? -.66 : .47;
+  arm.rotation.z=-.66;
   box(group,'chalk',x+.19,1.01,z,.113,.32,.113).rotation.z=.31;
-  if (icon==='hammer') {
-    cyl(group,'oak',x-.32,1.34,z,.028,.37);
-    box(group,'foundation',x-.32,1.52,z,.26,.105,.13).rotation.z=-.15;
-  } else if (icon==='owl') {
-    part(group,foliage,'foundation',x-.29,1.22,z,.10,.14,.074);
-    for(const offset of [-.035,.035]) part(group,sphere,'brass',x-.29+offset,1.26,z+.058,.026,.027,.024);
-  } else {
-    for(const offset of [-.065,0,.065]) box(group,'brass',x-.22+offset,1.2,z+.04,.013,.21,.033);
-    box(group,'foundation',x-.22,1.31,z+.04,.24,.043,.067);
-  }
+  cyl(group,'oak',x-.32,1.34,z,.028,.37);
+  box(group,'foundation',x-.32,1.52,z,.26,.105,.13).rotation.z=-.15;
 }
 
 function workstations(group, out, rooms) {
@@ -326,7 +406,7 @@ function workstations(group, out, rooms) {
       box(group,'cedar',x+.47,.95,-3.53,.26,.07,.32);
     } else {
       for (let slot=0;slot<3;slot++)
-        box(group, ['terracotta','sage','brass'][slot],x+(slot-1)*.36,.96,-3.57,.24,.12,.33);
+        box(group, ['ochre','sage','brass'][slot],x+(slot-1)*.36,.96,-3.57,.24,.12,.33);
     }
   }
 }
@@ -339,10 +419,10 @@ function temple(parent, out, plan, exterior=false) {
   parent.add(group);
   const width=rooms.length===3 ? 9 : 8.4, edge=width/2;
   if (!exterior) floorPavers(group,width,-4.38,4.68);
-  const painted=!exterior&&plan.id==='hephaestus';
-  doorway(out,group,width,pavilionDoor,3.19,[0],'chalk',painted?-1:0);
+  const palette=foyerPalettes[plan.id];
+  doorway(out,group,width,pavilionDoor,3.19,[0],'chalk',exterior?0:-1,palette);
   if (!exterior) doorway(out,group,width,roomPartition,3.12,rooms.map(room=>room.x),
-    painted?'chalk':'plaster',painted?1:0);
+    'chalk',1,palette);
   solid(out,group,'chalk',0,1.57,-4.29,width,3.14,.21);
   for (const side of [-1,1]) {
     solid(out,group,'chalk',side*edge,1.57,-.21,.22,3.14,8.38);
@@ -369,10 +449,9 @@ function temple(parent, out, plan, exterior=false) {
     box(group,'amber',side*(edge-.24),1.994,1.1,.19,.16,.16);
   }
   statue(group,out,plan.icon);
-  if(painted){
-    hefestoCeiling(group,width);
-    hefestoRelief(group);
-  }
+  cofferedCeiling(group,width);
+  if(plan.id==='hephaestus')hefestoRelief(group);
+  else sideFoyerDetails(group,plan.icon);
   workstations(group,out,rooms);
 }
 
@@ -490,6 +569,7 @@ function porch(parent, out) {
 
 function smallTemple(parent,out) {
   box(parent,'foundation',0,.047,.03,1.79,.09,3.55);
+  box(parent,'ivory',0,.093,.06,1.75,.018,3.48);
   solid(out,parent,'limestone',0,.96,-.96,1.52,1.92,.20);
   for(const side of [-1,1]) {
     solid(out,parent,'limestone',side*.69,1.00,-.19,.166,2.0,1.76);
@@ -497,15 +577,32 @@ function smallTemple(parent,out) {
     pillar(out,parent,side*.685,1.21,2.02,.071);
     pillar(out,parent,side*.446,1.21,2.02,.063);
     box(parent,'warmWood',side*.825,1.87,.99,.06,.29,.18);
+    for(const y of [.17,.52,.89,1.26,1.63])
+      box(parent,'ivory',side*.777,y,-.19,.019,.041,1.68);
+    for(const y of [1.98,2.05])
+      box(parent,'ivory',side*.783,y,0,.055,.032,2.57);
   }
   box(parent,'warmWood',0,2.10,.02,1.72,.19,2.74);
-  gabledRoof(parent,.825,1.29,2.19,.375);
-  const oculus=cyl(parent,'amber',0,2.333,1.307,.078,.041);
+  box(parent,'ivory',0,2.092,1.33,1.74,.052,.093);
+  box(parent,'limestone',0,2.162,1.33,1.78,.041,.12);
+  gabledRoof(parent,.825,1.29,2.19,.375,'porticoTile','porticoRidge');
+  const ring=cyl(parent,'polishedBronze',0,2.346,1.318,.104,.048);
+  ring.rotation.x=Math.PI/2;
+  const oculus=cyl(parent,'warmGlass',0,2.346,1.347,.077,.027);
   oculus.rotation.x=Math.PI/2;
   box(parent,'oak',0,.87,.733,.828,1.74,.09);
   box(parent,'warmWood',0,.846,.785,.727,1.64,.022);
-  box(parent,'brass',.259,.898,.815,.056,.066,.051);
-  box(parent,'amber',.526,1.347,.858,.088,.117,.09);
+  for(const side of [-1,1]){
+    for(const y of [.405,1.282]){
+      box(parent,'cedar',side*.185,y,.804,.296,.59,.024);
+      box(parent,'oak',side*.185,y,.820,.235,.522,.018);
+    }
+    const pull=new T.TorusGeometry(.027,.006,8,16);
+    part(parent,pull,'polishedBronze',side*.048,.891,.831,1,1,1);
+    box(parent,'agedBronze',side*.531,1.349,.854,.112,.153,.041);
+    part(parent,sphere,'warmGlass',side*.531,1.352,.901,.033,.061,.036);
+    box(parent,'polishedBronze',side*.531,1.421,.897,.092,.016,.091);
+  }
 }
 
 export function makeScene(stage) {
@@ -523,11 +620,7 @@ export function makeScene(stage) {
   return {group,obstacles};
 }
 
-export function makeHefestoSliceScenes() {
-  const hefesto=pavilions.find(pavilion=>pavilion.id==='hephaestus');
-  const rooms=roomCenters(hefesto);
-  const roomWidth=rooms[1].x-rooms[0].x;
-  const width=roomWidth*rooms.length, edge=width/2;
+export function makeHefestoSliceScenes({allTemples=false}={}) {
   const cells=[];
   function layer(cell, name, origin, build) {
     const group=new T.Group(), obstacles=[];
@@ -544,41 +637,54 @@ export function makeHefestoSliceScenes() {
     pavilions.forEach(pavilion=>temple(group,out,pavilion,true));
     loggias(group,out);
   });
-  layer('hefesto','foyer',[0,0],(group,out)=>{
-    const length=pavilionDoor+.82-roomPartition;
-    box(group,'foundation',0,-.044,roomPartition+length/2,width,.05,length);
-    floorPavers(group,width,-4.38,4.68,[-edge,edge,roomPartition,pavilionDoor+.82]);
-    doorway(out,group,width,pavilionDoor,3.19,[0],'chalk',-1);
-    doorway(out,group,width,roomPartition,3.12,rooms.map(room=>room.x),'chalk',1);
-    closedDoor(group,out,0,pavilionDoor,1.46,true);
-    for (const room of rooms) closedDoor(group,out,room.x,roomPartition,1.46,true);
-    for (const side of [-1,1])
-      solid(out,group,'chalk',side*edge,1.57,(roomPartition+pavilionDoor)/2,
-        .22,3.14,pavilionDoor-roomPartition);
-    const roof=new T.Group();
-    roof.position.z=1.55;
-    group.add(roof);
-    gabledRoof(roof,edge+.37,2.52,3.4,1.22,hefesto.roof);
-    hefestoCeiling(group,width);
-    hefestoRelief(group);
-    hefestoDoorPlaques(group,rooms);
-    statue(group,out,hefesto.icon);
-  });
-  const printing=rooms.find(room=>room.id==='printing');
-  layer(printing.id,printing.id,[printing.x,-1.58],(group,out)=>{
-    const half=roomWidth/2;
-    floorPavers(group,width,-4.38,4.68,[printing.x-half,printing.x+half,-4.38,roomPartition]);
-    const local=new T.Group();
-    local.position.x=printing.x;
-    group.add(local);
-    doorway(out,local,roomWidth,roomPartition,3.12,[0],'plaster');
-    closedDoor(local,out,0,roomPartition,1.46);
-    solid(out,local,'chalk',0,1.57,-4.29,roomWidth,3.14,.21);
-    for (const side of [-1,1])
-      solid(out,local,'chalk',side*half,1.57,(-4.29+roomPartition)/2,.17,3.14,3.59);
-    box(local,'plaster',0,3.24,-2.5,roomWidth,.18,3.59);
-    workstations(local,out,[{id:printing.id,x:0}]);
-  });
+  for(const pavilion of pavilions){
+    const primary=pavilion.id==='hephaestus';
+    if(!primary&&!allTemples)continue;
+    const cell=primary?'hefesto':pavilion.id;
+    const rooms=roomCenters(pavilion), roomWidth=rooms[1].x-rooms[0].x;
+    const width=roomWidth*rooms.length, edge=width/2;
+    const palette=foyerPalettes[pavilion.id];
+    layer(cell,primary?'foyer':cell+'-foyer',[0,0],(group,out)=>{
+      const length=pavilionDoor+.82-roomPartition;
+      box(group,'foundation',0,-.044,roomPartition+length/2,width,.05,length);
+      floorPavers(group,width,-4.38,4.68,[-edge,edge,roomPartition,pavilionDoor+.82]);
+      doorway(out,group,width,pavilionDoor,3.19,[0],'chalk',-1,palette);
+      doorway(out,group,width,roomPartition,3.12,rooms.map(room=>room.x),'chalk',1,palette);
+      closedDoor(group,out,0,pavilionDoor,1.46,true);
+      for(const room of rooms)closedDoor(group,out,room.x,roomPartition,1.46,true);
+      for(const side of [-1,1])
+        solid(out,group,'chalk',side*edge,1.57,(roomPartition+pavilionDoor)/2,
+          .22,3.14,pavilionDoor-roomPartition);
+      const roof=new T.Group();
+      roof.position.z=1.55;
+      group.add(roof);
+      gabledRoof(roof,edge+.37,2.52,3.4,1.22,pavilion.roof);
+      cofferedCeiling(group,width);
+      if(primary)hefestoRelief(group);
+      else sideFoyerDetails(group,pavilion.icon);
+      roomPlaques(group,rooms,palette);
+      statue(group,out,pavilion.icon);
+    });
+    for(const {id,x} of rooms){
+      if(id==='atelier')continue;
+      layer(id,id,[x,-1.58],(group,out)=>{
+        const half=roomWidth/2;
+        if(!primary)box(group,'foundation',x,-.044,(-4.38+roomPartition)/2,roomWidth,.05,roomPartition+4.38);
+        floorPavers(group,width,-4.38,4.68,[x-half,x+half,-4.38,roomPartition]);
+        const local=new T.Group();
+        local.position.x=x;
+        group.add(local);
+        doorway(out,local,roomWidth,roomPartition,3.12,[0],'plaster');
+        closedDoor(local,out,0,roomPartition,1.46,!primary);
+        solid(out,local,'chalk',0,1.57,-4.29,roomWidth,3.14,.21);
+        for(const side of [-1,1])
+          solid(out,local,'chalk',side*half,1.57,(-4.29+roomPartition)/2,.17,3.14,3.59);
+        box(local,'plaster',0,3.24,-2.5,roomWidth,.18,3.59);
+        if(!primary)paintedBay(local,-half,half,-4.29,1,palette);
+        workstations(local,out,[{id,x:0}]);
+      });
+    }
+  }
   return cells;
 }
 

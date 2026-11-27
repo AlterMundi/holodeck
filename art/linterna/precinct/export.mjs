@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
-import {Box3,Euler,Vector3} from 'three';
+import {Box3,Euler,Texture,Vector3} from 'three';
 import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {batchModel} from './batch.mjs';
+import {embedFinishMaps} from './finish-maps.mjs';
 import {floorClearance,makeScene} from './model.mjs';
 import {approachDoor,makeJourneys,makeStops} from './plan.mjs';
 
@@ -62,10 +63,17 @@ function colliderBoxes(obstacles) {
 for (const [stage,{group,obstacles}] of scenes) {
   const root=stage==='approach' ? group.getObjectByName('Small street temple') : group;
   assert.ok(root);
-  const model=batchModel(root);
-  const bytes=Buffer.from(await new GLTFExporter().parseAsync(model,{binary:true,onlyVisible:true}));
+  const textured=stage==='approach';
+  const model=batchModel(root,{finishUV:textured});
+  const exporter=new GLTFExporter();
+  if(textured)exporter.register(embedFinishMaps);
+  const bytes=Buffer.from(await exporter.parseAsync(model,{binary:true,onlyVisible:true}));
   assert.ok(bytes.byteLength < 4*1024*1024);
-  const loaded=await new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');
+  // Node checks geometry and bounds. Chromium decodes the embedded maps.
+  const loader=new GLTFLoader().register(()=>({name:'Linterna offline inspection',
+    loadTexture:()=>Promise.resolve(new Texture()),
+  }));
+  const loaded=await loader.parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');
   const bounds=new Box3().setFromObject(loaded.scene);
   const expected=metres[stage];
   if (expected) {
