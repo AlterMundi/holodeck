@@ -246,6 +246,11 @@ export function createRoom(type,dimensions){
         throw Error('Unknown fixture style '+item.style);
     }
   }
-  if(type==='atlas')horizon(result);
+  if(type==='atlas'){
+    const mural = new T.Group();
+    mural.name = 'Atlas horizon mural';
+    horizon(mural);
+    result.add(mural);
+  }
   return result;
 }

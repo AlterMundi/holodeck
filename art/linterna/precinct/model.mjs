@@ -1,5 +1,7 @@
 import * as T from 'three';
 import {mergeVertices} from 'three/addons/utils/BufferGeometryUtils.js';
+import {createRoom} from '../model.mjs';
+import dimensions from '../dimensions.json' with {type:'json'};
 import {approachDoor, gardenArc, hall, pavilionDoor, pavilions, place, roomCenters, roomPartition} from './plan.mjs';
 
 const colors = {
@@ -8,7 +10,7 @@ const colors = {
   sage:0x4d6251, roofLine:0x6c7c61, brass:0xc6a064, terracotta:0xa45b41,
   slate:0x777974, amber:0xffba55, lawn:0xa6ad79, moss:0x819364,
   leaf:0x607b4f, olive:0x7d905a, brightLeaf:0x95a267, palePath:0xc9b593,
-  warmPath:0xbca27d, darkPath:0xaa9070, sea:0x557c78, grass:0x798b59, hill:0x9c9a62,
+  warmPath:0xbca27d, darkPath:0xaa9070,
 };
 const materials = Object.fromEntries(Object.entries(colors).map(([name,color]) =>
   [name,new T.MeshStandardMaterial({name,color,roughness:.91})]));
@@ -41,6 +43,14 @@ function solid(out, group, finish, x,y,z,w,h,d) {
   return mesh;
 }
 
+function boxCollider(out, group, x,y,z,w,h,d) {
+  const obstacle = new T.Object3D();
+  obstacle.position.set(x,y,z);
+  obstacle.scale.set(w,h,d);
+  group.add(obstacle);
+  out.push(obstacle);
+}
+
 function pillar(out, group, x,z,height,radius) {
   box(group,'foundation',x,.08,z,radius*3.05,.16,radius*3.05);
   box(group,'trim',x,.21,z,radius*2.6,.12,radius*2.6);
@@ -53,11 +63,7 @@ function pillar(out, group, x,z,height,radius) {
   }
   cyl(group,'trim',x,height-.26,z,radius*1.13,.14);
   box(group,'trim',x,height-.125,z,radius*2.77,.19,radius*2.77);
-  const obstacle = new T.Object3D();
-  obstacle.position.set(x,height/2,z);
-  obstacle.scale.set(radius*2.26,height,radius*2.26);
-  group.add(obstacle);
-  out.push(obstacle);
+  boxCollider(out,group,x,height/2,z,radius*2.26,height,radius*2.26);
 }
 
 function gabledRoof(group, halfWidth, halfDepth, spring, rise, finish='sage') {
@@ -100,17 +106,24 @@ function doorway(out, group, width, z, height, openings, finish='chalk') {
   if (last < width/2) solid(out,group,finish,(last+width/2)/2,height/2,z,width/2-last,height,.23);
 }
 
-function worldTable(out, group) {
-  const center=6.5;
-  solid(out,group,'oak',0,.49,center,3.75,.98,2.85);
-  box(group,'warmWood',0,.91,center,3.98,.25,3.06);
-  box(group,'brass',0,1.043,center,3.76,.036,2.85);
-  box(group,'sea',0,1.07,center,3.62,.031,2.73);
-  for (const [x,z,sx,sz] of [[-.94,-.2,.69,.98],[.66,.18,1.09,.89],[.79,-.95,.59,.32],[-.33,.87,.26,.35]]) {
-    const island = part(group,foliage,'grass',x,1.089,center+z,sx,.15,sz);
-    island.rotation.y=(x+1)*1.18;
-    part(group,foliage,'hill',x-.08,1.15,center+z-.06,sx*.57,.14,sz*.68);
-    cyl(group,'amber',x,1.26,center+z,.024,.095);
+function worldFurnishings(out, group) {
+  const plan=dimensions.rooms.atlas;
+  const model=createRoom('atlas',dimensions);
+  const center=6.5, atlas=plan.objects.find(item=>item.style==='atlas');
+  model.position.z=center-atlas.z;
+  const mural=model.getObjectByName('Atlas horizon mural');
+  mural.rotation.y=-Math.PI/2;
+  mural.position.set(1.34,0,2.8);
+  group.add(model);
+
+  // Suspend the original pendant from the taller colonnade's skylight crossbar.
+  box(group,'foundation',0,4.60,center,2.76,.12,.10);
+  cyl(group,'brass',atlas.x,3.91,center,.015,1.35);
+
+  const heights={atlas:1.43,bench:.53,seats:1.13,hooks:1.58};
+  for (const {style,shape,x,z,w,d,r} of plan.objects) {
+    const height=heights[style],width=shape==='circle'?2*r:w,depth=shape==='circle'?2*r:d;
+    boxCollider(out,model,x,height/2,z,width,height,depth);
   }
 }
 
@@ -147,7 +160,7 @@ function mainTemple(group, out) {
     box(group,'trim',x,5.12,7.01,.18,.54,10.0);
   box(group,'limestone',0,4.51,1.7,14.5,.18,.29);
   box(group,'foundation',0,-.025,.63,14.94,.083,.58);
-  worldTable(out,group);
+  worldFurnishings(out,group);
 }
 
 function statue(group, out, icon) {
