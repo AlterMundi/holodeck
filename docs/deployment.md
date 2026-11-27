@@ -204,6 +204,12 @@ configuration. Rooms with stairs keep their ordinary art. The room art
 endpoint serves the selected exact GLB only during authorized room presence.
 To restore the original appearance, select `matter-workshop-v1`.
 
+The Explorador review belongs in the existing Matter project selection as
+`{"id":"explorador","resources":["b099d9e71bc44267a3bdb80d37cac732"]}`.
+Its live descriptor stays Home-authorized. A compatible client projects the
+complete skinned GLB with its original texture and animation clips. Each
+worktable viewer can choose the clip with the existing A2UI Animación control.
+
 For an appearance-only rollout, the optional root-level
 `matterAppearance` names the existing Collection room and a qualified
 `profile`. The receiver applies it to that room while preserving the
