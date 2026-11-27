@@ -1,6 +1,7 @@
 import {AmbientLight,BufferGeometry,DirectionalLight,Group,Line,LineBasicMaterial,Mesh,MeshBasicMaterial,PlaneGeometry,PerspectiveCamera,Raycaster,Scene,SRGBColorSpace,Vector2,Vector3,VideoTexture} from 'three';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
 import {HudRenderLayer} from './hud-render-layer.mjs';
+import {mountWorkbenchControls,workbenchItems} from './workbench-controls.mjs';
 import {BeaconNativeModel} from './beacon-native-model.mjs';
 import {readWorktableReview} from './collection-review.mjs';
 import {makeModel} from './collection-worktable.mjs';
@@ -66,10 +67,7 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
         void refresh();
       }else if(action.name==='stationInput'&&latestView){
         const {id,kind,value}=action.context;
-        const envelope=model.action(id,kind,value);
-        editProblem=model.actionConflict?'El valor cambió en otra vista. Revisá el ajuste antes de aplicarlo.':'';
-        if(envelope)void write(envelope);
-        else showModel();
+        edit(id,kind,value);
       }
     }});
   if(focused)outbound.setPalette({background:'#10232d',button:'#264654',
@@ -109,6 +107,13 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
       layer.invalidate();
     }
     layer.draw(viewScene,viewCamera);
+  }
+  function edit(id,kind,value){
+    if(signal.aborted||!latestView)return;
+    const envelope=model.action(id,kind,value);
+    editProblem=model.actionConflict?'El valor cambió en otra vista. Revisá el ajuste antes de aplicarlo.':'';
+    if(envelope)void write(envelope);
+    else showModel();
   }
   const attempted=new Set();
   let guitar, guitarRequest, guitarSelection, guitarProblem;
@@ -211,24 +216,31 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
   }
   const ray=new Raycaster();
   const ndc=new Vector2();
-  const release=bindSpatialHudPointer({element:stage,hud:outbound,rayForPointer:event=>{
+  const rayForPointer=event=>{
     const rect=(focused?stage:world.canvas).getBoundingClientRect();
     if(!rect.width||!rect.height)return;
     ndc.set((event.clientX-rect.left)*2/rect.width-1,1-(event.clientY-rect.top)*2/rect.height);
     ray.setFromCamera(ndc,viewCamera);
     return {ray:ray.ray};
-  }});
+  };
+  const bench=!focused&&station.bench&&surface!=='operator'&&surface!=='guitar'?
+    mountWorkbenchControls({document,scene:world.scene,bench:station.bench,eye,pointerTarget:stage,rayForPointer,onAction:edit}):null;
+  const release=bindSpatialHudPointer({element:stage,hud:outbound,rayForPointer});
   if(layer)for(const kind of ['pointermove','pointerdown','pointerup','keydown'])stage.addEventListener(kind,layer.invalidate,{signal});
   outbound.receive({version:'1.0',createSurface:{surfaceId:nativeId,catalogId:spatialHudCatalog.id}});
   function update(view){
     if(signal.aborted)return;
-    const key=JSON.stringify(view.components);
+    const benchItems=new Set(bench?workbenchItems(view).map(item=>item.id):[]);
+    const components=view.components.filter(component=>!benchItems.has(component.id)).map(({presentation,...component})=>
+      component.id==='root'?{...component,children:component.children.filter(id=>!benchItems.has(id))}:component);
+    const key=JSON.stringify(components);
     if(key!==viewKey){
       viewKey=key;
-      outbound.receive({version:'1.0',updateComponents:{surfaceId:nativeId,components:view.components}},{allowOrphanComponents:true});
+      outbound.receive({version:'1.0',updateComponents:{surfaceId:nativeId,components}},{allowOrphanComponents:true});
     }
     outbound.receive({version:'1.0',updateDataModel:{surfaceId:nativeId,path:'/',value:view.data}});
     outbound.update();
+    bench?.update(view);
     showGuitarLink();
     layer?.invalidate();
   }
@@ -402,11 +414,12 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
     draw,
     focus(){stage.tabIndex=-1;stage.focus({preventScroll:true});},
     contains(event){
-      return event.composedPath().includes(stage)||outbound.ownsAccessibleInput(event.target)||outbound.ownsTextInput(event.target);
+      return event.composedPath().includes(stage)||outbound.ownsAccessibleInput(event.target)||outbound.ownsTextInput(event.target)||bench?.owns(event.target);
     },
     key(event){
       if(outbound.ownsTextInput(event.target))return true;
       if(event.key==='Escape')return false;
+      if(bench?.owns(event.target))return true;
       if(outbound.handleKey(event,{surfaceId:nativeId}))event.preventDefault();
       return true;
     },
@@ -415,6 +428,7 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
       clearTimeout(timer);
       stream?.close();
       release();
+      bench?.dispose();
       clearGuitar();
       if(guitarLink){
         guitarLink.geometry.dispose();

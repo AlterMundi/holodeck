@@ -188,6 +188,7 @@ export class BeaconNativeModel {
         data[modelKey]=data[draftKey]=shown;
         input('range');
         rows.push({...field,component:'HudRange',min,max,step:(max-min)/(steps||100),gestureKey,
+          ...(node.presentation==='fader'||/fader|ganancia|\bgain\b|volumen/i.test(label)?{presentation:'fader'}:{}),
           action:localAction(id,'range',path(draftKey))});
       }else if(node.component==='TextField'&&segments(pointer)?.length){
         const kind=node.variant==='number'?'number':'text';
