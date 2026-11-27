@@ -152,6 +152,17 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
           showModel();
         }
       }
+    }else if(surface==='spatializer'&&envelope?.action.name==='downloadSpatializerTake'){
+      const {take,edition}=envelope.action.context;
+      if(typeof take==='string'&&/^[0-9a-f]{32}$/.test(take)&&typeof edition==='string'&&
+        /^[0-9a-f]{64}$/.test(edition)&&model.data.takes?.[take]?.edition===edition){
+        const link=document.createElement('a');
+        link.href=url('/takes/'+take+'/'+edition);
+        link.download='';
+        document.body.append(link);
+        link.click();
+        link.remove();
+      }
     }else if(envelope?.action.name==='reviewPreparedTake')preview?.review(envelope.action.context.take);
     else if(envelope)void write(envelope);
     else showModel();
