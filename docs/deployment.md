@@ -143,6 +143,10 @@ surfaces. Their live controls mutate the same confirmed preset.
 Shaper presents mix controls. Weaver also presents body and video
 controls. Spatializer starts or reuses its own audio service and
 requires a confirmed OSC projection before the table opens its controls.
+Weaver's **Abrir Ruteos** link selects the independent Stage receiver in
+the same panel. It reuses a ready service and offers startup when enabled
+for the selected workstation. If the profile disables the service, the
+table explains that state and leaves startup unavailable.
 
 The optional `gallery` receiving selection names an existing interior
 `room` and two distinct exact `artifact_review` pins (`draft` and `archive`,

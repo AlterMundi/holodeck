@@ -1,5 +1,20 @@
 # Current MVP work
 
+## November 27 — Weaver routing in the Beacon chamber
+
+Protected release `8eaacabc7713` adds **Abrir Ruteos** to Weaver's table.
+Immediate rollback is `8b4741435299`. The link opens the independent
+Stage receiver through the same authenticated Harmonic Lab panel.
+The deployed readback confirmed all 88 release files and the protected
+browser bundle.
+
+A Chromium fixture exercised the table against the installed panel and
+Legion receiver. With routing disabled in the saved profile, the table
+displayed that state without requesting startup. A temporary Stage session
+then exposed its real scene list and the table reused the ready receiver.
+The temporary process and port closed afterward. Routing remains disabled
+in the saved Legion profile. An authenticated human room visit is pending.
+
 ## November 27 — Spatializer in the Beacon chamber
 
 Protected release `8b4741435299` connects the Spatializer table to the
