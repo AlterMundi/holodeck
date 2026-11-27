@@ -291,8 +291,12 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
   };
   const bench=!focused&&station.bench&&surface!=='operator'&&surface!=='guitar'?
     mountWorkbenchControls({document,scene:world.scene,bench:station.bench,eye,pointerTarget:stage,rayForPointer,onAction:edit}):null;
+  // Proyección consumes HUD gestures in capture. Invalidate first so
+  // opening a local option menu redraws even when no A2UI action is sent.
+  if(layer)for(const kind of ['pointermove','pointerdown','pointerup','pointercancel','keydown']){
+    stage.addEventListener(kind,layer.invalidate,{capture:true,signal});
+  }
   const release=bindSpatialHudPointer({element:stage,hud:outbound,rayForPointer});
-  if(layer)for(const kind of ['pointermove','pointerdown','pointerup','keydown'])stage.addEventListener(kind,layer.invalidate,{signal});
   outbound.receive({version:'1.0',createSurface:{surfaceId:nativeId,catalogId:spatialHudCatalog.id}});
   function update(view){
     if(signal.aborted)return;

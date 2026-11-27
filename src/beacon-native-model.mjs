@@ -49,6 +49,30 @@ function draftGuard(event,paths,pointer,data){
   return JSON.stringify([event.name,event.context,authority]);
 }
 
+const weaverWorktable = [
+  {id:'mix',label:'Mezcla',members:['preset','fundamental','master','actions','audio','output_gain','apply_output','voice_gains']},
+  {id:'performance',label:'Interpretación',members:['performance_controls','experience_marks']},
+  {id:'tracking',label:'Seguimiento',members:['body','live_calibration','recording_status','video_transport','live_tracking']},
+  {id:'timbre',label:'Timbre por voz',members:['voice_timbre_title','voice_timbre_tabs']},
+  {id:'response',label:'Respuesta al movimiento',members:['movement_response_title','movement_response_tabs']},
+  {id:'model',label:'Modelo de movimiento',members:['algorithm_title','algorithm_tabs']},
+  {id:'routing',label:'Señales y ruteos',members:['voice_routes_title','voice_route_tabs']},
+  {id:'presets',label:'Presets',members:['preset_library']},
+];
+
+function weaverAreas(root){
+  const children=root?.children;
+  if(!Array.isArray(children))return [];
+  const areas=weaverWorktable.map(({id,label,members})=>({
+    id,label,children:children.filter(child=>members.includes(child)),
+  })).filter(area=>area.children.length);
+  // Scoped editors use a different root and keep their own navigation.
+  if(areas.length<2)return [];
+  const other=children.filter(child=>!areas.some(area=>area.children.includes(child)));
+  if(other.length)areas.push({id:'other',label:'Otros controles',children:other});
+  return areas;
+}
+
 export class BeaconNativeModel {
   constructor(surface){
     this.surface=surface;
@@ -59,6 +83,7 @@ export class BeaconNativeModel {
     this.actionConflict=false;
     this.data={};
     this.page=0;
+    this.weaverArea=undefined;
   }
 
   receive(messages){
@@ -66,6 +91,7 @@ export class BeaconNativeModel {
       if(message?.version!=='1.0')continue;
       const initial=message.createSurface;
       if(initial?.surfaceId===this.surface){
+        if(initial.dataModel?.sessionId!==this.data.sessionId)this.weaverArea=undefined;
         this.nodes.clear();
         this.drafts.clear();
         this.actionConflict=false;
@@ -105,8 +131,18 @@ export class BeaconNativeModel {
     }
     const input=this.input.get(id);
     if(!input||input.kind!==kind)return;
+    if(kind==='area'){
+      if(input.options.includes(value)&&value!==this.weaverArea){
+        this.weaverArea=value;
+        this.page=0;
+      }
+      return;
+    }
     if(kind==='tab'){
-      if(input.options.includes(value))this.tabs.set(id,value);
+      if(input.options.includes(value)){
+        if(input.fixed&&this.tabs.get(id)!==value)this.page=0;
+        this.tabs.set(id,value);
+      }
       return;
     }
     if(kind==='button'){
@@ -154,14 +190,27 @@ export class BeaconNativeModel {
 
   render(title){
     const rows=[];
+    const navigation=[];
     const data={};
+    const areas=this.surface==='weaver'?weaverAreas(this.nodes.get('root')):[];
+    const area=areas.find(item=>item.id===this.weaverArea)??areas[0];
+    if(area)this.weaverArea=area.id;
     const gestureKey=JSON.stringify([this.data.sessionId,this.data.stream,this.data.revision,this.data.profileVersion]);
     this.input.clear();
+    if(area){
+      const id='weaver_area';
+      const options=areas.map(({id,label})=>({id,label}));
+      data.selectedArea=data.areaDraft=area.id;
+      this.input.set(id,{kind:'area',options:options.map(item=>item.id)});
+      navigation.push({id,component:'HudChoice',label:'Área de Weaver',options,value:path('selectedArea'),
+        draft:path('areaDraft'),action:localAction(id,'area',path('areaDraft'))});
+    }
     const text=(id,label,style='body')=>({id,component:'HudText',label:String(label??''),style});
     const visit=(id,ancestors=new Set())=>{
       if(ancestors.has(id)||ancestors.size>=24||rows.length>=512)return;
       const node=this.nodes.get(id);
       if(!node||resolve(node.visible,this.data)===false)return;
+      if(area&&node.component==='Text'&&node.text===area.label)return;
       const nested=new Set(ancestors).add(id);
       if(['Column','Row','Card'].includes(node.component)){
         for(const child of node.children??(node.child?[node.child]:[]))visit(child,nested);
@@ -171,8 +220,9 @@ export class BeaconNativeModel {
       const pointer=node.value?.['@path'];
       const draft=this.drafts.get(pointer);
       const shown=draft&&!draft.invalid?draft.value:resolve(node.value,this.data);
-      const modelKey='value'+rows.length;
-      const draftKey='draft'+rows.length;
+      const number=rows.length+navigation.length;
+      const modelKey='value'+number;
+      const draftKey='draft'+number;
       const field={id,label,value:path(modelKey),draft:path(draftKey)};
       const input=(kind,fields={})=>this.input.set(id,{kind,pointer,...fields});
       if(node.component==='Text')rows.push(text(id,resolve(node.text,this.data)));
@@ -211,28 +261,32 @@ export class BeaconNativeModel {
         if(!options.length)return;
         const selected=options.find(option=>option.id===this.tabs.get(id))?.id??options[0].id;
         data[modelKey]=data[draftKey]=selected;
-        input('tab',{options:options.map(item=>item.id)});
-        rows.push({...field,label:'Sección',component:'HudChoice',options,action:localAction(id,'tab',path(draftKey))});
+        const fixed=area?.children.includes(id)??false;
+        input('tab',{options:options.map(item=>item.id),fixed});
+        (fixed?navigation:rows).push({...field,label:'Sección',component:'HudChoice',options,
+                                      action:localAction(id,'tab',path(draftKey))});
         visit(selected,nested);
       }
     };
-    visit('root');
-    const pages=[[]];
+    if(area)for(const id of area.children)visit(id);
+    else visit('root');
+    const pages=[[]], pageSize=Math.max(2,7-navigation.length);
     for(let index=0;index<rows.length;index++){
       const row=rows[index],next=rows[index+1],pointer=this.input.get(row.id)?.pointer;
       const nextEvent=next?.component==='HudButton'&&this.input.get(next.id)?.node?.action?.event;
       const pair=pointer&&nextEvent&&[...bindings(nextEvent.context)].some(path=>containsBinding(path,pointer));
-      if(pages.at(-1).length+(pair?2:1)>7)pages.push([]);
+      if(pages.at(-1).length+(pair?2:1)>pageSize)pages.push([]);
       pages.at(-1).push(row);
       if(pair)pages.at(-1).push(rows[++index]);
     }
     const maxPage=pages.length-1;
     this.page=Math.min(this.page,maxPage);
     const shown=pages[this.page];
-    const retained=new Set(shown.map(row=>row.id));
+    const visible=[...navigation,...shown];
+    const retained=new Set(visible.map(row=>row.id));
     for(const id of this.input.keys())if(!retained.has(id))this.input.delete(id);
     const header=text('station_title',title,'title');
-    const components=[header,...shown];
+    const components=[header,...visible];
     if(maxPage){
       for(const [name,label,step] of [['back','Anterior',-1],['next','Siguiente',1]]){
         const page=this.page+step;
@@ -242,6 +296,6 @@ export class BeaconNativeModel {
       components.push({id:'station_pages',component:'HudRow',children:['station_back','station_next']});
     }
     return {data,components:[{id:'root',component:'HudPanel',width:2.65,
-      children:[header.id,...shown.map(row=>row.id),...(maxPage?['station_pages']:[])]},...components]};
+      children:[header.id,...visible.map(row=>row.id),...(maxPage?['station_pages']:[])]},...components]};
   }
 }

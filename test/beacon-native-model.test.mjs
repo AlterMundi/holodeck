@@ -131,3 +131,60 @@ test('selecting an instrument section stays on the page where it was opened',()=
  assert.ok(result.components.some(node=>node.id==='second'));
  assert.ok(result.components.some(node=>node.id==='voice_tabs'));
 });
+
+test('Weaver areas and subsections stay available through pagination and preserve local drafts',()=>{
+ const model=new BeaconNativeModel('weaver');
+ const controls=[...Array(8)].map((_,i)=>({id:'row'+i,component:'Text',text:'Entry '+i}));
+ const components=[
+  {id:'root',component:'Column',children:['master','actions','algorithm_tabs','voice_route_tabs','future']},
+  {id:'master',component:'Slider',label:'Volumen',min:0,max:1,value:at('/master')},
+  {id:'actions',component:'Column',children:['apply']},
+  {id:'apply',component:'Button',child:'apply_label',action:{event:{name:'setMaster',
+   context:{sessionId:at('/sessionId'),revision:at('/revision'),master:at('/master')}}}},
+  {id:'apply_label',component:'Text',text:'Aplicar'},
+  {id:'algorithm_tabs',component:'Tabs',tabs:[{title:'Modelo',child:'default'}, {title:'Onset',child:'onset'}]},
+  {id:'default',component:'Column',children:controls.map(n=>n.id)},
+  ...controls,
+  {id:'onset',component:'Text',text:'Onset'},
+  {id:'voice_route_tabs',component:'Tabs',tabs:[{title:'Ruteos del preset',child:'routes'}]},
+  {id:'routes',component:'Text',text:'Routes'},
+  {id:'future',component:'Text',text:'Future'},
+ ];
+ const snapshot=(nodes=components,sessionId='same')=>({version:'1.0',createSurface:{
+  surfaceId:'weaver',components:nodes,dataModel:{sessionId,revision:4,master:.5},
+ }});
+ const render=()=>model.render('Weaver');
+ const ids=()=>render().components.map(component=>component.id);
+
+ model.receive([snapshot()]);
+ assert.deepEqual(render().components.find(item=>item.id==='weaver_area').options.map(option=>option.id),
+  ['mix','model','routing','other']);
+ model.action('master','range',.6);
+ assert.equal(model.action('weaver_area','area','model'),undefined);
+ assert.ok(ids().includes('row0'));
+ model.action('station_pages','page',1);
+ let visible=ids();
+ assert.ok(visible.includes('weaver_area'));
+ assert.ok(visible.includes('algorithm_tabs'));
+ assert.ok(visible.includes('row7'));
+ assert.ok(!visible.includes('row0'));
+ model.action('algorithm_tabs','tab','onset');
+ assert.ok(ids().includes('onset'));
+ assert.equal(model.page,0);
+ model.action('weaver_area','area','mix');
+ render();
+ assert.equal(model.action('apply','button').action.context.master,.6);
+
+ model.action('weaver_area','area','routing');
+ const inspector=[{id:'root',component:'Column',children:['back']},{id:'back',component:'Text',text:'Back'}];
+ model.receive([snapshot(inspector)]);
+ assert.ok(!ids().includes('weaver_area'));
+ model.receive([snapshot()]);
+ assert.equal(render().data.selectedArea,'routing');
+ model.receive([snapshot(components,'new')]);
+ assert.equal(render().data.selectedArea,'mix');
+ model.action('weaver_area','area','other');
+ visible=ids();
+ assert.ok(visible.includes('future'));
+ assert.ok(!visible.includes('master'));
+});

@@ -1,5 +1,25 @@
 # Current MVP work
 
+## Weaver worktable area navigation candidate
+
+The native Three.js worktable keeps an area selector and the area’s
+subsection selector visible during pagination. It organizes the existing
+Weaver components into mix, performance, tracking, voice timbre, movement
+response, motion model, routing and presets. A scoped route editor returns
+to the same area in the same Lab session. This navigation is local to the
+worktable and does not issue actions to Weaver.
+
+Chromium checked the worktable at 1450 and 390 pixels. The desktop fixture
+used 32 voices and wrote a prediction setting through the existing gateway.
+A separate web view received the setting. The narrow worktable opened a
+route and returned to routing while the desktop remained in timbre. Both
+used native controls without iframes. A canvas tap at the narrow
+viewport opened the area menu and selected the motion model. The focused
+render layer now invalidates before HUD capture consumes the pointer
+event. The full Holodeck build passed, with 536 tests passed and two
+skipped. The candidate awaits protected receiving deployment with the selected
+Weaver backend. Legion did not answer on its established SSH route.
+
 ## November 27 — Front-facing Weaver and Shaper worktables
 
 Protected release `b5dcf2d5853f` uses the same viewport-aligned Three.js
