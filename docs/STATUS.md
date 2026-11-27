@@ -1,6 +1,28 @@
 # Current MVP work
 
-## Weaver worktable area navigation candidate
+## November 27 — Native H.B. Guitar sections
+
+Protected release `d7945693e484` at source `f06e17d` puts Mecanismo,
+Arranque and Soporte directly on the native Three.js worktable. Each
+section names the selected part beside the confirmed controller state,
+highlights it in the current Home model and uses a leader line from the
+panel to the part. A model read failure offers a local retry. The
+authorized model reader confirmed that the exact controller edition
+`750753c3` matches the current Home selection.
+
+Chromium exercised the actual renderer with the exact three model
+scenes at 1450 and 390 pixels, including clicks on the Three.js controls,
+a failed model read and explicit retry. A controller fixture sent an
+A2UI state update to two independently open worktables. Both updated
+without issuing device actions. The full build passed with 536 tests
+passing and two skipped. All 92 installed files and the protected HTTPS
+bundle matched, and `b5dcf2d5853f` remains the rollback. The release also
+includes the Weaver area navigation below. The protected Lab gateway
+currently reports Legion offline and its existing SSH route has no
+network route. A session with the actual guitar controller remains
+unverified for this release.
+
+## Weaver worktable area navigation
 
 The native Three.js worktable keeps an area selector and the area’s
 subsection selector visible during pagination. It organizes the existing
@@ -17,8 +39,8 @@ used native controls without iframes. A canvas tap at the narrow
 viewport opened the area menu and selected the motion model. The focused
 render layer now invalidates before HUD capture consumes the pointer
 event. The full Holodeck build passed, with 536 tests passed and two
-skipped. The candidate awaits protected receiving deployment with the selected
-Weaver backend. Legion did not answer on its established SSH route.
+skipped. The client is published in the release above. The selected Weaver
+backend still needs receiving verification.
 
 ## November 27 — Front-facing Weaver and Shaper worktables
 
