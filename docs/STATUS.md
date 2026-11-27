@@ -1,5 +1,28 @@
 # Current MVP work
 
+
+## November 27 — A2UI teleport and favorite destinations
+
+Protected release `f78e9b265e3c` selects source `f61c380` for the
+teleport change. Press Q while navigating or use Teletransporte in the
+toolbar. The A2UI surface opens with an animated spiral, groups public land
+and houses and saves favorites by actor in the browser. The receiver lists
+reachable rooms and their authored stations and rechecks the selected
+destination against current permissions at move time. The destination
+does not accept client coordinates.
+
+Chromium verified the exact package with Q, favorites on reopening, travel
+from the public land to the Matter worktable, same-room arrival and travel
+back outside. A second authenticated fixture with observe rights could
+neither list protected rooms nor submit an otherwise valid private table
+destination. All 92 live package files match, and the protected URL serves
+the selected client bundle. The full suite passed 535 tests and skipped
+two. Prior release `85fcadf01672` is retained for rollback.
+
+[Remaining A2UI migration](a2ui-migration.md) is tracked against the served
+line. SysOps is still a read-only Activity candidate on `feat/sysops-hud`
+and has no navigable room in this release.
+
 ## November 27 — Manual flight pitch
 
 Protected release `85fcadf01672` gives the pilot direct control of
