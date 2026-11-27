@@ -567,6 +567,25 @@ function porch(parent, out) {
   smallTemple(facade,out);
 }
 
+export function makePorticoCrown() {
+  const crown=new T.Group();
+  crown.name='Casa Linterna portico crown';
+  gabledRoof(crown,.825,1.29,2.19,.375,'porticoTile','porticoRidge');
+  const ring=cyl(crown,'polishedBronze',0,2.346,1.318,.104,.048);
+  ring.rotation.x=Math.PI/2;
+  const oculus=cyl(crown,'warmGlass',0,2.346,1.347,.077,.027);
+  oculus.rotation.x=Math.PI/2;
+  return crown;
+}
+
+export function makePorticoBeam() {
+  const beam=new T.Group();
+  box(beam,'warmWood',0,2.10,.02,1.72,.19,2.74);
+  box(beam,'ivory',0,2.092,1.33,1.74,.052,.093);
+  box(beam,'limestone',0,2.162,1.33,1.78,.041,.12);
+  return beam;
+}
+
 function smallTemple(parent,out) {
   box(parent,'foundation',0,.047,.03,1.79,.09,3.55);
   box(parent,'ivory',0,.093,.06,1.75,.018,3.48);
@@ -582,14 +601,7 @@ function smallTemple(parent,out) {
     for(const y of [1.98,2.05])
       box(parent,'ivory',side*.783,y,0,.055,.032,2.57);
   }
-  box(parent,'warmWood',0,2.10,.02,1.72,.19,2.74);
-  box(parent,'ivory',0,2.092,1.33,1.74,.052,.093);
-  box(parent,'limestone',0,2.162,1.33,1.78,.041,.12);
-  gabledRoof(parent,.825,1.29,2.19,.375,'porticoTile','porticoRidge');
-  const ring=cyl(parent,'polishedBronze',0,2.346,1.318,.104,.048);
-  ring.rotation.x=Math.PI/2;
-  const oculus=cyl(parent,'warmGlass',0,2.346,1.347,.077,.027);
-  oculus.rotation.x=Math.PI/2;
+  parent.add(makePorticoBeam(),makePorticoCrown());
   box(parent,'oak',0,.87,.733,.828,1.74,.09);
   box(parent,'warmWood',0,.846,.785,.727,1.64,.022);
   for(const side of [-1,1]){

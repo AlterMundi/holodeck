@@ -123,13 +123,12 @@ node art/linterna/precinct/import-hd-portico.mjs AUTHORIZED_HD_SRC OUTPUT_DIR [B
 ```
 
 Pass a local copy of the selected Drive edition's editable `src` directory.
-The importer calls its original shrine and architectural generators offline,
-using reduced subdivisions and roof-tile density. It records the input
-hashes and the original and resulting triangle counts. Only the exterior
-mesh is exported. The HD viewer, terrain, lights and walkthrough remain
-outside this build. The visual model fits the East 1 envelope and leaves the
-threshold position, native door actions and existing collision authority
-with Holodeck.
+The importer calls the original shrine generator for masonry, columns and
+door and lantern details, with reduced subdivisions. The shared portico
+beam and roof provide a continuous volume with seated roof trim. The door
+leaves are represented closed at the same threshold. The build records the
+input hashes and both triangle counts. It exports only the exterior mesh.
+Holodeck retains the East 1 approach, door action and collision authority.
 
 The portico uses the HD palette in standard glTF materials. The optional
 masonry map samples the original ashlar shader's base color on a +Z-facing

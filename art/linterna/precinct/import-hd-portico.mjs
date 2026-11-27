@@ -9,6 +9,7 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {mergeVertices} from 'three/addons/utils/BufferGeometryUtils.js';
 import {batchModel} from './batch.mjs';
 import {embedFinishMaps} from './finish-maps.mjs';
+import {makePorticoBeam,makePorticoCrown} from './model.mjs';
 
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 const sourceFiles=['architecture.js','scene.js','materials.js','layout.js','nature.js','sculpture.js'];
@@ -30,26 +31,36 @@ const segments=[
   ['0.1 * r, 12, 8','0.1 * r, 8, 5'],
   ['a0, a1, n = 10','a0, a1, n = 3'],
   ['lathe(pts, 56)','lathe(pts, 10)'],
-  ['L / (0.34 * m)','L / (0.46 * m)'],
-  ['2 * D + 0.1, sx, Math.min(1, Math.max(0.4, m / 0.21))',
-    '2 * D + 0.1, sx, Math.min(1, Math.max(0.74, m / 0.21))'],
-  ['0.075, 0.085, 0.5, 10, 1, false','0.075, 0.085, 0.5, 5, 1, true'],
-  ['bevelSegments: 2, curveSegments: 6','bevelSegments: 1, curveSegments: 2'],
 ];
 
-function architecturalSource(source,low) {
-  if(low){
-    for(const [from,to] of segments){
-      const at=source.indexOf(from);
-      assert.ok(at>=0&&source.indexOf(from,at+from.length)<0,
-        'The HD generator revision changed at: '+from);
-      source=source.slice(0,at)+to+source.slice(at+from.length);
-    }
+function replaceSource(source,replacements){
+  for(const [from,to] of replacements){
+    const at=source.indexOf(from);
+    assert.ok(at>=0&&source.indexOf(from,at+from.length)<0,
+      'The HD generator revision changed at: '+from);
+    source=source.slice(0,at)+to+source.slice(at+from.length);
   }
+  return source;
+}
+
+function architecturalSource(source,low) {
+  if(low)source=replaceSource(source,segments);
   // Roof tile variation is the only stochastic input in the shrine.
   return `let seed=41;
     const tileRandom=()=>((seed=Math.imul(seed,1664525)+1013904223>>>0)/4294967296);
     ${source.replaceAll('Math.random()', 'tileRandom()')}`;
+}
+
+function shrineSource(source,low){
+  if(!low)return source+'\nexport {streetShrine};';
+  const roof=source.indexOf('  entabRect(B, f, -0.88, 0.88, -1.1, 1.38,');
+  const door=source.indexOf('  // doorway with bronze doors');
+  assert.ok(roof>0&&door>roof,'The HD shrine roof and opening must match the selected source');
+  source=source.slice(0,roof)+source.slice(door);
+  return replaceSource(source,[
+    ['colH, x > 0.5 ? r : r * 0.9)','colH - 0.105, x > 0.5 ? r * 1.18 : r * 1.06)'],
+    ['0, s * -0.55, 0','0, 0, 0'],
+  ])+'\nexport {streetShrine};';
 }
 
 async function hdGenerators(directory,sources,low) {
@@ -72,7 +83,7 @@ async function hdGenerators(directory,sources,low) {
         builder.onLoad({filter:/\.js$/},({path})=>{
           const name=Object.keys(sources).find(name=>join(directory,name)===path);
           const source=sources[name];
-          if(name==='scene.js')return {contents:source+'\nexport {streetShrine};'};
+          if(name==='scene.js')return {contents:shrineSource(source,low)};
           if(name==='architecture.js')return {contents:architecturalSource(source,low)};
           return {contents:source};
         });
@@ -132,11 +143,11 @@ const triangles=group=>group.children.reduce((sum,mesh)=>
 
 function fitToEntrance(group){
   const {min,max}=new Box3().setFromObject(group);
-  const protectedX=.43, protectedZ=1.46, cornice=2.12;
+  const protectedX=.43, protectedZ=1.46, lintelStart=2.00, roofSeat=2.183;
   const sx=Math.min(1,(envelope.x-protectedX)/(Math.max(max.x,-min.x)-protectedX));
-  const sy=Math.min(1,(envelope.y-cornice)/(max.y-cornice));
   const sz=Math.min(1,(envelope.z-protectedZ)/(Math.max(max.z,-min.z)-protectedZ));
-  assert.ok(sx>.52&&sy>.45&&sz>.5&&min.y>=-.001,
+  const sy=max.y>roofSeat?(roofSeat-lintelStart)/(max.y-lintelStart):1;
+  assert.ok(sx>.52&&sz>.5&&sy>.5&&min.y>=-.001,
     'The HD porch cannot fit this entrance: '+JSON.stringify([min.toArray(),max.toArray()]));
   const uvNormal=new Vector3();
   for(const mesh of group.children){
@@ -144,9 +155,10 @@ function fitToEntrance(group){
     const uv=new Float32Array(position.count*2);
     for(let i=0;i<position.count;i++){
       const x=position.getX(i), y=position.getY(i), z=position.getZ(i);
-      const dx=Math.abs(x)>protectedX?sx:1, dy=y>cornice?sy:1, dz=Math.abs(z)>protectedZ?sz:1;
+      const dx=Math.abs(x)>protectedX?sx:1, dz=Math.abs(z)>protectedZ?sz:1, dy=y>lintelStart?sy:1;
       const xx=dx===1?x:Math.sign(x)*(protectedX+(Math.abs(x)-protectedX)*dx);
-      const yy=dy===1?y:cornice+(y-cornice)*dy, zz=dz===1?z:Math.sign(z)*(protectedZ+(Math.abs(z)-protectedZ)*dz);
+      const zz=dz===1?z:Math.sign(z)*(protectedZ+(Math.abs(z)-protectedZ)*dz);
+      const yy=dy===1?y:lintelStart+(y-lintelStart)*dy;
       position.setXYZ(i,xx,yy,zz);
       uvNormal.set(normal.getX(i)/dx,normal.getY(i)/dy,normal.getZ(i)/dz).normalize();
       normal.setXYZ(i,uvNormal.x,uvNormal.y,uvNormal.z);
@@ -178,6 +190,7 @@ const sources=Object.fromEntries(await Promise.all(sourceFiles.map(async name=>[
 const original=triangles(collect(await hdGenerators(directory,sources,false)));
 const candidate=collect(await hdGenerators(directory,sources,true),Boolean(masonryBytes));
 fitToEntrance(candidate);
+candidate.add(makePorticoBeam(),makePorticoCrown());
 const model=batchModel(candidate,{finishUV:true,retainColors:true});
 for(const mesh of model.children){
   if(!mesh.geometry.index){
@@ -201,7 +214,7 @@ assert.ok(triangleCount<=budget.triangles&&triangleCount<original*.25&&model.chi
   'The imported shrine exceeds its rendering budget: '+JSON.stringify({
     original,triangles:triangleCount,draws:model.children.length,
     batches:model.children.map(mesh=>[mesh.name,(mesh.geometry.index?.count??mesh.geometry.attributes.position.count)/3]),
-    largest:candidate.children.map(({material,geometry})=>[material.name,geometry.type,
+    largest:candidate.children.filter(child=>child.isMesh).map(({material,geometry})=>[material.name,geometry.type,
       (geometry.index?.count??geometry.attributes.position.count)/3]).sort((a,b)=>b[2]-a[2]).slice(0,14),
   }));
 
