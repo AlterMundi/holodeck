@@ -1,5 +1,22 @@
 # Current MVP work
 
+## November 27 — Wait for Lab controls after the service opens
+
+Protected release `0ad8302ae071` keeps the instrument table in its
+preparing state while the selected host reports a running service and
+its A2UI controls are still coming online. The table reads status for
+up to twelve seconds and opens the controls as soon as the receiver
+confirms them. When the wait expires, **Reintentar** reads status again
+while the service is still running.
+
+Chromium verified adoption of a running HarMoCAP service, one cold
+start followed by delayed controls, and a deadline followed by a
+read-only retry. It also verified that closing the table ends status
+polling. The build passed with 536 tests passing and two skipped. All 92
+installed files and the protected HTTPS bundle matched. Rollback is
+`37052cb47623`. Legion remains offline, so the startup trial used
+controlled receiving states.
+
 ## November 27 — Native entries for every Lab table
 
 Protected release `37052cb47623` at source `144b373` places Ruteos,
