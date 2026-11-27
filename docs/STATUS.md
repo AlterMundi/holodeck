@@ -1,5 +1,16 @@
 # Current MVP work
 
+## November 27 — Pendings book and room jump
+
+Protected release `1fead074e81b` serves source `ea32f47`, with immediate
+rollback `8eaacabc7713`. The [Pendings book](pending-book.md) projects the
+paired Conversation ledger and uses an explicit room link for travel.
+A Chromium fixture against the packaged server deduplicated the shared
+task, jumped from outside to the gallery, and refused the private room.
+The protected release files, health, sign-in boundary and anonymous jump
+denial were checked after deployment. The real paired account's pending
+inventory was not accessed for the trial.
+
 ## November 27 — Weaver routing in the Beacon chamber
 
 Protected release `8eaacabc7713` adds **Abrir Ruteos** to Weaver's table.
