@@ -1,9 +1,31 @@
 # Current MVP work
 
+## November 27 — Shared Harmonic Lab operator controls
+
+Protected Holodeck release `9ec79492c207` adds **Operación del Lab** at
+the Weaver worktable. The same A2UI document also renders in the existing
+web panel. It lists services, starts selected services on request and
+saves configuration for subsequent launches through the existing
+workstation writer. Opening the surface performs reads.
+
+The Lab gateway release is `a55c473f5949`. Chromium verified an isolated
+web start reflected in the native Three.js view, followed by a Three.js
+start reflected in the web renderer. The gateway accepted a current
+profile save and refused a stale profile, a mismatched control and
+a request without the existing CSRF proof. A separate live probe
+rendered Legion's operator feed in Three.js with no command or start.
+The web panel likewise rendered Legion in read-only mode.
+
+All 91 Holodeck files matched the selected archive, the exact HTTPS
+bundle was served and the access boundary remained in force. Immediate
+rollback is `c43182aa96fe`. The Node suite passed 512 tests with two
+skips. Physical devices, live stopped-to-ready acceptance and visits
+from the paired human remain open.
+
 ## November 27 — Startup feedback at the Harmonic Lab worktables
 
-Protected release `10edd13fa0c3` is active, with `23fe0a220065` as
-immediate rollback. All 91 installed files and the protected HTTPS
+Protected release `10edd13fa0c3` introduced the updated startup view,
+with `23fe0a220065` as its rollback. All 91 installed files and the protected HTTPS
 bundle matched. Only the browser bundle changed.
 
 Chromium exercised stopped-to-ready and reuse, launch with a lost
