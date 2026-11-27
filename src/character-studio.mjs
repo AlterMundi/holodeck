@@ -13,6 +13,7 @@ import {ATELIER_FOYER,CHARACTER_STUDIO} from './house-review-rooms.mjs';
 import {arrivalDoor,doorLocation,readSpace} from './space-travel.mjs';
 
 const names={
+  hero_idle:'Reposo heroico · Explorador',hero_landing:'Aterrizaje heroico · Explorador',
   idle:'Reposo',jog:'Trote',air:'En el aire',calm:'Reposo',curious:'Curiosidad',joy:'Alegría',
   sad:'Tristeza',anger:'Enojo',uncertain:'Duda',focus:'Concentración',welcome:'Saludo',
   sleep:'Dormir',walk:'Marcha · clip original',run:'Carrera · clip original',
@@ -376,7 +377,8 @@ export function openCharacterStudio(document,table=null){
   }
 
   const clipOptions=(profile,figure)=>profile.clips
-    ?[...Object.keys(profile.clips),...Object.keys(humanMotionStudies)]:Array.from(figure.clips.keys());
+    ?[...Array.from(figure.clips.keys()).filter(name=>!Object.hasOwn(profile.clips,name)),
+      ...Object.keys(profile.clips),...Object.keys(humanMotionStudies)]:Array.from(figure.clips.keys());
 
   function targetClip(model,next,figure){
     const clip=model.animations[0]?.clone();
@@ -423,7 +425,8 @@ export function openCharacterStudio(document,table=null){
     rig=next;
     scene.add(root);
     const options=clipOptions(profile,figure);
-    const initialClip=options.includes(requestedClip)?requestedClip:profile.clips?'estudio-vuelo':options[0];
+    const initialClip=options.includes(requestedClip)?requestedClip:
+      options.includes(profile.initial)?profile.initial:profile.clips?'estudio-vuelo':options[0];
     await loadClip(initialClip,requestedFrame,expected,id);
   }
 
