@@ -1,7 +1,8 @@
 const radians=Math.PI/180;
-// Córdoba Observatorio, Servicio Meteorológico Nacional.
-const latitude=-31.40*radians;
-const longitude=-64.18;
+// José de la Quintana, Córdoba (official locality coordinates).
+export const quintana=Object.freeze({latitude:-31.80349305,longitude:-64.41885653});
+const latitude=quintana.latitude*radians;
+const longitude=quintana.longitude;
 const tau=2*Math.PI;
 const utcDayMs=86400000;
 const j2000=Date.UTC(2000,0,1,12);

@@ -1,9 +1,9 @@
-import {BackSide, Color, HemisphereLight, Mesh, ShaderMaterial, SphereGeometry, SRGBColorSpace, TextureLoader, Vector2, Vector3, Vector4} from 'three';
+import {BackSide, Color, HemisphereLight, Mesh, RepeatWrapping, ShaderMaterial, SphereGeometry, SRGBColorSpace, TextureLoader, Vector2, Vector3, Vector4} from 'three';
 import {toroidalAirColor,toroidalCosmosColor} from './toroidal-air.mjs';
-import {TOROIDAL_TERRAIN,terrainCoordinates, terrainFrame,terrainWaterDepth} from './toroidal-terrain.mjs';
+import {TOROIDAL_TERRAIN,terrainCoordinates,terrainWaterDepth} from './toroidal-terrain.mjs';
 
+import {quintanaCelestial} from './quintana-celestial.mjs';
 import {celestialRotation,cloudWind} from './toroidal-solar-clock.mjs';
-import {toroidalSunDirection} from './toroidal-terrain-renderer.mjs';
 
 const groundHaze = new Color().setRGB(.46,.57,.70);
 const deepHaze = new Color(0x133f52);
@@ -25,11 +25,15 @@ const vertexShader = `
 `;
 
 const fragmentShader = `
-  uniform vec3 radialUp;
+  uniform vec3 moon;
+  uniform vec2 discRadii;
   uniform vec3 sun;
   uniform vec4 wind;
   uniform vec2 celestialTurn;
   uniform float waterDepth;
+  uniform float exposure;
+  uniform float cloudiness;
+  uniform float lightning;
   uniform float daylight;
   uniform sampler2D cosmos;
   uniform bool showCosmos;
@@ -56,14 +60,14 @@ const fragmentShader = `
   varying vec3 skyDirection;
   void main() {
     vec3 direction = normalize(skyDirection);
-    float elevation = dot(direction, radialUp);
+    float elevation = direction.y;
     float facing = max(0.0, dot(direction, sun));
     float crown = pow(clamp(elevation,0.0,1.0),.72);
     vec3 horizon = toroidalAir(facing,daylight);
     vec3 zenith = mix(vec3(.013,.021,.055),vec3(.080,.21,.44),daylight);
     vec3 sky = mix(horizon,zenith,crown);
     if(showCosmos){
-      vec3 deep=toroidalCosmos(cosmos,direction,celestialTurn);
+      vec3 deep=toroidalCosmos(cosmos,direction,celestialTurn)*exposure;
       float deepLight=dot(deep,vec3(.2126,.7152,.0722));
       float transmission=toroidalCosmosWindow(elevation,daylight);
       float nightWeight=1.0-smoothstep(.21,.85,daylight);
@@ -80,7 +84,7 @@ const fragmentShader = `
       float mass=cloudNoise(folded);
       float lobes=cloudNoise(folded*2.58+vec3(7.2,2.4,-3.5));
       float density=mass*.77+lobes*.23;
-      float billows=smoothstep(.514,.652,density);
+      float billows=smoothstep(.57-.22*cloudiness,.73-.20*cloudiness,density);
       vec3 q=direction*vec3(7.4,19.4,5.2)+vec3(wind.z,3.6,wind.w);
       float streaks=smoothstep(.57,.79,cloudNoise(q))*.30;
       float cover=smoothstep(-.027,.16,elevation);
@@ -91,6 +95,7 @@ const fragmentShader = `
       float shaping=smoothstep(.51,.69,density+lobes*.053+elevation*.024);
       vec3 vapor=mix(under,light,shaping);
       sky=mix(sky,vapor,.92*cloud);
+      sky+=vec3(.41,.52,.72)*lightning*cloud;
     }
     float veil=exp(-max(0.0,elevation)*7.0);
     sky=mix(sky,horizon,veil*.52);
@@ -98,7 +103,15 @@ const fragmentShader = `
     // requiring another full-screen target on lightweight graphics.
     sky+=vec3(.15,.098,.057)*pow(facing,16.0)*daylight*(1.0-.65*cloud);
     sky+=vec3(.38,.22,.09)*pow(facing,55.0)*daylight*(1.0-.68*cloud);
-    sky+=vec3(1.6,.96,.48)*smoothstep(.9987,.9995,facing)*daylight*(1.0-.88*cloud);
+    // The nearby lunar silhouette occults the solar disc at actual angular sizes.
+    float solarOffset=length(cross(direction,sun));
+    float lunarOffset=length(cross(direction,moon));
+    float solarDisc=(1.0-smoothstep(discRadii.x*.92,discRadii.x*1.06,solarOffset))*step(.999,facing)*step(-.012,direction.y);
+    float lunarDisc=(1.0-smoothstep(discRadii.y*.91,discRadii.y*1.06,lunarOffset))*step(.999,dot(direction,moon))*step(-.012,direction.y);
+    vec3 moonNormal=normalize((direction-moon)/max(.001,discRadii.y)-direction*sqrt(max(0.0,1.0-pow(lunarOffset/max(.001,discRadii.y),2.0))));
+    float lunarPhase=max(0.0,dot(moonNormal,sun));
+    sky=mix(sky,mix(vec3(.012,.017,.030),vec3(.63,.66,.67),lunarPhase),lunarDisc*(1.0-.92*cloud)*mix(1.0,.66,daylight));
+    sky+=vec3(2.0,1.54,1.05)*solarDisc*(1.0-lunarDisc)*(1.0-.88*cloud);
     if (waterDepth > .014) {
       vec3 suspended = mix(vec3(.012,.046,.068),vec3(.078,.28,.34),smoothstep(-.19,.95,elevation));
       sky = mix(sky,suspended*mix(.23,1.0,daylight),smoothstep(.014,.08,waterDepth));
@@ -114,12 +127,12 @@ export class ToroidalAtmosphere {
     this.scene = scene;
     this.fill = new HemisphereLight(0xb0d4ff,0x8d6949,1.12);
     this.fill.position.set(0,1,0);
-    this.radialUp = new Vector3(0,1,0);
+
     this.sunlight = new Vector3(.56,.64,-.52).normalize();
     const material = new ShaderMaterial({
       side:BackSide, depthWrite:false, fog:false, vertexShader, fragmentShader,
-      uniforms:{radialUp:{value:this.radialUp},sun:{value:this.sunlight},wind:{value:new Vector4()},celestialTurn:{value:new Vector2(1,0)},
-        waterDepth:{value:0},daylight:{value:1},showCosmos:{value:false},cosmos:{value:null}},
+      uniforms:{moon:{value:new Vector3()},discRadii:{value:new Vector2()},sun:{value:this.sunlight},wind:{value:new Vector4()},celestialTurn:{value:new Vector2(1,0)},
+        waterDepth:{value:0},exposure:{value:1.5},cloudiness:{value:.26},lightning:{value:0},daylight:{value:1},showCosmos:{value:false},cosmos:{value:null}},
     });
     this.sky = new Mesh(new SphereGeometry(10,24,12),material);
     this.sky.name = 'Toroidal atmosphere';
@@ -127,9 +140,10 @@ export class ToroidalAtmosphere {
     this.sky.frustumCulled = false;
     this.previousSky = null;
     this.fog = null;
-    if(base)this.cosmos=new TextureLoader().load(new URL('assets/toroidal-cosmos.webp',base).href,texture=>{
+    if(base)this.cosmos=new TextureLoader().load(new URL('assets/quintana-celestial-atlas.webp',base).href,texture=>{
       if(this.disposed){texture.dispose();return;}
       texture.colorSpace=SRGBColorSpace;
+      texture.wrapS=RepeatWrapping;
       material.uniforms.cosmos.value=texture;
       material.uniforms.showCosmos.value=true;
     });
@@ -144,7 +158,7 @@ export class ToroidalAtmosphere {
     return this.sky.material.uniforms.celestialTurn.value;
   }
 
-  update(eye,position,solar,instant=Date.now()) {
+  update(eye,solar,instant=Date.now(),weather=null,exposure=1.5,reducedMotion=false) {
     if (!this.sky.parent) {
       this.scene.add(this.sky,this.fill);
     }
@@ -161,7 +175,20 @@ export class ToroidalAtmosphere {
     const drowned=depth>.025;
     this.sky.material.uniforms.waterDepth.value=depth;
     this.celestialTurn.set(...celestialRotation(instant));
-    this.sky.material.uniforms.wind.value.set(...cloudWind(instant));
+    const uniforms=this.sky.material.uniforms;
+    uniforms.exposure.value=exposure;
+    uniforms.cloudiness.value+=( (weather?.cloudCover??26)/100-uniforms.cloudiness.value)*.025;
+    const cloudPhase=cloudWind(instant);
+    if(weather){
+      const from=weather.windDirection*Math.PI/180;
+      const drift=((instant-weather.at)/60000)*weather.windSpeed*.009;
+      cloudPhase[0]+=Math.cos(from)*drift;
+      cloudPhase[1]-=Math.sin(from)*drift;
+    }
+    uniforms.wind.value.set(...cloudPhase);
+    const seconds=instant/1000;
+    const pulse=seconds%29;
+    uniforms.lightning.value=weather?.storm&&!reducedMotion?Math.max(0,1-pulse*3.2)*.42:0;
     const daylight=solar?.daylight??1;
     if(this.fog?.object===this.scene.fog&&this.fog){
       const fog=this.fog.object;
@@ -172,9 +199,14 @@ export class ToroidalAtmosphere {
     this.sky.material.uniforms.daylight.value=daylight;
     this.fill.intensity=drowned?.31+.33*daylight:.19+.93*daylight;
     this.sky.position.copy(eye);
-    const {u,v}=terrainCoordinates([position.x,position.y,position.z]);
-    this.radialUp.fromArray(terrainFrame(u,v).up);
-    this.sunlight.fromArray(toroidalSunDirection(position,TOROIDAL_TERRAIN,solar?.direction));
+    const slice=Math.floor(instant/10000);
+    if(slice!==this.celestialSlice){
+      const {sun,moon}=quintanaCelestial(new Date(slice*10000));
+      this.celestialSlice=slice;
+      this.sunlight.fromArray(sun.direction);
+      uniforms.moon.value.fromArray(moon.direction);
+      uniforms.discRadii.value.set(sun.radius,moon.radius);
+    }
   }
 
   dispose() {

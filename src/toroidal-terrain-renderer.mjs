@@ -413,7 +413,7 @@ const waterShading = (reflectBank=false) => ({
       // View space normals add wave detail, then the celestial map is
       // sampled in the same world axes as the sky.
       vec3 worldRay=transpose(mat3(viewMatrix))*reflectedRay;
-      float window=toroidalCosmosWindow(skyHeight,holodeckDaylight)*(1.0-smoothstep(.21,.85,holodeckDaylight));
+      float window=toroidalCosmosWindow(worldRay.y,holodeckDaylight)*(1.0-smoothstep(.21,.85,holodeckDaylight));
       vec3 skyLight=toroidalCosmos(holodeckCosmos,worldRay,holodeckCelestialTurn);
       float radiance=max(max(skyLight.r,skyLight.g),skyLight.b);
       reflectedAir=mix(reflectedAir,skyLight*1.12,window*surfaceView*smoothstep(.018,.24,radiance));

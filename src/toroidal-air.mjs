@@ -1,4 +1,4 @@
-import {celestialPole} from './toroidal-solar-clock.mjs';
+import {quintana} from './toroidal-solar-clock.mjs';
 
 // Linear-light horizon radiance shared by the sky, terrain and water.
 // Low-altitude sun warms the air without tinting the entire sky orange.
@@ -17,15 +17,21 @@ vec3 toroidalAir(float facing, float daylight) {
 // coordinates, seam and night visibility.
 export const toroidalCosmosColor = `
 vec3 toroidalCosmos(sampler2D panorama, vec3 direction, vec2 rotation) {
-  const vec3 pole=vec3(${celestialPole.map(value=>value.toFixed(9)).join(',')});
-  direction=direction*rotation.x+cross(pole,direction)*rotation.y+pole*dot(pole,direction)*(1.0-rotation.x);
-  float longitude=fract(atan(direction.z,direction.x)/6.2831853+.5);
-  vec2 uv=vec2(longitude,.5+asin(clamp(direction.y,-1.0,1.0))/3.1415927);
-  vec3 deep=texture2D(panorama,uv).rgb;
-  return mix(vec3(.012,.005,.04),deep,smoothstep(0.0,.035,min(longitude,1.0-longitude)));
+  const float latSin=${Math.sin(quintana.latitude*Math.PI/180).toFixed(9)};
+  const float latCos=${Math.cos(quintana.latitude*Math.PI/180).toFixed(9)};
+  float north=-direction.x, east=direction.z, up=direction.y;
+  float meridian=up*latCos-north*latSin;
+  vec3 eq=vec3(meridian*rotation.x-east*rotation.y,
+    meridian*rotation.y+east*rotation.x,up*latSin+north*latCos);
+  // ICRS to Galactic, with Galactic centre in the middle of ESO eso0932a.
+  vec3 gal=vec3(dot(eq,vec3(-.05487556,-.87343709,-.48383502)),
+    dot(eq,vec3(.49410943,-.44482963,.74698224)),
+    dot(eq,vec3(-.86766615,-.19807637,.45598378)));
+  vec2 uv=vec2(fract(.5-atan(gal.y,gal.x)/6.2831853),.5+asin(clamp(gal.z,-1.0,1.0))/3.1415927);
+  return texture2D(panorama,uv).rgb;
 }
 
 float toroidalCosmosWindow(float elevation, float daylight) {
-  return mix(.98,.15,smoothstep(.15,.82,daylight))*smoothstep(.045,.48,elevation);
+  return mix(.98,.27,smoothstep(.15,.82,daylight))*smoothstep(-.025,.16,elevation);
 }
 `;

@@ -7,6 +7,8 @@ import {selectedHudLook} from './hud-look-preview.mjs';
 import {ToroidalScenery} from './toroidal-scenery.mjs';
 import {ToroidalAtmosphere,toroidalViewDepth} from './toroidal-atmosphere.mjs';
 import {argentineSun,nightSkyKey} from './toroidal-solar-clock.mjs';
+import {bindLocalRain} from './local-rain.mjs';
+import {bindAvatarPracticals} from './avatar-practicals.mjs';
 import {bindToroidalHouseLight} from './toroidal-house-light.mjs';
 import {bindFoyerFloorFinish} from './foyer-floor-finish.mjs';
 import {ToroidalCave} from './toroidal-cave.mjs';
@@ -248,11 +250,11 @@ class HolodeckExperienceClient extends Networked3dWebExperienceClient {
 
 const rendererBudget={adaptive:true,startAtNative:matchMedia('(pointer: coarse)').matches,
   lightweight:usesLightGraphics(location.search)};
-let videoFrameBudget,mouseSensitivity=1,updateRoomGlazing=()=>{},notifyFullscreenError;
+let videoFrameBudget,mouseSensitivity=1,skyExposure=1.5,updateRoomGlazing=()=>{},notifyFullscreenError;
 function createFrameBudget(renderer){
   return videoFrameBudget=capWorldPixelRatio(renderer,rendererBudget);
 }
-bindVideoSettings({document,window,lightweight:rendererBudget.lightweight,onFullscreenError:message=>notifyFullscreenError?.(message),onSensitivity:value=>{mouseSensitivity=value;},onGraphics:lightweight=>{
+bindVideoSettings({document,window,lightweight:rendererBudget.lightweight,onFullscreenError:message=>notifyFullscreenError?.(message),onSensitivity:value=>{mouseSensitivity=value;},onSkyExposure:value=>{skyExposure=value;},onGraphics:lightweight=>{
   rendererBudget.lightweight=lightweight;
   videoFrameBudget?.setLightweight(lightweight);
   updateRoomGlazing();
@@ -862,7 +864,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       dolly:(delta,x,y,pointerX,pointerY)=>tableFlight.dollyInspection(client.getCharacterManager().localController,
         delta,x,y,worldPicker.worktableHit(pointerX,pointerY)),
       pan:(x,y)=>tableFlight.translateInspection(client.getCharacterManager().localController,x,y),
-    });
+    },()=>outsideRing()&&(flightEnabled||radialMovementMode==='swim'||radialMovementMode==='surface')&&
+      !entering&&!moving&&!tableFlight.active&&!document.hidden);
     const aiming=()=>releaseOrbit.aiming()&&!entering&&!moving&&!tableFlight.active&&!document.hidden;
     const mapPanel=document.querySelector('#space-travel');
     const minimap=bindToroidalMinimap(mapPanel);
@@ -1028,6 +1031,21 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     geometryProbe=new AppliedGeometryProbe({document,scene:renderer.mmlCompositionScene.group,
       canvas:options.targetElement.querySelector(':scope > canvas'),expectedDocumentURL:socket('world')});
     nativeAvatarLayer=new NativeAvatarLayer({document,base,onFailure:message=>say(message)});
+    const rain=bindLocalRain(renderer.mmlCompositionScene.group);
+    let weather=null,weatherNext=-Infinity,weatherRequest;
+    const weatherLabel=document.querySelector('#quintana-weather-status');
+    function checkWeather(){
+      if(weatherRequest||performance.now()<weatherNext||document.hidden)return;
+      weatherNext=performance.now()+5*60000;
+      weatherRequest=new AbortController();
+      const request=weatherRequest;
+      fetch(new URL('api/quintana-weather',base),{signal:AbortSignal.any([request.signal,AbortSignal.timeout(8500)])})
+        .then(response=>response.ok?response.json():null)
+        .then(sample=>{if(!request.signal.aborted)weather=sample;})
+        .catch(()=>{})
+        .finally(()=>{if(weatherRequest===request)weatherRequest=null;});
+    }
+    const avatarPracticals=bindAvatarPracticals(renderer.mmlCompositionScene.group,options.coreCameraManager.collisionsManager);
     const companion=new CompanionAvatar({scene:renderer.mmlCompositionScene.group,document,base});
     const flightWake=new FlightWake(renderer.mmlCompositionScene.group);
     const waterSplash=new WaterSplash(renderer.mmlCompositionScene.group,{
@@ -1161,7 +1179,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const releaseFlightAnimation=bindFlightAvatarAnimation(renderer.characterManager,()=>({
       outdoor:outsideRing(),flying:flightEnabled,boosting:localFlightBoost(),grounded:client.getCharacterManager().localController?.characterOnGround,table:tableFlight.active,tabletopPlayers:tabletopPlayers(),
       peerPoses:poses.peers,peerGaze:points.gazes,gaze:tableGaze,wake:!entering&&!moving&&drawWorld?flightWake:null,glanceMotion:!companion.motion.matches&&!document.hidden,
-      aimPitch:aiming()?Math.PI/2-options.coreCameraManager.phi:null,
+      aimPitch:aiming()?Math.PI/2-options.coreCameraManager.phi:null,loopPitch:releaseOrbit.pitch(),
       splash:!entering&&!moving&&drawWorld&&!document.hidden?waterSplash:null,
       waterWake:!entering&&!moving&&drawWorld&&!document.hidden?waterWake:null,
       microphoneLevel:sharedConversation&&!moving&&!entering&&sharedSurface()?sharedConversation.microphoneLevel():null,
@@ -1341,7 +1359,15 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       if(outsideRing()&&position){
         atmosphere??=new ToroidalAtmosphere(renderer.mmlCompositionScene.group.parent,base);
         const eye=options.coreCameraManager.getCameraState().position;
-        atmosphere.update(eye,position,solar);
+        checkWeather();
+        const now=Date.now(),previousWeatherText=weatherLabel?.textContent;
+        const currentWeather=weather&&now-weather.at<30*60000?weather:null;
+        const weatherText=currentWeather?`José de la Quintana · viento ${Math.round(currentWeather.windSpeed)} km/h${currentWeather.storm?' · tormenta estimada':currentWeather.precipitation>0?' · lluvia estimada':''}`:
+          'José de la Quintana · clima sin datos recientes';
+        if(weatherLabel&&previousWeatherText!==weatherText)weatherLabel.textContent=weatherText;
+        atmosphere.update(eye,solar,now,currentWeather,skyExposure,companion.motion.matches);
+        rain.update(eye,atmosphere.sky.material.uniforms.waterDepth.value<.03?currentWeather:null,
+          performance.now(),companion.motion.matches);
         ring?.setView(eye,toroidalViewDepth(eye),atmosphere.panorama,atmosphere.celestialTurn);
       }else if(atmosphere){
         atmosphere.dispose();
@@ -1385,6 +1411,12 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         crouch:!flightEnabled&&!tableFlight.active&&client.getCharacterManager().localController?.characterOnGround&&client.keyInputManager?.isKeyPressed('alt'),
         explicitFlight:flightEnabled,grounded:!flightEnabled&&client.getCharacterManager().localController?.characterOnGround===true,
         visible:!entering&&!moving&&drawWorld,seconds:presentationSeconds});
+      if(!outsideRing())rain.update(null,null,0,false);
+      avatarPracticals.update({
+        player:renderer.characterManager.loadedCharacters.get(character?.connectionId)?.character.getMesh(),
+        feet:position,companion:companion.object,outdoor:outsideRing(),table:tableFlight.active,
+        daylight:solar?.daylight,visible:!entering&&!moving&&drawWorld,
+      });
       const wakesVisible=outsideRing()&&!entering&&!moving&&drawWorld&&!document.hidden&&!companion.motion.matches;
       if(wakesVisible&&companion.object){
         const robot=companion.object;
@@ -1515,7 +1547,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         if(source?.startsWith(url('assets/').pathname))model.setAttribute('src',source);
       }
     };
-    renderer.dispose=()=>{backgroundFocus?.dispose();poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();worldFocus.abort();tableAttention.dispose();pointRequest?.controller.abort();document.removeEventListener('visibilitychange',abortHiddenPoint);points.dispose();if(pointView===points)pointView=null;display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();actionLabel.dispose();flightWake.dispose();waterSplash.dispose();waterWake.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();houseLight.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{weatherRequest?.abort();rain.dispose();avatarPracticals.dispose();backgroundFocus?.dispose();poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseOrbit();worldFocus.abort();tableAttention.dispose();pointRequest?.controller.abort();document.removeEventListener('visibilitychange',abortHiddenPoint);points.dispose();if(pointView===points)pointView=null;display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();actionLabel.dispose();flightWake.dispose();waterSplash.dispose();waterWake.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();houseLight.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
       if(client.keyInputManager){
         const keys=client.keyInputManager,shouldCapture=keys.shouldCaptureKeyPress;
@@ -1526,7 +1558,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       }
       releaseHeadroom=bindInteriorHeadroom(client.getCharacterManager(),()=>inside);
       releaseRadialMovement=bindToroidalMml(client.getCharacterManager(),options.coreCameraManager,outsideRing,
-        ()=>flightEnabled,firstExteriorDoor,(mode,boost=false)=>{radialMovementMode=mode;radialBoosting=boost;},aiming);
+        ()=>flightEnabled,firstExteriorDoor,(mode,boost=false)=>{radialMovementMode=mode;radialBoosting=boost;},aiming,releaseOrbit.pitch);
       firstExteriorDoor=null;
       releaseTableFlight=bindMatterFlight(client.getCharacterManager(),options.coreCameraManager,tableFlight,tableInputAllowed,()=>matterHud.leave());
       options.onInitialized();
