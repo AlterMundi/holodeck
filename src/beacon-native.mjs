@@ -172,9 +172,23 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
     try{
       const response=await fetch(url('/actions'),{method:'POST',credentials:'same-origin',signal,
         headers:{'Content-Type':'application/json','X-Lab-CSRF':csrf},body:JSON.stringify(envelope)});
-      await response.body?.cancel().catch(()=>{});
-      lastProblem=response.status===409?'Cambió el instrumento. Revisá los controles y volvé a intentar.':
-        response.ok?'':'No se pudo confirmar el cambio.';
+      if(surface==='operator'){
+        const receipt=await response.json();
+        if(response.ok&&Array.isArray(receipt)){
+          const confirmed=receipt[0]?.createSurface;
+          if(confirmed?.surfaceId===surface){
+            model.receive([{version:'1.0',updateDataModel:{surfaceId:surface,path:'/',value:confirmed.dataModel}},
+              {version:'1.0',updateComponents:{surfaceId:surface,components:confirmed.components}}]);
+            if(envelope.action.name==='saveProfile')model.drafts.clear();
+          }
+        }
+        lastProblem=response.ok?(envelope.action.name==='saveProfile'?'Configuración guardada.':'Inicio solicitado.'):
+          response.status===409?'Cambió el estado del equipo. Revisalo antes de continuar.':'No se pudo confirmar la operación.';
+      }else{
+        await response.body?.cancel().catch(()=>{});
+        lastProblem=response.status===409?'Cambió el instrumento. Revisá los controles y volvé a intentar.':
+          response.ok?'':'No se pudo confirmar el cambio.';
+      }
     }catch{
       if(!signal.aborted)lastProblem='No se pudo confirmar el cambio.';
     }
@@ -238,8 +252,15 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
         return;
       }
       const host=summary.hosts.find(host=>host.id===selected);
-      const service=host?.services?.find(service=>service.id===station.service);
       if(!host?.online){retry('La estación no responde.');return;}
+      if(surface==='operator'){
+        csrf=summary.csrf;
+        if(!csrf){status('Se necesita acceso a Harmonic Lab.');return;}
+        status('Consultando al equipo…');
+        connect();
+        return;
+      }
+      const service=host.services?.find(service=>service.id===station.service);
       if(!host.projectionSurfaces?.includes(surface)||!service?.installed){
         status('Este instrumento no está disponible en esta estación.');return;
       }

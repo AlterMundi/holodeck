@@ -4,7 +4,7 @@ export {BEACON_CONTROLS} from './beacon-stations.mjs';
 const panel='/harmonic_lab/';
 const STATUS_LIMIT=128*1024;
 const STATUS_LIFETIME=30000;
-const weaverViews=Object.freeze({router:{title:'Ruteos de Weaver',surface:'router'},rostro:{title:'Rostro',surface:'rostro'},harmocap:{title:'HarMoCAP',surface:'harmocap'}});
+const weaverViews=Object.freeze({operator:{title:'Operación del laboratorio',surface:'operator'},router:{title:'Ruteos de Weaver',surface:'router'},rostro:{title:'Rostro',surface:'rostro'},harmocap:{title:'HarMoCAP',surface:'harmocap'}});
 export function nearbyBeaconControl(objects,position){
   if(!position)return null;
   let distance=1.85,nearest=null;
@@ -59,10 +59,10 @@ async function readBeaconStatus(signal){
 }
 
 export class BeaconControls{
-  constructor(link,panel,{statusButton,statusText,routerLink,rostroLink,harmocapLink,readStatus=readBeaconStatus}={}){
+  constructor(link,panel,{statusButton,statusText,routerLink,rostroLink,harmocapLink,operatorLink,readStatus=readBeaconStatus}={}){
     this.link=link;this.panel=panel;
     this.statusButton=statusButton;this.statusText=statusText;this.readStatus=readStatus;
-    this.weaverLinks={router:routerLink,rostro:rostroLink,harmocap:harmocapLink};
+    this.weaverLinks={router:routerLink,rostro:rostroLink,harmocap:harmocapLink,operator:operatorLink};
     for(const [view,anchor] of Object.entries(this.weaverLinks))if(anchor)anchor.onclick=event=>{
       if(this.current?.surface!=='weaver'||event.button||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
       event.preventDefault();

@@ -8,11 +8,12 @@ const text=(id,label,fields={})=>({id,component:'HudText',label,...fields});
 const button=(id,label,fields={})=>({id,component:'HudButton',label,action:action(id),...fields});
 
 const stationComponents=[
-  {id:'root',component:'HudPanel',label:'Controles del laboratorio',width:beaconStationWidth,children:['title','stationActions','status']},
+  {id:'root',component:'HudPanel',label:'Controles del laboratorio',width:beaconStationWidth,children:['title','stationActions','operate','status']},
   text('title',path('title'),{style:'title'}),
   {id:'stationActions',component:'HudRow',children:['check','open']},
   button('check','Consultar estado',{disabled:path('checking')}),
   button('open','Abrir laboratorio'),
+  button('operate','Operación del Lab',{visible:path('canOperate')}),
   text('status',path('status'),{style:'body',lines:2,visible:path('hasStatus')}),
 ];
 const viewerComponents=[
@@ -63,6 +64,7 @@ export class BeaconHud{
     const status=this.owner.statusText.textContent;
     this.syncSurface(beaconStationId,'stationGroup',stationComponents,identity&&visible&&!opened?{
       ...identity,status,hasStatus:Boolean(status),checking:this.owner.statusButton.disabled,
+      canOperate:current.surface==='weaver'&&Boolean(this.owner.weaverLinks.operator),
     }:null);
     this.syncSurface(beaconViewerId,'viewerGroup',viewerComponents,identity&&opened&&native?identity:null);
   }
@@ -80,6 +82,10 @@ export class BeaconHud{
     if(surfaceId===beaconStationId&&this.stationPresented&&!opened){
       if(name==='check'&&!this.owner.statusButton.disabled)void this.owner.checkStatus();
       else if(name==='open')this.openNearby();
+      else if(name==='operate'&&current.surface==='weaver'&&this.owner.weaverLinks.operator){
+        this.onOpen();
+        this.owner.open({native:this.canOpenNative(),view:'operator'});
+      }
     }else if(surfaceId===beaconViewerId&&this.viewerPresented&&opened&&native){
       if(name==='close')this.owner.close();
       else if(name==='external')this.owner.external.click();
