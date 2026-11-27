@@ -20,6 +20,16 @@ function replaceSection(source,start,end,body) {
 
 export function repairArchitecture(source) {
   source=replaceSource(source,[
+    // The front of the shaft must face away from the axis. Seat its open
+    // lower ring in the solid collar so both export resolutions keep contact.
+    ['idx.push(a, b, a + 1, b, b + 1, a + 1);',
+      'idx.push(a, a + 1, b, b, a + 1, b + 1);'],
+    ['pts.push([R, 0.66 * r], [R, 0.7 * r], [0, 0.7 * r]);',
+      'const collar = 1.075 * r;\n    pts.push([collar, 0.66 * r], [collar, 0.7 * r], [0, 0.7 * r]);'],
+    ['const shaftH = h - plinthH - base.height - cap.height;',
+      'const seat = plinthH + base.height - 0.04 * r;\n  const shaftH = h - seat - cap.height;'],
+    ['flutedShaft(shaftH, r), mat(f, x, plinthH + base.height, z)',
+      'flutedShaft(shaftH, r), mat(f, x, seat, z)'],
     ['s.moveTo(-A + 0.25, 0); s.lineTo(0, H - 0.12); s.lineTo(A - 0.25, 0); s.closePath();',
       'const seat = H + 0.12 - 0.08 / Math.cos(slope);\n    s.moveTo(-A, 0); s.lineTo(0, seat); s.lineTo(A, 0); s.closePath();'],
     ["B.add('marble', moulding(prof, hyp + 0.55), mat(sf, sx * A / 2, H / 2 - 0.05, 0.15, 0, 0, -sx * slope));",

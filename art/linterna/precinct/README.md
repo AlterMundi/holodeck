@@ -147,7 +147,8 @@ node art/linterna/precinct/import-hd-portico.mjs AUTHORIZED_HD_SRC OUTPUT_DIR [B
 Pass a local copy of the selected Drive edition's editable `src` directory
 and its HTML template. Both builds call the original geometry generators.
 The roof fits its tile grid and ridge within the deck and joins the raking
-trim and stepped corner cornices in place. The visual tour also splits
+trim and stepped corner cornices in place. The fluted shafts face outward
+and seat inside the top collar of each attic base. The visual tour also splits
 painted wall skins into bays and lintels around the original door
 dimensions and restores the annular terrain in the carved atlas tray.
 The review keeps the source lights, shadows, vegetation and tour with
