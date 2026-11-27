@@ -3,7 +3,8 @@ import {AmbientLight, Group, Matrix4} from 'three';
 import {createHudMaterialShell, createInstrumentGlass} from './hud-material-shell.mjs';
 
 const instrumentSurfaces=new Set(['matter-worktable','world-toolbelt','world-header',
-  'world-map','world-controls','conversation-header','world-settings']);
+  'world-map','world-controls','conversation-header','world-settings','pending-tool','pending-book',
+  'world-activity','world-exhibitions','world-visit','world-recovery','world-creation','world-notice']);
 
 const looks={
   taller:{frame:'#1c282b',accent:'#7d9994',radius:.11,thickness:.055,roughness:.78,
@@ -131,7 +132,7 @@ export class HudLookPreview{
       this.invalidate();
     }
     const pulse=this.reduced.matches?0:Math.max(0,1-(performance.now()-(panel.hit??-Infinity))/210);
-    panel.shell.update(bounds,{colors:this.instrumentColors,compact:key==='world-toolbelt'||key==='world-header'||key==='world-controls',lightLevel:pulse});
+    panel.shell.update(bounds,{colors:this.instrumentColors,compact:key==='world-toolbelt'||key==='world-header'||key==='world-controls'||key==='pending-tool',lightLevel:pulse});
     if(pulse||panel.animated)this.invalidate();
     panel.animated=Boolean(pulse);
   }

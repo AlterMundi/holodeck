@@ -95,8 +95,9 @@ async function readAppearance(body){
   appearanceChoice.disabled=appearanceSave.disabled=true;
   appearanceStatus.textContent=body?'Guardando…':'Cargando…';
   try{
-    const {choice}=await requestAppearance(body);
+    const {choice,personalDefault}=await requestAppearance(body);
     if(generation!==appearanceGeneration)return;
+    appearanceChoice.options[0].textContent=personalDefault?'Explorador':'Automática';
     appearanceChoice.value=choice??'';
     appearanceStatus.textContent=body?'Guardada.':'';
     appearanceChoice.disabled=appearanceSave.disabled=false;
@@ -1478,7 +1479,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const suppressNotice=compactConversation&&worldNotice.temporary;
       worldNotice.element.toggleAttribute('data-compact-suppressed',suppressNotice);
       matterHud.pending.update(pendingBook,!entering&&drawWorld&&!opaqueVisit&&!settingsOpen&&
-        (!toolModal||pendingBook?.dialog.open));
+        (!toolModal||pendingBook?.dialog.open),worldCanvas.clientWidth>=650&&worldCanvas.clientHeight>=445);
       matterHud.status.update({
         noticeVisible:!suppressNotice&&!entering&&drawWorld&&!opaqueVisit,noticeOpacity:worldNotice.opacity,
         controlsVisible:!inside&&navigationVisible&&!mapPanel.open&&!matterHud.coarsePointer.matches&&matterHud.canvas.clientWidth>1150,

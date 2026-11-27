@@ -66,6 +66,7 @@ export function mountPendingBook({window,document,select,currentActor,onJump,onC
   const button=document.querySelector('#pending-book-tool'),badge=button.querySelector('[data-count]');
   const dialog=document.querySelector('#pending-book'),list=dialog.querySelector('[data-items]');
   const status=dialog.querySelector('[role=status]'),conversation=dialog.querySelector('[data-conversation]');
+  const backButton=dialog.querySelector('[data-back]');
   let refreshing=false,selected,disposed=false,detailTurn=0,showingDetail=false,readiness,signalTimer,countLabel='';
   const signals=new PendingSignals();
   const read=async(path,surface)=>{
@@ -107,6 +108,8 @@ export function mountPendingBook({window,document,select,currentActor,onJump,onC
             dialog.close();
             await onJump(destinations[0]);
           }else{
+            backButton.hidden=false;
+            conversation.hidden=false;
             const text=document.createElement('p');
             text.textContent=typeof detail.body==='string'?detail.body:item.preview??'';
             list.replaceChildren(text);
@@ -116,7 +119,7 @@ export function mountPendingBook({window,document,select,currentActor,onJump,onC
               visit.onclick=()=>{dialog.close();void onJump(room);};
               list.append(visit);
             }
-            status.textContent=destinations.length?'Elegí un destino.':'Este pendiente se atiende en Conversación.';
+            status.textContent=destinations.length?'Elegí un destino.':'';
           }
         }catch(error){if(turn===detailTurn&&dialog.open){showingDetail=false;status.textContent=error.message;}}
       };
@@ -168,6 +171,8 @@ export function mountPendingBook({window,document,select,currentActor,onJump,onC
     }finally{refreshing=false;}
   }
   function back(){
+    backButton.hidden=true;
+    conversation.hidden=true;
     list.replaceChildren();
     readiness=undefined;
     showingDetail=false;
@@ -184,6 +189,7 @@ export function mountPendingBook({window,document,select,currentActor,onJump,onC
     back();
   };
   dialog.querySelector('[data-close]').onclick=()=>dialog.close();
+  backButton.onclick=back;
   conversation.onclick=()=>{dialog.close();onConversation();};
   const escape=event=>{
     if(event.key!=='Escape'||!dialog.open)return;

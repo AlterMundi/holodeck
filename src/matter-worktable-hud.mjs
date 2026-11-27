@@ -1,4 +1,4 @@
-import {PendingBookHud,pendingToolId,pendingBookId} from './pending-book-hud.mjs';
+import {PendingBookHud,pendingToolId,pendingBookId,pendingBookWidth} from './pending-book-hud.mjs';
 import {hudAppearanceKey,readHudAppearance} from './hud-appearance.mjs';
 import {PassageHud} from './passage-hud.mjs';
 import {HudLookPreview} from './hud-look-preview.mjs';
@@ -281,7 +281,10 @@ export class MatterWorktableHud{
         else if(requested.surfaceId===doorPromptId)this.door.activate(requested);
         else if(requested.surfaceId===collectionHudId)this.collection.activate(requested);
         else if(requested.surfaceId===settingsId)this.settings.activate(requested);
-        else if([pendingToolId,pendingBookId].includes(requested.surfaceId))this.pending.activate(requested);
+        else if([pendingToolId,pendingBookId].includes(requested.surfaceId)){
+          this.lookPreview.hit(requested.surfaceId);
+          this.pending.activate(requested);
+        }
         else if(requested.surfaceId===activityHudId)this.activity.activate(requested);
         else if([exhibitionHudId,visitHudId].includes(requested.surfaceId))this.visit.activate(requested);
         else if(requested.surfaceId===recoveryHudId)this.recovery.activate(requested);
@@ -860,7 +863,7 @@ export class MatterWorktableHud{
     const compactText=(key==='toolPlacement'&&this.toolLayout?.compact)||
       (key==='doorPlacement'&&this.door.compact);
     const characterControls=key==='workPlacement'&&this.active&&this.table!==this.collectionTable;
-    const fontSize=characterControls&&this.compactCharacterTable?13:
+    const fontSize=key==='pendingBookPlacement'?20:characterControls&&this.compactCharacterTable?13:
       characterControls&&viewport.width<=420?13:compactText?12:viewport.placementVariant==='portrait'?14:15;
     const signature=[viewport.width,viewport.height,x,y,scale,pixelRatio,fontSize,dock?.depth,
       bounds?.left,bounds?.right,bounds?.top,bounds?.bottom].join(':');
@@ -1120,8 +1123,10 @@ export class MatterWorktableHud{
         Math.max(insets.top,14),scale);
     }
     if(this.pending.bookGroup){
-      const scale=Math.min(148,(width-24)/2.68,(height-28)/(1.65+.13*this.pending.lineCount));
-      this.place(this.pending.bookGroup,'pendingBookPlacement',viewport,width/2,Math.max(14,(height-1.8*scale)/3),scale);
+      const scale=Math.min(246,(width-32)/(pendingBookWidth+.24),(height-28)/1.65);
+      const bounds=this.hud.getSurfaceBounds(pendingBookId);
+      const panelHeight=(bounds?bounds.top-bounds.bottom:1.5)*scale;
+      this.place(this.pending.bookGroup,'pendingBookPlacement',viewport,width/2,Math.max(14,(height-panelHeight)/2),scale);
     }
     if(this.status.noticeGroup){
       const {left,right}=this.toolInsets();
@@ -1233,6 +1238,12 @@ export class MatterWorktableHud{
     this.lookPreview.draw(toolbeltId,this.toolGroup,this.hud.getSurfaceBounds(toolbeltId));
     this.lookPreview.draw(pendingToolId,this.pending.toolGroup,this.hud.getSurfaceBounds(pendingToolId));
     this.lookPreview.draw(pendingBookId,this.pending.bookGroup,this.hud.getSurfaceBounds(pendingBookId));
+    this.lookPreview.draw(activityHudId,this.activity.group,this.hud.getSurfaceBounds(activityHudId));
+    this.lookPreview.draw(exhibitionHudId,this.visit.indexGroup,this.hud.getSurfaceBounds(exhibitionHudId));
+    this.lookPreview.draw(visitHudId,this.visit.viewerGroup,this.hud.getSurfaceBounds(visitHudId));
+    this.lookPreview.draw(recoveryHudId,this.recovery.group,this.hud.getSurfaceBounds(recoveryHudId));
+    this.lookPreview.draw(creationHudId,this.creation.group,this.hud.getSurfaceBounds(creationHudId));
+    this.lookPreview.draw(worldNoticeId,this.status.noticeGroup,this.hud.getSurfaceBounds(worldNoticeId));
     this.lookPreview.draw(surfaceId,this.group,this.hud.getSurfaceBounds(surfaceId));
     if(!this.lookPreview.name||this.document.body.dataset.hudTheme==='light')this.lookPreview.draw(settingsId,this.settings.group,this.hud.getSurfaceBounds(settingsId));
     this.map.decoration();

@@ -382,9 +382,16 @@ body[data-world-starting] :is(canvas,#hud,#dock,#view-tools,#world-tools,#visit-
 #pending-book-tool>strong{font:700 25px/1 Georgia,serif}
 #pending-book-tool[data-attention]>strong{color:var(--hud-brass,#ffd18a);text-shadow:0 0 10px #ffd18a80}
 #pending-book-tool [data-count]{font-size:12px;font-variant-numeric:tabular-nums}
-#pending-book{width:min(430px,calc(100vw - 28px));max-height:min(70dvh,540px);padding:18px;border:1px solid var(--hud-rim,#587980);border-radius:16px;background:var(--hud-panel,#0b1b24);color:var(--hud-ink,#f6ebd9)}
+#pending-book{position:fixed;inset:0;margin:auto;z-index:34;width:min(600px,calc(100vw - 28px));max-height:min(82dvh,650px);padding:18px;border:1px solid var(--hud-rim,#587980);border-radius:16px;background:var(--hud-panel,#0b1b24);color:var(--hud-ink,#f6ebd9)}
+#pending-book[open]{display:flex;flex-direction:column;gap:10px;overflow:hidden}
+#pending-book [data-items]{min-height:0;overflow:auto;overscroll-behavior:contain}
+#pending-book [role=status]{margin:0}
+#pending-book [role=status]:empty{display:none}
+#pending-book header,#pending-book footer{flex:none}
 #pending-book::backdrop{background:#07111974}
 #pending-book header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#pending-book [data-items]>p{font-size:17px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;color:inherit}
+#pending-book footer{display:flex;gap:10px;flex-wrap:wrap}
 #pending-book ul{list-style:none;padding:0;margin:10px 0}
 #pending-book li{margin:8px 0}
 #pending-book li button{display:block;width:100%;text-align:left}
@@ -457,7 +464,7 @@ body[data-world-starting] #pending-book-tool{visibility:hidden;pointer-events:no
 <button id="pending-book-tool" type="button" aria-label="Pendientes" aria-haspopup="dialog" hidden><strong aria-hidden="true">?</strong><span data-count></span></button>
 <dialog id="pending-book" aria-labelledby="pending-book-title">
   <header><h2 id="pending-book-title">Pendientes</h2><button type="button" data-close autofocus>Cerrar</button></header>
-  <p role="status"></p><div data-items></div><button type="button" data-conversation>Conversar acá</button>
+  <p role="status"></p><div data-items></div><footer><button type="button" data-back hidden>Volver</button><button type="button" data-conversation hidden>Conversar acá</button></footer>
 </dialog>
 <div id="release-hud">
   <button id="release-dnd" type="button" aria-pressed="false" aria-label="No molestar con reinicios" title="Controlar cuándo puede reiniciarse Holodeck" hidden>⚑ Disponible</button>
