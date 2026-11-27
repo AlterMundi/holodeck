@@ -1,5 +1,20 @@
 # Current MVP work
 
+## November 27 — A2UI Pendings and Navegante notification
+
+Protected `812d52266022` serves the isolated candidate `55042c5` with
+immediate rollback `1fead074e81b`. The upper-left question mark and book
+use A2UI, and **Conversar acá** opens the in-world panel. The active room
+keeps a small location label. **Ajustes** owns the existing audio opt-in.
+One batch of new items lights the marker and triggers a brief Navegante
+chirp pose with a two-note sound when audio is active.
+
+Chromium against the candidate package opened the native book, selected an
+item, opened the internal Conversation, then enabled audio in the native
+settings. Two triangle notes were observed when a second item appeared.
+The receiving package, protected entry, health and installed bytes matched.
+The trial used a test pending list.
+
 ## November 27 — Pendings book and room jump
 
 Protected release `1fead074e81b` serves source `ea32f47`, with immediate
