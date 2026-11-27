@@ -97,7 +97,7 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
     const firstJump=wantsFirstJump();
     const jump=!flying&&!motion.swimming&&Boolean(firstJump||control?.jump||touch?.jump||(wet&&manual>0));
     const sprint=freeVertical?keyInputManager.getRun()||touch?.isSprinting:control?.isSprinting;
-    const pitch=Math.PI/2-camera.phi;
+    const pitch=camera.phi-Math.PI/2;
     const loopPull=flying&&aiming()&&!manual&&moving&&-Math.cos(control.direction)>.84&&Math.abs(pitch)>.43?
       Math.sign(pitch):0;
     const previousHeight=motion.height;
