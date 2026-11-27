@@ -1,5 +1,6 @@
-import {BufferGeometry,Group,Line,LineBasicMaterial,Mesh,MeshBasicMaterial,PlaneGeometry,Raycaster,SRGBColorSpace,Vector2,Vector3,VideoTexture} from 'three';
-import {bindSpatialHudPointer,createSpatialHud,spatialHudCatalog} from 'proyeccion/spatial-hud';
+import {AmbientLight,BufferGeometry,DirectionalLight,Group,Line,LineBasicMaterial,Mesh,MeshBasicMaterial,PlaneGeometry,PerspectiveCamera,Raycaster,Scene,SRGBColorSpace,Vector2,Vector3,VideoTexture} from 'three';
+import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
+import {HudRenderLayer} from './hud-render-layer.mjs';
 import {BeaconNativeModel} from './beacon-native-model.mjs';
 import {readWorktableReview} from './collection-review.mjs';
 import {makeModel} from './collection-worktable.mjs';
@@ -29,7 +30,7 @@ function startFailure(job,service){
 const readFlag={shaper:'shaperProjectionReady',rostro:'rostroProjectionReady',harmocap:'harmocapProjectionReady'};
 const nativeAction=(name,context={})=>({event:{name,context}});
 
-export function openBeaconNative(stage,{world,station,surface,title,readStatus}){
+export function openBeaconNative(stage,{world,station,surface,title,readStatus,focused=false}){
   const document=stage.ownerDocument;
   const controller=new AbortController();
   const {signal}=controller;
@@ -39,7 +40,16 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
   const eye=world.camera.getWorldPosition(new Vector3());
   parent.rotation.y=Math.atan2(eye.x-parent.position.x,eye.z-parent.position.z);
   parent.scale.setScalar(.57);
-  world.scene.add(parent);
+  const layer=focused?new HudRenderLayer(world.renderer,{viewport:stage,mount:stage}):null;
+  const viewScene=focused?new Scene():world.scene;
+  const viewCamera=focused?new PerspectiveCamera(42,1,.05,20):world.camera;
+  if(focused){
+    viewCamera.position.z=3;
+    const light=new DirectionalLight(0xffe2bd,2.3);
+    light.position.set(1.3,2.8,3);
+    viewScene.add(new AmbientLight(0xcbe5f0,1.9),light);
+  }
+  viewScene.add(parent);
   const model=new BeaconNativeModel(surface);
   let selected,source,csrf,stream,binding,timer,latestView,lastProblem='',editProblem='',viewKey,refreshing=false;
   const outbound=createSpatialHud({parent,document,accessibilityRoot:stage,controlStyle:'optical',
@@ -62,6 +72,44 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
         else showModel();
       }
     }});
+  if(focused)outbound.setPalette({background:'#10232d',button:'#264654',
+    pressed:'#34695e',disabled:'#273942',text:'#eef5f3',focus:'#e7ca8c'});
+  let placement, stackedGuitar=false;
+  function draw(){
+    if(!layer||signal.aborted)return;
+    const {width,height}=stage.getBoundingClientRect();
+    if(!width||!height)return;
+    const bounds=outbound.getSurfaceBounds(nativeId);
+    if(!bounds)return;
+    const side=surface==='guitar'&&width>=740;
+    const stacked=surface==='guitar'&&!side;
+    const panelWidth=bounds.right-bounds.left;
+    const panelHeight=bounds.top-bounds.bottom;
+    const span=side?panelWidth+1.75:panelWidth;
+    const total=panelHeight+(stacked?1.15:0);
+    const scale=Math.min((width-24)/span,(height-24)/total,side?245:260);
+    if(scale<=0)return;
+    const key=[width,height,scale,bounds.bottom,layer.pixelRatio].join(':');
+    if(key!==placement){
+      stackedGuitar=stacked;
+      placement=key;
+      viewCamera.aspect=width/height;
+      viewCamera.updateProjectionMatrix();
+      placeHudInViewport(parent,viewCamera,{width,height,x:width/2-(side?.83*scale:0),
+        y:(height-total*scale)*.43+bounds.top*scale,pixelsPerUnit:scale,depth:3});
+      outbound.setTextDensity(nativeId,{cssPixelsPerUnit:Math.round(scale),pixelRatio:layer.pixelRatio,fontSize:17});
+      outbound.setChoicePresentation(nativeId,'overlay');
+      outbound.update();
+      layer.invalidate();
+    }
+    if(guitar?.placement!==placement&&guitar){
+      guitar.placement=placement;
+      guitar.group.position.set(side?2.44:0,side?-1.14:bounds.bottom-.94,0);
+      showGuitarLink();
+      layer.invalidate();
+    }
+    layer.draw(viewScene,viewCamera);
+  }
   const attempted=new Set();
   let guitar, guitarRequest, guitarSelection, guitarProblem;
   const guitarLink=surface==='guitar'?new Line(new BufferGeometry(),
@@ -82,7 +130,12 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
     const center=part.geometry.boundingBox.getCenter(new Vector3());
     center.z=part.geometry.boundingBox.max.z;
     const target=parent.worldToLocal(part.localToWorld(center));
-    const points=[
+    const bottom=panel&&outbound.getSurfaceBounds(nativeId)?.bottom;
+    const points=stackedGuitar&&bottom!==undefined?[
+      new Vector3(label.x+.98,bottom,label.z+.03),
+      new Vector3(label.x+.98,bottom-.16,label.z+.03),
+      target,
+    ]:[
       new Vector3(label.x+1.26,label.y,label.z+.03),
       new Vector3(label.x+1.44,label.y,label.z+.03),
       target,
@@ -148,6 +201,7 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
       material.emissiveIntensity=.58;
       parent.add(guitar.group);
       showGuitarLink();
+      layer?.invalidate();
     }catch{
       if(!controller.signal.aborted&&!signal.aborted){
         guitarProblem='No se pudo abrir la pieza de guitarra.';
@@ -158,12 +212,13 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
   const ray=new Raycaster();
   const ndc=new Vector2();
   const release=bindSpatialHudPointer({element:stage,hud:outbound,rayForPointer:event=>{
-    const rect=world.canvas.getBoundingClientRect();
+    const rect=(focused?stage:world.canvas).getBoundingClientRect();
     if(!rect.width||!rect.height)return;
     ndc.set((event.clientX-rect.left)*2/rect.width-1,1-(event.clientY-rect.top)*2/rect.height);
-    ray.setFromCamera(ndc,world.camera);
+    ray.setFromCamera(ndc,viewCamera);
     return {ray:ray.ray};
   }});
+  if(layer)for(const kind of ['pointermove','pointerdown','pointerup','keydown'])stage.addEventListener(kind,layer.invalidate,{signal});
   outbound.receive({version:'1.0',createSurface:{surfaceId:nativeId,catalogId:spatialHudCatalog.id}});
   function update(view){
     if(signal.aborted)return;
@@ -175,6 +230,7 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
     outbound.receive({version:'1.0',updateDataModel:{surfaceId:nativeId,path:'/',value:view.data}});
     outbound.update();
     showGuitarLink();
+    layer?.invalidate();
   }
   function status(label,buttons=[]){
     latestView=false;
@@ -190,6 +246,9 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
   function showModel(syncModel=true){
     latestView=true;
     const view=model.render(title);
+    if(focused&&surface==='guitar')for(const node of view.components){
+      if(node.id==='settings'||node.id==='savedSettings')node.lines=2;
+    }
     const problem=guitarProblem||(editProblem||lastProblem);
     if(problem){
       view.components[0].children.splice(1,0,'station_error');
@@ -340,6 +399,7 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
   status('Consultando al laboratorio…');
   void refresh();
   return {
+    draw,
     focus(){stage.tabIndex=-1;stage.focus({preventScroll:true});},
     contains(event){
       return event.composedPath().includes(stage)||outbound.ownsAccessibleInput(event.target)||outbound.ownsTextInput(event.target);
@@ -362,6 +422,7 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus})
       }
       preview?.dispose();
       outbound.dispose();
+      layer?.dispose();
       parent.removeFromParent();
     },
   };

@@ -125,6 +125,9 @@ export class BeaconControls{
     this.title.textContent=title;
     this.external.href=(view?this.weaverLinks[view]:this.link).getAttribute('href');
     const world=this.world;
+    const focused=Boolean(world?.renderer&&['weaver','guitar'].includes(surface));
+    this.panel.toggleAttribute?.('data-beacon-focused',focused);
+    if(focused)native=false;
     this.panel.toggleAttribute?.('data-beacon-world',!!world);
     this.stage.replaceChildren();
     const connection=new AbortController();
@@ -139,7 +142,7 @@ export class BeaconControls{
     void import('./beacon-native.mjs').then(({openBeaconNative})=>{
       if(connection.signal.aborted)return;
       this.projection=openBeaconNative(this.stage,{world,station:surface==='router'?{...station,service:'router'}:station,
-        surface,title,readStatus:this.readStatus});
+        surface,title,readStatus:this.readStatus,focused});
       this.projection.focus();
     }).catch(()=>{
       if(!connection.signal.aborted)this.showOpeningStatus('No se pudieron abrir los controles de la mesa.');
@@ -191,6 +194,7 @@ export class BeaconControls{
     this.setNative(false);
     this.panel.removeAttribute('data-beacon-hud');
     this.panel.removeAttribute('data-beacon-world');
+    this.panel.removeAttribute('data-beacon-focused');
     this.openConnection?.abort();
     this.openConnection=null;
     this.disposeProjection();
@@ -205,6 +209,7 @@ export class BeaconControls{
   }
 
   update(objects,position){
+    this.projection?.draw();
     const next=nearbyBeaconControl(objects,position);
     if(next===this.current)return;
     this.close();

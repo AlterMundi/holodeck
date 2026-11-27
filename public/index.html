@@ -60,6 +60,15 @@ body:has(#conversation-panel:not([hidden])) #visit-controls,.room-transition #vi
 #beacon-panel[data-beacon-world] header{position:absolute;inset:12px 12px auto;z-index:1;pointer-events:none}
 #beacon-panel[data-beacon-world] header .row{pointer-events:auto}
 #beacon-panel[data-beacon-world] .beacon-panel-stage{position:absolute;inset:0;background:transparent;border-radius:0}
+body:has(#beacon-panel[open]) #beacon-station{display:none}
+#beacon-panel[data-beacon-focused]::backdrop{background:linear-gradient(120deg,#121e268c,#08131ab4)}
+#beacon-panel[data-beacon-focused] header{inset:20px max(18px,calc((100vw - 1000px)/2)) auto}
+#beacon-panel[data-beacon-focused] header h2{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+#beacon-panel[data-beacon-focused] header .row{display:flex;gap:10px;margin-inline:auto;align-items:center}
+#beacon-panel[data-beacon-focused] header a,#beacon-panel[data-beacon-focused] header button{padding:10px 17px;border-radius:12px;background:#172a35;color:#e8f0ef;border:1px solid #4b6971;text-decoration:none}
+#beacon-panel[data-beacon-focused] header button{background:#dfc182;color:#19252a;border-color:#e7c98b;font-weight:650}
+#beacon-panel[data-beacon-focused] .beacon-panel-stage{inset:80px 0 10px}
+#beacon-panel[data-beacon-focused] canvas[data-hud-render-layer]{z-index:auto!important}
 #beacon-panel[data-beacon-world] [data-beacon-before-frame],#beacon-panel[data-beacon-world] [data-beacon-after-frame]{position:absolute}
 .beacon-opening-status{position:absolute;inset:auto 1rem 1rem;width:max-content;max-width:calc(100% - 2rem);padding:.75rem;background:#182b36;color:#e4ecef;border-radius:10px;pointer-events:auto}
 

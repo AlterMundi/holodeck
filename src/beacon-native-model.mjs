@@ -216,9 +216,18 @@ export class BeaconNativeModel {
       }
     };
     visit('root');
-    const size=7,maxPage=Math.max(0,Math.ceil(rows.length/size)-1);
+    const pages=[[]];
+    for(let index=0;index<rows.length;index++){
+      const row=rows[index],next=rows[index+1],pointer=this.input.get(row.id)?.pointer;
+      const nextEvent=next?.component==='HudButton'&&this.input.get(next.id)?.node?.action?.event;
+      const pair=pointer&&nextEvent&&[...bindings(nextEvent.context)].some(path=>containsBinding(path,pointer));
+      if(pages.at(-1).length+(pair?2:1)>7)pages.push([]);
+      pages.at(-1).push(row);
+      if(pair)pages.at(-1).push(rows[++index]);
+    }
+    const maxPage=pages.length-1;
     this.page=Math.min(this.page,maxPage);
-    const shown=rows.slice(this.page*size,this.page*size+size);
+    const shown=pages[this.page];
     const retained=new Set(shown.map(row=>row.id));
     for(const id of this.input.keys())if(!retained.has(id))this.input.delete(id);
     const header=text('station_title',title,'title');
@@ -229,7 +238,7 @@ export class BeaconNativeModel {
         components.push({id:'station_'+name,component:'HudButton',label,disabled:page<0||page>maxPage,
                          action:localAction('station_pages','page',page)});
       }
-      components.push({id:'station_pages',component:'HudRow',children:['station-back','station-next']});
+      components.push({id:'station_pages',component:'HudRow',children:['station_back','station_next']});
     }
     return {data,components:[{id:'root',component:'HudPanel',width:2.65,
       children:[header.id,...shown.map(row=>row.id),...(maxPage?['station_pages']:[])]},...components]};

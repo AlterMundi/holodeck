@@ -96,3 +96,21 @@ test('a profile draft nested under an action binding retains the original profil
  assert.equal(model.action('save','button'),undefined);
  assert.equal(model.actionConflict,true);
 });
+
+test('pagination keeps an instrument field with its apply action and links the visible navigation',()=>{
+ const model=new BeaconNativeModel('shaper');
+ const leading=Array.from({length:6},(_,i)=>({id:'label_'+i,component:'Text',text:String(i)}));
+ model.receive([{version:'1.0',createSurface:{surfaceId:'shaper',dataModel:{gain:1},components:[
+  {id:'root',component:'Column',children:[...leading.map(row=>row.id),'gain','apply']},...leading,
+  {id:'gain',component:'Slider',label:'Gain',min:0,max:2,value:at('/gain')},
+  {id:'apply',component:'Button',label:'Aplicar',action:{event:{name:'setOutputGain',context:{gain:at('/gain')}}}},
+ ]}}]);
+ const first=model.render('Shaper');
+ assert.ok(!first.components.some(node=>node.id==='gain'));
+ const pager=first.components.find(node=>node.id==='station_pages');
+ assert.ok(pager.children.every(id=>first.components.some(node=>node.id===id)));
+ model.action('station_pages','page',1);
+ const next=model.render('Shaper');
+ assert.ok(next.components.some(node=>node.id==='gain'));
+ assert.ok(next.components.some(node=>node.id==='apply'));
+});

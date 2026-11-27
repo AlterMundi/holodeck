@@ -3,9 +3,11 @@ import {WebGLRenderer} from 'three';
 // CSS coordinates, hit tests and the scene renderer remain independent of the
 // HUD framebuffer. Retain the Three.js presentation if a second context fails.
 export class HudRenderLayer {
-  constructor(world, {onLoss} = {}) {
+  constructor(world, {onLoss, viewport = world.domElement, mount = world.domElement.ownerDocument.body} = {}) {
     this.world=world;
     this.onLoss=onLoss;
+    this.viewport=viewport;
+    this.mount=mount;
     this.canvas=world.domElement;
     this.window=this.canvas.ownerDocument.defaultView;
     this.dirty=true;
@@ -31,7 +33,7 @@ export class HudRenderLayer {
     this.onRestored=()=>{this.lost=false;this.invalidate();};
     canvas.addEventListener('webglcontextlost',this.onLost);
     canvas.addEventListener('webglcontextrestored',this.onRestored);
-    document.body.append(canvas);
+    this.mount.append(canvas);
   }
 
   get pixelRatio(){
@@ -57,7 +59,7 @@ export class HudRenderLayer {
       return true;
     }
 
-    const {width,height,left,top}=this.canvas.getBoundingClientRect();
+    const {width,height,left,top}=this.viewport.getBoundingClientRect();
     if(!width||!height){this.hide();return false;}
     const ratio=this.pixelRatio;
     const columns=Math.round((left+width)*ratio)-Math.round(left*ratio);
