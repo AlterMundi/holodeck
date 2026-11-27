@@ -50,6 +50,7 @@ test('a nearby bench mounts one owner panel only on open and discards it when ac
   assert.deepEqual(controls.reference(),{id:weaver.id,revision:1});
   assert.equal(controls.opened,false);
   link.onclick(click);
+  assert.equal(stage.children[0].src,link.href+'&projection=weaver');
   controls.clear();
   assert.equal(link.hidden,true);
   assert.equal(controls.opened,false);

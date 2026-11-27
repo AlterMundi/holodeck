@@ -125,9 +125,7 @@ export class BeaconControls{
     frame.title='Panel de '+this.current.title;
     frame.allow="camera 'none'; microphone 'none'";
     const {title}=this.current;
-    // Only the Guitar receiver currently serves its selected live surface.
-    // Keep the existing panel handoffs for receivers awaiting deployment.
-    const surface=this.current.surface==='guitar'?'guitar':null;
+    const surface=this.current.surface==='spatializer'?null:this.current.surface;
     frame.src=surface?href+'&projection='+encodeURIComponent(surface):href;
     this.frameEvents?.abort();
     this.frameEvents=new AbortController();
