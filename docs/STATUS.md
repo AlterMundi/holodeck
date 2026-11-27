@@ -1,5 +1,21 @@
 # Current MVP work
 
+## November 27 — Spatializer in the Beacon chamber
+
+Protected release `8b4741435299` connects the Spatializer table to the
+existing independent Legion receiver. Immediate rollback is `2de3b1a412a0`.
+The table shows the writable projection after the audio service and its
+OSC adapter both confirm readiness. The table's start request uses the
+existing Spatializer-only launcher path.
+
+The receiving trial used the real Beacon SuperCollider engine on an
+isolated JACK dummy server. A Chromium station mounted the ready
+projection without sending a start request. A legacy web volume change
+reached two live A2UI readers. The receiver refused a stale write and
+confirmed restoration through the typed action. The test services then
+stopped. R24 input, human listening and an authenticated human room
+visit remain pending.
+
 ## November 27 — Shaper mixer in the Beacon chamber
 
 Protected release `2de3b1a412a0` enables the Shaper table's dedicated
@@ -45,8 +61,7 @@ mechanism, switch door and neck support from exact Home edition
 repository tests passed and two were skipped. The Home technical reader
 can read the protected bundle and is refused at the human page.
 An authenticated human visit in the live room and use with the physical
-board remain pending. Spatializer retains its existing panel handoff
-while its receiving projection is qualified.
+board remain pending.
 
 ## November 27 — Paired-human DND for planned restarts
 

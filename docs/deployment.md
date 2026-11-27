@@ -141,8 +141,8 @@ Continue to use the device-local controller for writes to the board.
 Weaver and Shaper reuse the same body receiver through their respective
 surfaces. Their live controls mutate the same confirmed preset.
 Shaper presents mix controls. Weaver also presents body and video
-controls. Spatializer keeps its existing link while its receiving
-projection is qualified.
+controls. Spatializer starts or reuses its own audio service and
+requires a confirmed OSC projection before the table opens its controls.
 
 The optional `gallery` receiving selection names an existing interior
 `room` and two distinct exact `artifact_review` pins (`draft` and `archive`,
