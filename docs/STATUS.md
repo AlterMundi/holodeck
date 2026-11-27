@@ -1,5 +1,23 @@
 # Current MVP work
 
+## November 27 — Concurrent edits in Harmonic Lab
+
+Protected release `c1e8d2d4d88c` ties local native drafts to the
+authoritative bindings observed while editing. It blocks an affected
+submission when a different view updates the same field or its operation
+revision. Edits to independent Spatializer fields remain available.
+The ordered A2UI feed owns readback and operation receipts report the result.
+
+A Chromium Three.js fixture edited gain, received a newer revision and
+clicked Apply through the scene ray. The renderer displayed the conflict
+and sent no action for that draft. The next edit submitted against the
+new revision. The operator fixture repeated its native and web service
+updates in both directions. The Node suite passed 515 tests with two skips.
+
+The live package changed only the browser bundle. All 91 installed files
+matched, protected HTTPS served the exact bundle and the existing access
+boundary held. Immediate rollback is `43395c543894`.
+
 ## November 27 — Guitar readouts linked to physical parts
 
 Protected release `43395c543894` links the selected A2UI readout to its

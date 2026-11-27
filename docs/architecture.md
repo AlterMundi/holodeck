@@ -185,7 +185,11 @@ Three.js meshes in the room. Buttons and sliders use the world camera's
 pointer rays. Confirmed A2UI updates are applied to the same controls regardless
 of which client produced them. Tool actions keep the original surface,
 component, session and confirmed revision. Local field drafts stay with the
-current visit.
+current visit. The renderer remembers the action bindings and confirmed
+conditions at the time of editing. It rejects an affected draft when those
+conditions change. Field-scoped actions keep edits to independent fields.
+Action receipts show the result, while the ordered stream supplies the
+confirmed state for the view.
 
 Opening a worktable asks the existing authorized service to prepare the selected
 instrument when needed. Readiness, unavailable workstations and start failures
