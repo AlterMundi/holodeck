@@ -1,8 +1,28 @@
 # Current MVP work
 
+## November 27 — Startup feedback at the Harmonic Lab worktables
+
+Protected release `10edd13fa0c3` is active, with `23fe0a220065` as
+immediate rollback. All 91 installed files and the protected HTTPS
+bundle matched. Only the browser bundle changed.
+
+Chromium exercised stopped-to-ready and reuse, launch with a lost
+response, retained device failure, explicit retry and access denial
+against an isolated station fixture. It observed only one start
+submission per scenario and verified that closing removed the scene
+controls. Failure text came from the typed device reason. The underlying
+agent message stayed private.
+
+A separate read-only Chromium test rendered live Legion feeds for Weaver,
+Shaper, Rostro, HarMoCAP and Guitar as Three.js controls. The protected
+Guitar model loaded. No control writes or starts occurred. Legion had the
+body and Guitar services ready, Spatializer stopped and Ruteos disabled.
+An actual stopped-to-ready test with those held services and physical
+acceptance remain open.
+
 ## November 27 — Harmonic Lab controls in the Three.js world
 
-Protected release `23fe0a220065` is active. It changes the client bundle
+Protected release `23fe0a220065` introduced the native controls. It changes the client bundle
 and page only, with `bea793358846` retained as immediate rollback.
 All 91 installed files matched. The authenticated HTTPS client read
 returned the exact deployed bundle and the existing access boundary held.
