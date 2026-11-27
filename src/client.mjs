@@ -387,6 +387,7 @@ function benchControls(){
   return new BeaconControls(document.querySelector('#beacon-control'),document.querySelector('#beacon-panel'),{
     statusButton:document.querySelector('#beacon-status-check'),statusText:document.querySelector('#beacon-status-text'),
     routerLink:document.querySelector('#beacon-router'),
+    rostroLink:document.querySelector('#beacon-rostro'),
   });
 }
 

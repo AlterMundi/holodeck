@@ -1,5 +1,19 @@
 # Current MVP work
 
+## November 27 — Rostro tuning at the Weaver table
+
+Protected release `3ab07a91c1e3` adds **Abrir Rostro** to the existing Weaver
+table. Immediate rollback is `d35a9404d82b`. The table uses the protected Lab
+panel to prepare or reuse the selected Weaver backend. Rostro waits for
+its own tuning projection. The station iframe prevents camera and microphone
+use. The reader opens separately in the browser on the selected workstation.
+
+With the installed Legion receiver and a disposable body session, two
+Chromium station views changed and restored one shared tuning value. The
+native tuning endpoint confirmed both writes. The temporary body and Shaper
+closed and their data was removed. A participant's authenticated room visit
+and the physical facial capture path remain to be verified.
+
 ## November 27 — Reconnect to the same Weaver Stage
 
 Protected release `d35a9404d82b` serves the routing session binding from

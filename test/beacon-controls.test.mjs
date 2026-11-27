@@ -19,14 +19,16 @@ test('a control requires a current room object and nearby player position',()=>{
 test('a nearby bench mounts one owner panel only on open and discards it when access changes',()=>{
   const link={hidden:true,getAttribute:name=>link[name],removeAttribute:name=>delete link[name]};
   const routerLink={hidden:true,getAttribute:()=>'/harmonic_lab/?service=router'};
+  const rostroLink={hidden:true,getAttribute:()=>'/harmonic_lab/?service=body&projection=rostro'};
   const stage={children:[],replaceChildren(...children){this.children=children;}};
   const elements={'.beacon-panel-stage':stage,h2:{},a:{},button:{}};
   const panel={open:false,querySelector:selector=>elements[selector],ownerDocument:{createElement:()=>({})},
     showModal(){this.open=true;},close(){this.open=false;},removeAttribute(){},addEventListener(type,listener){this[type]=listener;}};
-  const controls=new BeaconControls(link,panel,{routerLink});
+  const controls=new BeaconControls(link,panel,{routerLink,rostroLink});
   const click={button:0,preventDefault(){this.handled=true;}};
   controls.update(objects,spatial.position);
   assert.equal(routerLink.hidden,true);
+  assert.equal(rostroLink.hidden,true);
   assert.equal(link.hidden,false);
   assert.equal(link.href,'/harmonic_lab/?service=audio');
   assert.equal(controls.reference(),null);
@@ -47,6 +49,7 @@ test('a nearby bench mounts one owner panel only on open and discards it when ac
 
   controls.update(objects,weaver.position);
   assert.equal(routerLink.hidden,false);
+  assert.equal(rostroLink.hidden,false);
   assert.equal(link.href,'/harmonic_lab/?service=body');
   assert.equal(controls.reference(),null);
   link.onclick({button:0,ctrlKey:true,preventDefault(){throw Error('ordinary link navigation must remain available');}});
@@ -58,8 +61,14 @@ test('a nearby bench mounts one owner panel only on open and discards it when ac
   routerLink.onclick(click);
   assert.equal(stage.children[0].src,'/harmonic_lab/?service=router&projection=router');
   assert.deepEqual(controls.reference(),{id:weaver.id,revision:1});
+  controls.close();
+  rostroLink.onclick(click);
+  assert.equal(stage.children[0].src,'/harmonic_lab/?service=body&projection=rostro');
+  assert.equal(stage.children[0].allow,"camera 'none'; microphone 'none'");
+  assert.deepEqual(controls.reference(),{id:weaver.id,revision:1});
   controls.clear();
   assert.equal(routerLink.hidden,true);
+  assert.equal(rostroLink.hidden,true);
   assert.equal(link.hidden,true);
   assert.equal(controls.opened,false);
   assert.deepEqual(stage.children,[]);

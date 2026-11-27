@@ -4,8 +4,7 @@ export {BEACON_CONTROLS} from './beacon-stations.mjs';
 const panel='/harmonic_lab/';
 const STATUS_LIMIT=128*1024;
 const STATUS_LIFETIME=30000;
-const routerView=Object.freeze({service:'router',title:'Ruteos de Weaver',surface:'router'});
-const hasRouter=station=>station?.surface==='weaver';
+const weaverViews=Object.freeze({router:{title:'Ruteos de Weaver',surface:'router'},rostro:{title:'Rostro',surface:'rostro'}});
 export function nearbyBeaconControl(objects,position){
   if(!position)return null;
   let distance=1.85,nearest=null;
@@ -60,14 +59,14 @@ async function readBeaconStatus(signal){
 }
 
 export class BeaconControls{
-  constructor(link,panel,{statusButton,statusText,routerLink,readStatus=readBeaconStatus}={}){
+  constructor(link,panel,{statusButton,statusText,routerLink,rostroLink,readStatus=readBeaconStatus}={}){
     this.link=link;this.panel=panel;
     this.statusButton=statusButton;this.statusText=statusText;this.readStatus=readStatus;
-    this.routerLink=routerLink;
-    if(routerLink)routerLink.onclick=event=>{
-      if(!hasRouter(this.current)||event.button||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+    this.weaverLinks={router:routerLink,rostro:rostroLink};
+    for(const [view,anchor] of Object.entries(this.weaverLinks))if(anchor)anchor.onclick=event=>{
+      if(this.current?.surface!=='weaver'||event.button||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
       event.preventDefault();
-      this.open({router:true});
+      this.open({view});
     };
     if(statusButton)statusButton.onclick=()=>void this.checkStatus();
     this.stage=panel.querySelector('.beacon-panel-stage');
@@ -116,17 +115,19 @@ export class BeaconControls{
     this.statusExpiry=setTimeout(()=>this.resetStatus(),STATUS_LIFETIME);
   }
 
-  open({native=false,router=false}={}){
-    if(this.opened||!this.current||(router&&(!this.routerLink||!hasRouter(this.current))))return;
+  open({native=false,view}={}){
+    if(this.opened||!this.current||(view&&(!this.weaverLinks[view]||this.current.surface!=='weaver')))return;
     this.last=this.current;
-    const {surface,title}=router?routerView:this.current;
+    const {surface,title}=view?weaverViews[view]:this.current;
     this.title.textContent=title;
-    const href=(router?this.routerLink:this.link).getAttribute('href');
+    const href=(view?this.weaverLinks[view]:this.link).getAttribute('href');
     this.external.href=href;
     const frame=this.panel.ownerDocument.createElement('iframe');
     frame.title='Panel de '+title;
     frame.allow="camera 'none'; microphone 'none'";
-    frame.src=surface?href+'&projection='+encodeURIComponent(surface):href;
+    const query=new URLSearchParams(href.split('?')[1]);
+    if(surface)query.set('projection',surface);
+    frame.src=panel+'?'+query;
     this.frameEvents?.abort();
     this.frameEvents=new AbortController();
     const {signal}=this.frameEvents;
@@ -235,7 +236,7 @@ export class BeaconControls{
     this.current=next;
     if(this.last!==next)this.last=null;
     this.link.hidden=!next;
-    if(this.routerLink)this.routerLink.hidden=!hasRouter(next);
+    for(const anchor of Object.values(this.weaverLinks))if(anchor)anchor.hidden=next?.surface!=='weaver';
     if(this.statusButton)this.statusButton.hidden=!next;
     if(!next){this.link.removeAttribute('href');return;}
     const target=new URLSearchParams({service:next.service});
