@@ -11,6 +11,7 @@ import {bindHarMoCAPPreview,preparedDownloadUrl,takeFormats} from './beacon-vide
 const panel='/harmonic_lab/';
 const nativeId='lab-worktable';
 const guitarRows={mechanism:'settings',startup:'startupStatus',support:'supportLabel'};
+const routeViewPattern=/^[a-z0-9][a-z0-9_-]{0,79}(?:\.(?:[0-9]|[12][0-9]|3[01]))?$/;
 const pendingPhases=new Set(['queued','starting']);
 const audioTrouble=Object.freeze({
   input:'La entrada de audio seleccionada no está disponible. Revisá su conexión y reintentá.',
@@ -52,7 +53,7 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
   }
   viewScene.add(parent);
   const model=new BeaconNativeModel(surface);
-  let selected,source,csrf,stream,binding,timer,latestView,lastProblem='',editProblem='',viewKey,refreshing=false;
+  let selected,source,csrf,stream,binding,timer,latestView,lastProblem='',editProblem='',viewKey,refreshing=false,voiceRoute='';
   let downloadingPreset=false;
   let presetFile,importingPreset=false;
   const outbound=createSpatialHud({parent,document,accessibilityRoot:stage,controlStyle:'optical',
@@ -61,6 +62,7 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
       if(signal.aborted||action?.surfaceId!==nativeId)return;
       if(action.name==='chooseStation'){
         selected=action.context.host;
+        voiceRoute='';
         void refresh();
       }else if(action.name==='retryStation'){
         if(stream){stream.close();stream=null;}
@@ -139,7 +141,18 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
     if(signal.aborted||!latestView)return;
     const envelope=model.action(id,kind,value);
     editProblem=model.actionConflict?'El valor cambió en otra vista. Revisá el ajuste antes de aplicarlo.':'';
-    if(envelope?.action.name==='reviewPreparedTake')preview?.review(envelope.action.context.take);
+    if(surface==='weaver'&&envelope?.action.name==='showVoiceRoute'){
+      const selection=envelope.action.context.selection;
+      if(Array.isArray(selection)&&selection.length<=1){
+        const route=selection[0];
+        if(typeof route==='string'&&routeViewPattern.test(route))openVoiceRoute(route);
+        else if(!selection.length&&envelope.action.sourceComponentId==='return_to_weaver')openVoiceRoute('');
+        else{
+          editProblem='Elegí una conexión para editar.';
+          showModel();
+        }
+      }
+    }else if(envelope?.action.name==='reviewPreparedTake')preview?.review(envelope.action.context.take);
     else if(envelope)void write(envelope);
     else showModel();
   }
@@ -440,12 +453,22 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
     update(view);
     if(syncModel&&surface==='guitar')void syncGuitar();
   }
-  function query(){
+  function openVoiceRoute(route){
+    voiceRoute=route;
+    latestView=false;
+    lastProblem='';
+    editProblem='';
+    status(route?'Abriendo conexión…':'Abriendo Weaver…');
+    connect();
+  }
+
+  function query(suffix=''){
     const params=new URLSearchParams({host:selected});
     if(binding)params.set('session',binding);
+    if(voiceRoute&&suffix==='/events')params.set('voice_route',voiceRoute);
     return '?'+params;
   }
-  function url(suffix=''){return panel+'api/a2ui/'+surface+suffix+query();}
+  function url(suffix=''){return panel+'api/a2ui/'+surface+suffix+query(suffix);}
   async function write(envelope){
     if(!source||!latestView||(surface==='router'&&envelope.action.context.sessionId!==binding))return;
     try{
@@ -454,6 +477,10 @@ export function openBeaconNative(stage,{world,station,surface,title,readStatus,f
       await response.body?.cancel().catch(()=>{});
       // The ordered instrument stream owns readback. A late action receipt
       // must not replace state this visit already received from another view.
+      if(surface==='weaver'&&response.ok&&envelope.action.name==='removeVoiceRouteTerm'){
+        const route=envelope.action.context.routeId;
+        if(typeof route==='string'&&voiceRoute===route+'.'+envelope.action.context.index)openVoiceRoute(route);
+      }
       if(surface==='operator'){
         lastProblem=response.ok?(envelope.action.name==='saveProfile'?'Configuración guardada.':'Inicio solicitado.'):
           response.status===409?'Cambió el estado del equipo. Revisalo antes de continuar.':'No se pudo confirmar la operación.';
