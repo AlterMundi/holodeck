@@ -224,11 +224,13 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
         entry.unsupported=0;entry.fall=0;
       }
       if(!standing||!glanceMotion||atTable)entry.landingAge=Infinity;
+      if(entry.landingAge<(entry.landing?.duration??0))entry.landing.captureSupport(character);
       const playLanding=()=>{
         if(!entry.landing||entry.landingAge>=entry.landing.duration)return;
         entry.landingAge+=step;
         const gaitWeight=(actor.animationWeights?.[1]??0)+(actor.animationWeights?.[2]??0);
         entry.landing.apply(entry.landingAge,landingBlendWeight(entry.landingAge,entry.landing.duration,speed,gaitWeight));
+        entry.landing.plant();
       };
       entry.absorbAge+=step;
       const previousSpeed=entry.planarSpeed;
