@@ -100,6 +100,10 @@ function doorway(out, group, width, z, height, openings, finish='chalk') {
   if (last < width/2) solid(out,group,finish,(last+width/2)/2,height/2,z,width/2-last,height,.23);
 }
 
+function closedDoor(group,out,x,z,width) {
+  solid(out,group,'cedar',x,1.18,z,width,2.36,.14);
+}
+
 function worldTable(out, group) {
   const center=6.5;
   solid(out,group,'oak',0,.49,center,3.75,.98,2.85);
@@ -114,14 +118,23 @@ function worldTable(out, group) {
   }
 }
 
-function floorPavers(group, width, start, end) {
+function floorPavers(group, width, start, end, bounds) {
   const rows = Math.ceil((end-start)/1.18);
   const cols = Math.ceil(width/1.18);
   const d = (end-start)/rows, w = width/cols;
   for (let row=0;row<rows;row++) {
     for (let col=0;col<cols;col++) {
       const finish = ['limestone','chalk','trim'][(row*31+col*7+row*col)%3];
-      box(group,finish,(col+.5)*w-width/2,.002,start+(row+.5)*d,w-.021,.039,d-.019);
+      if (!bounds) {
+        box(group,finish,(col+.5)*w-width/2,.002,start+(row+.5)*d,w-.021,.039,d-.019);
+        continue;
+      }
+      const left=Math.max(col*w-width/2+.0105,bounds[0]);
+      const right=Math.min((col+1)*w-width/2-.0105,bounds[1]);
+      const back=Math.max(start+row*d+.0095,bounds[2]);
+      const front=Math.min(start+(row+1)*d-.0095,bounds[3]);
+      if (right>left && front>back)
+        box(group,finish,(left+right)/2,.002,(back+front)/2,right-left,.039,front-back);
     }
   }
 }
@@ -173,10 +186,11 @@ function statue(group, out, icon) {
   }
 }
 
-function workstations(group, out, rooms) {
+function workstations(group, out, rooms, furnitureOnly=false) {
   for (const {id,x} of rooms) {
     solid(out,group,'oak',x,.41,-3.58,1.53,.82,.62);
     box(group,'warmWood',x,.85,-3.58,1.71,.12,.73);
+    if (furnitureOnly) continue;
     if (id==='printing') {
       box(group,'slate',x,.96,-3.57,.72,.12,.44);
       for (const sx of [-.31,.31]) box(group,'oak',x+sx,1.26,-3.57,.085,.55,.42);
@@ -193,29 +207,35 @@ function workstations(group, out, rooms) {
   }
 }
 
-function temple(parent, out, plan) {
+function temple(parent, out, plan, exterior=false) {
   const group=new T.Group(), rooms=roomCenters(plan);
   group.name=plan.id;
   group.position.set(plan.origin[0],0,plan.origin[1]);
   group.rotation.y=plan.turn;
   parent.add(group);
   const width=rooms.length===3 ? 9 : 8.4, edge=width/2;
-  floorPavers(group,width,-4.38,4.68);
+  if (!exterior) floorPavers(group,width,-4.38,4.68);
   doorway(out,group,width,pavilionDoor,3.19,[0]);
-  doorway(out,group,width,roomPartition,3.12,rooms.map(room=>room.x),'plaster');
+  if (!exterior) doorway(out,group,width,roomPartition,3.12,rooms.map(room=>room.x),'plaster');
   solid(out,group,'chalk',0,1.57,-4.29,width,3.14,.21);
   for (const side of [-1,1]) {
     solid(out,group,'chalk',side*edge,1.57,-.21,.22,3.14,8.38);
     for (const x of [1.47,edge-.53]) pillar(out,group,side*x,4.66,3.15,.19);
   }
-  for (let i=1;i<rooms.length;i++)
-    solid(out,group,'plaster',-edge+width*i/rooms.length,1.56,-2.5,.17,3.12,3.45);
+  if (!exterior) {
+    for (let i=1;i<rooms.length;i++)
+      solid(out,group,'plaster',-edge+width*i/rooms.length,1.56,-2.5,.17,3.12,3.45);
+  }
   box(group,'trim',0,3.21,.12,width+.55,.19,9.57);
   box(group,'foundation',0,3.34,.12,width+.65,.1,9.64);
   gabledRoof(group,edge+.37,4.88,3.4,1.22,plan.roof);
   for (const x of [-.98,.98]) {
     box(group,'oak',x,1.84,3.953,.105,.26,.12);
     box(group,'amber',x,1.95,4,.127,.127,.103);
+  }
+  if (exterior) {
+    closedDoor(group,out,0,pavilionDoor,1.46);
+    return;
   }
   for (const side of [-1,1]) {
     box(group,'foundation',side*(edge-.14),.215,1.55,.12,.41,4.2);
@@ -267,12 +287,15 @@ function plantingClear(x,z,radius) {
   });
 }
 
-function garden(group) {
+function gardenPaths(group) {
   box(group,'lawn',0,-.165,-6,51,.3,54);
   path(group,gardenArc,1.86);
   path(group,[[0,1],[0,-3],[0,-8],[0,-13],[0,-16.5],[0,-18.13]],2.05);
   path(group,[gardenArc[0],place(pavilions[0],0,pavilionDoor-.23)],1.85);
   path(group,[gardenArc.at(-1),place(pavilions[2],0,pavilionDoor-.23)],1.85);
+}
+
+function gardenPlanting(group) {
   for (let i=0;i<21;i++) {
     const angle=.08+i*.151, radius=18.4+(i%4)*.62;
     const x=Math.cos(angle)*radius,z=-Math.sin(angle)*radius-3.72;
@@ -298,6 +321,20 @@ function garden(group) {
   for (let i=0;i<34;i++) {
     const x=Math.sin(i*2.12)*(21+i%4),z=-29-Math.sin(i)*4;
     if (plantingClear(x,z,2.25)) tree(group,x,z,1.26+(i%4)*.3,i+7);
+  }
+}
+
+function loggias(group, obstacles) {
+  for (const x of [-7.1,7.1]) {
+    const loggia=new T.Group();
+    loggia.position.set(x,0,-19.9);
+    loggia.rotation.y=x<0?.36:-.36;
+    group.add(loggia);
+    box(loggia,'foundation',0,.025,0,3.23,.05,2.88);
+    for (const px of [-1.33,1.33]) for (const z of [-1.04,1.04])
+      pillar(obstacles,loggia,px,z,2.62,.14);
+    box(loggia,'trim',0,2.62,0,3.31,.13,2.83);
+    gabledRoof(loggia,1.68,1.43,2.71,.63);
   }
 }
 
@@ -337,23 +374,71 @@ export function makeScene(stage) {
   group.name=stage==='approach' ? 'Linterna approach' : 'Linterna precinct';
   if (stage==='approach') porch(group,obstacles);
   else {
-    garden(group);
+    gardenPaths(group);
+    gardenPlanting(group);
     mainTemple(group,obstacles);
     pavilions.forEach(pavilion=>temple(group,obstacles,pavilion));
-    for(const x of [-7.1,7.1]) {
-      const loggia=new T.Group();
-      loggia.position.set(x,0,-19.9);
-      loggia.rotation.y=x<0?.36:-.36;
-      group.add(loggia);
-      box(loggia,'foundation',0,.025,0,3.23,.05,2.88);
-      for(const px of [-1.33,1.33]) for(const z of [-1.04,1.04])
-        pillar(obstacles,loggia,px,z,2.62,.14);
-      box(loggia,'trim',0,2.62,0,3.31,.13,2.83);
-      gabledRoof(loggia,1.68,1.43,2.71,.63);
-    }
+    loggias(group,obstacles);
   }
   group.updateMatrixWorld(true);
   return {group,obstacles};
+}
+
+export function makeHefestoSliceScenes() {
+  const hefesto=pavilions.find(pavilion=>pavilion.id==='hephaestus');
+  const rooms=roomCenters(hefesto);
+  const roomWidth=rooms[1].x-rooms[0].x;
+  const width=roomWidth*rooms.length, edge=width/2;
+  const cells=[];
+  function layer(cell, name, origin, build) {
+    const group=new T.Group(), obstacles=[];
+    group.name=name;
+    build(group,obstacles);
+    group.position.set(-origin[0],0,-origin[1]);
+    group.updateMatrixWorld(true);
+    cells.push({cell,name,group,obstacles});
+  }
+  layer('arrival','hall',[0,0],mainTemple);
+  layer('arrival','garden-paths',[0,0],gardenPaths);
+  layer('arrival','garden-planting',[0,0],gardenPlanting);
+  layer('arrival','pavilion-exteriors',[0,0],(group,out)=>{
+    pavilions.forEach(pavilion=>temple(group,out,pavilion,true));
+    loggias(group,out);
+  });
+  layer('hefesto','foyer',[0,0],(group,out)=>{
+    floorPavers(group,width,-4.38,4.68,[-edge,edge,roomPartition,pavilionDoor+.82]);
+    doorway(out,group,width,pavilionDoor,3.19,[0]);
+    doorway(out,group,width,roomPartition,3.12,rooms.map(room=>room.x),'plaster');
+    closedDoor(group,out,0,pavilionDoor,1.46);
+    for (const room of rooms) closedDoor(group,out,room.x,roomPartition,1.46);
+    for (const side of [-1,1])
+      solid(out,group,'chalk',side*edge,1.57,(roomPartition+pavilionDoor)/2,
+        .22,3.14,pavilionDoor-roomPartition);
+    const roof=new T.Group();
+    roof.position.z=1.55;
+    group.add(roof);
+    gabledRoof(roof,edge+.37,2.52,3.4,1.22,hefesto.roof);
+    statue(group,out,hefesto.icon);
+  });
+  for (const room of rooms) {
+    layer(room.id,room.id,[room.x,-1.58],(group,out)=>{
+      const half=roomWidth/2;
+      floorPavers(group,width,-4.38,4.68,[room.x-half,room.x+half,-4.38,roomPartition]);
+      const local=new T.Group();
+      local.position.x=room.x;
+      group.add(local);
+      doorway(out,local,roomWidth,roomPartition,3.12,[0],'plaster');
+      closedDoor(local,out,0,roomPartition,1.46);
+      solid(out,local,'chalk',0,1.57,-4.29,roomWidth,3.14,.21);
+      for (const side of [-1,1])
+        solid(out,local,'chalk',side*half,1.57,(-4.29+roomPartition)/2,.17,3.14,3.59);
+      box(local,'plaster',0,3.24,-2.5,roomWidth,.18,3.59);
+      // The projected worktable supplies the actual Claymon. The printing room
+      // keeps its own stand-in fixture from the design study.
+      workstations(local,out,[{id:room.id,x:0}],room.id==='atelier');
+    });
+  }
+  return cells;
 }
 
 // World space clearance for the local camera. Top lintels and floor are

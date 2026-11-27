@@ -47,3 +47,28 @@ workbench binding in their existing authorized receiving paths.
 Recheck the actual deployed East 1 entrance and predecessor layout before
 selecting this art. Preserve the previous layout, original place IDs and
 existing authorized data while qualifying the new room and return paths.
+
+### Hefesto first slice
+
+```sh
+node art/linterna/precinct/hefesto-slice.mjs OUTPUT_DIR
+```
+
+The offline build emits room-local GLBs and a digest manifest for the common
+hall and garden, Hefesto's foyer, Claymon's Atelier room and the separate
+AnyPrinter room. Four bounded art pieces share the arrival cell. The other
+temples appear there as exterior shells. The generator checks room-local
+floors, solid walls and reciprocal landing clearance. It reopens each GLB
+and measures the Atelier wood surface at local XZ `(0, -2)`, top Y `0.91`
+and yaw `0°`. The actual projected model comes from the existing Atelier
+workspace. Its location and authorization are receiving selections.
+
+Passage thresholds and cell origins use precinct XZ metres. Each landing
+uses its own cell's XZ and floor surface height. Yaw is in degrees about +Y
+and describes the landing view, facing into the destination cell. The
+table's suggested 1.1 m interaction radius leaves the arrival stand outside
+table range in this compact room. Runtime profile and browser verification
+are required before selecting this value. Bind logical cells to approved
+room IDs through a revision-checked owning migration. Bind each asset part
+through the existing room authorization and test departure, re-entry and
+access revocation. The exporter writes no runtime state.
