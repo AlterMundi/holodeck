@@ -1163,7 +1163,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     }
     const avatarPracticals=bindAvatarPracticals(renderer.mmlCompositionScene.group,options.coreCameraManager.collisionsManager);
     const companion=new CompanionAvatar({scene:renderer.mmlCompositionScene.group,document,base});
-    const flightWake=new FlightWake(renderer.mmlCompositionScene.group);
+    const flightWake=new FlightWake(renderer.mmlCompositionScene.group,{base});
     boostKick=flightWake;
     const waterSplash=new WaterSplash(renderer.mmlCompositionScene.group,{
       lightweight:()=>rendererBudget.lightweight,pixelRatio:()=>renderer.composer.renderer.getPixelRatio(),

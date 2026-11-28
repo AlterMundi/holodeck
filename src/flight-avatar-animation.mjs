@@ -1,3 +1,4 @@
+import {FootfallDetector} from './footfall.mjs';
 import {Euler,Quaternion,Vector3} from 'three';
 import {matterAvatarScale} from './matter-flight.mjs';
 import {TabletopGlance} from './tabletop-attention.mjs';
@@ -267,6 +268,15 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
           }
         }else entry.washCarry=0;
       }else entry.washCarry=0;
+      // Steps on the ground lift what they land on: dust, grass, a faint
+      // breath on stone, rings in shallow water. Read from the feet's contact.
+      if(sample&&grounded===true&&!explicitFlight&&continuous&&!atTable&&glanceMotion&&wake?.footfall){
+        entry.footfalls??=new FootfallDetector(mesh);
+        const planted=entry.footfalls.sample(position,up,1,step);
+        if(speed>.8)for(const foot of planted)
+          wake?.footfall?.(washPoint.copy(foot),up,washDirection.copy(displacement).normalize(),
+            clamp((speed-1)/7.5,.25,1),sample,splash);
+      }else entry.footfalls?.reset();
       const draft=sample?sample.waterLevel-sample.feet:-Infinity;
 
       if(!outdoor||underwater)entry.observedFlight=false;
