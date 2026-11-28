@@ -118,7 +118,8 @@ test('flight exit holds a descent until contact, then gives the feet back to the
   const character={position:new Vector3(1800,498,11)};
   const state={characters:new Map([[1,character]]),localCharacterId:1};
   const manager={loadedCharacters:new Map([[1,{character:root}]]),update(){}};
-  const controls={outdoor:true,grounded:true,flying:false};
+  // Exact mixer handoff; terrain foot placement is covered in foot-placement.test.mjs.
+  const controls={outdoor:true,grounded:true,flying:false,footPlacement:false};
   const release=bindFlightAvatarAnimation(manager,()=>controls);
   assert.equal(bindFlightAvatarAnimation(manager,()=>controls),release);
   const leg=mesh.getObjectByName('calf_l'),arm=mesh.getObjectByName('upperarm_l');
