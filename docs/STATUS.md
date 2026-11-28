@@ -1,5 +1,31 @@
 # Current MVP work
 
+## Reactive meadow and ordinary flight wake · 2026-11-28
+
+Char Design's `c3140b5` is integrated in candidate `4e223ee`, archive
+`2b5c1d125740`. The candidate bounds distant clumps to 72 m and 0.32 per
+square metre, removes imperceptible distant wind, and keeps near bending and
+shadow coordinates together. The active protected release stays `952e5c7121b1`.
+
+RTX 2060 and Raspberry Pi 5 ran the same daytime meadow pose and camera with a
+528 × 330 drawing buffer. Three 2.5 s windows per arm gave these settled
+medians. Lightweight graphics had no distant grass in either build.
+
+| Device and mode | Base FPS | Candidate FPS | Base p95 | Candidate p95 |
+| --- | ---: | ---: | ---: | ---: |
+| RTX 2060, normal | 16.62 | 17.08 | 100 ms | 100 ms |
+| Pi 5, normal | 10.54 | 9.26 | 133 ms | 150 ms |
+| Pi 5, lightweight | 25.95 | 25.37 | 50 ms | 50 ms |
+
+On the RTX, browser movement exercised the actual grass push uniforms and
+recorded cruise particles near the local avatar while flying without boost.
+Captured distant clumps read as green vegetation. On the Pi, toggling only
+far meshes in the exact candidate gave alternating 9.23, 9.00, 8.94, and
+9.79 FPS. The far draw alone did not explain the normal-mode difference.
+Activation remains pending because the Pi's already-low normal-mode frame
+rate fell further. Node tests: 573 passed, two skipped.
+
+
 ## Owner layout revisions and stable fireflies · 2026-11-28
 
 Protected release `952e5c7121b1` selects `f7126a0` and retains
