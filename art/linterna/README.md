@@ -27,8 +27,10 @@ has its own door. A temple with a single app still has its vestibule, statue
 and separate app door. The reciprocal path goes back through the vestibule.
 A modal or a station inside an app room belongs to that room.
 
-The temples in Casa Linterna's inner garden form a semicircle. Treat future
-temples as peer pavilions on that arc and survey them against the retained
-temples. The Nix design demonstrates the one-app case with the WANDA observatory.
-Its temple, vestibule and room-local app anchors are documented in
+The temples in Casa Linterna's inner garden are peer pavilions on a semicircle.
+Center each entrance axis in an equal sector of the arc and face it toward the
+garden center, with a common entrance radius and comparable temple envelopes.
+In the four-temple study, the entrance axes are 45° apart. The Nix design
+demonstrates the one-app case with the WANDA observatory. Its temple,
+vestibule and room-local app anchors are documented in
 [nix/README.md](nix/README.md).

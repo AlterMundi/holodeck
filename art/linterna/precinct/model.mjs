@@ -416,6 +416,16 @@ function workstations(group, out, rooms) {
   }
 }
 
+export function addPavilionColumns(group, out, width, side) {
+  for (const x of [1.47,width/2-.53]) pillar(out,group,side*x,4.66,3.15,.19);
+}
+
+export function addPavilionRoof(group, width, finish) {
+  box(group,'trim',0,3.21,.12,width+.55,.19,9.57);
+  box(group,'foundation',0,3.34,.12,width+.65,.1,9.64);
+  gabledRoof(group,width/2+.37,4.88,3.4,1.22,finish);
+}
+
 function temple(parent, out, plan, exterior=false) {
   const group=new T.Group(), rooms=roomCenters(plan);
   group.name=plan.id;
@@ -431,15 +441,13 @@ function temple(parent, out, plan, exterior=false) {
   solid(out,group,'chalk',0,1.57,-4.29,width,3.14,.21);
   for (const side of [-1,1]) {
     solid(out,group,'chalk',side*edge,1.57,-.21,.22,3.14,8.38);
-    for (const x of [1.47,edge-.53]) pillar(out,group,side*x,4.66,3.15,.19);
+    addPavilionColumns(group,out,width,side);
   }
   if (!exterior) {
     for (let i=1;i<rooms.length;i++)
       solid(out,group,'plaster',-edge+width*i/rooms.length,1.56,-2.5,.17,3.12,3.45);
   }
-  box(group,'trim',0,3.21,.12,width+.55,.19,9.57);
-  box(group,'foundation',0,3.34,.12,width+.65,.1,9.64);
-  gabledRoof(group,edge+.37,4.88,3.4,1.22,plan.roof);
+  addPavilionRoof(group,width,plan.roof);
   for (const x of [-.98,.98]) {
     box(group,'oak',x,1.84,3.953,.105,.26,.12);
     box(group,'amber',x,1.95,4,.127,.127,.103);
@@ -491,9 +499,9 @@ function tree(group,x,z,size,index) {
   }
 }
 
-function plantingClear(x,z,radius) {
+function plantingClear(x,z,radius,buildings) {
   if (z>hall.columns-radius && z<hall.entrance+radius && Math.abs(x)<hall.halfWidth+radius) return false;
-  return !pavilions.some(pavilion=>{
+  return !buildings.some(pavilion=>{
     const dx=x-pavilion.origin[0],dz=z-pavilion.origin[1];
     const sine=Math.sin(pavilion.turn),cosine=Math.cos(pavilion.turn);
     const localX=dx*cosine-dz*sine,localZ=dx*sine+dz*cosine;
@@ -501,15 +509,19 @@ function plantingClear(x,z,radius) {
   });
 }
 
-function gardenPaths(group) {
+function gardenPaths(group, paths) {
   box(group,'lawn',0,-.165,-6,51,.3,54);
+  if (paths) {
+    for (const {points,width} of paths) path(group,points,width);
+    return;
+  }
   path(group,gardenArc,1.86);
   path(group,[[0,1],[0,-3],[0,-8],[0,-13],[0,-16.5],[0,-18.13]],2.05);
   path(group,[gardenArc[0],place(pavilions[0],0,pavilionDoor-.23)],1.85);
   path(group,[gardenArc.at(-1),place(pavilions[2],0,pavilionDoor-.23)],1.85);
 }
 
-function gardenPlanting(group, acceptPlant) {
+function gardenPlanting(group, acceptPlant, buildings=pavilions) {
   function plant(build, x, z, size, index) {
     if (!acceptPlant) {
       build(group,x,z,size,index);
@@ -523,8 +535,8 @@ function gardenPlanting(group, acceptPlant) {
   for (let i=0;i<21;i++) {
     const angle=.08+i*.151, radius=18.4+(i%4)*.62;
     const x=Math.cos(angle)*radius,z=-Math.sin(angle)*radius-3.72;
-    if (plantingClear(x,z,1.45)) plant(shrubs,x,z,.66+(i%5)*.12,i);
-    if (i%2===0 && plantingClear(x*1.18,z-1.05,2.06)) plant(tree,x*1.18,z-1.05,1.40+(i%4)*.24,i);
+    if (plantingClear(x,z,1.45,buildings)) plant(shrubs,x,z,.66+(i%5)*.12,i);
+    if (i%2===0 && plantingClear(x*1.18,z-1.05,2.06,buildings)) plant(tree,x*1.18,z-1.05,1.40+(i%4)*.24,i);
   }
   for (const side of [-1,1]) {
     for (const [x,z] of [[2.35,-1.4],[3.42,-4.1],[1.72,-5.8],[1.88,-8.2],[1.69,-12.1]]) {
@@ -539,7 +551,7 @@ function gardenPlanting(group, acceptPlant) {
     const edges=[[4.42,-1.75,.50],[4.15,-3.35,.67],[5.62,-4.8,.60],[6.5,-10.17,.79],
       [4.94,-11.75,.55],[3.81,-13.05,.75],[9.81,-5.57,.51],[10.77,-5.8,.69]];
     edges.forEach(([x,z,size],i)=>{
-      if (plantingClear(side*x,z,size*1.46)) plant(shrubs,side*x,z,size,i);
+      if (plantingClear(side*x,z,size*1.46,buildings)) plant(shrubs,side*x,z,size,i);
     });
     for (let i=0;i<10;i++) {
       const x=side*(i%2===0 ? 5.8+i*.54 : 6.98+i*.5);
@@ -548,17 +560,17 @@ function gardenPlanting(group, acceptPlant) {
     }
     for (let i=0;i<8;i++) {
       const x=side*(15+i%3*2.4),z=2.9-i*4.88;
-      if (plantingClear(x,z,2.12)) plant(tree,x,z,1.38+i%3*.39,i);
+      if (plantingClear(x,z,2.12,buildings)) plant(tree,x,z,1.38+i%3*.39,i);
     }
   }
   for (let i=0;i<34;i++) {
     const x=Math.sin(i*2.12)*(21+i%4),z=-29-Math.sin(i)*4;
-    if (plantingClear(x,z,2.25)) plant(tree,x,z,1.26+(i%4)*.3,i+7);
+    if (plantingClear(x,z,2.25,buildings)) plant(tree,x,z,1.26+(i%4)*.3,i+7);
   }
 }
 
-function loggias(group, obstacles, {omitWestLoggia=false}={}) {
-  for (const x of omitWestLoggia ? [7.1] : [-7.1,7.1]) {
+function loggias(group, obstacles) {
+  for (const x of [-7.1,7.1]) {
     const loggia=new T.Group();
     loggia.position.set(x,0,-19.9);
     loggia.rotation.y=x<0?.36:-.36;
@@ -637,11 +649,14 @@ export function makeScene(stage, options) {
   group.name=stage==='approach' ? 'Linterna approach' : 'Linterna precinct';
   if (stage==='approach') porch(group,obstacles);
   else {
-    gardenPaths(group);
-    gardenPlanting(group,options?.acceptPlant);
+    const layout=options?.layout;
+    gardenPaths(group,layout?.paths);
+    gardenPlanting(group,options?.acceptPlant,layout?.pavilions);
     mainTemple(group,obstacles);
-    pavilions.forEach(pavilion=>temple(group,obstacles,pavilion));
-    loggias(group,obstacles,options);
+    for (const pavilion of layout?.pavilions ?? pavilions) {
+      if (!pavilion.externalModel) temple(group,obstacles,pavilion);
+    }
+    if (!layout) loggias(group,obstacles);
   }
   group.updateMatrixWorld(true);
   return {group,obstacles};
@@ -658,8 +673,8 @@ export function makeHefestoSliceScenes({allTemples=false}={}) {
     cells.push({cell,name,group,obstacles});
   }
   layer('arrival','hall',[0,0],mainTemple);
-  layer('arrival','garden-paths',[0,0],gardenPaths);
-  layer('arrival','garden-planting',[0,0],gardenPlanting);
+  layer('arrival','garden-paths',[0,0],group=>gardenPaths(group));
+  layer('arrival','garden-planting',[0,0],group=>gardenPlanting(group));
   layer('arrival','pavilion-exteriors',[0,0],(group,out)=>{
     pavilions.forEach(pavilion=>temple(group,out,pavilion,true));
     loggias(group,out);

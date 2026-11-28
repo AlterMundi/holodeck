@@ -1,19 +1,23 @@
 import * as T from 'three';
 
+import { addPavilionColumns, addPavilionRoof } from '../precinct/model.mjs';
+import { pavilionDoor } from '../precinct/plan.mjs';
+import { gardenPlan } from './garden-plan.mjs';
+
+const { width, roof } = gardenPlan.nix;
+const rear = -4.29;
+const front = pavilionDoor;
+const doorX = .92;
+const statue = [-1.85,0,-1.58];
+
 export const foyerPlan = {
-  width: 4.76,
-  depth: 5.14,
-  front: 2.49,
-  rear: -2.49,
-  doorX: .69,
+  width, front, rear, doorX, statue,
   entrances: {garden:1.72, observatory:1.80},
-  height: 3.15,
-  statue: [-1.14,0,-.88],
   anchors: {
-    'nix.foyer.entry': {at:[0,0,2.49],facing:[0,0,-1],from:'garden'},
-    'nix.foyer.return': {at:[0,0,2.49],facing:[0,0,1],to:'garden'},
-    'nix.foyer.statue': {at:[-1.14,0,-.88],represents:'Nix'},
-    'nix.foyer.wanda-door': {at:[.69,0,-2.49],facing:[0,0,-1],to:'nix.entry',site:'WANDA'},
+    'nix.foyer.entry': {at:[0,0,front],facing:[0,0,-1],from:'garden'},
+    'nix.foyer.return': {at:[0,0,front],facing:[0,0,1],to:'garden'},
+    'nix.foyer.statue': {at:statue,represents:'Nix'},
+    'nix.foyer.wanda-door': {at:[doorX,0,rear],facing:[0,0,-1],to:'nix.entry',site:'WANDA'},
   },
 };
 
@@ -40,7 +44,7 @@ export function textPanel(text, width, height, {foreground='#fff0d2', background
 }
 
 export function makeFoyer() {
-  const group=new T.Group();
+  const group=new T.Group(), obstacles=[];
   group.name='Templo de Nix / Vestíbulo';
   group.userData={units:'metres',up:'+Y',review:'design-only'};
   const stone=material('#b9a98e');
@@ -81,65 +85,68 @@ export function makeFoyer() {
     group.add(face);
     return face;
   };
-  box('Dressed limestone floor',[4.89,.12,5.22],[0,-.06,0],stone);
-  for (let row=0;row<5;row++) for (let col=0;col<5;col++) {
-    box('Vestibule limestone tile',[.932,.027,1.009],[-1.89+col*.945,-.013,-2.04+row*1.02],(row+col)%2?stone:plaster);
+  const half=width/2, depth=front-rear;
+  const floorFront=4.82, floorRear=rear-.16;
+  const floorDepth=floorFront-floorRear, wallZ=(front+rear)/2;
+  box('Dressed limestone floor',[width,.12,floorDepth],[0,-.062,(floorFront+floorRear)/2],stone);
+  const count=Math.round(width);
+  for(let row=0;row<9;row++) for(let col=0;col<count;col++){
+    box('Vestibule limestone tile',[width/count-.017,.027,floorDepth/9-.017],
+      [(col+.5)*width/count-half,-.013,floorRear+(row+.5)*floorDepth/9],(row+col)%2?stone:plaster);
   }
   for(const side of [-1,1]){
-    const x=side*2.31;
-    box('Limewash side wall',[.15,3.15,5.14],[x,1.575,0],plaster);
-    box('Sage dado',[.038,.52,4.79],[side*2.217,.26,0],sage);
-    box('Walnut cap',[.055,.09,4.79],[side*2.201,.56,0],cedar);
-    for (const z of [-1.74,.62]) box('Engaged stone pilaster',[.055,2.99,.21],[side*2.213,1.5,z],stone);
+    const x=side*half;
+    box('Limewash side wall',[.22,3.15,depth],[x,1.575,wallZ],plaster);
+    box('Sage dado',[.038,.52,depth-.24],[side*(half-.127),.26,wallZ],sage);
+    box('Walnut cap',[.055,.09,depth-.24],[side*(half-.144),.56,wallZ],cedar);
+    for(const z of [-2.65,-.32,2.15])
+      box('Engaged stone pilaster',[.055,2.99,.21],[side*(half-.16),1.5,z],stone);
+    addPavilionColumns(group,obstacles,width,side);
   }
-  function wallWithDoor(z,cx,width,finish){
-    for(const [a,b] of [[-2.38,cx-width/2],[cx+width/2,2.38]]){
+  function wallWithDoor(z,cx,opening,finish){
+    for(const [a,b] of [[-half,cx-opening/2],[cx+opening/2,half]]){
       box('Door wall pier',[b-a,3.15,.19],[(a+b)/2,1.575,z],finish);
     }
-    box('Door lintel infill',[width,.73,.19],[cx,2.785,z],finish);
+    box('Door lintel infill',[opening,.73,.19],[cx,2.785,z],finish);
     for(const side of [-1,1])
-      box('Dressed door jamb',[.15,2.46,.29],[cx+side*(width/2+.079),1.23,z],stone);
-    box('Dressed lintel',[width+.32,.16,.31],[cx,2.49,z],stone);
-    box('Flush brass threshold',[width,.018,.34],[cx,.005,z],brass);
+      box('Dressed door jamb',[.15,2.46,.29],[cx+side*(opening/2+.079),1.23,z],stone);
+    box('Dressed lintel',[opening+.32,.16,.31],[cx,2.49,z],stone);
+    box('Flush brass threshold',[opening,.018,.34],[cx,.005,z],brass);
   }
-  wallWithDoor(foyerPlan.front,0,foyerPlan.entrances.garden,plaster);
-  wallWithDoor(foyerPlan.rear,foyerPlan.doorX,foyerPlan.entrances.observatory,mural);
-  box('Recess behind WANDA door',[1.79,2.41,.10],[foyerPlan.doorX,1.215,-2.59],chair);
-  const doorFace=box('WANDA door leaf',[1.68,2.31,.06],[foyerPlan.doorX,1.18,-2.53],cedar);
-  box('WANDA door recessed slate panel',[1.25,1.95,.045],[foyerPlan.doorX,1.19,-2.481],mural);
-  box('WANDA door pull',[.032,.24,.09],[1.27,1.09,-2.43],brass);
-  plaque('WANDA · OBSERVATORIO',1.78,.235,[foyerPlan.doorX,2.75,-2.324]);
+  wallWithDoor(front,0,foyerPlan.entrances.garden,plaster);
+  wallWithDoor(rear,doorX,foyerPlan.entrances.observatory,mural);
+  box('Recess behind WANDA door',[1.79,2.41,.10],[doorX,1.215,rear-.10],chair);
+  const doorFace=box('WANDA door leaf',[1.68,2.31,.06],[doorX,1.18,rear-.04],cedar);
+  box('WANDA door recessed slate panel',[1.25,1.95,.045],[doorX,1.19,rear+.009],mural);
+  box('WANDA door pull',[.032,.24,.09],[doorX+.58,1.09,rear+.06],brass);
+  plaque('WANDA · OBSERVATORIO',1.78,.235,[doorX,2.75,rear+.166]);
 
-  box('Low cedar coffer',[4.79,.151,5.11],[0,3.14,0],cedar);
-  for(const z of [-1.9,-1.0,-.1,.8,1.7])
-    box('Coffer beam',[4.62,.155,.111],[0,3.011,z],sage);
-  box('Temple platform',[4.74,.08,.77],[0,-.04,2.85],stone);
-  for(const x of [-1.77,1.77]){
-    box('Portico base',[.55,.24,.53],[x,.12,2.91],stone);
-    cylinder('Portico fluted stone shaft',.123,.17,2.42,[x,1.43,2.91],plaster);
-    box('Portico capital',[.43,.19,.41],[x,2.68,2.91],stone);
-  }
-  box('Portico architrave',[4.87,.20,.41],[0,2.91,2.84],plaster);
-  const gable=new T.Shape();
-  gable.moveTo(-2.46,0);gable.lineTo(0,.87);gable.lineTo(2.46,0);gable.closePath();
-  add('Sage gable',new T.ExtrudeGeometry(gable,{depth:5.79,bevelEnabled:false}),sage,[0,3.23,-2.57]);
+  box('Cedar coffer',[width-.15,.151,depth+.12],[0,3.17,wallZ],cedar);
+  for(let z=rear+.45;z<front;z+=.89)
+    box('Coffer beam',[width-.27,.155,.111],[0,3.011,z],sage);
+  for(let x=-half+.58;x<half-.20;x+=.96)
+    box('Coffer rib',[.115,.13,depth-.13],[x,3.025,wallZ],cedar);
+  addPavilionRoof(group,width,roof);
+
   const frontLights=[];
   for(const side of [-1,1]){
-    const lightX=side*1.15;
-    box('Amber facade lantern',[.14,.18,.115],[lightX,1.94,2.653],glow);
-    box('Facade lantern bronze cap',[.18,.034,.153],[lightX,2.052,2.668],brass);
-    frontLights.push({at:[lightX,1.85,2.99],color:'#ffce8d',intensity:5.5,range:4.0});
-    const trim=box('Cedar verge',[2.64,.096,.18],[side*1.22,3.63,3.245],cedar);
-    trim.rotation.z=side*-.34;
+    const lightX=side*1.13;
+    box('Amber facade lantern',[.14,.18,.115],[lightX,1.94,front+.165],glow);
+    box('Facade lantern bronze cap',[.18,.034,.153],[lightX,2.052,front+.18],brass);
+    frontLights.push({at:[lightX,1.85,front+.50],color:'#ffce8d',intensity:5.5,range:4.0});
   }
-  plaque('TEMPLO DE NIX',1.46,.22,[0,3.19,3.08]);
+  plaque('TEMPLO DE NIX',1.50,.229,[0,3.21,4.948]);
+  plaque('NIX · LA NOCHE',1.55,.23,[statue[0],1.68,rear+.13]);
   const star=new T.Shape();
   for(let i=0;i<16;i++){
     const angle=Math.PI/2+i*Math.PI/8, radius=i%2?.085:.241;
     star[i?'lineTo':'moveTo'](radius*Math.cos(angle),radius*Math.sin(angle));
   }
   star.closePath();
-  add('Eight-point night medallion',new T.ShapeGeometry(star),frost,[0,3.635,3.23]);
+  add('Eight-point night medallion',new T.ShapeGeometry(star),frost,[0,3.895,4.905]).scale.setScalar(1.22);
+  for(const [x,y,scale] of [[-3.12,2.24,.16],[-2.48,2.49,.22],[-1.79,2.33,.28],[-1.04,2.51,.16],[-.49,2.21,.20]]){
+    add('Gilt night frieze star',new T.ShapeGeometry(star),brass,[x,y,rear+.105]).scale.setScalar(scale);
+  }
 
   const figure=new T.Group();
   figure.name='Statue of Nix';
@@ -176,10 +183,10 @@ export function makeFoyer() {
   name.position.set(0,.348,.354);
   figure.add(name);
   const rim=new T.PointLight('#ffd4a1',9,3.5,2);
-  rim.position.set(-1.35,2.55,.23);
+  rim.position.set(statue[0]-.25,2.67,statue[2]+1.12);
   group.add(rim);
   const house=new T.PointLight('#a8bffe',5.5,3.5,2);
-  house.position.set(1.05,2.84,-1.93);
+  house.position.set(doorX+.22,2.84,rear+.57);
   group.add(house);
   for(const [id,data] of Object.entries(foyerPlan.anchors)){
     const marker=new T.Group();
@@ -188,7 +195,7 @@ export function makeFoyer() {
     marker.userData={anchorId:id,...data};
     group.add(marker);
   }
-  return {group,figure,doorFace,doorHits:group.children.filter(obj=>
+  return {group,figure,obstacles,doorFace,doorHits:group.children.filter(obj=>
     ['WANDA door leaf','WANDA door recessed slate panel','WANDA door pull'].includes(obj.name)),
     frontLights};
 }

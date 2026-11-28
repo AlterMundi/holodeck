@@ -132,11 +132,18 @@ try {
   assert.equal(garden.targets.length,4);
   assert.ok(garden.counts.gardenWalk>500 && garden.counts.innerWalk>60);
   assert.ok(garden.separateDoor);
+  assert.deepEqual(garden.temples.map(temple=>temple.id),['athena','nix','hephaestus','apollo']);
+  assert.deepEqual(garden.temples.map(temple=>Math.round(temple.angleDeg*2)/2),[-67.5,-22.5,22.5,67.5]);
+  assert.ok(garden.spacings.every(step=>Math.abs(step.degrees-45)<1e-8));
+  assert.equal(garden.temples[1].facadeWidthM,Math.max(...garden.temples.map(temple=>temple.facadeWidthM)));
+  assert.equal(Object.keys(garden.roofGapProjectionM).length,6);
   assert.ok(Math.min(...Object.values(garden.roofGapProjectionM))>=.10);
   const walk = page.locator('#context-walk');
   const wanda = page.locator('#wanda-door');
   assert.equal(await wanda.isVisible(),false);
   assert.equal(await page.locator('#open-eye').isVisible(),false);
+  await page.getByRole('button',{name:'Ver los cuatro templos'}).click();
+  assert.equal(await page.locator('body').getAttribute('data-view'),'semicirculo');
   await walk.click();
   await page.waitForSelector('body[data-journey=vestibulo]',{timeout:35000});
   assert.equal(await page.locator('body').getAttribute('data-stage'),'foyer');

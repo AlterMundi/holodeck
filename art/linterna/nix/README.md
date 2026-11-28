@@ -73,21 +73,26 @@ to WandaTelescope. The design review opens no node connection.
 
 ## Temple and garden review
 
-The viewer's **Ver desde el jardín** option uses the existing Casa Linterna
-precinct and places Nix between Atenea and Hefesto. A small pavilion occupies
-the western expansion shelter's slot on the semicircle. The existing temple
-origins and the eastern shelter stay in place. Only plant groups that conflict
-with the vestibule footprint or surveyed path are suppressed in this review.
-The local origin of the vestibule is placed at (-8.45, 0, -20.65), with a
-+0.29 radian Y rotation.
+In the viewer, open **Ver desde el jardín**, then **Ver los cuatro templos**
+for the overview. The four peers are Atenea, Nix, Hefesto and Apolo from west
+to east. The entrance axes face the same center at (0, -4.50) in the
+precinct XZ plane. Each temple occupies the midpoint of one 45° sector of
+the semicircle. The four garden thresholds share a 15.20 m radius with
+11.63 m chords between consecutive thresholds. The three existing temple
+models keep their architecture and move to the new positions. The garden paths
+follow the new arc. The two former expansion shelters are left out of this
+study, and planting that crosses a path or temple footprint is cleared.
 
-The garden door opens into a 4.76 × 5.14 m vestibule. A statue of Nix in a
-midnight mantle stands on the left. The separately labelled **WANDA ·
-OBSERVATORIO** door stands on the right and opens the approved room in its own
-scene. The same thresholds serve the return path. The source survey keeps
-the route at a 1.12 m clear envelope, checks the proposed addition against
-the retained structure, and checks the statue and WANDA door from 1.20 and
-1.64 m eye heights. The app room uses the same geometry and WANDA data.
+Nix uses the shared four-column portico and gabled roof. Its 9.00 m façade
+matches Atenea's width and the common roof reaches the same height as the
+other temples. The vestibule continues from the garden door to the rear of
+the temple. A statue of Nix in a midnight mantle stands on the left. The
+**WANDA · OBSERVATORIO** door stands on the right and opens the approved room
+in its own scene. The same thresholds serve the return path. The source
+survey checks the four equal entrance spacings, all six pairs of temple
+footprints, a 1.12 m clear approach to each temple, and sightlines to the
+statue and WANDA door from 1.20 and 1.64 m eye heights.
+The app room uses the same geometry and WANDA data.
 
 | Vestibule marker | Purpose |
 | --- | --- |

@@ -89,9 +89,10 @@ function showStage(next) {
   siteLights.visible=site;
   gardenLights.visible=!site;
   ground.position.y=site?-.028:-.19;
+  ground.material.color.set(site?'#454c47':'#a6ad79');
   for(const panel of document.querySelectorAll('[data-site-only]'))panel.hidden=!site;
   for(const button of document.querySelectorAll('[data-pose]')){
-    const gardenButton=button.dataset.pose==='approach';
+    const gardenButton=['approach','semicirculo'].includes(button.dataset.pose);
     button.hidden=gardenButton?next!=='garden':!site;
   }
   contextWalk.hidden=site;
@@ -300,6 +301,7 @@ if(context){
   contextWalk.onclick=()=>{
     if(journey)return;
     const back=stage==='foyer';
+    if(!back && view==='semicirculo')pose('columnata');
     if(back&&view==='puerta-wanda'){
       follow(context.innerWalk,true,'vestibulo',()=>follow(context.gardenWalk,true,'columnata'));
     }else follow(context.gardenWalk,back,back?'columnata':'vestibulo');
