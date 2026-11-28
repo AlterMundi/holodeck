@@ -157,6 +157,17 @@ landmarks to the terrain height at their footprints.
 The review keeps the source lights, shadows, vegetation and tour with
 site URLs omitted. Open the generated preview in a WebGL browser.
 
+The preview budgets 30 rendered frames per second during navigation.
+It adapts the number of rendered pixels using measured wall time, draws
+the scene directly while the camera moves, and restores only the effects
+the device can afford after it stops. Even at the lowest quality the same
+collision and tour data drive navigation. Individual buildings and
+vegetation patches can be culled separately. Distant columns use a
+simpler tapered mesh and grass thins with distance. The small gold stars
+in the coffers are an alpha-tested texture on two triangles each. A
+shared repeating noise texture replaces expensive material noise during
+movement while keeping the fresco patterns and surface palettes.
+
 The portico importer reduces subdivisions and quantizes its exported
 attributes. Its report records the source hashes and both triangle counts.
 It exports the exterior mesh. Holodeck retains the East 1 approach, native
