@@ -1,5 +1,16 @@
 # Current MVP work
 
+## N-3X Navegante correction · 2026-11-28
+
+Protected release `30d0fbe71857` selects `a9b6f41` with
+`65aa4d1bd078` available for rollback. The corrected N-3X restores the
+cyan antenna and long cape. The superhero movement remains active.
+All 97 installed files matched the deployed package. Authenticated HTTPS
+served the exact new 864,752-byte model, SHA-256 `aee42b81c1e7` (prefix).
+Node passed 599 tests with four skips. Chromium on RTX 2060 used the
+exact model and rendered it from the front and rear. Its walking check
+recorded 7.48 m of companion movement and a changing cape pose.
+
 ## Char Design district and character release · 2026-11-28
 
 Protected release `65aa4d1bd078` selects runtime source `2e919d2`,
