@@ -225,7 +225,8 @@ export class Shockwaves{
           float light;
           if(kind<.5){
             float thickness=mix(.22,.04,age);
-            float band=exp(-pow((r-(1.-thickness))/thickness,2.)*2.);
+            float offset=(r-(1.-thickness))/thickness;
+            float band=exp(-2.*offset*offset);
             float inner=smoothstep(.2,1.,r)*.18*(1.-age);
             light=(band+inner)*(1.-age)*(1.-age)*1.4*step(r,1.);
           }else{
@@ -319,8 +320,10 @@ export class WaterRipples{
           float r=length(plane);
           if(r>1.)discard;
           // A leading crest, a trailing trough and a faint second ring.
-          float crest=exp(-pow((r-.92)/.05,2.));
-          float second=exp(-pow((r-.62)/.05,2.))*.55;
+          float front=(r-.92)/.05;
+          float back=(r-.62)/.05;
+          float crest=exp(-front*front);
+          float second=exp(-back*back)*.55;
           float foam=(1.-smoothstep(0.,.35,r))*(1.-smoothstep(0.,.25,age))*.5;
           float fade=(1.-age)*(1.-age)*(.5+.5*strength);
           float a=(crest+second+foam)*fade*.75;

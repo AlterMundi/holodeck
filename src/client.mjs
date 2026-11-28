@@ -2026,6 +2026,13 @@ $('#room-topic-choice').onchange=event=>{
   roomTopic=item?{id:item.id,revision:item.revision}:null;
 };
 let toolbarCaption='';
+const micOpeningMessages={
+  timeout:'El micrófono tardó en abrir. Revisá el permiso del sitio y probá de nuevo.',
+  access:'El navegador bloqueó el micrófono. Habilitalo para este sitio y probá de nuevo.',
+  device:'No pude abrir el micrófono. Revisá el dispositivo y probá de nuevo.',
+  image:'No pude abrir la imagen adjunta. Revisala en Conversar.',
+  context:'No pude preparar el contexto del lugar. Tu borrador sigue en Conversar.',
+};
 function showToolbarCaption(text,settled=false){
   if(text===toolbarCaption)return;
   if(!text){
@@ -2033,10 +2040,11 @@ function showToolbarCaption(text,settled=false){
   }else worldNotice.show(text,{transient:settled});
   toolbarCaption=settled?'':text;
 }
-function projectVoiceControls({recording=false,speaking=false,speakerReady=false,phase,words,previewUnavailable,needsReview}={}){
+function projectVoiceControls({recording=false,speaking=false,speakerReady=false,phase,words,previewUnavailable,needsReview,openingError}={}){
   const mic=$('#tool-mic'),speaker=$('#tool-speaker');
   mic.textContent=recording?'Enviar audio':'Mic';
   mic.setAttribute('aria-pressed',String(recording));
+  mic.setAttribute('aria-busy',String(['permission','finalizing','sending'].includes(phase)));
   speaker.textContent=speaking?'🔊 Audio':'🔇 Audio';
   speaker.setAttribute('aria-pressed',String(speaking));
   speaker.setAttribute('aria-label',speaking?'Silenciar respuestas habladas':'Activar respuestas habladas');
@@ -2047,6 +2055,8 @@ function projectVoiceControls({recording=false,speaking=false,speakerReady=false
     showToolbarCaption(label);
   }else if(phase==='permission')showToolbarCaption('Abriendo el micrófono…');
   else if(phase==='finalizing'||phase==='sending')showToolbarCaption('Enviando audio…');
+  else if(phase==='idle'&&Object.hasOwn(micOpeningMessages,openingError))
+    showToolbarCaption(micOpeningMessages[openingError],true);
   else if(phase==='ready'||phase==='idle'&&needsReview)
     showToolbarCaption('Tu grabación quedó en Conversar para revisar.',true);
   else if(phase==='idle')showToolbarCaption('');
@@ -2583,6 +2593,7 @@ async function captureConversationView(){
 $('#tool-mic').onclick=async()=>{
   if(!sharedSurface()||moving||entering)return;
   const button=$('#tool-mic');
+  if(button.getAttribute('aria-busy')==='true')return;
   button.disabled=true;
   try{
     if(inside&&activeSpace.id===CHARACTER_STUDIO&&matterHud?.active)

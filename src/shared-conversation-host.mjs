@@ -20,7 +20,10 @@ export class SharedConversationHost{
     try{return await this.mounting;}catch(error){this.mounting=null;throw error;}
   }
   async install(){
-    const selected=await this.api('conversation-surface');
+    const selected=await this.api('conversation-surface',undefined,{signal:AbortSignal.timeout(4500)}).catch(error=>{
+      if(error.name==='TimeoutError')throw Error('La conversación tardó en abrir. Probá de nuevo.');
+      throw error;
+    });
     if(this.closed)throw Error('La conversación se cerró.');
     if(selected.schema!=='holodeck.conversation-surface/v1'||selected.actorRef!==this.currentActor()
       ||!/^[a-f0-9]{64}$/.test(selected.binding||''))throw Error('Tu acceso cambió. Volvé a entrar al mundo.');
@@ -44,7 +47,7 @@ export class SharedConversationHost{
     if(!page)return;
     this.voiceObserver=new page.defaultView.MutationObserver(()=>this.syncVoiceControls());
     for(const node of page.querySelectorAll('#conversation-talk,#conversation-voice-replies'))
-      this.voiceObserver.observe(node,{attributes:true,attributeFilter:['aria-pressed','disabled','data-capture-phase']});
+      this.voiceObserver.observe(node,{attributes:true,attributeFilter:['aria-pressed','disabled','aria-label','data-capture-phase','data-capture-opening-error']});
     const caption=page.querySelector('#conversation-voice-state');
     if(caption)this.voiceObserver.observe(caption,{attributes:true,attributeFilter:['data-voice-transcript','data-live-caption','data-attention'],
       childList:true,subtree:true,characterData:true});
@@ -77,16 +80,20 @@ export class SharedConversationHost{
     const {mic,speaker,caption}=this.voiceControls();
     const recording=mic?.getAttribute('aria-pressed')==='true';
     const owned=this.toolbarCaptureActive;
-    const phase=owned?(mic?.dataset.capturePhase??(recording?'recording':null)):null;
+    const phase=owned?(mic?.dataset.capturePhase??
+      (recording?'recording':mic?.getAttribute('aria-label')==='Send recording'?'ready':mic?.disabled?'permission':'idle')):null;
+    const openingError=owned&&phase==='idle'?mic?.dataset.captureOpeningError:undefined;
     const words=owned&&recording&&caption?.dataset.voiceTranscript==='true'?
       Array.from(caption.textContent.trim().replace(/\s+/g,' ')).slice(-145).join(''):'';
     this.onVoiceControls({
-      recording,phase,words,previewUnavailable:owned&&recording&&caption?.textContent==='Recording… Live text unavailable.',
-      needsReview:owned&&caption?.dataset.attention==='true',
+      recording,phase,words,openingError,previewUnavailable:owned&&recording&&caption?.textContent==='Recording… Live text unavailable.',
+      needsReview:owned&&mic?.title==='Retry sending the same recording',
       speaking:speaker?.getAttribute('aria-pressed')==='true',
       speakerReady:!!speaker&&!this.closed,
     });
-    if(owned&&(phase==='idle'||phase==='ready'))this.toolbarCaptureActive=false;
+    if(owned&&(phase==='idle'||phase==='ready')){
+      this.toolbarCaptureActive=false;this.toolbarRecording=false;
+    }
     if(mic&&!mic.disabled&&this.channel)this.toolbarVoiceReady?.();
   }
 
@@ -104,6 +111,11 @@ export class SharedConversationHost{
         if(this.lastAudioRecord)this.lastAudioRecord.toolbarMic=true;
       }else{this.toolbarRecording=true;this.toolbarCaptureActive=true;}
       mic.click();
+      if(mic.dataset.capturePhase==='idle'&&!mic.dataset.captureOpeningError){
+        this.syncVoiceControls();
+        throw Error('No se inició la grabación. Probá de nuevo.');
+      }
+      this.syncVoiceControls();
       return true;
     };
     if(start())return;

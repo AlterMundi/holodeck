@@ -664,3 +664,29 @@ test('the authenticated room reader renders an empty MML room without a house or
  assert.equal((await fetch(base+route,{headers})).status,404);
  assert.equal(reads,3);
 });
+
+test('toolbar microphone projects a failed opening and lets the next press record',async()=>{
+ const {host}=fixture();
+ await host.mount();
+ host.channel=randomUUID();
+ const projected=[];
+ host.onVoiceControls=state=>projected.push(state);
+ const mic={dataset:{capturePhase:'idle'},disabled:false,pressed:false,
+   getAttribute:name=>name==='aria-pressed'?String(mic.pressed):null,
+   click(){mic.dataset.capturePhase='permission';mic.dataset.captureOpeningError='';mic.disabled=true;}};
+ host.voiceControls=()=>({page:{defaultView:{}},mic,caption:{dataset:{attention:'true'}}});
+ await host.pressToolbarMic();
+ assert.equal(projected.at(-1).phase,'permission');
+ assert.equal(projected.at(-1).needsReview,false);
+ Object.assign(mic.dataset,{capturePhase:'idle',captureOpeningError:'timeout'});
+ mic.disabled=false;
+ host.syncVoiceControls();
+ assert.equal(projected.at(-1).openingError,'timeout');
+ assert.equal(host.toolbarCaptureActive,false);
+ await host.pressToolbarMic();
+ mic.dataset.capturePhase='recording';mic.pressed=true;mic.disabled=false;
+ host.syncVoiceControls();
+ assert.equal(projected.at(-1).recording,true);
+ assert.equal(projected.at(-1).phase,'recording');
+ host.dispose();
+});

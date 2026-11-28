@@ -89,7 +89,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const mosaicRoute=NAVEGANTE_VARIANTS.mosaic.model;
   let mosaicAsset=null;
   if(mosaicCompanion===true&&stateDir){
-    const file=join(stateDir,'navegante-mosaic.glb');
+    const file=join(stateDir,'navegante-mosaic-separated-boots.glb');
     try{
       const size=statSync(file).size;
       if(size>6*1024**2)throw Error('The selected companion exceeds its size bound');
