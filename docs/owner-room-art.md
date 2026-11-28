@@ -52,3 +52,13 @@ room grants and the Claymon workspace identity when publishing the layout.
 For the workbench, bind the one approved workspace to its registered public
 issuer and fixed private service route. Verify the crossed thresholds and
 shared workspace revision on the receiving configuration before activation.
+
+The selected Home catalog edition was readable by the receiving operator.
+It uses manifest SHA-256
+`bde0266305ee7249106411a61ee3bcef4631521bd63795a720dbc53162fbb19f`.
+All seven GLB parts passed the receiver's byte-count and digest checks.
+The edition connects arrival to Hefesto, then Hefesto to Atelier and
+Printing. The live layout exposes Research Gallery and a direct
+foyer–Claymon door. The manifest lacks the current `atelierWidgets` caddy
+binding. Activation still needs an owner-published compatible layout and
+the approved Atelier workspace binding described above.
