@@ -66,3 +66,33 @@ test('the worker builds a room icon off the event loop',async()=>{
   assert.ok(ticks>5,'event loop kept running: '+ticks);
   icons.worker.worker?.terminate();
 });
+
+import {semanticDescriptor,semanticIcon,semanticRole} from '../src/teleport-semantic-icons.mjs';
+import {fitIcon as fitSemantic} from '../src/teleport-icons.mjs';
+
+test('worktables and topics pick a role from their widget and title',()=>{
+  assert.equal(semanticRole({id:'object:r:beacon-guitar',title:'H.B. Guitar'}),'music');
+  assert.equal(semanticRole({id:'object:r:archive-turntable',title:'Archivo giratorio'}),'archive');
+  assert.equal(semanticRole({id:'topic:a',title:'Impresión 3D'}),'print');
+  assert.equal(semanticRole({id:'topic:b',title:'Voces'}),'voice');
+  assert.equal(semanticRole({id:'object:p:x',title:'Mesa',widget:'conversation'}),'conversation');
+  assert.equal(semanticRole({id:'topic:c',title:'Wiggle Stash'}),'topic');
+  assert.equal(semanticRole({id:'object:r:x',title:'Algo'}),'tools');
+  assert.equal(semanticRole({role:'archive',title:'Cualquiera'}),'archive');
+});
+
+test('renaming a topic changes its icon key and emblem colour',async()=>{
+  const a=semanticDescriptor({id:'topic:1',title:'Wiggle Stash'}),b=semanticDescriptor({id:'topic:1',title:'Wiggle Archive'});
+  assert.notEqual(iconKey({kind:'semantic',revision:JSON.stringify(a)}),iconKey({kind:'semantic',revision:JSON.stringify(b)}));
+  const icons=new TeleportIcons({worker:false});
+  const glb=await icons.glb({kind:'semantic',revision:JSON.stringify(a),descriptor:a});
+  const {scene}=await parse(glb);
+  assert.ok(fits(scene));
+});
+
+test('every semantic motif builds a small fitted mesh',()=>{
+  for(const role of ['plaza','home','conversation','voice','music','viewer','print','archive','research','code','video','network','character','map','design','tools','output','project','topic']){
+    const mesh=fitSemantic(semanticIcon({role,title:role}));
+    assert.ok(mesh.indices.length/3>4&&mesh.indices.length/3<1400,role);
+  }
+});

@@ -75,3 +75,26 @@ fail closed), `showNodes(parts,count,{parent})`, `faceViewer(parts,worldEye,rate
 for the rail and `stationMotion(scene,animations,{reduced})`.
 `test/teleport-station-asset.test.mjs` checks budget, anchors, fit, rail facing,
 reduced motion and the miniature library.
+
+## Destination icons
+
+Every teleport destination supplies its own low-poly icon
+(`src/teleport-icons.mjs`, `src/teleport-semantic-icons.mjs`). The icon key
+is the source revision, so a change to the source produces a new icon:
+
+| Destination | Source |
+| --- | --- |
+| room | its current art export, shown as a cutaway dollhouse |
+| house | its facade record |
+| `terrain:residence` | the Residence export |
+| worktable, project, topic, public place | a semantic icon from its role (main A2UI widget or function) and its title |
+
+Semantic roles: `plaza home conversation voice music viewer print archive research
+code video network character map design tools output project topic`.
+A destination can set `iconRole` explicitly or provide `widget`. Otherwise
+the role is inferred from the id and title. A topic without a matching role
+gets an emblem whose shape and colour derive from its title, so renaming a
+topic renames and redraws its icon. New destination kinds such as topics or
+project tables only need `id`, `title` and optionally `widget`/`iconRole`.
+They then get their icon from `teleportDestinations` with no authored
+miniature. The authored miniatures remain loading placeholders.
