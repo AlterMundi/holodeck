@@ -96,3 +96,28 @@ test('every semantic motif builds a small fitted mesh',()=>{
     assert.ok(mesh.indices.length/3>4&&mesh.indices.length/3<1400,role);
   }
 });
+
+import {jpegGrid} from '../src/icon-jpeg.mjs';
+
+test('JPEG base colours are read from their DC coefficients',()=>{
+  const bytes=readFileSync(new URL('../public/room-art/compaii-atelier/foyer.glb',import.meta.url));
+  const length=bytes.readUInt32LE(12),json=JSON.parse(bytes.toString('utf8',20,20+length)),bin=20+length+8;
+  const image=json.images.find(item=>item.mimeType==='image/jpeg');
+  const view=json.bufferViews[image.bufferView];
+  const grid=jpegGrid(bytes.subarray(bin+(view.byteOffset??0),bin+(view.byteOffset??0)+view.byteLength));
+  assert.ok(grid&&grid.length===32*32*3);
+  assert.ok(grid.every(value=>value>=0&&value<=1));
+  const mean=grid.reduce((a,b)=>a+b,0)/grid.length;
+  assert.ok(mean>.01&&mean<.99,'mean '+mean);
+});
+
+test('a worktable icon is cropped from its room and keeps a function emblem',async()=>{
+  const art=readFileSync(new URL('../public/room-art/matter-workshop-orbital-focused.glb',import.meta.url));
+  const icons=new TeleportIcons({worker:false});
+  const descriptor={role:'archive',title:'Vitrina de archivo'};
+  const glb=await icons.glb({kind:'crop',revision:'test-crop',bytes:art,crop:{center:[3.35,1.01,-3.68]},descriptor});
+  const {scene}=await parse(glb);
+  assert.ok(fits(scene));
+  let triangles=0;scene.traverse(o=>{if(o.isMesh)triangles+=o.geometry.index.count/3;});
+  assert.ok(triangles>100,'cropped geometry plus emblem: '+triangles);
+});

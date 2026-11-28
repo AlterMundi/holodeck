@@ -87,7 +87,8 @@ is the source revision, so a change to the source produces a new icon:
 | room | its current art export, shown as a cutaway dollhouse |
 | house | its facade record |
 | `terrain:residence` | the Residence export |
-| worktable, project, topic, public place | a semantic icon from its role (main A2UI widget or function) and its title |
+| worktable in a room with art | the table cropped from the room art with its real texture colours, plus a small emblem for its function |
+| worktable without art, project, topic, public place | a semantic icon from its role (main A2UI widget or function) and its title |
 
 Semantic roles: `plaza home conversation voice music viewer print archive research
 code video network character map design tools output project topic`.
@@ -97,4 +98,5 @@ gets an emblem whose shape and colour derive from its title, so renaming a
 topic renames and redraws its icon. New destination kinds such as topics or
 project tables only need `id`, `title` and optionally `widget`/`iconRole`.
 They then get their icon from `teleportDestinations` with no authored
-miniature. The authored miniatures remain loading placeholders.
+miniature. Model icons sample PNG and JPEG base colours per vertex (JPEG from
+its DC coefficients) and are made slightly more saturated so they read at icon size. The authored miniatures remain loading placeholders.

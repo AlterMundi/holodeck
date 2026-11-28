@@ -545,7 +545,13 @@ export async function createHolodeck({basePath='/',production=false,identityReso
         // A worktable's icon follows its main widget/function and its title.
         const descriptor=semanticDescriptor({id:'object:'+object.id,title:object.title,
           widget:object.widget??object.surface??object.kind,role:object.iconRole});
-        iconSource.set(destinations.at(-1),{kind:'semantic',revision:JSON.stringify(descriptor),descriptor});
+        // When the room art carries the table, crop it so the icon has its real
+        // shape and texture colours; the semantic emblem keeps its function legible.
+        const {x:ox,y:oy=1,z:oz}=object.position;
+        iconSource.set(destinations.at(-1),art?.bytes&&art.revision?
+          {kind:'crop',revision:JSON.stringify([art.revision,ox,oy,oz,descriptor]),bytes:art.bytes,
+            crop:{center:[ox,oy,oz]},descriptor}:
+          {kind:'semantic',revision:JSON.stringify(descriptor),descriptor});
       }
     }
     // Every remaining destination (public places, topics, projects) composes
