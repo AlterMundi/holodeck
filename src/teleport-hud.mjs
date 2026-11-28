@@ -128,7 +128,7 @@ export class TeleportHud {
       return !entry.house;
     });
     const destinations=available.map(entry=>({
-      id:entry.id,
+      id:entry.id,icon:entry.icon,
       label:(this.category==='favorites'&&!parent&&entry.houseTitle&&!entry.id.startsWith('house:')?entry.houseTitle+' · ':'')+
         this.title(entry)+(entry.current?' (estás acá)':''),
     })).sort((a,b)=>byName(a.label,b.label));

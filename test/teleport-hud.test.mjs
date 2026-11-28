@@ -4,10 +4,10 @@ import {TeleportHud} from '../src/teleport-hud.mjs';
 
 test('the teleport graph opens branches, returns one level and travels only on confirmation',async()=>{
   const house={id:'house:home',house:'home',houseTitle:'Casa',title:'Entrada exterior'};
-  const room={...house,id:'room:lab',title:'Laboratorio',to:'lab'};
+  const room={...house,id:'room:lab',title:'Laboratorio',to:'lab',icon:'/icon/lab'};
   const table={...room,id:'object:lab:worktable',title:'Mesa de trabajo'};
   const plaza={id:'terrain:arrival',title:'Plaza'};
-  const residence={id:'terrain:residence',title:'Residencia',links:[room.id,'room:hidden']};
+  const residence={id:'terrain:residence',title:'Residencia',icon:'/icon/residence',links:[room.id,'room:hidden']};
   const trips=[];
   let state;
   const hud=new TeleportHud({
@@ -19,8 +19,10 @@ test('the teleport graph opens branches, returns one level and travels only on c
   const act=(name,context={})=>hud.activate({name,context:{epoch:state.epoch,level:state.level,...context}});
   const choose=()=>act('slot0',{selected:state.slot0Key});
   assert.equal(state.slot0Key,plaza.id);
+  assert.equal(hud.slots[1].icon,residence.icon);
   act('slot1',{selected:residence.id});
   assert.equal(state.backLabel,'Volver desde Residencia');
+  assert.equal(hud.slots[0].icon,room.icon);
   assert.equal(state.slot0Key,room.id);
   assert.equal(state.slot1Visible,false);
   act('back');
