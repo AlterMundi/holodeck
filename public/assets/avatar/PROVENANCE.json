@@ -3,8 +3,9 @@
   "appearance": "compaii-navegante-white-v1",
   "designSha256": "17fdad0610f6971a8b37c9df4f5aef0f294ee8f36c62058fe6955757404f6daa",
   "designBytes": 153394,
-  "rendererSha256": "9866f14ea2dca9aaa5ab6da439cacfa375368c841352c55631511328f7a4d541",
-  "rendererBytes": 99284,
+  "rendererSha256": "ecacf736a715a86c6c34b0ae46f82f3ff955148a83de2d9a3092c02afeddd3fc",
+  "rendererBytes": 99286,
+  "rendererAdjustment": "Local display-label edit. Source inventory records the upstream inputs.",
   "source": "DaimonApp installed maintained renderer; ASCII-Interfaces MIT source lineage",
   "sourceInventory": [
     {

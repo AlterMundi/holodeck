@@ -670,11 +670,11 @@ verified its exact listener, Core PID, goals and heartbeat controls. The
 initial operator result is retained. Oliva's scoped handoff completed normally.
 No new native input or model call was made.
 
-Emma selected listener `3d4c85b09be3` and bridge `fa3447e8a311` in her
-existing ITACA VM. Readback verified the same Core, goal accounting, heartbeat
+A receiving companion selected listener `3d4c85b09be3` and bridge
+`fa3447e8a311` in its existing VM. Readback verified the same Core, goal accounting, heartbeat
 controls, canonical Conversation binding and foreign-actor denial. The native
-operator then used the existing CompAII and Emma read lanes to observe the
-same world run under distinct, registered being identities. This was a
+operator then used the existing operator and companion read lanes to observe
+the same world run under distinct, registered being identities. This was a
 read-only foreground check. The four remaining receivers are on the host
 covered by the existing shutdown and service-stop hold.
 
@@ -1068,7 +1068,7 @@ the compatible rollback.
 [Before and after at walking height](../art/compaii-house/redesign/README.md#beacon-joinery-and-workstations)
 
 Activation required a [scoped Home journal capacity repair](https://github.com/nicoechaniz/daimon-cluster/pull/552).
-ITACA retained its original 128 entries and completed the same deployment
+The deployment journal retained its original 128 entries and completed the same deployment
 request as entry 129. Package audiences and receiver state were preserved.
 
 The previous release served source `239819d`, package `b7107ba7645e`. A session can keep parsed static art from
