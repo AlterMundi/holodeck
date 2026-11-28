@@ -7,6 +7,9 @@ import {cloudWind} from './toroidal-solar-clock.mjs';
 const groundHaze = new Color().setRGB(.46,.57,.70);
 const deepHaze = new Color(0x133f52);
 const nightHaze=new Color().setRGB(.016,.024,.054);
+// The sky art enlarges the discs. Quintana's clock, eclipse geometry and
+// lighting continue to use the physical angular radii.
+const sunDisplayScale=6.4,moonDisplayScale=6.6;
 
 export function toroidalViewDepth(eye){
   const {u,v,height}=terrainCoordinates([eye.x,eye.y,eye.z]);
@@ -26,6 +29,7 @@ const vertexShader = `
 const fragmentShader = `
   uniform vec3 moon;
   uniform vec2 discRadii;
+  uniform vec2 displayRadii;
   uniform vec3 sun;
   uniform vec4 wind;
   uniform mat3 celestialBasis;
@@ -59,6 +63,18 @@ const fragmentShader = `
       mix(cloudHash(h+y),cloudHash(h+x+y),f.x),f.y),
       mix(mix(cloudHash(h+z),cloudHash(h+x+z),f.x),
       mix(cloudHash(h+y+z),cloudHash(h+x+y+z),f.x),f.y),f.z);
+  }
+  mat3 discFrame(vec3 center) {
+    vec3 reference=abs(dot(center,skyUp))>.98?celestialBasis[0]:skyUp;
+    if(abs(dot(center,reference))>.98)reference=celestialBasis[1];
+    vec3 right=normalize(cross(reference,center));
+    return mat3(right,cross(center,right),center);
+  }
+  float orbitArc(vec2 p,float radius,float tilt,float halfWidth){
+    vec2 q=mat2(.954,tilt,-tilt,.954)*p;
+    float ring=length(q*vec2(1.0,2.7));
+    float rim=1.0-smoothstep(halfWidth,halfWidth+.018,abs(ring-radius));
+    return rim*smoothstep(.12,.45,abs(q.x)/radius);
   }
   varying vec3 skyDirection;
   void main() {
@@ -106,15 +122,58 @@ const fragmentShader = `
     // requiring another full-screen target on lightweight graphics.
     sky+=vec3(.15,.098,.057)*pow(facing,16.0)*daylight*(1.0-.65*cloud);
     sky+=vec3(.38,.22,.09)*pow(facing,55.0)*daylight*(1.0-.68*cloud);
-    // The nearby lunar silhouette occults the solar disc at actual angular sizes.
-    float solarOffset=length(cross(direction,sun));
-    float lunarOffset=length(cross(direction,moon));
-    float solarDisc=(1.0-smoothstep(discRadii.x*.92,discRadii.x*1.06,solarOffset))*step(.999,facing)*step(-.012,elevation);
-    float lunarDisc=(1.0-smoothstep(discRadii.y*.91,discRadii.y*1.06,lunarOffset))*step(.999,dot(direction,moon))*step(-.012,elevation);
-    vec3 moonNormal=normalize((direction-moon)/max(.001,discRadii.y)-direction*sqrt(max(0.0,1.0-pow(lunarOffset/max(.001,discRadii.y),2.0))));
-    float lunarPhase=max(0.0,dot(moonNormal,moonLight));
-    sky=mix(sky,mix(vec3(.012,.017,.030),vec3(.63,.66,.67),lunarPhase),lunarDisc*max(step(.001,eclipse),smoothstep(.002,.045,moonFraction))*(1.0-.92*cloud)*mix(1.0,.72,daylight));
-    sky+=vec3(2.0,1.54,1.05)*solarDisc*(1.0-lunarDisc)*(1.0-.88*cloud);
+    // Large illustrated discs live in the same sky and behind the same clouds.
+    float altitudeMask=smoothstep(-.014,-.003,elevation);
+    float lunarVisibility=smoothstep(.002,.045,moonFraction);
+    if(dot(direction,moon)>.997&&lunarVisibility>0.0&&eclipse==0.0){
+      float radius=max(.001,displayRadii.y);
+      mat3 frame=discFrame(moon);
+      vec2 p=vec2(dot(direction,frame[0]),dot(direction,frame[1]))/radius;
+      float r=length(p);
+      float air=altitudeMask*(1.0-.92*cloud)*mix(1.0,.74,daylight)*lunarVisibility;
+      vec3 indigo=vec3(.20,.22,.65),mint=vec3(.38,.91,.87);
+      float orbit=orbitArc(p,1.46,.30,.023);
+      sky+=mix(indigo,mint,smoothstep(-.8,.7,p.x))*air*
+        (.37*orbit+.11*exp(-8.0*max(0.0,r-1.0))*step(1.0,r));
+      if(r<1.02){
+        vec3 normal=normalize(frame*vec3(p,-sqrt(max(0.0,1.0-r*r))));
+        float light=max(0.0,dot(normal,moonLight));
+        float basin=cloudNoise(normal*4.1+vec3(31.0,11.0,-9.0));
+        float dust=cloudNoise(normal*22.0+vec3(12.0,-7.0,3.0));
+        float marbling=smoothstep(.28,.70,basin*.84+dust*.16);
+        vec3 surface=mix(vec3(.16,.20,.44),vec3(.54,.83,.84),marbling);
+        vec3 rim=mix(vec3(.25,.22,.64),vec3(.57,.91,1.0),clamp(p.y*.5+.5,0.0,1.0));
+        float edge=smoothstep(.86,1.0,r);
+        vec3 colour=vec3(.019,.026,.060)+surface*(.13+1.38*light)+rim*edge*(.16+.53*light);
+        sky=mix(sky,colour,(1.0-smoothstep(.98,1.02,r))*air*.97);
+      }
+    }
+    if(facing>.996){
+      float radius=max(.001,displayRadii.x);
+      mat3 frame=discFrame(sun);
+      vec2 p=vec2(dot(direction,frame[0]),dot(direction,frame[1]))/radius;
+      float r=length(p);
+      float disc=1.0-smoothstep(.984,1.015,r);
+      float air=altitudeMask*(1.0-.88*cloud);
+      float warm=1.0-smoothstep(.02,.27,dot(sun,skyUp));
+      float horizonBands=.5+.5*sin(14.0*p.y+1.8*p.x+1.0*sin(p.x*4.0));
+      vec3 solarSurface=mix(vec3(1.53,.66,.19),vec3(2.42,1.61,.67),smoothstep(-1.0,.85,p.y));
+      solarSurface=mix(solarSurface,vec3(1.41,.11,.45),warm*(.46+.28*horizonBands)*(1.0-smoothstep(-.9,.32,p.y)));
+      solarSurface+=vec3(.72,.32,.13)*smoothstep(.84,1.0,r);
+      // Sample the physical directions for the eclipse silhouette, then
+      // map it back onto the illustrated Sun.
+      float occultation=0.0;
+      if(eclipse>0.0){
+        vec3 physical=normalize(sun+discRadii.x*(frame[0]*p.x+frame[1]*p.y));
+        float offset=length(cross(physical,moon))/max(.001,discRadii.y);
+        occultation=1.0-smoothstep(.975,1.025,offset);
+      }
+      float halo=exp(-3.8*max(0.0,r-1.0))*(1.0-disc);
+      float arc=orbitArc(p,1.47,-.30,.022);
+      sky+=mix(vec3(.69,.27,.23),vec3(.53,.16,.49),warm)*air*(.52*halo+.49*arc);
+      sky=mix(sky,sky+solarSurface*(1.0-occultation),disc*air);
+      sky=mix(sky,vec3(.017,.012,.038),disc*occultation*air);
+    }
     if (waterDepth > .014) {
       vec3 suspended = mix(vec3(.012,.046,.068),vec3(.078,.28,.34),smoothstep(-.19,.95,elevation));
       sky = mix(sky,suspended*mix(.23,1.0,daylight),smoothstep(.014,.08,waterDepth));
@@ -134,7 +193,7 @@ export class ToroidalAtmosphere {
     this.sunlight = new Vector3(.56,.64,-.52).normalize();
     const material = new ShaderMaterial({
       side:BackSide, depthWrite:false, fog:false, vertexShader, fragmentShader,
-      uniforms:{moon:{value:new Vector3()},discRadii:{value:new Vector2()},sun:{value:this.sunlight},wind:{value:new Vector4()},celestialBasis:{value:new Matrix3()},skyUp:{value:new Vector3(0,1,0)},moonLight:{value:new Vector3()},eclipse:{value:0},moonFraction:{value:0},
+      uniforms:{moon:{value:new Vector3()},discRadii:{value:new Vector2()},displayRadii:{value:new Vector2()},sun:{value:this.sunlight},wind:{value:new Vector4()},celestialBasis:{value:new Matrix3()},skyUp:{value:new Vector3(0,1,0)},moonLight:{value:new Vector3()},eclipse:{value:0},moonFraction:{value:0},
         waterDepth:{value:0},exposure:{value:1.5},cloudiness:{value:.26},lightning:{value:0},daylight:{value:1},showCosmos:{value:false},cosmos:{value:null}},
     });
     this.sky = new Mesh(new SphereGeometry(10,24,12),material);
@@ -209,6 +268,7 @@ export class ToroidalAtmosphere {
       uniforms.moon.value.fromArray(solar.moon);
       uniforms.moonLight.value.fromArray(solar.moonLight);
       uniforms.discRadii.value.set(...solar.radii);
+      uniforms.displayRadii.value.set(solar.radii[0]*sunDisplayScale,solar.radii[1]*moonDisplayScale);
       uniforms.eclipse.value=solar.eclipse;
       uniforms.moonFraction.value=solar.illuminated;
       this.celestialBasis.set(...solar.equatorial);

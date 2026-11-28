@@ -61,8 +61,11 @@ controls canonical spoken replies and turns on after another toolbar recording
 is accepted. A recording awaiting review stays in the canonical composer.
 The canonical composer reports whether it is opening, recording or awaiting
 review. An unfinished microphone opening expires after 20 seconds. The toolbar
-shows the specific access, device, world context or attachment failure and
-can be used again. A late browser stream is stopped and the draft is kept.
+shows the specific access, device or attachment failure and can be used
+again. A late browser stream is stopped and the draft is kept. World context
+prepares alongside recording. If it fails or takes more than three seconds
+after recording stops, the same audio remains ready in Conversation for an
+explicit send without the world context.
 
 
 A text submission or the start of a voice input prepares a situated state for
