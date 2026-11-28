@@ -6,9 +6,15 @@ const rightAxis=new Vector3(1,0,0);
 
 // Lower the hips over the SDK's current footsteps. Solving against the ankle
 // positions keeps the stock standing and walking contacts, including yaw.
+// A stealth crouch goes further: hips low and back, the back long and
+// forward, the eyes level on the way ahead and both fists up in a guard.
 export function bindHumanoidCrouch(mesh){
   const find=name=>mesh.getObjectByName(name);
   const pelvis=find('pelvis'),spine=find('spine_01');
+  const trunk=['spine_02','spine_03'].map(find).filter(bone=>bone?.isBone);
+  const neck=['neck_01','head'].map(find).filter(bone=>bone?.isBone);
+  const arms=['l','r'].map(side=>({upper:find('upperarm_'+side),fore:find('lowerarm_'+side),hand:find('hand_'+side),side}))
+    .filter(({upper,fore,hand})=>upper?.isBone&&fore?.isBone&&hand?.isBone);
   const legs=['l','r'].map(side=>({
     hip:find('thigh_'+side),knee:find('calf_'+side),ankle:find('foot_'+side),
     hipPosition:new Vector3(),ankleTarget:new Vector3(),stockKnee:new Vector3(),stockAxis:new Vector3(),stockPole:new Vector3(),
@@ -17,7 +23,8 @@ export function bindHumanoidCrouch(mesh){
   if(!pelvis?.isBone||!pelvis.parent||legs.some(({hip,knee,ankle})=>
     !hip?.isBone||!knee?.isBone||!ankle?.isBone||knee.parent!==hip||ankle.parent!==knee))return null;
 
-  const joints=[pelvis,...(spine?.isBone?[spine]:[]),...legs.flatMap(({hip,knee,ankle})=>[hip,knee,ankle])];
+  const joints=[pelvis,...(spine?.isBone?[spine]:[]),...trunk,...neck,...arms.flatMap(({upper,fore})=>[upper,fore]),
+    ...legs.flatMap(({hip,knee,ankle})=>[hip,knee,ankle])];
   const snapshots=joints.map(joint=>({joint,rotation:new Quaternion(),position:new Vector3()}));
   const bodyOrientation=new Quaternion(),world=new Quaternion(),parent=new Quaternion(),swing=new Quaternion();
   const forward=new Vector3(),up=new Vector3(),right=new Vector3(),point=new Vector3();
@@ -38,6 +45,16 @@ export function bindHumanoidCrouch(mesh){
     orient(bone,world);
   }
 
+  function guard(bone,child,destination,amount){
+    bone.getWorldPosition(point);
+    child.getWorldPosition(from).sub(point).normalize();
+    to.copy(destination).sub(point).normalize();
+    bone.getWorldQuaternion(world);
+    swing.setFromUnitVectors(from,to).slerp(parent.identity(),1-amount);
+    world.premultiply(swing);
+    orient(bone,world);
+  }
+
   return {
     restore(){
       if(!posed)return;
@@ -47,7 +64,7 @@ export function bindHumanoidCrouch(mesh){
       }
       posed=false;
     },
-    apply(character,weight){
+    apply(character,weight,stealth=0){
       if(posed||weight<.002)return;
       let totalLength=0;
       for(const leg of legs){
@@ -72,8 +89,8 @@ export function bindHumanoidCrouch(mesh){
       up.copy(upAxis).applyQuaternion(bodyOrientation);
       forward.copy(forwardAxis).applyQuaternion(bodyOrientation);
       right.copy(rightAxis).applyQuaternion(bodyOrientation);
-      const depth=totalLength*.12*weight*weight;
-      pelvis.getWorldPosition(point).addScaledVector(up,-depth).addScaledVector(forward,-depth*.18);
+      const depth=totalLength*(.12*weight*weight+.15*stealth*stealth);
+      pelvis.getWorldPosition(point).addScaledVector(up,-depth).addScaledVector(forward,-depth*(.18+.30*stealth));
       pelvis.position.copy(pelvis.parent.worldToLocal(point));
 
       for(const leg of legs){
@@ -99,8 +116,32 @@ export function bindHumanoidCrouch(mesh){
         orient(leg.ankle,leg.ankleOrientation);
       }
       if(spine?.isBone&&spine.parent){
-        spine.getWorldQuaternion(world).premultiply(swing.setFromAxisAngle(right,.20*weight));
+        spine.getWorldQuaternion(world).premultiply(swing.setFromAxisAngle(right,.20*weight+.16*stealth));
         orient(spine,world);
+      }
+      if(stealth<.002)return;
+      for(const bone of trunk){
+        bone.getWorldQuaternion(world).premultiply(swing.setFromAxisAngle(right,.15*stealth));
+        orient(bone,world);
+      }
+      // Keep the eyes level on the way ahead.
+      for(const bone of neck){
+        bone.getWorldQuaternion(world).premultiply(swing.setFromAxisAngle(right,-.26*stealth));
+        orient(bone,world);
+      }
+      // Guard: elbows in under the chest, fists up in front of the jaw.
+      if(arms.length===2){
+        arms[0].upper.getWorldPosition(from);arms[1].upper.getWorldPosition(to);
+        const leftSign=to.sub(from).dot(right)<0?1:-1;
+        for(const {upper,fore,hand,side} of arms){
+          const out=(side==='l'?1:-1)*leftSign;
+          upper.getWorldPosition(point);
+          kneeTarget.copy(point).addScaledVector(right,.10*out).addScaledVector(up,-.22).addScaledVector(forward,.16);
+          guard(upper,fore,kneeTarget,stealth);
+          fore.getWorldPosition(point);
+          kneeTarget.copy(point).addScaledVector(right,-.06*out).addScaledVector(up,.22).addScaledVector(forward,.14);
+          guard(fore,hand,kneeTarget,stealth);
+        }
       }
     },
   };

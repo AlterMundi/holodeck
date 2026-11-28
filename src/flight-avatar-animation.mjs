@@ -1,7 +1,7 @@
 import {Euler,Quaternion,Vector3} from 'three';
 import {matterAvatarScale} from './matter-flight.mjs';
 import {TabletopGlance} from './tabletop-attention.mjs';
-import {bindHumanoidFlightRig} from './humanoid-flight-poses.mjs';
+import {FLIGHT_STYLES,HOVER_STYLES,TREAD_STYLES,bindHumanoidFlightRig} from './humanoid-flight-poses.mjs';
 import {bindPersonalAvatarLanding,landingBlendWeight} from './personal-avatar-landing.mjs';
 import {bindHumanoidCrouch} from './humanoid-crouch.mjs';
 import {bindHumanoidStandingIdle} from './humanoid-standing-idle.mjs';
@@ -19,6 +19,32 @@ const yawAxis=new Vector3(0,1,0),rollAxis=new Vector3(0,0,1);
 const liftSeconds=.66,landSeconds=.46,hipHeight=1;
 const absorbTiming=[.08,.07,.40],brakeTiming=[.08,.04,.34];
 const bindings=new WeakMap();
+// Double-jump tricks. Each names its spins (turns about the body's lateral,
+// long and forward axes) and the body it holds. A body deals them in its own
+// shuffled order, so the same trick does not come twice running.
+export const TRICK_SECONDS=.78;
+export const TRICKS=Object.freeze([
+  {name:'front-tuck',flip:1,twist:0,roll:0,body:'trickTuck'},
+  {name:'back-layout',flip:-1,twist:0,roll:0,body:'trickLayout'},
+  {name:'double-pirouette',flip:0,twist:2,roll:0,body:'trickTwist'},
+  {name:'corkscrew',flip:-1,twist:1,roll:0,body:'trickTwist'},
+  {name:'side-aerial',flip:0,twist:0,roll:1,body:'trickLayout'},
+  {name:'front-full',flip:1,twist:1,roll:0,body:'trickTwist'},
+]);
+const STYLE_NAMES=Object.keys(FLIGHT_STYLES),HOVER_NAMES=Object.keys(HOVER_STYLES),TREAD_NAMES=Object.keys(TREAD_STYLES);
+const scatter=index=>{const x=Math.sin(index*57.31+.77)*43758.5453;return x-Math.floor(x);};
+// Next entry from a per-body shuffled deck, never repeating the last one.
+function dealt(entry,key,list){
+  const deck=entry[key]??=[];
+  if(!deck.length){
+    const round=(entry[key+'Round']=(entry[key+'Round']??0)+1);
+    const order=list.map((item,index)=>({item,key:scatter(entry.idlePhase*3.1+index*7.7+round*1.3)}))
+      .sort((a,b)=>a.key-b.key).map(({item})=>item);
+    if(order[0]===entry[key+'Last']&&order.length>1)order.push(order.shift());
+    deck.push(...order);
+  }
+  return entry[key+'Last']=deck.shift();
+}
 
 export function bindFlightAvatarAnimation(manager,context,{clock}={}){
   if(bindings.has(manager))return bindings.get(manager);
@@ -75,7 +101,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       medium:null,loopTime:0,strokeTime:1.40,wadeWeight:0,phase:0,
       gaitPhase:null,gaitBackward:false,flightBackward:false,travelRight:0,travelForward:1,unsupported:0,fall:0,landingAge:Infinity,absorbAge:Infinity,absorb:0,brakeAge:Infinity,brake:0,lastSpeed:0});
     for(const follower of [entry.turn,entry.pitch,entry.bank,entry.lift,entry.sink,
-      entry.thrust,entry.lean,entry.sway,entry.lead,entry.aim,entry.hips,entry.headFirst,entry.backing])follower.reset();
+      entry.thrust,entry.lean,entry.sway,entry.lead,entry.aim,entry.hips,entry.headFirst,entry.backing,entry.outstretched,entry.restAmount])follower.reset();
     entry.heading.set(0,0,0);
     entry.airRig?.reset();
   }
@@ -141,7 +167,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
           unpitched:new Quaternion(),applied:new Quaternion(),heading:new Vector3(),shift:new Vector3(),
           turn:new Follower(8.5),pitch:new Follower(7.5),bank:new Follower(10),lift:new Follower(9),sink:new Follower(4.5),
           thrust:new Follower(9),lean:new Follower(10),sway:new Follower(9),lead:new Follower(12),aim:new Follower(16),
-          hips:new Follower(11),headFirst:new Follower(7),backing:new Follower(6),directional:bindHumanoidDirectionalGait(mesh),
+          hips:new Follower(11),headFirst:new Follower(7),backing:new Follower(6),outstretched:new Follower(6),restAmount:new Follower(3.5),directional:bindHumanoidDirectionalGait(mesh),
           limbs:limbNames.map(name=>mesh.getObjectByName(name))};
         resetMotion(entry);
         actors.set(id,entry);
@@ -227,6 +253,32 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const boost=entry.boost;
       entry.boostRelease+=(Number(!boostInput&&boost>0)-entry.boostRelease)*ease(step,15);
       const boostRelease=entry.boostRelease*Math.sin(Math.PI*boost);
+      // A fresh style for every boost and now and then on a long cruise.
+      const cruisingStyle=mode==='hover'&&!atTable&&entry.planarSpeed>2;
+      entry.styleAge=cruisingStyle?(entry.styleAge??0)+step:0;
+      if(boostInput&&!entry.boostHeld||cruisingStyle&&(!entry.style||entry.styleAge>8+5*scatter(entry.flightAge))){
+        entry.style=FLIGHT_STYLES[dealt(entry,'styles',STYLE_NAMES)];
+        entry.styleAge=0;
+        // Breaking away: a ring of light where the boost begins.
+        if(boostInput&&!entry.boostHeld&&outdoor&&glanceMotion){
+          facing.copy(rollAxis).applyQuaternion(character.quaternion);
+          right.copy(pitchAxis).applyQuaternion(character.quaternion);
+          wake?.burst?.(id,position,facing.multiplyScalar(entry.travelForward).addScaledVector(right,entry.travelRight));
+        }
+      }
+      if(mode!=='hover'&&mode!=='lift')entry.style=null;
+      // Still in the air or in the water: a varied rest, changing now and then.
+      const restingAir=mode==='hover'&&!atTable&&entry.planarSpeed<.6&&Math.abs(entry.rise)<1;
+      const restingWater=mode==='swim'&&entry.planarSpeed<.3;
+      const afloat=(restingAir||restingWater)&&glanceMotion;
+      const restKind=restingAir?'air':restingWater?'water':null;
+      entry.restAge=afloat&&entry.restKind===restKind?(entry.restAge??0)+step:0;
+      if(afloat&&(entry.restKind!==restKind||entry.restAge>6.5+4*scatter(entry.loopTime))){
+        entry.restKind=restKind;entry.restAge=0;
+        entry.rest=restingAir?HOVER_STYLES[dealt(entry,'hovers',HOVER_NAMES)]:TREAD_STYLES[dealt(entry,'treads',TREAD_NAMES)];
+      }
+      const restAmount=glanceMotion?entry.restAmount.update(afloat&&entry.rest?1:0,step,3.5):entry.restAmount.reset().value;
+      entry.boostHeld=boostInput;
 
       // Contact absorbs with the planted legs. Depth follows the fall speed.
       const standing=grounded===true&&!floating;
@@ -256,12 +308,13 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const thrust=entry.thrust.update(clamp((entry.planarSpeed-previousSpeed)/Math.max(step,.004),-30,30),step);
       if(standing&&thrust<-8.5&&previousSpeed>2.1&&entry.brakeAge>.6&&glanceMotion){
         entry.brakeAge=0;
-        entry.brake=.12+.26*clamp(previousSpeed/7);
+        entry.brake=.16+.30*clamp(previousSpeed/7);
       }
       entry.brakeAge+=step;
       const authoredContact=entry.landing&&entry.landingAge<entry.landing.duration;
-      const dip=glanceMotion&&standing?Math.max(authoredContact?0:entry.absorb*pulse(entry.absorbAge,...absorbTiming),
-        authoredContact?0:entry.brake*pulse(entry.brakeAge,...brakeTiming)):0;
+      const absorbing=glanceMotion&&standing&&!authoredContact?entry.absorb*pulse(entry.absorbAge,...absorbTiming):0;
+      const braking=glanceMotion&&standing&&!authoredContact?entry.brake*pulse(entry.brakeAge,...brakeTiming):0;
+      const dip=Math.max(absorbing,braking);
 
       const airborne=grounded!==true&&(atTable||outdoor&&(mode==='lift'||mode==='hover'||mode==='descend'));
       const running=outdoor&&!atTable&&standing&&!underwater;
@@ -306,7 +359,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const climb=clamp(entry.rise/5,-1,1);
       const lean=underwater?entry.medium==='surface'?1.12*w:
           clamp(1.22*w-clamp(entry.rise/2.8,-1,1)*(.30+.30*w),-.2,1.72):
-        mode==='hover'||mode==='lift'?((atTable?.56:.57+.13*clamp((entry.planarSpeed-4)/4))*w+.38*smooth(boost))*backLean-.16*climb*w+clamp(.011*thrust,-.20,.14)-.10*boostRelease:
+        mode==='hover'||mode==='lift'?((atTable?.56:.57+.13*clamp((entry.planarSpeed-4)/4))*w+.38*smooth(boost))*backLean-.16*climb*w+clamp(.011*thrust,-.20,.14)-.48*boostRelease:
           0;
       const looking=isLocal&&!atTable&&Number.isFinite(aimPitch);
       const aimTarget=looking?clamp(aimPitch,-1.2,1.2):0;
@@ -322,7 +375,8 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const sinkTarget=underwater&&entry.medium==='surface'&&entry.airRig?Math.min(.36-.12*w,Math.max(0,sample.feet-sample.ground+.28)):0;
       const sink=glanceMotion?entry.sink.update(sinkTarget,step):entry.sink.reset(sinkTarget).value;
       const trunk=glanceMotion&&standing&&!underwater?1:0;
-      const trunkPitch=entry.lean.update(trunk*(clamp(.009*thrust,-.13,.13)+.10*dip+.07*entry.wadeWeight),step);
+      // A hard stop plants and leans back against the momentum, like a skid.
+      const trunkPitch=entry.lean.update(trunk*(clamp(.009*thrust,-.13,.04)+.10*absorbing-.62*braking+.07*entry.wadeWeight),step);
       const trunkRoll=entry.sway.update(trunk*clamp(-turnRate*entry.planarSpeed*.010,-.17,.17),step);
       const trunkLead=entry.lead.update(trunk*clamp(-airYaw*.45,-.5,.5),step);
 
@@ -334,7 +388,10 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const hips=stepping?entry.hips.update(gaitTravel.hips*clamp((entry.planarSpeed-.25)/.9),step):entry.hips.reset().value;
       entry.directional?.apply(character,hips);
 
-      const trick=isLocal&&outdoor&&glanceMotion&&!explicitFlight&&grounded===false&&trickAge<.53;
+      const trick=isLocal&&outdoor&&glanceMotion&&!explicitFlight&&grounded===false&&trickAge<TRICK_SECONDS;
+      if(trick&&(!entry.trick||trickAge<entry.trickAge))entry.trick=dealt(entry,'tricks',TRICKS);
+      entry.trickAge=trick?trickAge:Infinity;
+      if(!trick)entry.trick=null;
       const settled=!trick&&w<.01&&entry.hoverWeight<.01&&entry.lowWeight<.01&&entry.airWeight<.01&&
         entry.lowerWeight<.01&&entry.wadeWeight<.01&&dip<.002&&sink<.002&&
         Math.abs(pitchValue)<.002&&Math.abs(bankValue)<.001&&Math.abs(airYaw)<.001&&
@@ -370,17 +427,26 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       // Wait for the root tilt from flight to settle before committing the
       // ground pose. This avoids turning its planted feet with the air pose.
       const groundBlend=Math.max(0,1-Math.abs(pitchValue)/.08);
-      entry.crouchRig?.apply(character,crouchWeight*groundBlend);
+      // Only a chosen crouch is stealth; landing and braking dips stay plain.
+      entry.crouchRig?.apply(character,crouchWeight*groundBlend,entry.lowWeight*(1-entry.lowerWeight)*groundBlend);
       // The movement controller keeps a signed pitch through the vertical.
       // The model's vertical rest frame starts 90 degrees from cruise.
+      // The pilot lies out along the camera only while travelling. Launching,
+      // hovering and climbing in place it stands tall, fist to the sky.
       const aerobatic=isLocal&&floating&&Number.isFinite(loopPitch);
       const pilot=isLocal&&explicitFlight&&aerobatic;
-      const tuck=trick?.88*Math.sin(Math.PI*trickAge/.53):0;
-      const flip=trick?2*Math.PI*smooth(trickAge/.53):0;
+      const outstretched=glanceMotion?entry.outstretched.update(aerobatic&&mode==='hover'?clamp((entry.planarSpeed-.6)/2.4):0,step):
+        entry.outstretched.reset(aerobatic&&mode==='hover'?1:0).value;
+      // Snap into the trick body, spin, then open out before the ground.
+      const trickProgress=trick?trickAge/TRICK_SECONDS:0;
+      const tuck=trick?smooth(trickProgress/.18)*smooth((1-trickProgress)/.22):0;
+      const spin=trick?smooth((trickProgress-.08)/.80):0;
+      const flip=trick?2*Math.PI*entry.trick.flip*spin:0;
       // The camera's pitch steers only the forward part of the travel.
       // Backing away, the pilot stands up and leans back instead of lying out.
       const piloted=aerobatic?Math.PI/2-loopPitch*Math.cos(headFirst):pitchValue;
-      pitch.setFromAxisAngle(pitchAxis,piloted+(pitchValue-piloted)*(aerobatic?backing:0)+flip);
+      const laidOut=piloted+(pitchValue-piloted)*(aerobatic?backing:0);
+      pitch.setFromAxisAngle(pitchAxis,pitchValue+(laidOut-pitchValue)*outstretched+flip);
       entry.rotation=character.quaternion;
       entry.unpitched.copy(entry.rotation);
       if(airYaw&&!pilot)entry.rotation.multiply(yaw.setFromAxisAngle(yawAxis,airYaw));
@@ -391,6 +457,8 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       }
       tilt.copy(pitch);
       if(bankValue)tilt.multiply(roll.setFromAxisAngle(pilot?yawAxis:rollAxis,bankValue));
+      if(trick&&entry.trick.roll)tilt.multiply(roll.setFromAxisAngle(rollAxis,2*Math.PI*entry.trick.roll*spin));
+      if(trick&&entry.trick.twist)tilt.multiply(roll.setFromAxisAngle(yawAxis,2*Math.PI*entry.trick.twist*spin));
       entry.rotation.multiply(tilt);
       entry.applied.copy(entry.rotation);
       if(entry.airRig&&(lift>.002||sink>.002||trick)){
@@ -405,6 +473,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
         entry.shifted=true;
       }
       const armWeight=Math.max(tuck,Math.min(1,entry.airWeight+entry.wadeWeight));
+      const trickTorso=trick?Math.max(entry.airWeight,tuck):entry.airWeight;
       if(entry.airRig&&Math.max(armWeight,entry.lowerWeight)>.01){
         const wading=entry.airWeight<entry.wadeWeight;
         if(mode){
@@ -418,15 +487,18 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
           water.point.copy(position).addScaledVector(up,draft);
           character.parent?.localToWorld(water.point);
         }
-        entry.airRig.apply(character,{mode:trick?'lift':wading?'wade':entry.poseMode,time:trick?.29:wading?entry.loopTime:entry.poseTime,
-          forward:w,weight:armWeight,lowerWeight:Math.max(entry.lowerWeight,tuck),torsoWeight:entry.airWeight,step,
-          bank:entry.airWeight*clamp(bankValue,-.5,.5),boost,boostRelease,
+        entry.airRig.apply(character,{mode:trick?entry.trick.body:wading?'wade':entry.poseMode,time:trick?0:wading?entry.loopTime:entry.poseTime,
+          forward:w,weight:armWeight,lowerWeight:Math.max(entry.lowerWeight,tuck),torsoWeight:trickTorso,step,
+          bank:entry.airWeight*clamp(bankValue,-.5,.5),boost,boostRelease,style:entry.style,
+          climb:mode==='hover'?clamp((entry.rise-1)/2.5)*(1-w):0,rest:entry.rest,restAmount,
           // Reach overhead only once the body lies along the surface.
           stroke:mode==='swim'?smooth((pitchValue-.45)/.5):0,strokeTime:entry.strokeTime,
           water:surface&&!wading?water:null});
       }
       idle();
-      entry.accents?.apply(character,trunkPitch+(floating?0:aim*.35),trunkLead,trunkRoll,floating?0:aim*.88);
+      // Standing in the air the head follows the view, up and down.
+      const viewPitch=pilot&&Number.isFinite(loopPitch)?clamp(-loopPitch*.75,-.7,.6)*(1-outstretched):0;
+      entry.accents?.apply(character,trunkPitch+(floating?0:aim*.35),trunkLead,trunkRoll,floating?viewPitch:aim*.88);
       playLanding();
       entry.glance?.apply(character,entry.head,glanceTarget,dt,1-w*.8);
       const airSwing=entry.airRig?0:w,hoverSwing=entry.airRig?0:entry.hoverWeight;
