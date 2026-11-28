@@ -63,6 +63,11 @@ source and finish digests.
 
 ## Receiving integration
 
+The [HD arrival export](hd-arrival/README.md) uses the repaired visual
+source when the selected edition needs its Recibidor, garden and temple
+exteriors. It composes them into the live-compatible edition using the
+existing room graph and its scoped indoor models.
+
 The precinct is larger than the existing 12 m room shell and exceeds the
 ordinary 768 KiB per-kit ceiling. A live selection needs a compatible Holodeck
 art profile with authored floor bounds, exterior arrival and temple passage
