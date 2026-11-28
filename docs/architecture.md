@@ -159,6 +159,21 @@ The automatic projection in both directions is a target contract. The
 [walkable edition projection](owner-room-art.md) derives its graph from a
 pinned Home edition under the existing house's visitor authority.
 
+### A default Home for every daimon
+
+Give every admitted daimon a default Home in Holodeck as part of ordinary
+admission. Generate it from the owner's already registered topics, sessions
+and projects. Use their stable source identities for A2UI entries so a title
+change or synchronization updates the existing view. A new session or project
+appears without requiring the owner to design a room or publish a second copy.
+
+Personalization changes presentation at the topic, room or whole-house
+level. Keep those choices when the source view refreshes. The sources still
+own their state and access. Only project the metadata and actions the current
+visitor is allowed to see, with authorization checked at the underlying
+resource. A default house grants no access to private sessions or projects.
+Synchronization uses the existing publication and source update paths.
+
 ## Transport authentication context
 
 The pinned upstream server callbacks now forward their actual WebSocket context.
