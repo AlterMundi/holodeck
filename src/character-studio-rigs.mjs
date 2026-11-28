@@ -10,4 +10,4 @@ export const rigs={
 // Nicolás's Explorer keeps the stock humanoid skeleton, so the shared stock
 // clips and motion studies apply; its own authored hero clips come first.
 // Same file as human-avatars.mjs personalAvatarFile (that module is server-only).
-rigs.explorer={label:'Explorador',file:'assets/avatar/explorer-hero-v29.glb',clips:rigs.humanoid.clips,initial:'hero_idle'};
+rigs.explorer={label:'Explorador',file:'assets/avatar/explorer-hero-v30.glb',clips:rigs.humanoid.clips,initial:'hero_idle'};

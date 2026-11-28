@@ -4,7 +4,7 @@ import {runSequence} from './sequence.mjs';
 const legs=[['walk-forward',2,{forward:1}],['walk-right',2,{right:1}],['walk-back',2,{forward:-1}],['walk-diagonal',2,{forward:1,right:-1}],
   ['run-forward',2,{forward:1,sprint:true}],['run-left',2,{right:-1,sprint:true}],['run-back-diagonal',2,{forward:-1,right:1,sprint:true}]];
 const stats={};let prev=null;
-await runSequence({file:'avatar/explorer-hero-v29.glb',route:legs,pilot:true,onFrame({name,phase,mesh,dt}){
+await runSequence({file:'avatar/explorer-hero-v30.glb',route:legs,pilot:true,onFrame({name,phase,mesh,dt}){
   if(phase<.7){prev=null;return;}
   const feet=['ball_l','ball_r'].map(n=>mesh.getObjectByName(n).getWorldPosition(new Vector3()));
   const up=new Vector3(0,1,0).applyQuaternion(mesh.parent.quaternion);
