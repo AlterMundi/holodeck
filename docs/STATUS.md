@@ -4,6 +4,20 @@
 
 
 
+
+## November 28 — Teleport inspection in the current location
+
+Protected release `fc1805677c21` selects Holodeck source `f3717f3` and
+Proyección `1753566` for view-scoped ray picking. The immersive mount invokes
+the model inside the live world render. WASD and drag move the bounded local
+inspection camera, while camera-mounted A2UI controls remain usable from any
+angle. Esc returns input to the unchanged world avatar.
+
+Chromium checked the exact package in the arrival plaza and the Matter
+workshop. The model attached in the current scene in both locations. Movement
+left the avatar in place, and the normal travel action completed the round
+trip. The 92 installed files and the served protected bundle matched.
+
 ## November 28 — Navigable teleport workstation
 
 Protected release `67a853c5d09a` selects Holodeck source `901bc1d`.
