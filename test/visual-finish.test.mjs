@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {GRADE_DEFAULTS} from '../src/cinematic-grade.mjs';
 import {Group} from 'three';
 import {grassCover,ToroidalGrass} from '../src/toroidal-grass.mjs';
-import {terrainElevation,terrainPosition,TOROIDAL_TERRAIN} from '../src/toroidal-terrain.mjs';
+import {linternaGrassCover,terrainCoordinates,terrainElevation,terrainPosition,TOROIDAL_HOUSE_PLOTS,TOROIDAL_PARCEL_Y,TOROIDAL_TERRAIN} from '../src/toroidal-terrain.mjs';
 import {CAVE} from '../src/toroidal-cave.mjs';
 
 const TAU=2*Math.PI;
@@ -23,6 +23,20 @@ test('grass grows on the open meadow beside the arrival and thins toward the par
   assert.ok(open>.3,'open meadow '+open);
   const edge=cover(local(-11,10));
   assert.ok(edge>0&&edge<open,'feathered edge '+edge);
+});
+
+test('the full Casa Linterna plot and paving edge exclude grass, with a meadow beyond',()=>{
+  const lot=TOROIDAL_HOUSE_PLOTS.find(plot=>plot.id==='parcel-east-1');
+  const sample=(x,z)=>terrainCoordinates([TOROIDAL_TERRAIN.majorRadius+lot.x+x,TOROIDAL_PARCEL_Y,lot.z+z]);
+  for(const x of [-36,-18,0,18,36])for(const z of [-36,-18,0,18,36])
+    assert.equal(cover(sample(x,z)),0);
+  const boundary=sample(37,0);
+  assert.equal(linternaGrassCover(boundary.u,boundary.v),0);
+  const fringe=sample(39,0);
+  assert.ok(linternaGrassCover(fringe.u,fringe.v)>0&&linternaGrassCover(fringe.u,fringe.v)<1);
+  const meadow=sample(44,0);
+  assert.equal(linternaGrassCover(meadow.u,meadow.v),1);
+  assert.ok(cover(meadow)>0);
 });
 
 test('cinematic grade keeps a restrained default look',()=>{

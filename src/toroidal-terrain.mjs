@@ -146,6 +146,21 @@ export const TOROIDAL_HOUSE_PLOTS=Object.freeze([1,2,3,4].flatMap(row=>[-1,1].ma
   });
 })));
 const districtBuildable=TOROIDAL_HOUSE_PLOTS.filter(plot=>plot.id!=='parcel-west-1');
+const linternaPlot=districtBuildable.find(plot=>plot.id==='parcel-east-1');
+
+// Project the torus direction onto the same horizontal plane as the authored
+// courtyard. The small apron keeps wind-swept blades off the paving edge.
+export function linternaGrassCover(u,v){
+  if(wrappedDistance(u,0)>.012||wrappedDistance(v,.25)>.036)return 1;
+  const {center,up}=terrainFrame(u,v);
+  const radius=TOROIDAL_PARCEL_Y/up[1];
+  const x=center[0]+up[0]*radius-TOROIDAL_TERRAIN.majorRadius;
+  const z=center[2]+up[2]*radius;
+  const gap=Math.max(Math.abs(x-linternaPlot.x)-linternaPlot.width/2,
+    Math.abs(z-linternaPlot.z)-linternaPlot.depth/2);
+  return fade(Math.max(0,Math.min(1,(gap-1.25)/3)));
+}
+
 
 function housingGrade(u,v,elevation){
   if(wrappedDistance(u,0)>.045||wrappedDistance(v,.25)>.058)return elevation;
