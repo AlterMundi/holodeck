@@ -1,5 +1,29 @@
 # Current MVP work
 
+## House parcel authority and Casa Linterna HD · 2026-11-28
+
+Protected release `f4ced75d15c1` selects `a771fb1`, with
+`4669107b064f` available for code rollback. An accepted parcel gives its
+author house and owned-room publication operations independently of the
+shared world edit right. The owner controls the house guest policy and
+narrower room audiences through the existing own-native lane. Current
+installations keep recorded ownership and legacy guest policies until
+the owner saves a new policy.
+
+A real Unix and HTTP fixture qualified claim, repeat publication, owned
+layout and design access, foreign author denial, guest entry and
+revocation. The served native lane returned the current owned-house
+access policy. The Home authority confirmed that the existing Casa
+Linterna owner remains admitted to Holodeck. All 99 installed files
+matched. Node passed 604 tests with four skips and Python passed 49.
+
+The active owner tour selects Casa Linterna HD manifest `05ff08f5742d`.
+Chromium with the exact release package and preserved visitor grants
+loaded the new Recibidor model. The five room destinations, return and
+foreign-reader denial passed. The previous tour files and selection
+remain available for rollback. The full exterior is an owner-published
+candidate awaiting terrain placement.
+
 ## Navegante studio variants · 2026-11-28
 
 Protected release `4669107b064f` selects `7c03210`, including Char Design's
