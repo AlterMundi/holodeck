@@ -42,7 +42,7 @@ export class RibbonTrails{
     geometry.setIndex(index);
     for(let i=0;i<vertices;i++)this.shape.setZ(i,-1e4);
     this.material=new ShaderMaterial({
-      transparent:true,depthWrite:false,blending:AdditiveBlending,side:DoubleSide,
+      transparent:true,depthWrite:false,blending:NormalBlending,side:DoubleSide,
       uniforms:{clock:{value:0}},
       vertexShader:`
         attribute vec3 tangent;
@@ -74,8 +74,10 @@ export class RibbonTrails{
           float x=abs(across);
           float core=exp(-x*x*18.);
           float halo=exp(-x*x*3.5)*.55;
-          vec3 light=mix(colour,vec3(1.),core*.7);
-          gl_FragColor=vec4(light*(core+halo)*glow,1.);
+          // Keep the hue: only the very core goes white, so a daylight sky
+          // does not wash the ribbon out.
+          vec3 light=mix(colour,vec3(1.),core*.35);
+          gl_FragColor=vec4(light*(1.15+core*.4),min(1.,(core*.8+halo)*glow));
           #include <colorspace_fragment>
         }`,
     });
@@ -361,5 +363,114 @@ export class WaterRipples{
     this.mesh.removeFromParent();
     this.mesh.geometry.dispose();
     this.material.dispose();
+  }
+}
+
+// Soft smoke: camera-facing puffs whose shape is animated noise, swelling,
+// drifting and thinning as they age. Shared by boosts and hard landings.
+export const SMOKE={life:1.5};
+const noise=`
+  float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+  float value(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+    return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}
+  float fbm(vec2 p){float s=0.,a=.5;for(int i=0;i<4;i++){s+=a*value(p);p*=2.03;a*=.5;}return s;}`;
+export class SmokePuffs{
+  constructor(scene,{count=48}={}){
+    this.count=count;
+    const vertices=count*4;
+    const geometry=new BufferGeometry();
+    this.center=attribute(geometry,'position',vertices,3);
+    this.velocity=attribute(geometry,'velocity',vertices,3);
+    this.data=attribute(geometry,'data',vertices,4);   // corner x, corner y, born, size
+    this.tint=attribute(geometry,'tint',vertices,4);   // rgb, seed
+    geometry.setIndex(quadIndex(count));
+    for(let q=0;q<count;q++)for(let c=0;c<4;c++)this.data.setXYZW(q*4+c,corners[c][0],corners[c][1],-1e4,1);
+    this.material=new ShaderMaterial({
+      transparent:true,depthWrite:false,blending:NormalBlending,side:DoubleSide,
+      uniforms:{clock:{value:0}},
+      vertexShader:`
+        attribute vec3 velocity;
+        attribute vec4 data;
+        attribute vec4 tint;
+        uniform float clock;
+        varying vec2 plane;
+        varying float age;
+        varying vec4 colour;
+        void main(){
+          float seconds=clock-data.z;
+          age=seconds/${SMOKE.life.toFixed(2)};
+          plane=data.xy;colour=tint;
+          if(age<0.||age>1.){gl_Position=vec4(2.,2.,2.,1.);return;}
+          // Thrown out fast, then caught by the air.
+          vec3 travel=velocity*(1.-exp(-seconds*3.))/3.;
+          vec4 eye=modelViewMatrix*vec4(position+travel,1.);
+          float size=data.w*(.45+1.4*sqrt(age));
+          float spin=tint.w*6.283+seconds*(tint.w-.5)*1.2;
+          eye.xy+=mat2(cos(spin),-sin(spin),sin(spin),cos(spin))*data.xy*size;
+          gl_Position=projectionMatrix*eye;
+        }`,
+      fragmentShader:`
+        varying vec2 plane;
+        varying float age;
+        varying vec4 colour;
+        ${noise}
+        void main(){
+          float r=length(plane);
+          if(r>1.)discard;
+          float billow=fbm(plane*1.6+colour.w*9.+age*1.3);
+          float body=smoothstep(1.,.15,r+(billow-.5)*.9);
+          float fade=smoothstep(0.,.08,age)*(1.-age)*(1.-age);
+          // Lit from inside at first, then grey and cool.
+          vec3 shade=mix(colour.rgb*1.2,vec3(.72,.76,.80),smoothstep(0.,.35,age))*(.75+.35*billow);
+          gl_FragColor=vec4(shade,body*fade*.55);
+          #include <colorspace_fragment>
+        }`,
+    });
+    this.mesh=new Mesh(geometry,this.material);
+    this.mesh.name='Smoke puffs';
+    this.mesh.frustumCulled=false;
+    this.mesh.raycast=()=>{};
+    this.mesh.visible=false;
+    this.next=0;
+    this.last=-1e4;
+    scene.add(this.mesh);
+  }
+
+  puff(point,velocity,time,size,colour,seed=Math.random()){
+    const q=this.next++%this.count;
+    for(let c=0;c<4;c++){
+      const i=q*4+c;
+      this.center.setXYZ(i,point.x,point.y,point.z);
+      this.velocity.setXYZ(i,velocity.x,velocity.y,velocity.z);
+      this.data.setZ(i,time);this.data.setW(i,size);
+      this.tint.setXYZW(i,colour.r,colour.g,colour.b,seed);
+    }
+    this.center.needsUpdate=this.velocity.needsUpdate=this.data.needsUpdate=this.tint.needsUpdate=true;
+    this.last=time;
+    this.mesh.visible=true;
+  }
+
+  update(time,enabled){
+    this.material.uniforms.clock.value=time;
+    this.mesh.visible=enabled&&time-this.last<SMOKE.life;
+  }
+
+  dispose(){
+    this.mesh.removeFromParent();
+    this.mesh.geometry.dispose();
+    this.material.dispose();
+  }
+}
+
+// A brief screen-only kick for the local boost. Never in VR or with
+// reduced motion: there the view must stay exactly where the head is.
+export class CameraKick{
+  constructor(){this.at=-1e4;this.offset=new Vector3();}
+  fire(time){this.at=time;}
+  sample(time,up,right,{allowed=true}={}){
+    const age=time-this.at;
+    if(!allowed||age<0||age>.32)return this.offset.set(0,0,0);
+    const fade=(1-age/.32)**2*.06;
+    return this.offset.copy(up).multiplyScalar(Math.sin(age*71)*fade).addScaledVector(right,Math.sin(age*53+1.3)*fade*.7);
   }
 }
