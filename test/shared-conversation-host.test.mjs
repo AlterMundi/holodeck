@@ -81,7 +81,8 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  const {chromium}=await import(browserModule);
  const {createHolodeck}=await import('../src/server.mjs');
  const actorRef='human:room-visitor',origin='https://conversation.test',binding='a'.repeat(64);
- const projectA=randomUUID(),projectB=randomUUID(),card=randomUUID(),mission='Revisar las ilustraciones';
+ const projectA=randomUUID(),projectB=randomUUID(),mission='Revisar las ilustraciones';
+ let card;
  const binary=process.env.DAIMON_CARDS_BIN;
  let cardTool,questbook,storyCommit='1'.repeat(40),laterCommit;
  if(binary){
@@ -103,8 +104,6 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
   cardTool=input=>JSON.parse(execFileSync(binary,[store],{encoding:'utf8',input:JSON.stringify({
     project:projectA,actor:{kind:'daimon',subject:COMPAII_BEING},can_write:true,input,
   })}));
-  assert.equal(cardTool({type:'apply',command:{operation:randomUUID(),card,expected_revision:0,
-    action:{type:'create',title:mission}}}).result.status,'applied');
   questbook={project:projectA,binary,store,authorize:async actor=>({read:actor.id===actorRef,write:actor.id===actorRef})};
  }
  let repositories=[],historical=[],projectRevision=1;
@@ -234,6 +233,25 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
   assert.equal(await request('questbook',foreign),403);
   await detail.getByRole('button',{name:'Abrir diario de misiones'}).tap();
   const journal=page.getByRole('dialog',{name:'Diario de misiones'});
+  await journal.getByText('Todavía no hay misiones.').waitFor();
+  let creates=0;
+  const createPath='**/api/questbook/create';
+  await page.route(createPath,async route=>{
+    ++creates;
+    const reply=await route.fetch();
+    const body=await reply.json();
+    assert.equal(body.result.status,'applied');
+    card=body.result.event.card.id;
+    assert.deepEqual(body.result.event.card.revised_by,{kind:'human',subject:actorRef});
+    await route.abort('failed');
+  });
+  await journal.getByRole('button',{name:'Nueva misión'}).tap();
+  await journal.getByLabel('Título de la nueva misión').fill(mission);
+  await journal.getByRole('button',{name:'Crear misión'}).tap();
+  await journal.getByText('Misión creada.').waitFor();
+  assert.equal(creates,1);
+  assert.equal(cardTool({type:'read',card}).result.title,mission);
+  await page.unroute(createPath);
   await journal.getByText(mission,{exact:true}).last().waitFor({state:'attached'});
   const changed=page.waitForResponse(response=>response.url().endsWith('/api/questbook/action'));
   await journal.getByRole('button',{name:'Aceptar misión'}).focus();
@@ -381,7 +399,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  await dialog.getByRole('button',{name}).tap();
  await dialog.getByText('Ese topic ya no está disponible.').waitFor();
  assert.deepEqual(readbacks,[null,room.room,null,room.room]);
- assert.deepEqual(posted,questbook?['/api/topic-space',
+ assert.deepEqual(posted,questbook?['/api/topic-space','/api/questbook/create',
    '/api/questbook/action','/api/questbook/action','/api/questbook/action','/api/questbook/action','/api/space']:
    ['/api/topic-space','/api/space']);
  assert.deepEqual(modes,[room.room,null,room.room,null]);

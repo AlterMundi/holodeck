@@ -239,8 +239,8 @@ body:has(#conversation-panel:not([hidden])) #topics-open,body:has(#content-visit
 #questbook-dialog header,#questbook-dialog nav{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 #questbook-dialog h2{margin:0;font:clamp(22px,5vw,30px) Georgia,serif}
 #questbook-status:empty{display:none}
-#questbook-title-form:not([hidden]){display:grid;gap:8px;margin:12px 0}
-#questbook-title-form input{box-sizing:border-box;width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#10272c;color:var(--ink);font:inherit}
+#questbook-title-form:not([hidden]),#questbook-create-form:not([hidden]){display:grid;gap:8px;margin:12px 0}
+#questbook-title-form input,#questbook-create-form input{box-sizing:border-box;width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#10272c;color:var(--ink);font:inherit}
 
 #questbook-stage canvas{display:block;width:100%;height:min(410px,59dvh);touch-action:none}
 #questbook-stage canvas[hidden]{display:none}
@@ -347,6 +347,12 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
 <dialog id="questbook-dialog" aria-labelledby="questbook-title">
   <header><h2 id="questbook-title">Diario de misiones</h2><form method="dialog"><button type="submit" autofocus>Volver al mundo</button></form></header>
   <p id="questbook-status" role="status"></p>
+  <button id="questbook-create" type="button" hidden>Nueva misión</button>
+  <form id="questbook-create-form" hidden>
+    <label for="questbook-create-title">Título de la nueva misión</label>
+    <input id="questbook-create-title" name="title" type="text" maxlength="240" required>
+    <div class="row"><button type="submit">Crear misión</button><button id="questbook-create-cancel" type="button">Cancelar</button></div>
+  </form>
   <div id="questbook-stage"><canvas aria-hidden="true" hidden></canvas></div>
   <form id="questbook-title-form" hidden>
     <label for="questbook-title-draft">Título de la misión</label>

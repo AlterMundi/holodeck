@@ -24,12 +24,17 @@ The optional `questbook` selection names one project UUID, the absolute
 `viewEndpoint` and `editEndpoint` audience routes at the configured loopback
 Home receiver. The receiver stores card state in `STATE_DIR/questbook.sqlite`.
 Select audiences explicitly for the project; general Holodeck access alone
-does not grant card access. The owner seeds the project before opening its
-questbook. In the exterior workshop, open **Misiones** to display the
+does not grant card access. A project writer can create its first mission
+from an empty questbook. In the exterior workshop, open **Misiones** to display the
 project journal in the existing Proyección spatial HUD. The section includes
 keyboard and screen-reader controls from that same renderer.
 
-The authenticated `GET api/questbook` opens the first entry. The optional
+The authenticated `GET api/questbook` opens the first entry and reports
+whether the current actor can create a mission, including on an empty board.
+`POST api/questbook/create` uses the same typed create command as the own-native
+writer with a new card UUID and a stable operation UUID. A lost response is
+reconciled through `GET api/questbook/receipt` for the original actor and operation.
+The optional
 `selected` and `after` parameters address a card and page. `POST api/questbook/action` handles acceptance or completion with the
 observed card revision and the original operation ID.
 `POST api/questbook/objective` takes `operation`, `card`, `revision`,

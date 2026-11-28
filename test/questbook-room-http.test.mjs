@@ -102,6 +102,37 @@ test('the authenticated questbook credits only its original Room action', {skip:
     return (await response.json()).result[2].updateDataModel.value;
   };
   const post = (path,body) => fetch(base+'api/questbook/'+path,{method:'POST',headers,body:JSON.stringify(body)});
+  const creationPage = await fetch(base,{headers:{Cookie:cookie}});
+  const creationHeaders = {...headers,Cookie:cookie+'; '+creationPage.headers.get('set-cookie').split(';')[0]};
+  await creationPage.text();
+  const create = {operation:randomUUID(),card:'ffffffff-ffff-4fff-8fff-ffffffffffff',title:'Find the map'};
+  const createPost = body => fetch(base+'api/questbook/create',
+    {method:'POST',headers:creationHeaders,body:JSON.stringify(body)});
+  assert.equal((await fetch(base+'api/questbook/receipt?operation='+create.operation)).status,401);
+  projectWrite = false;
+  assert.equal((await createPost(create)).status,403);
+  projectWrite = true;
+  const firstCreation = (await (await createPost(create)).json()).result;
+  assert.equal(firstCreation.status,'applied');
+  assert.equal((await (await createPost(create)).json()).result.status,'retained');
+  assert.equal((await (await createPost({...create,title:'Changed original'})).json()).result.reason,'operation_changed');
+  const receipt = await fetch(base+'api/questbook/receipt?operation='+create.operation,{headers});
+  assert.equal(receipt.status,200);
+  assert.deepEqual((await receipt.json()).result,firstCreation.event);
+  const fromDaimon = await native({type:'read',card:create.card});
+  assert.equal(fromDaimon.result.title,create.title);
+  assert.equal(fromDaimon.result.revised_by.subject,human);
+  const foreignReceipt = await native({type:'receipt',operation:create.operation});
+  assert.equal(foreignReceipt.result,null);
+  for (let i = 1; i <= 32; i++) {
+    const cardId='00000000-0000-4000-8000-'+i.toString(16).padStart(12,'0');
+    assert.equal(tool({type:'apply',command:{operation:randomUUID(),card:cardId,
+      expected_revision:0,action:{type:'create',title:'Page entry '+i}}}).result.status,'applied');
+  }
+  const offPage = await fetch(base+'api/questbook?selected='+create.card,{headers}).then(reply=>reply.json());
+  const model = offPage.result[2].updateDataModel.value;
+  assert.equal(model.title,create.title);
+  assert.equal(model.next,'00000000-0000-4000-8000-000000000020');
   const action = {operation:randomUUID(),card,event:{surfaceId:'questbook-'+project,name:'claim',
     context:{card,revision:2}}};
   assert.equal((await view()).progress,'0/1');

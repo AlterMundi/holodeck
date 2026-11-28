@@ -690,7 +690,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     }
     const spaceRoute=['/space','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
       req.path==='/appearance'||req.path==='/conversation-surface'||req.path==='/topic-space'||req.path==='/topic-projects'||
-      (questbookHost&&/^\/questbook(?:\/(?:action|objective))?$/.test(req.path))||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
+      (questbookHost&&/^\/questbook(?:\/(?:action|objective|create|receipt))?$/.test(req.path))||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
     if(!spaceRoute&&spaces.current(actor)!==OUTSIDE)
@@ -1134,6 +1134,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     });
     app.get(route('api/questbook'),questbookReply('view'));
     app.post(route('api/questbook/action'),questbookReply('action'));
+    app.post(route('api/questbook/create'),questbookReply('create'));
+    app.get(route('api/questbook/receipt'),questbookReply('receipt'));
     app.post(route('api/questbook/objective'),questbookReply('confirmObjective'));
   }
   app.post(route('api/observe'),(req,res)=>res.json(room.observe(req.actor,req.body)));

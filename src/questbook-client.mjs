@@ -11,6 +11,21 @@ export class Questbook {
     this.canvas = this.stage.querySelector('canvas');
     this.back = document.querySelector('#questbook-back');
     this.next = document.querySelector('#questbook-next');
+    this.createButton = document.querySelector('#questbook-create');
+    this.createForm = document.querySelector('#questbook-create-form');
+    this.createInput = document.querySelector('#questbook-create-title');
+    this.createSave = this.createForm.querySelector('button[type="submit"]');
+    this.createCancel = document.querySelector('#questbook-create-cancel');
+    this.createButton.onclick = () => this.openCreation();
+    this.createCancel.onclick = () => {
+      if (this.creation) return;
+      this.createForm.hidden = true;
+      this.createInput.value = '';
+    };
+    this.createForm.onsubmit = event => {
+      event.preventDefault();
+      void this.createMission();
+    };
     this.titleForm = document.querySelector('#questbook-title-form');
     this.titleInput = document.querySelector('#questbook-title-draft');
     this.titleSave = this.titleForm.querySelector('button[type="submit"]');
@@ -39,6 +54,8 @@ export class Questbook {
       ++this.mountRevision;
       this.unmount();
       this.closeTitleEdit();
+      this.createForm.hidden = this.createButton.hidden = true;
+      this.createInput.value = '';
       if (this.scope) this.data = null;
       this.scope = null;
     });
@@ -154,6 +171,62 @@ export class Questbook {
     this.titleForm.hidden = true;
   }
 
+  openCreation() {
+    const scope = JSON.stringify(this.scope);
+    if (this.createButton.hidden) return;
+    if (this.creation && this.creation.scope !== scope) {
+      this.status.textContent = 'Hay una misión por confirmar en el diario donde la creaste.';
+      return;
+    }
+    this.createForm.hidden = false;
+    this.createInput.value = this.creation?.title ?? '';
+    this.createInput.readOnly = this.createCancel.disabled = !!this.creation;
+    this.createInput.focus();
+  }
+
+  async createMission() {
+    if (!this.dialog.open || this.saving || this.createForm.hidden || this.createButton.hidden) return;
+    const scope = JSON.stringify(this.scope);
+    const title = this.creation?.title ?? this.createInput.value.trim();
+    if (!title || new TextEncoder().encode(title).length > 240) {
+      this.status.textContent = 'Escribí un título breve para la misión.';
+      return;
+    }
+    if (this.creation && this.creation.scope !== scope) return;
+    this.creation ??= {scope,title,card:crypto.randomUUID(),operation:crypto.randomUUID()};
+    const {card,operation} = this.creation;
+    const mount = this.mountRevision;
+    this.saving = this.createSave.disabled = this.createInput.readOnly = this.createCancel.disabled = true;
+    this.status.textContent = 'Guardando…';
+    let created = false, conflict = false;
+    try {
+      const {result} = await this.api('questbook/create',{card,operation,title,...this.scope});
+      created = ['applied','retained'].includes(result.status);
+      conflict = result.status === 'conflict';
+    } catch {
+      const query = new URLSearchParams({...JSON.parse(scope),operation});
+      try {
+        const {result} = await this.api('questbook/receipt?'+query);
+        created = result?.command?.card === card && result.command.action?.type === 'create'
+          && result.command.action.title === title;
+      } catch { /* Retain the exact original for a deliberate retry. */ }
+    } finally {
+      this.saving = this.createSave.disabled = false;
+    }
+    if (created || conflict) this.creation = null;
+    if (!this.dialog.open || this.mountRevision !== mount) return;
+    this.createInput.readOnly = this.createCancel.disabled = !!this.creation;
+    if (created) {
+      this.createForm.hidden = true;
+      this.createInput.value = '';
+      this.pages = [null];
+      await this.read(card,'Misión creada.');
+    } else {
+      this.status.textContent = conflict ? 'No se pudo guardar la misión. Podés guardar el borrador de nuevo.'
+        : 'Falta confirmar la misión. Podés reintentar el mismo envío.';
+    }
+  }
+
   async read(selected, notice = '') {
     const reading = ++this.reading;
     const query = new URLSearchParams(this.scope ?? {});
@@ -162,9 +235,11 @@ export class Questbook {
     if (cursor) query.set('after',cursor);
     this.status.textContent = 'Cargando misiones…';
     try {
-      const {result} = await this.api('questbook?'+query);
+      const {result,canCreate} = await this.api('questbook?'+query);
       if (reading !== this.reading || !this.dialog.open) return;
       this.back.hidden = this.pages.length === 1;
+      this.createButton.hidden = !canCreate;
+      if (!canCreate) this.createForm.hidden = true;
       if (!result) {
         this.unmount();
         this.data = null;
@@ -192,6 +267,7 @@ export class Questbook {
       this.unmount();
       this.data = null;
       this.closeTitleEdit();
+      this.createForm.hidden = this.createButton.hidden = true;
       this.next.hidden = true;
       this.back.hidden = this.pages.length === 1;
       this.status.textContent = error.httpStatus === 403

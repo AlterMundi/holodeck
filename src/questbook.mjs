@@ -6,6 +6,8 @@ import {homeIdentityResolver} from './home-identity.mjs';
 import {createNativeQuestbookAuthority} from './native-authority.mjs';
 
 const uuid = value => typeof value === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value);
+const missionTitle = value => typeof value === 'string' && !!value.trim()
+  && Buffer.byteLength(value) <= 240 && !/[\u0000-\u001f\u007f]/.test(value);
 const commandId = value => typeof value === 'string' && /^[\w-]{8,80}$/.test(value);
 const labels = Object.freeze({
   claim: 'Aceptar misión', mark_done: 'Completar misión', open: 'Disponible',
@@ -92,6 +94,8 @@ export function createQuestbook(room, {project, binary, store, authorize}) {
       const writer = await access(actor, true, request);
       const initial = await mount(caller, writer, selected, projectRevisions, !!readHistory);
       const model = initial.result?.[2]?.updateDataModel?.value;
+      if (!initial.ok) return initial;
+      initial.canCreate = !!writer;
       if (!model) return initial;
       const candidates = model.revisionCandidates ?? [];
       delete model.revisionCandidates;
@@ -103,7 +107,26 @@ export function createQuestbook(room, {project, binary, store, authorize}) {
       if (!verified) return {ok:false,code:'access'};
       const reader = await access(verified.actor, false, request);
       if (!reader) return {ok:false,code:'access'};
-      return mount(reader, await access(verified.actor, true, request), model.id, verified.revisions);
+      const refreshedWriter = await access(verified.actor, true, request);
+      const result = await mount(reader, refreshedWriter, model.id, verified.revisions);
+      if (result.ok) result.canCreate = !!refreshedWriter;
+      return result;
+    },
+
+    async create(actor, {operation, card, title}, request) {
+      const caller = await access(actor, true, request);
+      if (!caller) return {ok:false,code:'access'};
+      if (!uuid(operation) || !uuid(card) || !missionTitle(title)) return {ok:false,code:'invalid'};
+      return execute(caller, true, {type:'apply', command:{
+        operation, card, expected_revision:0, action:{type:'create',title},
+      }});
+    },
+
+    async receipt(actor, {operation}, request) {
+      const caller = await access(actor, false, request);
+      if (!caller) return {ok:false,code:'access'};
+      if (!uuid(operation)) return {ok:false,code:'invalid'};
+      return execute(caller, false, {type:'receipt',operation});
     },
 
     async action(actor, {operation, card, event}, request) {
@@ -116,8 +139,7 @@ export function createQuestbook(room, {project, binary, store, authorize}) {
       }
       const {title, revision} = event.context;
       if (event.name === 'edit_title') {
-        if (typeof title !== 'string' || !title.trim() || Buffer.byteLength(title) > 240
-          || /[\u0000-\u001f\u007f]/.test(title)) return {ok:false, code:'invalid'};
+        if (!missionTitle(title)) return {ok:false, code:'invalid'};
       } else if (title !== undefined) {
         return {ok:false, code:'invalid'};
       }
