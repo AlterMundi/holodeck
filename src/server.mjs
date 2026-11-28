@@ -28,6 +28,8 @@ import {FROM_SERVER_BROADCAST_MESSAGE_TYPE,handleExperienceWebsocketSubprotocol,
 import enableWs from 'express-ws';
 import { existsSync, readFileSync } from 'node:fs';
 import {ANIMATION_ASSET_REVISIONS,readPackedArt,sendPackedArt} from './packed-art.mjs';
+import {TeleportIcons,iconKey} from './teleport-icons.mjs';
+import {residenceAssets} from './toroidal-residence-assets.mjs';
 import { packedClientHandler } from './packed-client.mjs';
 import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
@@ -480,6 +482,11 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       position:station.position,revision:station.revision}))];
   }
   const mayTeleportThrough=id=>!singleHouse||spaces.rooms.get(id)?.house===COMPAII_HOUSE;
+  // Each destination derives its own low-poly icon from its source; the key
+  // follows the source revision so icons refresh whenever the source changes.
+  const teleportIcons=new TeleportIcons();
+  const residenceVisual=new URL('../public/'+residenceAssets.visual.path,import.meta.url);
+  const iconSource=new WeakMap();
   function teleportDestinations(actor){
     const destinations=[];
     const publicPlace=(id,title,arrival)=>destinations.push({id,title,to:OUTSIDE,arrival});
@@ -488,6 +495,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(toroidal){
       const [x,y,z]=residenceWorld(0,-21,TOROIDAL_RESIDENCE.floor);
       publicPlace('terrain:residence','Residencia de la Nobleza IA',{x,y,z,yaw:180});
+      iconSource.set(destinations.at(-1),{kind:'residence',revision:residenceAssets.visual.sha256,
+        bytes:()=>readFileSync(residenceVisual)});
     }else if(!hideWorkshop){
       const names={overlook:'Mirador',gallery:'Isla de la galería',garden:'Isla del jardín'};
       for(const {id,x,z} of TERRACES){
@@ -517,12 +526,15 @@ export async function createHolodeck({basePath='/',production=false,identityReso
         const door=exteriorDoor(house);
         destinations.push({id:'house:'+house.id,to:OUTSIDE,title:'Entrada exterior',...group,
           arrival:toroidal?toroidalParcelPoint(door):door});
+        iconSource.set(destinations.at(-1),{kind:'facade',revision:JSON.stringify(house.facade),facade:house.facade});
       }
       const view=spaces.view(actor,to);
       const details={...group,room:candidate.title,to};
       const roomArrival=portal?{x:0,y:.11,z:4,yaw:180}:null;
       destinations.push({id:'room:'+to,title:candidate.title,...details,arrival:roomArrival,
         current:to===spaces.current(actor),portal});
+      const art=artForRoom(candidate,spaces.passages(actor,candidate));
+      if(art?.bytes&&art.revision)iconSource.set(destinations.at(-1),{kind:'room',revision:art.revision,bytes:art.bytes});
       for(const object of roomObjects(view)){
         if(!object.position||!(object.kind==='workstation'||/worktable|orientation-table|archive-turntable/.test(object.id)))continue;
         const {x,z}=object.position;
@@ -1305,8 +1317,20 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   });
   app.get(route('api/space/destinations'),(req,res)=>{
     if(spaces.fenced||room.commitUncertain)return res.sendStatus(503);
-    const destinations=teleportDestinations(req.actor).map(({arrival,portal,...destination})=>destination);
+    const destinations=teleportDestinations(req.actor).map(entry=>{
+      const {arrival,portal,...destination}=entry,source=iconSource.get(entry);
+      return source?{...destination,icon:route('api/space/destinations/icon/'+iconKey(source))}:destination;
+    });
     res.json({space:spaces.current(req.actor),destinations});
+  });
+  app.get(route('api/space/destinations/icon/:key'),async(req,res)=>{
+    if(spaces.fenced||room.commitUncertain)return res.sendStatus(503);
+    const source=teleportDestinations(req.actor).map(entry=>iconSource.get(entry))
+      .find(candidate=>candidate&&iconKey(candidate)===req.params.key);
+    if(!source)return res.sendStatus(404);
+    const bytes=await teleportIcons.glb(source);
+    if(!bytes)return res.sendStatus(404);
+    res.set('Cache-Control','private, max-age=31536000, immutable').type('model/gltf-binary').send(bytes);
   });
   app.get(route('api/space/scene'),(req,res)=>{
     const {room:destination}=req.query;
