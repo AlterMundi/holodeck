@@ -92,6 +92,13 @@ test('ordinary flight leaves a ribbon; boost adds sparks and breaks away with a 
     assert.equal(wake.index,0,'no cruise sparks');
     assert.ok(ribbon.points.filter(point=>point.born>-1e3).length>=6);
     assert.ok(Math.abs(ribbon.points[0].strength-.6)<1e-9);
+    const last=ribbon.points[0].p.clone();
+    wake.observe(1,at.set(3.04,0,0),up,false,.03);
+    assert.deepEqual(ribbon.points[0].p,last,'a fading ribbon stays in place');
+    wake.observe(1,at.set(120,0,0),up,true,.03);
+    assert.equal(wake.ribbons.slots.has(1),false,'an abrupt relocation drops the old trail');
+    wake.observe(1,at.set(120.15,0,0),up,true,.03);
+    assert.ok(wake.ribbons.slots.get(1).points.every(point=>point.p.x>=120),'the next segment starts at the new position');
     // Boost: sparks and a full-strength ribbon.
     wake.observe(2,at.set(0,5,0),up,true,.03);
     wake.observe(2,at.set(.75,5,0),up,true,.03);

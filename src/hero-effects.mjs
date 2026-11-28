@@ -92,9 +92,10 @@ export class RibbonTrails{
 
   // Extend a flyer's ribbon to its current point. strength 0 lets it fade.
   follow(id,point,time,strength,colour){
+    if(!strength)return;
     let track=this.slots.get(id);
     if(!track){
-      if(!strength||!this.free.length)return;
+      if(!this.free.length)return;
       track={slot:this.free.shift(),points:Array.from({length:RIBBON.points},()=>({p:point.clone(),born:-1e4,strength:0})),
         lastPush:-1e4,seen:time,colour};
       this.slots.set(id,track);
@@ -103,20 +104,20 @@ export class RibbonTrails{
     const head=track.points[0];
     // After a gap the old path is gone: restart from here, so no strip
     // stretches across the jump.
-    if(strength&&time-track.lastPush>RIBBON.life){
+    if(time-track.lastPush>RIBBON.life){
       for(const item of track.points){item.p.copy(point);item.born=-1e4;}
       track.lastPush=time;
     }
     // The head rides with the body; a new point is committed once it is a
     // spacing away from the last committed one.
-    if(strength&&track.points[1].p.distanceTo(point)>=RIBBON.spacing){
+    if(track.points[1].p.distanceTo(point)>=RIBBON.spacing){
       const tail=track.points.pop();
       tail.p.copy(point);tail.born=time;tail.strength=strength;
       track.points.unshift(tail);
       track.lastPush=time;
     }else{
       head.p.copy(point);
-      if(strength){head.born=time;head.strength=strength;}
+      head.born=time;head.strength=strength;
     }
     this.write(track);
   }
@@ -139,15 +140,19 @@ export class RibbonTrails{
     this.mesh.visible=true;
   }
 
+  release(id){
+    const track=this.slots.get(id);
+    if(!track)return;
+    for(let i=0;i<RIBBON.points*2;i++)this.shape.setZ(track.slot*RIBBON.points*2+i,-1e4);
+    this.shape.needsUpdate=true;
+    this.free.push(track.slot);
+    this.slots.delete(id);
+  }
+
   update(time,enabled){
     this.material.uniforms.clock.value=time;
-    for(const [id,track] of this.slots){
-      if(enabled&&time-track.seen<RIBBON.life+.2)continue;
-      for(let i=0;i<RIBBON.points*2;i++)this.shape.setZ(track.slot*RIBBON.points*2+i,-1e4);
-      this.shape.needsUpdate=true;
-      this.free.push(track.slot);
-      this.slots.delete(id);
-    }
+    for(const [id,track] of this.slots)
+      if(!enabled||time-track.seen>=RIBBON.life+.2)this.release(id);
     this.mesh.visible=enabled&&this.slots.size>0;
   }
 
@@ -313,7 +318,7 @@ export class WaterRipples{
           // A leading crest, a trailing trough and a faint second ring.
           float crest=exp(-pow((r-.92)/.05,2.));
           float second=exp(-pow((r-.62)/.05,2.))*.55;
-          float foam=smoothstep(.35,0.,r)*(1.-smoothstep(0.,.25,age))*.5;
+          float foam=(1.-smoothstep(0.,.35,r))*(1.-smoothstep(0.,.25,age))*.5;
           float fade=(1.-age)*(1.-age)*(.5+.5*strength);
           float a=(crest+second+foam)*fade*.75;
           gl_FragColor=vec4(mix(vec3(.62,.80,.86),vec3(.95,.99,1.),crest),a);

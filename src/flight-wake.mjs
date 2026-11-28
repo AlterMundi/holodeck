@@ -100,6 +100,10 @@ export class FlightWake{
       track={last:new Vector3().copy(position),color,seen:time,carry:0};
       this.tracks.set(id,track);
     }
+    // A respawn or corrected peer position must never bridge an old ribbon
+    // to the new location. Keep the same speed ceiling as the spark emitter.
+    if(track.last.distanceTo(position)>Math.max(.4,Math.min(Math.max(seconds,0),.13)*39))
+      this.ribbons.release(id);
     const boost=flying?boostWakeDistance(track.last,position,seconds):0;
     const cruise=flying&&!boost?cruiseWakeDistance(track.last,position,seconds):0;
     const distance=boost||cruise,style=boost?BOOST:CRUISE;
