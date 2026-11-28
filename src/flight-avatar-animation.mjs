@@ -99,7 +99,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
     Object.assign(entry,{weight:0,hoverWeight:0,lowWeight:0,planarSpeed:0,flightSpeed:0,airWeight:0,
       boost:0,boostRelease:0,lowerWeight:0,airTime:0,rise:0,flightAge:0,poseTime:0,observedFlight:false,
       mode:null,poseMode:null,idleDwell:0,idleTime:0,idleWeight:0,
-      medium:null,loopTime:0,strokeTime:1.40,wadeWeight:0,phase:0,
+      medium:null,loopTime:0,strokeTime:1.40,wadeWeight:0,washCarry:0,phase:0,
       gaitPhase:null,gaitBackward:false,flightBackward:false,travelRight:0,travelForward:1,unsupported:0,fall:0,landingAge:Infinity,absorbAge:Infinity,absorb:0,brakeAge:Infinity,brake:0,lastSpeed:0});
     for(const follower of [entry.turn,entry.pitch,entry.bank,entry.lift,entry.sink,
       entry.thrust,entry.lean,entry.sway,entry.lead,entry.aim,entry.hips,entry.headFirst,entry.ahead,entry.sideLean,entry.outstretched,entry.restAmount])follower.reset();
@@ -255,7 +255,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
         const clearance=sample.feet-surface;
         const pace=travel/Math.max(elapsed,.001);
         const closeness=clamp(1-clearance/3);
-        if(closeness>0&&pace>3){
+        if(clearance>=0&&closeness>0&&pace>3){
           entry.washCarry=(entry.washCarry??0)+travel*closeness;
           const spacing=wet?1.6:1.1;
           while(entry.washCarry>=spacing){
@@ -266,7 +266,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
             else wake?.dust?.(washPoint,up,washDirection.copy(displacement).normalize(),strength,sample);
           }
         }else entry.washCarry=0;
-      }
+      }else entry.washCarry=0;
       const draft=sample?sample.waterLevel-sample.feet:-Infinity;
 
       if(!outdoor||underwater)entry.observedFlight=false;

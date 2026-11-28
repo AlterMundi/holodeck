@@ -418,7 +418,7 @@ export class SmokePuffs{
           float r=length(plane);
           if(r>1.)discard;
           float billow=fbm(plane*1.6+colour.w*9.+age*1.3);
-          float body=smoothstep(1.,.15,r+(billow-.5)*.9);
+          float body=1.-smoothstep(.15,1.,r+(billow-.5)*.9);
           float fade=smoothstep(0.,.08,age)*(1.-age)*(1.-age);
           // Lit from inside at first, then grey and cool.
           vec3 shade=mix(colour.rgb*1.2,vec3(.72,.76,.80),smoothstep(0.,.35,age))*(.75+.35*billow);
