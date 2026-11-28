@@ -1,6 +1,25 @@
 # Current MVP work
 
 
+## November 28 — Companion visor speech and nighttime swarms
+
+Protected release `cf76f6561865` selects source `9c9ff2b`, integrating
+Char Design's `b1eb76a`. Only the illuminated visor mouth follows speech.
+The baked animations are smoothed. The companion steps forward to face a
+stationary player during a reply, holds through short pauses and resumes
+following on movement. Night fireflies gather in up to four local swarms.
+
+The exact package ran on the Legion RTX 2060 with a controlled speech
+envelope. The mouth went from 0 to 0.85, the emissive intensity rose from
+2.85 to 5.03, and the hidden chin stayed fixed. The companion moved from
+1.23 m behind to 1.14 m ahead, faced the player and returned behind while
+walking. The settled head sample peaked at 0.011 rad per rendered sample.
+A separate 16-location firefly check observed up to 86, reproducible
+placement at the same location and daytime hiding. All 562 active tests
+passed with two skips. The protected client and 96 installed files matched
+the package. Rollback is `6d0115a025cd`.
+
+
 
 
 
