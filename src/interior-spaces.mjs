@@ -19,12 +19,14 @@ const ROOM_MARKER = Object.freeze({id:'room-marker',kind:'cylinder',
 const exact = (value, keys) => value && typeof value === 'object' &&
   !Array.isArray(value) && Object.keys(value).sort().join(',') === keys;
 const allowedActor = value => typeof value === 'string' && ACTOR.test(value);
+export const validRoomGuests=guests=>Array.isArray(guests)&&guests.length<=16&&
+  (guests.length===1&&guests[0]==='*'||guests.every(allowedActor))&&new Set(guests).size===guests.length;
 const listedGuest=(room,id)=>room.guests[0]==='*'||room.guests.includes(id);
 const label = value => typeof value === 'string' && value.trim().length > 0 &&
   value.length <= 60 && !/[\u0000-\u001f\u007f]/.test(value);
 
 export class InteriorSpaces {
-  constructor({definitions = [], houses, state, persist, clock = Date.now, guestAccess, upperLanding, exteriorPortals = new Set()}) {
+  constructor({definitions = [], houses, state, persist, clock = Date.now, guestAccess, houseGuestAccess, upperLanding, exteriorPortals = new Set()}) {
     this.exteriorPortals = exteriorPortals;
     if (!Array.isArray(definitions) || definitions.length > MAX_SPACES)
       throw Error('Select bounded authored interior rooms');
@@ -32,6 +34,7 @@ export class InteriorSpaces {
     this.persist = persist;
     this.clock = clock;
     this.guestAccess = guestAccess;
+    this.houseGuestAccess=houseGuestAccess;
     this.upperLanding = upperLanding;
     this.rooms = new Map();
     for (const d of definitions) {
@@ -39,8 +42,7 @@ export class InteriorSpaces {
           typeof d.id !== 'string' || d.id === OUTSIDE || !SPACE.test(d.id) || this.rooms.has(d.id) ||
           typeof d.house !== 'string' || !HOUSE.test(d.house) || !label(d.title) ||
           !Number.isSafeInteger(d.level) || Math.abs(d.level)>1000 || typeof d.entry !== 'boolean' ||
-          !Array.isArray(d.guests) || d.guests.length > 16 || !(d.guests.length===1&&d.guests[0]==='*'||d.guests.every(allowedActor)) ||
-          new Set(d.guests).size !== d.guests.length ||
+          !validRoomGuests(d.guests) ||
           !Array.isArray(d.links) || d.links.length > 6 ||
           !d.links.every(link=>exact(link,'kind,to') && typeof link.to === 'string' &&
             SPACE.test(link.to) && link.to !== d.id && ['door','stair','portal'].includes(link.kind)) ||
@@ -88,7 +90,10 @@ export class InteriorSpaces {
     const house=this.houses.directory().find(h=>h.id===room.house);
     if (!house) return false;
     if (house.owner===actor.id && actor.kind==='daimon') return true;
-    if (!listedGuest(room,actor.id)||room.guests[0]==='*'&&!actor.rights?.includes('observe')) return false;
+    const houseDecision=this.houseGuestAccess?.(actor,room);
+    if(houseDecision!=null){
+      if(!houseDecision||!actor.rights?.includes('observe'))return false;
+    }else if(!listedGuest(room,actor.id)||room.guests[0]==='*'&&!actor.rights?.includes('observe'))return false;
     return this.guestAccess ? this.guestAccess(actor,room.id)===true : true;
   }
 

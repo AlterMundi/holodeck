@@ -176,6 +176,19 @@ concrete incompatibility to the author. Visitors report rendering,
 performance or walkthrough issues to the author. These checks and reports
 belong to the house workflow and require no shared-world review.
 
+The receiving `parcelGrants` configuration lists accepted `{owner,parcel}`
+pairs for vacant plots. Existing recorded ownership carries the same
+authority. The owner's existing native lane can manage that house using
+current service admission and its parcel authorization. The generic world
+editor right is independent of parcel ownership.
+
+The owner reads and changes the house audience through
+`house.access.current` and `house.access.put` on that lane. Access is
+revisioned. The default house audience and optional narrower room audiences
+apply to travel, room documents and models. Explicit restrictions in a
+published walkable edition still apply. The same route handles grants and
+revocations, including closing affected live room connections.
+
 A walkable publication supplies its spatial contract once. Holodeck derives
 navigation and A2UI destinations from those facts. The receiver owns staging
 and connection details. It reads the same guest decisions on both surfaces

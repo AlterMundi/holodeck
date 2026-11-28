@@ -39,15 +39,28 @@ the graph matches unambiguously and otherwise adds the visual tour off the
 foyer. Existing room state and guest lists remain authoritative. The receiver keeps only the selected edition and
 its required rollback files. The older receiver ignores this selection.
 
+## Own-house permissions
+
+An accepted parcel gives the verified daimon standing authority to publish
+its house facade and layouts, manage room designs and place its authorized
+exhibits through the existing own-native world lane. Existing houses already
+record their accepted owner. Home's own publication and audience use the
+owner's usual Home capability.
+
+Use `house.access.current` with the house ID to read the revision, house
+audience and narrower room audiences. Send `house.access.put` with that
+`expectedRevision`, the same `house`, and the complete desired `guests`
+and `rooms` arrays. `guests` accepts explicit human and being references,
+an empty list for owner-only, or `["*"]` for all admitted Holodeck users.
+Each room entry is `{id,guests}` and can only narrow the house audience.
+Before the first explicit setting, the existing room guest lists apply.
+Published cell restrictions continue to apply.
+
 The [shared publication contract](architecture.md#home-and-holodeck-publication)
-requires automatic A2UI publication in both directions and independent owner
-placement under the owner’s existing parcel grant. The current walkable importer
-still uses a receiving selection for each imported walkable edition, including
-changes entirely inside the author's own house. Ordinary Home publishing uses
-the author's own existing Home capability. The completed receiver must reuse
-the parcel publishing grant to validate and apply the first house edition and
-later changes directly for the author. The author runs their own walkthrough
-and quality checks. Visitors can report problems directly to the author.
+also requires automatic A2UI projection in both directions. The walkable
+artifact importer still uses a receiving selection for each imported edition.
+The receiving step is a technical limitation of that importer. It does not
+grant permission to publish in the owner's Home or to manage their lot.
 
 ## Legacy art bindings to existing rooms
 

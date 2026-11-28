@@ -40,7 +40,7 @@ export async function loadOwnerRoomTours(selections,definitions,request){
   if(!Array.isArray(selections)||selections.length>4||
      new Set(selections.map(selection=>selection.house)).size!==selections.length)
     throw Error('Select distinct owner room tours');
-  const tours=[],art=new Map();
+  const tours=[],art=new Map(),guestLimits=new Map();
   for(const selection of selections){
     const foyer=definitions.find(room=>room.house===selection.house&&room.entry);
     if(!foyer)throw Error('Owner room tour requires its authored foyer');
@@ -81,6 +81,8 @@ export async function loadOwnerRoomTours(selections,definitions,request){
     const tourRooms=cells.map(cell=>({id:rooms[cell],house:foyer.house,level:foyer.level,
       title:manifest.cells[cell].title??labels[cell]??cell,entry:cell===entrance,
       guests:manifest.cells[cell].guests,links:links.get(cell).map(to=>({kind:'door',to:rooms[to]}))}));
+    for(const room of tourRooms)
+      if(room.guests&&room.guests[0]!=='*')guestLimits.set(room.id,new Set(room.guests));
     const topology=reused?definitions:tourRooms;
     const staged=await loadOwnerRoomArt([{...selection,rooms}],new Map(topology.map(room=>[room.id,room])),request);
     if(!reused){
@@ -91,7 +93,7 @@ export async function loadOwnerRoomTours(selections,definitions,request){
     for(const [id,room] of staged)art.set(id,room);
     tours.push({foyer:foyer.id,entrance:rooms[entrance],rooms:tourRooms,reused:Boolean(reused)});
   }
-  return {art,project(definitions){
+  return {art,guestLimits,project(definitions){
     const byId=new Map(definitions.map(room=>[room.id,room]));
     for(const tour of tours){
       const foyer=byId.get(tour.foyer);

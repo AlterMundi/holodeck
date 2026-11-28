@@ -17,6 +17,7 @@ import {IndoorGardens,INDOOR_GARDEN_BYTES} from './indoor-gardens.mjs';
 import {GardenEditors} from './garden-editors.mjs';
 import {readOwnedRoomArt} from './owned-room-art.mjs';
 import {Houses, HOUSE_SAVE_BYTES,exteriorDoor,houseId} from './houses.mjs';
+import {HouseAccess} from './house-access.mjs';
 import {readActivity,ActivityError} from './activity.mjs';
 import {nodeVisits} from './content-nodes.mjs';
 import express from 'express';
@@ -62,7 +63,7 @@ import {HumanAvatarProfiles,humanWardrobeAssets} from './human-avatars.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
-export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,releaseControllerRef=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt,houseVisual,gardenVisual,gallerySelection,galleryAuthorization,matterCollection,collectionSourceRequest,nativeReviewAuthority=null,artProfile,worldTerrain,atelierLayoutWrites=ATELIER_EXPANSION_WRITES,lightExercise=false,questbook=null,ownerRoomArt=[],ownerRoomTours=[],ownerArtRequest,atelierWorkshop=null}={}){
+export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,releaseControllerRef=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt,houseVisual,gardenVisual,gallerySelection,galleryAuthorization,matterCollection,collectionSourceRequest,nativeReviewAuthority=null,artProfile,worldTerrain,atelierLayoutWrites=ATELIER_EXPANSION_WRITES,lightExercise=false,questbook=null,ownerRoomArt=[],ownerRoomTours=[],parcelGrants=production?[]:null,ownerArtRequest,atelierWorkshop=null}={}){
   if(!/^\/(?:[a-z0-9-]+\/)*$/.test(basePath))throw Error('Select a bounded absolute base path');
   lightExercise=lightExercise===true;
   if(production&&(!identityResolver||!publicOrigin||!stateDir))throw Error('Shared identity, audience and state are required in production');
@@ -129,7 +130,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const localBoot=randomBytes(4).toString('hex');
   const store=stateDir?new RoomStore(stateDir):null;
   const houseStore=stateDir ? new RoomStore(join(stateDir,'houses'),{maxBytes:HOUSE_SAVE_BYTES}) : null;
-  const houses=new Houses({state:houseStore?.load(),persist:houseStore ? state => houseStore.save(state) : null});
+  const houses=new Houses({state:houseStore?.load(),parcelGrants,persist:houseStore ? state => houseStore.save(state) : null});
   const spaceStore=stateDir ? new RoomStore(join(stateDir,'spaces'),{maxBytes:SPACE_SAVE_BYTES}) : null;
   const layoutStore=stateDir?new RoomStore(join(stateDir,'layouts'),{maxBytes:LAYOUT_SAVE_BYTES}):null;
   // Keep the receiving graph as the fallback for releases predating adoption.
@@ -175,10 +176,16 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const definedRooms=new Set(layoutDefinitions().map(room=>room.id));
   const portalRooms=toroidal?Object.fromEntries([['matter',matterCollection?.room],['character',CHARACTER_STUDIO],
     ['lab',ATELIER_ROOMS.lab]].filter(([,id])=>id&&definedRooms.has(id)&&id!==ATELIER_FOYER)):{};
+  const accessStore=stateDir&&new RoomStore(join(stateDir,'house-access'),{maxBytes:96*1024});
+  const houseAccess=new HouseAccess({state:accessStore?.load(),houses,rooms:()=>spaces.rooms,
+    persist:accessStore?value=>accessStore.save(value):null});
   const spaces=new InteriorSpaces({definitions:layoutDefinitions(),houses,state:spaceStore?.load(),
     exteriorPortals:new Set(Object.values(portalRooms)),
     upperLanding:toroidal&&artProfile===ATELIER_PROFILE?atelierLabReturn:undefined,
-    persist:spaceStore ? state=>spaceStore.save(state) : null,guestAccess:interiorGuestAccess});
+    persist:spaceStore ? state=>spaceStore.save(state) : null,
+    houseGuestAccess:(actor,room)=>houseAccess.guestAllowed(actor,room),
+    guestAccess:(actor,id)=>(!tours.guestLimits.has(id)||tours.guestLimits.get(id).has(actor.id))&&
+      (!interiorGuestAccess||interiorGuestAccess(actor,id)===true)});
   const ownerArt=await loadOwnerRoomArt(ownerRoomArt,spaces.rooms,ownerReader);
   function ownerArtFor(room){
     if(tours.art.has(room?.id))return tours.art.get(room.id);
@@ -699,7 +706,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const authorizeReview=nativeReviewAuthority&&(async(author,pin)=>{
       if(await nativeReviewAuthority(author,pin)!==true)return false;
       const rights=await nativeRoomAuthority({actor:author});
-      return projectionHealthy&&rights.includes('observe')&&rights.includes('edit');
+      return projectionHealthy&&rights.includes('observe')&&(rights.includes('edit')||ownsRoom({...author,rights},input.room));
     });
     return exhibits.put(actor,preview?{...input,type:'exhibit.put'}:input,room.nodes,{preview,authorizeReview,canWrite});
   }
@@ -771,16 +778,46 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     try{return indoorGardens.act(actor,input,{delegated});}
     catch(error){if(indoorGardens.fenced)spaces.fenced=true;throw error;}
   }
+  const ownsRoom=(actor,id)=>{
+    const selected=spaces.rooms.get(id);
+    return !!selected&&houses.canManage(actor,selected.house);
+  };
+  // Legacy room writers consume edit. Derive it only for the operation's
+  // owned target, never on the session or shared-world authority.
+  function houseEditor(actor,allowed=houses.canManage(actor)){
+    return projectionHealthy&&allowed&&!actor.rights.includes('edit')
+      ? {...actor,rights:[...actor.rights,'edit']}:actor;
+  }
+  function changeHouseAccess(actor,input){
+    if(!projectionHealthy||room.commitUncertain||spaces.fenced)return null;
+    if(input.type==='house.access.current')
+      return Object.keys(input).sort().join(',')==='house,type'?houseAccess.current(actor,input.house):null;
+    let access;
+    try{access=houseAccess.put(actor,input);}
+    catch(error){if(error.commitUncertain)spaces.fenced=true;throw error;}
+    if(access)for(const [socket,record] of sockets)
+      if(spaces.rooms.get(record.scope)?.house===access.house&&
+         (!inScope(record.session.actor,record.scope)||record.projectionAllowed?.()===false))
+        socket.close(1008);
+    return access;
+  }
   const selectedWorldPorts=validateWorldPorts({worldSocket,worldSocketBeingRef,worldPorts});
   if(selectedWorldPorts.length&&!native)throw Error('Native authority is required for world return ports');
   for(const selected of selectedWorldPorts)installedWorldPorts.push(await createWorldPort({socketPath:selected.socket,expectedBeingRef:selected.beingRef,room,native,describeSpace,moveSpace,conversationPlace,questbook:questbookHost,
     readRenderedView:({id,verified})=>renderedViews.read({id,human:verified.humanRef,space:verified.capturedSpace??OUTSIDE,run:room.run}),
     approachSpace:(actor,destination)=>room.commitUncertain?null:spaces.approach(actor,destination),
-    putExhibit,exhibitResult:(actor,id)=>exhibits.result(actor,id),
-    currentLayout:actor=>layoutAuthority(actor).current(actor),
-    draftLayout:(actor,input)=>room.commitUncertain||spaces.fenced||!layoutStore?null:layoutAuthority(actor).draft(actor,input),
-    previewLayout,
-    publishLayout,layoutResult:(actor,id)=>layoutAuthority(actor).result(actor,id),roomDesign,indoorGarden,atelierWorkshop:atelierAuthority,
+    putExhibit:(actor,input)=>putExhibit(houseEditor(actor,ownsRoom(actor,input.room)),input),
+    houseAccess:changeHouseAccess,ownsRoom,ownsHouse:(actor,id)=>houses.canManage(actor,id),
+    houseWritesAllowed:()=>projectionHealthy&&!room.commitUncertain&&!spaces.fenced,
+    exhibitResult:(actor,id)=>exhibits.result(actor,id),
+    currentLayout:actor=>layoutAuthority(actor).current(houseEditor(actor)),
+    draftLayout:(actor,input)=>room.commitUncertain||spaces.fenced||!layoutStore?null:layoutAuthority(actor).draft(houseEditor(actor),input),
+    previewLayout:(actor,input)=>previewLayout(houseEditor(actor,houses.canManage(actor,input.house)),input),
+    publishLayout:(actor,input)=>publishLayout(houseEditor(actor,houses.canManage(actor,input.house)),input),
+    layoutResult:(actor,id)=>layoutAuthority(actor).result(houseEditor(actor),id),
+    roomDesign:(actor,input)=>roomDesign(houseEditor(actor,input.type==='design.result'?houses.canManage(actor):ownsRoom(actor,input.room)),input),
+    indoorGarden,authorGarden:(actor,input)=>indoorGarden(houseEditor(actor,ownsRoom(actor,input.room)),input),
+    atelierWorkshop:atelierAuthority,
     reviewCharacter:(actor,type,input)=>{
       const result=reviewCharacter(actor,type,input);
       return type==='character-review.current'&&result.status===200?
@@ -1622,7 +1659,7 @@ export async function main(){
   validateWorldPorts({...receiving});
   const nativeRoomAuthority=receiving&&Object.hasOwn(receiving,'authoritySocket')?createNativeRoomAuthority(receiving.authoritySocket):null;
   const nativeReviewAuthority=nativeRoomAuthority?createNativeReviewAuthority(receiving.authoritySocket):null;
-  const runtime=await createHolodeck({production,stateDir,releaseControllerRef:receiving?.releaseControllerRef,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,nativeReviewAuthority,contentVisits:receiving?.contentVisits,contentNodes:receiving?.contentNodes,nativeRoomAuthority,conversationOrigins:receiving?.conversationOrigins||[],ownNative:receiving?.ownNative??false,interiorSpaces:receiving?.interiorSpaces??[],gallerySelection:receiving?.gallery,matterCollection:selectMatterAppearance(receiving),artProfile:receiving?.artProfile,worldTerrain:receiving?.worldTerrain,ownerRoomArt:receiving?.ownerRoomArt??[],ownerRoomTours:receiving?.ownerRoomTours??[],atelierWorkshop:receiving?.atelierWorkshop??null,questbook:configuredQuestbook(receiving,stateDir)});
+  const runtime=await createHolodeck({production,stateDir,releaseControllerRef:receiving?.releaseControllerRef,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,nativeReviewAuthority,contentVisits:receiving?.contentVisits,contentNodes:receiving?.contentNodes,nativeRoomAuthority,conversationOrigins:receiving?.conversationOrigins||[],ownNative:receiving?.ownNative??false,interiorSpaces:receiving?.interiorSpaces??[],gallerySelection:receiving?.gallery,matterCollection:selectMatterAppearance(receiving),artProfile:receiving?.artProfile,worldTerrain:receiving?.worldTerrain,ownerRoomArt:receiving?.ownerRoomArt??[],ownerRoomTours:receiving?.ownerRoomTours??[],parcelGrants:receiving?.parcelGrants??(production?[]:null),atelierWorkshop:receiving?.atelierWorkshop??null,questbook:configuredQuestbook(receiving,stateDir)});
   const port=Number(process.env.PORT||18940);
   if(!Number.isInteger(port)||port<1024||port>65535)throw Error('Select a valid loopback port');
   if(process.env.HOST&&process.env.HOST!=='127.0.0.1')throw Error('Use the existing loopback gateway');

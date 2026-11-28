@@ -175,7 +175,12 @@ export class Room extends EventEmitter {
   }
 
   execute(actor, command) {
-    if (!actor?.rights?.includes('edit')) throw new RoomError('forbidden', 'Editing access required');
+    const housing=houseAction(command?.type);
+    const houseWrite=command?.type==='house.claim'
+      ? this.houses.canClaim(actor,command.args?.parcel)
+      : housing&&this.houses.canManage(actor,command.target);
+    if (!houseWrite && !actor?.rights?.includes('edit'))
+      throw new RoomError('forbidden',housing?'Accepted parcel or house ownership required':'Editing access required');
     if (!command || Object.keys(command).some(key => !['id','issuedAt','run','edition','observation','nativeRequest','type','target','expectedRevision','args'].includes(key))
       || typeof command.id !== 'string' || !/^[\w-]{8,80}$/.test(command.id)
       || !Number.isSafeInteger(command.issuedAt) || command.issuedAt > this.clock() + 1000)
@@ -194,7 +199,6 @@ export class Room extends EventEmitter {
       throw new RoomError('expired', 'Command expired; inspect state before making a new decision');
     for (const [id, outcome] of this.outcomes) if (this.clock() - outcome.at > LIMITS.retryMs) this.outcomes.delete(id);
     if (this.outcomes.size >= LIMITS.commands) throw new RoomError('capacity', 'Command history capacity reached');
-    const housing = houseAction(command.type);
     const finish = (status, reason, event = null) => {
       const result = { command: command.id, status, reason, event: event?.sequence ?? null, run: this.run };
       if (!housing) this.outcomes.set(key, { fingerprint, result, at: this.clock() });

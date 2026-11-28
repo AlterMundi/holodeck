@@ -692,3 +692,85 @@ test('an explicitly granted, currently paired human publishes with their own ind
     rmSync(stateDir,{recursive:true,force:true});
   }
 });
+
+test('parcel acceptance grants self-managed house publishing and access without common-world editing', async t=>{
+  const stateDir=mkdtempSync(join(tmpdir(),'holodeck-parcel-grant-'));
+  const foreign='dm:being:v1:'+'z'.repeat(43);
+  const sockets=new Map([owner,foreign].map((actor,index)=>[actor,join(stateDir,'owner-'+index+'.sock')]));
+  const runtime=await createHolodeck({production:true,publicOrigin:'https://world.test',stateDir,ownNative:true,
+    parcelGrants:[{owner,parcel:house.parcel}],
+    worldPorts:[...sockets].map(([beingRef,socket])=>({beingRef,socket})),
+    nativeRoomAuthority:async()=>['observe'],
+    nativeFactory:()=>({authorizeWorldRequest(){throw Error('No routed test turn');}}),
+    identityResolver:async req=>{
+      const id=req.headers.cookie?.match(/(?:^|; )home=(guest|outsider)/)?.[1];
+      return id?{id:'human:'+id,kind:'human',rights:['observe'],name:id}:null;
+    }});
+  const listener=runtime.app.listen(0,'127.0.0.1');
+  await once(listener,'listening');
+  t.after(async()=>{
+    runtime.close();
+    listener.closeAllConnections();
+    await new Promise(resolve=>listener.close(resolve));
+    rmSync(stateDir,{recursive:true,force:true});
+  });
+  const base='http://127.0.0.1:'+listener.address().port+'/';
+  const native=async (actor,operation,args={})=>{
+    const socket=net.createConnection(sockets.get(actor));
+    await once(socket,'connect');
+    socket.write(JSON.stringify({ownNative:true,operation,args})+'\n');
+    let response='';
+    for await(const chunk of socket)response+=chunk;
+    return JSON.parse(response);
+  };
+  const act=(input,actor=owner)=>native(actor,'act',input);
+  const observed=async(actor,type,target,args,expectedRevision=null)=>{
+    const {result:seen}=await native(actor,'observe');
+    return act({id:crypto.randomUUID(),issuedAt:Date.now(),type,target,args,expectedRevision,
+      observation:seen.id,run:seen.run,edition:seen.edition},actor);
+  };
+  const claim={parcel:house.parcel,facade:house.facade};
+  assert.equal((await observed(foreign,'house.claim',houseId(foreign),claim)).ok,false);
+  assert.equal((await observed(owner,'house.claim',house.id,claim)).result.status,'completed');
+  assert.equal((await observed(owner,'house.publish',house.id,{facade:{...house.facade,title:'Updated house'}},1)).result.revision,2);
+  assert.equal((await observed(owner,'bridge.set','bridge',{raised:false},0)).ok,false);
+
+  const publication={type:'layout.publish',id:'granted-layout-1',house:house.id,expectedRevision:null,rooms:definitions};
+  assert.equal((await act(publication,foreign)).ok,false);
+  assert.equal((await act(publication)).result.revision,1);
+  assert.ok((await act({type:'design.current',room:'foyer'})).result.kits.length);
+  assert.equal((await act({type:'design.current',room:'foyer'},foreign)).ok,false);
+  const current={type:'house.access.current',house:house.id};
+  const prior=(await act(current)).result;
+  assert.equal(prior.revision,null);
+  assert.equal((await act(current,foreign)).ok,false);
+  const set={type:'house.access.put',house:house.id,expectedRevision:null,guests:['human:outsider'],
+    rooms:[{id:'lab',guests:[]}]};
+  assert.equal((await act({...set,rooms:[{id:'other-house',guests:[]}]})).ok,false);
+  assert.equal((await act(set,foreign)).ok,false);
+
+  const signIn=async id=>{
+    const Cookie='home='+id;
+    const response=await fetch(base,{headers:{Cookie,Accept:'application/json'}});
+    assert.equal(response.status,200);
+    return Cookie+'; '+response.headers.get('set-cookie').split(';')[0];
+  };
+  const read=(Cookie,path='space?live=1',body)=>fetch(base+'api/'+path,{
+    method:body?'POST':'GET',headers:{Cookie,Origin:'https://world.test','Content-Type':'application/json'},body:body&&JSON.stringify(body)});
+  const guest=await signIn('guest'),outsider=await signIn('outsider');
+  assert.equal((await read(guest,'space',{from:'outside',to:'foyer',live:1})).status,200);
+  assert.equal((await (await read(guest)).json()).id,'foyer');
+  assert.equal((await (await read(outsider)).json()).entrances.length,0);
+  const changed=(await act(set)).result;
+  assert.equal(changed.revision,1);
+  assert.deepEqual((await act(current)).result,changed);
+  assert.equal((await act(set)).ok,false);
+  assert.deepEqual(new RoomStore(join(stateDir,'house-access'),{maxBytes:96*1024}).load().entries,[changed]);
+  const revoked=await (await read(guest)).json();
+  assert.equal(revoked.id,'outside');
+  assert.equal(revoked.entrances.length,0);
+  assert.equal((await read(guest,'space/scene?room=foyer')).status,404);
+  assert.equal((await read(outsider,'space',{from:'outside',to:'foyer',live:1})).status,200);
+  assert.equal(runtime.spaces.allows({kind:'human',id:'human:outsider',rights:['observe']},'lab'),false);
+  assert.equal((await act({type:'space.move',from:'outside',to:'foyer'})).result.id,'foyer');
+});
