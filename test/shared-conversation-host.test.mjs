@@ -598,7 +598,8 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  await dialog.getByRole('button',{name}).tap();
  await dialog.getByText('Ese topic ya no está disponible.').waitFor();
  assert.deepEqual(readbacks,[null,room.room,null,room.room]);
- assert.deepEqual(posted,questbook?['/api/topic-space','/api/questbook/create','/api/questbook/create',
+ // The current renderer publishes its pose separately from work and travel.
+ assert.deepEqual(posted.filter(path=>path!=='/api/space/avatar-pose'),questbook?['/api/topic-space','/api/questbook/create','/api/questbook/create',
    '/api/questbook/action','/api/questbook/action','/api/questbook/action','/api/questbook/action','/api/space']:
    ['/api/topic-space','/api/space']);
  assert.deepEqual(modes,[room.room,null,room.room,null]);
