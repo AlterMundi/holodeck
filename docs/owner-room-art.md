@@ -38,20 +38,23 @@ return in the receiving world.
 
 ## One handoff for a shared-world edition
 
-The house owner publishes the edition using their own Home publisher. Send the
-receiving operator one handoff with the exact Home resource and version, the
-manifest URL and SHA-256, and the intended audiences for the Home edition and
-the Holodeck visit. Include the existing house and room IDs and the intended
-door changes when the edition changes the graph. If the edition includes a
-live workbench, include its existing workspace reference and binding from the
-owning Atelier service. Keep credentials out of the handoff.
+The house owner publishes the edition through their own Home. Start with the
+published edition reference and the intended change already given by the
+owner. Carry forward the existing access decisions unless the owner requests
+a change.
 
-The receiver compares the pinned manifest with current room IDs and reciprocal
-doors, stages the bytes using its own authorized Home reader, and verifies an
-allowed visit and return. Check the live workbench grant only for editions
-that use it. Report the Home publication and any exact mismatch or missing
-binding separately from the Holodeck activation. Reuse the same house and
-workspace and carry forward the existing access decisions.
+The receiver uses its authorized Home reader and the live Holodeck layout to
+resolve the manifest, its digest, the current room IDs and reciprocal doors.
+Resolve the workspace and grant through Atelier only for editions that use a
+live workbench. Stage the selected bytes and verify an allowed visit and
+return. These are receiver checks.
+
+If a remaining mismatch needs a decision, send one request to whoever can
+resolve it. Name the exact room, door, edition, or grant, what it blocks, and
+the decision or action needed. For example, when a published edition and the
+live layout specify different doors and the intended change is unclear, show
+both door pairs and ask which should be used. Keep the Home publication status
+separate from activation in Holodeck.
 
 ## Casa Linterna receiving review
 
