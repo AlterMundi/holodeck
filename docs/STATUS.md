@@ -1,5 +1,28 @@
 # Current MVP work
 
+## Explorer motion and responsive meadow · 2026-11-28
+
+Protected release `6fd9cd26732d` selects `66dad9e`, integrating Char Design's
+`cd2b78f` and the qualified meadow. Exact archive and protected HTTPS bundle
+readback passed. Rollback remains `952e5c7121b1`.
+
+A browser on the RTX 2060 exercised 20 ground and flight segments with A, D,
+S and diagonals, including Shift. A 42 s idle run measured at most 4.3 mm of
+foot displacement. A second client with its own fixture identity loaded the
+same rig and observed its ground and airborne movement. A later device pass
+confirmed head-first lateral flight when transitioning out of reverse, with
+and without boost. The exact final package also rendered reactive grass,
+distant clumps and ordinary-flight particles while moving.
+
+The grass renderer applies the reactive shader only on tiles that intersect
+the active pressure volume. In the settled Pi 5 normal-mode comparison at a
+528 × 330 drawing buffer, the base produced 11.76 FPS and the tile-scoped
+build produced 11.43 FPS. Median p95 was 100 ms in both runs. The later
+flight-only transition correction does not affect that stationary scene.
+The final RTX meadow arm used a larger adaptive draw buffer; use it for
+visual qualification only. Node tests: 579 passed, two skipped.
+
+
 ## Reactive meadow and ordinary flight wake · 2026-11-28
 
 Char Design's `c3140b5` is integrated in candidate `4e223ee`, archive
