@@ -14,22 +14,23 @@ const slotNames=Array.from({length:pageSize},(_,i)=>'slot'+i);
 const row=(id,children)=>({id,component:'HudRow',children});
 const components=[
   {id:'root',component:'HudPanel',chrome:'none',label:'Teletransporte',width:teleportHudWidth,gap:.018,
-    children:['heading','categories','back','models','space','actions','message']},
+    children:['heading','categories','back','models','space','travel','actions','message']},
   {...row('heading',['close']),visible:path('cameraMounted')},
   button('close','Cerrar'),
   {...row('categories',categories.map(({id})=>id)),visible:path('cameraMounted')},
   ...categories.map(({id,label})=>button(id,label,{pressed:path(id+'Active'),disabled:path('loading')})),
-  button('back',path('backLabel'),{visible:path('cameraBack'),gestureKey:path('level'),
+  button('back',path('backLabel'),{visible:path('physicalBack'),gestureKey:path('level'),
     action:action('back',{level:path('level')})}),
   row('models',slotNames),
   ...slotNames.map(id=>button(id,path(id+'Label'),{visible:path(id+'Visible'),pressed:path(id+'Active'),
     gestureKey:path(id+'Key'),action:action(id,{selected:path(id+'Key'),level:path('level')})})),
   text('space','',{lines:6}),
-  {...row('actions',['previous','favorite','go','next']),visible:path('cameraMounted')},
+  row('travel',['go']),
+  {...row('actions',['previous','favorite','next']),visible:path('cameraMounted')},
   button('previous','Destinos anteriores',{disabled:path('noPrevious')}),
   button('favorite',path('favoriteLabel'),{pressed:path('isFavorite'),disabled:path('noSelection'),gestureKey:path('destination'),
     action:action('favorite',{selected:path('destination')})}),
-  button('go','Teletransportar',{disabled:path('noTravel'),gestureKey:path('destination'),
+  button('go','Viajar',{disabled:path('noTravel'),gestureKey:path('destination'),
     action:action('go',{selected:path('destination')})}),
   button('next','Más destinos',{disabled:path('noNext')}),
   text('message',path('message'),{style:'status',visible:path('hasMessage'),lines:2}),
@@ -46,15 +47,21 @@ export function teleportModelId(id){
 }
 
 export class TeleportHud {
-  constructor({send,read,go,focus,onOpen,onClose,onSelect,onViewData,storage}){
-    Object.assign(this,{send,read,go,focus,onOpen,onClose,onSelect,onViewData,storage,epoch:0});
+  constructor({send,read,go,focus,onOpen,onClose,onSelect,onViewData,prepare,travelMotion,storage}){
+    Object.assign(this,{send,read,go,focus,onOpen,onClose,onSelect,onViewData,prepare,travelMotion,storage,epoch:0});
   }
 
   message(type,content){this.send(type,content,teleportHudId);}
 
   async open(space){
-    if(this.group)return;
+    if(this.group||this.preparing)return;
     const epoch=++this.epoch;
+    if(this.prepare){
+      this.preparing=true;
+      this.physical=await this.prepare();
+      this.preparing=false;
+      if(epoch!==this.epoch)return;
+    }
     this.key='holodeck:teleport:favorites:'+space.actorRef;
     this.favorites=new Set();
     try{
@@ -92,7 +99,10 @@ export class TeleportHud {
   }
 
   close(){
+    if(this.preparing){this.epoch++;return;}
     if(!this.group)return;
+    clearTimeout(this.travelTimer);
+    this.travelling=false;
     this.epoch++;
     if(this.lastPublishedSelection){this.lastPublishedSelection='';this.onSelect?.(null);}
     this.message('deleteSurface',{});
@@ -156,13 +166,13 @@ export class TeleportHud {
       'Marcá tus destinos habituales con la estrella.':'No hay destinos disponibles en esta zona.');
     this.caption=current?this.title(current)+(current.current?' (estás acá)':''):'';
     const value={
-      epoch:this.epoch,level:this.level,hasParent:Boolean(parent),cameraBack:!this.worldMounted&&Boolean(parent),
+      epoch:this.epoch,level:this.level,hasParent:Boolean(parent),physicalBack:Boolean(parent),
       backLabel:parent?'Volver desde '+this.title(parent):'',
       destination:this.destination,
       noPrevious:!this.page,noNext:(this.page+1)*pageSize>=destinations.length,
-      cameraMounted:!this.worldMounted,loading:this.loading,
+      cameraMounted:!this.physical,loading:this.loading,
       isFavorite,favoriteLabel:isFavorite?'Quitar favorito':'Guardar favorito',
-      noTravel:!current||Boolean(current.current),noSelection:!current,
+      noTravel:!current||Boolean(current.current)||this.travelling===true,noSelection:!current,
       hasMessage:Boolean(message),message,
     };
     for(const {id} of categories)value[id+'Active']=this.category===id;
@@ -198,6 +208,7 @@ export class TeleportHud {
   activate({name,context}){
     if(!this.group||context?.epoch!==this.epoch)return;
     if(name==='close'){this.close();return;}
+    if(this.travelling)return;
     const {slots,current}=this.options();
     const selection=context.selected;
     if(categories.some(item=>item.id===name)&&(name!==this.category||this.branch)){
@@ -229,8 +240,18 @@ export class TeleportHud {
     }
     if(current&&selection===current.id){
       if(name==='go'&&!current.current){
-        this.close();
-        this.go(current);
+        const delay=this.travelMotion?.();
+        if(delay){
+          this.travelling=true;
+          this.update();
+          this.travelTimer=setTimeout(()=>{
+            this.close();
+            this.go(current);
+          },delay);
+        }else{
+          this.close();
+          this.go(current);
+        }
         return;
       }
       if(name==='favorite'){

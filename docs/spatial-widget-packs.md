@@ -9,13 +9,11 @@ spatial renderer resolves model hits to the same control instance exposed
 to a keyboard and screen reader. The host can mount the surface on the HUD
 or on a workbench without changing the A2UI messages.
 
-The teleport instrument is the first pack. It uses reusable miniature
-factories, a finish palette, physical switches and built-in sound when world
-sound is enabled. The current model is built from geometry in
-`src/teleport-models.mjs`. A pack can use preloaded GLB assets through the
-same renderer hook and dispose its owned resources when the corresponding
-control leaves the surface. See the [low instrument design brief](teleport-instrument-design.md)
-for the next art pass.
+The teleport instrument is the first pack. Char Design's station and
+destination miniatures are loaded from their authored GLBs. Named anchors
+place the spatial A2UI ray targets on the child nodes, floating parent and
+travel carriage. The carriage turns on its rail toward the current view.
+See the [station asset contract](../art/teleport-station/README.md).
 
 ## Camera-mounted and immersive presentation
 
@@ -46,8 +44,8 @@ IDs, such as the rooms accessible through the Residence portals. The UI also
 uses the catalog's existing house and room fields to construct containment.
 Picking a branch opens one level and keeps its actual destination selected.
 The `back` action leaves that branch without traveling. The renderer can bind
-the stable `back` control instance to the selected parent model. Until the
-authored model arrives, the immersive graph uses an ordinary A2UI back control.
+the stable `back` control instance to the selected parent model. If the authored station cannot load, the camera-mounted A2UI controls still
+expose the same actions.
 
 The teleport controller exposes
 `selectDestination(id)` and a selection callback for a future map.

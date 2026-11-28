@@ -50,9 +50,9 @@ export class TeleportWorkspace {
     this.group=group;
     this.place.add(group);
     group.matrixAutoUpdate=true;
-    group.position.set(0,1.65,0);
+    group.position.set(0,0,0);
     group.rotation.set(0,0,0);
-    group.scale.setScalar(.88);
+    group.scale.setScalar(1);
     this.place.updateMatrixWorld(true);
     this.focus.set(0,.96,.10);
     this.place.localToWorld(this.focus);

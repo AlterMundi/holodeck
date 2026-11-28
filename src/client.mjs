@@ -809,7 +809,7 @@ function resetDoor(){
   });
 }
 function toggleTeleport(){
-  if(matterHud?.teleport.group){matterHud.teleport.close();return true;}
+  if(matterHud?.teleport.group||matterHud?.teleport.preparing){matterHud.teleport.close();return true;}
   if(!matterHud||entering||moving||needsSync||matterHud.active||matterHud.modalScope||mapPanel.open||beaconControls.opened||
      signalEditor.active||contentVisitor?.index?.opened||worldHistory?.opened||
      document.querySelector('dialog[open],#creator:not([hidden]),#content-visit:not([hidden]):not(.is-walking)'))return false;
@@ -1026,7 +1026,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       beaconControls,onBeaconOpen:()=>releaseBeaconInput(client),
       toggleSound:()=>{if(!moving&&!entering&&navigator.userActivation?.isActive)void toggleWorldSound();},
       teleport:{
-        scene:renderer.scene,
+        base,scene:renderer.scene,
         anchor:()=>{
           const position=client.getLocalCharacterState()?.position;
           if(!position)return null;
