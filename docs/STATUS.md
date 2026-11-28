@@ -10,6 +10,15 @@ project routes denied anonymous requests. The packed tests exercised the
 project route, ratified permissions, the shared Questbook writer and
 the exact Home publication using the deployed Conversation client.
 
+The paired journal now uses the issue-capable DaimonCards writer at
+Matrix `1983c43`. Its SHA-256 is
+`f0a60d4838dace536b7638d293f33f3e9bffe8a804344ac4a8c22411f4095425`.
+Replacing the executable kept the existing Holodeck and native bridge
+processes. CompAII verified both original receipts for creating an issue
+and linking it to the published playtest's exact Git revision. The prior
+cards were unchanged. Keep the compatible writer on a UI rollback because
+the live board now contains a `create_issue` event.
+
 The real Daimon Matrix topic still needs its Gateway workspace and
 checkpoint linked before the paired visitor can open the pilot
 publication in that room. The
