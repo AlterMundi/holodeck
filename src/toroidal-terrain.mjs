@@ -150,13 +150,23 @@ const linternaPlot=districtBuildable.find(plot=>plot.id==='parcel-east-1');
 // Bounds in the selected exterior's local x/z. Leave the garden strips,
 // courtyards between wings, and the perimeter planted.
 const linternaHardSurfaces=[
-  [-2.9,2.9,1.6,36],           // approach and path to the Recibidor
-  [-8,8,22.4,28.1],            // portico
-  [-12.7,12.7,8.55,22.45],    // raised arrival terrace
-  [-5.8,5.8,-7.4,1.8],        // Recibidor shell
-  [-15.1,-4.85,-21.3,-11.1],  // Athena
-  [-3.3,3.3,-26.8,-19.2],     // Hephaestus
-  [4.95,15,-21.2,-11.25],     // Apollo
+  [-2.9,2.9,1.6,36],             // tiled approach to the Recibidor
+  // Eight portico plinths and four raised beds measured from the exterior GLB.
+  ...[23.76,26.56].flatMap(back=>[-7.275,-4.415,3.265,6.125]
+    .map(left=>[left,left+1.15,back,back+1.08])),
+  ...[8.575,17.575].flatMap(back=>[-12.675,4.325]
+    .map(left=>[left,left+8.35,back,back+4.85])),
+  [-10.74,-7.26,19.76,23.24],    // garden basins
+  [7.26,10.74,19.76,23.24],
+  [-26.6,-13.6,25.9,26.5],      // portico walls
+  [13.6,26.6,25.9,26.5],
+  [-5.8,5.8,-7.4,1.8],          // Recibidor
+  [-15.1,-4.85,-21.3,-11.1],    // Athena
+  [-3.3,3.3,-26.8,-19.2],       // Hephaestus
+  [4.95,15,-21.2,-11.25],       // Apollo
+  [-21.43,-20.97,-33.05,1.05],  // rear garden walls
+  [20.97,21.43,-33.05,1.05],
+  [-21.43,21.43,-33.63,-33.17],
 ];
 
 // Project the torus direction onto the same plane and yaw as the exterior.
@@ -169,7 +179,7 @@ export function linternaGrassCover(u,v){
   let gap=Infinity;
   for(const [left,right,back,front] of linternaHardSurfaces)
     gap=Math.min(gap,Math.hypot(Math.max(left-x,0,x-right),Math.max(back-z,0,z-front)));
-  return fade(Math.max(0,Math.min(1,(gap-.65)/1.6)));
+  return fade(Math.max(0,Math.min(1,(gap-.26)/.9)));
 }
 
 function housingGrade(u,v,elevation){

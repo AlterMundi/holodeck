@@ -1,7 +1,7 @@
 import {BufferGeometry,Color,DoubleSide,Float32BufferAttribute,Group,InstancedMesh,MeshStandardMaterial,Object3D,Vector3} from 'three';
 import {approachCoordinates} from './sand3d-trail.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
-import {terrainElevation,terrainMeadowMoisture,terrainPosition,terrainTrail,terrainWoodland,TOROIDAL_TERRAIN} from './toroidal-terrain.mjs';
+import {linternaGrassCover,terrainElevation,terrainMeadowMoisture,terrainPosition,terrainTrail,terrainWoodland,TOROIDAL_TERRAIN} from './toroidal-terrain.mjs';
 
 // Offsets use the existing trail's local metres. Each pocket reads as one
 // bank, with a broken outline and open ground between pockets.
@@ -41,7 +41,7 @@ function clearGround(x,z) {
   if(Math.abs(x)<6.25)return false;
   return boundary.every(([dx,dz])=>{
     const {u,v}=approachCoordinates(x+.82*dx,z+.82*dz);
-    return terrainTrail(u,v)<=.10;
+    return terrainTrail(u,v)<=.10&&linternaGrassCover(u,v)>.99;
   });
 }
 
@@ -86,7 +86,7 @@ export function shortMeadowPlants(x,z,lightweight,stoneScale=()=>1){
       const pz=z+COVER_TILE*((row+.08+.84*pick(123))/COVER_STEPS-.5);
       if((px>-7.4&&pz<26)||pick(93)<Math.max(0,(px+10)/4))continue;
       const {u,v}=approachCoordinates(px,pz);
-      const contact=stoneScale(u,v);
+      const contact=stoneScale(u,v)*linternaGrassCover(u,v);
       if(contact<.01)continue;
       const h=terrainElevation(u,v);
       const aboveWater=h-TOROIDAL_TERRAIN.waterLevel;
