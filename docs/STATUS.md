@@ -1,5 +1,23 @@
 # Current MVP work
 
+## Canonical microphone composer · 2026-11-28
+
+Protected release `7afbffc91713` serves source `3c284ae`; all 99 installed
+files matched. Mic opens and starts the same canonical Conversation
+composer. The compact view hides the timeline while retaining the same
+mounted frame and draft. Conversar expands it again. Pause, Continue,
+Stop and Send remain in the canonical composer and use the same audio
+original. The world dock cannot submit a recording.
+
+Canonical Conversation asset source `6a6390f9` is served at microphone
+fingerprint `73837ebb428e37c5` and receiving stylesheet fingerprint
+`58125234de6c921f`. Chromium verified compact/full presentation, device
+permission retry, pause, continue, stop without sending, and one explicit
+send. The streaming fixture verified editing, additional dictated words and
+a single send of the resulting text. The Holodeck Node suite passed 620
+checks with six skips. Physical acceptance on the user's microphone is
+still open.
+
 ## World context capacity and immediate audio · 2026-11-28
 
 Protected release `3c16ba534112` serves source `2df4545`. The live world
@@ -4630,10 +4648,8 @@ and a scripted native worker.
 
 ## Selected receiving release
 
-The current protected release is `3c16ba534112` at `2df4545` with
-`51aac6529989` as its prior package. The prior loader accepts at most 32
-preparation records; rolling back with a larger ledger requires the compatible
-loader. The current writer never alters a canonical original. See the latest entry at the top of
+The current protected release is `7afbffc91713` at `3c284ae` with
+`3c16ba534112` retained as the immediate compatible rollback. See the latest entry at the top of
 this record for the current receiver checks. Earlier releases follow.
 
 The protected playtest now selects package `601108cb255e` at source
