@@ -451,7 +451,7 @@ Gateway's current work observation. The status shows observed work or
 queue activity, retained human questions and the presence of a canonical
 result. A stale native observation does not say that the daimon is
 working. The catalogue, other rooms and older owners receive no new
-details. The table reads no details. The table reads no transcript and starts no turn. **Ver resultado
+details. The table reads no transcript and starts no turn. **Ver resultado
 del topic** opens the current result through the paired Conversation frame.
 Only the selected room and a correlation reference cross into the frame.
 Conversation reads the retained result and opens it without changing the
