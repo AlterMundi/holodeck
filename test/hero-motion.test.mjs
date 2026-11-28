@@ -84,6 +84,19 @@ test('a pilot keeps facing the view: lies out ahead, leans into a strafe, stands
   assert.ok(seen['strafe-after-back'].upright>.6&&seen['strafe-after-back'].lean>.2,note);
 });
 
+test('a submerged strafe stays upright while a forward stroke lies out',async()=>{
+  const start={u:.005,v:.325,height:-11,cameraSteering:true};
+  const route=[['forward',2,{forward:1}],['strafe',2.5,{right:1}]];
+  const alignment={};
+  await runSequence({file:explorer,route,start,pilot:true,onFrame({name,phase,root}){
+    if(phase<1.6)return;
+    const upright=new Vector3(0,1,0).applyQuaternion(toroidalRotation(root.position,0));
+    alignment[name]=new Vector3(0,1,0).applyQuaternion(root.quaternion).dot(upright);
+  }});
+  assert.ok(alignment.forward<.65,JSON.stringify(alignment));
+  assert.ok(alignment.strafe>.8,JSON.stringify(alignment));
+});
+
 test('the explorer idles through its repertoire with both feet planted',async()=>{
   let drift=0,lowest=Infinity,left=0,right=0,reach=-Infinity,start=null;
   await runSequence({file:explorer,route:[['idle',62,{}]],pilot:true,onFrame({phase,mesh,root}){

@@ -569,10 +569,12 @@ export class ToroidalGrass {
     for(let i=0;i<PUSHERS;i++){
       const source=i<LIVE_PUSHERS?live[i]:this.footprints[i-LIVE_PUSHERS];
       const born=i<LIVE_PUSHERS?(source?this.seconds:-1e4):source[3];
-      const above=source?this.heightAbove(source):Infinity;
-      if(!source||this.seconds-born>TRAMPLE_SECONDS||above>TRAMPLE_REACH){push[i].set(0,0,0,-1e4);continue;}
-      push[i].set(source[0],source[1],source[2],born);
-      samples.push([...source,above]);
+      if(!source||this.seconds-born>TRAMPLE_SECONDS){push[i].set(0,0,0,-1e4);continue;}
+      const [x,y,z]=source;
+      const above=this.heightAbove(source);
+      if(above>TRAMPLE_REACH){push[i].set(0,0,0,-1e4);continue;}
+      push[i].set(x,y,z,born);
+      samples.push([x,y,z,above]);
       centre[0]+=source[0];centre[1]+=source[1];centre[2]+=source[2];
       active++;
     }

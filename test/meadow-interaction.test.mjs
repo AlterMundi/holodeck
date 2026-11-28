@@ -47,6 +47,7 @@ test('walking leaves footprints that spring back, and a jump leaves none',()=>{
     const start=point(.004,.27);
     grass.update(start,false,1,1/60);
     assert.equal(live(grass).length,1,'only the explorer, standing');
+    grass.seconds+=100; // An old visit clock cannot widen each new footprint.
     const step=point(.004+1.2/(2*Math.PI*1000),.27);
     // Walk a few metres: footprints appear behind.
     for(let i=1;i<=30;i++){
@@ -56,6 +57,7 @@ test('walking leaves footprints that spring back, and a jump leaves none',()=>{
     const walked=live(grass).length;
     assert.ok(walked>2,`footprints: ${walked}`);
     assert.ok(grass.uniforms.grassPushBounds.value.w>0);
+    assert.ok(grass.uniforms.grassPushBounds.value.w<8,'bounds follow footprint height, not its timestamp');
     // Standing still, footprints fade out within the spring-back time.
     const here=grass.walkers.get('self').now;
     for(let i=0;i<120;i++)grass.update({x:here[0],y:here[1],z:here[2]},false,1,1/30);

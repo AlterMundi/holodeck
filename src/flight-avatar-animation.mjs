@@ -358,8 +358,8 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
 
       // Flight and water tilt turn about the hips. Ground lean stays in the trunk.
       const climb=clamp(entry.rise/5,-1,1);
-      const lean=underwater?entry.medium==='surface'?1.12*w:
-          clamp(1.22*w-clamp(entry.rise/2.8,-1,1)*(.30+.30*w),-.2,1.72):
+      const lean=underwater?entry.medium==='surface'?1.12*w*backLean:
+          clamp(1.22*w*backLean-clamp(entry.rise/2.8,-1,1)*(.30+.30*w),-.7,1.72):
         mode==='hover'||mode==='lift'?((atTable?.56:.57+.13*clamp((entry.planarSpeed-4)/4))*w+.38*smooth(boost))*backLean-.16*climb*w+clamp(.011*thrust,-.20,.14)-.48*boostRelease:
           0;
       const looking=isLocal&&!atTable&&Number.isFinite(aimPitch);
