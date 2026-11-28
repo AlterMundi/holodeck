@@ -27,7 +27,7 @@ const free=(object,shared)=>{
 };
 
 function engrave(parent,document,label,{width=.219,height=.049,x=0,y=-.101,z=.003}={}){
-  if(!document||!label)return;
+  if(!document||label==null)return;
   const canvas=document.createElement('canvas');
   canvas.width=Math.round(384*width/.76);canvas.height=48;
   const pixels=canvas.width;
