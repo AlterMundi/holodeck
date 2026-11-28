@@ -354,6 +354,7 @@ test('the Holodeck A2UI journal follows the bridge action from the actual worksh
   assert.equal(runtime.room.entities.bridge.revision,1);
   assert.equal(typed(4,{type:'complete'}).result.status,'applied');
 
+  await page.close();
   const mobile = await browser.newPage({viewport:{width:390,height:700},isMobile:true,hasTouch:true});
   await mobile.goto(base);
   await mobile.locator('#questbook-open').tap();
