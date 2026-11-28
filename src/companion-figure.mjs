@@ -5,7 +5,6 @@ import {bindCompanionGait} from './companion-gait.mjs';
 import {TabletopGlance} from './tabletop-attention.mjs';
 import {Follower,clamp,ease,pulse,smooth} from './avatar-motion-curves.mjs';
 import {smoothClip} from './animation-smoothing.mjs';
-import {installNaveganteFace} from './navegante-face.mjs';
 
 // The luminous visor mouth alone carries the speech: its morph opens the lit
 // lips and its glow follows the voice. The ceramic chin stays still.
@@ -100,12 +99,6 @@ export async function loadCompanionFigure(url){
     throw Error('Invalid Navegante asset');
   }
   const eyes=['eye-L','eye-R'].map(name=>root.getObjectByName(name)).filter(Boolean);
-  // The navigator's face of light: brows, eyes and mouth follow the mood.
-  let face=null;
-  root.traverse(object=>{if(object.isMesh&&!face)face=installNaveganteFace(object);});
-  // Each gesture carries its expression; rest is calm and a long rest sleeps.
-  const moods={curious:'curious',welcome:'welcome',brace:'uncertain',scan:'focus',sway:'calm',tinker:'focus',chirp:'joy'};
-  let mood='calm',moodHold=0;
   const frameRest=frame.quaternion.clone(),frameSpot=frame.position.clone();
   const tilt=new Quaternion(),roll=new Quaternion(),offset=new Vector3();
   const pitching=new Follower(8),rolling=new Follower(9),pivoting=new Follower(9);
@@ -148,10 +141,7 @@ export async function loadCompanionFigure(url){
     }
   }
 
-  return {root,dispose,gait,resetGlance:()=>glance.reset(),face,
-    // Hold an expression for a while (for example from conversation cues).
-    express(name,seconds=4){if(face){mood=name;moodHold=seconds;}},
-    expression:()=>face?.name??null,
+  return {root,dispose,gait,resetGlance:()=>glance.reset(),
     weights:()=>Object.fromEntries([...base].map(([name,{weight}])=>[name,weight])),
     gestures:()=>[...layers].filter(([,layer])=>layer.live).map(([name])=>name),
     greet(){greeting=3.2;},
@@ -252,16 +242,6 @@ export async function loadCompanionFigure(url){
       if(motion)glance.apply(root,head,gaze,step,1-goals.glide*.7-goals.swim*.6);
       else glance.reset();
 
-      if(face){
-        const live=[...layers].filter(([,layer])=>layer.live).map(([name])=>name);
-        moodHold=Math.max(0,moodHold-step);
-        const gesture=live.map(name=>moods[name]).find(Boolean);
-        const speaking=level>.03;
-        const resting=lively>38&&!speaking&&!attending;
-        const wanted=moodHold>0?mood:gesture??(attending?'curious':resting?'sleep':speaking?'welcome':'calm');
-        face.set(wanted);
-        face.update(step,{speech:clamp(level),motion});
-      }
       // The playback signal alone opens the jaw. Small bodies need a wider,
       // still bounded, opening to read at tabletop distance.
       const aperture=clamp(level)*(miniature?1.45:1);

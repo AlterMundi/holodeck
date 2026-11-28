@@ -140,21 +140,6 @@ const {once}=require('node:events');
     await page.screenshot({path:join(process.env.SHOTS||__dirname,'mouth-'+name+'.png'),clip:{x:300,y:120,width:600,height:500}});
     return info;
   };
-  if(process.env.DEBUG_FACE)console.log('debug',JSON.stringify(await page.evaluate(async()=>{
-    holodeckDevelopment.companionSpeech(1);await new Promise(r=>setTimeout(r,200));
-    let mouth=null,face=null;holodeckDevelopment.companion()?.traverse(o=>{
-      const m=[o.material].flat()[0];if(m?.name?.startsWith('Navegante face'))face=m.name;
-      const i=o.morphTargetDictionary?.['mouth-open'];if(i!==undefined)mouth=o.morphTargetInfluences[i];});
-    return {hidden:document.hidden,reduced:matchMedia('(prefers-reduced-motion: reduce)').matches,mouth,face};})));
-  // Optionally photograph the navigator's expressions in the running client.
-  for(const name of (process.env.EXPRESSIONS||'').split(',').filter(Boolean)){
-    await page.evaluate(()=>{window.__speak&&clearInterval(window.__speak);holodeckDevelopment.companionSpeech(0);});
-    await page.evaluate(name=>holodeckDevelopment.companionExpression(name,30),name);
-    await page.waitForTimeout(900);
-    const shown=await page.evaluate(()=>holodeckDevelopment.companionExpressionName?.());
-    console.log('expression',name,shown??'');
-    await page.screenshot({path:join(process.env.SHOTS||__dirname,'face-'+name+'.png'),clip:{x:300,y:120,width:600,height:500}});
-  }
   const closed=await face(0,'closed');
   const open=await face(1,'speaking');
   assert.ok(open.open>.9,'speech opens the luminous mouth in the running client: '+open.open);

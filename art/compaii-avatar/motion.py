@@ -155,62 +155,58 @@ def library(joints):
 
     def cue(seconds, *keys):
         return (seconds, False, [(0, {}, at), *keys, (seconds, {}, at)])
-    # The nine cues follow the navigator gallery (v6). The head is large, so
-    # its pitch stays modest: the face must remain readable in every cue.
-    chin = dict(forward=(52, 10), out=(-10, 22), elbow=(128, 12), hand=(-8, 0))
     clips["curious"] = cue(2.2,
-        (.22, {"head": (3, -4, 0), "antenna": (10, 0, 0)}, (0, .004, -.004)),
-        (.55, {"head": (-4, 12, 9), "antenna": (-14, 0, 5), "chest": (4, 3, 4), "cape": (3, 0, 0),
-               **arms(**chin)}, (0, -.012, -.010)),
-        (1.4, {"head": (-5, 13, 11), "antenna": (-9, 0, 3), "chest": (4, 3, 5), "cape": (2, 0, 0),
-               **arms(forward=(54, 12), out=(-10, 24), elbow=(132, 14), hand=(-10, 0))}, (0, -.012, -.010)),
-        (1.86, {"head": (-2, 4, 3), "chest": (2, 1, 1), **arms(forward=(16, 4), out=(0, 8), elbow=(40, 6))},
-         (0, -.004, -.004)))
+        (.22, {"head": (4, -4, 0), "antenna": (12, 0, 0)}, (0, .004, -.004)),
+        (.52, {"head": (-5, 17, 5), "antenna": (-20, 0, 6), "chest": (9, 3, 4), "cape": (3, 0, 0),
+               **arms(forward=(16, -6), out=(7, 4), elbow=(34, 10))}, (0, -.022, -.016)),
+        (1.35, {"head": (-7, 15, 8), "antenna": (-11, 0, 3), "chest": (8, 3, 5), "cape": (2, 0, 0),
+                **arms(forward=(18, -5), out=(7, 4), elbow=(38, 10))}, (0, -.020, -.014)),
+        (1.62, {"head": (-4, -12, -4), "antenna": (-15, 0, -4), "chest": (7, -2, -3),
+                **arms(forward=(10, 2), out=(6, 5), elbow=(26, 16))}, (0, -.014, -.010)),
+        (1.86, {"head": (-4, -11, -4), "antenna": (-7, 0, -2), "chest": (5, -2, -2),
+                **arms(forward=(6, 2), out=(4, 4), elbow=(16, 10))}, (0, -.008, -.006)))
     clips["joy"] = cue(1.7,
-        (.18, {"head": (6, 0, 0), "chest": (6, 0, 0), **arms(forward=(-10, -10), elbow=(16, 16))}, (0, 0, -.03)),
-        (.42, {"head": (-9, 0, 0), "chest": (-7, 0, 0), "cape": (-6, 0, 0), "antenna": (16, 0, 0),
-               **arms(forward=(26, 26), out=(98, 98), elbow=(22, 22), hand=(-12, -12))}, (0, 0, .03)),
-        (.66, {"head": (-7, -5, -3), "chest": (-5, 0, -4), "cape": (10, 0, 0), "antenna": (-12, 0, 0),
-               **arms(forward=(24, 24), out=(90, 90), elbow=(30, 30), hand=(-8, -8))}, (0, 0, -.012)),
-        (.9, {"head": (-9, 5, 3), "chest": (-6, 0, 4), "cape": (2, 0, 0), "antenna": (8, 0, 0),
-              **arms(forward=(26, 26), out=(96, 96), elbow=(24, 24), hand=(-12, -12))}, (0, 0, .012)),
-        (1.2, {"head": (-3, 0, 0), "cape": (4, 0, 0), **arms(forward=(8, 8), out=(24, 24), elbow=(16, 16))}, (0, 0, -.008)))
-    clasped = dict(forward=(24, 24), out=(-20, -20), elbow=(30, 30), hand=(6, 6))
+        (.18, {"head": (9, 0, 0), "chest": (8, 0, 0), **arms(forward=(-14, -14), elbow=(18, 18))}, (0, 0, -.038)),
+        (.42, {"head": (-13, 5, 0), "chest": (-8, 0, 4), "cape": (-5, 0, 0), "antenna": (18, 0, 0),
+               **arms(forward=(38, 38), out=(62, 62), elbow=(42, 42), hand=(16, 16))}, (0, 0, .030)),
+        (.62, {"head": (-9, -6, 0), "chest": (-4, 0, -5), "cape": (12, 0, 0), "antenna": (-14, 0, 0),
+               **arms(forward=(34, 34), out=(54, 54), elbow=(58, 58))}, (0, 0, -.018)),
+        (.84, {"head": (-11, 6, 0), "chest": (-6, 0, 4), "cape": (2, 0, 0), "antenna": (9, 0, 0),
+               **arms(forward=(36, 36), out=(60, 60), elbow=(44, 44))}, (0, 0, .014)),
+        (1.16, {"head": (-4, 0, 0), "cape": (4, 0, 0), **arms(forward=(8, 8), out=(16, 16), elbow=(22, 22))}, (0, 0, -.012)))
     clips["sad"] = cue(2.4,
-        (.7, {"chest": (9, 0, 0), "head": (10, -4, 0), "antenna": (18, 0, 0), "cape": (3, 0, 0), **arms(**clasped)},
-         (0, 0, -.018)),
-        (1.6, {"chest": (10, 0, 0), "head": (11, -5, 3), "antenna": (20, 0, 0), "cape": (3, 0, 0), **arms(**clasped)},
-         (0, 0, -.02)))
+        (.7, {"chest": (13, 0, 0), "head": (19, -6, 0), "antenna": (22, 0, 0), **arms(forward=(8, 8), elbow=(4, 4))}, (0, 0, -.018)),
+        (1.6, {"chest": (14, 0, 0), "head": (21, -8, 4), "antenna": (25, 0, 0), **arms(forward=(9, 9), elbow=(4, 4))}, (0, 0, -.020)))
     clips["anger"] = cue(1.7,
-        (.14, {"chest": (-4, 0, 0), "head": (-4, 0, 0)}, (0, 0, .004)),
-        (.34, {"chest": (9, 0, 0), "head": (6, 0, 0), "antenna": (-16, 0, 0),
-               **arms(forward=(14, 14), out=(24, 24), elbow=(58, 58), hand=(14, 14))}, (0, -.012, -.022)),
-        (1.15, {"chest": (8, 0, 0), "head": (5, 0, 0), "antenna": (-10, 0, 0),
-                **arms(forward=(12, 12), out=(22, 22), elbow=(55, 55), hand=(14, 14))}, (0, -.010, -.018)))
-    shrug = dict(forward=(52, 32), out=(-10, 40), elbow=(128, 44), hand=(-8, -22))
+        (.14, {"chest": (-5, 0, 0), "head": (-6, 0, 0)}, (0, 0, .004)),
+        (.34, {"chest": (11, 0, 0), "head": (10, 0, 0), "eye-L": (0, -16, 0), "eye-R": (0, 16, 0), "antenna": (-18, 0, 0),
+               **arms(forward=(-14, -14), out=(26, 26), elbow=(34, 34))}, (0, -.012, -.022)),
+        (1.15, {"chest": (10, 0, 0), "head": (9, 0, 0), "eye-L": (0, -16, 0), "eye-R": (0, 16, 0), "antenna": (-12, 0, 0),
+                **arms(forward=(-12, -12), out=(24, 24), elbow=(32, 32))}, (0, -.010, -.018)))
     clips["uncertain"] = cue(2.1,
-        (.4, {"head": (4, -10, -10), "chest": (-2, -3, -4), "antenna": (8, 0, -6), **arms(**shrug)}, (.010, 0, -.006)),
-        (1.0, {"head": (5, -9, -12), "chest": (-2, -3, -5), "antenna": (4, 0, -4), **arms(**shrug)}, (.012, 0, -.008)),
-        (1.32, {"head": (4, 8, 9), "chest": (-2, 2, 4), "antenna": (8, 0, 6), **arms(**shrug)}, (-.010, 0, -.006)))
-    explain = dict(forward=(36, 46), out=(20, -4), elbow=(42, 88), hand=(-10, -16))
+        (.4, {"head": (6, -15, -8), "chest": (-3, -3, -4), "antenna": (8, 0, -6),
+              **arms(forward=(26, 4), out=(5, 20), elbow=(92, 24))}, (.010, 0, -.006)),
+        (1.0, {"head": (7, -13, -10), "chest": (-3, -3, -5), "antenna": (4, 0, -4),
+               **arms(forward=(28, 4), out=(5, 22), elbow=(98, 26))}, (.012, 0, -.008)),
+        (1.32, {"head": (5, 11, 9), "chest": (-3, 2, 4), "antenna": (8, 0, 6),
+                **arms(forward=(26, 4), out=(5, 20), elbow=(92, 24))}, (-.010, 0, -.006)))
     clips["focus"] = cue(1.9,
-        (.42, {"chest": (6, 0, 0), "head": (5, 0, 0), "antenna": (-12, 0, 0), **arms(**explain)}, (0, -.010, -.012)),
-        (1.35, {"chest": (7, 0, 0), "head": (6, 0, 3), "antenna": (-9, 0, 0),
-                **arms(forward=(38, 48), out=(22, -4), elbow=(44, 92), hand=(-10, -16))}, (0, -.012, -.014)))
+        (.42, {"chest": (12, 0, 0), "head": (6, 0, 0), "eye-L": (0, 8, 0), "eye-R": (0, -8, 0), "antenna": (-14, 0, 0),
+               **arms(forward=(12, 12), elbow=(38, 38))}, (0, -.014, -.016)),
+        (1.35, {"chest": (13, 0, 0), "head": (7, 0, 3), "eye-L": (0, 8, 0), "eye-R": (0, -8, 0), "antenna": (-10, 0, 0),
+                **arms(forward=(14, 14), elbow=(42, 42))}, (0, -.016, -.018)))
     wave = {"head": (-4, 8, -6), "chest": (-4, -4, -5), "antenna": (6, 0, 0)}
     clips["welcome"] = cue(2.3,
-        (.18, {"head": (5, 0, 0), "chest": (3, 0, 4), **arms(forward=(0, -12), elbow=(0, 14))}, (0, 0, -.014)),
-        (.52, {**wave, **arms(forward=(30, 14), out=(30, 142), elbow=(30, 34), hand=(-14, 10))}, (-.010, 0, .006)),
-        (.74, {**wave, **arms(forward=(30, 14), out=(30, 116), elbow=(30, 18), hand=(-14, -12))}, (-.010, 0, .004)),
-        (.96, {**wave, **arms(forward=(30, 14), out=(30, 144), elbow=(30, 36), hand=(-14, 10))}, (-.010, 0, .004)),
-        (1.18, {**wave, **arms(forward=(30, 14), out=(30, 118), elbow=(30, 18), hand=(-14, -12))}, (-.010, 0, .003)),
-        (1.45, {**wave, **arms(forward=(28, 12), out=(28, 138), elbow=(28, 30), hand=(-12, 0))}, (-.008, 0, .002)),
-        (1.85, {"head": (2, 2, -2), **arms(forward=(6, 8), out=(8, 22), elbow=(10, 24))}, (0, 0, -.006)))
+        (.18, {"head": (6, 0, 0), "chest": (4, 0, 4), **arms(forward=(0, -12), elbow=(0, 14))}, (0, 0, -.014)),
+        (.52, {**wave, **arms(forward=(4, 14), out=(8, 142), elbow=(8, 34), hand=(0, 10))}, (-.010, 0, .006)),
+        (.74, {**wave, **arms(forward=(4, 14), out=(8, 116), elbow=(8, 18), hand=(0, -12))}, (-.010, 0, .004)),
+        (.96, {**wave, **arms(forward=(4, 14), out=(8, 144), elbow=(8, 36), hand=(0, 10))}, (-.010, 0, .004)),
+        (1.18, {**wave, **arms(forward=(4, 14), out=(8, 118), elbow=(8, 18), hand=(0, -12))}, (-.010, 0, .003)),
+        (1.45, {**wave, **arms(forward=(4, 12), out=(8, 138), elbow=(8, 30))}, (-.008, 0, .002)),
+        (1.85, {"head": (2, 2, -2), **arms(forward=(0, 8), out=(2, 22), elbow=(4, 24))}, (0, 0, -.006)))
     clips["sleep"] = cue(3.2,
-        (1.0, {"chest": (9, 0, 0), "head": (11, 6, 7), "cape": (3, -4, 0), "antenna": (16, 0, 0), **arms(**clasped)},
-         (0, 0, -.018)),
-        (2.1, {"chest": (10, 0, 0), "head": (13, 7, 8), "cape": (4, -4, 0), "antenna": (18, 0, 0), **arms(**clasped)},
-         (0, 0, -.022)))
+        (1.0, {"chest": (15, 0, 0), "head": (22, 7, 0), "cape": (3, -4, 0), "antenna": (20, 0, 0)}, (0, 0, -.020)),
+        (2.1, {"chest": (17, 0, 0), "head": (25, 8, 0), "cape": (4, -4, 0), "antenna": (24, 0, 0)}, (0, 0, -.026)))
 
     for name, seconds in (("walk", 14 / 15), ("run", .8), ("bound", .8)):
         count = round(seconds * FPS)
@@ -377,15 +373,14 @@ def author(rig):
         bone.location = (0, 0, 0)
 
 
-def export(rig, path, image_format=None):
+def export(rig, path):
     tracks = rig.animation_data.nla_tracks
     for track in tracks:
         track.mute = False
     bpy.ops.export_scene.gltf(filepath=str(path), export_format="GLB", use_selection=True,
         export_animation_mode="NLA_TRACKS", export_animations=True, export_materials="EXPORT",
         export_texcoords=True, export_meshopt_compression_enable=True,
-        export_meshopt_extension="EXT_meshopt_compression", export_optimize_animation_keep_anim_armature=False,
-        **({"export_image_format": image_format, "export_image_quality": 86} if image_format else {}))
+        export_meshopt_extension="EXT_meshopt_compression", export_optimize_animation_keep_anim_armature=False)
     for track in tracks:
         track.mute = True
 
