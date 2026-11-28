@@ -277,11 +277,11 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  assert.equal(entered.title,name);
  assert.equal(runtime.spaces.current({id:actorRef}),entered.id);
  const table=page.getByRole('dialog',{name:'Mesa de proyectos'});
- const tapTool=async id=>{
-  const bounds=await page.waitForFunction(tool=>{
-   const rect=window.holodeckDevelopment?.toolBounds(tool);
+ const tapTool=async (id,surface='toolBounds')=>{
+  const bounds=await page.waitForFunction(({id,surface})=>{
+   const rect=window.holodeckDevelopment?.[surface](id);
    return rect&&rect.width>0&&rect.height>0?rect:null;
-  },id,{timeout:10000});
+  },{id,surface},{timeout:10000});
   const {left,top,width,height}=await bounds.jsonValue();
   await page.touchscreen.tap(left+width/2,top+height/2);
  };
@@ -587,7 +587,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  await page.locator('#conversation-panel').getByRole('heading',{name,exact:true}).waitFor();
  await page.locator('#conversation-close').tap();
  await tapTool('map');
- await page.locator('#space-travel').getByRole('button',{name:'Volver al lugar anterior',exact:true}).tap();
+ await tapTool('exit','mapBounds');
  await page.waitForFunction(()=>!document.body.classList.contains('inside-house')&&
    !document.body.classList.contains('room-transition'));
  assert.equal(runtime.spaces.current({id:actorRef}),'outside');

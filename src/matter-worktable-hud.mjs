@@ -1115,6 +1115,10 @@ export class MatterWorktableHud{
     return this.hud.getControlViewportBounds?.(toolbeltId,name,this.camera,this.canvas.getBoundingClientRect())??null;
   }
 
+  mapBounds(name){
+    return this.hud.getControlViewportBounds?.(worldMapId,name,this.camera,this.canvas.getBoundingClientRect())??null;
+  }
+
   beginPassage(){
     if(this.passage.active)return;
     this.priorInert??=this.a11y.inert;

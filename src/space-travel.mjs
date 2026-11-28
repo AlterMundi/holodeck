@@ -186,7 +186,8 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onArriva
     near=closest;nearRevision=++doorOfferRevision;button.hidden=!near;
     if(near)button.textContent=near.title;
   };
-  update.navigation=()=>({scope:space.id,busy,canExit:!suspended&&links.length>0,map:suspended?null:map?.state()});
+  update.navigation=()=>({scope:space.id,busy,canExit:!suspended&&links.length>0,
+    exitLabel:links[0]?.title,map:suspended?null:map?.state()});
   update.doorOffer=doorOffer;
   update.followDoor=followDoor;
   update.jump=to=>to===space.id?false:move({to},undefined,true);
