@@ -1,4 +1,4 @@
-import {AnimationMixer,LoopOnce,LoopRepeat,Vector3} from 'three';
+import {AnimationMixer,LoopOnce,LoopRepeat,Matrix4,MeshBasicMaterial,Quaternion,Vector3} from 'three';
 
 // Char Design's teleport station (Alternative 3). The asset owns form,
 // materials and named anchors; Holodeck owns A2UI controls, permissions,
@@ -28,6 +28,30 @@ export function stationParts(scene){
     carriage:found.tp_travel_carriage,travelSlot:found.tp_travel_slot,button:found.tp_travel_button,
     beam:[found.tp_travel_beam,found.tp_travel_beam_rings],
   };
+}
+
+// The authored threads have their length baked into the geometry. Shrink
+// across that axis and keep their endpoints, including the centre support.
+export function softenStationLinks(parts){
+  const colour=new MeshBasicMaterial({color:0x467b74});
+  const replaced=new Set();
+  const up=new Vector3(0,1,0),axis=new Vector3(),rotation=new Quaternion();
+  const alignment=new Matrix4(),width=new Matrix4().makeScale(.31,1,.31);
+  const crossSection=new Matrix4(),inverse=new Matrix4();
+  const stem=parts.root.getObjectByName('tp_parent_stem');
+  for(const link of [...parts.threads,stem]){
+    if(!link?.isMesh)continue;
+    axis.copy(up);
+    if(link!==stem)axis.subVectors(link.position,parts.parent.position).normalize();
+    rotation.setFromUnitVectors(up,axis);
+    alignment.makeRotationFromQuaternion(rotation);
+    crossSection.copy(alignment).multiply(width).multiply(inverse.copy(alignment).invert());
+    link.geometry.applyMatrix4(crossSection);
+    for(const material of [link.material].flat())replaced.add(material);
+    link.material=colour;
+  }
+  if(!replaced.size)colour.dispose();
+  return replaced;
 }
 
 // Show exactly the used destination slots; a hidden slot also hides its thread.

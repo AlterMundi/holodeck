@@ -24,6 +24,6 @@ export function houseReviewRooms(rooms, house, matterId, labId) {
 }
 
 export const characterWorktable=Object.freeze({
-  id:'character-worktable', kind:'fixture', title:'Mesa de Char Design', revision:1,
+  id:'character-worktable', kind:'fixture', widget:'character-review', iconRole:'character', title:'Mesa de Char Design', revision:1,
   position:Object.freeze({x:0,y:.88,z:0}),
 });

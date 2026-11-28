@@ -1,6 +1,6 @@
 import {basename} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {openSync,readSync,closeSync,constants} from 'node:fs';
+import {openSync,readSync,closeSync,constants,readFileSync,statSync} from 'node:fs';
 import {join} from 'node:path';
 
 const digest=/^[a-f0-9]{64}$/;
@@ -8,6 +8,23 @@ export const releaseNoticeName='release-notice.json';
 
 export function installedRelease(root){
   return /^release-([a-f0-9]{64})$/.exec(basename(fileURLToPath(root)))?.[1]??null;
+}
+
+// Holodeck's selected USTAR uses 512-byte entries and 10 KiB records.
+export function installedPackageBytes(root){
+  try{
+    const file=new URL('service.json',root);
+    const {service,files}=JSON.parse(readFileSync(file,'utf8'));
+    if(service!=='holodeck'||!Array.isArray(files)||files.length>4096)return null;
+    const blocks=bytes=>512+512*Math.ceil(bytes/512);
+    let bytes=1024+blocks(statSync(file).size);
+    for(const {path} of files){
+      if(typeof path!=='string'||path.startsWith('/')||path.split('/').some(part=>['','.','..'].includes(part))||
+        !/^[a-zA-Z0-9._/-]+$/.test(path))return null;
+      bytes+=blocks(statSync(new URL(path,root)).size);
+    }
+    return 10240*Math.ceil(bytes/10240);
+  }catch{return null;}
 }
 
 export function releaseStatus(version,stateDir,now=Date.now()){

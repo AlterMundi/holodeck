@@ -1,8 +1,9 @@
+import {DiagnosticsHud,diagnosticsId,diagnosticsWidth} from './diagnostics-hud.mjs';
 import {PendingBookHud,pendingToolId,pendingBookId,pendingBookWidth} from './pending-book-hud.mjs';
 import {hudAppearanceKey,readHudAppearance} from './hud-appearance.mjs';
 import {PassageHud} from './passage-hud.mjs';
 import {HudLookPreview} from './hud-look-preview.mjs';
-import {AmbientLight,DirectionalLight,Matrix4,OrthographicCamera,PerspectiveCamera,Raycaster,Scene,Vector2} from 'three';
+import {AmbientLight,DirectionalLight,Matrix4,OrthographicCamera,PerspectiveCamera,Raycaster,Scene,Vector2,Vector3} from 'three';
 import {WorldMapHud,worldMapId,worldBearingId,terrainPeekId} from './world-map-hud.mjs';
 import {DoorPromptHud,compactDoorPromptWidth,doorPromptId} from './door-prompt-hud.mjs';
 import {CollectionHud,collectionHudId,collectionHudWidth} from './collection-hud.mjs';
@@ -189,7 +190,7 @@ const portraitWork=[
 const movement=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE']);
 
 export class MatterWorktableHud{
-  constructor({document,webgl,table,collection,toggleSound,onActive,canEnter=()=>true,onError,readTools,activateTool,navigation,presentMovement,history,visitor,creatorContext,beaconControls,onBeaconOpen,teleport,worktableNavigation,fixedNavigation}){
+  constructor({document,webgl,table,collection,toggleSound,onActive,canEnter=()=>true,onError,readTools,activateTool,navigation,presentMovement,history,visitor,creatorContext,beaconControls,onBeaconOpen,teleport,worktableNavigation,fixedNavigation,frameDiagnostics}){
     this.worktableNavigation=worktableNavigation;
     this.fixedNavigation=fixedNavigation;
     Object.assign(this,{document,webgl,table,onActive,canEnter,readTools,activateTool,presentMovement,movementGroups:new Map(),scope:0,toolScope:0,mode:null,blocked:false});
@@ -268,9 +269,11 @@ export class MatterWorktableHud{
         this.canvas.tabIndex=-1;
         this.canvas.focus({preventScroll:true});
       }});
+    this.diagnostics=new DiagnosticsHud({monitor:frameDiagnostics,send:(type,content,id)=>this.send(type,content,id),
+      focus:name=>this.hud.focusAccessibleControl(diagnosticsId,name)});
     this.settings=new SettingsHud({document,send:(type,content,id)=>this.send(type,content,id),
       focusControl:name=>this.hud.focusAccessibleControl(settingsId,name),focusLauncher:name=>this.focusTool(name),
-      onSurfaceChange:()=>this.syncSettingsInput(),onSound:toggleSound});
+      onSurfaceChange:()=>this.syncSettingsInput(),onSound:toggleSound,onDiagnostics:()=>this.diagnostics.open()});
     this.teleport=new TeleportHud({...teleport,send:(type,content,id)=>{
       if(type==='deleteSurface')this.teleportModels.detach();
       this.send(type,content,id);
@@ -333,6 +336,7 @@ export class MatterWorktableHud{
         else if(id===worldBearingId)this.map.bearingGroup=group;
         else if(id===doorPromptId)this.door.group=group;
         else if(id===collectionHudId)this.collection.group=group;
+        else if(id===diagnosticsId)this.diagnostics.group=group;
         else if(id===settingsId)this.settings.group=group;
         else if(id===pendingToolId)this.pending.toolGroup=group;
         else if(id===pendingBookId)this.pending.bookGroup=group;
@@ -357,13 +361,22 @@ export class MatterWorktableHud{
         else if(requested.surfaceId===worldBearingId)this.map.activateBearing(requested);
         else if(requested.surfaceId===doorPromptId)this.door.activate(requested);
         else if(requested.surfaceId===collectionHudId)this.collection.activate(requested);
+        else if(requested.surfaceId===diagnosticsId)this.diagnostics.activate(requested);
         else if(requested.surfaceId===settingsId)this.settings.activate(requested);
         else if([pendingToolId,pendingBookId].includes(requested.surfaceId)){
           this.lookPreview.hit(requested.surfaceId);
           this.pending.activate(requested);
         }
         else if(requested.surfaceId===activityHudId)this.activity.activate(requested);
-        else if(requested.surfaceId===teleportHudId)this.teleport.activate(requested);
+        else if(requested.surfaceId===teleportHudId){
+          const anchor=this.teleportModels.controls.get(requested.name)?.hit;
+          if(anchor?.parent?.visible&&this.teleportMode==='workspace'){
+            const clicked=anchor.getWorldPosition(new Vector3());
+            this.worktableNavigation.point(this.teleportWorkspace,target=>
+              requested.name==='go'&&anchor.parent?.visible?anchor.getWorldPosition(target):target.copy(clicked));
+          }
+          this.teleport.activate(requested);
+        }
         else if(requested.surfaceId===teleportViewId){
           if(!this.teleport.group)return;
           if(requested.name==='exit')this.teleport.close();
@@ -375,7 +388,17 @@ export class MatterWorktableHud{
         else if(requested.surfaceId===recoveryHudId)this.recovery.activate(requested);
         else if(requested.surfaceId===creationHudId)this.creation.activate(requested);
         else if([beaconStationId,beaconViewerId].includes(requested.surfaceId))this.beacon.activate(requested);
-        else this.handleAction(requested);
+        else{
+          if(requested.surfaceId===surfaceId&&this.active&&this.fixedNavigation?.active){
+            const subject=this.table.reviewCameraTarget??this.table.anchor;
+            const model=this.table.model?.group;
+            if(subject||model)this.worktableNavigation.point(this.fixedNavigation,target=>{
+              if(model?.parent)return model.getWorldPosition(target);
+              return subject&&target.set(subject.x,subject.y+.08,subject.z);
+            });
+          }
+          this.handleAction(requested);
+        }
       },onTransportError:onError,
     });
     const immersivePointer=event=>this.handleTeleportPointer(event);
@@ -497,7 +520,7 @@ export class MatterWorktableHud{
 
   rayForPointer(event){
     if(this.priorInert!==undefined)return;
-    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.teleport.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.pending.toolGroup&&!this.pending.bookGroup&&!this.status.controlsGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.movementGroups.size)return;
+    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.teleport.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.diagnostics.group&&!this.pending.toolGroup&&!this.pending.bookGroup&&!this.status.controlsGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.movementGroups.size)return;
     const rect=this.canvas.getBoundingClientRect();
     if(!rect.width||!rect.height)return;
     this.pointerPosition.set((event.clientX-rect.left)*2/rect.width-1,1-(event.clientY-rect.top)*2/rect.height);
@@ -1144,7 +1167,7 @@ export class MatterWorktableHud{
       !this.webgl.getContext().isContextLost()&&!this.document.querySelector(
         'dialog[open],#signal-editor:not([hidden]),#conversation-panel:not([hidden]),#content-visit:not([hidden]):not(.is-walking)');
     this.creation.update({visible:createClear,width:width-left-right-40,maxHeight:height-createTop-recoveryReserve});
-    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.teleport.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.pending.toolGroup&&!this.pending.bookGroup&&!this.status.noticeGroup&&!this.status.controlsGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.movementGroups.size&&!additional){
+    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.teleport.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.diagnostics.group&&!this.pending.toolGroup&&!this.pending.bookGroup&&!this.status.noticeGroup&&!this.status.controlsGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.movementGroups.size&&!additional){
       this.releaseHudOverrides();
       this.windows.end();
       this.layer.hide();
@@ -1443,6 +1466,11 @@ export class MatterWorktableHud{
         }
       }
     }
+    if(this.diagnostics.group){
+      this.diagnostics.update();
+      const scale=Math.min(166,(width-left-right-32)/(diagnosticsWidth+.08));
+      this.place(this.diagnostics.group,'diagnosticsPlacement',viewport,left+16+diagnosticsWidth*scale/2,top+58,scale);
+    }
     this.hud.update();
     if(this.teleport.group&&this.teleportModels.animate(this.teleportMode==='workspace'?this.teleportWorkspace.camera:this.camera))this.layer.invalidate();
     if(this.teleportMode==='workspace')this.teleportWorkspace.place.updateMatrixWorld(true);
@@ -1504,6 +1532,7 @@ export class MatterWorktableHud{
     this.windows.dispose();
     this.events.abort();
     this.teleport.close();
+    this.diagnostics.close();
     this.teleportModels.dispose();
     this.passage.dispose();
     this.layer.dispose();

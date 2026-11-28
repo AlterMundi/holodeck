@@ -298,6 +298,7 @@ export class CinematicGrade {
     }
     this.resize(width,height);
     const autoClear=gl.autoClear;
+    let postStarted;
     gl.setRenderTarget(this.target);
     try{
       if(this.validateTarget){
@@ -316,6 +317,7 @@ export class CinematicGrade {
       gl.state.buffers.depth.setMask(true);
       gl.clear(true,true,false);
       render.call(gl,scene,camera);
+      if(this.profile)postStarted=performance.now();
       // Every pass below overwrites or deliberately accumulates its target.
       gl.autoClear=false;
 
@@ -358,6 +360,7 @@ export class CinematicGrade {
     uniforms.projection.value.copy(camera.projectionMatrix);
     uniforms.frame.value=this.frame=(this.frame+1)%64;
     render.call(gl,this.composite,this.camera);
+    if(postStarted!==undefined)this.profile.post+=performance.now()-postStarted;
   }
 
   dispose(){

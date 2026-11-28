@@ -29,6 +29,7 @@ import enableWs from 'express-ws';
 import { existsSync, readFileSync } from 'node:fs';
 import {ANIMATION_ASSET_REVISIONS,readPackedArt,sendPackedArt} from './packed-art.mjs';
 import {TeleportIcons,iconKey} from './teleport-icons.mjs';
+import {semanticDescriptor} from './teleport-semantic-icons.mjs';
 import {residenceAssets} from './toroidal-residence-assets.mjs';
 import { packedClientHandler } from './packed-client.mjs';
 import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
@@ -54,7 +55,7 @@ import {createAtelierRoomAuthority} from './atelier-authority.mjs';
 import {atelierProjectionHandler} from './atelier-projection.mjs';
 import {WorldDocument} from './world-document.mjs';
 import {SessionBindings,SESSION_MS,sessionKey} from './session-bindings.mjs';
-import {installedRelease,releaseStatus} from './release-status.mjs';
+import {installedPackageBytes,installedRelease,releaseStatus} from './release-status.mjs';
 import {HumanAvatarProfiles,humanWardrobeAssets} from './human-avatars.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
@@ -587,7 +588,24 @@ export async function createHolodeck({basePath='/',production=false,identityReso
         const offset=z>2?-1.35:1.45;
         destinations.push({id:'object:'+to+':'+object.id,title:object.title,...details,portal,
           arrival:{x,y:.12,z:z+offset,yaw:offset>0?180:0}});
+        // A worktable's icon follows its main widget/function and its title.
+        const descriptor=semanticDescriptor({id:'object:'+object.id,title:object.title,
+          widget:object.widget??object.surface??object.kind,role:object.iconRole});
+        // When the room art carries the table, crop it so the icon has its real
+        // shape and texture colours; the semantic emblem keeps its function legible.
+        const {x:ox,y:oy=1,z:oz}=object.position;
+        iconSource.set(destinations.at(-1),art?.bytes&&art.revision?
+          {kind:'crop',revision:JSON.stringify([art.revision,ox,oy,oz,descriptor]),bytes:art.bytes,
+            crop:{center:[ox,oy,oz]},descriptor}:
+          {kind:'semantic',revision:JSON.stringify(descriptor),descriptor});
       }
+    }
+    // Every remaining destination (public places, topics, projects) composes
+    // a semantic icon from what it is for and what it is called.
+    for(const entry of destinations){
+      if(iconSource.has(entry))continue;
+      const descriptor=semanticDescriptor({id:entry.id,title:entry.title,widget:entry.widget,role:entry.iconRole});
+      iconSource.set(entry,{kind:'semantic',revision:JSON.stringify(descriptor),descriptor});
     }
     const residence=destinations.find(entry=>entry.id==='terrain:residence');
     if(residence){
@@ -791,7 +809,9 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     onClientDisconnect(connection){dropPose(OUTSIDE,connection,outsidePosePeers,network);for(const s of sessions.values())if(s.connection===connection){s.connection=null;if(!room.commitUncertain)room.atomic(()=>room.event(s.actor,'participant.left',{}));}},
     onClientUserIdentityUpdate(){return false;}
   };
-  const version=installedRelease(new URL('../',import.meta.url));
+  const root=new URL('../',import.meta.url);
+  const version=installedRelease(root);
+  const packageBytes=installedPackageBytes(root);
   const index=readFileSync(new URL('../public/index.html',import.meta.url),'utf8')
     .replace('<head>','<head><base href="'+basePath+'">')
     .replace('HOL0DECK_RELEASE_PLACEHOLDER',version?.slice(0,12)??'Desarrollo');
@@ -866,7 +886,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const releaseHold=releaseControllerRef&&stateDir?
     new RoomStore(join(stateDir,'release-hold'),{maxBytes:128}):null;
   function currentReleaseStatus(){
-    const status=releaseStatus(version,stateDir);
+    const status={...releaseStatus(version,stateDir),packageBytes};
     try{
       const hold=releaseHold?.load();
       if(hold!=null&&(Object.keys(hold).join(',')!=='dnd'||typeof hold.dnd!=='boolean'))

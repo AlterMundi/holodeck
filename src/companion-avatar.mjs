@@ -14,6 +14,9 @@ const appearance='compaii-navegante-white-v1';
 const localUp=new Vector3(0,1,0);
 const localForward=new Vector3(0,0,1);
 const rearOffsets=[[.74,1.23],[.97,1.12],[.59,1.45]];
+// While answering, the companion steps in front of the player, a little to
+// one side, and turns to face them, as one does to talk to someone.
+const speechHold=1600,speakingFront=1.38,speakingSide=.32;
 const floatDraft=.86;
 const maximumFollowSpeed=9.2;
 // A jump is over before the companion would finish its own launch.
@@ -81,7 +84,10 @@ export class CompanionAvatar{
   setSpeechLevel(level){
     this.level=Number.isFinite(level)?Math.max(0,Math.min(1,level)):0;
     this.speechAt=performance.now();
+    if(this.level>.03)this.voicedAt=this.speechAt;
   }
+  // Speaking holds across the short pauses between phrases.
+  speaking(now){return now-(this.voicedAt??-Infinity)<speechHold;}
   get object(){return this.figure?.root.visible?this.figure.root:null;}
 
   // Height from a point to the support under it. Authored surfaces are
@@ -157,10 +163,13 @@ export class CompanionAvatar{
       }
       this.leaderMoving=travelling;
     }
-    const angle=this.followAngle.setFromAxisAngle(localUp,this.followYaw??yaw).premultiply(frame);
+    const conversing=!small&&samePlace&&!this.leaderMoving&&!flying&&!diving&&this.speaking(now);
+    const angle=this.followAngle.setFromAxisAngle(localUp,conversing?yaw:this.followYaw??yaw).premultiply(frame);
     const height=(diving?.25:flying?.16:water?0:-.037)*scale;
     const [shoulder,trail]=rearOffsets[this.followSlot];
-    this.relative.set(small?1.36*scale:shoulder*this.followSide,height,small?.612*scale:-trail);
+    if(conversing)this.relative.set(speakingSide*this.followSide,height,speakingFront);
+    else this.relative.set(small?1.36*scale:shoulder*this.followSide,height,small?.612*scale:-trail);
+    this.conversing=conversing;
     this.target.copy(position).add(this.relative.applyQuaternion(angle));
     if(avoidFurniture&&!this.roomClearance.chooseTarget(position,this.target,colliders,grounded||!samePlace)){
       root.visible=false;
@@ -310,7 +319,8 @@ export class CompanionAvatar{
     root.scale.setScalar(scale);
     this.previous=scale;
     this.previousOutdoor=outdoor;
-    this.face({root,position,point,small,speed,reset,moving,dt});
+    // Facing the player while answering; a held attention point still wins.
+    this.face({root,position,point:point||(this.conversing?position:null),small,speed,reset,moving,dt});
     this.forward=this.facingDirection.copy(localForward).applyQuaternion(root.quaternion);
     const acceleration=dt>0&&!reset&&moving?
       (this.followVelocity.dot(this.forward)-this.lastVelocity.dot(this.forward))/(dt*scale):0;

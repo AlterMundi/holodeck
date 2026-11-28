@@ -4,10 +4,10 @@ import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {bindCompanionGait} from './companion-gait.mjs';
 import {TabletopGlance} from './tabletop-attention.mjs';
 import {Follower,clamp,ease,pulse,smooth} from './avatar-motion-curves.mjs';
+import {smoothClip} from './animation-smoothing.mjs';
 
-// The luminous visor mouth carries the speech; the ceramic chin only follows
-// it slightly so the face, not the body, reads as talking.
-const jawTravel=4/515;
+// The luminous visor mouth alone carries the speech: its morph opens the lit
+// lips and its glow follows the voice. The ceramic chin stays still.
 const MOUTH_MORPH='mouth-open';
 const gaitClips=['walk','run','bound','wade'];
 const cycles=['calm',...gaitClips,'hover','glide','tread','swim'];
@@ -50,6 +50,10 @@ export async function loadCompanionFigure(url){
       for(const resource of resources)resource.dispose();
     }
   };
+  // Baked clips carry per-frame micro noise that reads as trembling once
+  // replayed and blended; low-pass them (short, fast clips only lightly).
+  const looping=new Set(cycles);
+  for(const clip of animations)smoothClip(clip,{sigmaSeconds:clip.duration<1.2?.025:.05,loop:looping.has(clip.name)});
   const named=new Map(animations.map(clip=>[clip.name,clip]));
   const head=root.getObjectByName('head'),frame=root.getObjectByName('root');
   const hinge=root.getObjectByName('anchor-mouth');
@@ -57,6 +61,9 @@ export async function loadCompanionFigure(url){
     dispose();
     throw Error('Invalid Navegante asset');
   }
+  // The separate ceramic chin piece under the visor is not part of the N-3X
+  // design: collapse its bone so only the visor and its mouth of light remain.
+  hinge.scale.setScalar(1e-4);
   const gait=bindCompanionGait(root);
   const glance=new TabletopGlance();
   const base=new Map(),shots=new Map(),layers=new Map();
@@ -77,7 +84,6 @@ export async function loadCompanionFigure(url){
     const action=mixer.clipAction(clip).setLoop(LoopOnce,1);
     layers.set(name,{action,weight:0,live:false});
   }
-  const jawHeight=hinge.position.z,jawAngle=hinge.rotation.x;
   // Every primitive of the joined skin carries the same "mouth-open" morph.
   const mouths=[];
   let mouthGlow=null;
@@ -241,8 +247,6 @@ export async function loadCompanionFigure(url){
       const aperture=clamp(level)*(miniature?1.45:1);
       jaw=motion?jaw+(aperture-jaw)*ease(step,aperture>jaw?30:15):0;
       if(jaw<.004&&!aperture)jaw=0;
-      hinge.position.z=jawHeight-jawTravel*jaw;
-      hinge.rotation.x=jawAngle+.03*jaw;
       for(const {influences,index} of mouths)influences[index]=Math.min(jaw,1.2);
       if(mouthGlow)mouthGlow.material.emissiveIntensity=mouthGlow.base*(1+.9*jaw);
       if(clock>nextBlink+.17)nextBlink=clock+1.9+3.6*scatter(Math.floor(clock*7));

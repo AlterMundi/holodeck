@@ -1,6 +1,53 @@
 # Current MVP work
 
 
+## November 28 — Opt-in performance HUD
+
+Protected release `9dc023504c57` selects `14a47b8`. From Settings,
+the A2UI performance panel can stay open while moving. The summary shows
+frame rate, p95 and available JS heap with its sampled peak. Detail adds
+the CPU-side frame breakdown, a sampled world GPU time when the WebGL
+extension is present, drawing-buffer size, draw calls, triangles and the
+installed package size. Sampling is on demand and the HUD refreshes once
+per second. Unattributed time is not classified as browser or GPU delay.
+
+Chromium on the Legion RTX 2060 opened, expanded and closed the monitor
+and walked while it was open. The package-size readback matched the
+40,386,560-byte archive. The 562 active tests passed with two skips.
+The protected client and 96 installed files matched the archive. Rollback
+is `9387dee3eb62`.
+
+
+## November 28 — Teleport link glare and station lighting
+
+Protected release `9387dee3eb62` selects `b402371`. Destination links use
+31% of their previous thickness and no longer emit light. A material-scoped
+key and fill light the station and all miniatures in the world and HUD.
+Chromium on a Legion RTX 2060 displayed the links and generated Matter
+miniature with the world lights disabled. All 562 active tests passed with
+two skips. The protected client and 96 installed files matched the package.
+Rollback is `cf76f6561865`.
+
+
+## November 28 — Companion visor speech and nighttime swarms
+
+Protected release `cf76f6561865` selects source `9c9ff2b`, integrating
+Char Design's `b1eb76a`. Only the illuminated visor mouth follows speech.
+The baked animations are smoothed. The companion steps forward to face a
+stationary player during a reply, holds through short pauses and resumes
+following on movement. Night fireflies gather in up to four local swarms.
+
+The exact package ran on the Legion RTX 2060 with a controlled speech
+envelope. The mouth went from 0 to 0.85, the emissive intensity rose from
+2.85 to 5.03, and the hidden chin stayed fixed. The companion moved from
+1.23 m behind to 1.14 m ahead, faced the player and returned behind while
+walking. The settled head sample peaked at 0.011 rad per rendered sample.
+A separate 16-location firefly check observed up to 86, reproducible
+placement at the same location and daytime hiding. All 562 active tests
+passed with two skips. The protected client and 96 installed files matched
+the package. Rollback is `6d0115a025cd`.
+
+
 
 
 
@@ -29,6 +76,25 @@ stable FPS gain across the two comparisons. The larger meadow run reduced
 draw calls from 249 to 215, with p95 callback interval increasing from
 100 to 199.9 ms. On the Pi both poses stayed at 33.4 ms p95. Lightweight
 bypasses the cinematic and additional vegetation paths.
+
+## November 28 — Source-colored teleport icons and tabletop interaction
+
+Protected release `6d0115a025cd` selects source `9bc955a`, including Char
+Design's `6f9ff07` and `4d5616f`. Plaza and the Character table have
+semantic icons. Matter and other authored tables derive a crop from their
+room artwork with their function emblem. Their key follows the artwork
+revision, table position, and semantic descriptor. Topic and project icon
+support is ready for those destinations when they join the teleport catalog.
+
+Chromium on the Legion RTX 2060 showed the authored Plaza miniature giving
+way to its icon and the Matter table's 376-triangle crop. The same drag
+traced identical camera displacement with either mouse button in the
+Teleport workspace, and a physical node click produced the companion's
+laser. The fixed Matter table also passed both-button orbit and A2UI
+animation selection with the laser. The Redmi fixture did not finish
+entering the world in the earlier semantic icon trial. All 560 active
+tests passed with two skips. The protected client and all 96 installed
+files matched the package. Rollback is `68f7929a6147`.
 
 ## November 28 — Teleport icons derived from destinations
 

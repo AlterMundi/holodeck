@@ -261,6 +261,20 @@ room entry, camera response and note readback. Fixture identities and
 temporary copies belong in technical qualification. The protected trial
 uses the existing Home audience and room guest list.
 
+### November 28 — Nicolás saved a note in the live workshop
+
+Protected release `59bd64df3466`. Nicolás saved a note on Explorer,
+`air`, frame `7`. CompAII entered the same studio through its own native
+admission and read Nicolás's persisted note with
+`character-review.notes` for the exact model and clip edition. The owner
+then returned to the outside space.
+
+This covers real human note creation and independent native readback for an
+exact frame. The wider two-visitor trial, presenter/follow, and situated
+Conversation delivery of the pose remain separate checks. The toolbar
+microphone original arrived without the room or pose reference in this
+trial, while the note remained readable in Holodeck.
+
 ## Shared session and authored motion
 
 Track the [Character Design Room #24](https://github.com/AlterMundi/holodeck/issues/24)
