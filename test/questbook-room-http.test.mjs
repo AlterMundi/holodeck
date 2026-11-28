@@ -1,13 +1,16 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
-import {execFileSync} from 'node:child_process';
+import {execFile,execFileSync} from 'node:child_process';
+import net from 'node:net';
+import {promisify} from 'node:util';
 import {mkdtempSync, rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {createHolodeck} from '../src/server.mjs';
 import {homeIdentityResolver} from '../src/home-identity.mjs';
+import {createNativeRoomAuthority} from '../src/native-authority.mjs';
 import {configuredQuestbook} from '../src/questbook.mjs';
 
 const binary = process.env.DAIMON_CARDS_BIN;
@@ -20,7 +23,32 @@ test('the authenticated questbook credits only its original Room action', {skip:
   const origin = 'https://quest.test', human = 'human:quest-fixture';
   const cookie = 'home=quest-fixture';
   const daimon = 'dm:being:v1:' + 'A'.repeat(43);
-  let allowed = true, projectWrite = true;
+  let allowed = true, projectWrite = true, nativeRead = true, nativeWrite = true;
+  const authoritySocket = join(directory,'authority.sock'), worldSocket = join(directory,'world.sock');
+  let requestedProject = project;
+  const authority = net.createServer(socket => {
+    let buffer = '';
+    socket.on('data', chunk => {
+      buffer += chunk;
+      if (!buffer.includes('\n')) return;
+      const request = JSON.parse(buffer.split('\n')[0]);
+      assert.equal(request.beingRef,daimon);
+      const result = request.operation === 'world-access'
+        ? {schema:'holodeck.world-access/v1',beingRef:daimon,allowed:true}
+        : {schema:'holodeck.questbook-access/v1',project:requestedProject,beingRef:daimon,
+          requestedWrite:request.write,read:nativeRead,write:nativeRead&&request.write&&nativeWrite};
+      socket.end(JSON.stringify({ok:true,result})+'\n');
+    });
+  });
+  await new Promise(resolve => authority.listen(authoritySocket,resolve));
+  t.after(() => new Promise(resolve => authority.close(resolve)));
+  async function native(input,source = ['--own'],operation = 'questbook') {
+    const args = [new URL('../integrations/world_port.py',import.meta.url).pathname,
+      '--socket',worldSocket,...source,operation,'--json',JSON.stringify(input)];
+    const reply = await promisify(execFile)('python3',args,{timeout:12000})
+      .then(value=>value.stdout,error=>error.stdout || Promise.reject(error));
+    return JSON.parse(reply);
+  }
   const home = createServer((req,res) => {
     if (req.headers.host !== 'quest.test' || !req.headers.cookie?.includes(cookie) || !allowed) {
       return res.writeHead(403).end();
@@ -49,9 +77,12 @@ test('the authenticated questbook credits only its original Room action', {skip:
     event:{type:'bridge_state',raised:true}}}).result.status,'applied');
 
   const runtime = await createHolodeck({production:true,basePath:'/holodeck/',publicOrigin:origin,
-    stateDir:directory,identityResolver:homeIdentityResolver({publicOrigin:origin,authHost:'quest.test',
+    stateDir:directory,worldSocket,worldSocketBeingRef:daimon,ownNative:true,
+    nativeFactory:async()=>({authorizeWorldRequest:async()=>{throw Error('No delegated input in this fixture');}}),
+    nativeRoomAuthority:createNativeRoomAuthority(authoritySocket),
+    identityResolver:homeIdentityResolver({publicOrigin:origin,authHost:'quest.test',
       authorizeEndpoint:homeBase+'/service-access/holodeck',identityEndpoint:homeBase+'/access/identity'}),
-    questbook:configuredQuestbook({origin,authHost:'quest.test',authEndpoint:homeBase+'/access/identity',
+    questbook:configuredQuestbook({origin,authHost:'quest.test',authEndpoint:homeBase+'/access/identity',authoritySocket,
       questbook:{project,binary,viewEndpoint:homeBase+'/project/view',editEndpoint:homeBase+'/project/edit'}},directory)});
   const listener = runtime.app.listen(0,'127.0.0.1');
   await new Promise(resolve => listener.once('listening',resolve));
@@ -106,10 +137,55 @@ test('the authenticated questbook credits only its original Room action', {skip:
   assert.deepEqual(retried.result.event,confirmed.result.event);
   assert.equal(runtime.room.entities.bridge.revision,0);
 
-  const finished = typed(4,{type:'complete'});
+  const found = await native({type:'read',card});
+  assert.equal(found.result.revision,4);
+  assert.equal(found.result.objectives[0].receipt.command,original.id);
+  assert.equal((await native({type:'receipt',operation:report.operation})).result,null,'cannot read another actor’s receipt');
+  assert.equal((await native({type:'read',card},['--interaction',randomUUID()])).ok,false);
+  const command = {operation:randomUUID(),card,expected_revision:4,action:{type:'complete'}};
+  nativeWrite=false;
+  assert.deepEqual(await native({type:'apply',command}),{ok:false,code:'access'});
+  nativeWrite=true;
+  const finished = await native({type:'apply',command});
+  assert.deepEqual(finished.authoritySource,{identity:'receiving-lane',access:'current-being-grant'});
+  assert.equal(finished.result.event.card.revised_by.subject,daimon);
   assert.equal(finished.result.event.card.status,'done');
+  assert.deepEqual((await native({type:'receipt',operation:command.operation})).result,finished.result.event);
+  assert.equal((await native({type:'apply',command})).result.status,'retained');
+  const changed = await native({type:'apply',command:{...command,action:{type:'edit_title',title:'Changed'}}});
+  assert.equal(changed.result.reason,'operation_changed');
+  nativeWrite=false;
+  assert.deepEqual(await native({type:'apply',command}),{ok:false,code:'access'});
+  assert.deepEqual((await native({type:'receipt',operation:command.operation})).result,finished.result.event);
+  nativeRead=false;
+  assert.deepEqual(await native({type:'receipt',operation:command.operation}),{ok:false,code:'access'});
+  nativeRead=true;
+  requestedProject=randomUUID();
+  assert.equal((await native({type:'read',card})).ok,false);
   assert.equal((await view()).status,'Completada');
   assert.equal(tool({type:'history',card,after:0}).result.length,5);
+  requestedProject=project;
+  nativeWrite=true;
+  const nativeCard=randomUUID(), nativeObjective=randomUUID();
+  const nativeEdit=(revision,action)=>native({type:'apply',
+    command:{operation:randomUUID(),card:nativeCard,expected_revision:revision,action}});
+  assert.equal((await nativeEdit(0,{type:'create',title:'Native bridge mission'})).result.status,'applied');
+  assert.equal((await nativeEdit(1,{type:'require_world',objective:{id:nativeObjective,place:'island-workshop',
+    event:{type:'bridge_state',raised:true}}})).result.status,'applied');
+  assert.equal((await nativeEdit(2,{type:'claim'})).result.status,'applied');
+  const observed=(await native({},['--own'],'observe')).result;
+  const nativeWorld={id:randomUUID(),issuedAt:runtime.room.clock(),run:observed.run,edition:observed.edition,
+    observation:observed.id,type:'bridge.set',target:'bridge',expectedRevision:0,args:{raised:true}};
+  const record={type:'confirm_objective',operation:randomUUID(),card:nativeCard,revision:3,
+    objective:nativeObjective,originalCommand:nativeWorld.id};
+  assert.deepEqual(await native({...record,originalCommand:original.id}),{ok:false,code:'unresolved'});
+  assert.equal((await native(nativeWorld,['--own'],'act')).result.status,'completed');
+  const credited=await native(record);
+  assert.equal(credited.result.event.card.objectives[0].receipt.actor,daimon);
+  assert.equal(runtime.room.entities.bridge.revision,1);
+  const nativeView=await fetch(base+'api/questbook?selected='+nativeCard,{headers}).then(reply=>reply.json());
+  assert.equal(nativeView.result[2].updateDataModel.value.progress,'1/1');
+
   projectWrite = false;
   assert.equal((await view()).claimDisabled,true);
   allowed=false;

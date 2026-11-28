@@ -3,6 +3,7 @@
 import {execFile} from 'node:child_process';
 import {isAbsolute,join} from 'node:path';
 import {homeIdentityResolver} from './home-identity.mjs';
+import {createNativeQuestbookAuthority} from './native-authority.mjs';
 
 const uuid = value => typeof value === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value);
 const commandId = value => typeof value === 'string' && /^[\w-]{8,80}$/.test(value);
@@ -21,9 +22,12 @@ export function configuredQuestbook(receiving, stateDir) {
   const home = {publicOrigin:receiving.origin,authHost:receiving.authHost,identityEndpoint:receiving.authEndpoint};
   const view = homeIdentityResolver({...home,authorizeEndpoint:selected.viewEndpoint});
   const edit = homeIdentityResolver({...home,authorizeEndpoint:selected.editEndpoint});
+  const native = receiving.authoritySocket
+    ? createNativeQuestbookAuthority(receiving.authoritySocket,selected.project) : null;
   return {
     project:selected.project, binary:selected.binary, store:join(stateDir,'questbook.sqlite'),
     async authorize(actor, _project, request, write) {
+      if (actor.kind === 'daimon' && !request) return native?.(actor,write);
       if (actor.kind !== 'human' || !request) return null;
       const [reader, editor] = await Promise.all([view(request), write ? edit(request) : null]);
       return {read:reader?.id===actor.id,write:editor?.id===actor.id};
@@ -56,6 +60,20 @@ export function createQuestbook(room, {project, binary, store, authorize}) {
   }
 
   return {
+    async native(actor, input) {
+      if (actor.kind !== 'daimon') return {ok:false,code:'access'};
+      if (input.type === 'confirm_objective') {
+        if (Object.keys(input).sort().join(',') !== 'card,objective,operation,originalCommand,revision,type')
+          return {ok:false,code:'invalid'};
+        return this.confirmObjective(actor,input);
+      }
+      if (!['list','read','receipt','apply'].includes(input.type)) return {ok:false,code:'invalid'};
+      const write = input.type === 'apply';
+      const caller = await access(actor,write);
+      if (!caller) return {ok:false,code:'access'};
+      return execute(caller,write,input);
+    },
+
     async view(actor, {selected = null, after = null}, request) {
       const caller = await access(actor, false, request);
       if (!caller) return {ok:false, code:'access'};

@@ -56,7 +56,7 @@ function situatedInterior({request,verified,actor,room,conversationPlace,indoorG
 
 // The receiving operator owns the directory/socket filesystem capability.
 // Native identity and current room rights are independently rechecked per request.
-export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,approachSpace,conversationPlace,putExhibit,exhibitResult,currentLayout,draftLayout,previewLayout,publishLayout,layoutResult,roomDesign,indoorGarden}){
+export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,approachSpace,conversationPlace,putExhibit,exhibitResult,currentLayout,draftLayout,previewLayout,publishLayout,layoutResult,roomDesign,indoorGarden,questbook}){
   if(!socketPath?.startsWith('/')||!native?.authorizeWorldRequest||typeof resolveRights!=='function')
     throw Error('Select the installed native world port and authority resolver');
   let active=0;
@@ -75,8 +75,9 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
         const request=JSON.parse(bytes.subarray(0,end));
         const own=request?.ownNative===true;
         if(!request||Object.keys(request).sort().join(',')!==(own?'args,operation,ownNative':'args,interactionId,operation')
-          ||!['observe','activity','project','act','result'].includes(request.operation)
+          ||!['observe','activity','project','act','result','questbook'].includes(request.operation)
           ||!request.args||typeof request.args!=='object'||Array.isArray(request.args))throw Error('Invalid world operation');
+        if(request.operation==='questbook'&&(!own||!questbook))throw Error('Use the existing own-native project lane');
         let verified,rights;
         if(own){
           // The private receiving lane selects identity; current Home authority
@@ -109,7 +110,11 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
         const space=verified.capturedSpace?null:describeSpace?.(actor);
         let result;
         const savedExhibit=own&&request.operation==='result'?exhibitResult?.(actor,request.args.id):null;
-        if(verified.capturedSpace){
+        if(request.operation==='questbook'){
+          const outcome=await questbook.native(actor,request.args);
+          if(!outcome.ok){socket.end(JSON.stringify(outcome)+'\n');return;}
+          result=outcome.result;
+        }else if(verified.capturedSpace){
           result=situatedInterior({request,verified,actor,room,conversationPlace,indoorGarden,approachSpace,moveSpace});
         }else if(request.operation==='act'&&request.args.type==='layout.current'){
           if(!own||!rights.includes('edit')||Object.keys(request.args).length!==1)throw Error('Reading the draft base requires an own-native editor route');

@@ -42,6 +42,22 @@ A missing, rejected, mismatched or retired Room receipt leaves the objective
 pending. Once credited, the card retains that exact evidence and its
 idempotent receipt across Room resets.
 
+For daimon access, the existing central native bridge may select a
+`questbook_access` object with the same `project` UUID and its registered
+`view_service_key` and `edit_service_key`. These are the same Home audiences used
+by the browser endpoints. The bridge reads current actor-specific access through
+the installed `daimon-home service-access` route. Install the matched bridge
+revision and retain the existing UID guard and identity-pinned world ports.
+The app checks both world admission and project access. General world admission
+does not authorize card reads, writes or recovery.
+
+Use the existing `world_port.py --own questbook --json ...` entrypoint through
+the calling body's own configured socket. It accepts `list`, `read`, `apply`
+and `receipt` in the typed JSON `type` field. A `receipt` read uses the original
+`operation` UUID and never repeats the action. To credit an authorized native
+world action, `confirm_objective` takes the same fields as the HTTP objective
+request and reads the acting being's exact Room outcome.
+
 Run the protected HTTP fixture against the exact candidate writer:
 
 ```sh

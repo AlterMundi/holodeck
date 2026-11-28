@@ -177,6 +177,24 @@ class BridgeContracts(unittest.TestCase):
         for actor in ('human:telegram:1','unknown','dm:being:v1:a'):
             with self.assertRaises(module.BridgeError):self.bridge.dispatch({**request,'beingRef':actor})
 
+    def test_questbook_authority_binds_project_being_and_requested_mode(self):
+        being='dm:being:v1:'+'a'*43
+        project=str(uuid.uuid4())
+        request={'operation':'questbook-access','beingRef':being,'project':project,'write':True}
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch(request)
+        seen=[]
+        self.bridge.questbook_access_reader=lambda *args: seen.append(args) or (True,True)
+        self.assertEqual(self.bridge.dispatch(request),{'schema':'holodeck.questbook-access/v1',
+            'project':project,'beingRef':being,'requestedWrite':True,'read':True,'write':True})
+        for invalid in ({**request,'write':'true'}, {**request,'beingRef':'human:fixture'},
+                        {**request,'view_service_key':'caller-selected'}, {**request,'project':'other'}):
+            with self.assertRaises((module.BridgeError,ValueError)):
+                self.bridge.dispatch(invalid)
+        self.assertEqual(seen,[(project,being,True)])
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,'write':False})
+
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.provider=Provider(str(Path(self.temp.name)/'fixture.sqlite'))

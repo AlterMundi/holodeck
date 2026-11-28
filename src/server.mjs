@@ -486,7 +486,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }
   const selectedWorldPorts=validateWorldPorts({worldSocket,worldSocketBeingRef,worldPorts});
   if(selectedWorldPorts.length&&!native)throw Error('Native authority is required for world return ports');
-  for(const selected of selectedWorldPorts)installedWorldPorts.push(await createWorldPort({socketPath:selected.socket,expectedBeingRef:selected.beingRef,room,native,describeSpace,moveSpace,conversationPlace,
+  for(const selected of selectedWorldPorts)installedWorldPorts.push(await createWorldPort({socketPath:selected.socket,expectedBeingRef:selected.beingRef,room,native,describeSpace,moveSpace,conversationPlace,questbook:questbookHost,
     approachSpace:(actor,destination)=>room.commitUncertain?null:spaces.approach(actor,destination),
     putExhibit,exhibitResult:(actor,id)=>exhibits.result(actor,id),
     currentLayout:actor=>layoutAuthority(actor).current(actor),

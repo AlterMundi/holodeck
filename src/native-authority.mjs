@@ -48,3 +48,16 @@ export function createNativeReviewAuthority(socketPath,{timeoutMs=10000}={}){
   return result.owned;
  };
 }
+
+export function createNativeQuestbookAuthority(socketPath, project, {timeoutMs=8000}={}) {
+ const exchange=authorityExchange(socketPath,timeoutMs);
+ return async (actor, write)=>{
+  const beingRef=actorRef(actor);
+  const result=await exchange({operation:'questbook-access',beingRef,project,write});
+  if(!result||result.schema!=='holodeck.questbook-access/v1'||result.beingRef!==beingRef||
+     result.project!==project||result.requestedWrite!==write||
+     typeof result.read!=='boolean'||typeof result.write!=='boolean'||result.write&&(!write||!result.read))
+    throw Error('Questbook authority response does not match this operation');
+  return {read:result.read,write:result.write};
+ };
+}
