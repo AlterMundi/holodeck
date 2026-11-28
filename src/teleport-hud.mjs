@@ -14,9 +14,9 @@ const slotNames=Array.from({length:pageSize},(_,i)=>'slot'+i);
 const row=(id,children)=>({id,component:'HudRow',children});
 const components=[
   {id:'root',component:'HudPanel',chrome:'none',label:'Teletransporte',width:teleportHudWidth,gap:.018,
-    children:['heading','categories','house','models','space','caption','actions','message']},
-  row('heading',['title','close']),
-  text('title','Teletransporte',{style:'title',weight:4}),button('close','Cerrar'),
+    children:['heading','categories','house','models','space','actions','message']},
+  row('heading',['close']),
+  button('close','Cerrar'),
   row('categories',categories.map(({id})=>id)),
   ...categories.map(({id,label})=>button(id,label,{pressed:path(id+'Active'),disabled:path('loading')})),
   button('house',path('houseLabel'),{visible:path('inHouses'),gestureKey:path('house')}),
@@ -24,7 +24,6 @@ const components=[
   ...slotNames.map(id=>button(id,path(id+'Label'),{visible:path(id+'Visible'),pressed:path(id+'Active'),
     gestureKey:path(id+'Key'),action:action(id,{selected:path(id+'Key')})})),
   text('space','',{lines:6}),
-  text('caption',path('caption'),{style:'body',lines:2,visible:path('hasDestination')}),
   row('actions',['previous','favorite','go','next']),
   button('previous','Destinos anteriores',{disabled:path('noPrevious')}),
   button('favorite',path('favoriteLabel'),{pressed:path('isFavorite'),disabled:path('noSelection'),gestureKey:path('destination'),
@@ -116,11 +115,12 @@ export class TeleportHud {
     const isFavorite=this.favorites.has(this.destination);
     const message=this.error||(this.loading?'Buscando destinos…':destinations.length?'':this.category==='favorites'?
       'Marcá tus destinos habituales con la estrella.':'No hay destinos disponibles en esta zona.');
+    this.caption=(this.category==='houses'&&current?current.houseTitle+' · ':'')+(slots.find(slot=>slot.id===this.destination)?.label??'');
     const value={
       epoch:this.epoch,house:this.house,houseOptions:houses,
-      destination:this.destination,caption:(this.category==='houses'&&current?current.houseTitle+' · ':'')+(slots.find(slot=>slot.id===this.destination)?.label??''),
+      destination:this.destination,
       noPrevious:!this.page,noNext:(this.page+1)*pageSize>=destinations.length,
-      inHouses:this.category==='houses'&&houses.length>1,houseLabel:'Cambiar casa · '+(houses.find(entry=>entry.id===this.house)?.label??''),loading:this.loading,hasDestination:Boolean(current),
+      inHouses:this.category==='houses'&&houses.length>1,houseLabel:'Cambiar casa · '+(houses.find(entry=>entry.id===this.house)?.label??''),loading:this.loading,
       isFavorite,favoriteLabel:isFavorite?'Quitar favorito':'Guardar favorito',
       noTravel:!current||Boolean(current.current),noSelection:!current,
       hasMessage:Boolean(message),message,

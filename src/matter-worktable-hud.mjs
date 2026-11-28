@@ -1218,7 +1218,6 @@ export class MatterWorktableHud{
       const scale=Math.min(250,(width-32)/teleportHudWidth,(height-24)/2.16);
       const y=Math.max(16,(height-1.90*scale)/2);
       this.place(this.teleport.group,'teleportPlacement',viewport,width/2,y,scale);
-      if(this.teleportModels.animate())this.layer.invalidate();
     }
     if(this.activity.group){
       const activityScale=Math.min(176,(width-24)/activityHudWidth,(height-24)/2.47);
@@ -1271,6 +1270,7 @@ export class MatterWorktableHud{
       }
     }
     this.hud.update();
+    if(this.teleport.group&&this.teleportModels.animate())this.layer.invalidate();
     this.windows.end();
     this.lookPreview.draw(worldControlsId,this.status.controlsGroup,this.hud.getSurfaceBounds(worldControlsId));
     if(this.cockpit||!this.lookPreview.name||this.document.body.dataset.hudTheme==='light')this.lookPreview.draw(worldMapId,this.map.group,this.hud.getSurfaceBounds(worldMapId));
