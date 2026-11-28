@@ -16,8 +16,9 @@ manifest and GLBs, and stages the files in `STATE_DIR/owner-room-tours`.
 Select `receiving.ownerRoomTours` with the existing `house`, immutable
 `manifest` URL and its `sha256`. The manifest determines cell identities,
 titles, reciprocal doors, and the return to the foyer. No live layout write
-or second room map is needed. Existing rooms keep their current shell,
-guest lists and state. The receiver keeps only the selected edition and
+or second room map is needed. Holodeck reuses existing room identities when
+the graph matches unambiguously and otherwise adds the visual tour off the
+foyer. Existing room state and guest lists remain authoritative. The receiver keeps only the selected edition and
 its required rollback files. The older receiver ignores this selection.
 
 The [shared publication contract](architecture.md#home-and-holodeck-publication)

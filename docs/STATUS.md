@@ -1,5 +1,21 @@
 # Current MVP work
 
+## Casa Linterna's current visual edition · 2026-11-28
+
+Protected release `e0d082583e22` selects runtime source `2ee4a53`; the
+rollback is `c7a92cd8a6aa`. The exact owner-published manifest
+`713b5156…` supplies 13 GLBs across five rooms. Its graph matches the
+owner's live layout revision 4. The receiver reused the existing room IDs
+and guest lists. The visual route starts at Recibidor, branches to Hefesto
+and Atenea, and continues to Claymon and the Research Gallery.
+
+The packaged fixture using the production layout and admission confirmed
+the five destinations, movement and return, loading a protected model in
+Chromium, and denial for a foreign visitor. Production verified the selected
+code and healthy protected service. The live Atelier workspace remains
+independently configured. Automatic default Homes and two-way A2UI
+publication are recorded in the architecture and roadmap.
+
 ## Boost smoke and low-flight surface effects · 2026-11-28
 
 Protected release `c7a92cd8a6aa` selects runtime source `0679a01`, including
