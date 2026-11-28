@@ -920,7 +920,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(room.commitUncertain||spaces.fenced)return res.status(503).json({message:'Holodeck necesita recuperar su último cambio antes de continuar.'});
     const canEdit=projectionHealthy&&['observe','edit'].every(right=>req.actor.rights?.includes(right));
     res.json({run:room.run,edition:room.edition,sequence:room.sequence,actorRef:req.actor.id,canEdit,entities:room.entities,focus:room.focusState(),nodes:room.nodeState(),
-      entrances:spaces.view(req.actor).entrances,
+      entrances:spaces.view(req.actor).entrances,questbook:!!questbookHost,
       native:native?{...await native.availability(req.actor),sharedConversation:!!native.contexts}:{available:false}});
   }));
   app.get(route('api/places'),(req,res)=>{

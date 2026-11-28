@@ -56,10 +56,10 @@ export function createQuestbook(room, {project, binary, store, authorize}) {
   }
 
   return {
-    async view(actor, {selected, after = null}, request) {
+    async view(actor, {selected = null, after = null}, request) {
       const caller = await access(actor, false, request);
       if (!caller) return {ok:false, code:'access'};
-      if (!uuid(selected) || (after !== null && !uuid(after))) return {ok:false, code:'invalid'};
+      if ((selected !== null && !uuid(selected)) || (after !== null && !uuid(after))) return {ok:false, code:'invalid'};
       const writer = await access(actor, true, request);
       return execute(caller, !!writer, {type:'mount_questbook', selected, after, labels,
         journal:'Diario de misiones', missions:'Misiones'});

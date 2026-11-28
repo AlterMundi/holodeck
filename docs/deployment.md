@@ -25,15 +25,19 @@ The optional `questbook` selection names one project UUID, the absolute
 Home receiver. The receiver stores card state in `STATE_DIR/questbook.sqlite`.
 Select audiences explicitly for the project; general Holodeck access alone
 does not grant card access. The owner seeds the project before opening its
-questbook. Lead users to the journal from the selected A2UI host.
+questbook. In the exterior workshop, open **Misiones** to display the
+project journal in the existing Proyección spatial HUD. The section includes
+keyboard and screen-reader controls from that same renderer.
 
-The authenticated `GET api/questbook?selected=CARD` projects the selected
-entry. `POST api/questbook/action` handles acceptance or completion with the
+The authenticated `GET api/questbook` opens the first entry. The optional
+`selected` and `after` parameters address a card and page. `POST api/questbook/action` handles acceptance or completion with the
 observed card revision and the original operation ID.
 `POST api/questbook/objective` takes `operation`, `card`, `revision`,
 `objective` and `originalCommand`. It reads the current actor's existing
 Room outcome and linked event. It never calls the Room command again. The
-bridge-state pilot can confirm a matching transition from the workshop.
+bridge-state pilot confirms the authorized player's matching transition when
+they have selected an active quest. Opening a journal or selecting a mission
+only reads the project. The workshop bridge action is the ordinary Room action.
 A missing, rejected, mismatched or retired Room receipt leaves the objective
 pending. Once credited, the card retains that exact evidence and its
 idempotent receipt across Room resets.
@@ -45,8 +49,12 @@ DAIMON_CARDS_BIN=/path/to/daimon-cards node --test test/questbook-room-http.test
 ```
 
 The fixture uses the real Room, HTTP middleware, project audience adapter
-and Rust writer with synthetic Home identity. Live selection and the native
-daimon's existing signed access remain separate.
+and Rust writer with synthetic Home identity. To exercise the mounted browser
+journey, build the client and set `HOLODECK_PLAYWRIGHT` to the installed
+Playwright Core module. The loopback browser test accepts a quest through the
+rendered HUD, actuates the bridge and verifies the same outcome in a second
+narrow browser after a typed writer operation. Live selection and native daimon
+authorization remain separate.
 
 
 The optional `artProfile: "compaii-atelier-v1"` selects the packaged

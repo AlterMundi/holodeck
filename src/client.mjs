@@ -26,6 +26,7 @@ import { SharedConversationHost } from './shared-conversation-host.mjs';
 import { WorldAudio } from './world-audio.mjs';
 import {WorldHistory} from './world-history.mjs';
 import { snapshotMayApply, sameRequest } from './client-order.mjs';
+import { Questbook } from './questbook-client.mjs';
 import { WorldNotice } from './client-feedback.mjs';
 import {arrivalDoor,doorLocation,readSpace,showSpaceLinks} from './space-travel.mjs';
 const base=new URL('./',document.baseURI);
@@ -69,7 +70,7 @@ document.querySelector('#appearance-form').onsubmit=event=>{
   if(!appearanceSave.disabled)void readAppearance({choice:appearanceChoice.value===''?null:Number(appearanceChoice.value)});
 };
 window.addEventListener('keydown',event=>{
-  if(appearanceDialog.open)event.stopImmediatePropagation();
+  if(appearanceDialog.open||document.querySelector('#questbook-dialog').open)event.stopImmediatePropagation();
 },true);
 const touchControls={
   mount(container,experience){
@@ -629,6 +630,7 @@ async function api(path,body,{signal}={}){
   if(!response.ok){const error=Error(value.message||value.detail||'La acción no se pudo completar.');Object.assign(error,value,{httpStatus:response.status});throw error;}
   return value;
 }
+const questbook=new Questbook(document,api);
 function noteRecovery(kind,result={}){
   const expiredCommand=kind==='command'&&result.code==='not-recorded'&&pending&&
     ((Number.isFinite(result.serverTime)&&Number.isFinite(result.retryWindowMs)&&result.serverTime-pending.issuedAt>result.retryWindowMs)||
@@ -766,6 +768,7 @@ async function refresh(){
     activeSpace={...activeSpace,entrances:state.entrances};resetDoor();
   }
   $('#garden-create').hidden=state.canEdit!==true;
+  $('#questbook-open').hidden=state.questbook!==true;
   worldAudio.observe(state,{continuityVersion});worldHistory.observe(state);
   const count=client.getCharacterStates().size;
   $('#people').textContent=count>1?`${count} exploradores en el taller`:'Un lugar para crear juntos';
@@ -791,6 +794,7 @@ function settleCommand(result){
       appliedRevision:pending.type==='garden.place'?1:pending.expectedRevision+1,run:pending.run};
     say(undo?'Tu cambio quedó deshecho.':'El cambio ya forma parte del mundo.',{transient:true});
   }else say('Ese lugar cambió. Mirá cómo quedó antes de intentarlo de nuevo.');
+  if(result.status==='completed'&&pending.type==='bridge.set')void questbook.bridgeCompleted(pending);
   const id=pending.id;
   pending=null;pendingMetadata=null;sessionStorage.removeItem(pendingKey);clearRecovery('command');
   signalEditor.settle(id,result.status);return true;

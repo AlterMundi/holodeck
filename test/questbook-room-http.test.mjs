@@ -115,3 +115,67 @@ test('the authenticated questbook credits only its original Room action', {skip:
   allowed=false;
   assert.equal((await fetch(base+journal,{headers})).status,401);
 });
+
+const playwright = process.env.HOLODECK_PLAYWRIGHT;
+test('the Holodeck A2UI journal follows the bridge action from the actual workshop', {skip:!binary||!playwright}, async t => {
+  const {chromium} = await import(playwright);
+  const directory = mkdtempSync(join(tmpdir(),'holodeck-questbook-browser-'));
+  t.after(() => rmSync(directory,{recursive:true,force:true}));
+  const store = join(directory,'questbook.sqlite');
+  const project = randomUUID(), card = randomUUID(), objective = randomUUID();
+  const title = 'Volvé a unir las islas';
+  function tool(input) {
+    return JSON.parse(execFileSync(binary,[store],{input:JSON.stringify({
+      project,actor:{kind:'daimon',subject:'fixture-writer'},can_write:true,input,
+    }),encoding:'utf8'}));
+  }
+  function typed(revision, action) {
+    return tool({type:'apply',command:{operation:randomUUID(),card,expected_revision:revision,action}});
+  }
+  assert.equal(typed(0,{type:'create',title}).result.status,'applied');
+  assert.equal(typed(1,{type:'require_world',objective:{id:objective,place:'island-workshop',
+    event:{type:'bridge_state',raised:true}}}).result.status,'applied');
+
+  const runtime = await createHolodeck({stateDir:directory,questbook:{
+    project,binary,store,authorize:async () => ({read:true,write:true}),
+  }});
+  const listener = runtime.app.listen(0,'127.0.0.1');
+  await new Promise(resolve => listener.once('listening',resolve));
+  t.after(() => { runtime.close();listener.closeAllConnections();return new Promise(resolve=>listener.close(resolve)); });
+  const browser = await chromium.launch({executablePath:process.env.CHROMIUM_BIN||'/usr/bin/chromium',
+    args:['--no-sandbox','--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader']});
+  t.after(() => browser.close());
+  const base = 'http://127.0.0.1:'+listener.address().port+'/';
+  const page = await browser.newPage({viewport:{width:1100,height:800}});
+  const errors = [];
+  page.on('pageerror',error=>errors.push(error.message));
+  await page.goto(base);
+  await page.locator('#questbook-open').click();
+  const dialog = page.getByRole('dialog',{name:'Diario de misiones'});
+  const pixels = dialog.locator('canvas');
+  await pixels.waitFor({state:'visible'});
+  await dialog.getByText(title,{exact:true}).last().waitFor({state:'attached'});
+  assert.equal(await dialog.getByRole('button',{name:'Completar misión'}).isDisabled(),true);
+  await dialog.getByRole('button',{name:'Aceptar misión'}).focus();
+  await page.keyboard.press('Space');
+  await dialog.getByText('En curso',{exact:true}).waitFor({state:'attached'});
+  if (process.env.HOLODECK_QUESTBOOK_CAPTURE) await dialog.screenshot({path:process.env.HOLODECK_QUESTBOOK_CAPTURE});
+  await dialog.getByRole('button',{name:'Volver al mundo'}).click();
+
+  const credit = page.waitForResponse(response=>response.url().endsWith('/api/questbook/objective'));
+  await page.getByRole('button',{name:'Conectar las islas'}).click();
+  const applied = await (await credit).json();
+  assert.equal(applied.result.status,'applied');
+  assert.equal(runtime.room.entities.bridge.revision,1);
+  assert.equal(typed(4,{type:'complete'}).result.status,'applied');
+
+  const mobile = await browser.newPage({viewport:{width:390,height:700},isMobile:true,hasTouch:true});
+  await mobile.goto(base);
+  await mobile.locator('#questbook-open').tap();
+  const mobileDialog = mobile.getByRole('dialog',{name:'Diario de misiones'});
+  await mobileDialog.getByText('Completada',{exact:true}).waitFor({state:'attached'});
+  assert.ok(await mobileDialog.getByText('1/1',{exact:true}).count());
+  assert.equal(await mobileDialog.getByRole('button',{name:'Completar misión'}).isDisabled(),true);
+  assert.ok((await mobileDialog.boundingBox()).width < 390);
+  assert.deepEqual(errors,[]);
+});
