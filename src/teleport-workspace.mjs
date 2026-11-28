@@ -79,8 +79,8 @@ export class TeleportWorkspace {
     }
     const distance=clamp(3.62/aspect,3.55,7.6)*this.zoom;
     const horizontal=distance*Math.cos(this.pitch);
-    this.camera.position.set(siteX+Math.sin(this.yaw)*horizontal,1.48+distance*Math.sin(this.pitch),Math.cos(this.yaw)*horizontal);
-    this.camera.lookAt(siteX,1.48,0);
+    this.camera.position.set(siteX+Math.sin(this.yaw)*horizontal,1.40+distance*Math.sin(this.pitch),Math.cos(this.yaw)*horizontal);
+    this.camera.lookAt(siteX,1.40,0);
     this.camera.updateMatrixWorld(true);
   }
 

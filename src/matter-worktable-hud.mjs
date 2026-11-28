@@ -27,10 +27,10 @@ const teleportViewComponents=[
   {id:'switch',component:'HudButton',label:{'@path':'/mode'},action:{event:{name:'switch'}}},
   {id:'navigation',component:'HudRow',children:['back','front','near'],visible:{'@path':'/immersive'}},
   {id:'back',component:'HudButton',label:'Alejar',action:{event:{name:'back'}}},
-  {id:'front',component:'HudButton',label:'Ver de frente',action:{event:{name:'front'}}},
+  {id:'front',component:'HudButton',label:'Frente',action:{event:{name:'front'}}},
   {id:'near',component:'HudButton',label:'Acercar',action:{event:{name:'near'}}},
   {id:'exit',component:'HudButton',label:'Salir',action:{event:{name:'exit'}}},
-  {id:'guide',component:'HudText',label:'Arrastrá alrededor del instrumento para girar',visible:{'@path':'/immersive'}},
+  {id:'guide',component:'HudText',label:'Arrastrá para girar',visible:{'@path':'/immersive'}},
 ];
 const cockpitDocks={
   toolPlacement:{x:-.26,y:0,depth:1.08,anchor:0},
@@ -1339,7 +1339,7 @@ export class MatterWorktableHud{
       const parent=immersive?this.teleportWorkspace.overlay:this.hud.group;
       if(this.teleportViewGroup.parent!==parent)parent.add(this.teleportViewGroup);
       const scale=Math.min(175,(width-22)/2.62);
-      this.place(this.teleportViewGroup,'teleportViewPlacement',viewport,width/2,Math.max(12,height-(immersive?.78:.41)*scale),scale);
+      this.place(this.teleportViewGroup,'teleportViewPlacement',viewport,width/2,Math.max(12,height-(immersive?.71:.41)*scale),scale);
     }
     if(this.teleport.group&&this.teleportMode==='workspace'){
       this.teleportWorkspace.resize(width/height);
