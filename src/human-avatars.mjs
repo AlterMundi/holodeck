@@ -9,8 +9,8 @@ const rigs=[
 ];
 const outfits=rigs.map((_,index)=>`avatar-wardrobe-v1-${index+1}.glb`);
 const profiles=Object.freeze([...rigs.map(rig=>rig+'.glb'),...outfits]);
-export const personalAvatarFile='avatar/explorer-hero-v29.glb';
-export const personalAvatarSha256='f12f53803a6f0b3a754ad185c8319fbc020f627c01a14195e0603fe6534b3ef7';
+export const personalAvatarFile='avatar/explorer-hero-v30.glb';
+export const personalAvatarSha256='fdc62b339ae95dee8697239ca35c10f674ce2ab6ddd8d9c78648c75d6df40dbe';
 export const avatarModelFiles=Object.freeze([...profiles,personalAvatarFile]);
 const preferenceLimit=64;
 const preferenceSchema='holodeck.avatar-choices/v1';

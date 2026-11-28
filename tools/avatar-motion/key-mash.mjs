@@ -2,7 +2,7 @@
 // A connected avatar leans and settles; it never whips around.
 import {runSequence} from './sequence.mjs';
 const keys=[{forward:1},{right:1},{forward:-1},{right:-1},{forward:1,right:1},{},{forward:-1,right:1},{right:-1,sprint:true},{forward:1,sprint:true}];
-export async function keyMash({flight=true,file='avatar/explorer-hero-v29.glb'}={}){
+export async function keyMash({flight=true,file='avatar/explorer-hero-v30.glb'}={}){
   const route=[['launch',flight?1.2:.2,flight?{flight:true,vertical:1}:{}],
     ...keys.flatMap((input,index)=>[[`k${index}`,.35,{...input,flight}],[`h${index}`,.25,{flight}]])];
   let previous=null,worst=0,sum=0,count=0;

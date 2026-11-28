@@ -1,7 +1,7 @@
 // Directional travel and idle repertoire study for the explorer. The body
 // faces the view (yaw 0) and the input moves it in every direction, as the
 // live controller does. Usage:
-//   node directional.mjs out.json [avatar/explorer-hero-v29.glb] [pilot]
+//   node directional.mjs out.json [avatar/explorer-hero-v30.glb] [pilot]
 import {writeFileSync} from 'node:fs';
 import {runSequence,drawnSkeleton,localFrame,localPatch} from './sequence.mjs';
 
@@ -31,7 +31,7 @@ const shots={idle:[1.5],'walk-right':[.8,1.1],'walk-back':[.8,1.1],'walk-diagona
   'long-idle':Array.from({length:55},(_,i)=>i+.5)};
 
 if(import.meta.url===`file://${process.argv[1]}`){
-  const [,,out,file='avatar/explorer-hero-v29.glb',pilot='pilot']=process.argv;
+  const [,,out,file='avatar/explorer-hero-v30.glb',pilot='pilot']=process.argv;
   const frames=[],taken=new Map(),feet=[];
   const result=await runSequence({file,route:DIRECTIONAL_ROUTE,pilot:pilot==='pilot',onFrame({name,phase,root,actor,avatar}){
     const index=taken.get(name)??0;

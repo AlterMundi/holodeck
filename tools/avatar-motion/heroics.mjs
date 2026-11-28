@@ -39,7 +39,7 @@ const shots=Object.fromEntries([
 ]);
 
 if(import.meta.url===`file://${process.argv[1]}`){
-  const [,,out,file='avatar/explorer-hero-v29.glb']=process.argv;
+  const [,,out,file='avatar/explorer-hero-v30.glb']=process.argv;
   const frames=[],taken=new Map();
   const result=await runSequence({file,route:HEROIC_ROUTE,pilot:true,onFrame({name,phase,root,actor,avatar}){
     const index=taken.get(name)??0;

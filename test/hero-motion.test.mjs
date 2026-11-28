@@ -7,7 +7,7 @@ import {groundGaitSample} from '../src/humanoid-ground-gait.mjs';
 import {runSequence} from '../tools/avatar-motion/sequence.mjs';
 import {toroidalRotation} from '../src/toroidal-locomotion.mjs';
 
-const explorer='avatar/explorer-hero-v29.glb';
+const explorer='avatar/explorer-hero-v30.glb';
 
 test('a moving body faces the view and a resting one keeps its heading',()=>{
   assert.equal(presentedYaw({moving:true,cameraYaw:1,travelYaw:2.5,restingYaw:0}),1);
