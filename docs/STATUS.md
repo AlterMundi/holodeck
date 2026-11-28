@@ -11,6 +11,7 @@ existing foyer audience. The generic proxy is omitted for this parcel.
 The packaged Chromium fixture used the production layout and audiences.
 It rendered the near GLB, loaded the collision shell and offered the door
 at the published stand. Pressing E entered the existing HD Recibidor.
+At 117 m the browser drew the distant GLB without loading the near model.
 The return anchor matched the exterior door, and a foreign reader received
 neither the exterior descriptor nor its model. The active configuration
 and cache matched the owner manifest and all three GLBs. All 99 installed
