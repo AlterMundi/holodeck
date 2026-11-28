@@ -205,6 +205,27 @@ class BridgeContracts(unittest.TestCase):
         with self.assertRaises(module.BridgeError):
             self.bridge.dispatch({**request,'write':False})
 
+    def test_private_questbook_uses_the_current_pair_for_browser_and_native(self):
+        project=str(uuid.uuid4())
+        being='dm:being:v1:'+'a'*43
+        pair=copy.deepcopy(PAIR)
+        pair['owner_being_ref']=being
+        self.bridge.pair_reader=lambda:pair
+        self.bridge.paired_questbooks=frozenset([project])
+        request={'operation':'questbook-access','project':project,'write':True}
+        human={'actorRef':self.actor}
+        self.assertTrue(self.bridge.dispatch({**request,**human})['write'])
+        self.assertTrue(self.bridge.dispatch({**request,'beingRef':being})['write'])
+        self.assertFalse(self.bridge.dispatch({**request,'actorRef':'human:telegram:9'})['read'])
+        self.assertFalse(self.bridge.dispatch({**request,'beingRef':'dm:being:v1:'+'b'*43})['read'])
+        self.assertFalse(self.bridge.dispatch({**request,**human,'write':False})['write'])
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,**human,'beingRef':being})
+        pair['human']['ref']='human:telegram:9'
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,**human})
+        self.assertEqual(self.provider.inputs,[])
+
     def test_topic_room_requires_current_shared_workspace_and_exact_pair(self):
         room='a'*64
         request={'operation':'topic-room','actorRef':self.actor,'room':room}

@@ -70,12 +70,13 @@ def routed_execution(route):
 
 class NativeBridge:
     def __init__(self,provider,pair_reader,world_port=None,home_auth=None,world_access_reader=None,review_ownership_reader=None,
-                 questbook_access_reader=None):
+                 questbook_access_reader=None,paired_questbooks=()):
         self.provider=provider
         self.pair_reader=pair_reader
         self.world_port=world_port
         self.world_access_reader=world_access_reader
         self.questbook_access_reader=questbook_access_reader
+        self.paired_questbooks=frozenset(paired_questbooks)
         self.review_ownership_reader=review_ownership_reader
         self.human_ref='human:telegram:'+str(provider.human)
         self.home_workspace=False
@@ -489,18 +490,24 @@ class NativeBridge:
                         raise BridgeError('topic-room-unavailable','Select bounded exact project evidence')
             return self.topic_room(request['actorRef'],request['room'],include_projects,cursor,selection)
         if request.get('operation')=='questbook-access':
-            if (set(request)!={'operation','beingRef','project','write'}
-                or not isinstance(request['beingRef'],str)
-                or not re.fullmatch(r'dm:being:v1:[A-Za-z0-9_-]{43}',request['beingRef'])
-                or type(request['write']) is not bool):
-                raise BridgeError('identity','Select an exact native being and project access mode')
+            key='actorRef' if 'actorRef' in request else 'beingRef'
+            pattern=r'human:[A-Za-z0-9:._/-]{1,240}' if key=='actorRef' else r'dm:being:v1:[A-Za-z0-9_-]{43}'
+            subject=request.get(key)
+            if (set(request)!={'operation',key,'project','write'} or not isinstance(subject,str)
+                or not re.fullmatch(pattern,subject) or type(request['write']) is not bool):
+                raise BridgeError('identity','Select an exact project actor and access mode')
             project=ident(request['project'])
-            if self.questbook_access_reader is None:
-                raise BridgeError('authority-unavailable','Current project authority is unavailable')
-            read,write=self.questbook_access_reader(project,request['beingRef'],request['write'])
+            if project in self.paired_questbooks:
+                pair=self.pair(self.human_ref)
+                read=subject in (pair['human']['ref'],pair['owner_being_ref'])
+                write=read and request['write']
+            else:
+                if self.questbook_access_reader is None:
+                    raise BridgeError('authority-unavailable','Current project authority is unavailable')
+                read,write=self.questbook_access_reader(project,subject,request['write'])
             if type(read) is not bool or type(write) is not bool or write and (not read or not request['write']):
                 raise BridgeError('authority-unavailable','Current project authority is unconfirmed')
-            return {'schema':'holodeck.questbook-access/v1','project':project,'beingRef':request['beingRef'],
+            return {'schema':'holodeck.questbook-access/v1','project':project,key:subject,
                     'requestedWrite':request['write'],'read':read,'write':write}
         if request.get('operation')=='world-access':
             if set(request)!={'operation','beingRef'} or not isinstance(request['beingRef'],str) or not re.fullmatch(r'dm:being:v1:[A-Za-z0-9_-]{43}',request['beingRef']):
@@ -551,7 +558,10 @@ def configuration(path):
             raise ValueError('Select at least one questbook project')
         by_project={}
         for project in projects:
-            if (not isinstance(project,dict) or set(project)!={'project','view_service_key','edit_service_key'}
+            if not isinstance(project,dict):
+                raise ValueError('Select an exact questbook project')
+            paired=set(project)=={'project','paired'} and project['paired'] is True
+            if not paired and (set(project)!={'project','view_service_key','edit_service_key'}
                 or not all(isinstance(project[key],str) and re.fullmatch('s-[a-f0-9]{24}',project[key])
                            for key in ('view_service_key','edit_service_key'))
                 or project['view_service_key']==project['edit_service_key']):
@@ -627,15 +637,18 @@ def serve(path):
         return result['allowed']
     def world_access_reader(being):
         return service_access(being,config['world_service_key'])
-    def questbook_access_reader(project,being,write):
+    def questbook_access_reader(project,subject,write):
         selection=config['questbook_access'].get(project)
         if selection is None:
             return False,False
-        can_read=service_access(being,selection['view_service_key'])
-        return can_read,can_read and write and service_access(being,selection['edit_service_key'])
+        if not subject.startswith('dm:being:v1:'):
+            return False,False
+        can_read=service_access(subject,selection['view_service_key'])
+        return can_read,can_read and write and service_access(subject,selection['edit_service_key'])
     bridge=NativeBridge(provider,pair_reader,config.get('world_port'),home_auth=home_auth,
         world_access_reader=world_access_reader if 'world_service_key' in config else None,
         questbook_access_reader=questbook_access_reader if 'questbook_access' in config else None,
+        paired_questbooks=[project for project, entry in config.get('questbook_access',{}).items() if entry.get('paired')],
         review_ownership_reader=review_reader(config['review_owner'],config.get('world_service_key')) if 'review_owner' in config else None)
     slots=threading.BoundedSemaphore(4)
     class Handler(socketserver.StreamRequestHandler):

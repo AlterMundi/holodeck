@@ -23,19 +23,22 @@ export function configuredQuestbook(receiving, stateDir) {
     throw Error('Select distinct questbook projects');
   const home = {publicOrigin:receiving.origin,authHost:receiving.authHost,identityEndpoint:receiving.authEndpoint};
   return projects.map(entry=>{
-    if (!entry || Object.keys(entry).sort().join(',') !== 'binary,editEndpoint,project,viewEndpoint'
-       || !uuid(entry.project)) {
+    const paired=entry?.paired===true;
+    const keys=paired?'binary,paired,project':'binary,editEndpoint,project,viewEndpoint';
+    if (!entry || Object.keys(entry).sort().join(',') !== keys || !uuid(entry.project)
+       || (paired&&!receiving.authoritySocket)) {
       throw Error('Select the existing questbook project audiences and writer');
     }
-    const view = homeIdentityResolver({...home,authorizeEndpoint:entry.viewEndpoint});
-    const edit = homeIdentityResolver({...home,authorizeEndpoint:entry.editEndpoint});
+    const view = !paired&&homeIdentityResolver({...home,authorizeEndpoint:entry.viewEndpoint});
+    const edit = !paired&&homeIdentityResolver({...home,authorizeEndpoint:entry.editEndpoint});
     const native = receiving.authoritySocket
-      ? createNativeQuestbookAuthority(receiving.authoritySocket,entry.project) : null;
+      ? createNativeQuestbookAuthority(receiving.authoritySocket,entry.project,{paired}) : null;
     return {
       project:entry.project, binary:entry.binary, store:join(stateDir,'questbook.sqlite'),
       async authorize(actor, _project, request, write) {
         if (actor.kind === 'daimon' && !request) return native?.(actor,write);
         if (actor.kind !== 'human' || !request) return null;
+        if (paired) return native(actor,write);
         const [reader, editor] = await Promise.all([view(request), write ? edit(request) : null]);
         return {read:reader?.id===actor.id,write:editor?.id===actor.id};
       },

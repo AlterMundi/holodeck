@@ -66,6 +66,17 @@ revision and retain the existing UID guard and identity-pinned world ports.
 The app checks both world admission and project access. General world admission
 does not authorize card reads, writes or recovery.
 
+For a private paired project, select `{project, binary, paired: true}` in
+the Holodeck receiver and `{project, paired: true}` in the bridge's
+`questbook_access`. The existing Home session authenticates the browser,
+and the existing world lane authenticates the daimon. The bridge compares
+the actor to the current registered human/daimon pair for every access.
+This selection uses no additional Home service registrations. It is
+project-specific and cannot be combined with explicit audience endpoints
+or keys. A pairing or receiver binding change closes access until the
+current pair verifies again. Use registered view and edit audiences for
+projects that include other participants.
+
 Use the existing `world_port.py --own questbook --json ...` entrypoint through
 the calling body's own configured socket. It accepts `list`, `read`, `apply`
 and `receipt` in the typed JSON `type` field. Include the exact `project`

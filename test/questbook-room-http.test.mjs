@@ -33,6 +33,14 @@ test('the authenticated questbook credits only its original Room action', {skip:
       buffer += chunk;
       if (!buffer.includes('\n')) return;
       const request = JSON.parse(buffer.split('\n')[0]);
+      if(request.actorRef!==undefined){
+        assert.equal(request.actorRef,human);
+        assert.equal(request.project,project);
+        socket.end(JSON.stringify({ok:true,result:{schema:'holodeck.questbook-access/v1',
+          project,actorRef:human,requestedWrite:request.write,read:allowed,
+          write:allowed&&request.write&&projectWrite}})+'\n');
+        return;
+      }
       assert.equal(request.beingRef,daimon);
       const result = request.operation === 'world-access'
         ? {schema:'holodeck.world-access/v1',beingRef:daimon,allowed:true}
@@ -55,8 +63,7 @@ test('the authenticated questbook credits only its original Room action', {skip:
     if (req.headers.host !== 'quest.test' || !req.headers.cookie?.includes(cookie) || !allowed) {
       return res.writeHead(403).end();
     }
-    if (['/service-access/holodeck','/project/view'].includes(req.url)) return res.writeHead(204).end();
-    if (req.url === '/project/edit') return res.writeHead(projectWrite?204:403).end();
+    if (req.url === '/service-access/holodeck') return res.writeHead(204).end();
     if (req.url !== '/access/identity') return res.writeHead(404).end();
     res.setHeader('Content-Type','application/json');
     res.end(JSON.stringify({contract:'dm.home-session/v1',origin,expires:Date.now()/1000+60,
@@ -86,7 +93,7 @@ test('the authenticated questbook credits only its original Room action', {skip:
       authorizeEndpoint:homeBase+'/service-access/holodeck',identityEndpoint:homeBase+'/access/identity'}),
     questbook:configuredQuestbook({origin,authHost:'quest.test',authEndpoint:homeBase+'/access/identity',authoritySocket,
       questbook:[
-        {project,binary,viewEndpoint:homeBase+'/project/view',editEndpoint:homeBase+'/project/edit'},
+        {project,binary,paired:true},
         {project:otherProject,binary,viewEndpoint:homeBase+'/other/view',editEndpoint:homeBase+'/other/edit'},
       ]},directory)});
   const listener = runtime.app.listen(0,'127.0.0.1');
