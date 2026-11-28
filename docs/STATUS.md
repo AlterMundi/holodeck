@@ -1,6 +1,17 @@
 # Current MVP work
 
 
+## November 28 — Teleport link glare and station lighting
+
+Protected release `9387dee3eb62` selects `b402371`. Destination links use
+31% of their previous thickness and no longer emit light. A material-scoped
+key and fill light the station and all miniatures in the world and HUD.
+Chromium on a Legion RTX 2060 displayed the links and generated Matter
+miniature with the world lights disabled. All 562 active tests passed with
+two skips. The protected client and 96 installed files matched the package.
+Rollback is `cf76f6561865`.
+
+
 ## November 28 — Companion visor speech and nighttime swarms
 
 Protected release `cf76f6561865` selects source `9c9ff2b`, integrating
