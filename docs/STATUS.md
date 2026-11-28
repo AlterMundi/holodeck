@@ -1,6 +1,23 @@
 # Current MVP work
 
 
+## November 28 — Opt-in performance HUD
+
+Protected release `9dc023504c57` selects `14a47b8`. From Settings,
+the A2UI performance panel can stay open while moving. The summary shows
+frame rate, p95 and available JS heap with its sampled peak. Detail adds
+the CPU-side frame breakdown, a sampled world GPU time when the WebGL
+extension is present, drawing-buffer size, draw calls, triangles and the
+installed package size. Sampling is on demand and the HUD refreshes once
+per second. Unattributed time is not classified as browser or GPU delay.
+
+Chromium on the Legion RTX 2060 opened, expanded and closed the monitor
+and walked while it was open. The package-size readback matched the
+40,386,560-byte archive. The 562 active tests passed with two skips.
+The protected client and 96 installed files matched the archive. Rollback
+is `9387dee3eb62`.
+
+
 ## November 28 — Teleport link glare and station lighting
 
 Protected release `9387dee3eb62` selects `b402371`. Destination links use
