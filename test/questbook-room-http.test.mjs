@@ -290,7 +290,7 @@ test('the authenticated questbook credits only its original Room action', {skip:
 });
 
 const playwright = process.env.HOLODECK_PLAYWRIGHT;
-test('the Holodeck A2UI journal follows the bridge action from the actual workshop', {skip:!binary||!playwright}, async t => {
+test('the exterior A2UI journal preserves a shared mission across browser views', {skip:!binary||!playwright}, async t => {
   const {chromium} = await import(playwright);
   const directory = mkdtempSync(join(tmpdir(),'holodeck-questbook-browser-'));
   t.after(() => rmSync(directory,{recursive:true,force:true}));
@@ -335,23 +335,18 @@ test('the Holodeck A2UI journal follows the bridge action from the actual worksh
   if (process.env.HOLODECK_QUESTBOOK_CAPTURE) await dialog.screenshot({path:process.env.HOLODECK_QUESTBOOK_CAPTURE});
   await dialog.getByRole('button',{name:'Volver al mundo'}).click();
 
-  await page.getByRole('button',{name:'Mostrar herramientas'}).click();
-  const command = page.waitForResponse(response=>response.url().endsWith('/api/commands'));
-  const credit = page.waitForResponse(response=>response.url().endsWith('/api/questbook/objective'));
-  await page.getByRole('button',{name:'Conectar las islas'}).click();
-  const outcome=await (await command).json();
-  assert.equal(outcome.status,'completed',JSON.stringify(outcome));
-  const applied = await (await credit).json();
-  assert.equal(applied.result.status,'applied');
-  assert.equal(runtime.room.entities.bridge.revision,1);
-  assert.equal(typed(4,{type:'complete'}).result.status,'applied');
+  const shared=tool({type:'read',card}).result;
+  assert.equal(shared.revision,3);
+  assert.equal(shared.status,'in_progress');
+  assert.equal(shared.objectives[0].receipt,null);
+  assert.equal(typed(3,{type:'complete'}).result.reason,'objectives_pending');
 
   const mobile = await browser.newPage({viewport:{width:390,height:700},isMobile:true,hasTouch:true});
   await mobile.goto(base);
   await mobile.locator('#questbook-open').tap();
   const mobileDialog = mobile.getByRole('dialog',{name:'Diario de misiones'});
-  await mobileDialog.getByText('Completada',{exact:true}).waitFor({state:'attached'});
-  assert.ok(await mobileDialog.getByText('1/1',{exact:true}).count());
+  await mobileDialog.getByText('En curso',{exact:true}).waitFor({state:'attached'});
+  assert.ok(await mobileDialog.getByText('0/1',{exact:true}).count());
   assert.equal(await mobileDialog.getByRole('button',{name:'Completar misión'}).isDisabled(),true);
   assert.ok((await mobileDialog.boundingBox()).width < 390);
   assert.deepEqual(errors,[]);
