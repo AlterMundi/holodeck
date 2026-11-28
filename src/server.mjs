@@ -1576,8 +1576,25 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       return res.sendStatus(503);
     const board=selection&&questbookHost?.select(project);
     const questbook=!!board&&await board.canRead(selected.actor,project,req);
+    let publication;
+    const published=questbook&&board.published;
+    if(published&&published.repository===repository){
+      const evidence=[{repository,commit:published.commit}];
+      const verified=await topicSelection(req,res,visit.topic,visit.room.id,true,undefined,{...selection,evidence});
+      if(!verified)return;
+      const history=verified.projects?.evidence??[];
+      const current=verified.projects?.repositories;
+      if(verified.projects?.project!==project||!validProjectRepositories(history,project)
+        ||!validProjectRepositories(current,project))
+        return res.sendStatus(503);
+      if([...current,...history].some(row=>row.repository===repository&&row.commit===published.commit)
+        &&await board.canRead(verified.actor,project,req)){
+        publication={commit:published.commit,url:published.url};
+      }
+    }
     if(!inScope(selected.actor,visit.room.id))return res.sendStatus(404);
     res.json({room:visit.topic,repositories,next,restarted,...(selection?{project,questbook}:{}),
+      ...(publication?{publication}:{}),
       ...(work?{work:{execution:work.execution,question:work.question,result:work.result}}:{})});
   }));
 

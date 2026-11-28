@@ -97,6 +97,15 @@ existing Home and own-native identities. Every operation rechecks the
 current pairing, and the initialized card store belongs under the
 Holodeck service's existing `STATE_DIR`.
 
+A paired entry may select one existing Home publication with
+`publication: {repository, commit, artifact, version}`. Use the exact Git
+repository UUID and full commit, and the Home artifact ID and immutable
+version from the existing publisher. In its topic room, the project table
+links to that version through the same Home sign-in entry as the web.
+The link requires the current room/project access and a matching current
+or historical project revision. Later drafts do not advance it. Home
+continues to authorize the published bytes independently of room access.
+
 This receiving composition leaves room-specific project catalogs to the
 separate topic-room integration. The currently selected toroidal terrain
 hides the traditional workshop bridge. Use a mission the selected

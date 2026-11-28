@@ -152,11 +152,12 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  const {chromium}=await import(browserModule);
  const {createHolodeck}=await import('../src/server.mjs');
  const actorRef='human:room-visitor',origin='https://conversation.test',binding='a'.repeat(64);
- const projectA=randomUUID(),projectB=randomUUID(),mission='Revisar las ilustraciones';
+ const projectA=randomUUID(),projectB=randomUUID(),storyRepository=randomUUID(),mission='Revisar las ilustraciones';
+ const publishedURL='https://home.test/access/sso/start?return='+encodeURIComponent('/view/'+'a'.repeat(32)+'?display=work&version='+'b'.repeat(64));
  let card;
  const binary=process.env.DAIMON_CARDS_BIN;
  let cardTool,questbook,storyCommit='1'.repeat(40),laterCommit;
- let projectBReadable=false,projectBWritable=false;
+ let projectAReadable=true,projectBReadable=false,projectBWritable=false;
  const secondCard='00000000-0000-4000-8000-000000000001',secondMission='Preparar el mapa del juego';
  if(binary){
   const {mkdtemp,rm}=await import('node:fs/promises');
@@ -177,8 +178,14 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
   cardTool=(input,project=projectA)=>JSON.parse(execFileSync(binary,[store],{encoding:'utf8',input:JSON.stringify({
     project,actor:{kind:'daimon',subject:COMPAII_BEING},can_write:true,input,
   })}));
+  const {configuredQuestbook}=await import('../src/questbook.mjs');
+  const [selected]=configuredQuestbook({origin:'https://home.test',authoritySocket:join(dir,'unused.sock'),
+   questbook:{project:projectA,binary,paired:true,publication:{
+    repository:storyRepository,commit:storyCommit,artifact:'a'.repeat(32),version:'b'.repeat(64),
+   }}},dir);
   questbook=[
-   {project:projectA,binary,store,authorize:async actor=>({read:actor.id===actorRef,write:actor.id===actorRef})},
+   {project:projectA,binary,store,published:selected.published,
+    authorize:async actor=>({read:actor.id===actorRef&&projectAReadable,write:actor.id===actorRef&&projectAReadable})},
    {project:projectB,binary,store,authorize:async actor=>({read:actor.id===actorRef&&projectBReadable,write:actor.id===actorRef&&projectBWritable})},
   ];
   assert.equal(cardTool({type:'apply',command:{operation:randomUUID(),card:secondCard,expected_revision:0,
@@ -313,7 +320,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  await attentionDialog.waitFor({state:'hidden'});
  work={execution:'unknown',question:false,result:true};
  repositories=[
-  {project:projectA,repository:randomUUID(),label:'Cuento',commit:storyCommit,locator:'/must-not-leak'},
+  {project:projectA,repository:storyRepository,label:'Cuento',commit:storyCommit,locator:'/must-not-leak'},
   {project:projectA,repository:randomUUID(),label:'Ilustraciones',commit:'2'.repeat(40)},
   {project:projectB,repository:randomUUID(),label:'Juego',commit:'3'.repeat(40)},
  ];
@@ -376,6 +383,15 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  assert.equal(await detail.getByText('Juego',{exact:true}).count(),0);
  if(questbook){
   const selectors={room:room.room,project:projectA,repository:repositories[0].repository};
+  const projectRead=scope=>page.evaluate(async scope=>
+    fetch('api/topic-projects?'+new URLSearchParams(scope)).then(response=>response.json()),scope);
+  const publicationLink=detail.getByRole('link',{name:'Abrir versión publicada'});
+  assert.equal(await publicationLink.getAttribute('href'),publishedURL);
+  assert.deepEqual((await projectRead(selectors)).publication,{url:publishedURL,commit:storyCommit});
+  assert.equal((await projectRead({...selectors,repository:repositories[1].repository})).publication,undefined);
+  projectAReadable=false;
+  assert.equal((await projectRead(selectors)).publication,undefined);
+  projectAReadable=true;
   const foreign={room:room.room,project:projectB,repository:repositories[2].repository};
   const request=(path,scope)=>page.evaluate(async ({path,scope})=>
     fetch('api/'+path+'?'+new URLSearchParams(scope)).then(response=>response.status),{path,scope});
@@ -491,11 +507,13 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
   await table.getByRole('button',{name:'Abrir proyecto de Cuento',exact:true}).tap();
   await detail.getByRole('button',{name:'Abrir diario de misiones'}).tap();
   await journal.getByText('Cuento · '+storyCommit,{exact:true}).waitFor({state:'attached'});
+  assert.deepEqual((await projectRead(selectors)).publication,{url:publishedURL,commit:storyCommit});
   const previous=(await mount()).result[2].updateDataModel.value;
   assert.equal(previous.revisions,'Cuento · '+storyCommit);
   assert.equal('revisionCandidates' in previous,false);
   assert.equal(JSON.stringify(previous).includes('/must-not-leak'),false);
   historical=[];
+  assert.equal((await projectRead(selectors)).publication,undefined);
   assert.equal((await mount()).result[2].updateDataModel.value.hasRevisions,false);
   assert.equal(cardTool({type:'read',card}).result.evidence.length,2);
   repositories[0].commit=storyCommit;

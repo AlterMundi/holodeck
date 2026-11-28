@@ -2613,6 +2613,14 @@ async function readTopicProjects(pages){
       section.append(list,open);
       topicProjectsList.append(section);
     }
+    if(project&&result.publication){
+      const release=document.createElement('a');
+      release.href=result.publication.url;
+      release.textContent='Abrir versión publicada';
+      release.target='_blank';
+      release.rel='noopener';
+      topicProjectsList.append(release);
+    }
     if(project&&result.questbook===true){
       const missions=document.createElement('button');
       missions.type='button';
