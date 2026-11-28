@@ -1,6 +1,6 @@
 import {
   AdditiveBlending, BufferAttribute, BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Group,
-  InstancedBufferAttribute, InstancedMesh, Matrix4, MeshStandardMaterial, Points, Quaternion, ShaderMaterial, Vector3,
+  InstancedBufferAttribute, InstancedMesh, Matrix4, MeshStandardMaterial, Points, Quaternion, ShaderMaterial, Vector3, Vector4,
 } from 'three';
 import {CAVE} from './toroidal-cave.mjs';
 import {
@@ -35,6 +35,21 @@ const SWARM_FADE=[24,36];      // metres: fully visible → gone
 const SWARM_REACH=SWARM_FADE[1]+10;
 const FLOWER_SHARE=.045;      // wildflowers per tuft on fresh meadow
 const FLOWER_TINTS=[[1,.98,.92],[1,.97,.9],[1,.82,.28],[.62,.46,1],[.5,.55,1],[1,.62,.78]];
+// The far meadow: a sparse layer of cheap clumps that takes over where the
+// detailed carpet thins, so distant slopes keep the texture of grass.
+const FAR_TILE=48;             // metres at the ring's mid latitude
+const FAR_RADIUS=96;           // metres of visible far meadow
+const FAR_START=[20,34];       // metres: clumps fade in as the carpet thins
+const FAR_DENSITY=.7;          // clumps per square metre on open meadow
+const FAR_COLUMNS=Math.round(TAU*T.majorRadius/FAR_TILE);
+const FAR_ROWS=Math.round(TAU*T.tubeRadius/FAR_TILE);
+// Walkers part the grass and leave a short path that springs back.
+const LIVE_PUSHERS=3;          // explorer, companion and the nearest peer
+const TRAIL_PUSHERS=12;        // footprints left behind, shared
+const PUSHERS=LIVE_PUSHERS+TRAIL_PUSHERS;
+const FOOTSTEP=.6;             // metres between footprints
+const TRAMPLE_SECONDS=1.8;     // a footprint has sprung back after this
+const TRAMPLE_REACH=3.4;       // metres above the grass a body still parts it
 
 const overlookStart=overlookCoordinates(-4.1,-8);
 const overlookEnd=overlookCoordinates(4.1,7.4);
@@ -116,6 +131,29 @@ function tuftGeometry(){
   return geometry;
 }
 
+// Three crossed, tapered cards: twelve triangles that read as a clump of grass
+// from twenty metres on, instead of thirty for a detailed tuft.
+function clumpGeometry(){
+  const positions=[],colors=[],normals=[],indices=[];
+  for(let k=0;k<3;k++){
+    const a=k*Math.PI/3+.2,dx=Math.cos(a),dz=Math.sin(a);
+    const base=positions.length/3;
+    const rows=[[0,.5,.3],[.55,.32,.62],[1,.06,1]];
+    for(const [y,w,shade] of rows){
+      positions.push(-dx*w,y,-dz*w,dx*w,y,dz*w);
+      colors.push(shade,shade,shade,shade,shade*1.02,shade*.97);
+      normals.push(-dz*.4,1,dx*.4,-dz*.4,1,dx*.4);
+    }
+    indices.push(base,base+1,base+2,base+1,base+3,base+2,base+2,base+3,base+4,base+3,base+5,base+4);
+  }
+  const geometry=new BufferGeometry();
+  geometry.setAttribute('position',new Float32BufferAttribute(positions,3));
+  geometry.setAttribute('color',new Float32BufferAttribute(colors,3));
+  geometry.setAttribute('normal',new Float32BufferAttribute(normals,3));
+  geometry.setIndex(indices);
+  return geometry;
+}
+
 function flowerGeometry(){
   const positions=[],colors=[],normals=[],indices=[];
   const quad=(points,colour,normal)=>{
@@ -140,18 +178,21 @@ function flowerGeometry(){
   return geometry;
 }
 
-function grassMaterial(uniforms){
-  const material=new MeshStandardMaterial({vertexColors:true,side:DoubleSide,roughness:.78,metalness:0});
+function grassMaterial(uniforms,far=false){
+  const material=new MeshStandardMaterial({vertexColors:true,side:DoubleSide,roughness:far?1:.78,metalness:0});
   material.onBeforeCompile=shader=>{
     Object.assign(shader.uniforms,uniforms);
     shader.vertexShader=shader.vertexShader
       .replace('#include <common>',`#include <common>
+        #define GRASS_PUSHERS ${PUSHERS}
         uniform float grassTime;
         uniform vec3 grassWind;
         uniform float grassReach;
+        uniform vec4 grassPush[GRASS_PUSHERS];
+        uniform vec4 grassPushBounds;
         attribute vec2 grassGrow;
         varying float vGrassTip;`)
-      .replace('#include <beginnormal_vertex>',`vec3 objectNormal=normalize(normal*vec3(.6,1.,.6));
+      .replace('#include <beginnormal_vertex>',`vec3 objectNormal=${far?'vec3(0.,1.,0.)':'normalize(normal*vec3(.6,1.,.6))'};
         #ifdef USE_TANGENT
           vec3 objectTangent=vec3(tangent.xyz);
         #endif`)
@@ -164,18 +205,57 @@ function grassMaterial(uniforms){
           // remaining far tufts widen a little to keep the colour of grass.
           float far=distance(root,cameraPosition);
           float jitter=fract(grassGrow.x*7.137+.31);
+          float grow=smoothstep(grassGrow.y,grassGrow.y+${GROW_SECONDS.toFixed(2)},grassTime);
+          ${far?`
+          // Clumps kindle where the detailed carpet thins and leave the far
+          // edge one by one, so neither border reads as a line.
+          float inner=smoothstep(${FAR_START[0].toFixed(1)},${FAR_START[1].toFixed(1)},far+(jitter-.5)*7.0);
+          float edge=1.-smoothstep(grassReach-22.0,grassReach-2.0,far+(jitter-.5)*14.0);
+          float reach=inner*edge*grow;`:`
           float share=mix(1.,${FAR_SHARE.toFixed(2)},smoothstep(${FULL_DENSITY.toFixed(1)},grassReach,far));
           float keep=1.-smoothstep(share-.1,share,grassGrow.x);
           float edge=1.-smoothstep(grassReach-14.0,grassReach-2.0,far+(jitter-.5)*9.0);
-          float grow=smoothstep(grassGrow.y,grassGrow.y+${GROW_SECONDS.toFixed(2)},grassTime);
           float reach=keep*edge*grow;
-          transformed.xz*=1.+(1.-share)*.7;
+          transformed.xz*=1.+(1.-share)*.7;`}
           float bend=position.y*position.y;
           float phase=dot(root,vec3(.173,.127,.191));
           float gust=.55+.45*sin(grassTime*.43+dot(root,grassWind)*.035);
           float sway=sin(grassTime*1.9+phase)*.55+sin(grassTime*3.1+phase*1.7)*.2;
           vec3 world=grassWind*(gust*.22+sway*.10*gust)*bend;
           world+=cross(grassWind,normalize(root))*sin(grassTime*2.3+phase*2.1)*.035*bend;
+          ${far?'':`
+          // Bodies part the grass around them: each recent footprint pushes
+          // the tuft away and presses it down, then lets it spring back with
+          // a small overshoot. One test per tuft skips all of it when nobody
+          // is near.
+          if(grassPushBounds.w>0.&&distance(root,grassPushBounds.xyz)<grassPushBounds.w){
+            vec3 axis=(modelMatrix*instanceMatrix*vec4(0.,1.,0.,0.)).xyz;
+            float tall=length(axis);
+            vec3 up=axis/max(tall,1e-4);
+            vec3 trample=vec3(0.);
+            float press=0.;
+            for(int i=0;i<GRASS_PUSHERS;i++){
+              vec4 body=grassPush[i];
+              float age=grassTime-body.w;
+              if(age<0.||age>${TRAMPLE_SECONDS.toFixed(2)})continue;
+              vec3 offset=root-body.xyz;
+              float above=-dot(offset,up);
+              float gate=1.-smoothstep(1.1,${TRAMPLE_REACH.toFixed(2)},above);
+              if(gate<=0.)continue;
+              vec3 across=offset+up*above;
+              float gap=length(across);
+              // Low flight blows a wider, gentler hollow than a footstep.
+              float radius=.8+max(0.,above)*.55;
+              float spring=exp(-age*2.4)*(.8+.2*cos(age*11.));
+              float amount=(1.-smoothstep(.1,radius,gap))*gate*spring;
+              trample+=across/max(gap,.05)*amount;
+              press=max(press,amount*(1.-smoothstep(.6,1.6,above)));
+            }
+            float parted=min(1.,length(trample));
+            if(parted>0.){
+              world+=(trample/max(length(trample),1e-4)*parted*.85-up*press*.5)*tall*bend;
+            }
+          }`}
           transformed+=inverse(mat3(instanceMatrix))*world;
           transformed*=reach;
           vGrassTip=position.y;
@@ -188,8 +268,13 @@ function grassMaterial(uniforms){
         normal=normalize(vNormal);`)
       .replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
         totalEmissiveRadiance+=diffuseColor.rgb*vGrassTip*vGrassTip*grassGlow;`);
+    // Seen at a grazing angle, specular sheen turns distant clumps grey;
+    // lit like the ground they stand on, they read as its texture.
+    if(far)shader.fragmentShader=shader.fragmentShader.replace('#include <aomap_fragment>',`#include <aomap_fragment>
+        reflectedLight.directSpecular*=0.;
+        reflectedLight.indirectSpecular*=0.;`);
   };
-  material.customProgramCacheKey=()=>'holodeck-toroidal-grass-v4';
+  material.customProgramCacheKey=()=>far?'holodeck-toroidal-grass-far-v1':'holodeck-toroidal-grass-v5';
   return material;
 }
 
@@ -233,16 +318,24 @@ export class ToroidalGrass {
     scene.add(this.group);
     this.tiles=new Map();
     this.queue=[];
-    this.uniforms={grassTime:{value:0},grassWind:{value:new Vector3(1,0,0)},grassReach:{value:RADIUS},grassGlow:{value:.06}};
+    this.uniforms={grassTime:{value:0},grassWind:{value:new Vector3(1,0,0)},grassReach:{value:RADIUS},grassGlow:{value:.06},
+      grassPush:{value:Array.from({length:PUSHERS},()=>new Vector4(0,0,0,-1e4))},grassPushBounds:{value:new Vector4(0,0,0,0)}};
     this.geometry=tuftGeometry();
     this.flowerGeometry=flowerGeometry();
     this.material=grassMaterial(this.uniforms);
+    this.farTiles=new Map();
+    this.farGeometry=clumpGeometry();
+    this.farMaterial=grassMaterial({...this.uniforms,grassReach:{value:FAR_RADIUS}},true);
+    this.walkers=new Map();
+    this.footprints=Array.from({length:TRAIL_PUSHERS},()=>[0,0,0,-1e4]);
+    this.footprintIndex=0;
     this.matrix=new Matrix4();
     this.quaternion=new Quaternion();
     this.yaw=new Quaternion();
     this.basis=new Matrix4();
     this.axisY=new Vector3(0,1,0);
     this.color=new Color();
+    this.scratchColor=new Color();
     this.scale=new Vector3();
     this.place=new Vector3();
     this.seconds=0;
@@ -255,8 +348,10 @@ export class ToroidalGrass {
 
   disposeTile(mesh){
     const flowers=mesh.userData.flowers;
-    flowers.geometry.dispose();
-    flowers.dispose();
+    if(flowers){
+      flowers.geometry.dispose();
+      flowers.dispose();
+    }
     mesh.geometry.dispose();
     mesh.dispose();
   }
@@ -346,19 +441,128 @@ export class ToroidalGrass {
     return mesh;
   }
 
-  wanted(u,v,height){
-    const ringMetres=TAU*(T.majorRadius+(T.tubeRadius+height)*Math.cos(TAU*v))/COLUMNS;
-    const tubeMetres=TAU*(T.tubeRadius+height)/ROWS;
-    const column=Math.floor(wrap(u)*COLUMNS),row=Math.floor(wrap(v)*ROWS);
-    const spanU=Math.ceil((RADIUS+TILE)/ringMetres),spanV=Math.ceil((RADIUS+TILE)/tubeMetres);
+  // A far tile: fewer, larger clumps in the meadow's own colours. Some take
+  // a flower tint, so distant drifts of colour survive past the carpet.
+  buildFarTile(column,row){
+    const u0=column/FAR_COLUMNS,v0=row/FAR_ROWS;
+    const center=terrainPosition(u0+.5/FAR_COLUMNS,v0+.5/FAR_ROWS,terrainElevation(u0+.5/FAR_COLUMNS,v0+.5/FAR_ROWS));
+    const latitudeScale=(T.majorRadius+T.tubeRadius*Math.cos(TAU*(v0+.5/FAR_ROWS)))/T.majorRadius;
+    const candidates=Math.round(FAR_TILE*FAR_TILE*latitudeScale*FAR_DENSITY*this.density);
+    const mesh=new InstancedMesh(this.farGeometry.clone(),this.farMaterial,Math.max(1,candidates));
+    mesh.position.fromArray(center);
+    let count=0;
+    for(let i=0;i<candidates;i++){
+      const pick=salt=>random(column+7919,row+104729,i,salt);
+      const u=(column+pick(11))/FAR_COLUMNS,v=(row+pick(23))/FAR_ROWS;
+      const h=terrainElevation(u,v);
+      const cover=grassCover(u,v,h);
+      if(cover<=0||pick(31)>cover*1.15)continue;
+      const du=1.2/(TAU*T.majorRadius*latitudeScale),dv=1.2/(TAU*T.tubeRadius);
+      const slope=Math.hypot(terrainElevation(u+du,v)-h,terrainElevation(u,v+dv)-h)/1.2;
+      if(slope>.55||pick(37)<(slope-.3)*2.5)continue;
+      const ground=terrainColor(u,v,h,slope);
+      const frame=terrainFrame(u,v);
+      const point=terrainPosition(u,v,h-.05);
+      this.place.set(point[0]-center[0],point[1]-center[1],point[2]-center[2]);
+      this.basis.makeBasis(
+        new Vector3().fromArray(frame.alongRing),new Vector3().fromArray(frame.up),new Vector3().fromArray(frame.aroundTube));
+      this.quaternion.setFromRotationMatrix(this.basis).multiply(this.yaw.setFromAxisAngle(this.axisY,pick(41)*TAU));
+      const lush=.55+.45*Math.min(1,cover);
+      const height=(.24+.2*pick(53)+.1*pick(61))*lush;
+      const width=.55+.45*pick(67);
+      this.scale.set(width,height,width);
+      this.matrix.compose(this.place,this.quaternion,this.scale);
+      mesh.setMatrixAt(count,this.matrix);
+      const vary=.82+.26*pick(71),dry=pick(73)<.18;
+      this.color.setRGB(
+        (ground[0]*(dry?1.15:.86))*vary,
+        (ground[1]*1.12+.01)*vary,
+        (ground[2]*(dry?.9:.72))*vary);
+      const moisture=ground[1]/(ground[0]+ground[1]+ground[2]+1e-3);
+      const drift=.5+.5*Math.sin(u*9000+row)*Math.sin(v*7000+column);
+      if(pick(79)<FLOWER_SHARE*2.2*(.6+moisture*1.2)*cover*drift){
+        const tint=FLOWER_TINTS[Math.floor(pick(101)*FLOWER_TINTS.length)];
+        this.color.lerp(this.scratchColor.setRGB(tint[0]*.85,tint[1]*.85,tint[2]*.85),.4);
+      }
+      mesh.setColorAt(count,this.color);
+      count++;
+    }
+    const values=new Float32Array(Math.max(1,count)*2);
+    for(let i=0;i<count;i++){values[i*2]=(i+.5)/count;values[i*2+1]=this.seconds;}
+    mesh.geometry.setAttribute('grassGrow',new InstancedBufferAttribute(values,2));
+    mesh.count=count;
+    mesh.instanceMatrix.needsUpdate=true;
+    if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
+    mesh.receiveShadow=false;
+    mesh.castShadow=false;
+    mesh.computeBoundingSphere();
+    mesh.visible=count>0;
+    mesh.name='grass-far-tile';
+    return mesh;
+  }
+
+  wanted(u,v,height,{columns=COLUMNS,rows=ROWS,tile=TILE,radius=RADIUS}={}){
+    const ringMetres=TAU*(T.majorRadius+(T.tubeRadius+height)*Math.cos(TAU*v))/columns;
+    const tubeMetres=TAU*(T.tubeRadius+height)/rows;
+    const column=Math.floor(wrap(u)*columns),row=Math.floor(wrap(v)*rows);
+    const spanU=Math.ceil((radius+tile)/ringMetres),spanV=Math.ceil((radius+tile)/tubeMetres);
     const list=[];
     for(let dc=-spanU;dc<=spanU;dc++)for(let dr=-spanV;dr<=spanV;dr++){
-      const c=(column+dc+COLUMNS)%COLUMNS,r=(row+dr+ROWS)%ROWS;
-      const cu=(c+.5)/COLUMNS,cv=(r+.5)/ROWS;
-      const distance=Math.hypot(wrappedDistance(cu,u)*COLUMNS*ringMetres,wrappedDistance(cv,v)*ROWS*tubeMetres);
-      if(distance<RADIUS+TILE*.75)list.push({c,r,distance});
+      const c=(column+dc+columns)%columns,r=(row+dr+rows)%rows;
+      const cu=(c+.5)/columns,cv=(r+.5)/rows;
+      const distance=Math.hypot(wrappedDistance(cu,u)*columns*ringMetres,wrappedDistance(cv,v)*rows*tubeMetres);
+      if(distance<radius+tile*.75)list.push({c,r,distance});
     }
     return list.sort((a,b)=>a.distance-b.distance);
+  }
+
+  // A body near the grass this frame. Moving bodies leave footprints that
+  // spring back; a long jump (teleport, respawn) leaves none.
+  observe(id,position){
+    if(!position||![position.x,position.y,position.z].every(Number.isFinite))return;
+    let walker=this.walkers.get(id);
+    if(!walker){
+      if(this.walkers.size>=32)return;
+      walker={last:[position.x,position.y,position.z],now:[0,0,0],seen:this.seconds};
+      this.walkers.set(id,walker);
+    }
+    const [x,y,z]=walker.last;
+    const moved=Math.hypot(position.x-x,position.y-y,position.z-z);
+    if(moved>4)walker.last=[position.x,position.y,position.z];
+    else if(moved>=FOOTSTEP){
+      this.footprints[this.footprintIndex]=[x,y,z,this.seconds];
+      this.footprintIndex=(this.footprintIndex+1)%TRAIL_PUSHERS;
+      walker.last=[position.x,position.y,position.z];
+    }
+    walker.now=[position.x,position.y,position.z];
+    walker.seen=this.seconds;
+  }
+
+  updateTrample(position){
+    const push=this.uniforms.grassPush.value,bounds=this.uniforms.grassPushBounds.value;
+    for(const [id,walker] of this.walkers)if(this.seconds-walker.seen>.5)this.walkers.delete(id);
+    // The explorer always owns a live slot; the nearest other bodies get the rest.
+    const live=[...this.walkers.entries()].filter(([id])=>id!=='self')
+      .map(([,walker])=>walker.now)
+      .sort((a,b)=>Math.hypot(a[0]-position.x,a[1]-position.y,a[2]-position.z)-Math.hypot(b[0]-position.x,b[1]-position.y,b[2]-position.z));
+    live.unshift([position.x,position.y,position.z]);
+    let active=0;
+    const centre=[0,0,0],samples=[];
+    for(let i=0;i<PUSHERS;i++){
+      const source=i<LIVE_PUSHERS?live[i]:this.footprints[i-LIVE_PUSHERS];
+      const born=i<LIVE_PUSHERS?(source?this.seconds:-1e4):source[3];
+      if(!source||this.seconds-born>TRAMPLE_SECONDS){push[i].set(0,0,0,-1e4);continue;}
+      push[i].set(source[0],source[1],source[2],born);
+      samples.push(source);
+      centre[0]+=source[0];centre[1]+=source[1];centre[2]+=source[2];
+      active++;
+    }
+    if(!active){bounds.set(0,0,0,0);return;}
+    centre[0]/=active;centre[1]/=active;centre[2]/=active;
+    let radius=0;
+    for(const p of samples)radius=Math.max(radius,Math.hypot(p[0]-centre[0],p[1]-centre[1],p[2]-centre[2]));
+    // Beyond a body's widest hollow, no tuft can be reached.
+    bounds.set(centre[0],centre[1],centre[2],radius+.8+TRAMPLE_REACH*.55+TRAMPLE_REACH);
   }
 
   update(position,lightweight,daylight=1,seconds=1/60){
@@ -379,6 +583,8 @@ export class ToroidalGrass {
     this.uniforms.grassTime.value=this.seconds;
     const day=Math.max(0,Math.min(1,daylight??1));
     this.uniforms.grassGlow.value=.045*day;
+    this.observe('self',position);
+    this.updateTrample(position);
 
     const wanted=this.wanted(u,v,height);
     const keep=new Set(wanted.map(({c,r})=>this.tileKey(c,r)));
@@ -398,13 +604,31 @@ export class ToroidalGrass {
       const share=1+(FAR_SHARE-1)*smoothstep(FULL_DENSITY,RADIUS,nearest);
       mesh.count=Math.min(mesh.userData.full,Math.ceil(mesh.userData.full*share)+1);
     }
+    const farWanted=this.wanted(u,v,height,{columns:FAR_COLUMNS,rows:FAR_ROWS,tile:FAR_TILE,radius:FAR_RADIUS});
+    const farKeep=new Set(farWanted.map(({c,r})=>this.tileKey(c,r)));
+    for(const [key,mesh] of this.farTiles){
+      if(farKeep.has(key))continue;
+      this.group.remove(mesh);
+      this.disposeTile(mesh);
+      this.farTiles.delete(key);
+    }
+    // The detailed carpet comes first; the far meadow uses what time is left.
     const start=performance.now();
+    let pending=false;
     for(const {c,r} of wanted){
       const key=this.tileKey(c,r);
       if(this.tiles.has(key))continue;
-      if(performance.now()-start>BUDGET_MS)break;
+      if(performance.now()-start>BUDGET_MS){pending=true;break;}
       const mesh=this.buildTile(c,r);
       this.tiles.set(key,mesh);
+      this.group.add(mesh);
+    }
+    if(!pending)for(const {c,r} of farWanted){
+      const key=this.tileKey(c,r);
+      if(this.farTiles.has(key))continue;
+      if(performance.now()-start>BUDGET_MS)break;
+      const mesh=this.buildFarTile(c,r);
+      this.farTiles.set(key,mesh);
       this.group.add(mesh);
     }
     this.updateFireflies(position,u,v,height,1-smoothstep(.04,.32,day));
@@ -520,6 +744,14 @@ export class ToroidalGrass {
       this.disposeTile(mesh);
     }
     this.tiles.clear();
+    for(const mesh of this.farTiles.values()){
+      this.group.remove(mesh);
+      this.disposeTile(mesh);
+    }
+    this.farTiles.clear();
+    this.walkers.clear();
+    for(const footprint of this.footprints)footprint[3]=-1e4;
+    this.uniforms.grassPushBounds.value.set(0,0,0,0);
     if(this.fireflies)this.fireflies.visible=false;
     this.fireflyCells='';
   }
@@ -533,7 +765,9 @@ export class ToroidalGrass {
     }
     this.geometry.dispose();
     this.flowerGeometry.dispose();
+    this.farGeometry.dispose();
     this.material.dispose();
+    this.farMaterial.dispose();
     this.group.removeFromParent();
   }
 }

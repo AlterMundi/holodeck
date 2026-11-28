@@ -78,7 +78,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
   function animatedUpdate(state,dt){
     // Remove last frame's extra limb rotations before the base mixer runs.
     for(const entry of actors.values())restore(entry);
-    const {outdoor,flying,boosting,grounded:localGrounded,table,crouch,gaze,peerGaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null,wake=null,splash=null,waterWake=null,aimPitch=null,loopPitch=null,trickAge=Infinity}=context();
+    const {outdoor,flying,boosting,grounded:localGrounded,table,crouch,gaze,peerGaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null,wake=null,splash=null,waterWake=null,trample=null,aimPitch=null,loopPitch=null,trickAge=Infinity}=context();
     const now=clock?.();
     const elapsed=now!==undefined&&previousTime!==undefined?(now-previousTime)/1000:dt;
     previousTime=now;
@@ -183,6 +183,8 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const wet=entry.medium==='surface'||entry.medium==='submerged';
       const underwater=wet&&!explicitFlight;
       if(outdoor&&!atTable&&glanceMotion)wake?.observe(id,position,up,explicitFlight&&!wet,elapsed);
+      // Peers part the meadow too; the explorer's own steps are read by the grass.
+      if(outdoor&&!atTable&&!isLocal&&continuous)trample?.observe(id,position);
       const draft=sample?sample.waterLevel-sample.feet:-Infinity;
 
       if(!outdoor||underwater)entry.observedFlight=false;
