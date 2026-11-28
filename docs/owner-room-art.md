@@ -35,3 +35,20 @@ under normal room authorization. The Holodeck service receives neither
 reader credentials nor visitor cookies for the Home origin. An edition
 update follows the same staging contract. Verify both visitors and the full
 return in the receiving world.
+
+## Casa Linterna receiving review
+
+The receiving integration carries the owner-room reader from #39, the
+Atelier workbench from #38, and the Linterna tool-caddy contract from
+`e46cfce`. The code candidate builds with the current toroidal release
+and its existing teleport assets. The package check covers the receiver
+with no owner edition selected.
+
+The live East 1 layout still has the foyer, Research Gallery and Claymon,
+with a direct foyer–Claymon link. Selecting the Linterna edition requires
+the owner's exact Home manifest URL and digest and a revision-checked layout
+whose room IDs and reciprocal doors match that manifest. Keep the existing
+room grants and the Claymon workspace identity when publishing the layout.
+For the workbench, bind the one approved workspace to its registered public
+issuer and fixed private service route. Verify the crossed thresholds and
+shared workspace revision on the receiving configuration before activation.
