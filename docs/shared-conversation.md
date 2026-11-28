@@ -446,6 +446,13 @@ discards them on departure. Additional projects remain accessible through
 the paged table. Separate project interiors and editing surfaces remain
 part of the topic-room roadmap.
 
+On a table read, the exact visited room can also receive the paired
+Gateway's current work observation. The status shows observed work or
+queue activity, retained human questions and the presence of a canonical
+result. A stale native observation does not say that the daimon is
+working. The catalogue, other rooms and older owners receive no new
+details. The table reads no transcript and starts no turn. Opening or
+answering an exact retained item stays with Conversation's existing writer.
 
 The project view offers the questbook when the project is the one selected
 by the receiving card writer and the visitor has its read grant. Its pages

@@ -992,7 +992,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       res.sendStatus(503);return null;
     }
     return {actor,id:'topic-'+topic.slice(0,40),topic,title:selection.general?'Nuestra conversación general':selection.title,
-      projects:selection.projects};
+      projects:selection.projects,work:selection.work};
   }
 
   function validProjectRepositories(repositories,project){
@@ -1021,7 +1021,9 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     }
     const selected=await topicSelection(req,res,visit.topic,visit.room.id,true,cursor,selection);
     if(!selected)return;
-    const {projects}=selected;
+    const {projects,work}=selected;
+    if(work!==undefined&&(!work||!['unknown','idle','queued','working'].includes(work.execution)||
+      typeof work.question!=='boolean'||typeof work.result!=='boolean'))return res.sendStatus(503);
     if(!projects||(projects.project??null)!==(selection?.project??null)||
       !validProjectRepositories(projects.repositories,selection?.project))
       return res.sendStatus(503);
@@ -1032,7 +1034,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const board=selection&&questbookHost?.select(project);
     const questbook=!!board&&await board.canRead(selected.actor,project,req);
     if(!inScope(selected.actor,visit.room.id))return res.sendStatus(404);
-    res.json({room:visit.topic,repositories,next,restarted,...(selection?{project,questbook}:{})});
+    res.json({room:visit.topic,repositories,next,restarted,...(selection?{project,questbook}:{}),
+      ...(work?{work:{execution:work.execution,question:work.question,result:work.result}}:{})});
   }));
 
   app.get(route('api/topic-space'),asyncRoute(async(req,res)=>{

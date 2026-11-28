@@ -1220,7 +1220,16 @@ async function readTopicProjects(pages){
     }
     const status=projects.size?(project?'Repositorios del proyecto':'Vínculos del topic'):topicProjectsPage.length>1||topicProjectsCursor
       ?'No hay vínculos visibles en esta página.':'Todavía no hay proyectos visibles en esta sala.';
-    topicProjectsStatus.textContent=result.restarted?'Los vínculos cambiaron. Volvimos a la primera página. '+status:status;
+    const work=result.work;
+    const cues=[
+      work?.execution==='working'?'El daimon estaba trabajando al abrir la mesa.':null,
+      work?.execution==='queued'?'Había trabajo en espera al abrir la mesa.':null,
+      work?.question?'Hay una pregunta pendiente.':null,
+      work?.result?'Hay un resultado en la conversación del topic.':null,
+    ].filter(Boolean);
+    topicProjectsStatus.textContent=[
+      result.restarted?'Los vínculos cambiaron. Volvimos a la primera página.':null,status,...cues,
+    ].filter(Boolean).join(' ');
   }catch{
     if(!current())return;
     topicProjectsStatus.textContent=project?'El proyecto no está disponible desde esta sala.':'No pude consultar los proyectos de esta sala.';

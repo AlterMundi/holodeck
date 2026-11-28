@@ -239,11 +239,18 @@ class BridgeContracts(unittest.TestCase):
         self.assertEqual(self.bridge.dispatch(request)['title'],'Ideas')
         self.assertEqual(calls,[room])
         projects={'repositories':[]}
+        work={'execution':'working','question':True,'result':False}
         self.provider.topic_rooms=lambda selected, *, include_projects: (
             calls.append((selected,include_projects)) or {
-            'schema':'daimon.topic-rooms/v1','rooms':[{'room':room,'title':'Ideas','general':False,'projects':projects}]})
-        self.assertEqual(self.bridge.dispatch({**request,'projects':True})['projects'],projects)
+            'schema':'daimon.topic-rooms/v1','rooms':[{'room':room,'title':'Ideas','general':False,
+                'projects':projects,'work':work}]})
+        observed=self.bridge.dispatch({**request,'projects':True})
+        self.assertEqual(observed['projects'],projects)
+        self.assertEqual(observed['work'],work)
         self.assertEqual(calls[-1],(room,True))
+        work['private_native_id']='refused'
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,'projects':True})
         repo=str(uuid.uuid4())
         selection={'project':str(uuid.uuid4()),'repository':repo,
                    'evidence':[{'repository':repo,'commit':'a'*40}]}

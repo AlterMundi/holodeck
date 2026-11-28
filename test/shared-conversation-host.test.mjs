@@ -113,7 +113,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
   assert.equal(cardTool({type:'apply',command:{operation:randomUUID(),card:secondCard,expected_revision:0,
     action:{type:'create',title:secondMission}}},projectB).result.status,'applied');
  }
- let repositories=[],historical=[],projectRevision=1;
+ let repositories=[],historical=[],projectRevision=1,work;
  const nativeFactory=async()=>({availability:async()=>({available:true}),contexts:{},
    async topicRoom(actor,topic,includeProjects,cursor,selection){
     assert.equal(actor.ref,actorRef);
@@ -124,7 +124,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
     const restarted=!!cursor&&cursor!==projectRevision+'.3';
     const older=cursor&&!restarted;
     return {schema:'holodeck.topic-room/v1',actorRef,room:topic,title:room.title,general:false,
-      ...(includeProjects?{projects:{repositories:older?scoped.slice(8):scoped.slice(0,8),
+      ...(includeProjects?{work,projects:{repositories:older?scoped.slice(8):scoped.slice(0,8),
         next:!older&&scoped.length>8?projectRevision+'.3':null,restarted,
         ...(selection?{project:selection.project}:{}),
         ...(selection?.evidence?{evidence:historical.filter(row=>row.project===selection.project&&
@@ -202,6 +202,14 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  });
  await closeTable();
  assert.equal(await page.locator('#topic-project-doors').count(),0);
+ work={execution:'working',question:true,result:false,private_native_id:'must-not-leak'};
+ const cueRead=await page.evaluate(async room=>fetch('api/topic-projects?room='+room).then(r=>r.json()),room.room);
+ assert.deepEqual(cueRead.work,{execution:'working',question:true,result:false});
+ assert.equal(await page.evaluate(async()=>fetch('api/topic-projects?room='+'8'.repeat(64)).then(r=>r.status)),404);
+ await openTable();
+ await table.getByRole('status').filter({hasText:'El daimon estaba trabajando al abrir la mesa. Hay una pregunta pendiente.'}).waitFor();
+ await closeTable();
+ work={execution:'unknown',question:false,result:true};
  repositories=[
   {project:projectA,repository:randomUUID(),label:'Cuento',commit:storyCommit,locator:'/must-not-leak'},
   {project:projectA,repository:randomUUID(),label:'Ilustraciones',commit:'2'.repeat(40)},
@@ -210,7 +218,11 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  const read=await page.evaluate(async room=>await fetch('api/topic-projects?room='+room).then(response=>response.json()),room.room);
  assert.equal(read.repositories.length,3);
  assert.equal('locator' in read.repositories[0],false);
+ assert.deepEqual(read.work,work);
  await openTable();
+ const status=table.getByRole('status').filter({hasText:'Hay un resultado en la conversación del topic.'});
+ await status.waitFor();
+ assert.doesNotMatch(await status.textContent(),/estaba trabajando|pregunta pendiente/);
  await table.getByText('Cuento',{exact:true}).waitFor();
  assert.equal(await table.getByRole('list',{name:'Repositorios de un proyecto'}).count(),2);
  await table.getByText('3'.repeat(40),{exact:true}).waitFor();
@@ -288,14 +300,14 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
   await table.getByRole('button',{name:'Abrir proyecto de Cuento',exact:true}).tap();
   await detail.getByRole('button',{name:'Abrir diario de misiones'}).tap();
   await page.unroute(receiptPath);
-  await journal.getByRole('button',{name:'Nueva misión'}).tap();
+  await journal.getByRole('button',{name:'Confirmar misión pendiente'}).tap();
   assert.equal(await journal.getByLabel('Título de la nueva misión').inputValue(),mission);
   const receipt=page.waitForResponse(response=>{
     const url=new URL(response.url());
     return url.pathname.endsWith('/api/questbook/receipt')&&url.searchParams.get('operation')===operation
       &&url.searchParams.get('project')===projectA;
   });
-  await journal.getByRole('button',{name:'Crear misión'}).tap();
+  await journal.getByRole('button',{name:'Comprobar misión'}).tap();
   assert.equal((await (await receipt).json()).result.command.card,card);
   await journal.getByText('Misión creada.').waitFor();
   assert.deepEqual(creates,[projectA,projectB]);

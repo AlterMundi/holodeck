@@ -170,9 +170,15 @@ class NativeBridge:
         title=re.sub(r'[\x00-\x1f\x7f]',' ',title).strip()[:80]
         if not title:
             raise BridgeError('topic-room-unavailable','The current topic title is unavailable')
+        work=entry.get('work') if include_projects else None
+        if work is not None and (not isinstance(work,dict) or set(work)!={'execution','question','result'}
+            or work['execution'] not in ('unknown','idle','queued','working')
+            or type(work['question']) is not bool or type(work['result']) is not bool):
+            raise BridgeError('topic-room-unavailable','The topic work observation is invalid')
         return {'schema':'holodeck.topic-room/v1','actorRef':actor,'beingRef':pair['owner_being_ref'],
                 'homeRef':pair['home_ref'],'room':room,'title':title,'general':entry['general'],
-                **({'projects':entry['projects']} if include_projects and 'projects' in entry else {})}
+                **({'projects':entry['projects']} if include_projects and 'projects' in entry else {}),
+                **({'work':work} if work is not None else {})}
 
     def observation_file(self,ident_,actor,observation):
         if (not isinstance(observation,dict) or observation.get('schema')!='holodeck.situation/v1'
