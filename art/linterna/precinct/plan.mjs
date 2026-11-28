@@ -1,11 +1,11 @@
 // Metres. X is east, +Z faces the approach. Pavilion coordinates are local
 // to the door they describe; the render and clearances use the same plan.
 export const pavilions = [
-  {id: 'athena', origin: [-13.5, -12.8], turn: .85,
-    rooms: ['planning', 'reading', 'library'], roof: 'sage', icon: 'owl'},
-  {id: 'hephaestus', origin: [0, -22], turn: 0,
+  {id: 'athena', origin: [-13.5, -12.8], turn: .85, width: 9,
+    rooms: ['planning', 'reading', 'library', 'research-gallery'], roof: 'sage', icon: 'owl'},
+  {id: 'hephaestus', origin: [0, -22], turn: 0, width: 8.4,
     rooms: ['atelier', 'printing'], roof: 'sage', icon: 'hammer'},
-  {id: 'apollo', origin: [13.5, -12.8], turn: -.85,
+  {id: 'apollo', origin: [13.5, -12.8], turn: -.85, width: 8.4,
     rooms: ['instrument', 'movement'], roof: 'sage', icon: 'lyre'},
 ];
 
@@ -22,8 +22,7 @@ export function place(pavilion, x, z) {
 }
 
 export function roomCenters(pavilion) {
-  const width = pavilion.rooms.length === 3 ? 9 : 8.4;
-  return pavilion.rooms.map((id, i) => ({id, x: width * ((i + .5) / pavilion.rooms.length - .5)}));
+  return pavilion.rooms.map((id, i) => ({id, x: pavilion.width * ((i + .5) / pavilion.rooms.length - .5)}));
 }
 
 // Inner curve of the path, from Athena through Hephaestus to Apollo.

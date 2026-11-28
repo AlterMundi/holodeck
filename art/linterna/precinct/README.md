@@ -122,7 +122,9 @@ node art/linterna/precinct/hefesto-slice.mjs OUTPUT_DIR REVIEWED_WORKSHOP_GLB --
 ```
 
 `linterna-all-temples.json` includes Athena's ochre foyer, its three study
-rooms, Apollo's ivory and blue foyer, and its two sound and movement rooms.
+rooms and the Research Gallery, plus Apollo's ivory and blue foyer and its
+two sound and movement rooms. Bind the Research Gallery cell to the house's
+existing gallery room when revising its links.
 The study and music room scenes have furnishings and an authorized door
 placement contract. They carry no application endpoints or data.
 The front of each temple appears in the arrival cell. Its foyer and site

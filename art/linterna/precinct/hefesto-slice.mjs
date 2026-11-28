@@ -84,8 +84,8 @@ const passages=[
 ];
 const sidePavilions=allTemples?pavilions.filter(pavilion=>pavilion!==hefesto):[];
 for(const pavilion of sidePavilions){
-  const siteRooms=roomCenters(pavilion), width=siteRooms[1].x-siteRooms[0].x;
-  const edge=width*siteRooms.length/2;
+  const siteRooms=roomCenters(pavilion), width=pavilion.width/siteRooms.length;
+  const edge=pavilion.width/2;
   cells[pavilion.id]={origin:pavilion.origin,
     floor:[{...pavers,x:[-edge,edge],z:[roomPartition,pavilionDoor+.82]}]};
   const front=place(pavilion,0,pavilionDoor);
@@ -166,7 +166,7 @@ for (const cell of Object.keys(cells)) {
     const entry=passages.find(passage=>passage.sides[1].cell===cell).sides[1].stand;
     const workPosition=[0,-1.1];
     checkPath([entry,workPosition]);
-    assert.ok(!passable([0,-2]),cell+' bench must remain solid');
+    assert.ok(!passable([0,-2]),cell+' furnishing must remain solid');
   }
   for (const entry of passages.slice(1).flatMap(passage=>passage.sides).filter(entry=>entry.cell===cell))
     assert.ok(!passable(entry.threshold),cell+' must require an authorized door transition');

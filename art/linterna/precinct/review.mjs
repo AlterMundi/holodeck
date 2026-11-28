@@ -17,6 +17,7 @@ const labels = {
   planning:['Planificación','Una sala de proyectos y planificación.'],
   reading:['Lectura','Una sala de lectura.'],
   library:['Biblioteca','Sala prevista para consulta bibliográfica.'],
+  'research-gallery':['Galería de investigación','Una sala de Atenea para exhibir investigaciones y sus objetos.'],
 };
 const actionText = {
   promenade:'Salir al paseo',world:'Cruzar la puerta',garden:'Ir al jardín',

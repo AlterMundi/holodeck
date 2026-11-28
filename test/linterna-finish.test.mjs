@@ -29,7 +29,7 @@ test('side temple interiors are offered only by the expanded room-art edition',(
   const first=makeHefestoSliceScenes();
   const expanded=makeHefestoSliceScenes({allTemples:true});
   assert.deepEqual(expanded.filter(layer=>!first.some(original=>original.cell===layer.cell)).map(layer=>layer.cell),
-    ['athena','planning','reading','library','apollo','instrument','movement']);
+    ['athena','planning','reading','library','research-gallery','apollo','instrument','movement']);
   const hall=expanded.find(layer=>layer.name==='pavilion-exteriors').group;
   assert.equal(hall.getObjectByName('Athena wayfinding sculpture'),undefined);
   assert.equal(hall.getObjectByName('Apollo wayfinding sculpture'),undefined);

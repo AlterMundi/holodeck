@@ -373,7 +373,7 @@ function mainTemple(group, out) {
 }
 
 function statue(group, out, icon) {
-  const x=1.04, z=.25;
+  const x=icon==='owl'?0:1.04, z=.25;
   solid(out,group,'foundation',x,.20,z,.63,.40,.58);
   box(group,'trim',x,.41,z,.67,.064,.61);
   if(icon!=='hammer'){
@@ -393,6 +393,11 @@ function statue(group, out, icon) {
 
 function workstations(group, out, rooms) {
   for (const {id,x} of rooms) {
+    if(id==='research-gallery'){
+      solid(out,group,'foundation',x,.29,-3.58,1.53,.58,.62);
+      box(group,'limestone',x,.595,-3.58,1.71,.07,.73);
+      continue;
+    }
     solid(out,group,'oak',x,.41,-3.58,1.53,.82,.62);
     box(group,'warmWood',x,.85,-3.58,1.71,.12,.73);
     if (id==='printing') {
@@ -417,7 +422,7 @@ function temple(parent, out, plan, exterior=false) {
   group.position.set(plan.origin[0],0,plan.origin[1]);
   group.rotation.y=plan.turn;
   parent.add(group);
-  const width=rooms.length===3 ? 9 : 8.4, edge=width/2;
+  const width=plan.width, edge=width/2;
   if (!exterior) floorPavers(group,width,-4.38,4.68);
   const palette=foyerPalettes[plan.id];
   doorway(out,group,width,pavilionDoor,3.19,[0],'chalk',exterior?0:-1,palette);
@@ -654,7 +659,7 @@ export function makeHefestoSliceScenes({allTemples=false}={}) {
     if(!primary&&!allTemples)continue;
     const cell=primary?'hefesto':pavilion.id;
     const rooms=roomCenters(pavilion), roomWidth=rooms[1].x-rooms[0].x;
-    const width=roomWidth*rooms.length, edge=width/2;
+    const width=pavilion.width, edge=width/2;
     const palette=foyerPalettes[pavilion.id];
     layer(cell,primary?'foyer':cell+'-foyer',[0,0],(group,out)=>{
       const length=pavilionDoor+.82-roomPartition;
