@@ -139,6 +139,15 @@ currently readable seven models and manifest measured 41,031,680 bytes
 under the 40 MiB receiver cap. This qualifies the packaging route separately
 from the newer edition and its activation.
 
+The serving layout revision 2 admits Nicolás to the existing foyer. A
+candidate using the serving runtime and the verified four-cell edition
+fits in 41,052,160 bytes and stages all seven exact models. The loader
+accepts those models and their door poses against a matching four-cell
+fixture. The serving graph still has three rooms and rejects that edition.
+That archive is a candidate only. Select the edition matching the owner's
+next live layout before activating it. The visual visit does not require
+an interactive Atelier service binding.
+
 The owning daimon can use `layout.revise` to move the Claymon passage while
 preserving existing room identities. This needs the owner's exact revised
 graph and its current revision. Select `guests: ["*"]` in each room the
