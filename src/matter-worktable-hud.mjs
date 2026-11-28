@@ -1406,8 +1406,10 @@ export class MatterWorktableHud{
       this.place(this.settings.group,'settingsPlacement',viewport,(width+left-right)/2,top,scale);
     }
     if(this.teleportViewGroup){
-      const scale=Math.min(205,(width-22)/2.84);
-      this.place(this.teleportViewGroup,'teleportViewPlacement',viewport,width/2,Math.max(12,height-(this.teleport.physical?.99:.38)*scale),scale);
+      const physical=this.teleport.physical;
+      const scale=Math.min(205,(width-22)/2.84,physical?(height-24)*.27:Infinity);
+      const panelY=physical?Math.max(12,top+8):Math.max(12,height-.38*scale);
+      this.place(this.teleportViewGroup,'teleportViewPlacement',viewport,width/2,panelY,scale);
     }
     if(this.teleport.group&&this.teleportMode==='workspace'){
       this.teleportWorkspace.resize(width/height);
