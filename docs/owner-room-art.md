@@ -1,5 +1,23 @@
 # Owner-hosted room editions
 
+## Exterior and room quality
+
+Publish a full-size exterior as a sibling of the walkable room edition.
+Use the authored shell, materials, textures and a doorway on the outside.
+A lightweight distance representation can be generated from that shell.
+The Residencia is the current visual and runtime reference for visible houses
+on the terrain. Distinct authored parcels can use different silhouettes,
+materials and construction. Indoor cell models retain their original quality
+and remain available through their room access checks.
+
+The former miniature geometry is a fallback in the world and in the
+teleporter. Its dimensions do not define the size or quality of the exterior.
+The toroidal district supplies real building envelopes and a common grade.
+For Casa Linterna, qualify the owner's full-quality edition against the
+actual browser transfer, memory, render cost, doors and collisions before
+setting durable import budgets. The legacy room importer limits listed
+below describe the currently deployed format during that transition.
+
 ## Publish a walkable edition
 
 The owner publishes one Home edition with the cells, artwork and passages

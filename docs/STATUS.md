@@ -1,5 +1,21 @@
 # Current MVP work
 
+## Full-size house district · 2026-11-28
+
+Protected release `449a717707ee` selects `1d50c1c` with `ecd4a7d815da`
+as rollback. West 1 is a 112 × 112 m reservation for the Residencia,
+including its staircase. Seven 72 × 72 m parcels use the same house IDs.
+East 1 keeps the current Casa Linterna door and room access. Land grading
+leaves the ring route, its water crossings and the palace approach intact.
+
+The packaged Chromium fixture used the production house layout and grants.
+It opened the CompAII destination from the A2UI Houses category and moved
+the avatar to the palace threshold. HTTP checks confirmed the foyer return
+uses the same threshold, the five Casa Linterna rooms remain reachable, and
+a foreign visitor cannot see or read their protected interior assets. Node
+passed 590 tests with four skips. The active HTTPS client and all 96
+installed files matched the exact selected package.
+
 ## Teleport controls above the station · 2026-11-28
 
 Protected release `ecd4a7d815da` selects `ab3dcbf` with
