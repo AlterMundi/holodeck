@@ -1,6 +1,23 @@
 # Current MVP work
 
 
+
+## November 28 — A portable 3D teleport instrument
+
+Protected release `d4486bf3fc03` selects Holodeck source `0c45e81` and
+the authored button binding in Proyección `67584e6`. Q opens the same
+authorized destinations and favorites on a physical-looking A2UI instrument.
+The toolbar, miniatures and controls emit the existing actions. The prior
+teleport release remains available for rollback.
+
+Chromium exercised the packaged model ray targets, keyboard selection,
+persisted favorites, travel to the Matter worktable and return to the plaza.
+The deployed bundle and every installed package file match the candidate.
+The [3D widget pack contract](spatial-widget-packs.md) links to Proyección's
+portable surface roadmap, including scene mounts, continuous controls and
+future physical controller input.
+
+
 ## November 27 — A2UI teleport and favorite destinations
 
 Protected release `f78e9b265e3c` selects source `f61c380` for the
