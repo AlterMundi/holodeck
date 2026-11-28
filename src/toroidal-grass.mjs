@@ -38,9 +38,9 @@ const FLOWER_TINTS=[[1,.98,.92],[1,.97,.9],[1,.82,.28],[.62,.46,1],[.5,.55,1],[1
 // The far meadow: a sparse layer of cheap clumps that takes over where the
 // detailed carpet thins, so distant slopes keep the texture of grass.
 const FAR_TILE=48;             // metres at the ring's mid latitude
-const FAR_RADIUS=84;           // metres of visible far meadow
+const FAR_RADIUS=72;           // metres of visible far meadow
 const FAR_START=[20,34];       // metres: clumps fade in as the carpet thins
-const FAR_DENSITY=.42;          // clumps per square metre on open meadow
+const FAR_DENSITY=.32;          // clumps per square metre on open meadow
 const FAR_COLUMNS=Math.round(TAU*T.majorRadius/FAR_TILE);
 const FAR_ROWS=Math.round(TAU*T.tubeRadius/FAR_TILE);
 // Walkers part the grass and leave a short path that springs back.
@@ -218,46 +218,48 @@ function grassMaterial(uniforms,far=false){
           float edge=1.-smoothstep(grassReach-14.0,grassReach-2.0,far+(jitter-.5)*9.0);
           float reach=keep*edge*grow;
           transformed.xz*=1.+(1.-share)*.7;`}
-          float bend=position.y*position.y;
-          float phase=dot(root,vec3(.173,.127,.191));
-          float gust=.55+.45*sin(grassTime*.43+dot(root,grassWind)*.035);
-          float sway=sin(grassTime*1.9+phase)*.55+sin(grassTime*3.1+phase*1.7)*.2;
-          vec3 world=grassWind*(gust*.22+sway*.10*gust)*bend;
-          world+=cross(grassWind,normalize(root))*sin(grassTime*2.3+phase*2.1)*.035*bend;
           ${far?'':`
-          // Bodies part the grass around them: each recent footprint pushes
-          // the tuft away and presses it down, then lets it spring back with
-          // a small overshoot. One test per tuft skips all of it when nobody
-          // is near.
-          if(grassPushBounds.w>0.&&distance(root,grassPushBounds.xyz)<grassPushBounds.w){
-            vec3 axis=(modelMatrix*instanceMatrix*vec4(0.,1.,0.,0.)).xyz;
-            float tall=length(axis);
-            vec3 up=axis/max(tall,1e-4);
-            vec3 trample=vec3(0.);
-            float press=0.;
-            for(int i=0;i<GRASS_PUSHERS;i++){
-              vec4 body=grassPush[i];
-              float age=grassTime-body.w;
-              if(age<0.||age>${TRAMPLE_SECONDS.toFixed(2)})continue;
-              vec3 offset=root-body.xyz;
-              float above=-dot(offset,up);
-              float gate=1.-smoothstep(1.1,${TRAMPLE_REACH.toFixed(2)},above);
-              if(gate<=0.)continue;
-              vec3 across=offset+up*above;
-              float gap=length(across);
-              // Low flight blows a wider, gentler hollow than a footstep.
-              float radius=.8+max(0.,above)*.55;
-              float spring=exp(-age*2.4)*(.8+.2*cos(age*11.));
-              float amount=(1.-smoothstep(.1,radius,gap))*gate*spring;
-              trample+=across/max(gap,.05)*amount;
-              press=max(press,amount*(1.-smoothstep(.6,1.6,above)));
+          if(reach>0.){
+            float bend=position.y*position.y;
+            float phase=dot(root,vec3(.173,.127,.191));
+            float gust=.55+.45*sin(grassTime*.43+dot(root,grassWind)*.035);
+            float sway=sin(grassTime*1.9+phase)*.55+sin(grassTime*3.1+phase*1.7)*.2;
+            vec3 world=grassWind*(gust*.22+sway*.10*gust)*bend;
+            world+=cross(grassWind,normalize(root))*sin(grassTime*2.3+phase*2.1)*.035*bend;
+            // Bodies part the grass around them: each recent footprint pushes
+            // the tuft away and presses it down, then lets it spring back with
+            // a small overshoot. One test per tuft skips all of it when nobody
+            // is near.
+            if(grassPushBounds.w>0.&&distance(root,grassPushBounds.xyz)<grassPushBounds.w){
+              vec3 axis=(modelMatrix*instanceMatrix*vec4(0.,1.,0.,0.)).xyz;
+              float tall=length(axis);
+              vec3 up=axis/max(tall,1e-4);
+              vec3 trample=vec3(0.);
+              float press=0.;
+              for(int i=0;i<GRASS_PUSHERS;i++){
+                vec4 body=grassPush[i];
+                float age=grassTime-body.w;
+                if(age<0.||age>${TRAMPLE_SECONDS.toFixed(2)})continue;
+                vec3 offset=root-body.xyz;
+                float above=-dot(offset,up);
+                float gate=1.-smoothstep(1.1,${TRAMPLE_REACH.toFixed(2)},above);
+                if(gate<=0.)continue;
+                vec3 across=offset+up*above;
+                float gap=length(across);
+                // Low flight blows a wider, gentler hollow than a footstep.
+                float radius=.8+max(0.,above)*.55;
+                float spring=exp(-age*2.4)*(.8+.2*cos(age*11.));
+                float amount=(1.-smoothstep(.1,radius,gap))*gate*spring;
+                trample+=across/max(gap,.05)*amount;
+                press=max(press,amount*(1.-smoothstep(.6,1.6,above)));
+              }
+              float parted=min(1.,length(trample));
+              if(parted>0.){
+                world+=(trample/max(length(trample),1e-4)*parted*.85-up*press*.5)*tall*bend;
+              }
             }
-            float parted=min(1.,length(trample));
-            if(parted>0.){
-              world+=(trample/max(length(trample),1e-4)*parted*.85-up*press*.5)*tall*bend;
-            }
+            grassOffset=world*reach;
           }`}
-          grassOffset=world*reach;
           transformed*=reach;
           vGrassTip=position.y;
         }`)
@@ -282,7 +284,7 @@ function grassMaterial(uniforms,far=false){
         reflectedLight.directSpecular*=0.;
         reflectedLight.indirectSpecular*=0.;`);
   };
-  material.customProgramCacheKey=()=>far?'holodeck-toroidal-grass-far-v2':'holodeck-toroidal-grass-v6';
+  material.customProgramCacheKey=()=>far?'holodeck-toroidal-grass-far-v3':'holodeck-toroidal-grass-v7';
   return material;
 }
 
