@@ -147,20 +147,30 @@ export const TOROIDAL_HOUSE_PLOTS=Object.freeze([1,2,3,4].flatMap(row=>[-1,1].ma
 })));
 const districtBuildable=TOROIDAL_HOUSE_PLOTS.filter(plot=>plot.id!=='parcel-west-1');
 const linternaPlot=districtBuildable.find(plot=>plot.id==='parcel-east-1');
+// Bounds in the selected exterior's local x/z. Leave the garden strips,
+// courtyards between wings, and the perimeter planted.
+const linternaHardSurfaces=[
+  [-2.9,2.9,1.6,36],           // approach and path to the Recibidor
+  [-8,8,22.4,28.1],            // portico
+  [-12.7,12.7,8.55,22.45],    // raised arrival terrace
+  [-5.8,5.8,-7.4,1.8],        // Recibidor shell
+  [-15.1,-4.85,-21.3,-11.1],  // Athena
+  [-3.3,3.3,-26.8,-19.2],     // Hephaestus
+  [4.95,15,-21.2,-11.25],     // Apollo
+];
 
-// Project the torus direction onto the same horizontal plane as the authored
-// courtyard. The small apron keeps wind-swept blades off the paving edge.
+// Project the torus direction onto the same plane and yaw as the exterior.
 export function linternaGrassCover(u,v){
   if(wrappedDistance(u,0)>.012||wrappedDistance(v,.25)>.036)return 1;
   const {center,up}=terrainFrame(u,v);
   const radius=TOROIDAL_PARCEL_Y/up[1];
-  const x=center[0]+up[0]*radius-TOROIDAL_TERRAIN.majorRadius;
-  const z=center[2]+up[2]*radius;
-  const gap=Math.max(Math.abs(x-linternaPlot.x)-linternaPlot.width/2,
-    Math.abs(z-linternaPlot.z)-linternaPlot.depth/2);
-  return fade(Math.max(0,Math.min(1,(gap-1.25)/3)));
+  const x=center[2]+up[2]*radius-linternaPlot.z;
+  const z=linternaPlot.x+TOROIDAL_TERRAIN.majorRadius-center[0]-up[0]*radius;
+  let gap=Infinity;
+  for(const [left,right,back,front] of linternaHardSurfaces)
+    gap=Math.min(gap,Math.hypot(Math.max(left-x,0,x-right),Math.max(back-z,0,z-front)));
+  return fade(Math.max(0,Math.min(1,(gap-.65)/1.6)));
 }
-
 
 function housingGrade(u,v,elevation){
   if(wrappedDistance(u,0)>.045||wrappedDistance(v,.25)>.058)return elevation;

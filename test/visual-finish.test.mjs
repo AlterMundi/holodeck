@@ -25,18 +25,18 @@ test('grass grows on the open meadow beside the arrival and thins toward the par
   assert.ok(edge>0&&edge<open,'feathered edge '+edge);
 });
 
-test('the full Casa Linterna plot and paving edge exclude grass, with a meadow beyond',()=>{
+test('Casa Linterna clears paths and building footprints and keeps the gardens around them',()=>{
   const lot=TOROIDAL_HOUSE_PLOTS.find(plot=>plot.id==='parcel-east-1');
-  const sample=(x,z)=>terrainCoordinates([TOROIDAL_TERRAIN.majorRadius+lot.x+x,TOROIDAL_PARCEL_Y,lot.z+z]);
-  for(const x of [-36,-18,0,18,36])for(const z of [-36,-18,0,18,36])
+  const sample=(x,z)=>terrainCoordinates([TOROIDAL_TERRAIN.majorRadius+lot.x-z,TOROIDAL_PARCEL_Y,lot.z+x]);
+  for(const [x,z] of [[0,34],[6,24],[10,16],[0,-4],[-10,-15],[0,-24],[10,-15]])
     assert.equal(cover(sample(x,z)),0);
-  const boundary=sample(37,0);
-  assert.equal(linternaGrassCover(boundary.u,boundary.v),0);
-  const fringe=sample(39,0);
-  assert.ok(linternaGrassCover(fringe.u,fringe.v)>0&&linternaGrassCover(fringe.u,fringe.v)<1);
-  const meadow=sample(44,0);
-  assert.equal(linternaGrassCover(meadow.u,meadow.v),1);
-  assert.ok(cover(meadow)>0);
+  const edge=sample(4.1,32);
+  assert.ok(linternaGrassCover(edge.u,edge.v)>0&&linternaGrassCover(edge.u,edge.v)<1);
+  for(const [x,z] of [[21,12],[15,29],[25,-2],[-25,-30]]){
+    const meadow=sample(x,z);
+    assert.equal(linternaGrassCover(meadow.u,meadow.v),1);
+    assert.ok(cover(meadow)>0);
+  }
 });
 
 test('cinematic grade keeps a restrained default look',()=>{
