@@ -23,7 +23,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { join } from 'node:path';
 import { Room, RoomError, LIMITS } from './room.mjs';
-import { configuredQuestbook, createQuestbook } from './questbook.mjs';
+import { configuredQuestbook, createQuestbooks } from './questbook.mjs';
 import { RoomStore } from './room-store.mjs';
 import { homeIdentityResolver } from './home-identity.mjs';
 import { worldDocument } from './world.mjs';
@@ -216,7 +216,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const room=new Room({houses,state:store?.load(),persist:store?s=>store.save(s):null,contentNodes:selectedContentNodes,
     presence:()=>[...sessions.values()].filter(s=>s.connection!==null&&Date.now()-s.created<SESSION_MS&&spaces.current(s.actor)===OUTSIDE)
       .map(s=>({actor:s.actor.id,kind:'human',name:s.actor.name||'Explorador',scope:'authenticated-room-presence',position:null}))});
-  const questbookHost = questbook && createQuestbook(room, questbook);
+  const questbookHost = questbook && createQuestbooks(room, questbook);
   const exteriorAddress='http://localhost'+route('world');
   const document=new WorldDocument(exteriorAddress);
   // Keep the ordinary snapshot for browsers already running an earlier client.
@@ -1029,7 +1029,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const {next=null,restarted=false}=projects;
     if((next!==null&&(typeof next!=='string'||!pageKey.test(next)))||typeof restarted!=='boolean')
       return res.sendStatus(503);
-    const questbook=!!selection&&!!questbookHost&&await questbookHost.canRead(selected.actor,project,req);
+    const board=selection&&questbookHost?.select(project);
+    const questbook=!!board&&await board.canRead(selected.actor,project,req);
     if(!inScope(selected.actor,visit.room.id))return res.sendStatus(404);
     res.json({room:visit.topic,repositories,next,restarted,...(selection?{project,questbook}:{})});
   }));
@@ -1094,13 +1095,13 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       let actor=req.actor;
       let projectRevisions=[], readHistory;
       const {room:topic, project, repository}=input;
+      const board=questbookHost.select(project);
+      if(!board)return res.status(403).json({ok:false,code:'access'});
       const visit=spaces.topicVisit(req.actor);
       if(visit||topic!==undefined||project!==undefined||repository!==undefined){
         const id=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
         if(!visit||visit.topic!==topic||typeof project!=='string'||!id.test(project)||
            typeof repository!=='string'||!id.test(repository))
-          return res.status(403).json({ok:false,code:'access'});
-        if(!questbookHost.matchesProject(project))
           return res.status(403).json({ok:false,code:'access'});
         const selected=await topicSelection(req,res,topic,visit.room.id,true,undefined,{project,repository});
         if(!selected)return;
@@ -1127,7 +1128,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
         }
         actor=selected.actor;
       }
-      const result = await questbookHost[method](actor,input,req,projectRevisions,readHistory);
+      const result = await board[method](actor,input,req,projectRevisions,readHistory);
       if(res.headersSent)return;
       const status = result.ok ? 200 : ({access:403, invalid:400, missing:404, unresolved:409}[result.code]||503);
       res.status(status).json(result);

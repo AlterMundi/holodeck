@@ -19,13 +19,14 @@ test('the authenticated questbook credits only its original Room action', {skip:
   const directory = mkdtempSync(join(tmpdir(), 'holodeck-questbook-'));
   t.after(() => rmSync(directory, {recursive:true,force:true}));
   const store = join(directory, 'questbook.sqlite');
-  const project = randomUUID(), card = randomUUID(), objective = randomUUID();
+  const project = randomUUID(), otherProject = randomUUID(), card = randomUUID(), objective = randomUUID();
   const origin = 'https://quest.test', human = 'human:quest-fixture';
   const cookie = 'home=quest-fixture';
   const daimon = 'dm:being:v1:' + 'A'.repeat(43);
   let allowed = true, projectWrite = true, nativeRead = true, nativeWrite = true;
   const authoritySocket = join(directory,'authority.sock'), worldSocket = join(directory,'world.sock');
-  let requestedProject = project;
+  let requestedProject;
+  let otherProjectRead = false;
   const authority = net.createServer(socket => {
     let buffer = '';
     socket.on('data', chunk => {
@@ -35,8 +36,9 @@ test('the authenticated questbook credits only its original Room action', {skip:
       assert.equal(request.beingRef,daimon);
       const result = request.operation === 'world-access'
         ? {schema:'holodeck.world-access/v1',beingRef:daimon,allowed:true}
-        : {schema:'holodeck.questbook-access/v1',project:requestedProject,beingRef:daimon,
-          requestedWrite:request.write,read:nativeRead,write:nativeRead&&request.write&&nativeWrite};
+        : {schema:'holodeck.questbook-access/v1',project:requestedProject??request.project,beingRef:daimon,
+          requestedWrite:request.write,read:request.project===project?nativeRead:otherProjectRead,
+          write:request.project===project&&nativeRead&&request.write&&nativeWrite};
       socket.end(JSON.stringify({ok:true,result})+'\n');
     });
   });
@@ -83,7 +85,10 @@ test('the authenticated questbook credits only its original Room action', {skip:
     identityResolver:homeIdentityResolver({publicOrigin:origin,authHost:'quest.test',
       authorizeEndpoint:homeBase+'/service-access/holodeck',identityEndpoint:homeBase+'/access/identity'}),
     questbook:configuredQuestbook({origin,authHost:'quest.test',authEndpoint:homeBase+'/access/identity',authoritySocket,
-      questbook:{project,binary,viewEndpoint:homeBase+'/project/view',editEndpoint:homeBase+'/project/edit'}},directory)});
+      questbook:[
+        {project,binary,viewEndpoint:homeBase+'/project/view',editEndpoint:homeBase+'/project/edit'},
+        {project:otherProject,binary,viewEndpoint:homeBase+'/other/view',editEndpoint:homeBase+'/other/edit'},
+      ]},directory)});
   const listener = runtime.app.listen(0,'127.0.0.1');
   await new Promise(resolve => listener.once('listening',resolve));
   t.after(() => { runtime.close(); listener.closeAllConnections(); return new Promise(resolve => listener.close(resolve)); });
@@ -122,6 +127,13 @@ test('the authenticated questbook credits only its original Room action', {skip:
   const fromDaimon = await native({type:'read',card:create.card});
   assert.equal(fromDaimon.result.title,create.title);
   assert.equal(fromDaimon.result.revised_by.subject,human);
+  assert.deepEqual(await native({type:'read',project:otherProject,card:create.card}),{ok:false,code:'access'});
+  otherProjectRead=true;
+  assert.equal((await native({type:'read',project:otherProject,card:create.card})).result,null);
+  assert.deepEqual(await native({type:'apply',project:otherProject,command:{
+    operation:randomUUID(),card:create.card,expected_revision:0,action:{type:'create',title:'Another board'},
+  }}),{ok:false,code:'access'});
+  assert.equal((await native({type:'read',project,card:create.card})).result.title,create.title);
   const foreignReceipt = await native({type:'receipt',operation:create.operation});
   assert.equal(foreignReceipt.result,null);
   for (let i = 1; i <= 32; i++) {
@@ -276,7 +288,7 @@ test('the Holodeck A2UI journal follows the bridge action from the actual worksh
   const directory = mkdtempSync(join(tmpdir(),'holodeck-questbook-browser-'));
   t.after(() => rmSync(directory,{recursive:true,force:true}));
   const store = join(directory,'questbook.sqlite');
-  const project = randomUUID(), card = randomUUID(), objective = randomUUID();
+  const project = randomUUID(), otherProject = randomUUID(), card = randomUUID(), objective = randomUUID();
   const title = 'Volvé a unir las islas';
   function tool(input) {
     return JSON.parse(execFileSync(binary,[store],{input:JSON.stringify({

@@ -18,26 +18,47 @@ const labels = Object.freeze({
 export function configuredQuestbook(receiving, stateDir) {
   const selected = receiving?.questbook;
   if (selected === undefined) return null;
-  if (!selected || !stateDir || Object.keys(selected).sort().join(',') !== 'binary,editEndpoint,project,viewEndpoint') {
-    throw Error('Select the existing questbook project audiences and writer');
-  }
+  const projects = Array.isArray(selected) ? selected : [selected];
+  if (!stateDir || !projects.length || new Set(projects.map(entry=>entry?.project)).size!==projects.length)
+    throw Error('Select distinct questbook projects');
   const home = {publicOrigin:receiving.origin,authHost:receiving.authHost,identityEndpoint:receiving.authEndpoint};
-  const view = homeIdentityResolver({...home,authorizeEndpoint:selected.viewEndpoint});
-  const edit = homeIdentityResolver({...home,authorizeEndpoint:selected.editEndpoint});
-  const native = receiving.authoritySocket
-    ? createNativeQuestbookAuthority(receiving.authoritySocket,selected.project) : null;
+  return projects.map(entry=>{
+    if (!entry || Object.keys(entry).sort().join(',') !== 'binary,editEndpoint,project,viewEndpoint'
+       || !uuid(entry.project)) {
+      throw Error('Select the existing questbook project audiences and writer');
+    }
+    const view = homeIdentityResolver({...home,authorizeEndpoint:entry.viewEndpoint});
+    const edit = homeIdentityResolver({...home,authorizeEndpoint:entry.editEndpoint});
+    const native = receiving.authoritySocket
+      ? createNativeQuestbookAuthority(receiving.authoritySocket,entry.project) : null;
+    return {
+      project:entry.project, binary:entry.binary, store:join(stateDir,'questbook.sqlite'),
+      async authorize(actor, _project, request, write) {
+        if (actor.kind === 'daimon' && !request) return native?.(actor,write);
+        if (actor.kind !== 'human' || !request) return null;
+        const [reader, editor] = await Promise.all([view(request), write ? edit(request) : null]);
+        return {read:reader?.id===actor.id,write:editor?.id===actor.id};
+      },
+    };
+  });
+}
+
+export function createQuestbooks(room, configuration) {
+  const entries = Array.isArray(configuration) ? configuration : [configuration];
+  const boards = new Map(entries.map(entry=>[entry.project,createQuestbook(room,entry)]));
+  if (!boards.size || boards.size!==entries.length) throw Error('Select distinct questbook projects');
+  const defaultProject = entries[0].project;
+  const select = (project=defaultProject) => boards.get(project);
   return {
-    project:selected.project, binary:selected.binary, store:join(stateDir,'questbook.sqlite'),
-    async authorize(actor, _project, request, write) {
-      if (actor.kind === 'daimon' && !request) return native?.(actor,write);
-      if (actor.kind !== 'human' || !request) return null;
-      const [reader, editor] = await Promise.all([view(request), write ? edit(request) : null]);
-      return {read:reader?.id===actor.id,write:editor?.id===actor.id};
+    select,
+    async native(actor,{project,...input}) {
+      const board = select(project);
+      return board ? board.native(actor,input) : {ok:false,code:'access'};
     },
   };
 }
 
-export function createQuestbook(room, {project, binary, store, authorize}) {
+function createQuestbook(room, {project, binary, store, authorize}) {
   if (!uuid(project) || typeof binary !== 'string' || !isAbsolute(binary)
     || typeof store !== 'string' || !isAbsolute(store) || typeof authorize !== 'function') {
     throw Error('Select an owner-bound questbook project and writer');
@@ -62,8 +83,6 @@ export function createQuestbook(room, {project, binary, store, authorize}) {
   }
 
   return {
-    matchesProject: selectedProject => selectedProject === project,
-
     async canRead(actor, selectedProject, request) {
       return selectedProject === project && !!await access(actor, false, request);
     },

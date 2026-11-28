@@ -85,6 +85,8 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  let card;
  const binary=process.env.DAIMON_CARDS_BIN;
  let cardTool,questbook,storyCommit='1'.repeat(40),laterCommit;
+ let projectBReadable=false;
+ const secondCard=randomUUID(),secondMission='Preparar el mapa del juego';
  if(binary){
   const {mkdtemp,rm}=await import('node:fs/promises');
   const {join}=await import('node:path'),{tmpdir}=await import('node:os');
@@ -101,10 +103,15 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
   storyCommit=commit('Story draft');
   laterCommit=commit('Second draft');
   const store=join(dir,'cards.sqlite');
-  cardTool=input=>JSON.parse(execFileSync(binary,[store],{encoding:'utf8',input:JSON.stringify({
-    project:projectA,actor:{kind:'daimon',subject:COMPAII_BEING},can_write:true,input,
+  cardTool=(input,project=projectA)=>JSON.parse(execFileSync(binary,[store],{encoding:'utf8',input:JSON.stringify({
+    project,actor:{kind:'daimon',subject:COMPAII_BEING},can_write:true,input,
   })}));
-  questbook={project:projectA,binary,store,authorize:async actor=>({read:actor.id===actorRef,write:actor.id===actorRef})};
+  questbook=[
+   {project:projectA,binary,store,authorize:async actor=>({read:actor.id===actorRef,write:actor.id===actorRef})},
+   {project:projectB,binary,store,authorize:async actor=>({read:actor.id===actorRef&&projectBReadable,write:false})},
+  ];
+  assert.equal(cardTool({type:'apply',command:{operation:randomUUID(),card:secondCard,expected_revision:0,
+    action:{type:'create',title:secondMission}}},projectB).result.status,'applied');
  }
  let repositories=[],historical=[],projectRevision=1;
  const nativeFactory=async()=>({availability:async()=>({available:true}),contexts:{},
@@ -231,6 +238,15 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
   const request=(path,scope)=>page.evaluate(async ({path,scope})=>
     fetch('api/'+path+'?'+new URLSearchParams(scope)).then(response=>response.status),{path,scope});
   assert.equal(await request('questbook',foreign),403);
+  projectBReadable=true;
+  const second=await page.evaluate(async scope=>
+    fetch('api/questbook?'+new URLSearchParams(scope)).then(response=>response.json()),foreign);
+  assert.equal(second.result[2].updateDataModel.value.title,secondMission);
+  assert.equal(second.canCreate,false);
+  assert.equal(await request('questbook',{...selectors,selected:secondCard}),404);
+  assert.equal(await request('questbook',{...foreign,repository:selectors.repository}),404);
+  projectBReadable=false;
+  assert.equal(await request('questbook',foreign),403);
   await detail.getByRole('button',{name:'Abrir diario de misiones'}).tap();
   const journal=page.getByRole('dialog',{name:'Diario de misiones'});
   await journal.getByText('Todavía no hay misiones.').waitFor();
@@ -321,6 +337,14 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
   assert.equal(cardTool({type:'read',card}).result.title,humanTitle);
   repositories=linkedRepositories;
   await journal.getByRole('button',{name:'Volver al mundo',exact:true}).tap();
+  await openTable();
+  projectBReadable=true;
+  await table.getByRole('button',{name:'Abrir proyecto de Juego',exact:true}).tap();
+  await detail.getByRole('button',{name:'Abrir diario de misiones'}).tap();
+  await journal.getByText(secondMission,{exact:true}).last().waitFor({state:'attached'});
+  assert.equal(await journal.getByRole('button',{name:'Nueva misión'}).isVisible(),false);
+  await journal.getByRole('button',{name:'Volver al mundo',exact:true}).tap();
+  projectBReadable=false;
   await openTable();
  }else await detail.getByRole('button',{name:'Volver a la mesa',exact:true}).tap();
  await table.getByText('Cuento',{exact:true}).waitFor();

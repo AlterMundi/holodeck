@@ -19,12 +19,15 @@ It carries route metadata and private content references, not credentials.
 
 ### Questbook pilot
 
-The optional `questbook` selection names one project UUID, the absolute
-`binary` path of the owner-side DaimonCards writer, and the existing project
-`viewEndpoint` and `editEndpoint` audience routes at the configured loopback
-Home receiver. The receiver stores card state in `STATE_DIR/questbook.sqlite`.
-Select audiences explicitly for the project; general Holodeck access alone
-does not grant card access. A project writer can create its first mission
+The optional `questbook` selection accepts one project object or a list of
+distinct project objects. Each names its project UUID, the absolute `binary`
+path of the owner-side DaimonCards writer, and the project's `viewEndpoint`
+and `editEndpoint` routes at the configured loopback Home receiver. Card
+state in `STATE_DIR/questbook.sqlite` is scoped by project. The exterior
+workshop opens the first configured project. A topic-room project opens its
+own journal only while the visitor has both the current room repository link
+and that project's view grant. Select each audience explicitly. General
+Holodeck access does not grant card access. A project writer can create its first mission
 from an empty questbook. In the exterior workshop, open **Misiones** to display the
 project journal in the existing Proyección spatial HUD. The section includes
 keyboard and screen-reader controls from that same renderer.
@@ -48,8 +51,9 @@ pending. Once credited, the card retains that exact evidence and its
 idempotent receipt across Room resets.
 
 For daimon access, the existing central native bridge may select a
-`questbook_access` object with the same `project` UUID and its registered
-`view_service_key` and `edit_service_key`. These are the same Home audiences used
+`questbook_access` object or list of distinct project entries with their
+`project` UUID and registered `view_service_key` and `edit_service_key`.
+These are the same Home audiences used
 by the browser endpoints. The bridge reads current actor-specific access through
 the installed `daimon-home service-access` route. Install the matched bridge
 revision and retain the existing UID guard and identity-pinned world ports.
@@ -58,7 +62,9 @@ does not authorize card reads, writes or recovery.
 
 Use the existing `world_port.py --own questbook --json ...` entrypoint through
 the calling body's own configured socket. It accepts `list`, `read`, `apply`
-and `receipt` in the typed JSON `type` field. A `receipt` read uses the original
+and `receipt` in the typed JSON `type` field. Include the exact `project`
+UUID to address its journal. Omitting it opens the same default as the
+exterior workshop. A `receipt` read uses the original
 `operation` UUID and never repeats the action. To credit an authorized native
 world action, `confirm_objective` takes the same fields as the HTTP objective
 request and reads the acting being's exact Room outcome.

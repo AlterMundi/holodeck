@@ -545,13 +545,22 @@ def configuration(path):
             or not re.fullmatch('s-[a-f0-9]{24}',value['world_service_key'])):
         raise ValueError('Select the fixed owned world service')
     if 'questbook_access' in value:
-        project=value['questbook_access']
-        if (not isinstance(project,dict) or set(project)!={'project','view_service_key','edit_service_key'}
-            or not all(isinstance(project[key],str) and re.fullmatch('s-[a-f0-9]{24}',project[key])
-                       for key in ('view_service_key','edit_service_key'))
-            or project['view_service_key']==project['edit_service_key']):
-            raise ValueError('Select the fixed project and its view and edit audiences')
-        ident(project['project'])
+        selection=value['questbook_access']
+        projects=selection if isinstance(selection,list) else [selection]
+        if not projects:
+            raise ValueError('Select at least one questbook project')
+        by_project={}
+        for project in projects:
+            if (not isinstance(project,dict) or set(project)!={'project','view_service_key','edit_service_key'}
+                or not all(isinstance(project[key],str) and re.fullmatch('s-[a-f0-9]{24}',project[key])
+                           for key in ('view_service_key','edit_service_key'))
+                or project['view_service_key']==project['edit_service_key']):
+                raise ValueError('Select the fixed project and its view and edit audiences')
+            project_id=ident(project['project'])
+            if project_id in by_project:
+                raise ValueError('Duplicate questbook project')
+            by_project[project_id]=project
+        value['questbook_access']=by_project
     if 'review_owner' in value:
         review=value['review_owner']
         paths={'nexus_reader','database','publisher','binding'}
@@ -619,8 +628,8 @@ def serve(path):
     def world_access_reader(being):
         return service_access(being,config['world_service_key'])
     def questbook_access_reader(project,being,write):
-        selection=config['questbook_access']
-        if project!=selection['project']:
+        selection=config['questbook_access'].get(project)
+        if selection is None:
             return False,False
         can_read=service_access(being,selection['view_service_key'])
         return can_read,can_read and write and service_access(being,selection['edit_service_key'])
