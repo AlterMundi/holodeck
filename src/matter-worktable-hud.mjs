@@ -11,6 +11,7 @@ import {RecoveryHud,recoveryHudId} from './recovery-hud.mjs';
 import {CreationHud,creationHudId} from './creation-hud.mjs';
 import {BeaconHud,beaconStationId,beaconViewerId,beaconStationWidth,beaconViewerWidth} from './beacon-hud.mjs';
 import {SettingsHud,settingsId} from './settings-hud.mjs';
+import {TeleportWorkspace} from './teleport-workspace.mjs';
 import {TeleportModels} from './teleport-models.mjs';
 import {TeleportHud,teleportHudId,teleportHudWidth} from './teleport-hud.mjs';
 import {HudRenderLayer} from './hud-render-layer.mjs';
@@ -19,7 +20,18 @@ import {VisitHud,exhibitionHudId,visitHudId,exhibitionHudWidth,visitHudWidth} fr
 import {placeHudWindow,SpatialHudWindows} from './spatial-hud-windows.mjs';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
 
-const surfaceId='matter-worktable',toolbeltId='world-toolbelt';
+const surfaceId='matter-worktable',toolbeltId='world-toolbelt',teleportViewId='world-teleport-view';
+const teleportViewComponents=[
+  {id:'root',component:'HudPanel',label:'Vista del teletransportador',width:2.52,gap:.025,children:['views','navigation','guide']},
+  {id:'views',component:'HudRow',children:['switch','exit']},
+  {id:'switch',component:'HudButton',label:{'@path':'/mode'},action:{event:{name:'switch'}}},
+  {id:'navigation',component:'HudRow',children:['back','front','near'],visible:{'@path':'/immersive'}},
+  {id:'back',component:'HudButton',label:'Alejar',action:{event:{name:'back'}}},
+  {id:'front',component:'HudButton',label:'Ver de frente',action:{event:{name:'front'}}},
+  {id:'near',component:'HudButton',label:'Acercar',action:{event:{name:'near'}}},
+  {id:'exit',component:'HudButton',label:'Salir',action:{event:{name:'exit'}}},
+  {id:'guide',component:'HudText',label:'Arrastrá alrededor del instrumento para girar',visible:{'@path':'/immersive'}},
+];
 const cockpitDocks={
   toolPlacement:{x:-.26,y:0,depth:1.08,anchor:0},
   headerPlacement:{x:0,y:.22,depth:1.32,anchor:-1},
@@ -247,12 +259,24 @@ export class MatterWorktableHud{
     },
       focus:name=>this.hud.focusAccessibleControl(teleportHudId,name),
       onOpen:()=>{
+        this.send('createSurface',{catalogId:spatialHudCatalog.id},teleportViewId);
+        this.send('updateComponents',{components:teleportViewComponents},teleportViewId);
+        let mode='workspace';
+        try{if(teleport.storage.getItem('holodeck:teleport:view')==='camera')mode='camera';}catch{}
+        this.setTeleportMode(mode);
         this.syncSettingsInput();this.layer.invalidate();teleport.onOpen();
       },
       onClose:()=>{
+        this.clearTeleportPointer();
+        this.teleportWorkspace?.leave();
+        this.teleportMode=null;
+        delete this.document.body.dataset.teleportWorkspace;
+        this.send('deleteSurface',{},teleportViewId);
+        this.teleportViewGroup=null;
         this.teleportModels.instrument.removeFromParent();
         this.syncSettingsInput();this.layer.invalidate();teleport.onClose();
       }});
+    this.teleportStorage=teleport.storage;
     this.teleportModels=new TeleportModels(this.teleport,{
       document,reduced:()=>this.reducedTeleportMotion,
     });
@@ -287,6 +311,7 @@ export class MatterWorktableHud{
         else if(id===pendingBookId)this.pending.bookGroup=group;
         else if(id===activityHudId)this.activity.group=group;
         else if(id===teleportHudId){this.teleport.group=group;this.teleportModels.attach(group);}
+        else if(id===teleportViewId)this.teleportViewGroup=group;
         else if(id===exhibitionHudId)this.visit.indexGroup=group;
         else if(id===visitHudId)this.visit.viewerGroup=group;
         else if(id===worldNoticeId)this.status.noticeGroup=group;
@@ -312,6 +337,16 @@ export class MatterWorktableHud{
         }
         else if(requested.surfaceId===activityHudId)this.activity.activate(requested);
         else if(requested.surfaceId===teleportHudId)this.teleport.activate(requested);
+        else if(requested.surfaceId===teleportViewId){
+          if(!this.teleport.group)return;
+          if(requested.name==='exit')this.teleport.close();
+          if(this.teleportMode==='workspace'){
+            if(requested.name==='front')this.teleportWorkspace.enter(this.teleport.group);
+            if(requested.name==='near')this.teleportWorkspace.approach(-.16);
+            if(requested.name==='back')this.teleportWorkspace.approach(.16);
+          }
+          if(requested.name==='switch')this.setTeleportMode(this.teleportMode==='workspace'?'camera':'workspace',true);
+        }
         else if([exhibitionHudId,visitHudId].includes(requested.surfaceId))this.visit.activate(requested);
         else if(requested.surfaceId===recoveryHudId)this.recovery.activate(requested);
         else if(requested.surfaceId===creationHudId)this.creation.activate(requested);
@@ -319,6 +354,10 @@ export class MatterWorktableHud{
         else this.handleAction(requested);
       },onTransportError:onError,
     });
+    const immersivePointer=event=>this.handleTeleportPointer(event);
+    for(const type of ['pointerdown','pointermove','pointerup','pointercancel','lostpointercapture','wheel','contextmenu'])
+      this.canvas.addEventListener(type,immersivePointer,{capture:true,passive:false,signal:this.events.signal});
+    document.defaultView.addEventListener('blur',()=>this.clearTeleportPointer(),{signal:this.events.signal});
     const consumeSettingsPointer=event=>{
       if((!this.settings.group&&!this.teleport.group&&!this.activity.owner()?.native&&!this.visit.indexActive&&!this.visit.viewerActive&&!(this.beacon.owner.opened&&this.beacon.owner.native))||(event.type==='pointerdown'&&event.button===0))return;
       event.preventDefault();
@@ -354,6 +393,64 @@ export class MatterWorktableHud{
     table.panel.setAttribute('data-spatial','');
   }
 
+  setTeleportMode(mode,remember=false){
+    this.clearTeleportPointer();
+    this.hud.setInteractionScope({surfaceIds:[],blockOutside:true});
+    this.teleportMode=mode;
+    if(mode==='workspace'){
+      this.teleportWorkspace??=new TeleportWorkspace(this.layer.invalidate);
+      this.teleportWorkspace.enter(this.teleport.group);
+    }else{
+      this.teleportWorkspace?.leave(this.hud.group);
+      this.teleportPlacement=null;
+    }
+    const immersive=mode==='workspace';
+    if(immersive)this.document.body.dataset.teleportWorkspace='';
+    else delete this.document.body.dataset.teleportWorkspace;
+    this.hud.setInteractionScope({surfaceIds:[teleportHudId,teleportViewId],blockOutside:true});
+    this.send('updateDataModel',{value:{mode:immersive?'Vista HUD':'Explorar instrumento',immersive}},teleportViewId);
+    if(remember){
+      try{this.teleportStorage.setItem('holodeck:teleport:view',mode);}catch{}
+      this.hud.focusAccessibleControl(teleportViewId,'switch');
+    }
+    this.layer.invalidate();
+  }
+
+  clearTeleportPointer(){
+    const drag=this.teleportWorkspace?.drag;
+    if(!drag)return;
+    this.teleportWorkspace.drag=null;
+    if(this.canvas.hasPointerCapture(drag.id))this.canvas.releasePointerCapture(drag.id);
+  }
+
+  handleTeleportPointer(event){
+    if(this.teleportMode!=='workspace')return;
+    const workspace=this.teleportWorkspace;
+    if(event.type==='pointerdown'){
+      if(workspace.drag||event.button!==0&&event.button!==2)return;
+      const projection=this.rayForPointer(event);
+      if(event.button===0&&projection&&typeof this.hud.pointerTarget(projection.ray,projection)==='string')return;
+      workspace.drag={id:event.pointerId,x:event.clientX,y:event.clientY};
+      this.canvas.setPointerCapture(event.pointerId);
+    }else if(event.type==='wheel'){
+      workspace.approach(Math.max(-.24,Math.min(.24,event.deltaY*(event.deltaMode? .027:.00135))));
+    }else if(event.type!=='contextmenu'){
+      const drag=workspace.drag;
+      if(!drag||drag.id!==event.pointerId)return;
+      if(event.type==='pointermove'){
+        workspace.orbit(-(event.clientX-drag.x)*.009,(event.clientY-drag.y)*.007);
+        drag.x=event.clientX;drag.y=event.clientY;
+      }else this.clearTeleportPointer();
+    }
+    event.preventDefault();event.stopImmediatePropagation();
+  }
+
+  teleportBounds(id){
+    const view=['switch','front','exit','near','back'].includes(id);
+    const camera=!view&&this.teleportMode==='workspace'?this.teleportWorkspace.camera:this.camera;
+    return this.hud.getControlViewportBounds(view?teleportViewId:teleportHudId,id,camera,this.canvas.getBoundingClientRect());
+  }
+
   rayForPointer(event){
     if(this.priorInert!==undefined)return;
     if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.teleport.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.pending.toolGroup&&!this.pending.bookGroup&&!this.status.controlsGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.movementGroups.size)return;
@@ -361,6 +458,12 @@ export class MatterWorktableHud{
     if(!rect.width||!rect.height)return;
     this.pointerPosition.set((event.clientX-rect.left)*2/rect.width-1,1-(event.clientY-rect.top)*2/rect.height);
     this.pointerRay.setFromCamera(this.pointerPosition,this.camera);
+    if(this.teleportMode==='workspace'){
+      if(typeof this.hud.pointerTarget(this.pointerRay.ray,{maxDistance:12})==='string')
+        return {ray:this.pointerRay.ray,maxDistance:12};
+      this.pointerRay.setFromCamera(this.pointerPosition,this.teleportWorkspace.camera);
+      return {ray:this.pointerRay.ray,maxDistance:18};
+    }
     return {ray:this.pointerRay.ray};
   }
 
@@ -762,7 +865,9 @@ export class MatterWorktableHud{
     if(focusedSurface===this.modalScope)return;
     if(this.windows.drag?.id===worldMapId)this.windows.cancelDrag();
     this.modalScope=focusedSurface;
-    this.hud.setInteractionScope(focusedSurface?{surfaceIds:[focusedSurface],blockOutside:true}:undefined);
+    this.hud.setInteractionScope(focusedSurface?{
+      surfaceIds:focusedSurface===teleportHudId?[teleportHudId,teleportViewId]:[focusedSurface],blockOutside:true,
+    }:undefined);
     if(focusedSurface===worldMapId)this.hud.focusAccessibleControl(worldMapId,'close');
   }
 
@@ -803,6 +908,21 @@ export class MatterWorktableHud{
     const visit=this.visit.indexActive||this.visit.viewerActive;
     const surface=this.teleport.group?teleportHudId:history?.native?activityHudId:this.visit.indexActive?exhibitionHudId:visit?visitHudId:settingsId;
     if(event.defaultPrevented)return false;
+    if(this.teleport.group){
+      if(event.key==='Escape'){if(!event.repeat)this.teleport.close();return true;}
+      if(this.teleportMode==='workspace'&&this.teleportWorkspace.key(event))return true;
+      // Both the physical instrument and the persistent view controls take part in tab order.
+      if(event.key==='Tab'){
+        const controls=[...this.a11y.querySelectorAll('button:not(:disabled)')];
+        const index=controls.indexOf(this.document.activeElement);
+        const next=index<0?(event.shiftKey?controls.length-1:0):
+          (index+(event.shiftKey?-1:1)+controls.length)%controls.length;
+        controls[next]?.focus({preventScroll:true});
+        return true;
+      }
+      const focused=this.hud.currentFocus()?.surfaceId===teleportViewId?teleportViewId:teleportHudId;
+      return this.hud.handleKey(event,{surfaceId:focused})||movement.has(event.code);
+    }
     if((history?.native||visit)&&!this.ownsAccessibleInput(event.target)&&
       event.target?.closest?.('input,textarea,button,select,[contenteditable]')){
       if(event.key==='Escape'){if(visit)this.visit.close();else history.close();return true;}
@@ -1214,7 +1334,16 @@ export class MatterWorktableHud{
       const scale=Math.min(178,(width-left-right)/2.25,Math.max(70,height-top-reserved)/2.0);
       this.place(this.settings.group,'settingsPlacement',viewport,(width+left-right)/2,top,scale);
     }
-    if(this.teleport.group){
+    if(this.teleportViewGroup){
+      const immersive=this.teleportMode==='workspace';
+      const parent=immersive?this.teleportWorkspace.overlay:this.hud.group;
+      if(this.teleportViewGroup.parent!==parent)parent.add(this.teleportViewGroup);
+      const scale=Math.min(175,(width-22)/2.62);
+      this.place(this.teleportViewGroup,'teleportViewPlacement',viewport,width/2,Math.max(12,height-(immersive?.78:.41)*scale),scale);
+    }
+    if(this.teleport.group&&this.teleportMode==='workspace'){
+      this.teleportWorkspace.resize(width/height);
+    }else if(this.teleport.group){
       const scale=Math.min(250,(width-32)/teleportHudWidth,(height-24)/2.16);
       const y=Math.max(16,(height-1.90*scale)/2);
       this.place(this.teleport.group,'teleportPlacement',viewport,width/2,y,scale);
@@ -1271,6 +1400,7 @@ export class MatterWorktableHud{
     }
     this.hud.update();
     if(this.teleport.group&&this.teleportModels.animate())this.layer.invalidate();
+    if(this.teleportMode==='workspace')this.teleportWorkspace.scene.updateMatrixWorld(true);
     this.windows.end();
     this.lookPreview.draw(worldControlsId,this.status.controlsGroup,this.hud.getSurfaceBounds(worldControlsId));
     if(this.cockpit||!this.lookPreview.name||this.document.body.dataset.hudTheme==='light')this.lookPreview.draw(worldMapId,this.map.group,this.hud.getSurfaceBounds(worldMapId));
@@ -1292,7 +1422,11 @@ export class MatterWorktableHud{
       this.layer.invalidate();
     }
     let painted=false;
-    try{painted=this.layer.draw(this.scene,this.camera,additional);}
+    try{
+      const workspace=this.teleportMode==='workspace'?this.teleportWorkspace:null;
+      painted=workspace?this.layer.draw(workspace.scene,workspace.camera,{scene:workspace.overlay,camera:this.camera}):
+        this.layer.draw(this.scene,this.camera,additional);
+    }
     finally{
       this.map.markBearingPresented(Boolean(painted&&this.map.bearingGroup&&this.hud.getSurfaceBounds(worldBearingId)));
       this.door.presented(Boolean(painted&&this.door.group&&this.toolGroup&&this.hud.getSurfaceBounds(doorPromptId)));
@@ -1330,6 +1464,7 @@ export class MatterWorktableHud{
     this.events.abort();
     this.teleport.close();
     this.teleportModels.dispose();
+    this.teleportWorkspace?.dispose();
     this.passage.dispose();
     this.layer.dispose();
     this.map.dispose();
