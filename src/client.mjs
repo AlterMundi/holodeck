@@ -655,7 +655,7 @@ async function api(path,body,{signal}={}){
   if(!response.ok){const error=Error(value.message||value.detail||'La acción no se pudo completar.');Object.assign(error,value,{httpStatus:response.status});throw error;}
   return value;
 }
-const questbook=new Questbook(document,api);
+const questbook=new Questbook(document,api,`holodeck.questbook-creations:${base.pathname}`);
 function noteRecovery(kind,result={}){
   const expiredCommand=kind==='command'&&result.code==='not-recorded'&&pending&&
     ((Number.isFinite(result.serverTime)&&Number.isFinite(result.retryWindowMs)&&result.serverTime-pending.issuedAt>result.retryWindowMs)||

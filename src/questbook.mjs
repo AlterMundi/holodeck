@@ -117,7 +117,7 @@ function createQuestbook(room, {project, binary, store, authorize}) {
       const initial = await mount(caller, writer, selected, projectRevisions, !!readHistory);
       const model = initial.result?.[2]?.updateDataModel?.value;
       if (!initial.ok) return initial;
-      initial.canCreate = !!writer;
+      Object.assign(initial,{canCreate:!!writer,project,actorRef:actor.id});
       if (!model) return initial;
       const candidates = model.revisionCandidates ?? [];
       delete model.revisionCandidates;
@@ -131,11 +131,13 @@ function createQuestbook(room, {project, binary, store, authorize}) {
       if (!reader) return {ok:false,code:'access'};
       const refreshedWriter = await access(verified.actor, true, request);
       const result = await mount(reader, refreshedWriter, model.id, verified.revisions);
-      if (result.ok) result.canCreate = !!refreshedWriter;
+      if (result.ok) Object.assign(result,{canCreate:!!refreshedWriter,project,actorRef:verified.actor.id});
       return result;
     },
 
-    async create(actor, {operation, card, title}, request) {
+    async create(actor, {operation, card, title, expectedActor, expectedProject}, request) {
+      if ((expectedActor !== undefined && expectedActor !== actor?.id) ||
+          (expectedProject !== undefined && expectedProject !== project)) return {ok:false,code:'access'};
       const caller = await access(actor, true, request);
       if (!caller) return {ok:false,code:'access'};
       if (!uuid(operation) || !uuid(card) || !missionTitle(title)) return {ok:false,code:'invalid'};
@@ -144,7 +146,9 @@ function createQuestbook(room, {project, binary, store, authorize}) {
       }});
     },
 
-    async receipt(actor, {operation}, request) {
+    async receipt(actor, {operation, expectedActor, expectedProject}, request) {
+      if ((expectedActor !== undefined && expectedActor !== actor?.id) ||
+          (expectedProject !== undefined && expectedProject !== project)) return {ok:false,code:'access'};
       const caller = await access(actor, false, request);
       if (!caller) return {ok:false,code:'access'};
       if (!uuid(operation)) return {ok:false,code:'invalid'};
