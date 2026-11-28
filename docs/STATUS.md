@@ -1,5 +1,23 @@
 # Current MVP work
 
+## Pilot loops and free look · 2026-11-28
+
+Protected release `3df546386f92` selects `7c8c53e`. The previous release,
+`2a4b5b7339a0`, is the rollback. Installation and protected bundle readback
+matched all 96 files in the selected archive. Node tests passed 586 with four
+skips.
+
+On the RTX 2060, sustained right-button input completed four vertical loops
+in both directions with and without boost. The flight pose kept its alignment
+past both poles. Rapid directional changes peaked at 3.75 rad/s. Left-button
+drag changed framing while walking, swimming, and flying with under 0.0001 rad
+of body-heading change. Right-button drag moved the camera and body together.
+
+Chromium's emulated touch screen verified framing without moving the body, then
+using the A2UI joystick to walk in the new direction. The physical Redmi
+connected to the isolated fixture and received a position, but its entry screen
+stayed open, leaving physical touch acceptance outstanding.
+
 ## Stable flight and character poses · 2026-11-28
 
 Protected release `2a4b5b7339a0` selects `78aadf4`. It integrates Char Design's
