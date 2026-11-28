@@ -1,5 +1,23 @@
 # Current MVP work
 
+## Explorer v30 · 2026-11-28
+
+Protected release `bca910ad89ca` selects `bbb0b8a`, including Char
+Design's `7c1a4b0`, with `71a5a2d10651` available for rollback. Nicolás's
+personal avatar has articulated fingers, fingerless gloves and revised face
+materials. The package ships the selected personal avatar and retains v29 in
+the prior package. All 97 installed files matched the release. Authenticated
+HTTPS served the exact v30 GLB, SHA-256 prefix `fdc62b339ae9`. Node passed
+601 tests with four skips.
+
+Both devices loaded v30 through the personal-avatar assignment, rendered
+idle, landing and flight, and exposed five finger joints on each hand.
+In three short idle windows, Pi 5 at 363 × 244 measured a median 18.2 FPS
+for both editions. RTX 2060 at 660 × 407 first measured 26.56 → 18.20 FPS.
+A five-window repeat in reverse order after a 6.5-second warmup measured
+18.54 → 17.21 FPS, with overlapping ranges. The larger first-run gap did
+not reproduce in the warmed comparison.
+
 ## Navegante LED visor · 2026-11-28
 
 Protected release `71a5a2d10651` selects `625fc1b`, including Char
