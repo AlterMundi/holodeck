@@ -1,5 +1,23 @@
 # Current MVP work
 
+## Flight ribbons, shockwaves and water ripples · 2026-11-28
+
+Protected release `3073d6c8068c` selects runtime source `1553b42`. It
+integrates Char Design's `dd69f08` with a ribbon reset at abrupt position
+changes. The previous release, `3df546386f92`, is the rollback. All 96
+installed files matched the package and the protected client matched over
+HTTPS. Node passed 586 tests with four skips.
+
+RTX 2060 browser checks observed cruise ribbons, repeat boost shockwaves,
+ribbons through vertical turns and rapid directional changes, a clean trail
+restart after a relocation, and water ripples on entry and exit. A second
+networked client observed a ribbon and shockwave at the flying peer.
+
+On the Pi 5 in normal graphics at a 528 × 330 draw buffer, three 2.5-second
+windows per arm gave median cruise FPS of 13.51 before and 14.42 after, and
+median boost FPS of 14.81 before and 14.90 after. Median frame p95 remained
+about 83 ms in both cases. This covers a single flight route over the meadow.
+
 ## Pilot loops and free look · 2026-11-28
 
 Protected release `3df546386f92` selects `7c8c53e`. The previous release,
