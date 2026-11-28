@@ -57,6 +57,7 @@ import {loadOwnerExteriors} from './owner-exterior.mjs';
 import {loadOwnerRoomTours} from './owner-room-tours.mjs';
 import {createAtelierRoomAuthority} from './atelier-authority.mjs';
 import {atelierProjectionHandler} from './atelier-projection.mjs';
+import {loadWandaFixture,wandaRoomArt} from './wanda-observatory.mjs';
 import {WorldDocument} from './world-document.mjs';
 import {SessionBindings,SESSION_MS,sessionKey} from './session-bindings.mjs';
 import {installedPackageBytes,installedRelease,releaseStatus} from './release-status.mjs';
@@ -64,10 +65,11 @@ import {HumanAvatarProfiles,humanWardrobeAssets} from './human-avatars.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
-export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,releaseControllerRef=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt,houseVisual,gardenVisual,gallerySelection,galleryAuthorization,matterCollection,collectionSourceRequest,nativeReviewAuthority=null,artProfile,worldTerrain,atelierLayoutWrites=ATELIER_EXPANSION_WRITES,lightExercise=false,questbook=null,ownerRoomArt=[],ownerRoomTours=[],ownerExteriors=[],parcelGrants=production?[]:null,ownerArtRequest,atelierWorkshop=null}={}){
+export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,releaseControllerRef=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt,houseVisual,gardenVisual,gallerySelection,galleryAuthorization,matterCollection,collectionSourceRequest,nativeReviewAuthority=null,artProfile,worldTerrain,atelierLayoutWrites=ATELIER_EXPANSION_WRITES,lightExercise=false,questbook=null,ownerRoomArt=[],ownerRoomTours=[],ownerExteriors=[],parcelGrants=production?[]:null,ownerArtRequest,atelierWorkshop=null,wandaFixture=null}={}){
   if(!/^\/(?:[a-z0-9-]+\/)*$/.test(basePath))throw Error('Select a bounded absolute base path');
   lightExercise=lightExercise===true;
   if(production&&(!identityResolver||!publicOrigin||!stateDir))throw Error('Shared identity, audience and state are required in production');
+  if(wandaFixture&&(production||!identityResolver))throw Error('WANDA fixture requires the authenticated local trial');
   if(typeof interiorArtwork!=='function'||production&&(interiorArtwork!==interiorArt||houseVisual||gardenVisual))
     throw Error('Select checked-in art for production');
   if(galleryAuthorization!==undefined&&(production||typeof galleryAuthorization!=='function'))
@@ -188,6 +190,9 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     guestAccess:(actor,id)=>(!tours.guestLimits.has(id)||tours.guestLimits.get(id).has(actor.id))&&
       (!interiorGuestAccess||interiorGuestAccess(actor,id)===true)});
   const ownerArt=await loadOwnerRoomArt(ownerRoomArt,spaces.rooms,ownerReader);
+  if(wandaFixture&&!spaces.rooms.has(wandaFixture.room))throw Error('Select an existing observatory room');
+  const wanda=wandaFixture&&loadWandaFixture(wandaFixture);
+  const wandaHref=path=>route('api/space/wanda/'+path);
   const exteriorReader=production?ownerRoomCache(pathToFileURL(join(stateDir,'owner-exteriors')+'/')):ownerArtRequest;
   const authoredExteriors=toroidal?await loadOwnerExteriors(ownerExteriors,houses,exteriorReader):new Map();
   const canSeeExterior=(actor,house)=>actor.rights?.includes('observe')&&
@@ -496,10 +501,11 @@ export async function createHolodeck({basePath='/',production=false,identityReso
 
   function renderInterior(room,passages,exhibit){
     const owned=ownerArtFor(room);
+    const instruments=room.id===wanda?.room?wandaRoomArt(wanda.projection(wandaHref)):'';
     if(owned){
       const models=[...owned.models.keys()].map((revision,index)=>
         `<m-model id="room-art-${index}" data-owner-room-art src="${route('api/space/art/'+revision)}" collide="false"></m-model>`).join('');
-      return `<m-group id="${room.id}">${models}${owned.colliders}</m-group>`;
+      return `<m-group id="${room.id}">${models}${owned.colliders}${instruments}</m-group>`;
     }
     const art=artForRoom(room,passages),src=art?route('api/space/art/'+art.revision):null;
     const gallerySigns=room.id===gallery?.room&&exhibit?.pin.kind==='artifact_review'&&exhibit.pin.adapter==='interactive_3d';
@@ -509,7 +515,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     };
     const houseDoor=spaces.rooms.has(CHARACTER_STUDIO)&&
       (room.id===ATELIER_FOYER||passages.some(p=>p.to===ATELIER_FOYER));
-    return interiorDocument(room,passages,exhibit,art&&{...art,src,gallerySigns},passageAsset,houseDoor);
+    return interiorDocument(room,passages,exhibit,art&&{...art,src,gallerySigns},passageAsset,houseDoor,instruments);
   }
   function interiorScopeKey(actor,selected){
     if(!selected)return null;
@@ -575,6 +581,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(owned?.table?.id===atelierAnchor.id)space.atelierTableReach=owned.table.interactionRadius;
       if(owned?.widgets)space.atelierWidgets=owned.widgets;
     }
+    if(space.id===wanda?.room&&inScope(actor,wanda.room))space.wandaObservatory=wanda.projection(wandaHref);
     if(!cell)return space;
     return {...space,participants:roomParticipants(space.id)};
   }
@@ -1061,7 +1068,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       session[budget].push(now);
     }
     const spaceRoute=['/space','/space/destinations','/space/jump','/space/character-pose-review','/space/character-presentation','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/avatar-pose','/space/collection/tabletop-presence','/space/collection/pointing','/space/matter-look','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/exteriors/')||req.path.startsWith('/space/destinations/icon/')||req.path.startsWith('/space/collection-model/')||
-      req.path.startsWith('/space/atelier/')||req.path==='/release-dnd'||req.path==='/appearance'||req.path==='/conversation-surface'||req.path==='/topic-space'||req.path==='/topic-projects'||
+      req.path.startsWith('/space/atelier/')||req.path.startsWith('/space/wanda/')||req.path==='/release-dnd'||req.path==='/appearance'||req.path==='/conversation-surface'||req.path==='/topic-space'||req.path==='/topic-projects'||
       (questbookHost&&/^\/questbook(?:\/(?:action|objective|create|receipt))?$/.test(req.path))||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
@@ -1128,6 +1135,20 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   app.use(route('api/space/atelier/'),asyncRoute(atelierProjectionHandler({
     authority:atelierAuthority,scope:atelierSpace,authorize:currentActor,
   })));
+  app.use(route('api/space/wanda/'),(req,res)=>{
+    res.set({'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'});
+    if(!wanda||!inScope(req.actor,wanda.room))return res.sendStatus(404);
+    if(req.method==='GET'){
+      const bytes=wanda.media(req.path);
+      if(bytes)return res.type('image/jpeg').send(bytes);
+    }
+    if(req.method==='POST'&&req.path==='/action'){
+      if(!req.is('application/json'))return res.sendStatus(415);
+      const view=wanda.inspect(req.body,wandaHref);
+      return view?res.json(view):res.sendStatus(409);
+    }
+    return res.sendStatus(404);
+  });
   app.get(route('api/appearance'),(req,res)=>{
     if(req.actor.kind!=='human')return res.sendStatus(403);
     res.json({choice:avatars.preference(req.actor),...(avatars.ownsPersonalAvatar(req.actor)?{personalDefault:true}:{})});

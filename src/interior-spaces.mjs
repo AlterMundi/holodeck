@@ -297,7 +297,7 @@ export class InteriorSpaces {
 }
 
 // Each server-authorized room has its own local collision and render document.
-export function interiorDocument(room,passages=[],exhibit=null,art=null,passageAsset=()=>null,houseDoor=false) {
+export function interiorDocument(room,passages=[],exhibit=null,art=null,passageAsset=()=>null,houseDoor=false,instruments='') {
   const {id,position:{x,y,z},radius,height}=ROOM_MARKER;
   const showWalls=!(art?.replacesShell||art?.replacesWalls);
   const ceiling=art?.ceiling??3.3;
@@ -325,7 +325,7 @@ export function interiorDocument(room,passages=[],exhibit=null,art=null,passageA
     {floor:'#b5a28e',wall:'#5b7471',end:'#668581'});
   return `<m-group id="${room.id}">
     ${roomFloor(passages,art&&!art.palette?'#746d61':floor,!art?.replacesShell)}
-    ${stationMarkup}${controlAnchors}${characterFurniture}
+    ${stationMarkup}${controlAnchors}${characterFurniture}${instruments}
     ${characterTable?'<m-cube id="studio-ceiling" y="3.26" width="11.8" height=".08" depth="11.8" color="#526365" collide="false"></m-cube>':''}
     ${art?'<m-model id="room-art" src="'+attribute(art.src)+'" collide="false"></m-model>'+art.colliders+
       (art.dressing??'')+(art.lightRig??''):''}

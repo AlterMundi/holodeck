@@ -56,6 +56,7 @@ world without changing or redeploying Holodeck.
 - [Spatial entrances to existing content](docs/content-landmarks.md)
 - [Shared world activity and situated history](docs/world-history.md)
 - [Research objects and replaceable content editions](docs/research-objects.md)
+- [Nix observatory read-only WANDA trial](docs/wanda-observatory.md)
 
 Research includes Social Conjurer, LLMR, VRCopilot, Ubiq-Genie, CraftAssist,
 Resonite, Microverse, Minecraft/Roblox and browser engine alternatives. Their

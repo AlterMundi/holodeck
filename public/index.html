@@ -407,7 +407,13 @@ body:not([data-tools-expanded]) :is(#view-tools,#activity-open),body[data-a2ui-t
 .video-icon{display:block;width:20px;height:14px;border:1.5px solid currentColor;border-radius:3px;position:relative}
 .video-icon::after{content:'';position:absolute;inset:auto 5px -4px;border-bottom:1px solid currentColor}
 #video-dialog,#appearance-dialog{width:min(390px,calc(100vw - 24px));box-sizing:border-box;color:var(--ink);background:var(--control-fill,#173339);border-radius:18px;padding:22px;border:1px solid var(--line)}
-#video-dialog::backdrop,#appearance-dialog::backdrop{background:#07181bbb}
+#video-dialog::backdrop,#appearance-dialog::backdrop,.wanda-inspection::backdrop{background:#07181bbb}
+.wanda-inspection{width:min(730px,calc(100% - 24px));max-height:calc(100dvh - 24px);box-sizing:border-box;border:1px solid var(--line);border-radius:16px;padding:clamp(12px,3vw,22px);background:var(--panel);color:var(--ink)}
+.wanda-inspection header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.wanda-inspection h2,.wanda-inspection p{margin:0}
+.wanda-inspection button{min-height:44px}
+.wanda-inspection img:not([hidden]){display:block;width:100%;height:auto;max-height:calc(100dvh - 174px);object-fit:contain;background:#080d12}
+.wanda-inspection p{font-size:.92rem;margin-top:10px}
 #video-dialog label,#video-dialog select{display:block}
 #mouse-sensitivity{width:100%;margin:8px 0 16px;accent-color:var(--gold)}
 #video-dialog select{width:100%;min-height:44px;margin:6px 0 16px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);font:inherit}

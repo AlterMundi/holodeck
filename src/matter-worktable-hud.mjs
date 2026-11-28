@@ -11,6 +11,7 @@ import {WorldStatusHud,worldNoticeId,worldControlsId,worldControlsWidth} from '.
 import {RecoveryHud,recoveryHudId} from './recovery-hud.mjs';
 import {CreationHud,creationHudId} from './creation-hud.mjs';
 import {BeaconHud,beaconStationId,beaconViewerId,beaconStationWidth,beaconViewerWidth} from './beacon-hud.mjs';
+import {WandaHud,wandaHudId,wandaHudWidth} from './wanda-hud.mjs';
 import {SettingsHud,settingsId} from './settings-hud.mjs';
 import {TeleportWorkspace} from './teleport-workspace.mjs';
 import {TeleportModels} from './teleport-models.mjs';
@@ -190,7 +191,7 @@ const portraitWork=[
 const movement=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE']);
 
 export class MatterWorktableHud{
-  constructor({document,webgl,table,collection,workspace,toggleSound,onActive,canEnter=()=>true,onError,readTools,activateTool,navigation,presentMovement,history,visitor,creatorContext,beaconControls,onBeaconOpen,teleport,worktableNavigation,fixedNavigation,frameDiagnostics}){
+  constructor({document,webgl,table,collection,workspace,toggleSound,onActive,canEnter=()=>true,onError,readTools,activateTool,navigation,presentMovement,history,visitor,creatorContext,beaconControls,onBeaconOpen,wandaRequest,teleport,worktableNavigation,fixedNavigation,frameDiagnostics}){
     this.worktableNavigation=worktableNavigation;
     this.fixedNavigation=fixedNavigation;
     Object.assign(this,{document,webgl,table,workspace,onActive,canEnter,readTools,activateTool,presentMovement,movementGroups:new Map(),scope:0,toolScope:0,mode:null,blocked:false});
@@ -324,6 +325,8 @@ export class MatterWorktableHud{
       focusWorld:()=>this.focusTool('map')||this.focusTool('talk'),onOpen:onBeaconOpen,
       canOpenNative:()=>Boolean(this.layer.overlay&&!this.layer.lost&&
         this.canvas.clientWidth>=330&&this.canvas.clientHeight>=320)});
+    this.wanda=new WandaHud({document,send:(type,content,id)=>this.send(type,content,id),
+      request:wandaRequest,onOpen:onBeaconOpen,onError});
     this.lookPreview=new HudLookPreview({document,parent:this.scene,invalidate:this.layer.invalidate});
     this.hud=createSpatialHud({parent:this.scene,document,accessibilityRoot:this.a11y,controlStyle:'optical',retainTextDrafts:true,
       createButtonModel:request=>request.surfaceId===teleportHudId?this.teleportModels.create(request):undefined,
@@ -351,6 +354,7 @@ export class MatterWorktableHud{
         else if(id===creationHudId)this.creation.group=group;
         else if(id===beaconStationId)this.beacon.stationGroup=group;
         else if(id===beaconViewerId)this.beacon.viewerGroup=group;
+        else if(id===wandaHudId)this.wanda.group=group;
         else if(id===movementStick||id===movementJump||id===movementDown)this.movementGroups.set(id,group);
         else this.group=group;
       },
@@ -388,6 +392,7 @@ export class MatterWorktableHud{
         else if(requested.surfaceId===recoveryHudId)this.recovery.activate(requested);
         else if(requested.surfaceId===creationHudId)this.creation.activate(requested);
         else if([beaconStationId,beaconViewerId].includes(requested.surfaceId))this.beacon.activate(requested);
+        else if(requested.surfaceId===wandaHudId)void this.wanda.activate(requested);
         else{
           if(requested.surfaceId===surfaceId&&this.active&&this.fixedNavigation?.active){
             const subject=this.table.reviewCameraTarget??this.table.anchor;
@@ -520,7 +525,7 @@ export class MatterWorktableHud{
 
   rayForPointer(event){
     if(this.priorInert!==undefined)return;
-    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.teleport.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.diagnostics.group&&!this.pending.toolGroup&&!this.pending.bookGroup&&!this.status.controlsGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.movementGroups.size)return;
+    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.teleport.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.diagnostics.group&&!this.pending.toolGroup&&!this.pending.bookGroup&&!this.status.controlsGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.wanda.group&&!this.movementGroups.size)return;
     const rect=this.canvas.getBoundingClientRect();
     if(!rect.width||!rect.height)return;
     this.pointerPosition.set((event.clientX-rect.left)*2/rect.width-1,1-(event.clientY-rect.top)*2/rect.height);
@@ -1178,7 +1183,7 @@ export class MatterWorktableHud{
       !this.webgl.getContext().isContextLost()&&!this.document.querySelector(
         'dialog[open],#signal-editor:not([hidden]),#conversation-panel:not([hidden]),#content-visit:not([hidden]):not(.is-walking)');
     this.creation.update({visible:createClear,width:width-left-right-40,maxHeight:height-createTop-recoveryReserve});
-    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.teleport.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.diagnostics.group&&!this.pending.toolGroup&&!this.pending.bookGroup&&!this.status.noticeGroup&&!this.status.controlsGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.movementGroups.size&&!additional){
+    if(!this.visit.indexGroup&&!this.visit.viewerGroup&&!this.activity.group&&!this.teleport.group&&!this.toolGroup&&!this.group&&!this.map.group&&!this.map.bearingGroup&&!this.door.group&&!this.collection.group&&!this.settings.group&&!this.diagnostics.group&&!this.pending.toolGroup&&!this.pending.bookGroup&&!this.status.noticeGroup&&!this.status.controlsGroup&&!this.recovery.group&&!this.creation.group&&!this.beacon.stationGroup&&!this.beacon.viewerGroup&&!this.wanda.group&&!this.movementGroups.size&&!additional){
       this.releaseHudOverrides();
       this.windows.end();
       this.layer.hide();
@@ -1470,6 +1475,11 @@ export class MatterWorktableHud{
       const offset=width<700?(this.coarsePointer.matches?200:86):139;
       this.place(this.beacon.stationGroup,'beaconStationPlacement',viewport,width-right-18-beaconStationWidth*scale/2,
         top+offset,scale);
+    }
+    if(this.wanda.group){
+      const scale=Math.min(169,(width-left-right-36)/(wandaHudWidth+.12));
+      this.place(this.wanda.group,'wandaPlacement',viewport,width-right-16-wandaHudWidth*scale/2,
+        top+(width<700?95:136),scale);
     }
     let beaconViewerPlaced=false;
     if(this.beacon.viewerGroup&&this.layer.overlay&&!this.layer.lost){

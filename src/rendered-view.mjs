@@ -6,8 +6,8 @@ const idPattern=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/
 const maxFrames=40;
 const vector=(value,length)=>Array.isArray(value)&&value.length===length&&value.every(Number.isFinite);
 
-function jpegDimensions(bytes){
-  if(bytes.readUInt16BE(0)!==0xffd8||bytes.readUInt16BE(bytes.length-2)!==0xffd9)return null;
+export function jpegDimensions(bytes){
+  if(bytes.length<4||bytes.readUInt16BE(0)!==0xffd8||bytes.readUInt16BE(bytes.length-2)!==0xffd9)return null;
   let offset=2;
   while(offset+8<bytes.length&&bytes[offset]===0xff){
     const marker=bytes[offset+1],length=bytes.readUInt16BE(offset+2);

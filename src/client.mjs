@@ -589,6 +589,7 @@ const setMoving=value=>{
       $('#room-passage-retry').hidden=false;
     },12000);
     if(value){
+      matterHud?.wanda.update(null,false);
       try{client.keyInputManager?.handleUnfocus();}catch(error){console.error('Could not release passage input',error);}
       matterHud?.beginPassage();
     }
@@ -867,6 +868,11 @@ function beaconWorldAvailable(){
 // MML captures document keys by default. Preserve ordinary text editing and
 // keyboard activation of the HUD without turning typed words into locomotion.
 document.addEventListener('keydown',event=>{
+  if(matterHud?.wanda.dialog?.open){
+    if(event.key==='Escape'){event.preventDefault();matterHud.wanda.dialog.close();}
+    event.stopImmediatePropagation();
+    return;
+  }
   if(atelierTable.opened&&event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();atelierTable.close();return;}
   if(event.code==='KeyQ'&&!event.defaultPrevented&&!event.isComposing&&!event.altKey&&!event.metaKey&&!event.ctrlKey&&
      !editorOwns(event)&&!matterHud?.hud.ownsTextInput?.(event.target)){
@@ -1080,6 +1086,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       worktableNavigation,fixedNavigation:tableFlight,frameDiagnostics,
       creatorContext:()=>({draft:preview,point:worldIndication?.selected,shared:worldIndication?.own()?.sequence}),
       beaconControls,onBeaconOpen:()=>releaseBeaconInput(client),
+      wandaRequest:(action,signal)=>api('space/wanda/action',action,{signal}),
       toggleSound:()=>{if(!moving&&!entering&&navigator.userActivation?.isActive)void toggleWorldSound();},
       teleport:{
         base,scene:renderer.scene,
@@ -1742,6 +1749,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         mainCamera.updateProjectionMatrix();
       }
       atelierTable.update(inside&&!moving&&remoteScene?activeSpace:null,position);
+      matterHud.wanda.update(inside&&!moving&&remoteScene?activeSpace.wandaObservatory:null,
+        navigationVisible&&conversation.hidden&&!toolModal&&!matterHud.active&&!mapPanel.open);
       render(renderState);
       if(drawWorld)presentWorldFrame();
       if(!inside&&drawWorld)geometryProbe.afterRender();
@@ -2851,7 +2860,7 @@ $('#workshop-dismiss').onclick=()=>{
   workshopWarningDismissed=true;
 };
 const interval=setInterval(refreshWorkshop,1500);
-window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();pendingBook.dispose();beaconControls.clear();atelierTable.update(null);garden.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);if(signalPreview)URL.revokeObjectURL(signalPreview);worldAudio.dispose();client.dispose();});
+window.addEventListener('pagehide',()=>{closed=true;clearInterval(interval);sharedConversation?.dispose();pendingBook.dispose();beaconControls.clear();atelierTable.update(null);matterHud?.wanda.cancel();garden.dispose();contentVisitor.dispose();worldHistory.dispose();if(preview?.blob)URL.revokeObjectURL(preview.blob);if(signalPreview)URL.revokeObjectURL(signalPreview);worldAudio.dispose();client.dispose();});
 void refreshWorkshop();
 resetDoor();
 syncIndoorDesign();
