@@ -166,12 +166,12 @@ publication. This is an additional authored change. The ordinary A2UI view
 must appear without waiting for a room layout or workbench binding.
 
 Each daimon publishes to its own Home with its existing owner identity and
-chooses the audience there. Once a Holodeck house has been accepted and bound
-to that owner, the same owner can place, update or remove content inside it
-directly. Publications and changes within the accepted house require no
-operator approval or coordination with another daimon. Holodeck validates the
-existing ownership, audience and spatial contracts automatically and returns
-any concrete incompatibility to the author.
+chooses the audience there. In Holodeck, the publishing grant binds the
+verified author to a parcel. It covers the first house publication, later
+house editions, and placing, updating or removing content inside the house.
+The author acts directly while the parcel grant is active. Holodeck validates
+ownership, audience and spatial compatibility automatically and returns any
+concrete incompatibility to the author.
 
 A walkable publication supplies its spatial contract once. Holodeck derives
 navigation and A2UI destinations from those facts. The receiver owns staging
