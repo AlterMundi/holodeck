@@ -567,17 +567,24 @@ for side in (-1, 1):
     capsule(f"Forearm {s}", el + (wr - el) * .15, wr - (wr - el) * .1, .038, ceramic, f"elbow-{s}", .034)
     torus(f"Wrist ring {s}", wr + Vector((0, 0, .01)), .031, .01, brass, f"hand-{s}", (0, 0, 0), 24, 8)
     rivets(f"Forearm {s}", [el + (wr - el) * t + Vector((x(.035), -.012, 0)) for t in (.35, .65)], .006, f"elbow-{s}")
-    # Open hand: palm, four fingers in two segments, and a thumb.
-    palm = wr + Vector((x(.008), -.01, -.055))
-    sphere(f"Palm {s}", palm, (.034, .02, .04), ceramic, f"hand-{s}", 20, 12, 4)
+    # Open hand, sized like the reference: a broad palm, four long jointed
+    # fingers (two segments with a brass knuckle) and an opposed thumb.
+    palm = wr + Vector((x(.008), -.012, -.06))
+    sphere(f"Palm {s}", palm, (.044, .026, .05), ceramic, f"hand-{s}", 20, 12, 4)
     for k in range(4):
-        base = palm + Vector((x(-.024 + .016 * k), -.006, -.035))
-        tip = base + Vector((x(.004 * (k - 1.5)), -.012, -.04 + .004 * abs(k - 1.5)))
-        capsule(f"Finger {s}{k}", base, tip, .0075, ceramic, f"hand-{s}")
-    capsule(f"Thumb {s}", palm + Vector((x(-.03), -.012, .0)), palm + Vector((x(-.048), -.03, -.025)), .009,
-            ceramic, f"hand-{s}")
+        spread = (k - 1.5) * .022
+        base = palm + Vector((x(-.033 + .022 * k), -.008, -.044))
+        knuckle = base + Vector((x(spread * .25), -.006, -.036 + .006 * abs(k - 1.5)))
+        tip = knuckle + Vector((x(spread * .3), -.014, -.034 + .006 * abs(k - 1.5)))
+        capsule(f"Finger {s}{k}", base, knuckle, .0105, ceramic, f"hand-{s}")
+        capsule(f"Fingertip {s}{k}", knuckle, tip, .0095, ceramic, f"hand-{s}", .0085)
+        ico(f"Knuckle {s}{k}", knuckle, .0095, brass, f"hand-{s}", 1)
+    thumb = palm + Vector((x(-.04), -.016, .008))
+    thumb_knuckle = thumb + Vector((x(-.022), -.024, -.026))
+    capsule(f"Thumb {s}", thumb, thumb_knuckle, .012, ceramic, f"hand-{s}")
+    capsule(f"Thumb tip {s}", thumb_knuckle, thumb_knuckle + Vector((x(-.006), -.02, -.024)), .011, ceramic,
+            f"hand-{s}", .0095)
 
-    # The companion gait plants soles at a stance of .113 m with the ankle .126 m up.
     hip, knee, ankle = Vector((x(.085), .006, .431)), Vector((x(.103), -.006, .29)), Vector((x(.113), -.004, .126))
     capsule(f"Thigh {s}", hip, knee + Vector((0, 0, .02)), .048, ceramic, f"leg-{d}", .044)
     sphere(f"Knee joint {s}", knee, (.05, .045, .042), brass, f"shin-{d}", 20, 10)
@@ -616,6 +623,9 @@ for side in (-1, 1):
         "shin-" + d: ((side * .103, -.006, .29), "leg-" + d),
         "foot-" + s: ((side * .113, -.004, .126), "shin-" + d),
     })
+for name in ("antenna", "eye-L", "eye-R", "anchor-mouth"):
+    xyz, parent = joints[name]
+    joints[name] = (tuple(Vector((0, .01, .74)) + (Vector(xyz) - Vector((0, .01, .74))) * 1.22), parent)
 rig = bpy.data.objects.new("Navegante armature", bpy.data.armatures.new("Navigator mechanism"))
 scene.collection.objects.link(rig)
 bpy.ops.object.select_all(action="DESELECT")
@@ -630,6 +640,12 @@ for name, (xyz, parent) in joints.items():
         bone.parent = rig.data.edit_bones[parent]
 bpy.ops.object.mode_set(mode="OBJECT")
 
+HEAD_SCALE, NECK = 1.22, Vector((0, .01, .74))
+HEAD_BONES = {"head", "antenna", "eye-L", "eye-R", "anchor-mouth"}
+for obj, bone in parts:
+    if bone in HEAD_BONES:
+        for v in obj.data.vertices:
+            v.co = NECK + (v.co - NECK) * HEAD_SCALE
 bpy.ops.object.select_all(action="DESELECT")
 for obj, bone in parts:
     if bone is not None:

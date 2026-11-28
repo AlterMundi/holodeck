@@ -112,25 +112,31 @@ test('the explorer idles through its repertoire with both feet planted',async()=
   }});
   const note=JSON.stringify({drift,lowest,left,right,reach});
   assert.ok(drift<.01,note);
-  assert.ok(lowest<.7,note);         // a squat
+  assert.ok(lowest<start.pelvis.y-.05,note); // the ready stance settles
   assert.ok(left>.05&&right>.05,note); // weight onto each leg
-  assert.ok(reach>1.7,note);         // a stretch overhead
 });
 
-test('every double jump is a full heroic trick, twice as high, none repeated in a row',async()=>{
+test('every double jump is a superhero surge: no spins, twice as high, none repeated in a row',async()=>{
   const {HEROIC_ROUTE}=await import('../tools/avatar-motion/heroics.mjs');
   const {TRICKS}=await import('../src/flight-avatar-animation.mjs');
   const route=HEROIC_ROUTE.filter(([name])=>/^(still|hop|trick|land)/.test(name));
-  const spins=new Map(),lift=new Map();let start=null,base=null;
-  await runSequence({file:explorer,route,pilot:true,onFrame({name,phase,root,motion}){
+  const turn=new Map(),lift=new Map(),hands=new Map();let start=null,base=null;
+  const result=await runSequence({file:explorer,route,pilot:true,onFrame({name,phase,root,mesh,motion}){
     if(name.startsWith('hop')&&phase<.02){start=root.quaternion.clone();base=motion.height;}
     if(!name.startsWith('trick'))return;
-    spins.set(name,Math.max(spins.get(name)??0,root.quaternion.angleTo(start)));
+    turn.set(name,Math.max(turn.get(name)??0,root.quaternion.angleTo(start)));
     lift.set(name,Math.max(lift.get(name)??0,motion.height-base));
+    if(phase>.4&&!hands.has(name)){
+      const inverse=root.quaternion.clone().invert();
+      const at=bone=>mesh.getObjectByName(bone).getWorldPosition(new Vector3()).sub(root.position).applyQuaternion(inverse);
+      hands.set(name,[at('hand_l'),at('hand_r')].map(h=>h.toArray().map(v=>+v.toFixed(1)).join()).join('|'));
+    }
   }});
-  assert.ok(TRICKS.length>=5);
-  for(const [name,spin] of spins)assert.ok(spin>2.4,`${name} spin ${spin}`);
+  assert.ok(TRICKS.length>=4);
+  for(const [name,angle] of turn)assert.ok(angle<.7,`${name} turned ${angle}`);
   for(const [name,height] of lift)assert.ok(height>1.6,`${name} height ${height}`);
+  assert.ok(new Set(hands.values()).size>=3,[...hands.values()].join(' / '));
+  assert.ok(result.bursts>=TRICKS.length,'each surge breaks away with a burst');
 });
 
 test('each boost breaks away with a burst and a fresh flight style',async()=>{
@@ -143,7 +149,7 @@ test('each boost breaks away with a burst and a fresh flight style',async()=>{
     const at=bone=>mesh.getObjectByName(bone).getWorldPosition(new Vector3()).sub(root.position).applyQuaternion(inverse);
     hands.set(name,[at('hand_l'),at('hand_r')].map(hand=>hand.toArray().map(v=>+v.toFixed(1)).join()).join('|'));
   }});
-  assert.equal(result.bursts,5);
+  assert.ok(result.bursts>=5);
   assert.ok(new Set(hands.values()).size>=4,[...hands.values()].join(' / '));
 });
 

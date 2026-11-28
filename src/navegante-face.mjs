@@ -63,7 +63,7 @@ void eye(vec2 p,float side,float open,float curve,float slant,inout vec3 colour,
   float heat=clamp((p.y-bottom)/max(lid-bottom,.01),0.,1.);
   vec3 ember=mix(vec3(1.,.55,.12),vec3(.35,.08,.02),mix(heat,.35,shut));
   colour=mix(colour,vec3(.05,.02,.01),lit);
-  glow+=mix(ember*slit*1.4,vec3(1.,.5,.1)*arcGlow*1.1,shut);
+  glow+=mix(ember*slit*1.8,vec3(1.,.5,.1)*arcGlow*1.5,shut);
 }
 void face(inout vec3 colour,inout vec3 glow){
   vec2 p=vFace;
@@ -173,7 +173,7 @@ export class NaveganteFace{
   write(){
     const c=this.current,u=this.uniforms;
     this.colour.setRGB(c[0],c[1],c[2]);
-    u.faceBrow.value.set(c[0],c[1],c[2],1.1);
+    u.faceBrow.value.set(c[0],c[1],c[2],1.5);
     u.faceLift.value.set(c[3],c[4],c[5],c[6]);
     u.faceEyes.value.set(c[7],c[8],c[9],c[10]);
     u.faceSlant.value.set(c[11],c[12],1,this.blink);
