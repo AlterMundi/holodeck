@@ -1025,6 +1025,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       mic:document.getElementById('tool-mic'),speaker:document.getElementById('tool-speaker'),
       appearance:document.getElementById('appearance-open'),video:document.getElementById('video-open'),
       bridge:document.getElementById('bridge'),plant:document.getElementById('plant'),undo:document.getElementById('undo'),
+      projects:document.getElementById('topic-projects-open'),
       activity:document.getElementById('activity-open'),visit:document.getElementById('visit-near'),
       endVisit:document.getElementById('visit-end-near'),fullscreen:document.getElementById('video-fullscreen')};
     const visitAllowed=()=>!moving&&!entering&&document.getElementById('conversation-panel').hidden&&
@@ -1035,9 +1036,10 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       label:['toggle','mic','speaker'].includes(id)?element.textContent.trim():id==='undo'?'Deshacer':id==='visit'&&element.textContent.startsWith('Visitar ')?'Visitar':
         element.getAttribute('aria-label')??element.textContent.trim(),
       visible:(id==='activity'?activityAllowed():id==='fullscreen'?element.hasAttribute('data-fullscreen-available'):!element.hidden)&&
-        (['toggle','map','talk','mic','speaker','appearance','video','fullscreen'].includes(id)||['visit','endVisit'].includes(id)&&visitAllowed()&&!operating||!inside&&!operating&&
+        (['toggle','map','talk','mic','speaker','appearance','video','fullscreen','projects'].includes(id)||['visit','endVisit'].includes(id)&&visitAllowed()&&!operating||!inside&&!operating&&
           !['visit','endVisit'].includes(id))
         &&(!['appearance','video'].includes(id)||document.getElementById('conversation-panel').hidden),
+      pinned:Boolean(activeSpace?.topic)&&['talk','map','projects'].includes(id),
       disabled:element.disabled,
       pressed:element.getAttribute(['fullscreen','mic','speaker'].includes(id)?'aria-pressed':'aria-expanded')==='true',
     }])),{teleport:{label:'Teletransporte',visible:!operating,disabled:moving||entering,
@@ -1768,6 +1770,7 @@ const worldAudio=new WorldAudio({onChange:()=>updateSoundButton()});
 let soundBusy=false;
 // Development inspection surface only. It reports actual client state.
 window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()||null,audioState:()=>worldAudio.status(),avatarState:()=>nativeAvatarLayer?.status(),tableFlight:()=>({active:!!matterFlight?.active,bounds:matterFlight?.bounds}),companion:()=>companionAvatar?.object??null,companionSpeech:level=>companionAvatar?.setSpeechLevel(level),flight:()=>flightEnabled,hudWindow:id=>matterHud?.windows.geometry.get(id)??null,toolBounds:id=>matterHud?.toolBounds(id)??null,
+ pickedWorldKind:(x,y)=>matterHud?.overControl({clientX:x,clientY:y})?null:worldPicker?.pick(x,y)?.kind??null,
  teleportBounds:id=>matterHud?.teleportBounds(id),
  teleportView:()=>matterHud?.teleportMode==='workspace'?{mode:'workspace',position:matterHud.teleportWorkspace.camera.position.toArray(),
    inWorld:matterHud.teleportWorkspace.place.parent===matterHud.teleportScene,anchor:matterHud.teleportWorkspace.place.position.toArray()}:

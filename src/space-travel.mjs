@@ -32,7 +32,8 @@ export function doorLocation({x,y,z,facing,yaw=facing*90,doorway=false}) {
 
 export function arrivalDoor(from,next){
   if(next.id===from.id)return null;
-  if(next.topic&&next.exitDoor)return {x:0,y:.11,z:4,yaw:180};
+  // Keep the arrival beyond the exit prompt so the project wall is immediately usable.
+  if(next.topic&&next.exitDoor)return {x:0,y:.11,z:2.8,yaw:180};
   if(next.id==='outside')return from.exteriorDoor??null;
   if(from.id==='outside'){
     if(next.entryLanding)return next.entryLanding;

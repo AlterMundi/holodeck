@@ -277,7 +277,15 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  assert.equal(entered.title,name);
  assert.equal(runtime.spaces.current({id:actorRef}),entered.id);
  const table=page.getByRole('dialog',{name:'Mesa de proyectos'});
- const openTable=()=>page.getByRole('button',{name:'Mesa de proyectos'}).tap();
+ const tapTool=async id=>{
+  const bounds=await page.waitForFunction(tool=>{
+   const rect=window.holodeckDevelopment?.toolBounds(tool);
+   return rect&&rect.width>0&&rect.height>0?rect:null;
+  },id,{timeout:10000});
+  const {left,top,width,height}=await bounds.jsonValue();
+  await page.touchscreen.tap(left+width/2,top+height/2);
+ };
+ const openTable=()=>tapTool('projects');
  const closeTable=()=>table.getByRole('button',{name:'Cerrar'}).tap();
  await openTable();
  await table.getByText('Todavía no hay proyectos visibles en esta sala.').waitFor({timeout:6000}).catch(async error=>{
@@ -332,18 +340,39 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  assert.deepEqual(modes,[]);
  await page.locator('#conversation-close').tap();
  await resultDialog.waitFor({state:'detached'});
+ await page.waitForFunction(()=>!document.body.classList.contains('room-transition')&&
+  document.querySelector('#room-passage')&&getComputedStyle(document.querySelector('#room-passage')).pointerEvents==='none');
  const point=await page.evaluate(()=>{
    const door=document.querySelector('#topic-project-door-0 > m-cube:nth-child(2)').getContainer();
    const camera=holodeckDevelopment.client.getCameraManager().getCameraState();
    const p=door.getWorldPosition(door.position.clone()).sub(camera.position);
    p.applyQuaternion(door.quaternion.clone().set(camera.rotation.x,camera.rotation.y,camera.rotation.z,camera.rotation.w).invert());
    const scale=Math.tan(camera.fov*Math.PI/360)*-p.z;
-   return {x:innerWidth*(1+p.x/(scale*camera.aspect))/2,y:innerHeight*(1-p.y/scale)/2,depth:p.z};
+   const point={x:innerWidth*(1+p.x/(scale*camera.aspect))/2,y:innerHeight*(1-p.y/scale)/2,depth:p.z};
+   const hit=(dx,dy)=>holodeckDevelopment.pickedWorldKind(point.x+dx,point.y+dy);
+   for(const dy of [0,-14,14,-28,28,-42,42,-56,56])for(const dx of [0,-12,12,-24,24,-36,36]){
+    if(hit(dx,dy)==='topic-project-door')return {...point,x:point.x+dx,y:point.y+dy,kind:hit(dx,dy)};
+   }
+   return {...point,kind:hit(0,0),element:document.elementFromPoint(point.x,point.y)?.tagName};
  });
  assert.ok(point.depth<0&&point.x>0&&point.x<390&&point.y>0&&point.y<700,JSON.stringify(point));
+ assert.equal(point.kind,'topic-project-door',JSON.stringify(point));
+ await page.evaluate(()=>{
+  window.doorEvents=[];
+  const canvas=document.querySelector('.world-interaction-canvas');
+  for(const node of [document,canvas])for(const type of ['pointerdown','pointerup','pointercancel','click']){
+   for(const capture of [true,false])node.addEventListener(type,event=>{
+    doorEvents.push([node===document?'document':'canvas',type,capture,event.target.id,event.target.className,event.target===canvas,event.defaultPrevented,event.button,
+     event.isPrimary,event.clientX,event.clientY,event.timeStamp,document.body.classList.contains('room-transition'),
+     holodeckDevelopment.pickedWorldKind(event.clientX,event.clientY)]);
+   },{capture,once:true});
+  }
+ });
  await page.touchscreen.tap(point.x,point.y);
  const detail=page.getByRole('dialog',{name:'Proyecto vinculado'});
- await detail.getByText('Ilustraciones',{exact:true}).waitFor();
+ await detail.getByText('Ilustraciones',{exact:true}).waitFor({timeout:6000}).catch(async error=>{
+  throw Error(JSON.stringify({point,events:await page.evaluate(()=>window.doorEvents),errors}),{cause:error});
+ });
  assert.equal(await detail.getByText('Juego',{exact:true}).count(),0);
  if(questbook){
   const selectors={room:room.room,project:projectA,repository:repositories[0].repository};
@@ -533,7 +562,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  await table.getByText(/Volvimos a la primera página/).waitFor();
  await table.getByText('Cuento',{exact:true}).waitFor();
  await closeTable();
- await page.getByRole('button',{name:'Conversar',exact:true}).tap();
+ await tapTool('talk');
  await page.getByRole('heading',{name:'Nuestra conversación general',exact:true}).waitFor();
  await page.getByRole('button',{name:'Hablar directo al topic',exact:true}).tap();
  await page.locator('#conversation-panel').getByRole('heading',{name,exact:true}).waitFor();
@@ -557,7 +586,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  await page.getByRole('button',{name:'Hablar directo al topic',exact:true}).tap();
  await page.locator('#conversation-panel').getByRole('heading',{name,exact:true}).waitFor();
  await page.locator('#conversation-close').tap();
- await page.getByRole('button',{name:'Minimapa',exact:true}).tap();
+ await tapTool('map');
  await page.locator('#space-travel').getByRole('button',{name:'Volver al lugar anterior',exact:true}).tap();
  await page.waitForFunction(()=>!document.body.classList.contains('inside-house')&&
    !document.body.classList.contains('room-transition'));
