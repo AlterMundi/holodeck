@@ -19,6 +19,7 @@ export function doorLocation({x,y,z,facing,yaw=facing*90}) {
 
 export function arrivalDoor(from,next){
   if(next.id===from.id)return null;
+  if(next.topic&&next.exitDoor)return {x:0,y:.11,z:4,yaw:180};
   if(next.id==='outside')return from.exteriorDoor??null;
   if(from.id==='outside'){
     const door=next.exitDoor;
@@ -35,9 +36,12 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
   const doors=inside
     ? [...space.exits.map(exit=>({...exit,mapTitle:exit.title,title:(exit.kind==='portal'?'Cruzar portal · ':
         exit.kind==='stair'?(exit.rise<0?'Bajar · ':'Subir · '):'Ir a · ')+exit.title})),
-        ...(space.exitDoor?[{to:'outside',mapTitle:'Salida al exterior',title:'Salir al exterior',door:space.exitDoor}]:[])]
+        ...(space.exitDoor?[space.topic
+          ? {to:space.returnTo,mapTitle:'Volver al lugar anterior',title:'Volver al lugar anterior',door:space.exitDoor}
+          : {to:'outside',mapTitle:'Salida al exterior',title:'Salir al exterior',door:space.exitDoor}]:[])]
     : space.entrances.map(entrance=>({to:entrance.id,title:'Entrar · '+entrance.title,door:entrance.door}));
   const list=travel.querySelector('nav');
+  list.setAttribute('aria-label',space.topic?'Regreso al lugar anterior':'Regreso al exterior');
   const map=inside&&mapEnabled?showRoomMap(travel,doors):null;
   let near=null,busy=false,suspended=false;
   async function move(destination) {
@@ -77,6 +81,7 @@ export function showSpaceLinks(space,{canLeave=()=>true,onError,onMoved,onMoving
   }
 
   const links=[];
+  if(space.topic)links.push({to:space.returnTo,title:'Volver al lugar anterior'});
   if(space.emergencyExit)links.push({to:'outside',title:'Volver al exterior'});
   const summary=travel.querySelector('summary');
   if(summary)summary.textContent=links.length?'Mapa y regreso':'Mapa';

@@ -254,12 +254,29 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     for(const [res,session] of collectionStreams)
       if(session.actor.id===actor.id&&!inScope(actor,collection.room))res.end();
   }
+  async function checkTopicVisit(actor,visit){
+    if(visit.checking)return visit.checking;
+    if(Date.now()-visit.checkedAt<20000)return;
+    visit.checking=(async()=>{
+      try{
+        const selection=await native.topicRoom(actor,visit.topic);
+        if(selection?.schema!=='holodeck.topic-room/v1'||selection.room!==visit.topic||selection.actorRef!==actor.ref)
+          throw Error('Topic access changed');
+        visit.checkedAt=Date.now();
+        spaces.renewTopic(actor,visit);
+      }catch{spaces.abandonTopic(actor,visit);}
+    })();
+    try{await visit.checking;}finally{visit.checking=null;}
+  }
+
   async function checkSocket(socket,record){
     if(record.checking)return record.checking;
     record.checking=(async()=>{
       try{
         const actor=await currentActor({method:'GET',headers:{cookie:record.session.sourceCookie}},record.session);
         if(actor?.rights?.includes('observe'))spaces.releaseDeniedPosition(actor);
+        const visit=spaces.topicVisit(actor);
+        if(visit?.room.id===record.scope)await checkTopicVisit(actor,visit);
         if(!inScope(actor,record.scope)||record.projectionAllowed?.()===false)socket.close(1008);
       }catch{socket.close(1008);}
     })();
@@ -279,7 +296,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(path===activeNetworkPath&&actor?.rights?.includes('observe'))spaces.releaseDeniedPosition(actor);
       const scope=path===activeNetworkPath?spaces.current(actor):req.params.space??OUTSIDE;
       if(!inScope(actor,scope)||socket.readyState!==1){socket.close(1008);return;}
-      const record={session,scope,checking:null};sockets.set(socket,record);
+      const record={session,scope,checking:null,topic:spaces.topicVisit(actor)?.room.id===scope};sockets.set(socket,record);
       // Upstream transports broadcast synchronously. Enforce the current room
       // before any client payload enters or leaves those transports.
       const stillAllowed=()=>sessionFor(cookieToken(req))===session&&Date.now()-session.created<SESSION_MS&&inScope(session.actor,scope)&&record.projectionAllowed?.()!==false;
@@ -292,7 +309,16 @@ export async function createHolodeck({basePath='/',production=false,identityReso
         if(event!=='message'||stillAllowed())return emit(event,...args);
         socket.close(1008);return false;
       };
-      socket.once('close',()=>{sockets.delete(socket);if(!sockets.size&&authorizationTimer){clearInterval(authorizationTimer);authorizationTimer=null;}});
+      socket.once('close',()=>{
+        sockets.delete(socket);
+        if(record.topic)setImmediate(()=>{
+          const cell=cellTransports.get(scope);
+          if(cell&&![...sockets.values()].some(record=>record.scope===scope)){
+            cellTransports.delete(scope);
+            cell.network.dispose();
+          }
+        });
+        if(!sockets.size&&authorizationTimer){clearInterval(authorizationTimer);authorizationTimer=null;}});
       if(!authorizationTimer){authorizationTimer=setInterval(()=>{
         for(const [current,state]of sockets)checkSocket(current,state);
       },2000);authorizationTimer.unref();}
@@ -310,12 +336,13 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     return interiorDocument(room,passages,exhibit,art&&{...art,src,gallerySigns},passageAsset);
   }
   function interiorScopeKey(actor,selected){
+    if(!selected)return null;
     return JSON.stringify([spaces.passages(actor,selected).map(link=>link.slot),
       !selected.entry&&!spaces.canReachEntrance(actor,selected.id),exhibits.forRoom(selected.id)?.revision??0,
       designs.forRoom(selected.id)?.revision??0,gardenEditors.grant(actor,selected.id)?.revision??0]);
   }
   function visitScene(actor,id,cachedRevision){
-    const selected=spaces.rooms.get(id);
+    const selected=spaces.room(id);
     if(!selected)return null;
     const markup=renderInterior(selected,spaces.passages(actor,selected),exhibits.forRoom(id));
     const revision=createHash('sha256').update(actor.id+'\n'+markup).digest('hex');
@@ -324,7 +351,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   function liveSpace(actor,cachedRevision){
     const space=describeSpace(actor,true);
     return {...space,live:1,actorRef:actor.id,
-      sharedConversation:!!(native?.contexts&&native?.conversationSurface),scene:visitScene(actor,space.id,cachedRevision)};
+      sharedConversation:!space.topic&&!!(native?.contexts&&native?.conversationSurface),scene:visitScene(actor,space.id,cachedRevision)};
   }
   function roomParticipants(id){
     const seen=new Map();
@@ -336,7 +363,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   function describeSpace(actor,includeSky=false){
     if(spaces.fenced)throw new RoomError('space-uncertain','Room placement needs recovery');
     const view=spaces.view(actor),exhibit=exhibits.scoped(actor,view.id),
-      art=artForRoom(spaces.rooms.get(view.id),view.exits ?? []);
+      art=artForRoom(spaces.room(view.id),view.exits ?? []);
     const activity=indoorGardens.view(actor,view.id);
     const outdoorSky=includeSky?(view.id===OUTSIDE?atelier?.outdoorSky:art?.outdoorSky):null;
     const space={...view,...(view.id===OUTSIDE?{}:{objects:roomObjects(view)}),
@@ -353,7 +380,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     return {...space,participants:roomParticipants(space.id)};
   }
   function roomObjects(view){
-    const art=artForRoom(spaces.rooms.get(view.id),view.exits ?? []);
+    const art=artForRoom(spaces.room(view.id),view.exits ?? []);
     const objects=art?.replacesShell||art?.hideMarker?[]:view.objects;
     const stations=[art?.station,...(art?.controls??[])].filter(Boolean);
     const fixtures=(art?.fixtures??[]).map(fixture=>({...fixture,revision:art.designRevision??fixture.revision}));
@@ -361,7 +388,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       position:station.position,revision:station.revision}))];
   }
   function conversationPlace(actor,id){
-    const selected=spaces.rooms.get(id);
+    const selected=spaces.room(id);
     if(!actor.rights?.includes('observe')||!selected||spaces.fenced||room.commitUncertain||!spaces.allows(actor,id))return null;
     const view=spaces.view(actor,id);
     const exhibit=exhibits.scoped(actor,id),activity=indoorGardens.observe(actor,id);
@@ -563,7 +590,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       onClientUserIdentityUpdate(){return false;}
     },worldConfig:{mmlDocuments:{interior:{url:'ws://'+address+'world'}},enableChat:false,enableTweakPane:false,
       environmentConfiguration:{groundPlane:false,sun:{intensity:.9},fog:{fogFar:0},
-        ambientLight:{intensity:artForRoom(spaces.rooms.get(id))?.ambient ?? 1.5}},
+        ambientLight:{intensity:artForRoom(spaces.room(id))?.ambient ?? 1.5}},
       avatarConfiguration:{allowCustomAvatars:false},allowCustomDisplayName:false,allowOrbitalCamera:true,
       spawnConfiguration:{spawnPosition:{x:0,y:1,z:4},spawnYRotation:180},hud:{respawnButton:false}}});
     const cell={connections,network:scopedNetwork};
@@ -603,8 +630,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       network.userNetworkingServer.connectClient(ws);
       return;
     }
-    const scopeKey=interiorScopeKey(record.session.actor,spaces.rooms.get(record.scope));
-    record.projectionAllowed=()=>interiorScopeKey(record.session.actor,spaces.rooms.get(record.scope))===scopeKey;
+    const scopeKey=interiorScopeKey(record.session.actor,spaces.room(record.scope));
+    record.projectionAllowed=()=>interiorScopeKey(record.session.actor,spaces.room(record.scope))===scopeKey;
     cellFor(record.scope).network.userNetworkingServer.connectClient(ws);
   });
   app.ws(route('world'),(ws,req)=>{
@@ -621,13 +648,13 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       cellFor(id).network.userNetworkingServer.connectClient(ws);
       return;
     }
-    const selectedRoom=spaces.rooms.get(id);
-    const passages=()=>spaces.passages(record.session.actor,spaces.rooms.get(id));
+    const selectedRoom=spaces.room(id);
+    const passages=()=>spaces.passages(record.session.actor,spaces.room(id));
     const initial=passages();
     const currentExhibit=()=>exhibits.scoped(record.session.actor,id);
     const initialExhibit=currentExhibit();
     const scope=interiorScopeKey(record.session.actor,selectedRoom);
-    record.projectionAllowed=()=>interiorScopeKey(record.session.actor,spaces.rooms.get(id))===scope;
+    record.projectionAllowed=()=>interiorScopeKey(record.session.actor,spaces.room(id))===scope;
     // A connection owns exactly one filtered document. Closing it releases
     // all DOM work while the room's shared avatar stream stays independent.
     const scopedDocument=new WorldDocument('http://localhost'+route('spaces/'+id+'/world'));
@@ -690,7 +717,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   });
   app.get(route('api/space/art/:revision'),(req,res)=>{
     const id=spaces.current(req.actor);
-    const selected=spaces.rooms.get(id);
+    const selected=spaces.room(id);
     if(!selected||!inScope(req.actor,id))return res.sendStatus(404);
     const passages=spaces.passages(req.actor,selected);
     const main=artForRoom(selected,passages);
@@ -744,7 +771,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   async function canRestoreCollection(actor){
     if(!actor.rights?.includes('edit')||!archiveStore||archiveUnavailable)
       return false;
-    const owner=houses.directory().find(house=>house.id===spaces.rooms.get(collection.room)?.house)?.owner;
+    const owner=houses.directory().find(house=>house.id===spaces.room(collection.room)?.house)?.owner;
     if(!owner)return false;
     if(actor.kind==='daimon')return owner===actor.id;
     if(actor.kind!=='human'||!native?.conversationSurface)return false;
@@ -759,7 +786,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const actor=await currentActor(req,session);
     if(!inScope(actor,collection.room))return res.sendStatus(404);
     if(projection===null)return res.status(503).json({message:'La colección no está disponible en este momento.'});
-    const art=artForRoom(spaces.rooms.get(collection.room));
+    const art=artForRoom(spaces.room(collection.room));
     const projects=projection.projects.map(project=>({...project,editions:project.editions.map(withRepresentative),
       ...(art?.shelves?{anchor:art.shelves[project.shelf]}:{})}));
     const current=new Set(projects.flatMap(project=>project.editions.map(edition=>edition.resource+':'+edition.version)));
@@ -939,29 +966,44 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       res.status(error.status).json({code:error.code,message:error.message,...(error.code==='stale-run'?{run:room.run}:{})});}
   });
   app.get(route('api/content-visits'),(req,res)=>res.json({nodes:selectedContentNodes,visits:[...visitsForActor(selectedContentVisits,req.actor),...nodeVisits(room.nodes,req.actor)]}));
-  app.get(route('api/topic-space'),asyncRoute(async(req,res)=>{
-    const {room:topic}=req.query;
-    if(!native?.topicRoom||typeof topic!=='string'||!/^[a-f0-9]{64}$/.test(topic))return res.sendStatus(404);
-    if(room.commitUncertain||spaces.fenced)return res.sendStatus(503);
-    const from=spaces.current(req.actor);
+  async function topicSelection(req,res,topic,from){
+    if(!native?.topicRoom||typeof topic!=='string'||!/^[a-f0-9]{64}$/.test(topic)){
+      res.sendStatus(404);return null;
+    }
+    if(room.commitUncertain||spaces.fenced){res.sendStatus(503);return null;}
     let selection;
     try{selection=await native.topicRoom(req.actor,topic);}
-    catch(error){
-      return res.sendStatus(error?.code==='topic-room-unavailable'||error?.code==='identity'?404:503);
-    }
+    catch(error){res.sendStatus(error?.code==='topic-room-unavailable'||error?.code==='identity'?404:503);return null;}
     const actor=await currentActor(req,req.holodeckSession);
-    if(!actor||!inScope(actor,from))return res.sendStatus(404);
+    if(!actor||!inScope(actor,from)){res.sendStatus(404);return null;}
     if(selection?.schema!=='holodeck.topic-room/v1'||selection.actorRef!==actor.ref||
       selection.room!==topic||typeof selection.general!=='boolean'||typeof selection.title!=='string'||
-      !selection.title.trim()||Array.from(selection.title).length>80||/[\u0000-\u001f\u007f]/.test(selection.title))
-      return res.sendStatus(503);
-    const id='topic-'+topic.slice(0,40);
-    const title=selection.general?'Nuestra conversación general':selection.title;
-    // The existing interior renderer supplies an empty room before any house,
-    // project furniture or world writes exist. Viewer state belongs to the visit.
+      !selection.title.trim()||Array.from(selection.title).length>80||/[\u0000-\u001f\u007f]/.test(selection.title)){
+      res.sendStatus(503);return null;
+    }
+    return {actor,id:'topic-'+topic.slice(0,40),topic,title:selection.general?'Nuestra conversación general':selection.title};
+  }
+
+  app.get(route('api/topic-space'),asyncRoute(async(req,res)=>{
+    const from=spaces.current(req.actor);
+    const selected=await topicSelection(req,res,req.query.room,from);
+    if(!selected)return;
+    const {actor,id,title,topic}=selected;
     const markup=interiorDocument({id,title,entry:true,level:0});
-    const revision=createHash('sha256').update(topic+'\n'+actor.id+'\n'+markup).digest('hex');
+    const revision=createHash('sha256').update(actor.id+'\n'+markup).digest('hex');
     res.json({schema:'holodeck.topic-space/v1',topic,title,from,scene:{id,actor:actor.id,revision,markup}});
+  }));
+  app.post(route('api/topic-space'),asyncRoute(async(req,res)=>{
+    const input=req.body;
+    if(!input||Object.keys(input).sort().join(',')!=='from,topic'||input.from!==spaces.current(req.actor))
+      return res.sendStatus(409);
+    const selected=await topicSelection(req,res,input.topic,input.from);
+    if(!selected)return;
+    const {actor}=selected;
+    if(!spaces.enterTopic(actor,input.from,selected))return res.sendStatus(409);
+    spaces.topicVisit(actor).checkedAt=Date.now();
+    closeOutOfScope(actor);
+    res.json(liveSpace(actor));
   }));
   app.get(route('api/conversation-surface'),asyncRoute(async(req,res)=>{
     if(!native?.contexts||!native?.conversationSurface)return res.status(503).json({message:'La conversación compartida todavía no está disponible en este mundo.'});
@@ -1039,7 +1081,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const known=error instanceof RoomError;
     res.status(known?409:error.type==='entity.too.large'?413:503).json({message:known?'El mundo cambió o esa acción no está disponible. Revisá el lugar antes de intentarlo de nuevo.':'No pude completar esa acción. Conservé los cambios que ya estaban confirmados.'});
   });
-  return {app,room,native,spaces,close(){for(const res of collectionStreams.keys())res.end();if(authorizationTimer)clearInterval(authorizationTimer);for(const socket of sockets.keys())socket.close(1001);for(const port of installedWorldPorts)port.close();network.dispose();document.dispose();arrivalDocument?.dispose();for(const cell of cellTransports.values()){cell.network.dispose();}}};
+  return {app,room,native,spaces,close(){for(const res of collectionStreams.keys())res.end();if(authorizationTimer)clearInterval(authorizationTimer);for(const socket of sockets.keys())socket.close(1001);for(const port of installedWorldPorts)port.close();network.dispose();document.dispose();arrivalDocument?.dispose();for(const cell of cellTransports.values()){cell.network.dispose();}cellTransports.clear();}};
 }
 
 export function validateWorldPorts({worldSocket=null,worldSocketBeingRef=null,worldPorts=[],nativeRoutes=null}={}){

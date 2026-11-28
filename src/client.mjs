@@ -298,6 +298,7 @@ function onNear(destination){
 function applySpace(next,anchor){
   if(next.actorRef!==activeSpace.actorRef){sceneCache.clear();location.reload();return;}
   const changed=next.id!==activeSpace.id;
+  const leavingTopic=!!activeSpace.topic&&changed;
   const leavingOutside=activeSpace.id==='outside'&&next.id!=='outside';
   activeSpace=next;inside=next.id!=='outside';arrival=anchor;
   if(leavingOutside)client.getRenderer()?.setMMLConfiguration({},window.SESSION_TOKEN);
@@ -310,9 +311,9 @@ function applySpace(next,anchor){
   $('#people').textContent=inside?(next.level===0?'Planta baja':next.level<0?`Subsuelo ${-next.level}`:`Piso ${next.level}`):'Un lugar para crear juntos';
   if(changed){roomTopic=undefined;worktableTopic=undefined;contentVisitor.changeRoom(inside,next.id);worldIndication.selected=null;worldIndication.removeOutline();state=null;}
   else if(inside)contentVisitor.confirmRoom();
-  if(anchor){
+  if(anchor||leavingTopic){
     const destination=new URL(location.href);
-    destination.hash=doorLocation(anchor);
+    destination.hash=anchor?doorLocation(anchor):'';
     history.replaceState(history.state,'',destination);
   }
   resetDoor();
@@ -740,7 +741,7 @@ function updateNativeAvailability(){
   const available=state?.native?.available===true;
   const shared=sharedSurface();
   syncRoomTopic();
-  $('#topics-open').hidden=!shared;
+  $('#topics-open').hidden=!shared&&!activeSpace?.topic;
   $('#talk').disabled=inside&&!shared;
   $('#conversation-panel').classList.toggle('shared-conversation',shared);
   $('#conversation-form').hidden=shared;$('#conversation-log').hidden=shared;
@@ -1012,7 +1013,35 @@ function conversationHost(){
     onStatus:({phase,busy})=>{$('#companion-status').textContent=phases[phase]||(busy?'La conversación está procesando tu intervención.':'Tu intervención quedó en la conversación.');},onError:say});
   return sharedConversation;
 }
-mountTopicExplorer(document,query=>conversationHost().readTopicRooms(query));
+mountTopicExplorer(document,query=>conversationHost().readTopicRooms(query),async topic=>{
+  if(!hot||moving||requestingMove||signalEditor?.active||
+     contentVisitor.frame&&!contentVisitor.parked||!inside&&(nativeTurn||pending||preview||$('#message').value.trim()))
+    throw Error('Retomá el trabajo abierto antes de cambiar de lugar.');
+  const from=activeSpace;
+  requestingMove=true;setMoving(true);
+  prefetchRequest?.abort();prefetchRequest=null;
+  try{
+    let next;
+    try{
+      next=await api('topic-space',{from:from.id,topic});
+    }catch(error){
+      if(error.httpStatus&&error.httpStatus<500)
+        throw Error('Esta sala ya no está disponible.');
+      // A lost move receipt is recovered from location, never by resending.
+      next=await readSpace();
+    }
+    if(next?.actorRef!==from.actorRef||next.topic!==topic)
+      throw Error('No pude confirmar la entrada a la sala.');
+    requestingMove=false;needsSync=false;
+    applySpace(next,arrivalDoor(from,next));
+    moveDeadline=setTimeout(()=>location.reload(),8000);
+  }catch(error){
+    requestingMove=false;
+    setMoving(false);
+    if(needsSync){setMoving(true);syncCurrent();}
+    throw error;
+  }
+});
 function openConversation(open){
   const panel=$('#conversation-panel');panel.hidden=!open;$('#talk').setAttribute('aria-expanded',String(open));
   if(open)updateNativeAvailability();

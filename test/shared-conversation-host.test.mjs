@@ -67,6 +67,11 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  const {createHolodeck}=await import('../src/server.mjs');
  const actorRef='human:room-visitor',origin='https://conversation.test',binding='a'.repeat(64);
  const nativeFactory=async()=>({availability:async()=>({available:true}),contexts:{},
+   async topicRoom(actor,topic){
+    assert.equal(actor.ref,actorRef);
+    if(!visible||topic!==room.room)throw Object.assign(Error('Unavailable'),{code:'topic-room-unavailable'});
+    return {schema:'holodeck.topic-room/v1',actorRef,room:topic,title:room.title,general:false};
+   },
    conversationSurface:async()=>({schema:'holodeck.conversation-surface/v1',actorRef,binding,
     beingRef:'dm:being:v1:'+'b'.repeat(43),homeRef:'home:'+'c'.repeat(32),url:origin+'/interaction/'})});
  const runtime=await createHolodeck({conversationOrigins:[origin],nativeFactory,
@@ -79,10 +84,10 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  const page=await browser.newPage({viewport:{width:390,height:700},isMobile:true,hasTouch:true});
  const readbacks=[],errors=[],name='Proyecto de las islas';
  const room={room:'7'.repeat(64),title:name,general:false,direct_available:true};
- let visible=true,posted=0;
+ let visible=true;const posted=[];
  const protocol=await readFile(childSource,'utf8');
  page.on('pageerror',error=>errors.push(error.message));
- page.on('request',request=>{if(request.method()==='POST')posted++;});
+ page.on('request',request=>{if(request.method()==='POST')posted.push(new URL(request.url()).pathname);});
  await page.route(url=>url.origin===origin,async route=>{
   const address=new URL(route.request().url());
   if(address.pathname==='/interaction/'){
@@ -106,13 +111,27 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  const dialog=page.getByRole('dialog',{name:'Explorar topics'});
  await dialog.getByRole('button',{name}).tap();
  await dialog.getByRole('heading',{name}).waitFor();
- await dialog.getByRole('button',{name:'Volver a los topics'}).tap();
+ await dialog.getByRole('button',{name:'Entrar a la sala'}).tap();
+ await dialog.waitFor({state:'hidden'});
+ await page.waitForFunction(()=>document.body.classList.contains('inside-house')&&
+   !document.body.classList.contains('room-transition')&&document.querySelector('m-group[id^="topic-"]'));
+ const entered=await page.evaluate(()=>fetch('api/space?live=1').then(response=>response.json()));
+ assert.equal(entered.topic,room.room);
+ assert.equal(entered.returnTo,'outside');
+ assert.equal(entered.title,name);
+ assert.equal(runtime.spaces.current({id:actorRef}),entered.id);
+ await page.locator('#space-travel summary').tap();
+ await page.locator('#space-travel').getByRole('button',{name:'Volver al lugar anterior',exact:true}).tap();
+ await page.waitForFunction(()=>!document.body.classList.contains('inside-house')&&
+   !document.body.classList.contains('room-transition'));
+ assert.equal(runtime.spaces.current({id:actorRef}),'outside');
+ await page.getByRole('button',{name:'Topics',exact:true}).tap();
  await dialog.getByRole('button',{name}).waitFor();
  visible=false;
  await dialog.getByRole('button',{name}).tap();
  await dialog.getByText('Ese topic ya no está disponible.').waitFor();
  assert.deepEqual(readbacks,[null,room.room,null,room.room]);
- assert.equal(posted,0);
+ assert.deepEqual(posted,['/api/topic-space','/api/space']);
  assert.deepEqual(errors,[]);
 });
 

@@ -305,7 +305,10 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
   <p id="topic-explorer-status" role="status"></p>
   <ul id="topic-explorer-list"></ul>
   <nav aria-label="Páginas de topics"><button id="topics-back" type="button" hidden>Anterior</button><button id="topics-next" type="button" hidden>Siguiente</button></nav>
-  <section id="topic-room-details" hidden><h3></h3><p></p><button type="button">Volver a los topics</button></section>
+  <section id="topic-room-details" hidden><h3></h3><p></p><div class="row">
+    <button id="topic-room-enter" type="button" class="primary" hidden>Entrar a la sala</button>
+    <button id="topic-room-back" type="button">Volver a los topics</button>
+  </div></section>
 </dialog>
 <dialog id="questbook-dialog" aria-labelledby="questbook-title">
   <header><h2 id="questbook-title">Diario de misiones</h2><form method="dialog"><button type="submit" autofocus>Volver al mundo</button></form></header>

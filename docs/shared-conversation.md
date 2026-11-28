@@ -157,8 +157,9 @@ ordinary Holodeck entrance, including without a house. The existing
 authenticated Conversation frame reads the Gateway Session Workspace
 projection and returns bounded room summaries to the exact bound host.
 Holodeck reads the selected room again before showing its current entry.
-Discovery and selection use only reads. They do not change the recipient,
-submit a message or start a model turn.
+Discovery and selection use only reads. **Entrar a la sala** performs an
+explicit navigation through the existing MML rendering and presence flow.
+These actions neither route input nor start a model turn.
 
 Build the client before running `test/shared-conversation-host.test.mjs`.
 Set `HOLODECK_PLAYWRIGHT` to the installed Playwright Core module and
@@ -172,8 +173,14 @@ through the paired native bridge and returns one room using the
 existing MML interior renderer. The bridge reuses the current owned Gateway
 topic reader with the explicit shared Home workspace grant. The HTTP host
 rechecks the visitor and current place after the returning read. The room
-definition needs no house. Mounted navigation and capturing topic context
-for general Conversation remain subsequent receiving work.
+definition needs no house. The same route accepts an explicit entrance
+with the current place and exact topic reference. The live visit keeps the
+preceding physical place as its exit destination while that place remains
+authorized. Generated room visits are bounded in memory and reuse the
+existing socket authorization check. The browser recovers a lost move
+response by reading current location. The browser fixture enters and leaves
+an actual generated MML room. Capturing the topic for general Conversation,
+project surfaces, and live participant verification remain open.
 
 A shared Conversation iframe can stay mounted while a human closes its
 panel and moves between allowed rooms. New indoor sources freeze the

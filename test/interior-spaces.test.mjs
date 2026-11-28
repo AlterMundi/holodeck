@@ -60,6 +60,32 @@ test('room links, scoped discovery, durable moves and uncertain saves',()=>{
   assert.equal(disconnected.move(guest,{from:'gallery',to:'outside'}).id,'outside');
 });
 
+test('generated topic visits return to the physical room and never write its checkpoint',()=>{
+  const houses={directory:()=>[house]};
+  let clock=100,allowed=true,saves=0;
+  const spaces=new InteriorSpaces({houses,definitions,clock:()=>clock,
+    guestAccess:()=>allowed,persist:()=>saves++});
+  const topic={id:'topic-'+'a'.repeat(40),topic:'a'.repeat(64),title:'Project'};
+  const other={...guest,id:'human:other'};
+  assert.equal(spaces.move(guest,{from:'outside',to:'foyer'}).id,'foyer');
+  assert.equal(spaces.enterTopic(guest,'outside',topic),null);
+  assert.equal(spaces.enterTopic(guest,'foyer',topic).id,topic.id);
+  assert.equal(spaces.allows(other,topic.id),false);
+  assert.equal(spaces.view(guest).returnTo,'foyer');
+  assert.equal(spaces.move(guest,{from:topic.id,to:'gallery'}),null);
+  assert.equal(spaces.move(guest,{from:topic.id,to:'foyer'}).id,'foyer');
+  assert.equal(saves,1);
+  spaces.enterTopic(guest,'foyer',topic);
+  clock+=59000;
+  assert.equal(spaces.renewTopic(guest,spaces.topicVisit(guest)),true);
+  clock+=3000;
+  assert.equal(spaces.current(guest),topic.id);
+  allowed=false;
+  assert.equal(spaces.view(guest).returnTo,'outside');
+  assert.equal(spaces.move(guest,{from:topic.id,to:'outside'}).id,'outside');
+  assert.equal(saves,1);
+});
+
 test('HTTP, real geometry upgrades and native observation share active room and current grants',async()=>{
   const stateDir=mkdtempSync(join(tmpdir(),'holodeck-spaces-')),socketPath=join(stateDir,'native.sock'),foreignSocket=join(stateDir,'foreign.sock');
   const foreignBeing='dm:being:v1:'+'z'.repeat(43);
