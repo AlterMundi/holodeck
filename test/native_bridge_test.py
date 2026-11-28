@@ -223,6 +223,19 @@ class BridgeContracts(unittest.TestCase):
             'schema':'daimon.topic-rooms/v1','rooms':[{'room':room,'title':'Ideas','general':False,'projects':projects}]})
         self.assertEqual(self.bridge.dispatch({**request,'projects':True})['projects'],projects)
         self.assertEqual(calls[-1],(room,True))
+        repo=str(uuid.uuid4())
+        selection={'project':str(uuid.uuid4()),'repository':repo,
+                   'evidence':[{'repository':repo,'commit':'a'*40}]}
+        self.provider.topic_rooms=lambda selected, *, include_projects, project_selection: (
+            calls.append((selected,include_projects,project_selection)) or {
+            'schema':'daimon.topic-rooms/v1','rooms':[{'room':room,'title':'Ideas','general':False,'projects':projects}]})
+        self.assertEqual(self.bridge.dispatch({**request,'projects':True,'selection':selection})['projects'],projects)
+        self.assertEqual(calls[-1],(room,True,selection))
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,'projects':True,'selection':{
+                **selection,'evidence':[{'repository':repo,'commit':'a'*7}]}})
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,'projects':True,'selection':selection,'cursor':'12.4'})
         with self.assertRaises(module.BridgeError):
             self.bridge.dispatch({**request,'projects':True,'selection':{'project':str(uuid.uuid4())}})
         with self.assertRaises(module.BridgeError):

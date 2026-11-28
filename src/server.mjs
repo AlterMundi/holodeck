@@ -1092,7 +1092,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       res.set('Cache-Control','no-store');
       const input=req.method==='GET'?req.query:req.body||{};
       let actor=req.actor;
-      let projectRevisions=[];
+      let projectRevisions=[], readHistory;
       const {room:topic, project, repository}=input;
       const visit=spaces.topicVisit(req.actor);
       if(visit||topic!==undefined||project!==undefined||repository!==undefined){
@@ -1107,15 +1107,28 @@ export async function createHolodeck({basePath='/',production=false,identityReso
         if(selected.projects?.project!==project)
           return res.status(403).json({ok:false,code:'access'});
         if(method==='view'){
+          const toRevisions=rows=>rows.map(({repository,commit,label})=>({revision:{repository,commit},label}));
           if(!validProjectRepositories(selected.projects.repositories,project))
             return res.sendStatus(503);
-          projectRevisions=selected.projects.repositories.map(({repository,commit,label})=>({
-            revision:{repository,commit},label,
-          }));
+          projectRevisions=toRevisions(selected.projects.repositories);
+          readHistory=async evidence=>{
+            const verified=await topicSelection(req,res,topic,visit.room.id,true,undefined,{project,repository,evidence});
+            if(!verified)return null;
+            const rows=verified.projects?.evidence??[];
+            if(verified.projects?.project!==project||!validProjectRepositories(rows,project)||
+               !rows.every(row=>evidence.some(item=>item.repository===row.repository&&item.commit===row.commit))||
+               !validProjectRepositories(verified.projects.repositories,project)){
+              res.sendStatus(503);
+              return null;
+            }
+            return {actor:verified.actor,revisions:toRevisions([...verified.projects.repositories,...rows.filter(row=>!verified.projects.repositories.some(
+              current=>current.repository===row.repository&&current.commit===row.commit))])};
+          };
         }
         actor=selected.actor;
       }
-      const result = await questbookHost[method](actor,input,req,projectRevisions);
+      const result = await questbookHost[method](actor,input,req,projectRevisions,readHistory);
+      if(res.headersSent)return;
       const status = result.ok ? 200 : ({access:403, invalid:400, missing:404, unresolved:409}[result.code]||503);
       res.status(status).json(result);
     });

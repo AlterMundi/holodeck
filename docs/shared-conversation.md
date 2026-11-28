@@ -453,3 +453,13 @@ and revisioned actions revalidate the room and the linked repository before
 using the same DaimonCards writer as the workshop journal. The writer
 continues to enforce the individual card and edit grants. Leaving the
 topic closes its journal. No new card store or model work is required.
+
+The receiving card writer supplies at most eight exact revision candidates
+from the selected mission privately to the owner-side host. For candidates
+missing from the current page, the host asks the already-authorized project
+reader to resolve retained Git evidence and rechecks the room and card
+access before rendering. The browser receives only the revisions matched
+to that mission. An expired citation, another project's repository or an
+unregistered commit cannot be rendered as project evidence. A displayed
+historical commit refers to verification at registration, with current
+visibility checked on opening.

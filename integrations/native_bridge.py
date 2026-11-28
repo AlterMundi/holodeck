@@ -472,11 +472,21 @@ class NativeBridge:
                 ('cursor' in request and (not include_projects or not isinstance(cursor,str) or
                  re.fullmatch(r'[0-9]{1,19}\.[0-9]{1,19}',cursor) is None))):
                 raise BridgeError('topic-room-unavailable','Select an exact topic room and page')
-            if 'selection' in request and (not include_projects or not isinstance(selection,dict)
-                or set(selection)!={'project','repository'} or any(not isinstance(value,str) or
-                re.fullmatch(r'[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}',value) is None
-                for value in selection.values())):
-                raise BridgeError('topic-room-unavailable','Select a linked project and repository')
+            if 'selection' in request:
+                uuid_pattern=r'[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}'
+                if (not include_projects or not isinstance(selection,dict)
+                    or set(selection)-{'evidence'}!={'project','repository'} or any(
+                        not isinstance(selection[key],str) or re.fullmatch(uuid_pattern,selection[key]) is None
+                        for key in ('project','repository'))):
+                    raise BridgeError('topic-room-unavailable','Select a linked project and repository')
+                if 'evidence' in selection:
+                    evidence=selection['evidence']
+                    if (cursor is not None or not isinstance(evidence,list) or not 1<=len(evidence)<=8
+                        or any(not isinstance(row,dict) or set(row)!={'repository','commit'}
+                            or not isinstance(row['repository'],str) or re.fullmatch(uuid_pattern,row['repository']) is None
+                            or not isinstance(row['commit'],str) or re.fullmatch(r'(?:[0-9a-f]{40}|[0-9a-f]{64})',row['commit']) is None
+                            for row in evidence)):
+                        raise BridgeError('topic-room-unavailable','Select bounded exact project evidence')
             return self.topic_room(request['actorRef'],request['room'],include_projects,cursor,selection)
         if request.get('operation')=='questbook-access':
             if (set(request)!={'operation','beingRef','project','write'}

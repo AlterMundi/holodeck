@@ -80,14 +80,30 @@ export function createQuestbook(room, {project, binary, store, authorize}) {
       return execute(caller,write,input);
     },
 
-    async view(actor, {selected = null, after = null}, request, projectRevisions = []) {
+    async view(actor, {selected = null, after = null}, request, projectRevisions = [], readHistory) {
       const caller = await access(actor, false, request);
       if (!caller) return {ok:false, code:'access'};
       if ((selected !== null && !uuid(selected)) || (after !== null && !uuid(after))) return {ok:false, code:'invalid'};
+      const mount = (reader, writer, selected, revisions, includeCandidates = false) =>
+        execute(reader, !!writer, {type:'mount_questbook', selected, after, labels,
+          ...(revisions.length ? {project_revisions:revisions} : {}),
+          ...(includeCandidates ? {include_revision_candidates:true} : {}),
+          journal:'Diario de misiones', missions:'Misiones'});
       const writer = await access(actor, true, request);
-      return execute(caller, !!writer, {type:'mount_questbook', selected, after, labels,
-        ...(projectRevisions.length ? {project_revisions:projectRevisions} : {}),
-        journal:'Diario de misiones', missions:'Misiones'});
+      const initial = await mount(caller, writer, selected, projectRevisions, !!readHistory);
+      const model = initial.result?.[2]?.updateDataModel?.value;
+      if (!model) return initial;
+      const candidates = model.revisionCandidates ?? [];
+      delete model.revisionCandidates;
+      if (!readHistory) return initial;
+      const missing = candidates.filter(row=>!projectRevisions.some(({revision})=>
+        revision.repository===row.repository && revision.commit===row.commit));
+      if (!missing.length) return initial;
+      const verified = await readHistory(missing);
+      if (!verified) return {ok:false,code:'access'};
+      const reader = await access(verified.actor, false, request);
+      if (!reader) return {ok:false,code:'access'};
+      return mount(reader, await access(verified.actor, true, request), model.id, verified.revisions);
     },
 
     async action(actor, {operation, card, event}, request) {

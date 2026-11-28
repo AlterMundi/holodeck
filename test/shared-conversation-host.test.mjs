@@ -107,7 +107,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
     action:{type:'create',title:mission}}}).result.status,'applied');
   questbook={project:projectA,binary,store,authorize:async actor=>({read:actor.id===actorRef,write:actor.id===actorRef})};
  }
- let repositories=[],projectRevision=1;
+ let repositories=[],historical=[],projectRevision=1;
  const nativeFactory=async()=>({availability:async()=>({available:true}),contexts:{},
    async topicRoom(actor,topic,includeProjects,cursor,selection){
     assert.equal(actor.ref,actorRef);
@@ -120,7 +120,9 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
     return {schema:'holodeck.topic-room/v1',actorRef,room:topic,title:room.title,general:false,
       ...(includeProjects?{projects:{repositories:older?scoped.slice(8):scoped.slice(0,8),
         next:!older&&scoped.length>8?projectRevision+'.3':null,restarted,
-        ...(selection?{project:selection.project}:{})}}:{})};
+        ...(selection?{project:selection.project}:{}),
+        ...(selection?.evidence?{evidence:historical.filter(row=>row.project===selection.project&&
+          selection.evidence.some(ref=>ref.repository===row.repository&&ref.commit===row.commit))}:{})}}:{})};
    },
    conversationSurface:async()=>({schema:'holodeck.conversation-surface/v1',actorRef,binding,
     beingRef:COMPAII_BEING,homeRef:'home:'+'c'.repeat(32),url:origin+'/interaction/'})});
@@ -273,12 +275,18 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
   const mount=()=>page.evaluate(async scope=>
     fetch('api/questbook?'+new URLSearchParams(scope)).then(response=>response.json()),selectors);
   assert.equal((await mount()).result[2].updateDataModel.value.revisions,'Cuento · '+storyCommit);
+  historical=[{...repositories[0]}];
+  repositories[0].commit=laterCommit;
   await journal.getByRole('button',{name:'Volver al mundo',exact:true}).tap();
   await openTable();
   await table.getByRole('button',{name:'Abrir proyecto de Cuento',exact:true}).tap();
   await detail.getByRole('button',{name:'Abrir diario de misiones'}).tap();
   await journal.getByText('Cuento · '+storyCommit,{exact:true}).waitFor({state:'attached'});
-  repositories[0].commit=laterCommit;
+  const previous=(await mount()).result[2].updateDataModel.value;
+  assert.equal(previous.revisions,'Cuento · '+storyCommit);
+  assert.equal('revisionCandidates' in previous,false);
+  assert.equal(JSON.stringify(previous).includes('/must-not-leak'),false);
+  historical=[];
   assert.equal((await mount()).result[2].updateDataModel.value.hasRevisions,false);
   assert.equal(cardTool({type:'read',card}).result.evidence.length,2);
   repositories[0].commit=storyCommit;
