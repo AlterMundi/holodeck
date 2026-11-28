@@ -15,10 +15,10 @@ The personal teleport mount projects both avatars on the board while
 preserving their ordinary world presence for other clients.
 
 Chromium exercised Shift + wheel and Escape on the exact package in
-Materia and in the spatial teleporter. The teleport render placed both
-avatars at tabletop scale and restored their transforms on exit. The full
-suite passed 546 tests, with two skips. The protected readback matched
-94 installed files and the published client bundle.
+Materia, Character Studio and the spatial teleporter. The teleport render
+placed both avatars at tabletop scale and restored their transforms on exit.
+The full suite passed 546 tests, with two skips. The protected readback
+matched 94 installed files and the published client bundle.
 
 ## November 28 — Char Design teleport station
 
