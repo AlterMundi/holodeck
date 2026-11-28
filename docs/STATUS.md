@@ -1,5 +1,19 @@
 # Current MVP work
 
+## Casa Linterna ground cover follows the paving · 2026-11-28
+
+Protected release `e8448d2404f9` selects `407aa50` with `a70fb2502b50`
+available for rollback. The same footprint now governs the grass carpet,
+scenery tufts, trail flowers, scattered rocks and woodland understory.
+The portico plinths and raised beds use their measured GLB bounds, leaving
+the gaps planted.
+
+At the reported viewpoint, the prior package had 115 procedural roots on
+the tiled approach across four scenery layers. The packaged Chromium
+fixture observed zero in both graphics profiles after correction, with
+vegetation in the surrounding gardens and between raised beds. All 99
+installed files matched the release. Node passed 608 tests with four skips.
+
 ## Casa Linterna garden and paving · 2026-11-28
 
 Protected release `a70fb2502b50` selects `c569550` with `ae40359a0f92`
