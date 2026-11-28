@@ -18,18 +18,23 @@ resources when the corresponding control leaves the surface.
 
 ## Camera-mounted and immersive presentation
 
-The teleport instrument now has two local mounts. Q opens the immersive
-workstation by default. Its perspective camera orbits independently when
-the visitor drags the space around the instrument or presses A/D. Wheel or
-W/S changes the viewing distance. The visible Acercar and Alejar controls also work with touch. The persistent A2UI view controls can
-return to the front, switch to the camera-mounted HUD or exit. Esc closes
-either view. The browser remembers the chosen mount.
+The teleport instrument has two local mounts. Q defaults to the situated
+workstation. The client invokes its model in the current location, using
+the local up direction and a nearby clear placement in front of the player.
+The same renderer draws the scenery and the model with a bounded inspection
+camera. WASD translates that camera, drag moves it around the object and
+wheel approaches or backs away. The camera respects known world colliders.
+The underlying avatar remains under normal physics and receives no
+inspection movement. Esc releases inspection input and restores normal
+camera control.
 
-Both mounts reparent the same live A2UI surface and widget models. Selection,
-favorites and permissions are independent of the camera. The input layer
-routes hits to the respective view without moving the world avatar. The
-immersive environment is private to the visitor and creates no world object,
-room membership or presence.
+The model and miniature hit regions live in the 3D location. Camera-mounted
+A2UI controls are reachable from any angle. Picking is scoped to each
+camera's A2UI surfaces. The same TeleportHud owns selection, favorites and
+permissions through both mounts. No server entity, arrival or room change
+occurs until the visitor confirms an authorized destination. If local
+placement is blocked, the instrument opens in its camera-mounted view.
+The browser remembers the chosen mount when the location supports it.
 
 ## Shared selection with a future map
 

@@ -1,4 +1,4 @@
-import {BoxGeometry, CanvasTexture, CatmullRomCurve3, CylinderGeometry, DoubleSide, EquirectangularReflectionMapping,
+import {BoxGeometry, CanvasTexture, CatmullRomCurve3, CylinderGeometry, DoubleSide, Group, EquirectangularReflectionMapping,
   ExtrudeGeometry, LatheGeometry, Mesh, MeshBasicMaterial, MeshStandardMaterial, Shape, SphereGeometry,
   SRGBColorSpace, TorusGeometry, TubeGeometry, Vector2, Vector3} from 'three';
 
@@ -59,6 +59,9 @@ export function buildInstrument(parent,{brass,edge,patina,enamel,obscured,glass,
     ring.rotation.x=Math.PI/2+.13;ring.scale.y=.55;
   }
 
+  const console=new Group();
+  console.name='Camera-facing console';
+  parent.add(console);
   const fascia=new Shape();
   fascia.moveTo(-1.12,-1.17);fascia.quadraticCurveTo(-1.15,-1.105,-.94,-1.105);
   fascia.quadraticCurveTo(0,-1.17,.96,-1.105);fascia.quadraticCurveTo(1.13,-1.11,1.105,-1.19);
@@ -67,13 +70,13 @@ export function buildInstrument(parent,{brass,edge,patina,enamel,obscured,glass,
   fascia.quadraticCurveTo(.43,-1.52,.32,-1.53);fascia.lineTo(-.32,-1.53);
   fascia.quadraticCurveTo(-.44,-1.52,-.48,-1.45);fascia.quadraticCurveTo(-.58,-1.411,-.8,-1.41);fascia.quadraticCurveTo(-1.025,-1.391,-1.065,-1.32);
   fascia.closePath();
-  mesh(parent,new ExtrudeGeometry(fascia,{depth:.045,bevelEnabled:true,bevelThickness:.018,bevelSize:.021,
+  mesh(console,new ExtrudeGeometry(fascia,{depth:.045,bevelEnabled:true,bevelThickness:.018,bevelSize:.021,
     bevelSegments:3,curveSegments:16}),brass,0,0,.385);
   for(const x of [-1.04,1.025,-.84,.83]){
     const y=Math.abs(x)>.95?-1.155:-1.373;
-    const screw=mesh(parent,new CylinderGeometry(.014,.017,.011,12),edge,x,y,.457);
+    const screw=mesh(console,new CylinderGeometry(.014,.017,.011,12),edge,x,y,.457);
     screw.rotation.x=Math.PI/2;
-    block(parent,patina,.017,.003,.003,x,y,.467).rotation.z=.4+x;
+    block(console,patina,.017,.003,.003,x,y,.467).rotation.z=.4+x;
   }
   for(const x of [-.81,.81]){
     const hinge=mesh(parent,new CylinderGeometry(.064,.066,.084,20),patina,x,-.955,-.13);

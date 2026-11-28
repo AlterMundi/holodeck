@@ -15,16 +15,16 @@ const row=(id,children)=>({id,component:'HudRow',children});
 const components=[
   {id:'root',component:'HudPanel',chrome:'none',label:'Teletransporte',width:teleportHudWidth,gap:.018,
     children:['heading','categories','house','models','space','actions','message']},
-  row('heading',['close']),
+  {...row('heading',['close']),visible:path('cameraMounted')},
   button('close','Cerrar'),
-  row('categories',categories.map(({id})=>id)),
+  {...row('categories',categories.map(({id})=>id)),visible:path('cameraMounted')},
   ...categories.map(({id,label})=>button(id,label,{pressed:path(id+'Active'),disabled:path('loading')})),
   button('house',path('houseLabel'),{visible:path('inHouses'),gestureKey:path('house')}),
   row('models',slotNames),
   ...slotNames.map(id=>button(id,path(id+'Label'),{visible:path(id+'Visible'),pressed:path(id+'Active'),
     gestureKey:path(id+'Key'),action:action(id,{selected:path(id+'Key')})})),
   text('space','',{lines:6}),
-  row('actions',['previous','favorite','go','next']),
+  {...row('actions',['previous','favorite','go','next']),visible:path('cameraMounted')},
   button('previous','Destinos anteriores',{disabled:path('noPrevious')}),
   button('favorite',path('favoriteLabel'),{pressed:path('isFavorite'),disabled:path('noSelection'),gestureKey:path('destination'),
     action:action('favorite',{selected:path('destination')})}),
@@ -45,8 +45,8 @@ export function teleportModelId(id){
 }
 
 export class TeleportHud {
-  constructor({send,read,go,focus,onOpen,onClose,onSelect,storage}){
-    Object.assign(this,{send,read,go,focus,onOpen,onClose,onSelect,storage,epoch:0});
+  constructor({send,read,go,focus,onOpen,onClose,onSelect,onViewData,storage}){
+    Object.assign(this,{send,read,go,focus,onOpen,onClose,onSelect,onViewData,storage,epoch:0});
   }
 
   message(type,content){this.send(type,content,teleportHudId);}
@@ -120,7 +120,7 @@ export class TeleportHud {
       epoch:this.epoch,house:this.house,houseOptions:houses,
       destination:this.destination,
       noPrevious:!this.page,noNext:(this.page+1)*pageSize>=destinations.length,
-      inHouses:this.category==='houses'&&houses.length>1,houseLabel:'Cambiar casa · '+(houses.find(entry=>entry.id===this.house)?.label??''),loading:this.loading,
+      cameraMounted:!this.worldMounted,inHouses:!this.worldMounted&&this.category==='houses'&&houses.length>1,houseLabel:'Cambiar casa · '+(houses.find(entry=>entry.id===this.house)?.label??''),loading:this.loading,
       isFavorite,favoriteLabel:isFavorite?'Quitar favorito':'Guardar favorito',
       noTravel:!current||Boolean(current.current),noSelection:!current,
       hasMessage:Boolean(message),message,
@@ -134,6 +134,7 @@ export class TeleportHud {
       value[id+'Active']=Boolean(slot&&slot.id===this.destination);
     }
     this.message('updateDataModel',{value});
+    this.onViewData?.({...value,caption:this.caption,hasHouseChoice:this.category==='houses'&&houses.length>1});
   }
 
   selectDestination(id){

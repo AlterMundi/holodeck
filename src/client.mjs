@@ -13,7 +13,7 @@ import {bindAvatarPracticals} from './avatar-practicals.mjs';
 import {bindToroidalHouseLight} from './toroidal-house-light.mjs';
 import {bindFoyerFloorFinish} from './foyer-floor-finish.mjs';
 import {ToroidalCave} from './toroidal-cave.mjs';
-import {TOROIDAL_TERRAIN} from './toroidal-terrain.mjs';
+import {TOROIDAL_TERRAIN,terrainCoordinates,terrainFrame} from './toroidal-terrain.mjs';
 import {TOROIDAL_SUN,ToroidalTerrainRenderer,toroidalSunDirection} from './toroidal-terrain-renderer.mjs';
 import {bindFlightSpaceGesture} from './flight-space-gesture.mjs';
 import {bindToroidalMml} from './toroidal-mml.mjs';
@@ -917,8 +917,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         delta,x,y,worldPicker.worktableHit(pointerX,pointerY)),
       pan:(x,y)=>tableFlight.translateInspection(client.getCharacterManager().localController,x,y),
     },()=>outsideRing()&&!flightEnabled&&(radialMovementMode==='swim'||radialMovementMode==='surface')&&
-      !entering&&!moving&&!tableFlight.active&&!document.hidden,
-      ()=>outsideRing()&&flightEnabled&&!entering&&!moving&&!tableFlight.active&&!document.hidden);
+      !entering&&!moving&&!tableFlight.active&&!matterHud?.teleport.group&&!document.hidden,
+      ()=>outsideRing()&&flightEnabled&&!entering&&!moving&&!tableFlight.active&&!matterHud?.teleport.group&&!document.hidden);
     const releaseFraming=bindAvatarFraming(options.coreCameraManager,worldInteractionCanvas,
       ()=>client.getCharacterManager().localController?.config.quaternion,
       ()=>!entering&&!moving&&!tableFlight.inspectParts&&!document.hidden);
@@ -1026,6 +1026,21 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       beaconControls,onBeaconOpen:()=>releaseBeaconInput(client),
       toggleSound:()=>{if(!moving&&!entering&&navigator.userActivation?.isActive)void toggleWorldSound();},
       teleport:{
+        scene:renderer.scene,
+        anchor:()=>{
+          const position=client.getLocalCharacterState()?.position;
+          if(!position)return null;
+          const feet=new Vector3(position.x,position.y,position.z);
+          const up=new Vector3(0,1,0);
+          if(outsideRing()){
+            const {u,v}=terrainCoordinates(feet.toArray());
+            up.fromArray(terrainFrame(u,v).up);
+          }
+          const forward=new Vector3(0,0,-1).applyQuaternion(mainCamera.quaternion).projectOnPlane(up);
+          if(forward.lengthSq()<.03)forward.set(0,0,-1).projectOnPlane(up);
+          if(forward.lengthSq()<.03)forward.set(1,0,0).projectOnPlane(up);
+          return {feet,up,forward:forward.normalize(),colliders:options.coreCameraManager.collisionsManager};
+        },
         read:async()=>{
           const response=await fetch(new URL('api/space/destinations',base),{credentials:'same-origin',
             signal:AbortSignal.timeout(6000)});
@@ -1187,16 +1202,25 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         else matterHud.visit.present({painted:false});
         return;
       }
-      if(floorSplatScope?.projection){
-        const camera=roomModel.getScene().getGraphicsAdapter().getCamera();
-        floorSplatScope.projection.sort(camera,false);
-      }
-      if(backgroundFocus&&outsideRing()&&!rendererBudget.lightweight)backgroundFocus.draw(draw);
-      else{
-        backgroundFocus?.dispose();
-        draw();
-      }
-      if(!moving&&!entering)worldView.present(renderer.composer.renderer.domElement,mainCamera);
+      const drawLocation=()=>{
+        if(floorSplatScope?.projection){
+          const splatCamera=matterHud.teleportMode==='workspace'?mainCamera:
+            roomModel.getScene().getGraphicsAdapter().getCamera();
+          floorSplatScope.projection.sort(splatCamera,false);
+        }
+        if(backgroundFocus&&outsideRing()&&!rendererBudget.lightweight)backgroundFocus.draw(draw);
+        else{
+          backgroundFocus?.dispose();
+          draw();
+        }
+        if(!moving&&!entering)worldView.present(renderer.composer.renderer.domElement,mainCamera);
+      };
+      if(matterHud.teleportMode==='workspace'){
+        const view=matterHud.teleportWorkspace;
+        view.resize(mainCamera.aspect);
+        view.advance(performance.now());
+        view.withCamera(mainCamera,drawLocation);
+      }else drawLocation();
       if(moving)matterHud.drawPassage();
       else matterHud.draw(display.draw());
     };
@@ -1652,7 +1676,8 @@ let soundBusy=false;
 // Development inspection surface only. It reports actual client state.
 window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()||null,audioState:()=>worldAudio.status(),avatarState:()=>nativeAvatarLayer?.status(),tableFlight:()=>({active:!!matterFlight?.active,bounds:matterFlight?.bounds}),companion:()=>companionAvatar?.object??null,companionSpeech:level=>companionAvatar?.setSpeechLevel(level),flight:()=>flightEnabled,hudWindow:id=>matterHud?.windows.geometry.get(id)??null,toolBounds:id=>matterHud?.toolBounds(id)??null,
  teleportBounds:id=>matterHud?.teleportBounds(id),
- teleportView:()=>matterHud?.teleportMode==='workspace'?{mode:'workspace',position:matterHud.teleportWorkspace.camera.position.toArray()}:
+ teleportView:()=>matterHud?.teleportMode==='workspace'?{mode:'workspace',position:matterHud.teleportWorkspace.camera.position.toArray(),
+   inWorld:matterHud.teleportWorkspace.place.parent===matterHud.teleportScene,anchor:matterHud.teleportWorkspace.place.position.toArray()}:
    {mode:matterHud?.teleportMode??null}};
 const $=selector=>document.querySelector(selector);
 notifyFullscreenError=message=>{

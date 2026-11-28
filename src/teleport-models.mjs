@@ -172,7 +172,7 @@ export class TeleportModels {
     this.metals=instrumentMetals(finish,this.reflection);
     this.sharedMaterials=new Set(Object.values(this.metals));
     buildInstrument(this.instrument,this.metals);
-    engrave(this.instrument,document,'TELETRANSPORTE',{width:.57,height:.061,y:.013,z:.124});
+    this.title=engrave(this.instrument,document,'TELETRANSPORTE',{width:.57,height:.061,y:.013,z:.124});
     this.caption=engrave(this.instrument,document,'',{width:.79,height:.060,y:-1.466,z:.50});
     if(this.caption)this.caption.plaque.visible=false;
   }
@@ -231,10 +231,11 @@ export class TeleportModels {
       const ease=1-(1-t)**3,phase=t*Math.PI*1.65;
       const count=this.teleport.slots?.length??0;
       const activeAnchor=slot!==null&&count===2?instrumentSlots[slot+1]:anchor;
-      const signature=[t,count,state.selected,state.focused,state.disabled].join(':');
+      const signature=[t,count,state.selected,state.focused,state.disabled,this.worldMode].join(':');
       if(signature===state.paint)return false;
       state.paint=signature;
       const raise=state.selected&&slot!==null;
+      object.visible=slot!==null||!this.worldMode;
       object.position.set(activeAnchor[0]*ease+.18*(1-ease)*Math.sin(phase),
         activeAnchor[1]-.23*(1-ease)+(raise?.040:0),activeAnchor[2]+(raise?.061:0));
       object.rotation.y=slot===null?0:(slot-1.5)*.25+(1-t)*1.2;
@@ -262,12 +263,19 @@ export class TeleportModels {
     }};
   }
 
+  setWorldMode(active){
+    this.worldMode=active;
+    this.instrument.getObjectByName('Camera-facing console').visible=!active;
+    if(this.title)this.title.plaque.visible=!active;
+    if(this.caption)this.caption.plaque.visible=!active&&Boolean(this.lastCaption);
+  }
+
   animate(){
     let moving=false;
     const caption=this.teleport.caption??'';
     if(this.caption&&caption!==this.lastCaption){
       this.lastCaption=caption;
-      this.caption.plaque.visible=Boolean(caption);
+      this.caption.plaque.visible=!this.worldMode&&Boolean(caption);
       if(caption)this.caption.update(caption);
       moving=true;
     }

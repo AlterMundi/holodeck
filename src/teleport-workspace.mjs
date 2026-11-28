@@ -1,115 +1,174 @@
-import {AmbientLight, BoxGeometry, Color, CylinderGeometry, DirectionalLight, Fog, Group, Mesh,
-  MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, PointLight, Scene, TorusGeometry} from 'three';
+import {Group, Matrix4, PerspectiveCamera, Quaternion, Ray, Vector3} from 'three';
 
-const siteX=32;
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
-const navigation=new Set(['KeyA','KeyD','KeyW','KeyS']);
-
-function part(parent,geometry,material,x,y,z){
-  const mesh=new Mesh(geometry,material);
-  mesh.position.set(x,y,z);parent.add(mesh);
-  return mesh;
-}
+const movement=new Set(['KeyA','KeyD','KeyW','KeyS','Space','AltLeft','AltRight','ShiftLeft','ShiftRight']);
 
 export class TeleportWorkspace {
-  constructor(invalidate){
+  constructor(invalidate,anchor){
     this.invalidate=invalidate;
-    this.camera=new PerspectiveCamera(43,1,.075,24);
-    this.scene=new Scene();
-    this.overlay=new Scene();
-    this.scene.background=new Color(0x111e24);
-    this.scene.fog=new Fog(0x111e24,6.8,16);
+    this.readAnchor=anchor;
+    this.camera=new PerspectiveCamera(48,1,.075,10000);
     this.place=new Group();
-    this.place.position.x=siteX;
-    this.scene.add(this.place,new AmbientLight(0xbbebea,1.15));
-    const key=new DirectionalLight(0xffdda6,2.2);
-    key.position.set(3,6,4);this.scene.add(key);
-    for(const [x,z,color] of [[-3,-2,0x53c9ba],[3,0,0xf4ba75]]){
-      const light=new PointLight(color,15,9);
-      light.position.set(x,3.4,z);
-      this.place.add(light);
-    }
-    const slate=new MeshStandardMaterial({color:0x273337,roughness:.8});
-    const dark=new MeshStandardMaterial({color:0x17262c,roughness:.64,metalness:.2});
-    const copper=new MeshStandardMaterial({color:0x9f693c,roughness:.3,metalness:.58});
-    const teal=new MeshBasicMaterial({color:0x418f80});
-    part(this.place,new CylinderGeometry(7.8,7.8,.18,64),slate,0,-.09,0);
-    part(this.place,new CylinderGeometry(.98,1.23,.68,48),dark,0,.34,0);
-    part(this.place,new CylinderGeometry(1.09,1.01,.12,48),copper,0,.70,0);
-    for(const [r,y,t,mat] of [[1.042,.623,.016,teal],[1.29,.015,.010,copper],[2.62,.013,.018,teal],[4.14,.012,.017,copper]]){
-      part(this.place,new TorusGeometry(r,t,8,72),mat,0,y,0).rotation.x=Math.PI/2;
-    }
-    for(let i=0;i<12;i++){
-      const a=i*Math.PI/6,x=Math.cos(a),z=Math.sin(a);
-      const column=part(this.place,new BoxGeometry(.58,5,.35),dark,x*5.35,2.49,z*5.35);
-      column.rotation.y=-a+Math.PI/2;
-      part(this.place,new CylinderGeometry(.017,.017,3.55,8),i%2?teal:copper,x*5.14,2.49,z*5.14);
-      const plinth=part(this.place,new BoxGeometry(.74,.18,.53),copper,x*5.35,.09,z*5.35);
-      plinth.rotation.y=column.rotation.y;
-    }
-    for(const height of [.13,4.58]){
-      part(this.place,new TorusGeometry(5.40,.055,8,84),copper,0,height,0).rotation.x=Math.PI/2;
-    }
+    this.place.name='Invoked teleport station';
+    this.keys=new Set();
+    this.localEye=new Vector3();
+    this.eye=new Vector3();
+    this.focus=new Vector3();
+    this.from=new Vector3();
+    this.aim=new Vector3();
+    this.ray=new Ray();
+    this.savedPosition=new Vector3();
+    this.savedRotation=new Quaternion();
   }
 
-  enter(group){
+  enter(group,scene){
+    const anchor=this.readAnchor();
+    if(!anchor||!scene)return false;
+    const {feet,up,forward,colliders}=anchor;
+    this.colliders=colliders;
+    const from=feet.clone().addScaledVector(up,.86);
+    const direction=forward.clone();
+    const chosen=[0,.63,-.63,1.21,-1.21,Math.PI].some(angle=>{
+      direction.copy(forward).applyAxisAngle(up,angle);
+      return [2.8,2.15,1.5].some(distance=>{
+        this.ray.set(from,direction);
+        if(colliders?.raycastFirst(this.ray,distance+.25))return false;
+        this.place.position.copy(feet).addScaledVector(direction,distance);
+        this.initialDistance=distance;
+        return true;
+      });
+    });
+    if(!chosen)return false;
+    const right=new Vector3().crossVectors(direction,up).normalize();
+    const z=direction.clone().negate();
+    this.ray.set(this.place.position.clone().addScaledVector(up,.85),up.clone().negate());
+    const floor=colliders?.raycastFirst(this.ray,1.85);
+    if(floor)this.place.position.copy(this.ray.at(floor[0],this.eye));
+    this.place.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(right,up,z));
+    this.camera.up.copy(up);
+    scene.add(this.place);
     this.group=group;
     this.place.add(group);
     group.matrixAutoUpdate=true;
-    group.position.set(0,2.24,0);
+    group.position.set(0,1.65,0);
     group.rotation.set(0,0,0);
-    group.scale.setScalar(1);
-    this.yaw=.12;this.pitch=.13;this.zoom=1;
-    this.resize(this.aspect??1);
-    this.scene.updateMatrixWorld(true);
-    this.invalidate();
+    group.scale.setScalar(.88);
+    this.place.updateMatrixWorld(true);
+    this.focus.set(0,.96,.10);
+    this.place.localToWorld(this.focus);
+    this.reset();
+    return true;
   }
 
   leave(parent){
     if(this.group&&parent)parent.add(this.group);
+    this.place.removeFromParent();
     this.group=null;
+    this.clearInput();
     this.drag=null;
   }
 
+  clearInput(){this.keys.clear();this.lastFrame=null;}
+
+  reset(){
+    this.localEye.set(0,1.52,this.initialDistance);
+    this.pitchOffset=0;
+    this.lastFrame=null;
+    // Aim from the existing world position. Back off slightly on tall displays.
+    const target=this.localEye.clone();
+    target.z=Math.max(this.initialDistance,Math.min(4.4,2.65/(this.aspect??1)));
+    this.tryPosition(target);
+    this.updateCamera();
+  }
+
   resize(aspect){
-    if(this.aspect!==aspect){
-      this.aspect=aspect;
-      this.camera.aspect=aspect;
-      this.camera.updateProjectionMatrix();
+    if(this.aspect===aspect)return;
+    this.aspect=aspect;
+    this.camera.aspect=aspect;
+    this.camera.updateProjectionMatrix();
+  }
+
+  tryPosition(next){
+    const radius=Math.hypot(next.x,next.z);
+    const limited=clamp(radius,1.15,5);
+    if(radius<.0001)return;
+    next.x*=limited/radius;next.z*=limited/radius;
+    next.y=clamp(next.y,.52,3.25);
+    this.from.copy(this.localEye);this.place.localToWorld(this.from);
+    this.eye.copy(next);this.place.localToWorld(this.eye);
+    const distance=this.ray.direction.subVectors(this.eye,this.from).length();
+    if(distance>.0001){
+      this.ray.origin.copy(this.from);
+      this.ray.direction.multiplyScalar(1/distance);
+      if(this.colliders?.raycastFirst(this.ray,distance+.16))return;
     }
-    const distance=clamp(3.62/aspect,3.55,7.6)*this.zoom;
-    const horizontal=distance*Math.cos(this.pitch);
-    this.camera.position.set(siteX+Math.sin(this.yaw)*horizontal,1.40+distance*Math.sin(this.pitch),Math.cos(this.yaw)*horizontal);
-    this.camera.lookAt(siteX,1.40,0);
+    this.localEye.copy(next);
+  }
+
+  updateCamera(){
+    this.eye.copy(this.localEye);this.place.localToWorld(this.eye);
+    this.camera.position.copy(this.eye);
+    this.camera.lookAt(this.aim.copy(this.focus).addScaledVector(this.camera.up,this.pitchOffset));
     this.camera.updateMatrixWorld(true);
+    this.invalidate();
   }
 
   orbit(dx,dy){
-    this.yaw=(this.yaw+dx)%(2*Math.PI);
-    this.pitch=clamp(this.pitch+dy,-.16,.58);
-    this.resize(this.aspect);
-    this.invalidate();
+    const next=this.localEye.clone();
+    const angle=Math.atan2(next.x,next.z)+dx;
+    const radius=Math.hypot(next.x,next.z);
+    next.set(Math.sin(angle)*radius,next.y+dy*3.5,Math.cos(angle)*radius);
+    this.tryPosition(next);
+    this.updateCamera();
   }
 
   approach(amount){
-    this.zoom=clamp(this.zoom*Math.exp(amount),.64,1.18);
-    this.resize(this.aspect);
-    this.invalidate();
+    const next=this.localEye.clone(),newDistance=Math.exp(amount);
+    next.x*=newDistance;next.z*=newDistance;
+    this.tryPosition(next);
+    this.updateCamera();
   }
 
-  key(event){
-    if(!navigation.has(event.code)||event.altKey||event.ctrlKey||event.metaKey||event.shiftKey)return false;
-    if(event.code==='KeyA'||event.code==='KeyD')this.orbit(event.code==='KeyA'?.105:-.105,0);
-    else this.approach(event.code==='KeyW'?-.075:.075);
+  key(event,down){
+    if(!movement.has(event.code)||down&&(event.metaKey||event.ctrlKey))return false;
+    if(down)this.keys.add(event.code);else this.keys.delete(event.code);
     return true;
   }
 
-  dispose(){
-    const materials=new Set();
-    this.place.traverse(object=>{
-      object.geometry?.dispose();
-      if(object.material)materials.add(object.material);
-    });
-    for(const material of materials)material.dispose();
+  advance(now){
+    const dt=this.lastFrame===null?0:Math.min(.045,(now-this.lastFrame)/1000);
+    this.lastFrame=now;
+    if(!this.keys.size||!dt)return;
+    const forward=Number(this.keys.has('KeyW'))-Number(this.keys.has('KeyS'));
+    const strafe=Number(this.keys.has('KeyD'))-Number(this.keys.has('KeyA'));
+    const lift=Number(this.keys.has('Space'))-Number(this.keys.has('AltLeft')||this.keys.has('AltRight'));
+    const speed=this.keys.has('ShiftLeft')||this.keys.has('ShiftRight')?3.2:1.75;
+    const forwardAxis=new Vector3(-this.localEye.x,0,-this.localEye.z).normalize();
+    const rightAxis=new Vector3(-forwardAxis.z,0,forwardAxis.x);
+    const direction=forwardAxis.multiplyScalar(forward).addScaledVector(rightAxis,strafe);
+    direction.y=lift;
+    if(direction.lengthSq()){
+      this.tryPosition(this.localEye.clone().addScaledVector(direction.normalize(),dt*speed));
+      this.updateCamera();
+    }
+  }
+
+  withCamera(main,draw){
+    this.savedPosition.copy(main.position);
+    this.savedRotation.copy(main.quaternion);
+    const savedFov=main.fov;
+    main.position.copy(this.camera.position);
+    main.quaternion.copy(this.camera.quaternion);
+    main.fov=this.camera.fov;
+    main.updateProjectionMatrix();
+    main.updateMatrixWorld(true);
+    try{return draw();}
+    finally{
+      main.position.copy(this.savedPosition);
+      main.quaternion.copy(this.savedRotation);
+      main.fov=savedFov;
+      main.updateProjectionMatrix();
+      main.updateMatrixWorld(true);
+    }
   }
 }

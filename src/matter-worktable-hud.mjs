@@ -21,17 +21,35 @@ import {placeHudWindow,SpatialHudWindows} from './spatial-hud-windows.mjs';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
 
 const surfaceId='matter-worktable',toolbeltId='world-toolbelt',teleportViewId='world-teleport-view';
+const teleportViewPath=name=>({'@path':'/'+name});
+const teleportViewButton=(id,label,fields={})=>({
+  id,component:'HudButton',label,action:{event:{name:id,context:{
+    epoch:teleportViewPath('epoch'),selected:teleportViewPath('destination'),
+  }}},...fields,
+});
+const teleportViewRow=(id,children,immersive=false)=>({id,component:'HudRow',children,
+  ...(immersive?{visible:teleportViewPath('immersive')}:{}),
+});
 const teleportViewComponents=[
-  {id:'root',component:'HudPanel',label:'Vista del teletransportador',width:2.52,gap:.025,children:['views','navigation','guide']},
-  {id:'views',component:'HudRow',children:['switch','exit']},
-  {id:'switch',component:'HudButton',label:{'@path':'/mode'},action:{event:{name:'switch'}}},
-  {id:'navigation',component:'HudRow',children:['back','front','near'],visible:{'@path':'/immersive'}},
-  {id:'back',component:'HudButton',label:'Alejar',action:{event:{name:'back'}}},
-  {id:'front',component:'HudButton',label:'Frente',action:{event:{name:'front'}}},
-  {id:'near',component:'HudButton',label:'Acercar',action:{event:{name:'near'}}},
-  {id:'exit',component:'HudButton',label:'Salir',action:{event:{name:'exit'}}},
-  {id:'guide',component:'HudText',label:'Arrastrá para girar',visible:{'@path':'/immersive'}},
+  {id:'root',component:'HudPanel',label:'Vista del teletransportador',width:2.72,gap:.022,
+    children:['views','zones','house','selection','trip']},
+  teleportViewRow('views',['switch','front','exit']),
+  teleportViewButton('switch',teleportViewPath('mode')),
+  teleportViewButton('front','Frente',{visible:teleportViewPath('immersive')}),
+  teleportViewButton('exit','Salir'),
+  teleportViewRow('zones',['favorites','terrain','houses'],true),
+  ...[['favorites','Favoritos'],['terrain','Terreno público'],['houses','Casas']].map(([id,label])=>
+    teleportViewButton(id,label,{pressed:teleportViewPath(id+'Active'),disabled:teleportViewPath('loading')})),
+  teleportViewButton('house',teleportViewPath('houseLabel'),{visible:teleportViewPath('chooseHouse'),gestureKey:teleportViewPath('house')}),
+  {id:'selection',component:'HudText',label:teleportViewPath('caption'),style:'status',lines:1,visible:teleportViewPath('showCaption')},
+  teleportViewRow('trip',['previous','favorite','go','next'],true),
+  teleportViewButton('previous','Anterior',{disabled:teleportViewPath('noPrevious')}),
+  teleportViewButton('favorite',teleportViewPath('favoriteLabel'),{pressed:teleportViewPath('isFavorite'),
+    disabled:teleportViewPath('noSelection'),gestureKey:teleportViewPath('destination'),weight:1.5}),
+  teleportViewButton('go','Viajar',{disabled:teleportViewPath('noTravel'),gestureKey:teleportViewPath('destination')}),
+  teleportViewButton('next','Siguiente',{disabled:teleportViewPath('noNext')}),
 ];
+const teleportViewActions=new Set(teleportViewComponents.filter(view=>view.component==='HudButton').map(view=>view.id));
 const cockpitDocks={
   toolPlacement:{x:-.26,y:0,depth:1.08,anchor:0},
   headerPlacement:{x:0,y:.22,depth:1.32,anchor:-1},
@@ -257,7 +275,13 @@ export class MatterWorktableHud{
       if(type==='deleteSurface')this.teleportModels.instrument.removeFromParent();
       this.send(type,content,id);
     },
-      focus:name=>this.hud.focusAccessibleControl(teleportHudId,name),
+      focus:name=>this.hud.focusAccessibleControl(this.teleport.worldMounted?teleportViewId:teleportHudId,
+        this.teleport.worldMounted&&name==='close'?'exit':name),
+      onViewData:state=>{
+        const immersive=this.teleportMode==='workspace';
+        this.send('updateDataModel',{value:{...state,mode:immersive?'Vista HUD':'Explorar instrumento',immersive,
+          chooseHouse:immersive&&state.hasHouseChoice,showCaption:immersive&&Boolean(state.caption)}},teleportViewId);
+      },
       onOpen:()=>{
         this.send('createSurface',{catalogId:spatialHudCatalog.id},teleportViewId);
         this.send('updateComponents',{components:teleportViewComponents},teleportViewId);
@@ -277,6 +301,8 @@ export class MatterWorktableHud{
         this.syncSettingsInput();this.layer.invalidate();teleport.onClose();
       }});
     this.teleportStorage=teleport.storage;
+    this.teleportScene=teleport.scene;
+    this.teleportAnchor=teleport.anchor;
     this.teleportModels=new TeleportModels(this.teleport,{
       document,reduced:()=>this.reducedTeleportMotion,
     });
@@ -340,12 +366,9 @@ export class MatterWorktableHud{
         else if(requested.surfaceId===teleportViewId){
           if(!this.teleport.group)return;
           if(requested.name==='exit')this.teleport.close();
-          if(this.teleportMode==='workspace'){
-            if(requested.name==='front')this.teleportWorkspace.enter(this.teleport.group);
-            if(requested.name==='near')this.teleportWorkspace.approach(-.16);
-            if(requested.name==='back')this.teleportWorkspace.approach(.16);
-          }
+          if(requested.name==='front'&&this.teleportMode==='workspace')this.teleportWorkspace.reset();
           if(requested.name==='switch')this.setTeleportMode(this.teleportMode==='workspace'?'camera':'workspace',true);
+          if(!['exit','front','switch'].includes(requested.name))this.teleport.activate(requested);
         }
         else if([exhibitionHudId,visitHudId].includes(requested.surfaceId))this.visit.activate(requested);
         else if(requested.surfaceId===recoveryHudId)this.recovery.activate(requested);
@@ -357,7 +380,17 @@ export class MatterWorktableHud{
     const immersivePointer=event=>this.handleTeleportPointer(event);
     for(const type of ['pointerdown','pointermove','pointerup','pointercancel','lostpointercapture','wheel','contextmenu'])
       this.canvas.addEventListener(type,immersivePointer,{capture:true,passive:false,signal:this.events.signal});
-    document.defaultView.addEventListener('blur',()=>this.clearTeleportPointer(),{signal:this.events.signal});
+    document.defaultView.addEventListener('blur',()=>{
+      this.clearTeleportPointer();this.teleportWorkspace?.clearInput();
+    },{signal:this.events.signal});
+    document.addEventListener('visibilitychange',()=>{
+      if(document.hidden){this.clearTeleportPointer();this.teleportWorkspace?.clearInput();}
+    },{signal:this.events.signal});
+    document.addEventListener('keyup',event=>{
+      if(this.teleportMode==='workspace'&&this.teleportWorkspace.key(event,false)){
+        event.preventDefault();event.stopImmediatePropagation();
+      }
+    },{capture:true,signal:this.events.signal});
     const consumeSettingsPointer=event=>{
       if((!this.settings.group&&!this.teleport.group&&!this.activity.owner()?.native&&!this.visit.indexActive&&!this.visit.viewerActive&&!(this.beacon.owner.opened&&this.beacon.owner.native))||(event.type==='pointerdown'&&event.button===0))return;
       event.preventDefault();
@@ -396,19 +429,22 @@ export class MatterWorktableHud{
   setTeleportMode(mode,remember=false){
     this.clearTeleportPointer();
     this.hud.setInteractionScope({surfaceIds:[],blockOutside:true});
-    this.teleportMode=mode;
     if(mode==='workspace'){
-      this.teleportWorkspace??=new TeleportWorkspace(this.layer.invalidate);
-      this.teleportWorkspace.enter(this.teleport.group);
-    }else{
-      this.teleportWorkspace?.leave(this.hud.group);
-      this.teleportPlacement=null;
+      this.teleportWorkspace??=new TeleportWorkspace(this.layer.invalidate,this.teleportAnchor);
+      if(!this.teleportWorkspace.enter(this.teleport.group,this.teleportScene))mode='camera';
     }
+    this.teleportMode=mode;
     const immersive=mode==='workspace';
     if(immersive)this.document.body.dataset.teleportWorkspace='';
-    else delete this.document.body.dataset.teleportWorkspace;
+    else{
+      this.teleportWorkspace?.leave(this.hud.group);
+      this.teleportPlacement=null;
+      delete this.document.body.dataset.teleportWorkspace;
+    }
+    this.teleport.worldMounted=immersive;
+    this.teleportModels.setWorldMode(immersive);
     this.hud.setInteractionScope({surfaceIds:[teleportHudId,teleportViewId],blockOutside:true});
-    this.send('updateDataModel',{value:{mode:immersive?'Vista HUD':'Explorar instrumento',immersive}},teleportViewId);
+    this.teleport.update();
     if(remember){
       try{this.teleportStorage.setItem('holodeck:teleport:view',mode);}catch{}
       this.hud.focusAccessibleControl(teleportViewId,'switch');
@@ -446,7 +482,7 @@ export class MatterWorktableHud{
   }
 
   teleportBounds(id){
-    const view=['switch','front','exit','near','back'].includes(id);
+    const view=teleportViewActions.has(id)&&(this.teleportMode==='workspace'||['switch','exit'].includes(id));
     const camera=!view&&this.teleportMode==='workspace'?this.teleportWorkspace.camera:this.camera;
     return this.hud.getControlViewportBounds(view?teleportViewId:teleportHudId,id,camera,this.canvas.getBoundingClientRect());
   }
@@ -459,10 +495,12 @@ export class MatterWorktableHud{
     this.pointerPosition.set((event.clientX-rect.left)*2/rect.width-1,1-(event.clientY-rect.top)*2/rect.height);
     this.pointerRay.setFromCamera(this.pointerPosition,this.camera);
     if(this.teleportMode==='workspace'){
-      if(typeof this.hud.pointerTarget(this.pointerRay.ray,{maxDistance:12})==='string')
-        return {ray:this.pointerRay.ray,maxDistance:12};
+      const hudRay={ray:this.pointerRay.ray,surfaceIds:[teleportViewId]};
+      if(typeof this.hud.pointerTarget(hudRay.ray,hudRay)==='string')return hudRay;
+      this.teleportWorkspace.place.updateMatrixWorld(true);
       this.pointerRay.setFromCamera(this.pointerPosition,this.teleportWorkspace.camera);
-      return {ray:this.pointerRay.ray,maxDistance:18};
+      const hit=this.teleportWorkspace.colliders?.raycastFirst(this.pointerRay.ray,8);
+      return {ray:this.pointerRay.ray,surfaceIds:[teleportHudId],maxDistance:hit?.[0]??8};
     }
     return {ray:this.pointerRay.ray};
   }
@@ -910,7 +948,8 @@ export class MatterWorktableHud{
     if(event.defaultPrevented)return false;
     if(this.teleport.group){
       if(event.key==='Escape'){if(!event.repeat)this.teleport.close();return true;}
-      if(this.teleportMode==='workspace'&&this.teleportWorkspace.key(event))return true;
+      if(this.teleportMode==='workspace'&&!(event.code==='Space'&&this.ownsAccessibleInput(event.target))&&
+         this.teleportWorkspace.key(event,true))return true;
       // Both the physical instrument and the persistent view controls take part in tab order.
       if(event.key==='Tab'){
         const controls=[...this.a11y.querySelectorAll('button:not(:disabled)')];
@@ -1336,10 +1375,8 @@ export class MatterWorktableHud{
     }
     if(this.teleportViewGroup){
       const immersive=this.teleportMode==='workspace';
-      const parent=immersive?this.teleportWorkspace.overlay:this.hud.group;
-      if(this.teleportViewGroup.parent!==parent)parent.add(this.teleportViewGroup);
-      const scale=Math.min(175,(width-22)/2.62);
-      this.place(this.teleportViewGroup,'teleportViewPlacement',viewport,width/2,Math.max(12,height-(immersive?.71:.41)*scale),scale);
+      const scale=Math.min(205,(width-22)/2.84);
+      this.place(this.teleportViewGroup,'teleportViewPlacement',viewport,width/2,Math.max(12,height-(immersive?.99:.38)*scale),scale);
     }
     if(this.teleport.group&&this.teleportMode==='workspace'){
       this.teleportWorkspace.resize(width/height);
@@ -1400,7 +1437,7 @@ export class MatterWorktableHud{
     }
     this.hud.update();
     if(this.teleport.group&&this.teleportModels.animate())this.layer.invalidate();
-    if(this.teleportMode==='workspace')this.teleportWorkspace.scene.updateMatrixWorld(true);
+    if(this.teleportMode==='workspace')this.teleportWorkspace.place.updateMatrixWorld(true);
     this.windows.end();
     this.lookPreview.draw(worldControlsId,this.status.controlsGroup,this.hud.getSurfaceBounds(worldControlsId));
     if(this.cockpit||!this.lookPreview.name||this.document.body.dataset.hudTheme==='light')this.lookPreview.draw(worldMapId,this.map.group,this.hud.getSurfaceBounds(worldMapId));
@@ -1422,11 +1459,7 @@ export class MatterWorktableHud{
       this.layer.invalidate();
     }
     let painted=false;
-    try{
-      const workspace=this.teleportMode==='workspace'?this.teleportWorkspace:null;
-      painted=workspace?this.layer.draw(workspace.scene,workspace.camera,{scene:workspace.overlay,camera:this.camera}):
-        this.layer.draw(this.scene,this.camera,additional);
-    }
+    try{painted=this.layer.draw(this.scene,this.camera,additional);}
     finally{
       this.map.markBearingPresented(Boolean(painted&&this.map.bearingGroup&&this.hud.getSurfaceBounds(worldBearingId)));
       this.door.presented(Boolean(painted&&this.door.group&&this.toolGroup&&this.hud.getSurfaceBounds(doorPromptId)));
@@ -1464,7 +1497,6 @@ export class MatterWorktableHud{
     this.events.abort();
     this.teleport.close();
     this.teleportModels.dispose();
-    this.teleportWorkspace?.dispose();
     this.passage.dispose();
     this.layer.dispose();
     this.map.dispose();
