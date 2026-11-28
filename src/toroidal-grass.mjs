@@ -15,7 +15,7 @@ import {
 
 const TAU=2*Math.PI;
 const T=TOROIDAL_TERRAIN;
-const TILE=8;                 // metres at the ring's mid latitude
+const TILE=12;                // metres at the ring's mid latitude
 const RADIUS=34;              // metres of visible carpet
 const DENSITY=5.2;            // tufts per square metre on open meadow
 const BUDGET_MS=3.5;          // generation time per frame
@@ -144,6 +144,7 @@ function grassMaterial(uniforms){
           vec3 objectTangent=vec3(tangent.xyz);
         #endif`)
       .replace('#include <begin_vertex>',`#include <begin_vertex>
+        vec3 grassOffset=vec3(0.);
         {
           vec3 root=(modelMatrix*instanceMatrix*vec4(0.,0.,0.,1.)).xyz;
           float reach=1.0-smoothstep(grassReach-9.0,grassReach,distance(root,cameraPosition));
@@ -153,10 +154,15 @@ function grassMaterial(uniforms){
           float sway=sin(grassTime*1.9+phase)*.55+sin(grassTime*3.1+phase*1.7)*.2;
           vec3 world=grassWind*(gust*.22+sway*.10*gust)*bend;
           world+=cross(grassWind,normalize(root))*sin(grassTime*2.3+phase*2.1)*.035*bend;
-          transformed+=inverse(mat3(instanceMatrix))*world;
+          // Displace in world space after projection setup (see project_vertex)
+          // instead of inverting the instance matrix for every vertex.
+          grassOffset=world*reach;
           transformed*=reach;
           vGrassTip=position.y;
-        }`);
+        }`)
+      .replace('#include <project_vertex>',`#include <project_vertex>
+        mvPosition.xyz+=(viewMatrix*vec4(grassOffset,0.)).xyz;
+        gl_Position=projectionMatrix*mvPosition;`);
     shader.fragmentShader=shader.fragmentShader
       .replace('#include <common>',`#include <common>
         uniform float grassGlow;
@@ -166,7 +172,7 @@ function grassMaterial(uniforms){
       .replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
         totalEmissiveRadiance+=diffuseColor.rgb*vGrassTip*vGrassTip*grassGlow;`);
   };
-  material.customProgramCacheKey=()=>'holodeck-toroidal-grass-v2';
+  material.customProgramCacheKey=()=>'holodeck-toroidal-grass-v3';
   return material;
 }
 
@@ -349,6 +355,10 @@ export class ToroidalGrass {
       if(!mesh)continue;
       const share=distance<16?1:Math.max(.32,1-(distance-16)/34);
       mesh.count=Math.round(mesh.userData.full*share);
+      const near=distance<20;
+      mesh.receiveShadow=near;
+      mesh.userData.flowers.receiveShadow=near;
+      mesh.userData.flowers.visible=distance<26&&mesh.userData.flowers.count>0;
     }
     const start=performance.now();
     for(const {c,r} of wanted){
