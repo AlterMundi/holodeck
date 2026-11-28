@@ -4,6 +4,7 @@ import {Worker} from 'node:worker_threads';
 import {Box3,Color,Matrix4,Vector3} from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
+import {semanticIcon} from './teleport-semantic-icons.mjs';
 
 // Every teleport destination can describe itself as a small low-poly icon.
 // The icon is derived from the destination's own source (its room art, its
@@ -11,7 +12,7 @@ import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 // so editing the source produces a new icon without anyone maintaining it.
 // Destinations without a usable source keep the authored miniature.
 
-export const TELEPORT_ICON_VERSION='tp-icon-v1';
+export const TELEPORT_ICON_VERSION='tp-icon-v2';
 const FOOTPRINT=.24, HEIGHT=.26, TRIANGLES=1400, CACHE=64;
 const MAX_SOURCE_BYTES=24*1024*1024;
 
@@ -291,6 +292,7 @@ export function iconGlb(mesh){
 
 export async function buildIcon(source){
   const mesh=source.kind==='facade'?facadeIcon(source.facade):
+    source.kind==='semantic'?fitIcon(semanticIcon(source.descriptor)):
     await sceneIcon(source.bytes,{cutaway:source.kind==='room'});
   if(!mesh)return null;
   const glb=iconGlb(mesh);
@@ -349,10 +351,10 @@ export class TeleportIcons {
   }
 
   async build(source){
-    const plain={kind:source.kind,revision:source.revision,facade:source.facade,
+    const plain={kind:source.kind,revision:source.revision,facade:source.facade,descriptor:source.descriptor,
       bytes:typeof source.bytes==='function'?source.bytes():source.bytes};
     if(plain.bytes&&plain.bytes.length>MAX_SOURCE_BYTES)return null;
-    if(!this.worker||plain.kind==='facade'){const bytes=await buildIcon(plain);return bytes&&Buffer.from(bytes);}
+    if(!this.worker||plain.kind==='facade'||plain.kind==='semantic'){const bytes=await buildIcon(plain);return bytes&&Buffer.from(bytes);}
     return this.worker.run(plain);
   }
 }

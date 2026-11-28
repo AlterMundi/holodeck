@@ -29,6 +29,7 @@ import enableWs from 'express-ws';
 import { existsSync, readFileSync } from 'node:fs';
 import {ANIMATION_ASSET_REVISIONS,readPackedArt,sendPackedArt} from './packed-art.mjs';
 import {TeleportIcons,iconKey} from './teleport-icons.mjs';
+import {semanticDescriptor} from './teleport-semantic-icons.mjs';
 import {residenceAssets} from './toroidal-residence-assets.mjs';
 import { packedClientHandler } from './packed-client.mjs';
 import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
@@ -541,7 +542,18 @@ export async function createHolodeck({basePath='/',production=false,identityReso
         const offset=z>2?-1.35:1.45;
         destinations.push({id:'object:'+to+':'+object.id,title:object.title,...details,portal,
           arrival:{x,y:.12,z:z+offset,yaw:offset>0?180:0}});
+        // A worktable's icon follows its main widget/function and its title.
+        const descriptor=semanticDescriptor({id:'object:'+object.id,title:object.title,
+          widget:object.widget??object.surface??object.kind,role:object.iconRole});
+        iconSource.set(destinations.at(-1),{kind:'semantic',revision:JSON.stringify(descriptor),descriptor});
       }
+    }
+    // Every remaining destination (public places, topics, projects) composes
+    // a semantic icon from what it is for and what it is called.
+    for(const entry of destinations){
+      if(iconSource.has(entry))continue;
+      const descriptor=semanticDescriptor({id:entry.id,title:entry.title,widget:entry.widget,role:entry.iconRole});
+      iconSource.set(entry,{kind:'semantic',revision:JSON.stringify(descriptor),descriptor});
     }
     const residence=destinations.find(entry=>entry.id==='terrain:residence');
     if(residence){
