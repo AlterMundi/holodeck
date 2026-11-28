@@ -1104,3 +1104,24 @@ Chrome 154.0.8037.92, ANGLE (Broadcom, V3D 7.1.7.0, OpenGL ES 3.1). FPS is the o
 | meadow | 23.6 / 50.1 | 26.9 / 50.0 | 363 × 244 | 363 × 244 |
 
 Median pose FPS was 24.9 and 26.9.
+
+### Physical Redmi check
+
+Chrome 158 on the Redmi (Android 16, Qualcomm Adreno 610) rendered both
+exact archives directly on the phone. Tests used three fixed poses, the
+same night clock and the same drawing-buffer dimensions per pose. The
+candidate's GLB digest was verified in both modes. This closes the physical
+phone coverage gap noted above. These are controlled browser measurements.
+
+| Mode and pose | Base FPS / p95 ms | Candidate FPS / p95 ms |
+| --- | ---: | ---: |
+| Livianos, plaza | 32.2 / 50.2 | 32.2 / 50.2 |
+| Livianos, residence-hall | 33.3 / 50.1 | 38.8 / 33.6 |
+| Livianos, meadow | 33.9 / 50.2 | 34.3 / 50.2 |
+| Normal, plaza | 14.0 / 83.6 | 13.4 / 83.6 |
+| Normal, residence-hall | 23.5 / 50.2 | 25.2 / 50.2 |
+| Normal, meadow | 14.9 / 66.9 | 12.8 / 83.6 |
+
+The Redmi kept up with the base in Livianos. Normal mode was already
+slow on this phone and lost another 2.1 FPS in the meadow in this run.
+The desktop performance adjustment and deployment remain pending.
