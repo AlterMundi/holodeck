@@ -282,7 +282,7 @@ test('standing idle animates supported humanoids and releases without moving eit
     const state={characters:new Map([[id,actor]]),localCharacterId:id};
     const head=mesh.getObjectByName('head'),chest=mesh.getObjectByName('spine_05');
     const stockHead=head.quaternion.clone(),stockChest=chest.quaternion.clone();
-    // The repertoire moves the hips (weight shift, squat); the feet stay put.
+    // The repertoire moves the hips (weight shift, ready stance); the feet stay put.
     const contacts=['foot_l','foot_r'].map(name=>{
       const bone=mesh.getObjectByName(name);
       return [bone,bone.getWorldPosition(new Vector3()),bone.getWorldQuaternion(new Quaternion()).normalize()];

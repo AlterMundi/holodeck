@@ -1,9 +1,9 @@
 import {Quaternion,Vector3} from 'three';
 import {keyed} from './avatar-motion-curves.mjs';
 
-// A standing body's repertoire over its authored idle: shift the weight to
-// one leg, stretch overhead and to each side, drop into a squat and rise,
-// roll the neck. The feet stay exactly where the idle planted them: the hips
+// A standing body's repertoire over its authored idle, in a hero's register:
+// shift the weight to one leg with a hand on the hip, look back over each
+// shoulder, settle into a ready stance with the guard up, roll the neck. The feet stay exactly where the idle planted them: the hips
 // move and two-bone IK bends the legs back onto the same footprints.
 //
 // Lanes, all in the body frame (Y up, Z forward, X toward the left side):
@@ -24,24 +24,26 @@ const shift=side=>({length:7.2,keys:[
 const phrases=[
   shift(1),
   shift(-1),
+  // Look back over each shoulder, the chest turning with the gaze: alert,
+  // reading the surroundings.
   {length:6.4,keys:[
     at(0),
-    at(1.1,{2:.02,4:-.10,7:-.20,10:1}),
-    at(1.7,{2:.025,4:-.13,7:-.24,10:1}),
-    at(2.6,{4:-.08,5:.20,7:-.14,9:.10,10:1}),
-    at(3.1,{4:-.08,5:.21,7:-.14,9:.10,10:1}),
-    at(4.0,{4:-.08,5:-.20,7:-.14,9:-.10,10:1}),
-    at(4.5,{4:-.08,5:-.21,7:-.14,9:-.10,10:1}),
-    at(5.3,{4:.03,10:.15}),
+    at(1.1,{0:.03,3:-.03,6:.22,8:.55,7:-.04}),
+    at(2.2,{0:.035,3:-.035,6:.24,8:.62,7:-.06}),
+    at(3.0,{6:0,8:0}),
+    at(4.1,{0:-.03,3:.03,6:-.22,8:-.55,7:-.04}),
+    at(5.2,{0:-.035,3:.035,6:-.24,8:-.62,7:-.06}),
     at(6.4),
   ]},
+  // Ready stance: settle a little lower, chest forward, guard up, then stand
+  // tall again with the shoulders squared.
   {length:5.2,keys:[
     at(0),
-    at(.35,{1:.04,4:.06,11:.3}),
-    at(1.35,{1:.40,2:-.06,4:.42,7:-.30,11:1}),
-    at(2.05,{1:.42,2:-.065,4:.44,7:-.32,11:1}),
-    at(3.4,{1:.03,4:.04,7:-.04,11:.2}),
-    at(3.75,{1:-.012,4:-.03}),
+    at(.45,{1:.05,4:.06,11:.25}),
+    at(1.2,{1:.12,2:-.03,4:.14,7:-.08,11:.55}),
+    at(2.6,{1:.12,2:-.03,4:.14,7:-.10,11:.55}),
+    at(3.5,{1:-.01,4:-.06,7:-.06,11:.05}),
+    at(4.2,{4:-.05,7:-.04}),
     at(5.2),
   ]},
   {length:5.0,keys:[
