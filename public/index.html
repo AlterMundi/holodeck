@@ -168,6 +168,8 @@ body:has(#conversation-panel[data-hud-chrome]:not([hidden])) .touch-controls{vis
 #conversation-resize::after{content:'';position:absolute;right:5px;bottom:5px;width:9px;height:9px;border-right:2px solid var(--gold);border-bottom:2px solid var(--gold);border-radius:0 0 3px 0;opacity:.8}
 #conversation-move:focus-visible,#conversation-resize:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 #shared-conversation{flex:1;min-height:0;display:flex}
+#conversation-panel.shared-conversation[data-composer-only]{height:min(272px,50dvh)!important;min-height:0}
+#conversation-panel[data-composer-only] .conversation-actions,#conversation-panel[data-composer-only] #conversation-resize{display:none}
 #shared-conversation iframe{width:100%;height:100%;min-width:0;flex:1;border:0;border-radius:12px;background:#163b3f}
 #conversation-panel.shared-conversation{
  top:max(20px,env(safe-area-inset-top));right:max(20px,env(safe-area-inset-right));bottom:max(24px,env(safe-area-inset-bottom));

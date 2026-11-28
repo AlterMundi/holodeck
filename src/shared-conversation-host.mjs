@@ -45,12 +45,10 @@ export class SharedConversationHost{
     this.voiceObserver?.disconnect();
     const page=this.composerDocument();
     if(!page)return;
+    page.body?.toggleAttribute('data-holodeck-composer',this.composerOnly===true);
     this.voiceObserver=new page.defaultView.MutationObserver(()=>this.syncVoiceControls());
     for(const node of page.querySelectorAll('#conversation-talk,#conversation-voice-replies'))
       this.voiceObserver.observe(node,{attributes:true,attributeFilter:['aria-pressed','disabled','aria-label','data-capture-phase','data-capture-opening-error']});
-    const caption=page.querySelector('#conversation-voice-state');
-    if(caption)this.voiceObserver.observe(caption,{attributes:true,attributeFilter:['data-voice-transcript','data-live-caption','data-attention'],
-      childList:true,subtree:true,characterData:true});
     this.syncVoiceControls();
     // Older same-origin shells can share the shortcut without forwarding any
     // data. Once the child negotiates dismissal it owns the key.
@@ -71,22 +69,25 @@ export class SharedConversationHost{
       url.searchParams.get('surface_visit')===this.visit?page:null;
   }
 
+  setComposerOnly(value){
+    this.composerOnly=value===true;
+    this.composerDocument()?.body?.toggleAttribute('data-holodeck-composer',this.composerOnly);
+  }
+
   voiceControls(){
     const page=this.composerDocument();
-    return {page,mic:page?.querySelector('#conversation-talk'),speaker:page?.querySelector('#conversation-voice-replies'),caption:page?.querySelector('#conversation-voice-state')};
+    return {page,mic:page?.querySelector('#conversation-talk'),speaker:page?.querySelector('#conversation-voice-replies')};
   }
 
   syncVoiceControls(){
-    const {mic,speaker,caption}=this.voiceControls();
+    const {mic,speaker}=this.voiceControls();
     const recording=mic?.getAttribute('aria-pressed')==='true';
     const owned=this.toolbarCaptureActive;
     const phase=owned?(mic?.dataset.capturePhase??
       (recording?'recording':mic?.getAttribute('aria-label')==='Send recording'?'ready':mic?.disabled?'permission':'idle')):null;
     const openingError=owned&&phase==='idle'?mic?.dataset.captureOpeningError:undefined;
-    const words=owned&&recording&&caption?.dataset.voiceTranscript==='true'?
-      Array.from(caption.textContent.trim().replace(/\s+/g,' ')).slice(-145).join(''):'';
     this.onVoiceControls({
-      recording,phase,words,openingError,previewUnavailable:owned&&recording&&caption?.textContent==='Recording… Live text unavailable.',
+      recording,phase,openingError,
       needsReview:owned&&mic?.title==='Retry sending the same recording',
       speaking:speaker?.getAttribute('aria-pressed')==='true',
       speakerReady:!!speaker&&!this.closed,
@@ -94,22 +95,21 @@ export class SharedConversationHost{
     if(owned&&(phase==='idle'||phase==='ready')){
       this.toolbarCaptureActive=false;this.toolbarRecording=false;
     }
-    if(mic&&!mic.disabled&&this.channel)this.toolbarVoiceReady?.();
+    if(mic&&this.channel)this.toolbarVoiceReady?.();
   }
 
   async pressToolbarMic(){
     await this.mount();
     const start=()=>{
       const {page,mic}=this.voiceControls();
-      if(!this.channel||!mic||mic.disabled||this.currentActor()!==this.selected?.actorRef)return false;
-      if(mic.getAttribute('aria-pressed')!=='true'&&mic.title==='Retry sending the same recording')
-        throw Error('Hay una grabación pendiente. Revisala en Conversar.');
-      // Prime the canonical playback from the microphone gesture when the
-      // composer already exists. Enable its queue only after the audio receipt.
+      if(!this.channel||!mic||this.currentActor()!==this.selected?.actorRef)return false;
+      // The visible canonical composer owns all capture actions after start.
+      if(mic.getAttribute('aria-pressed')==='true'||
+        ['permission','recording','editing','ready','finalizing','sending'].includes(mic.dataset.capturePhase)||
+        mic.title==='Retry sending the same recording')return true;
+      if(mic.disabled)return false;
       page.defaultView.PcmSpeech?.unlock();
-      if(mic.getAttribute('aria-pressed')==='true'){
-        if(this.lastAudioRecord)this.lastAudioRecord.toolbarMic=true;
-      }else{this.toolbarRecording=true;this.toolbarCaptureActive=true;}
+      this.toolbarRecording=true;this.toolbarCaptureActive=true;
       mic.click();
       if(mic.dataset.capturePhase==='idle'&&!mic.dataset.captureOpeningError){
         this.syncVoiceControls();
@@ -122,10 +122,14 @@ export class SharedConversationHost{
     await new Promise((resolve,reject)=>{
       const done=()=>{clearTimeout(timer);this.toolbarVoiceReady=null;this.cancelToolbarVoice=null;};
       const timer=setTimeout(()=>{done();reject(Error('El micrófono todavía no está disponible.'));},3500);
-      this.toolbarVoiceReady=()=>{
-        try{if(start()){done();resolve();}}
-        catch(error){done();reject(error);}
+      const ready=()=>{
+        this.toolbarVoiceReady=null;
+        try{
+          if(start()){done();resolve();}
+          else this.toolbarVoiceReady=ready;
+        }catch(error){done();reject(error);}
       };
+      this.toolbarVoiceReady=ready;
       this.cancelToolbarVoice=()=>{done();reject(Error('Se cerró la conversación antes de grabar.'));};
     });
   }

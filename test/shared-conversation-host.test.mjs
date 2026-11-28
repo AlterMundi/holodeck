@@ -669,11 +669,11 @@ test('toolbar microphone projects a failed opening and lets the next press recor
  const {host}=fixture();
  await host.mount();
  host.channel=randomUUID();
- const projected=[];
+ const projected=[];let presses=0;
  host.onVoiceControls=state=>projected.push(state);
  const mic={dataset:{capturePhase:'idle'},disabled:false,pressed:false,
    getAttribute:name=>name==='aria-pressed'?String(mic.pressed):null,
-   click(){mic.dataset.capturePhase='permission';mic.dataset.captureOpeningError='';mic.disabled=true;}};
+   click(){presses++;mic.dataset.capturePhase='permission';mic.dataset.captureOpeningError='';mic.disabled=true;}};
  host.voiceControls=()=>({page:{defaultView:{}},mic,caption:{dataset:{attention:'true'}}});
  await host.pressToolbarMic();
  assert.equal(projected.at(-1).phase,'permission');
@@ -688,5 +688,7 @@ test('toolbar microphone projects a failed opening and lets the next press recor
  host.syncVoiceControls();
  assert.equal(projected.at(-1).recording,true);
  assert.equal(projected.at(-1).phase,'recording');
+ await host.pressToolbarMic();
+ assert.equal(presses,2,'The world button leaves send and stop to the composer');
  host.dispose();
 });

@@ -2025,41 +2025,13 @@ $('#room-topic-choice').onchange=event=>{
   const item=roomObjects().find(object=>object.id===event.target.value);
   roomTopic=item?{id:item.id,revision:item.revision}:null;
 };
-let toolbarCaption='';
-const micOpeningMessages={
-  timeout:'El micrófono tardó en abrir. Revisá el permiso del sitio y probá de nuevo.',
-  access:'El navegador bloqueó el micrófono. Habilitalo para este sitio y probá de nuevo.',
-  device:'No pude abrir el micrófono. Revisá el dispositivo y probá de nuevo.',
-  image:'No pude abrir la imagen adjunta. Revisala en Conversar.',
-  context:'No pude preparar el contexto del lugar. Tu borrador sigue en Conversar.',
-};
-function showToolbarCaption(text,settled=false){
-  if(text===toolbarCaption)return;
-  if(!text){
-    if(!settled&&worldNotice.element.textContent===toolbarCaption)worldNotice.clear();
-  }else worldNotice.show(text,{transient:settled});
-  toolbarCaption=settled?'':text;
-}
-function projectVoiceControls({recording=false,speaking=false,speakerReady=false,phase,words,previewUnavailable,needsReview,openingError}={}){
+function projectVoiceControls({recording=false,speaking=false,speakerReady=false}={}){
   const mic=$('#tool-mic'),speaker=$('#tool-speaker');
-  mic.textContent=recording?'Enviar audio':'Mic';
   mic.setAttribute('aria-pressed',String(recording));
-  mic.setAttribute('aria-busy',String(['permission','finalizing','sending'].includes(phase)));
   speaker.textContent=speaking?'🔊 Audio':'🔇 Audio';
   speaker.setAttribute('aria-pressed',String(speaking));
   speaker.setAttribute('aria-label',speaking?'Silenciar respuestas habladas':'Activar respuestas habladas');
   speaker.disabled=!speakerReady;
-  if(recording&&phase){
-    const label=words?'● Grabando · '+words:
-      previewUnavailable?'● Grabando · transcripción en vivo no disponible':'● Grabando · te estoy escuchando';
-    showToolbarCaption(label);
-  }else if(phase==='permission')showToolbarCaption('Abriendo el micrófono…');
-  else if(phase==='finalizing'||phase==='sending')showToolbarCaption('Enviando audio…');
-  else if(phase==='idle'&&Object.hasOwn(micOpeningMessages,openingError))
-    showToolbarCaption(micOpeningMessages[openingError],true);
-  else if(phase==='ready'||phase==='idle'&&needsReview)
-    showToolbarCaption('Tu grabación quedó en Conversar para revisar.',true);
-  else if(phase==='idle')showToolbarCaption('');
 }
 function updateNativeAvailability(){
   const available=state?.native?.available===true;
@@ -2514,7 +2486,7 @@ async function paintGeneralCompanion(host){
     }finally{source.remove();}
   }catch{/* The companion light remains available without the portrait. */}
 }
-function openConversation(open){
+function openConversation(open,{composerOnly=false}={}){
   if(!open)sharedConversation?.closeTopicItem();
   const panel=$('#conversation-panel'),talk=$('#talk');
   const wasHidden=panel.hidden;
@@ -2529,6 +2501,7 @@ function openConversation(open){
     if(target.width&&target.height)conversationDisplay?.minimize(target);
   }
   if(restoreFocus)focused.blur();
+  if(open)panel.toggleAttribute('data-composer-only',composerOnly);
   workspace.set('conversation',open);
   syncWorkspace();
   if(wasHidden===open)resetFlightTap();
@@ -2540,6 +2513,7 @@ function openConversation(open){
   }
   if(open&&sharedSurface()){
     const host=ensureSharedConversation();
+    host.setComposerOnly(composerOnly);
     host.mount().then(()=>paintGeneralCompanion(host)).catch(()=>say('No pude abrir tu conversación. Volvé a tocar Conversar para intentarlo.'));
   }else if(open&&!flightEnabled)$('#message').focus();
   let didFocusWorld=false;
@@ -2566,7 +2540,7 @@ fitConversationWindow=bindHudPanelWindow(conversationWindow,{
 });
 fitConversationWorkspace=()=>fitConversationWindow(true);
 compactWorkspace.addEventListener('change',syncWorkspace);
-$('#talk').onclick=()=>openConversation(!workspace.visible('conversation'));
+$('#talk').onclick=()=>openConversation(!workspace.visible('conversation')||conversationWindow.hasAttribute('data-composer-only'));
 const mapPanel=$('#space-travel'),mapTool=$('#map-tool');
 mapTool.onclick=()=>{
   if(mapPanel.hidden)return;
@@ -2593,14 +2567,13 @@ async function captureConversationView(){
 $('#tool-mic').onclick=async()=>{
   if(!sharedSurface()||moving||entering)return;
   const button=$('#tool-mic');
-  if(button.getAttribute('aria-busy')==='true')return;
   button.disabled=true;
   try{
     if(inside&&activeSpace.id===CHARACTER_STUDIO&&matterHud?.active)
       conversationCharacterPose=matterHud.table?.currentPose?.()??null;
-    if(button.getAttribute('aria-pressed')!=='true')showToolbarCaption('Abriendo el micrófono…');
+    if(!workspace.visible('conversation'))openConversation(true,{composerOnly:true});
     await ensureSharedConversation().pressToolbarMic();
-  }catch(error){showToolbarCaption('');say(error.message,{transient:true});}
+  }catch(error){say(error.message,{transient:true});}
   finally{button.disabled=false;}
 };
 $('#tool-speaker').onclick=()=>sharedConversation?.toggleToolbarSpeaker();

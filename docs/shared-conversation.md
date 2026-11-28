@@ -8,11 +8,12 @@ not a new goal or a claim of delivery.
 
 ## Current state
 
-The toolbar Mic keeps the conversation panel closed. The world HUD shows
-opening, recording, processing and the available partial transcript. A
-successful toolbar recording enables spoken replies; the speaker control
-can mute them. The regular Conversation composer and its canonical delivery
-receipt remain the owners of capture and playback.
+The toolbar Mic starts the ordinary recorder and opens the canonical
+composer. When the chat is closed, it opens in a compact composer-only
+presentation. Conversar expands the same frame, preserving the draft and
+capture. A successful toolbar recording enables spoken replies; the speaker
+control can mute them. The Conversation composer and canonical receipt
+remain the owners of capture and playback.
 
 Holodeck directly embeds canonical Conversation at the
 [protected entrance](https://compaii.dmn.homes/holodeck/).
@@ -55,8 +56,10 @@ The chat leaves space below for the A2UI toolbar.
 
 ## Toolbar voice and replayable world state
 
-Mic uses the ordinary paired Conversation recorder without opening the chat.
-The first press starts recording and the next sends it. The adjacent speaker
+Mic starts the ordinary paired Conversation recorder and reveals the
+composer. Pause and Continue preserve one original and the editable live
+transcript. Stop finalizes it. Send is separate. The A2UI world dock only
+opens and starts the canonical composer. The adjacent speaker
 controls canonical spoken replies and turns on after another toolbar recording
 is accepted. A recording awaiting review stays in the canonical composer.
 The canonical composer reports whether it is opening, recording or awaiting
