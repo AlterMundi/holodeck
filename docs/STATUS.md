@@ -4386,7 +4386,7 @@ reconnect. On the Raspberry Pi client, the model response started at 0.78 s inst
 instead of 15.09 s, so room entry needs further work.
 The renderer now skips hidden interior frames while connecting and loading,
 then draws the destination before lifting the passage overlay. In the
-instrumented the Raspberry Pi client run, the first ready draw took 9.03 s and the next
+instrumented run on the Raspberry Pi client, the first ready draw took 9.03 s and the next
 one took 11 ms. Both desktop Chromium and emulated touch passed the packed
 doorway round trip with this change.
 On the physical Pi the packed lightweight candidate then reduced the
@@ -4456,7 +4456,7 @@ both Chromium and Blender. The complete packaged Pi run kept
 returned to the foyer. The next qualified fixture adds oriented
 fixture reflections to the service windows and the archive glass.
 The fitted window crops moved closer to Blender from both registered
-cameras. the Raspberry Pi client showed the selected model behind the glass, kept
+cameras. The Raspberry Pi client showed the selected model behind the glass, kept
 33.3 ms median and 50.0 ms p95 over 371 moving intervals, and returned
 through the door. The remaining visual differences include softness of
 glazing. The archive canopy and side fill now participate in the layered
@@ -4717,7 +4717,7 @@ health and client responses. Four scope denials passed. The actual
 predecessor package booted against the same optional configuration in
 the protected Node 24 fixture and served its original Matter GLB.
 The exact selected package concurrently passed desktop and emulated
-touch worktable use and the physical Raspberry Pi client route. the Raspberry Pi client had
+touch worktable use and the physical Raspberry Pi client route. The Raspberry Pi client had
 33.3 ms median and 50.0 ms p95 across 382 walking intervals, confirmed
 archive rotation, 24 camera checks and the foyer return. The browser
 trials used controlled identities. An authenticated human visit to the
@@ -4731,14 +4731,14 @@ across the floor plane and projected into the actual 561 × 374 drawing
 buffer. The measured position is the weighted centroid of the bright,
 near-neutral pixels in that floor region.
 
-On physical Raspberry Pi client, all eight samples tracked the highlight across
+On the physical Raspberry Pi client, all eight samples tracked the highlight across
 1.86 m of lateral camera travel. It moved 78.8 px horizontally against
 79.8 px predicted, with 3.2 px median absolute horizontal error and no
 reversal in the sampled direction. The desktop Chromium software renderer
 tracked four samples over 1.74 m, with 72.2 px observed against 73.6 px
 predicted and 3.4 px median error. Both routes returned through the foyer
 and verified that the scoped art became inaccessible outside the room.
-A separate Raspberry Pi client uninstrumented walk measured 33.3 ms median and
+A separate uninstrumented walk on the Raspberry Pi client measured 33.3 ms median and
 50.0 ms p95 across 388 intervals. Capture overhead was outside that
 measurement.
 
@@ -4807,7 +4807,7 @@ limits that bias to +1.18 while the brightest held-out pixels still
 average 15.03 levels below the reference.
 
 The isolated 32,061,440-byte package `b9e0387b42bf` passed the physical
-The Raspberry Pi client door, rotating archive and 24 camera-clearance checks. It took
+The door on the Raspberry Pi client, rotating archive and 24 camera-clearance checks. It took
 10.10 s to enter cold through the test tunnel and measured 33.3 ms median
 and 49.9 ms p95 over 396 walking intervals. The pendant reflection still
 moved in the expected direction over eight samples, with a 3.6 px
@@ -4826,7 +4826,7 @@ eight walking-camera poses, the foreground error was 7.15 and the error
 in successive luma changes was 4.72.
 
 The rebuilt `1a8ab781ac35` package matches the tested stage byte for byte
-and retains the 32,061,440-byte archive size. the Raspberry Pi client entered cold in
+and retains the 32,061,440-byte archive size. The Raspberry Pi client entered cold in
 9.64 s and measured 33.3 ms median and 50.0 ms p95 over 380 walking
 intervals. Seven samples tracked the pendant reflection with a 3.3 px
 median horizontal error. The archive turn, all 24 corner checks and

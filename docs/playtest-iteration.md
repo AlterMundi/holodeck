@@ -231,7 +231,7 @@ buffer measured 250.0 versus 266.7 ms frame p95 and 142.8 versus 159.2 ms
 software timer-query p95. Both lightweight medians were 133.3 ms.
 There is no measured performance gain. Use an actual hardware adapter
 and a matched run before
-promoting this material correction. the primary host exposes SwiftShader and no DRM
+promoting this material correction. The primary host exposes SwiftShader and no DRM
 graphics device. The comparison therefore records the browser renderer,
 WebGL identity, device and render pixel ratios, drawing-buffer area and
 draw/triangle counts, and checks whether GPU timer samples are disjoint.

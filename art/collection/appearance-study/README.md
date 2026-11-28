@@ -553,7 +553,7 @@ maps. The exact packed build kept independent desktop and emulated-touch
 looks on the same worktable revision, including separate rotation, exact
 part context, edition revocation and clearing the table. An injected map
 failure kept the previous look, and the retry succeeded. The GLB and both
-maps returned 404 after leaving. the Raspberry Pi client with amber active took 10.14 s
+maps returned 404 after leaving. The Raspberry Pi client with amber active took 10.14 s
 to enter cold through the qualification tunnel and walked the route at
 33.3 ms median and 33.4 ms p95 (435 moving intervals). The archive turned
 and all 24 sampled corner camera positions cleared the room.
@@ -590,7 +590,7 @@ The matched-height Pi captures show less mottling in the floor. The
 current browser ceiling, glazing and illumination response still need
 comparison with the detailed Blender reference.
 
-On the Raspberry Pi client the refined packed candidate reached the visible default
+On the Raspberry Pi client, the refined packed candidate reached the visible default
 room 9.84 s after cold entry through the qualification tunnel. The
 optional layered look applied in 2.27 s and transferred 646,870 PNG
 bytes. With the look enabled, 393 moving intervals measured 33.3 ms
@@ -647,7 +647,7 @@ mask to 27 texels. Restoring it recovered the same turned mask. The
 second emulated-touch browser retained its separate look and local
 shadow. Clearing the worktable removed its projected silhouette.
 
-On the Raspberry Pi client two retained archive representatives produced different
+On the Raspberry Pi client, two retained archive representatives produced different
 visible masks when switching editions and completing the half-turn
 (5,018 versus 2,925 occupied texels). The real pad and the second model
 reached the same half-turn. With the archive models enabled, 374 moving
@@ -698,7 +698,7 @@ the sampled pendant reflection and its parallax. It leaves secondary
 floor reflections and glazing as separate visual differences.
 
 The packed candidate keeps the 51,931-byte authored deck texture
-alongside the two scoped diffuse layers. the Raspberry Pi client applied them in
+alongside the two scoped diffuse layers. The Raspberry Pi client applied them in
 1.45 s through the qualification tunnel. Cold entry took 9.66 s.
 With lightweight graphics and the finish active, 374 moving intervals
 measured 33.3 ms median and 50.0 ms p95. Both archived representatives
@@ -728,7 +728,7 @@ reflection crops, mean absolute RGB error to Blender fell from 53.7 to
 45.8 levels in the center and from 56.4 to 46.3 laterally. Glazing
 color and reflection softness still differ from the offline render.
 
-On the Raspberry Pi client the aligned package showed the retained archive model
+On the Raspberry Pi client, the aligned package showed the retained archive model
 through the glass after the edition switch and half-turn. The walk
 measured 33.3 ms median and 50.0 ms p95 over 371 moving intervals.
 Cold entry took 9.76 s and selecting the layered look took 2.58 s through
