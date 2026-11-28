@@ -1,4 +1,5 @@
 import {AdditiveBlending,BufferAttribute,BufferGeometry,Color,DynamicDrawUsage,Points,ShaderMaterial,Vector3} from 'three';
+import {RibbonTrails,Shockwaves} from './hero-effects.mjs';
 
 const capacity=384;
 // Boosted flight leaves the bright, short wake; ordinary flight a thinner,
@@ -81,6 +82,11 @@ export class FlightWake{
     this.lastEmission=-10;
     this.tracks=new Map();
     this.particle=new Vector3();
+    // Flyers leave glowing ribbons; boosts keep their sparks on top and
+    // break away with a shockwave.
+    this.ribbons=new RibbonTrails(scene);
+    this.shockwaves=new Shockwaves(scene);
+    this.ribbonPoint=new Vector3();
     scene.add(this.mesh);
   }
 
@@ -98,7 +104,10 @@ export class FlightWake{
     const cruise=flying&&!boost?cruiseWakeDistance(track.last,position,seconds):0;
     const distance=boost||cruise,style=boost?BOOST:CRUISE;
     track.seen=time;
-    if(distance>0){
+    this.ribbonPoint.copy(position).addScaledVector(up,style.lift);
+    this.ribbons.follow(id,this.ribbonPoint,time,boost?1:cruise?.6:0,track.color);
+    // Cruise is drawn by the ribbon alone; boost adds sparks.
+    if(boost>0){
       const carry=track.carry%style.spacing;
       for(let offset=style.spacing-carry;offset<=distance;offset+=style.spacing){
         const i=this.index;
@@ -119,18 +128,22 @@ export class FlightWake{
   }
 
   // A ring of light around the body, perpendicular to where it breaks away.
-  burst(id,position,direction){
+  burst(id,position,direction,up=null){
     const time=(performance.now()-this.start)/1000;
     const axis=this.particle.copy(direction);
     if(axis.lengthSq()<1e-6)return;
     axis.normalize();
+    const lift=up?new Vector3().copy(up).multiplyScalar(.9):new Vector3(0,.9,0);
+    const key0=Number(id);
+    this.shockwaves.fire(new Vector3().copy(position).add(lift),axis,time,
+      new Color(Number.isFinite(key0)?tones[(Math.imul(key0,0x9e3779b1)>>>0)%tones.length]:0x6eeed8));
     const a=Math.abs(axis.y)<.9?new Vector3(0,1,0):new Vector3(1,0,0);
     const u=new Vector3().crossVectors(axis,a).normalize(),v=new Vector3().crossVectors(axis,u);
     const key=Number(id),color=new Color(Number.isFinite(key)?tones[(Math.imul(key,0x9e3779b1)>>>0)%tones.length]:0x6eeed8);
     for(let k=0;k<BURST.count;k++){
       const angle=k/BURST.count*Math.PI*2,c=Math.cos(angle),s=Math.sin(angle);
       const i=this.index;
-      this.position.setXYZ(i,position.x+(u.x*c+v.x*s)*.35,position.y+(u.y*c+v.y*s)*.35+.9,position.z+(u.z*c+v.z*s)*.35);
+      this.position.setXYZ(i,position.x+lift.x+(u.x*c+v.x*s)*.35,position.y+lift.y+(u.y*c+v.y*s)*.35,position.z+lift.z+(u.z*c+v.z*s)*.35);
       this.drift.setXYZ(i,(u.x*c+v.x*s)*BURST.speed-axis.x*2,(u.y*c+v.y*s)*BURST.speed-axis.y*2,(u.z*c+v.z*s)*BURST.speed-axis.z*2);
       this.tint.setXYZ(i,.6+.4*color.r,.6+.4*color.g,.6+.4*color.b);
       this.born.setX(i,time);
@@ -143,6 +156,8 @@ export class FlightWake{
 
   update(enabled){
     const time=(performance.now()-this.start)/1000;
+    this.ribbons.update(time,enabled);
+    this.shockwaves.update(time,enabled);
     this.mesh.material.uniforms.clock.value=time;
     for(const [id,track] of this.tracks)if(time-track.seen>.4)this.tracks.delete(id);
     this.mesh.visible=enabled&&time-this.lastEmission<life;
@@ -155,6 +170,8 @@ export class FlightWake{
   }
 
   dispose(){
+    this.ribbons.dispose();
+    this.shockwaves.dispose();
     this.mesh.removeFromParent();
     this.mesh.geometry.dispose();
     this.mesh.material.dispose();
