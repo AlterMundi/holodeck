@@ -1,5 +1,25 @@
 # Current MVP work
 
+## Toolbar Mic and companion boots · 2026-11-28
+
+Protected release `316394be6e59` serves `22cbd29`, with `59ce25c1115c`
+available for rollback. All 99 installed files matched the package. The
+canonical Conversation receiver serves microphone source `4240284f`.
+Chromium exercised a stalled permission request, access denial, disposal of
+late tracks and a successful recording retry while keeping the draft. It
+made no submission. The Node suite passed 619 tests with six skips.
+
+The mosaic model uses a separate corrected edition. Its bronze and dark
+boot meshes previously contained 84 triangles connecting vertices weighted
+to opposite feet. Only those triangle indices were removed. The packaged
+browser confirmed zero cross-leg triangles, the same 21 bones, textures
+and speech/expression controls. The preceding model is retained for rollback.
+
+Boost shockwaves and water ripples now square their signed offsets directly.
+GLSL leaves a negative base to `pow` undefined. Software Chromium rendered
+both effects without non-finite pixels before and after the change. The
+intermittent black square seen on the player's device was not reproduced.
+
 ## Mosaic companion edition · 2026-11-28
 
 Protected release `59ce25c1115c` serves `1c36fdb` with `d4bd03c4d4e1`
@@ -4569,6 +4589,10 @@ and a scripted native worker.
 [Room and source contract](houses.md#the-collection)
 
 ## Selected receiving release
+
+The current protected release is `316394be6e59` at `22cbd29` with
+`59ce25c1115c` retained for rollback. See the latest entry at the top of
+this record for the current receiver checks. Earlier releases follow.
 
 The protected playtest now selects package `601108cb255e` at source
 `43c39e0`. It includes Proyección PR #7 (`a8e5afc`) for display-density
