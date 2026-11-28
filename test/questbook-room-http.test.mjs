@@ -8,11 +8,11 @@ import {mkdtempSync, rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {randomUUID} from 'node:crypto';
-import {createHolodeck} from '../src/server.mjs';
 import {homeIdentityResolver} from '../src/home-identity.mjs';
 import {createNativeRoomAuthority} from '../src/native-authority.mjs';
 import {configuredQuestbook} from '../src/questbook.mjs';
 
+const {createHolodeck} = await import(process.env.HOLODECK_QUESTBOOK_SERVER ?? '../src/server.mjs');
 const binary = process.env.DAIMON_CARDS_BIN;
 
 test('the authenticated questbook credits only its original Room action', {skip:!binary}, async t => {
