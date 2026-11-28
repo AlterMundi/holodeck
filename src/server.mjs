@@ -995,6 +995,15 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       projects:selection.projects};
   }
 
+  function validProjectRepositories(repositories,project){
+    const hash=/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/;
+    const id=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
+    return Array.isArray(repositories)&&repositories.length<=8&&!repositories.some(row=>!row||typeof row.project!=='string'||!id.test(row.project)||
+      (project&&row.project!==project)||
+      typeof row.repository!=='string'||!id.test(row.repository)||typeof row.commit!=='string'||!hash.test(row.commit)||
+      typeof row.label!=='string'||!row.label.trim()||Array.from(row.label).length>80||/[\u0000-\u001f\u007f]/.test(row.label));
+  }
+
   app.get(route('api/topic-projects'),asyncRoute(async(req,res)=>{
     res.set('Cache-Control','private, no-store');
     const visit=spaces.topicVisit(req.actor);
@@ -1013,14 +1022,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const selected=await topicSelection(req,res,visit.topic,visit.room.id,true,cursor,selection);
     if(!selected)return;
     const {projects}=selected;
-    if(!projects||!Array.isArray(projects.repositories)||projects.repositories.length>8||
-      (projects.project??null)!==(selection?.project??null))
-      return res.sendStatus(503);
-    const hash=/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/;
-    if(projects.repositories.some(row=>!row||typeof row.project!=='string'||!id.test(row.project)||
-      (selection&&row.project!==project)||
-      typeof row.repository!=='string'||!id.test(row.repository)||typeof row.commit!=='string'||!hash.test(row.commit)||
-      typeof row.label!=='string'||!row.label.trim()||Array.from(row.label).length>80||/[\u0000-\u001f\u007f]/.test(row.label)))
+    if(!projects||(projects.project??null)!==(selection?.project??null)||
+      !validProjectRepositories(projects.repositories,selection?.project))
       return res.sendStatus(503);
     const repositories=projects.repositories.map(({project,repository,commit,label})=>({project,repository,commit,label}));
     const {next=null,restarted=false}=projects;
@@ -1089,6 +1092,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       res.set('Cache-Control','no-store');
       const input=req.method==='GET'?req.query:req.body||{};
       let actor=req.actor;
+      let projectRevisions=[];
       const {room:topic, project, repository}=input;
       const visit=spaces.topicVisit(req.actor);
       if(visit||topic!==undefined||project!==undefined||repository!==undefined){
@@ -1102,9 +1106,16 @@ export async function createHolodeck({basePath='/',production=false,identityReso
         if(!selected)return;
         if(selected.projects?.project!==project)
           return res.status(403).json({ok:false,code:'access'});
+        if(method==='view'){
+          if(!validProjectRepositories(selected.projects.repositories,project))
+            return res.sendStatus(503);
+          projectRevisions=selected.projects.repositories.map(({repository,commit,label})=>({
+            revision:{repository,commit},label,
+          }));
+        }
         actor=selected.actor;
       }
-      const result = await questbookHost[method](actor,input,req);
+      const result = await questbookHost[method](actor,input,req,projectRevisions);
       const status = result.ok ? 200 : ({access:403, invalid:400, missing:404, unresolved:409}[result.code]||503);
       res.status(status).json(result);
     });

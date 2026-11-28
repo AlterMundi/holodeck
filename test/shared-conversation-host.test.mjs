@@ -83,13 +83,22 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  const actorRef='human:room-visitor',origin='https://conversation.test',binding='a'.repeat(64);
  const projectA=randomUUID(),projectB=randomUUID(),card=randomUUID(),mission='Revisar las ilustraciones';
  const binary=process.env.DAIMON_CARDS_BIN;
- let cardTool,questbook;
+ let cardTool,questbook,storyCommit='1'.repeat(40),laterCommit;
  if(binary){
   const {mkdtemp,rm}=await import('node:fs/promises');
   const {join}=await import('node:path'),{tmpdir}=await import('node:os');
   const {execFileSync}=await import('node:child_process');
   const dir=await mkdtemp(join(tmpdir(),'holodeck-room-quest-'));
   t.after(()=>rm(dir,{recursive:true,force:true}));
+  const git=(...args)=>execFileSync('git',args,{cwd:dir,encoding:'utf8'}).trim();
+  git('init','--quiet');
+  const commit=message=>{
+   git('-c','user.name=Questbook fixture','-c','user.email=fixture@example.test',
+     'commit','--quiet','--allow-empty','-m',message);
+   return git('rev-parse','HEAD');
+  };
+  storyCommit=commit('Story draft');
+  laterCommit=commit('Second draft');
   const store=join(dir,'cards.sqlite');
   cardTool=input=>JSON.parse(execFileSync(binary,[store],{encoding:'utf8',input:JSON.stringify({
     project:projectA,actor:{kind:'daimon',subject:COMPAII_BEING},can_write:true,input,
@@ -186,7 +195,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  await closeTable();
  assert.equal(await page.locator('#topic-project-doors').count(),0);
  repositories=[
-  {project:projectA,repository:randomUUID(),label:'Cuento',commit:'1'.repeat(40),locator:'/must-not-leak'},
+  {project:projectA,repository:randomUUID(),label:'Cuento',commit:storyCommit,locator:'/must-not-leak'},
   {project:projectA,repository:randomUUID(),label:'Ilustraciones',commit:'2'.repeat(40)},
   {project:projectB,repository:randomUUID(),label:'Juego',commit:'3'.repeat(40)},
  ];
@@ -256,13 +265,30 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
   assert.equal(shared.title,humanTitle);
   assert.equal(shared.revision,4);
   assert.deepEqual(shared.revised_by,{kind:'human',subject:actorRef});
+  const linkRevision=(expected_revision,repository,commit)=>cardTool({type:'apply',command:{
+    operation:randomUUID(),card,expected_revision,action:{type:'link_revision',revision:{repository,commit}},
+  }}).result;
+  assert.equal(linkRevision(4,repositories[0].repository,storyCommit).status,'applied');
+  assert.equal(linkRevision(5,repositories[2].repository,storyCommit).status,'applied');
+  const mount=()=>page.evaluate(async scope=>
+    fetch('api/questbook?'+new URLSearchParams(scope)).then(response=>response.json()),selectors);
+  assert.equal((await mount()).result[2].updateDataModel.value.revisions,'Cuento · '+storyCommit);
+  await journal.getByRole('button',{name:'Volver al mundo',exact:true}).tap();
+  await openTable();
+  await table.getByRole('button',{name:'Abrir proyecto de Cuento',exact:true}).tap();
+  await detail.getByRole('button',{name:'Abrir diario de misiones'}).tap();
+  await journal.getByText('Cuento · '+storyCommit,{exact:true}).waitFor({state:'attached'});
+  repositories[0].commit=laterCommit;
+  assert.equal((await mount()).result[2].updateDataModel.value.hasRevisions,false);
+  assert.equal(cardTool({type:'read',card}).result.evidence.length,2);
+  repositories[0].commit=storyCommit;
   const linkedRepositories=repositories;
   repositories=repositories.slice(1);
   assert.equal(await request('questbook',selectors),404);
   const denied=await page.evaluate(async ({selectors,card,operation})=>{
     const response=await fetch('api/questbook/action',{method:'POST',headers:{'content-type':'application/json'},
       body:JSON.stringify({...selectors,operation,card,event:{surfaceId:'questbook-'+selectors.project,
-        name:'edit_title',context:{card,revision:4,title:'Escritura sin vínculo'}}})});
+        name:'edit_title',context:{card,revision:6,title:'Escritura sin vínculo'}}})});
     return response.status;
   },{selectors,card,operation:randomUUID()});
   assert.equal(denied,404);
@@ -291,7 +317,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  repositories[0].commit='4'.repeat(40);
  await openTable();
  await table.getByText('4'.repeat(40),{exact:true}).waitFor();
- assert.equal(await table.getByText('1'.repeat(40),{exact:true}).count(),0);
+ assert.equal(await table.getByText(storyCommit,{exact:true}).count(),0);
  assert.equal(await table.getByText('Juego',{exact:true}).count(),0);
  await closeTable();
  repositories.push(...Array.from({length:8},(_,index)=>({
