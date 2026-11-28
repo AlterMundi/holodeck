@@ -58,6 +58,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
   const yaw=new Quaternion(),roll=new Quaternion();
   const pivot=new Vector3(),shift=new Vector3(),tilt=new Quaternion();
   const water={up:new Vector3(),point:new Vector3()};
+  const washPoint=new Vector3(),washDirection=new Vector3();
 
   // Follow the real heading with a critically damped turn. The physical yaw
   // already answered the input. This eases only what the body shows.
@@ -245,6 +246,27 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       if(outdoor&&!atTable&&glanceMotion)wake?.observe(id,position,up,explicitFlight&&!wet,elapsed);
       // Peers part the meadow too; the explorer's own steps are read by the grass.
       if(outdoor&&!atTable&&!isLocal&&continuous)trample?.observe(id,position);
+      // Flying low washes the surface below: dust and torn grass over land,
+      // rings racing across the water. Spacing by distance keeps the cost
+      // flat at any speed; nothing is emitted above three metres.
+      if(sample&&explicitFlight&&glanceMotion&&continuous&&!atTable){
+        const wet=sample.waterLevel>sample.ground;
+        const surface=wet?sample.waterLevel:sample.ground;
+        const clearance=sample.feet-surface;
+        const pace=travel/Math.max(elapsed,.001);
+        const closeness=clamp(1-clearance/3);
+        if(closeness>0&&pace>3){
+          entry.washCarry=(entry.washCarry??0)+travel*closeness;
+          const spacing=wet?1.6:1.1;
+          while(entry.washCarry>=spacing){
+            entry.washCarry-=spacing;
+            washPoint.copy(position).addScaledVector(up,-clearance);
+            const strength=closeness*clamp(pace/14,.35,1);
+            if(wet)splash?.skim?.(washPoint,up,strength);
+            else wake?.dust?.(washPoint,up,washDirection.copy(displacement).normalize(),strength,sample);
+          }
+        }else entry.washCarry=0;
+      }
       const draft=sample?sample.waterLevel-sample.feet:-Infinity;
 
       if(!outdoor||underwater)entry.observedFlight=false;

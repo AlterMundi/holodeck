@@ -1,5 +1,6 @@
 import {AdditiveBlending,BufferAttribute,BufferGeometry,Color,DynamicDrawUsage,Points,ShaderMaterial,Vector3} from 'three';
 import {CameraKick,RibbonTrails,Shockwaves,SmokePuffs} from './hero-effects.mjs';
+import {terrainColor} from './toroidal-terrain.mjs';
 
 const capacity=384;
 // Boosted flight leaves the bright, short wake; ordinary flight a thinner,
@@ -194,6 +195,28 @@ export class FlightWake{
       this.born.array.fill(-10);
       this.born.needsUpdate=true;
       this.tracks.clear();
+    }
+  }
+
+  // Dust kicked up from the ground under a low flyer: puffs in the ground's
+  // own colour, thrown out to the sides and back, with a few grass-green bits.
+  dust(point,up,direction,strength,ground){
+    const [r,g,b]=Array.isArray(ground)?ground:terrainColor(ground.u,ground.v,ground.ground,0);
+    const time=(performance.now()-this.start)/1000;
+    const side=this.particle.crossVectors(up,direction);
+    if(side.lengthSq()<1e-6)side.set(1,0,0);
+    side.normalize();
+    this.dustColour??=new Color();
+    for(const sign of [-1,1]){
+      const out=new Vector3().copy(side).multiplyScalar(sign*(2.2+2.5*strength))
+        .addScaledVector(direction,-1.5).addScaledVector(up,.9+.8*strength);
+      const grassy=g>r*1.08&&g>b*1.2;
+      this.dustColour.setRGB(r*1.15+.08,g*1.1+.06,b*1.05+.05);
+      this.smoke.puff(new Vector3().copy(point).addScaledVector(up,.15),out,time,.35+.35*strength,this.dustColour,(time*7.3+sign)%1);
+      if(grassy&&strength>.5){
+        this.dustColour.setRGB(r*.8,g*1.25,b*.6);
+        this.smoke.puff(new Vector3().copy(point).addScaledVector(up,.1),out.multiplyScalar(1.3),time,.16,this.dustColour,(time*3.1+sign*.5)%1);
+      }
     }
   }
 
