@@ -1,5 +1,25 @@
 # Current MVP work
 
+## Boost smoke and low-flight surface effects · 2026-11-28
+
+Protected release `c7a92cd8a6aa` selects runtime source `0679a01`, including
+the two new commits from Char Design's `59c5069` branch tip. The installed
+96 files and protected HTTPS client matched the release package. Rollback
+is `3073d6c8068c`. Node passed 588 tests with four skips.
+
+On the RTX 2060, the boost rendered smoke and sparks, and low flight raised
+dust over grass and dirt and rings over water. The local camera target moved
+by up to 1.0 cm during the measured boost. The same target stayed fixed
+relative to its input with reduced motion and with the Three.js XR-presenting
+flag simulated. A physical headset was not tested. A second networked
+browser received the remote boost's smoke, trail and shockwave without a
+camera offset of its own.
+
+On the Pi 5 at 528 × 330 in normal graphics, three 2.5-second low-boost
+windows had median FPS of 15.90 before and 15.10 after. Median frame p95
+stayed at 83.4 ms. The candidate filled the 48-puff pool and produced green
+grass fragments. The pool remains at 48.
+
 ## Flight ribbons, shockwaves and water ripples · 2026-11-28
 
 Protected release `3073d6c8068c` selects runtime source `1553b42`. It
