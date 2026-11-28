@@ -1,4 +1,5 @@
 import {BufferAttribute,BufferGeometry,DynamicDrawUsage,Points,ShaderMaterial,Vector3} from 'three';
+import {WaterRipples} from './hero-effects.mjs';
 import {terrainFrame,terrainPosition} from './toroidal-terrain.mjs';
 
 const capacity=192;
@@ -118,6 +119,7 @@ export class WaterSplash {
     this.forward=new Vector3();
     this.side=new Vector3();
     this.origin=new Vector3();
+    this.ripples=new WaterRipples(scene);
     scene.add(this.mesh);
   }
 
@@ -185,6 +187,9 @@ export class WaterSplash {
     this.mesh.material.uniforms.pixelRatio.value=this.pixelRatio();
     this.lastBurst=now;
     this.mesh.visible=true;
+    // The surface answers with spreading rings; a hard entry adds a second.
+    this.ripples.spawn(this.point,this.up,now,strength);
+    if(strength>.55)this.ripples.spawn(this.point,this.up,now+.18,strength*.7);
   }
 
   update(available){
@@ -198,11 +203,13 @@ export class WaterSplash {
       }
     }else for(const [id,state] of this.states)if(now-state.seen>.4)this.states.delete(id);
     this.mesh.material.uniforms.clock.value=now;
+    this.ripples.update(now,available);
     this.mesh.visible=available&&now-this.lastBurst<lifetime;
     if(this.mesh.visible)this.mesh.material.uniforms.pixelRatio.value=this.pixelRatio();
   }
 
   dispose(){
+    this.ripples.dispose();
     this.mesh.removeFromParent();
     this.mesh.geometry.dispose();
     this.mesh.material.dispose();

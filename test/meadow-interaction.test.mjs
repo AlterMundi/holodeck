@@ -75,7 +75,7 @@ test('walking leaves footprints that spring back, and a jump leaves none',()=>{
   }finally{grass.dispose();}
 });
 
-test('ordinary flight leaves a softer, longer trail than boost',()=>{
+test('ordinary flight leaves a ribbon; boost adds sparks and breaks away with a shockwave',()=>{
   const origin=new Vector3(),end=new Vector3();
   assert.equal(cruiseWakeDistance(origin,end.set(.15,0,0),.03),.15,'5 m/s');
   assert.equal(cruiseWakeDistance(origin,end.set(.05,0,0),.03),0,'hovering');
@@ -86,27 +86,26 @@ test('ordinary flight leaves a softer, longer trail than boost',()=>{
     const at=new Vector3();
     wake.observe(1,at.set(0,0,0),up,true,.03);
     for(let i=1;i<=20;i++)wake.observe(1,at.set(i*.15,0,0),up,true,.03);
-    assert.ok(wake.index>=4,`cruise particles: ${wake.index}`);
-    const cruise=wake.kind.getX(0);
-    const cruiseLife=wake.kind.getY(0);
-    const first=wake.index;
+    // Cruise: a ribbon with a growing path, no sparks.
+    const ribbon=wake.ribbons.slots.get(1);
+    assert.ok(ribbon,'cruise ribbon');
+    assert.equal(wake.index,0,'no cruise sparks');
+    assert.ok(ribbon.points.filter(point=>point.born>-1e3).length>=6);
+    assert.ok(Math.abs(ribbon.points[0].strength-.6)<1e-9);
+    // Boost: sparks and a full-strength ribbon.
     wake.observe(2,at.set(0,5,0),up,true,.03);
     wake.observe(2,at.set(.75,5,0),up,true,.03);
-    assert.ok(wake.index>first);
-    assert.ok(cruise<wake.kind.getX(first),'boost is brighter');
-    assert.ok(cruiseLife>wake.kind.getY(first),'cruise lasts longer');
-    // A boost sample can carry more than one cruise spacing. The first
-    // cruise particle must still be inside the segment just flown.
-    wake.observe(4,at.set(0,8,0),up,true,.03);
-    wake.observe(4,at.set(.65,8,0),up,true,.03);
-    const beforeCruise=wake.index;
-    wake.observe(4,at.set(.8,8,0),up,true,.015);
-    for(let index=beforeCruise;index<wake.index;index++)
-      assert.ok(wake.position.getX(index)>=.65);
-    // Walking (not flying) leaves nothing.
-    const before=wake.index;
+    assert.ok(wake.index>0,'boost sparks');
+    assert.equal(wake.ribbons.slots.get(2).points[0].strength,1);
+    // A boost breaking away fires a shockwave.
+    wake.burst(2,at,new Vector3(1,0,0),up);
+    assert.equal(wake.shockwaves.mesh.visible,true);
+    // Walking (not flying) starts no ribbon.
     wake.observe(3,at.set(0,9,0),up,false,.03);
     wake.observe(3,at.set(.15,9,0),up,false,.03);
-    assert.equal(wake.index,before);
+    assert.equal(wake.ribbons.slots.has(3),false);
+    wake.update(false);
+    assert.equal(wake.ribbons.slots.size,0);
   }finally{wake.dispose();}
+  assert.equal(scene.children.length,0);
 });
