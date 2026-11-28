@@ -60,15 +60,16 @@ test('the planted foot moves against the travel in every direction',async()=>{
 });
 
 test('a pilot flies head first along a sideways boost and leans back when backing away',async()=>{
-  const route=[['launch',1.2,{flight:true,vertical:1}],['side',2,{flight:true,right:1,sprint:true}],['back',2.2,{flight:true,forward:-1}]];
-  let lastPosition=null,alignment=0,backTilt=-1;
+  const route=[['launch',1.2,{flight:true,vertical:1}],['side',2,{flight:true,right:1,sprint:true}],['back',2.2,{flight:true,forward:-1}],['strafe-after-back',2.8,{flight:true,right:-1,sprint:true}]];
+  let lastPosition=null,alignment=0,strafeAfterBack=0,backTilt=-1;
   await runSequence({file:explorer,route,pilot:true,onFrame({name,phase,root}){
     const position=root.position.clone();
-    if(name==='side'&&phase>1.6&&lastPosition){
+    if((name==='side'||name==='strafe-after-back')&&phase>1.6&&lastPosition){
       const travel=position.clone().sub(lastPosition).normalize();
       // Lying out, the body's long axis (its local up) runs along the travel.
       const length=new Vector3(0,1,0).applyQuaternion(root.quaternion);
-      alignment=Math.max(alignment,length.dot(travel));
+      if(name==='side')alignment=Math.max(alignment,length.dot(travel));
+      else strafeAfterBack=Math.max(strafeAfterBack,length.dot(travel));
     }
     if(name==='back'&&phase>2){
       const upright=new Vector3(0,1,0).applyQuaternion(toroidalRotation(root.position,0));
@@ -77,6 +78,7 @@ test('a pilot flies head first along a sideways boost and leans back when backin
     lastPosition=position;
   }});
   assert.ok(alignment>.8,`alignment ${alignment}`);
+  assert.ok(strafeAfterBack>.8,`strafe after backing ${strafeAfterBack}`);
   // Backing away the pilot stands up instead of lying out.
   assert.ok(backTilt>.75,`upright ${backTilt}`);
 });

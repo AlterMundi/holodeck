@@ -287,7 +287,8 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       // In flight and water the body goes head first along its travel; when
       // drifting backwards it leans back and lets the feet lead instead.
       const cruising=(mode==='hover'||mode==='swim')&&!atTable&&glanceMotion;
-      const flightTravel=gaitDirection(heading,entry.flightBackward);
+      // An established backward lean must release at a pure strafe.
+      const flightTravel=gaitDirection(heading,entry.flightBackward,1.74);
       if(!cruising)entry.flightBackward=false;
       else if(entry.planarSpeed>.5)entry.flightBackward=flightTravel.backward;
       const headFirstTarget=cruising?(entry.flightBackward?flightTravel.hips*.5:heading)*w:0;

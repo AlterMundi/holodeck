@@ -13,9 +13,9 @@ export function travelAngle(right,forward){
 }
 
 // Lower body yaw for a travel angle, with hysteresis around the side.
-export function gaitDirection(angle,wasBackward=false){
+export function gaitDirection(angle,wasBackward=false,leaveBackward=BACK_LEAVE){
   const back=Math.abs(angle);
-  const backward=wasBackward?back>BACK_LEAVE:back>BACK_ENTER;
+  const backward=wasBackward?back>leaveBackward:back>BACK_ENTER;
   const turned=backward?angle-Math.sign(angle||1)*Math.PI:angle;
   return {backward,hips:clamp(turned,-LEG_LIMIT,LEG_LIMIT)};
 }
