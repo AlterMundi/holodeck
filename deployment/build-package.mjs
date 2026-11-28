@@ -26,7 +26,7 @@ const resourcePlugin={name:'qualified-jsdom-sidecars',setup(api){
 }};
 // Compact the vendored server within the receiving archive limit. Preserve
 // runtime function and class names used by the router and dependency adapters.
-await build({entryPoints:{server:join(root,'src/server.mjs'),'xhr-sync-worker':join(root,'node_modules/jsdom/lib/jsdom/living/xhr/xhr-sync-worker.js')},outdir:join(stage,'src'),outExtension:{'.js':'.mjs'},bundle:true,splitting:true,format:'esm',platform:'node',target:'node24',minify:true,keepNames:true,
+await build({entryPoints:{server:join(root,'src/server.mjs'),'teleport-icon-worker':join(root,'src/teleport-icon-worker.mjs'),'xhr-sync-worker':join(root,'node_modules/jsdom/lib/jsdom/living/xhr/xhr-sync-worker.js')},outdir:join(stage,'src'),outExtension:{'.js':'.mjs'},bundle:true,splitting:true,format:'esm',platform:'node',target:'node24',minify:true,keepNames:true,
   banner:{js:"import{createRequire as __createRequire}from'node:module';const require=__createRequire(import.meta.url);"},external:['canvas'],plugins:[resourcePlugin]});
 await mkdir(join(stage,'runtime/jsdom/lib/jsdom/browser'),{recursive:true});
 await copyFile(join(root,'node_modules/jsdom/lib/jsdom/browser/default-stylesheet.css'),join(stage,'runtime/jsdom/lib/jsdom/browser/default-stylesheet.css'));

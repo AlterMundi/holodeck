@@ -64,6 +64,15 @@ A map will use the same authorized catalog and the same trip request
 with its existing server-side access check. Its position and camera remain
 local to its projection. The current instrument has no map.
 
+Reachable destinations may also expose a revisioned icon URL from the
+destination catalog. The server checks the same access and reachability
+for each icon request and generates the GLB off the request loop. Rooms
+use their selected art, houses use their facade, and the Residence uses
+its exact packaged visual export. Replacing a source changes the icon URL.
+The station mounts its authored miniature immediately and swaps in the
+generated icon when it loads. Locations without a usable source retain
+the authored miniature.
+
 A future workbench can mount switch models with the same hook today.
 Continuous knobs and sliders need explicit normalized gesture and display
 bindings before accepting a physical input. A physical MIDI adapter will

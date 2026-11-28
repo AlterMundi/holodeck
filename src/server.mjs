@@ -496,7 +496,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       const [x,y,z]=residenceWorld(0,-21,TOROIDAL_RESIDENCE.floor);
       publicPlace('terrain:residence','Residencia de la Nobleza IA',{x,y,z,yaw:180});
       iconSource.set(destinations.at(-1),{kind:'residence',revision:residenceAssets.visual.sha256,
-        bytes:()=>readFileSync(residenceVisual)});
+        bytes:()=>exteriorArt.get(residenceAssets.visual.path)?.bytes??readFileSync(residenceVisual)});
     }else if(!hideWorkshop){
       const names={overlook:'Mirador',gallery:'Isla de la galería',garden:'Isla del jardín'};
       for(const {id,x,z} of TERRACES){
@@ -884,7 +884,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(session[budget].length>=(pointing?1:4))return res.status(429).json({message:'Esperá un momento antes de intentar otra acción.'});
       session[budget].push(now);
     }
-    const spaceRoute=['/space','/space/destinations','/space/jump','/space/character-pose-review','/space/character-presentation','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/avatar-pose','/space/collection/tabletop-presence','/space/collection/pointing','/space/matter-look','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
+    const spaceRoute=['/space','/space/destinations','/space/jump','/space/character-pose-review','/space/character-presentation','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/avatar-pose','/space/collection/tabletop-presence','/space/collection/pointing','/space/matter-look','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/destinations/icon/')||req.path.startsWith('/space/collection-model/')||
       req.path==='/release-dnd'||req.path==='/appearance'||req.path==='/conversation-surface'||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
@@ -1323,15 +1323,16 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     });
     res.json({space:spaces.current(req.actor),destinations});
   });
-  app.get(route('api/space/destinations/icon/:key'),async(req,res)=>{
+  app.get(route('api/space/destinations/icon/:key'),asyncRoute(async(req,res)=>{
     if(spaces.fenced||room.commitUncertain)return res.sendStatus(503);
+    if(!/^[a-f0-9]{32}$/.test(req.params.key))return res.sendStatus(404);
     const source=teleportDestinations(req.actor).map(entry=>iconSource.get(entry))
       .find(candidate=>candidate&&iconKey(candidate)===req.params.key);
     if(!source)return res.sendStatus(404);
     const bytes=await teleportIcons.glb(source);
     if(!bytes)return res.sendStatus(404);
     res.set('Cache-Control','private, max-age=31536000, immutable').type('model/gltf-binary').send(bytes);
-  });
+  }));
   app.get(route('api/space/scene'),(req,res)=>{
     const {room:destination}=req.query;
     const from=spaces.current(req.actor);

@@ -36,7 +36,10 @@ export function pngGrid(bytes){
   }
   const channels={0:1,2:3,3:1,4:2,6:4}[type];
   if(depth!==8||interlace||!channels||width*height>4096*4096)return null;
-  const raw=inflateSync(Buffer.concat(data)),stride=width*channels,pixels=Buffer.alloc(stride*height);
+  const stride=width*channels,decoded=(stride+1)*height;
+  const raw=inflateSync(Buffer.concat(data),{maxOutputLength:decoded});
+  if(raw.length!==decoded)return null;
+  const pixels=Buffer.alloc(stride*height);
   for(let y=0;y<height;y++){
     const filter=raw[y*(stride+1)],line=raw.subarray(y*(stride+1)+1,(y+1)*(stride+1)),out=y*stride;
     for(let x=0;x<stride;x++){
@@ -298,13 +301,18 @@ export async function buildIcon(source){
 class IconWorker {
   constructor(){this.next=0;this.pending=new Map();}
   run(source){
+    if(this.pending.size>=CACHE)return Promise.resolve(null);
     if(!this.worker){
-      this.worker=new Worker(new URL('./teleport-icon-worker.mjs',import.meta.url),{execArgv:[]});
-      this.worker.on('message',({id,bytes})=>{
+      const worker=this.worker=new Worker(new URL('./teleport-icon-worker.mjs',import.meta.url),{execArgv:[]});
+      worker.on('message',({id,bytes})=>{
         this.pending.get(id)?.(bytes?Buffer.from(bytes):null);this.pending.delete(id);this.idle();
       });
-      const fail=()=>{for(const done of this.pending.values())done(null);this.pending.clear();this.worker=null;};
-      this.worker.on('error',fail);this.worker.on('exit',fail);
+      const fail=()=>{
+        if(this.worker!==worker)return;
+        for(const done of this.pending.values())done(null);
+        this.pending.clear();this.worker=null;
+      };
+      worker.on('error',fail);worker.on('exit',fail);
     }
     clearTimeout(this.timer);
     const id=++this.next;
@@ -336,7 +344,7 @@ export class TeleportIcons {
       this.cache.delete(key);this.cache.set(key,entry);
     }
     const bytes=await entry;
-    if(!bytes)this.cache.delete(key);
+    if(!bytes&&this.cache.get(key)===entry)this.cache.delete(key);
     return bytes;
   }
 
