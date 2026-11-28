@@ -122,9 +122,9 @@ test('speech opens the luminous mouth at either size, and reduced motion keeps i
   const speak=()=>avatar.setSpeechLevel(1);
   still(avatar,.6,{},speak);
   assert.ok(opening()>.97&&opening()<=1,String(opening()));
-  const full=rest-jaw.position.z;
-  // the ceramic chin only follows the light, a third of its former travel
-  assert.ok(Math.abs(full-4/515)<.0004,String(full));
+  // only the light speaks: the separate chin piece is collapsed and never moves
+  assert.equal(jaw.position.z,rest);
+  assert.ok(jaw.scale.x<1e-3);
   avatar.setSpeechLevel(0);
   still(avatar,.8);
   assert.ok(Math.abs(jaw.position.z-rest)<1e-6);
@@ -132,8 +132,7 @@ test('speech opens the luminous mouth at either size, and reduced motion keeps i
   const {Box3}=await import('three');
   const table={active:true,bounds:new Box3(new Vector3(-1,.8,-.7),new Vector3(1,2,.7))};
   still(avatar,.8,{table,position:new Vector3(0,1,0)},speak);
-  const miniature=rest-jaw.position.z;
-  assert.ok(miniature>full*1.3&&miniature<full*1.5);
+  assert.equal(jaw.position.z,rest);
   assert.ok(opening()>1.15&&opening()<=1.2,'a wider, bounded opening at tabletop scale');
   document.media.matches=true;
   still(avatar,.2,{},speak);
@@ -237,4 +236,28 @@ test('stacked passes hand every bone back to the mixer',async()=>{
   }});
   assert.ok(stock.size>80);
   assert.ok(new Quaternion().length()===1);
+});
+
+test('the companion steps in front of a still player to answer and faces them',async()=>{
+  const {avatar}=await loadCompanion();
+  const root=avatar.figure.root;
+  still(avatar,1.2);
+  const leader=new Vector3(0,0,0);
+  const behind=root.position.clone().sub(leader).dot(new Vector3(0,0,1));
+  still(avatar,2.4,{},()=>avatar.setSpeechLevel(.6));
+  const ahead=root.position.clone().sub(leader);
+  assert.ok(ahead.z>behind+.8,'moved toward the front: '+behind+' -> '+ahead.z);
+  const toPlayer=leader.clone().sub(root.position).setY(0).normalize();
+  assert.ok(new Vector3(0,0,1).applyQuaternion(root.quaternion).dot(toPlayer)>.8,'faces the player');
+});
+
+test('companion clips are low-passed so blended motion does not tremble',async()=>{
+  const {jitterRatio}=await import('../src/animation-smoothing.mjs');
+  const {parseGlb}=await import('../tools/avatar-motion/rig.mjs');
+  const {smoothClip}=await import('../src/animation-smoothing.mjs');
+  const g=await parseGlb(new URL('../public/assets/avatar/navegante-blender.glb',import.meta.url).pathname);
+  for(const name of ['calm','hover','glide','sway']){
+    const clip=g.animations.find(item=>item.name===name);
+    assert.ok(jitterRatio(smoothClip(clip.clone(),{sigmaSeconds:.05,loop:true}))<.3,name);
+  }
 });
