@@ -445,3 +445,11 @@ rechecks the selected link. The scene owns the displayed doors and
 discards them on departure. Additional projects remain accessible through
 the paged table. Separate project interiors and editing surfaces remain
 part of the topic-room roadmap.
+
+
+The project view offers the questbook when the project is the one selected
+by the receiving card writer and the visitor has its read grant. Its pages
+and revisioned actions revalidate the room and the linked repository before
+using the same DaimonCards writer as the workshop journal. The writer
+continues to enforce the individual card and edit grants. Leaving the
+topic closes its journal. No new card store or model work is required.

@@ -1026,7 +1026,9 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const {next=null,restarted=false}=projects;
     if((next!==null&&(typeof next!=='string'||!pageKey.test(next)))||typeof restarted!=='boolean')
       return res.sendStatus(503);
-    res.json({room:visit.topic,repositories,next,restarted,...(selection?{project}:{})});
+    const questbook=!!selection&&!!questbookHost&&await questbookHost.canRead(selected.actor,project,req);
+    if(!inScope(selected.actor,visit.room.id))return res.sendStatus(404);
+    res.json({room:visit.topic,repositories,next,restarted,...(selection?{project,questbook}:{})});
   }));
 
   app.get(route('api/topic-space'),asyncRoute(async(req,res)=>{
@@ -1085,7 +1087,24 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   if (questbookHost) {
     const questbookReply = method => asyncRoute(async(req,res)=>{
       res.set('Cache-Control','no-store');
-      const result = await questbookHost[method](req.actor, req.method==='GET' ? req.query : req.body||{}, req);
+      const input=req.method==='GET'?req.query:req.body||{};
+      let actor=req.actor;
+      const {room:topic, project, repository}=input;
+      const visit=spaces.topicVisit(req.actor);
+      if(visit||topic!==undefined||project!==undefined||repository!==undefined){
+        const id=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
+        if(!visit||visit.topic!==topic||typeof project!=='string'||!id.test(project)||
+           typeof repository!=='string'||!id.test(repository))
+          return res.status(403).json({ok:false,code:'access'});
+        if(!questbookHost.matchesProject(project))
+          return res.status(403).json({ok:false,code:'access'});
+        const selected=await topicSelection(req,res,topic,visit.room.id,true,undefined,{project,repository});
+        if(!selected)return;
+        if(selected.projects?.project!==project)
+          return res.status(403).json({ok:false,code:'access'});
+        actor=selected.actor;
+      }
+      const result = await questbookHost[method](actor,input,req);
       const status = result.ok ? 200 : ({access:403, invalid:400, missing:404, unresolved:409}[result.code]||503);
       res.status(status).json(result);
     });

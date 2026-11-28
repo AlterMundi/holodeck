@@ -60,6 +60,12 @@ export function createQuestbook(room, {project, binary, store, authorize}) {
   }
 
   return {
+    matchesProject: selectedProject => selectedProject === project,
+
+    async canRead(actor, selectedProject, request) {
+      return selectedProject === project && !!await access(actor, false, request);
+    },
+
     async native(actor, input) {
       if (actor.kind !== 'daimon') return {ok:false,code:'access'};
       if (input.type === 'confirm_objective') {

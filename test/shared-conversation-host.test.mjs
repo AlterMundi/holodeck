@@ -81,6 +81,23 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  const {chromium}=await import(browserModule);
  const {createHolodeck}=await import('../src/server.mjs');
  const actorRef='human:room-visitor',origin='https://conversation.test',binding='a'.repeat(64);
+ const projectA=randomUUID(),projectB=randomUUID(),card=randomUUID(),mission='Revisar las ilustraciones';
+ const binary=process.env.DAIMON_CARDS_BIN;
+ let cardTool,questbook;
+ if(binary){
+  const {mkdtemp,rm}=await import('node:fs/promises');
+  const {join}=await import('node:path'),{tmpdir}=await import('node:os');
+  const {execFileSync}=await import('node:child_process');
+  const dir=await mkdtemp(join(tmpdir(),'holodeck-room-quest-'));
+  t.after(()=>rm(dir,{recursive:true,force:true}));
+  const store=join(dir,'cards.sqlite');
+  cardTool=input=>JSON.parse(execFileSync(binary,[store],{encoding:'utf8',input:JSON.stringify({
+    project:projectA,actor:{kind:'daimon',subject:COMPAII_BEING},can_write:true,input,
+  })}));
+  assert.equal(cardTool({type:'apply',command:{operation:randomUUID(),card,expected_revision:0,
+    action:{type:'create',title:mission}}}).result.status,'applied');
+  questbook={project:projectA,binary,store,authorize:async actor=>({read:actor.id===actorRef,write:actor.id===actorRef})};
+ }
  let repositories=[],projectRevision=1;
  const nativeFactory=async()=>({availability:async()=>({available:true}),contexts:{},
    async topicRoom(actor,topic,includeProjects,cursor,selection){
@@ -98,7 +115,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
    },
    conversationSurface:async()=>({schema:'holodeck.conversation-surface/v1',actorRef,binding,
     beingRef:COMPAII_BEING,homeRef:'home:'+'c'.repeat(32),url:origin+'/interaction/'})});
- const runtime=await createHolodeck({conversationOrigins:[origin],nativeFactory,
+ const runtime=await createHolodeck({conversationOrigins:[origin],nativeFactory,questbook,
   nativeRoomAuthority:async()=>['observe'],
   identityResolver:async()=>({id:actorRef,ref:actorRef,kind:'human',rights:['observe','edit','project'],name:'Visitor'})});
  const server=runtime.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
@@ -168,7 +185,6 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  });
  await closeTable();
  assert.equal(await page.locator('#topic-project-doors').count(),0);
- const projectA=randomUUID(),projectB=randomUUID();
  repositories=[
   {project:projectA,repository:randomUUID(),label:'Cuento',commit:'1'.repeat(40),locator:'/must-not-leak'},
   {project:projectA,repository:randomUUID(),label:'Ilustraciones',commit:'2'.repeat(40)},
@@ -199,7 +215,36 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  const detail=page.getByRole('dialog',{name:'Proyecto vinculado'});
  await detail.getByText('Ilustraciones',{exact:true}).waitFor();
  assert.equal(await detail.getByText('Juego',{exact:true}).count(),0);
- await detail.getByRole('button',{name:'Volver a la mesa',exact:true}).tap();
+ if(questbook){
+  const selectors={room:room.room,project:projectA,repository:repositories[0].repository};
+  const foreign={room:room.room,project:projectB,repository:repositories[2].repository};
+  const request=(path,scope)=>page.evaluate(async ({path,scope})=>
+    fetch('api/'+path+'?'+new URLSearchParams(scope)).then(response=>response.status),{path,scope});
+  assert.equal(await request('questbook',foreign),403);
+  await detail.getByRole('button',{name:'Abrir diario de misiones'}).tap();
+  const journal=page.getByRole('dialog',{name:'Diario de misiones'});
+  await journal.getByText(mission,{exact:true}).last().waitFor({state:'attached'});
+  const changed=page.waitForResponse(response=>response.url().endsWith('/api/questbook/action'));
+  await journal.getByRole('button',{name:'Aceptar misión'}).focus();
+  await page.keyboard.press('Space');
+  assert.equal((await (await changed).json()).result.status,'applied');
+  await journal.getByText('En curso',{exact:true}).waitFor({state:'attached'});
+  assert.equal(cardTool({type:'read',card}).result.status,'in_progress');
+  const linkedRepositories=repositories;
+  repositories=repositories.slice(1);
+  assert.equal(await request('questbook',selectors),404);
+  const denied=await page.evaluate(async ({selectors,card,operation})=>{
+    const response=await fetch('api/questbook/action',{method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify({...selectors,operation,card,event:{surfaceId:'questbook-'+selectors.project,
+        name:'done',context:{card,revision:2}}})});
+    return response.status;
+  },{selectors,card,operation:randomUUID()});
+  assert.equal(denied,404);
+  assert.equal(cardTool({type:'read',card}).result.status,'in_progress');
+  repositories=linkedRepositories;
+  await journal.getByRole('button',{name:'Volver al mundo',exact:true}).tap();
+  await openTable();
+ }else await detail.getByRole('button',{name:'Volver a la mesa',exact:true}).tap();
  await table.getByText('Cuento',{exact:true}).waitFor();
  const openStory=()=>table.getByRole('button',{name:'Abrir proyecto de Cuento',exact:true}).tap();
  await openStory();
@@ -276,7 +321,8 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  await dialog.getByRole('button',{name}).tap();
  await dialog.getByText('Ese topic ya no está disponible.').waitFor();
  assert.deepEqual(readbacks,[null,room.room,null,room.room]);
- assert.deepEqual(posted,['/api/topic-space','/api/space']);
+ assert.deepEqual(posted,questbook?['/api/topic-space','/api/questbook/action','/api/questbook/action','/api/space']:
+   ['/api/topic-space','/api/space']);
  assert.deepEqual(modes,[room.room,null,room.room,null]);
  assert.deepEqual(errors,[]);
 });

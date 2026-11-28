@@ -320,7 +320,10 @@ function applySpace(next,anchor){
     $('#shared-conversation').inert=true;
     if(!changingTopicMode)void setTopicMode(null);
   }
-  if(changed&&$('#topic-projects-dialog').open)$('#topic-projects-dialog').close();
+  if(changed){
+    if($('#topic-projects-dialog').open)$('#topic-projects-dialog').close();
+    questbook.closeTopic();
+  }
   if(changed){roomTopic=undefined;worktableTopic=undefined;contentVisitor.changeRoom(inside,next.id);worldIndication.selected=null;worldIndication.removeOutline();state=null;}
   else if(inside)contentVisitor.confirmRoom();
   if(anchor||leavingTopic){
@@ -1204,6 +1207,16 @@ async function readTopicProjects(pages){
       open.onclick=()=>openTopicProject(first);
       section.append(list,open);
       topicProjectsList.append(section);
+    }
+    if(project&&result.questbook===true){
+      const missions=document.createElement('button');
+      missions.type='button';
+      missions.textContent='Abrir diario de misiones';
+      missions.onclick=()=>{
+        topicProjectsDialog.close();
+        questbook.open({room,...project});
+      };
+      topicProjectsList.append(missions);
     }
     const status=projects.size?(project?'Repositorios del proyecto':'Vínculos del topic'):topicProjectsPage.length>1||topicProjectsCursor
       ?'No hay vínculos visibles en esta página.':'Todavía no hay proyectos visibles en esta sala.';

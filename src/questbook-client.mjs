@@ -13,12 +13,17 @@ export class Questbook {
     this.next = document.querySelector('#questbook-next');
     this.pages = [null];
     this.reading = 0;
+    this.mountRevision = 0;
 
-    document.querySelector('#questbook-open').onclick = () => {
-      this.dialog.showModal();
-      void this.read(this.data?.id);
-    };
-    this.dialog.addEventListener('close', () => { ++this.reading; this.unmount(); });
+    document.querySelector('#questbook-open').onclick = () => this.open();
+    this.dialog.addEventListener('close', () => {
+      if (this.dialog.open) return;
+      ++this.reading;
+      ++this.mountRevision;
+      this.unmount();
+      if (this.scope) this.data = null;
+      this.scope = null;
+    });
     this.back.onclick = () => {
       this.pages.pop();
       void this.read();
@@ -28,6 +33,22 @@ export class Questbook {
       this.pages.push(this.data.next);
       void this.read();
     };
+  }
+
+  open(scope = null) {
+    if (this.dialog.open) return;
+    ++this.mountRevision;
+    if (scope || this.scope) {
+      this.pages = [null];
+      this.data = null;
+    }
+    this.scope = scope;
+    this.dialog.showModal();
+    void this.read(this.data?.id);
+  }
+
+  closeTopic() {
+    if (this.scope && this.dialog.open) this.dialog.close();
   }
 
   mount() {
@@ -101,7 +122,7 @@ export class Questbook {
 
   async read(selected, notice = '') {
     const reading = ++this.reading;
-    const query = new URLSearchParams();
+    const query = new URLSearchParams(this.scope ?? {});
     if (selected) query.set('selected',selected);
     const cursor = this.pages.at(-1);
     if (cursor) query.set('after',cursor);
@@ -150,21 +171,23 @@ export class Questbook {
       || event.context.revision !== this.data.revision) return;
     this.saving = true;
     const {card} = event.context;
+    const mountRevision = this.mountRevision;
     this.status.textContent = 'Guardando…';
     let notice = '';
     try {
-      const {result} = await this.api('questbook/action',{operation:crypto.randomUUID(),card,event});
+      const {result} = await this.api('questbook/action',{operation:crypto.randomUUID(),card,event,...this.scope});
       if (result.status === 'conflict') notice = 'La misión cambió. Ya podés ver cómo quedó.';
     } catch {
       notice = 'No pude confirmar el cambio. Revisá el estado de la misión.';
     } finally {
-      if (this.dialog.open) await this.read(card,notice);
+      if (this.dialog.open && this.mountRevision === mountRevision) await this.read(card,notice);
       this.saving = false;
     }
   }
 
   async bridgeCompleted(command) {
     const card = this.data;
+    if (this.scope) return;
     const objective = card?.tracking?.find(item => item.place === 'island-workshop'
       && item.event.type === 'bridge_state' && item.event.raised === command.args.raised);
     if (!objective) return;
