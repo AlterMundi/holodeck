@@ -5,6 +5,23 @@
 
 
 
+## November 28 — Char Design visual passes 1 and 2
+
+Protected release `883664e167e6` selects source `bc18b03`, with
+`83516a8b198c` as rollback. It integrates Char Design's `320e588`
+and `16e54ac` on top of the shared worktable release. The Residence has
+the new materials and translucent thresholds with the same collision
+mesh. The automatic graphics profile enables the cinematic finish and
+the animated meadow with flowers and night fireflies. Lightweight keeps
+its reduced render path. `?acabado=plano` omits the cinematic finish.
+
+Chromium on the exact package loaded the authored Residence GLB and
+observed the HDR render target, grass tiles, flowers and night fireflies.
+The suite passed 549 tests with two skips. Protected readback matched all
+94 installed files, the HTTPS bundle and the exact Residence export.
+Earlier physical measurements are retained in the
+[visual qualification](https://github.com/AlterMundi/holodeck/blob/cb56da693e2be2a93e04942f9a24edad5aa951e1/docs/environment-art-revamp.md#november-28--char-design-residencia-and-cinematic-finish-release-pending).
+
 ## November 28 — Shared spatial worktable navigation
 
 Protected release `83516a8b198c` selects source `dfb9683`, with
