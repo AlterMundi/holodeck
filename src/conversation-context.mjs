@@ -3,7 +3,7 @@ import {join} from 'node:path';
 import {createHash} from 'node:crypto';
 import {captureNativeSituation,NativeConversationError} from './native-conversation.mjs';
 
-const MAX_RECORDS=32,MAX_RECEIPTS=32,MAX_BYTES=1800*1024;
+const MAX_UNATTACHED=32,MAX_RECORDS=128,MAX_RECEIPTS=32,MAX_BYTES=1800*1024;
 const uuid=value=>typeof value==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(value);
 const encode=value=>JSON.stringify(value);
 const digest=value=>createHash('sha256').update(encode(value)).digest('hex');
@@ -39,6 +39,7 @@ export async function createConversationContexts({room,stateDir,transport,allowI
           ||r.observation?.schema!=='holodeck.situation/v1'||r.observation.observer!==r.actorRef
           ||r.observation.inputAssociation?.humanInputId!==id||!['frozen','prepared'].includes(r.phase)
           ||r.mode!==undefined&&r.mode!==machineMode
+          ||r.attached!==undefined&&(r.attached!==true||r.phase!=='prepared')
           ||r.phase==='prepared'&&!validPrepared(r))throw Error('Invalid context source record');
       }
       const retained=saved.receipts??{};
@@ -109,18 +110,32 @@ export async function createConversationContexts({room,stateDir,transport,allowI
       return true;
     });
   }
-  async function retireConfirmed(){
-    // Bounded metadata reads, no model work and no unconfirmed source eviction.
-    const available=Object.values(records).filter(r=>r.phase==='prepared');
+  const sources=()=>Object.values(records);
+  const full=()=>sources().length>=MAX_RECORDS||sources().filter(record=>!record.attached).length>=MAX_UNATTACHED;
+  const terminal=status=>status.retainedOriginal===true&&status.tracking===false&&['completed','problem'].includes(status.phase);
+  const attached=status=>status.retainedOriginal===true&&status.nativeAcceptance==='observed';
+  async function confirmAttachment(record){
+    return transaction(async()=>{
+      if(records[record.id]!==record)return false;
+      if(record.attached)return true;
+      record.attached=true;
+      try{await persist(record.mode);}catch(error){if(!error.replaced)delete record.attached;throw error;}
+      return true;
+    });
+  }
+  async function reconcileCapacity(){
+    // A retained source leaves the preparation budget as soon as the
+    // canonical owner verifies the exact attachment and observes admission.
+    // The full record remains available to an active native turn.
+    const hardFull=sources().length>=MAX_RECORDS;
+    const available=sources().filter(record=>record.phase==='prepared'&&(hardFull||!record.attached));
     const selected=Array.from({length:Math.min(4,available.length)},(_,i)=>available[(retireCursor+i)%available.length]);
     if(available.length)retireCursor=(retireCursor+selected.length)%available.length;
-    for(const candidate of selected){
-      let status;try{status=await readStatus(candidate);}catch{continue;}
-      if(status.retainedOriginal===true&&status.tracking===false&&['completed','problem'].includes(status.phase)){
-        if(await retire(candidate,status))return true;
-      }
-    }
-    return false;
+    await Promise.allSettled(selected.map(async record=>{
+      const status=await readStatus(record);
+      if(terminal(status))await retire(record,status);
+      else if(attached(status))await confirmAttachment(record);
+    }));
   }
   async function prepareSource(actor,request,retryRecord=null,capturePlace=null){
       const ref=actorRef(actor);
@@ -155,12 +170,13 @@ export async function createConversationContexts({room,stateDir,transport,allowI
         }else{
           const canonical=await transport.lookup({actorRef:ref,id:request.id,textSha256:null});
           if(canonical.state!=='absent')throw fail('id-reuse','Recover the existing canonical original before preparing another source');
-          if(Object.keys(records).length>=MAX_RECORDS&&!await retireConfirmed())throw fail('capacity','Prepared sources need their retained results before new admission');
+          if(full())await reconcileCapacity();
+          if(full())throw fail('capacity','Prepared sources need canonical confirmation before new admission');
           const roomVisit=await interior?.roomVisit;
           const worktable=await interior?.resolveWorktable?.();
           record=await transaction(async()=>{
             if(interior&&interior.run!==room.run)throw fail('scope-changed','El mundo cambió durante la preparación');
-            if(Object.keys(records).length>=MAX_RECORDS)throw fail('capacity','Context source capacity reached');
+            if(full())throw fail('capacity','Context source capacity reached');
             const observation=captureNativeSituation(room,actor,request,{
               pairedBeing:frozen.beingRef,serverCapture:'at-machine-context-preparation',interior,roomVisit,worktable});
             const value={id:request.id,actorRef:ref,requestHash,frozen,observation,mode,phase:'frozen'};records[value.id]=value;
@@ -235,7 +251,10 @@ export async function createConversationContexts({room,stateDir,transport,allowI
       if(previous&&previous.actorRef===actorRef(actor)&&!fenced)return {released:true,canonicalOriginalPreserved:true};
       const record=owned(actor,id);if(fenced||record.phase!=='prepared')return {released:false};
       const status=await readStatus(record);
-      if(status.retainedOriginal!==true||status.tracking!==false||!['completed','problem'].includes(status.phase))return {released:false};
+      if(!terminal(status)){
+        if(attached(status))await confirmAttachment(record);
+        return {released:false};
+      }
       const released=await retire(record,status);
       return {released,canonicalOriginalPreserved:true};
     },

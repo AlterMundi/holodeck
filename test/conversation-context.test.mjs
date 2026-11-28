@@ -113,11 +113,27 @@ test('only confirmed canonical terminal sources release capacity; originals are 
 test('unconfirmed preparation is bounded at32 records, without evicting or fabricating an original',async t=>{
  const f=await fixture(t),context=await f.open();
  for(let i=0;i<32;i++)await context.prepare(actor,request());
- await assert.rejects(context.prepare(actor,request()),/retained results/);
+ await assert.rejects(context.prepare(actor,request()),/canonical confirmation/);
  assert.equal(Object.keys(JSON.parse(readFileSync(join(f.dir,'conversation-contexts.json'),'utf8')).records).length,32);
  assert.equal(f.uploads,32);assert.equal(f.writes,0);
 });
 
+test('a canonically attached source frees preparation capacity before the reply and keeps its world scope',async t=>{
+ const f=await fixture(t),context=await f.open(async()=>true);
+ const capture=()=>({id:randomUUID(),run:f.room.run,edition:f.room.edition,sequence:0,capturedAt:123,
+  place:{id:'foyer',title:'Foyer',level:0,house:'fixture',objects:[],participants:[]}});
+ const delayed=request();await context.prepare(actor,delayed,capture);
+ for(let i=0;i<31;i++)await context.prepare(actor,request(),capture);
+ f.statuses.set(delayed.id,{phase:'queued',nativeAcceptance:'observed',retainedOriginal:true,tracking:true});
+ const next=request();await context.prepare(actor,next,capture);
+ assert.equal(context.has(delayed.id),true);
+ const resumed=await f.open(async()=>true),same=await resumed.recover(actor,delayed.id,binding);
+ assert.equal(same.files[0].file_id,f.prepared.get(delayed.id).file.file_id);
+ const scope=await resumed.authorizeWorldRequest(delayed.id,being);
+ assert.equal(scope.capturedSpace,'foyer');assert.equal(scope.receiptOnly,false);
+ assert.equal((await resumed.release(actor,delayed.id)).released,false);
+ assert.equal(f.uploads,33);assert.equal(f.writes,0);
+});
 test('capacity retirement and explicit release retain the most recent 32 indoor receipt references',async t=>{
  const f=await fixture(t),context=await f.open(async()=>true);
  const capture=()=>({id:randomUUID(),run:f.room.run,edition:f.room.edition,sequence:0,capturedAt:123,
