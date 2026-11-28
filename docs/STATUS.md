@@ -1,5 +1,21 @@
 # Current MVP work
 
+## Topic rooms and project releases · 2026-11-28
+
+Protected release `cf6ad0088bff` serves the
+[topic project composition](https://github.com/AlterMundi/holodeck/commit/8b5589851daa260e1833bddc4dd225f83a1fb24c)
+with Casa Linterna's existing exterior and `e8448d2404f9` as immediate
+rollback. The serving inventory matched all 99 files. The topic and
+project routes denied anonymous requests. The packed tests exercised the
+project route, ratified permissions, the shared Questbook writer and
+the exact Home publication using the deployed Conversation client.
+
+The real Daimon Matrix topic still needs its Gateway workspace and
+checkpoint linked before the paired visitor can open the pilot
+publication in that room. The
+[Matrix roadmap](https://github.com/AlterMundi/daimon-matrix/pull/571)
+retains the receiving evidence and remaining acceptance.
+
 ## Casa Linterna ground cover follows the paving · 2026-11-28
 
 Protected release `e8448d2404f9` selects `407aa50` with `a70fb2502b50`
