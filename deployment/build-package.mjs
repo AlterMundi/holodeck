@@ -36,6 +36,13 @@ if(digest(await readFile(join(root,'public/assets',personalAvatarFile)))!==perso
   throw Error('The personal avatar must match its qualified GLB');
 async function copyTree(from,to){await mkdir(to,{recursive:true});for(const entry of await readdir(from,{withFileTypes:true})){const src=join(from,entry.name),dst=join(to,entry.name);if(entry.isDirectory())await copyTree(src,dst);else if(entry.isFile())await copyFile(src,dst);else throw Error('Regular selected files only');}}
 await copyTree(join(root,'public'),join(stage,'public'));await copyTree(join(root,'build'),join(stage,'build'));
+// The active release only advertises the selected personal avatar. Older
+// Explorer exports remain in source and in their own rollback packages.
+const stagedAvatarDirectory=join(stage,'public/assets/avatar');
+for(const file of await readdir(stagedAvatarDirectory)){
+  if(/^explorer-hero-v\d+\.glb$/.test(file)&&'avatar/'+file!==personalAvatarFile)
+    await rm(join(stagedAvatarDirectory,file));
+}
 if(ownerCache){
   const names=await readdir(ownerCache);
   if(!names.length||names.length>33)throw Error('Select a bounded owner room edition');
