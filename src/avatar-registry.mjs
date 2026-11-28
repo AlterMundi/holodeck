@@ -5,7 +5,7 @@ export const AVATARS=Object.freeze({
  'compaii-navegante-white-v1':Object.freeze({being:COMPAII_BEING,name:'Navegante blanco',
   design:'assets/avatar/navegante-white.json',renderer:'assets/avatar/renderer.mjs',
   model:'assets/avatar/navegante-blender.glb',
-  modelSha256:'ace626f00c00bcf1f0439d7712e8106c7cceaa36078e3c1d8b55656639ba8ced',
+  modelSha256:'0dffa76d3668a741ccf8a9ec1c6c91617937ff10e2df2ba0d26b0e536726b2b3',
   sha256:'17fdad0610f6971a8b37c9df4f5aef0f294ee8f36c62058fe6955757404f6daa',
   maxBytes:256*1024,width:1.6,height:2})
 });

@@ -1,5 +1,6 @@
 import {
-  AdditiveBlending,BufferAttribute,BufferGeometry,DoubleSide,DynamicDrawUsage,Mesh,NormalBlending,ShaderMaterial,Vector3,
+  AdditiveBlending,BufferAttribute,BufferGeometry,DoubleSide,DynamicDrawUsage,LinearMipmapLinearFilter,Mesh,NoColorSpace,
+  NormalBlending,ShaderMaterial,TextureLoader,Vector3,
 } from 'three';
 
 // Effects drawn as shapes instead of dots. Each kind is one mesh and one
@@ -366,16 +367,33 @@ export class WaterRipples{
   }
 }
 
-// Soft smoke: camera-facing puffs whose shape is animated noise, swelling,
-// drifting and thinning as they age. Shared by boosts and hard landings.
-export const SMOKE={life:1.5};
+// Soft smoke: camera-facing puffs drawn from a baked flipbook (see
+// art/effects/bake_smoke_flipbook.py). The volume was simulated and lit once
+// offline from above, right and left; here each puff blends between frames,
+// is relit from the local sky, and fades softly where it meets the ground.
+// Until the flipbook arrives, or if it cannot load, the puff falls back to
+// animated noise. Shared by boosts, low-flight wash and footfalls.
+export const SMOKE={life:1.5,atlas:'assets/effects/smoke-flipbook.png',frames:16,grid:4};
 const noise=`
   float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
   float value(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
     return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}
   float fbm(vec2 p){float s=0.,a=.5;for(int i=0;i<4;i++){s+=a*value(p);p*=2.03;a*=.5;}return s;}`;
+let sharedAtlas=null;
+function smokeAtlas(base){
+  if(sharedAtlas||!base)return sharedAtlas;
+  sharedAtlas={texture:null,users:new Set()};
+  new TextureLoader().load(new URL(SMOKE.atlas,base).href,texture=>{
+    texture.colorSpace=NoColorSpace;
+    texture.generateMipmaps=true;
+    texture.minFilter=LinearMipmapLinearFilter;
+    sharedAtlas.texture=texture;
+    for(const user of sharedAtlas.users)user(texture);
+  },undefined,()=>{});
+  return sharedAtlas;
+}
 export class SmokePuffs{
-  constructor(scene,{count=48}={}){
+  constructor(scene,{count=96,base=null}={}){
     this.count=count;
     const vertices=count*4;
     const geometry=new BufferGeometry();
@@ -383,46 +401,94 @@ export class SmokePuffs{
     this.velocity=attribute(geometry,'velocity',vertices,3);
     this.data=attribute(geometry,'data',vertices,4);   // corner x, corner y, born, size
     this.tint=attribute(geometry,'tint',vertices,4);   // rgb, seed
+    this.ground=attribute(geometry,'ground',vertices,4); // up xyz, height above the ground
+    this.shape=attribute(geometry,'shape',vertices,4); // life, glow, opacity, gravity
     geometry.setIndex(quadIndex(count));
-    for(let q=0;q<count;q++)for(let c=0;c<4;c++)this.data.setXYZW(q*4+c,corners[c][0],corners[c][1],-1e4,1);
+    for(let q=0;q<count;q++)for(let c=0;c<4;c++){
+      this.data.setXYZW(q*4+c,corners[c][0],corners[c][1],-1e4,1);
+      this.shape.setXYZW(q*4+c,SMOKE.life,1,.55,0);
+      this.ground.setXYZW(q*4+c,0,1,0,100);
+    }
     this.material=new ShaderMaterial({
       transparent:true,depthWrite:false,blending:NormalBlending,side:DoubleSide,
-      uniforms:{clock:{value:0}},
+      uniforms:{clock:{value:0},atlas:{value:null},atlasReady:{value:0}},
       vertexShader:`
         attribute vec3 velocity;
         attribute vec4 data;
         attribute vec4 tint;
+        attribute vec4 ground;
+        attribute vec4 shape;
         uniform float clock;
         varying vec2 plane;
         varying float age;
         varying vec4 colour;
+        varying vec3 sky;
+        varying float floorDistance;
+        varying float size;
+        varying vec3 look;
         void main(){
           float seconds=clock-data.z;
-          age=seconds/${SMOKE.life.toFixed(2)};
-          plane=data.xy;colour=tint;
+          age=seconds/max(shape.x,.05);
+          plane=data.xy;colour=tint;look=shape.yzw;
           if(age<0.||age>1.){gl_Position=vec4(2.,2.,2.,1.);return;}
-          // Thrown out fast, then caught by the air.
-          vec3 travel=velocity*(1.-exp(-seconds*3.))/3.;
+          // Thrown out fast, then caught by the air; dust settles.
+          vec3 travel=velocity*(1.-exp(-seconds*3.))/3.-ground.xyz*shape.w*seconds*seconds*.5;
           vec4 eye=modelViewMatrix*vec4(position+travel,1.);
-          float size=data.w*(.45+1.4*sqrt(age));
+          size=data.w*(.45+1.4*sqrt(age));
           float spin=tint.w*6.283+seconds*(tint.w-.5)*1.2;
-          eye.xy+=mat2(cos(spin),-sin(spin),sin(spin),cos(spin))*data.xy*size;
+          vec2 corner=mat2(cos(spin),-sin(spin),sin(spin),cos(spin))*data.xy*size;
+          eye.xy+=corner;
+          // Light and the ground plane are expressed in the puff's own frame.
+          vec3 upView=normalize(mat3(modelViewMatrix)*ground.xyz);
+          vec2 rotUp=mat2(cos(-spin),-sin(-spin),sin(-spin),cos(-spin))*upView.xy;
+          sky=vec3(rotUp,upView.z);
+          floorDistance=ground.w+dot(travel,ground.xyz)+dot(vec3(corner,0.),upView);
           gl_Position=projectionMatrix*eye;
         }`,
       fragmentShader:`
+        uniform sampler2D atlas;
+        uniform float atlasReady;
         varying vec2 plane;
         varying float age;
         varying vec4 colour;
+        varying vec3 sky;
+        varying float floorDistance;
+        varying float size;
+        varying vec3 look;
         ${noise}
+        vec4 frame(float index,vec2 uv){
+          float column=mod(index,${SMOKE.grid}.),row=floor(index/${SMOKE.grid}.);
+          return texture2D(atlas,(vec2(column,${SMOKE.grid-1}.-row)+uv)/${SMOKE.grid}.);
+        }
         void main(){
           float r=length(plane);
           if(r>1.)discard;
-          float billow=fbm(plane*1.6+colour.w*9.+age*1.3);
-          float body=1.-smoothstep(.15,1.,r+(billow-.5)*.9);
+          float body,light;
+          if(atlasReady>.5){
+            vec2 uv=plane*.5+.5;
+            float t=age*${SMOKE.frames-1}.;
+            float f=floor(t);
+            vec4 a=frame(f,uv),b=frame(min(f+1.,${SMOKE.frames-1}.),uv);
+            vec4 s=mix(a,b,t-f);
+            body=s.a;
+            // Relight from the local sky: above, and whichever side faces it.
+            vec2 side=sky.xy;
+            light=s.r*max(side.y,0.)+s.g*max(side.x,0.)+s.b*max(-side.x,0.)+
+              mix(s.r,.55,.5)*max(-side.y,0.)*.6+.25*(1.-abs(sky.z));
+            // Dust is thin: soften its self-shadow so it never reads as dark knots.
+            light=mix(clamp(light,.25,1.1),.95,.4*(1.-look.x));
+          }else{
+            float billow=fbm(plane*1.6+colour.w*9.+age*1.3);
+            body=1.-smoothstep(.15,1.,r+(billow-.5)*.9);
+            light=.75+.35*billow;
+          }
           float fade=smoothstep(0.,.08,age)*(1.-age)*(1.-age);
-          // Lit from inside at first, then grey and cool.
-          vec3 shade=mix(colour.rgb*1.2,vec3(.72,.76,.80),smoothstep(0.,.35,age))*(.75+.35*billow);
-          gl_FragColor=vec4(shade,body*fade*.55);
+          // Soft contact: thin out instead of cutting a line into the ground.
+          float contact=smoothstep(0.,.45*size,floorDistance);
+          // Lit from inside at first (boosts), then grey and cool.
+          vec3 cooled=mix(colour.rgb*1.2,vec3(.72,.76,.80),smoothstep(0.,.35,age));
+          vec3 shade=mix(colour.rgb,cooled,look.x)*light;
+          gl_FragColor=vec4(shade,body*fade*contact*look.y);
           #include <colorspace_fragment>
         }`,
     });
@@ -432,11 +498,19 @@ export class SmokePuffs{
     this.mesh.raycast=()=>{};
     this.mesh.visible=false;
     this.next=0;
-    this.last=-1e4;
+    this.until=-1e4;
+    const atlas=smokeAtlas(base);
+    if(atlas){
+      this.useAtlas=texture=>{this.material.uniforms.atlas.value=texture;this.material.uniforms.atlasReady.value=1;};
+      if(atlas.texture)this.useAtlas(atlas.texture);else atlas.users.add(this.useAtlas);
+      this.atlasUsers=atlas.users;
+    }
     scene.add(this.mesh);
   }
 
-  puff(point,velocity,time,size,colour,seed=Math.random()){
+  // glow: 1 starts lit by the colour and cools to grey (boost); 0 keeps the
+  // given colour (dust). up/height place the ground plane for soft contact.
+  puff(point,velocity,time,size,colour,seed=Math.random(),{life=SMOKE.life,glow=1,opacity=.55,gravity=0,up=null,height=100}={}){
     const q=this.next++%this.count;
     for(let c=0;c<4;c++){
       const i=q*4+c;
@@ -444,18 +518,23 @@ export class SmokePuffs{
       this.velocity.setXYZ(i,velocity.x,velocity.y,velocity.z);
       this.data.setZ(i,time);this.data.setW(i,size);
       this.tint.setXYZW(i,colour.r,colour.g,colour.b,seed);
+      this.shape.setXYZW(i,life,glow,opacity,gravity);
+      if(up)this.ground.setXYZW(i,up.x,up.y,up.z,height);
+      else this.ground.setXYZW(i,0,1,0,100);
     }
-    this.center.needsUpdate=this.velocity.needsUpdate=this.data.needsUpdate=this.tint.needsUpdate=true;
-    this.last=time;
+    this.center.needsUpdate=this.velocity.needsUpdate=this.data.needsUpdate=this.tint.needsUpdate=
+      this.shape.needsUpdate=this.ground.needsUpdate=true;
+    this.until=Math.max(this.until,time+life);
     this.mesh.visible=true;
   }
 
   update(time,enabled){
     this.material.uniforms.clock.value=time;
-    this.mesh.visible=enabled&&time-this.last<SMOKE.life;
+    this.mesh.visible=enabled&&time<this.until;
   }
 
   dispose(){
+    this.atlasUsers?.delete(this.useAtlas);
     this.mesh.removeFromParent();
     this.mesh.geometry.dispose();
     this.material.dispose();

@@ -32,6 +32,7 @@ export class TeleportModels {
     this.offset=new Vector3();
     this.keyDirection={value:localKey.clone()};
     this.litMaterials=new WeakSet();
+    this.icons=new Map();
   }
 
   lightModels(root){
@@ -64,38 +65,20 @@ export class TeleportModels {
     });
   }
 
-  clearFigure(state){
-    state.loadingIcon?.abort();
-    state.loadingIcon=null;
-    if(state.generated)releaseScenes([state.generated]);
-    state.generated=null;
-    state.figure?.removeFromParent();
-    state.figure=null;
-  }
-
-  syncFigure(state){
-    const {slot,anchor}=state;
-    const entry=slot>=0?this.teleport.slots?.[slot]:this.teleport.entries?.find(item=>item.id===this.teleport.branch);
-    if(state.key===entry?.id&&state.iconUrl===entry?.icon)return;
-    this.clearFigure(state);
-    state.key=entry?.id;
-    state.iconUrl=entry?.icon;
-    if(!entry)return;
-    const model=this.figures.get(teleportModelId(entry.id,entry.landmark)).clone();
-    model.position.set(0,0,0);
-    const bounds=new Box3().setFromObject(model),center=bounds.getCenter(new Vector3());
-    model.position.set(-center.x,-bounds.min.y,-center.z);
-    const figure=state.figure=new Group();
-    figure.add(model);
-    anchor.add(figure);
-    if(!entry.icon)return;
-    const loadingIcon=state.loadingIcon=new AbortController();
-    const signal=AbortSignal.any([loadingIcon.signal,AbortSignal.timeout(8000)]);
-    fetch(new URL(entry.icon,this.base),{signal})
+  // Destination icons are shared, immutable per URL and small, so they are
+  // fetched once as soon as the destinations are known. A pedestal never shows
+  // the authored miniature while its own icon is still on the way: it stays
+  // empty and the icon grows in. The authored miniature is only the fallback
+  // when the destination has no icon or its icon cannot be produced.
+  iconRecord(url){
+    let record=this.icons.get(url);
+    if(record)return record;
+    record={scene:null,failed:false};
+    record.ready=fetch(new URL(url,this.base),{signal:AbortSignal.timeout(8000)})
       .then(response=>{if(!response.ok)throw Error('Icon unavailable');return response.arrayBuffer();})
       .then(bytes=>new GLTFLoader().parseAsync(bytes,''))
       .then(({scene})=>{
-        if(signal.aborted||state.figure!==figure){releaseScenes([scene]);return;}
+        if(this.disposed){releaseScenes([scene]);return;}
         scene.traverse(object=>{
           if(!object.isMesh)return;
           object.material.vertexColors=true;
@@ -103,13 +86,63 @@ export class TeleportModels {
           object.material.needsUpdate=true;
         });
         this.lightModels(scene);
-        state.generated=scene;
-        figure.clear();
-        figure.add(scene);
-        this.invalidate();
-      }).catch(()=>{}).finally(()=>{
-        if(state.loadingIcon===loadingIcon)state.loadingIcon=null;
-      });
+        record.scene=scene;
+      }).catch(()=>{
+        record.failed=true;
+        // Let a later opening retry instead of pinning a transient failure.
+        if(this.icons.get(url)===record)setTimeout(()=>{if(this.icons.get(url)===record)this.icons.delete(url);},15000).unref?.();
+      }).finally(()=>this.invalidate());
+    this.icons.set(url,record);
+    return record;
+  }
+
+  prefetchIcons(){
+    if(this.prefetched===this.teleport.entries)return;
+    this.prefetched=this.teleport.entries;
+    for(const entry of this.teleport.entries??[])if(entry.icon)this.iconRecord(entry.icon);
+  }
+
+  clearFigure(state){
+    state.waiting=null;
+    state.figure?.removeFromParent();
+    state.figure=null;
+  }
+
+  authoredFigure(entry){
+    const model=this.figures.get(teleportModelId(entry.id,entry.landmark)).clone();
+    model.position.set(0,0,0);
+    const bounds=new Box3().setFromObject(model),center=bounds.getCenter(new Vector3());
+    model.position.set(-center.x,-bounds.min.y,-center.z);
+    return model;
+  }
+
+  placeFigure(state,model,now,{grow=false}={}){
+    const figure=state.figure=new Group();
+    figure.add(model);
+    state.anchor.add(figure);
+    state.appearAt=grow&&!this.reduced()?now:null;
+    this.invalidate();
+  }
+
+  syncFigure(state,now=performance.now()){
+    const {slot}=state;
+    const entry=slot>=0?this.teleport.slots?.[slot]:this.teleport.entries?.find(item=>item.id===this.teleport.branch);
+    if(state.key===entry?.id&&state.iconUrl===entry?.icon){
+      const record=state.waiting;
+      if(!record||(!record.scene&&!record.failed))return;
+      state.waiting=null;
+      this.placeFigure(state,record.scene?record.scene.clone():this.authoredFigure(entry),now,{grow:true});
+      return;
+    }
+    this.clearFigure(state);
+    state.key=entry?.id;
+    state.iconUrl=entry?.icon;
+    if(!entry)return;
+    if(!entry.icon){this.placeFigure(state,this.authoredFigure(entry),now);return;}
+    const record=this.iconRecord(entry.icon);
+    if(record.scene)this.placeFigure(state,record.scene.clone(),now);
+    else if(record.failed)this.placeFigure(state,this.authoredFigure(entry),now);
+    else state.waiting=record;
   }
 
   async prepare(){
@@ -204,6 +237,7 @@ export class TeleportModels {
     if(!this.surface)return false;
     const dt=this.lastFrame===null?0:Math.min(.25,(now-this.lastFrame)/1000);
     this.lastFrame=now;
+    this.prefetchIcons();
     const count=this.teleport.slots?.length??0;
     showNodes(this.parts,count,{parent:Boolean(this.teleport.branch)});
     if(this.lastLevel!==this.teleport.level){
@@ -219,14 +253,20 @@ export class TeleportModels {
     this.parts.center.getWorldPosition(this.center);
     const t=this.reduced()?1:1-(1-Math.min(1,(now-this.openedAt)/480))**3;
     for(const [id,state] of this.controls){
-      if(id!=='go')this.syncFigure(state);
+      if(id!=='go')this.syncFigure(state,now);
       this.transform.multiplyMatrices(this.inverse,state.anchor.matrixWorld);
       this.transform.decompose(state.object.position,state.object.quaternion,state.object.scale);
       state.object.visible=state.anchor.visible&&!state.disabled&&
         (state.slot>=0?state.slot<count:id==='back'?Boolean(this.teleport.branch):true);
       if(state.figure){
         const emphasis=state.focused||state.pressed?1.08:1;
-        state.figure.scale.setScalar(emphasis*(state.slot>=0?.42+.58*t:1));
+        let grown=1;
+        if(state.appearAt!=null){
+          const g=Math.min(1,(now-state.appearAt)/220);
+          grown=1-(1-g)**3;
+          if(g>=1)state.appearAt=null;
+        }
+        state.figure.scale.setScalar(emphasis*grown*(state.slot>=0?.42+.58*t:1));
         if(state.slot>=0){
           state.anchor.worldToLocal(this.offset.copy(this.center)).multiplyScalar(1-t);
           state.figure.position.copy(this.offset);
@@ -236,13 +276,14 @@ export class TeleportModels {
       }
       state.object.updateMatrixWorld(true);
     }
-    return !this.reduced();
+    return !this.reduced()||[...this.controls.values()].some(state=>state.waiting);
   }
 
   dispose(){
     this.disposed=true;
     this.detach();
     this.motion?.dispose();
-    releaseScenes([this.instrument,this.source],this.replacedLinkMaterials);
+    releaseScenes([this.instrument,this.source,...[...this.icons.values()].map(record=>record.scene)],this.replacedLinkMaterials);
+    this.icons.clear();
   }
 }

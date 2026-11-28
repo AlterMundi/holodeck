@@ -110,7 +110,7 @@ const residenceSite=(()=>{
 // The walking grade sits a few centimetres under the modelled marble (podium top 1.8 m,
 // interior floor 1.85 m, step noses) so the terrain never shows through it.
 export const TOROIDAL_RESIDENCE=Object.freeze({...residenceSite,podium:1.77,floor:1.82,
-  podiumRadius:29.2,wallRadius:25.9,stair:{topWidth:7.5362,halfWidth:10.1739,top:-38.4348,bottom:-49.7391,steps:10},
+  podiumRadius:29.2,wallRadius:25.9,stair:{topWidth:7.5362,halfWidth:10.1739,top:-38.4348,bottom:-49.7391,steps:10,curved:true},
   atrium:{halfWidth:8.29,center:-30.1449,from:-38.4348,to:-25}});
 const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
 const normal=vector=>{
@@ -209,12 +209,15 @@ function residencePad(x,y){
   if(radial<=wallRadius)return {offset:floor,distance:0};
   if(radial<=podiumRadius)return {offset:podium,distance:0};
   if(Math.abs(x)<=atrium.halfWidth&&y>=atrium.from&&y<=atrium.to)return {offset:podium,distance:0};
-  const stairProgress=Math.max(0,Math.min(1,(stair.top-y)/(stair.top-stair.bottom)));
+  // The fan stair curves round the atrium: its nosings are arcs about the
+  // atrium centre, between straight cheeks, down to an arc at its foot.
+  const fromCentre=Math.hypot(x,y-atrium.center);
+  const topRadius=atrium.center-stair.top,footRadius=atrium.center-stair.bottom;
+  const stairProgress=Math.max(0,Math.min(1,(fromCentre-topRadius)/(footRadius-topRadius)));
   const stairWidth=mix(stair.topWidth,stair.halfWidth,stairProgress);
   const stairOffset=podium*(1-stairProgress);
-  if(Math.abs(x)<=stairWidth&&y>=stair.bottom&&y<stair.top)return {offset:stairOffset,distance:0};
-  const stairDistance=Math.hypot(Math.max(0,Math.abs(x)-stairWidth),
-    Math.max(0,stair.bottom-y,y-stair.top));
+  if(Math.abs(x)<=stairWidth&&y<stair.top&&fromCentre<=footRadius)return {offset:stairOffset,distance:0};
+  const stairDistance=Math.max(0,Math.abs(x)-stairWidth,fromCentre-footRadius,y-stair.top);
   const atriumDistance=Math.hypot(Math.max(0,Math.abs(x)-atrium.halfWidth),
     Math.max(0,atrium.from-y,y-atrium.to));
   const podiumDistance=radial-podiumRadius;

@@ -123,7 +123,7 @@ export class WaterSplash {
     scene.add(this.mesh);
   }
 
-  observe(id,sample,seconds,planar,continuous,emit){
+  observe(id,sample,seconds,planar,continuous,emit,local=false){
     const now=(this.clock()-this.start)/1000;
     const last=this.states.get(id);
     if(!last&&this.states.size>=32)return;
@@ -140,6 +140,7 @@ export class WaterSplash {
     }
     this.states.set(id,{...state,seen:now,depth,u:sample.u,v:sample.v,impact:emit&&strength?null:impact});
     if(!emit||!strength)return;
+    if(local)this.sound?.('splash',{strength});
     const anchor=impact?.side===state.side?impact:sample;
     const frame=terrainFrame(anchor.u,anchor.v);
     this.point.fromArray(terrainPosition(anchor.u,anchor.v,sample.waterLevel));

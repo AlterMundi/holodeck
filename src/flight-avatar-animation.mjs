@@ -1,3 +1,6 @@
+import {FootfallDetector} from './footfall.mjs';
+import {bindFootPlacement} from './foot-placement.mjs';
+import {terrainCoordinates,terrainElevation,terrainFrame} from './toroidal-terrain.mjs';
 import {Euler,Quaternion,Vector3} from 'three';
 import {matterAvatarScale} from './matter-flight.mjs';
 import {TabletopGlance} from './tabletop-attention.mjs';
@@ -58,7 +61,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
   const yaw=new Quaternion(),roll=new Quaternion();
   const pivot=new Vector3(),shift=new Vector3(),tilt=new Quaternion();
   const water={up:new Vector3(),point:new Vector3()};
-  const washPoint=new Vector3(),washDirection=new Vector3();
+  const washPoint=new Vector3(),washDirection=new Vector3(),plantPoint=new Vector3();
 
   // Follow the real heading with a critically damped turn. The physical yaw
   // already answered the input. This eases only what the body shows.
@@ -81,6 +84,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
     return advance-residual;
   }
   function restore(entry){
+    entry.feet?.restore();
     entry.glance?.restore();
     entry.landing?.restore();
     entry.mouth?.restore();
@@ -109,7 +113,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
   function animatedUpdate(state,dt){
     // Remove last frame's extra limb rotations before the base mixer runs.
     for(const entry of actors.values())restore(entry);
-    const {outdoor,flying,boosting,grounded:localGrounded,table,crouch,gaze,peerGaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null,wake=null,splash=null,waterWake=null,trample=null,aimPitch=null,loopPitch=null,trickAge=Infinity}=context();
+    const {outdoor,flying,boosting,grounded:localGrounded,table,crouch,gaze,peerGaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null,wake=null,splash=null,waterWake=null,trample=null,aimPitch=null,loopPitch=null,trickAge=Infinity,footPlacement=true}=context();
     const now=clock?.();
     const elapsed=now!==undefined&&previousTime!==undefined?(now-previousTime)/1000:dt;
     previousTime=now;
@@ -238,7 +242,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const sample=outdoor&&!atTable?exteriorSample(position):null;
       entry.medium=sample?avatarMedium(HUMAN_BODY,sample,{supported:grounded===true,previous:entry.medium}):null;
       if(sample){
-        splash?.observe(id,sample,elapsed,continuous?travel/Math.max(elapsed,.001):0,continuous,glanceMotion);
+        splash?.observe(id,sample,elapsed,continuous?travel/Math.max(elapsed,.001):0,continuous,glanceMotion,isLocal);
         waterWake?.observe(id,position,up,sample,{flying:explicitFlight,seconds:elapsed,continuous,emit:glanceMotion});
       }
       const wet=entry.medium==='surface'||entry.medium==='submerged';
@@ -267,6 +271,19 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
           }
         }else entry.washCarry=0;
       }else entry.washCarry=0;
+      // Steps on the ground lift what they land on: dust, grass, a faint
+      // breath on stone, rings in shallow water. Read from the feet's contact.
+      if(sample&&grounded===true&&!explicitFlight&&continuous&&!atTable&&glanceMotion&&wake?.footfall){
+        entry.footfalls??=new FootfallDetector(mesh);
+        const planted=entry.footfalls.sample(position,up,1,step);
+        if(speed>.8)for(const foot of planted)
+          wake?.footfall?.(washPoint.copy(foot),up,washDirection.copy(displacement).normalize(),
+            clamp((speed-1)/7.5,.25,1),sample,{splash,local:isLocal});
+      }else entry.footfalls?.reset();
+      // Uneven terrain under the feet is solved after every other layer.
+      entry.plant=footPlacement&&sample&&grounded===true&&!explicitFlight&&!wet&&continuous&&!atTable&&glanceMotion&&
+        Math.abs(sample.feet-sample.ground)<.1?sample:null;
+      entry.plantSpeed=speed;
       const draft=sample?sample.waterLevel-sample.feet:-Infinity;
 
       if(!outdoor||underwater)entry.observedFlight=false;
@@ -573,6 +590,26 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
           bone.quaternion.multiply(bend.setFromAxisAngle(localAxis,motionBend+crouchBend));
         }
       }
+    }
+    for(const [id,actor] of state.characters){
+      const entry=actors.get(id),character=this.loadedCharacters.get(id)?.character;
+      if(!entry||!character||entry.mesh!==character.getMesh())continue;
+      const target=entry.plant?1-clamp((entry.plantSpeed-1.5)/3.5):0;
+      entry.plantWeight=(entry.plantWeight??0)+(target-(entry.plantWeight??0))*ease(step,8);
+      if(entry.plantWeight<.01||!entry.plant)continue;
+      if(entry.feet===undefined)entry.feet=bindFootPlacement(entry.mesh);
+      if(!entry.feet)continue;
+      const ground=entry.plant.ground,parent=character.parent;
+      up.set(0,1,0).applyQuaternion(character.quaternion);
+      // Only where the body stands along the terrain's own up.
+      const [nx,ny,nz]=terrainFrame(entry.plant.u,entry.plant.v).up;
+      if(up.x*nx+up.y*ny+up.z*nz<.97)continue;
+      right.copy(pitchAxis).applyQuaternion(character.quaternion);
+      entry.feet.apply(character,up,right,point=>{
+        const local=parent?parent.worldToLocal(plantPoint.copy(point)):plantPoint.copy(point);
+        const {u,v}=terrainCoordinates([local.x,local.y,local.z]);
+        return terrainElevation(u,v)-ground;
+      },entry.plantWeight);
     }
     for(const id of actors.keys())if(!state.characters.has(id))actors.delete(id);
     return result;

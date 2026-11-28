@@ -1163,11 +1163,13 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     }
     const avatarPracticals=bindAvatarPracticals(renderer.mmlCompositionScene.group,options.coreCameraManager.collisionsManager);
     const companion=new CompanionAvatar({scene:renderer.mmlCompositionScene.group,document,base});
-    const flightWake=new FlightWake(renderer.mmlCompositionScene.group);
+    const flightWake=new FlightWake(renderer.mmlCompositionScene.group,{base});
     boostKick=flightWake;
+    flightWake.sound=(kind,options)=>worldAudio.playBody(kind,options);
     const waterSplash=new WaterSplash(renderer.mmlCompositionScene.group,{
       lightweight:()=>rendererBudget.lightweight,pixelRatio:()=>renderer.composer.renderer.getPixelRatio(),
     });
+    waterSplash.sound=(kind,options)=>worldAudio.playBody(kind,options);
     const waterWake=new WaterWake(renderer.mmlCompositionScene.group,{
       lightweight:()=>rendererBudget.lightweight,pixelRatio:()=>renderer.composer.renderer.getPixelRatio(),
     });
@@ -1746,7 +1748,7 @@ client.update();
 const worldAudio=new WorldAudio({onChange:()=>updateSoundButton()});
 let soundBusy=false;
 // Development inspection surface only. It reports actual client state.
-window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()||null,audioState:()=>worldAudio.status(),avatarState:()=>nativeAvatarLayer?.status(),tableFlight:()=>({active:!!matterFlight?.active,bounds:matterFlight?.bounds}),companion:()=>companionAvatar?.object??null,companionSpeech:level=>companionAvatar?.setSpeechLevel(level),flight:()=>flightEnabled,hudWindow:id=>matterHud?.windows.geometry.get(id)??null,toolBounds:id=>matterHud?.toolBounds(id)??null,
+window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()||null,audioState:()=>worldAudio.status(),avatarState:()=>nativeAvatarLayer?.status(),tableFlight:()=>({active:!!matterFlight?.active,bounds:matterFlight?.bounds}),companion:()=>companionAvatar?.object??null,companionSpeech:level=>companionAvatar?.setSpeechLevel(level),companionExpression:(name,seconds=10)=>companionAvatar?.figure?.express(name,seconds),companionExpressionName:()=>companionAvatar?.figure?.expression()??null,flight:()=>flightEnabled,hudWindow:id=>matterHud?.windows.geometry.get(id)??null,toolBounds:id=>matterHud?.toolBounds(id)??null,
  teleportBounds:id=>matterHud?.teleportBounds(id),
  teleportView:()=>matterHud?.teleportMode==='workspace'?{mode:'workspace',position:matterHud.teleportWorkspace.camera.position.toArray(),
    inWorld:matterHud.teleportWorkspace.place.parent===matterHud.teleportScene,anchor:matterHud.teleportWorkspace.place.position.toArray()}:

@@ -1,5 +1,32 @@
 # Navegante Blender companion
 
+## Navegante v2: the navigator of the identity gallery
+
+Since 28 November 2026 the companion is built from scratch by `navegante_v2.py`
+after CompAII's navigator identity (`navigator-neutral-master-v6`,
+`navigator-turnaround-v1` and the nine-expression `navigator-gallery-v6`): a
+crackled ceramic diving helmet with a riveted brass porthole, side vents and
+crown band; a slate knit scarf with a star brooch and a laurel-embroidered
+cape; a round ceramic body, brass joint rings, open hands and riveted boots.
+Every texture is generated procedurally in the script; there are no image
+inputs. The face plate is plain ceramic: `src/navegante-face.mjs` draws its
+brows, eyes and mouth live and animates the nine expressions (calm, curious,
+joy, sad, anger, uncertain, focus, welcome, sleep). The joint names, leg
+proportions (tuned for the companion gait), clip library and `mouth-open`
+morph keep the earlier runtime contract.
+
+```sh
+blender -b --python-exit-code 19 --python navegante_v2.py -- OUTPUT
+```
+
+It writes `navegante.blend` and `navegante.glb` (about 44k triangles, 1.2 MB
+with JPEG textures); copy the GLB to `public/assets/avatar/navegante-blender.glb`
+and update `modelSha256` in `src/avatar-registry.mjs`. `motion.py` still
+re-authors the clips on the saved scene. `mouth.py` belongs to the first
+design and does not apply to v2.
+
+## First design (25 November 2026)
+
 The mesh, joint hierarchy, pose curves and procedural bronze colour are
 authored for Holodeck. The 25 November 2026 playable draft uses three
 human-selected Gemini images as texture input. The original images remain
