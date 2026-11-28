@@ -581,6 +581,16 @@ use at most8records and8KiB each for their current/atomic-stage file; the existi
 its separate small bound; original source attachments stay with the existing
 bounded native attachment writer rather than being copied into app history.
 
+The optional `mosaicCompanion` receiver selection activates the companion
+mosaic edition from `navegante-mosaic.glb` in the service state directory.
+Keep the source artwork under its existing audience. Use
+`tools/avatar-motion/merge-companion-motion.mjs` to preserve the qualified
+N-3X skeletal tracks with the new mesh. The receiver checks the selected
+asset's SHA-256 and bounds and serves it through the signed-in world route.
+The default continues to use the built-in N-3X when this selector is absent
+or the edition is unavailable. Its assets and the existing studio versions
+remain separate from the mosaic edition.
+
 The optional `privatePersonalAvatar` receiver selection pins a paired Home
 release by `resource` and exact `version`. It resolves
 `assets/explorer-hero-proposal.glb` inside a paired Human publication. Verify

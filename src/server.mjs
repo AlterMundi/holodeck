@@ -27,7 +27,7 @@ import {avatarPoseBroadcast,avatarPoseModes,poseConnection,poseKeyMaterial,poseP
 import {tabletopPointBroadcast,tabletopPointDuration,tabletopPointProofMessage,validTabletopPoint} from './tabletop-pointing.mjs';
 import {FROM_SERVER_BROADCAST_MESSAGE_TYPE,handleExperienceWebsocketSubprotocol,serializeServerBroadcastMessage} from '@mml-io/3d-web-experience-protocol';
 import enableWs from 'express-ws';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import {ANIMATION_ASSET_REVISIONS,readPackedArt,sendPackedArt} from './packed-art.mjs';
 import {TeleportIcons,iconKey} from './teleport-icons.mjs';
 import {semanticDescriptor} from './teleport-semantic-icons.mjs';
@@ -60,11 +60,12 @@ import {atelierProjectionHandler} from './atelier-projection.mjs';
 import {WorldDocument} from './world-document.mjs';
 import {SessionBindings,SESSION_MS,sessionKey} from './session-bindings.mjs';
 import {installedPackageBytes,installedRelease,releaseStatus} from './release-status.mjs';
+import {NAVEGANTE_VARIANTS} from './avatar-registry.mjs';
 import {HumanAvatarProfiles,humanWardrobeAssets,personalAvatarFile,personalAvatarRoute,personalAvatarEdition} from './human-avatars.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
-export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,releaseControllerRef=null,privatePersonalAvatar=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt,houseVisual,gardenVisual,gallerySelection,galleryAuthorization,matterCollection,collectionSourceRequest,nativeReviewAuthority=null,artProfile,worldTerrain,atelierLayoutWrites=ATELIER_EXPANSION_WRITES,lightExercise=false,questbook=null,ownerRoomArt=[],ownerRoomTours=[],ownerExteriors=[],parcelGrants=production?[]:null,ownerArtRequest,atelierWorkshop=null}={}){
+export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,releaseControllerRef=null,privatePersonalAvatar=null,mosaicCompanion=false,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt,houseVisual,gardenVisual,gallerySelection,galleryAuthorization,matterCollection,collectionSourceRequest,nativeReviewAuthority=null,artProfile,worldTerrain,atelierLayoutWrites=ATELIER_EXPANSION_WRITES,lightExercise=false,questbook=null,ownerRoomArt=[],ownerRoomTours=[],ownerExteriors=[],parcelGrants=production?[]:null,ownerArtRequest,atelierWorkshop=null}={}){
   if(!/^\/(?:[a-z0-9-]+\/)*$/.test(basePath))throw Error('Select a bounded absolute base path');
   lightExercise=lightExercise===true;
   if(production&&(!identityResolver||!publicOrigin||!stateDir))throw Error('Shared identity, audience and state are required in production');
@@ -85,6 +86,19 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   if(atelierWorkshop!==null&&(!ownNative||!nativeRoomAuthority))throw Error('The Atelier room requires the selected own-native return lane');
   const atelierAuthority=atelierWorkshop&&createAtelierRoomAuthority(atelierWorkshop);
   const route=path=>basePath+path;
+  const mosaicRoute=NAVEGANTE_VARIANTS.mosaic.model;
+  let mosaicAsset=null;
+  if(mosaicCompanion===true&&stateDir){
+    const file=join(stateDir,'navegante-mosaic.glb');
+    try{
+      const size=statSync(file).size;
+      if(size>6*1024**2)throw Error('The selected companion exceeds its size bound');
+      const bytes=readFileSync(file);
+      if(bytes.length!==size||createHash('sha256').update(bytes).digest('hex')!==NAVEGANTE_VARIANTS.mosaic.modelSha256)
+        throw Error('The selected companion differs from the qualified model');
+      mosaicAsset=bytes;
+    }catch(error){console.error('The selected companion edition is unavailable:',error.message);}
+  }
   const app=express();
   // Express4 does not forward a rejected async handler. The upstream MML index
   // issues the session in such a handler; include its persistence errors in the
@@ -531,6 +545,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const roomLooks=space.collectionShelves&&matterArt?.roomLooks;
     const splat=space.collectionShelves&&matterArt?.floorSplat;
     return {...space,live:1,avatarPosePresence:true,actorRef:actor.id,
+      ...(mosaicAsset?{companionModel:'mosaic'}:{}),
       ...(roomLooks?{matterStyles:{...roomLooks.describe(revision=>route('api/space/art/'+revision)),
         ...(roomLookPreferences.has(lookReaderKey(actor))?{preferred:roomLookPreferences.get(lookReaderKey(actor))}:{})}}:{}),
       ...(splat?{matterFloorSplat:{src:route('api/space/art/'+splat.revision),target:splat.target,radius:splat.radius}}:{}),
@@ -1063,7 +1078,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       session[budget].push(now);
     }
     const spaceRoute=['/space','/space/destinations','/space/jump','/space/character-pose-review','/space/character-presentation','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/avatar-pose','/space/collection/tabletop-presence','/space/collection/pointing','/space/matter-look','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/exteriors/')||req.path.startsWith('/space/destinations/icon/')||req.path.startsWith('/space/collection-model/')||
-      req.path.startsWith('/space/atelier/')||req.path==='/release-dnd'||req.path==='/appearance'||req.path===personalAvatarRoute.slice(3)||req.path==='/conversation-surface'||req.path==='/topic-space'||req.path==='/topic-projects'||
+      req.path.startsWith('/space/atelier/')||req.path==='/release-dnd'||req.path==='/appearance'||req.path===personalAvatarRoute.slice(3)||req.path===mosaicRoute.slice(3)||req.path==='/conversation-surface'||req.path==='/topic-space'||req.path==='/topic-projects'||
       (questbookHost&&/^\/questbook(?:\/(?:action|objective|create|receipt))?$/.test(req.path))||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
@@ -1130,6 +1145,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   app.use(route('api/space/atelier/'),asyncRoute(atelierProjectionHandler({
     authority:atelierAuthority,scope:atelierSpace,authorize:currentActor,
   })));
+  if(mosaicAsset)app.get(route(mosaicRoute),(_req,res)=>
+    res.set('Cache-Control','private, no-store').type('model/gltf-binary').send(mosaicAsset));
   if(privateExplorer)app.get(route(personalAvatarRoute),(req,res)=>{
     // The same MML description reaches peers. Only the owner's freshly
     // authorized request can follow the exact private Home edition.
@@ -1862,7 +1879,7 @@ export async function main(){
   validateWorldPorts({...receiving});
   const nativeRoomAuthority=receiving&&Object.hasOwn(receiving,'authoritySocket')?createNativeRoomAuthority(receiving.authoritySocket):null;
   const nativeReviewAuthority=nativeRoomAuthority?createNativeReviewAuthority(receiving.authoritySocket):null;
-  const runtime=await createHolodeck({production,stateDir,releaseControllerRef:receiving?.releaseControllerRef,privatePersonalAvatar:receiving?.privatePersonalAvatar,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,nativeReviewAuthority,contentVisits:receiving?.contentVisits,contentNodes:receiving?.contentNodes,nativeRoomAuthority,conversationOrigins:receiving?.conversationOrigins||[],ownNative:receiving?.ownNative??false,interiorSpaces:receiving?.interiorSpaces??[],gallerySelection:receiving?.gallery,matterCollection:selectMatterAppearance(receiving),artProfile:receiving?.artProfile,worldTerrain:receiving?.worldTerrain,ownerRoomArt:receiving?.ownerRoomArt??[],ownerRoomTours:receiving?.ownerRoomTours??[],ownerExteriors:receiving?.ownerExteriors??[],parcelGrants:receiving?.parcelGrants??(production?[]:null),atelierWorkshop:receiving?.atelierWorkshop??null,questbook:configuredQuestbook(receiving,stateDir)});
+  const runtime=await createHolodeck({production,stateDir,releaseControllerRef:receiving?.releaseControllerRef,privatePersonalAvatar:receiving?.privatePersonalAvatar,mosaicCompanion:receiving?.mosaicCompanion===true,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,nativeReviewAuthority,contentVisits:receiving?.contentVisits,contentNodes:receiving?.contentNodes,nativeRoomAuthority,conversationOrigins:receiving?.conversationOrigins||[],ownNative:receiving?.ownNative??false,interiorSpaces:receiving?.interiorSpaces??[],gallerySelection:receiving?.gallery,matterCollection:selectMatterAppearance(receiving),artProfile:receiving?.artProfile,worldTerrain:receiving?.worldTerrain,ownerRoomArt:receiving?.ownerRoomArt??[],ownerRoomTours:receiving?.ownerRoomTours??[],ownerExteriors:receiving?.ownerExteriors??[],parcelGrants:receiving?.parcelGrants??(production?[]:null),atelierWorkshop:receiving?.atelierWorkshop??null,questbook:configuredQuestbook(receiving,stateDir)});
   const port=Number(process.env.PORT||18940);
   if(!Number.isInteger(port)||port<1024||port>65535)throw Error('Select a valid loopback port');
   if(process.env.HOST&&process.env.HOST!=='127.0.0.1')throw Error('Use the existing loopback gateway');

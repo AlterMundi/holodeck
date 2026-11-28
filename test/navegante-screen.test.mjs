@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BufferGeometry,Mesh,MeshStandardMaterial} from 'three';
-import {EXPRESSIONS,EXPRESSION_NAMES,SpeechArticulator,installNaveganteScreen} from '../src/navegante-screen.mjs';
+import {BufferGeometry,Group,Mesh,MeshStandardMaterial} from 'three';
+import {EXPRESSIONS,EXPRESSION_NAMES,SpeechArticulator,installNaveganteDisplay,installNaveganteScreen} from '../src/navegante-screen.mjs';
 
 test('the visor screen carries the nine expressions of the navigator sheet',()=>{
   assert.deepEqual(EXPRESSION_NAMES,['calm','curious','joy','sad','anger','uncertain','focus','welcome','sleep']);
@@ -32,4 +32,27 @@ test('speech is articulated syllable by syllable, not only louder',()=>{
   assert.ok(maxOpen>.7);
   a.update(0,1);for(let f=0;f<60;f++)a.update(0,1/60);
   assert.ok(a.open<.01&&a.talking<.1,'falls silent');
+});
+
+test('the mosaic head keeps its ceramic material and gains the same expression and speech hooks',()=>{
+  const ceramic=new MeshStandardMaterial();ceramic.name='Nav4_CeramicMosaic';
+  const cyan=new MeshStandardMaterial({emissive:0x2288ff,emissiveIntensity:5});
+  cyan.name='Nav4_CyanEyes';
+  const root=new Group(),head=new Mesh(new BufferGeometry(),ceramic);
+  head.name='Nav4_Head';root.add(head);
+  for(const name of ['Nav4_EyeL','Nav4_EyeR']){
+    const eye=new Mesh(new BufferGeometry(),cyan);eye.name=name;root.add(eye);
+  }
+  const display=installNaveganteDisplay(root);
+  assert.ok(display.mosaic&&head.material.userData.keepShaderInHologram);
+  assert.notEqual(head.material,ceramic);
+  for(const mood of EXPRESSION_NAMES){
+    display.set(mood);display.update(1,{motion:false});assert.equal(display.name,mood);
+  }
+  display.set('joy');display.update(1,{motion:false});
+  assert.equal(cyan.emissive.getHex(),EXPRESSIONS.joy.colour);
+  for(let frame=0;frame<12;frame++)display.update(1/60,{speech:.9});
+  assert.ok(display.speech.open>0&&display.uniforms.sTalk.value>0);
+  display.update(0,{motion:false});
+  assert.equal(display.speech.open,0);
 });

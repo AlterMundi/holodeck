@@ -1195,7 +1195,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         .finally(()=>{if(weatherRequest===request)weatherRequest=null;});
     }
     const avatarPracticals=bindAvatarPracticals(renderer.mmlCompositionScene.group,options.coreCameraManager.collisionsManager);
-    const companion=new CompanionAvatar({scene:renderer.mmlCompositionScene.group,document,base});
+    const companion=new CompanionAvatar({scene:renderer.mmlCompositionScene.group,document,base,mosaic:activeSpace.companionModel==='mosaic'});
     const flightWake=new FlightWake(renderer.mmlCompositionScene.group,{base});
     boostKick=flightWake;
     flightWake.sound=(kind,options)=>worldAudio.playBody(kind,options);

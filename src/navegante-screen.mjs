@@ -123,7 +123,7 @@ float zGlyph(vec2 q,float s){
   q/=s;if(abs(q.x)>.5||abs(q.y)>.5)return 0.;
   return max(max(band(q.y-.45,.14),band(q.y+.45,.14)),band(q.y-q.x,.16));
 }
-vec4 screen(){
+vec4 screen(bool mosaic){
   // glTF flips V; the screen is authored with +y up.
   vec2 p=vec2(vScreen.x*2.-1.,1.-vScreen.y*2.)*vec2(sShape.x,1.);
   float t=sFx1.z;
@@ -131,7 +131,8 @@ vec4 screen(){
   vec2 cell=(floor(p*density)+.5)/density;
   vec2 f=fract(p*density)-.5;
   float dot=smoothstep(.46,.30,length(f));
-  float lit=max(max(eyeLit(cell,-1.),eyeLit(cell,1.)),mouthLit(cell));
+  float lit=mouthLit(cell);
+  lit=max(lit,max(eyeLit(cell,-1.),eyeLit(cell,1.))*(mosaic?.83:1.));
   lit=max(lit,max(browLit(cell,-1.,sBrow.y),browLit(cell,1.,sBrow.z)));
   // Sparkles around the eyes, twinkling.
   for(int i=0;i<4;i++){
@@ -164,11 +165,15 @@ vec4 screen(){
   float breathe=1.-.25*step(.5,sFx0.w)*(.5+.5*sin(t*1.3));
   float glow=lit*flick*sCol.a*breathe;
   // Unlit pixels show faintly, like a real panel.
-  vec3 led=colour*(glow*1.7+.014)*dot;
+  vec3 led=colour*(glow*1.7+(mosaic?0.:.014))*dot;
   return vec4(led,1.);
 }`;
 
 export function installNaveganteDisplay(root){
+  const head=root.getObjectByName('Nav4_Head');
+  const eyeMats=['Nav4_EyeL','Nav4_EyeR'].map(name=>root.getObjectByName(name)?.material);
+  if(head?.material?.name==='Nav4_CeramicMosaic'&&eyeMats.every(material=>material?.name==='Nav4_CyanEyes'))
+    return installMosaicDisplay(head,[...new Set(eyeMats)]);
   let display=null;
   root.traverse(object=>{
     if(object.isMesh&&!display)display=installNaveganteScreen(object)??installNaveganteFace(object);
@@ -176,12 +181,48 @@ export function installNaveganteDisplay(root){
   return display;
 }
 
+function displayUniforms(){
+  return {sCol:{value:new Vector4()},sEye0:{value:new Vector4()},sEye1:{value:new Vector4()},
+    sBrow:{value:new Vector4()},sMouth:{value:new Vector4()},sMouth2:{value:new Vector4()},
+    sFx0:{value:new Vector4()},sFx1:{value:new Vector4()},sTalk:{value:0},sShape:{value:new Vector2(1.485,1)}};
+}
+
+function installMosaicDisplay(head,eyes){
+  const material=head.material.clone(),uniforms=displayUniforms();
+  // The glTF's +Z face, physical eye centers at x=±.08 and y=1 m.
+  // Keep the authored ceramic and slit eyes visible and add light only to
+  // the front of the mosaic. The eyes themselves carry the mood colour.
+  uniforms.sShape.value.set(1.485,1);
+  material.onBeforeCompile=shader=>{
+    Object.assign(shader.uniforms,uniforms);
+    shader.vertexShader=shader.vertexShader
+      .replace('#include <common>','#include <common>\nvarying vec2 vScreen; varying float faceDepth;')
+      .replace('#include <begin_vertex>','#include <begin_vertex>\nvScreen=vec2(.5+position.x/.457,.5-(position.y-.983)/.212); faceDepth=position.z;');
+    shader.fragmentShader=shader.fragmentShader
+      .replace('#include <common>','#include <common>\nvarying float faceDepth;\n'+SCREEN_GLSL)
+      .replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance+=screen(true).rgb*smoothstep(.035,.09,faceDepth);');
+  };
+  material.customProgramCacheKey=()=> 'navegante-mosaic-screen-v1';
+  material.userData.keepShaderInHologram=true;
+  head.material=material;
+  const display=new NaveganteScreen(uniforms,material,{calm:eyes[0].emissive.getHex()});
+  const update=display.update.bind(display),brightness=eyes.map(eye=>eye.emissiveIntensity);
+  display.mosaic=true;
+  display.update=(seconds,options)=>{
+    update(seconds,options);
+    const [r,g,b,bright]=display.current;
+    eyes.forEach((eye,i)=>{
+      eye.emissive.setRGB(r,g,b);
+      eye.emissiveIntensity=brightness[i]*bright*(1-.88*display.blink)*(1-.85*display.current[6]);
+    });
+  };
+  return display;
+}
+
 export function installNaveganteScreen(mesh){
   const material=[mesh.material].flat()[0];
   if(!material||!/^Visor LED screen/.test(material.name))return null;
-  const uniforms={sCol:{value:new Vector4()},sEye0:{value:new Vector4()},sEye1:{value:new Vector4()},
-    sBrow:{value:new Vector4()},sMouth:{value:new Vector4()},sMouth2:{value:new Vector4()},
-    sFx0:{value:new Vector4()},sFx1:{value:new Vector4()},sTalk:{value:0},sShape:{value:new Vector2(1.485,1)}};
+  const uniforms=displayUniforms();
   // The visor's own proportion; a "slits" screen (the bronze navigator) rests
   // with narrow blue eyes.
   const slits=/slits/.test(material.name);
@@ -200,7 +241,7 @@ export function installNaveganteScreen(mesh){
       .replace('#include <begin_vertex>','#include <begin_vertex>\nvScreen=uv;');
     shader.fragmentShader=shader.fragmentShader
       .replace('#include <common>','#include <common>\n'+SCREEN_GLSL)
-      .replace('vec4 diffuseColor = vec4( diffuse, opacity );','vec4 diffuseColor = screen();');
+      .replace('vec4 diffuseColor = vec4( diffuse, opacity );','vec4 diffuseColor = screen(false);');
   };
   screen.customProgramCacheKey=()=> 'navegante-led-screen-v1';
   screen.userData.keepInHologram=true;

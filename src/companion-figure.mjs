@@ -21,6 +21,7 @@ const scatter=index=>{const x=Math.sin(index*12.9898+4.1414)*43758.5453;return x
 
 export async function loadCompanionFigure(url){
   const {scene:root,animations}=await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url.href);
+  const screen=installNaveganteDisplay(root);
   const geometries=new Set(),materials=new Set(),textures=new Set(),skeletons=new Set();
   root.traverse(object=>{
     if(!object.isMesh)return;
@@ -65,7 +66,7 @@ export async function loadCompanionFigure(url){
   // The separate ceramic chin piece under the visor is not part of the N-3X
   // design: collapse its bone so only the visor and its mouth of light remain.
   hinge.scale.setScalar(1e-4);
-  const gait=bindCompanionGait(root);
+  const gait=bindCompanionGait(root,{fitBoots:screen?.mosaic===true});
   const glance=new TabletopGlance();
   const base=new Map(),shots=new Map(),layers=new Map();
   for(const name of cycles){
@@ -100,7 +101,6 @@ export async function loadCompanionFigure(url){
     throw Error('Invalid Navegante asset');
   }
   const eyes=['eye-L','eye-R'].map(name=>root.getObjectByName(name)).filter(Boolean);
-  const screen=installNaveganteDisplay(root);
   // Each gesture carries its expression; rest is calm and a long rest sleeps.
   const moods={curious:'curious',welcome:'welcome',brace:'uncertain',scan:'focus',sway:'calm',tinker:'focus',chirp:'joy',
     joy:'joy',sad:'sad',anger:'anger',uncertain:'uncertain',focus:'focus',sleep:'sleep'};
@@ -260,7 +260,7 @@ export async function loadCompanionFigure(url){
       }
       // The playback signal alone opens the jaw. Small bodies need a wider,
       // still bounded, opening to read at tabletop distance.
-      const aperture=clamp(level)*(miniature?1.45:1);
+      const aperture=(screen?.mosaic?screen.speech.open:clamp(level))*(miniature?1.45:1);
       jaw=motion?jaw+(aperture-jaw)*ease(step,aperture>jaw?30:15):0;
       if(jaw<.004&&!aperture)jaw=0;
       for(const {influences,index} of mouths)influences[index]=Math.min(jaw,1.2);

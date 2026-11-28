@@ -191,7 +191,11 @@ export class MatterHologram{
       const translucent=material=>{
         // Self-lit screens (Navegante's visor) already read as light.
         if(material.userData?.keepInHologram)return material;
-        const clone=new MeshStandardMaterial().copy(material);
+        const clone=material.userData?.keepShaderInHologram?material.clone():new MeshStandardMaterial().copy(material);
+        if(material.userData?.keepShaderInHologram){
+          clone.onBeforeCompile=material.onBeforeCompile;
+          clone.customProgramCacheKey=material.customProgramCacheKey;
+        }
         clone.transparent=true;
         clone.opacity*=.55;
         clone.alphaTest*=.55;

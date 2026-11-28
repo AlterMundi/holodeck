@@ -3,6 +3,7 @@ import {clamp,smooth} from './avatar-motion-curves.mjs';
 
 const localUp=new Vector3(0,1,0),localForward=new Vector3(0,0,1),localRight=new Vector3(1,0,0);
 const ankleHeight=.126,stance=.113,toe=.115,lateralToeClearance=.13;
+const pitchLimit=.8,pitchSamples=65;
 const legs=[['leg-left','shin-left','foot-L',-1,0],['leg-right','shin-right','foot-R',1,.5]];
 
 // Cadence rises with speed and the stance covers only what the legs can reach.
@@ -14,9 +15,49 @@ export function companionStride(speed){
   return {cadence,length,duty:Math.min(.6,reach/Math.max(.001,length))};
 }
 
+// Measure the new boot profile in the same frame used by the existing IK.
+// This is bind-pose work: animation only samples the small lookup table.
+function fitBootSoles(root,limbs){
+  const inverse=root.getWorldQuaternion(new Quaternion()).invert();
+  const point=new Vector3();
+  const origins=limbs.map(limb=>limb.foot.getWorldPosition(new Vector3()));
+  const samples=limbs.map(()=>[]);
+  root.traverse(mesh=>{
+    const geometry=mesh.geometry;
+    if(!mesh.isSkinnedMesh||!geometry?.attributes.skinIndex||!geometry?.attributes.skinWeight)return;
+    const {skinIndex:indices,skinWeight:weights}=geometry.attributes;
+    const sides=mesh.skeleton.bones.map(bone=>limbs.findIndex(limb=>limb.foot===bone));
+    for(let vertex=0;vertex<indices.count;vertex++){
+      const index=sides[indices.getX(vertex)];
+      if(index<0||weights.getX(vertex)<.8)continue;
+      mesh.getVertexPosition(vertex,point);
+      mesh.localToWorld(point).sub(origins[index]).applyQuaternion(inverse);
+      samples[index].push([point.y,point.z]);
+    }
+  });
+  for(const [index,points] of samples.entries()){
+    if(!points.length)continue;
+    limbs[index].soleHeights=Array.from({length:pitchSamples},(_,sample)=>{
+      const pitch=2*pitchLimit*sample/(pitchSamples-1)-pitchLimit;
+      const cosine=Math.cos(pitch),sine=Math.sin(pitch);
+      let low=Infinity;
+      for(const [y,z] of points)low=Math.min(low,y*cosine-z*sine);
+      return -low;
+    });
+  }
+}
+
+function bootHeight(limb,pitch){
+  if(!limb.soleHeights)return null;
+  const sample=(clamp(pitch,-pitchLimit,pitchLimit)+pitchLimit)*(pitchSamples-1)/(pitchLimit*2);
+  const at=Math.min(pitchSamples-2,Math.floor(sample));
+  const [a,b]=[limb.soleHeights[at],limb.soleHeights[at+1]];
+  return a+(b-a)*(sample-at);
+}
+
 // Place each foot once, keep it there until it lifts, then solve the leg to it.
 // Positions are in the root's parent space so moving frames and scale agree.
-export function bindCompanionGait(root){
+export function bindCompanionGait(root,{fitBoots=false}={}){
   const hips=root.getObjectByName('hips');
   const limbs=legs.map(([thigh,shin,foot,side,offset])=>({
     thigh:root.getObjectByName(thigh),shin:root.getObjectByName(shin),foot:root.getObjectByName(foot),side,offset,
@@ -38,6 +79,7 @@ export function bindCompanionGait(root){
     limb.upper=limb.thigh.getWorldPosition(new Vector3()).distanceTo(limb.shin.getWorldPosition(hip))/size;
     limb.lower=limb.shin.getWorldPosition(new Vector3()).distanceTo(limb.foot.getWorldPosition(hip))/size;
   }
+  if(fitBoots)fitBootSoles(root,limbs);
   const clipHips=new Vector3();
   let phase=0,walking=false,fresh=true,still=0,rise=0,drop=0,posed=false;
   let side=0,lateral=0,forwardSwing=1;
@@ -217,11 +259,16 @@ export function bindCompanionGait(root){
           // Roll over a fixed toe as the body passes ahead of it.
           const behind=point.subVectors(hip,limb.ankle).dot(forward)/grow;
           limb.pitch=walking?.75*smooth((behind-.055)/.12):0;
+          const fitted=bootHeight(limb,limb.pitch);
           if(limb.pitch>0){
             limb.toe.set(0,-ankleHeight,toe).multiplyScalar(grow);
             point.copy(limb.toe).applyQuaternion(turn.setFromAxisAngle(localRight,limb.pitch));
             limb.toe.sub(point).applyQuaternion(desired);
             limb.ankle.add(limb.toe);
+          }
+          if(fitted!==null){
+            const stock=ankleHeight*Math.cos(limb.pitch)+toe*Math.sin(limb.pitch);
+            limb.ankle.add(point.set(0,(fitted-stock)*grow,0).applyQuaternion(desired));
           }
           const stood=point.subVectors(hip,limb.ankle).dot(up)/grow;
           const reach=(limb.upper+limb.lower)*.997;
@@ -233,7 +280,9 @@ export function bindCompanionGait(root){
           drop=Math.max(drop,Math.min(limit,needed));
         }else{
           const lowest=ankleHeight*(Math.cos(limb.pitch)-1)+Math.abs(Math.sin(limb.pitch))*(limb.pitch>0?toe+.02:.085);
-          limb.ankle.addScaledVector(up,(limb.height+rise*.7+lowest)*grow);
+          const fitted=bootHeight(limb,limb.pitch);
+          const clearance=fitted===null?lowest:Math.max(lowest,fitted-ankleHeight);
+          limb.ankle.addScaledVector(up,(limb.height+rise*.7+clearance)*grow);
         }
       }
       posed=true;

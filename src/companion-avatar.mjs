@@ -1,5 +1,5 @@
 import {Quaternion, Ray, Vector3} from 'three';
-import {AVATARS} from './avatar-registry.mjs';
+import {AVATARS,NAVEGANTE_VARIANTS} from './avatar-registry.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
 import {TOROIDAL_TERRAIN,terrainCoordinates,terrainElevation,terrainFrame} from './toroidal-terrain.mjs';
 import {MatterHologram,matterAvatarScale} from './matter-flight.mjs';
@@ -32,7 +32,7 @@ export function companionWaterPitch(water,speed,verticalSpeed){
 }
 
 export class CompanionAvatar{
-  constructor({scene,document,base}){
+  constructor({scene,document,base,mosaic=false}){
     Object.assign(this,{scene,document});
     this.relative=new Vector3();
     this.followAngle=new Quaternion();
@@ -66,10 +66,14 @@ export class CompanionAvatar{
     this.visibilityChanged=()=>{if(document.hidden)this.previous=null;};
     document.addEventListener('visibilitychange',this.visibilityChanged);
     this.place=(point,up)=>this.settle(point,up);
-    const asset=AVATARS[appearance];
-    const model=new URL(asset.model,base);
-    model.searchParams.set('v',asset.modelSha256);
-    void loadCompanionFigure(model).then(figure=>{
+    const load=asset=>{
+      const model=new URL(asset.model,base);
+      model.searchParams.set('v',asset.modelSha256);
+      return loadCompanionFigure(model);
+    };
+    const standard=AVATARS[appearance];
+    const selected=mosaic?load(NAVEGANTE_VARIANTS.mosaic).catch(()=>load(standard)):load(standard);
+    void selected.then(figure=>{
       if(this.disposed){figure.dispose();return;}
       this.figure=figure;
       this.hologram=new MatterHologram(figure.root,{depthWrite:true});
