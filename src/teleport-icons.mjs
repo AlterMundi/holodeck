@@ -5,6 +5,7 @@ import {Box3,Color,Matrix4,Vector3} from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {semanticIcon} from './teleport-semantic-icons.mjs';
+import {jpegGrid} from './icon-jpeg.mjs';
 
 // Every teleport destination can describe itself as a small low-poly icon.
 // The icon is derived from the destination's own source (its room art, its
@@ -12,7 +13,7 @@ import {semanticIcon} from './teleport-semantic-icons.mjs';
 // so editing the source produces a new icon without anyone maintaining it.
 // Destinations without a usable source keep the authored miniature.
 
-export const TELEPORT_ICON_VERSION='tp-icon-v2';
+export const TELEPORT_ICON_VERSION='tp-icon-v3';
 const FOOTPRINT=.24, HEIGHT=.26, TRIANGLES=1400, CACHE=64;
 const MAX_SOURCE_BYTES=24*1024*1024;
 
@@ -71,9 +72,9 @@ function untextured(bytes){
   const contents=JSON.parse(bytes.toString('utf8',20,20+length));
   const binStart=20+length+8;
   const imageGrid=image=>{
-    if(image?.bufferView===undefined||image.mimeType!=='image/png')return null;
+    if(image?.bufferView===undefined||!['image/png','image/jpeg'].includes(image.mimeType))return null;
     const view=contents.bufferViews[image.bufferView];
-    try{return pngGrid(bytes.subarray(binStart+(view.byteOffset??0),binStart+(view.byteOffset??0)+view.byteLength));}catch{return null;}
+    try{return (image.mimeType==='image/jpeg'?jpegGrid:pngGrid)(bytes.subarray(binStart+(view.byteOffset??0),binStart+(view.byteOffset??0)+view.byteLength));}catch{return null;}
   };
   const grids=new Map();
   for(const material of contents.materials??[]){
@@ -247,13 +248,51 @@ export function facadeIcon(facade){
   return fitIcon({positions:new Float32Array(positions),colors:new Float32Array(colors),indices});
 }
 
-export async function sceneIcon(bytes,{cutaway=false,triangles=TRIANGLES}={}){
+// Simplified colours read better a little more saturated at icon size.
+export function vivid(mesh,amount=1.55){
+  const c=mesh.colors;
+  for(let i=0;i<c.length;i+=3){
+    const l=.2126*c[i]+.7152*c[i+1]+.0722*c[i+2];
+    for(let k=0;k<3;k++)c[i+k]=Math.max(0,Math.min(1,l+(c[i+k]-l)*amount));
+  }
+  return mesh;
+}
+
+// Keep the triangles around a point: a worktable seen as it is in its room.
+function cropAround(geometry,{center,radius=1.2,below=1.15,above=1.25}){
+  const {positions,colors}=geometry,keep=[],tint=[];
+  const [cx,cy,cz]=center;
+  for(let t=0;t<positions.length;t+=9){
+    const x=(positions[t]+positions[t+3]+positions[t+6])/3,y=(positions[t+1]+positions[t+4]+positions[t+7])/3,z=(positions[t+2]+positions[t+5]+positions[t+8])/3;
+    if(Math.hypot(x-cx,z-cz)>radius||y<cy-below||y>cy+above)continue;
+    for(let k=0;k<9;k++){keep.push(positions[t+k]);tint.push(colors[t+k]);}
+  }
+  return {positions:new Float32Array(keep),colors:new Float32Array(tint)};
+}
+
+// Put a small function emblem above a model icon so its role stays legible.
+function withEmblem(mesh,descriptor){
+  const emblem=fitIcon(semanticIcon(descriptor));
+  let top=0;
+  for(let i=1;i<mesh.positions.length;i+=3)top=Math.max(top,mesh.positions[i]);
+  const base=mesh.positions.length/3,scale=.36;
+  const positions=[...mesh.positions],colors=[...mesh.colors],indices=[...mesh.indices];
+  for(let i=0;i<emblem.positions.length;i+=3)
+    positions.push(emblem.positions[i]*scale,top+.02+emblem.positions[i+1]*scale,emblem.positions[i+2]*scale);
+  colors.push(...emblem.colors);
+  for(const index of emblem.indices)indices.push(base+index);
+  return fitIcon({positions:new Float32Array(positions),colors:new Float32Array(colors),indices});
+}
+
+export async function sceneIcon(bytes,{cutaway=false,crop=null,triangles=TRIANGLES}={}){
   if(!bytes||bytes.length>MAX_SOURCE_BYTES)return null;
   const scene=await parseScene(bytes);
   let geometry=collectTriangles(scene,{skip:object=>/collider|collision|hitbox/i.test(object.name)});
+  if(crop)geometry=cropAround(geometry,crop);
   if(cutaway)geometry=withoutCeiling(geometry);
+  if(geometry.positions.length<9*20)return null;
   const mesh=clusterTriangles(geometry,{triangles});
-  return mesh&&fitIcon(mesh);
+  return mesh&&fitIcon(vivid(mesh));
 }
 
 // Minimal GLB: one mesh, POSITION + COLOR_0 + indices, one flat material.
@@ -291,9 +330,15 @@ export function iconGlb(mesh){
 }
 
 export async function buildIcon(source){
-  const mesh=source.kind==='facade'?facadeIcon(source.facade):
-    source.kind==='semantic'?fitIcon(semanticIcon(source.descriptor)):
-    await sceneIcon(source.bytes,{cutaway:source.kind==='room'});
+  let mesh;
+  if(source.kind==='facade')mesh=facadeIcon(source.facade);
+  else if(source.kind==='semantic')mesh=fitIcon(semanticIcon(source.descriptor));
+  else if(source.kind==='crop'){
+    // A worktable as it looks in its room, with its function emblem above;
+    // tables with no authored geometry fall back to the semantic icon.
+    const model=await sceneIcon(source.bytes,{crop:source.crop});
+    mesh=model?withEmblem(model,source.descriptor):fitIcon(semanticIcon(source.descriptor));
+  }else mesh=await sceneIcon(source.bytes,{cutaway:source.kind==='room'});
   if(!mesh)return null;
   const glb=iconGlb(mesh);
   return new Uint8Array(glb.buffer,glb.byteOffset,glb.byteLength).slice();
@@ -351,7 +396,7 @@ export class TeleportIcons {
   }
 
   async build(source){
-    const plain={kind:source.kind,revision:source.revision,facade:source.facade,descriptor:source.descriptor,
+    const plain={kind:source.kind,revision:source.revision,facade:source.facade,descriptor:source.descriptor,crop:source.crop,
       bytes:typeof source.bytes==='function'?source.bytes():source.bytes};
     if(plain.bytes&&plain.bytes.length>MAX_SOURCE_BYTES)return null;
     if(!this.worker||plain.kind==='facade'||plain.kind==='semantic'){const bytes=await buildIcon(plain);return bytes&&Buffer.from(bytes);}
