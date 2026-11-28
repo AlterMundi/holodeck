@@ -1,5 +1,27 @@
 # Current MVP work
 
+## Navegante studio variants · 2026-11-28
+
+Protected release `4669107b064f` selects `7c03210`, including Char Design's
+`071baa8`, with `bca910ad89ca` available for rollback. The Character Studio
+offers Navegante escafandra and Navegante bronce. Both use the companion's
+face renderer for studio poses. In-world companions still use the N-3X
+asset and its 1.485 visor proportion.
+
+Chromium on RTX 2060 opened both studio variants, showed each as selected
+in the Character panel and rendered the ceramic face and blue LED slits. Both
+devices loaded the exact Explorer v30 and N-3X models in the world. In five
+two-second idle windows at 363 × 244, Pi 5 measured 18.20 FPS on the prior
+release and 17.90 with the variants package. The first RTX 2060 pair at
+660 × 407 varied widely, with medians of 25.29 and 18.54 FPS respectively.
+A repeat in reverse order with a 15-second warmup measured 17.07 and
+19.02 FPS respectively. The first-run slowdown did not reproduce.
+
+Lossless Brotli on the three avatar models keeps the archive at 39.91 MiB.
+All 99 installed files and the authenticated HTTPS hashes for all four
+avatar models matched the qualified package. Node passed 603 tests with
+four skips.
+
 ## Explorer v30 · 2026-11-28
 
 Protected release `bca910ad89ca` selects `bbb0b8a`, including Char
