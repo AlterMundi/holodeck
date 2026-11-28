@@ -386,6 +386,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(atelierAnchor){
       space.atelierTable=atelierAnchor.id;
       if(owned?.table?.id===atelierAnchor.id)space.atelierTableReach=owned.table.interactionRadius;
+      if(owned?.widgets)space.atelierWidgets=owned.widgets;
     }
     if(!cell)return space;
     return {...space,participants:roomParticipants(space.id)};

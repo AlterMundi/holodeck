@@ -49,6 +49,25 @@ test('metric art supplies a worktable anchor inside its own floor',async()=>{
   await assert.rejects(loadOwnerRoomArt([select(wrong)],rooms,reply(wrong)),/owner room worktable/);
 });
 
+test('owner widget art can open only the existing tools panel and cannot nominate an A2UI action',async()=>{
+  const table={cell:'arrival',id:'room-marker',anchor:[0,.45,-2],turntable:[0,1.146,-2],
+    interactionRadius:2.4,rotationY:0};
+  const atlas={...manifest.cells.arrival,floor:[{x:[-6,6],z:[-6,6],top:.1,depth:.2}]};
+  const props=[{id:'atelier.tools',object:'Tool caddy',anchor:[.82,1.12,-2.3],reach:1.2,a2uiComponent:null},
+    {id:'atelier.save',object:'Ledger',anchor:[-4.55,1.3,-4.3],reach:1.3,a2uiComponent:null}];
+  const contract={schema:'casa-linterna.atelier-widgets/v1',site:'DaimonAtelier',room:'arrival',
+    frame:{units:'m',up:'+Y',size:12,height:3.3,floor:.1},roomMarker:table.anchor,turntable:table.turntable,
+    door:[0,5],landing:[0,4],widgets:props};
+  const data={...manifest,cells:{arrival:atlas},table,atelierWidgets:contract};
+  const get=async value=>(await loadOwnerRoomArt([select(value)],rooms,reply(value))).get('atlas');
+  assert.deepEqual((await get(data)).widgets.map(({id,action})=>[id,action]),[
+    ['atelier.tools','open-workbench'],['atelier.save',null],
+  ]);
+  await assert.rejects(get({...data,atelierWidgets:{...contract,landing:[0,4.1]}}),/widget room contract/);
+  const invalid=[{...props[0],a2uiComponent:'smooth'},props[1]];
+  await assert.rejects(get({...data,atelierWidgets:{...contract,widgets:invalid}}),/Atelier art widget/);
+});
+
 test('the packaged reader loads only exact staged bytes without fetching Home',async t=>{
   const directory=await mkdtemp(join(tmpdir(),'holodeck-owner-room-'));
   t.after(()=>rm(directory,{recursive:true,force:true}));

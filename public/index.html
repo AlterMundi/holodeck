@@ -36,13 +36,14 @@ body:has(#conversation-panel:not([hidden])) #visit-controls,.room-transition #vi
 body:has(#beacon-panel[open]) .touch-controls{visibility:hidden;pointer-events:none}
 @media(max-width:740px){#beacon-panel{width:calc(100vw - 16px);height:calc(100dvh - 16px);padding:8px;border-radius:14px}#beacon-panel h2{font-size:20px}}
 #atelier-table{position:fixed;z-index:22;right:22px;bottom:94px;min-height:44px;font-size:16px}
+#atelier-widget{position:fixed;z-index:22;right:22px;bottom:143px;max-width:min(28rem,calc(100vw - 44px));margin:0;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#10232c;color:#fff;font-size:15px;pointer-events:none}
 #atelier-panel{width:min(1050px,calc(100vw - 36px));height:min(760px,calc(100dvh - 36px));max-width:none;max-height:none;padding:12px;border:1px solid var(--line);border-radius:20px;background:#163b3f;color:var(--ink);overflow:hidden}
 #atelier-panel[open]{display:flex;flex-direction:column;gap:10px}#atelier-panel::backdrop{background:#081b24b8}
 #atelier-panel header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}#atelier-panel h2{margin:0;font-size:clamp(20px,4vw,26px)}
 #atelier-panel button{min-height:44px;font-size:16px}#atelier-panel-stage{flex:1;min-height:0;overflow:hidden;border-radius:12px;background:#f9f4e8}
 #atelier-panel-stage iframe{display:block;width:100%;height:100%;border:0}
 body:has(#atelier-panel[open]) .touch-controls{visibility:hidden;pointer-events:none}
-body:has(#content-visit:not([hidden]):not(.is-walking)) #atelier-table,body:has(#conversation-panel:not([hidden])) #atelier-table,.room-transition #atelier-table{display:none}
+body:has(#content-visit:not([hidden]):not(.is-walking)) :is(#atelier-table,#atelier-widget),body:has(#conversation-panel:not([hidden])) :is(#atelier-table,#atelier-widget),.room-transition :is(#atelier-table,#atelier-widget){display:none}
 @media(max-width:740px){#atelier-panel{width:calc(100vw - 16px);height:calc(100dvh - 16px);padding:8px;border-radius:14px}#atelier-table{right:12px}}
 #signal-editor{position:fixed;z-index:26;right:20px;bottom:105px;width:335px;max-width:calc(100vw - 40px);max-height:min(65dvh,540px);overflow:auto;padding:16px;border-radius:16px}
 #signal-editor label{display:block;margin:8px 0}#signal-editor input:not([type=checkbox]),#signal-editor select{padding:6px;color:var(--ink);background:#102d31;border:1px solid var(--line);border-radius:8px;font:inherit}
@@ -285,6 +286,7 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
 </dialog>
 <section id="beacon-station" aria-label="Controles del banco"><div class="row"><button id="beacon-status-check" type="button" class="glass" hidden>Consultar estado</button><a id="beacon-control" class="primary" target="_blank" rel="noopener" hidden></a></div><p id="beacon-status-text" class="glass" role="status"></p></section>
 <dialog id="beacon-panel" aria-labelledby="beacon-panel-title"><header><h2 id="beacon-panel-title">Laboratorio</h2><div class="row"><a target="_blank" rel="noopener">Abrir aparte</a><button type="button" autofocus>Volver al mundo</button></div></header><div class="beacon-panel-stage"></div></dialog>
+<p id="atelier-widget" hidden></p>
 <button id="atelier-table" type="button" class="primary" aria-haspopup="dialog" hidden>Abrir mesa de Atelier</button>
 <dialog id="atelier-panel" aria-labelledby="atelier-panel-title"><header><h2 id="atelier-panel-title">Mesa de Atelier</h2><button type="button" autofocus>Volver al mundo</button></header><div id="atelier-panel-stage"></div></dialog>
 <section id="content-visit" aria-label="Contenido visitado" class="glass" hidden><header><h2 id="visit-title">Presentación</h2><button id="visit-end" type="button">Cerrar contenido</button><button id="visit-walk" type="button" class="primary">Volver al mundo</button></header><p id="visit-loading" role="status" hidden></p><div id="visit-stage"></div></section>

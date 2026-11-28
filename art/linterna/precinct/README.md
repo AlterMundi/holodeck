@@ -180,6 +180,27 @@ mounts the existing Atelier projection and workspace. With selected
 owner art, the receiver takes the table anchor and reach from the same
 digest-pinned manifest as the room floor and doorway poses.
 
+An owner edition can include an `atelierWidgets` room contract alongside
+`table`. Use the room's metric +Y frame and exact table anchor, turntable
+and return landing. The architectural door plane may be up to 25 cm
+behind the measured passage threshold. Widget records describe props and
+must leave `a2uiComponent` null. The receiver maps `atelier.tools` to the
+existing panel's open interaction. Other props display information within
+their reach. The workbench's `atelierWorkbench` surface owns `share`,
+`smooth` and `refresh`. The room supplies neither a workspace override
+nor arbitrary widget actions. Returning to the room closes the existing
+panel. The paired human's table grant and Atelier's independent workspace,
+actor and revision checks apply as before.
+
+Export new workshop art as room-local GLB parts within the existing
+768 KiB per-model limit, with embedded textures and no external URLs.
+Keep the floor, closed visual door and native passage poses, table and
+turntable metadata, and separate collision boxes for large furniture.
+Record source and GLB digests with the widget contract. Treat the authored
+procedural materials and any successor UV layout as new bake inputs.
+Reuse the previous lightmap only with geometry and UV equivalence verified
+against its exact recorded input. Keep AnyPrinter in its own cell.
+
 The portico importer reduces subdivisions and quantizes its exported
 attributes. Its report records the source hashes and both triangle counts.
 It exports the exterior mesh. Holodeck retains the East 1 approach, native
