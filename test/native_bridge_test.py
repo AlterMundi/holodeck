@@ -217,6 +217,16 @@ class BridgeContracts(unittest.TestCase):
         self.bridge.home_workspace=True
         self.assertEqual(self.bridge.dispatch(request)['title'],'Ideas')
         self.assertEqual(calls,[room])
+        projects={'repositories':[]}
+        self.provider.topic_rooms=lambda selected, *, include_projects: (
+            calls.append((selected,include_projects)) or {
+            'schema':'daimon.topic-rooms/v1','rooms':[{'room':room,'title':'Ideas','general':False,'projects':projects}]})
+        self.assertEqual(self.bridge.dispatch({**request,'projects':True})['projects'],projects)
+        self.assertEqual(calls[-1],(room,True))
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,'projects':1})
+        self.provider.topic_rooms=lambda selected: {
+            'schema':'daimon.topic-rooms/v1','rooms':[{'room':room,'title':'Ideas','general':False}]}
         with self.assertRaises(module.BridgeError):
             self.bridge.dispatch({**request,'actorRef':'human:other'})
         with self.assertRaises(module.BridgeError):

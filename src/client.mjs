@@ -315,6 +315,7 @@ function applySpace(next,anchor){
     $('#shared-conversation').inert=true;
     if(!changingTopicMode)void setTopicMode(null);
   }
+  if(changed&&$('#topic-projects-dialog').open)$('#topic-projects-dialog').close();
   if(changed){roomTopic=undefined;worktableTopic=undefined;contentVisitor.changeRoom(inside,next.id);worldIndication.selected=null;worldIndication.removeOutline();state=null;}
   else if(inside)contentVisitor.confirmRoom();
   if(anchor||leavingTopic){
@@ -752,6 +753,7 @@ function updateNativeAvailability(){
   const shared=sharedSurface();
   syncRoomTopic();
   $('#topics-open').hidden=!shared&&!activeSpace?.topic;
+  $('#topic-projects-open').hidden=!activeSpace?.topic;
   $('#talk').disabled=inside&&!shared;
   $('#conversation-panel').classList.toggle('shared-conversation',shared);
   $('#conversation-panel').classList.toggle('topic-conversation',!!activeSpace?.topic||directTopic!==undefined);
@@ -1130,6 +1132,49 @@ function openConversation(open){
 }
 $('#talk').onclick=()=>openConversation($('#conversation-panel').hidden);
 $('#conversation-close').onclick=()=>openConversation(false);
+const topicProjectsDialog=$('#topic-projects-dialog');
+const topicProjectsList=$('#topic-projects-list');
+const topicProjectsStatus=$('#topic-projects-status');
+let topicProjectsRead;
+topicProjectsDialog.addEventListener('close',()=>{
+  if(topicProjectsDialog.open)return;
+  topicProjectsRead?.abort();
+  topicProjectsList.replaceChildren();
+});
+$('#topic-projects-open').onclick=async()=>{
+  const room=activeSpace.topic;
+  if(!room||topicProjectsDialog.open)return;
+  const request=new AbortController();
+  topicProjectsRead=request;
+  topicProjectsList.replaceChildren();
+  topicProjectsStatus.textContent='Buscando los proyectos de esta sala…';
+  topicProjectsDialog.showModal();
+  const current=()=>!request.signal.aborted&&topicProjectsDialog.open&&activeSpace.topic===room;
+  try{
+    const result=await api('topic-projects?'+new URLSearchParams({room}),undefined,{signal:request.signal});
+    if(!current()||result.room!==room)return;
+    const projects=new Map();
+    for(const repository of result.repositories){
+      if(!projects.has(repository.project))projects.set(repository.project,[]);
+      projects.get(repository.project).push(repository);
+    }
+    for(const repositories of projects.values()){
+      const list=document.createElement('ul');
+      list.setAttribute('aria-label','Repositorios de un proyecto');
+      for(const repository of repositories){
+        const row=document.createElement('li'),name=document.createElement('strong'),commit=document.createElement('code');
+        name.textContent=repository.label;
+        commit.textContent=repository.commit;
+        row.append(name,commit);
+        list.append(row);
+      }
+      topicProjectsList.append(list);
+    }
+    topicProjectsStatus.textContent=projects.size?'Vínculos recientes':'Todavía no hay proyectos visibles en esta sala.';
+  }catch{
+    if(current())topicProjectsStatus.textContent='No pude consultar los proyectos de esta sala.';
+  }
+};
 $('#worktable-reference-clear').onclick=()=>{worktableTopic=undefined;updateNativeAvailability();};
 function boundConversation(){
   const log=$('#conversation-log');while(log.children.length>128)log.firstElementChild.remove();

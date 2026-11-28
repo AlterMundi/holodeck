@@ -81,11 +81,13 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  const {chromium}=await import(browserModule);
  const {createHolodeck}=await import('../src/server.mjs');
  const actorRef='human:room-visitor',origin='https://conversation.test',binding='a'.repeat(64);
+ let repositories=[];
  const nativeFactory=async()=>({availability:async()=>({available:true}),contexts:{},
-   async topicRoom(actor,topic){
+   async topicRoom(actor,topic,includeProjects){
     assert.equal(actor.ref,actorRef);
     if(!visible||topic!==room.room)throw Object.assign(Error('Unavailable'),{code:'topic-room-unavailable'});
-    return {schema:'holodeck.topic-room/v1',actorRef,room:topic,title:room.title,general:false};
+    return {schema:'holodeck.topic-room/v1',actorRef,room:topic,title:room.title,general:false,
+      ...(includeProjects?{projects:{repositories}}:{})};
    },
    conversationSurface:async()=>({schema:'holodeck.conversation-surface/v1',actorRef,binding,
     beingRef:COMPAII_BEING,homeRef:'home:'+'c'.repeat(32),url:origin+'/interaction/'})});
@@ -145,6 +147,40 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  assert.equal(entered.returnTo,'outside');
  assert.equal(entered.title,name);
  assert.equal(runtime.spaces.current({id:actorRef}),entered.id);
+ const table=page.getByRole('dialog',{name:'Mesa de proyectos'});
+ const openTable=()=>page.getByRole('button',{name:'Mesa de proyectos'}).tap();
+ const closeTable=()=>table.getByRole('button',{name:'Cerrar'}).tap();
+ await openTable();
+ await table.getByText('Todavía no hay proyectos visibles en esta sala.').waitFor({timeout:6000}).catch(async error=>{
+  const diagnostics=await page.evaluate(async room=>({
+   dialog:document.querySelector('#topic-projects-dialog').open,
+   status:document.querySelector('#topic-projects-status').textContent,
+   http:await fetch('api/topic-projects?room='+room).then(async r=>[r.status,await r.text()])
+  }),room.room);
+  throw Error(JSON.stringify({diagnostics,errors}),{cause:error});
+ });
+ await closeTable();
+ const projectA=randomUUID(),projectB=randomUUID();
+ repositories=[
+  {project:projectA,repository:randomUUID(),label:'Cuento',commit:'1'.repeat(40),locator:'/must-not-leak'},
+  {project:projectA,repository:randomUUID(),label:'Ilustraciones',commit:'2'.repeat(40)},
+  {project:projectB,repository:randomUUID(),label:'Juego',commit:'3'.repeat(40)},
+ ];
+ const read=await page.evaluate(async room=>await fetch('api/topic-projects?room='+room).then(response=>response.json()),room.room);
+ assert.equal(read.repositories.length,3);
+ assert.equal('locator' in read.repositories[0],false);
+ await openTable();
+ await table.getByText('Cuento',{exact:true}).waitFor();
+ assert.equal(await table.getByRole('list',{name:'Repositorios de un proyecto'}).count(),2);
+ await table.getByText('3'.repeat(40),{exact:true}).waitFor();
+ await closeTable();
+ repositories=repositories.filter(row=>row.label!=='Juego');
+ repositories[0].commit='4'.repeat(40);
+ await openTable();
+ await table.getByText('4'.repeat(40),{exact:true}).waitFor();
+ assert.equal(await table.getByText('1'.repeat(40),{exact:true}).count(),0);
+ assert.equal(await table.getByText('Juego',{exact:true}).count(),0);
+ await closeTable();
  await page.getByRole('button',{name:'Conversar',exact:true}).tap();
  await page.getByRole('heading',{name:'Nuestra conversación general',exact:true}).waitFor();
  await page.getByRole('button',{name:'Hablar directo al topic',exact:true}).tap();

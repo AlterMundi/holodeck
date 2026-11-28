@@ -207,7 +207,7 @@ body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-controls
 .inside-house #creator,.inside-house #pointing,.inside-house #play-near,.inside-house #recovery-panel{display:none!important}
 .inside-house #world-tools,.inside-house #dock,.inside-house #companion-status,.inside-house #sound{display:none}
 .inside-house.has-situated-conversation #dock{display:flex;left:auto;right:max(14px,env(safe-area-inset-right));bottom:max(84px,env(safe-area-inset-bottom));transform:none}
-.inside-house #dock button:not(#talk){display:none}
+.inside-house #dock button:not(#talk):not(#topic-projects-open){display:none}
 @media(max-width:740px){#space-travel{top:145px;right:12px}.inside-house #space-travel{top:66px;max-height:calc(100dvh - 170px)}}
 @media(max-width:740px){
   #world-tools:has(#garden-create:not([hidden])){flex-direction:column;align-items:flex-end;gap:6px}
@@ -218,14 +218,18 @@ body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-controls
 }
 #appearance-open{position:fixed;right:22px;bottom:max(24px,env(safe-area-inset-bottom));z-index:20;min-height:44px}
 #topics-open{position:fixed;z-index:20;top:72px;right:22px;min-height:44px}
-#topic-explorer{width:min(432px,calc(100vw - 24px));max-height:calc(100dvh - 24px);box-sizing:border-box;padding:16px;border:1px solid var(--line);border-radius:18px;background:#173339;color:var(--ink);overflow:auto}
-#topic-explorer::backdrop{background:#081b24b8}
-#topic-explorer header,#topic-explorer nav{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+#topic-projects-dialog,#topic-explorer{width:min(432px,calc(100vw - 24px));max-height:calc(100dvh - 24px);box-sizing:border-box;padding:16px;border:1px solid var(--line);border-radius:18px;background:#173339;color:var(--ink);overflow:auto}
+#topic-projects-dialog::backdrop,#topic-explorer::backdrop{background:#081b24b8}
+#topic-projects-dialog header,#topic-explorer header,#topic-explorer nav{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 #topic-explorer h2{margin:0;font:clamp(22px,5vw,30px) Georgia,serif}
 #topic-explorer ul{padding:0;list-style:none}
 #topic-explorer li+li{margin-top:6px}
 #topic-explorer li button{min-height:44px;width:100%;text-align:left;overflow-wrap:anywhere}
-#topic-explorer-status:empty{display:none}
+#topic-projects-status:empty,#topic-explorer-status:empty{display:none}
+#topic-projects-list{display:grid;gap:12px}
+#topic-projects-list ul{list-style:none;margin:0;padding:10px;display:grid;gap:8px;background:#22434a;border-radius:10px}
+#topic-projects-list li{display:grid;gap:2px;overflow-wrap:anywhere}
+#topic-projects-list code{font-size:.72rem;color:var(--muted)}
 body:has(#conversation-panel:not([hidden])) #topics-open,body:has(#content-visit:not([hidden]):not(.is-walking)) #topics-open{display:none}
 #questbook-dialog{width:min(500px,calc(100vw - 24px));max-height:calc(100dvh - 24px);box-sizing:border-box;padding:16px;border:1px solid var(--line);border-radius:18px;background:#173339;color:var(--ink);overflow:auto}
 #questbook-dialog::backdrop{background:#081b24b8}
@@ -277,7 +281,7 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
 <div id="companion-status" class="glass" role="status">Exploración compartida</div>
 <div id="notice" class="glass" role="status"></div>
 <div id="room-passage"><span class="passage-arch" aria-hidden="true"></span><p id="room-passage-message" role="status"></p><button id="room-passage-retry" type="button" onclick="location.reload()" hidden>Reintentar</button></div>
-<nav id="dock" class="glass" aria-label="Acciones del taller"><button id="bridge" class="primary">Conectar islas</button><button id="plant">Crear luz</button><button id="talk" aria-expanded="false" aria-controls="conversation-panel">Conversar</button><button id="undo" class="icon" title="Deshacer mi último cambio" aria-label="Deshacer mi último cambio" disabled>↶</button></nav>
+<nav id="dock" class="glass" aria-label="Acciones del taller"><button id="bridge" class="primary">Conectar islas</button><button id="plant">Crear luz</button><button id="talk" aria-expanded="false" aria-controls="conversation-panel">Conversar</button><button id="topic-projects-open" type="button" aria-haspopup="dialog" hidden>Mesa de proyectos</button><button id="undo" class="icon" title="Deshacer mi último cambio" aria-label="Deshacer mi último cambio" disabled>↶</button></nav>
 <section id="pointing" class="glass" aria-label="Indicar un objeto" hidden><p id="point-label"></p><div class="row"><button id="point-visit" class="primary" type="button" hidden>Visitar contenido</button><button id="point-send" class="primary" type="button">Señalar</button><button id="point-edit" type="button" hidden>Editar luz</button><button id="point-clear" type="button">Cancelar</button></div></section>
 <details id="play-near" class="glass" hidden><summary><strong id="play-title"></strong> · Cómo jugar<span id="play-progress" role="status"></span></summary><p id="play-instruction"></p><button id="play-edit" type="button" hidden>Editar jardín</button></details>
 <div id="indoor-design-tools" hidden><button id="indoor-design" type="button">Diseñar jardín</button><button id="indoor-design-forget" type="button" hidden>Cerrar seguimiento</button></div>
@@ -323,6 +327,11 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
     <button id="topic-room-enter" type="button" class="primary" hidden>Entrar a la sala</button>
     <button id="topic-room-back" type="button">Volver a los topics</button>
   </div></section>
+</dialog>
+<dialog id="topic-projects-dialog" aria-labelledby="topic-projects-title">
+  <header><h2 id="topic-projects-title">Mesa de proyectos</h2><form method="dialog"><button type="submit" autofocus>Cerrar</button></form></header>
+  <p id="topic-projects-status" role="status"></p>
+  <div id="topic-projects-list"></div>
 </dialog>
 <dialog id="questbook-dialog" aria-labelledby="questbook-title">
   <header><h2 id="questbook-title">Diario de misiones</h2><form method="dialog"><button type="submit" autofocus>Volver al mundo</button></form></header>

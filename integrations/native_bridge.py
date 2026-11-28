@@ -144,11 +144,12 @@ class NativeBridge:
                 'beingRef':frozen['beingRef'],'homeRef':frozen['homeRef'],
                 'binding':frozen['binding'],'url':self.home_origin+self.home_entry}
 
-    def topic_room(self,actor,room):
+    def topic_room(self,actor,room,include_projects=False):
         first=self.pair(actor)
         if not self.home_workspace or not isinstance(room,str) or re.fullmatch('[a-f0-9]{64}',room) is None:
             raise BridgeError('topic-room-unavailable','The current Home workspace grant is unavailable')
-        current=self.provider.topic_rooms(room)
+        current=(self.provider.topic_rooms(room,include_projects=True) if include_projects
+                 else self.provider.topic_rooms(room))
         rows=current.get('rooms')
         if (current.get('schema')!='daimon.topic-rooms/v1' or not isinstance(rows,list) or len(rows)!=1
             or rows[0].get('room')!=room):
@@ -165,7 +166,8 @@ class NativeBridge:
         if not title:
             raise BridgeError('topic-room-unavailable','The current topic title is unavailable')
         return {'schema':'holodeck.topic-room/v1','actorRef':actor,'beingRef':pair['owner_being_ref'],
-                'homeRef':pair['home_ref'],'room':room,'title':title,'general':entry['general']}
+                'homeRef':pair['home_ref'],'room':room,'title':title,'general':entry['general'],
+                **({'projects':entry['projects']} if include_projects and 'projects' in entry else {})}
 
     def observation_file(self,ident_,actor,observation):
         if (not isinstance(observation,dict) or observation.get('schema')!='holodeck.situation/v1'
@@ -458,9 +460,11 @@ class NativeBridge:
             return {'schema':'holodeck.review-ownership/v1','beingRef':request['beingRef'],
                     'pin':request['pin'],'owned':owned}
         if request.get('operation')=='topic-room':
-            if set(request)!={'operation','actorRef','room'}:
+            include_projects=request.get('projects',False)
+            keys={'operation','actorRef','room'}
+            if set(request)-{'projects'}!=keys or type(include_projects) is not bool:
                 raise BridgeError('topic-room-unavailable','Select an exact topic room')
-            return self.topic_room(request['actorRef'],request['room'])
+            return self.topic_room(request['actorRef'],request['room'],include_projects)
         if request.get('operation')=='questbook-access':
             if (set(request)!={'operation','beingRef','project','write'}
                 or not isinstance(request['beingRef'],str)

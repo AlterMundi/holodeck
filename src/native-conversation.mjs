@@ -108,7 +108,7 @@ export function createUnixNativeTransport(socketPath){
   }
   return {inspect:actorRef=>call('inspect',{actorRef}),
     surface:actorRef=>call('surface',{actorRef}),
-    topicRoom:(actorRef,room)=>call('topic-room',{actorRef,room}),
+    topicRoom:(actorRef,room,includeProjects)=>call('topic-room',{actorRef,room,...(includeProjects?{projects:true}:{})}),
     prepareContext:payload=>call('prepare-context',payload),
     submit:payload=>call('submit',payload),status:payload=>call('status',payload),lookup:payload=>call('lookup',payload)};
 }
@@ -343,6 +343,6 @@ export async function nativeFactory({room,stateDir,receiving,allowInteriorSource
   const contexts=await createConversationContexts({room,stateDir:join(stateDir,'conversation-context'),transport,allowInteriorSource});
   return {...legacy,contexts,
     conversationSurface:actor=>transport.surface(actor.ref),
-    topicRoom:(actor,room)=>transport.topicRoom(actor.ref,room),
+    topicRoom:(actor,room,includeProjects)=>transport.topicRoom(actor.ref,room,includeProjects),
     authorizeWorldRequest:(id,being)=>contexts.hasWorldRequest(id)?contexts.authorizeWorldRequest(id,being):legacy.authorizeWorldRequest(id,being)};
 }

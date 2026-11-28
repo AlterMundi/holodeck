@@ -425,3 +425,14 @@ The selector in that browser fixture is controlled. The Session Workspace
 fixture separately tests the actual destination selector and exact reference.
 Native admission and the corresponding return for a direct original still need
 live acceptance.
+
+### Projects in a generated topic room
+
+The project table reads the paired Gateway's current topic checkpoint on
+each opening. Repositories are grouped under their project identity and
+display their exact linked Git commit. Up to eight recent links are
+projected. The active room and its current reader access are checked for
+each request. Closing the table or leaving the room discards its browser
+view. A backend without the project reader reports the table unavailable.
+The table is a read-only view. Project navigation, paginated discovery and
+work surfaces remain part of the topic-room roadmap.
