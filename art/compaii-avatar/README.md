@@ -55,6 +55,15 @@ blender -b art/compaii-avatar/navegante.blend --python-exit-code 19 \
   --python art/compaii-avatar/n3x_refine.py -- art/compaii-avatar/navegante.blend
 ```
 
+## LED face
+
+`n3x_faces.py` (run after `n3x_refine.py`) removes the modelled pupils,
+brows and mouth lens and lays a thin "Visor LED screen" over the visor glass.
+`src/navegante-screen.mjs` draws the nine expressions of the navigator
+expression sheet on it as pixels, each with its own colour and pattern, and
+articulates speech syllable by syllable from the playback level (a, e, i, o,
+u shapes and closures) instead of only brightening.
+
 ## Motion
 
 `motion.py` holds every pose and its timing. It replaces the NLA tracks of the
