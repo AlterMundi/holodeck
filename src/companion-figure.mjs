@@ -5,8 +5,7 @@ import {bindCompanionGait} from './companion-gait.mjs';
 import {TabletopGlance} from './tabletop-attention.mjs';
 import {Follower,clamp,ease,pulse,smooth} from './avatar-motion-curves.mjs';
 import {smoothClip} from './animation-smoothing.mjs';
-import {installNaveganteScreen} from './navegante-screen.mjs';
-import {installNaveganteFace} from './navegante-face.mjs';
+import {installNaveganteDisplay} from './navegante-screen.mjs';
 
 // The luminous visor mouth alone carries the speech: its morph opens the lit
 // lips and its glow follows the voice. The ceramic chin stays still.
@@ -101,11 +100,7 @@ export async function loadCompanionFigure(url){
     throw Error('Invalid Navegante asset');
   }
   const eyes=['eye-L','eye-R'].map(name=>root.getObjectByName(name)).filter(Boolean);
-  // The visor is an LED screen: expressions and the speaking mouth are pixels.
-  let screen=null;
-  root.traverse(object=>{if(object.isMesh&&!screen)screen=installNaveganteScreen(object);});
-  // The white diving-helmet option draws its face on ceramic instead.
-  if(!screen)root.traverse(object=>{if(object.isMesh&&!screen)screen=installNaveganteFace(object);});
+  const screen=installNaveganteDisplay(root);
   // Each gesture carries its expression; rest is calm and a long rest sleeps.
   const moods={curious:'curious',welcome:'welcome',brace:'uncertain',scan:'focus',sway:'calm',tinker:'focus',chirp:'joy',
     joy:'joy',sad:'sad',anger:'anger',uncertain:'uncertain',focus:'focus',sleep:'sleep'};

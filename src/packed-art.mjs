@@ -2,11 +2,13 @@ import {createHash} from 'node:crypto';
 import {readFileSync,statSync} from 'node:fs';
 import {brotliDecompressSync} from 'node:zlib';
 import {AVATARS,NAVEGANTE_VARIANTS} from './avatar-registry.mjs';
+import {personalAvatarFile,personalAvatarSha256} from './human-avatars.mjs';
 
 // Keep the canonical bytes and URLs of bundled animated characters.
 const companion=AVATARS['compaii-navegante-white-v1'];
 export const ANIMATION_ASSET_REVISIONS=Object.freeze({
   [companion.model]:companion.modelSha256,
+  ['assets/'+personalAvatarFile]:personalAvatarSha256,
   ...Object.fromEntries(Object.values(NAVEGANTE_VARIANTS).filter(v=>v.model!==companion.model).map(v=>[v.model,v.modelSha256])),
   'assets/footballer-10.glb':'ced2ad8de32a214685d2315f60b2ec0a0637682dcca8fd3722cb9fd9918a6e26',
   'assets/anim_air.glb':'370b7b800de11d66cb365ec8a147135a789c476922daee80ed664cbce9941c8f',

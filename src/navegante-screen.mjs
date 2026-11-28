@@ -1,3 +1,4 @@
+import {installNaveganteFace} from './navegante-face.mjs';
 import {AdditiveBlending,Color,MeshBasicMaterial,Vector2,Vector3,Vector4} from 'three';
 
 // Navegante's visor is an LED screen. Every expression and the speaking
@@ -167,6 +168,14 @@ vec4 screen(){
   return vec4(led,1.);
 }`;
 
+export function installNaveganteDisplay(root){
+  let display=null;
+  root.traverse(object=>{
+    if(object.isMesh&&!display)display=installNaveganteScreen(object)??installNaveganteFace(object);
+  });
+  return display;
+}
+
 export function installNaveganteScreen(mesh){
   const material=[mesh.material].flat()[0];
   if(!material||!/^Visor LED screen/.test(material.name))return null;
@@ -175,12 +184,14 @@ export function installNaveganteScreen(mesh){
     sFx0:{value:new Vector4()},sFx1:{value:new Vector4()},sTalk:{value:0},sShape:{value:new Vector2(1.485,1)}};
   // The visor's own proportion; a "slits" screen (the bronze navigator) rests
   // with narrow blue eyes.
-  mesh.geometry.computeBoundingBox();
-  const size=mesh.geometry.boundingBox.getSize(new Vector3());
-  const wide=size.x,other=[size.y,size.z].sort((a,b)=>b-a)[0];
-  if(wide>0&&other>0)uniforms.sShape.value.x=wide/other;
   const slits=/slits/.test(material.name);
-  if(slits)uniforms.sShape.value.y=.38;
+  if(slits){
+    mesh.geometry.computeBoundingBox();
+    const size=mesh.geometry.boundingBox.getSize(new Vector3());
+    const height=Math.max(size.y,size.z);
+    if(size.x>0&&height>0)uniforms.sShape.value.x=size.x/height;
+    uniforms.sShape.value.y=.38;
+  }
   const screen=new MeshBasicMaterial({name:material.name,transparent:true,depthWrite:false,blending:AdditiveBlending,toneMapped:false});
   screen.onBeforeCompile=shader=>{
     Object.assign(shader.uniforms,uniforms);

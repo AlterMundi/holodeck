@@ -8,6 +8,7 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {ModelLoader} from '@mml-io/model-loader';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport,spatialHudCatalog} from 'proyeccion/spatial-hud';
 import {rigs} from './character-studio-rigs.mjs';
+import {installNaveganteDisplay} from './navegante-screen.mjs';
 import {createHumanMotionStudy,humanMotionStudies,motionStudyRate} from './human-motion-study.mjs';
 import {ATELIER_FOYER,CHARACTER_STUDIO} from './house-review-rooms.mjs';
 import {arrivalDoor,doorLocation,readSpace} from './space-travel.mjs';
@@ -413,7 +414,8 @@ export function openCharacterStudio(document,table=null){
     root.add(orientation);
     orientation.add(model.group);
     normalise(root,table?.height);
-    const nextFigure={root,orientation,model:model.group,rigDigest:digest,
+    const display=profile.previewDisplay?installNaveganteDisplay(model.group):null;
+    const nextFigure={root,orientation,model:model.group,rigDigest:digest,display,
       mixer:new AnimationMixer(model.group),clips:new Map(model.animations.map(item=>[item.name,item]))};
     if(id!==sequence){disposeFigure(nextFigure);return;}
     playback?.stop();
@@ -535,7 +537,14 @@ export function openCharacterStudio(document,table=null){
   function frameLimit(duration=timelineDuration()){return Math.ceil(duration*motionStudyRate);}
   function availableChapters(){return displayed()?.chapters??[];}
   function drawPose(){
-    if(playback)playback.draw(Math.min(displayed().duration,frame/motionStudyRate));
+    if(!playback)return;
+    const selection=displayed();
+    playback.draw(Math.min(selection.duration,frame/motionStudyRate));
+    if(figure.display){
+      figure.display.set('calm');
+      figure.display.set(selection.name);
+      figure.display.update(0,{motion:false});
+    }
   }
   function scrub(target){
     frame=Math.max(0,Math.min(Math.round(Number(target)||0),frameLimit()));

@@ -65,6 +65,9 @@ if(ownerCache){
 }
 // Preserve the qualified bytes and their existing URLs with one disk representation.
 const deeplyPackedArt=new Set([
+  'assets/'+personalAvatarFile,
+  'assets/avatar/navegante-escafandra.glb',
+  'assets/avatar/navegante-bronce.glb',
   'assets/residencia/residencia.glb',
   'room-art/compaii-atelier/beacon-return.glb',
   'room-art/compaii-atelier/beacon.glb',
