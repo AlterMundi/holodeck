@@ -1,5 +1,18 @@
 # Current MVP work
 
+## Private personal avatar edition · 2026-11-28
+
+Protected release `d4bd03c4d4e1` serves `5ea2956` with `b10cc0d03f3c`
+available for rollback. The existing paired Home edition supplies the
+personal default while other signed-in visitors receive the bundled
+Explorer. The release archive contains no private portrait or model.
+
+The packed Chromium fixture loaded the exact private model and the bundled
+peer fallback, kept 87 joints and both authored clips, and exercised idle,
+landing and flight. The runtime speech binder opened and reset `jawOpen`
+using synthetic audio levels. The live package matched all 99 files.
+Node passed 617 tests with six skips.
+
 ## Conversation, minimap and worktables · 2026-11-28
 
 Protected release `b10cc0d03f3c` serves `c22d94b` with the topic-room
