@@ -18,12 +18,13 @@ const panel = (label, children) => [
   button('close', 'Cerrar'),
 ];
 const video = [
-  ...panel('Ajustes', ['sound', 'quality', 'sensitivity', 'fullscreen', 'shortcut', 'status']),
+  ...panel('Ajustes', ['sound', 'quality', 'sensitivity', 'fullscreen', 'diagnostics', 'shortcut', 'status']),
   button('sound', path('soundLabel'), {disabled:path('soundDisabled'),pressed:path('soundActive')}),
   choice('quality', 'Gráficos'),
   {id: 'sensitivity', component: 'HudRange', label: 'Sensibilidad (%)', min: 30, max: 240, step: 5,
     value: path('sensitivity'), draft: path('sensitivityDraft'), action: action('sensitivity', {value: path('sensitivityDraft')})},
   button('fullscreen', path('fullscreenLabel'), {disabled: path('fullscreenDisabled'), pressed: path('fullscreenActive')}),
+  button('diagnostics','Rendimiento'),
   text('shortcut', 'Ctrl + Alt + F', {visible: path('showShortcut')}),
   text('status', path('status'), {style: 'status', visible: path('hasStatus')}),
 ];
@@ -55,8 +56,8 @@ function change(input, value, event) {
 // Keep the browser settings adapters as the behavior owners. The visible
 // controls use their live state and invoke the same actions and persistence.
 export class SettingsHud {
-  constructor({document, send, focusControl, focusLauncher, onSurfaceChange,onSound}) {
-    Object.assign(this, {send, focusControl, focusLauncher, onSurfaceChange, onSound, scope: 0});
+  constructor({document, send, focusControl, focusLauncher, onSurfaceChange,onSound,onDiagnostics}) {
+    Object.assign(this, {send, focusControl, focusLauncher, onSurfaceChange, onSound, onDiagnostics, scope: 0});
     const find = id => document.getElementById(id);
     this.dialogs = {appearance: find('appearance-dialog'), video: find('video-dialog')};
     this.launchers = {appearance: find('appearance-open'), video: find('video-open')};
@@ -138,6 +139,7 @@ export class SettingsHud {
     if (name === 'close') { this.close(); return; }
     const {value} = context;
     if (active === 'video') {
+      if (name === 'diagnostics') { this.close(false); this.onDiagnostics(); return; }
       if (name === 'sound') this.onSound?.();
       if (name === 'quality') change(this.quality, value, 'change');
       if (name === 'sensitivity' && Number.isFinite(value) && value >= 30 && value <= 240 && value % 5 === 0)

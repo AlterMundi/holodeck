@@ -52,7 +52,7 @@ import {readCollectionRepresentatives} from './collection-representatives.mjs';
 import {createNativeRoomAuthority,createNativeReviewAuthority} from './native-authority.mjs';
 import {WorldDocument} from './world-document.mjs';
 import {SessionBindings,SESSION_MS,sessionKey} from './session-bindings.mjs';
-import {installedRelease,releaseStatus} from './release-status.mjs';
+import {installedPackageBytes,installedRelease,releaseStatus} from './release-status.mjs';
 import {HumanAvatarProfiles,humanWardrobeAssets} from './human-avatars.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
@@ -763,7 +763,9 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     onClientDisconnect(connection){dropPose(OUTSIDE,connection,outsidePosePeers,network);for(const s of sessions.values())if(s.connection===connection){s.connection=null;if(!room.commitUncertain)room.atomic(()=>room.event(s.actor,'participant.left',{}));}},
     onClientUserIdentityUpdate(){return false;}
   };
-  const version=installedRelease(new URL('../',import.meta.url));
+  const root=new URL('../',import.meta.url);
+  const version=installedRelease(root);
+  const packageBytes=installedPackageBytes(root);
   const index=readFileSync(new URL('../public/index.html',import.meta.url),'utf8')
     .replace('<head>','<head><base href="'+basePath+'">')
     .replace('HOL0DECK_RELEASE_PLACEHOLDER',version?.slice(0,12)??'Desarrollo');
@@ -838,7 +840,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const releaseHold=releaseControllerRef&&stateDir?
     new RoomStore(join(stateDir,'release-hold'),{maxBytes:128}):null;
   function currentReleaseStatus(){
-    const status=releaseStatus(version,stateDir);
+    const status={...releaseStatus(version,stateDir),packageBytes};
     try{
       const hold=releaseHold?.load();
       if(hold!=null&&(Object.keys(hold).join(',')!=='dnd'||typeof hold.dnd!=='boolean'))
