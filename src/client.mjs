@@ -937,9 +937,12 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     },()=>outsideRing()&&!flightEnabled&&(radialMovementMode==='swim'||radialMovementMode==='surface')&&
       !entering&&!moving&&!tableFlight.active&&!matterHud?.teleport.group&&!document.hidden,
       ()=>outsideRing()&&flightEnabled&&!entering&&!moving&&!tableFlight.active&&!matterHud?.teleport.group&&!document.hidden,outsideRing);
+    // The boost kick is screen-only: never in VR, never with reduced motion.
+    let boostKick=null;
     const releaseFraming=bindAvatarFraming(options.coreCameraManager,worldInteractionCanvas,
       ()=>client.getCharacterManager().localController?.config.quaternion,
-      ()=>!entering&&!moving&&!tableFlight.active&&!matterHud?.teleport.group&&!document.hidden);
+      ()=>!entering&&!moving&&!tableFlight.active&&!matterHud?.teleport.group&&!document.hidden,
+      (up,side)=>boostKick?.shake(up,side,!renderer.composer.renderer.xr?.isPresenting&&!companion.motion.matches));
     const aiming=()=>releaseOrbit.aiming()&&!entering&&!moving&&!tableFlight.active&&!document.hidden;
     const mapPanel=document.querySelector('#space-travel');
     const minimap=bindToroidalMinimap(mapPanel);
@@ -1158,6 +1161,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const avatarPracticals=bindAvatarPracticals(renderer.mmlCompositionScene.group,options.coreCameraManager.collisionsManager);
     const companion=new CompanionAvatar({scene:renderer.mmlCompositionScene.group,document,base});
     const flightWake=new FlightWake(renderer.mmlCompositionScene.group);
+    boostKick=flightWake;
     const waterSplash=new WaterSplash(renderer.mmlCompositionScene.group,{
       lightweight:()=>rendererBudget.lightweight,pixelRatio:()=>renderer.composer.renderer.getPixelRatio(),
     });

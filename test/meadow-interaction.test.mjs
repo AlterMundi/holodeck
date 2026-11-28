@@ -109,3 +109,21 @@ test('ordinary flight leaves a ribbon; boost adds sparks and breaks away with a 
   }finally{wake.dispose();}
   assert.equal(scene.children.length,0);
 });
+
+test('a boost breakaway throws smoke and kicks only the local, non-VR screen',async()=>{
+  const {CameraKick}=await import('../src/hero-effects.mjs');
+  const scene=new Group(),up=new Vector3(0,1,0),side=new Vector3(1,0,0);
+  const wake=new FlightWake(scene);
+  try{
+    wake.burst(7,new Vector3(),new Vector3(0,0,1),up,false);
+    assert.equal(wake.smoke.mesh.visible,true);
+    assert.equal(wake.shake(up,side,true).length(),0,'a peer boost does not shake my view');
+    wake.burst(7,new Vector3(),new Vector3(0,0,1),up,true);
+    const kick=new CameraKick();kick.fire(0);
+    assert.ok(kick.sample(.05,up,side).length()>0);
+    assert.equal(kick.sample(.05,up,side,{allowed:false}).length(),0,'VR or reduced motion');
+    assert.equal(kick.sample(.5,up,side).length(),0,'brief');
+    assert.ok(kick.sample(.05,up,side).length()<.07,'gentle');
+  }finally{wake.dispose();}
+  assert.equal(scene.children.length,0);
+});

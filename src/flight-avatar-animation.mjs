@@ -281,7 +281,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
         if(boostInput&&!entry.boostHeld&&outdoor&&glanceMotion){
           facing.copy(rollAxis).applyQuaternion(character.quaternion);
           right.copy(pitchAxis).applyQuaternion(character.quaternion);
-          wake?.burst?.(id,position,facing.multiplyScalar(entry.travelForward).addScaledVector(right,entry.travelRight),up);
+          wake?.burst?.(id,position,facing.multiplyScalar(entry.travelForward).addScaledVector(right,entry.travelRight),up,isLocal);
         }
       }
       if(mode!=='hover'&&mode!=='lift')entry.style=null;
