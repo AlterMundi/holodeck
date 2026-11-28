@@ -78,3 +78,20 @@ joints. The gestures (`brace`, `scan`, `sway`, `tinker`, `chirp` and the nine
 cues except `calm`) start and end at neutral, so the runtime can layer them.
 The runtime solves ground contact over these clips. See
 [character motion](../../docs/character-motion.md).
+
+## Alternative bodies
+
+CompAII wears the N-3X. Two diving-helmet alternatives are kept as options:
+
+```sh
+blender -b --python-exit-code 19 --python art/compaii-avatar/navegante_escafandra.py -- OUT            # escafandra (white ceramic, live face)
+blender -b --python-exit-code 19 --python art/compaii-avatar/navegante_escafandra.py -- OUT --bronze   # bronce (aged bronze, LED slits)
+```
+
+They ship as `public/assets/avatar/navegante-escafandra.glb` and
+`navegante-bronce.glb`, are listed in `NAVEGANTE_VARIANTS`
+(`src/avatar-registry.mjs`) and appear in the Character Studio's character
+choice. There is no in-game switch: to wear one, point the
+`compaii-navegante-white-v1` entry's `model` and `modelSha256` at it and
+deploy. The runtime draws the escafandra's face with `navegante-face.mjs` and
+the bronce visor with `navegante-screen.mjs`.
