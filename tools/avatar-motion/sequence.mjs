@@ -39,9 +39,10 @@ export const ROUTE=[
   ['ashore',2,{yaw:0}],
 ];
 
-export async function runSequence({file='avatar-1-bodyA-skin01.glb',fps=60,reduced=false,start={u:.002,v:.245},onFrame=()=>{},peer=false}={}){
+export async function runSequence({file='avatar-1-bodyA-skin01.glb',fps=60,reduced=false,start={u:.002,v:.245},onFrame=()=>{},peer=false,route=ROUTE,pilot=false}={}){
   const {root,mesh}=humanAvatar(file);
   const {mixer,clips}=await stockLocomotion(mesh);
+  mesh.animations=clips.authored??[];
   const document=presentation({reduced});
   const {avatar,scene}=await loadCompanion({document});
   scene.add(root);
@@ -51,8 +52,9 @@ export async function runSequence({file='avatar-1-bodyA-skin01.glb',fps=60,reduc
   const state={characters:new Map([[1,actor]]),localCharacterId:peer?99:1};
   const weights={idle:1,jog:0,run:0,air:0};
   let input={},planar=0,last=null;
+  const host=[0,0,0];
   const peerPoses=new Map();
-  const manager={loadedCharacters:new Map([[1,{character:root}]]),update(_,dt){
+  const manager={loadedCharacters:new Map([[1,{character:root}]]),update(rendered,dt){
     const pose=motion.pose();
     root.position.set(pose.position.x,pose.position.y,pose.position.z);
     root.quaternion.copy(toroidalRotation(pose.position,pose.rotation.eulerY,rotation));
@@ -65,16 +67,25 @@ export async function runSequence({file='avatar-1-bodyA-skin01.glb',fps=60,reduc
       weights[name]+=(Number(name===goal)-weights[name])*(1-Math.exp(-dt*9));
       clips[name].setEffectiveWeight(weights[name]);
     }
-    actor.animationWeights={0:weights.idle};
-    clips.jog.setEffectiveTimeScale(Math.max(.4,planar/5));
+    // Like the MML host: lanes carry times and weights, and a render-state
+    // copy of the times (the gait's own clock) is what the mixer advances.
+    const times=rendered?.characters?.get(1)?.animationTimes;
+    if(times){clips.jog.time=times[1];clips.run.time=times[2];}
+    clips.jog.setEffectiveTimeScale(1);
     mixer.update(dt);
+    // The host's own lane clocks run forward, independent of the copy.
+    host[0]+=dt;host[1]=(host[1]+dt)%clips.jog.getClip().duration;host[2]=(host[2]+dt)%clips.run.getClip().duration;
+    actor.animationWeights={0:weights.idle,1:weights.jog,2:weights.run};
+    actor.animationTimes={...host};
   }};
   let clockTime=0;
+  // A pilot is the local explorer: the camera's pitch steers its flight.
   const release=bindFlightAvatarAnimation(manager,()=>({outdoor:true,flying:Boolean(input.flight),grounded:motion.grounded,
-    crouch:Boolean(input.crouch&&motion.grounded),peerPoses,glanceMotion:!reduced}),{clock:()=>clockTime});
+    crouch:Boolean(input.crouch&&motion.grounded),peerPoses,glanceMotion:!reduced,
+    boosting:pilot&&Boolean(input.flight&&input.sprint),loopPitch:pilot&&input.flight?(input.pitch??0):null}),{clock:()=>clockTime});
   let time=0;
   const cost={human:0,companion:0,frames:0};
-  for(const [name,seconds,controls,until,place] of ROUTE){
+  for(const [name,seconds,controls,until,place] of route){
     if(place)motion=new ToroidalLocomotion(place);
     let phase=0;
     while(phase<seconds){

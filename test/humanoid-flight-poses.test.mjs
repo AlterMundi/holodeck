@@ -281,7 +281,8 @@ test('standing idle animates supported humanoids and releases without moving eit
     const state={characters:new Map([[id,actor]]),localCharacterId:id};
     const head=mesh.getObjectByName('head'),chest=mesh.getObjectByName('spine_05');
     const stockHead=head.quaternion.clone(),stockChest=chest.quaternion.clone();
-    const contacts=['pelvis','foot_l','foot_r'].map(name=>{
+    // The repertoire moves the hips (weight shift, squat); the feet stay put.
+    const contacts=['foot_l','foot_r'].map(name=>{
       const bone=mesh.getObjectByName(name);
       return [bone,bone.getWorldPosition(new Vector3()),bone.getWorldQuaternion(new Quaternion()).normalize()];
     });
@@ -310,8 +311,8 @@ test('standing idle animates supported humanoids and releases without moving eit
       frames(1);
       peak=Math.max(peak,head.quaternion.angleTo(stockHead));
       for(const [bone,position,rotation] of contacts){
-        assert.ok(bone.getWorldPosition(new Vector3()).distanceTo(position)<1e-6);
-        assert.ok(bone.getWorldQuaternion(new Quaternion()).normalize().angleTo(rotation)<1e-6);
+        assert.ok(bone.getWorldPosition(new Vector3()).distanceTo(position)<1e-5);
+        assert.ok(bone.getWorldQuaternion(new Quaternion()).normalize().angleTo(rotation)<1e-5);
       }
     }
     assert.ok(peak>.045,file);

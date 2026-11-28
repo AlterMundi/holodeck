@@ -76,6 +76,7 @@ export function humanAvatar(file){
   mesh.skeleton=new Skeleton(joints.map(index=>objects[index]),inverse);
   root.add(mesh);
   root.getMesh=()=>mesh;
+  mesh.userData.file=file;
   return {root,mesh};
 }
 
@@ -94,5 +95,17 @@ export async function stockLocomotion(mesh){
     });
     clips[name]=mixer.clipAction(copy).play().setEffectiveWeight(name==='idle'?1:0);
   }
+  // An avatar's own idle replaces the stock one, as in the client.
+  const authored=[];
+  const own=await parseGlb(new URL(mesh.userData.file??'',assets)).catch(()=>null);
+  for(const clip of own?.animations??[]){
+    if(!/^hero_/.test(clip.name))continue;
+    authored.push(clip);
+    if(clip.name==='hero_idle'){
+      clips.idle.stop();
+      clips.idle=mixer.clipAction(clip).play().setEffectiveWeight(1);
+    }
+  }
+  clips.authored=authored;
   return {mixer,clips};
 }

@@ -1,3 +1,4 @@
+import {presentedYaw} from './avatar-facing.mjs';
 import {Line3, Quaternion, Ray, Vector3} from 'three';
 import {createAvatarHeadroom} from './avatar-headroom.mjs';
 import {createToroidalCameraClearance} from './toroidal-camera-clearance.mjs';
@@ -93,7 +94,7 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
       steerToroidalFlight(control?.direction,camera.phi,!flying&&!motion.swimming&&wet,flying?camera.phi-Math.PI/2:loopPitch()):
       {direction:control?.direction,forward:Number(moving),climb:0};
     const travelYaw=moving?Math.PI/2-camera.theta+steer.direction:motion.yaw;
-    const yaw=flying||aiming()?3*Math.PI/2-camera.theta:travelYaw;
+    const yaw=presentedYaw({moving,flying,aiming:aiming(),cameraYaw:3*Math.PI/2-camera.theta,travelYaw,restingYaw:motion.yaw});
     const firstJump=wantsFirstJump();
     const jump=!flying&&!motion.swimming&&Boolean(firstJump||control?.jump||touch?.jump||(wet&&manual>0));
     const sprint=freeVertical?keyInputManager.getRun()||touch?.isSprinting:control?.isSprinting;
