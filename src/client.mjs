@@ -936,7 +936,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       pan:(x,y)=>tableFlight.translateInspection(client.getCharacterManager().localController,x,y),
     },()=>outsideRing()&&!flightEnabled&&(radialMovementMode==='swim'||radialMovementMode==='surface')&&
       !entering&&!moving&&!tableFlight.active&&!matterHud?.teleport.group&&!document.hidden,
-      ()=>outsideRing()&&flightEnabled&&!entering&&!moving&&!tableFlight.active&&!matterHud?.teleport.group&&!document.hidden);
+      ()=>outsideRing()&&flightEnabled&&!entering&&!moving&&!tableFlight.active&&!matterHud?.teleport.group&&!document.hidden,outsideRing);
     const releaseFraming=bindAvatarFraming(options.coreCameraManager,worldInteractionCanvas,
       ()=>client.getCharacterManager().localController?.config.quaternion,
       ()=>!entering&&!moving&&!tableFlight.active&&!matterHud?.teleport.group&&!document.hidden);

@@ -95,7 +95,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
     if(entry.rotation?.equals(entry.applied))entry.rotation.copy(entry.unpitched);
   }
   function resetMotion(entry){
-    Object.assign(entry,{weight:0,hoverWeight:0,lowWeight:0,planarSpeed:0,airWeight:0,
+    Object.assign(entry,{weight:0,hoverWeight:0,lowWeight:0,planarSpeed:0,flightSpeed:0,airWeight:0,
       boost:0,boostRelease:0,lowerWeight:0,airTime:0,rise:0,flightAge:0,poseTime:0,observedFlight:false,
       mode:null,poseMode:null,idleDwell:0,idleTime:0,idleWeight:0,
       medium:null,loopTime:0,strokeTime:1.40,wadeWeight:0,phase:0,
@@ -229,7 +229,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const moved=travel<(atTable?.65:3);
       const speed=moved&&continuous?Math.min(atTable?9:18,travel/Math.max(elapsed*factor,.001)):0;
       // Full flight speed, vertical included, for a pilot's posture.
-      entry.flightSpeed=(entry.flightSpeed??0)+((continuous&&piloting?Math.min(30,travel3/Math.max(elapsed,.001)):0)-(entry.flightSpeed??0))*ease(step,8);
+      entry.flightSpeed+=((continuous&&piloting?Math.min(30,travel3/Math.max(elapsed,.001)):0)-entry.flightSpeed)*ease(step,8);
       const fade=ease(step,8);
       if(!continuous)resetMotion(entry);
 
@@ -351,7 +351,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
 
       const low=!active&&(isLocal?crouch:peerPose==='crouch'&&grounded);
       // A pilot going vertical is still cruising, not hovering.
-      const cruiseSpeed=piloting?Math.max(entry.planarSpeed,entry.flightSpeed??0):entry.planarSpeed;
+      const cruiseSpeed=piloting?Math.max(entry.planarSpeed,entry.flightSpeed):entry.planarSpeed;
       const target=mode==='hover'||mode==='swim'?clamp((cruiseSpeed-.14)/1.8):0;
       entry.weight+=(target-entry.weight)*ease(step,6);
       entry.hoverWeight+=(Number(Boolean(active))*(1-target)-entry.hoverWeight)*fade;
@@ -456,7 +456,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       // hovering and climbing in place it stands tall, fist to the sky.
       const aerobatic=isLocal&&floating&&Number.isFinite(loopPitch);
       const pilot=isLocal&&explicitFlight&&aerobatic;
-      const outstretched=glanceMotion?entry.outstretched.update(aerobatic&&mode==='hover'?clamp((Math.max(entry.planarSpeed,entry.flightSpeed??0)-.6)/2.4)*clamp(ahead):0,step):
+      const outstretched=glanceMotion?entry.outstretched.update(aerobatic&&mode==='hover'?clamp((Math.max(entry.planarSpeed,entry.flightSpeed)-.6)/2.4)*clamp(ahead):0,step):
         entry.outstretched.reset(aerobatic&&mode==='hover'?1:0).value;
       // Snap into the trick body, spin, then open out before the ground.
       const trickProgress=trick?trickAge/TRICK_SECONDS:0;

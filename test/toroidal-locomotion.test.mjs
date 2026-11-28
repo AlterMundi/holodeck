@@ -385,12 +385,14 @@ test('a left drag orbits the camera alone and a right drag steers body and camer
   // Left drag: the camera turns, the steering angles stay put.
   emit(canvas,'pointerdown',{button:0});
   orbit(1.2,.3);
+  camera.theta=.5; camera.phi=1.55; // The rendered camera is still easing.
   let view=release.look(true,1/60);
   assert.ok(Math.abs(view.theta)<1e-9&&Math.abs(view.phi-1.4)<1e-9,JSON.stringify(view));
+  camera.targetTheta+=.2; // A final event arrives before the next game frame.
   emit(document,'pointerup',{button:0});
   // Released and still: the framed view stays for a photo.
   view=release.look(false,1/60);
-  assert.ok(Math.abs(camera.targetTheta-1.2)<1e-9&&Math.abs(view.theta)<1e-9);
+  assert.ok(Math.abs(camera.targetTheta-1.4)<1e-9&&Math.abs(view.theta)<1e-9);
   // Moving again, the camera swings back behind the body.
   for(let i=0;i<120;i++){view=release.look(true,1/60);camera.theta=camera.targetTheta;camera.phi=camera.targetPhi;}
   assert.ok(Math.abs(camera.targetTheta)<.01&&Math.abs(view.theta)<.01,JSON.stringify({camera,view}));
