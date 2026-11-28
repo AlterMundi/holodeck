@@ -5,6 +5,21 @@
 
 
 
+## November 28 — Teleport icons derived from destinations
+
+Protected release `59bd64df3466` selects source `d8c644a`, based on Char
+Design's corrected `26999f6`. The station shows its authored miniature
+while the revisioned GLB loads, and keeps the authored model for Plaza and
+worktables without an icon source. Room access is checked on each icon
+request. The worker and the protected bundle ship together.
+
+The physical Redmi with Adreno 610 showed the authored Residence miniature,
+then its replacement from the exact package. The verified HTTP fixture
+generated Residence, room and facade GLBs and returned 404 for an
+inaccessible room key and an unknown key. All 555 active tests passed, with
+two skips. Protected readback matched 96 installed files. Rollback is
+`883664e167e6`.
+
 ## November 28 — Char Design visual passes 1 and 2
 
 Protected release `883664e167e6` selects source `bc18b03`, with
