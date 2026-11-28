@@ -2,7 +2,7 @@ import {PendingBookHud,pendingToolId,pendingBookId,pendingBookWidth} from './pen
 import {hudAppearanceKey,readHudAppearance} from './hud-appearance.mjs';
 import {PassageHud} from './passage-hud.mjs';
 import {HudLookPreview} from './hud-look-preview.mjs';
-import {BufferGeometry,Float32BufferAttribute,Line,LineBasicMaterial,Matrix4,OrthographicCamera,PerspectiveCamera,Raycaster,Scene,Vector2} from 'three';
+import {AmbientLight,DirectionalLight,Matrix4,OrthographicCamera,PerspectiveCamera,Raycaster,Scene,Vector2} from 'three';
 import {WorldMapHud,worldMapId,worldBearingId,terrainPeekId} from './world-map-hud.mjs';
 import {DoorPromptHud,compactDoorPromptWidth,doorPromptId} from './door-prompt-hud.mjs';
 import {CollectionHud,collectionHudId,collectionHudWidth} from './collection-hud.mjs';
@@ -11,6 +11,7 @@ import {RecoveryHud,recoveryHudId} from './recovery-hud.mjs';
 import {CreationHud,creationHudId} from './creation-hud.mjs';
 import {BeaconHud,beaconStationId,beaconViewerId,beaconStationWidth,beaconViewerWidth} from './beacon-hud.mjs';
 import {SettingsHud,settingsId} from './settings-hud.mjs';
+import {TeleportModels} from './teleport-models.mjs';
 import {TeleportHud,teleportHudId,teleportHudWidth} from './teleport-hud.mjs';
 import {HudRenderLayer} from './hud-render-layer.mjs';
 import {WorldActivityHud,activityHudId,activityHudWidth} from './world-activity-hud.mjs';
@@ -240,29 +241,25 @@ export class MatterWorktableHud{
     this.settings=new SettingsHud({document,send:(type,content,id)=>this.send(type,content,id),
       focusControl:name=>this.hud.focusAccessibleControl(settingsId,name),focusLauncher:name=>this.focusTool(name),
       onSurfaceChange:()=>this.syncSettingsInput(),onSound:toggleSound});
-    this.teleport=new TeleportHud({...teleport,send:(type,content,id)=>this.send(type,content,id),
+    this.teleport=new TeleportHud({...teleport,send:(type,content,id)=>{
+      if(type==='deleteSurface')this.teleportModels.instrument.removeFromParent();
+      this.send(type,content,id);
+    },
       focus:name=>this.hud.focusAccessibleControl(teleportHudId,name),
       onOpen:()=>{
-        this.teleportOpenedAt=performance.now();
         this.syncSettingsInput();this.layer.invalidate();teleport.onOpen();
       },
       onClose:()=>{
-        this.teleportCurl.visible=false;
+        this.teleportModels.instrument.removeFromParent();
         this.syncSettingsInput();this.layer.invalidate();teleport.onClose();
       }});
-    const spiral=[],colors=[];
-    for(let i=0;i<=100;i++){
-      const ratio=i/100,phase=ratio*Math.PI*2.35;
-      spiral.push(Math.cos(phase)*ratio*1.56,Math.sin(phase)*ratio*1.03,-.09);
-      colors.push(.10+.52*ratio,.36+.50*ratio,.36+.47*ratio);
-    }
-    const geometry=new BufferGeometry();
-    geometry.setAttribute('position',new Float32BufferAttribute(spiral,3));
-    geometry.setAttribute('color',new Float32BufferAttribute(colors,3));
-    this.teleportCurl=new Line(geometry,new LineBasicMaterial({vertexColors:true,transparent:true,
-      depthTest:false,depthWrite:false}));
-    this.teleportCurl.visible=false;
-    this.scene.add(this.teleportCurl);
+    this.teleportModels=new TeleportModels(this.teleport,{
+      document,reduced:()=>this.reducedTeleportMotion,
+    });
+    this.reducedTeleportMotion=document.defaultView.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const key=new DirectionalLight(0xffe1aa,2.3);
+    key.position.set(-1,2,4);
+    this.scene.add(key,new AmbientLight(0xb0e6dd,1.65));
     this.activity=new WorldActivityHud({owner:history,send:(type,content,id)=>this.send(type,content,id),
       focus:name=>this.hud.focusAccessibleControl(activityHudId,name)});
     this.visit=new VisitHud({owner:visitor,send:(type,content,id)=>this.send(type,content,id),
@@ -274,7 +271,9 @@ export class MatterWorktableHud{
       canOpenNative:()=>Boolean(this.layer.overlay&&!this.layer.lost&&
         this.canvas.clientWidth>=330&&this.canvas.clientHeight>=320)});
     this.lookPreview=new HudLookPreview({document,parent:this.scene,invalidate:this.layer.invalidate});
-    this.hud=createSpatialHud({parent:this.scene,document,accessibilityRoot:this.a11y,controlStyle:'optical',retainTextDrafts:true,controlRole:(...args)=>args[0]===surfaceId&&this.table?.controlRole?this.table.controlRole(...args):opticalRole(...args),
+    this.hud=createSpatialHud({parent:this.scene,document,accessibilityRoot:this.a11y,controlStyle:'optical',retainTextDrafts:true,
+      createButtonModel:request=>request.surfaceId===teleportHudId?this.teleportModels.create(request):undefined,
+      controlRole:(...args)=>args[0]===surfaceId&&this.table?.controlRole?this.table.controlRole(...args):opticalRole(...args),
       controlIconOnly:(surface,id)=>surface===toolbeltId&&this.toolLayout?.iconOnly===true&&Object.hasOwn(toolIcons,id),
       placeSurface:(group,id)=>{
         if(id===toolbeltId)this.toolGroup=group;
@@ -287,7 +286,7 @@ export class MatterWorktableHud{
         else if(id===pendingToolId)this.pending.toolGroup=group;
         else if(id===pendingBookId)this.pending.bookGroup=group;
         else if(id===activityHudId)this.activity.group=group;
-        else if(id===teleportHudId)this.teleport.group=group;
+        else if(id===teleportHudId){this.teleport.group=group;this.teleportModels.attach(group);}
         else if(id===exhibitionHudId)this.visit.indexGroup=group;
         else if(id===visitHudId)this.visit.viewerGroup=group;
         else if(id===worldNoticeId)this.status.noticeGroup=group;
@@ -1216,22 +1215,10 @@ export class MatterWorktableHud{
       this.place(this.settings.group,'settingsPlacement',viewport,(width+left-right)/2,top,scale);
     }
     if(this.teleport.group){
-      const scale=Math.min(188,(width-32)/teleportHudWidth,(height-32)/2.50);
-      const reduced=this.document.defaultView.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const progress=reduced?1:Math.min(1,(performance.now()-this.teleportOpenedAt)/540);
-      const tail=(1-progress)**2;
-      const phase=progress*Math.PI*2.25;
-      const x=width/2+Math.cos(phase)*scale*.33*tail;
-      const y=Math.max(16,(height-1.66*scale)/2)+Math.sin(phase)*scale*.23*tail;
-      this.place(this.teleport.group,'teleportPlacement',viewport,x,y,scale*(1-.28*tail));
-      const curl=this.teleportCurl;
-      curl.visible=progress<1;
-      if(curl.visible){
-        placeHudInViewport(curl,this.camera,{...viewport,x:width/2,y:y+scale*.77,pixelsPerUnit:scale,depth:1.02});
-        curl.geometry.setDrawRange(0,Math.max(2,Math.round(101*progress)));
-        curl.material.opacity=.85*Math.sin(Math.PI*progress);
-        this.layer.invalidate();
-      }
+      const scale=Math.min(250,(width-32)/teleportHudWidth,(height-24)/2.16);
+      const y=Math.max(16,(height-1.90*scale)/2);
+      this.place(this.teleport.group,'teleportPlacement',viewport,width/2,y,scale);
+      if(this.teleportModels.animate())this.layer.invalidate();
     }
     if(this.activity.group){
       const activityScale=Math.min(176,(width-24)/activityHudWidth,(height-24)/2.47);
@@ -1342,7 +1329,7 @@ export class MatterWorktableHud{
     this.windows.dispose();
     this.events.abort();
     this.teleport.close();
-    this.teleportCurl.geometry.dispose();this.teleportCurl.material.dispose();
+    this.teleportModels.dispose();
     this.passage.dispose();
     this.layer.dispose();
     this.map.dispose();

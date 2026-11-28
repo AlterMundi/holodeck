@@ -1,41 +1,53 @@
 import {spatialHudCatalog} from 'proyeccion/spatial-hud';
 
 export const teleportHudId='world-teleport';
-export const teleportHudWidth=2.45;
+export const teleportHudWidth=2.72;
+const pageSize=4;
 const path=name=>({'@path':'/'+name});
 const action=(name,fields={})=>({event:{name,context:{epoch:path('epoch'),...fields}}});
 const button=(id,label,fields={})=>({id,component:'HudButton',label,action:action(id),...fields});
 const text=(id,label,fields={})=>({id,component:'HudText',label,...fields});
-const choice=(id,label,fields={})=>({id,component:'HudChoice',label,options:path(id+'Options'),
-  value:path(id),draft:path(id+'Draft'),action:action(id,{selected:path(id+'Draft')}),...fields});
-const components=[
-  {id:'root',component:'HudPanel',label:'Teletransporte',width:teleportHudWidth,gap:.022,
-    children:['heading','category','house','destination','actions','message']},
-  {id:'heading',component:'HudRow',children:['title','close']},
-  text('title','Teletransporte',{style:'title',weight:3}),
-  button('close','Cerrar'),
-  choice('category','Zona',{disabled:path('loading')}),
-  choice('house','Casa',{visible:path('inHouses')}),
-  choice('destination','Destino',{visible:path('hasOptions')}),
-  {id:'actions',component:'HudRow',visible:path('hasDestination'),children:['favorite','go']},
-  button('favorite',path('favoriteLabel'),{pressed:path('isFavorite'),weight:1.9,
-    action:action('favorite',{selected:path('destination')})}),
-  button('go','Teletransportar',{disabled:path('isHere'),weight:1.6,
-    action:action('go',{selected:path('destination')})}),
-  text('message',path('message'),{style:'status',visible:path('hasMessage'),lines:2}),
-];
 const categories=[
-  {id:'favorites',label:'⭐ Favoritos'},{id:'terrain',label:'🧭 Terreno público'},{id:'houses',label:'🏠 Casas'},
+  {id:'favorites',label:'Favoritos'},{id:'terrain',label:'Terreno público'},{id:'houses',label:'Casas'},
+];
+const slotNames=Array.from({length:pageSize},(_,i)=>'slot'+i);
+const row=(id,children)=>({id,component:'HudRow',children});
+const components=[
+  {id:'root',component:'HudPanel',chrome:'none',label:'Teletransporte',width:teleportHudWidth,gap:.018,
+    children:['heading','categories','house','models','space','caption','actions','message']},
+  row('heading',['title','close']),
+  text('title','Teletransporte',{style:'title',weight:4}),button('close','Cerrar'),
+  row('categories',categories.map(({id})=>id)),
+  ...categories.map(({id,label})=>button(id,label,{pressed:path(id+'Active'),disabled:path('loading')})),
+  button('house',path('houseLabel'),{visible:path('inHouses'),gestureKey:path('house')}),
+  row('models',slotNames),
+  ...slotNames.map(id=>button(id,path(id+'Label'),{visible:path(id+'Visible'),pressed:path(id+'Active'),
+    gestureKey:path(id+'Key'),action:action(id,{selected:path(id+'Key')})})),
+  text('space','',{lines:6}),
+  text('caption',path('caption'),{style:'body',lines:2,visible:path('hasDestination')}),
+  row('actions',['previous','favorite','go','next']),
+  button('previous','Destinos anteriores',{disabled:path('noPrevious')}),
+  button('favorite',path('favoriteLabel'),{pressed:path('isFavorite'),disabled:path('noSelection'),gestureKey:path('destination'),
+    action:action('favorite',{selected:path('destination')})}),
+  button('go','Teletransportar',{disabled:path('noTravel'),gestureKey:path('destination'),
+    action:action('go',{selected:path('destination')})}),
+  button('next','Más destinos',{disabled:path('noNext')}),
+  text('message',path('message'),{style:'status',visible:path('hasMessage'),lines:2}),
 ];
 const byName=(a,b)=>a.localeCompare(b,'es');
 const maxFavorites=128;
-const icon=entry=>entry.id.startsWith('object:')?'🎛️':entry.id.startsWith('room:')?'🚪':
-  entry.id.startsWith('house:')?'🏠':entry.id==='terrain:residence'?'🏛️':
-  entry.id==='terrain:garden'?'🌿':entry.id==='terrain:overlook'?'⛰️':'📍';
+
+// A map projection can use the same stable node IDs and miniature families.
+export function teleportModelId(id){
+  if(id.startsWith('object:'))return 'table';
+  if(id.startsWith('room:'))return 'room';
+  if(id.startsWith('house:'))return 'house';
+  return id==='terrain:residence'?'residence':'plaza';
+}
 
 export class TeleportHud {
-  constructor({send,read,go,focus,onOpen,onClose,storage}){
-    Object.assign(this,{send,read,go,focus,onOpen,onClose,storage,epoch:0});
+  constructor({send,read,go,focus,onOpen,onClose,onSelect,storage}){
+    Object.assign(this,{send,read,go,focus,onOpen,onClose,onSelect,storage,epoch:0});
   }
 
   message(type,content){this.send(type,content,teleportHudId);}
@@ -51,7 +63,7 @@ export class TeleportHud {
         if(typeof id==='string'&&id.length<=160)this.favorites.add(id);
       }
     }catch{}
-    Object.assign(this,{category:'terrain',house:'',destination:'',entries:[],loading:true,error:''});
+    Object.assign(this,{category:'terrain',house:'',destination:'',page:0,entries:[],loading:true,error:''});
     this.message('createSurface',{catalogId:spatialHudCatalog.id});
     this.message('updateComponents',{components});
     this.onOpen();
@@ -72,6 +84,7 @@ export class TeleportHud {
   close(){
     if(!this.group)return;
     this.epoch++;
+    if(this.lastPublishedSelection){this.lastPublishedSelection='';this.onSelect?.(null);}
     this.message('deleteSurface',{});
     this.group=null;
     this.onClose();
@@ -84,35 +97,70 @@ export class TeleportHud {
     const available=this.entries.filter(entry=>this.category==='terrain'?!entry.house:
       this.category==='houses'?entry.house===this.house:this.favorites.has(entry.id));
     const destinations=available.map(entry=>({
-      id:entry.id,label:icon(entry)+' '+(this.category==='favorites'&&entry.houseTitle?entry.houseTitle+' · ':'')+
+      id:entry.id,label:(this.category==='favorites'&&entry.houseTitle?entry.houseTitle+' · ':'')+
         (entry.room&&entry.title!==entry.room?entry.room+' / ':'')+entry.title+(entry.current?' (estás acá)':''),
     })).sort((a,b)=>byName(a.label,b.label));
-    if(!destinations.some(option=>option.id===this.destination))this.destination=destinations[0]?.id??'';
-    return {houses,destinations,current:available.find(entry=>entry.id===this.destination)};
+    this.page=Math.min(this.page,Math.max(0,Math.ceil(destinations.length/pageSize)-1));
+    const slots=destinations.slice(this.page*pageSize,(this.page+1)*pageSize);
+    if(!slots.some(option=>option.id===this.destination))this.destination=slots[0]?.id??'';
+    return {houses,destinations,slots,current:available.find(entry=>entry.id===this.destination)};
   }
 
   update(){
-    const {houses,destinations,current}=this.options();
+    const {houses,destinations,slots,current}=this.options();
+    this.slots=slots;
+    if(this.lastPublishedSelection!==this.destination){
+      this.lastPublishedSelection=this.destination;
+      this.onSelect?.(current?.id??null);
+    }
     const isFavorite=this.favorites.has(this.destination);
-    const message=this.error||(this.loading?'Cargando destinos…':destinations.length?'':this.category==='favorites'?
-      'Marcá tus destinos habituales con Guardar favorito.':'No hay destinos disponibles en esta zona.');
-    this.message('updateDataModel',{value:{
-      epoch:this.epoch,category:this.category,categoryOptions:categories,house:this.house,houseOptions:houses,
-      destination:this.destination,destinationOptions:destinations,hasOptions:destinations.length>0,
-      inHouses:this.category==='houses'&&houses.length>0,loading:this.loading,hasDestination:Boolean(current),
-      isFavorite,favoriteLabel:isFavorite?'Quitar favorito':'Guardar favorito',isHere:Boolean(current?.current),
+    const message=this.error||(this.loading?'Buscando destinos…':destinations.length?'':this.category==='favorites'?
+      'Marcá tus destinos habituales con la estrella.':'No hay destinos disponibles en esta zona.');
+    const value={
+      epoch:this.epoch,house:this.house,houseOptions:houses,
+      destination:this.destination,caption:(this.category==='houses'&&current?current.houseTitle+' · ':'')+(slots.find(slot=>slot.id===this.destination)?.label??''),
+      noPrevious:!this.page,noNext:(this.page+1)*pageSize>=destinations.length,
+      inHouses:this.category==='houses'&&houses.length>1,houseLabel:'Cambiar casa · '+(houses.find(entry=>entry.id===this.house)?.label??''),loading:this.loading,hasDestination:Boolean(current),
+      isFavorite,favoriteLabel:isFavorite?'Quitar favorito':'Guardar favorito',
+      noTravel:!current||Boolean(current.current),noSelection:!current,
       hasMessage:Boolean(message),message,
-    }});
+    };
+    for(const {id} of categories)value[id+'Active']=this.category===id;
+    for(const [index,id] of slotNames.entries()){
+      const slot=slots[index];
+      value[id+'Label']=slot?.label??'';
+      value[id+'Key']=slot?.id??'';
+      value[id+'Visible']=Boolean(slot);
+      value[id+'Active']=Boolean(slot&&slot.id===this.destination);
+    }
+    this.message('updateDataModel',{value});
+  }
+
+  selectDestination(id){
+    if(!this.group||this.loading)return false;
+    const entry=this.entries.find(candidate=>candidate.id===id);
+    if(!entry)return false;
+    this.category=entry.house?'houses':'terrain';
+    this.house=entry.house??'';
+    const {destinations}=this.options();
+    this.page=Math.floor(destinations.findIndex(item=>item.id===id)/pageSize);
+    this.destination=id;
+    this.update();
+    return true;
   }
 
   activate({name,context}){
     if(!this.group||context?.epoch!==this.epoch)return;
     if(name==='close'){this.close();return;}
-    const {houses,destinations,current}=this.options();
+    const {houses,slots,current}=this.options();
     const selection=context.selected;
-    if(name==='category'&&categories.some(item=>item.id===selection))this.category=selection;
-    if(name==='house'&&houses.some(item=>item.id===selection))this.house=selection;
-    if(name==='destination'&&destinations.some(item=>item.id===selection))this.destination=selection;
+    if(categories.some(item=>item.id===name)&&name!==this.category){this.category=name;this.page=0;}
+    if(name==='house'&&houses.length>1){
+      this.house=houses[(houses.findIndex(item=>item.id===this.house)+1)%houses.length].id;this.page=0;
+    }
+    if(name==='next')this.page++;
+    if(name==='previous')this.page=Math.max(0,this.page-1);
+    if(slots[slotNames.indexOf(name)]?.id===selection&&typeof selection==='string')this.destination=selection;
     if(current&&selection===current.id){
       if(name==='go'&&!current.current){
         this.close();

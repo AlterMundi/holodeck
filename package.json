@@ -20,7 +20,7 @@
     "astronomy-engine": "2.1.19",
     "express": "4.21.2",
     "express-ws": "5.0.2",
-    "proyeccion": "https://codeload.github.com/AlterMundi/proyeccion/tar.gz/b3958a8cb78fa76a41bfc3205eb96d25d2bdf870",
+    "proyeccion": "https://codeload.github.com/AlterMundi/proyeccion/tar.gz/67584e6dc2028d5f1b9d984380ebe9aa5876cb3c",
     "three": "0.182.0",
     "three-mesh-bvh": "0.9.0"
   },

@@ -17,6 +17,8 @@ interaction.
 | Conversation | Canonical Conversation owns the composer, recording and recognition, history and delivery | Render the canonical state/actions via A2UI in Holodeck; keep links, files, live audio and pending sends in Conversation |
 | SysOps | A2UI activity views on feat/sysops-hud (3114e41) | Integrate the read-only panel with live shared view. A navigable room and Shared Resources projection have separate scope |
 
+See [3D widget packs](spatial-widget-packs.md) for authored physical controls in the HUD and workbenches.
+
 The cumulative branch includes changes from older shared-view revisions.
 A merge dry run found conflicts in the entry HTML, client, HUD placement, and widget build. Integrate by surface while preserving current input and navigation behavior. Start with startup and gardens, using the intended A2UI surfaces from the cumulative line without replacing the shared-view renderer.
 Before retiring a fallback, cover its ordinary, keyboard-only and recovery

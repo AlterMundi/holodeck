@@ -103,7 +103,7 @@ export class WorldAudio{
   playCue(kind,{pan=0}={}){
     if(!this.status().active||this.context.currentTime-this.lastCue<COOLDOWN_SECONDS)return false;
     const signal=kind==='pending-new';
-    const frequencies=signal?[523.25,783.99]:kind==='bridge-open'?[392,587.33]:kind==='bridge-close'?[587.33,392]:kind==='light-remove'?[440]:[659.25];
+    const frequencies=signal?[523.25,783.99]:kind==='teleport-select'?[659.25,987.77]:kind==='bridge-open'?[392,587.33]:kind==='bridge-close'?[587.33,392]:kind==='light-remove'?[440]:[659.25];
     if(this.cues.size+frequencies.length>MAX_CUE_NODES)return false;
     this.lastCue=this.context.currentTime;
     frequencies.forEach((frequency,index)=>{

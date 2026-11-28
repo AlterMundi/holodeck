@@ -1033,6 +1033,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
           return response.json();
         },
         go:destination=>void updateDoor.teleport?.(destination),
+        onSelect:id=>{if(id&&navigator.userActivation?.isActive)worldAudio.playCue('teleport-select');},
         storage:{getItem:key=>window.localStorage.getItem(key),setItem:(key,value)=>window.localStorage.setItem(key,value)},
         onOpen:()=>{releaseBeaconInput(client);touchControls.pause(true);},
         onClose:()=>{touchControls.pause(false);if(!matterHud?.focusTool('teleport'))matterHud?.canvas.focus();},
@@ -1649,7 +1650,8 @@ client.update();
 const worldAudio=new WorldAudio({onChange:()=>updateSoundButton()});
 let soundBusy=false;
 // Development inspection surface only. It reports actual client state.
-window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()||null,audioState:()=>worldAudio.status(),avatarState:()=>nativeAvatarLayer?.status(),tableFlight:()=>({active:!!matterFlight?.active,bounds:matterFlight?.bounds}),companion:()=>companionAvatar?.object??null,companionSpeech:level=>companionAvatar?.setSpeechLevel(level),flight:()=>flightEnabled,hudWindow:id=>matterHud?.windows.geometry.get(id)??null,toolBounds:id=>matterHud?.toolBounds(id)??null};
+window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()||null,audioState:()=>worldAudio.status(),avatarState:()=>nativeAvatarLayer?.status(),tableFlight:()=>({active:!!matterFlight?.active,bounds:matterFlight?.bounds}),companion:()=>companionAvatar?.object??null,companionSpeech:level=>companionAvatar?.setSpeechLevel(level),flight:()=>flightEnabled,hudWindow:id=>matterHud?.windows.geometry.get(id)??null,toolBounds:id=>matterHud?.toolBounds(id)??null,
+ teleportBounds:id=>matterHud?.hud.getControlViewportBounds('world-teleport',id,matterHud.camera,matterHud.canvas.getBoundingClientRect())};
 const $=selector=>document.querySelector(selector);
 notifyFullscreenError=message=>{
   if($('#conversation-panel').hidden&&matterHud?.compactTouch()!=='landscape')return false;
