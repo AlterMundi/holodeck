@@ -14,15 +14,16 @@ const slotNames=Array.from({length:pageSize},(_,i)=>'slot'+i);
 const row=(id,children)=>({id,component:'HudRow',children});
 const components=[
   {id:'root',component:'HudPanel',chrome:'none',label:'Teletransporte',width:teleportHudWidth,gap:.018,
-    children:['heading','categories','house','models','space','actions','message']},
+    children:['heading','categories','back','models','space','actions','message']},
   {...row('heading',['close']),visible:path('cameraMounted')},
   button('close','Cerrar'),
   {...row('categories',categories.map(({id})=>id)),visible:path('cameraMounted')},
   ...categories.map(({id,label})=>button(id,label,{pressed:path(id+'Active'),disabled:path('loading')})),
-  button('house',path('houseLabel'),{visible:path('inHouses'),gestureKey:path('house')}),
+  button('back',path('backLabel'),{visible:path('cameraBack'),gestureKey:path('level'),
+    action:action('back',{level:path('level')})}),
   row('models',slotNames),
   ...slotNames.map(id=>button(id,path(id+'Label'),{visible:path(id+'Visible'),pressed:path(id+'Active'),
-    gestureKey:path(id+'Key'),action:action(id,{selected:path(id+'Key')})})),
+    gestureKey:path(id+'Key'),action:action(id,{selected:path(id+'Key'),level:path('level')})})),
   text('space','',{lines:6}),
   {...row('actions',['previous','favorite','go','next']),visible:path('cameraMounted')},
   button('previous','Destinos anteriores',{disabled:path('noPrevious')}),
@@ -62,7 +63,7 @@ export class TeleportHud {
         if(typeof id==='string'&&id.length<=160)this.favorites.add(id);
       }
     }catch{}
-    Object.assign(this,{category:'terrain',house:'',destination:'',page:0,entries:[],loading:true,error:''});
+    Object.assign(this,{category:'terrain',branch:'',branchTrail:[],destination:'',page:0,level:0,entries:[],children:new Map(),loading:true,error:''});
     this.message('createSurface',{catalogId:spatialHudCatalog.id});
     this.message('updateComponents',{components});
     this.onOpen();
@@ -73,6 +74,16 @@ export class TeleportHud {
       if(epoch!==this.epoch)return;
       if(result.space!==space.id)throw Error('Location changed');
       this.entries=result.destinations;
+      const byId=new Map(this.entries.map(entry=>[entry.id,entry]));
+      for(const entry of this.entries){
+        const parent=this.parentOf(entry);
+        if(parent&&byId.has(parent)){
+          if(!this.children.has(parent))this.children.set(parent,[]);
+          this.children.get(parent).push(entry);
+        }
+        const linked=(entry.links??[]).map(id=>byId.get(id)).filter(Boolean);
+        if(linked.length)this.children.set(entry.id,linked);
+      }
     }catch{
       if(epoch===this.epoch)this.error='No pude cargar los destinos. Volvé a abrir el menú para reintentar.';
     }finally{
@@ -89,25 +100,53 @@ export class TeleportHud {
     this.onClose();
   }
 
+  parentOf(entry){
+    if(entry.id.startsWith('object:'))return 'room:'+entry.to;
+    if(entry.id.startsWith('room:'))return 'house:'+entry.house;
+    return '';
+  }
+
+  title(entry){
+    return entry.id.startsWith('house:')?entry.houseTitle:entry.title;
+  }
+
   options(){
-    const groups=new Map(this.entries.filter(entry=>entry.house).map(entry=>[entry.house,entry.houseTitle]));
-    const houses=[...groups].map(([id,label])=>({id,label})).sort((a,b)=>byName(a.label,b.label));
-    if(!groups.has(this.house))this.house=houses[0]?.id??'';
-    const available=this.entries.filter(entry=>this.category==='terrain'?!entry.house:
-      this.category==='houses'?entry.house===this.house:this.favorites.has(entry.id));
+    const parent=this.entries.find(entry=>entry.id===this.branch);
+    const available=parent?this.children.get(parent.id)??[]:this.entries.filter(entry=>{
+      if(this.category==='favorites')return this.favorites.has(entry.id);
+      if(this.category==='houses')return entry.id.startsWith('house:');
+      return !entry.house;
+    });
     const destinations=available.map(entry=>({
-      id:entry.id,label:(this.category==='favorites'&&entry.houseTitle?entry.houseTitle+' · ':'')+
-        (entry.room&&entry.title!==entry.room?entry.room+' / ':'')+entry.title+(entry.current?' (estás acá)':''),
+      id:entry.id,
+      label:(this.category==='favorites'&&!parent&&entry.houseTitle&&!entry.id.startsWith('house:')?entry.houseTitle+' · ':'')+
+        this.title(entry)+(entry.current?' (estás acá)':''),
     })).sort((a,b)=>byName(a.label,b.label));
     this.page=Math.min(this.page,Math.max(0,Math.ceil(destinations.length/pageSize)-1));
     const slots=destinations.slice(this.page*pageSize,(this.page+1)*pageSize);
-    if(!slots.some(option=>option.id===this.destination))this.destination=slots[0]?.id??'';
-    return {houses,destinations,slots,current:available.find(entry=>entry.id===this.destination)};
+    const current=parent?.id===this.destination?parent:available.find(entry=>entry.id===this.destination);
+    return {parent,destinations,slots,current};
+  }
+
+  showSelection(id){
+    const index=this.options().destinations.findIndex(item=>item.id===id);
+    this.page=index<0?0:Math.floor(index/pageSize);
+    this.destination=id;
+  }
+
+  changeLevel(branch,selection){
+    this.branch=branch;
+    this.level++;
+    this.showSelection(selection);
   }
 
   update(){
-    const {houses,destinations,slots,current}=this.options();
+    const {parent,destinations,slots,current}=this.options();
     this.slots=slots;
+    if(!current&&this.category==='terrain'&&slots.length){
+      this.destination=slots[0].id;
+      return this.update();
+    }
     if(this.lastPublishedSelection!==this.destination){
       this.lastPublishedSelection=this.destination;
       this.onSelect?.(current?.id??null);
@@ -115,12 +154,13 @@ export class TeleportHud {
     const isFavorite=this.favorites.has(this.destination);
     const message=this.error||(this.loading?'Buscando destinos…':destinations.length?'':this.category==='favorites'?
       'Marcá tus destinos habituales con la estrella.':'No hay destinos disponibles en esta zona.');
-    this.caption=(this.category==='houses'&&current?current.houseTitle+' · ':'')+(slots.find(slot=>slot.id===this.destination)?.label??'');
+    this.caption=current?this.title(current)+(current.current?' (estás acá)':''):'';
     const value={
-      epoch:this.epoch,house:this.house,houseOptions:houses,
+      epoch:this.epoch,level:this.level,hasParent:Boolean(parent),cameraBack:!this.worldMounted&&Boolean(parent),
+      backLabel:parent?'Volver desde '+this.title(parent):'',
       destination:this.destination,
       noPrevious:!this.page,noNext:(this.page+1)*pageSize>=destinations.length,
-      cameraMounted:!this.worldMounted,inHouses:!this.worldMounted&&this.category==='houses'&&houses.length>1,houseLabel:'Cambiar casa · '+(houses.find(entry=>entry.id===this.house)?.label??''),loading:this.loading,
+      cameraMounted:!this.worldMounted,loading:this.loading,
       isFavorite,favoriteLabel:isFavorite?'Quitar favorito':'Guardar favorito',
       noTravel:!current||Boolean(current.current),noSelection:!current,
       hasMessage:Boolean(message),message,
@@ -134,7 +174,7 @@ export class TeleportHud {
       value[id+'Active']=Boolean(slot&&slot.id===this.destination);
     }
     this.message('updateDataModel',{value});
-    this.onViewData?.({...value,caption:this.caption,hasHouseChoice:this.category==='houses'&&houses.length>1});
+    this.onViewData?.({...value,caption:this.caption});
   }
 
   selectDestination(id){
@@ -142,10 +182,15 @@ export class TeleportHud {
     const entry=this.entries.find(candidate=>candidate.id===id);
     if(!entry)return false;
     this.category=entry.house?'houses':'terrain';
-    this.house=entry.house??'';
-    const {destinations}=this.options();
-    this.page=Math.floor(destinations.findIndex(item=>item.id===id)/pageSize);
-    this.destination=id;
+    const parents=[];
+    for(let parent=this.parentOf(entry);parent;){
+      const ancestor=this.entries.find(candidate=>candidate.id===parent);
+      if(!ancestor)break;
+      parents.unshift(ancestor.id);
+      parent=this.parentOf(ancestor);
+    }
+    this.branchTrail=parents;
+    this.changeLevel(parents.at(-1)??'',id);
     this.update();
     return true;
   }
@@ -153,15 +198,35 @@ export class TeleportHud {
   activate({name,context}){
     if(!this.group||context?.epoch!==this.epoch)return;
     if(name==='close'){this.close();return;}
-    const {houses,slots,current}=this.options();
+    const {slots,current}=this.options();
     const selection=context.selected;
-    if(categories.some(item=>item.id===name)&&name!==this.category){this.category=name;this.page=0;}
-    if(name==='house'&&houses.length>1){
-      this.house=houses[(houses.findIndex(item=>item.id===this.house)+1)%houses.length].id;this.page=0;
+    if(categories.some(item=>item.id===name)&&(name!==this.category||this.branch)){
+      this.category=name;
+      this.branchTrail=[];
+      this.changeLevel('','');
     }
-    if(name==='next')this.page++;
-    if(name==='previous')this.page=Math.max(0,this.page-1);
-    if(slots[slotNames.indexOf(name)]?.id===selection&&typeof selection==='string')this.destination=selection;
+    if(name==='next'||name==='previous'){
+      this.page=Math.max(0,this.page+(name==='next'?1:-1));
+      this.destination=this.branch;
+    }
+    if(name==='back'&&context.level===this.level&&this.branch){
+      const previous=this.branchTrail.pop();
+      this.changeLevel(this.branchTrail.at(-1)??'',previous);
+      this.update();
+      const slot=this.slots.findIndex(item=>item.id===previous);
+      if(slot>=0)this.focus(slotNames[slot]);
+      return;
+    }
+    if(context.level===this.level&&typeof selection==='string'&&slots[slotNames.indexOf(name)]?.id===selection){
+      if(this.children.has(selection)){
+        this.branchTrail.push(selection);
+        this.changeLevel(selection,selection);
+        this.update();
+        this.focus('back');
+        return;
+      }
+      this.destination=selection;
+    }
     if(current&&selection===current.id){
       if(name==='go'&&!current.current){
         this.close();
@@ -169,7 +234,10 @@ export class TeleportHud {
         return;
       }
       if(name==='favorite'){
-        if(this.favorites.has(selection))this.favorites.delete(selection);
+        if(this.favorites.has(selection)){
+          this.favorites.delete(selection);
+          if(this.category==='favorites'&&!this.branch)this.destination='';
+        }
         else{
           if(this.favorites.size>=maxFavorites)this.favorites.delete(this.favorites.values().next().value);
           this.favorites.add(selection);

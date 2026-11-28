@@ -24,7 +24,7 @@ const surfaceId='matter-worktable',toolbeltId='world-toolbelt',teleportViewId='w
 const teleportViewPath=name=>({'@path':'/'+name});
 const teleportViewButton=(id,label,fields={})=>({
   id,component:'HudButton',label,action:{event:{name:id,context:{
-    epoch:teleportViewPath('epoch'),selected:teleportViewPath('destination'),
+    epoch:teleportViewPath('epoch'),level:teleportViewPath('level'),selected:teleportViewPath('destination'),
   }}},...fields,
 });
 const teleportViewRow=(id,children,immersive=false)=>({id,component:'HudRow',children,
@@ -32,7 +32,7 @@ const teleportViewRow=(id,children,immersive=false)=>({id,component:'HudRow',chi
 });
 const teleportViewComponents=[
   {id:'root',component:'HudPanel',label:'Vista del teletransportador',width:2.72,gap:.022,
-    children:['views','zones','house','selection','trip']},
+    children:['views','zones','selection','back','trip']},
   teleportViewRow('views',['switch','front','exit']),
   teleportViewButton('switch',teleportViewPath('mode')),
   teleportViewButton('front','Frente',{visible:teleportViewPath('immersive')}),
@@ -40,8 +40,8 @@ const teleportViewComponents=[
   teleportViewRow('zones',['favorites','terrain','houses'],true),
   ...[['favorites','Favoritos'],['terrain','Terreno público'],['houses','Casas']].map(([id,label])=>
     teleportViewButton(id,label,{pressed:teleportViewPath(id+'Active'),disabled:teleportViewPath('loading')})),
-  teleportViewButton('house',teleportViewPath('houseLabel'),{visible:teleportViewPath('chooseHouse'),gestureKey:teleportViewPath('house')}),
   {id:'selection',component:'HudText',label:teleportViewPath('caption'),style:'status',lines:1,visible:teleportViewPath('showCaption')},
+  teleportViewButton('back',teleportViewPath('backLabel'),{visible:teleportViewPath('showBack'),gestureKey:teleportViewPath('level')}),
   teleportViewRow('trip',['previous','favorite','go','next'],true),
   teleportViewButton('previous','Anterior',{disabled:teleportViewPath('noPrevious')}),
   teleportViewButton('favorite',teleportViewPath('favoriteLabel'),{pressed:teleportViewPath('isFavorite'),
@@ -275,12 +275,12 @@ export class MatterWorktableHud{
       if(type==='deleteSurface')this.teleportModels.instrument.removeFromParent();
       this.send(type,content,id);
     },
-      focus:name=>this.hud.focusAccessibleControl(this.teleport.worldMounted?teleportViewId:teleportHudId,
+      focus:name=>this.hud.focusAccessibleControl(this.teleport.worldMounted&&!name.startsWith('slot')?teleportViewId:teleportHudId,
         this.teleport.worldMounted&&name==='close'?'exit':name),
       onViewData:state=>{
         const immersive=this.teleportMode==='workspace';
         this.send('updateDataModel',{value:{...state,mode:immersive?'Vista HUD':'Explorar instrumento',immersive,
-          chooseHouse:immersive&&state.hasHouseChoice,showCaption:immersive&&Boolean(state.caption)}},teleportViewId);
+          showCaption:immersive&&Boolean(state.caption),showBack:immersive&&state.hasParent}},teleportViewId);
       },
       onOpen:()=>{
         this.send('createSurface',{catalogId:spatialHudCatalog.id},teleportViewId);

@@ -10,11 +10,12 @@ to a keyboard and screen reader. The host can mount the surface on the HUD
 or on a workbench without changing the A2UI messages.
 
 The teleport instrument is the first pack. It uses reusable miniature
-factories, a finish palette, physical switches, miniatures that unfold along a helical rail
-and built-in sound only when world sound is enabled. The first meshes are
-generated from geometry in `src/teleport-models.mjs`. A later pack can use
-preloaded GLB assets through the same renderer hook and dispose its owned
-resources when the corresponding control leaves the surface.
+factories, a finish palette, physical switches and built-in sound when world
+sound is enabled. The current model is built from geometry in
+`src/teleport-models.mjs`. A pack can use preloaded GLB assets through the
+same renderer hook and dispose its owned resources when the corresponding
+control leaves the surface. See the [low instrument design brief](teleport-instrument-design.md)
+for the next art pass.
 
 ## Camera-mounted and immersive presentation
 
@@ -40,7 +41,15 @@ The browser remembers the chosen mount when the location supports it.
 
 The location catalog assigns a stable destination ID. `teleportModelId`
 maps that ID to a model family; `makeDestinationModel` can render it in a
-map, a HUD or a room. The teleport controller exposes
+map, a HUD or a room. The catalog's optional `links` list points to other authorized destination
+IDs, such as the rooms accessible through the Residence portals. The UI also
+uses the catalog's existing house and room fields to construct containment.
+Picking a branch opens one level and keeps its actual destination selected.
+The `back` action leaves that branch without traveling. The renderer can bind
+the stable `back` control instance to the selected parent model. Until the
+authored model arrives, the immersive graph uses an ordinary A2UI back control.
+
+The teleport controller exposes
 `selectDestination(id)` and a selection callback for a future map.
 A map will use the same authorized catalog and the same trip request
 with its existing server-side access check. Its position and camera remain

@@ -531,6 +531,12 @@ export async function createHolodeck({basePath='/',production=false,identityReso
           arrival:{x,y:.12,z:z+offset,yaw:offset>0?180:0}});
       }
     }
+    const residence=destinations.find(entry=>entry.id==='terrain:residence');
+    if(residence){
+      const rooms=new Set(availableEntrances.filter(entry=>entry.portal).map(entry=>entry.id));
+      residence.links=destinations.filter(entry=>entry.id.startsWith('room:')&&rooms.has(entry.to))
+        .map(entry=>entry.id);
+    }
     return destinations;
   }
   function conversationPlace(actor,id){
