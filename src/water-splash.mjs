@@ -192,6 +192,12 @@ export class WaterSplash {
     if(strength>.55)this.ripples.spawn(this.point,this.up,now+.18,strength*.7);
   }
 
+  // A low flyer skimming the water: a ring on the surface below it.
+  skim(point,up,strength){
+    const now=(this.clock()-this.start)/1000;
+    this.ripples.spawn(point,up,now,.35+.5*strength);
+  }
+
   update(available){
     const now=(this.clock()-this.start)/1000;
     if(!available){

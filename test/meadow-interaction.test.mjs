@@ -127,3 +127,18 @@ test('a boost breakaway throws smoke and kicks only the local, non-VR screen',as
   }finally{wake.dispose();}
   assert.equal(scene.children.length,0);
 });
+
+test('flying low washes the surface: dust over land, rings over water, nothing up high',async()=>{
+  const {WaterSplash}=await import('../src/water-splash.mjs');
+  const splash=new WaterSplash(new Group());
+  splash.skim(new Vector3(),new Vector3(0,1,0),.8);
+  assert.equal(splash.ripples.mesh.visible,true,'a ring under a skimming flyer');
+  splash.dispose();
+  const scene=new Group(),up=new Vector3(0,1,0);
+  const wake=new FlightWake(scene);
+  try{
+    wake.dust(new Vector3(),up,new Vector3(0,0,1),1,[.3,.5,.2]);
+    assert.equal(wake.smoke.mesh.visible,true);
+    assert.ok(wake.smoke.next>=3,'puffs to both sides and grass bits');
+  }finally{wake.dispose();}
+});
