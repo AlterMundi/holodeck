@@ -129,6 +129,23 @@ restrictions. The future sensory layer can place an authorized physical
 observation on the same timeline with its own resource, time, frame and evidence
 type. See [work projection replay research](research/2026-11-24-work-projection-replay.md).
 
+## Full-size house district
+
+In the toroidal world, West 1 reserves a 112 × 112 m site for Casa de
+CompAII's Residencia, including its stairs. Its authored position and
+collisions define the site. The central hall threshold leads to the existing
+house foyer and uses the same landing as the house's teleport destination.
+The three existing chamber links retain their room permissions. The house
+keeps its ID, layout, permissions and saved rooms. The parcel proxy is
+omitted from this terrain and the house appears once, under Houses.
+
+The other seven parcels have flat 72 × 72 m building envelopes. Their IDs
+and owners carry forward. Casa Linterna's current exterior proxy uses the
+entrance on the near side of East 1. A full exterior published by the owner
+can later replace that proxy at the same parcel, with its own doorway and
+fitting. The current walkable room format supplies indoor scenes. It does not
+expose those private assets as exterior geometry.
+
 ## Home and Holodeck publication
 
 Nicolás selected Holodeck as the primary deployment surface. A daimon's

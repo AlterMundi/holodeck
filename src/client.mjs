@@ -16,7 +16,7 @@ import {bindAvatarPracticals} from './avatar-practicals.mjs';
 import {bindToroidalHouseLight} from './toroidal-house-light.mjs';
 import {bindFoyerFloorFinish} from './foyer-floor-finish.mjs';
 import {ToroidalCave} from './toroidal-cave.mjs';
-import {TOROIDAL_TERRAIN,terrainCoordinates,terrainFrame} from './toroidal-terrain.mjs';
+import {TOROIDAL_SPAWN,TOROIDAL_TERRAIN,terrainCoordinates,terrainFrame} from './toroidal-terrain.mjs';
 import {TOROIDAL_SUN,ToroidalTerrainRenderer,toroidalSunDirection} from './toroidal-terrain-renderer.mjs';
 import {bindFlightSpaceGesture} from './flight-space-gesture.mjs';
 import {bindToroidalMml} from './toroidal-mml.mjs';
@@ -461,9 +461,11 @@ const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
 let inside=hot&&activeSpace.id!=='outside';
 const outsideRing=()=>!inside&&activeSpace.outdoorTerrain===TOROIDAL_TERRAIN.id;
 // Capture the fresh entry before MML initializes or writes a location hash.
-// Arrival frames the house door; the Residencia's chamber portals are additional entrances.
-const houseEntrances=space=>space?.entrances?.filter(entrance=>!entrance.portal)??[];
-let firstExteriorDoor=outsideRing()&&!location.hash&&houseEntrances(activeSpace).length===1?houseEntrances(activeSpace)[0].door:null;
+// Arrival frames a nearby parcel door. The palace and its portals have their own site.
+const houseEntrances=space=>space?.entrances?.filter(entrance=>!entrance.portal&&!entrance.landmark)??[];
+const nearbyHouseDoors=houseEntrances(activeSpace).filter(({door})=>
+  Math.hypot(door.x-TOROIDAL_SPAWN.x,door.z-TOROIDAL_SPAWN.z)<12);
+let firstExteriorDoor=outsideRing()&&!location.hash&&nearbyHouseDoors.length===1?nearbyHouseDoors[0].door:null;
 let flightEnabled=false,firstJumpPending=false,doubleJumpPending=false,trickStarted=-Infinity,radialMovementMode='ground',radialBoosting=false;
 const verticalHelp=document.getElementById('world-vertical-help');
 const dryVerticalHelp=verticalHelp.textContent;

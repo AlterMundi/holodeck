@@ -38,18 +38,15 @@ test('the selected facade and miniature face the aisle and keep the legacy physi
     {x:-2.075,y:.11,z:15.5,facing:-1});
 });
 
-test('the torus facade sits on the terrain without moving its proxy or entrance', () => {
+test('the torus replaces the west miniature with the residence and keeps the east facade on its larger plot', () => {
   const world=room();
-  const art={houseVisual:({id})=>id===west.id?{facade,miniature}:null};
+  const art={houseVisual:()=>({facade,miniature})};
   const ring=worldDocument(world,{...art,toroidalHouse:west.id});
   const valley=worldDocument(world,{...art,valleyHouse:west.id});
-  assert.match(model(ring,`facade-${west.id}`),/ y="0" z="0" ry="90" collide="false"/);
+  assert.ok(!ring.includes(west.id));
+  assert.match(model(ring,`facade-${east.id}`),/ y="0" z="0" ry="-90" collide="false"/);
+  assert.match(ring,/<m-group id="parcel-east-1" x="55" z="15.5">/);
   assert.match(model(valley,`facade-${west.id}`),/ y="0.1" z="0" ry="90" collide="false"/);
-  assert.equal(model(ring,`miniature-${west.id}`),model(valley,`miniature-${west.id}`));
-  const proxy=/<m-cube [^>]*width="3.15"[^>]*opacity="0"[^>]*>/;
-  const door=new RegExp(`<m-group id="entrance-${west.id}"[^>]*>`);
-  assert.equal(ring.match(proxy)?.[0],valley.match(proxy)?.[0]);
-  assert.equal(ring.match(door)?.[0],valley.match(door)?.[0]);
   assert.ok(ring.includes(`id="entrance-${east.id}"`));
   assert.ok(!valley.includes(`id="entrance-${east.id}"`));
   assert.doesNotMatch(ring,/id="house-commons"/);

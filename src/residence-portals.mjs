@@ -10,6 +10,12 @@ export const RESIDENCE_PORTALS=Object.freeze([
 ]);
 const STAND=1.1;
 
+// The public hall of the palace is the exterior threshold of the existing house.
+export function residenceHouseDoor(){
+  const [x,y,z]=residenceWorld(0,-21,TOROIDAL_RESIDENCE.floor);
+  return {x,y,z,yaw:180};
+}
+
 export function residencePortalDoor({centre:[x,y]}){
   const r=Math.hypot(x,y),k=(r-STAND)/r;
   const [wx,wy,wz]=residenceWorld(x*k,y*k,TOROIDAL_RESIDENCE.floor);

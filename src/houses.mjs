@@ -14,8 +14,8 @@ export const HOUSE_PLOTS = Object.freeze(ROWS.flatMap((z, index) =>
 ));
 // The facade door faces the common aisle. Spawn on the public approach,
 // beyond the facade collider and inside the connected walking surface.
-export function exteriorDoor(house) {
-  const plot = HOUSE_PLOTS.find(candidate => candidate.id === house.parcel);
+export function exteriorDoor(house, plots=HOUSE_PLOTS) {
+  const plot = plots.find(candidate => candidate.id === house.parcel);
   return {
     x: plot.x - plot.side * (house.facade.width / 2 + .85),
     y: .11,

@@ -3,7 +3,7 @@ import test from 'node:test';
 import {Group,Matrix4,Vector3} from 'three';
 import {innerWoodlandTrees,ToroidalWoodland,woodlandTrees} from '../src/toroidal-woodland.mjs';
 import {
-  TOROIDAL_TERRAIN, TOROIDAL_PARCEL_Y, TOROIDAL_OVERLOOK, TERRAIN_EDGES, buildTerrainTile, selectTerrainTiles,
+  TOROIDAL_TERRAIN, TOROIDAL_HOUSE_PLOTS, TOROIDAL_PARCEL_Y, TOROIDAL_OVERLOOK, TERRAIN_EDGES, buildTerrainTile, selectTerrainTiles,
   terrainColor, terrainCoordinates, terrainElevation, terrainFrame, terrainMeadowMoisture, terrainPosition, terrainTile, terrainTrail, terrainWoodland, toroidalParcelPoint,
 } from '../src/toroidal-terrain.mjs';
 
@@ -50,6 +50,21 @@ test('the parcel and its portals share a level strip of analytic ground', () => 
     near(surface[0],world.x);
     near(surface[2],world.z);
     assert.equal(world.facing,1);
+  }
+});
+
+test('district lots have full-size level envelopes without overlapping the palace reservation', () => {
+  for (const [index,plot] of TOROIDAL_HOUSE_PLOTS.entries()) {
+    for (const other of TOROIDAL_HOUSE_PLOTS.slice(index+1)) {
+      assert.ok(Math.abs(plot.x-other.x)>=(plot.width+other.width)/2 ||
+        Math.abs(plot.z-other.z)>=(plot.depth+other.depth)/2);
+    }
+    if (plot.id==='parcel-west-1') continue;
+    for (const [dx,dz] of [[0,0],[-35,-35],[-35,35],[35,-35],[35,35]]) {
+      const x=TOROIDAL_TERRAIN.majorRadius+plot.x+dx,z=plot.z+dz;
+      const {u,v}=terrainCoordinates([x,TOROIDAL_PARCEL_Y,z]);
+      near(terrainPosition(u,v,terrainElevation(u,v))[1],TOROIDAL_PARCEL_Y);
+    }
   }
 });
 

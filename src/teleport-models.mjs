@@ -81,7 +81,7 @@ export class TeleportModels {
     state.key=entry?.id;
     state.iconUrl=entry?.icon;
     if(!entry)return;
-    const model=this.figures.get(teleportModelId(entry.id)).clone();
+    const model=this.figures.get(teleportModelId(entry.id,entry.landmark)).clone();
     model.position.set(0,0,0);
     const bounds=new Box3().setFromObject(model),center=bounds.getCenter(new Vector3());
     model.position.set(-center.x,-bounds.min.y,-center.z);

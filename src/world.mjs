@@ -1,4 +1,4 @@
-import {TOROIDAL_TERRAIN, TOROIDAL_PARCEL_Y} from './toroidal-terrain.mjs';
+import {TOROIDAL_TERRAIN, TOROIDAL_PARCEL_Y, TOROIDAL_HOUSE_PLOTS} from './toroidal-terrain.mjs';
 import {HOUSE_GROUND,HOUSE_PLOTS} from './houses.mjs';
 import {VALLEY_LAYOUT,VALLEY_GROUND,VALLEY_DRESSING} from './continuous-valley.mjs';
 import {LAYOUT_VERSION,TERRACE_TOP,TERRACES,PROMENADES} from './world-layout.mjs';
@@ -50,7 +50,7 @@ function houseModel(part, plot, position, id, prefix, sourceAttribute, floor=.1)
   return `<m-model id="${id}" ${sourceAttribute}="${attribute(prefix+'assets/'+part.asset)}" x="${x}" y="${y+floor}" z="${z}" ry="${-plot.side*90}" collide="false"></m-model>`;
 }
 
-function housingDocument(houses, prefix, houseVisual, site, sourceAttribute, onlyHouse, facadeFloor=.1, facadesOnly=Boolean(onlyHouse)) {
+function housingDocument(houses, prefix, houseVisual, site, sourceAttribute, onlyHouse, facadeFloor=.1, facadesOnly=Boolean(onlyHouse), plots=HOUSE_PLOTS) {
   const {houseWalk:walk,parcelTerrain:terrain,parcelGarden}=site??{};
   const authoredWalk = assetFile(walk?.asset) && /^[a-f0-9]{64}$/.test(walk.revision);
   const walkSource = authoredWalk ? prefix + 'assets/' + walk.asset + '?v=' + walk.revision.slice(0,12) : '';
@@ -73,7 +73,7 @@ function housingDocument(houses, prefix, houseVisual, site, sourceAttribute, onl
   if(!facadesOnly)markup += authoredWalk ?
     `<m-model id="house-walk" src="${attribute(walkSource)}" collide="false" cast-shadows="false"></m-model>` :
     '<m-cube x="0" y=".101" z="17.42" width="2.8" height=".006" depth="15.24" color="#c8b695" collide="false"></m-cube>';
-  for (const plot of HOUSE_PLOTS) {
+  for (const plot of plots) {
     const house = houses.find(entry => entry.parcel === plot.id);
     if((onlyHouse&&house?.id!==onlyHouse)||(facadesOnly&&!house))continue;
     markup += `<m-group id="${plot.id}" x="${plot.x}" z="${plot.z}">
@@ -232,11 +232,11 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
   if(manifest.length>16384)throw Error('Geometry manifest exceeds bound');
   let out=`<m-group id="workshop" data-run="${attribute(room.run)}" data-edition="${attribute(room.edition)}" data-semantic-sequence="${room.sequence}" data-layout-version="${layout}" data-geometry-state="${attribute(manifest)}">`;
   if(toroidalHouse){
-    const houses=room.houses?.directory()??[];
+    const houses=(room.houses?.directory()??[]).filter(house=>house.id!==toroidalHouse);
     out+=`<m-group id="ring-house" x="${TOROIDAL_TERRAIN.majorRadius}" y="${TOROIDAL_PARCEL_Y}">`+
       // The torus is already paved at the group origin. The legacy .1 m
       // art offset is for the older physical ground cubes.
-      housingDocument(houses,prefix,houseVisual,null,sourceAttribute,undefined,0,true)+'</m-group>';
+      housingDocument(houses,prefix,houseVisual,null,sourceAttribute,undefined,0,true,TOROIDAL_HOUSE_PLOTS)+'</m-group>';
   } else if(valleyHouse)out+=valleyMarkup(prefix,valleyHouse,houseVisual,sourceAttribute,
     room.houses?.directory()??[]);
   else out+=workshopExterior(room,{prefix,sourceAttribute,includeVisits,includeCues,

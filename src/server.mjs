@@ -1,14 +1,14 @@
 import {createQuintanaWeather} from './quintana-weather.mjs';
 import {parseRenderedView,RenderedViews} from './rendered-view.mjs';
 import {SAND3D_TRAIL_REVISIONS} from './sand3d-trail-assets.mjs';
-import {TOROIDAL_SPAWN, TOROIDAL_TERRAIN, TOROIDAL_RESIDENCE, residenceWorld, toroidalParcelPoint} from './toroidal-terrain.mjs';
+import {TOROIDAL_HOUSE_PLOTS, TOROIDAL_SPAWN, TOROIDAL_TERRAIN, toroidalParcelPoint} from './toroidal-terrain.mjs';
 import {RESIDENCE_REVISIONS} from './toroidal-residence-assets.mjs';
 import {indoorGardenTemplates} from './indoor-garden-recipe.mjs';
 import {COMPAII_HOUSE,interiorArt} from './interior-art.mjs';
 import {ATELIER_EXPANSION_WRITES,ATELIER_PROFILE,ATELIER_ROOMS,atelierLabReturn,matchesAtelierLayout,packedExteriorArt,selectAtelier} from './compaii-atelier.mjs';
 import {RoomExhibits,EXHIBIT_ARCHIVE_SAVE_BYTES,EXHIBIT_SAVE_BYTES} from './room-exhibits.mjs';
 import {ATELIER_FOYER,CHARACTER_STUDIO,characterWorktable,houseReviewRooms} from './house-review-rooms.mjs';
-import {residenceEntrances} from './residence-portals.mjs';
+import {residenceEntrances,residenceHouseDoor} from './residence-portals.mjs';
 import {createCharacterPoseReview,resolveReviewPose} from './character-pose-review.mjs';
 import {InteriorSpaces, OUTSIDE, SPACE_SAVE_BYTES, interiorDocument} from './interior-spaces.mjs';
 import {InteriorLayouts,LAYOUT_SAVE_BYTES} from './interior-layouts.mjs';
@@ -196,9 +196,18 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const singleHouse=valley;
   const hideWorkshop=valley||toroidal;
   const outdoorHouse=house=>!singleHouse||house.id===COMPAII_HOUSE;
+  const houseExteriorDoor=house=>toroidal?
+    (house.id===COMPAII_HOUSE?residenceHouseDoor():toroidalParcelPoint(exteriorDoor(house,TOROIDAL_HOUSE_PLOTS))):
+    exteriorDoor(house);
+  const houseDirectory=()=>room.houses.directory();
   const exteriorEntrances=actor=>[...spaces.view(actor,OUTSIDE).entrances.filter(
     entrance=>!singleHouse||spaces.rooms.get(entrance.id)?.house===COMPAII_HOUSE).map(
-    entrance=>toroidal?{...entrance,door:toroidalParcelPoint(entrance.door)}:entrance),
+    entrance=>{
+      const id=spaces.rooms.get(entrance.id).house;
+      const house=houseDirectory().find(place=>place.id===id);
+      return {...entrance,door:toroidal?houseExteriorDoor(house):entrance.door,
+        ...(toroidal&&id===COMPAII_HOUSE?{landmark:'residence'}:{})};
+    }),
     ...(toroidal?residenceEntrances(Object.fromEntries(Object.entries(portalRooms).filter(([,id])=>spaces.allows(actor,id))),
       id=>spaces.rooms.get(id)?.title??'Cámara'):[])];
   const publicWorld=toroidal?TOROIDAL_TERRAIN.id:valley?VALLEY_LAYOUT:'island-workshop';
@@ -503,7 +512,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const outdoorSky=includeSky?(view.id===OUTSIDE?atelier?.outdoorSky:art?.outdoorSky):null;
     const space={...view,...(view.id===OUTSIDE?{entrances:exteriorEntrances(actor),...(toroidal?{title:'Holodeck',outdoorTerrain:TOROIDAL_TERRAIN.id,terrainRun:room.run}:
         valley?{title:'Valle de llegada',outdoorTerrain:true}:{})}:{objects:roomObjects(view),
-        ...(toroidal&&view.exteriorDoor?{exteriorDoor:toroidalParcelPoint(view.exteriorDoor)}:{})}),
+        ...(toroidal&&view.exteriorDoor?{exteriorDoor:houseExteriorDoor(houseDirectory().find(house=>house.id===view.house))}:{})}),
       ...(gardenRoom?(lightExercise?{playableInterior:true}:{gardenReceiptRecovery:true}):{}),
       ...(lightExercise&&gardenEditors.grant(actor,view.id)?{canDesignGarden:true}:{}),
       ...(activity?{activity}:{}),
@@ -546,12 +555,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const publicPlace=(id,title,arrival)=>destinations.push({id,title,to:OUTSIDE,arrival});
     const plaza=toroidal?TOROIDAL_SPAWN:{x:0,y:TERRACE_TOP+.001,z:6};
     publicPlace('terrain:arrival','Plaza de llegada',{...plaza,yaw:180});
-    if(toroidal){
-      const [x,y,z]=residenceWorld(0,-21,TOROIDAL_RESIDENCE.floor);
-      publicPlace('terrain:residence','Residencia de la Nobleza IA',{x,y,z,yaw:180});
-      iconSource.set(destinations.at(-1),{kind:'residence',revision:residenceAssets.visual.sha256,
-        bytes:()=>exteriorArt.get(residenceAssets.visual.path)?.bytes??readFileSync(residenceVisual)});
-    }else if(!hideWorkshop){
+    if(!toroidal&&!hideWorkshop){
       const names={overlook:'Mirador',gallery:'Isla de la galería',garden:'Isla del jardín'};
       for(const {id,x,z} of TERRACES){
         if(names[id])publicPlace('terrain:'+id,names[id],{x,y:TERRACE_TOP+.001,z,yaw:180});
@@ -577,10 +581,13 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       const group={house:house.id,houseTitle:house.facade.title};
       if(!houses.has(house.id)){
         houses.add(house.id);
-        const door=exteriorDoor(house);
+        const residence=toroidal&&house.id===COMPAII_HOUSE;
         destinations.push({id:'house:'+house.id,to:OUTSIDE,title:'Entrada exterior',...group,
-          arrival:toroidal?toroidalParcelPoint(door):door});
-        iconSource.set(destinations.at(-1),{kind:'facade',revision:JSON.stringify(house.facade),facade:house.facade});
+          arrival:houseExteriorDoor(house),...(residence?{landmark:'residence'}:{})});
+        iconSource.set(destinations.at(-1),residence?
+          {kind:'residence',revision:residenceAssets.visual.sha256,
+            bytes:()=>exteriorArt.get(residenceAssets.visual.path)?.bytes??readFileSync(residenceVisual)}:
+          {kind:'facade',revision:JSON.stringify(house.facade),facade:house.facade});
       }
       const view=spaces.view(actor,to);
       const details={...group,room:candidate.title,to};
@@ -613,12 +620,6 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(iconSource.has(entry))continue;
       const descriptor=semanticDescriptor({id:entry.id,title:entry.title,widget:entry.widget,role:entry.iconRole});
       iconSource.set(entry,{kind:'semantic',revision:JSON.stringify(descriptor),descriptor});
-    }
-    const residence=destinations.find(entry=>entry.id==='terrain:residence');
-    if(residence){
-      const rooms=new Set(availableEntrances.filter(entry=>entry.portal).map(entry=>entry.id));
-      residence.links=destinations.filter(entry=>entry.id.startsWith('room:')&&rooms.has(entry.to))
-        .map(entry=>entry.id);
     }
     return destinations;
   }
@@ -1477,7 +1478,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   }));
   app.get(route('api/places'),(req,res)=>{
     if(room.commitUncertain)return res.status(503).json({message:'El taller necesita recuperar su último cambio.'});
-    res.json({world:publicWorld,houses:room.houses.directory().filter(outdoorHouse)});
+    res.json({world:publicWorld,houses:room.houses.directory().filter(outdoorHouse),...(toroidal?{plots:TOROIDAL_HOUSE_PLOTS}:{})});
   });
   app.get(route('api/places/:id'),(req,res)=>{
     if(room.commitUncertain)return res.status(503).json({message:'El taller necesita recuperar su último cambio.'});
