@@ -1,5 +1,8 @@
 # East 1 exterior study
 
+The [exterior candidate](../estate-exterior/) packages the selected portico
+and court as near, distant and collision assets for the East 1 plot.
+
 The sketch fits the Casa Linterna precinct inside the current 72 × 72 m East 1
 envelope. Its open lantern portico leads into a level arrival court and the
 existing Recibidor threshold. The visual proposal uses a 0.74 multiplier for
