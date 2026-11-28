@@ -178,7 +178,7 @@ function flowerGeometry(){
   return geometry;
 }
 
-function grassMaterial(uniforms,far=false){
+function grassMaterial(uniforms,{far=false,reactive=false}={}){
   const material=new MeshStandardMaterial({vertexColors:true,side:DoubleSide,roughness:far?1:.78,metalness:0});
   material.onBeforeCompile=shader=>{
     Object.assign(shader.uniforms,uniforms);
@@ -226,6 +226,7 @@ function grassMaterial(uniforms,far=false){
             float sway=sin(grassTime*1.9+phase)*.55+sin(grassTime*3.1+phase*1.7)*.2;
             vec3 world=grassWind*(gust*.22+sway*.10*gust)*bend;
             world+=cross(grassWind,normalize(root))*sin(grassTime*2.3+phase*2.1)*.035*bend;
+            ${reactive?`
             // Bodies part the grass around them: each recent footprint pushes
             // the tuft away and presses it down, then lets it spring back with
             // a small overshoot. One test per tuft skips all of it when nobody
@@ -258,6 +259,7 @@ function grassMaterial(uniforms,far=false){
                 world+=(trample/max(length(trample),1e-4)*parted*.85-up*press*.5)*tall*bend;
               }
             }
+            `:' '}
             grassOffset=world*reach;
           }`}
           transformed*=reach;
@@ -284,7 +286,7 @@ function grassMaterial(uniforms,far=false){
         reflectedLight.directSpecular*=0.;
         reflectedLight.indirectSpecular*=0.;`);
   };
-  material.customProgramCacheKey=()=>far?'holodeck-toroidal-grass-far-v3':'holodeck-toroidal-grass-v7';
+  material.customProgramCacheKey=()=>far?'holodeck-toroidal-grass-far-v3':reactive?'holodeck-toroidal-grass-reactive-v1':'holodeck-toroidal-grass-wind-v1';
   return material;
 }
 
@@ -333,9 +335,10 @@ export class ToroidalGrass {
     this.geometry=tuftGeometry();
     this.flowerGeometry=flowerGeometry();
     this.material=grassMaterial(this.uniforms);
+    this.reactiveMaterial=grassMaterial(this.uniforms,{reactive:true});
     this.farTiles=new Map();
     this.farGeometry=clumpGeometry();
-    this.farMaterial=grassMaterial({...this.uniforms,grassReach:{value:FAR_RADIUS}},true);
+    this.farMaterial=grassMaterial({...this.uniforms,grassReach:{value:FAR_RADIUS}},{far:true});
     this.walkers=new Map();
     this.footprints=Array.from({length:TRAIL_PUSHERS},()=>[0,0,0,-1e4]);
     this.footprintIndex=0;
@@ -575,6 +578,15 @@ export class ToroidalGrass {
     bounds.set(centre[0],centre[1],centre[2],radius+.8+TRAMPLE_REACH*.55+TRAMPLE_REACH);
   }
 
+  selectTileMaterial(mesh) {
+    const bounds=this.uniforms.grassPushBounds.value;
+    const sphere=mesh.boundingSphere;
+    const centre=sphere.center;
+    const touched=Math.hypot(centre.x+mesh.position.x-bounds.x,centre.y+mesh.position.y-bounds.y,
+      centre.z+mesh.position.z-bounds.z)<=sphere.radius+bounds.w;
+    mesh.material=mesh.userData.flowers.material=touched?this.reactiveMaterial:this.material;
+  }
+
   update(position,lightweight,daylight=1,seconds=1/60){
     const valid=position&&[position.x,position.y,position.z].every(Number.isFinite);
     this.group.visible=!lightweight&&valid;
@@ -613,6 +625,7 @@ export class ToroidalGrass {
       const nearest=Math.max(0,distance-TILE*.75-6); // 6 m: camera may sit behind the explorer
       const share=1+(FAR_SHARE-1)*smoothstep(FULL_DENSITY,RADIUS,nearest);
       mesh.count=Math.min(mesh.userData.full,Math.ceil(mesh.userData.full*share)+1);
+      this.selectTileMaterial(mesh);
     }
     const farWanted=this.wanted(u,v,height,{columns:FAR_COLUMNS,rows:FAR_ROWS,tile:FAR_TILE,radius:FAR_RADIUS});
     const farKeep=new Set(farWanted.map(({c,r})=>this.tileKey(c,r)));
@@ -630,6 +643,7 @@ export class ToroidalGrass {
       if(this.tiles.has(key))continue;
       if(performance.now()-start>BUDGET_MS){pending=true;break;}
       const mesh=this.buildTile(c,r);
+      this.selectTileMaterial(mesh);
       this.tiles.set(key,mesh);
       this.group.add(mesh);
     }
@@ -777,6 +791,7 @@ export class ToroidalGrass {
     this.flowerGeometry.dispose();
     this.farGeometry.dispose();
     this.material.dispose();
+    this.reactiveMaterial.dispose();
     this.farMaterial.dispose();
     this.group.removeFromParent();
   }

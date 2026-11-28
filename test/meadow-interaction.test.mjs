@@ -21,6 +21,10 @@ test('the far meadow fills in beyond the detailed carpet and leaves with it',()=
       const now=grass.farTiles.size*1000+grass.tiles.size;stable=now===size&&grass.farTiles.size>0?stable+1:0;size=now;
     }
     assert.ok(grass.tiles.size>0,'detailed carpet');
+    const near=[...grass.tiles.values()];
+    assert.ok(near.some(mesh=>mesh.material===grass.reactiveMaterial),'occupied tiles bend');
+    assert.ok(near.some(mesh=>mesh.material===grass.material),'untouched tiles use the wind-only shader');
+    assert.ok(near.every(mesh=>mesh.material===mesh.userData.flowers.material),'flowers follow the tile shader');
     assert.ok(grass.farTiles.size>0,'far meadow');
     const clumps=[...grass.farTiles.values()].reduce((sum,mesh)=>sum+mesh.count,0);
     assert.ok(clumps>2000&&clumps<40000,`far clumps: ${clumps}`);
