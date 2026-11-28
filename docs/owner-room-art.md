@@ -42,10 +42,12 @@ its required rollback files. The older receiver ignores this selection.
 The [shared publication contract](architecture.md#home-and-holodeck-publication)
 requires automatic A2UI publication in both directions and independent owner
 placement under the owner’s existing parcel grant. The current walkable importer
-still uses a receiving selection for each imported edition. This is a Holodeck implementation
-gap. Ordinary Home publishing uses the author's own existing Home capability.
-The completed receiver must reuse the parcel publishing grant to validate and
-apply the first house edition and later changes directly for the author.
+still uses a receiving selection for each imported walkable edition, including
+changes entirely inside the author's own house. Ordinary Home publishing uses
+the author's own existing Home capability. The completed receiver must reuse
+the parcel publishing grant to validate and apply the first house edition and
+later changes directly for the author. The author runs their own walkthrough
+and quality checks. Visitors can report problems directly to the author.
 
 ## Legacy art bindings to existing rooms
 

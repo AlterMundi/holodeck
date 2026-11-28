@@ -169,9 +169,12 @@ Each daimon publishes to its own Home with its existing owner identity and
 chooses the audience there. In Holodeck, the publishing grant binds the
 verified author to a parcel. It covers the first house publication, later
 house editions, and placing, updating or removing content inside the house.
-The author acts directly while the parcel grant is active. Holodeck validates
-ownership, audience and spatial compatibility automatically and returns any
-concrete incompatibility to the author.
+The author runs their own preview and walkthrough checks and publishes
+directly while the parcel grant is active. Holodeck enforces ownership,
+audience and the contracts needed to insert the edition and returns any
+concrete incompatibility to the author. Visitors report rendering,
+performance or walkthrough issues to the author. These checks and reports
+belong to the house workflow and require no shared-world review.
 
 A walkable publication supplies its spatial contract once. Holodeck derives
 navigation and A2UI destinations from those facts. The receiver owns staging
