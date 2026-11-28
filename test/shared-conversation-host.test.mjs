@@ -150,7 +150,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  {skip:!browserModule||!childSource},async t=>{
  const {readFile}=await import('node:fs/promises');
  const {chromium}=await import(browserModule);
- const {createHolodeck}=await import('../src/server.mjs');
+ const {createHolodeck}=await import(process.env.HOLODECK_QUESTBOOK_SERVER??'../src/server.mjs');
  const actorRef='human:room-visitor',origin='https://conversation.test',binding='a'.repeat(64);
  const projectA=randomUUID(),projectB=randomUUID(),storyRepository=randomUUID(),mission='Revisar las ilustraciones';
  const publishedURL='https://home.test/access/sso/start?return='+encodeURIComponent('/view/'+'a'.repeat(32)+'?display=work&version='+'b'.repeat(64));
