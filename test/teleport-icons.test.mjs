@@ -107,8 +107,11 @@ test('JPEG base colours are read from their DC coefficients',()=>{
   const grid=jpegGrid(bytes.subarray(bin+(view.byteOffset??0),bin+(view.byteOffset??0)+view.byteLength));
   assert.ok(grid&&grid.length===32*32*3);
   assert.ok(grid.every(value=>value>=0&&value<=1));
-  const mean=grid.reduce((a,b)=>a+b,0)/grid.length;
-  assert.ok(mean>.01&&mean<.99,'mean '+mean);
+  // Full decode of foyer-bounce, sampled to 32 × 32 in linear RGB.
+  const reference=[.01085,.00854,.00523];
+  const means=[0,0,0];
+  for(let i=0;i<grid.length;i++)means[i%3]+=grid[i]/1024;
+  assert.ok(means.every((mean,i)=>Math.abs(mean-reference[i])<.003),String(means));
 });
 
 test('a worktable icon is cropped from its room and keeps a function emblem',async()=>{
