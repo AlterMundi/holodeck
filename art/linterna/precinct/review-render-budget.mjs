@@ -14,6 +14,11 @@ const restProfiles = [
   { pixels: 530000, effects: 'full', distance: 1.5 },
 ];
 
+function approach(value, target, elapsed, response, epsilon) {
+  const next = target + (value - target) * Math.exp(-elapsed / response);
+  return Math.abs(next - target) < epsilon ? target : next;
+}
+
 // Use wall time for the render budget. A slow device must not appear to meet
 // the target because the movement integrator clamps its simulation delta.
 export class ReviewBudget {
@@ -26,6 +31,9 @@ export class ReviewBudget {
     this.windowAt = 0;
     this.samples = [];
     this.movingFrames = 0;
+    this.visual = null;
+    this.visualAt = null;
+    this.drawnVisual = null;
   }
 
   resetFrames() {
@@ -35,19 +43,40 @@ export class ReviewBudget {
     this.movingFrames = 0;
   }
 
+  noteMovement(time) {
+    this.motionAt = time;
+  }
+
   plan(time, active, dirty) {
-    if (active) this.motionAt = time;
+    if (active) this.noteMovement(time);
     const moving = time - this.motionAt < 280;
     const changed = moving !== this.motion;
     this.motion = moving;
     if (changed) this.resetFrames();
-    if (!moving) return { draw: dirty || changed, profile: restProfiles[this.level], moving };
-    const draw = this.next === null || time + 2 >= this.next;
+    const target = moving ? motionProfiles[this.level] : restProfiles[this.level];
+    const density = Math.sqrt(target.pixels);
+    const glow = Number(target.effects !== 'direct');
+    const contact = Number(target.effects === 'full');
+    const elapsed = Math.min(65, Math.max(0, time - (this.visualAt ?? time)));
+    this.visualAt = time;
+    const previous = this.visual ?? {density, glow, contact, distance: target.distance};
+    const nextVisual = this.visual = {
+      density: approach(previous.density, density, elapsed, moving ? 210 : 370, 1.5),
+      glow: approach(previous.glow, glow, elapsed, 195, .02),
+      contact: approach(previous.contact, contact, elapsed, 195, .02),
+      distance: approach(previous.distance, target.distance, elapsed, 270, .018),
+    };
+    const fading = Object.keys(nextVisual).some(key => nextVisual[key] !== this.drawnVisual?.[key]);
+    const draw = (moving || dirty || changed || fading) && (this.next === null || time + 2 >= this.next);
     if (draw) {
       const next = (this.next ?? time) + cadence;
       this.next = next > time ? next : time + cadence;
+      this.drawnVisual = nextVisual;
     }
-    return { draw, profile: motionProfiles[this.level], moving };
+    return { draw, moving, resolutionSettled: nextVisual.density === density, profile: {
+      pixels: nextVisual.density ** 2, glow: nextVisual.glow, contact: nextVisual.contact,
+      distance: nextVisual.distance,
+    }};
   }
 
   observe(time, cpuTime) {

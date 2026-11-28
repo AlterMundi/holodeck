@@ -140,7 +140,7 @@ grants and live app bindings under their owning integration.
 ### Reviewing the repaired HD scene and importing the portico
 
 ```sh
-node art/linterna/precinct/build-hd-review.mjs AUTHORIZED_HD_SRC AUTHORIZED_TEMPLATE OUTPUT_HTML
+node art/linterna/precinct/build-hd-review.mjs AUTHORIZED_HD_SRC AUTHORIZED_TEMPLATE OUTPUT_HTML [REVIEWED_WORKSHOP_GLB]
 node art/linterna/precinct/import-hd-portico.mjs AUTHORIZED_HD_SRC OUTPUT_DIR [BAKED_MASONRY_JPEG]
 ```
 
@@ -167,6 +167,18 @@ simpler tapered mesh and grass thins with distance. The small gold stars
 in the coffers are an alpha-tested texture on two triangles each. A
 shared repeating noise texture replaces expensive material noise during
 movement while keeping the fresco patterns and surface palettes.
+Resolution, bloom and contact shadows ease between the selected budgets.
+Resolution changes are applied at bounded intervals. The final stationary
+frame settles before the view stops drawing.
+
+Provide the exact reviewed workshop GLB to show Atelier at its selected
+12 × 12 × 3.3 m dimensions. The guided tour uses the foyer doorway to
+enter the independent workshop and the measured return doorway to come
+back. Furniture footprints and the landing come from `dimensions.json`.
+The standalone view previews the room art. The authorized in-world table
+mounts the existing Atelier projection and workspace. With selected
+owner art, the receiver takes the table anchor and reach from the same
+digest-pinned manifest as the room floor and doorway poses.
 
 The portico importer reduces subdivisions and quantizes its exported
 attributes. Its report records the source hashes and both triangle counts.

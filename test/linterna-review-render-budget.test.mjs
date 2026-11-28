@@ -35,6 +35,29 @@ test('a renewed movement period can regain a quality step with measured headroom
   assert.equal(budget.level, 2);
 });
 
+test('resolution and effects ease out and back after motion instead of jumping', () => {
+  const budget = new ReviewBudget(false);
+  budget.level = 3;
+  const resting = budget.plan(0, false, false).profile;
+  assert.equal(resting.contact, 1);
+  const first = budget.plan(16, true, false).profile;
+  assert.ok(first.pixels < resting.pixels && first.pixels > 450000);
+  assert.ok(first.contact < 1 && first.contact > .85);
+  let moving = first;
+  for (let t=32;t<=1200;t+=16) moving=budget.plan(t, true, false).profile;
+  assert.ok(moving.pixels < 280000);
+  assert.equal(moving.glow,0);
+  for (let t=1216;t<=1440;t+=16) budget.plan(t,false,false);
+  assert.ok(budget.plan(1456,false,false).moving);
+  const recovery=budget.plan(1488,false,false);
+  assert.equal(recovery.moving,false);
+  assert.ok(recovery.profile.pixels > moving.pixels && recovery.profile.pixels < 330000);
+  let final=recovery;
+  for (let t=1504;t<=3808;t+=16) final=budget.plan(t,false,false);
+  assert.ok(Math.abs(final.profile.pixels-resting.pixels) < 1);
+  assert.equal(final.draw,false);
+});
+
 test('resolution and vegetation work stay bounded by quality and view distance', () => {
   assert.equal(reviewPixelRatio(320, 500, 3, 40000), .5);
   const full = {}, light = {};

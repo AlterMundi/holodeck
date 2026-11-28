@@ -39,6 +39,16 @@ test('corrupt bytes, off-Home URLs and missing reciprocal graph fail closed',asy
   await assert.rejects(loadOwnerRoomArt([select()],changed,reply()),/every published door/);
 });
 
+test('metric art supplies a worktable anchor inside its own floor',async()=>{
+  const table={cell:'arrival',id:'room-marker',anchor:[0,.45,-2],turntable:[0,1.146,-2],
+    interactionRadius:2.4,rotationY:0};
+  const data={...manifest,table};
+  const scene=(await loadOwnerRoomArt([select(data)],rooms,reply(data))).get('atlas');
+  assert.deepEqual(scene.table,{id:'room-marker',position:{x:0,y:.45,z:-2},interactionRadius:2.4});
+  const wrong={...data,table:{...table,anchor:[9,.45,-2],turntable:[9,1.146,-2]}};
+  await assert.rejects(loadOwnerRoomArt([select(wrong)],rooms,reply(wrong)),/owner room worktable/);
+});
+
 test('the packaged reader loads only exact staged bytes without fetching Home',async t=>{
   const directory=await mkdtemp(join(tmpdir(),'holodeck-owner-room-'));
   t.after(()=>rm(directory,{recursive:true,force:true}));

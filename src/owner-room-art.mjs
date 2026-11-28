@@ -86,6 +86,18 @@ function doorway(side){
   return {door:{x,y,z,yaw:(side.yaw+180)%360},landing:{x,y,z,yaw:side.yaw}};
 }
 
+function worktable(table,cell){
+  const {id,anchor,turntable,interactionRadius}=table;
+  if(typeof id!=='string'||!/^[a-z0-9][a-z0-9-]{0,87}$/.test(id)||
+     !tuple(anchor,3,-100,100)||!tuple(turntable,3,-100,100)||
+     !validNumber(interactionRadius,.5,4)||!validNumber(table.rotationY,-360,360)||
+     !cell.floor.some(floor=>anchor[0]>=floor.x[0]&&anchor[0]<=floor.x[1]&&
+       anchor[2]>=floor.z[0]&&anchor[2]<=floor.z[1]&&anchor[1]>=floor.top)||
+     anchor[0]!==turntable[0]||anchor[2]!==turntable[2]||turntable[1]<=anchor[1])
+    throw Error('Invalid owner room worktable');
+  return {id,position:{x:anchor[0],y:anchor[1],z:anchor[2]},interactionRadius};
+}
+
 export async function loadOwnerRoomArt(selections,rooms,request=fetch){
   if(!Array.isArray(selections)||selections.length>4)throw Error('Select bounded owner room art');
   const result=new Map();
@@ -102,6 +114,7 @@ export async function loadOwnerRoomArt(selections,rooms,request=fetch){
       if(!room||result.has(id)||!Array.isArray(cell?.models)||!cell.models.length||cell.models.length>6)
         throw Error('Owner room binding is unavailable');
       const colliders=geometry(cell);
+      const table=manifest.table?.cell===cellId?worktable(manifest.table,cell):null;
       const doors=new Map();
       let exterior=null;
       for(const {sides} of manifest.passages){
@@ -131,7 +144,7 @@ export async function loadOwnerRoomArt(selections,rooms,request=fetch){
         const bytes=await readOwnerModel(from,asset,request);
         models.set(asset.sha256+'.glb',{bytes});
       }
-      result.set(id,{house:room.house,models,colliders,exterior,doors,revision:selection.sha256});
+      result.set(id,{house:room.house,models,colliders,exterior,doors,table,revision:selection.sha256});
     }
   }
   return result;

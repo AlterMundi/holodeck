@@ -31,7 +31,8 @@ export class AtelierTable {
   update(space, position){
     const table=space?.atelierTable&&space.objects?.find(object=>object.id===space.atelierTable);
     const anchor=table?.position;
-    const near=Boolean(anchor&&position&&Math.hypot(anchor.x-position.x,anchor.z-position.z)<=2.4);
+    const reach=space?.atelierTableReach??2.4;
+    const near=Boolean(anchor&&position&&Math.hypot(anchor.x-position.x,anchor.z-position.z)<=reach);
     if(!near||this.room!==space?.id)this.close();
     this.room=space?.id;
     this.button.hidden=!near;

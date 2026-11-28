@@ -383,16 +383,24 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       ...(exhibit?{exhibitRevision:exhibit.revision}:{})};
     const cell=cellTransports.get(space.id);
     const atelierAnchor=atelierAuthority?.browserAnchor(actor,space);
-    if(atelierAnchor)space.atelierTable=atelierAnchor.id;
+    if(atelierAnchor){
+      space.atelierTable=atelierAnchor.id;
+      if(owned?.table?.id===atelierAnchor.id)space.atelierTableReach=owned.table.interactionRadius;
+    }
     if(!cell)return space;
     return {...space,participants:roomParticipants(space.id)};
   }
   function roomObjects(view){
-    const art=artForRoom(spaces.rooms.get(view.id),view.exits ?? []);
+    const room=spaces.rooms.get(view.id);
+    const art=artForRoom(room,view.exits ?? []);
+    const table=ownerArtFor(room)?.table;
     const objects=art?.replacesShell||art?.hideMarker?[]:view.objects;
     const stations=[art?.station,...(art?.controls??[])].filter(Boolean);
     const fixtures=(art?.fixtures??[]).map(fixture=>({...fixture,revision:art.designRevision??fixture.revision}));
-    return [...objects,...fixtures,...stations.map(station=>({id:station.id,kind:'workstation',title:station.title,
+    const originalMarker=table&&objects.find(object=>object.id===table.id);
+    const markers=table?[...objects.filter(object=>object.id!==table.id),
+      {...(originalMarker??{id:table.id,kind:'workstation',title:'Mesa de Atelier'}),position:table.position}]:objects;
+    return [...markers,...fixtures,...stations.map(station=>({id:station.id,kind:'workstation',title:station.title,
       position:station.position,revision:station.revision}))];
   }
   function conversationPlace(actor,id){

@@ -5,11 +5,19 @@ export function optimizeReviewMain(source) {
     ["import { Sky }", "import { ReviewBudget, reviewFast, reviewPixelRatio, updateReviewDetail } from 'linterna-review-budget';\nimport { Sky }"],
     ['const DPR = Math.min(devicePixelRatio, 1.75);\nrenderer.setPixelRatio(DPR);',
       `const quality = new ReviewBudget(matchMedia('(pointer: coarse)').matches);
-let profile, lastDetailAt = -Infinity, activeStageForDetail;
+let profile, lastDetailAt = -Infinity, activeStageForDetail, detailScale;
+let lastResizeAt = -Infinity, lastResizePixels;
 const detailOrigin = new THREE.Vector3(Infinity, 0, 0);`],
     ['sun.shadow.mapSize.set(4096, 4096);', 'sun.shadow.mapSize.set(1024, 1024);'],
     ['const POOL = 10;', 'const POOL = 4;'],
     ['type: THREE.HalfFloatType, samples: 4', 'type: THREE.HalfFloatType, samples: 0'],
+    ["uniforms: { tDiffuse: { value: null }, uTime: { value: 0 } },",
+      "uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uBlend: { value: 1 } },"],
+    ["uniform float uTime; varying vec2 vUv;",
+      "uniform float uTime; uniform float uBlend; varying vec2 vUv;"],
+    ["vec4 c=texture2D(tDiffuse,vUv); vec2 d=vUv-.5;",
+      "vec4 original=texture2D(tDiffuse,vUv); vec4 c=original; vec2 d=vUv-.5;"],
+    ["gl_FragColor=c; }`", "gl_FragColor=mix(original,c,uBlend); }`"],
     ['gtao.render = (...a) => { noAO.forEach(o => (o.visible = false)); gtaoRender(...a); noAO.forEach(o => (o.visible = true)); };',
       `gtao.render = (...args) => {
   const visible = [...noAO].filter(object => object.visible);
@@ -22,7 +30,7 @@ const detailOrigin = new THREE.Vector3(Infinity, 0, 0);`],
     b.clear = clearance(b.obstacles);`],
     ['  transit = null; resetBtn.disabled = false; dirty = true;\n  assignLights(true);',
       '  transit = null; resetBtn.disabled = false; dirty = true;\n  camera.position.copy(pos);\n  assignLights(true);'],
-    ['  composer.render();', `  if (window.__capture || (profile && profile.effects !== 'direct')) composer.render();
+    ['  composer.render();', `  if (window.__capture || profile?.glow > .02 || profile?.contact > .02) composer.render();
   else renderer.render(scene, camera);`],
     [`let last = 0, frames = 0, acc = 0, scale = 1;
 function loop(t) {
@@ -43,28 +51,34 @@ function loop(t) {
   const dt = Math.min((t - (last || t)) / 1000, 0.045);
   last = t;
   if (!document.hidden && !window.__capture) {
-    const active = Boolean(transit || keys.size || drag);
+    const active = Boolean(transit || keys.size);
     if (transit) stepTransit(dt); else if (keys.size) walk(dt);
     const next = quality.plan(t, active, dirty);
     if (next.draw) {
-      const changed = profile !== next.profile;
       profile = next.profile;
-      reviewFast.value = next.moving || quality.level < 2 ? 1 : 0;
-      if (changed) {
-        gtao.enabled = profile.effects === 'full';
-        bloom.enabled = profile.effects !== 'direct';
-        grade.enabled = profile.effects === 'full';
-        const shadows = quality.level >= (next.moving ? 2 : 1);
-        if (renderer.shadowMap.enabled !== shadows) {
-          renderer.shadowMap.enabled = shadows;
-          renderer.shadowMap.needsUpdate = shadows;
-        }
-        resize();
+      reviewFast.value = quality.level < 2 ? 1 : 0;
+      gtao.enabled = profile.contact > .02;
+      gtao.blendIntensity = profile.contact * .85;
+      bloom.enabled = profile.glow > .02;
+      bloom.strength = profile.glow * .34;
+      grade.enabled = profile.contact > .02;
+      grade.uniforms.uBlend.value = profile.contact;
+      const shadows = quality.level >= 1;
+      if (renderer.shadowMap.enabled !== shadows) {
+        renderer.shadowMap.enabled = shadows;
+        renderer.shadowMap.needsUpdate = shadows;
       }
-      if (changed || detailMoving !== next.moving || activeStageForDetail !== stageName ||
-          (t - lastDetailAt > 140 && detailOrigin.distanceToSquared(pos) > 1)) {
+      if (lastResizePixels !== profile.pixels && (t - lastResizeAt >= 90 || next.resolutionSettled)) {
+        resize();
+        lastResizeAt = t;
+        lastResizePixels = profile.pixels;
+      }
+      if (detailMoving !== next.moving || activeStageForDetail !== stageName ||
+          (t - lastDetailAt > 140 &&
+            (detailOrigin.distanceToSquared(pos) > 1 || Math.abs(detailScale - profile.distance) > .045))) {
         updateReviewDetail(built.get(stageName).detail, pos, profile.distance, next.moving);
         detailOrigin.copy(pos);
+        detailScale = profile.distance;
         activeStageForDetail = stageName;
         detailMoving = next.moving;
         lastDetailAt = t;
@@ -80,21 +94,44 @@ function loop(t) {
   requestAnimationFrame(loop);
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) dirty = true; });`],
+    ['  if (!drag) return;\n  yaw -=',
+      '  if (!drag || (e.clientX === drag[0] && e.clientY === drag[1])) return;\n  quality.noteMovement(performance.now());\n  yaw -='],
     [`  renderer.setPixelRatio(DPR * scale);
   renderer.setSize(w, h, false);
   composer.setPixelRatio(DPR * scale);
   composer.setSize(w, h);`,
       `  const ratio = reviewPixelRatio(w, h, devicePixelRatio, profile?.pixels ?? 140000);
-  const width = Math.max(1, Math.round(w * ratio)), height = Math.max(1, Math.round(h * ratio));
+  const width = Math.max(1, Math.round(w * ratio / 4) * 4);
+  const height = Math.max(1, Math.round(h * width / w));
   if (renderer.domElement.width !== width || renderer.domElement.height !== height) {
     renderer.setSize(width, height, false);
     composer.setSize(width, height);
   }`],
     ['    clear: p => clear(p),', `    clear: p => clear(p),
-    quality: () => ({ level: quality.level, effects: profile?.effects, moving: quality.motion,
+    quality: () => ({ level: quality.level, pixels: Math.round(profile?.pixels ?? 0),
+      glow: profile?.glow, contact: profile?.contact, moving: quality.motion,
       rendered: quality.movingFrames }),`],
     ['    renderNow(t = 4000) { camera.position.copy(pos); assignLights(true); render(t); },',
       '    renderNow(t = 4000) { reviewFast.value = 0; camera.position.copy(pos); assignLights(true); render(t); },'],
+  ]);
+}
+
+export function stageReviewWorkshop(source) {
+  return replaceSource(source,[
+    ["import { Sky }", `import {insideWorkshop,loadReviewWorkshop,workshopDescription,workshopFloor,workshopLanding,workshopReturn,workshopView} from 'linterna-review-workshop';
+import { Sky }`],
+    ['const STOPS = stops(), GRAPH = graph();', `const STOPS = stops(), GRAPH = graph();
+STOPS.atelier = {stage: 'atelier-metric', point: workshopLanding, target: workshopView};
+GRAPH.hephaestus.atelier = GRAPH.hephaestus.atelier.slice(0,-1);
+GRAPH.atelier.hephaestus = [workshopReturn];
+PLACES.atelier[1] = workshopDescription;
+let metricWorkshop;`],
+    ['const b = buildStage(name, M, S);', "const b = name === 'atelier-metric' ? metricWorkshop : buildStage(name, M, S);"],
+    ['pos.set(s.point[0], EYE, s.point[1]);', "pos.set(s.point[0], EYE + (s.stage === 'atelier-metric' ? workshopFloor : 0), s.point[1]);"],
+    ['wpv.set(x, EYE, z);', 'wpv.set(x, pos.y, z);'],
+    ['function walkable(x, z) {', "function walkable(x, z) {\n  if (stageName === 'atelier-metric') return insideWorkshop(x,z) && clear([x,z]);"],
+    ["  S = await loadStatues();\n  goStop('promenade');",
+      "  const [sculptures, workshop] = await Promise.all([loadStatues(),loadReviewWorkshop()]);\n  S = sculptures;\n  metricWorkshop = workshop;\n  goStop('promenade');"],
   ]);
 }
 
@@ -277,8 +314,8 @@ function grassPatch(points, mat, full, light) {
   ]);
 }
 
-export function optimizeReviewScene(source) {
-  return replaceSource(source,[
+export function optimizeReviewScene(source,metricWorkshop=false) {
+  source=replaceSource(source,[
     ['ctx.B.add(material, sculpture, mat(f, x, y - foot - 0.002, z, 0, ry, 0, s, s, s));',
       'ctx.B.figure(material, sculpture, mat(f, x, y - foot - 0.002, z, 0, ry, 0, s, s, s));'],
     ['terrain(M.ground, H, 640, 320)', 'terrain(M.ground, H, 640, 160)'],
@@ -301,4 +338,14 @@ export function optimizeReviewScene(source) {
   drawBuilding('Rotunda', local => tholos(local, -4.6, -10.6));
   drawBuilding('Fountain', local => fountain(local, 4.6, -10.6));`],
   ]);
+  return metricWorkshop?replaceSource(source,[
+    ['    furnish(ctx, f, rm.id, rm.x);', `    if (rm.id === 'atelier') {
+      const z = INNER_Z - 0.22;
+      box(B, f, 'bronzeDark', rm.x, 1.28, z, 1.46, 2.56, 0.08);
+      for (const side of [-1,1]) for (let tier = 0; tier < 3; tier++) {
+        box(B, f, 'bronze', rm.x+side*.36, .45+tier*.79, z+.047, .58, .62, .02);
+      }
+      obstacle(ctx, f, rm.x, 1.28, z-.30, 1.46, 2.56, 0.08);
+    } else furnish(ctx, f, rm.id, rm.x);`],
+  ]):source;
 }
