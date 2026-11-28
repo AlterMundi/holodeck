@@ -60,6 +60,11 @@ test('a single published edition projects its doors and per-cell guests without 
   assert.ok(tours.art.get(entry.id).doors.has(hall.id));
   const revoked=new InteriorSpaces({definitions:tours.project([{...foyer,guests:[]},privateRoom]),houses});
   assert.equal(revoked.allows(visitor,entry.id),false);
+  const actual=[localRoom('old-foyer',true,[visitor.id],'house-hefesto'),
+    localRoom('house-hefesto',false,[],'old-foyer')];
+  const matched=await loadOwnerRoomTours([{house,manifest:url,sha256}],actual,reply(data));
+  assert.deepEqual(matched.project(actual),actual);
+  assert.equal(matched.art.get(foyer.id).doors.has('house-hefesto'),true);
 });
 
 test('corrupt bytes, off-Home URLs and missing reciprocal graph fail closed',async()=>{
