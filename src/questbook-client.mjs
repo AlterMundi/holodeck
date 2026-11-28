@@ -1,6 +1,8 @@
 import {OrthographicCamera,Raycaster,Scene,Vector2,WebGLRenderer} from 'three';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport} from 'proyeccion/spatial-hud';
 
+const MAX_PENDING_CREATIONS = 8;
+
 export class Questbook {
   constructor(document, api) {
     this.document = document;
@@ -16,9 +18,10 @@ export class Questbook {
     this.createInput = document.querySelector('#questbook-create-title');
     this.createSave = this.createForm.querySelector('button[type="submit"]');
     this.createCancel = document.querySelector('#questbook-create-cancel');
+    this.pendingCreations = new Map();
     this.createButton.onclick = () => this.openCreation();
     this.createCancel.onclick = () => {
-      if (this.creation) return;
+      if (this.pendingCreations.has(this.creationScope())) return;
       this.createForm.hidden = true;
       this.createInput.value = '';
     };
@@ -171,51 +174,69 @@ export class Questbook {
     this.titleForm.hidden = true;
   }
 
+  creationScope() {
+    const {room,project,repository} = this.scope ?? {};
+    return JSON.stringify([room,project,repository]);
+  }
+
   openCreation() {
-    const scope = JSON.stringify(this.scope);
     if (this.createButton.hidden) return;
-    if (this.creation && this.creation.scope !== scope) {
-      this.status.textContent = 'Hay una misión por confirmar en el diario donde la creaste.';
+    const pending = this.pendingCreations.get(this.creationScope());
+    if (!pending && this.pendingCreations.size >= MAX_PENDING_CREATIONS) {
+      this.status.textContent = 'Confirmá una misión pendiente antes de crear otra.';
       return;
     }
     this.createForm.hidden = false;
-    this.createInput.value = this.creation?.title ?? '';
-    this.createInput.readOnly = this.createCancel.disabled = !!this.creation;
+    this.createInput.value = pending?.title ?? '';
+    this.createInput.readOnly = this.createCancel.disabled = !!pending;
     this.createInput.focus();
+  }
+
+  async readCreationReceipt({scope,operation,card,title}) {
+    const query = new URLSearchParams({...scope,operation});
+    const {result} = await this.api('questbook/receipt?'+query);
+    if (result === null) return false;
+    if (result?.command?.card !== card || result.command.action?.type !== 'create'
+      || result.command.action.title !== title) throw Error('Creation receipt does not match the original');
+    return true;
   }
 
   async createMission() {
     if (!this.dialog.open || this.saving || this.createForm.hidden || this.createButton.hidden) return;
-    const scope = JSON.stringify(this.scope);
-    const title = this.creation?.title ?? this.createInput.value.trim();
+    const key = this.creationScope();
+    const pending = this.pendingCreations.get(key);
+    const title = pending?.title ?? this.createInput.value.trim();
     if (!title || new TextEncoder().encode(title).length > 240) {
       this.status.textContent = 'Escribí un título breve para la misión.';
       return;
     }
-    if (this.creation && this.creation.scope !== scope) return;
-    this.creation ??= {scope,title,card:crypto.randomUUID(),operation:crypto.randomUUID()};
-    const {card,operation} = this.creation;
+    if (!pending && this.pendingCreations.size >= MAX_PENDING_CREATIONS) return;
+    const intent = pending ?? {scope:{...this.scope},title,card:crypto.randomUUID(),operation:crypto.randomUUID()};
+    this.pendingCreations.set(key,intent);
+    const {card,operation,scope} = intent;
     const mount = this.mountRevision;
     this.saving = this.createSave.disabled = this.createInput.readOnly = this.createCancel.disabled = true;
     this.status.textContent = 'Guardando…';
-    let created = false, conflict = false;
+    let created = false, conflict = false, submitted = false;
     try {
-      const {result} = await this.api('questbook/create',{card,operation,title,...this.scope});
-      created = ['applied','retained'].includes(result.status);
-      conflict = result.status === 'conflict';
+      if (pending) created = await this.readCreationReceipt(intent);
+      if (!created) {
+        submitted = true;
+        const {result} = await this.api('questbook/create',{card,operation,title,...scope});
+        created = ['applied','retained'].includes(result.status);
+        conflict = result.status === 'conflict';
+      }
     } catch {
-      const query = new URLSearchParams({...JSON.parse(scope),operation});
-      try {
-        const {result} = await this.api('questbook/receipt?'+query);
-        created = result?.command?.card === card && result.command.action?.type === 'create'
-          && result.command.action.title === title;
-      } catch { /* Retain the exact original for a deliberate retry. */ }
+      if (submitted) {
+        try { created = await this.readCreationReceipt(intent); }
+        catch { /* Leave the original scoped to this journal. */ }
+      }
     } finally {
       this.saving = this.createSave.disabled = false;
     }
-    if (created || conflict) this.creation = null;
+    if (created || conflict) this.pendingCreations.delete(key);
     if (!this.dialog.open || this.mountRevision !== mount) return;
-    this.createInput.readOnly = this.createCancel.disabled = !!this.creation;
+    this.createInput.readOnly = this.createCancel.disabled = this.pendingCreations.has(key);
     if (created) {
       this.createForm.hidden = true;
       this.createInput.value = '';

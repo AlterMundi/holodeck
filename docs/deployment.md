@@ -36,7 +36,13 @@ The authenticated `GET api/questbook` opens the first entry and reports
 whether the current actor can create a mission, including on an empty board.
 `POST api/questbook/create` uses the same typed create command as the own-native
 writer with a new card UUID and a stable operation UUID. A lost response is
-reconciled through `GET api/questbook/receipt` for the original actor and operation.
+reconciled through `GET api/questbook/receipt` for the original actor and
+operation. The browser keeps unconfirmed creations tied to their original
+room, project and repository for the lifetime of the open page. Other
+journals remain usable. Returning to the original journal and confirming
+again reads the receipt first. A readable, absent receipt allows the same
+operation to reach the idempotent writer. An unavailable receipt keeps the
+operation pending. The page holds at most eight unconfirmed creations.
 The optional
 `selected` and `after` parameters address a card and page. `POST api/questbook/action` handles acceptance or completion with the
 observed card revision and the original operation ID.

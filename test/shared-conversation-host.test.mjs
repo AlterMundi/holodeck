@@ -85,8 +85,8 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  let card;
  const binary=process.env.DAIMON_CARDS_BIN;
  let cardTool,questbook,storyCommit='1'.repeat(40),laterCommit;
- let projectBReadable=false;
- const secondCard=randomUUID(),secondMission='Preparar el mapa del juego';
+ let projectBReadable=false,projectBWritable=false;
+ const secondCard='00000000-0000-4000-8000-000000000001',secondMission='Preparar el mapa del juego';
  if(binary){
   const {mkdtemp,rm}=await import('node:fs/promises');
   const {join}=await import('node:path'),{tmpdir}=await import('node:os');
@@ -108,7 +108,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
   })}));
   questbook=[
    {project:projectA,binary,store,authorize:async actor=>({read:actor.id===actorRef,write:actor.id===actorRef})},
-   {project:projectB,binary,store,authorize:async actor=>({read:actor.id===actorRef&&projectBReadable,write:false})},
+   {project:projectB,binary,store,authorize:async actor=>({read:actor.id===actorRef&&projectBReadable,write:actor.id===actorRef&&projectBWritable})},
   ];
   assert.equal(cardTool({type:'apply',command:{operation:randomUUID(),card:secondCard,expected_revision:0,
     action:{type:'create',title:secondMission}}},projectB).result.status,'applied');
@@ -250,23 +250,56 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
   await detail.getByRole('button',{name:'Abrir diario de misiones'}).tap();
   const journal=page.getByRole('dialog',{name:'Diario de misiones'});
   await journal.getByText('Todavía no hay misiones.').waitFor();
-  let creates=0;
-  const createPath='**/api/questbook/create';
+  const creates=[];
+  const createPath='**/api/questbook/create', receiptPath='**/api/questbook/receipt?*';
+  let operation;
   await page.route(createPath,async route=>{
-    ++creates;
+    const original=route.request().postDataJSON();
+    creates.push(original.project);
     const reply=await route.fetch();
     const body=await reply.json();
     assert.equal(body.result.status,'applied');
-    card=body.result.event.card.id;
     assert.deepEqual(body.result.event.card.revised_by,{kind:'human',subject:actorRef});
-    await route.abort('failed');
+    if(original.project===projectA){
+      card=body.result.event.card.id;
+      operation=original.operation;
+      await route.abort('failed');
+    }else await route.fulfill({response:reply});
   });
-  await journal.getByRole('button',{name:'Nueva misión'}).tap();
-  await journal.getByLabel('Título de la nueva misión').fill(mission);
-  await journal.getByRole('button',{name:'Crear misión'}).tap();
-  await journal.getByText('Misión creada.').waitFor();
-  assert.equal(creates,1);
+  await page.route(receiptPath,route=>route.abort('failed'));
+  const createMission=async title=>{
+    await journal.getByRole('button',{name:'Nueva misión'}).tap();
+    await journal.getByLabel('Título de la nueva misión').fill(title);
+    await journal.getByRole('button',{name:'Crear misión'}).tap();
+  };
+  await createMission(mission);
+  await journal.getByText('Falta confirmar la misión. Podés reintentar el mismo envío.').waitFor();
   assert.equal(cardTool({type:'read',card}).result.title,mission);
+  await journal.getByRole('button',{name:'Volver al mundo',exact:true}).tap();
+  await openTable();
+  projectBReadable=projectBWritable=true;
+  await table.getByRole('button',{name:'Abrir proyecto de Juego',exact:true}).tap();
+  await detail.getByRole('button',{name:'Abrir diario de misiones'}).tap();
+  await createMission('Revisar los controles del juego');
+  await journal.getByText('Misión creada.').waitFor();
+  await journal.getByRole('button',{name:'Volver al mundo',exact:true}).tap();
+  projectBReadable=projectBWritable=false;
+  await openTable();
+  await table.getByRole('button',{name:'Abrir proyecto de Cuento',exact:true}).tap();
+  await detail.getByRole('button',{name:'Abrir diario de misiones'}).tap();
+  await page.unroute(receiptPath);
+  await journal.getByRole('button',{name:'Nueva misión'}).tap();
+  assert.equal(await journal.getByLabel('Título de la nueva misión').inputValue(),mission);
+  const receipt=page.waitForResponse(response=>{
+    const url=new URL(response.url());
+    return url.pathname.endsWith('/api/questbook/receipt')&&url.searchParams.get('operation')===operation
+      &&url.searchParams.get('project')===projectA;
+  });
+  await journal.getByRole('button',{name:'Crear misión'}).tap();
+  assert.equal((await (await receipt).json()).result.command.card,card);
+  await journal.getByText('Misión creada.').waitFor();
+  assert.deepEqual(creates,[projectA,projectB]);
+  assert.equal(cardTool({type:'history',card,after:0}).result.length,1);
   await page.unroute(createPath);
   await journal.getByText(mission,{exact:true}).last().waitFor({state:'attached'});
   const changed=page.waitForResponse(response=>response.url().endsWith('/api/questbook/action'));
@@ -423,7 +456,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  await dialog.getByRole('button',{name}).tap();
  await dialog.getByText('Ese topic ya no está disponible.').waitFor();
  assert.deepEqual(readbacks,[null,room.room,null,room.room]);
- assert.deepEqual(posted,questbook?['/api/topic-space','/api/questbook/create',
+ assert.deepEqual(posted,questbook?['/api/topic-space','/api/questbook/create','/api/questbook/create',
    '/api/questbook/action','/api/questbook/action','/api/questbook/action','/api/questbook/action','/api/space']:
    ['/api/topic-space','/api/space']);
  assert.deepEqual(modes,[room.room,null,room.room,null]);
