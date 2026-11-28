@@ -335,8 +335,12 @@ test('the Holodeck A2UI journal follows the bridge action from the actual worksh
   if (process.env.HOLODECK_QUESTBOOK_CAPTURE) await dialog.screenshot({path:process.env.HOLODECK_QUESTBOOK_CAPTURE});
   await dialog.getByRole('button',{name:'Volver al mundo'}).click();
 
+  await page.getByRole('button',{name:'Mostrar herramientas'}).click();
+  const command = page.waitForResponse(response=>response.url().endsWith('/api/commands'));
   const credit = page.waitForResponse(response=>response.url().endsWith('/api/questbook/objective'));
   await page.getByRole('button',{name:'Conectar las islas'}).click();
+  const outcome=await (await command).json();
+  assert.equal(outcome.status,'completed',JSON.stringify(outcome));
   const applied = await (await credit).json();
   assert.equal(applied.result.status,'applied');
   assert.equal(runtime.room.entities.bridge.revision,1);
