@@ -45,6 +45,14 @@ conversation acceptance. Nicolas explicitly resumed the full existing MVP22Novem
 active objective; specific acceptance observations remain separate and do not
 require another generic trial before implementation can continue.
 
+## Conversation alongside navigation and worktables
+
+Opening the minimap or a worktable while chatting keeps Conversation open.
+A wide viewport presents the open surfaces together. On a compact viewport
+the most recently opened surface takes the foreground. Closing it reveals the
+previous surface in place, including the same Conversation frame and draft.
+The chat leaves space below for the A2UI toolbar.
+
 ## Toolbar voice and replayable world state
 
 Mic uses the ordinary paired Conversation recorder without opening the chat.

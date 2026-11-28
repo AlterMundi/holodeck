@@ -156,11 +156,12 @@ async function main(){
       assert.equal(new URL(page.url()).searchParams.has('taller'),false);
       return currentSpace();
     };
-    const openWorktable=async (space,clientPage=page,offset=0,{retryModel=false}={})=>{
+    const openWorktable=async (space,clientPage=page,offset=0,{retryModel=false,activate}={})=>{
       const bench=space.objects.find(object=>object.id==='character-worktable');
       assert.ok(bench,'The Character room has no worktable');
       await placeAvatar({x:bench.position.x+offset,y:.25,z:bench.position.z+1.62},180,clientPage);
-      await clientPage.getByRole('button',{name:'Usar mesa',exact:true}).press('Enter',{timeout:15000});
+      if(activate)await activate();
+      else await clientPage.getByRole('button',{name:'Usar mesa',exact:true}).press('Enter',{timeout:15000});
       const table=clientPage.getByRole('group',{name:'Mesa de Char Design',exact:true});
       if(retryModel){
         await table.getByText('No se pudo abrir el personaje. Volvé a probar.',{exact:true}).waitFor();
@@ -208,7 +209,7 @@ async function main(){
       const draft=page.frameLocator('#shared-conversation iframe').locator('#fixture-draft');
       await draft.fill('Borrador conservado');
       await page.evaluate(()=>{window.workspaceFrame=document.querySelector('#shared-conversation iframe');});
-      const table=await openWorktable(await currentSpace());
+      const table=await openWorktable(await currentSpace(),page,0,{activate:()=>tool('open')});
       await tool('map');
       await map.waitFor({state:'attached'});
       assert.equal(await chat.isVisible(),true);
@@ -228,7 +229,7 @@ async function main(){
       await map.getByRole('button',{name:'Cerrar',exact:true}).press('Enter');
       await chat.waitFor({state:'visible'});
       assert.equal(await draft.inputValue(),'Borrador conservado');
-      await openWorktable(await currentSpace());
+      await openWorktable(await currentSpace(),page,0,{activate:()=>tool('open')});
       await chat.waitFor({state:'hidden'});
       await table.getByRole('button',{name:'Salir de la mesa',exact:true}).press('Enter');
       await chat.waitFor({state:'visible'});
