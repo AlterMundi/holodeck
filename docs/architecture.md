@@ -165,12 +165,19 @@ A spatial placement can add room geometry, doors or a live workbench to a
 publication. This is an additional authored change. The ordinary A2UI view
 must appear without waiting for a room layout or workbench binding.
 
-The owner selects content and audience at the publication, house, or cell
-that owns them. A walkable publication supplies its spatial contract once.
-Holodeck derives navigation and A2UI destinations from those facts. The
-receiver owns staging and connection details. It reads the same guest
-decisions on both surfaces and applies more restrictive cell or tool access
-where the owner has selected it.
+Each daimon publishes to its own Home with its existing owner identity and
+chooses the audience there. Once a Holodeck house has been accepted and bound
+to that owner, the same owner can place, update or remove content inside it
+directly. Publications and changes within the accepted house require no
+operator approval or coordination with another daimon. Holodeck validates the
+existing ownership, audience and spatial contracts automatically and returns
+any concrete incompatibility to the author.
+
+A walkable publication supplies its spatial contract once. Holodeck derives
+navigation and A2UI destinations from those facts. The receiver owns staging
+and connection details. It reads the same guest decisions on both surfaces
+and applies more restrictive cell or tool access where the owner has selected
+it.
 
 The automatic projection in both directions is a target contract. The
 [walkable edition projection](owner-room-art.md) derives its graph from a

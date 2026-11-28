@@ -40,8 +40,12 @@ foyer. Existing room state and guest lists remain authoritative. The receiver ke
 its required rollback files. The older receiver ignores this selection.
 
 The [shared publication contract](architecture.md#home-and-holodeck-publication)
-also requires automatic A2UI publication in both directions. The walkable
-tour uses a receiving selection while that publication discovery is pending.
+requires automatic A2UI publication in both directions and independent owner
+placement inside an accepted house. The current walkable importer still uses a
+receiving selection for each imported edition. This is a Holodeck implementation
+gap. Ordinary Home publishing uses the author's own existing Home capability.
+The completed receiver must carry forward the accepted ownership binding and
+validate and apply later editions without per-edition operator involvement.
 
 ## Legacy art bindings to existing rooms
 
