@@ -90,6 +90,7 @@ const upShader=`
 
 const compositeShader=`
   #include <packing>
+  #define AO_SAMPLES 6
   uniform sampler2D sceneColor;
   uniform sampler2D sceneDepth;
   uniform sampler2D bloom;
@@ -121,20 +122,15 @@ const compositeShader=`
   // Scalable ambient obscurance from the resolved depth only.
   float ambientOcclusion(vec3 position,float distanceToEye){
     if(aoStrength<=0.0||distanceToEye>aoDistance)return 1.0;
-    vec3 right=viewPosition(vUv+vec2(texel.x,0.))-position;
-    vec3 left=position-viewPosition(vUv-vec2(texel.x,0.));
-    vec3 up=viewPosition(vUv+vec2(0.,texel.y))-position;
-    vec3 down=position-viewPosition(vUv-vec2(0.,texel.y));
-    vec3 dx=dot(right,right)<dot(left,left)?right:left;
-    vec3 dy=dot(up,up)<dot(down,down)?up:down;
-    vec3 normal=normalize(cross(dx,dy));
+    // Screen-space derivatives give the facet normal without extra depth reads.
+    vec3 normal=normalize(cross(dFdx(position),dFdy(position)));
     if(dot(normal,position)>0.0)normal=-normal;
     vec4 projected=projection*vec4(aoRadius,0.,position.z,1.);
     float screenRadius=clamp(abs(projected.x/projected.w)*.5,texel.x*2.0,.08);
     float angle=interleavedNoise(gl_FragCoord.xy)*6.2831853;
     float occlusion=0.0;
-    for(int i=0;i<10;i++){
-      float t=(float(i)+.5)/10.0;
+    for(int i=0;i<AO_SAMPLES;i++){
+      float t=(float(i)+.5)/float(AO_SAMPLES);
       float a=angle+float(i)*2.3999632;
       vec2 offset=vec2(cos(a),sin(a))*screenRadius*sqrt(t)*vec2(1.0,texel.y/texel.x);
       vec3 delta=viewPosition(vUv+offset)-position;
@@ -142,7 +138,7 @@ const compositeShader=`
       float falloff=max(0.0,1.0-lengthSq/(aoRadius*aoRadius*4.0));
       occlusion+=max(0.0,dot(normal,delta)/sqrt(lengthSq+1e-4)-.08)*falloff;
     }
-    occlusion=occlusion/10.0;
+    occlusion=occlusion/float(AO_SAMPLES);
     float fade=1.0-smoothstep(aoDistance*.55,aoDistance,distanceToEye);
     return clamp(1.0-occlusion*aoStrength*1.6*fade,0.0,1.0);
   }
@@ -231,7 +227,7 @@ export class CinematicGrade {
 
   allocate(render,scene,camera,width,height){
     const gl=this.webgl,context=gl.getContext();
-    const samples=Math.min(4,gl.capabilities.maxSamples);
+    const samples=Math.min(width*height>1500000?2:4,gl.capabilities.maxSamples);
     const supports=format=>(context.getInternalformatParameter(
       context.RENDERBUFFER,format,context.SAMPLES)??[]).includes(samples);
     if(!samples||!supports(context.DEPTH_COMPONENT24)||!supports(context.RGBA16F)){
@@ -357,6 +353,8 @@ export class CinematicGrade {
     uniforms.inverseProjection.value.copy(camera.projectionMatrixInverse);
     uniforms.projection.value.copy(camera.projectionMatrix);
     uniforms.frame.value=this.frame=(this.frame+1)%64;
+    // When the adaptive budget has lowered the drawing buffer, skip occlusion.
+    uniforms.aoStrength.value=gl.getPixelRatio()<.9?0:this.settings.aoStrength;
     render.call(gl,this.composite,this.camera);
   }
 
