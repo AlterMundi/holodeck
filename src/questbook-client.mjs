@@ -1,10 +1,12 @@
 import {OrthographicCamera,Raycaster,Scene,Vector2,WebGLRenderer} from 'three';
 import {bindSpatialHudPointer,createSpatialHud,placeHudInViewport} from 'proyeccion/spatial-hud';
+import {loadIntent,saveIntent} from './client-intents.mjs';
 
 const MAX_PENDING_CREATIONS = 8;
+const creationKey = ({actorRef,project,scope}) => JSON.stringify([actorRef,project,scope.room,scope.repository]);
 
 export class Questbook {
-  constructor(document, api) {
+  constructor(document, api, storageKey) {
     this.document = document;
     this.api = api;
     this.dialog = document.querySelector('#questbook-dialog');
@@ -16,14 +18,26 @@ export class Questbook {
     this.createButton = document.querySelector('#questbook-create');
     this.createForm = document.querySelector('#questbook-create-form');
     this.createInput = document.querySelector('#questbook-create-title');
+    this.createDescription = document.querySelector('#questbook-create-description');
     this.createSave = this.createForm.querySelector('button[type="submit"]');
     this.createCancel = document.querySelector('#questbook-create-cancel');
+    this.storageKey = storageKey;
     this.pendingCreations = new Map();
+    try {
+      const records = loadIntent(sessionStorage,this.storageKey);
+      if (Array.isArray(records) && records.length <= MAX_PENDING_CREATIONS) {
+        for (const record of records) {
+          if (record?.actorRef && record.project && record.scope && record.operation && record.card && record.title) {
+            this.pendingCreations.set(creationKey(record),record);
+          }
+        }
+      }
+    } catch { /* Unreadable recovery data never triggers a submission. */ }
     this.createButton.onclick = () => this.openCreation();
     this.createCancel.onclick = () => {
       if (this.pendingCreations.has(this.creationScope())) return;
       this.createForm.hidden = true;
-      this.createInput.value = '';
+      this.createInput.value = this.createDescription.value = '';
     };
     this.createForm.onsubmit = event => {
       event.preventDefault();
@@ -58,9 +72,10 @@ export class Questbook {
       this.unmount();
       this.closeTitleEdit();
       this.createForm.hidden = this.createButton.hidden = true;
-      this.createInput.value = '';
+      this.createInput.value = this.createDescription.value = '';
       if (this.scope) this.data = null;
       this.scope = null;
+      this.creationOwner = null;
     });
     this.back.onclick = () => {
       this.pages.pop();
@@ -81,6 +96,8 @@ export class Questbook {
       this.data = null;
     }
     this.scope = scope;
+    this.creationOwner = null;
+    this.createForm.hidden = this.createButton.hidden = true;
     this.dialog.showModal();
     void this.read(this.data?.id);
   }
@@ -175,8 +192,18 @@ export class Questbook {
   }
 
   creationScope() {
-    const {room,project,repository} = this.scope ?? {};
-    return JSON.stringify([room,project,repository]);
+    return this.creationOwner && creationKey({...this.creationOwner,scope:this.scope ?? {}});
+  }
+
+  saveCreations() {
+    saveIntent(sessionStorage,this.storageKey,[...this.pendingCreations.values()]);
+  }
+
+  showCreationAction() {
+    const pending = this.pendingCreations.has(this.creationScope());
+    this.createButton.hidden = !this.creationOwner || (!this.canCreate && !pending);
+    this.createButton.textContent = pending ? 'Confirmar misión pendiente' : 'Nueva misión';
+    this.createSave.textContent = pending ? 'Comprobar misión' : 'Crear misión';
   }
 
   openCreation() {
@@ -188,41 +215,61 @@ export class Questbook {
     }
     this.createForm.hidden = false;
     this.createInput.value = pending?.title ?? '';
-    this.createInput.readOnly = this.createCancel.disabled = !!pending;
+    this.createDescription.value = pending?.description ?? '';
+    this.createInput.readOnly = this.createDescription.readOnly = this.createCancel.disabled = !!pending;
     this.createInput.focus();
   }
 
-  async readCreationReceipt({scope,operation,card,title}) {
-    const query = new URLSearchParams({...scope,operation});
+  async readCreationReceipt({scope,operation,card,title,description,actorRef,project}) {
+    const query = new URLSearchParams({...scope,operation,expectedActor:actorRef,expectedProject:project});
     const {result} = await this.api('questbook/receipt?'+query);
     if (result === null) return false;
-    if (result?.command?.card !== card || result.command.action?.type !== 'create'
-      || result.command.action.title !== title) throw Error('Creation receipt does not match the original');
+    const action = result?.command?.action;
+    const type = description === undefined ? 'create' : 'create_issue';
+    if (result?.command?.operation !== operation || result.command.card !== card ||
+        action?.type !== type || action.title !== title || action.description !== description)
+      throw Error('Creation receipt does not match the original');
     return true;
   }
 
   async createMission() {
     if (!this.dialog.open || this.saving || this.createForm.hidden || this.createButton.hidden) return;
     const key = this.creationScope();
+    if (!key) return;
     const pending = this.pendingCreations.get(key);
     const title = pending?.title ?? this.createInput.value.trim();
     if (!title || new TextEncoder().encode(title).length > 240) {
       this.status.textContent = 'Escribí un título breve para la misión.';
       return;
     }
-    if (!pending && this.pendingCreations.size >= MAX_PENDING_CREATIONS) return;
-    const intent = pending ?? {scope:{...this.scope},title,card:crypto.randomUUID(),operation:crypto.randomUUID()};
-    this.pendingCreations.set(key,intent);
-    const {card,operation,scope} = intent;
+    const description = pending ? pending.description : this.createDescription.value.trim() || undefined;
+    if (description !== undefined && new TextEncoder().encode(description).length > 4096) {
+      this.status.textContent = 'Acortá la descripción de la misión.';
+      return;
+    }
+    if (!pending && (!this.canCreate || this.pendingCreations.size >= MAX_PENDING_CREATIONS)) return;
+    const intent = pending ?? {...this.creationOwner,scope:{...this.scope},title,description,
+      card:crypto.randomUUID(),operation:crypto.randomUUID()};
+    if (!pending) {
+      this.pendingCreations.set(key,intent);
+      try { this.saveCreations(); }
+      catch {
+        this.pendingCreations.delete(key);
+        this.status.textContent = 'No pude conservar este envío para recuperarlo. La misión no se envió.';
+        return;
+      }
+    }
+    const {card,operation,scope,actorRef,project} = intent;
     const mount = this.mountRevision;
-    this.saving = this.createSave.disabled = this.createInput.readOnly = this.createCancel.disabled = true;
+    this.saving = this.createSave.disabled = this.createInput.readOnly = this.createDescription.readOnly = this.createCancel.disabled = true;
     this.status.textContent = 'Guardando…';
     let created = false, conflict = false, submitted = false;
+    const canCreate = this.canCreate;
     try {
       if (pending) created = await this.readCreationReceipt(intent);
-      if (!created) {
+      if (!created && canCreate) {
         submitted = true;
-        const {result} = await this.api('questbook/create',{card,operation,title,...scope});
+        const {result} = await this.api('questbook/create',{card,operation,title,description,...scope,expectedActor:actorRef,expectedProject:project});
         created = ['applied','retained'].includes(result.status);
         conflict = result.status === 'conflict';
       }
@@ -234,17 +281,23 @@ export class Questbook {
     } finally {
       this.saving = this.createSave.disabled = false;
     }
-    if (created || conflict) this.pendingCreations.delete(key);
+    if (created || conflict) {
+      this.pendingCreations.delete(key);
+      try { this.saveCreations(); }
+      catch { /* A retained local copy can only reconcile the same operation. */ }
+    }
     if (!this.dialog.open || this.mountRevision !== mount) return;
-    this.createInput.readOnly = this.createCancel.disabled = this.pendingCreations.has(key);
+    this.showCreationAction();
+    this.createInput.readOnly = this.createDescription.readOnly = this.createCancel.disabled = this.pendingCreations.has(key);
     if (created) {
       this.createForm.hidden = true;
-      this.createInput.value = '';
+      this.createInput.value = this.createDescription.value = '';
       this.pages = [null];
       await this.read(card,'Misión creada.');
     } else {
       this.status.textContent = conflict ? 'No se pudo guardar la misión. Podés guardar el borrador de nuevo.'
-        : 'Falta confirmar la misión. Podés reintentar el mismo envío.';
+        : canCreate ? 'Falta confirmar la misión. Podés reintentar el mismo envío.'
+          : 'Falta confirmar la misión. Tu acceso actual permite consultar su estado.';
     }
   }
 
@@ -256,11 +309,13 @@ export class Questbook {
     if (cursor) query.set('after',cursor);
     this.status.textContent = 'Cargando misiones…';
     try {
-      const {result,canCreate} = await this.api('questbook?'+query);
+      const {result,canCreate,actorRef,project} = await this.api('questbook?'+query);
       if (reading !== this.reading || !this.dialog.open) return;
       this.back.hidden = this.pages.length === 1;
-      this.createButton.hidden = !canCreate;
-      if (!canCreate) this.createForm.hidden = true;
+      this.creationOwner = actorRef && project ? {actorRef,project} : null;
+      this.canCreate = canCreate;
+      this.showCreationAction();
+      if (this.createButton.hidden) this.createForm.hidden = true;
       if (!result) {
         this.unmount();
         this.data = null;
@@ -288,6 +343,7 @@ export class Questbook {
       this.unmount();
       this.data = null;
       this.closeTitleEdit();
+      this.creationOwner = null;
       this.createForm.hidden = this.createButton.hidden = true;
       this.next.hidden = true;
       this.back.hidden = this.pages.length === 1;

@@ -98,6 +98,15 @@ existing Home and own-native identities. Every operation rechecks the
 current pairing, and the initialized card store belongs under the
 Holodeck service's existing `STATE_DIR`.
 
+A paired entry may select one existing Home publication with
+`publication: {repository, commit, artifact, version}`. Use the exact Git
+repository UUID and full commit, and the Home artifact ID and immutable
+version from the existing publisher. In its topic room, the project table
+links to that version through the same Home sign-in entry as the web.
+The link requires the current room/project access and a matching current
+or historical project revision. Later drafts do not advance it. Home
+continues to authorize the published bytes independently of room access.
+
 This receiving composition leaves room-specific project catalogs to the
 separate topic-room integration. The currently selected toroidal terrain
 hides the traditional workshop bridge. Use a mission the selected
@@ -116,6 +125,98 @@ identity endpoint, service-audience endpoint, public origin/base path and option
 native/world Unix sockets. `authoritySocket` selects the existing central native
 permission bridge; `contentVisits` selects at most eight protected report or artifact entrances.
 It carries route metadata and private content references, not credentials.
+
+### Questbook pilot
+
+The optional `questbook` selection accepts one project object or a list of
+distinct project objects. Each names its project UUID, the absolute `binary`
+path of the owner-side DaimonCards writer, and the project's `viewEndpoint`
+and `editEndpoint` routes at the configured loopback Home receiver. Card
+state in `STATE_DIR/questbook.sqlite` is scoped by project. The exterior
+workshop opens the first configured project. A topic-room project opens its
+own journal only while the visitor has both the current room repository link
+and that project's view grant. Select each audience explicitly. General
+Holodeck access does not grant card access. A project writer can create its first mission
+from an empty questbook. In the exterior workshop, open **Misiones** to display the
+project journal in the existing Proyección spatial HUD. The section includes
+keyboard and screen-reader controls from that same renderer.
+
+The authenticated `GET api/questbook` opens the first entry and reports
+whether the current actor can create a mission, including on an empty board.
+`POST api/questbook/create` uses the same typed create command as the own-native
+writer with a new card UUID and a stable operation UUID. A lost response is
+reconciled through `GET api/questbook/receipt` for the original actor and
+operation. The browser keeps up to eight unconfirmed creations in bounded
+tab-session storage before sending. Each record retains the actor, project,
+room and repository when present, title, card UUID and operation UUID.
+Reloading the same tab restores the choice once the same actor opens the
+same authorized journal. Opening the journal reads only; selecting
+**Comprobar misión** reads the original receipt before allowing an exact
+idempotent retry for a confirmed missing receipt. An unavailable receipt
+keeps the operation pending. The writer refuses recovery against a changed
+actor or default project. Successful confirmation clears the local copy.
+Closing the tab ends this local recovery path; the canonical card and
+receipt remain in the writer. Other journals remain usable.
+The optional
+`selected` and `after` parameters address a card and page. `POST api/questbook/action` handles acceptance or completion with the
+observed card revision and the original operation ID.
+`POST api/questbook/objective` takes `operation`, `card`, `revision`,
+`objective` and `originalCommand`. It reads the current actor's existing
+Room outcome and linked event. It never calls the Room command again. The
+bridge-state pilot confirms the authorized player's matching transition when
+they have selected an active quest. Opening a journal or selecting a mission
+only reads the project. The workshop bridge action is the ordinary Room action.
+A missing, rejected, mismatched or retired Room receipt leaves the objective
+pending. Once credited, the card retains that exact evidence and its
+idempotent receipt across Room resets.
+
+For daimon access, the existing central native bridge may select a
+`questbook_access` object or list of distinct project entries with their
+`project` UUID and registered `view_service_key` and `edit_service_key`.
+These are the same Home audiences used
+by the browser endpoints. The bridge reads current actor-specific access through
+the installed `daimon-home service-access` route. Install the matched bridge
+revision and retain the existing UID guard and identity-pinned world ports.
+The app checks both world admission and project access. General world admission
+does not authorize card reads, writes or recovery.
+
+For a private paired project, select `{project, binary, paired: true}` in
+the Holodeck receiver and `{project, paired: true}` in the bridge's
+`questbook_access`. The existing Home session authenticates the browser,
+and the existing world lane authenticates the daimon. The bridge compares
+the actor to the current registered human/daimon pair for every access.
+This selection uses no additional Home service registrations. It is
+project-specific and cannot be combined with explicit audience endpoints
+or keys. A pairing or receiver binding change closes access until the
+current pair verifies again. Use registered view and edit audiences for
+projects that include other participants.
+
+Use the existing `world_port.py --own questbook --json ...` entrypoint through
+the calling body's own configured socket. It accepts `list`, `read`, `apply`
+and `receipt` in the typed JSON `type` field. Include the exact `project`
+UUID to address its journal. Omitting it opens the same default as the
+exterior workshop. A `receipt` read uses the original
+`operation` UUID and never repeats the action. To credit an authorized native
+world action, `confirm_objective` takes the same fields as the HTTP objective
+request and reads the acting being's exact Room outcome.
+
+Run the protected HTTP fixture against the exact candidate writer:
+
+```sh
+DAIMON_CARDS_BIN=/path/to/daimon-cards node --test test/questbook-room-http.test.mjs
+```
+
+The fixture uses the real Room, HTTP middleware, project audience adapter
+and Rust writer with synthetic Home identity. It submits a player's A2UI
+claim and a daimon's native claim against the same revision. Only one
+assignment is recorded. Both readers see the accepted revision, and the
+winning operation is recoverable only by its original actor. To exercise the
+mounted browser journey, build the client and set `HOLODECK_PLAYWRIGHT` to the installed
+Playwright Core module. The loopback browser test accepts a quest through the
+rendered HUD, actuates the bridge and verifies the same outcome in a second
+narrow browser after a typed writer operation. Live selection and native daimon
+authorization remain separate.
+
 
 The optional `artProfile: "compaii-atelier-v1"` selects the packaged
 Blender commons, parcel walk, garden, facade, foyer, gallery, listening tower
@@ -431,8 +532,9 @@ ordinary projection. No receiving selection or state migration is needed.
 
 
 
-The archive remains below the existing 32 MiB limit and its declared unpacked
-inventory below 128 MiB. Validate the exact archive using the maintained receiving
+The Holodeck builder, Home gateway and executor accept archives up to 40 MiB.
+Other Home services retain the 32 MiB archive limit. The individual file limit
+remains 32 MiB and the aggregate unpacked limit remains 128 MiB. Validate the exact archive using the maintained receiving
 package verifier before publication. Publish the package as one stable private
 operator artifact, not an App card; deploy it through the ordinary owner command.
 Every release reuses the existing App/resource/URL and retains actual predecessor
@@ -505,7 +607,8 @@ native conversation, another app or a device capture. No timer, model poller,
 inbox reader, autonomous attention or global Stop is installed.
 
 Keep current, publisher-protected previous, one necessary compatible recovery
-and at most one candidate within the 120 MiB total Holodeck artifact-history bound.
+and at most one candidate within the 120 MiB total Holodeck artifact-history
+bound. Use at most three retained archives in ordinary rotation.
 Usually current/previous suffice; retain the third role only while the immediate
 predecessor cannot read current state. Reassess and retire it through the writer
 once a compatible predecessor is selected. Runtime code independently retains current/

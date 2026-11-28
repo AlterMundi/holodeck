@@ -147,3 +147,22 @@ conversation payload belongs to this public activity representation.
 Native projection and garden/bridge operations remain available through the
 same typed `project`/`act` interface. They are not human keyboard emulation.
 No automatic model attention or turn per world event is started by this command.
+
+## Paired project Questbook
+
+Where the receiver has a selected Questbook project, use the same installed
+own-native wrapper. The current topic or project owner gives you its exact
+project UUID. The app checks the current being grant and the project's access
+on each command. This command carries no acting-identity parameter.
+
+```sh
+holodeck-world --own questbook --json "$card_read"
+holodeck-world --own questbook --json "$original_receipt_read"
+```
+
+A card read uses `{type: "read", project, card}`. A receipt read uses
+`{type: "receipt", project, operation}`. For a typed write use `type: "apply"`,
+the exact project and a `command` with the observed card revision and stable
+operation UUID. A lost reply is reconciled by receipt first. The receipt
+belongs to the actor who committed the operation. General world access
+alone cannot read another project's cards or receipts.

@@ -188,6 +188,16 @@ class BridgeContracts(unittest.TestCase):
         self.assertNotIn('native_world_interface',prepared,'private native descriptor belongs only in the canonical file')
         repeated=self.bridge.dispatch(request);self.assertEqual(repeated,prepared);self.assertEqual(self.provider.inputs,[])
 
+    def test_generated_topic_context_keeps_the_attachment_without_a_world_action_port(self):
+        ident=str(uuid.uuid4())
+        observation={**self.observation,'scope':'structured-topic-room','place':{'topic':'a'*64,'title':'Ideas'}}
+        result=self.bridge.prepare_context(self.actor,self.frozen,ident,observation)
+        self.assertFalse(result['work_admitted'])
+        uploaded=json.loads(self.provider.uploads[0][0])
+        self.assertEqual(uploaded['observation']['place'],observation['place'])
+        self.assertNotIn('native_world_interface',uploaded)
+        self.assertEqual(self.provider.inputs,[])
+
     def test_shared_context_does_not_relabel_a_preexisting_original(self):
         ident=str(uuid.uuid4());self.bridge.submit(self.actor,self.frozen,{'id':ident,'text':'Exact existing fixture'},self.observation)
         before=copy.deepcopy(self.provider.originals[ident]);writes=len(self.provider.uploads)
@@ -227,6 +237,97 @@ class BridgeContracts(unittest.TestCase):
         with self.assertRaises(module.BridgeError):self.bridge.dispatch(request)
         for actor in ('human:telegram:1','unknown','dm:being:v1:a'):
             with self.assertRaises(module.BridgeError):self.bridge.dispatch({**request,'beingRef':actor})
+
+    def test_questbook_authority_binds_project_being_and_requested_mode(self):
+        being='dm:being:v1:'+'a'*43
+        project=str(uuid.uuid4())
+        request={'operation':'questbook-access','beingRef':being,'project':project,'write':True}
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch(request)
+        seen=[]
+        self.bridge.questbook_access_reader=lambda *args: seen.append(args) or (True,True)
+        self.assertEqual(self.bridge.dispatch(request),{'schema':'holodeck.questbook-access/v1',
+            'project':project,'beingRef':being,'requestedWrite':True,'read':True,'write':True})
+        for invalid in ({**request,'write':'true'}, {**request,'beingRef':'human:fixture'},
+                        {**request,'view_service_key':'caller-selected'}, {**request,'project':'other'}):
+            with self.assertRaises((module.BridgeError,ValueError)):
+                self.bridge.dispatch(invalid)
+        self.assertEqual(seen,[(project,being,True)])
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,'write':False})
+
+    def test_private_questbook_uses_the_current_pair_for_browser_and_native(self):
+        project=str(uuid.uuid4())
+        being='dm:being:v1:'+'a'*43
+        pair=copy.deepcopy(PAIR)
+        pair['owner_being_ref']=being
+        self.bridge.pair_reader=lambda:pair
+        self.bridge.paired_questbooks=frozenset([project])
+        request={'operation':'questbook-access','project':project,'write':True}
+        human={'actorRef':self.actor}
+        self.assertTrue(self.bridge.dispatch({**request,**human})['write'])
+        self.assertTrue(self.bridge.dispatch({**request,'beingRef':being})['write'])
+        self.assertFalse(self.bridge.dispatch({**request,'actorRef':'human:telegram:9'})['read'])
+        self.assertFalse(self.bridge.dispatch({**request,'beingRef':'dm:being:v1:'+'b'*43})['read'])
+        self.assertFalse(self.bridge.dispatch({**request,**human,'write':False})['write'])
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,**human,'beingRef':being})
+        pair['human']['ref']='human:telegram:9'
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,**human})
+        self.assertEqual(self.provider.inputs,[])
+
+    def test_topic_room_requires_current_shared_workspace_and_exact_pair(self):
+        room='a'*64
+        request={'operation':'topic-room','actorRef':self.actor,'room':room}
+        calls=[]
+        self.provider.topic_rooms=lambda selected: calls.append(selected) or {
+            'schema':'daimon.topic-rooms/v1','rooms':[{'room':room,'title':'Ideas','general':False}]}
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch(request)
+        self.assertEqual(calls,[])
+        self.bridge.home_workspace=True
+        self.assertEqual(self.bridge.dispatch(request)['title'],'Ideas')
+        self.assertEqual(calls,[room])
+        projects={'repositories':[]}
+        work={'execution':'working','question':True,'result':False}
+        self.provider.topic_rooms=lambda selected, *, include_projects: (
+            calls.append((selected,include_projects)) or {
+            'schema':'daimon.topic-rooms/v1','rooms':[{'room':room,'title':'Ideas','general':False,
+                'projects':projects,'work':work}]})
+        observed=self.bridge.dispatch({**request,'projects':True})
+        self.assertEqual(observed['projects'],projects)
+        self.assertEqual(observed['work'],work)
+        self.assertEqual(calls[-1],(room,True))
+        work['private_native_id']='refused'
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,'projects':True})
+        repo=str(uuid.uuid4())
+        selection={'project':str(uuid.uuid4()),'repository':repo,
+                   'evidence':[{'repository':repo,'commit':'a'*40}]}
+        self.provider.topic_rooms=lambda selected, *, include_projects, project_selection: (
+            calls.append((selected,include_projects,project_selection)) or {
+            'schema':'daimon.topic-rooms/v1','rooms':[{'room':room,'title':'Ideas','general':False,'projects':projects}]})
+        self.assertEqual(self.bridge.dispatch({**request,'projects':True,'selection':selection})['projects'],projects)
+        self.assertEqual(calls[-1],(room,True,selection))
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,'projects':True,'selection':{
+                **selection,'evidence':[{'repository':repo,'commit':'a'*7}]}})
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,'projects':True,'selection':selection,'cursor':'12.4'})
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,'projects':True,'selection':{'project':str(uuid.uuid4())}})
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,'cursor':'12.4'})
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,'projects':1})
+        self.provider.topic_rooms=lambda selected: {
+            'schema':'daimon.topic-rooms/v1','rooms':[{'room':room,'title':'Ideas','general':False}]}
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,'actorRef':'human:other'})
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,'room':'b'*64})
+        self.assertEqual(self.provider.inputs,[])
 
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)

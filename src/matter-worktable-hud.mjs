@@ -76,8 +76,8 @@ const toolPanelMinWidth=.5; // Minimum in the Proyección HudPanel catalog.
 const toolScale=286; // Proyección's .154-unit button target is 44 CSS px at this scale.
 const toolGap=.035,touchToolGap=.018,toolRowHeight=.18,toolPadding=.12,dockBottomMargin=.035;
 const iconToolPixels=48;
-const toolNames=['toggle','map','teleport','open','talk','mic','speaker','appearance','video','bridge','plant','undo','activity','visit','endVisit','fullscreen','more'];
-const toolPixels={toggle:148,map:130,teleport:120,open:154,talk:134,mic:105,speaker:110,appearance:138,video:96,bridge:182,plant:100,undo:92,activity:126,visit:124,endVisit:140,fullscreen:48,more:48};
+const toolNames=['toggle','map','teleport','open','talk','projects','mic','speaker','appearance','video','bridge','plant','undo','activity','visit','endVisit','fullscreen','more'];
+const toolPixels={toggle:148,map:130,teleport:120,open:154,talk:134,projects:166,mic:105,speaker:110,appearance:138,video:96,bridge:182,plant:100,undo:92,activity:126,visit:124,endVisit:140,fullscreen:48,more:48};
 
 function opticalRole(surface,id,component){
   if(surface===worldMapId||surface===worldBearingId||id==='map')return 'navigation';
@@ -86,7 +86,7 @@ function opticalRole(surface,id,component){
 }
 const toolIcons={map:'map',teleport:'map',talk:'conversation',appearance:'appearance',video:'video',activity:'activity',
   fullscreen:'resize'};
-const toolPriority=['open','mic','speaker','talk','map','teleport','activity','video','appearance','fullscreen','visit','endVisit','bridge','plant','undo'];
+const toolPriority=['open','mic','speaker','talk','projects','map','teleport','activity','video','appearance','fullscreen','visit','endVisit','bridge','plant','undo'];
 const compactToolPixels={open:86,map:110,teleport:95,talk:116,appearance:122,video:82,activity:110};
 function pixelsForTool(id,{compact,iconOnly}){
   if(iconOnly&&Object.hasOwn(toolIcons,id))return iconToolPixels;
@@ -701,7 +701,10 @@ export class MatterWorktableHud{
     const tools=this.readTools(this.active);
     for(const name of ['appearance','video'])tools[name].pressed=this.settings.current===name;
     const open={label:'Usar mesa',visible:this.mode==='enter',disabled:false};
-    if(!tools.toggle.pressed)return {toggle:tools.toggle,open};
+    if(!tools.toggle.pressed){
+      const pinned=Object.fromEntries(Object.entries(tools).filter(([,tool])=>tool.pinned));
+      return {toggle:tools.toggle,open,...pinned};
+    }
     return {...tools,open};
   }
 
@@ -1114,6 +1117,10 @@ export class MatterWorktableHud{
   toolBounds(name){
     if(!this.toolGroup||this.toolPlacement?.group!==this.toolGroup)return null;
     return this.hud.getControlViewportBounds?.(toolbeltId,name,this.camera,this.canvas.getBoundingClientRect())??null;
+  }
+
+  mapBounds(name){
+    return this.hud.getControlViewportBounds?.(worldMapId,name,this.camera,this.canvas.getBoundingClientRect())??null;
   }
 
   beginPassage(){

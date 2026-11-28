@@ -30,6 +30,10 @@ export function createNativeTransportMux({routes,createTransport}){
   return {
     async inspect(actorRef){const value=lane(actorRef);return verify(value,await value.transport.inspect(actorRef));},
     async surface(actorRef,options){const value=lane(actorRef);return verify(value,await value.transport.surface(actorRef,options));},
+    async topicRoom(actorRef,room,includeProjects,cursor,selection){
+      const value=lane(actorRef);
+      return verify(value,await value.transport.topicRoom(actorRef,room,includeProjects,cursor,selection));
+    },
     async lookup(request){
       const value=lane(request.actorRef),result=await value.transport.lookup(request);
       verify(value,result.frozen);

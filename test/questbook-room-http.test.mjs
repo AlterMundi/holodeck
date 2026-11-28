@@ -8,11 +8,11 @@ import {mkdtempSync, rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {randomUUID} from 'node:crypto';
-import {createHolodeck} from '../src/server.mjs';
 import {homeIdentityResolver} from '../src/home-identity.mjs';
 import {createNativeRoomAuthority} from '../src/native-authority.mjs';
 import {configuredQuestbook} from '../src/questbook.mjs';
 
+const {createHolodeck} = await import(process.env.HOLODECK_QUESTBOOK_SERVER ?? '../src/server.mjs');
 const binary = process.env.DAIMON_CARDS_BIN;
 
 test('the authenticated questbook credits only its original Room action', {skip:!binary}, async t => {
@@ -124,11 +124,23 @@ test('the authenticated questbook credits only its original Room action', {skip:
   projectWrite = false;
   assert.equal((await createPost(create)).status,403);
   projectWrite = true;
-  const firstCreation = (await (await createPost(create)).json()).result;
+  const boundCreation = {...create,expectedActor:human,expectedProject:project};
+  for (const retired of [{expectedActor:'human:another-actor'},{expectedProject:otherProject}]) {
+    const seat = await fetch(base,{headers:{Cookie:cookie}});
+    const seatHeaders = {...headers,Cookie:cookie+'; '+seat.headers.get('set-cookie').split(';')[0]};
+    await seat.text();
+    const denied = await fetch(base+'api/questbook/create',{method:'POST',headers:seatHeaders,
+      body:JSON.stringify({...boundCreation,...retired})});
+    assert.equal(denied.status,403);
+  }
+  const firstCreation = (await (await createPost(boundCreation)).json()).result;
   assert.equal(firstCreation.status,'applied');
   assert.equal((await (await createPost(create)).json()).result.status,'retained');
   assert.equal((await (await createPost({...create,title:'Changed original'})).json()).result.reason,'operation_changed');
-  const receipt = await fetch(base+'api/questbook/receipt?operation='+create.operation,{headers});
+  const receiptQuery = new URLSearchParams({operation:create.operation,expectedActor:human,expectedProject:project});
+  const receipt = await fetch(base+'api/questbook/receipt?'+receiptQuery,{headers});
+  receiptQuery.set('expectedActor','human:another-actor');
+  assert.equal((await fetch(base+'api/questbook/receipt?'+receiptQuery,{headers})).status,403);
   assert.equal(receipt.status,200);
   assert.deepEqual((await receipt.json()).result,firstCreation.event);
   const fromDaimon = await native({type:'read',card:create.card});
@@ -283,6 +295,27 @@ test('the authenticated questbook credits only its original Room action', {skip:
   const nativeView=await fetch(base+'api/questbook?selected='+nativeCard,{headers}).then(reply=>reply.json());
   assert.equal(nativeView.result[2].updateDataModel.value.progress,'1/1');
 
+  const issue = {operation:randomUUID(),card:randomUUID(),expected_revision:0,
+    action:{type:'create_issue',title:'Check the workshop route',description:'Walk from the entrance to the bridge.'}};
+  const issueCreated = await native({type:'apply',command:issue});
+  assert.deepEqual(issueCreated.authoritySource,{identity:'receiving-lane',access:'current-being-grant'});
+  assert.equal(issueCreated.result.status,'applied');
+  const issueView = await fetch(base+'api/questbook?selected='+issue.card,{headers});
+  assert.equal(issueView.status,200);
+  assert.equal(issueView.headers.get('cache-control'),'no-store');
+  const issueModel = (await issueView.json()).result[2].updateDataModel.value;
+  assert.equal(issueModel.id,issue.card);
+  assert.equal(issueModel.revision,issueCreated.result.event.card.revision);
+  assert.equal(issueModel.issueDescription,issue.action.description);
+  const issueRetried = await native({type:'apply',command:issue});
+  assert.equal(issueRetried.result.status,'retained');
+  assert.deepEqual(issueRetried.result.event,issueCreated.result.event);
+  assert.deepEqual((await native({type:'receipt',operation:issue.operation})).result,issueCreated.result.event);
+  assert.equal(tool({type:'history',card:issue.card,after:0}).result.length,1);
+  nativeRead=false;
+  assert.deepEqual(await native({type:'receipt',operation:issue.operation}),{ok:false,code:'access'});
+  nativeRead=true;
+
   projectWrite = false;
   assert.equal((await view()).claimDisabled,true);
   allowed=false;
@@ -297,6 +330,7 @@ test('the exterior A2UI journal preserves a shared mission across browser views'
   const store = join(directory,'questbook.sqlite');
   const project = randomUUID(), otherProject = randomUUID(), card = randomUUID(), objective = randomUUID();
   const title = 'Volvé a unir las islas';
+  const description = 'Levantá el puente para que la otra persona pueda cruzar.';
   function tool(input) {
     return JSON.parse(execFileSync(binary,[store],{input:JSON.stringify({
       project,actor:{kind:'daimon',subject:'fixture-writer'},can_write:true,input,
@@ -305,7 +339,7 @@ test('the exterior A2UI journal preserves a shared mission across browser views'
   function typed(revision, action) {
     return tool({type:'apply',command:{operation:randomUUID(),card,expected_revision:revision,action}});
   }
-  assert.equal(typed(0,{type:'create',title}).result.status,'applied');
+  assert.equal(typed(0,{type:'create_issue',title,description}).result.status,'applied');
   assert.equal(typed(1,{type:'require_world',objective:{id:objective,place:'island-workshop',
     event:{type:'bridge_state',raised:true}}}).result.status,'applied');
 
@@ -328,6 +362,7 @@ test('the exterior A2UI journal preserves a shared mission across browser views'
   const pixels = dialog.locator('canvas');
   await pixels.waitFor({state:'visible'});
   await dialog.getByText(title,{exact:true}).last().waitFor({state:'attached'});
+  await dialog.getByText(description,{exact:true}).waitFor({state:'attached'});
   assert.equal(await dialog.getByRole('button',{name:'Completar misión'}).isDisabled(),true);
   await dialog.getByRole('button',{name:'Aceptar misión'}).focus();
   await page.keyboard.press('Space');
@@ -347,8 +382,74 @@ test('the exterior A2UI journal preserves a shared mission across browser views'
   await mobile.locator('#questbook-open').tap();
   const mobileDialog = mobile.getByRole('dialog',{name:'Diario de misiones'});
   await mobileDialog.getByText('En curso',{exact:true}).waitFor({state:'attached'});
+  await mobileDialog.getByText(description,{exact:true}).waitFor({state:'attached'});
   assert.ok(await mobileDialog.getByText('0/1',{exact:true}).count());
   assert.equal(await mobileDialog.getByRole('button',{name:'Completar misión'}).isDisabled(),true);
   assert.ok((await mobileDialog.boundingBox()).width < 390);
   assert.deepEqual(errors,[]);
+});
+
+test('a reloaded A2UI journal recovers its committed creation with read access', {skip:!binary||!playwright}, async t => {
+  const {chromium} = await import(playwright);
+  const directory = mkdtempSync(join(tmpdir(),'holodeck-questbook-recovery-'));
+  t.after(() => rmSync(directory,{recursive:true,force:true}));
+  const store = join(directory,'questbook.sqlite'), project = randomUUID();
+  const actor = {id:'human:quest-recovery',ref:'human:quest-recovery',kind:'human',
+    name:'Quest player',rights:['observe','edit','project']};
+  let browserWrite = true;
+  const runtime = await createHolodeck({stateDir:directory,identityResolver:async () => actor,questbook:{
+    project,binary,store,authorize:async () => ({read:true,write:browserWrite}),
+  }});
+  const listener = runtime.app.listen(0,'127.0.0.1');
+  await new Promise(resolve => listener.once('listening',resolve));
+  t.after(() => { runtime.close();listener.closeAllConnections();return new Promise(resolve=>listener.close(resolve)); });
+  const browser = await chromium.launch({executablePath:process.env.CHROMIUM_BIN||'/usr/bin/chromium',
+    args:['--no-sandbox','--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader']});
+  t.after(() => browser.close());
+  const base = 'http://127.0.0.1:'+listener.address().port+'/';
+  const page = await browser.newPage({viewport:{width:1100,height:800}});
+  await page.goto(base);
+  await page.locator('#questbook-open').click();
+  const dialog = page.getByRole('dialog',{name:'Diario de misiones'});
+  const missionTitle = 'Conservar el recibo tras recargar';
+  const issueDescription = 'Volvé a abrir el diario y recuperá este encargo.';
+  let creationRequests = 0, receiptReads = 0, creation, submitted;
+  await page.route('**/api/questbook/create',async route => {
+    creationRequests++;
+    submitted=route.request().postDataJSON();
+    creation = await (await route.fetch()).json();
+    await route.abort();
+  });
+  await page.route('**/api/questbook/receipt?*',async route => {
+    if (++receiptReads === 1) await route.abort();
+    else await route.continue();
+  });
+  await dialog.getByRole('button',{name:'Nueva misión'}).click();
+  await dialog.getByLabel('Título de la nueva misión').fill(missionTitle);
+  const descriptionField=dialog.getByLabel('Descripción (opcional)');
+  await descriptionField.fill(issueDescription);
+  assert.equal(await descriptionField.inputValue(),issueDescription);
+  await dialog.getByRole('button',{name:'Crear misión'}).click();
+  await dialog.getByText('Falta confirmar la misión.',{exact:false}).waitFor();
+  assert.equal(submitted.description,issueDescription);
+  assert.equal(creation.result.status,'applied');
+  assert.deepEqual(creation.result.event.command.action,
+    {type:'create_issue',title:missionTitle,description:issueDescription});
+  browserWrite = false;
+  await page.reload();
+  await page.locator('#questbook-open').click();
+  await dialog.getByRole('button',{name:'Confirmar misión pendiente'}).click();
+  assert.equal(await dialog.getByLabel('Título de la nueva misión').inputValue(),missionTitle);
+  assert.equal(await dialog.getByLabel('Descripción (opcional)').inputValue(),issueDescription);
+  await dialog.getByRole('button',{name:'Comprobar misión'}).click();
+  await dialog.getByText('Misión creada.',{exact:true}).waitFor();
+  assert.equal(creationRequests,1);
+  assert.equal(receiptReads,2);
+  const recovered = JSON.parse(execFileSync(binary,[store],{encoding:'utf8',input:JSON.stringify({
+    project,actor:{kind:'daimon',subject:'fixture-reader'},can_write:false,
+    input:{type:'read',card:creation.result.event.card.id},
+  })})).result;
+  assert.equal(recovered.title,missionTitle);
+  assert.equal(recovered.issue_description,issueDescription);
+  assert.equal(recovered.revision,1);
 });

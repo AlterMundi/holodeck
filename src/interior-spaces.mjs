@@ -9,6 +9,9 @@ export const OUTSIDE = 'outside';
 export const SPACE_SAVE_BYTES = 16 * 1024;
 const MAX_SPACES = 24;
 const MAX_ACTIVE = 32;
+const TOPIC_ROOM = /^topic-[a-f0-9]{40}$/;
+const TOPIC_REF = /^[a-f0-9]{64}$/;
+const TOPIC_LEASE_MS = 60000;
 const HOUSE = /^house-[a-f0-9]{64}$/;
 const SPACE = /^[a-z][a-z0-9-]{0,47}$/;
 const ACTOR = /^(?:human:[A-Za-z0-9:_-]{1,130}|dm:being:v1:[A-Za-z0-9_-]{43})$/;
@@ -37,6 +40,7 @@ export class InteriorSpaces {
     this.houseGuestAccess=houseGuestAccess;
     this.upperLanding = upperLanding;
     this.rooms = new Map();
+    this.topicVisits = new Map();
     for (const d of definitions) {
       if (!exact(d,'entry,guests,house,id,level,links,title') ||
           typeof d.id !== 'string' || d.id === OUTSIDE || !SPACE.test(d.id) || this.rooms.has(d.id) ||
@@ -83,9 +87,60 @@ export class InteriorSpaces {
     this.positions = positions;
   }
 
+  topicVisit(actor) {
+    const visit=this.topicVisits.get(actor?.id);
+    if(!visit||visit.until<=this.clock())return null;
+    return visit;
+  }
+
+  room(id) {
+    const authored=this.rooms.get(id);
+    if(authored||!TOPIC_ROOM.test(id))return authored;
+    for(const visit of this.topicVisits.values()){
+      if(visit.room.id===id&&visit.until>this.clock())return visit.room;
+    }
+  }
+
+  enterTopic(actor, from, selection) {
+    const {id,title,topic}=selection;
+    if(this.fenced||!allowedActor(actor?.id)||!TOPIC_ROOM.test(id)||!TOPIC_REF.test(topic)
+      ||typeof title!=='string'||!title.trim()||this.rooms.has(id)||this.current(actor)!==from)return null;
+    const now=this.clock();
+    for(const [owner,visit] of this.topicVisits)
+      if(visit.until<=now)this.topicVisits.delete(owner);
+    const previous=this.topicVisit(actor);
+    if(!previous&&this.topicVisits.size>=MAX_ACTIVE)return null;
+    this.topicVisits.set(actor.id,{topic,returnTo:previous?.returnTo??from,until:now+TOPIC_LEASE_MS,
+      room:{id,title,topic,entry:true,level:0,links:[]}});
+    return this.view(actor);
+  }
+
+  renewTopic(actor,visit) {
+    if(this.topicVisit(actor)!==visit)return false;
+    visit.until=this.clock()+TOPIC_LEASE_MS;
+    return true;
+  }
+
+  abandonTopic(actor,visit) {
+    if(this.topicVisits.get(actor?.id)!==visit)return false;
+    this.topicVisits.delete(actor.id);
+    return true;
+  }
+
+  physicalLocation(actor) {
+    const p=this.positions.find(entry=>entry.actor===actor?.id);
+    if (!p || this.clock()-p.at>=WINDOW_MS || !this.allows(actor,p.space)) return OUTSIDE;
+    return p.space;
+  }
+
+  topicReturn(actor,visit) {
+    return this.physicalLocation(actor)===visit.returnTo?visit.returnTo:OUTSIDE;
+  }
+
   allows(actor, id) {
     if (id===OUTSIDE) return true;
     const room=this.rooms.get(id);
+    if (!room&&TOPIC_ROOM.test(id))return this.topicVisit(actor)?.room.id===id;
     if (!room || !allowedActor(actor?.id)) return false;
     const house=this.houses.directory().find(h=>h.id===room.house);
     if (!house) return false;
@@ -98,9 +153,7 @@ export class InteriorSpaces {
   }
 
   current(actor) {
-    const p=this.positions.find(entry=>entry.actor===actor?.id);
-    if (!p || this.clock()-p.at>=WINDOW_MS || !this.allows(actor,p.space)) return OUTSIDE;
-    return p.space;
+    return this.topicVisit(actor)?.room.id??this.physicalLocation(actor);
   }
 
   releaseDeniedPosition(actor) {
@@ -113,13 +166,14 @@ export class InteriorSpaces {
   routeTo(actor,destination,mayEnter=()=>true) {
     const target=this.rooms.get(destination),from=this.current(actor);
     if(this.fenced||!target||!this.allows(actor,destination))return null;
+    const visit=this.topicVisit(actor);
     const seen=new Set([from]),queue=[[from]];
     for(const path of queue){
       const id=path.at(-1);
       if(id===destination)return path;
       const room=this.rooms.get(id);
       const adjacent=this.view(actor,id);
-      const neighbors=room?[
+      const neighbors=visit?.room.id===id?[this.topicReturn(actor,visit)]:room?[
         ...adjacent.exits.map(exit=>exit.to),
         ...(adjacent.exitDoor||adjacent.emergencyExit?[OUTSIDE]:[]),
       ]:adjacent.entrances.filter(entry=>this.rooms.get(entry.id).house===target.house&&mayEnter(entry.id)).map(entry=>entry.id);
@@ -141,19 +195,30 @@ export class InteriorSpaces {
       return null;
     const path=this.routeTo(actor,request.to,mayEnter);
     if(!path||path.length<2)return null;
-    return this.place(actor,request.to)?{arrivalFrom:path.at(-2)}:null;
+    if(!this.place(actor,request.to))return null;
+    const visit=this.topicVisit(actor);
+    if(visit)this.abandonTopic(actor,visit);
+    return {arrivalFrom:path.at(-2)};
   }
 
   canMove(actor,request) {
     if (this.fenced || !exact(request,'from,to') || !allowedActor(actor?.id) ||
         typeof request.to!=='string' || this.current(actor)!==request.from ||
         request.from===request.to || !this.allows(actor,request.to)) return false;
+    const visit=this.topicVisit(actor);
+    if(visit)return request.to===this.topicReturn(actor,visit);
+    if(TOPIC_ROOM.test(request.to)&&!this.rooms.has(request.to))return false;
     if (request.from===OUTSIDE) return this.rooms.get(request.to)?.entry===true || this.exteriorPortals.has(request.to);
     return request.to===OUTSIDE || this.rooms.get(request.from)?.links.some(link=>link.to===request.to);
   }
 
   move(actor, request) {
     if (!this.canMove(actor,request)) return null;
+    const visit=this.topicVisit(actor);
+    if(visit){
+      this.abandonTopic(actor,visit);
+      return this.view(actor);
+    }
     return this.place(actor,request.to);
   }
 
@@ -214,6 +279,9 @@ export class InteriorSpaces {
   }
 
   view(actor,current=this.current(actor)) {
+    const visit=this.topicVisit(actor);
+    if(visit?.room.id===current)return {id:current,title:visit.room.title,level:0,topic:visit.topic,
+      objects:[ROOM_MARKER],exitDoor:FOYER_DOOR,returnTo:this.topicReturn(actor,visit),exits:[]};
     const room=this.allows(actor,current)&&this.rooms.get(current);
     const houses = new Map(this.houses.directory().map(house=>[house.id,house]));
     if (!room) return {id:OUTSIDE,entrances:[...this.rooms.values()]

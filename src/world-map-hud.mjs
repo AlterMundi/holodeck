@@ -21,7 +21,7 @@ const components=[
   },{...scope(),destination:path('destination')}),
   {...row('pagination',['previous','count','next']),visible:path('hasPages')},
   button('previous','Atrás',{},scope()),label('count',path('page')),button('next','Otro',{},scope()),
-  button('exit','Volver al exterior',{visible:path('canExit'),disabled:path('busy')},scope()),
+  button('exit',path('exitLabel'),{visible:path('canExit'),disabled:path('busy')},scope()),
 ];
 
 const landscapeComponents=[
@@ -97,7 +97,7 @@ export class WorldMapHud{
       this.invalidate();
     }
     if(!presented)return;
-    const {scope,busy,canExit,map}=this.mapState();
+    const {scope,busy,canExit,exitLabel,map}=this.mapState();
     if(this.mapScope!==scope){this.reset();this.mapScope=scope;}
     if(!this.group)this.message('createSurface',{catalogId:spatialHudCatalog.id});
     if(this.layout!==layout||!this.signature){
@@ -118,7 +118,7 @@ export class WorldMapHud{
       bounds:{minX:-6,maxX:6,minZ:-6,maxZ:6},destination:current?.id??'',
       destinationLabel:current?.title??'',destinationSelected:!!current&&map.selected===current.id,
       hasDestinations:count>0,hasPages:count>1,page:count?String(this.index+1)+' / '+count:'',
-      canExit,busy};
+      canExit,exitLabel:exitLabel??'Volver al exterior',busy};
     const signature=JSON.stringify(value);
     if(signature!==this.signature){
       this.signature=signature;

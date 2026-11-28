@@ -24,17 +24,32 @@ export function configuredQuestbook(receiving, stateDir) {
   const home = {publicOrigin:receiving.origin,authHost:receiving.authHost,identityEndpoint:receiving.authEndpoint};
   return projects.map(entry=>{
     const paired=entry?.paired===true;
-    const keys=paired?'binary,paired,project':'binary,editEndpoint,project,viewEndpoint';
+    const publication=entry?.publication;
+    const keys=paired?(publication===undefined?'binary,paired,project':'binary,paired,project,publication')
+      :'binary,editEndpoint,project,viewEndpoint';
     if (!entry || Object.keys(entry).sort().join(',') !== keys || !uuid(entry.project)
        || (paired&&!receiving.authoritySocket)) {
       throw Error('Select the existing questbook project audiences and writer');
+    }
+    let published;
+    if(publication!==undefined){
+      const {repository,commit,artifact,version}=publication??{};
+      if(!paired||Object.keys(publication??{}).sort().join(',')!=='artifact,commit,repository,version'
+        ||!uuid(repository)||typeof commit!=='string'||!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(commit)
+        ||typeof artifact!=='string'||!/^[a-f0-9]{32}$/.test(artifact)
+        ||typeof version!=='string'||!/^[a-f0-9]{64}$/.test(version)){
+        throw Error('Select an exact paired project publication');
+      }
+      const url=new URL('/access/sso/start',receiving.origin);
+      url.searchParams.set('return',`/view/${artifact}?display=work&version=${version}`);
+      published={repository,commit,url:url.href};
     }
     const view = !paired&&homeIdentityResolver({...home,authorizeEndpoint:entry.viewEndpoint});
     const edit = !paired&&homeIdentityResolver({...home,authorizeEndpoint:entry.editEndpoint});
     const native = receiving.authoritySocket
       ? createNativeQuestbookAuthority(receiving.authoritySocket,entry.project,{paired}) : null;
     return {
-      project:entry.project, binary:entry.binary, store:join(stateDir,'questbook.sqlite'),
+      project:entry.project, binary:entry.binary, store:join(stateDir,'questbook.sqlite'), published,
       async authorize(actor, _project, request, write) {
         if (actor.kind === 'daimon' && !request) return native?.(actor,write);
         if (actor.kind !== 'human' || !request) return null;
@@ -61,7 +76,7 @@ export function createQuestbooks(room, configuration) {
   };
 }
 
-function createQuestbook(room, {project, binary, store, authorize}) {
+function createQuestbook(room, {project, binary, store, authorize, published}) {
   if (!uuid(project) || typeof binary !== 'string' || !isAbsolute(binary)
     || typeof store !== 'string' || !isAbsolute(store) || typeof authorize !== 'function') {
     throw Error('Select an owner-bound questbook project and writer');
@@ -86,6 +101,8 @@ function createQuestbook(room, {project, binary, store, authorize}) {
   }
 
   return {
+    published,
+
     async canRead(actor, selectedProject, request) {
       return selectedProject === project && !!await access(actor, false, request);
     },
@@ -117,7 +134,7 @@ function createQuestbook(room, {project, binary, store, authorize}) {
       const initial = await mount(caller, writer, selected, projectRevisions, !!readHistory);
       const model = initial.result?.[2]?.updateDataModel?.value;
       if (!initial.ok) return initial;
-      initial.canCreate = !!writer;
+      Object.assign(initial,{canCreate:!!writer,project,actorRef:actor.id});
       if (!model) return initial;
       const candidates = model.revisionCandidates ?? [];
       delete model.revisionCandidates;
@@ -131,20 +148,29 @@ function createQuestbook(room, {project, binary, store, authorize}) {
       if (!reader) return {ok:false,code:'access'};
       const refreshedWriter = await access(verified.actor, true, request);
       const result = await mount(reader, refreshedWriter, model.id, verified.revisions);
-      if (result.ok) result.canCreate = !!refreshedWriter;
+      if (result.ok) Object.assign(result,{canCreate:!!refreshedWriter,project,actorRef:verified.actor.id});
       return result;
     },
 
-    async create(actor, {operation, card, title}, request) {
+    async create(actor, {operation, card, title, description, expectedActor, expectedProject}, request) {
+      if ((expectedActor !== undefined && expectedActor !== actor?.id) ||
+          (expectedProject !== undefined && expectedProject !== project)) return {ok:false,code:'access'};
       const caller = await access(actor, true, request);
       if (!caller) return {ok:false,code:'access'};
       if (!uuid(operation) || !uuid(card) || !missionTitle(title)) return {ok:false,code:'invalid'};
+      if (description !== undefined && (typeof description !== 'string' ||
+          !description.trim() || Buffer.byteLength(description)>4096))
+        return {ok:false,code:'invalid'};
+      const action = description === undefined
+        ? {type:'create',title} : {type:'create_issue',title,description};
       return execute(caller, true, {type:'apply', command:{
-        operation, card, expected_revision:0, action:{type:'create',title},
+        operation, card, expected_revision:0, action,
       }});
     },
 
-    async receipt(actor, {operation}, request) {
+    async receipt(actor, {operation, expectedActor, expectedProject}, request) {
+      if ((expectedActor !== undefined && expectedActor !== actor?.id) ||
+          (expectedProject !== undefined && expectedProject !== project)) return {ok:false,code:'access'};
       const caller = await access(actor, false, request);
       if (!caller) return {ok:false,code:'access'};
       if (!uuid(operation)) return {ok:false,code:'invalid'};

@@ -1,14 +1,15 @@
 // Only correlation and immutable machine context cross this boundary.
 // Canonical Conversation retains all human content, drafts, media and sends.
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
+const topicKey=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
 const SCHEMA='conversation.surface/v1';
 const microphoneLifetime=300;
 const machineMode='owner-journal/v1';
 const bounded=value=>{try{return JSON.stringify(value).length<=8192;}catch{return false;}};
 export class SharedConversationHost{
-  constructor({window,document,container,api,capture,captureRender,currentActor,onDismiss,onVoiceControls=()=>{},onStatus=()=>{},onError=()=>{},onSpeechLevel,avatarMicrophone=false}){
-    Object.assign(this,{window,document,container,api,capture,captureRender,currentActor,onDismiss,onVoiceControls,onStatus,onError,onSpeechLevel,avatarMicrophone});
-    this.records=new Map();this.visit=window.crypto.randomUUID();this.receive=this.receive.bind(this);
+  constructor({window,document,container,api,capture,captureRender,currentActor,onDismiss,onVoiceControls=()=>{},onStatus=()=>{},onError=()=>{},onSpeechLevel,avatarMicrophone=false,onTopicModeReset=()=>{}}){
+    Object.assign(this,{window,document,container,api,capture,captureRender,currentActor,onDismiss,onVoiceControls,onStatus,onError,onSpeechLevel,avatarMicrophone,onTopicModeReset});
+    this.records=new Map();this.topicReady=[];this.visit=window.crypto.randomUUID();this.receive=this.receive.bind(this);
     window.addEventListener('message',this.receive);
     this.clearMicrophone=()=>{this.microphoneSample=null;};
     if(avatarMicrophone)document.addEventListener('visibilitychange',this.clearMicrophone);
@@ -140,11 +141,22 @@ export class SharedConversationHost{
       this.dismissBound=typeof this.onDismiss==='function'&&d.features?.dismiss===true;
       this.microphoneBound=this.avatarMicrophone&&d.features?.avatarMicrophone===true;
       if(this.channel!==d.channel){
+        this.finishTopicRead(Error('La conexión cambió.'));
+        this.closeTopicItem();
+        this.finishTopicMode(Object.assign(Error('La conversación volvió al modo general.'),{reset:true}));
+        if(this.channel)this.onTopicModeReset();
         this.channel=d.channel;
         this.toolbarRecording=false;this.lastAudioRecord=null;
         this.mode=d.features?.machineSource===true&&this.selected.machineSource===machineMode?machineMode:undefined;
       }
-      this.send(d,'connect',{features:{...(this.onSpeechLevel?{avatarPlayback:true}:{}),...(this.microphoneBound?{avatarMicrophone:true}:{}),...(this.mode?{machineSource:this.mode}:{}),...(this.dismissBound?{dismiss:true}:{})}});this.syncVoiceControls();return;
+      this.supportsTopics=d.features?.topicRooms===true;
+      this.supportsDirect=d.features?.topicDirect===true;
+      this.supportsResult=d.features?.topicResult===true;
+      this.supportsQuestion=d.features?.topicQuestion===true;
+      const features={...(this.supportsTopics?{topicRooms:true}:{}),...(this.supportsDirect?{topicDirect:true}:{}),...(this.supportsResult?{topicResult:true}:{}),...(this.supportsQuestion?{topicQuestion:true}:{})};
+      this.send(d,'connect',{features:{...features,...(this.onSpeechLevel?{avatarPlayback:true}:{}),...(this.microphoneBound?{avatarMicrophone:true}:{}),...(this.mode?{machineSource:this.mode}:{}),...(this.dismissBound?{dismiss:true}:{})}});this.syncVoiceControls();
+      for(const ready of this.topicReady.splice(0))ready();
+      return;
     }
     if(d.channel!==this.channel)return;
     if(d.type==='dismiss'&&this.dismissBound&&Object.keys(d).length===6){
@@ -156,7 +168,23 @@ export class SharedConversationHost{
         Number.isInteger(d.level*4)&&d.level>=0&&d.level<=1){
         this.microphoneSample=d.level?{level:d.level,at:this.window.performance.now()}:null;
       }
-    }else if(d.type==='prepare')this.prepare(d).catch(()=>{});
+    }else if(d.type==='topic-direct-readback'){
+      if(this.topicMode?.request!==d.request)return;
+      if(d.unavailable===true)this.finishTopicMode(Object.assign(Error('No pude cambiar el destinatario.'),{refused:true}));
+      else if(d.room===this.topicMode.room)this.finishTopicMode(null);
+      else this.finishTopicMode(Error('No pude confirmar el destinatario.'));
+    }
+    else if(d.type==='topic-result-readback'||d.type==='topic-question-readback'){
+      const result=this.topicResult;
+      if(!result||d.type!==`topic-${result.kind}-readback`||result.request!==d.request||result.room!==d.room||!result.resolve)return;
+      if(d.opened===true){
+        clearTimeout(result.timer);
+        result.resolve();
+        result.resolve=result.reject=undefined;
+      }else this.closeTopicItem();
+    }
+    else if(d.type==='topic-rooms-readback')this.receiveTopicRead(d);
+    else if(d.type==='prepare')this.prepare(d).catch(()=>{});
     else if(d.type==='status'&&this.records.has(d.id)&&typeof d.phase==='string'&&d.phase.length<=64&&typeof d.busy==='boolean'){
       this.onStatus({phase:d.phase,busy:d.busy});
       const record=this.records.get(d.id);
@@ -172,6 +200,96 @@ export class SharedConversationHost{
       this.api(`conversation-contexts/${d.id}/discard`,{binding:d.binding,reason:d.reason})
         .then(value=>{if(value.released)this.records.delete(d.id);}).catch(()=>{});
     }
+  }
+  selectTopicMode(room){
+    if(this.closed||!this.supportsDirect||!this.channel||this.topicMode||
+      this.currentActor()!==this.selected?.actorRef||room!==null&&!topicKey(room))
+      return Promise.reject(Object.assign(Error('El modo directo todavía no está disponible.'),{refused:true}));
+    const request=this.window.crypto.randomUUID();
+    return new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>this.finishTopicMode(Error('No pude confirmar el destinatario.')),8000);
+      this.topicMode={request,room,resolve,reject,timer};
+      this.send({channel:this.channel},'topic-direct-select',{request,room});
+    });
+  }
+  finishTopicMode(error){
+    const selection=this.topicMode;
+    if(!selection)return;
+    this.topicMode=undefined;
+    clearTimeout(selection.timer);
+    if(error)selection.reject(error);
+    else selection.resolve();
+  }
+  async waitForTopicChannel(){
+    await this.mount();
+    if(!this.channel)await new Promise((resolve,reject)=>{
+      const ready=()=>{clearTimeout(timeout);resolve();};
+      const timeout=setTimeout(()=>{
+        this.topicReady=this.topicReady.filter(item=>item!==ready);
+        reject(Error('No pude conectar con tus topics.'));
+      },8000);
+      this.topicReady.push(ready);
+    });
+  }
+  async openTopicItem(kind,room,current){
+    if(!['result','question'].includes(kind)||!topicKey(room))throw Error('Seleccioná un topic válido.');
+    await this.waitForTopicChannel();
+    const supported=kind==='question'?this.supportsQuestion:this.supportsResult;
+    if(this.closed||!supported||this.currentActor()!==this.selected.actorRef||!current())
+      throw Error('No pude abrir ese elemento del topic.');
+    this.closeTopicItem();
+    const request=this.window.crypto.randomUUID();
+    return new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>this.closeTopicItem(),8000);
+      this.topicResult={request,room,resolve,reject,timer,kind};
+      this.send({channel:this.channel},`topic-${kind}-open`,{request,room});
+    });
+  }
+  closeTopicItem(){
+    const result=this.topicResult;
+    if(!result)return;
+    this.topicResult=undefined;
+    clearTimeout(result.timer);
+    this.send({channel:this.channel},`topic-${result.kind}-cancel`,{request:result.request});
+    result.reject?.(Error('Ese elemento del topic ya no está disponible.'));
+  }
+  async readTopicRooms({room,after}={}){
+    if(room!==undefined&&!topicKey(room)||after!==undefined&&!topicKey(after)||
+      room!==undefined&&after!==undefined)throw Error('Seleccioná un topic válido.');
+    await this.waitForTopicChannel();
+    if(this.closed||!this.supportsTopics||this.currentActor()!==this.selected.actorRef)
+      throw Error('Tus topics todavía no están disponibles acá.');
+    if(this.topicRead)throw Error('La lectura anterior sigue pendiente.');
+    const request=this.window.crypto.randomUUID();
+    return new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>this.finishTopicRead(Error('No pude confirmar tus topics.')),8000);
+      this.topicRead={request,room,after,resolve,reject,timer};
+      this.send({channel:this.channel},'topic-rooms-read',{request,...(room?{room}:{}),...(after?{after}:{})});
+    });
+  }
+  receiveTopicRead(d){
+    const wanted=this.topicRead;
+    if(!wanted||d.request!==wanted.request)return;
+    const rows=d.rooms;
+    if(d.unavailable||!Array.isArray(rows)||rows.length>12||
+      rows.some((row,index)=>!row||Object.keys(row).sort().join(',')!=='direct_available,general,room,title'||
+        !topicKey(row.room)||typeof row.title!=='string'||Array.from(row.title).length>80||
+        typeof row.general!=='boolean'||typeof row.direct_available!=='boolean'||
+        row.room<=(index>0?rows[index-1].room:wanted.after??''))||
+      !(d.next===null||rows.length===12&&d.next===rows.at(-1).room)||
+      wanted.room&&(rows.length!==1||rows[0].room!==wanted.room||d.next!==null)){
+      this.finishTopicRead(Error('Ese topic no está disponible.'));
+      return;
+    }
+    this.finishTopicRead(null,{rooms:rows,next:d.next});
+  }
+  finishTopicRead(error,value){
+    const read=this.topicRead;
+    if(!read)return;
+    this.topicRead=undefined;
+    clearTimeout(read.timer);
+    if(error)read.reject(error);
+    else read.resolve(value);
   }
   async prepare(d){
     const inline=d.mode===machineMode;
@@ -222,7 +340,11 @@ export class SharedConversationHost{
     return sample&&this.window.performance.now()-sample.at<microphoneLifetime?sample.level:0;
   }
   dispose(){
+    this.closeTopicItem();
     this.closed=true;
+    this.finishTopicMode(Error('La conversación se cerró.'));
+    this.finishTopicRead(Error('La conversación se cerró.'));
+    for(const ready of this.topicReady.splice(0))ready();
     this.localDismiss?.abort();
     this.voiceObserver?.disconnect();
     this.cancelToolbarVoice?.();
