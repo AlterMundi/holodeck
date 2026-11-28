@@ -925,6 +925,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const worldInteractionCanvas=renderer.composer.renderer.domElement;
     const frameDiagnostics=new FrameDiagnostics(renderer.composer.renderer,base);
     const releaseOrbit=bindWorldOrbitInput(options.coreCameraManager,worldInteractionCanvas,()=>mouseSensitivity,()=>Boolean(matterHud?.teleport.group),{
+      overControl:event=>matterHud?.overControl(event),
       tableOrbit:()=>tableFlight.active&&tableInputAllowed()&&!needsSync,
       active:()=>Boolean(tableFlight.inspectParts),
       available:pointer=>Boolean(tableFlight.inspectParts&&tableInputAllowed()&&!needsSync&&

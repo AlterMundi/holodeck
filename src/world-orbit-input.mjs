@@ -78,7 +78,8 @@ export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false,
     anchored=true;
   };
   canvas.addEventListener('pointerdown',event=>{
-    if(canFreeLook()&&!blocked()&&!camera.isFlyCameraOn()&&!inspect(event)&&!inspection?.tableOrbit?.()){
+    if(canFreeLook()&&!blocked()&&!camera.isFlyCameraOn()&&!inspect(event)&&
+        !inspection?.tableOrbit?.()&&!inspection?.overControl?.(event)){
       if(event.pointerType==='touch'){beginLook();lookTouches.add(event.pointerId);lookByTouch=true;}
       if(event.pointerType==='mouse'&&event.button===0){beginLook();leftHeld=true;lookByTouch=false;}
     }

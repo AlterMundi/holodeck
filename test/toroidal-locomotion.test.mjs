@@ -374,7 +374,9 @@ test('a left drag orbits the camera alone and a right drag steers body and camer
   Object.assign(document,{defaultView:new EventTarget(),body:{style:{}},exitPointerLock(){this.pointerLockElement=null;}});
   Object.assign(canvas,{ownerDocument:document,clientWidth:600,clientHeight:400,requestPointerLock(){document.pointerLockElement=this;}});
   const camera={isFlyCameraOn:()=>false,activePointers:new Map(),theta:0,phi:1.4,targetTheta:0,targetPhi:1.4,minPolarAngle:.15,maxPolarAngle:3};
-  const release=bindWorldOrbitInput(camera,canvas,()=>.5);
+  const release=bindWorldOrbitInput(camera,canvas,()=>.5,undefined,{
+    available:()=>false,overControl:event=>event.clientX===10,
+  });
   const emit=(target,type,fields)=>{
     const event=new Event(type,{cancelable:true});
     Object.assign(event,{pointerType:'mouse',pointerId:1,...fields});
@@ -405,5 +407,17 @@ test('a left drag orbits the camera alone and a right drag steers body and camer
   view=release.look(false,1/60);
   assert.ok(Math.abs(view.theta-camera.theta)<1e-9);
   emit(document,'pointerup',{button:2});
+  // A touch orbits the world first. The HUD stick shares the canvas and
+  // must let the body adopt the new heading while the stick is held.
+  const touch={pointerType:'touch',pointerId:2,button:0};
+  emit(canvas,'pointerdown',touch);
+  orbit(1.3,0);
+  view=release.look(false,1/60);
+  assert.ok(Math.abs(camera.theta-view.theta-1.3)<1e-9);
+  emit(document,'pointerup',touch);
+  emit(canvas,'pointerdown',{...touch,pointerId:3,clientX:10});
+  for(let i=0;i<120;i++)view=release.look(true,1/60);
+  assert.ok(Math.abs(view.theta-camera.theta)<.01,JSON.stringify({camera,view}));
+  emit(document,'pointerup',{...touch,pointerId:3});
   release();
 });
