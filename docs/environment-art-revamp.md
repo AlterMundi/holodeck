@@ -993,3 +993,114 @@ artificial wait still exposes the coarse geometry around the authored
 facade. 401 Node tests passed with two optional skips. The new regression
 asserts that the overlook collider is registered and disposed with
 terrain detail still pending.
+
+## November 28 — Char Design: Residencia and cinematic finish, release pending
+
+Compared the protected release `fc1805677c21` (runtime source `f3717f3`,
+lineage tip `77c4743f889a`) with integrated candidate `c35f3cab26cf`.
+The candidate contains Char Design's `320e588` and `16e54ac`, preserves the
+situated teleport camera and HUD, and keeps the exact same collision blob.
+The packed candidate is 38,860,800 bytes (SHA-256
+`98d9f05bed012f33b9c4b475e0a1e66726b13bd87027019dbf4ccd51b302354a`).
+538 tests passed and two were skipped. A fresh protected readback matched the
+base release and all 92 installed files.
+
+The protected packages were loaded from isolated fixture receivers with the
+same camera poses, world and night clock. Each arm verified the actual served
+Residencia GLB digest. Each pose sampled animation callbacks for 3.5 seconds.
+The Matter workshop check entered through the space receiver and confirmed the
+room model and the cinematic render target on RTX 2060 and in a 390×780
+touch-emulated Chromium viewport. The emulated viewport used SwiftShader.
+There was no reachable physical phone in the available test setup.
+
+The normal RTX run slowed at all seven poses. At matched adaptive-buffer
+sizes the hall went from 60.0 to 40.9 FPS and the meadow from 60.0 to
+39.3 FPS. At the smaller fixed buffer, the hall stayed slower and the
+plaza and meadow came close to 60 FPS. The candidate's flat-grade comparison
+left the hall near 52 FPS at that buffer, so the residual drop there persists
+with cinematic grading off. The Pi's median across poses went from 34.0 to 28.2 FPS with the
+base first, and from 24.9 to 26.9 FPS with the candidate first. The hall
+and corridor reached intervals around 67 ms in the initial candidate run.
+The reverse run put both hall readings at roughly 67 ms. The order effect
+leaves the size and cause of any Pi regression unresolved. Lightweight
+bypasses the cinematic passes and hides the additional vegetation. The
+candidate Residence adds five texture bindings and one visual mesh while
+keeping collision unchanged.
+
+Deployment is pending. A physical-phone check and a targeted art performance
+comparison still remain.
+The paired measurements give Char Design hall and meadow cases for tuning
+the desktop finish, and hall and corridor cases for another Pi comparison
+with texture variants at matched load.
+
+### RTX 2060, Normal, ordinary adaptive resolution
+
+Chrome 156.0.8078.47, ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 2060/PCIe/SSE2, OpenGL 4.5.0). FPS is the observed animation callback rate. P95 is the 95th percentile interval between callbacks.
+
+| Pose | Base FPS / p95 ms | Candidate FPS / p95 ms | Base buffer | Candidate buffer |
+| --- | ---: | ---: | ---: | ---: |
+| plaza | 60.0 / 16.7 | 48.3 / 33.4 | 840 × 518 | 1020 × 629 |
+| residence-approach | 60.0 / 16.7 | 45.2 / 33.4 | 840 × 518 | 1020 × 629 |
+| residence-three-quarter | 60.0 / 16.7 | 42.7 / 33.4 | 1020 × 629 | 1020 × 629 |
+| residence-hall | 60.0 / 16.7 | 40.9 / 33.4 | 1020 × 629 | 1020 × 629 |
+| residence-corridor | 42.9 / 33.4 | 37.5 / 33.4 | 1200 × 740 | 1020 × 629 |
+| overlook | 60.0 / 16.8 | 53.2 / 33.4 | 1200 × 740 | 1200 × 740 |
+| meadow | 60.0 / 16.7 | 39.3 / 33.4 | 1200 × 740 | 1200 × 740 |
+
+Median pose FPS was 60.0 and 42.7.
+
+### RTX 2060, Normal, fixed drawing buffer
+
+Chrome 156.0.8078.47, ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 2060/PCIe/SSE2, OpenGL 4.5.0). FPS is the observed animation callback rate. P95 is the 95th percentile interval between callbacks.
+
+| Pose | Base FPS / p95 ms | Candidate FPS / p95 ms | Base buffer | Candidate buffer |
+| --- | ---: | ---: | ---: | ---: |
+| plaza | 60.0 / 16.7 | 60.0 / 16.8 | 660 × 407 | 660 × 407 |
+| residence-hall | 60.0 / 16.7 | 51.8 / 16.7 | 660 × 407 | 660 × 407 |
+| meadow | 60.0 / 16.7 | 59.7 / 16.8 | 660 × 407 | 660 × 407 |
+
+Median pose FPS was 60.0 and 59.7.
+
+### RTX 2060, Normal, flat grade reference
+
+Chrome 156.0.8078.47, ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 2060/PCIe/SSE2, OpenGL 4.5.0). FPS is the observed animation callback rate. P95 is the 95th percentile interval between callbacks.
+
+| Pose | Cinematic FPS / p95 ms | Flat FPS / p95 ms | Cinematic buffer | Flat buffer |
+| --- | ---: | ---: | ---: | ---: |
+| plaza | 60.0 / 16.8 | 60.0 / 16.7 | 660 × 407 | 660 × 407 |
+| residence-hall | 51.8 / 16.7 | 52.0 / 16.7 | 660 × 407 | 660 × 407 |
+| meadow | 59.7 / 16.8 | 60.0 / 16.8 | 660 × 407 | 660 × 407 |
+
+Median pose FPS was 59.7 and 60.0.
+
+### Pi 5, Lightweight, base first
+
+Chrome 154.0.8037.92, ANGLE (Broadcom, V3D 7.1.7.0, OpenGL ES 3.1). FPS is the observed animation callback rate. P95 is the 95th percentile interval between callbacks.
+
+| Pose | Base FPS / p95 ms | Candidate FPS / p95 ms | Base buffer | Candidate buffer |
+| --- | ---: | ---: | ---: | ---: |
+| plaza | 34.0 / 33.4 | 31.7 / 50.0 | 363 × 244 | 363 × 244 |
+| residence-approach | 37.9 / 33.4 | 32.3 / 50.0 | 363 × 244 | 363 × 244 |
+| residence-three-quarter | 32.3 / 33.4 | 27.9 / 50.1 | 363 × 244 | 363 × 244 |
+| residence-hall | 32.3 / 33.4 | 25.0 / 66.7 | 363 × 244 | 363 × 244 |
+| residence-corridor | 34.7 / 33.4 | 25.3 / 66.6 | 363 × 244 | 363 × 244 |
+| overlook | 43.4 / 33.4 | 35.7 / 50.0 | 363 × 244 | 363 × 244 |
+| meadow | 33.6 / 33.5 | 28.2 / 50.1 | 363 × 244 | 363 × 244 |
+
+Median pose FPS was 34.0 and 28.2.
+
+### Pi 5, Lightweight, candidate first
+
+Chrome 154.0.8037.92, ANGLE (Broadcom, V3D 7.1.7.0, OpenGL ES 3.1). FPS is the observed animation callback rate. P95 is the 95th percentile interval between callbacks.
+
+| Pose | Base FPS / p95 ms | Candidate FPS / p95 ms | Base buffer | Candidate buffer |
+| --- | ---: | ---: | ---: | ---: |
+| plaza | 26.2 / 50.1 | 34.1 / 33.4 | 363 × 244 | 363 × 244 |
+| residence-approach | 29.2 / 50.1 | 35.0 / 33.4 | 363 × 244 | 363 × 244 |
+| residence-three-quarter | 23.2 / 50.1 | 25.9 / 50.1 | 363 × 244 | 363 × 244 |
+| residence-hall | 23.3 / 66.6 | 23.3 / 66.7 | 363 × 244 | 363 × 244 |
+| residence-corridor | 24.9 / 50.1 | 25.7 / 50.1 | 363 × 244 | 363 × 244 |
+| overlook | 32.0 / 50.0 | 36.1 / 49.9 | 363 × 244 | 363 × 244 |
+| meadow | 23.6 / 50.1 | 26.9 / 50.0 | 363 × 244 | 363 × 244 |
+
+Median pose FPS was 24.9 and 26.9.
