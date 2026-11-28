@@ -305,6 +305,28 @@ export class Room extends EventEmitter {
     return this.houses.result(actor.id, id) ?? clone(this.outcomes.get(actor.id + ':' + id)?.result ?? null);
   }
 
+  // The host resolves the card's objective and the current actor before
+  // asking Room for proof. This reader never executes the original command.
+  objectiveReceipt(actor, commandId, objective) {
+    if (!objective || objective.place !== WORKSHOP.id || objective.event?.type !== 'bridge_state'
+      || typeof objective.event.raised !== 'boolean'
+      || typeof commandId !== 'string' || !/^[\w-]{8,80}$/.test(commandId)) {
+      throw new RoomError('command', 'Invalid quest objective or command');
+    }
+    const result = this.result(actor, commandId);
+    if (!result || result.status !== 'completed' || result.run !== this.run) return null;
+    const event = this.events.find(item => item.sequence === result.event);
+    if (event?.actor !== actor.id || event.type !== 'bridge.set'
+      || event.detail.target !== 'bridge' || event.detail.entity?.raised !== objective.event.raised) {
+      return null;
+    }
+    return {
+      place: WORKSHOP.id, run: this.run, edition: this.edition, command: commandId,
+      actor: actor.id, sequence: event.sequence, occurred_at_ms: event.time,
+      event: { type: 'bridge_state', raised: event.detail.entity.raised },
+    };
+  }
+
   reset() {
     return this.atomic(()=>this.resetNow());
   }
