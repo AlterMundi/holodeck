@@ -36,6 +36,23 @@ reader credentials nor visitor cookies for the Home origin. An edition
 update follows the same staging contract. Verify both visitors and the full
 return in the receiving world.
 
+## One handoff for a shared-world edition
+
+The house owner publishes the edition using their own Home publisher. Send the
+receiving operator one handoff with the exact Home resource and version, the
+manifest URL and SHA-256, and the intended audiences for the Home edition and
+the Holodeck visit. Include the existing house and room IDs and the intended
+door changes when the edition changes the graph. If the edition includes a
+live workbench, include its existing workspace reference and binding from the
+owning Atelier service. Keep credentials out of the handoff.
+
+The receiver compares the pinned manifest with current room IDs and reciprocal
+doors, stages the bytes using its own authorized Home reader, and verifies an
+allowed visit and return. Check the live workbench grant only for editions
+that use it. Report the Home publication and any exact mismatch or missing
+binding separately from the Holodeck activation. Reuse the same house and
+workspace and carry forward the existing access decisions.
+
 ## Casa Linterna receiving review
 
 The receiving integration carries the owner-room reader from #39, the
