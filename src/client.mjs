@@ -30,6 +30,7 @@ import {bindMatterFlight,bindMatterHologram} from './matter-flight.mjs';
 import {matterInspectionNear} from './matter-contact.mjs';
 import {constrainInteriorCamera} from './interior-camera.mjs';
 import {bindAvatarFraming,bindCloseAvatar} from './avatar-camera.mjs';
+import {WorktableNavigation} from './worktable-navigation.mjs';
 import {capWorldPixelRatio,usesLightGraphics} from './render-pixel-budget.mjs';
 import {bindVideoSettings} from './video-settings.mjs';
 import {BackgroundFocus} from './background-focus.mjs';
@@ -892,6 +893,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
   // Upstream's default sun allocates an 8192² shadow map. This small world uses
   // the public renderer factory and a bounded 1024² light instead, on all clients.
   createRenderer:options=>{
+    const worktableNavigation=new WorktableNavigation();
     const tableFlight=new CharacterReviewFlight(options.coreCameraManager);
     matterFlight=tableFlight;
     constrainInteriorCamera(options,()=>{
@@ -915,13 +917,15 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         !matterHud.overControl(pointer)&&document.elementFromPoint(pointer.clientX,pointer.clientY)===worldInteractionCanvas),
       dolly:(delta,x,y,pointerX,pointerY)=>tableFlight.dollyInspection(client.getCharacterManager().localController,
         delta,x,y,worldPicker.worktableHit(pointerX,pointerY)),
+      wheel:event=>tableFlight.active&&tableInputAllowed()&&!needsSync&&
+        worktableNavigation.wheel(tableFlight,event,worldInteractionCanvas.clientHeight),
       pan:(x,y)=>tableFlight.translateInspection(client.getCharacterManager().localController,x,y),
     },()=>outsideRing()&&!flightEnabled&&(radialMovementMode==='swim'||radialMovementMode==='surface')&&
       !entering&&!moving&&!tableFlight.active&&!matterHud?.teleport.group&&!document.hidden,
       ()=>outsideRing()&&flightEnabled&&!entering&&!moving&&!tableFlight.active&&!matterHud?.teleport.group&&!document.hidden);
     const releaseFraming=bindAvatarFraming(options.coreCameraManager,worldInteractionCanvas,
       ()=>client.getCharacterManager().localController?.config.quaternion,
-      ()=>!entering&&!moving&&!tableFlight.inspectParts&&!document.hidden);
+      ()=>!entering&&!moving&&!tableFlight.active&&!matterHud?.teleport.group&&!document.hidden);
     const aiming=()=>releaseOrbit.aiming()&&!entering&&!moving&&!tableFlight.active&&!document.hidden;
     const mapPanel=document.querySelector('#space-travel');
     const minimap=bindToroidalMinimap(mapPanel);
@@ -1022,6 +1026,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const characterTable=new CharacterWorktable({document,scene:renderer.mmlCompositionScene.group,
       setAngle:angle=>tableFlight.setReviewAngle(angle)});
     matterHud=new MatterWorktableHud({document,webgl:renderer.composer.renderer,table:collectionShelves.worktable,collection:collectionShelves,
+      worktableNavigation,fixedNavigation:tableFlight,
       creatorContext:()=>({draft:preview,point:worldIndication?.selected,shared:worldIndication?.own()?.sequence}),
       beaconControls,onBeaconOpen:()=>releaseBeaconInput(client),
       toggleSound:()=>{if(!moving&&!entering&&navigator.userActivation?.isActive)void toggleWorldSound();},
@@ -1075,16 +1080,20 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       canEnter:()=>{
         if(options.coreCameraManager.isFlyCameraOn())return false;
         const table=matterHud.table,ordinary=table===collectionShelves.worktable;
-        return tableFlight.enter(client.getCharacterManager().localController,table.anchor,
-          {reviewTarget:table.reviewCameraTarget,reviewScale:table.reviewScale,
-            cameraProfile:ordinary?matterInspectionCamera:undefined,
-            inspectParts:ordinary?()=>table.model?.parts:null});
+        return worktableNavigation.mount(tableFlight,{
+          enter:()=>tableFlight.enter(client.getCharacterManager().localController,table.anchor,
+            {reviewTarget:table.reviewCameraTarget,reviewScale:table.reviewScale,
+              cameraProfile:ordinary?matterInspectionCamera:undefined,
+              inspectParts:ordinary?()=>table.model?.parts:null}),
+          lift:distance=>tableFlight.liftCamera(client.getCharacterManager().localController,distance),
+          leave:()=>tableFlight.exit(client.getCharacterManager().localController),
+        });
       },
       onActive:active=>{
         document.body.classList.toggle('is-operating-matter',active);
         if(!active){
           pointRequest?.controller.abort();
-          tableFlight.exit(client.getCharacterManager().localController);
+          worktableNavigation.unmount(tableFlight);
         }
         if(matterHud.table===collectionShelves.worktable)void shareTabletopMode(active);
         client.keyInputManager?.handleUnfocus();
@@ -1219,7 +1228,9 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         const view=matterHud.teleportWorkspace;
         view.resize(mainCamera.aspect);
         view.advance(performance.now());
-        view.withCamera(mainCamera,drawLocation);
+        const id=client.getLocalCharacterState()?.connectionId;
+        const explorer=renderer.characterManager.loadedCharacters.get(id)?.character.getMesh();
+        view.withCamera(mainCamera,()=>view.drawAvatars(explorer,companion.figure?.root,drawLocation));
       }else drawLocation();
       if(moving)matterHud.drawPassage();
       else matterHud.draw(display.draw());
@@ -1512,7 +1523,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       avatarPracticals.update({
         player:renderer.characterManager.loadedCharacters.get(character?.connectionId)?.character.getMesh(),
         feet:position,companion:companion.object,outdoor:outsideRing(),table:tableFlight.active,
-        daylight:solar?.daylight,visible:!entering&&!moving&&drawWorld,
+        daylight:solar?.daylight,visible:!entering&&!moving&&drawWorld&&matterHud.teleportMode!=='workspace',
         thrust:flightEnabled&&radialMovementMode==='flight'&&!client.getCharacterManager().localController?.characterOnGround,
         boost:localFlightBoost(),
       });

@@ -1,5 +1,7 @@
 import {Group, Matrix4, PerspectiveCamera, Quaternion, Ray, Vector3} from 'three';
 
+import {withTabletopAvatars} from './worktable-navigation.mjs';
+
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const movement=new Set(['KeyA','KeyD','KeyW','KeyS','Space','AltLeft','AltRight','ShiftLeft','ShiftRight']);
 
@@ -75,8 +77,7 @@ export class TeleportWorkspace {
     this.lastFrame=null;
     const aspect=this.aspect??1;
     if(aspect<.85){
-      // Frame the table from beside the explorer on narrow screens. Backing
-      // straight up would place the avatar between the camera and the board.
+      // Frame the narrow projected board from a three-quarter angle.
       this.localEye.set(0,1.52,Math.min(1.65,this.initialDistance));
       const radius=Math.max(this.initialDistance,Math.min(4.4,1.94/aspect));
       const target=new Vector3(Math.sin(.70)*radius,1.72,Math.cos(.70)*radius);
@@ -137,6 +138,21 @@ export class TeleportWorkspace {
     next.x*=newDistance;next.z*=newDistance;
     this.tryPosition(next);
     this.updateCamera();
+  }
+
+  lift(amount){
+    const next=this.localEye.clone();
+    next.y+=amount;
+    this.tryPosition(next);
+    this.updateCamera();
+  }
+
+  drawAvatars(explorer,companion,draw){
+    const viewer=Math.atan2(this.localEye.x,this.localEye.z);
+    return withTabletopAvatars(this.place,[
+      {object:explorer,angle:viewer-.97},
+      {object:companion,angle:viewer+.97},
+    ].map(({object,angle})=>({object,x:.76*Math.sin(angle),y:.80,z:.76*Math.cos(angle),yaw:angle+Math.PI})),draw);
   }
 
   key(event,down){

@@ -36,6 +36,8 @@ identity and service audience, with no alternate login.
 WASD/arrow keys move, mouse drag looks, Space jumps; mobile controls come from MML.
 Press **Q** or choose **Teletransporte** in the A2UI toolbar to travel to an
 accessible location. Favorites are saved for your identity in this browser.
+In spatial worktables, including the in-world teleporter, Shift + wheel
+changes camera height. See the [A2UI worktable projection](docs/spatial-widget-packs.md).
 The selected shared runtime includes native-authored result nodes and cooperative
 signal gardens. See the [native creator quickstart](docs/native-creation-quickstart.md)
 and [recipe contract](docs/playable-creations.md): creators change the running

@@ -344,3 +344,22 @@ test('an inspection orbit stopped by a wall discards the unreachable position',(
   flight.placeReviewEye({position:frameEye,rotation:new Quaternion()},controller);
   assert.ok(position.distanceTo(frameEye.clone().add(new Vector3(0,-matterEyeHeight,0)))<1e-8);
 });
+
+test('the character review lifts along table up and restores the original world pose on exit',()=>{
+  const {camera,controller,flight,position}=flightFixture(CharacterReviewFlight);
+  flight.exit(controller);
+  const worldFeet=position.clone();
+  assert.ok(flight.enter(controller,new Vector3(),{reviewTarget:new Vector3(0,.4,0),
+    cameraProfile:matterInspectionCamera,inspectParts:()=>[]}));
+  const eye=position.clone().add(new Vector3(0,matterEyeHeight,0));
+  camera.getMainCameraState=()=>({position:eye});
+  const before=position.clone(),radius=camera.distance;
+  flight.liftCamera(controller,.18);
+  assert.ok(position.distanceTo(before.add(new Vector3(0,.18,0)))<1e-10);
+  assert.equal(camera.distance,radius);
+  eye.copy(position).y+=matterEyeHeight;
+  flight.liftCamera(controller,100);
+  assert.equal(position.y,flight.bounds.max.y);
+  flight.exit(controller);
+  assert.deepEqual(position.toArray(),worldFeet.toArray());
+});

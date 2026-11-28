@@ -189,7 +189,9 @@ const portraitWork=[
 const movement=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE']);
 
 export class MatterWorktableHud{
-  constructor({document,webgl,table,collection,toggleSound,onActive,canEnter=()=>true,onError,readTools,activateTool,navigation,presentMovement,history,visitor,creatorContext,beaconControls,onBeaconOpen,teleport}){
+  constructor({document,webgl,table,collection,toggleSound,onActive,canEnter=()=>true,onError,readTools,activateTool,navigation,presentMovement,history,visitor,creatorContext,beaconControls,onBeaconOpen,teleport,worktableNavigation,fixedNavigation}){
+    this.worktableNavigation=worktableNavigation;
+    this.fixedNavigation=fixedNavigation;
     Object.assign(this,{document,webgl,table,onActive,canEnter,readTools,activateTool,presentMovement,movementGroups:new Map(),scope:0,toolScope:0,mode:null,blocked:false});
     this.canvas=webgl.domElement;
     const releaseHudOverrides=()=>{
@@ -291,7 +293,7 @@ export class MatterWorktableHud{
       },
       onClose:()=>{
         this.clearTeleportPointer();
-        this.teleportWorkspace?.leave();
+        this.worktableNavigation.unmount(this.teleportWorkspace);
         this.teleportMode=null;
         delete this.document.body.dataset.teleportWorkspace;
         this.send('deleteSurface',{},teleportViewId);
@@ -431,13 +433,18 @@ export class MatterWorktableHud{
     if(mode==='workspace'&&!this.teleport.physical)mode='camera';
     if(mode==='workspace'){
       this.teleportWorkspace??=new TeleportWorkspace(this.layer.invalidate,this.teleportAnchor);
-      if(!this.teleportWorkspace.enter(this.teleport.group,this.teleportScene))mode='camera';
+      const workspace=this.teleportWorkspace;
+      if(!this.worktableNavigation.mount(workspace,{
+        enter:()=>workspace.enter(this.teleport.group,this.teleportScene),
+        leave:parent=>workspace.leave(parent),
+        lift:distance=>workspace.lift(distance),
+      }))mode='camera';
     }
     this.teleportMode=mode;
     const immersive=mode==='workspace';
     if(immersive)this.document.body.dataset.teleportWorkspace='';
     else{
-      this.teleportWorkspace?.leave(this.hud.group);
+      this.worktableNavigation.unmount(this.teleportWorkspace,this.hud.group);
       this.teleportPlacement=null;
       delete this.document.body.dataset.teleportWorkspace;
     }
@@ -469,6 +476,7 @@ export class MatterWorktableHud{
       workspace.drag={id:event.pointerId,x:event.clientX,y:event.clientY};
       this.canvas.setPointerCapture(event.pointerId);
     }else if(event.type==='wheel'){
+      if(this.worktableNavigation.wheel(workspace,event,this.canvas.clientHeight))return;
       workspace.approach(Math.max(-.24,Math.min(.24,event.deltaY*(event.deltaMode? .027:.00135))));
     }else if(event.type!=='contextmenu'){
       const drag=workspace.drag;
@@ -947,6 +955,7 @@ export class MatterWorktableHud{
     const surface=this.teleport.group?teleportHudId:history?.native?activityHudId:this.visit.indexActive?exhibitionHudId:visit?visitHudId:settingsId;
     if(event.defaultPrevented)return false;
     if(this.teleport.group){
+      if(this.worktableNavigation.escape(this.teleportWorkspace,event,()=>this.teleport.close()))return true;
       if(event.key==='Escape'){if(!event.repeat)this.teleport.close();return true;}
       if(this.teleportMode==='workspace'&&!(event.code==='Space'&&this.ownsAccessibleInput(event.target))&&
          this.teleportWorkspace.key(event,true))return true;
@@ -1018,7 +1027,7 @@ export class MatterWorktableHud{
       }
     }
     if(this.map.group&&event.key==='Escape'&&!event.defaultPrevented){this.map.close();return true;}
-    if(this.active&&event.key==='Escape'&&!event.defaultPrevented){this.leave();return true;}
+    if(this.worktableNavigation.escape(this.fixedNavigation,event,()=>this.leave()))return true;
     if(this.creation.isFocused()&&event.key==='Escape'&&!event.defaultPrevented&&this.creation.cancel())return true;
     if(this.ownsAccessibleInput(event.target)){
       return event.repeat&&(event.key==='Enter'||event.key===' ')&&this.hud.currentFocus()?.surfaceId===doorPromptId;

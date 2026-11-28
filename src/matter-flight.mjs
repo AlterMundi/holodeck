@@ -1,6 +1,7 @@
 import {Box3, Line3, MeshStandardMaterial, Vector3} from 'three';
 
-export const matterAvatarScale=.19;
+import {matterAvatarScale} from './worktable-navigation.mjs';
+export {matterAvatarScale} from './worktable-navigation.mjs';
 export const matterEyeHeight=1.75*matterAvatarScale;
 const up={x:0,y:1,z:0};
 const cameraFields=['minDistance','maxDistance','distance','targetDistance','desiredDistance'];
@@ -33,12 +34,17 @@ export class MatterFlight{
     position.copy(this.point);
     controller.characterVelocity.set(0,0,0);
     this.cameraRanges=Object.fromEntries(cameraFields.map(key=>[key,this.camera[key]]));
+    this.eyeOffset=0;
     this.reviewTarget=reviewTarget;
     this.returnOrbit=reviewTarget?{yaw:this.camera.targetTheta,tilt:this.camera.targetPhi}:null;
     const distance=reviewTarget ? .96 : .68;
     Object.assign(this.camera,{minDistance:.27,maxDistance:1.25,distance,targetDistance:distance,desiredDistance:distance});
     this.active=true;
     return true;
+  }
+
+  liftCamera(_controller,distance){
+    this.eyeOffset=Math.max(-.23,Math.min(.38,this.eyeOffset+distance));
   }
 
   setReviewAngle(angle){
@@ -133,7 +139,7 @@ export function bindMatterFlight(manager,camera,flight,inputAllowed,onLost){
   const update=manager.update,setTarget=camera.setTarget,updateCamera=camera.update;
   function target(point){
     if(flight.reviewTarget)return setTarget.call(this,flight.reviewTarget);
-    if(flight.active)point.y+=matterEyeHeight-1.75;
+    if(flight.active)point.y+=matterEyeHeight-1.75+flight.eyeOffset;
     return setTarget.call(this,point);
   }
   function updateWithFlight(...args){

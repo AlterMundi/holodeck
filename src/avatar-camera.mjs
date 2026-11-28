@@ -1,17 +1,22 @@
 import {Vector3} from 'three';
 
+export function verticalWheelDistance(event,pageHeight){
+  if(!event.shiftKey||event.ctrlKey||event.metaKey)return null;
+  // Chromium may remap the wheel to the horizontal axis while Shift is held.
+  const units=event.deltaMode===1?16:event.deltaMode===2?pageHeight:1;
+  return -(event.deltaY||event.deltaX)*units*.0024;
+}
+
 export function bindAvatarFraming(camera,canvas,characterRotation,available=()=>true){
   const abort=new AbortController();
   const setTarget=camera.setTarget;
   const aim=new Vector3(),up=new Vector3();
   let requested=0,offset=0;
   canvas.addEventListener('wheel',event=>{
-    if(!event.shiftKey||event.ctrlKey||event.metaKey||camera.isFlyCameraOn()||!available())return;
-    // Shift can turn the vertical wheel axis into horizontal scroll in Chromium.
-    const units=event.deltaMode===1?16:event.deltaMode===2?canvas.clientHeight:1;
-    const change=(event.deltaY||event.deltaX)*units;
+    if(camera.isFlyCameraOn()||!available())return;
+    const change=verticalWheelDistance(event,canvas.clientHeight);
     if(!change)return;
-    requested=Math.max(-1.02,Math.min(.38,requested-change*.0024));
+    requested=Math.max(-1.02,Math.min(.38,requested+change));
     event.preventDefault();
     event.stopImmediatePropagation();
   },{capture:true,passive:false,signal:abort.signal});

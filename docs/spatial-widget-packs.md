@@ -22,10 +22,21 @@ workstation. The client invokes its model in the current location, using
 the local up direction and a nearby clear placement in front of the player.
 The same renderer draws the scenery and the model with a bounded inspection
 camera. WASD translates that camera, drag moves it around the object and
-wheel approaches or backs away. The camera respects known world colliders.
-The underlying avatar remains under normal physics and receives no
-inspection movement. Esc releases inspection input and restores normal
-camera control.
+wheel approaches or backs away. Shift + wheel lifts or lowers the view
+along the table's vertical axis, as in the fixed worktables. The camera
+respects known world colliders.
+
+Every navigable A2UI device mounts one `WorktableNavigation` per viewer.
+The shared mode acquires exclusive navigation, handles Shift + wheel and
+Escape, and releases navigation on unmount. The mount supplies the anchor
+in the current scene, the camera's collision bounds, and the audience.
+It uses the shared tabletop avatar scale for Explorer and Companion. Fixed shared tables use the existing
+table flight and its presence where supported. For a personal device,
+the rendered figures are borrowed for the local view, so opening or
+moving around it does not move the networked avatar. Esc releases the
+input and restores the world camera and full-size presentation. The
+camera-mounted mode remains an alternative mount for the same A2UI
+controls.
 
 The model and miniature hit regions live in the 3D location. Camera-mounted
 A2UI controls are reachable from any angle. Picking is scoped to each

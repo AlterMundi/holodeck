@@ -13,7 +13,7 @@ export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false,
       1-2*(clientY-rect.top)/rect.height,clientX,clientY);
   };
   canvas.addEventListener('wheel',event=>{
-    if(!inspection?.active())return;
+    if(inspection?.wheel?.(event)||!inspection?.active())return;
     event.preventDefault();
     event.stopImmediatePropagation();
     if(!inspect(event))return;

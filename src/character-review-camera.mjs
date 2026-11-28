@@ -124,10 +124,23 @@ export class CharacterReviewFlight extends MatterFlight{
       this.translateBy.multiplyScalar(this.camera.distance);
     }
     this.requestedFeet.copy(controller.config.position).add(this.translateBy.applyQuaternion(this.orientation));
+    this.repositionInspection(controller,this.forward);
+  }
+
+  liftCamera(controller,distance){
+    if(!this.reviewAnchor)return super.liftCamera(controller,distance);
+    if(controller!==this.returnPose?.controller)return;
+    const {position}=this.camera.getMainCameraState();
+    this.forward.subVectors(this.reviewAnchor,position).normalize();
+    this.requestedFeet.copy(controller.config.position).addScaledVector(up,distance);
+    this.repositionInspection(controller,this.forward,true);
+  }
+
+  repositionInspection(controller,forward,keepDistance=false){
     const feet=this.resolvePosition(controller,this.requestedFeet);
-    const progress=this.translateBy.subVectors(feet,controller.config.position).dot(this.forward);
-    const distance=Math.max(this.camera.minDistance,Math.min(this.camera.maxDistance,this.camera.distance-progress));
-    this.reviewAnchor.copy(feet).addScaledVector(this.forward,distance);
+    const progress=this.translateBy.subVectors(feet,controller.config.position).dot(forward);
+    const distance=Math.max(this.camera.minDistance,Math.min(this.camera.maxDistance,this.camera.distance-(keepDistance?0:progress)));
+    this.reviewAnchor.copy(feet).addScaledVector(forward,distance);
     this.reviewAnchor.y+=matterEyeHeight;
     this.contactEye.copy(feet);
     this.contactEye.y+=matterEyeHeight;

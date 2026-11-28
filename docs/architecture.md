@@ -177,6 +177,16 @@ in Nexus; Room remains the spatial authority. The owned-house/parcel direction
 requires a real creator namespace and space contract, not another server per
 participant or implicit publication rights from visiting a place.
 
+## Spatial worktable navigation
+
+Materia is the reference for navigating a worktable. The client mounts
+Materia, the character worktable, and the spatial teleport instrument through
+one exclusive [A2UI worktable mode](spatial-widget-packs.md). Device-specific
+geometry provides anchors and collision bounds to that mode. The camera,
+gesture and avatar-scale conventions belong to the Holodeck projection.
+A2UI remains the source of the controls and their actions for both spatial and
+camera-mounted surfaces.
+
 ## Harmonic Lab projections
 
 The Lab service owns instrument state and actions. Holodeck subscribes to the
