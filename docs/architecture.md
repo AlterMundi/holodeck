@@ -140,11 +140,10 @@ keeps its ID, layout, permissions and saved rooms. The parcel proxy is
 omitted from this terrain and the house appears once, under Houses.
 
 The other seven parcels have flat 72 × 72 m building envelopes. Their IDs
-and owners carry forward. Casa Linterna's current exterior proxy uses the
-entrance on the near side of East 1. A full exterior published by the owner
-can later replace that proxy at the same parcel, with its own doorway and
-fitting. The current walkable room format supplies indoor scenes through
-room-specific access checks. The outside uses its own published asset.
+and owners carry forward. Casa Linterna's published exterior occupies
+East 1. Its owner-authored stand supplies the door, teleport and return
+anchor. The full exterior uses the house visitor audience. The walkable
+room format supplies indoor scenes through room-specific access checks.
 
 ## Home and Holodeck publication
 

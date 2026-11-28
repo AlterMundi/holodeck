@@ -1,5 +1,21 @@
 # Current MVP work
 
+## Casa Linterna exterior on East 1 · 2026-11-28
+
+Protected release `ae40359a0f92` selects `4f561cf`, with `f4ced75d15c1`
+available for rollback. East 1 shows the owner-published exterior
+`2e67ade32f80` at full scale. Its near, distant and collision assets are
+selected from the owner's exact Home edition. Access follows the owner’s
+existing foyer audience. The generic proxy is omitted for this parcel.
+
+The packaged Chromium fixture used the production layout and audiences.
+It rendered the near GLB, loaded the collision shell and offered the door
+at the published stand. Pressing E entered the existing HD Recibidor.
+The return anchor matched the exterior door, and a foreign reader received
+neither the exterior descriptor nor its model. The active configuration
+and cache matched the owner manifest and all three GLBs. All 99 installed
+package files matched the release.
+
 ## House parcel authority and Casa Linterna HD · 2026-11-28
 
 Protected release `f4ced75d15c1` selects `a771fb1`, with
@@ -23,8 +39,7 @@ The active owner tour selects Casa Linterna HD manifest `05ff08f5742d`.
 Chromium with the exact release package and preserved visitor grants
 loaded the new Recibidor model. The five room destinations, return and
 foreign-reader denial passed. The previous tour files and selection
-remain available for rollback. The full exterior is an owner-published
-candidate awaiting terrain placement.
+remain available for rollback. The exterior was deployed in the subsequent release above.
 
 ## Navegante studio variants · 2026-11-28
 
