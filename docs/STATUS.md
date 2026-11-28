@@ -1,5 +1,19 @@
 # Current MVP work
 
+## Mosaic companion edition · 2026-11-28
+
+Protected release `59ce25c1115c` serves `1c36fdb` with `d4bd03c4d4e1`
+available for rollback. The selected mosaic edition uses the N-3X face
+expressions, speech articulator and exact skeletal tracks. Previous avatar
+files and the private personal avatar selection are preserved.
+
+The packaged Chromium fixture loaded the exact combined artifact and
+observed the joy and focus expressions and voice-driven mouth movement.
+All 294 skeletal tracks across the 24 clips matched. The flat-floor gait
+fixture measured maximum boot penetration below 0.1 mm, down from 25 mm
+with the raw export. All 99 package files matched production. Node passed
+618 tests with six skips.
+
 ## Private personal avatar edition · 2026-11-28
 
 Protected release `d4bd03c4d4e1` serves `5ea2956` with `b10cc0d03f3c`
