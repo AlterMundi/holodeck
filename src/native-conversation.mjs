@@ -62,9 +62,11 @@ export function captureNativeSituation(room,actor,request,{pairedBeing=null,pair
   const reserve={inputAssociation:extra.inputAssociation,...(extra.selectedActivity?{selectedActivity:extra.selectedActivity}:{}),...(extra.renderedView?{renderedView:extra.renderedView}:{})};
   const observation=interior?{
     schema:'holodeck.situation/v1',id:interior.id,run:interior.run,edition:interior.edition,
-    capturedAt:interior.capturedAt,observer:actor.id,scope:'structured-interior-room',
+    capturedAt:interior.capturedAt,observer:actor.id,
+    scope:interior.place.topic?'structured-topic-room':'structured-interior-room',
     place:{id:interior.place.id,title:interior.place.title,level:interior.place.level,
       house:interior.place.house,objects:interior.place.objects,
+      ...(interior.place.topic?{topic:interior.place.topic}:{}),
       ...(interior.place.activity?{activity:structuredClone(interior.place.activity)}:{}),
       ...(interior.place.exhibitRevision?{exhibitRevision:interior.place.exhibitRevision}:{})},
     source:{through:interior.sequence,displayedSequence:null},
@@ -112,6 +114,8 @@ export function createUnixNativeTransport(socketPath){
   }
   return {inspect:actorRef=>call('inspect',{actorRef}),
     surface:(actorRef,options)=>call('surface',{actorRef},options),
+    topicRoom:(actorRef,room,includeProjects,cursor,selection)=>call('topic-room',{actorRef,room,
+      ...(includeProjects?{projects:true}:{}),...(cursor?{cursor}:{}),...(selection?{selection}:{})}),
     prepareContext:payload=>call('prepare-context',payload),
     prepareMachineContext:payload=>call('prepare-machine-context',payload),
     machineContextStatus:payload=>call('machine-context-status',payload),
@@ -348,5 +352,6 @@ export async function nativeFactory({room,stateDir,receiving,allowInteriorSource
   const contexts=await createConversationContexts({room,stateDir:join(stateDir,'conversation-context'),transport,allowInteriorSource});
   return {...legacy,contexts,
     conversationSurface:(actor,options)=>transport.surface(actor.ref,options),
+    topicRoom:(actor,room,includeProjects,cursor,selection)=>transport.topicRoom(actor.ref,room,includeProjects,cursor,selection),
     authorizeWorldRequest:(id,being)=>contexts.hasWorldRequest(id)?contexts.authorizeWorldRequest(id,being):legacy.authorizeWorldRequest(id,being)};
 }

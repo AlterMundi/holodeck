@@ -237,3 +237,105 @@ test('a canonical interior source freezes its authorized place before awaits and
     rmSync(dir,{recursive:true,force:true});
   }
 });
+
+test('a generated topic freezes the authorized room in the general Conversation original',async t=>{
+  const root=mkdtempSync(join(tmpdir(),'holodeck-topic-conversation-'));
+  const actorRef='human:topic-visitor',beingRef='dm:being:v1:'+'a'.repeat(43);
+  const topic='9'.repeat(64),other='8'.repeat(64),binding='b'.repeat(64);
+  const frozen={actorRef,beingRef,binding,entry:[1,{},2,'general-conversation-fixture']};
+  let signalInspect,releaseInspect,mayRead=true,recipient=beingRef;
+  const inspected=new Promise(resolve=>{signalInspect=resolve;});
+  const waiting=new Promise(resolve=>{releaseInspect=resolve;});
+  const uploads=[];
+  const transport={
+    async inspect(actor){assert.equal(actor,actorRef);signalInspect();await waiting;return frozen;},
+    async lookup(){return {state:'absent'};},
+    async prepareMachineContext(input){
+      return {schema:'holodeck.prepared-machine-context/v1',id:input.id,binding,
+        entry_binding:frozen.entry,observation_id:input.observation.id,
+        submitted_by_prepare:false,retained_original:false,
+        receipt:randomUUID(),source_sha256:'d'.repeat(64)};
+    },
+    async machineContextStatus(){return {retainedOriginal:true,tracking:false,phase:'completed',nativeAcceptance:'observed'};},
+    async prepareContext(input){
+      uploads.push(input);
+      return {schema:'holodeck.prepared-conversation-context/v1',id:input.id,binding,
+        entry_binding:frozen.entry,observation_id:input.observation.id,work_admitted:false,
+        file:{file_id:randomUUID(),sha256:'c'.repeat(64),name:'holodeck-situation.json',mime:'application/json',size:2048}};
+    },
+  };
+  const runtime=await createHolodeck({stateDir:root,publicOrigin:'https://world.test',
+    identityResolver:async request=>request.headers.cookie?.includes('fixture=human')
+      ? {id:actorRef,ref:actorRef,kind:'human',rights:['observe']}:null,
+    nativeRoomAuthority:async ({actor})=>actor.ref===beingRef?['observe']:[],
+    nativeFactory:async ({room,stateDir,allowInteriorSource})=>({
+      contexts:await createConversationContexts({room,stateDir:join(stateDir,'context'),transport,allowInteriorSource}),
+      conversationSurface:async()=>({schema:'holodeck.conversation-surface/v1',actorRef,beingRef,
+        homeRef:'home:'+'c'.repeat(32),binding,url:'https://world.test/conversation/'}),
+      topicRoom:async (actor,ref)=>{
+        assert.equal(actor.ref,actorRef);
+        if(!mayRead)throw Object.assign(Error('Topic unavailable'),{code:'topic-room-unavailable'});
+        return {schema:'holodeck.topic-room/v1',actorRef,beingRef:recipient,
+          room:ref,title:ref===topic?'Original topic':'Another topic',general:false};
+      },
+    }),
+  });
+  const listener=runtime.app.listen(0,'127.0.0.1');
+  await once(listener,'listening');
+  t.after(async()=>{runtime.close();listener.closeAllConnections();
+    await new Promise(resolve=>listener.close(resolve));rmSync(root,{recursive:true,force:true});});
+  const base='http://127.0.0.1:'+listener.address().port+'/';
+  const entry=await fetch(base,{headers:{Cookie:'fixture=human'}});
+  const headers={Cookie:'fixture=human; '+entry.headers.get('set-cookie').split(';')[0],
+    Origin:'https://world.test','Content-Type':'application/json'};
+  await entry.text();
+  const post=(path,body)=>fetch(base+'api/'+path,{headers,method:'POST',body:JSON.stringify(body)});
+  const response=await post('topic-space',{from:'outside',topic});
+  assert.equal(response.status,200);
+  const space=await response.json();
+  assert.equal(space.sharedConversation,true);
+  const id=randomUUID();
+  const body={id,binding,view:{spaceId:space.id,topic:other,title:'Forged',capturedAt:17}};
+  const pending=post('conversation-contexts',body);
+  await inspected;
+  const nextRoom=await post('topic-space',{from:space.id,topic:other});
+  assert.equal(nextRoom.status,200);
+  const nextSpace=await nextRoom.json();
+  releaseInspect();
+  const prepared=await pending;
+  assert.equal(prepared.status,200,await prepared.clone().text());
+  const attachment=await prepared.json();
+  assert.equal(attachment.work_admitted,false);
+  assert.equal(uploads.length,1);
+  assert.deepEqual(uploads[0].frozen.entry,frozen.entry);
+  const {observation}=uploads[0];
+  assert.equal(observation.inputAssociation.humanInputId,id);
+  assert.equal(observation.scope,'structured-topic-room');
+  assert.equal(observation.place.topic,topic);
+  assert.equal(observation.place.id,space.id);
+  assert.equal(observation.place.title,'Original topic');
+  assert.doesNotMatch(JSON.stringify(observation),/Forged|Another topic/);
+  const recovery=()=>fetch(base+'api/conversation-contexts/'+id+'?binding='+binding,{headers});
+  assert.deepEqual((await (await recovery()).json()).files,attachment.files);
+  assert.deepEqual((await (await post('conversation-contexts',body)).json()).files,attachment.files);
+  assert.equal(uploads.length,1);
+  await assert.rejects(runtime.native.contexts.authorizeWorldRequest(id,beingRef),/does not select a physical world action scope/);
+  recipient='dm:being:v1:'+'b'.repeat(43);
+  assert.equal((await recovery()).status,409);
+  recipient=beingRef;
+  await new Promise(resolve=>setTimeout(resolve,1000)); // The HTTP action window already contains four writes.
+  const machineId=randomUUID();
+  const machine=await post('conversation-contexts',{id:machineId,binding,mode:'owner-journal/v1',view:{spaceId:nextSpace.id}});
+  assert.equal(machine.status,200,await machine.clone().text());
+  const {machine_source}=await machine.json();
+  const release=await post('conversation-contexts/'+machineId+'/release',{});
+  assert.equal(release.status,200,await release.clone().text());
+  assert.equal((await release.json()).released,true);
+  const recoveredMachine=()=>fetch(base+'api/conversation-contexts/'+machineId+'?binding='+binding,{headers});
+  assert.equal((await (await recoveredMachine()).json()).machine_source,machine_source);
+  await assert.rejects(runtime.native.contexts.authorizeWorldRequest(machineId,beingRef),/does not select a physical world action scope/);
+  mayRead=false;
+  assert.equal((await recovery()).status,409);
+  assert.equal((await recoveredMachine()).status,409);
+  assert.equal(uploads.length,1);
+});

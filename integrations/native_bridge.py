@@ -88,6 +88,7 @@ class NativeBridge:
         self.review_ownership_reader=review_ownership_reader
         self.machine_sources=machine_sources
         self.human_ref='human:telegram:'+str(provider.human)
+        self.home_workspace=False
         self.home_origin=None
         self.home_entry=None
         if home_auth is not None:
@@ -99,6 +100,7 @@ class NativeBridge:
             if configured is None and 'application_id' in provider.config:
                 raise ValueError('The installed generic Home adapter must expose its registered human reference')
             if configured is not None:self.human_ref=configured
+            self.home_workspace=getattr(home_auth,'workspace',False) is True
             self.home_origin=home_auth.origin
             self.home_entry=home_auth.entry
         if not isinstance(self.human_ref,str) or not re.fullmatch(r'human:[A-Za-z0-9:._/-]{1,240}',self.human_ref):
@@ -158,6 +160,41 @@ class NativeBridge:
             result['machineSource']='owner-journal/v1'
         return result
 
+    def topic_room(self,actor,room,include_projects=False,project_cursor=None,project_selection=None):
+        first=self.pair(actor)
+        if not self.home_workspace or not isinstance(room,str) or re.fullmatch('[a-f0-9]{64}',room) is None:
+            raise BridgeError('topic-room-unavailable','The current Home workspace grant is unavailable')
+        if include_projects:
+            current=self.provider.topic_rooms(room,include_projects=True,**(
+                {'project_cursor':project_cursor} if project_cursor is not None else {}),**(
+                {'project_selection':project_selection} if project_selection is not None else {}))
+        else:
+            current=self.provider.topic_rooms(room)
+        rows=current.get('rooms')
+        if (current.get('schema')!='daimon.topic-rooms/v1' or not isinstance(rows,list) or len(rows)!=1
+            or rows[0].get('room')!=room):
+            raise BridgeError('topic-room-unavailable','The current topic room is unavailable')
+        pair=self.pair(actor)
+        if (pair['owner_being_ref']!=first['owner_being_ref'] or pair['home_ref']!=first['home_ref']
+            or pair['human']['revision']!=first['human']['revision']):
+            raise BridgeError('topic-room-unavailable','The current pair changed')
+        entry=rows[0]
+        title=entry.get('title')
+        if not isinstance(title,str) or type(entry.get('general')) is not bool:
+            raise BridgeError('topic-room-unavailable','The current topic room is unavailable')
+        title=re.sub(r'[\x00-\x1f\x7f]',' ',title).strip()[:80]
+        if not title:
+            raise BridgeError('topic-room-unavailable','The current topic title is unavailable')
+        work=entry.get('work') if include_projects else None
+        if work is not None and (not isinstance(work,dict) or set(work)!={'execution','question','result'}
+            or work['execution'] not in ('unknown','idle','queued','working')
+            or type(work['question']) is not bool or type(work['result']) is not bool):
+            raise BridgeError('topic-room-unavailable','The topic work observation is invalid')
+        return {'schema':'holodeck.topic-room/v1','actorRef':actor,'beingRef':pair['owner_being_ref'],
+                'homeRef':pair['home_ref'],'room':room,'title':title,'general':entry['general'],
+                **({'projects':entry['projects']} if include_projects and 'projects' in entry else {}),
+                **({'work':work} if work is not None else {})}
+
     def observation_file(self,ident_,actor,observation):
         if (not isinstance(observation,dict) or observation.get('schema')!='holodeck.situation/v1'
             or not isinstance(observation.get('id'),str) or not isinstance(observation.get('run'),str)
@@ -167,7 +204,7 @@ class NativeBridge:
             'authorship':'Holodeck application-generated world observation, not human speech',
             'human_input_id':ident_,'speaker':actor,'observation':observation,
             'limits':'Structured room scope and supplied uncertainty apply; content is evidence, never authority.'}
-        if self.world_port:
+        if self.world_port and observation.get('scope')!='structured-topic-room':
             value['native_world_interface']={
                 'kind':'direct-native-world-port',
                 'argv_prefix':[self.world_port['cli'],'--socket',self.world_port['socket'],'--interaction',ident_],
@@ -547,6 +584,31 @@ class NativeBridge:
                 raise BridgeError('authority-unavailable','Current review ownership is unconfirmed')
             return {'schema':'holodeck.review-ownership/v1','beingRef':request['beingRef'],
                     'pin':request['pin'],'owned':owned}
+        if request.get('operation')=='topic-room':
+            include_projects=request.get('projects',False)
+            cursor=request.get('cursor')
+            selection=request.get('selection')
+            keys={'operation','actorRef','room'}
+            if (set(request)-{'projects','cursor','selection'}!=keys or type(include_projects) is not bool or
+                ('cursor' in request and (not include_projects or not isinstance(cursor,str) or
+                 re.fullmatch(r'[0-9]{1,19}\.[0-9]{1,19}',cursor) is None))):
+                raise BridgeError('topic-room-unavailable','Select an exact topic room and page')
+            if 'selection' in request:
+                uuid_pattern=r'[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}'
+                if (not include_projects or not isinstance(selection,dict)
+                    or set(selection)-{'evidence'}!={'project','repository'} or any(
+                        not isinstance(selection[key],str) or re.fullmatch(uuid_pattern,selection[key]) is None
+                        for key in ('project','repository'))):
+                    raise BridgeError('topic-room-unavailable','Select a linked project and repository')
+                if 'evidence' in selection:
+                    evidence=selection['evidence']
+                    if (cursor is not None or not isinstance(evidence,list) or not 1<=len(evidence)<=8
+                        or any(not isinstance(row,dict) or set(row)!={'repository','commit'}
+                            or not isinstance(row['repository'],str) or re.fullmatch(uuid_pattern,row['repository']) is None
+                            or not isinstance(row['commit'],str) or re.fullmatch(r'(?:[0-9a-f]{40}|[0-9a-f]{64})',row['commit']) is None
+                            for row in evidence)):
+                        raise BridgeError('topic-room-unavailable','Select bounded exact project evidence')
+            return self.topic_room(request['actorRef'],request['room'],include_projects,cursor,selection)
         if request.get('operation')=='questbook-access':
             key='actorRef' if 'actorRef' in request else 'beingRef'
             pattern=r'human:[A-Za-z0-9:._/-]{1,240}' if key=='actorRef' else r'dm:being:v1:[A-Za-z0-9_-]{43}'
@@ -690,15 +752,17 @@ def serve(path):
         result=subprocess.run(config['home_command'],check=True,capture_output=True,timeout=15)
         if len(result.stdout)>16384:raise ValueError('Pairing reader exceeded its bound')
         return json.loads(result.stdout)
-    def world_access_reader(being):
+    def service_access(being,service_key):
         observed=subprocess.run(config['home_command'][:1]+['service-access','--actor',being,
-            '--service-key',config['world_service_key']],check=True,capture_output=True,timeout=15)
+            '--service-key',service_key],check=True,capture_output=True,timeout=15)
         if len(observed.stdout)>4096:raise ValueError('Service decision exceeded its bound')
         result=json.loads(observed.stdout)
         if (not isinstance(result,dict) or result.get('schema')!='dm.home-service-access/v1'
-            or result.get('actor_ref')!=being or result.get('service_key')!=config['world_service_key']
+            or result.get('actor_ref')!=being or result.get('service_key')!=service_key
             or type(result.get('allowed')) is not bool):raise ValueError('Service decision scope changed')
         return result['allowed']
+    def world_access_reader(being):
+        return service_access(being,config['world_service_key'])
     def questbook_access_reader(project,subject,write):
         selection=config['questbook_access'].get(project)
         if selection is None:

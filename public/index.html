@@ -186,6 +186,20 @@ body:has(#conversation-panel[data-hud-chrome]:not([hidden])) .touch-controls{vis
 .conversation-actions:not(:has(:is(button,label):not([hidden]))),#conversation-panel[data-hud-chrome]:not(.shared-conversation) .conversation-actions{display:none}
 #conversation-share-view{font-size:14px;min-height:44px;padding:4px 10px}
 #conversation-panel.shared-conversation #conversation-close{flex:none;min-width:44px;min-height:44px;padding:4px 9px}
+#conversation-panel.topic-conversation header{flex-wrap:wrap}
+#conversation-panel.topic-conversation header h2{flex:1;min-width:0;white-space:normal;overflow-wrap:anywhere;margin:0}
+#conversation-audience{display:contents}
+#conversation-panel.topic-conversation #conversation-audience{display:flex;flex:1 1 100%;min-width:0;min-height:52px;align-items:center;gap:10px}
+#conversation-companion{position:relative;flex:none;width:52px;height:52px;display:grid;place-items:center;
+ border:1px solid #a9ddd2;border-radius:14px;background:#102d31;transition:transform .18s ease,opacity .18s ease}
+#conversation-companion canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;visibility:hidden}
+#conversation-companion[data-appearance] canvas{visibility:visible}
+#conversation-companion .portrait-render-source{left:-10000px;top:0;width:256px;height:320px}
+#conversation-companion:not([data-appearance]):before{content:'';width:16px;height:16px;border:1px solid #dbfff7;border-radius:50%;background:#9de6e5;box-shadow:0 0 12px #9de6e588}
+#conversation-audience[data-recipient=topic] #conversation-companion{transform:translateX(-5px) scale(.82);opacity:.45;border-style:dashed}
+#conversation-audience[data-recipient=unconfirmed] #conversation-companion{opacity:.35;border-style:dashed}
+@media(prefers-reduced-motion:reduce){#conversation-companion{transition:none}}
+#topic-mode-status{margin:0;padding:0 10px 6px}
 @media(max-width:740px){
  #conversation-panel.shared-conversation{
   top:calc(env(safe-area-inset-top) + 86px);right:max(12px,env(safe-area-inset-right));
@@ -369,7 +383,7 @@ body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-controls
 .inside-house #creator,.inside-house #pointing,.inside-house #play-near,.inside-house #recovery-panel{display:none!important}
 .inside-house #world-tools,.inside-house #dock,.inside-house #companion-status{display:none}
 body.inside-house #dock{display:flex;left:50%;right:auto;bottom:max(24px,env(safe-area-inset-bottom));transform:translateX(-50%)}
-.inside-house #dock button:not(#dock-toggle):not(#talk):not(#map-tool):not(#tool-mic):not(#tool-speaker),.inside-house:not(.has-situated-conversation) #talk{display:none}
+.inside-house #dock button:not(#dock-toggle):not(#talk):not(#map-tool):not(#tool-mic):not(#tool-speaker):not(#topic-projects-open),.inside-house:not(.has-situated-conversation) #talk{display:none}
 #world-minimap{display:block;width:min(224px,65vw);height:auto;border:1px solid var(--line);border-radius:9px;margin-bottom:8px}
 #space-travel:not([open]){display:none}
 body.is-operating-matter #dock{visibility:visible;pointer-events:auto}
@@ -382,7 +396,9 @@ body.is-operating-matter #dock #map-tool{display:none}
   body:not(.inside-house):has(#garden-create:not([hidden])) #play-near{top:265px}
   body:not(.inside-house):has(#garden-create:not([hidden])):has(#visit-near[hidden]) #play-near{top:205px}
 }
-body:not([data-tools-expanded]) :is(#dock button:not(#dock-toggle),#view-tools,#activity-open),body[data-a2ui-toolbelt] #view-tools,dialog[data-native-settings]{display:none!important}
+body:not([data-tools-expanded]) #dock button:not(#dock-toggle):not(#topic-projects-open):not(#talk):not(#map-tool),
+body:not([data-tools-expanded]):not(.inside-topic) #dock :is(#talk,#map-tool),
+body:not([data-tools-expanded]) :is(#view-tools,#activity-open),body[data-a2ui-toolbelt] #view-tools,dialog[data-native-settings]{display:none!important}
 #view-tools{position:fixed;right:22px;bottom:max(24px,env(safe-area-inset-bottom));z-index:20;display:flex;gap:8px}
 #video-open{display:grid;place-items:center;width:44px;padding:0}
 .video-icon{display:block;width:20px;height:14px;border:1.5px solid currentColor;border-radius:3px;position:relative}
@@ -394,6 +410,23 @@ body:not([data-tools-expanded]) :is(#dock button:not(#dock-toggle),#view-tools,#
 #video-dialog select{width:100%;min-height:44px;margin:6px 0 16px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);font:inherit}
 #video-dialog kbd{display:inline-block;margin:8px 0 12px;color:var(--muted)}
 #video-status:empty{display:none}
+#topics-open{position:fixed;z-index:20;top:72px;right:22px;min-height:44px}
+#topic-projects-dialog,#topic-explorer{width:min(432px,calc(100vw - 24px));max-height:calc(100dvh - 24px);box-sizing:border-box;padding:16px;border:1px solid var(--line);border-radius:18px;background:#173339;color:var(--ink);overflow:auto}
+#topic-projects-dialog::backdrop,#topic-explorer::backdrop{background:#081b24b8}
+#topic-projects-dialog header,#topic-explorer header,#topic-explorer nav{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+#topic-explorer h2{margin:0;font:clamp(22px,5vw,30px) Georgia,serif}
+#topic-explorer ul{padding:0;list-style:none}
+#topic-explorer li+li{margin-top:6px}
+#topic-explorer li button{min-height:44px;width:100%;text-align:left;overflow-wrap:anywhere}
+#topic-projects-status:empty,#topic-explorer-status:empty{display:none}
+#topic-projects-list{display:grid;gap:12px}
+#topic-projects-list ul{list-style:none;margin:0;padding:10px;display:grid;gap:8px;background:#22434a;border-radius:10px}
+#topic-projects-list li{display:grid;gap:2px;overflow-wrap:anywhere}
+#topic-projects-list code{font-size:.72rem;color:var(--muted)}
+#topic-projects-return{margin-bottom:12px}
+#topic-projects-list section button{width:100%;text-align:left;overflow-wrap:anywhere}
+#topic-projects-dialog nav:has(button:not([hidden])){margin-top:12px}
+body:has(#conversation-panel:not([hidden])) #topics-open,body:has(#content-visit:not([hidden]):not(.is-walking)) #topics-open{display:none}
 #appearance-dialog h2{margin:0 0 18px}
 #appearance-dialog label,#appearance-dialog select{display:block}
 #appearance-dialog select{box-sizing:border-box;width:100%;min-height:44px;margin:6px 0 16px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:#10272c;color:var(--ink);font:inherit}
@@ -536,7 +569,7 @@ body[data-teleport-workspace] #help{display:none}
   <div id="release-update" role="status" hidden></div>
 </div>
 <div id="room-passage" tabindex="-1"><span class="passage-energy" aria-hidden="true"></span><div class="passage-copy"><p id="room-passage-message" role="status"></p><span class="passage-orbit" aria-hidden="true"></span><button id="room-passage-retry" type="button" hidden>Reintentar</button></div></div>
-<nav id="dock" class="glass" aria-label="Acciones del taller"><button id="dock-toggle" type="button" aria-expanded="false" aria-label="Mostrar herramientas">Herramientas</button><button id="bridge" class="primary" hidden>Conectar islas</button><button id="plant" hidden>Crear luz</button><button id="map-tool" type="button" aria-expanded="false" aria-controls="space-travel" disabled>Minimapa</button><button id="talk" aria-expanded="false" aria-controls="conversation-panel">Conversar</button><button id="tool-mic" type="button" aria-pressed="false" hidden>Mic</button><button id="tool-speaker" type="button" aria-label="Activar respuestas habladas" aria-pressed="false" hidden disabled>🔇 Audio</button><button id="undo" hidden class="icon" title="Deshacer mi último cambio" aria-label="Deshacer mi último cambio" disabled>↶</button></nav>
+<nav id="dock" class="glass" aria-label="Acciones del taller"><button id="dock-toggle" type="button" aria-expanded="false" aria-label="Mostrar herramientas">Herramientas</button><button id="bridge" class="primary" hidden>Conectar islas</button><button id="plant" hidden>Crear luz</button><button id="map-tool" type="button" aria-expanded="false" aria-controls="space-travel" disabled>Minimapa</button><button id="talk" aria-expanded="false" aria-controls="conversation-panel">Conversar</button><button id="tool-mic" type="button" aria-pressed="false" hidden>Mic</button><button id="tool-speaker" type="button" aria-label="Activar respuestas habladas" aria-pressed="false" hidden disabled>🔇 Audio</button><button id="topic-projects-open" type="button" aria-haspopup="dialog" hidden>Mesa de proyectos</button><button id="undo" hidden class="icon" title="Deshacer mi último cambio" aria-label="Deshacer mi último cambio" disabled>↶</button></nav>
 <section id="pointing" class="glass" aria-label="Indicar un objeto" hidden><p id="point-label"></p><div class="row"><button id="point-visit" class="primary" type="button" hidden>Visitar contenido</button><button id="point-send" class="primary" type="button">Señalar</button><button id="point-edit" type="button" hidden>Editar luz</button><button id="point-clear" type="button">Cancelar</button></div></section>
 <details id="play-near" class="glass" hidden><summary><strong id="play-title"></strong> · Cómo jugar<span id="play-progress" role="status"></span></summary><p id="play-instruction"></p><button id="play-edit" type="button" hidden>Editar jardín</button></details>
 <div id="indoor-design-tools" hidden><button id="indoor-design" type="button">Diseñar jardín</button><button id="indoor-design-forget" type="button" hidden>Cerrar seguimiento</button></div>
@@ -573,8 +606,29 @@ body[data-teleport-workspace] #help{display:none}
 <dialog id="atelier-panel" aria-labelledby="atelier-panel-title"><header><h2 id="atelier-panel-title">Mesa de Atelier</h2><button type="button" autofocus>Volver al mundo</button></header><div id="atelier-panel-stage"></div></dialog>
 <section id="content-visit" aria-label="Contenido visitado" class="glass" hidden><header><h2 id="visit-title">Presentación</h2><button id="visit-end" type="button">Cerrar contenido</button><button id="visit-walk" type="button" class="primary">Volver al mundo</button></header><p id="visit-loading" role="status" hidden></p><div id="visit-stage"></div></section>
 <section id="creator" class="glass" aria-label="Crear una luz" hidden><h2 id="creator-title">Una luz para este lugar</h2><p id="preview-hint" role="status">La vista previa es tuya. Al plantar, aparece para todos.</p><div class="row colors" role="group" aria-label="Color de la luz"><button class="swatch" data-color="mint" style="--color:#8ce4c2" aria-label="Menta" aria-pressed="true"></button><button class="swatch" data-color="amber" style="--color:#efc87a" aria-label="Ámbar" aria-pressed="false"></button><button class="swatch" data-color="rose" style="--color:#e8a2b9" aria-label="Rosa" aria-pressed="false"></button><button class="swatch" data-color="violet" style="--color:#a77bea" aria-label="Violeta" aria-pressed="false"></button></div><div class="row"><button id="preview-move">Mover acá</button><button id="preview-accept" class="primary">Plantar</button><button id="preview-cancel">Cancelar</button></div></section>
-<section id="conversation-panel" class="glass" aria-label="Conversación situada" hidden><header><h2 id="conversation-move" tabindex="0" title="Arrastrá para mover · Flechas con foco">Conversar</h2><button id="conversation-close" class="icon" aria-label="Minimizar conversación" title="Minimizar conversación">−</button></header><div class="conversation-actions"><button id="history-reference-clear" type="button" hidden>Quitar tema</button><button id="worktable-reference-clear" type="button" hidden>Quitar referencia</button><label id="room-topic" hidden>Tema <select id="room-topic-choice" aria-label="Tema de la conversación"></select></label></div><p id="conversation-hint">Podés seguir recorriendo el mundo mientras transcurre mi turno.</p><div id="shared-conversation" hidden></div><div id="conversation-log" aria-live="polite"></div><form id="conversation-form"><label for="message">Hablemos de este lugar</label><textarea id="message" maxlength="2000" rows="2" placeholder="¿Qué hacemos acá juntos?"></textarea><button id="send" class="primary" type="submit" disabled>Enviar</button></form><div id="conversation-resize" tabindex="0" role="group" aria-label="Cambiar tamaño de la conversación con las flechas" title="Arrastrá para cambiar el tamaño"></div></section>
+<section id="conversation-panel" class="glass" aria-label="Conversación situada" hidden><header><div id="conversation-audience"><span id="conversation-companion" class="voice-mode-portrait" aria-hidden="true" hidden><canvas width="128" height="160"></canvas></span><h2 id="conversation-move" tabindex="0" title="Arrastrá para mover · Flechas con foco">Conversar</h2></div><button id="conversation-close" class="icon" aria-label="Minimizar conversación" title="Minimizar conversación">−</button></header><div class="conversation-actions"><button id="topic-conversation-mode" type="button" hidden>Hablar directo al topic</button><button id="history-reference-clear" type="button" hidden>Quitar tema</button><button id="worktable-reference-clear" type="button" hidden>Quitar referencia</button><label id="room-topic" hidden>Tema <select id="room-topic-choice" aria-label="Tema de la conversación"></select></label></div><p id="topic-mode-status" role="status" hidden></p><p id="conversation-hint">Podés seguir recorriendo el mundo mientras transcurre mi turno.</p><div id="shared-conversation" hidden></div><div id="conversation-log" aria-live="polite"></div><form id="conversation-form"><label for="message">Hablemos de este lugar</label><textarea id="message" maxlength="2000" rows="2" placeholder="¿Qué hacemos acá juntos?"></textarea><button id="send" class="primary" type="submit" disabled>Enviar</button></form><div id="conversation-resize" tabindex="0" role="group" aria-label="Cambiar tamaño de la conversación con las flechas" title="Arrastrá para cambiar el tamaño"></div></section>
 <section id="recovery-panel" class="glass" aria-label="Envíos por confirmar" hidden><h2>Hay un envío por confirmar</h2><div id="recovery-items"></div></section>
+<button id="topics-open" class="glass" type="button" aria-haspopup="dialog" hidden>Topics</button>
+<dialog id="topic-explorer" aria-labelledby="topic-explorer-title">
+  <header><h2 id="topic-explorer-title">Explorar topics</h2><form method="dialog"><button type="submit" autofocus>Cerrar</button></form></header>
+  <p id="topic-explorer-status" role="status"></p>
+  <ul id="topic-explorer-list"></ul>
+  <nav aria-label="Páginas de topics"><button id="topics-back" type="button" hidden>Anterior</button><button id="topics-next" type="button" hidden>Siguiente</button></nav>
+  <section id="topic-room-details" hidden><h3></h3><p></p><div class="row">
+    <button id="topic-room-enter" type="button" class="primary" hidden>Entrar a la sala</button>
+    <button id="topic-room-back" type="button">Volver a los topics</button>
+  </div></section>
+</dialog>
+<dialog id="topic-projects-dialog" aria-labelledby="topic-projects-title">
+  <header><h2 id="topic-projects-title">Mesa de proyectos</h2><form method="dialog"><button type="submit" autofocus>Cerrar</button></form></header>
+  <p id="topic-projects-status" role="status"></p>
+  <button id="topic-projects-return" type="button" hidden>Volver a la mesa</button>
+  <div id="topic-projects-list"></div>
+  <nav class="row" aria-label="Páginas de proyectos">
+    <button id="topic-projects-back" type="button" hidden>Anterior</button>
+    <button id="topic-projects-next" type="button" hidden>Siguiente</button>
+  </nav>
+</dialog>
 <dialog id="questbook-dialog" aria-labelledby="questbook-title">
   <header><h2 id="questbook-title">Diario de misiones</h2><form method="dialog"><button type="submit" autofocus>Volver al mundo</button></form></header>
   <p id="questbook-status" role="status"></p>

@@ -47,6 +47,7 @@ export async function createConversationContexts({room,stateDir,transport,allowI
       for(const [id,r] of Object.entries(retained)){
         if(!uuid(id)||records[id]||receipts[id]||saved.records[id]||!r||r.mode!==mode||typeof r.actorRef!=='string'||!r.actorRef.startsWith('human:')
           ||r.frozen?.actorRef!==r.actorRef||typeof r.frozen.beingRef!=='string'
+          ||r.topic!==undefined&&(r.mode!==machineMode||typeof r.topic!=='string'||!/^topic-[a-f0-9]{40}$/.test(r.space)||!r.topic.startsWith(r.space.slice(6))||!/^[a-f0-9]{64}$/.test(r.topic))
           ||!uuid(r.run)||(typeof r.space!=='string'&&!(mode===machineMode&&r.space===null))||typeof r.observationId!=='string'||!validPrepared(r))
           throw Error('Invalid context receipt reference');
       }
@@ -87,13 +88,21 @@ export async function createConversationContexts({room,stateDir,transport,allowI
     return source.mode===machineMode?transport.machineContextStatus({...payload,...source.machine}):
       transport.status({...payload,textSha256:null,contextFile:source.file});
   };
+  function capturedPlace(observation){
+    return ['structured-interior-room','structured-topic-room'].includes(observation?.scope)?observation.place:null;
+  }
+  function canReadPlace(actor,being,place){
+    return allowInteriorSource?.(actor,being,place.id,place.topic);
+  }
   async function retire(record,status){
     return transaction(async()=>{
       if(records[record.id]!==record)return false;
       const next={...receipts};
       if(status.phase==='completed'&&status.nativeAcceptance==='observed'&&(record.mode===machineMode||record.observation.scope==='structured-interior-room')){
         const {actorRef,frozen,file,observation,mode,machine}=record;
-        next[record.id]={actorRef,frozen,file,mode,machine,run:observation.run,space:observation.scope==='structured-interior-room'?observation.place.id:null,observationId:observation.id};
+        const place=capturedPlace(observation);
+        next[record.id]={actorRef,frozen,file,mode,machine,run:observation.run,space:place?.id??null,
+          ...(place?.topic?{topic:place.topic}:{}),observationId:observation.id};
       }
       delete records[record.id];
       try{await persist(record.mode,next);}catch(error){if(!error.replaced)records[record.id]=record;throw error;}
@@ -137,9 +146,8 @@ export async function createConversationContexts({room,stateDir,transport,allowI
         // retirement during the authority read must never create a new capture.
         if(retryRecord&&records[request.id]!==retryRecord)throw fail('not-found','The retained source changed before recovery');
         let record=records[request.id];
-        const indoorId=record?.observation.scope==='structured-interior-room'?
-          record.observation.place.id:interior?.place.id;
-        if(indoorId&&(!allowInteriorSource||!await allowInteriorSource(actor,frozen.beingRef,indoorId)))
+        const place=record?capturedPlace(record.observation):interior?.place;
+        if(place&&!await canReadPlace(actor,frozen.beingRef,place))
           throw fail('forbidden','Tu daimon necesita acceso actual a esa sala para recibir su contexto');
         if(record){
           if(encode(record.frozen)!==encode(frozen)||record.observation.run!==room.run)throw fail('binding','Preserve the source from the earlier room or binding');
@@ -159,7 +167,7 @@ export async function createConversationContexts({room,stateDir,transport,allowI
             try{await persist(mode);}catch(error){if(!error.replaced)delete records[value.id];throw error;}return value;
           });
         }
-        if(indoorId&&!await allowInteriorSource(actor,frozen.beingRef,indoorId))
+        if(place&&!await canReadPlace(actor,frozen.beingRef,place))
           throw fail('forbidden','El acceso a la sala cambió antes de preparar el contexto');
         if(record.observation.run!==room.run)throw fail('scope-changed','El mundo cambió antes de preparar el contexto');
         const payload={actorRef:ref,frozen:record.frozen,id:record.id,observation:record.observation};
@@ -192,6 +200,8 @@ export async function createConversationContexts({room,stateDir,transport,allowI
     async authorizeWorldRequest(id,expectedBeingRef){
       if(fenced)throw fail('context-recovery','Context source ledger needs receiving recovery');
       const record=records[id],receipt=receipts[id],source=record??receipt;
+      if(record?.observation.scope==='structured-topic-room'||receipt?.topic)
+        throw fail('native-scope','The topic context does not select a physical world action scope');
       const capturedSpace=receipt?.space??(record?.observation.scope==='structured-interior-room'?record.observation.place.id:null);
       if(!source||(record&&record.phase!=='prepared')||(receipt?.run??record?.observation.run)!==room.run
         ||source.frozen.beingRef!==expectedBeingRef)throw fail('native-scope','The prepared source does not belong to this room and return lane');
@@ -250,15 +260,15 @@ export async function createConversationContexts({room,stateDir,transport,allowI
         if(fenced||retained.actorRef!==actorRef(actor)||binding!==retained.frozen.binding||retained.run!==room.run
           ||encode(await transport.inspect(retained.actorRef))!==encode(retained.frozen))
           throw fail('binding','Preserve the source from the earlier room or binding');
-        if(retained.space&&(!allowInteriorSource||!await allowInteriorSource(actor,retained.frozen.beingRef,retained.space)))
+        if(retained.space&&!await canReadPlace(actor,retained.frozen.beingRef,{id:retained.space,topic:retained.topic}))
           throw fail('forbidden','El acceso a esa sala cambió');
         return {id,binding,prepared:true,retained:true,machine_source:retained.machine.receipt,files:[],work_admitted:false};
       }
       const record=owned(actor,id);const current=await transport.inspect(record.actorRef);
       if(fenced||binding!==record.frozen.binding||encode(current)!==encode(record.frozen)||record.observation.run!==room.run)
         throw fail('binding','Preserve the source from the earlier room or binding');
-      if(record.observation.scope==='structured-interior-room'&&(!allowInteriorSource||
-        !await allowInteriorSource(actor,record.frozen.beingRef,record.observation.place.id)))
+      const place=capturedPlace(record.observation);
+      if(place&&!await canReadPlace(actor,record.frozen.beingRef,place))
         throw fail('forbidden','El acceso a esa sala cambió');
       return record.phase==='prepared'?{...result(record),prepared:true}:{id,prepared:false,work_admitted:false};
     },

@@ -406,6 +406,47 @@ human pending item. Beacon work is explicitly outside this session.
 
 ## Indoor source contract
 
+### Topic explorer
+
+The **Topics** control opens the current pair's topic directory from the
+ordinary Holodeck entrance, including without a house. The existing
+authenticated Conversation frame reads the Gateway Session Workspace
+projection and returns bounded room summaries to the exact bound host.
+Holodeck reads the selected room again before showing its current entry.
+Discovery and selection use only reads. **Entrar a la sala** performs an
+explicit navigation through the existing MML rendering and presence flow.
+These actions neither route input nor start a model turn.
+
+Build the client before running `test/shared-conversation-host.test.mjs`.
+Set `HOLODECK_PLAYWRIGHT` to the installed Playwright Core module and
+`HOLODECK_CONVERSATION_SURFACE` to the compatible Gateway
+`dashboard/web/conversation-surface.js` to include the narrow-screen browser
+fixture. It uses both actual frame implementations and a controlled
+catalogue. Gateway independently verifies the HTTP workspace scope.
+
+The owner route `GET api/topic-space?room=...` reads the exact logical topic
+through the paired native bridge and returns one room using the
+existing MML interior renderer. The bridge reuses the current owned Gateway
+topic reader with the explicit shared Home workspace grant. The HTTP host
+rechecks the visitor and current place after the returning read. The room
+definition needs no house. The same route accepts an explicit entrance
+with the current place and exact topic reference. The live visit keeps the
+preceding physical place as its exit destination while that place remains
+authorized. Generated room visits are bounded in memory and reuse the
+existing socket authorization check. The browser recovers a lost move
+response by reading current location. The browser fixture enters and leaves
+an actual generated MML room.
+
+Inside that room, **Conversar** opens general Conversation. The existing
+machine-source writer freezes the authorized logical topic and room name at
+intake under `structured-topic-room`. Moving or leaving after capture
+keeps the same context and general destination. Reopening the retained
+source checks the exact topic and current pair. The topic attachment
+does not grant a physical world action scope or select direct routing.
+The isolated HTTP fixture moves to another topic before preparation
+resolves, then verifies the original context and its single retained
+attachment. Project surfaces and live original delivery remain open.
+
 A shared Conversation iframe can stay mounted while a human closes its
 panel and moves between allowed rooms. New indoor sources freeze the
 server-selected room at preparation intake, before waiting for the
@@ -625,3 +666,78 @@ available horizontal space within the display safe area. The regular
 side panel and the phone portrait rules continue to follow their respective
 layout constraints. The selected-worker browser fixture checked the full
 reply and its close control at four viewport sizes.
+
+## Direct conversation in a topic room
+
+A generated topic room opens general Conversation by default. The visitor can
+choose to talk directly to the current topic or return to general Conversation
+without leaving. The frame resolves the current authorized Session Workspace
+destination. Holodeck shows the confirmed audience and restores the general
+audience on departure or when a fresh Conversation document connects.
+The general companion portrait steps aside after the frame confirms direct
+mode. The topic name remains visible as the recipient. A return to general
+Conversation restores the portrait in the same room. The avatar uses the
+paired being's registered artwork, with a companion light as its fallback.
+Reduced-motion settings remove the transition. This indicator is local to
+the visitor, and the visitor's drafts and sends stay in Conversation.
+
+A mobile Chromium fixture exercises entry, direct selection, return on exit
+and refusal after room discovery is revoked through the real frame protocol.
+The selector in that browser fixture is controlled. The Session Workspace
+fixture separately tests the actual destination selector and exact reference.
+Native admission and the corresponding return for a direct original still need
+live acceptance.
+
+### Projects in a generated topic room
+
+The project table reads the paired Gateway's current topic checkpoint on
+each opening. Repositories are grouped under their project identity and
+display their exact linked Git commit. The visitor can move among pages
+without leaving the room. The active room and current source access are
+checked on each page. If the catalogue changes while paging, the table
+returns to the refreshed first page. Closing the table or leaving the room
+discards its browser view. A backend without the project reader reports the
+table unavailable. Opening a project from the table rechecks its selected
+repository link and shows only the project's currently visible repositories,
+including those outside the visible table page. Returning to the table
+reads its catalogue again. The view is read-only. The room draws one
+door per project represented on the first catalogue page, on entry and
+on a fresh first-page table read. A door opens the same project view and
+rechecks the selected link. The scene owns the displayed doors and
+discards them on departure. Additional projects remain accessible through
+the paged table. Separate project interiors and editing surfaces remain
+part of the topic-room roadmap.
+
+On a table read, the exact visited room can also receive the paired
+Gateway's current work observation. The status shows observed work or
+queue activity, retained human questions and the presence of a canonical
+result. A stale native observation does not say that the daimon is
+working. The catalogue, other rooms and older owners receive no new
+details. The table reads no transcript and starts no turn. **Ver resultado
+del topic** opens the current result through the paired Conversation frame.
+Only the selected room and a correlation reference cross into the frame.
+Conversation reads the retained result and opens it without changing the
+recipient or composing a reply. Leaving the room or closing the panel
+cancels the read. **Ver pregunta del topic** opens the current actionable
+questions for that room in Conversation's For You dialog. Conversation
+filters its existing canonical list by the exact room destination.
+Question text, answer drafts, and decision receipts stay with Conversation.
+The visitor explicitly answers through the same controls. Internal-only
+questions outside that list stay with their owning session.
+
+The project view offers the questbook when the project is the one selected
+by the receiving card writer and the visitor has its read grant. Its pages
+and revisioned actions revalidate the room and the linked repository before
+using the same DaimonCards writer as the workshop journal. The writer
+continues to enforce the individual card and edit grants. Leaving the
+topic closes its journal. No new card store or model work is required.
+
+The receiving card writer supplies at most eight exact revision candidates
+from the selected mission privately to the owner-side host. For candidates
+missing from the current page, the host asks the already-authorized project
+reader to resolve retained Git evidence and rechecks the room and card
+access before rendering. The browser receives only the revisions matched
+to that mission. An expired citation, another project's repository or an
+unregistered commit cannot be rendered as project evidence. A displayed
+historical commit refers to verification at registration, with current
+visibility checked on opening.

@@ -124,11 +124,23 @@ test('the authenticated questbook credits only its original Room action', {skip:
   projectWrite = false;
   assert.equal((await createPost(create)).status,403);
   projectWrite = true;
-  const firstCreation = (await (await createPost(create)).json()).result;
+  const boundCreation = {...create,expectedActor:human,expectedProject:project};
+  for (const retired of [{expectedActor:'human:another-actor'},{expectedProject:otherProject}]) {
+    const seat = await fetch(base,{headers:{Cookie:cookie}});
+    const seatHeaders = {...headers,Cookie:cookie+'; '+seat.headers.get('set-cookie').split(';')[0]};
+    await seat.text();
+    const denied = await fetch(base+'api/questbook/create',{method:'POST',headers:seatHeaders,
+      body:JSON.stringify({...boundCreation,...retired})});
+    assert.equal(denied.status,403);
+  }
+  const firstCreation = (await (await createPost(boundCreation)).json()).result;
   assert.equal(firstCreation.status,'applied');
   assert.equal((await (await createPost(create)).json()).result.status,'retained');
   assert.equal((await (await createPost({...create,title:'Changed original'})).json()).result.reason,'operation_changed');
-  const receipt = await fetch(base+'api/questbook/receipt?operation='+create.operation,{headers});
+  const receiptQuery = new URLSearchParams({operation:create.operation,expectedActor:human,expectedProject:project});
+  const receipt = await fetch(base+'api/questbook/receipt?'+receiptQuery,{headers});
+  receiptQuery.set('expectedActor','human:another-actor');
+  assert.equal((await fetch(base+'api/questbook/receipt?'+receiptQuery,{headers})).status,403);
   assert.equal(receipt.status,200);
   assert.deepEqual((await receipt.json()).result,firstCreation.event);
   const fromDaimon = await native({type:'read',card:create.card});
@@ -351,4 +363,59 @@ test('the exterior A2UI journal preserves a shared mission across browser views'
   assert.equal(await mobileDialog.getByRole('button',{name:'Completar misión'}).isDisabled(),true);
   assert.ok((await mobileDialog.boundingBox()).width < 390);
   assert.deepEqual(errors,[]);
+});
+
+test('a reloaded A2UI journal recovers its committed creation with read access', {skip:!binary||!playwright}, async t => {
+  const {chromium} = await import(playwright);
+  const directory = mkdtempSync(join(tmpdir(),'holodeck-questbook-recovery-'));
+  t.after(() => rmSync(directory,{recursive:true,force:true}));
+  const store = join(directory,'questbook.sqlite'), project = randomUUID();
+  const actor = {id:'human:quest-recovery',ref:'human:quest-recovery',kind:'human',
+    name:'Quest player',rights:['observe','edit','project']};
+  let browserWrite = true;
+  const runtime = await createHolodeck({stateDir:directory,identityResolver:async () => actor,questbook:{
+    project,binary,store,authorize:async () => ({read:true,write:browserWrite}),
+  }});
+  const listener = runtime.app.listen(0,'127.0.0.1');
+  await new Promise(resolve => listener.once('listening',resolve));
+  t.after(() => { runtime.close();listener.closeAllConnections();return new Promise(resolve=>listener.close(resolve)); });
+  const browser = await chromium.launch({executablePath:process.env.CHROMIUM_BIN||'/usr/bin/chromium',
+    args:['--no-sandbox','--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader']});
+  t.after(() => browser.close());
+  const base = 'http://127.0.0.1:'+listener.address().port+'/';
+  const page = await browser.newPage({viewport:{width:1100,height:800}});
+  await page.goto(base);
+  await page.locator('#questbook-open').click();
+  const dialog = page.getByRole('dialog',{name:'Diario de misiones'});
+  const missionTitle = 'Conservar el recibo tras recargar';
+  let creationRequests = 0, receiptReads = 0, creation;
+  await page.route('**/api/questbook/create',async route => {
+    creationRequests++;
+    creation = await (await route.fetch()).json();
+    await route.abort();
+  });
+  await page.route('**/api/questbook/receipt?*',async route => {
+    if (++receiptReads === 1) await route.abort();
+    else await route.continue();
+  });
+  await dialog.getByRole('button',{name:'Nueva misión'}).click();
+  await dialog.getByLabel('Título de la nueva misión').fill(missionTitle);
+  await dialog.getByRole('button',{name:'Crear misión'}).click();
+  await dialog.getByText('Falta confirmar la misión.',{exact:false}).waitFor();
+  assert.equal(creation.result.status,'applied');
+  browserWrite = false;
+  await page.reload();
+  await page.locator('#questbook-open').click();
+  await dialog.getByRole('button',{name:'Confirmar misión pendiente'}).click();
+  assert.equal(await dialog.getByLabel('Título de la nueva misión').inputValue(),missionTitle);
+  await dialog.getByRole('button',{name:'Comprobar misión'}).click();
+  await dialog.getByText('Misión creada.',{exact:true}).waitFor();
+  assert.equal(creationRequests,1);
+  assert.equal(receiptReads,2);
+  const recovered = JSON.parse(execFileSync(binary,[store],{encoding:'utf8',input:JSON.stringify({
+    project,actor:{kind:'daimon',subject:'fixture-reader'},can_write:false,
+    input:{type:'read',card:creation.result.event.card.id},
+  })})).result;
+  assert.equal(recovered.title,missionTitle);
+  assert.equal(recovered.revision,1);
 });
