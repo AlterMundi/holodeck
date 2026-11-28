@@ -150,6 +150,25 @@ human pending item. Beacon work is explicitly outside this session.
 
 ## Indoor source contract
 
+### Topic explorer
+
+The **Topics** control opens the current pair's topic directory from the
+ordinary Holodeck entrance, including without a house. The existing
+authenticated Conversation frame reads the Gateway Session Workspace
+projection and returns bounded room summaries to the exact bound host.
+Holodeck reads the selected room again before showing its current entry.
+Discovery and selection use only reads. They do not change the recipient,
+submit a message or start a model turn.
+
+Build the client before running `test/shared-conversation-host.test.mjs`.
+Set `HOLODECK_PLAYWRIGHT` to the installed Playwright Core module and
+`HOLODECK_CONVERSATION_SURFACE` to the compatible Gateway
+`dashboard/web/conversation-surface.js` to include the narrow-screen browser
+fixture. It uses both actual frame implementations and a controlled
+catalogue. Gateway independently verifies the HTTP workspace scope. Entering
+a generated spatial room and attaching its topic to general Conversation
+remain subsequent receiving work.
+
 A shared Conversation iframe can stay mounted while a human closes its
 panel and moves between allowed rooms. New indoor sources freeze the
 server-selected room at preparation intake, before waiting for the

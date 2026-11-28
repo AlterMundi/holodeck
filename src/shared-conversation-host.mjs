@@ -1,12 +1,13 @@
 // Only correlation and immutable machine context cross this boundary.
 // Canonical Conversation retains all human content, drafts, media and sends.
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
+const topicKey=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
 const SCHEMA='conversation.surface/v1';
 const bounded=value=>{try{return JSON.stringify(value).length<=8192;}catch{return false;}};
 export class SharedConversationHost{
   constructor({window,document,container,api,capture,currentActor,onStatus=()=>{},onError=()=>{}}){
     Object.assign(this,{window,document,container,api,capture,currentActor,onStatus,onError});
-    this.records=new Map();this.visit=window.crypto.randomUUID();this.receive=this.receive.bind(this);
+    this.records=new Map();this.topicReady=[];this.visit=window.crypto.randomUUID();this.receive=this.receive.bind(this);
     window.addEventListener('message',this.receive);
   }
   async mount(){
@@ -42,10 +43,15 @@ export class SharedConversationHost{
     const d=event.data;
     if(d.type==='ready'){
       // A reload establishes a fresh channel; old async replies stay on the old channel.
-      this.channel=d.channel;this.send(d,'connect');return;
+      if(this.channel!==d.channel)this.finishTopicRead(Error('La conexión cambió.'));
+      this.channel=d.channel;this.supportsTopics=d.features?.topicRooms===true;
+      this.send(d,'connect',this.supportsTopics?{features:{topicRooms:true}}:{});
+      for(const ready of this.topicReady.splice(0))ready();
+      return;
     }
     if(d.channel!==this.channel)return;
-    if(d.type==='prepare')this.prepare(d).catch(()=>{});
+    if(d.type==='topic-rooms-readback')this.receiveTopicRead(d);
+    else if(d.type==='prepare')this.prepare(d).catch(()=>{});
     else if(d.type==='status'&&this.records.has(d.id)&&typeof d.phase==='string'&&d.phase.length<=64&&typeof d.busy==='boolean'){
       this.onStatus({phase:d.phase,busy:d.busy});
       // This is a UI hint only. The server verifies real canonical terminal state.
@@ -55,6 +61,52 @@ export class SharedConversationHost{
       this.api(`conversation-contexts/${d.id}/discard`,{binding:d.binding,reason:d.reason})
         .then(value=>{if(value.released)this.records.delete(d.id);}).catch(()=>{});
     }
+  }
+  async readTopicRooms({room,after}={}){
+    if(room!==undefined&&!topicKey(room)||after!==undefined&&!topicKey(after)||
+      room!==undefined&&after!==undefined)throw Error('Seleccioná un topic válido.');
+    await this.mount();
+    if(!this.channel)await new Promise((resolve,reject)=>{
+      const ready=()=>{clearTimeout(timeout);resolve();};
+      const timeout=setTimeout(()=>{
+        this.topicReady=this.topicReady.filter(item=>item!==ready);
+        reject(Error('No pude conectar con tus topics.'));
+      },8000);
+      this.topicReady.push(ready);
+    });
+    if(this.closed||!this.supportsTopics||this.currentActor()!==this.selected.actorRef)
+      throw Error('Tus topics todavía no están disponibles acá.');
+    if(this.topicRead)throw Error('La lectura anterior sigue pendiente.');
+    const request=this.window.crypto.randomUUID();
+    return new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>this.finishTopicRead(Error('No pude confirmar tus topics.')),8000);
+      this.topicRead={request,room,after,resolve,reject,timer};
+      this.send({channel:this.channel},'topic-rooms-read',{request,...(room?{room}:{}),...(after?{after}:{})});
+    });
+  }
+  receiveTopicRead(d){
+    const wanted=this.topicRead;
+    if(!wanted||d.request!==wanted.request)return;
+    const rows=d.rooms;
+    if(d.unavailable||!Array.isArray(rows)||rows.length>12||
+      rows.some((row,index)=>!row||Object.keys(row).sort().join(',')!=='direct_available,general,room,title'||
+        !topicKey(row.room)||typeof row.title!=='string'||Array.from(row.title).length>80||
+        typeof row.general!=='boolean'||typeof row.direct_available!=='boolean'||
+        row.room<=(index>0?rows[index-1].room:wanted.after??''))||
+      !(d.next===null||rows.length===12&&d.next===rows.at(-1).room)||
+      wanted.room&&(rows.length!==1||rows[0].room!==wanted.room||d.next!==null)){
+      this.finishTopicRead(Error('Ese topic no está disponible.'));
+      return;
+    }
+    this.finishTopicRead(null,{rooms:rows,next:d.next});
+  }
+  finishTopicRead(error,value){
+    const read=this.topicRead;
+    if(!read)return;
+    this.topicRead=undefined;
+    clearTimeout(read.timer);
+    if(error)read.reject(error);
+    else read.resolve(value);
   }
   async prepare(d){
     if(!UUID.test(d.id||'')||!UUID.test(d.request||'')||!['text','audio'].includes(d.modality)
@@ -85,5 +137,5 @@ export class SharedConversationHost{
       if(!record.discarded&&this.channel===d.channel)this.send(d,'error',{request:d.request,id:d.id,message:'No pude conservar el contexto de este lugar. Tu borrador sigue en la conversación.'});
     }
   }
-  dispose(){this.closed=true;this.window.removeEventListener('message',this.receive);this.frame?.remove();}
+  dispose(){this.closed=true;this.finishTopicRead(Error('La conversación se cerró.'));for(const ready of this.topicReady.splice(0))ready();this.window.removeEventListener('message',this.receive);this.frame?.remove();}
 }

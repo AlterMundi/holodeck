@@ -203,6 +203,16 @@ body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-controls
   body:not(.inside-house):has(#garden-create:not([hidden])):has(#visit-near[hidden]) #play-near{top:205px}
 }
 #appearance-open{position:fixed;right:22px;bottom:max(24px,env(safe-area-inset-bottom));z-index:20;min-height:44px}
+#topics-open{position:fixed;z-index:20;top:72px;right:22px;min-height:44px}
+#topic-explorer{width:min(432px,calc(100vw - 24px));max-height:calc(100dvh - 24px);box-sizing:border-box;padding:16px;border:1px solid var(--line);border-radius:18px;background:#173339;color:var(--ink);overflow:auto}
+#topic-explorer::backdrop{background:#081b24b8}
+#topic-explorer header,#topic-explorer nav{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+#topic-explorer h2{margin:0;font:clamp(22px,5vw,30px) Georgia,serif}
+#topic-explorer ul{padding:0;list-style:none}
+#topic-explorer li+li{margin-top:6px}
+#topic-explorer li button{min-height:44px;width:100%;text-align:left;overflow-wrap:anywhere}
+#topic-explorer-status:empty{display:none}
+body:has(#conversation-panel:not([hidden])) #topics-open,body:has(#content-visit:not([hidden]):not(.is-walking)) #topics-open{display:none}
 #questbook-dialog{width:min(500px,calc(100vw - 24px));max-height:calc(100dvh - 24px);box-sizing:border-box;padding:16px;border:1px solid var(--line);border-radius:18px;background:#173339;color:var(--ink);overflow:auto}
 #questbook-dialog::backdrop{background:#081b24b8}
 #questbook-dialog header,#questbook-dialog nav{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
@@ -289,6 +299,14 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
 <section id="creator" class="glass" aria-label="Crear una luz" hidden><h2 id="creator-title">Una luz para este lugar</h2><p id="preview-hint" role="status">La vista previa es tuya. Al plantar, aparece para todos.</p><div class="row colors" role="group" aria-label="Color de la luz"><button class="swatch" data-color="mint" style="--color:#8ce4c2" aria-label="Menta" aria-pressed="true"></button><button class="swatch" data-color="amber" style="--color:#efc87a" aria-label="Ámbar" aria-pressed="false"></button><button class="swatch" data-color="rose" style="--color:#e8a2b9" aria-label="Rosa" aria-pressed="false"></button><button class="swatch" data-color="violet" style="--color:#a77bea" aria-label="Violeta" aria-pressed="false"></button></div><div class="row"><button id="preview-move">Mover acá</button><button id="preview-accept" class="primary">Plantar</button><button id="preview-cancel">Cancelar</button></div></section>
 <section id="conversation-panel" class="glass" aria-label="Conversación situada" hidden><header><h2>Desde acá</h2><button id="history-reference-clear" type="button" hidden>Quitar tema</button><button id="worktable-reference-clear" type="button" hidden>Quitar referencia</button><label id="room-topic" hidden>Tema <select id="room-topic-choice" aria-label="Tema de la conversación"></select></label><button id="conversation-close" class="icon" aria-label="Volver al mundo">×</button></header><p id="conversation-hint">Podés seguir recorriendo el mundo mientras transcurre mi turno.</p><div id="shared-conversation" hidden></div><div id="conversation-log" aria-live="polite"></div><form id="conversation-form"><label for="message">Hablemos de este lugar</label><textarea id="message" maxlength="2000" rows="2" placeholder="¿Qué hacemos acá juntos?"></textarea><button id="send" class="primary" type="submit" disabled>Enviar</button></form></section>
 <section id="recovery-panel" class="glass" aria-label="Envíos por confirmar" hidden><h2>Hay un envío por confirmar</h2><div id="recovery-items"></div></section>
+<button id="topics-open" class="glass" type="button" aria-haspopup="dialog" hidden>Topics</button>
+<dialog id="topic-explorer" aria-labelledby="topic-explorer-title">
+  <header><h2 id="topic-explorer-title">Explorar topics</h2><form method="dialog"><button type="submit" autofocus>Cerrar</button></form></header>
+  <p id="topic-explorer-status" role="status"></p>
+  <ul id="topic-explorer-list"></ul>
+  <nav aria-label="Páginas de topics"><button id="topics-back" type="button" hidden>Anterior</button><button id="topics-next" type="button" hidden>Siguiente</button></nav>
+  <section id="topic-room-details" hidden><h3></h3><p></p><button type="button">Volver a los topics</button></section>
+</dialog>
 <dialog id="questbook-dialog" aria-labelledby="questbook-title">
   <header><h2 id="questbook-title">Diario de misiones</h2><form method="dialog"><button type="submit" autofocus>Volver al mundo</button></form></header>
   <p id="questbook-status" role="status"></p>

@@ -22,6 +22,7 @@ import { indoorGardenContains,validIndoorGardenRecipe } from './indoor-garden-re
 import { OutdoorSky } from './outdoor-sky.mjs';
 import { SignalGardenEditor } from './signal-garden-editor.mjs';
 import { AppliedGeometryProbe } from './applied-geometry.mjs';
+import {mountTopicExplorer} from './topic-explorer.mjs';
 import { SharedConversationHost } from './shared-conversation-host.mjs';
 import { WorldAudio } from './world-audio.mjs';
 import {WorldHistory} from './world-history.mjs';
@@ -70,7 +71,7 @@ document.querySelector('#appearance-form').onsubmit=event=>{
   if(!appearanceSave.disabled)void readAppearance({choice:appearanceChoice.value===''?null:Number(appearanceChoice.value)});
 };
 window.addEventListener('keydown',event=>{
-  if(appearanceDialog.open||document.querySelector('#questbook-dialog').open)event.stopImmediatePropagation();
+  if(appearanceDialog.open||document.querySelector('#questbook-dialog').open||document.querySelector('#topic-explorer').open)event.stopImmediatePropagation();
 },true);
 const touchControls={
   mount(container,experience){
@@ -739,6 +740,7 @@ function updateNativeAvailability(){
   const available=state?.native?.available===true;
   const shared=sharedSurface();
   syncRoomTopic();
+  $('#topics-open').hidden=!shared;
   $('#talk').disabled=inside&&!shared;
   $('#conversation-panel').classList.toggle('shared-conversation',shared);
   $('#conversation-form').hidden=shared;$('#conversation-log').hidden=shared;
@@ -1004,14 +1006,18 @@ $('#undo').onclick=async()=>{
   else if(change.type==='garden.place')await action('garden.remove',change.target,{},entity.revision,{undo:true});
   else if(change.type==='garden.update'&&change.previous)await action('garden.update',change.target,{x:change.previous.x,z:change.previous.z,color:change.previous.color},entity.revision,{undo:true});
 };
+function conversationHost(){
+  if(!sharedConversation)sharedConversation=new SharedConversationHost({window,document,container:$('#shared-conversation'),api,
+    capture:captureInteractionContext,currentActor:()=>activeSpace?.actorRef??state?.actorRef,
+    onStatus:({phase,busy})=>{$('#companion-status').textContent=phases[phase]||(busy?'La conversación está procesando tu intervención.':'Tu intervención quedó en la conversación.');},onError:say});
+  return sharedConversation;
+}
+mountTopicExplorer(document,query=>conversationHost().readTopicRooms(query));
 function openConversation(open){
   const panel=$('#conversation-panel');panel.hidden=!open;$('#talk').setAttribute('aria-expanded',String(open));
   if(open)updateNativeAvailability();
   if(open&&sharedSurface()){
-    if(!sharedConversation)sharedConversation=new SharedConversationHost({window,document,container:$('#shared-conversation'),api,
-      capture:captureInteractionContext,currentActor:()=>activeSpace?.actorRef??state?.actorRef,
-      onStatus:({phase,busy})=>{$('#companion-status').textContent=phases[phase]||(busy?'La conversación está procesando tu intervención.':'Tu intervención quedó en la conversación.');},onError:say});
-    sharedConversation.mount().catch(()=>say('No pude abrir tu conversación. Volvé a tocar Conversar para intentarlo.'));
+    conversationHost().mount().catch(()=>say('No pude abrir tu conversación. Volvé a tocar Conversar para intentarlo.'));
   }else if(open)$('#message').focus();
   else if(panel.contains(document.activeElement)){document.activeElement.blur();window.focus();}
 }
