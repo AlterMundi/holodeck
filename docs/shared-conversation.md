@@ -63,9 +63,10 @@ The canonical composer reports whether it is opening, recording or awaiting
 review. An unfinished microphone opening expires after 20 seconds. The toolbar
 shows the specific access, device or attachment failure and can be used
 again. A late browser stream is stopped and the draft is kept. World context
-prepares alongside recording. If it fails or takes more than three seconds
-after recording stops, the same audio remains ready in Conversation for an
-explicit send without the world context.
+prepares alongside recording. After an explicit Send, Conversation gives it
+up to 750 milliseconds after finalization. The same original and human
+attachments are sent through the ordinary writer if context is unavailable.
+The canonical receipt describes the missing context immediately.
 
 
 A text submission or the start of a voice input prepares a situated state for
@@ -362,12 +363,13 @@ NativeBridge exposes these existing-owner, UID-restricted operations:
   Legacy historical status reads retain their existing contract.
 
 The existing receiving native-route mux keeps each operation on that pair's fixed
-lane. src/conversation-context.mjs retains only machine-source preparation, with
-at most32records and1.8MiB each current/stage file, inside the existing32MiB world
-quota. Combined room/legacy-native/context-source/session bounds remain below that
-quota. Canonical files use the existing owner limit of1024files/256MiB, refusing
-capacity rather than deleting originals. No human text/audio or separate transcript
-history is copied into this ledger.
+lane. The world ledger holds at most 32 preparations whose exact attachment has
+yet to be confirmed. A canonical retained original with observed native
+admission frees its preparation slot, including when its reply is queued.
+The same record keeps its world scope while work is active; terminal admission
+can still compact it to a receipt. The operational ledger has a separate
+128-record and 1.8 MiB limit for each current or staging file. Canonical files
+use the owner's existing limits. The ledger contains no human audio or text.
 
 Freeze source before upload. Missing acknowledgment retries the same retained
 observation; changed actor, binding, source, room or reused canonical ID refuses.

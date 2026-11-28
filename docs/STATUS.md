@@ -1,5 +1,27 @@
 # Current MVP work
 
+## World context capacity and immediate audio · 2026-11-28
+
+Protected release `3c16ba534112` serves source `2df4545`. The live world
+ledger had 32 preparation records. The owning bridge confirmed that 26
+already belonged to native-admitted originals whose replies still appeared
+queued. Four were terminal, one prepared source had no canonical original,
+and one returned an identity conflict. The preparation budget had counted
+all of them until a terminal reply.
+
+Exact canonical attachment confirmation now frees the preparation slot while
+preserving the original's world record and authorization checks. A controlled
+replay of the live 32-record pressure state used the actual native bridge,
+reserved a new context, released the synthetic source, and verified that no
+human original was created. The Node suite passed 620 tests with six skips.
+
+Canonical Conversation serves `0a4e7730`. When a person selects Send and
+world context is unavailable, the same audio is sent through the ordinary
+writer after at most 750 milliseconds of additional context wait. The
+receipt mentions the missing context. Chromium exercised a real MediaRecorder
+with a synthetic device and verified a single confirmed submission to the
+fixture writer after an injected context refusal.
+
 ## Larger illustrated Sun and Moon · 2026-11-28
 
 Protected release `51aac6529989` serves source `65fe1f5` with
@@ -4608,8 +4630,10 @@ and a scripted native worker.
 
 ## Selected receiving release
 
-The current protected release is `51aac6529989` at `65fe1f5` with
-`316394be6e59` retained for rollback. See the latest entry at the top of
+The current protected release is `3c16ba534112` at `2df4545` with
+`51aac6529989` as its prior package. The prior loader accepts at most 32
+preparation records; rolling back with a larger ledger requires the compatible
+loader. The current writer never alters a canonical original. See the latest entry at the top of
 this record for the current receiver checks. Earlier releases follow.
 
 The protected playtest now selects package `601108cb255e` at source
