@@ -78,6 +78,7 @@ class NativeBridge:
         self.questbook_access_reader=questbook_access_reader
         self.review_ownership_reader=review_ownership_reader
         self.human_ref='human:telegram:'+str(provider.human)
+        self.home_workspace=False
         self.home_origin=None
         self.home_entry=None
         if home_auth is not None:
@@ -89,6 +90,7 @@ class NativeBridge:
             if configured is None and 'application_id' in provider.config:
                 raise ValueError('The installed generic Home adapter must expose its registered human reference')
             if configured is not None:self.human_ref=configured
+            self.home_workspace=getattr(home_auth,'workspace',False) is True
             self.home_origin=home_auth.origin
             self.home_entry=home_auth.entry
         if not isinstance(self.human_ref,str) or not re.fullmatch(r'human:[A-Za-z0-9:._/-]{1,240}',self.human_ref):
@@ -141,6 +143,29 @@ class NativeBridge:
         return {'schema':'holodeck.conversation-surface/v1','actorRef':actor,
                 'beingRef':frozen['beingRef'],'homeRef':frozen['homeRef'],
                 'binding':frozen['binding'],'url':self.home_origin+self.home_entry}
+
+    def topic_room(self,actor,room):
+        first=self.pair(actor)
+        if not self.home_workspace or not isinstance(room,str) or re.fullmatch('[a-f0-9]{64}',room) is None:
+            raise BridgeError('topic-room-unavailable','The current Home workspace grant is unavailable')
+        current=self.provider.topic_rooms(room)
+        rows=current.get('rooms')
+        if (current.get('schema')!='daimon.topic-rooms/v1' or not isinstance(rows,list) or len(rows)!=1
+            or rows[0].get('room')!=room):
+            raise BridgeError('topic-room-unavailable','The current topic room is unavailable')
+        pair=self.pair(actor)
+        if (pair['owner_being_ref']!=first['owner_being_ref'] or pair['home_ref']!=first['home_ref']
+            or pair['human']['revision']!=first['human']['revision']):
+            raise BridgeError('topic-room-unavailable','The current pair changed')
+        entry=rows[0]
+        title=entry.get('title')
+        if not isinstance(title,str) or type(entry.get('general')) is not bool:
+            raise BridgeError('topic-room-unavailable','The current topic room is unavailable')
+        title=re.sub(r'[\x00-\x1f\x7f]',' ',title).strip()[:80]
+        if not title:
+            raise BridgeError('topic-room-unavailable','The current topic title is unavailable')
+        return {'schema':'holodeck.topic-room/v1','actorRef':actor,'beingRef':pair['owner_being_ref'],
+                'homeRef':pair['home_ref'],'room':room,'title':title,'general':entry['general']}
 
     def observation_file(self,ident_,actor,observation):
         if (not isinstance(observation,dict) or observation.get('schema')!='holodeck.situation/v1'
@@ -432,6 +457,10 @@ class NativeBridge:
                 raise BridgeError('authority-unavailable','Current review ownership is unconfirmed')
             return {'schema':'holodeck.review-ownership/v1','beingRef':request['beingRef'],
                     'pin':request['pin'],'owned':owned}
+        if request.get('operation')=='topic-room':
+            if set(request)!={'operation','actorRef','room'}:
+                raise BridgeError('topic-room-unavailable','Select an exact topic room')
+            return self.topic_room(request['actorRef'],request['room'])
         if request.get('operation')=='questbook-access':
             if (set(request)!={'operation','beingRef','project','write'}
                 or not isinstance(request['beingRef'],str)

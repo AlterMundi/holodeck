@@ -195,6 +195,24 @@ class BridgeContracts(unittest.TestCase):
         with self.assertRaises(module.BridgeError):
             self.bridge.dispatch({**request,'write':False})
 
+    def test_topic_room_requires_current_shared_workspace_and_exact_pair(self):
+        room='a'*64
+        request={'operation':'topic-room','actorRef':self.actor,'room':room}
+        calls=[]
+        self.provider.topic_rooms=lambda selected: calls.append(selected) or {
+            'schema':'daimon.topic-rooms/v1','rooms':[{'room':room,'title':'Ideas','general':False}]}
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch(request)
+        self.assertEqual(calls,[])
+        self.bridge.home_workspace=True
+        self.assertEqual(self.bridge.dispatch(request)['title'],'Ideas')
+        self.assertEqual(calls,[room])
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,'actorRef':'human:other'})
+        with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,'room':'b'*64})
+        self.assertEqual(self.provider.inputs,[])
+
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.provider=Provider(str(Path(self.temp.name)/'fixture.sqlite'))

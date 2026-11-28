@@ -115,3 +115,44 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  assert.equal(posted,0);
  assert.deepEqual(errors,[]);
 });
+
+test('the authenticated room reader renders an empty MML room without a house or movement',async t=>{
+ const {createHolodeck}=await import('../src/server.mjs');
+ const actorRef='human:topic-reader',topic='9'.repeat(64),title='Our <ideas> & plans';
+ let reads=0,permitted=true;
+ const runtime=await createHolodeck({
+  identityResolver:async req=>req.headers.cookie?.includes('home=topic-reader')
+    ? {id:actorRef,ref:actorRef,kind:'human',rights:['observe'],name:'Reader'}:null,
+  nativeFactory:async()=>({topicRoom:async(actor,ref)=>{
+   reads++;
+   assert.equal(actor.ref,actorRef);
+   if(!permitted||ref!==topic)throw Object.assign(Error('Unavailable'),{code:'topic-room-unavailable'});
+   return {schema:'holodeck.topic-room/v1',actorRef,room:topic,title,general:false};
+  }}),
+ });
+ const http=runtime.app.listen(0,'127.0.0.1');await new Promise(resolve=>http.once('listening',resolve));
+ t.after(()=>{runtime.close();http.closeAllConnections();return new Promise(resolve=>http.close(resolve));});
+ const base='http://127.0.0.1:'+http.address().port+'/';
+ const route='api/topic-space?room='+topic;
+ assert.equal((await fetch(base+route)).status,401);
+ assert.equal(reads,0);
+ const start=await fetch(base,{headers:{Cookie:'home=topic-reader'}});
+ const token=start.headers.get('set-cookie').split(';')[0];
+ await start.text();
+ const headers={Cookie:'home=topic-reader; '+token};
+ const first=await fetch(base+route,{headers});
+ assert.equal(first.status,200);
+ assert.equal(first.headers.get('cache-control'),'no-store');
+ const value=await first.json();
+ assert.equal(value.from,'outside');
+ assert.equal(value.topic,topic);
+ assert.equal(value.title,title);
+ assert.equal(value.scene.actor,actorRef);
+ assert.match(value.scene.markup,/Our &lt;ideas&gt; &amp; plans/);
+ assert.doesNotMatch(value.scene.markup,/<ideas>/);
+ assert.deepEqual(await (await fetch(base+route,{headers})).json(),value);
+ assert.equal(runtime.spaces.current({id:actorRef}),'outside');
+ permitted=false;
+ assert.equal((await fetch(base+route,{headers})).status,404);
+ assert.equal(reads,3);
+});

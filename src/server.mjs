@@ -652,7 +652,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       session.times.push(now);
     }
     const spaceRoute=['/space','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/collection-model/')||
-      req.path==='/appearance'||req.path==='/conversation-surface'||
+      req.path==='/appearance'||req.path==='/conversation-surface'||req.path==='/topic-space'||
       (questbookHost&&/^\/questbook(?:\/(?:action|objective))?$/.test(req.path))||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
@@ -939,6 +939,30 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       res.status(error.status).json({code:error.code,message:error.message,...(error.code==='stale-run'?{run:room.run}:{})});}
   });
   app.get(route('api/content-visits'),(req,res)=>res.json({nodes:selectedContentNodes,visits:[...visitsForActor(selectedContentVisits,req.actor),...nodeVisits(room.nodes,req.actor)]}));
+  app.get(route('api/topic-space'),asyncRoute(async(req,res)=>{
+    const {room:topic}=req.query;
+    if(!native?.topicRoom||typeof topic!=='string'||!/^[a-f0-9]{64}$/.test(topic))return res.sendStatus(404);
+    if(room.commitUncertain||spaces.fenced)return res.sendStatus(503);
+    const from=spaces.current(req.actor);
+    let selection;
+    try{selection=await native.topicRoom(req.actor,topic);}
+    catch(error){
+      return res.sendStatus(error?.code==='topic-room-unavailable'||error?.code==='identity'?404:503);
+    }
+    const actor=await currentActor(req,req.holodeckSession);
+    if(!actor||!inScope(actor,from))return res.sendStatus(404);
+    if(selection?.schema!=='holodeck.topic-room/v1'||selection.actorRef!==actor.ref||
+      selection.room!==topic||typeof selection.general!=='boolean'||typeof selection.title!=='string'||
+      !selection.title.trim()||Array.from(selection.title).length>80||/[\u0000-\u001f\u007f]/.test(selection.title))
+      return res.sendStatus(503);
+    const id='topic-'+topic.slice(0,40);
+    const title=selection.general?'Nuestra conversación general':selection.title;
+    // The existing interior renderer supplies an empty room before any house,
+    // project furniture or world writes exist. Viewer state belongs to the visit.
+    const markup=interiorDocument({id,title,entry:true,level:0});
+    const revision=createHash('sha256').update(topic+'\n'+actor.id+'\n'+markup).digest('hex');
+    res.json({schema:'holodeck.topic-space/v1',topic,title,from,scene:{id,actor:actor.id,revision,markup}});
+  }));
   app.get(route('api/conversation-surface'),asyncRoute(async(req,res)=>{
     if(!native?.contexts||!native?.conversationSurface)return res.status(503).json({message:'La conversación compartida todavía no está disponible en este mundo.'});
     const value=await native.conversationSurface(req.actor);

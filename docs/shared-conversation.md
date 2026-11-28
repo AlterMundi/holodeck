@@ -165,9 +165,15 @@ Set `HOLODECK_PLAYWRIGHT` to the installed Playwright Core module and
 `HOLODECK_CONVERSATION_SURFACE` to the compatible Gateway
 `dashboard/web/conversation-surface.js` to include the narrow-screen browser
 fixture. It uses both actual frame implementations and a controlled
-catalogue. Gateway independently verifies the HTTP workspace scope. Entering
-a generated spatial room and attaching its topic to general Conversation
-remain subsequent receiving work.
+catalogue. Gateway independently verifies the HTTP workspace scope.
+
+The owner route `GET api/topic-space?room=...` reads the exact logical topic
+through the paired native bridge and returns one room using the
+existing MML interior renderer. The bridge reuses the current owned Gateway
+topic reader with the explicit shared Home workspace grant. The HTTP host
+rechecks the visitor and current place after the returning read. The room
+definition needs no house. Mounted navigation and capturing topic context
+for general Conversation remain subsequent receiving work.
 
 A shared Conversation iframe can stay mounted while a human closes its
 panel and moves between allowed rooms. New indoor sources freeze the
