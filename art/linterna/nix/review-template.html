@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Templo de Nix · Casa Linterna</title>
+<style>
+:root{color-scheme:dark;--ink:#f4e8d2;--muted:#d9c9ad;--line:#647477;--surface:#111c24;--bronze:#bf9664}
+*{box-sizing:border-box}
+body{margin:0;height:100dvh;overflow:hidden;background:#101925;color:var(--ink);font:16px/1.42 system-ui,sans-serif}
+button{font:inherit;color:var(--ink);background:#25343b;border:1px solid #718083;border-radius:5px;padding:6px 12px;min-height:42px;cursor:pointer;white-space:nowrap}
+button:hover,button[aria-pressed="true"]{background:#d4b78d;color:#182329;border-color:#f2d6a8}
+button:focus-visible{outline:3px solid #ffe0a4;outline-offset:2px}
+button:disabled{opacity:.64;cursor:default}
+#view{position:fixed;inset:0;z-index:0;touch-action:none}
+canvas{display:block;width:100%;height:100%}
+header,.dock{position:fixed;z-index:1;left:16px;right:16px;display:flex;justify-content:space-between;gap:10px;align-items:start;pointer-events:none}
+header{top:14px}.dock{bottom:16px;align-items:end}
+.title,.panel{background:rgba(15,25,32,.94);border:1px solid var(--line);border-radius:8px;padding:11px 14px;pointer-events:auto}
+.title{border-top:2px solid var(--bronze)}
+h1,h2{font-family:Georgia,serif;line-height:1.04;font-weight:500;margin:0}
+h1{font-size:30px}h2{font-size:26px}p{margin:0}
+.title p{color:var(--muted);font-size:14px;margin-top:4px}
+.state,.routes,.actions,.options{display:flex;flex-wrap:wrap;gap:6px}
+.state{margin-top:8px}.panel{display:grid;gap:7px;max-width:100%}
+#status{font-size:15px;color:#ffe3a9;max-width:39ch}
+.help{font-size:14px;color:var(--muted)}
+.actions{justify-content:end}
+dialog{position:fixed;border:1px solid #8e8a72;border-radius:9px;background:#101a21;color:var(--ink);padding:14px;max-width:min(94vw,980px);max-height:90dvh;width:max-content;box-shadow:0 15px 45px #04080f}
+dialog::backdrop{background:rgba(3,8,14,.82)}
+.dialog-top{display:flex;justify-content:space-between;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+#frame-window{overflow:auto;width:min(78vw,850px);height:min(60dvh,650px);background:#050810;display:block;border:1px solid #495759;border-radius:4px}
+#frame-image{display:block;width:100%;height:100%;max-width:none;max-height:none;object-fit:contain}
+#frame-image[data-scale="2"]{height:auto}
+#meta{font-size:14px;max-width:65ch;margin-top:10px;color:var(--muted)}
+.art header,.art .dock{display:none}
+@media(max-width:760px){header,.dock{left:8px;right:8px}.title,.panel{padding:8px 10px}.title{max-width:100%}h1{font-size:23px}header{top:8px;display:grid}button{padding:5px 8px;min-height:40px}.dock{bottom:8px;display:grid}.actions{justify-content:start}.help{display:none}#frame-window{width:85vw;height:57dvh}dialog{padding:10px}}
+</style>
+</head>
+<body>
+<main id="view" aria-label="Observatorio de Nix, recorrido 3D"></main>
+<header>
+<div class="title"><h1>Templo de Nix</h1><p>Casa Linterna · Prueba de sala</p></div>
+<div class="panel">
+<p id="status" aria-live="polite"></p>
+<div class="state" aria-label="Estados de prueba">
+<button data-state="capture" aria-pressed="true">Captura fijada</button>
+<button data-state="offline" aria-pressed="false">Sin señal</button>
+<button data-state="preview" aria-pressed="false">Modo en vivo · Demo</button>
+</div></div>
+</header>
+<div class="dock">
+<nav class="panel" aria-label="Recorrido">
+<div class="routes"><button data-pose="approach">Pórtico</button><button data-pose="entry">Entrada</button><button data-pose="ocular">Ocular</button><button data-pose="gallery">Galería</button></div>
+<p class="help">WASD para caminar · Arrastrá para mirar</p>
+</nav>
+<div class="panel actions"><button id="open-eye">Ver cuadro completo</button><button id="open-gallery">Inspeccionar foto</button></div>
+</div>
+<dialog id="inspection" aria-labelledby="inspection-title">
+<div class="dialog-top"><h2 id="inspection-title"></h2><div class="options">
+<button id="fit" aria-pressed="true">Encuadrar</button><button id="zoom" aria-pressed="false">Ampliar ×2</button><button id="close">Cerrar</button>
+</div></div>
+<div id="frame-window" tabindex="0" aria-label="Imagen con desplazamiento"><img id="frame-image" alt="Cuadro completo de la imagen de prueba WANDA"></div>
+<p id="meta"></p>
+</dialog>
+<script type="module">/* REVIEW_SCRIPT */</script>
+</body></html>
