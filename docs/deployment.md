@@ -1031,8 +1031,9 @@ own reader was revoked. Historical first-edition browser loading retained its ol
 pin/model/GPU result without silently selecting current content. The generic
 Nexus deliverable-lifecycle proposal remains unimplemented.
 
-The shared 3D package is clean3.10.53 on ITACA and five remote bodies. Eko's
-pre-existing modified3.9 package retains its Bambu guidance and receives only the
+The shared 3D package is clean at 3.10.53 on the primary host and five remote
+bodies. The receiving body with a locally modified 3.9 package keeps its Bambu
+guidance and receives only the
 two compatible template deltas (global hidden styling and hidden version span),
 with no new JavaScript. Its actual builder generated a bounded triangle fixture
 successfully; clean package convergence is not claimed. Home separately selects

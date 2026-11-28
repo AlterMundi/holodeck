@@ -3,8 +3,8 @@
   "appearance": "compaii-navegante-white-v1",
   "designSha256": "17fdad0610f6971a8b37c9df4f5aef0f294ee8f36c62058fe6955757404f6daa",
   "designBytes": 153394,
-  "rendererSha256": "9866f14ea2dca9aaa5ab6da439cacfa375368c841352c55631511328f7a4d541",
-  "rendererBytes": 99284,
+  "rendererSha256": "4ee4b08336bbc1500e8d3c1dc7c88020dc49ca0da94201ee94d3e70352fe2eca",
+  "rendererBytes": 99287,
   "source": "DaimonApp installed maintained renderer; ASCII-Interfaces MIT source lineage",
   "sourceInventory": [
     {
@@ -105,5 +105,6 @@
     }
   ],
   "upstream": "AnnieScigliano/ASCII-Interfaces",
-  "selection": "Only selected inert canonical appearance and renderer closure; no actor records, voice, history, credentials or account pointers."
+  "selection": "Only selected inert canonical appearance and renderer closure; no actor records, voice, history, credentials or account pointers.",
+  "rendererDeliveryNote": "The published copy generalizes one example label; the source inventory retains the upstream lineage."
 }

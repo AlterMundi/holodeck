@@ -4381,12 +4381,12 @@ round trip in lightweight mode. The 371 moving frame intervals measured
 33.4 ms median and 66.6 ms p95 in a matched run. The clean bake took 12.93 s
 to enter cold through the test tunnel, versus 9.86 s for the predecessor.
 The latest candidate starts loading the authorized room model during presence
-reconnect. On Cuevanico, the model response started at 0.78 s instead of
+reconnect. On the Raspberry Pi client, the model response started at 0.78 s instead of
 3.67 s in the paired packaged runs. Full cold readiness still took 14.51 s
 instead of 15.09 s, so room entry needs further work.
 The renderer now skips hidden interior frames while connecting and loading,
 then draws the destination before lifting the passage overlay. In the
-instrumented Cuevanico run, the first ready draw took 9.03 s and the next
+instrumented run on the Raspberry Pi client, the first ready draw took 9.03 s and the next
 one took 11 ms. Both desktop Chromium and emulated touch passed the packed
 doorway round trip with this change.
 On the physical Pi the packed lightweight candidate then reduced the
@@ -4399,7 +4399,7 @@ turned, all 24 corner samples cleared the walls and 418 moving intervals
 measured 33.3 ms median and 33.4 ms p95.
 The separate `matter-workshop-orbital-focused-v1` selection adds responsive
 roughness and metalness to the tabletop and archive rear panel, with the
-fixed-light atlas on the rest of the room. On Cuevanico it measured 33.2 ms
+fixed-light atlas on the rest of the room. On the Raspberry Pi client it measured 33.2 ms
 median and 33.4 ms p95 while moving. Its 9.69 s cold door was slower than the
 last diffuse-only movement run. The desktop and touch worktable fixture both
 loaded the exact focused export, shared the retained edition, selected a
@@ -4407,7 +4407,7 @@ part and cleared the table. The focused selection is available in builds.
 Its room-style control now switches the local visitor between orbital and
 amber material/light atlases without reloading the shell or shared model.
 Desktop and emulated touch selected different looks on the same edition.
-On Cuevanico, applying the two amber images for the first time took 1.79 s
+On the Raspberry Pi client, applying the two amber images for the first time took 1.79 s
 through the test tunnel. The browser restored orbital and returned through
 the door. The GLB and both atlas URLs were refused after exit.
 The separate floor-splat profile now replaces only the visible floor of the
@@ -4417,7 +4417,7 @@ ran at 50.0 ms median and 66.7 ms p95 while moving. The matched mesh run
 recorded 33.3 ms / 50.0 ms. Both routes retained the rotating archive and
 door passage. The floor-splat profile is a trial selection.
 The separate appearance viewer also passed a moving hardware check on
-Cuevanico. The lightweight pure, detailed orbital pure and lightweight
+the Raspberry Pi client. The lightweight pure, detailed orbital pure and lightweight
 hybrid took 33.4 ms, 50.0 ms and 50.0 ms respectively at the median.
 The hybrid's archive turned, and the orbital view showed detailed light
 and visible breakup at thin edges. This check used the comparison viewer,
@@ -4429,7 +4429,7 @@ The isolated focused-room package now reads Orbital and Amber from the
 same versioned look manifest. It passed independent desktop and
 emulated-touch selection on a shared worktable, a browser retry after
 one deliberately failed map, and room-scoped asset refusal after exit.
-With Amber active, the exact package ran on Cuevanico at 33.3 ms median
+With Amber active, the exact package ran on the Raspberry Pi client at 33.3 ms median
 and 33.4 ms p95 while moving. The camera clearance, rotating archive and
 door return passed. Blender also exported independent albedo and static
 irradiance on the existing UV layout, with the archive platform excluded
@@ -4442,7 +4442,7 @@ the refined layers applied in 2.27 s and the walking route measured
 archive, camera clearance, door return and art refusal after exit
 passed. The layered look also projects live silhouettes onto the
 worktable and archive pads. The worktable mask responded to rotation,
-sectioning and clear in two browser views. On Cuevanico the archive
+sectioning and clear in two browser views. On the Raspberry Pi client the archive
 switched between two retained representatives, with a different mask
 after the half-turn. That run recorded 33.3 ms median and 50.0 ms p95
 over 374 moving intervals, and passed door return and camera clearance.
@@ -4456,7 +4456,7 @@ both Chromium and Blender. The complete packaged Pi run kept
 returned to the foyer. The next qualified fixture adds oriented
 fixture reflections to the service windows and the archive glass.
 The fitted window crops moved closer to Blender from both registered
-cameras. Cuevanico showed the selected model behind the glass, kept
+cameras. The Raspberry Pi client showed the selected model behind the glass, kept
 33.3 ms median and 50.0 ms p95 over 371 moving intervals, and returned
 through the door. The remaining visual differences include softness of
 glazing. The archive canopy and side fill now participate in the layered
@@ -4694,7 +4694,7 @@ receiving configuration and room run were preserved. All 75 installed
 payloads matched. Protected HTTPS health and exact client bytes passed,
 with four scope denials outside the relevant room or actor scope.
 
-Cuevanico qualified the same package before activation. The browser entered
+The Raspberry Pi client qualified the same package before activation. The browser entered
 cold in 9.53 s and measured 33.3 ms median and 50.0 ms p95 during 357 walking
 intervals. Archive rotation, camera clearance and foyer return passed.
 The desktop and emulated-touch worktable tests used controlled identities.
@@ -4717,7 +4717,7 @@ health and client responses. Four scope denials passed. The actual
 predecessor package booted against the same optional configuration in
 the protected Node 24 fixture and served its original Matter GLB.
 The exact selected package concurrently passed desktop and emulated
-touch worktable use and the physical Cuevanico route. Cuevanico had
+touch worktable use and the physical Raspberry Pi client route. The Raspberry Pi client had
 33.3 ms median and 50.0 ms p95 across 382 walking intervals, confirmed
 archive rotation, 24 camera checks and the foyer return. The browser
 trials used controlled identities. An authenticated human visit to the
@@ -4731,14 +4731,14 @@ across the floor plane and projected into the actual 561 × 374 drawing
 buffer. The measured position is the weighted centroid of the bright,
 near-neutral pixels in that floor region.
 
-On physical Cuevanico, all eight samples tracked the highlight across
+On the physical Raspberry Pi client, all eight samples tracked the highlight across
 1.86 m of lateral camera travel. It moved 78.8 px horizontally against
 79.8 px predicted, with 3.2 px median absolute horizontal error and no
 reversal in the sampled direction. The desktop Chromium software renderer
 tracked four samples over 1.74 m, with 72.2 px observed against 73.6 px
 predicted and 3.4 px median error. Both routes returned through the foyer
 and verified that the scoped art became inaccessible outside the room.
-Cuevanico's separate uninstrumented walk measured 33.3 ms median and
+A separate uninstrumented walk on the Raspberry Pi client measured 33.3 ms median and
 50.0 ms p95 across 388 intervals. Capture overhead was outside that
 measurement.
 
@@ -4782,7 +4782,7 @@ crop the served finish is too dark, particularly in the reference pixels
 below luma 80, where it averages 19.3 levels below Cycles. Test the floor's
 diffuse shadow response before increasing specular intensity.
 
-Cuevanico independently replayed the path in the pure-splat viewer at
+The Raspberry Pi client independently replayed the path in the pure-splat viewer at
 66.7 ms median and 83.4 ms p95 across 90 intervals at the same buffer
 dimensions, with JPEG capture outside the timed replay. This measures
 camera rendering and sorting only. The previous physical interaction
@@ -4807,7 +4807,7 @@ limits that bias to +1.18 while the brightest held-out pixels still
 average 15.03 levels below the reference.
 
 The isolated 32,061,440-byte package `b9e0387b42bf` passed the physical
-Cuevanico door, rotating archive and 24 camera-clearance checks. It took
+The door on the Raspberry Pi client, rotating archive and 24 camera-clearance checks. It took
 10.10 s to enter cold through the test tunnel and measured 33.3 ms median
 and 49.9 ms p95 over 396 walking intervals. The pendant reflection still
 moved in the expected direction over eight samples, with a 3.6 px
@@ -4826,7 +4826,7 @@ eight walking-camera poses, the foreground error was 7.15 and the error
 in successive luma changes was 4.72.
 
 The rebuilt `1a8ab781ac35` package matches the tested stage byte for byte
-and retains the 32,061,440-byte archive size. Cuevanico entered cold in
+and retains the 32,061,440-byte archive size. The Raspberry Pi client entered cold in
 9.64 s and measured 33.3 ms median and 50.0 ms p95 over 380 walking
 intervals. Seven samples tracked the pendant reflection with a 3.3 px
 median horizontal error. The archive turn, all 24 corner checks and
@@ -4872,7 +4872,7 @@ turntable textures remain intact. The two room-scoped textures total
 difference on the blue case and gray shelves, with variation by surface.
 The candidate archive is 32,348,160 bytes and remains below the 32 MiB limit.
 
-Cuevanico verified the 4,189-triangle test representative at both mounts.
+The Raspberry Pi client verified the 4,189-triangle test representative at both mounts.
 Each far mesh drew 117 triangles. Approaching restored the full geometry;
 backing away restored the reduced mesh with zero repeat model requests.
 The final package entered cold in 9.96 s and measured 33.3 ms median and
@@ -4889,7 +4889,7 @@ hit the new opaque dressing. The browser fixture returned through the
 actual foyer door and verified that the five scoped appearance maps
 were unavailable outside the room.
 
-Cuevanico verified the exact combined package with the infill, detail
+The Raspberry Pi client verified the exact combined package with the infill, detail
 tiles and Collection reductions. Cold entry took 9.53 s. The 357 walking
 intervals measured 33.3 ms median and 50.0 ms p95. The reduced models,
 archive turn, camera clearance and return passed. The 32,348,160-byte
@@ -5410,7 +5410,7 @@ initial operator result is retained. Oliva's scoped handoff completed normally.
 No new native input or model call was made.
 
 Emma selected listener `3d4c85b09be3` and bridge `fa3447e8a311` in her
-existing ITACA VM. Readback verified the same Core, goal accounting, heartbeat
+VM on the primary host. Readback verified the same Core, goal accounting, heartbeat
 controls, canonical Conversation binding and foreign-actor denial. The native
 operator then used the existing CompAII and Emma read lanes to observe the
 same world run under distinct, registered being identities. This was a
@@ -5807,7 +5807,7 @@ the compatible rollback.
 [Before and after at walking height](../art/compaii-house/redesign/README.md#beacon-joinery-and-workstations)
 
 Activation required a [scoped Home journal capacity repair](https://github.com/nicoechaniz/daimon-cluster/pull/552).
-ITACA retained its original 128 entries and completed the same deployment
+The primary host retained its original 128 entries and completed the same deployment
 request as entry 129. Package audiences and receiver state were preserved.
 
 The previous release served source `239819d`, package `b7107ba7645e`. A session can keep parsed static art from

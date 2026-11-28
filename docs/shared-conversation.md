@@ -266,7 +266,7 @@ Core and receiver configuration matched their preimages. The owner
 dashboard and speech-rendering CI passed on the exact PR head. The broader
 text job subsequently passed and PR #1035 merged as `eca802cc`.
 
-Eko, Oliva, Pixin, Calipso, C-137 and Noodles shared a different legacy
+Six paired receivers shared a different legacy
 frame and recorder baseline. The mic-only overlay retains their attachment
 and playback contracts. The scope-specific tests passed the frame and live
 PCM callback checks on those exact bytes. All six origins returned the same

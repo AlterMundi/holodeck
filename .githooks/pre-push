@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Check the exact tree being promoted to the default branch.
+while read -r _local_ref local_oid remote_ref _remote_oid; do
+  if [[ $remote_ref == refs/heads/main && ! $local_oid =~ ^0+$ ]]; then
+    ./tools/audience-check.sh --tree "$local_oid" --mask --require-terms
+  fi
+done

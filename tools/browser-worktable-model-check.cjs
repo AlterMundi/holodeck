@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {chromium}=require(process.env.PLAYWRIGHT||'/home/debian/Projects/daimon-nexus/frontend/node_modules/playwright');
+const {chromium}=require(process.env.PLAYWRIGHT || 'playwright');
 const {mkdtempSync,rmSync,readFileSync}=require('node:fs');
 const {tmpdir}=require('node:os');
 const {join,resolve}=require('node:path');

@@ -69,8 +69,8 @@ created. See [the native interface](native-integration.md#own-native-foreground-
 ## Existing owner operator path
 
 Use current Shared Resources placement and its held SSH/Incus operator route.
-Oliva is its existing ITACA VM; Eko is native on its existing host; the four
-children retain their original guests and existing Conversation units. The
+Keep each receiving body on its configured host or VM with its existing
+Conversation unit. The
 maintained generic adapter is Cluster `clusterctl.onboarding_conversation` and
 `docs/operations/children-admission.md` (reusable guest Conversation adapter).
 It is not necessary or appropriate to repeat bootstrap/admission to add this
