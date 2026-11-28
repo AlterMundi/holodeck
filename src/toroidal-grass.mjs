@@ -5,7 +5,7 @@ import {
 import {CAVE} from './toroidal-cave.mjs';
 import {
   overlookCoordinates, residencePlantClearance, TOROIDAL_TERRAIN, terrainColor, terrainCoordinates,
-  terrainElevation, terrainFrame, terrainPosition, terrainTrail, terrainWoodland,
+  terrainElevation, terrainFrame, terrainMeadowMoisture, terrainPosition, terrainTrail, terrainWoodland,
 } from './toroidal-terrain.mjs';
 
 // A dense, wind-driven carpet of grass tufts around the explorer and a few
@@ -21,7 +21,8 @@ const DENSITY=5.2;            // tufts per square metre on open meadow
 const BUDGET_MS=3.5;          // generation time per frame
 const COLUMNS=Math.round(TAU*T.majorRadius/TILE);
 const ROWS=Math.round(TAU*T.tubeRadius/TILE);
-const FIREFLIES=150;
+const FIREFLIES=96;            // at most, gathered in a few swarms
+const SWARMS=4;
 const FLOWER_SHARE=.045;      // wildflowers per tuft on fresh meadow
 const FLOWER_TINTS=[[1,.98,.92],[1,.97,.9],[1,.82,.28],[.62,.46,1],[.5,.55,1],[1,.62,.78]];
 
@@ -388,20 +389,43 @@ export class ToroidalGrass {
       const geometry=this.fireflies.geometry;
       const points=geometry.attributes.position.array,lifts=geometry.attributes.lift.array;
       const metresU=TAU*(T.majorRadius+(T.tubeRadius+height)*Math.cos(TAU*v)),metresV=TAU*(T.tubeRadius+height);
-      const salt=Math.floor(this.seconds*10);
-      let placed=0;
-      for(let attempt=0;attempt<FIREFLIES*5&&placed<FIREFLIES;attempt++){
-        const pick=s=>random(attempt,salt,placed,s);
-        const distance=4+30*Math.sqrt(pick(3)),angle=pick(5)*TAU;
+      // Swarms gather over hollows, damp meadow and banks, not on ridges.
+      // Seeded by place, so a swarm stays where it is when you come back.
+      const salt=Math.round(u*4000)*7919+Math.round(v*4000);
+      const valley=(pu,pv,h)=>{
+        let around=0;
+        for(let k=0;k<6;k++){
+          const a=k/6*TAU;
+          around+=terrainElevation(pu+Math.cos(a)*14/metresU,pv+Math.sin(a)*14/metresV);
+        }
+        const hollow=around/6-h;
+        const damp=terrainMeadowMoisture(pu,pv,h);
+        const bank=h<T.waterLevel+3?1:0;
+        return hollow*.6+(damp-.5)*3+bank*1.5;
+      };
+      const swarms=[];
+      for(let attempt=0;attempt<28;attempt++){
+        const pick=s=>random(attempt,salt,77,s);
+        const distance=6+38*Math.sqrt(pick(3)),angle=pick(5)*TAU;
         const pu=u+Math.cos(angle)*distance/metresU,pv=v+Math.sin(angle)*distance/metresV;
         const h=terrainElevation(pu,pv);
         if(h<T.waterLevel-.2||(h>T.waterLevel+.4&&grassCover(pu,pv,h)<=0))continue;
-        const surface=Math.max(h,T.waterLevel);
-        const point=terrainPosition(pu,pv,surface+.35+1.5*pick(7)*pick(9));
-        const up=terrainFrame(pu,pv).up;
-        points.set(point,placed*3);
-        lifts.set(up,placed*3);
-        placed++;
+        const score=valley(pu,pv,h);
+        if(score>.4)swarms.push({pu,pv,score});
+      }
+      swarms.sort((a,b)=>b.score-a.score).splice(SWARMS);
+      let placed=0;
+      for(const [index,swarm] of swarms.entries()){
+        const count=Math.round(14+10*Math.min(1,swarm.score/3));
+        for(let i=0;i<count&&placed<FIREFLIES;i++){
+          const pick=s=>random(index,salt,i,s);
+          const spread=2.6*Math.sqrt(-2*Math.log(Math.max(1e-4,pick(11))))*.5,angle=pick(13)*TAU;
+          const pu=swarm.pu+Math.cos(angle)*spread/metresU,pv=swarm.pv+Math.sin(angle)*spread/metresV;
+          const h=terrainElevation(pu,pv),surface=Math.max(h,T.waterLevel);
+          points.set(terrainPosition(pu,pv,surface+.3+1.4*pick(7)*pick(9)),placed*3);
+          lifts.set(terrainFrame(pu,pv).up,placed*3);
+          placed++;
+        }
       }
       geometry.setDrawRange(0,placed);
       geometry.attributes.position.needsUpdate=true;
