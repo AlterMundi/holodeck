@@ -1,5 +1,27 @@
 # Current MVP work
 
+## Char Design district and character release · 2026-11-28
+
+Protected release `65aa4d1bd078` selects runtime source `2e919d2`,
+integrated in `448dc13`, and retains `449a717707ee` for rollback.
+It includes both Char Design deliveries through `5bdbf12`: cold teleport
+icons, contact dust and smoke, foot placement, local movement sounds,
+the curved staircase and updated palace materials, superhero double-jump
+poses, and the revised Navegante.
+
+The 39.94 MiB archive uses lossless Brotli for three measured art exports.
+The per-model bundled-art limit is 6 MiB and the package remains within
+the current 40 MiB allocation. HTTPS readback matched the protected
+client and the new Navegante, palace and collision models. All 97 installed
+files matched the package. Node passed 601 tests with four skips.
+
+On RTX 2060, Chromium climbed the new staircase, crossed the atrium and
+entered the hall. The double jump measured a 2.34 m lift, and the browser
+rendered the new face from the front with the joy expression and speech
+aperture. The cold teleport waited for its requested icon. On Pi 5, the
+same 363 × 244 hall pose settled at about 20 FPS versus about 23 FPS in the
+district baseline. The first candidate window contained a startup stall.
+
 ## Full-size house district · 2026-11-28
 
 Protected release `449a717707ee` selects `1d50c1c` with `ecd4a7d815da`

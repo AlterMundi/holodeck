@@ -143,8 +143,8 @@ The other seven parcels have flat 72 × 72 m building envelopes. Their IDs
 and owners carry forward. Casa Linterna's current exterior proxy uses the
 entrance on the near side of East 1. A full exterior published by the owner
 can later replace that proxy at the same parcel, with its own doorway and
-fitting. The current walkable room format supplies indoor scenes. It does not
-expose those private assets as exterior geometry.
+fitting. The current walkable room format supplies indoor scenes through
+room-specific access checks. The outside uses its own published asset.
 
 ## Home and Holodeck publication
 
