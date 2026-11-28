@@ -295,6 +295,27 @@ test('the authenticated questbook credits only its original Room action', {skip:
   const nativeView=await fetch(base+'api/questbook?selected='+nativeCard,{headers}).then(reply=>reply.json());
   assert.equal(nativeView.result[2].updateDataModel.value.progress,'1/1');
 
+  const issue = {operation:randomUUID(),card:randomUUID(),expected_revision:0,
+    action:{type:'create_issue',title:'Check the workshop route',description:'Walk from the entrance to the bridge.'}};
+  const issueCreated = await native({type:'apply',command:issue});
+  assert.deepEqual(issueCreated.authoritySource,{identity:'receiving-lane',access:'current-being-grant'});
+  assert.equal(issueCreated.result.status,'applied');
+  const issueView = await fetch(base+'api/questbook?selected='+issue.card,{headers});
+  assert.equal(issueView.status,200);
+  assert.equal(issueView.headers.get('cache-control'),'no-store');
+  const issueModel = (await issueView.json()).result[2].updateDataModel.value;
+  assert.equal(issueModel.id,issue.card);
+  assert.equal(issueModel.revision,issueCreated.result.event.card.revision);
+  assert.equal(issueModel.issueDescription,issue.action.description);
+  const issueRetried = await native({type:'apply',command:issue});
+  assert.equal(issueRetried.result.status,'retained');
+  assert.deepEqual(issueRetried.result.event,issueCreated.result.event);
+  assert.deepEqual((await native({type:'receipt',operation:issue.operation})).result,issueCreated.result.event);
+  assert.equal(tool({type:'history',card:issue.card,after:0}).result.length,1);
+  nativeRead=false;
+  assert.deepEqual(await native({type:'receipt',operation:issue.operation}),{ok:false,code:'access'});
+  nativeRead=true;
+
   projectWrite = false;
   assert.equal((await view()).claimDisabled,true);
   allowed=false;
@@ -309,6 +330,7 @@ test('the exterior A2UI journal preserves a shared mission across browser views'
   const store = join(directory,'questbook.sqlite');
   const project = randomUUID(), otherProject = randomUUID(), card = randomUUID(), objective = randomUUID();
   const title = 'Volvé a unir las islas';
+  const description = 'Levantá el puente para que la otra persona pueda cruzar.';
   function tool(input) {
     return JSON.parse(execFileSync(binary,[store],{input:JSON.stringify({
       project,actor:{kind:'daimon',subject:'fixture-writer'},can_write:true,input,
@@ -317,7 +339,7 @@ test('the exterior A2UI journal preserves a shared mission across browser views'
   function typed(revision, action) {
     return tool({type:'apply',command:{operation:randomUUID(),card,expected_revision:revision,action}});
   }
-  assert.equal(typed(0,{type:'create',title}).result.status,'applied');
+  assert.equal(typed(0,{type:'create_issue',title,description}).result.status,'applied');
   assert.equal(typed(1,{type:'require_world',objective:{id:objective,place:'island-workshop',
     event:{type:'bridge_state',raised:true}}}).result.status,'applied');
 
@@ -340,6 +362,7 @@ test('the exterior A2UI journal preserves a shared mission across browser views'
   const pixels = dialog.locator('canvas');
   await pixels.waitFor({state:'visible'});
   await dialog.getByText(title,{exact:true}).last().waitFor({state:'attached'});
+  await dialog.getByText(description,{exact:true}).waitFor({state:'attached'});
   assert.equal(await dialog.getByRole('button',{name:'Completar misión'}).isDisabled(),true);
   await dialog.getByRole('button',{name:'Aceptar misión'}).focus();
   await page.keyboard.press('Space');
@@ -359,6 +382,7 @@ test('the exterior A2UI journal preserves a shared mission across browser views'
   await mobile.locator('#questbook-open').tap();
   const mobileDialog = mobile.getByRole('dialog',{name:'Diario de misiones'});
   await mobileDialog.getByText('En curso',{exact:true}).waitFor({state:'attached'});
+  await mobileDialog.getByText(description,{exact:true}).waitFor({state:'attached'});
   assert.ok(await mobileDialog.getByText('0/1',{exact:true}).count());
   assert.equal(await mobileDialog.getByRole('button',{name:'Completar misión'}).isDisabled(),true);
   assert.ok((await mobileDialog.boundingBox()).width < 390);
