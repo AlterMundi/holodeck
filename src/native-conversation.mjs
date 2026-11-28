@@ -56,9 +56,11 @@ export function captureNativeSituation(room,actor,request,{pairedBeing=null,pair
   const reserve={inputAssociation:extra.inputAssociation,...(extra.selectedActivity?{selectedActivity:extra.selectedActivity}:{})};
   const observation=interior?{
     schema:'holodeck.situation/v1',id:interior.id,run:interior.run,edition:interior.edition,
-    capturedAt:interior.capturedAt,observer:actor.id,scope:'structured-interior-room',
+    capturedAt:interior.capturedAt,observer:actor.id,
+    scope:interior.place.topic?'structured-topic-room':'structured-interior-room',
     place:{id:interior.place.id,title:interior.place.title,level:interior.place.level,
       house:interior.place.house,objects:interior.place.objects,
+      ...(interior.place.topic?{topic:interior.place.topic}:{}),
       ...(interior.place.activity?{activity:structuredClone(interior.place.activity)}:{}),
       ...(interior.place.exhibitRevision?{exhibitRevision:interior.place.exhibitRevision}:{})},
     source:{through:interior.sequence,displayedSequence:null},

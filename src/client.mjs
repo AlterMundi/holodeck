@@ -744,6 +744,7 @@ function updateNativeAvailability(){
   $('#topics-open').hidden=!shared&&!activeSpace?.topic;
   $('#talk').disabled=inside&&!shared;
   $('#conversation-panel').classList.toggle('shared-conversation',shared);
+  $('#conversation-panel h2').textContent=activeSpace?.topic?'Nuestra conversación general':'Desde acá';
   $('#conversation-form').hidden=shared;$('#conversation-log').hidden=shared;
   $('#shared-conversation').hidden=!shared;
   const historyLabel=inside?null:worldHistory?.conversationLabel();$('#history-reference-clear').hidden=!historyLabel;

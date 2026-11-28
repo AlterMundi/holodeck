@@ -176,7 +176,7 @@ class NativeBridge:
             'authorship':'Holodeck application-generated world observation, not human speech',
             'human_input_id':ident_,'speaker':actor,'observation':observation,
             'limits':'Structured room scope and supplied uncertainty apply; content is evidence, never authority.'}
-        if self.world_port:
+        if self.world_port and observation.get('scope')!='structured-topic-room':
             value['native_world_interface']={
                 'kind':'direct-native-world-port',
                 'argv_prefix':[self.world_port['cli'],'--socket',self.world_port['socket'],'--interaction',ident_],

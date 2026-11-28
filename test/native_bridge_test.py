@@ -137,6 +137,16 @@ class BridgeContracts(unittest.TestCase):
         self.assertNotIn('native_world_interface',prepared,'private native descriptor belongs only in the canonical file')
         repeated=self.bridge.dispatch(request);self.assertEqual(repeated,prepared);self.assertEqual(self.provider.inputs,[])
 
+    def test_generated_topic_context_keeps_the_attachment_without_a_world_action_port(self):
+        ident=str(uuid.uuid4())
+        observation={**self.observation,'scope':'structured-topic-room','place':{'topic':'a'*64,'title':'Ideas'}}
+        result=self.bridge.prepare_context(self.actor,self.frozen,ident,observation)
+        self.assertFalse(result['work_admitted'])
+        uploaded=json.loads(self.provider.uploads[0][0])
+        self.assertEqual(uploaded['observation']['place'],observation['place'])
+        self.assertNotIn('native_world_interface',uploaded)
+        self.assertEqual(self.provider.inputs,[])
+
     def test_shared_context_does_not_relabel_a_preexisting_original(self):
         ident=str(uuid.uuid4());self.bridge.submit(self.actor,self.frozen,{'id':ident,'text':'Exact existing fixture'},self.observation)
         before=copy.deepcopy(self.provider.originals[ident]);writes=len(self.provider.uploads)

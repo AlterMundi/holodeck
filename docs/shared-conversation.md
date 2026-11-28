@@ -179,8 +179,17 @@ preceding physical place as its exit destination while that place remains
 authorized. Generated room visits are bounded in memory and reuse the
 existing socket authorization check. The browser recovers a lost move
 response by reading current location. The browser fixture enters and leaves
-an actual generated MML room. Capturing the topic for general Conversation,
-project surfaces, and live participant verification remain open.
+an actual generated MML room.
+
+Inside that room, **Conversar** opens general Conversation. The existing
+machine-source writer freezes the authorized logical topic and room name at
+intake under `structured-topic-room`. Moving or leaving after capture
+keeps the same context and general destination. Reopening the retained
+source checks the exact topic and current pair. The topic attachment
+does not grant a physical world action scope or select direct routing.
+The isolated HTTP fixture moves to another topic before preparation
+resolves, then verifies the original context and its single retained
+attachment. Project surfaces and live original delivery remain open.
 
 A shared Conversation iframe can stay mounted while a human closes its
 panel and moves between allowed rooms. New indoor sources freeze the

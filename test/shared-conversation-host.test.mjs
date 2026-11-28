@@ -75,6 +75,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
    conversationSurface:async()=>({schema:'holodeck.conversation-surface/v1',actorRef,binding,
     beingRef:'dm:being:v1:'+'b'.repeat(43),homeRef:'home:'+'c'.repeat(32),url:origin+'/interaction/'})});
  const runtime=await createHolodeck({conversationOrigins:[origin],nativeFactory,
+  nativeRoomAuthority:async()=>['observe'],
   identityResolver:async()=>({id:actorRef,ref:actorRef,kind:'human',rights:['observe','edit','project'],name:'Visitor'})});
  const server=runtime.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
  t.after(()=>{runtime.close();server.closeAllConnections();return new Promise(resolve=>server.close(resolve));});
@@ -120,6 +121,9 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  assert.equal(entered.returnTo,'outside');
  assert.equal(entered.title,name);
  assert.equal(runtime.spaces.current({id:actorRef}),entered.id);
+ await page.getByRole('button',{name:'Conversar',exact:true}).tap();
+ await page.getByRole('heading',{name:'Nuestra conversación general',exact:true}).waitFor();
+ await page.locator('#conversation-close').tap();
  await page.locator('#space-travel summary').tap();
  await page.locator('#space-travel').getByRole('button',{name:'Volver al lugar anterior',exact:true}).tap();
  await page.waitForFunction(()=>!document.body.classList.contains('inside-house')&&

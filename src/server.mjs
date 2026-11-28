@@ -351,7 +351,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   function liveSpace(actor,cachedRevision){
     const space=describeSpace(actor,true);
     return {...space,live:1,actorRef:actor.id,
-      sharedConversation:!space.topic&&!!(native?.contexts&&native?.conversationSurface),scene:visitScene(actor,space.id,cachedRevision)};
+      sharedConversation:!!(native?.contexts&&native?.conversationSurface&&(!space.topic||native.topicRoom&&nativeRoomAuthority)),scene:visitScene(actor,space.id,cachedRevision)};
   }
   function roomParticipants(id){
     const seen=new Map();
@@ -393,13 +393,23 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const view=spaces.view(actor,id);
     const exhibit=exhibits.scoped(actor,id),activity=indoorGardens.observe(actor,id);
     return {id,title:selected.title,level:selected.level,house:selected.house,
+      ...(selected.topic?{topic:selected.topic}:{}),
       objects:view.id===id?roomObjects(view):[],
       ...(activity?{activity}:{}),
       ...(exhibit?{exhibitRevision:exhibit.revision}:{}),
       participants:roomParticipants(id)};
   }
-  async function allowInteriorSource(actor,beingRef,id){
+  async function allowInteriorSource(actor,beingRef,id,topic){
     const recipient={id:beingRef,ref:beingRef,kind:'daimon'};
+    if(topic!==undefined){
+      if(!nativeRoomAuthority||!native?.topicRoom||spaces.fenced||room.commitUncertain||
+        typeof topic!=='string'||!/^[a-f0-9]{64}$/.test(topic)||id!=='topic-'+topic.slice(0,40))return false;
+      try{
+        const [entry,rights]=await Promise.all([native.topicRoom(actor,topic),nativeRoomAuthority({actor:recipient})]);
+        return entry?.schema==='holodeck.topic-room/v1'&&entry.actorRef===actor.ref&&entry.beingRef===beingRef
+          &&entry.room===topic&&rights.includes('observe')&&!spaces.fenced&&!room.commitUncertain;
+      }catch{return false;}
+    }
     if(!nativeRoomAuthority||spaces.fenced||room.commitUncertain||
       !spaces.allows(actor,id)||!spaces.allows(recipient,id))return false;
     const rights=await nativeRoomAuthority({actor:recipient});
