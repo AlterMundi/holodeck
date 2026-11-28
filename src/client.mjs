@@ -321,7 +321,7 @@ function applySpace(next,anchor){
     if(!changingTopicMode)void setTopicMode(null);
   }
   if(changed){
-    sharedConversation?.closeTopicResult();
+    sharedConversation?.closeTopicItem();
     if($('#topic-projects-dialog').open)$('#topic-projects-dialog').close();
     questbook.closeTopic();
   }
@@ -1135,7 +1135,7 @@ async function paintGeneralCompanion(host){
   }catch{/* The companion light remains available without the portrait. */}
 }
 function openConversation(open){
-  if(!open)sharedConversation?.closeTopicResult();
+  if(!open)sharedConversation?.closeTopicItem();
   const panel=$('#conversation-panel');panel.hidden=!open;$('#talk').setAttribute('aria-expanded',String(open));
   if(open)updateNativeAvailability();
   if(open&&sharedSurface()){
@@ -1223,19 +1223,22 @@ async function readTopicProjects(pages){
     const status=projects.size?(project?'Repositorios del proyecto':'Vínculos del topic'):topicProjectsPage.length>1||topicProjectsCursor
       ?'No hay vínculos visibles en esta página.':'Todavía no hay proyectos visibles en esta sala.';
     const work=result.work;
-    if(work?.result&&sharedSurface()){
-      const latest=document.createElement('button');
-      latest.type='button';
-      latest.textContent='Ver resultado del topic';
-      latest.onclick=()=>{
-        topicProjectsDialog.close();
-        openConversation(true);
-        const openedInRoom=()=>activeSpace.topic===room&&!$('#conversation-panel').hidden;
-        void conversationHost().openTopicResult(room,openedInRoom).catch(error=>{
-          if(openedInRoom())say(error.message);
-        });
-      };
-      topicProjectsList.append(latest);
+    if(sharedSurface()){
+      for(const [kind,label] of [['result','Ver resultado del topic'],['question','Ver pregunta del topic']]){
+        if(!work?.[kind])continue;
+        const action=document.createElement('button');
+        action.type='button';
+        action.textContent=label;
+        action.onclick=()=>{
+          topicProjectsDialog.close();
+          openConversation(true);
+          const openedInRoom=()=>activeSpace.topic===room&&!$('#conversation-panel').hidden;
+          void conversationHost().openTopicItem(kind,room,openedInRoom).catch(error=>{
+            if(openedInRoom())say(error.message);
+          });
+        };
+        topicProjectsList.append(action);
+      }
     }
     const cues=[
       work?.execution==='working'?'El daimon estaba trabajando al abrir la mesa.':null,

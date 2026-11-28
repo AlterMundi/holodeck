@@ -456,7 +456,12 @@ del topic** opens the current result through the paired Conversation frame.
 Only the selected room and a correlation reference cross into the frame.
 Conversation reads the retained result and opens it without changing the
 recipient or composing a reply. Leaving the room or closing the panel
-cancels the read. Answering a question still uses Conversation's own controls.
+cancels the read. **Ver pregunta del topic** opens the current actionable
+questions for that room in Conversation's For You dialog. Conversation
+filters its existing canonical list by the exact room destination.
+Question text, answer drafts, and decision receipts stay with Conversation.
+The visitor explicitly answers through the same controls. Internal-only
+questions outside that list stay with their owning session.
 
 The project view offers the questbook when the project is the one selected
 by the receiving card writer and the visitor has its read grant. Its pages

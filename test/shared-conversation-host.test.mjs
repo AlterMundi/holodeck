@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
+import {pathToFileURL} from 'node:url';
 import {SharedConversationHost} from '../src/shared-conversation-host.mjs';
 import {COMPAII_BEING} from '../src/avatar-registry.mjs';
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
@@ -145,6 +146,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  const room={room:'7'.repeat(64),title:name,general:false,direct_available:true};
  let visible=true;const posted=[];
  const protocol=await readFile(childSource,'utf8');
+ const attention=await readFile(new URL('attention.js',pathToFileURL(childSource)),'utf8');
  page.on('pageerror',error=>errors.push(error.message));
  page.on('request',request=>{if(request.method()==='POST')posted.push(new URL(request.url()).pathname);});
  await page.route(url=>url.origin===origin,async route=>{
@@ -157,6 +159,13 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
    const parent=address.searchParams.get('surface_parent'),visit=address.searchParams.get('surface_visit');
    const start=`document.documentElement.dataset.surfaceParent=${JSON.stringify(parent)};
     document.documentElement.dataset.surfaceVisit=${JSON.stringify(visit)};
+    const line=document.createElement('div'),panel=document.createElement('div');
+    document.body.append(line,panel);
+    const questions=['Pregunta privada del topic','Pregunta de otro topic'].map((title,id)=>{
+      const box=document.createElement('article');box.textContent=title;panel.append(box);
+      return {id:String(id),title,box,open:async()=>true};
+    });
+    const pending=AttentionCarousel.mount({line,panel,getItems:()=>questions,localOnly:true});
     const surface=ConversationSurface.create({readTopics:async room=>{
       const target=new URL('/api/interaction/sessions',location.origin);
       target.searchParams.set('projection','holodeck');if(room)target.searchParams.set('room',room);
@@ -172,9 +181,11 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
       result.id='fixture-result';
       result.textContent='Resultado privado del topic';
       document.body.append(result);result.showModal();return true;
-    },closeResult:()=>document.querySelector('#fixture-result')?.remove()
+    },closeResult:()=>document.querySelector('#fixture-result')?.remove(),
+    openQuestion:(room,current)=>room===${JSON.stringify(room.room)}&&pending.openSelected(['0'],current),
+    closeQuestion:()=>pending.closeSelected()
     });surface.identity(${JSON.stringify(actorRef)});surface.bind(${JSON.stringify(binding)});`;
-   return route.fulfill({contentType:'text/html',body:`<!doctype html><html><script>${protocol}\n${start}</script></html>`});
+   return route.fulfill({contentType:'text/html',body:`<!doctype html><html><head><style>.pending-panel article:not(.for-you-items > article){display:none}</style></head><body><script>${protocol}\n${attention}\n${start}</script></body></html>`});
   }
   assert.equal(address.pathname,'/api/interaction/sessions');
   assert.equal(address.searchParams.get('projection'),'holodeck');
@@ -215,7 +226,13 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  assert.equal(await page.evaluate(async()=>fetch('api/topic-projects?room='+'8'.repeat(64)).then(r=>r.status)),404);
  await openTable();
  await table.getByRole('status').filter({hasText:'El daimon estaba trabajando al abrir la mesa. Hay una pregunta pendiente.'}).waitFor();
- await closeTable();
+ await table.getByRole('button',{name:'Ver pregunta del topic'}).tap();
+ const attentionDialog=page.frameLocator('#shared-conversation iframe').getByRole('dialog',{name:'For you'});
+ await attentionDialog.getByText('Pregunta privada del topic').waitFor();
+ assert.equal(await attentionDialog.getByText('Pregunta de otro topic').isVisible(),false);
+ assert.equal(await page.locator('#conversation-audience').getAttribute('data-recipient'),'general');
+ await page.locator('#conversation-close').tap();
+ await attentionDialog.waitFor({state:'hidden'});
  work={execution:'unknown',question:false,result:true};
  repositories=[
   {project:projectA,repository:randomUUID(),label:'Cuento',commit:storyCommit,locator:'/must-not-leak'},

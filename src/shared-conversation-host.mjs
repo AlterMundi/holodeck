@@ -45,14 +45,15 @@ export class SharedConversationHost{
       // A reload establishes a fresh channel; old async replies stay on the old channel.
       if(this.channel!==d.channel){
         this.finishTopicRead(Error('La conexión cambió.'));
-        this.closeTopicResult();
+        this.closeTopicItem();
         this.finishTopicMode(Object.assign(Error('La conversación volvió al modo general.'),{reset:true}));
         if(this.channel)this.onTopicModeReset();
       }
       this.channel=d.channel;this.supportsTopics=d.features?.topicRooms===true;
       this.supportsDirect=d.features?.topicDirect===true;
       this.supportsResult=d.features?.topicResult===true;
-      const features={...(this.supportsTopics?{topicRooms:true}:{}),...(this.supportsDirect?{topicDirect:true}:{}),...(this.supportsResult?{topicResult:true}:{})};
+      this.supportsQuestion=d.features?.topicQuestion===true;
+      const features={...(this.supportsTopics?{topicRooms:true}:{}),...(this.supportsDirect?{topicDirect:true}:{}),...(this.supportsResult?{topicResult:true}:{}),...(this.supportsQuestion?{topicQuestion:true}:{})};
       this.send(d,'connect',Object.keys(features).length?{features}:{});
       for(const ready of this.topicReady.splice(0))ready();
       return;
@@ -64,14 +65,14 @@ export class SharedConversationHost{
       else if(d.room===this.topicMode.room)this.finishTopicMode(null);
       else this.finishTopicMode(Error('No pude confirmar el destinatario.'));
     }
-    else if(d.type==='topic-result-readback'){
+    else if(d.type==='topic-result-readback'||d.type==='topic-question-readback'){
       const result=this.topicResult;
-      if(!result||result.request!==d.request||result.room!==d.room||!result.resolve)return;
+      if(!result||d.type!==`topic-${result.kind}-readback`||result.request!==d.request||result.room!==d.room||!result.resolve)return;
       if(d.opened===true){
         clearTimeout(result.timer);
         result.resolve();
         result.resolve=result.reject=undefined;
-      }else this.closeTopicResult();
+      }else this.closeTopicItem();
     }
     else if(d.type==='topic-rooms-readback')this.receiveTopicRead(d);
     else if(d.type==='prepare')this.prepare(d).catch(()=>{});
@@ -115,26 +116,27 @@ export class SharedConversationHost{
       this.topicReady.push(ready);
     });
   }
-  async openTopicResult(room,current){
-    if(!topicKey(room))throw Error('Seleccioná un topic válido.');
+  async openTopicItem(kind,room,current){
+    if(!['result','question'].includes(kind)||!topicKey(room))throw Error('Seleccioná un topic válido.');
     await this.waitForTopicChannel();
-    if(this.closed||!this.supportsResult||this.currentActor()!==this.selected.actorRef||!current())
-      throw Error('No pude abrir el resultado del topic.');
-    this.closeTopicResult();
+    const supported=kind==='question'?this.supportsQuestion:this.supportsResult;
+    if(this.closed||!supported||this.currentActor()!==this.selected.actorRef||!current())
+      throw Error('No pude abrir ese elemento del topic.');
+    this.closeTopicItem();
     const request=this.window.crypto.randomUUID();
     return new Promise((resolve,reject)=>{
-      const timer=setTimeout(()=>this.closeTopicResult(),8000);
-      this.topicResult={request,room,resolve,reject,timer};
-      this.send({channel:this.channel},'topic-result-open',{request,room});
+      const timer=setTimeout(()=>this.closeTopicItem(),8000);
+      this.topicResult={request,room,resolve,reject,timer,kind};
+      this.send({channel:this.channel},`topic-${kind}-open`,{request,room});
     });
   }
-  closeTopicResult(){
+  closeTopicItem(){
     const result=this.topicResult;
     if(!result)return;
     this.topicResult=undefined;
     clearTimeout(result.timer);
-    this.send({channel:this.channel},'topic-result-cancel',{request:result.request});
-    result.reject?.(Error('No pude abrir el resultado del topic.'));
+    this.send({channel:this.channel},`topic-${result.kind}-cancel`,{request:result.request});
+    result.reject?.(Error('Ese elemento del topic ya no está disponible.'));
   }
   async readTopicRooms({room,after}={}){
     if(room!==undefined&&!topicKey(room)||after!==undefined&&!topicKey(after)||
@@ -203,5 +205,5 @@ export class SharedConversationHost{
       if(!record.discarded&&this.channel===d.channel)this.send(d,'error',{request:d.request,id:d.id,message:'No pude conservar el contexto de este lugar. Tu borrador sigue en la conversación.'});
     }
   }
-  dispose(){this.closeTopicResult();this.closed=true;this.finishTopicMode(Error('La conversación se cerró.'));this.finishTopicRead(Error('La conversación se cerró.'));for(const ready of this.topicReady.splice(0))ready();this.window.removeEventListener('message',this.receive);this.frame?.remove();}
+  dispose(){this.closeTopicItem();this.closed=true;this.finishTopicMode(Error('La conversación se cerró.'));this.finishTopicRead(Error('La conversación se cerró.'));for(const ready of this.topicReady.splice(0))ready();this.window.removeEventListener('message',this.receive);this.frame?.remove();}
 }
