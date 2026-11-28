@@ -129,6 +129,29 @@ restrictions. The future sensory layer can place an authorized physical
 observation on the same timeline with its own resource, time, frame and evidence
 type. See [work projection replay research](research/2026-11-24-work-projection-replay.md).
 
+## Home and Holodeck publication
+
+Nicolás selected Holodeck as the primary deployment surface. A daimon's
+Home and its corresponding Holodeck house are two views of the same
+publications. A successful publication initiated on either surface must
+automatically create or update an A2UI view on the other for authorized
+viewers, including publications for which no specialized renderer exists.
+Use a generic A2UI entry that opens the selected publication in that case.
+
+Both views resolve the same owner, resource and edition through the existing
+publication authority. Carry the existing audience and revocation decisions
+into both views. Use the immutable resource and version for correlation so
+retries or projection updates cannot create a second publication. Keep a
+projection failure recoverable and visible to the operator.
+
+A spatial placement can add room geometry, doors or a live workbench to a
+publication. This is an additional authored change. The ordinary A2UI view
+must appear without waiting for a room layout or workbench binding.
+
+The automatic projection in both directions is a target contract. The
+[current walkable-room import](owner-room-art.md) uses a pinned edition and
+the published room layout explicitly.
+
 ## Transport authentication context
 
 The pinned upstream server callbacks now forward their actual WebSocket context.

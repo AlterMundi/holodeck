@@ -1,5 +1,10 @@
 # Owner-hosted room editions
 
+This is the current walkable-room import contract. The target
+[shared publication contract](architecture.md#home-and-holodeck-publication)
+creates the other A2UI view automatically. Placing a walkable room and
+changing its doors use the spatial contract below.
+
 East 1 uses Holodeck's ordinary room crossing, avatar, presence, and return.
 The room scene comes from a pinned edition on the owner's Home. An operator
 can select `receiving.ownerRoomArt` with an entry of the following form:
@@ -38,16 +43,60 @@ return in the receiving world.
 
 ## One handoff for a shared-world edition
 
-The house owner publishes the edition through their own Home. Start with the
-published edition reference and the intended change already given by the
-owner. Carry forward the existing access decisions unless the owner requests
-a change.
+Publishing to Home ends at Home. The following contract applies when the
+owner asks Holodeck to use the edition as a walkable scene inside the shared
+world. An ordinary link to the owner's viewer does not use this contract.
 
-The receiver uses its authorized Home reader and the live Holodeck layout to
-resolve the manifest, its digest, the current room IDs and reciprocal doors.
-Resolve the workspace and grant through Atelier only for editions that use a
-live workbench. Stage the selected bytes and verify an allowed visit and
-return. These are receiver checks.
+| Parameter | When needed | Source |
+| --- | --- | --- |
+| Edition selection | Every import or update needs an unambiguous version. An immutable Home link, or the Home resource and version from the publication receipt, identifies it. | Use the reference already supplied or resolve the uniquely selected edition through Home. Ask the author which edition only if the selection is ambiguous. |
+| Destination house | Every import. A house name or the context of the request is enough when it identifies one house. | Holodeck resolves the existing house ID. |
+| Room and door changes | Only when the edition changes which rooms or doors Holodeck should expose. If the manifest and the requested change already identify the intended mapping, use them. | The owner supplies only a missing design decision, for example which of two existing doors the new opening replaces. No separate floor-plan file is required. |
+| Visitor access | Existing audiences and guest lists carry forward. An explicit change is needed to open a private room or alter its guest list. | The house owner selects the change. Home reader access and Holodeck visitor access are independent. |
+| Live workbench | Only when the requested edition includes an interactive Atelier workbench. | Reuse the admitted workspace and grant. Ask which workspace only if there is no unambiguous existing binding. |
+
+For example, “Use this published edition in Casa Linterna and keep the
+current doors and visitor access” is a complete request for an art-only update.
+The receiving operator fills in the configuration at the top of this guide.
+Use the authorized Home reader to resolve the HTTPS JSON manifest on the
+owner's `.dmn.homes`, pin the SHA-256 of its exact bytes, and map manifest
+cell IDs to existing Holodeck room IDs in `rooms`. Each selection covers
+1–12 distinct rooms in a single house, and a room may appear in only one
+selection.
+
+### Edition format and receiver checks
+
+- The current importer reads `holodeck.linterna.hefesto-slice/v2`. Its
+  `cells` contain room-local `models`, `floor`, and `colliders`.
+  A selected cell has 1–6 models, 1–12 floor boxes and up to 192 colliders.
+  Floors use `x` and `z` extent pairs, `top` and `depth`. Colliders use
+  `position`, `size` and `rotationY`. Coordinates use metres with +Y up.
+  Each model declares a sibling GLB `file`, byte count `bytes` and
+  `sha256`. The manifest is limited to 96,000 bytes and each GLB to 768 KiB.
+  The staging command accepts up to 32 model entries and at most 12 MiB of
+  distinct staged bytes including the manifest. The release also has its own
+  [archive budget](deployment.md#reproducible-package).
+- `passages` lists up to 48 passages. Each internal doorway has one
+  `sides` entry per connected cell with `cell`, `threshold` and `stand`
+  in local `[x,z]`, `surfaceY` in metres and `yaw` in degrees. The
+  entry cell has exactly one external passage with a `keepParcelOffer: true`
+  outer side. The receiver compares both directions with Holodeck's live
+  `door` links. Every published link of a selected room needs a matching
+  pose.
+- If links must change, preview the proposed full graph with
+  `layout.revise.preview` using the current `expectedRevision`, and check
+  the manifest against that graph before activating it. The actual owner
+  action is `layout.revise`, with `id`, `house`, `expectedRevision`
+  and `rooms` (existing IDs, levels and entry flags stay stable). Stage and
+  confirm an allowed visit and return before reporting the edition active.
+- For Atelier, the manifest's optional `table` pins the cell, object ID,
+  anchor, turntable, rotation and interaction radius. Caddy widgets use
+  `atelierWidgets` with the same cell, a metric +Y frame, compatible door
+  and landing poses, and matching table anchors. The receiving operator
+  configures the workspace, transport and signing keys through the
+  [Atelier binding](deployment.md#receiving-contracts). Keep credentials out of
+  the author handoff. A minimal manifest and a widget example live in the
+  [receiver fixtures](../test/owner-room-art.test.mjs).
 
 If a remaining mismatch needs a decision, send one request to whoever can
 resolve it. Name the exact room, door, edition, or grant, what it blocks, and

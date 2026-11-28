@@ -4,6 +4,13 @@ The complete cross-project sequence is the [reviewed shared roadmap](shared-road
 tracked in the existing [Field Project 13](https://github.com/orgs/AlterMundi/projects/13).
 The MVP coverage below remains its own unfinished acceptance record.
 
+Holodeck is the primary deployment surface. Extend A2UI projection and
+durable sharing so that publishing in Home or the corresponding Holodeck
+house produces the other view of the same edition automatically. Qualify
+both directions with allowed and denied viewers and verify retries retain
+one publication. See the
+[publication contract](architecture.md#home-and-holodeck-publication).
+
 The MVP scope includes the [complete environment art production plan](shared-roadmap.md#environment-art-production). Nicolás confirmed entry to the Beacon basement and requested a full visual redesign. The commons, attractive small house exterior, expandable interior, working Beacon instruments and versioned 3D gallery are all part of the same goal, together with the existing native and multi-user acceptance checks.
 
 The current native goal prioritizes the aesthetic revamp until Nicolás
