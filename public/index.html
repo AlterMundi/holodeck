@@ -209,7 +209,7 @@ body:has(#conversation-panel[data-hud-chrome]:not([hidden])) .touch-controls{vis
  top:max(10px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right));padding-inline:10px
 }
 body[data-compact-workspace] #conversation-panel:not([data-travel-lane]){
- bottom:calc(env(safe-area-inset-bottom) + 110px);
+ bottom:var(--conversation-dock-edge,calc(env(safe-area-inset-bottom) + 110px));
 }
 #conversation-panel.shared-conversation[data-travel-lane="bottom"]{bottom:var(--conversation-travel-edge)}
 #conversation-panel.shared-conversation[data-travel-lane="side"]{

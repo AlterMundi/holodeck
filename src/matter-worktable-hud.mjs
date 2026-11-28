@@ -785,8 +785,8 @@ export class MatterWorktableHud{
     const viewport={width:this.canvas.clientWidth,height:this.canvas.clientHeight};
     const dockClearance=this.usesCockpitDocks(viewport)?21:0;
     const dockHeight=this.toolLayout?(this.toolLayout.height+dockBottomMargin)*this.toolLayout.scale:0;
-    return {...insets,movementReady,travelBottom:Math.ceil(insets.bottom+dockClearance+dockHeight+
-      .64*conversationMovementScale+26)};
+    const dockBottom=Math.ceil(insets.bottom+dockClearance+dockHeight+8);
+    return {...insets,movementReady,dockBottom,travelBottom:Math.ceil(dockBottom+.64*conversationMovementScale+18)};
   }
 
   compactDock(){

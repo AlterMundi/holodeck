@@ -2408,12 +2408,18 @@ function openConversation(open){
   if(!open)fitConversationWindow(true);
   if(restoreFocus&&!didFocusWorld&&!matterHud?.focusTool('talk'))talk.focus({preventScroll:true});
 }
-fitConversationWindow=bindHudPanelWindow($('#conversation-panel'),{
+const conversationWindow=$('#conversation-panel');
+fitConversationWindow=bindHudPanelWindow(conversationWindow,{
   resize:$('#conversation-resize'),
   canMove:event=>sharedSurface()||!$('#conversation-panel').hasAttribute('data-hud-chrome')||!!event.target.closest?.('#conversation-move'),
   readInsets:()=>{
     const insets=matterHud?.conversationTravelInsets()??{};
-    return compactWorkspace.matches?{...insets,bottom:Math.max(110,insets.bottom??0)}:insets;
+    if(!compactWorkspace.matches)return insets;
+    const bottom=Math.max(110,insets.dockBottom??0);
+    const edge=bottom+'px';
+    if(conversationWindow.style.getPropertyValue('--conversation-dock-edge')!==edge)
+      conversationWindow.style.setProperty('--conversation-dock-edge',edge);
+    return {...insets,bottom};
   },
 });
 fitConversationWorkspace=()=>fitConversationWindow(true);

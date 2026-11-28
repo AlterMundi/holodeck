@@ -118,7 +118,7 @@ async function main(){
     const page=await context.newPage(),errors=[];
     page.on('pageerror',error=>errors.push(error.stack??error.message));
     await page.route(conversationURL+'*',route=>route.fulfill({contentType:'text/html',body:`
-      <button disabled>Preparar contexto</button><output></output>
+      <button disabled>Preparar contexto</button><textarea id="fixture-draft"></textarea><output></output>
       <script>
         const params=new URLSearchParams(location.search),target=params.get('surface_parent');
         const base={schema:'conversation.surface/v1',visit:params.get('surface_visit'),
@@ -175,6 +175,68 @@ async function main(){
       }
       return table;
     };
+
+    if(process.env.HOLODECK_WORKSPACE_ONLY==='1'){
+      assert.equal(await moveVisitor(page,'outside',foyer),200);
+      assert.equal(await moveVisitor(page,foyer,studio),200);
+      await page.goto(url,{waitUntil:'domcontentloaded'});
+      await worldReady();
+      await page.setViewportSize({width:1440,height:900});
+      const chat=page.locator('#conversation-panel');
+      const map=page.getByRole('group',{name:'Mapa del lugar',exact:true});
+      const tool=async(id)=>{
+        await page.waitForFunction(name=>{
+          const r=holodeckDevelopment.toolBounds(name);
+          if(!r)return false;
+          const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+          return hit instanceof HTMLCanvasElement;
+        },id,{timeout:15000}).catch(async error=>{
+          console.error('Workspace tool',id,await page.evaluate(name=>{
+            const r=holodeckDevelopment.toolBounds(name);
+            const hit=r&&document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+            return {r,hit:hit?.outerHTML.slice(0,160),expanded:document.querySelector('#dock-toggle').getAttribute('aria-expanded'),
+              chat:document.querySelector('#conversation-panel').getBoundingClientRect().toJSON()};
+          },id),errors);
+          throw error;
+        });
+        const r=await page.evaluate(name=>holodeckDevelopment.toolBounds(name),id);
+        await page.mouse.click(r.left+r.width/2,r.top+r.height/2);
+      };
+      if(await page.locator('#dock-toggle').getAttribute('aria-expanded')!=='true')await tool('toggle');
+      await tool('talk');
+      await chat.waitFor({state:'visible'});
+      const draft=page.frameLocator('#shared-conversation iframe').locator('#fixture-draft');
+      await draft.fill('Borrador conservado');
+      await page.evaluate(()=>{window.workspaceFrame=document.querySelector('#shared-conversation iframe');});
+      const table=await openWorktable(await currentSpace());
+      await tool('map');
+      await map.waitFor({state:'attached'});
+      assert.equal(await chat.isVisible(),true);
+      assert.equal(await table.getByRole('button',{name:'Reproducir',exact:true}).count(),1);
+      await page.screenshot({path:join(evidence,'workspace-wide.png')});
+      await page.setViewportSize({width:400,height:760});
+      await chat.waitFor({state:'hidden'});
+      await map.getByRole('button',{name:'Cerrar',exact:true}).press('Enter');
+      await table.getByRole('button',{name:'Reproducir',exact:true}).waitFor({state:'attached'});
+      assert.equal(await chat.isVisible(),false);
+      await table.getByRole('button',{name:'Salir de la mesa',exact:true}).press('Enter');
+      await chat.waitFor({state:'visible'});
+      assert.equal(await draft.inputValue(),'Borrador conservado');
+      assert.equal(await page.evaluate(()=>window.workspaceFrame===document.querySelector('#shared-conversation iframe')),true);
+      await tool('map');
+      await chat.waitFor({state:'hidden'});
+      await map.getByRole('button',{name:'Cerrar',exact:true}).press('Enter');
+      await chat.waitFor({state:'visible'});
+      assert.equal(await draft.inputValue(),'Borrador conservado');
+      await openWorktable(await currentSpace());
+      await chat.waitFor({state:'hidden'});
+      await table.getByRole('button',{name:'Salir de la mesa',exact:true}).press('Enter');
+      await chat.waitFor({state:'visible'});
+      assert.equal(await draft.inputValue(),'Borrador conservado');
+      assert.deepEqual(errors,[]);
+      console.log('WORKSPACE BROWSER PASS');
+      return;
+    }
 
     if(process.env.HOLODECK_REVIEW_PARITY_ONLY==='1'){
       assert.equal(await moveVisitor(page,'outside',foyer),200);
