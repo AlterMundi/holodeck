@@ -1,5 +1,18 @@
 # Current MVP work
 
+## Casa Linterna garden and paving · 2026-11-28
+
+Protected release `a70fb2502b50` selects `c569550` with `ae40359a0f92`
+available for rollback. Procedural grass follows the paved approach,
+portico, terrace and occupied building footprints while continuing
+through the gardens and around the house. The same mask applies to near
+and distant grass. The whole-parcel clearing candidate was never selected.
+
+Chromium with normal graphics drew grass in the garden and meadow, with
+zero grass instances on the sampled pavers, portico and terrace. Pressing
+E at the portico still entered the HD foyer. All 99 installed files
+matched the release. Node passed 607 tests with four skips.
+
 ## Casa Linterna exterior on East 1 · 2026-11-28
 
 Protected release `ae40359a0f92` selects `4f561cf`, with `f4ced75d15c1`
