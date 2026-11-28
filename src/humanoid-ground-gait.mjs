@@ -7,7 +7,9 @@ const jog=1,run=2,jogDuration=.7,runDuration=19/30,runLead=.10;
 const jogStride=4.55*jogDuration,runStride=6.15*runDuration;
 const wrap=value=>value-Math.floor(value);
 
-export function groundGaitSample(previous,times,weights,distance,mixerStep,simulationStep=mixerStep){
+// A backward gait runs the same cycle in reverse: the planted foot then
+// travels forward under the body, matching a body that backs away.
+export function groundGaitSample(previous,times,weights,distance,mixerStep,simulationStep=mixerStep,backward=false){
   const total=weights[jog]+weights[run];
   if(!Number.isFinite(total)||total<(previous===null?.08:.002)||!Number.isFinite(mixerStep)||mixerStep<0)return null;
   const timed=distance===null||!Number.isFinite(distance)||distance>.9||simulationStep>.10;
@@ -20,7 +22,8 @@ export function groundGaitSample(previous,times,weights,distance,mixerStep,simul
   // Keep the clip clock continuous while the mixer fades out ground motion.
   // A collider can arrest travel before it clears the controller's gait cue.
   const advance=timed?nativeAdvance:clamp(distance/stride,.25*nativeAdvance,1.45*nativeAdvance);
-  const phase=wrap(previous===null?base+nativeAdvance:previous+advance);
+  const sign=backward?-1:1;
+  const phase=wrap(previous===null?base+sign*nativeAdvance:previous+sign*advance);
 
   // MML assigns these times, then advances its animation mixer by step.
   // Supply only a render-state copy of its two locomotion lanes.
