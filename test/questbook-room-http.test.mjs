@@ -412,9 +412,11 @@ test('a reloaded A2UI journal recovers its committed creation with read access',
   await page.locator('#questbook-open').click();
   const dialog = page.getByRole('dialog',{name:'Diario de misiones'});
   const missionTitle = 'Conservar el recibo tras recargar';
-  let creationRequests = 0, receiptReads = 0, creation;
+  const issueDescription = 'Volvé a abrir el diario y recuperá este encargo.';
+  let creationRequests = 0, receiptReads = 0, creation, submitted;
   await page.route('**/api/questbook/create',async route => {
     creationRequests++;
+    submitted=route.request().postDataJSON();
     creation = await (await route.fetch()).json();
     await route.abort();
   });
@@ -424,14 +426,21 @@ test('a reloaded A2UI journal recovers its committed creation with read access',
   });
   await dialog.getByRole('button',{name:'Nueva misión'}).click();
   await dialog.getByLabel('Título de la nueva misión').fill(missionTitle);
+  const descriptionField=dialog.getByLabel('Descripción (opcional)');
+  await descriptionField.fill(issueDescription);
+  assert.equal(await descriptionField.inputValue(),issueDescription);
   await dialog.getByRole('button',{name:'Crear misión'}).click();
   await dialog.getByText('Falta confirmar la misión.',{exact:false}).waitFor();
+  assert.equal(submitted.description,issueDescription);
   assert.equal(creation.result.status,'applied');
+  assert.deepEqual(creation.result.event.command.action,
+    {type:'create_issue',title:missionTitle,description:issueDescription});
   browserWrite = false;
   await page.reload();
   await page.locator('#questbook-open').click();
   await dialog.getByRole('button',{name:'Confirmar misión pendiente'}).click();
   assert.equal(await dialog.getByLabel('Título de la nueva misión').inputValue(),missionTitle);
+  assert.equal(await dialog.getByLabel('Descripción (opcional)').inputValue(),issueDescription);
   await dialog.getByRole('button',{name:'Comprobar misión'}).click();
   await dialog.getByText('Misión creada.',{exact:true}).waitFor();
   assert.equal(creationRequests,1);
@@ -441,5 +450,6 @@ test('a reloaded A2UI journal recovers its committed creation with read access',
     input:{type:'read',card:creation.result.event.card.id},
   })})).result;
   assert.equal(recovered.title,missionTitle);
+  assert.equal(recovered.issue_description,issueDescription);
   assert.equal(recovered.revision,1);
 });

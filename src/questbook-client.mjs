@@ -18,6 +18,7 @@ export class Questbook {
     this.createButton = document.querySelector('#questbook-create');
     this.createForm = document.querySelector('#questbook-create-form');
     this.createInput = document.querySelector('#questbook-create-title');
+    this.createDescription = document.querySelector('#questbook-create-description');
     this.createSave = this.createForm.querySelector('button[type="submit"]');
     this.createCancel = document.querySelector('#questbook-create-cancel');
     this.storageKey = storageKey;
@@ -36,7 +37,7 @@ export class Questbook {
     this.createCancel.onclick = () => {
       if (this.pendingCreations.has(this.creationScope())) return;
       this.createForm.hidden = true;
-      this.createInput.value = '';
+      this.createInput.value = this.createDescription.value = '';
     };
     this.createForm.onsubmit = event => {
       event.preventDefault();
@@ -71,7 +72,7 @@ export class Questbook {
       this.unmount();
       this.closeTitleEdit();
       this.createForm.hidden = this.createButton.hidden = true;
-      this.createInput.value = '';
+      this.createInput.value = this.createDescription.value = '';
       if (this.scope) this.data = null;
       this.scope = null;
       this.creationOwner = null;
@@ -214,16 +215,20 @@ export class Questbook {
     }
     this.createForm.hidden = false;
     this.createInput.value = pending?.title ?? '';
-    this.createInput.readOnly = this.createCancel.disabled = !!pending;
+    this.createDescription.value = pending?.description ?? '';
+    this.createInput.readOnly = this.createDescription.readOnly = this.createCancel.disabled = !!pending;
     this.createInput.focus();
   }
 
-  async readCreationReceipt({scope,operation,card,title,actorRef,project}) {
+  async readCreationReceipt({scope,operation,card,title,description,actorRef,project}) {
     const query = new URLSearchParams({...scope,operation,expectedActor:actorRef,expectedProject:project});
     const {result} = await this.api('questbook/receipt?'+query);
     if (result === null) return false;
-    if (result?.command?.operation !== operation || result.command.card !== card || result.command.action?.type !== 'create'
-      || result.command.action.title !== title) throw Error('Creation receipt does not match the original');
+    const action = result?.command?.action;
+    const type = description === undefined ? 'create' : 'create_issue';
+    if (result?.command?.operation !== operation || result.command.card !== card ||
+        action?.type !== type || action.title !== title || action.description !== description)
+      throw Error('Creation receipt does not match the original');
     return true;
   }
 
@@ -237,8 +242,13 @@ export class Questbook {
       this.status.textContent = 'Escribí un título breve para la misión.';
       return;
     }
+    const description = pending ? pending.description : this.createDescription.value.trim() || undefined;
+    if (description !== undefined && new TextEncoder().encode(description).length > 4096) {
+      this.status.textContent = 'Acortá la descripción de la misión.';
+      return;
+    }
     if (!pending && (!this.canCreate || this.pendingCreations.size >= MAX_PENDING_CREATIONS)) return;
-    const intent = pending ?? {...this.creationOwner,scope:{...this.scope},title,
+    const intent = pending ?? {...this.creationOwner,scope:{...this.scope},title,description,
       card:crypto.randomUUID(),operation:crypto.randomUUID()};
     if (!pending) {
       this.pendingCreations.set(key,intent);
@@ -251,7 +261,7 @@ export class Questbook {
     }
     const {card,operation,scope,actorRef,project} = intent;
     const mount = this.mountRevision;
-    this.saving = this.createSave.disabled = this.createInput.readOnly = this.createCancel.disabled = true;
+    this.saving = this.createSave.disabled = this.createInput.readOnly = this.createDescription.readOnly = this.createCancel.disabled = true;
     this.status.textContent = 'Guardando…';
     let created = false, conflict = false, submitted = false;
     const canCreate = this.canCreate;
@@ -259,7 +269,7 @@ export class Questbook {
       if (pending) created = await this.readCreationReceipt(intent);
       if (!created && canCreate) {
         submitted = true;
-        const {result} = await this.api('questbook/create',{card,operation,title,...scope,expectedActor:actorRef,expectedProject:project});
+        const {result} = await this.api('questbook/create',{card,operation,title,description,...scope,expectedActor:actorRef,expectedProject:project});
         created = ['applied','retained'].includes(result.status);
         conflict = result.status === 'conflict';
       }
@@ -278,10 +288,10 @@ export class Questbook {
     }
     if (!this.dialog.open || this.mountRevision !== mount) return;
     this.showCreationAction();
-    this.createInput.readOnly = this.createCancel.disabled = this.pendingCreations.has(key);
+    this.createInput.readOnly = this.createDescription.readOnly = this.createCancel.disabled = this.pendingCreations.has(key);
     if (created) {
       this.createForm.hidden = true;
-      this.createInput.value = '';
+      this.createInput.value = this.createDescription.value = '';
       this.pages = [null];
       await this.read(card,'Misión creada.');
     } else {

@@ -491,7 +491,7 @@ body[data-teleport-workspace] #help{display:none}
 #questbook-dialog h2{margin:0;font:clamp(22px,5vw,30px) Georgia,serif}
 #questbook-status:empty{display:none}
 #questbook-title-form:not([hidden]),#questbook-create-form:not([hidden]){display:grid;gap:8px;margin:12px 0}
-#questbook-title-form input,#questbook-create-form input{box-sizing:border-box;width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#10272c;color:var(--ink);font:inherit}
+#questbook-title-form input,#questbook-create-form input,#questbook-create-form textarea{box-sizing:border-box;width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#10272c;color:var(--ink);font:inherit}
 #questbook-stage canvas{display:block;width:100%;height:min(410px,59dvh);touch-action:none}
 #questbook-stage canvas[hidden]{display:none}
 #questbook-stage .questbook-accessible{position:static!important;width:auto!important;height:auto!important;overflow:visible!important;clip-path:none!important;pointer-events:auto!important;padding:10px 0}
@@ -636,6 +636,8 @@ body[data-teleport-workspace] #help{display:none}
   <form id="questbook-create-form" hidden>
     <label for="questbook-create-title">Título de la nueva misión</label>
     <input id="questbook-create-title" name="title" type="text" maxlength="240" required>
+    <label for="questbook-create-description">Descripción (opcional)</label>
+    <textarea id="questbook-create-description" name="description" rows="3" maxlength="4096"></textarea>
     <div class="row"><button type="submit">Crear misión</button><button id="questbook-create-cancel" type="button">Cancelar</button></div>
   </form>
   <div id="questbook-stage"><canvas aria-hidden="true" hidden></canvas></div>

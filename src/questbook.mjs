@@ -135,14 +135,19 @@ function createQuestbook(room, {project, binary, store, authorize}) {
       return result;
     },
 
-    async create(actor, {operation, card, title, expectedActor, expectedProject}, request) {
+    async create(actor, {operation, card, title, description, expectedActor, expectedProject}, request) {
       if ((expectedActor !== undefined && expectedActor !== actor?.id) ||
           (expectedProject !== undefined && expectedProject !== project)) return {ok:false,code:'access'};
       const caller = await access(actor, true, request);
       if (!caller) return {ok:false,code:'access'};
       if (!uuid(operation) || !uuid(card) || !missionTitle(title)) return {ok:false,code:'invalid'};
+      if (description !== undefined && (typeof description !== 'string' ||
+          !description.trim() || Buffer.byteLength(description)>4096))
+        return {ok:false,code:'invalid'};
+      const action = description === undefined
+        ? {type:'create',title} : {type:'create_issue',title,description};
       return execute(caller, true, {type:'apply', command:{
-        operation, card, expected_revision:0, action:{type:'create',title},
+        operation, card, expected_revision:0, action,
       }});
     },
 
