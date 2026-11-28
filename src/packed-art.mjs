@@ -15,7 +15,7 @@ export const ANIMATION_ASSET_REVISIONS=Object.freeze({
   'assets/anim_run.glb':'9edf0340d0b17a4dbb84a33f773e076f60d136b6d99eb0094578408da3a332b3',
 });
 
-const MAX_ART_BYTES=4*1024*1024;
+export const MAX_ART_BYTES=6*1024*1024;
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 
 export function readPackedArt(path,revision) {

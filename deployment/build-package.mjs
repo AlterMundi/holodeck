@@ -7,7 +7,7 @@ import { brotliCompressSync, constants as zlib } from 'node:zlib';
 import {SAND3D_TRAIL_REVISIONS} from '../src/sand3d-trail-assets.mjs';
 import {personalAvatarFile,personalAvatarSha256} from '../src/human-avatars.mjs';
 import {RESIDENCE_REVISIONS} from '../src/toroidal-residence-assets.mjs';
-import {ANIMATION_ASSET_REVISIONS} from '../src/packed-art.mjs';
+import {ANIMATION_ASSET_REVISIONS,MAX_ART_BYTES} from '../src/packed-art.mjs';
 import {VALLEY_ASSET_REVISIONS} from '../src/continuous-valley.mjs';
 import {ATELIER_ASSET_REVISIONS} from '../src/compaii-atelier.mjs';
 import {OWNED_PACKED_ART_REVISIONS} from '../src/owned-room-art.mjs';
@@ -57,12 +57,18 @@ if(ownerCache){
   }
 }
 // Preserve the qualified bytes and their existing URLs with one disk representation.
+const deeplyPackedArt=new Set([
+  'assets/residencia/residencia.glb',
+  'room-art/compaii-atelier/beacon-return.glb',
+  'room-art/compaii-atelier/beacon.glb',
+  'room-art/compaii-atelier/foyer.glb',
+]);
 for(const [path,revision] of Object.entries({...ATELIER_ASSET_REVISIONS,...VALLEY_ASSET_REVISIONS,...ANIMATION_ASSET_REVISIONS,...OWNED_PACKED_ART_REVISIONS,...MATTER_ART_REVISIONS,...SAND3D_TRAIL_REVISIONS,...RESIDENCE_REVISIONS})){
   if(!path.endsWith('.glb'))continue;
   const original=join(stage,'public',path),bytes=await readFile(original);
-  if(bytes.length>4*1024*1024||digest(bytes)!==revision)throw Error('Unqualified art export: '+path);
+  if(bytes.length>MAX_ART_BYTES||digest(bytes)!==revision)throw Error('Unqualified art export: '+path);
   // Keep the authored foyer bytes exact and make room for revised motion.
-  const compact=path in SAND3D_TRAIL_REVISIONS||path==='room-art/compaii-atelier/foyer.glb';
+  const compact=path in SAND3D_TRAIL_REVISIONS||deeplyPackedArt.has(path);
   const packed=brotliCompressSync(bytes,{params:{[zlib.BROTLI_PARAM_QUALITY]:compact?11:6}});
   if(packed.length+1024>=bytes.length)continue;
   const output=join(stage,'runtime/art',path+'.br');
