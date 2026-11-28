@@ -51,7 +51,7 @@ if(ownerCache){
     if(total>12*1024*1024)throw Error('Owner room edition exceeds the archive budget');
     const data=await readFile(join(ownerCache,name));
     if(data.length!==info.size||digest(data)!==match[1])throw Error('Owner room edition does not match the staged bytes');
-    const compressed=brotliCompressSync(data,{params:{[zlib.BROTLI_PARAM_QUALITY]:7}});
+    const compressed=brotliCompressSync(data,{params:{[zlib.BROTLI_PARAM_QUALITY]:11}});
     if(compressed.length<data.length)await writeFile(join(target,name+'.br'),compressed);
     else await writeFile(join(target,name),data);
   }
@@ -61,8 +61,9 @@ for(const [path,revision] of Object.entries({...ATELIER_ASSET_REVISIONS,...VALLE
   if(!path.endsWith('.glb'))continue;
   const original=join(stage,'public',path),bytes=await readFile(original);
   if(bytes.length>4*1024*1024||digest(bytes)!==revision)throw Error('Unqualified art export: '+path);
-  // Keep the authored foyer bytes exact and make room for revised motion.
-  const compact=path in SAND3D_TRAIL_REVISIONS||path==='room-art/compaii-atelier/foyer.glb';
+  // An owner edition shares the 40 MiB archive with the base world. Use
+  // maximum lossless compression on the known art when they ship together.
+  const compact=Boolean(ownerCache)||path in SAND3D_TRAIL_REVISIONS||path==='room-art/compaii-atelier/foyer.glb';
   const packed=brotliCompressSync(bytes,{params:{[zlib.BROTLI_PARAM_QUALITY]:compact?11:6}});
   if(packed.length+1024>=bytes.length)continue;
   const output=join(stage,'runtime/art',path+'.br');
