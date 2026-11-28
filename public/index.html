@@ -230,6 +230,7 @@ body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-controls
 #topic-projects-list ul{list-style:none;margin:0;padding:10px;display:grid;gap:8px;background:#22434a;border-radius:10px}
 #topic-projects-list li{display:grid;gap:2px;overflow-wrap:anywhere}
 #topic-projects-list code{font-size:.72rem;color:var(--muted)}
+#topic-projects-dialog nav:has(button:not([hidden])){margin-top:12px}
 body:has(#conversation-panel:not([hidden])) #topics-open,body:has(#content-visit:not([hidden]):not(.is-walking)) #topics-open{display:none}
 #questbook-dialog{width:min(500px,calc(100vw - 24px));max-height:calc(100dvh - 24px);box-sizing:border-box;padding:16px;border:1px solid var(--line);border-radius:18px;background:#173339;color:var(--ink);overflow:auto}
 #questbook-dialog::backdrop{background:#081b24b8}
@@ -332,6 +333,10 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
   <header><h2 id="topic-projects-title">Mesa de proyectos</h2><form method="dialog"><button type="submit" autofocus>Cerrar</button></form></header>
   <p id="topic-projects-status" role="status"></p>
   <div id="topic-projects-list"></div>
+  <nav class="row" aria-label="Páginas de proyectos">
+    <button id="topic-projects-back" type="button" hidden>Anterior</button>
+    <button id="topic-projects-next" type="button" hidden>Siguiente</button>
+  </nav>
 </dialog>
 <dialog id="questbook-dialog" aria-labelledby="questbook-title">
   <header><h2 id="questbook-title">Diario de misiones</h2><form method="dialog"><button type="submit" autofocus>Volver al mundo</button></form></header>

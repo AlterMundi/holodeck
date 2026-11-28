@@ -81,13 +81,16 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  const {chromium}=await import(browserModule);
  const {createHolodeck}=await import('../src/server.mjs');
  const actorRef='human:room-visitor',origin='https://conversation.test',binding='a'.repeat(64);
- let repositories=[];
+ let repositories=[],projectRevision=1;
  const nativeFactory=async()=>({availability:async()=>({available:true}),contexts:{},
-   async topicRoom(actor,topic,includeProjects){
+   async topicRoom(actor,topic,includeProjects,cursor){
     assert.equal(actor.ref,actorRef);
     if(!visible||topic!==room.room)throw Object.assign(Error('Unavailable'),{code:'topic-room-unavailable'});
+    const restarted=!!cursor&&cursor!==projectRevision+'.3';
+    const older=cursor&&!restarted;
     return {schema:'holodeck.topic-room/v1',actorRef,room:topic,title:room.title,general:false,
-      ...(includeProjects?{projects:{repositories}}:{})};
+      ...(includeProjects?{projects:{repositories:older?repositories.slice(8):repositories.slice(0,8),
+        next:!older&&repositories.length>8?projectRevision+'.3':null,restarted}}:{})};
    },
    conversationSurface:async()=>({schema:'holodeck.conversation-surface/v1',actorRef,binding,
     beingRef:COMPAII_BEING,homeRef:'home:'+'c'.repeat(32),url:origin+'/interaction/'})});
@@ -180,6 +183,23 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  await table.getByText('4'.repeat(40),{exact:true}).waitFor();
  assert.equal(await table.getByText('1'.repeat(40),{exact:true}).count(),0);
  assert.equal(await table.getByText('Juego',{exact:true}).count(),0);
+ await closeTable();
+ repositories.push(...Array.from({length:8},(_,index)=>({
+  project:randomUUID(),repository:randomUUID(),label:'Anexo '+index,commit:'c'.repeat(40),
+ })));
+ await openTable();
+ const nextPage=table.getByRole('button',{name:'Siguiente',exact:true});
+ const previousPage=table.getByRole('button',{name:'Anterior',exact:true});
+ await nextPage.tap();
+ await table.getByText('Anexo 7',{exact:true}).waitFor();
+ assert.equal(await table.getByText('Cuento',{exact:true}).count(),0);
+ await previousPage.tap();
+ await table.getByText('Cuento',{exact:true}).waitFor();
+ assert.equal(await table.getByText('Anexo 7',{exact:true}).count(),0);
+ projectRevision++;
+ await nextPage.tap();
+ await table.getByText(/Volvimos a la primera página/).waitFor();
+ await table.getByText('Cuento',{exact:true}).waitFor();
  await closeTable();
  await page.getByRole('button',{name:'Conversar',exact:true}).tap();
  await page.getByRole('heading',{name:'Nuestra conversación general',exact:true}).waitFor();

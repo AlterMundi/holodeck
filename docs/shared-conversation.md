@@ -430,9 +430,10 @@ live acceptance.
 
 The project table reads the paired Gateway's current topic checkpoint on
 each opening. Repositories are grouped under their project identity and
-display their exact linked Git commit. Up to eight recent links are
-projected. The active room and its current reader access are checked for
-each request. Closing the table or leaving the room discards its browser
-view. A backend without the project reader reports the table unavailable.
-The table is a read-only view. Project navigation, paginated discovery and
-work surfaces remain part of the topic-room roadmap.
+display their exact linked Git commit. The visitor can move among pages
+without leaving the room. The active room and current source access are
+checked on each page. If the catalogue changes while paging, the table
+returns to the refreshed first page. Closing the table or leaving the room
+discards its browser view. A backend without the project reader reports the
+table unavailable. The table is a read-only view. Project entry and editing
+surfaces remain part of the topic-room roadmap.

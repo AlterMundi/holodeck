@@ -976,13 +976,13 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       res.status(error.status).json({code:error.code,message:error.message,...(error.code==='stale-run'?{run:room.run}:{})});}
   });
   app.get(route('api/content-visits'),(req,res)=>res.json({nodes:selectedContentNodes,visits:[...visitsForActor(selectedContentVisits,req.actor),...nodeVisits(room.nodes,req.actor)]}));
-  async function topicSelection(req,res,topic,from,includeProjects=false){
+  async function topicSelection(req,res,topic,from,includeProjects=false,cursor){
     if(!native?.topicRoom||typeof topic!=='string'||!/^[a-f0-9]{64}$/.test(topic)){
       res.sendStatus(404);return null;
     }
     if(room.commitUncertain||spaces.fenced){res.sendStatus(503);return null;}
     let selection;
-    try{selection=await native.topicRoom(req.actor,topic,includeProjects);}
+    try{selection=await native.topicRoom(req.actor,topic,includeProjects,cursor);}
     catch(error){res.sendStatus(error?.code==='topic-room-unavailable'||error?.code==='identity'?404:503);return null;}
     const actor=await currentActor(req,req.holodeckSession);
     if(!actor||!inScope(actor,from)){res.sendStatus(404);return null;}
@@ -999,7 +999,10 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     res.set('Cache-Control','private, no-store');
     const visit=spaces.topicVisit(req.actor);
     if(!visit||req.query.room!==visit.topic)return res.sendStatus(404);
-    const selected=await topicSelection(req,res,visit.topic,visit.room.id,true);
+    const cursor=req.query.cursor;
+    const pageKey=/^[0-9]{1,19}\.[0-9]{1,19}$/;
+    if(cursor!==undefined&&(typeof cursor!=='string'||!pageKey.test(cursor)))return res.sendStatus(400);
+    const selected=await topicSelection(req,res,visit.topic,visit.room.id,true,cursor);
     if(!selected)return;
     const {projects}=selected;
     if(!projects||!Array.isArray(projects.repositories)||projects.repositories.length>8)
@@ -1011,7 +1014,10 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       typeof row.label!=='string'||!row.label.trim()||Array.from(row.label).length>80||/[\u0000-\u001f\u007f]/.test(row.label)))
       return res.sendStatus(503);
     const repositories=projects.repositories.map(({project,repository,commit,label})=>({project,repository,commit,label}));
-    res.json({room:visit.topic,repositories});
+    const {next=null,restarted=false}=projects;
+    if((next!==null&&(typeof next!=='string'||!pageKey.test(next)))||typeof restarted!=='boolean')
+      return res.sendStatus(503);
+    res.json({room:visit.topic,repositories,next,restarted});
   }));
 
   app.get(route('api/topic-space'),asyncRoute(async(req,res)=>{

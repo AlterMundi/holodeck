@@ -1135,24 +1135,33 @@ $('#conversation-close').onclick=()=>openConversation(false);
 const topicProjectsDialog=$('#topic-projects-dialog');
 const topicProjectsList=$('#topic-projects-list');
 const topicProjectsStatus=$('#topic-projects-status');
-let topicProjectsRead;
+const topicProjectsBack=$('#topic-projects-back'),topicProjectsNext=$('#topic-projects-next');
+let topicProjectsRead,topicProjectsPage=[],topicProjectsCursor;
 topicProjectsDialog.addEventListener('close',()=>{
   if(topicProjectsDialog.open)return;
   topicProjectsRead?.abort();
   topicProjectsList.replaceChildren();
 });
-$('#topic-projects-open').onclick=async()=>{
+async function readTopicProjects(pages){
   const room=activeSpace.topic;
-  if(!room||topicProjectsDialog.open)return;
+  if(!room||!topicProjectsDialog.open)return;
+  topicProjectsRead?.abort();
   const request=new AbortController();
   topicProjectsRead=request;
+  topicProjectsPage=pages;
   topicProjectsList.replaceChildren();
+  topicProjectsBack.hidden=topicProjectsNext.hidden=true;
   topicProjectsStatus.textContent='Buscando los proyectos de esta sala…';
-  topicProjectsDialog.showModal();
   const current=()=>!request.signal.aborted&&topicProjectsDialog.open&&activeSpace.topic===room;
+  const cursor=pages.at(-1);
   try{
-    const result=await api('topic-projects?'+new URLSearchParams({room}),undefined,{signal:request.signal});
+    const query=new URLSearchParams({room,...(cursor?{cursor}:{})});
+    const result=await api('topic-projects?'+query,undefined,{signal:request.signal});
     if(!current()||result.room!==room)return;
+    topicProjectsPage=result.restarted?[null]:pages;
+    topicProjectsCursor=result.next;
+    topicProjectsBack.hidden=topicProjectsPage.length<2;
+    topicProjectsNext.hidden=!topicProjectsCursor;
     const projects=new Map();
     for(const repository of result.repositories){
       if(!projects.has(repository.project))projects.set(repository.project,[]);
@@ -1170,11 +1179,24 @@ $('#topic-projects-open').onclick=async()=>{
       }
       topicProjectsList.append(list);
     }
-    topicProjectsStatus.textContent=projects.size?'Vínculos recientes':'Todavía no hay proyectos visibles en esta sala.';
+    const status=projects.size?'Vínculos del topic':topicProjectsPage.length>1||topicProjectsCursor
+      ?'No hay vínculos visibles en esta página.':'Todavía no hay proyectos visibles en esta sala.';
+    topicProjectsStatus.textContent=result.restarted?'Los vínculos cambiaron. Volvimos a la primera página. '+status:status;
   }catch{
-    if(current())topicProjectsStatus.textContent='No pude consultar los proyectos de esta sala.';
+    if(!current())return;
+    topicProjectsStatus.textContent='No pude consultar los proyectos de esta sala.';
+    topicProjectsBack.hidden=pages.length<2;
   }
+}
+$('#topic-projects-open').onclick=()=>{
+  if(!activeSpace.topic||topicProjectsDialog.open)return;
+  topicProjectsPage=[null];
+  topicProjectsCursor=null;
+  topicProjectsDialog.showModal();
+  void readTopicProjects(topicProjectsPage);
 };
+topicProjectsBack.onclick=()=>void readTopicProjects(topicProjectsPage.slice(0,-1));
+topicProjectsNext.onclick=()=>void readTopicProjects([...topicProjectsPage,topicProjectsCursor]);
 $('#worktable-reference-clear').onclick=()=>{worktableTopic=undefined;updateNativeAvailability();};
 function boundConversation(){
   const log=$('#conversation-log');while(log.children.length>128)log.firstElementChild.remove();

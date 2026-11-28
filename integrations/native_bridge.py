@@ -144,12 +144,15 @@ class NativeBridge:
                 'beingRef':frozen['beingRef'],'homeRef':frozen['homeRef'],
                 'binding':frozen['binding'],'url':self.home_origin+self.home_entry}
 
-    def topic_room(self,actor,room,include_projects=False):
+    def topic_room(self,actor,room,include_projects=False,project_cursor=None):
         first=self.pair(actor)
         if not self.home_workspace or not isinstance(room,str) or re.fullmatch('[a-f0-9]{64}',room) is None:
             raise BridgeError('topic-room-unavailable','The current Home workspace grant is unavailable')
-        current=(self.provider.topic_rooms(room,include_projects=True) if include_projects
-                 else self.provider.topic_rooms(room))
+        if include_projects:
+            current=self.provider.topic_rooms(room,include_projects=True,**(
+                {'project_cursor':project_cursor} if project_cursor is not None else {}))
+        else:
+            current=self.provider.topic_rooms(room)
         rows=current.get('rooms')
         if (current.get('schema')!='daimon.topic-rooms/v1' or not isinstance(rows,list) or len(rows)!=1
             or rows[0].get('room')!=room):
@@ -461,10 +464,13 @@ class NativeBridge:
                     'pin':request['pin'],'owned':owned}
         if request.get('operation')=='topic-room':
             include_projects=request.get('projects',False)
+            cursor=request.get('cursor')
             keys={'operation','actorRef','room'}
-            if set(request)-{'projects'}!=keys or type(include_projects) is not bool:
-                raise BridgeError('topic-room-unavailable','Select an exact topic room')
-            return self.topic_room(request['actorRef'],request['room'],include_projects)
+            if (set(request)-{'projects','cursor'}!=keys or type(include_projects) is not bool or
+                ('cursor' in request and (not include_projects or not isinstance(cursor,str) or
+                 re.fullmatch(r'[0-9]{1,19}\.[0-9]{1,19}',cursor) is None))):
+                raise BridgeError('topic-room-unavailable','Select an exact topic room and page')
+            return self.topic_room(request['actorRef'],request['room'],include_projects,cursor)
         if request.get('operation')=='questbook-access':
             if (set(request)!={'operation','beingRef','project','write'}
                 or not isinstance(request['beingRef'],str)

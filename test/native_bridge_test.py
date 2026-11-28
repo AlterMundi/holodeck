@@ -224,6 +224,8 @@ class BridgeContracts(unittest.TestCase):
         self.assertEqual(self.bridge.dispatch({**request,'projects':True})['projects'],projects)
         self.assertEqual(calls[-1],(room,True))
         with self.assertRaises(module.BridgeError):
+            self.bridge.dispatch({**request,'cursor':'12.4'})
+        with self.assertRaises(module.BridgeError):
             self.bridge.dispatch({**request,'projects':1})
         self.provider.topic_rooms=lambda selected: {
             'schema':'daimon.topic-rooms/v1','rooms':[{'room':room,'title':'Ideas','general':False}]}
