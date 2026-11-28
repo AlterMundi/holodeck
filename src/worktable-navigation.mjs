@@ -17,7 +17,19 @@ export class WorktableNavigation{
     if(!this.active||this.active.surface!==surface)return;
     const {leave}=this.active;
     this.active=null;
+    this.attention=null;
     leave(options);
+  }
+
+  point(surface,resolve,now=performance.now()){
+    if(this.active?.surface===surface)this.attention={surface,resolve,start:now};
+  }
+
+  pointing(now=performance.now()){
+    const cue=this.attention;
+    if(!cue||cue.surface!==this.active?.surface)return null;
+    const age=now-cue.start,remaining=1150-age;
+    return remaining>0?{resolve:cue.resolve,age,remaining}:null;
   }
 
   wheel(surface,event,pageHeight){

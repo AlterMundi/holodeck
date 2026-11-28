@@ -3,7 +3,7 @@
 export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false,inspection,canLoop=()=>false,canPitch=()=>false){
   const document=canvas.ownerDocument;
   const abort=new AbortController(),capture={capture:true,signal:abort.signal};
-  let rightHeld=false,locked=false,pan=null,loopPitch=null,loopPole=0;
+  let rightHeld=false,locked=false,pan=null,tableDrag=null,loopPitch=null,loopPole=0;
   const touchIds=new Set();
   const inspect=event=>inspection?.available(event);
   const dolly=(delta,clientX,clientY)=>{
@@ -66,6 +66,13 @@ export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false,
       return;
     }
     if(event.button!==2)return;
+    if(inspection?.tableOrbit?.()){
+      tableDrag={id:event.pointerId,x:event.clientX,y:event.clientY};
+      canvas.setPointerCapture(event.pointerId);
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return;
+    }
     rightHeld=true;
     try{canvas.requestPointerLock?.()?.catch(()=>{});}catch{}
   },capture);
@@ -103,6 +110,18 @@ export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false,
       return;
     }
     if(event.pointerType!=='mouse')return;
+    if(tableDrag?.id===event.pointerId){
+      if(!(event.buttons&2)||blocked()||!inspection.tableOrbit()||!canvas.clientWidth||!canvas.clientHeight){
+        releaseTableDrag();
+        return;
+      }
+      turn(event.clientX-tableDrag.x,event.clientY-tableDrag.y);
+      tableDrag.x=event.clientX;
+      tableDrag.y=event.clientY;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return;
+    }
     if(pan?.id===event.pointerId){
       if(!(event.buttons&4)||!inspect(event)||!canvas.clientWidth||!canvas.clientHeight){pan=null;return;}
       inspection.pan(-2*(event.clientX-pan.x)/canvas.clientWidth,2*(event.clientY-pan.y)/canvas.clientHeight);
@@ -130,7 +149,16 @@ export function bindWorldOrbitInput(camera,canvas,sensitivity,blocked=()=>false,
     touchIds.clear();
     if(!camera.activePointers.size)document.body.style.cursor='';
   };
+  const releaseTableDrag=()=>{
+    const drag=tableDrag;
+    tableDrag=null;
+    if(drag&&canvas.hasPointerCapture(drag.id))canvas.releasePointerCapture(drag.id);
+  };
+  canvas.addEventListener('lostpointercapture',event=>{
+    if(event.pointerId===tableDrag?.id)releaseTableDrag();
+  },capture);
   const release=()=>{
+    releaseTableDrag();
     pan=null;
     releaseTouches();
     rightHeld=false;

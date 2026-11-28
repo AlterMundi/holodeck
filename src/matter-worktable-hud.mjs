@@ -2,7 +2,7 @@ import {PendingBookHud,pendingToolId,pendingBookId,pendingBookWidth} from './pen
 import {hudAppearanceKey,readHudAppearance} from './hud-appearance.mjs';
 import {PassageHud} from './passage-hud.mjs';
 import {HudLookPreview} from './hud-look-preview.mjs';
-import {AmbientLight,DirectionalLight,Matrix4,OrthographicCamera,PerspectiveCamera,Raycaster,Scene,Vector2} from 'three';
+import {AmbientLight,DirectionalLight,Matrix4,OrthographicCamera,PerspectiveCamera,Raycaster,Scene,Vector2,Vector3} from 'three';
 import {WorldMapHud,worldMapId,worldBearingId,terrainPeekId} from './world-map-hud.mjs';
 import {DoorPromptHud,compactDoorPromptWidth,doorPromptId} from './door-prompt-hud.mjs';
 import {CollectionHud,collectionHudId,collectionHudWidth} from './collection-hud.mjs';
@@ -363,7 +363,15 @@ export class MatterWorktableHud{
           this.pending.activate(requested);
         }
         else if(requested.surfaceId===activityHudId)this.activity.activate(requested);
-        else if(requested.surfaceId===teleportHudId)this.teleport.activate(requested);
+        else if(requested.surfaceId===teleportHudId){
+          const anchor=this.teleportModels.controls.get(requested.name)?.hit;
+          if(anchor?.parent?.visible&&this.teleportMode==='workspace'){
+            const clicked=anchor.getWorldPosition(new Vector3());
+            this.worktableNavigation.point(this.teleportWorkspace,target=>
+              requested.name==='go'&&anchor.parent?.visible?anchor.getWorldPosition(target):target.copy(clicked));
+          }
+          this.teleport.activate(requested);
+        }
         else if(requested.surfaceId===teleportViewId){
           if(!this.teleport.group)return;
           if(requested.name==='exit')this.teleport.close();
@@ -375,7 +383,17 @@ export class MatterWorktableHud{
         else if(requested.surfaceId===recoveryHudId)this.recovery.activate(requested);
         else if(requested.surfaceId===creationHudId)this.creation.activate(requested);
         else if([beaconStationId,beaconViewerId].includes(requested.surfaceId))this.beacon.activate(requested);
-        else this.handleAction(requested);
+        else{
+          if(requested.surfaceId===surfaceId&&this.active&&this.fixedNavigation?.active){
+            const subject=this.table.reviewCameraTarget??this.table.anchor;
+            const model=this.table.model?.group;
+            if(subject||model)this.worktableNavigation.point(this.fixedNavigation,target=>{
+              if(model?.parent)return model.getWorldPosition(target);
+              return subject&&target.set(subject.x,subject.y+.08,subject.z);
+            });
+          }
+          this.handleAction(requested);
+        }
       },onTransportError:onError,
     });
     const immersivePointer=event=>this.handleTeleportPointer(event);

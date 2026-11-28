@@ -22,7 +22,7 @@ export class PublicWorldPicker{
    if(!g||g.id!==e.pointerId||performance.now()-g.time>800||Math.hypot(e.clientX-g.x,e.clientY-g.y)>6)return;
    const picked=this.resolvePick(e.clientX,e.clientY);
    if(picked===unconfirmedTarget)this.onUnavailable();
-   else if(picked)this.onPick(picked);
+   else if(picked)this.onPick(picked,e);
   };
   for(const[type,listener]of [['pointerdown',this.down],['pointermove',this.move],['pointerup',this.up],['pointercancel',this.cancel]])canvas.addEventListener(type,listener);
  }
