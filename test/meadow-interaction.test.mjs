@@ -89,6 +89,14 @@ test('ordinary flight leaves a softer, longer trail than boost',()=>{
     assert.ok(wake.index>first);
     assert.ok(cruise<wake.kind.getX(first),'boost is brighter');
     assert.ok(cruiseLife>wake.kind.getY(first),'cruise lasts longer');
+    // A boost sample can carry more than one cruise spacing. The first
+    // cruise particle must still be inside the segment just flown.
+    wake.observe(4,at.set(0,8,0),up,true,.03);
+    wake.observe(4,at.set(.65,8,0),up,true,.03);
+    const beforeCruise=wake.index;
+    wake.observe(4,at.set(.8,8,0),up,true,.015);
+    for(let index=beforeCruise;index<wake.index;index++)
+      assert.ok(wake.position.getX(index)>=.65);
     // Walking (not flying) leaves nothing.
     const before=wake.index;
     wake.observe(3,at.set(0,9,0),up,false,.03);

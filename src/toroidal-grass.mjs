@@ -38,9 +38,9 @@ const FLOWER_TINTS=[[1,.98,.92],[1,.97,.9],[1,.82,.28],[.62,.46,1],[.5,.55,1],[1
 // The far meadow: a sparse layer of cheap clumps that takes over where the
 // detailed carpet thins, so distant slopes keep the texture of grass.
 const FAR_TILE=48;             // metres at the ring's mid latitude
-const FAR_RADIUS=96;           // metres of visible far meadow
+const FAR_RADIUS=84;           // metres of visible far meadow
 const FAR_START=[20,34];       // metres: clumps fade in as the carpet thins
-const FAR_DENSITY=.7;          // clumps per square metre on open meadow
+const FAR_DENSITY=.42;          // clumps per square metre on open meadow
 const FAR_COLUMNS=Math.round(TAU*T.majorRadius/FAR_TILE);
 const FAR_ROWS=Math.round(TAU*T.tubeRadius/FAR_TILE);
 // Walkers part the grass and leave a short path that springs back.
@@ -197,6 +197,7 @@ function grassMaterial(uniforms,far=false){
           vec3 objectTangent=vec3(tangent.xyz);
         #endif`)
       .replace('#include <begin_vertex>',`#include <begin_vertex>
+        vec3 grassOffset=vec3(0.);
         {
           vec3 root=(modelMatrix*instanceMatrix*vec4(0.,0.,0.,1.)).xyz;
           // Every tuft has its own rank (grassGrow.x) and leaves the carpet
@@ -256,10 +257,17 @@ function grassMaterial(uniforms,far=false){
               world+=(trample/max(length(trample),1e-4)*parted*.85-up*press*.5)*tall*bend;
             }
           }`}
-          transformed+=inverse(mat3(instanceMatrix))*world;
+          grassOffset=world*reach;
           transformed*=reach;
           vGrassTip=position.y;
-        }`);
+        }`)
+      .replace('#include <project_vertex>',`#include <project_vertex>
+        mvPosition.xyz+=(viewMatrix*vec4(grassOffset,0.)).xyz;
+        gl_Position=projectionMatrix*mvPosition;`)
+      .replace('#include <worldpos_vertex>',`#include <worldpos_vertex>
+        #if defined( USE_ENVMAP ) || defined( DISTANCE ) || defined( USE_SHADOWMAP ) || defined( USE_TRANSMISSION ) || NUM_SPOT_LIGHT_COORDS > 0
+          worldPosition.xyz+=grassOffset;
+        #endif`);
     shader.fragmentShader=shader.fragmentShader
       .replace('#include <common>',`#include <common>
         uniform float grassGlow;
@@ -274,7 +282,7 @@ function grassMaterial(uniforms,far=false){
         reflectedLight.directSpecular*=0.;
         reflectedLight.indirectSpecular*=0.;`);
   };
-  material.customProgramCacheKey=()=>far?'holodeck-toroidal-grass-far-v1':'holodeck-toroidal-grass-v5';
+  material.customProgramCacheKey=()=>far?'holodeck-toroidal-grass-far-v2':'holodeck-toroidal-grass-v6';
   return material;
 }
 

@@ -93,7 +93,8 @@ export class FlightWake{
     const distance=boost||cruise,style=boost?BOOST:CRUISE;
     track.seen=time;
     if(distance>0){
-      for(let offset=style.spacing-track.carry;offset<=distance;offset+=style.spacing){
+      const carry=track.carry%style.spacing;
+      for(let offset=style.spacing-carry;offset<=distance;offset+=style.spacing){
         const i=this.index;
         this.particle.copy(track.last).lerp(position,offset/distance)
           .addScaledVector(up,style.lift+Math.sin(i*4.1)*.11);
