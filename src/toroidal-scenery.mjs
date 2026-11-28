@@ -13,7 +13,7 @@ import {CAVE} from './toroidal-cave.mjs';
 import {caveExitCellCapacity,caveExitCover,intersectsCaveExitCover} from './toroidal-cave-verge.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
 import {
-  overlookCoordinates, residencePlantClearance, TOROIDAL_TERRAIN, terrainCoordinates,
+  linternaGrassCover, overlookCoordinates, residencePlantClearance, TOROIDAL_TERRAIN, terrainCoordinates,
   terrainElevation, terrainMeadowMoisture, terrainPosition, terrainTile, terrainTrail, terrainWoodland,
 } from './toroidal-terrain.mjs';
 
@@ -69,9 +69,11 @@ function sceneryForCell(cell) {
     if(distanceFromHouse<5.4)continue;
     if(u>CAVE.from-.00025&&u<CAVE.to+.00025&&Math.abs(v-CAVE.latitude)<.0029)continue;
     if(residencePlantClearance(u,v,2.6))continue;
+    const cover=linternaGrassCover(u,v);
+    if(cover<=.01)continue;
     const moisture=terrainMeadowMoisture(u,v,h);
     const stony=h>37||h<TOROIDAL_TERRAIN.waterLevel+2.5||pick(7)<.16+(1-moisture)*.17;
-    const size=stony?.20+pick(53)**1.7*.79:.25+pick(53)**1.4*.41;
+    const size=(stony?.20+pick(53)**1.7*.79:.25+pick(53)**1.4*.41)*cover;
     const tint=pick(97),yaw=pick(29)*TAU;
     const footprint=stony?{
       along:TAU*(TOROIDAL_TERRAIN.majorRadius+(TOROIDAL_TERRAIN.tubeRadius+h)*Math.cos(v*TAU)),
@@ -136,6 +138,8 @@ function meadowCell(cell,index,door,atCaveExit){
   if(turf===0&&u>CAVE.from-.00029&&u<CAVE.to+.00029&&Math.abs(v-CAVE.latitude)<.0031)return null;
   if(u>overlookStart.u&&u<overlookEnd.u&&v>overlookStart.v&&v<overlookEnd.v)return null;
   if(residencePlantClearance(u,v,1.8)||terrainTrail(u,v)>.12)return null;
+  const cover=linternaGrassCover(u,v);
+  if(cover<=.01)return null;
   const h=terrainElevation(u,v);
   if(h<TOROIDAL_TERRAIN.waterLevel+1.4||h>FIELD_MAX_ELEVATION)return null;
   const fold=349*TAU*u+188*TAU*v+1.3*Math.sin(54*TAU*u-93*TAU*v);
@@ -144,10 +148,10 @@ function meadowCell(cell,index,door,atCaveExit){
   const ordinary=(.47+moisture*.19+.21*Math.sin(fold)+.17*Math.sin(pocket))*(1-.40*terrainWoodland(u,v,h));
   const growth=index>=FIELD_DENSITY ? turf*.96 :
     (ordinary+(1-ordinary)*turf*.85)*(1-.87*tread);
-  if(pick(229)>growth)return null;
+  if(pick(229)>growth*cover)return null;
   const vigor=pick(421)**1.6;
   const tall=turf>.25&&pick(773)<.12;
-  const size=.30+vigor*.51+growth*.14+turf*(tall?.28:.10);
+  const size=(.30+vigor*.51+growth*.14+turf*(tall?.28:.10))*cover;
   return {u,v,h,yaw:pick(321)*TAU,size,
     color:grassColor(moisture+turf*.11,pick(499))};
 }
@@ -281,7 +285,8 @@ export function approachCover(lightweight,{x:doorX,z:doorZ=15.5,facing=-1}={}) {
     const {u,v}=approachCoordinates(x,z);
     // Keep the facade and the aisle connecting its door to the route clear.
     if((Math.abs(z-doorZ)<1.9&&x*facing>0)||(!atFacade&&terrainTrail(u,v)>.22))return;
-    plants.push({u,v,h:terrainElevation(u,v),...styling});
+    const cover=linternaGrassCover(u,v);
+    if(cover>.01)plants.push({u,v,h:terrainElevation(u,v),...styling,size:styling.size*cover});
   };
   for(let station=0;station<20;station++)for(const side of [-1,1]){
     const index=station*2+Number(side>0);

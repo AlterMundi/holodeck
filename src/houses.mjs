@@ -14,8 +14,8 @@ export const HOUSE_PLOTS = Object.freeze(ROWS.flatMap((z, index) =>
 ));
 // The facade door faces the common aisle. Spawn on the public approach,
 // beyond the facade collider and inside the connected walking surface.
-export function exteriorDoor(house) {
-  const plot = HOUSE_PLOTS.find(candidate => candidate.id === house.parcel);
+export function exteriorDoor(house, plots=HOUSE_PLOTS) {
+  const plot = plots.find(candidate => candidate.id === house.parcel);
   return {
     x: plot.x - plot.side * (house.facade.width / 2 + .85),
     y: .11,
@@ -67,7 +67,7 @@ function validReceipt(r, houses) {
 }
 
 export class Houses {
-  constructor({state, persist} = {}) {
+  constructor({state, persist, parcelGrants = null} = {}) {
     this.state = state ?? {schema:SCHEMA, houses:[], receipts:[]};
     const {houses, receipts} = this.state;
     if (!exact(this.state, 'houses,receipts,schema') || this.state.schema !== SCHEMA ||
@@ -80,11 +80,32 @@ export class Houses {
         new Set(receipts.map(r => r.owner + ':' + r.result.command)).size !== receipts.length) {
       throw Error('Invalid house checkpoint; preserve it for recovery');
     }
+    if (parcelGrants!==null && (!Array.isArray(parcelGrants) || parcelGrants.length>HOUSE_PLOTS.length ||
+        new Set(parcelGrants.map(grant=>grant?.parcel)).size!==parcelGrants.length ||
+        new Set(parcelGrants.map(grant=>grant?.owner)).size!==parcelGrants.length ||
+        !parcelGrants.every(grant=>exact(grant,'owner,parcel') && typeof grant.owner==='string' &&
+          BEING.test(grant.owner) && plotFor(grant.parcel) &&
+          !houses.some(house=>house.parcel===grant.parcel && house.owner!==grant.owner ||
+            house.owner===grant.owner && house.parcel!==grant.parcel))))
+      throw Error('Invalid parcel grants');
+    this.parcelGrants=parcelGrants===null?null:new Map(parcelGrants.map(grant=>[grant.parcel,grant.owner]));
     this.persist = persist;
   }
 
   directory() {
     return structuredClone(this.state.houses);
+  }
+
+  canManage(actor, id = houseId(String(actor?.id))) {
+    return actor?.kind==='daimon' && actor.rights?.includes('observe') &&
+      this.state.houses.some(house=>house.id===id && house.owner===actor.id);
+  }
+
+  canClaim(actor,parcel) {
+    return actor?.kind==='daimon' && actor.rights?.includes('observe') &&
+      (this.parcelGrants===null
+        ? actor.rights.includes('edit')
+        : this.parcelGrants.get(parcel)===actor.id);
   }
 
   receipt(owner, id) {
@@ -101,6 +122,7 @@ export class Houses {
       ownHouse: typeof owner === 'string' && BEING.test(owner) ? houseId(owner) : null,
       ground: HOUSE_GROUND,
       plots: HOUSE_PLOTS.map(p => ({id:p.id, x:p.x, z:p.z, width:p.width, depth:p.depth,
+        ...(owner&&this.parcelGrants?.get(p.id)===owner?{reservedForYou:true}:{}),
         occupied:this.state.houses.some(h => h.parcel === p.id)})),
       revisions:this.state.houses.map(({id,parcel,revision}) => ({id,parcel,revision})),
     };
@@ -126,6 +148,8 @@ export class Houses {
     if (!exact(args, claiming ? 'facade,parcel' : 'facade'))
       return refuse('Select a supported house publication');
     const parcel = claiming ? args.parcel : old.parcel;
+    if (claiming && this.parcelGrants!==null && this.parcelGrants.get(parcel)!==actor.id)
+      return refuse('This author has no grant for that parcel');
     if (claiming && this.state.houses.some(h => h.parcel === parcel))
       return refuse('This parcel is already occupied');
     if (!validFacade(args.facade, plotFor(parcel)))

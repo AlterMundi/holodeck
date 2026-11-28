@@ -1,6 +1,7 @@
 import {AdditiveBlending,BufferAttribute,BufferGeometry,Color,DynamicDrawUsage,Points,ShaderMaterial,Vector3} from 'three';
 import {CameraKick,RibbonTrails,Shockwaves,SmokePuffs} from './hero-effects.mjs';
 import {terrainColor} from './toroidal-terrain.mjs';
+import {footDustColour,footSurface} from './footfall-surface.mjs';
 
 const capacity=384;
 // Boosted flight leaves the bright, short wake; ordinary flight a thinner,
@@ -28,7 +29,7 @@ export function cruiseWakeDistance(previous,current,seconds){
 }
 
 export class FlightWake{
-  constructor(scene){
+  constructor(scene,{base=null}={}){
     const geometry=new BufferGeometry();
     const attribute=length=>new BufferAttribute(new Float32Array(capacity*length),length).setUsage(DynamicDrawUsage);
     this.position=attribute(3);
@@ -98,8 +99,10 @@ export class FlightWake{
     // break away with a shockwave.
     this.ribbons=new RibbonTrails(scene);
     this.shockwaves=new Shockwaves(scene);
-    this.smoke=new SmokePuffs(scene);
+    this.smoke=new SmokePuffs(scene,{base});
     this.kick=new CameraKick();
+    // Optional (kind,{strength}) sink for the explorer's own body sounds.
+    this.sound=null;
     this.ribbonPoint=new Vector3();
     scene.add(this.mesh);
   }
@@ -162,9 +165,9 @@ export class FlightWake{
     for(let k=0;k<8;k++){
       const a=k/8*Math.PI*2+key0;
       const throwOut=new Vector3().copy(su).multiplyScalar(Math.cos(a)*4.5).addScaledVector(sv,Math.sin(a)*4.5).addScaledVector(axis,-3.5);
-      this.smoke.puff(origin,throwOut,time,.55+.2*((k*7)%3)/2,hue,(k*.618+time)%1);
+      this.smoke.puff(origin,throwOut,time,.55+.2*((k*7)%3)/2,hue,(k*.618+time)%1,{up:up??null,height:up?.9:100});
     }
-    if(local)this.kick.fire(time);
+    if(local){this.kick.fire(time);this.sound?.('boost',{strength:1});}
     const a=Math.abs(axis.y)<.9?new Vector3(0,1,0):new Vector3(1,0,0);
     const u=new Vector3().crossVectors(axis,a).normalize(),v=new Vector3().crossVectors(axis,u);
     const key=Number(id),color=new Color(Number.isFinite(key)?tones[(Math.imul(key,0x9e3779b1)>>>0)%tones.length]:0x6eeed8);
@@ -212,11 +215,46 @@ export class FlightWake{
         .addScaledVector(direction,-1.5).addScaledVector(up,.9+.8*strength);
       const grassy=g>r*1.08&&g>b*1.2;
       this.dustColour.setRGB(r*1.15+.08,g*1.1+.06,b*1.05+.05);
-      this.smoke.puff(new Vector3().copy(point).addScaledVector(up,.15),out,time,.35+.35*strength,this.dustColour,(time*7.3+sign)%1);
+      this.smoke.puff(new Vector3().copy(point).addScaledVector(up,.15),out,time,.35+.35*strength,this.dustColour,(time*7.3+sign)%1,
+        {glow:0,opacity:.5,life:1.3,gravity:.6,up,height:.15});
       if(grassy&&strength>.5){
         this.dustColour.setRGB(r*.8,g*1.25,b*.6);
-        this.smoke.puff(new Vector3().copy(point).addScaledVector(up,.1),out.multiplyScalar(1.3),time,.16,this.dustColour,(time*3.1+sign*.5)%1);
+        this.smoke.puff(new Vector3().copy(point).addScaledVector(up,.1),out.multiplyScalar(1.3),time,.16,this.dustColour,(time*3.1+sign*.5)%1,
+          {glow:0,opacity:.8,life:.9,gravity:5,up,height:.1});
       }
+    }
+  }
+
+  // A step on dry ground: a low puff of the ground's colour pushed back and
+  // to the sides, settling quickly. Grass throws a few green bits; stone only
+  // a faint pale breath. Strength is the pace from walk (~.3) to sprint (1).
+  footfall(point,up,direction,strength,sample,{splash=null,colour=null,local=false}={}){
+    const surface=typeof sample==='string'?sample:footSurface(sample);
+    if(!surface)return;
+    if(local)this.sound?.('step-'+surface,{strength});
+    if(surface==='water'){
+      splash?.skim?.(point.addScaledVector(up,sample.waterLevel-sample.feet),up,.15+.35*strength);
+      return;
+    }
+    const [r,g,b]=colour??footDustColour(surface,sample);
+    const time=(performance.now()-this.start)/1000;
+    this.dustColour??=new Color();
+    const back=this.particle.copy(direction).multiplyScalar(-(.6+1.6*strength));
+    const side=new Vector3().crossVectors(up,direction);
+    if(side.lengthSq()<1e-6)side.set(1,0,0);
+    side.normalize();
+    const seed=(time*5.17)%1;
+    const spread=(seed-.5)*(.8+1.2*strength);
+    const out=new Vector3().copy(back).addScaledVector(side,spread).addScaledVector(up,.35+.6*strength);
+    const lift=new Vector3().copy(point).addScaledVector(up,.06);
+    const stone=surface==='stone';
+    this.dustColour.setRGB(r*1.1+.06,g*1.05+.05,b+.04);
+    this.smoke.puff(lift,out,time,(stone?.09:.12)+.15*strength,this.dustColour,seed,
+      {glow:0,opacity:(stone?.14:.3)*(.55+.45*strength),life:.7+.5*strength,gravity:.9,up,height:.06});
+    if(surface==='grass'&&strength>.45){
+      this.dustColour.setRGB(r*.75,g*1.3,b*.55);
+      this.smoke.puff(lift,out.multiplyScalar(1.5).addScaledVector(up,.8),time,.07+.05*strength,this.dustColour,(seed+.37)%1,
+        {glow:0,opacity:.85,life:.55,gravity:6,up,height:.06});
     }
   }
 

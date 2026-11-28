@@ -9,7 +9,7 @@ import {usePineBark} from './toroidal-pine-bark.mjs';
 import {toroidalAirColor} from './toroidal-air.mjs';
 import {toroidalRotation} from './toroidal-locomotion.mjs';
 import {
-  INNER_WOODLANDS, TOROIDAL_TERRAIN, residenceCoordinates, residenceLocal, residencePlantClearance, terrainCoordinates, terrainElevation, terrainFrame, terrainPosition, terrainTrail,
+  INNER_WOODLANDS, linternaGrassCover, TOROIDAL_TERRAIN, residenceCoordinates, residenceLocal, residencePlantClearance, terrainCoordinates, terrainElevation, terrainFrame, terrainPosition, terrainTrail,
   terrainWoodland, woodlandCoordinates,
 } from './toroidal-terrain.mjs';
 
@@ -491,7 +491,7 @@ function undergrowthFor(trees){
         radius*(alongRing[axis]*Math.cos(a)+aroundTube[axis]*Math.sin(a)));
       const at=terrainCoordinates(offset);
       const elevation=terrainElevation(at.u,at.v);
-      if(residencePlantClearance(at.u,at.v,1.5)||Math.abs(elevation-h)>radius*.59||terrainTrail(at.u,at.v)>.012||
+      if(linternaGrassCover(at.u,at.v)<.99||residencePlantClearance(at.u,at.v,1.5)||Math.abs(elevation-h)>radius*.59||terrainTrail(at.u,at.v)>.012||
          terrainWoodland(at.u,at.v,elevation)<.22)continue;
       const width=.85+pick(141+index)*.92;
       const ground=terrainPosition(at.u,at.v,elevation);

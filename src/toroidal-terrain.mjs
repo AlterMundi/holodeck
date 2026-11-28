@@ -110,7 +110,7 @@ const residenceSite=(()=>{
 // The walking grade sits a few centimetres under the modelled marble (podium top 1.8 m,
 // interior floor 1.85 m, step noses) so the terrain never shows through it.
 export const TOROIDAL_RESIDENCE=Object.freeze({...residenceSite,podium:1.77,floor:1.82,
-  podiumRadius:29.2,wallRadius:25.9,stair:{topWidth:7.5362,halfWidth:10.1739,top:-38.4348,bottom:-49.7391,steps:10},
+  podiumRadius:29.2,wallRadius:25.9,stair:{topWidth:7.5362,halfWidth:10.1739,top:-38.4348,bottom:-49.7391,steps:10,curved:true},
   atrium:{halfWidth:8.29,center:-30.1449,from:-38.4348,to:-25}});
 const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
 const normal=vector=>{
@@ -131,6 +131,77 @@ export const residenceFrame=(()=>{
   const ex=cross(up,ez);
   return {origin,up,ex,ez};
 })();
+
+// Plot IDs stay stable across terrain editions. West 1 is reserved for the
+// existing palace and its front stair. The other lots share a level ground
+// plane with the arrival plaza, with green buffers between rows.
+const districtSize=72;
+export const TOROIDAL_HOUSE_PLOTS=Object.freeze([1,2,3,4].flatMap(row=>[-1,1].map(side=>{
+  const palace=row===1&&side===-1;
+  return Object.freeze({
+    id:`parcel-${side<0?'west':'east'}-${row}`,
+    x:palace?residenceFrame.origin[0]-TOROIDAL_TERRAIN.majorRadius:side===1?55:-105,
+    z:palace?residenceFrame.origin[2]:row===1?15.5:-190-90*(row-2),
+    width:palace?112:districtSize,depth:palace?112:districtSize,side,
+  });
+})));
+const districtBuildable=TOROIDAL_HOUSE_PLOTS.filter(plot=>plot.id!=='parcel-west-1');
+const linternaPlot=districtBuildable.find(plot=>plot.id==='parcel-east-1');
+// Bounds in the selected exterior's local x/z. Leave the garden strips,
+// courtyards between wings, and the perimeter planted.
+const linternaHardSurfaces=[
+  [-2.9,2.9,1.6,36],             // tiled approach to the Recibidor
+  // Eight portico plinths and four raised beds measured from the exterior GLB.
+  ...[23.76,26.56].flatMap(back=>[-7.275,-4.415,3.265,6.125]
+    .map(left=>[left,left+1.15,back,back+1.08])),
+  ...[8.575,17.575].flatMap(back=>[-12.675,4.325]
+    .map(left=>[left,left+8.35,back,back+4.85])),
+  [-10.74,-7.26,19.76,23.24],    // garden basins
+  [7.26,10.74,19.76,23.24],
+  [-26.6,-13.6,25.9,26.5],      // portico walls
+  [13.6,26.6,25.9,26.5],
+  [-5.8,5.8,-7.4,1.8],          // Recibidor
+  [-15.1,-4.85,-21.3,-11.1],    // Athena
+  [-3.3,3.3,-26.8,-19.2],       // Hephaestus
+  [4.95,15,-21.2,-11.25],       // Apollo
+  [-21.43,-20.97,-33.05,1.05],  // rear garden walls
+  [20.97,21.43,-33.05,1.05],
+  [-21.43,21.43,-33.63,-33.17],
+];
+
+// Project the torus direction onto the same plane and yaw as the exterior.
+export function linternaGrassCover(u,v){
+  if(wrappedDistance(u,0)>.012||wrappedDistance(v,.25)>.036)return 1;
+  const {center,up}=terrainFrame(u,v);
+  const radius=TOROIDAL_PARCEL_Y/up[1];
+  const x=center[2]+up[2]*radius-linternaPlot.z;
+  const z=linternaPlot.x+TOROIDAL_TERRAIN.majorRadius-center[0]-up[0]*radius;
+  let gap=Infinity;
+  for(const [left,right,back,front] of linternaHardSurfaces)
+    gap=Math.min(gap,Math.hypot(Math.max(left-x,0,x-right),Math.max(back-z,0,z-front)));
+  return fade(Math.max(0,Math.min(1,(gap-.26)/.9)));
+}
+
+function housingGrade(u,v,elevation){
+  if(wrappedDistance(u,0)>.045||wrappedDistance(v,.25)>.058)return elevation;
+  const frame=terrainFrame(u,v);
+  const radius=TOROIDAL_PARCEL_Y/frame.up[1];
+  const x=frame.center[0]+frame.up[0]*radius-TOROIDAL_TERRAIN.majorRadius;
+  const z=frame.center[2]+frame.up[2]*radius;
+  // Leave the ring trail and its water crossings at their authored grade.
+  const crossTrail=wrappedDistance(v,.25)*TAU*TOROIDAL_TERRAIN.tubeRadius;
+  const trailClearance=fade(Math.max(0,Math.min(1,(crossTrail-4)/13)));
+  let distance=Infinity;
+  for(const plot of districtBuildable){
+    distance=Math.min(distance,Math.hypot(
+      Math.max(0,Math.abs(x-plot.x)-plot.width/2),
+      Math.max(0,Math.abs(z-plot.z)-plot.depth/2),
+    ));
+  }
+  const approach=Math.hypot(Math.max(0,-x,x-55),Math.max(0,Math.abs(z-15.5)-2.5));
+  const blend=Math.min(distance,approach)/14;
+  return blend>=1?elevation:mix(elevation,radius-TOROIDAL_TERRAIN.tubeRadius,trailClearance*(1-fade(blend)));
+}
 
 export function residenceCoordinates(x,y){
   const {origin,ex,ez}=residenceFrame;
@@ -173,12 +244,15 @@ function residencePad(x,y){
   if(radial<=wallRadius)return {offset:floor,distance:0};
   if(radial<=podiumRadius)return {offset:podium,distance:0};
   if(Math.abs(x)<=atrium.halfWidth&&y>=atrium.from&&y<=atrium.to)return {offset:podium,distance:0};
-  const stairProgress=Math.max(0,Math.min(1,(stair.top-y)/(stair.top-stair.bottom)));
+  // The fan stair curves round the atrium: its nosings are arcs about the
+  // atrium centre, between straight cheeks, down to an arc at its foot.
+  const fromCentre=Math.hypot(x,y-atrium.center);
+  const topRadius=atrium.center-stair.top,footRadius=atrium.center-stair.bottom;
+  const stairProgress=Math.max(0,Math.min(1,(fromCentre-topRadius)/(footRadius-topRadius)));
   const stairWidth=mix(stair.topWidth,stair.halfWidth,stairProgress);
   const stairOffset=podium*(1-stairProgress);
-  if(Math.abs(x)<=stairWidth&&y>=stair.bottom&&y<stair.top)return {offset:stairOffset,distance:0};
-  const stairDistance=Math.hypot(Math.max(0,Math.abs(x)-stairWidth),
-    Math.max(0,stair.bottom-y,y-stair.top));
+  if(Math.abs(x)<=stairWidth&&y<stair.top&&fromCentre<=footRadius)return {offset:stairOffset,distance:0};
+  const stairDistance=Math.max(0,Math.abs(x)-stairWidth,fromCentre-footRadius,y-stair.top);
   const atriumDistance=Math.hypot(Math.max(0,Math.abs(x)-atrium.halfWidth),
     Math.max(0,atrium.from-y,y-atrium.to));
   const podiumDistance=radial-podiumRadius;
@@ -234,10 +308,10 @@ export function terrainElevation(u, v, terrain = TOROIDAL_TERRAIN) {
   const distance = Math.hypot(wrappedDistance(u, 0) * TAU * terrain.majorRadius,
     wrappedDistance(v, .25) * TAU * terrain.tubeRadius);
   const own = terrain.id===TOROIDAL_TERRAIN.id;
-  if (distance >= 76) return own?residenceGrade(u,v,overlookGrade(u,v,elevation),terrain):elevation;
+  if (distance >= 76) return own?residenceGrade(u,v,housingGrade(u,v,overlookGrade(u,v,elevation)),terrain):elevation;
   const pavedGrade = (terrain.tubeRadius + 18) / Math.sin(wrap(v) * TAU) - terrain.tubeRadius;
   const graded = mix(pavedGrade, elevation, fade(Math.max(0, distance - 32) / 44));
-  return own?residenceGrade(u,v,graded,terrain):graded;
+  return own?residenceGrade(u,v,housingGrade(u,v,graded),terrain):graded;
 }
 
 // The low-contrast worn route wraps around the broad shoulder. A spur

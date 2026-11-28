@@ -33,20 +33,21 @@ const boostBrake=pose([.86,-.22,.46],[.72,.12,.68],[.12,-.78,.61],[.08,-.97,-.22
 const fistAhead=pose([.10,.96,.26],[.04,.99,.12],[.07,-.99,-.09],[.04,-.98,-.18],[.02,-.99,.10]);
 const fistsTogether=pose([.03,.96,.28],[-.10,.99,.08],[.06,-.99,-.08],[.04,-.98,-.16],[.02,-.99,.10]);
 const armAlong=pose([.18,-.97,-.16],[.10,-.99,-.08],[.07,-.99,-.09],[.04,-.98,-.18],[.02,-.99,.10]);
-const wing=pose([.97,.18,.16],[.96,.26,.08],[.10,-.99,-.04],[.05,-.99,-.10],[.02,-.99,.10]);
+// Thrusters: arms down and back at the sides, palms driving the body on.
+const thruster=pose([.38,-.70,-.60],[.30,-.62,-.72],[.07,-.99,-.09],[.04,-.98,-.18],[.02,-.99,.10]);
 // Standing in the air or treading water, a hero still has things to do.
 // Each rest style shapes the limbs over the floating loop.
 const onHip=pose([.62,-.72,-.30],[-.55,-.42,.30],[.10,-.99,.02],[.06,-.99,-.08],[0,-.85,.52]);
 const levitate=pose([.55,-.82,.12],[.60,-.68,.40],[.08,-.99,.04],[.05,-.99,-.06],[0,-.90,.44]);
-const kneeUp=pose([.30,-.94,.10],[.20,-.90,.38],[.10,-.68,.72],[.05,-.96,-.28],[0,-.70,.71]);
+// Arms folded across the chest, legs long and together: watching, unhurried.
+const armsFolded=pose([.30,-.88,.36],[-.86,.08,.50],[.06,-.99,-.04],[.04,-.99,-.08],[0,-.96,.28]);
 const straightDown=pose([.30,-.94,.10],[.20,-.90,.38],[.06,-.99,-.04],[.04,-.99,-.08],[0,-.96,.28]);
 const scullWide=pose([.86,-.44,.26],[.80,.08,.59],[.07,-.99,.10],[.05,-.97,-.24],[0,-.70,.71]);
 const scullCalm=pose([.40,-.78,.48],[.30,-.40,.86],[.12,-.90,.42],[.08,-.92,-.38],[0,-.60,.80]);
 export const HOVER_STYLES=Object.freeze({
   'fists-on-hips':{left:onHip,right:onHip},
   levitate:{left:levitate,right:levitate},
-  'knee-up':{left:kneeUp,right:straightDown},
-  'knee-up-right':{left:straightDown,right:kneeUp},
+  'arms-folded':{left:armsFolded,right:armsFolded},
   drift:null,
 });
 export const TREAD_STYLES=Object.freeze({'scull-wide':{left:scullWide,right:scullWide},'scull-calm':{left:scullCalm,right:scullCalm},tread:null});
@@ -54,18 +55,35 @@ export const FLIGHT_STYLES=Object.freeze({
   'superman-left':{left:fistAhead,right:armAlong},
   'superman-right':{left:armAlong,right:fistAhead},
   'fists-together':{left:fistsTogether,right:fistsTogether},
-  wings:{left:wing,right:wing},
+  thrusters:{left:thruster,right:thruster},
   rocket:{left:armAlong,right:armAlong},
 });
 // Launch: drop low with one fist back, then drive it straight at the sky.
 const launchFist=pose([.06,.98,.16],[.03,.99,.08],[.06,-.99,-.06],[.04,-.99,-.10],[0,-.98,.20],[-.10,0,0],[-.36,0,0]);
 const launchTight=pose([.20,-.96,.18],[.10,-.80,.58],[.06,-.99,-.06],[.04,-.99,-.10],[0,-.98,.20],[-.10,0,0],[-.36,0,0]);
 const coilBrace=pose([.34,-.70,.62],[.14,-.92,.36],[.13,-.84,.53],[.10,-.79,-.61],[0,-.12,.99],[.40,0,0],[-.30,0,0]);
-// Trick bodies: a tight ball, a stretched layout with arms out, and a
-// spin with both arms locked overhead and the legs together, like a blade.
-const trickTuck=pose([.30,-.10,.95],[-.20,-.85,.48],[.10,.35,.93],[.06,-.80,-.60],[0,-.40,.92],[.40,0,0],[.20,0,0]);
-const trickLayout=pose([.98,.10,.12],[.97,.20,.05],[.06,-.99,-.08],[.04,-.99,-.10],[0,-.97,.25],[-.10,0,0],[-.22,0,0]);
-const trickTwist=pose([.06,.98,.12],[-.06,.99,.06],[.02,-.99,-.04],[.02,-.99,-.06],[0,-.98,.20],[0,0,0],[-.10,0,0]);
+// Double-jump surges, in the register of a film superhero: no spins, no
+// tumbling. Each gathers for a beat, then drives the body up with intent and
+// holds a strong, readable line before opening for the fall.
+const gatherLow=pose([.42,-.82,.40],[.10,-.30,.95],[.12,-.55,.82],[.08,-.92,-.38],[0,-.45,.89],[.22,0,0],[-.10,0,0]);
+const gatherCross=pose([.30,-.60,.74],[-.80,.25,.55],[.12,-.62,.77],[.08,-.92,-.38],[0,-.45,.89],[.26,0,0],[.05,0,0]);
+// Skyward: one fist driven straight up, the other arm locked down at the
+// side, legs together and pointed; chest open, eyes on the sky.
+const skyFist=pose([.06,.98,.16],[.03,.99,.10],[.04,-.99,-.08],[.03,-.99,-.12],[0,-.97,.24],[-.12,0,0],[-.42,0,0]);
+const skyLocked=pose([.22,-.95,-.20],[.12,-.98,-.16],[.04,-.99,-.08],[.03,-.99,-.12],[0,-.97,.24],[-.12,0,0],[-.42,0,0]);
+// Power burst: arms flung out and down with open hands, chest thrown open,
+// legs a little apart, as if energy left the body.
+const burstOpen=pose([.86,-.40,.32],[.92,-.28,.28],[.22,-.95,.20],[.10,-.96,-.26],[.04,-.80,.60],[-.20,0,0],[-.30,0,0]);
+// Leap: an athlete's stride through the air; the lead knee driven high,
+// the trail leg long behind, arms in counter-swing.
+const leapDriveArm=pose([.20,.40,.89],[.08,.90,.42],[.10,-.10,.99],[.06,-.96,-.26],[0,-.40,.92],[.18,0,0],[-.18,0,0]);
+const leapTrailArm=pose([.22,-.55,-.80],[.12,-.30,-.95],[.06,-.75,-.66],[.03,-.45,-.89],[0,-.70,-.71],[.18,0,0],[-.18,0,0]);
+// Guarded rise: compact and armoured, forearms up before the face, knees
+// drawn, then the legs reach for the ground.
+const guardUp=pose([.30,-.20,.93],[-.30,.85,.43],[.12,-.25,.96],[.07,-.95,-.30],[0,-.45,.89],[.20,0,0],[.12,0,0]);
+// The other leg stays long beneath, so the guard reads as a fighter, not a ball.
+const guardLong=pose([.30,-.20,.93],[-.30,.85,.43],[.06,-.97,.22],[.04,-.99,-.08],[0,-.85,.52],[.20,0,0],[.12,0,0]);
+const openFall=pose([.55,-.78,.30],[.42,-.70,.58],[.12,-.90,.42],[.07,-.96,-.26],[0,-.30,.95],[.02,0,0],[.08,0,0]);
 const coil=pose([.30,-.86,-.42],[.18,-.95,-.24],[.13,-.84,.53],[.10,-.79,-.61],[0,-.12,.99],[.34,0,0],[-.22,0,0]);
 const spring=pose([.28,-.94,-.18],[.16,-.98,-.12],[.07,-.99,-.08],[.04,-.99,-.12],[0,-.95,.31],[-.16,0,0],[-.26,0,0]);
 const tuck=pose([.54,-.76,.36],[.24,-.60,.76],[.13,-.72,.68],[.08,-.78,-.62],[.02,-.50,.86],[.14,0,0],[-.12,0,0]);
@@ -99,9 +117,13 @@ const clips={
   glide:{keys:even(sweep,2.2),loop:2.2,alternate:true},
   lift:{keys:[[0,rest],[.07,coil],[.14,coil],[.24,launchFist],[.42,launchFist],[.58,tuck],[.72,drift[0]]],
     right:[[0,rest],[.07,coilBrace],[.14,coilBrace],[.24,launchTight],[.42,launchTight],[.58,tuck],[.72,drift[0]]]},
-  trickTuck:{keys:[[0,trickTuck],[1,trickTuck]]},
-  trickLayout:{keys:[[0,trickLayout],[1,trickLayout]]},
-  trickTwist:{keys:[[0,trickTwist],[1,trickTwist]]},
+  surgeSky:{keys:[[0,gatherLow],[.16,gatherLow],[.30,skyFist],[.58,skyFist],[.78,openFall]],
+    right:[[0,gatherLow],[.16,gatherLow],[.30,skyLocked],[.58,skyLocked],[.78,openFall]]},
+  surgeBurst:{keys:[[0,gatherCross],[.18,gatherCross],[.30,burstOpen],[.60,burstOpen],[.78,openFall]]},
+  surgeLeap:{keys:[[0,gatherLow],[.12,gatherLow],[.26,leapTrailArm],[.60,leapTrailArm],[.78,openFall]],
+    right:[[0,gatherLow],[.12,gatherLow],[.26,leapDriveArm],[.60,leapDriveArm],[.78,openFall]]},
+  surgeGuard:{keys:[[0,gatherLow],[.12,guardUp],[.56,guardUp],[.78,openFall]],
+    right:[[0,gatherLow],[.12,guardLong],[.56,guardLong],[.78,openFall]]},
   descend:{keys:[[0,drift[1]],[.20,flare],[.42,flare],[.80,reachDown]]},
   land:{keys:[[0,reachDown],[.10,brake],[.18,brake],[.46,rest]]},
   tread:{keys:even(tread,1.8),loop:1.8,alternate:true},

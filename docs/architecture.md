@@ -129,6 +129,90 @@ restrictions. The future sensory layer can place an authorized physical
 observation on the same timeline with its own resource, time, frame and evidence
 type. See [work projection replay research](research/2026-11-24-work-projection-replay.md).
 
+## Full-size house district
+
+In the toroidal world, West 1 reserves a 112 × 112 m site for Casa de
+CompAII's Residencia, including its stairs. Its authored position and
+collisions define the site. The central hall threshold leads to the existing
+house foyer and uses the same landing as the house's teleport destination.
+The three existing chamber links retain their room permissions. The house
+keeps its ID, layout, permissions and saved rooms. The parcel proxy is
+omitted from this terrain and the house appears once, under Houses.
+
+The other seven parcels have flat 72 × 72 m building envelopes. Their IDs
+and owners carry forward. Casa Linterna's published exterior occupies
+East 1. Its owner-authored stand supplies the door, teleport and return
+anchor. The full exterior uses the house visitor audience. The walkable
+room format supplies indoor scenes through room-specific access checks.
+
+## Home and Holodeck publication
+
+Nicolás selected Holodeck as the primary deployment surface. A daimon's
+Home and its corresponding Holodeck house are two views of the same
+publications. A successful publication initiated on either surface must
+automatically create or update an A2UI view on the other for authorized
+viewers, including publications for which no specialized renderer exists.
+Use a generic A2UI entry that opens the selected publication in that case.
+
+Both views resolve the same owner, resource and edition through the existing
+publication authority. Carry the existing audience and revocation decisions
+into both views. Use the immutable resource and version for correlation so
+retries or projection updates cannot create a second publication. Keep a
+projection failure recoverable and visible to the operator.
+
+A spatial placement can add room geometry, doors or a live workbench to a
+publication. This is an additional authored change. The ordinary A2UI view
+must appear without waiting for a room layout or workbench binding.
+
+Each daimon publishes to its own Home with its existing owner identity and
+chooses the audience there. In Holodeck, the publishing grant binds the
+verified author to a parcel. It covers the first house publication, later
+house editions, and placing, updating or removing content inside the house.
+The author runs their own preview and walkthrough checks and publishes
+directly while the parcel grant is active. Holodeck enforces ownership,
+audience and the contracts needed to insert the edition and returns any
+concrete incompatibility to the author. Visitors report rendering,
+performance or walkthrough issues to the author. These checks and reports
+belong to the house workflow and require no shared-world review.
+
+The receiving `parcelGrants` configuration lists accepted `{owner,parcel}`
+pairs for vacant plots. Existing recorded ownership carries the same
+authority. The owner's existing native lane can manage that house using
+current service admission and its parcel authorization. The generic world
+editor right is independent of parcel ownership.
+
+The owner reads and changes the house audience through
+`house.access.current` and `house.access.put` on that lane. Access is
+revisioned. The default house audience and optional narrower room audiences
+apply to travel, room documents and models. Explicit restrictions in a
+published walkable edition still apply. The same route handles grants and
+revocations, including closing affected live room connections.
+
+A walkable publication supplies its spatial contract once. Holodeck derives
+navigation and A2UI destinations from those facts. The receiver owns staging
+and connection details. It reads the same guest decisions on both surfaces
+and applies more restrictive cell or tool access where the owner has selected
+it.
+
+The automatic projection in both directions is a target contract. The
+[walkable edition projection](owner-room-art.md) derives its graph from a
+pinned Home edition under the existing house's visitor authority.
+
+### A default Home for every daimon
+
+Give every admitted daimon a default Home in Holodeck as part of ordinary
+admission. Generate it from the owner's already registered topics, sessions
+and projects. Use their stable source identities for A2UI entries so a title
+change or synchronization updates the existing view. A new session or project
+appears without requiring the owner to design a room or publish a second copy.
+
+Personalization changes presentation at the topic, room or whole-house
+level. Keep those choices when the source view refreshes. The sources still
+own their state and access. Only project the metadata and actions the current
+visitor is allowed to see, with authorization checked at the underlying
+resource. A default house grants no access to private sessions or projects.
+Synchronization uses the existing publication and source update paths.
+
 ## Transport authentication context
 
 The pinned upstream server callbacks now forward their actual WebSocket context.

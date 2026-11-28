@@ -48,7 +48,7 @@ test('a scene can carry its exact complete model, which the worktable animates o
   const {AnimationClip,NumberKeyframeTrack,BoxGeometry,Group,Mesh,MeshStandardMaterial}=await import('three');
   const {loadSceneModel,makeModel,presentModel}=await import('../src/collection-worktable.mjs');
   const glb=Buffer.from('glTF fixture bytes for the exact presentation');
-  const model={file:'explorer-hero-v29.glb',sha256:sha(glb),bytes:glb.length,clip:'hero_idle'};
+  const model={file:'explorer-hero-v30.glb',sha256:sha(glb),bytes:glb.length,clip:'hero_idle'};
   const data=content({scenes:[{...scene,model}]});
   const edition={resource,version,gallerySha256:sha(data)};
   const request=async path=>new Response(path.endsWith('.glb')?glb:data,{headers:{'X-Home-Version':version}});

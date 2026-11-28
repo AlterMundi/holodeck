@@ -1,5 +1,227 @@
 # Current MVP work
 
+## Casa Linterna ground cover follows the paving · 2026-11-28
+
+Protected release `e8448d2404f9` selects `407aa50` with `a70fb2502b50`
+available for rollback. The same footprint now governs the grass carpet,
+scenery tufts, trail flowers, scattered rocks and woodland understory.
+The portico plinths and raised beds use their measured GLB bounds, leaving
+the gaps planted.
+
+At the reported viewpoint, the prior package had 115 procedural roots on
+the tiled approach across four scenery layers. The packaged Chromium
+fixture observed zero in both graphics profiles after correction, with
+vegetation in the surrounding gardens and between raised beds. All 99
+installed files matched the release. Node passed 608 tests with four skips.
+
+## Casa Linterna garden and paving · 2026-11-28
+
+Protected release `a70fb2502b50` selects `c569550` with `ae40359a0f92`
+available for rollback. Procedural grass follows the paved approach,
+portico, terrace and occupied building footprints while continuing
+through the gardens and around the house. The same mask applies to near
+and distant grass. The whole-parcel clearing candidate was never selected.
+
+Chromium with normal graphics drew grass in the garden and meadow, with
+zero grass instances on the sampled pavers, portico and terrace. Pressing
+E at the portico still entered the HD foyer. All 99 installed files
+matched the release. Node passed 607 tests with four skips.
+
+## Casa Linterna exterior on East 1 · 2026-11-28
+
+Protected release `ae40359a0f92` selects `4f561cf`, with `f4ced75d15c1`
+available for rollback. East 1 shows the owner-published exterior
+`2e67ade32f80` at full scale. Its near, distant and collision assets are
+selected from the owner's exact Home edition. Access follows the owner’s
+existing foyer audience. The generic proxy is omitted for this parcel.
+
+The packaged Chromium fixture used the production layout and audiences.
+It rendered the near GLB, loaded the collision shell and offered the door
+at the published stand. Pressing E entered the existing HD Recibidor.
+At 117 m the browser drew the distant GLB without loading the near model.
+The return anchor matched the exterior door, and a foreign reader received
+neither the exterior descriptor nor its model. The active configuration
+and cache matched the owner manifest and all three GLBs. All 99 installed
+package files matched the release.
+
+## House parcel authority and Casa Linterna HD · 2026-11-28
+
+Protected release `f4ced75d15c1` selects `a771fb1`, with
+`4669107b064f` available for code rollback. An accepted parcel gives its
+author house and owned-room publication operations independently of the
+shared world edit right. The owner controls the house guest policy and
+narrower room audiences through the existing own-native lane. Current
+installations keep recorded ownership and legacy guest policies until
+the owner saves a new policy.
+Use a release that reads the house-access checkpoint for recovery once a
+policy has been written. The previous code predates that checkpoint.
+
+A real Unix and HTTP fixture qualified claim, repeat publication, owned
+layout and design access, foreign author denial, guest entry and
+revocation. The served native lane returned the current owned-house
+access policy. The Home authority confirmed that the existing Casa
+Linterna owner remains admitted to Holodeck. All 99 installed files
+matched. Node passed 604 tests with four skips and Python passed 49.
+
+The active owner tour selects Casa Linterna HD manifest `05ff08f5742d`.
+Chromium with the exact release package and preserved visitor grants
+loaded the new Recibidor model. The five room destinations, return and
+foreign-reader denial passed. The previous tour files and selection
+remain available for rollback. The exterior was deployed in the subsequent release above.
+
+## Navegante studio variants · 2026-11-28
+
+Protected release `4669107b064f` selects `7c03210`, including Char Design's
+`071baa8`, with `bca910ad89ca` available for rollback. The Character Studio
+offers Navegante escafandra and Navegante bronce. Both use the companion's
+face renderer for studio poses. In-world companions still use the N-3X
+asset and its 1.485 visor proportion.
+
+Chromium on RTX 2060 opened both studio variants, showed each as selected
+in the Character panel and rendered the ceramic face and blue LED slits. Both
+devices loaded the exact Explorer v30 and N-3X models in the world. In five
+two-second idle windows at 363 × 244, Pi 5 measured 18.20 FPS on the prior
+release and 17.90 with the variants package. The first RTX 2060 pair at
+660 × 407 varied widely, with medians of 25.29 and 18.54 FPS respectively.
+A repeat in reverse order with a 15-second warmup measured 17.07 and
+19.02 FPS respectively. The first-run slowdown did not reproduce.
+
+Lossless Brotli on the three avatar models keeps the archive at 39.91 MiB.
+All 99 installed files and the authenticated HTTPS hashes for all four
+avatar models matched the qualified package. Node passed 603 tests with
+four skips.
+
+## Explorer v30 · 2026-11-28
+
+Protected release `bca910ad89ca` selects `bbb0b8a`, including Char
+Design's `7c1a4b0`, with `71a5a2d10651` available for rollback. Nicolás's
+personal avatar has articulated fingers, fingerless gloves and revised face
+materials. The package ships the selected personal avatar and retains v29 in
+the prior package. All 97 installed files matched the release. Authenticated
+HTTPS served the exact v30 GLB, SHA-256 prefix `fdc62b339ae9`. Node passed
+601 tests with four skips.
+
+Both devices loaded v30 through the personal-avatar assignment, rendered
+idle, landing and flight, and exposed five finger joints on each hand.
+In three short idle windows, Pi 5 at 363 × 244 measured a median 18.2 FPS
+for both editions. RTX 2060 at 660 × 407 first measured 26.56 → 18.20 FPS.
+A five-window repeat in reverse order after a 6.5-second warmup measured
+18.54 → 17.21 FPS, with overlapping ranges. The larger first-run gap did
+not reproduce in the warmed comparison.
+
+## Navegante LED visor · 2026-11-28
+
+Protected release `71a5a2d10651` selects `625fc1b`, including Char
+Design's `9c1b261`, with `30d0fbe71857` available for rollback. The
+release adds the LED expressions, level-driven mouth shapes, revised
+idle poses and a self-lit visor material shared with the tabletop
+hologram. All 97 installed files matched the package. Authenticated
+HTTPS served the exact new GLB, SHA-256 prefix `c36dbff08607`, and the
+client containing its shader. Node passed 601 tests with four skips.
+
+Chromium on RTX 2060 and Pi 5 rendered joy and sadness and showed
+multiple mouth shapes under a synthetic playback envelope. Each
+device ran three two-second windows per edition at the same pose and
+drawing-buffer size. RTX 2060 at 660 × 407 measured a median 29.02 FPS
+before and 26.78 after, with overlapping ranges. Pi 5 at 363 × 244
+measured 20.66 before and 21.15 after. These are short visor-scene checks.
+
+## N-3X Navegante correction · 2026-11-28
+
+Protected release `30d0fbe71857` selects `a9b6f41` with
+`65aa4d1bd078` available for rollback. The corrected N-3X restores the
+cyan antenna and long cape. The superhero movement remains active.
+All 97 installed files matched the deployed package. Authenticated HTTPS
+served the exact new 864,752-byte model, SHA-256 `aee42b81c1e7` (prefix).
+Node passed 599 tests with four skips. Chromium on RTX 2060 used the
+exact model and rendered it from the front and rear. Its walking check
+recorded 7.48 m of companion movement and a changing cape pose.
+
+## Char Design district and character release · 2026-11-28
+
+Protected release `65aa4d1bd078` selects runtime source `2e919d2`,
+integrated in `448dc13`, and retains `449a717707ee` for rollback.
+It includes both Char Design deliveries through `5bdbf12`: cold teleport
+icons, contact dust and smoke, foot placement, local movement sounds,
+the curved staircase and updated palace materials, superhero double-jump
+poses, and the revised Navegante.
+
+The 39.94 MiB archive uses lossless Brotli for three measured art exports.
+The per-model bundled-art limit is 6 MiB and the package remains within
+the current 40 MiB allocation. HTTPS readback matched the protected
+client and the new Navegante, palace and collision models. All 97 installed
+files matched the package. Node passed 601 tests with four skips.
+
+On RTX 2060, Chromium climbed the new staircase, crossed the atrium and
+entered the hall. The double jump measured a 2.34 m lift, and the browser
+rendered the new face from the front with the joy expression and speech
+aperture. The cold teleport waited for its requested icon. On Pi 5, the
+same 363 × 244 hall pose settled at about 20 FPS versus about 23 FPS in the
+district baseline. The first candidate window contained a startup stall.
+
+## Full-size house district · 2026-11-28
+
+Protected release `449a717707ee` selects `1d50c1c` with `ecd4a7d815da`
+as rollback. West 1 is a 112 × 112 m reservation for the Residencia,
+including its staircase. Seven 72 × 72 m parcels use the same house IDs.
+East 1 keeps the current Casa Linterna door and room access. Land grading
+leaves the ring route, its water crossings and the palace approach intact.
+
+The packaged Chromium fixture used the production house layout and grants.
+It opened the CompAII destination from the A2UI Houses category and moved
+the avatar to the palace threshold. HTTP checks confirmed the foyer return
+uses the same threshold, the five Casa Linterna rooms remain reachable, and
+a foreign visitor cannot see or read their protected interior assets. Node
+passed 590 tests with four skips. The active HTTPS client and all 96
+installed files matched the exact selected package.
+
+## Teleport controls above the station · 2026-11-28
+
+Protected release `ecd4a7d815da` selects `ab3dcbf` with
+`e0d082583e22` as rollback. The physical station's A2UI panel docks above
+the controls. A packaged Chromium test measured 264 px between the panel
+controls and the physical travel button at 960 × 600, 219 px after orbiting,
+and 373 px at 390 × 844. The same fixture still resolved all five Casa
+Linterna rooms, served the owner model only to the admitted actor, and
+returned to the foyer. Node passed 589 tests with four skips. Protected
+HTTPS and all 96 installed runtime files matched the selected package.
+
+## Casa Linterna's current visual edition · 2026-11-28
+
+Protected release `e0d082583e22` selects runtime source `2ee4a53`; the
+rollback is `c7a92cd8a6aa`. The exact owner-published manifest
+`713b5156…` supplies 13 GLBs across five rooms. Its graph matches the
+owner's live layout revision 4. The receiver reused the existing room IDs
+and guest lists. The visual route starts at Recibidor, branches to Hefesto
+and Atenea, and continues to Claymon and the Research Gallery.
+
+The packaged fixture using the production layout and admission confirmed
+the five destinations, movement and return, loading a protected model in
+Chromium, and denial for a foreign visitor. Production verified the selected
+code and healthy protected service. The live Atelier workspace remains
+independently configured. Automatic default Homes and two-way A2UI
+publication are recorded in the architecture and roadmap.
+
+## Boost smoke and low-flight surface effects · 2026-11-28
+
+Protected release `c7a92cd8a6aa` selects runtime source `0679a01`, including
+the two new commits from Char Design's `59c5069` branch tip. The installed
+96 files and protected HTTPS client matched the release package. Rollback
+is `3073d6c8068c`. Node passed 588 tests with four skips.
+
+On the RTX 2060, the boost rendered smoke and sparks, and low flight raised
+dust over grass and dirt and rings over water. The local camera target moved
+by up to 1.0 cm during the measured boost. The same target stayed fixed
+relative to its input with reduced motion and with the Three.js XR-presenting
+flag simulated. A physical headset was not tested. A second networked
+browser received the remote boost's smoke, trail and shockwave without a
+camera offset of its own.
+
+On the Pi 5 at 528 × 330 in normal graphics, three 2.5-second low-boost
+windows had median FPS of 15.90 before and 15.10 after. Median frame p95
+stayed at 83.4 ms. The candidate filled the 48-puff pool and produced green
+grass fragments. The pool remains at 48.
+
 ## Flight ribbons, shockwaves and water ripples · 2026-11-28
 
 Protected release `3073d6c8068c` selects runtime source `1553b42`. It

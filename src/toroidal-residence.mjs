@@ -21,7 +21,7 @@ export function residencePlacement(){
   return {origin:new Vector3(...origin),quaternion};
 }
 
-async function fetchExact(base,{path,bytes,sha256},signal){
+export async function fetchExact(base,{path,bytes,sha256},signal){
   const response=await fetch(new URL(path,base),{signal,redirect:'error'});
   if(!response.ok){await response.body?.cancel();throw Error('Residence model unavailable');}
   const buffer=await response.arrayBuffer();

@@ -7,6 +7,8 @@ import {brotliCompressSync} from 'node:zlib';
 import {pathToFileURL} from 'node:url';
 import {test} from 'node:test';
 import {loadOwnerRoomArt,ownerRoomCache} from '../src/owner-room-art.mjs';
+import {loadOwnerRoomTours} from '../src/owner-room-tours.mjs';
+import {InteriorSpaces} from '../src/interior-spaces.mjs';
 import {arrivalDoor} from '../src/space-travel.mjs';
 
 const sha=content=>createHash('sha256').update(content).digest('hex');
@@ -31,6 +33,38 @@ test('owner art is selected by content hash and keeps the existing arrival seman
   const landed=arrivalDoor({id:'outside'},{id:'atlas',entryLanding:scene.exterior.landing});
   assert.deepEqual(landed,{x:0,y:.11,z:4,yaw:180});
   assert.equal(scene.exterior.door.yaw,0);
+});
+
+test('a single published edition projects its doors and per-cell guests without rewriting the authored layout',async()=>{
+  const house='house-'+'a'.repeat(64);
+  const visitor={kind:'human',id:'human:visitor',rights:['observe']};
+  const localRoom=(id,entry,guests,to)=>({id,house,title:id,entry,level:0,guests,links:[{kind:'door',to}]});
+  const foyer=localRoom('old-foyer',true,[visitor.id],'private-room');
+  const privateRoom=localRoom('private-room',false,[],'old-foyer');
+  const layout=[foyer,privateRoom];
+  const {arrival}=manifest.cells;
+  const sides=['arrival','hefesto'].map(cell=>({cell,threshold:[0,5],stand:[0,4],surfaceY:.1,yaw:180}));
+  const data={...manifest,cells:{arrival,hefesto:{...arrival,guests:[]}},passages:[...manifest.passages,{sides}]};
+  const {manifest:url,sha256}=select(data);
+  const tours=await loadOwnerRoomTours([{house,manifest:url,sha256}],layout,reply(data));
+  const projected=tours.project(layout);
+  const houses={directory:()=>[{id:house,owner:'fixture',parcel:'parcel-east-1',facade:{title:'Fixture'}}]};
+  const spaces=new InteriorSpaces({definitions:projected,houses});
+  const entry=projected.find(room=>room.title==='Recorrido de la casa');
+  const hall=projected.find(room=>room.title==='Hefesto');
+  assert.deepEqual(foyer.links,[{kind:'door',to:privateRoom.id}]);
+  assert.deepEqual(projected.find(room=>room.id===privateRoom.id),privateRoom);
+  assert.deepEqual(spaces.routeTo(visitor,entry.id),['outside',foyer.id,entry.id]);
+  assert.equal(spaces.routeTo(visitor,hall.id),null);
+  assert.ok(tours.art.get(entry.id).doors.has(foyer.id));
+  assert.ok(tours.art.get(entry.id).doors.has(hall.id));
+  const revoked=new InteriorSpaces({definitions:tours.project([{...foyer,guests:[]},privateRoom]),houses});
+  assert.equal(revoked.allows(visitor,entry.id),false);
+  const actual=[localRoom('old-foyer',true,[visitor.id],'house-hefesto'),
+    localRoom('house-hefesto',false,[],'old-foyer')];
+  const matched=await loadOwnerRoomTours([{house,manifest:url,sha256}],actual,reply(data));
+  assert.deepEqual(matched.project(actual),actual);
+  assert.equal(matched.art.get(foyer.id).doors.has('house-hefesto'),true);
 });
 
 test('corrupt bytes, off-Home URLs and missing reciprocal graph fail closed',async()=>{

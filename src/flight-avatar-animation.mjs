@@ -1,3 +1,6 @@
+import {FootfallDetector} from './footfall.mjs';
+import {bindFootPlacement} from './foot-placement.mjs';
+import {terrainCoordinates,terrainElevation,terrainFrame} from './toroidal-terrain.mjs';
 import {Euler,Quaternion,Vector3} from 'three';
 import {matterAvatarScale} from './matter-flight.mjs';
 import {TabletopGlance} from './tabletop-attention.mjs';
@@ -19,17 +22,16 @@ const yawAxis=new Vector3(0,1,0),rollAxis=new Vector3(0,0,1);
 const liftSeconds=.66,landSeconds=.46,hipHeight=1;
 const absorbTiming=[.08,.07,.40],brakeTiming=[.08,.04,.34];
 const bindings=new WeakMap();
-// Double-jump tricks. Each names its spins (turns about the body's lateral,
-// long and forward axes) and the body it holds. A body deals them in its own
-// shuffled order, so the same trick does not come twice running.
+// Double-jump surges. No spins: each holds the body's own heading and only
+// leans with the move (radians of pitch, + forward). A body deals them in its
+// own shuffled order, so the same surge does not come twice running. A surge
+// breaks away from the air with a burst of light below the feet.
 export const TRICK_SECONDS=.78;
 export const TRICKS=Object.freeze([
-  {name:'front-tuck',flip:1,twist:0,roll:0,body:'trickTuck'},
-  {name:'back-layout',flip:-1,twist:0,roll:0,body:'trickLayout'},
-  {name:'double-pirouette',flip:0,twist:2,roll:0,body:'trickTwist'},
-  {name:'corkscrew',flip:-1,twist:1,roll:0,body:'trickTwist'},
-  {name:'side-aerial',flip:0,twist:0,roll:1,body:'trickLayout'},
-  {name:'front-full',flip:1,twist:1,roll:0,body:'trickTwist'},
+  {name:'skyward-fist',lean:-.10,body:'surgeSky'},
+  {name:'power-burst',lean:-.06,body:'surgeBurst'},
+  {name:'hero-leap',lean:.30,body:'surgeLeap'},
+  {name:'guarded-rise',lean:.12,body:'surgeGuard'},
 ]);
 const STYLE_NAMES=Object.keys(FLIGHT_STYLES),HOVER_NAMES=Object.keys(HOVER_STYLES),TREAD_NAMES=Object.keys(TREAD_STYLES);
 const scatter=index=>{const x=Math.sin(index*57.31+.77)*43758.5453;return x-Math.floor(x);};
@@ -58,7 +60,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
   const yaw=new Quaternion(),roll=new Quaternion();
   const pivot=new Vector3(),shift=new Vector3(),tilt=new Quaternion();
   const water={up:new Vector3(),point:new Vector3()};
-  const washPoint=new Vector3(),washDirection=new Vector3();
+  const washPoint=new Vector3(),washDirection=new Vector3(),plantPoint=new Vector3();
 
   // Follow the real heading with a critically damped turn. The physical yaw
   // already answered the input. This eases only what the body shows.
@@ -81,6 +83,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
     return advance-residual;
   }
   function restore(entry){
+    entry.feet?.restore();
     entry.glance?.restore();
     entry.landing?.restore();
     entry.mouth?.restore();
@@ -109,7 +112,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
   function animatedUpdate(state,dt){
     // Remove last frame's extra limb rotations before the base mixer runs.
     for(const entry of actors.values())restore(entry);
-    const {outdoor,flying,boosting,grounded:localGrounded,table,crouch,gaze,peerGaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null,wake=null,splash=null,waterWake=null,trample=null,aimPitch=null,loopPitch=null,trickAge=Infinity}=context();
+    const {outdoor,flying,boosting,grounded:localGrounded,table,crouch,gaze,peerGaze,peerPoses,glanceMotion=true,tabletopPlayers=[],microphoneLevel=null,wake=null,splash=null,waterWake=null,trample=null,aimPitch=null,loopPitch=null,trickAge=Infinity,footPlacement=true}=context();
     const now=clock?.();
     const elapsed=now!==undefined&&previousTime!==undefined?(now-previousTime)/1000:dt;
     previousTime=now;
@@ -238,7 +241,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const sample=outdoor&&!atTable?exteriorSample(position):null;
       entry.medium=sample?avatarMedium(HUMAN_BODY,sample,{supported:grounded===true,previous:entry.medium}):null;
       if(sample){
-        splash?.observe(id,sample,elapsed,continuous?travel/Math.max(elapsed,.001):0,continuous,glanceMotion);
+        splash?.observe(id,sample,elapsed,continuous?travel/Math.max(elapsed,.001):0,continuous,glanceMotion,isLocal);
         waterWake?.observe(id,position,up,sample,{flying:explicitFlight,seconds:elapsed,continuous,emit:glanceMotion});
       }
       const wet=entry.medium==='surface'||entry.medium==='submerged';
@@ -267,6 +270,19 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
           }
         }else entry.washCarry=0;
       }else entry.washCarry=0;
+      // Steps on the ground lift what they land on: dust, grass, a faint
+      // breath on stone, rings in shallow water. Read from the feet's contact.
+      if(sample&&grounded===true&&!explicitFlight&&continuous&&!atTable&&glanceMotion&&wake?.footfall){
+        entry.footfalls??=new FootfallDetector(mesh);
+        const planted=entry.footfalls.sample(position,up,1,step);
+        if(speed>.8)for(const foot of planted)
+          wake?.footfall?.(washPoint.copy(foot),up,washDirection.copy(displacement).normalize(),
+            clamp((speed-1)/7.5,.25,1),sample,{splash,local:isLocal});
+      }else entry.footfalls?.reset();
+      // Uneven terrain under the feet is solved after every other layer.
+      entry.plant=footPlacement&&sample&&grounded===true&&!explicitFlight&&!wet&&continuous&&!atTable&&glanceMotion&&
+        Math.abs(sample.feet-sample.ground)<.1?sample:null;
+      entry.plantSpeed=speed;
       const draft=sample?sample.waterLevel-sample.feet:-Infinity;
 
       if(!outdoor||underwater)entry.observedFlight=false;
@@ -432,7 +448,11 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       entry.directional?.apply(character,hips);
 
       const trick=isLocal&&outdoor&&glanceMotion&&!explicitFlight&&grounded===false&&trickAge<TRICK_SECONDS;
-      if(trick&&(!entry.trick||trickAge<entry.trickAge))entry.trick=dealt(entry,'tricks',TRICKS);
+      if(trick&&(!entry.trick||trickAge<entry.trickAge)){
+        entry.trick=dealt(entry,'tricks',TRICKS);
+        up.set(0,1,0).applyQuaternion(character.quaternion);
+        wake?.burst?.(id,position,up,up,isLocal);
+      }
       entry.trickAge=trick?trickAge:Infinity;
       if(!trick)entry.trick=null;
       const settled=!trick&&w<.01&&entry.hoverWeight<.01&&entry.lowWeight<.01&&entry.airWeight<.01&&
@@ -480,11 +500,10 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const pilot=isLocal&&explicitFlight&&aerobatic;
       const outstretched=glanceMotion?entry.outstretched.update(aerobatic&&mode==='hover'?clamp((Math.max(entry.planarSpeed,entry.flightSpeed)-.6)/2.4)*clamp(ahead):0,step):
         entry.outstretched.reset(aerobatic&&mode==='hover'?1:0).value;
-      // Snap into the trick body, spin, then open out before the ground.
+      // Gather, drive and hold the surge body, leaning only with the move.
       const trickProgress=trick?trickAge/TRICK_SECONDS:0;
-      const tuck=trick?smooth(trickProgress/.18)*smooth((1-trickProgress)/.22):0;
-      const spin=trick?smooth((trickProgress-.08)/.80):0;
-      const flip=trick?2*Math.PI*entry.trick.flip*spin:0;
+      const tuck=trick?smooth(trickProgress/.12)*smooth((1-trickProgress)/.25):0;
+      const flip=trick?entry.trick.lean*smooth((trickProgress-.10)/.25)*smooth((1-trickProgress)/.30):0;
       // The camera's pitch steers only the forward part of the travel.
       // Backing away, the pilot stands up and leans back instead of lying out.
       const piloted=aerobatic?Math.PI/2-loopPitch*Math.cos(headFirst):pitchValue;
@@ -500,8 +519,6 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       // Lean into a sideways travel about the body's own forward axis.
       tilt.setFromAxisAngle(rollAxis,-sideLean).multiply(pitch);
       if(bankValue)tilt.multiply(roll.setFromAxisAngle(pilot?yawAxis:rollAxis,bankValue));
-      if(trick&&entry.trick.roll)tilt.multiply(roll.setFromAxisAngle(rollAxis,2*Math.PI*entry.trick.roll*spin));
-      if(trick&&entry.trick.twist)tilt.multiply(roll.setFromAxisAngle(yawAxis,2*Math.PI*entry.trick.twist*spin));
       entry.rotation.multiply(tilt);
       entry.applied.copy(entry.rotation);
       if(entry.airRig&&(lift>.002||sink>.002||trick)){
@@ -530,7 +547,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
           water.point.copy(position).addScaledVector(up,draft);
           character.parent?.localToWorld(water.point);
         }
-        entry.airRig.apply(character,{mode:trick?entry.trick.body:wading?'wade':entry.poseMode,time:trick?0:wading?entry.loopTime:entry.poseTime,
+        entry.airRig.apply(character,{mode:trick?entry.trick.body:wading?'wade':entry.poseMode,time:trick?trickAge:wading?entry.loopTime:entry.poseTime,
           forward:w,weight:armWeight,lowerWeight:Math.max(entry.lowerWeight,tuck),torsoWeight:trickTorso,step,
           bank:entry.airWeight*clamp(bankValue,-.5,.5),boost,boostRelease,style:entry.style,
           climb:mode==='hover'?clamp((entry.rise-1)/2.5)*(1-w):0,rest:entry.rest,restAmount,
@@ -573,6 +590,26 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
           bone.quaternion.multiply(bend.setFromAxisAngle(localAxis,motionBend+crouchBend));
         }
       }
+    }
+    for(const [id,actor] of state.characters){
+      const entry=actors.get(id),character=this.loadedCharacters.get(id)?.character;
+      if(!entry||!character||entry.mesh!==character.getMesh())continue;
+      const target=entry.plant?1-clamp((entry.plantSpeed-1.5)/3.5):0;
+      entry.plantWeight=(entry.plantWeight??0)+(target-(entry.plantWeight??0))*ease(step,8);
+      if(entry.plantWeight<.01||!entry.plant)continue;
+      if(entry.feet===undefined)entry.feet=bindFootPlacement(entry.mesh);
+      if(!entry.feet)continue;
+      const ground=entry.plant.ground,parent=character.parent;
+      up.set(0,1,0).applyQuaternion(character.quaternion);
+      // Only where the body stands along the terrain's own up.
+      const [nx,ny,nz]=terrainFrame(entry.plant.u,entry.plant.v).up;
+      if(up.x*nx+up.y*ny+up.z*nz<.97)continue;
+      right.copy(pitchAxis).applyQuaternion(character.quaternion);
+      entry.feet.apply(character,up,right,point=>{
+        const local=parent?parent.worldToLocal(plantPoint.copy(point)):plantPoint.copy(point);
+        const {u,v}=terrainCoordinates([local.x,local.y,local.z]);
+        return terrainElevation(u,v)-ground;
+      },entry.plantWeight);
     }
     for(const id of actors.keys())if(!state.characters.has(id))actors.delete(id);
     return result;

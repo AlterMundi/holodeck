@@ -118,7 +118,8 @@ test('flight exit holds a descent until contact, then gives the feet back to the
   const character={position:new Vector3(1800,498,11)};
   const state={characters:new Map([[1,character]]),localCharacterId:1};
   const manager={loadedCharacters:new Map([[1,{character:root}]]),update(){}};
-  const controls={outdoor:true,grounded:true,flying:false};
+  // Exact mixer handoff; terrain foot placement is covered in foot-placement.test.mjs.
+  const controls={outdoor:true,grounded:true,flying:false,footPlacement:false};
   const release=bindFlightAvatarAnimation(manager,()=>controls);
   assert.equal(bindFlightAvatarAnimation(manager,()=>controls),release);
   const leg=mesh.getObjectByName('calf_l'),arm=mesh.getObjectByName('upperarm_l');
@@ -281,7 +282,7 @@ test('standing idle animates supported humanoids and releases without moving eit
     const state={characters:new Map([[id,actor]]),localCharacterId:id};
     const head=mesh.getObjectByName('head'),chest=mesh.getObjectByName('spine_05');
     const stockHead=head.quaternion.clone(),stockChest=chest.quaternion.clone();
-    // The repertoire moves the hips (weight shift, squat); the feet stay put.
+    // The repertoire moves the hips (weight shift, ready stance); the feet stay put.
     const contacts=['foot_l','foot_r'].map(name=>{
       const bone=mesh.getObjectByName(name);
       return [bone,bone.getWorldPosition(new Vector3()),bone.getWorldQuaternion(new Quaternion()).normalize()];

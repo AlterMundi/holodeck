@@ -40,6 +40,30 @@ blender -b art/compaii-avatar/navegante.blend --python-exit-code 19 \
   --python art/compaii-avatar/mouth.py -- art/compaii-avatar/navegante.blend
 ```
 
+## N-3X refinement
+
+`n3x_refine.py` brings the packed scene closer to the N-3X production sheet
+(front, back, top and three-quarter views): the antenna rises from the top
+centre of the helmet with its cyan light, the hands have four long
+two-segment fingers and an opposed thumb, the mouth well and chin under the
+visor are gone, the visor bezel is riveted, the cape falls to the ankles and
+the boots have tall cuffs with brass bands. It edits `navegante.blend` once;
+then run `motion.py` to export.
+
+```sh
+blender -b art/compaii-avatar/navegante.blend --python-exit-code 19 \
+  --python art/compaii-avatar/n3x_refine.py -- art/compaii-avatar/navegante.blend
+```
+
+## LED face
+
+`n3x_faces.py` (run after `n3x_refine.py`) removes the modelled pupils,
+brows and mouth lens and lays a thin "Visor LED screen" over the visor glass.
+`src/navegante-screen.mjs` draws the nine expressions of the navigator
+expression sheet on it as pixels, each with its own colour and pattern, and
+articulates speech syllable by syllable from the playback level (a, e, i, o,
+u shapes and closures) instead of only brightening.
+
 ## Motion
 
 `motion.py` holds every pose and its timing. It replaces the NLA tracks of the
@@ -54,3 +78,20 @@ joints. The gestures (`brace`, `scan`, `sway`, `tinker`, `chirp` and the nine
 cues except `calm`) start and end at neutral, so the runtime can layer them.
 The runtime solves ground contact over these clips. See
 [character motion](../../docs/character-motion.md).
+
+## Alternative bodies
+
+CompAII wears the N-3X. Two diving-helmet alternatives are kept as options:
+
+```sh
+blender -b --python-exit-code 19 --python art/compaii-avatar/navegante_escafandra.py -- OUT            # escafandra (white ceramic, live face)
+blender -b --python-exit-code 19 --python art/compaii-avatar/navegante_escafandra.py -- OUT --bronze   # bronce (aged bronze, LED slits)
+```
+
+They ship as `public/assets/avatar/navegante-escafandra.glb` and
+`navegante-bronce.glb`, are listed in `NAVEGANTE_VARIANTS`
+(`src/avatar-registry.mjs`) and appear in the Character Studio's character
+choice. There is no in-game switch: to wear one, point the
+`compaii-navegante-white-v1` entry's `model` and `modelSha256` at it and
+deploy. The runtime draws the escafandra's face with `navegante-face.mjs` and
+the bronce visor with `navegante-screen.mjs`.

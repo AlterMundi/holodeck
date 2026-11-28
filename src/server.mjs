@@ -1,14 +1,14 @@
 import {createQuintanaWeather} from './quintana-weather.mjs';
 import {parseRenderedView,RenderedViews} from './rendered-view.mjs';
 import {SAND3D_TRAIL_REVISIONS} from './sand3d-trail-assets.mjs';
-import {TOROIDAL_SPAWN, TOROIDAL_TERRAIN, TOROIDAL_RESIDENCE, residenceWorld, toroidalParcelPoint} from './toroidal-terrain.mjs';
+import {TOROIDAL_HOUSE_PLOTS, TOROIDAL_SPAWN, TOROIDAL_TERRAIN, toroidalParcelPoint} from './toroidal-terrain.mjs';
 import {RESIDENCE_REVISIONS} from './toroidal-residence-assets.mjs';
 import {indoorGardenTemplates} from './indoor-garden-recipe.mjs';
 import {COMPAII_HOUSE,interiorArt} from './interior-art.mjs';
 import {ATELIER_EXPANSION_WRITES,ATELIER_PROFILE,ATELIER_ROOMS,atelierLabReturn,matchesAtelierLayout,packedExteriorArt,selectAtelier} from './compaii-atelier.mjs';
 import {RoomExhibits,EXHIBIT_ARCHIVE_SAVE_BYTES,EXHIBIT_SAVE_BYTES} from './room-exhibits.mjs';
 import {ATELIER_FOYER,CHARACTER_STUDIO,characterWorktable,houseReviewRooms} from './house-review-rooms.mjs';
-import {residenceEntrances} from './residence-portals.mjs';
+import {residenceEntrances,residenceHouseDoor} from './residence-portals.mjs';
 import {createCharacterPoseReview,resolveReviewPose} from './character-pose-review.mjs';
 import {InteriorSpaces, OUTSIDE, SPACE_SAVE_BYTES, interiorDocument} from './interior-spaces.mjs';
 import {InteriorLayouts,LAYOUT_SAVE_BYTES} from './interior-layouts.mjs';
@@ -17,6 +17,7 @@ import {IndoorGardens,INDOOR_GARDEN_BYTES} from './indoor-gardens.mjs';
 import {GardenEditors} from './garden-editors.mjs';
 import {readOwnedRoomArt} from './owned-room-art.mjs';
 import {Houses, HOUSE_SAVE_BYTES,exteriorDoor,houseId} from './houses.mjs';
+import {HouseAccess} from './house-access.mjs';
 import {readActivity,ActivityError} from './activity.mjs';
 import {nodeVisits} from './content-nodes.mjs';
 import express from 'express';
@@ -52,6 +53,8 @@ import {readMatterWorkshopArt} from './matter-workshop-art.mjs';
 import {readCollectionRepresentatives} from './collection-representatives.mjs';
 import {createNativeRoomAuthority,createNativeReviewAuthority} from './native-authority.mjs';
 import {loadOwnerRoomArt,ownerRoomCache} from './owner-room-art.mjs';
+import {loadOwnerExteriors} from './owner-exterior.mjs';
+import {loadOwnerRoomTours} from './owner-room-tours.mjs';
 import {createAtelierRoomAuthority} from './atelier-authority.mjs';
 import {atelierProjectionHandler} from './atelier-projection.mjs';
 import {WorldDocument} from './world-document.mjs';
@@ -61,7 +64,7 @@ import {HumanAvatarProfiles,humanWardrobeAssets} from './human-avatars.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
-export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,releaseControllerRef=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt,houseVisual,gardenVisual,gallerySelection,galleryAuthorization,matterCollection,collectionSourceRequest,nativeReviewAuthority=null,artProfile,worldTerrain,atelierLayoutWrites=ATELIER_EXPANSION_WRITES,lightExercise=false,questbook=null,ownerRoomArt=[],ownerArtRequest,atelierWorkshop=null}={}){
+export async function createHolodeck({basePath='/',production=false,identityResolver=null,publicOrigin=null,stateDir=null,releaseControllerRef=null,nativeFactory=null,worldSocket=null,worldSocketBeingRef=null,worldPorts=[],contentVisits=[],contentNodes,nativeRoomAuthority=null,conversationOrigins=[],ownNative=false,interiorSpaces=[],interiorGuestAccess,interiorArtwork=interiorArt,houseVisual,gardenVisual,gallerySelection,galleryAuthorization,matterCollection,collectionSourceRequest,nativeReviewAuthority=null,artProfile,worldTerrain,atelierLayoutWrites=ATELIER_EXPANSION_WRITES,lightExercise=false,questbook=null,ownerRoomArt=[],ownerRoomTours=[],ownerExteriors=[],parcelGrants=production?[]:null,ownerArtRequest,atelierWorkshop=null}={}){
   if(!/^\/(?:[a-z0-9-]+\/)*$/.test(basePath))throw Error('Select a bounded absolute base path');
   lightExercise=lightExercise===true;
   if(production&&(!identityResolver||!publicOrigin||!stateDir))throw Error('Shared identity, audience and state are required in production');
@@ -128,7 +131,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const localBoot=randomBytes(4).toString('hex');
   const store=stateDir?new RoomStore(stateDir):null;
   const houseStore=stateDir ? new RoomStore(join(stateDir,'houses'),{maxBytes:HOUSE_SAVE_BYTES}) : null;
-  const houses=new Houses({state:houseStore?.load(),persist:houseStore ? state => houseStore.save(state) : null});
+  const houses=new Houses({state:houseStore?.load(),parcelGrants,persist:houseStore ? state => houseStore.save(state) : null});
   const spaceStore=stateDir ? new RoomStore(join(stateDir,'spaces'),{maxBytes:SPACE_SAVE_BYTES}) : null;
   const layoutStore=stateDir?new RoomStore(join(stateDir,'layouts'),{maxBytes:LAYOUT_SAVE_BYTES}):null;
   // Keep the receiving graph as the fallback for releases predating adoption.
@@ -159,24 +162,46 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   if(worldTerrain!==undefined&&worldTerrain!==TOROIDAL_TERRAIN.id)throw Error('Unknown world terrain edition');
   const toroidal=worldTerrain===TOROIDAL_TERRAIN.id;
   const authoredLayout=()=>overlayRooms(layouts.definitions(),atelierLayouts?.definitions()??[]);
-  const layoutDefinitions=()=>{
-    const combined=authoredLayout();
-    if(!toroidal)return combined;
-    return houseReviewRooms(combined,COMPAII_HOUSE,matterCollection?.room,ATELIER_ROOMS.lab);
+  const baseLayout=(replacement)=>{
+    const authored=authoredLayout();
+    const combined=replacement?[...authored.filter(room=>room.house!==replacement.house),...replacement.rooms]:authored;
+    return toroidal?houseReviewRooms(combined,COMPAII_HOUSE,matterCollection?.room,ATELIER_ROOMS.lab):combined;
   };
+  if(ownerArtRequest!==undefined&&(production||typeof ownerArtRequest!=='function'))
+    throw Error('Select the installed Home asset reader');
+  const ownerReader=production?ownerRoomCache(new URL('../runtime/owner-room-art/',import.meta.url)):ownerArtRequest;
+  const tourReader=production?ownerRoomCache(pathToFileURL(join(stateDir,'owner-room-tours')+'/')):ownerArtRequest;
+  const tours=await loadOwnerRoomTours(ownerRoomTours,baseLayout(),tourReader);
+  const layoutDefinitions=replacement=>tours.project(baseLayout(replacement));
   // The Residencia's chamber thresholds open the rooms off the foyer directly from the world.
   const definedRooms=new Set(layoutDefinitions().map(room=>room.id));
   const portalRooms=toroidal?Object.fromEntries([['matter',matterCollection?.room],['character',CHARACTER_STUDIO],
     ['lab',ATELIER_ROOMS.lab]].filter(([,id])=>id&&definedRooms.has(id)&&id!==ATELIER_FOYER)):{};
+  const accessStore=stateDir&&new RoomStore(join(stateDir,'house-access'),{maxBytes:96*1024});
+  const houseAccess=new HouseAccess({state:accessStore?.load(),houses,rooms:()=>spaces.rooms,
+    persist:accessStore?value=>accessStore.save(value):null});
   const spaces=new InteriorSpaces({definitions:layoutDefinitions(),houses,state:spaceStore?.load(),
     exteriorPortals:new Set(Object.values(portalRooms)),
     upperLanding:toroidal&&artProfile===ATELIER_PROFILE?atelierLabReturn:undefined,
-    persist:spaceStore ? state=>spaceStore.save(state) : null,guestAccess:interiorGuestAccess});
-  if(ownerArtRequest!==undefined&&(production||typeof ownerArtRequest!=='function'))
-    throw Error('Select the installed Home asset reader');
-  const ownerReader=production?ownerRoomCache(new URL('../runtime/owner-room-art/',import.meta.url)):ownerArtRequest;
+    persist:spaceStore ? state=>spaceStore.save(state) : null,
+    houseGuestAccess:(actor,room)=>houseAccess.guestAllowed(actor,room),
+    guestAccess:(actor,id)=>(!tours.guestLimits.has(id)||tours.guestLimits.get(id).has(actor.id))&&
+      (!interiorGuestAccess||interiorGuestAccess(actor,id)===true)});
   const ownerArt=await loadOwnerRoomArt(ownerRoomArt,spaces.rooms,ownerReader);
+  const exteriorReader=production?ownerRoomCache(pathToFileURL(join(stateDir,'owner-exteriors')+'/')):ownerArtRequest;
+  const authoredExteriors=toroidal?await loadOwnerExteriors(ownerExteriors,houses,exteriorReader):new Map();
+  const canSeeExterior=(actor,house)=>actor.rights?.includes('observe')&&
+    [...spaces.rooms.values()].some(room=>room.house===house&&room.entry&&spaces.allows(actor,room.id));
+  const exteriorViews=actor=>[...authoredExteriors.values()].filter(value=>canSeeExterior(actor,value.house))
+    .map(({house,revision,title,origin,yaw,nearUntilMetres,distanceFromMetres,assets})=>({
+      house,revision,title,origin,yaw,nearUntilMetres,distanceFromMetres,
+      assets:Object.fromEntries(Object.entries(assets).map(([kind,model])=>[kind,{
+        path:route('api/space/exteriors/'+house+'/'+kind+'/'+model.sha256+'.glb'),
+        bytes:model.length,sha256:model.sha256,
+      }]))
+    }));
   function ownerArtFor(room){
+    if(tours.art.has(room?.id))return tours.art.get(room.id);
     const selected=ownerArt.get(room?.id);
     return selected&&selected.house===room.house&&Boolean(selected.exterior)===room.entry&&
       selected.doors.size===room.links.length&&room.links.every(link=>link.kind==='door'&&selected.doors.has(link.to))
@@ -191,9 +216,18 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   const singleHouse=valley;
   const hideWorkshop=valley||toroidal;
   const outdoorHouse=house=>!singleHouse||house.id===COMPAII_HOUSE;
+  const houseExteriorDoor=house=>toroidal?
+    (house.id===COMPAII_HOUSE?residenceHouseDoor():authoredExteriors.get(house.id)?.door??toroidalParcelPoint(exteriorDoor(house,TOROIDAL_HOUSE_PLOTS))):
+    exteriorDoor(house);
+  const houseDirectory=()=>room.houses.directory();
   const exteriorEntrances=actor=>[...spaces.view(actor,OUTSIDE).entrances.filter(
     entrance=>!singleHouse||spaces.rooms.get(entrance.id)?.house===COMPAII_HOUSE).map(
-    entrance=>toroidal?{...entrance,door:toroidalParcelPoint(entrance.door)}:entrance),
+    entrance=>{
+      const id=spaces.rooms.get(entrance.id).house;
+      const house=houseDirectory().find(place=>place.id===id);
+      return {...entrance,door:toroidal?houseExteriorDoor(house):entrance.door,
+        ...(toroidal&&id===COMPAII_HOUSE?{landmark:'residence'}:{})};
+    }),
     ...(toroidal?residenceEntrances(Object.fromEntries(Object.entries(portalRooms).filter(([,id])=>spaces.allows(actor,id))),
       id=>spaces.rooms.get(id)?.title??'Cámara'):[])];
   const publicWorld=toroidal?TOROIDAL_TERRAIN.id:valley?VALLEY_LAYOUT:'island-workshop';
@@ -313,7 +347,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       const art={basePath,houseVisual:atelier?.houseVisual??houseVisual,
         gardenVisual:atelier?.gardenVisual??gardenVisual,sceneryAsset:atelier?.sceneryAsset,sceneryRevision:atelier?.sceneryRevision,
         commonsVisual:atelier?.commonsVisual,coastalRidges:atelier?.coastalRidges,
-        valleyHouse:valley?COMPAII_HOUSE:undefined,toroidalHouse:toroidal?COMPAII_HOUSE:undefined};
+        valleyHouse:valley?COMPAII_HOUSE:undefined,toroidalHouse:toroidal?COMPAII_HOUSE:undefined,authoredExteriors};
       const loads=[document.load(worldDocument(room,art))];
       if(arrivalDocument)loads.push(arrivalDocument.load(worldDocument(room,{...art,deferDressing:true})));
       await Promise.all(loads);
@@ -523,9 +557,9 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const gardenRoom=Boolean(indoorGardens.owner(view.id));
     const activity=lightExercise&&gardenRoom?indoorGardens.view(actor,view.id):null;
     const outdoorSky=includeSky?(view.id===OUTSIDE?atelier?.outdoorSky:art?.outdoorSky):null;
-    const space={...view,...(view.id===OUTSIDE?{entrances:exteriorEntrances(actor),...(toroidal?{title:'Holodeck',outdoorTerrain:TOROIDAL_TERRAIN.id,terrainRun:room.run}:
+    const space={...view,...(view.id===OUTSIDE?{entrances:exteriorEntrances(actor),...(toroidal?{title:'Holodeck',outdoorTerrain:TOROIDAL_TERRAIN.id,terrainRun:room.run,exteriors:exteriorViews(actor)}:
         valley?{title:'Valle de llegada',outdoorTerrain:true}:{})}:{objects:roomObjects(view),
-        ...(toroidal&&view.exteriorDoor?{exteriorDoor:toroidalParcelPoint(view.exteriorDoor)}:{})}),
+        ...(toroidal&&view.exteriorDoor?{exteriorDoor:houseExteriorDoor(houseDirectory().find(house=>house.id===view.house))}:{})}),
       ...(gardenRoom?(lightExercise?{playableInterior:true}:{gardenReceiptRecovery:true}):{}),
       ...(lightExercise&&gardenEditors.grant(actor,view.id)?{canDesignGarden:true}:{}),
       ...(activity?{activity}:{}),
@@ -568,12 +602,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const publicPlace=(id,title,arrival)=>destinations.push({id,title,to:OUTSIDE,arrival});
     const plaza=toroidal?TOROIDAL_SPAWN:{x:0,y:TERRACE_TOP+.001,z:6};
     publicPlace('terrain:arrival','Plaza de llegada',{...plaza,yaw:180});
-    if(toroidal){
-      const [x,y,z]=residenceWorld(0,-21,TOROIDAL_RESIDENCE.floor);
-      publicPlace('terrain:residence','Residencia de la Nobleza IA',{x,y,z,yaw:180});
-      iconSource.set(destinations.at(-1),{kind:'residence',revision:residenceAssets.visual.sha256,
-        bytes:()=>exteriorArt.get(residenceAssets.visual.path)?.bytes??readFileSync(residenceVisual)});
-    }else if(!hideWorkshop){
+    if(!toroidal&&!hideWorkshop){
       const names={overlook:'Mirador',gallery:'Isla de la galería',garden:'Isla del jardín'};
       for(const {id,x,z} of TERRACES){
         if(names[id])publicPlace('terrain:'+id,names[id],{x,y:TERRACE_TOP+.001,z,yaw:180});
@@ -599,10 +628,13 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       const group={house:house.id,houseTitle:house.facade.title};
       if(!houses.has(house.id)){
         houses.add(house.id);
-        const door=exteriorDoor(house);
+        const residence=toroidal&&house.id===COMPAII_HOUSE;
         destinations.push({id:'house:'+house.id,to:OUTSIDE,title:'Entrada exterior',...group,
-          arrival:toroidal?toroidalParcelPoint(door):door});
-        iconSource.set(destinations.at(-1),{kind:'facade',revision:JSON.stringify(house.facade),facade:house.facade});
+          arrival:houseExteriorDoor(house),...(residence?{landmark:'residence'}:{})});
+        iconSource.set(destinations.at(-1),residence?
+          {kind:'residence',revision:residenceAssets.visual.sha256,
+            bytes:()=>exteriorArt.get(residenceAssets.visual.path)?.bytes??readFileSync(residenceVisual)}:
+          {kind:'facade',revision:JSON.stringify(house.facade),facade:house.facade});
       }
       const view=spaces.view(actor,to);
       const details={...group,room:candidate.title,to};
@@ -635,12 +667,6 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(iconSource.has(entry))continue;
       const descriptor=semanticDescriptor({id:entry.id,title:entry.title,widget:entry.widget,role:entry.iconRole});
       iconSource.set(entry,{kind:'semantic',revision:JSON.stringify(descriptor),descriptor});
-    }
-    const residence=destinations.find(entry=>entry.id==='terrain:residence');
-    if(residence){
-      const rooms=new Set(availableEntrances.filter(entry=>entry.portal).map(entry=>entry.id));
-      residence.links=destinations.filter(entry=>entry.id.startsWith('room:')&&rooms.has(entry.to))
-        .map(entry=>entry.id);
     }
     return destinations;
   }
@@ -730,13 +756,17 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const authorizeReview=nativeReviewAuthority&&(async(author,pin)=>{
       if(await nativeReviewAuthority(author,pin)!==true)return false;
       const rights=await nativeRoomAuthority({actor:author});
-      return projectionHealthy&&rights.includes('observe')&&rights.includes('edit');
+      return projectionHealthy&&rights.includes('observe')&&(rights.includes('edit')||ownsRoom({...author,rights},input.room));
     });
     return exhibits.put(actor,preview?{...input,type:'exhibit.put'}:input,room.nodes,{preview,authorizeReview,canWrite});
   }
   function previewLayout(actor,input){
     const candidate=layoutAuthority(actor).preview(actor,input);
     if(!candidate)return null;
+    if(tours.art.size){
+      try{new InteriorSpaces({definitions:layoutDefinitions(candidate),houses});}
+      catch{return null;}
+    }
     for(const definition of candidate.rooms){
       const art=ownerArtFor(spaces.rooms.get(definition.id));
       if(art&&(art.doors.size!==definition.links.length||
@@ -798,16 +828,46 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     try{return indoorGardens.act(actor,input,{delegated});}
     catch(error){if(indoorGardens.fenced)spaces.fenced=true;throw error;}
   }
+  const ownsRoom=(actor,id)=>{
+    const selected=spaces.rooms.get(id);
+    return !!selected&&houses.canManage(actor,selected.house);
+  };
+  // Legacy room writers consume edit. Derive it only for the operation's
+  // owned target, never on the session or shared-world authority.
+  function houseEditor(actor,allowed=houses.canManage(actor)){
+    return projectionHealthy&&allowed&&!actor.rights.includes('edit')
+      ? {...actor,rights:[...actor.rights,'edit']}:actor;
+  }
+  function changeHouseAccess(actor,input){
+    if(!projectionHealthy||room.commitUncertain||spaces.fenced)return null;
+    if(input.type==='house.access.current')
+      return Object.keys(input).sort().join(',')==='house,type'?houseAccess.current(actor,input.house):null;
+    let access;
+    try{access=houseAccess.put(actor,input);}
+    catch(error){if(error.commitUncertain)spaces.fenced=true;throw error;}
+    if(access)for(const [socket,record] of sockets)
+      if(spaces.rooms.get(record.scope)?.house===access.house&&
+         (!inScope(record.session.actor,record.scope)||record.projectionAllowed?.()===false))
+        socket.close(1008);
+    return access;
+  }
   const selectedWorldPorts=validateWorldPorts({worldSocket,worldSocketBeingRef,worldPorts});
   if(selectedWorldPorts.length&&!native)throw Error('Native authority is required for world return ports');
   for(const selected of selectedWorldPorts)installedWorldPorts.push(await createWorldPort({socketPath:selected.socket,expectedBeingRef:selected.beingRef,room,native,describeSpace,moveSpace,conversationPlace,questbook:questbookHost,
     readRenderedView:({id,verified})=>renderedViews.read({id,human:verified.humanRef,space:verified.capturedSpace??OUTSIDE,run:room.run}),
     approachSpace:(actor,destination)=>room.commitUncertain?null:spaces.approach(actor,destination),
-    putExhibit,exhibitResult:(actor,id)=>exhibits.result(actor,id),
-    currentLayout:actor=>layoutAuthority(actor).current(actor),
-    draftLayout:(actor,input)=>room.commitUncertain||spaces.fenced||!layoutStore?null:layoutAuthority(actor).draft(actor,input),
-    previewLayout,
-    publishLayout,layoutResult:(actor,id)=>layoutAuthority(actor).result(actor,id),roomDesign,indoorGarden,atelierWorkshop:atelierAuthority,
+    putExhibit:(actor,input)=>putExhibit(houseEditor(actor,ownsRoom(actor,input.room)),input),
+    houseAccess:changeHouseAccess,ownsRoom,ownsHouse:(actor,id)=>houses.canManage(actor,id),
+    houseWritesAllowed:()=>projectionHealthy&&!room.commitUncertain&&!spaces.fenced,
+    exhibitResult:(actor,id)=>exhibits.result(actor,id),
+    currentLayout:actor=>layoutAuthority(actor).current(houseEditor(actor)),
+    draftLayout:(actor,input)=>room.commitUncertain||spaces.fenced||!layoutStore?null:layoutAuthority(actor).draft(houseEditor(actor),input),
+    previewLayout:(actor,input)=>previewLayout(houseEditor(actor,houses.canManage(actor,input.house)),input),
+    publishLayout:(actor,input)=>publishLayout(houseEditor(actor,houses.canManage(actor,input.house)),input),
+    layoutResult:(actor,id)=>layoutAuthority(actor).result(houseEditor(actor),id),
+    roomDesign:(actor,input)=>roomDesign(houseEditor(actor,input.type==='design.result'?houses.canManage(actor):ownsRoom(actor,input.room)),input),
+    indoorGarden,authorGarden:(actor,input)=>indoorGarden(houseEditor(actor,ownsRoom(actor,input.room)),input),
+    atelierWorkshop:atelierAuthority,
     reviewCharacter:(actor,type,input)=>{
       const result=reviewCharacter(actor,type,input);
       return type==='character-review.current'&&result.status===200?
@@ -1000,7 +1060,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       if(session[budget].length>=(pointing?1:4))return res.status(429).json({message:'Esperá un momento antes de intentar otra acción.'});
       session[budget].push(now);
     }
-    const spaceRoute=['/space','/space/destinations','/space/jump','/space/character-pose-review','/space/character-presentation','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/avatar-pose','/space/collection/tabletop-presence','/space/collection/pointing','/space/matter-look','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/destinations/icon/')||req.path.startsWith('/space/collection-model/')||
+    const spaceRoute=['/space','/space/destinations','/space/jump','/space/character-pose-review','/space/character-presentation','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/avatar-pose','/space/collection/tabletop-presence','/space/collection/pointing','/space/matter-look','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/exteriors/')||req.path.startsWith('/space/destinations/icon/')||req.path.startsWith('/space/collection-model/')||
       req.path.startsWith('/space/atelier/')||req.path==='/release-dnd'||req.path==='/appearance'||req.path==='/conversation-surface'||req.path==='/topic-space'||req.path==='/topic-projects'||
       (questbookHost&&/^\/questbook(?:\/(?:action|objective|create|receipt))?$/.test(req.path))||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
@@ -1095,6 +1155,15 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       }
     }
     res.json({choice:avatars.preference(actor),...(avatars.ownsPersonalAvatar(actor)?{personalDefault:true}:{})});
+  });
+  app.get(route('api/space/exteriors/:house/:kind/:revision'),(req,res)=>{
+    const exterior=authoredExteriors.get(req.params.house);
+    const kind=req.params.kind;
+    if(!exterior||!Object.hasOwn(exterior.assets,kind)||spaces.fenced||room.commitUncertain||
+      spaces.current(req.actor)!==OUTSIDE||!canSeeExterior(req.actor,exterior.house))return res.sendStatus(404);
+    const asset=exterior.assets[kind];
+    if(req.params.revision!==asset.sha256+'.glb')return res.sendStatus(404);
+    res.set('Cache-Control','private, no-store').type('model/gltf-binary').send(asset.bytes);
   });
   app.get(route('api/space/art/:revision'),(req,res)=>{
     const id=spaces.current(req.actor);
@@ -1500,12 +1569,12 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     if(room.commitUncertain||spaces.fenced)return res.status(503).json({message:'Holodeck necesita recuperar su último cambio antes de continuar.'});
     const canEdit=projectionHealthy&&['observe','edit'].every(right=>req.actor.rights?.includes(right));
     res.json({run:room.run,edition:room.edition,sequence:room.sequence,actorRef:req.actor.id,canEdit:!hideWorkshop&&canEdit,lightExercise:lightExercise&&!hideWorkshop,layout:publicWorld,entities:hideWorkshop?{}:room.entities,
-      focus:hideWorkshop?[]:room.focusState(),nodes:hideWorkshop?{}:room.nodeState(),entrances:exteriorEntrances(req.actor),questbook:!!questbookHost,
+      focus:hideWorkshop?[]:room.focusState(),nodes:hideWorkshop?{}:room.nodeState(),entrances:exteriorEntrances(req.actor),...(toroidal?{exteriors:exteriorViews(req.actor)}:{}),questbook:!!questbookHost,
       native:native?{...await native.availability(req.actor),sharedConversation:!!native.contexts}:{available:false}});
   }));
   app.get(route('api/places'),(req,res)=>{
     if(room.commitUncertain)return res.status(503).json({message:'El taller necesita recuperar su último cambio.'});
-    res.json({world:publicWorld,houses:room.houses.directory().filter(outdoorHouse)});
+    res.json({world:publicWorld,houses:room.houses.directory().filter(outdoorHouse),...(toroidal?{plots:TOROIDAL_HOUSE_PLOTS}:{})});
   });
   app.get(route('api/places/:id'),(req,res)=>{
     if(room.commitUncertain)return res.status(503).json({message:'El taller necesita recuperar su último cambio.'});
@@ -1785,7 +1854,7 @@ export async function main(){
   validateWorldPorts({...receiving});
   const nativeRoomAuthority=receiving&&Object.hasOwn(receiving,'authoritySocket')?createNativeRoomAuthority(receiving.authoritySocket):null;
   const nativeReviewAuthority=nativeRoomAuthority?createNativeReviewAuthority(receiving.authoritySocket):null;
-  const runtime=await createHolodeck({production,stateDir,releaseControllerRef:receiving?.releaseControllerRef,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,nativeReviewAuthority,contentVisits:receiving?.contentVisits,contentNodes:receiving?.contentNodes,nativeRoomAuthority,conversationOrigins:receiving?.conversationOrigins||[],ownNative:receiving?.ownNative??false,interiorSpaces:receiving?.interiorSpaces??[],gallerySelection:receiving?.gallery,matterCollection:selectMatterAppearance(receiving),artProfile:receiving?.artProfile,worldTerrain:receiving?.worldTerrain,ownerRoomArt:receiving?.ownerRoomArt??[],atelierWorkshop:receiving?.atelierWorkshop??null,questbook:configuredQuestbook(receiving,stateDir)});
+  const runtime=await createHolodeck({production,stateDir,releaseControllerRef:receiving?.releaseControllerRef,basePath:receiving?.basePath||'/',publicOrigin:receiving?.origin,identityResolver:resolver,nativeFactory,worldSocket:receiving?.worldSocket,worldSocketBeingRef:receiving?.worldSocketBeingRef,worldPorts:receiving?.worldPorts,nativeReviewAuthority,contentVisits:receiving?.contentVisits,contentNodes:receiving?.contentNodes,nativeRoomAuthority,conversationOrigins:receiving?.conversationOrigins||[],ownNative:receiving?.ownNative??false,interiorSpaces:receiving?.interiorSpaces??[],gallerySelection:receiving?.gallery,matterCollection:selectMatterAppearance(receiving),artProfile:receiving?.artProfile,worldTerrain:receiving?.worldTerrain,ownerRoomArt:receiving?.ownerRoomArt??[],ownerRoomTours:receiving?.ownerRoomTours??[],ownerExteriors:receiving?.ownerExteriors??[],parcelGrants:receiving?.parcelGrants??(production?[]:null),atelierWorkshop:receiving?.atelierWorkshop??null,questbook:configuredQuestbook(receiving,stateDir)});
   const port=Number(process.env.PORT||18940);
   if(!Number.isInteger(port)||port<1024||port>65535)throw Error('Select a valid loopback port');
   if(process.env.HOST&&process.env.HOST!=='127.0.0.1')throw Error('Use the existing loopback gateway');

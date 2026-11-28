@@ -105,3 +105,15 @@ test('the pending cue is a distinct, bounded ascending chirp under the existing 
  assert.equal(audio.playCue('pending-new'),false);
  await audio.dispose();
 });
+test('body sounds play only when sound is on, keep their spacing and stay bounded',async()=>{
+ const {audio,advance}=setup();
+ assert.equal(audio.playBody('step-grass'),false,'off by default');
+ await audio.enableFromGesture();
+ assert.equal(audio.playBody('step-grass',{strength:.5}),true);
+ assert.equal(audio.playBody('step-grass'),false,'too soon after the last step');
+ assert.equal(audio.playBody('boost'),true);
+ assert.equal(audio.playBody('nonsense'),false);
+ for(let i=0;i<20;i++){advance(150);audio.playBody('step-dirt');}
+ assert.ok(audio.effects.size*3<=12);
+ const context=audio.context;await audio.dispose();assert.ok(context.made.every(n=>!n.connected));
+});

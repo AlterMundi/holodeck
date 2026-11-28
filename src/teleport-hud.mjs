@@ -39,7 +39,8 @@ const byName=(a,b)=>a.localeCompare(b,'es');
 const maxFavorites=128;
 
 // A map projection can use the same stable node IDs and miniature families.
-export function teleportModelId(id){
+export function teleportModelId(id,landmark){
+  if(landmark==='residence')return 'residence';
   if(id.startsWith('object:'))return 'table';
   if(id.startsWith('room:'))return 'room';
   if(id.startsWith('house:'))return 'house';
@@ -81,6 +82,11 @@ export class TeleportHud {
       if(epoch!==this.epoch)return;
       if(result.space!==space.id)throw Error('Location changed');
       this.entries=result.destinations;
+      const residence=this.entries.find(entry=>entry.landmark==='residence');
+      if(residence&&this.favorites.delete('terrain:residence')){
+        this.favorites.add(residence.id);
+        this.saveFavorites();
+      }
       const byId=new Map(this.entries.map(entry=>[entry.id,entry]));
       for(const entry of this.entries){
         const parent=this.parentOf(entry);
@@ -108,6 +114,10 @@ export class TeleportHud {
     this.message('deleteSurface',{});
     this.group=null;
     this.onClose();
+  }
+
+  saveFavorites(){
+    try{this.storage.setItem(this.key,JSON.stringify([...this.favorites]));}catch{}
   }
 
   parentOf(entry){
@@ -263,7 +273,7 @@ export class TeleportHud {
           if(this.favorites.size>=maxFavorites)this.favorites.delete(this.favorites.values().next().value);
           this.favorites.add(selection);
         }
-        try{this.storage.setItem(this.key,JSON.stringify([...this.favorites]));}catch{}
+        this.saveFavorites();
       }
     }
     this.update();

@@ -4,7 +4,7 @@ import {
 } from 'three';
 import {CAVE} from './toroidal-cave.mjs';
 import {
-  overlookCoordinates, residencePlantClearance, TOROIDAL_TERRAIN, terrainColor, terrainCoordinates,
+  linternaGrassCover, overlookCoordinates, residencePlantClearance, TOROIDAL_TERRAIN, terrainColor, terrainCoordinates,
   terrainElevation, terrainFrame, terrainMeadowMoisture, terrainPosition, terrainTrail, terrainWoodland,
 } from './toroidal-terrain.mjs';
 
@@ -81,13 +81,15 @@ export function grassCover(u,v,h){
   const outside=Math.max(Math.abs(x)-9.5,-5-z,z-28);
   if(outside<0)return 0;
   if(residencePlantClearance(u,v,2.2))return 0;
+  const lot=linternaGrassCover(u,v);
+  if(lot===0)return 0;
   const trail=terrainTrail(u,v);
   if(trail>.55)return 0;
   const shore=Math.min(1,(h-T.waterLevel-.35)/1.4);
   const woodland=terrainWoodland(u,v,h);
   // Feather the parcel edge so the carpet thins out instead of ending in a hedge.
   const commons=Math.min(1,outside/5);
-  return Math.max(0,(1-trail*1.6)*shore*(1-woodland*.55)*commons*commons);
+  return Math.max(0,(1-trail*1.6)*shore*(1-woodland*.55)*commons*commons*lot);
 }
 
 function tuftGeometry(){

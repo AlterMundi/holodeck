@@ -146,12 +146,15 @@ def library(joints):
 
     def breath(pose, z):
         return {**still, **planted(joints, z), **pose}, (0, 0, z)
-    rest = breath({"chest": (1, 0, 0), "cape": (2, 0, 0), **arms(out=(3, 3), elbow=(8, 8))}, -.004)
-    inhale = breath({"chest": (-1.5, 0, 0), "head": (1.5, -1.5, 0), "cape": (3, 1, 0), "antenna": (3, 0, 1),
-                     **arms(out=(6, 6), elbow=(6, 6), hand=(3, 3))}, 0)
-    settle = breath({"chest": (2.2, .8, 1.5), "head": (-1, 1.5, -2), "cape": (1, -1, 0), "antenna": (-3, 0, -1),
-                     **arms(out=(2, 3), elbow=(11, 8), forward=(2, 0))}, -.009)
-    clips["calm"] = (4.0, True, [(0, *rest), (1.25, *inhale), (1.65, *inhale), (3.05, *settle), (3.35, *settle)])
+    # A hero's poise: weight centred over both feet, chest lifted and open,
+    # shoulders back, arms a little away from the body, head level. The
+    # breath is slow and vertical; nothing sways or tilts.
+    poise = {"cape": (3, 0, 0), **arms(forward=(-4, -4), out=(9, 9), elbow=(10, 10), hand=(4, 4))}
+    rest = breath({**poise, "chest": (-3, 0, 0), "head": (-2, 0, 0)}, -.006)
+    inhale = breath({**poise, "chest": (-5.5, 0, 0), "head": (-3, 0, 0), "cape": (4, 0, 0), "antenna": (2, 0, 0),
+                     **arms(forward=(-5, -5), out=(11, 11), elbow=(9, 9), hand=(4, 4))}, -.002)
+    settle = breath({**poise, "chest": (-2.5, 0, 0), "head": (-1.5, 0, 0), "antenna": (-2, 0, 0)}, -.007)
+    clips["calm"] = (4.6, True, [(0, *rest), (1.6, *inhale), (2.1, *inhale), (3.7, *settle), (4.1, *settle)])
 
     def cue(seconds, *keys):
         return (seconds, False, [(0, {}, at), *keys, (seconds, {}, at)])
@@ -301,27 +304,30 @@ def library(joints):
                **arms(forward=(34, 22), out=(24, 30), elbow=(18, 24))}, (0, .020, -.038)),
         (.34, {"chest": (7, 0, 0), "head": (-5, 0, 0), "cape": (-10, 0, 0), "antenna": (15, 0, 0),
                **arms(forward=(-8, -6), out=(8, 8), elbow=(6, 6))}, (0, -.006, -.014)))
+    # Survey: a slow, deliberate turn of the head and chest to each side,
+    # level and centred, as if reading the horizon.
     clips["scan"] = cue(4.6,
-        (.30, {"head": (4, 3, -7), "chest": (0, 0, 0)}, at),
-        (.62, {"head": (-6, -5, 42), "chest": (0, 0, 5), "antenna": (0, 0, 14)}, (.006, 0, 0)),
-        (1.55, {"head": (-9, -4, 47), "chest": (-2, -2, 13), "antenna": (-6, 0, 3), **arms(out=(0, 6), elbow=(0, 8))}, (.010, 0, -.003)),
-        (2.12, {"head": (5, 4, -30), "chest": (1, 0, 6), "antenna": (4, 0, -16)}, (0, 0, -.006)),
-        (2.50, {"head": (8, 9, -46), "chest": (2, 2, -12), "antenna": (-4, 0, -4), **arms(out=(6, 0), elbow=(10, 0))}, (-.010, 0, -.006)),
-        (3.45, {"head": (6, 10, -44), "chest": (2, 2, -14), "antenna": (-2, 0, -2), **arms(out=(6, 0), elbow=(10, 0))}, (-.010, 0, -.004)))
+        (.45, {"chest": (-3, 0, 0), "head": (-2, 0, 0)}, at),
+        (1.05, {"chest": (-3, 0, 12), "head": (-3, 0, 40), "antenna": (0, 0, 8)}, at),
+        (1.75, {"chest": (-3, 0, 13), "head": (-3, 0, 42)}, at),
+        (2.45, {"chest": (-3, 0, -12), "head": (-3, 0, -40), "antenna": (0, 0, -8)}, at),
+        (3.25, {"chest": (-3, 0, -13), "head": (-3, 0, -42)}, at),
+        (3.95, {"chest": (-3, 0, 0), "head": (-2, 0, 0)}, at))
+    # Hero stance (kept under the old name): arms folded across the chest,
+    # weight onto one planted leg, chest up, a long steady look ahead.
+    hips_fists = dict(forward=(12, 12), out=(33, 35), elbow=(100, 100), hand=(0, 0), twist=(90, 90))
     clips["sway"] = cue(4.2,
-        (.55, {"hips": (0, 4, 4), "chest": (2, -6, -6), "head": (-2, 7, 4), "cape": (4, 4, 0), **arms(forward=(-12, 14), out=(4, 6), elbow=(10, 16))}, (.024, 0, -.012)),
-        (1.15, {"hips": (0, 4, 4), "chest": (2, -6, -8), "head": (-2, 9, 2), "cape": (2, 2, 0), **arms(forward=(-10, 12), out=(4, 6), elbow=(10, 16))}, (.024, 0, -.010)),
-        (1.95, {"hips": (0, -4, -5), "chest": (1, 6, 8), "head": (-3, -8, -4), "cape": (5, -4, 0), **arms(forward=(16, -14), out=(6, 4), elbow=(18, 10))}, (-.024, 0, -.013)),
-        (2.75, {"hips": (0, -4, -5), "chest": (0, 6, 9), "head": (-4, -10, -2), "cape": (2, -2, 0), **arms(forward=(14, -12), out=(6, 4), elbow=(18, 10))}, (-.024, 0, -.010)),
-        (3.45, {"hips": (0, 1, 1), "chest": (-4, -1, 0), "head": (5, 0, 0), **arms(out=(7, 7), elbow=(4, 4))}, (.003, 0, .006)))
+        (.6, {"hips": (0, 2, 0), "chest": (-6, -2, 0), "head": (-4, 0, 0), "cape": (5, 0, 0), **arms(**hips_fists)}, (.016, 0, -.004)),
+        (3.2, {"hips": (0, 2, 0), "chest": (-6.5, -2, 0), "head": (-4, 0, 3), "cape": (4, 0, 0), **arms(**hips_fists)}, (.016, 0, -.004)),
+        (3.8, {"chest": (-3, 0, 0), "head": (-2, 0, 0), **arms(out=(9, 9), elbow=(10, 10))}, (0, 0, -.002)))
+    # Gauntlet check: raise the forearm and read it, chest still upright.
+    gauntlet = dict(forward=(-4, 52), out=(6, 8), elbow=(10, 104), hand=(0, 8), twist=(0, 30))
     clips["tinker"] = cue(4.4,
-        (.35, {"head": (5, 0, -4), "chest": (2, 0, 0), **arms(forward=(0, 12), elbow=(0, 34))}, (0, 0, -.006)),
-        (.85, {"head": (24, -8, -22), "chest": (5, 0, -6), "antenna": (-12, 0, 0), **arms(forward=(-4, 46), out=(4, 2), elbow=(10, 92), hand=(0, 12), twist=(0, 26))}, (0, 0, -.010)),
-        (1.55, {"head": (25, 5, -22), "chest": (5, 0, -6), "antenna": (-6, 0, 3), **arms(forward=(-4, 48), out=(4, 2), elbow=(10, 96), hand=(0, -22), twist=(0, 38))}, (0, 0, -.010)),
-        (1.92, {"head": (25, -7, -24), "chest": (6, 0, -6), "antenna": (-12, 0, -3), **arms(forward=(-4, 48), out=(4, 2), elbow=(10, 92), hand=(0, 24), twist=(0, 10))}, (0, 0, -.010)),
-        (2.70, {"head": (24, -8, -24), "chest": (6, 0, -6), "antenna": (-8, 0, 0), **arms(forward=(-4, 48), out=(4, 2), elbow=(10, 94), hand=(0, 18), twist=(0, 14))}, (0, 0, -.010)),
-        (3.05, {"head": (-10, 6, 0), "chest": (-5, 0, 4), "antenna": (16, 0, 0), **arms(forward=(6, 22), out=(14, 26), elbow=(24, 44))}, (0, 0, .004)),
-        (3.65, {"head": (-5, 2, 2), "antenna": (-4, 0, 0), **arms(forward=(0, 2), out=(4, 6), elbow=(8, 14))}, (0, 0, -.004)))
+        (.5, {"head": (6, 0, -10), "chest": (-2, 0, -4), **arms(forward=(-4, 30), out=(6, 6), elbow=(10, 70))}, at),
+        (1.0, {"head": (16, 0, -18), "chest": (-1, 0, -6), "antenna": (-6, 0, 0), **arms(**gauntlet)}, at),
+        (2.6, {"head": (17, 0, -19), "chest": (-1, 0, -6), "antenna": (-4, 0, 0), **arms(**gauntlet)}, at),
+        (3.2, {"head": (-3, 0, 0), "chest": (-4, 0, 0), **arms(forward=(-4, 10), out=(9, 10), elbow=(10, 30))}, at),
+        (3.8, {"head": (-2, 0, 0), "chest": (-3, 0, 0), **arms(out=(9, 9), elbow=(10, 10))}, at))
     clips["chirp"] = cue(1.9,
         (.20, {"head": (10, 0, 0), "chest": (6, 0, 0), "antenna": (-10, 0, 0), **arms(forward=(-12, -12), out=(4, 4), elbow=(20, 20))}, (0, 0, -.034)),
         (.38, {"head": (-12, -10, 0), "chest": (-6, 0, 0), "cape": (-8, 0, 0), "antenna": (26, 0, 0), **arms(forward=(12, 12), out=(36, 36), elbow=(30, 30), hand=(-18, -18))}, (0, 0, .004)),
@@ -373,14 +379,15 @@ def author(rig):
         bone.location = (0, 0, 0)
 
 
-def export(rig, path):
+def export(rig, path, image_format=None):
     tracks = rig.animation_data.nla_tracks
     for track in tracks:
         track.mute = False
     bpy.ops.export_scene.gltf(filepath=str(path), export_format="GLB", use_selection=True,
         export_animation_mode="NLA_TRACKS", export_animations=True, export_materials="EXPORT",
         export_texcoords=True, export_meshopt_compression_enable=True,
-        export_meshopt_extension="EXT_meshopt_compression", export_optimize_animation_keep_anim_armature=False)
+        export_meshopt_extension="EXT_meshopt_compression", export_optimize_animation_keep_anim_armature=False,
+        **({"export_image_format": image_format, "export_image_quality": 86} if image_format else {}))
     for track in tracks:
         track.mute = True
 

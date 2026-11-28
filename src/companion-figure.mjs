@@ -5,6 +5,7 @@ import {bindCompanionGait} from './companion-gait.mjs';
 import {TabletopGlance} from './tabletop-attention.mjs';
 import {Follower,clamp,ease,pulse,smooth} from './avatar-motion-curves.mjs';
 import {smoothClip} from './animation-smoothing.mjs';
+import {installNaveganteDisplay} from './navegante-screen.mjs';
 
 // The luminous visor mouth alone carries the speech: its morph opens the lit
 // lips and its glow follows the voice. The ceramic chin stays still.
@@ -99,6 +100,11 @@ export async function loadCompanionFigure(url){
     throw Error('Invalid Navegante asset');
   }
   const eyes=['eye-L','eye-R'].map(name=>root.getObjectByName(name)).filter(Boolean);
+  const screen=installNaveganteDisplay(root);
+  // Each gesture carries its expression; rest is calm and a long rest sleeps.
+  const moods={curious:'curious',welcome:'welcome',brace:'uncertain',scan:'focus',sway:'calm',tinker:'focus',chirp:'joy',
+    joy:'joy',sad:'sad',anger:'anger',uncertain:'uncertain',focus:'focus',sleep:'sleep'};
+  let mood='calm',moodHold=0;
   const frameRest=frame.quaternion.clone(),frameSpot=frame.position.clone();
   const tilt=new Quaternion(),roll=new Quaternion(),offset=new Vector3();
   const pitching=new Follower(8),rolling=new Follower(9),pivoting=new Follower(9);
@@ -141,7 +147,10 @@ export async function loadCompanionFigure(url){
     }
   }
 
-  return {root,dispose,gait,resetGlance:()=>glance.reset(),
+  return {root,dispose,gait,resetGlance:()=>glance.reset(),screen,
+    // Hold an expression for a while (conversation cues, development).
+    express(name,seconds=4){mood=name;moodHold=seconds;},
+    expression:()=>screen?.name??null,
     weights:()=>Object.fromEntries([...base].map(([name,{weight}])=>[name,weight])),
     gestures:()=>[...layers].filter(([,layer])=>layer.live).map(([name])=>name),
     greet(){greeting=3.2;},
@@ -242,6 +251,13 @@ export async function loadCompanionFigure(url){
       if(motion)glance.apply(root,head,gaze,step,1-goals.glide*.7-goals.swim*.6);
       else glance.reset();
 
+      if(screen){
+        moodHold=Math.max(0,moodHold-step);
+        const gesture=[...layers].filter(([,layer])=>layer.live).map(([name])=>moods[name]).find(Boolean);
+        const resting=lively>40&&level<.02&&!attending;
+        screen.set(moodHold>0?mood:gesture??(attending?'curious':resting?'sleep':'calm'));
+        screen.update(step,{speech:clamp(level),motion});
+      }
       // The playback signal alone opens the jaw. Small bodies need a wider,
       // still bounded, opening to read at tabletop distance.
       const aperture=clamp(level)*(miniature?1.45:1);

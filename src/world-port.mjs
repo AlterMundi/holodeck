@@ -82,7 +82,7 @@ function situatedInterior({request,verified,actor,room,conversationPlace,indoorG
 
 // The receiving operator owns the directory/socket filesystem capability.
 // Native identity and current room rights are independently rechecked per request.
-export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,approachSpace,conversationPlace,readRenderedView,putExhibit,exhibitResult,currentLayout,draftLayout,previewLayout,publishLayout,layoutResult,roomDesign,indoorGarden,reviewCharacter,atelierWorkshop=null,questbook=null}){
+export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,approachSpace,conversationPlace,readRenderedView,putExhibit,exhibitResult,currentLayout,draftLayout,previewLayout,publishLayout,layoutResult,roomDesign,indoorGarden,authorGarden=indoorGarden,reviewCharacter,houseAccess,ownsRoom,ownsHouse,houseWritesAllowed,atelierWorkshop=null,questbook=null}){
   if(!socketPath?.startsWith('/')||!native?.authorizeWorldRequest||typeof resolveRights!=='function')
     throw Error('Select the installed native world port and authority resolver');
   let active=0;
@@ -132,6 +132,10 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
           verified=current;
         }
         const actor={...verified.actor,rights};
+        const mayEditHouse=id=>rights.includes('edit')||ownsHouse?.(actor,id);
+        const mayEditRoom=id=>rights.includes('edit')||ownsRoom?.(actor,id);
+        if(request.operation==='act'&&['house.claim','house.publish'].includes(request.args.type)&&
+          houseWritesAllowed?.()===false)throw Error('House publishing is temporarily unavailable');
         const port=new DaimonPort(room,async()=>actor);
         const space=verified.capturedSpace?null:describeSpace?.(actor);
         let result;
@@ -159,26 +163,30 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
             throw Error('Character review requires the selected own-native access');
           result=reviewCharacter?.(actor,type,input);
           if(!result)throw Error('Character review unavailable');
+        }else if(request.operation==='act'&&['house.access.current','house.access.put'].includes(request.args.type)){
+          if(!own)throw Error('House access requires the selected own-native route');
+          result=houseAccess?.(actor,request.args);
+          if(!result)throw Error('House access unavailable');
         }else if(request.operation==='act'&&request.args.type==='layout.current'){
-          if(!own||!rights.includes('edit')||Object.keys(request.args).length!==1)throw Error('Reading the draft base requires an own-native editor route');
+          if(!own||!mayEditHouse()||Object.keys(request.args).length!==1)throw Error('Reading the draft base requires an own-native editor route');
           result=currentLayout?.(actor)??null;
         }else if(request.operation==='act'&&request.args.type==='layout.result'){
           if(!own||Object.keys(request.args).sort().join(',')!=='id,type')throw Error('Layout receipts require an own-native route');
           result=layoutResult?.(actor,request.args.id);
           if(!result)throw Error('Layout receipt unavailable');
         }else if(request.operation==='act'&&request.args.type==='layout.draft'){
-          if(!own||!actor.rights.includes('edit'))throw Error('Layout drafting requires an own-native route');
+          if(!own||!mayEditHouse())throw Error('Layout drafting requires an own-native route');
           result=draftLayout?.(actor,request.args);
           if(!result)throw Error('Layout draft unavailable');
         }else if(request.operation==='act'&&['layout.preview','layout.publish','layout.revise.preview','layout.revise'].includes(request.args.type)){
-          if(!own||!actor.rights.includes('edit'))throw Error('Layout authoring requires an own-native route');
+          if(!own||!mayEditHouse(request.args.house))throw Error('Layout authoring requires an own-native route');
           const {type}=request.args;
           const preview=type==='layout.preview'||type==='layout.revise.preview';
           result=preview?previewLayout?.(actor,{...request.args,type:type==='layout.preview'?'layout.publish':'layout.revise'}):
             publishLayout?.(actor,request.args);
           if(!result)throw Error('Layout unavailable');
         }else if(request.operation==='act'&&['design.current','design.preview','design.put','design.result'].includes(request.args.type)){
-          if(!own||!rights.includes('edit'))throw Error('Room design requires an own-native editor route');
+          if(!own||(request.args.type==='design.result'?!mayEditHouse():!mayEditRoom(request.args.room)))throw Error('Room design requires an own-native editor route');
           const fields=Object.keys(request.args).sort().join(',');
           if((request.args.type==='design.current'&&fields!=='room,type')||
              (request.args.type==='design.result'&&fields!=='id,type'))throw Error('Invalid room design lookup');
@@ -188,20 +196,24 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
           'garden.editor.current','garden.editor.set'].includes(request.args.type)){
           if(!own||(request.args.type==='garden.result'&&Object.keys(request.args).sort().join(',')!=='id,type'))
             throw Error('Indoor gardens require an own-native route');
-          result=indoorGarden?.(actor,request.args);
+          result=authorGarden?.(actor,request.args);
           if(!result)throw Error('Indoor garden unavailable');
         }else if(request.operation==='act'&&['exhibit.current','exhibit.preview','exhibit.put','exhibit.history','exhibit.archive'].includes(request.args.type)){
-          if(!own||!rights.includes('edit'))throw Error('Exhibit authoring requires an own-native editor route');
+          if(!own||!mayEditRoom(request.args.room))throw Error('Exhibit authoring requires an own-native editor route');
           if(['exhibit.current','exhibit.history'].includes(request.args.type)&&Object.keys(request.args).sort().join(',')!=='room,type')
             throw Error('Invalid exhibit lookup');
           result=await putExhibit?.(actor,request.args);
           if(!result)throw Error('Exhibit authoring unavailable');
         }else if(savedExhibit)result=savedExhibit;
         else if(request.operation==='act'&&request.args.type==='space.move'){
-          if(!own||!rights.includes('edit')||Object.keys(request.args).sort().join(',')!=='from,to,type')
+          const {from,to}=request.args;
+          const ownTransition=ownsRoom?.(actor,to)||to==='outside'&&ownsRoom?.(actor,from);
+          if(!own||!rights.includes('edit')&&!ownTransition||Object.keys(request.args).sort().join(',')!=='from,to,type')
             throw Error('Room transitions require an own-native route');
           result=moveSpace?.(actor,{from:request.args.from,to:request.args.to});
           if(!result)throw Error('Room transition unavailable');
+        }else if(own&&request.operation==='act'&&request.args.type==='house.publish'){
+          result=await port.act(null,{...request.args,nativeRequest:'own-native:'+request.args.id});
         }else if(space&&space.id!=='outside'){
           if(!own||request.operation!=='observe')throw Error('Exterior operation unavailable inside');
           result={schema:'holodeck.space-observation/v1',run:room.run,edition:room.edition,

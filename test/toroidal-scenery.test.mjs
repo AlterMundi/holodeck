@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFile} from 'node:fs/promises';
-import {Scene,Vector3} from 'three';
+import {Matrix4,Scene,Vector3} from 'three';
 import {approachCover,grassBesideStones,ToroidalScenery} from '../src/toroidal-scenery.mjs';
 import {meadowBankPlants,shortMeadowPlants} from '../src/toroidal-meadow-banks.mjs';
 import {TOROIDAL_TERRAIN,terrainFrame,terrainPosition,terrainTrail,TOROIDAL_SPAWN,TOROIDAL_OVERLOOK} from '../src/toroidal-terrain.mjs';
@@ -38,6 +38,34 @@ test('the lookout collider remains active while analytical plants wait for detai
     cover.dispose();
   }
   assert.equal(colliders.size,0);
+});
+
+test('both scenery profiles leave Casa Linterna paving clear and keep the garden interstices',()=>{
+  const scene=new Scene(),scenery=new ToroidalScenery(scene);
+  const origin=new Vector3(1855,498,15.5);
+  const camera=new Vector3(1831.754,498,15.443);
+  const instance=new Matrix4(),root=new Vector3();
+  try{
+    for(const lightweight of [false,true]){
+      scenery.update(camera,lightweight);
+      scene.updateMatrixWorld(true);
+      let path=0,garden=0,interstices=0;
+      scenery.group.traverse(mesh=>{
+        if(!mesh.isInstancedMesh||!mesh.visible)return;
+        for(let i=0;i<mesh.count;i++){
+          mesh.getMatrixAt(i,instance);
+          root.setFromMatrixPosition(instance).applyMatrix4(mesh.matrixWorld);
+          const x=root.z-origin.z,z=origin.x-root.x;
+          if(Math.abs(x)<2.9&&z>1.8&&z<35.5)path++;
+          if(Math.abs(x)>14&&Math.abs(x)<30&&Math.abs(z)<28)garden++;
+          if(Math.abs(x)>5&&Math.abs(x)<12&&z>13.6&&z<17.35)interstices++;
+        }
+      });
+      assert.equal(path,0);
+      assert.ok(garden>0);
+      assert.ok(interstices>0);
+    }
+  }finally{scenery.dispose();}
 });
 
 test('the meadow profiles share rooted banks outside the trail and dispose their instance buffers',()=>{

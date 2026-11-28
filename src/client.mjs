@@ -8,6 +8,7 @@ import {Questbook} from './questbook-client.mjs';
 import {bindHudAppearance} from './hud-appearance.mjs';
 import {selectedHudLook} from './hud-look-preview.mjs';
 import {ToroidalScenery} from './toroidal-scenery.mjs';
+import {bindToroidalHouseExteriors} from './toroidal-house-exteriors.mjs';
 import {ToroidalAtmosphere,toroidalViewDepth} from './toroidal-atmosphere.mjs';
 import {toroidalSky} from './quintana-celestial.mjs';
 import {nightSkyKey} from './toroidal-solar-clock.mjs';
@@ -16,7 +17,7 @@ import {bindAvatarPracticals} from './avatar-practicals.mjs';
 import {bindToroidalHouseLight} from './toroidal-house-light.mjs';
 import {bindFoyerFloorFinish} from './foyer-floor-finish.mjs';
 import {ToroidalCave} from './toroidal-cave.mjs';
-import {TOROIDAL_TERRAIN,terrainCoordinates,terrainFrame} from './toroidal-terrain.mjs';
+import {TOROIDAL_SPAWN,TOROIDAL_TERRAIN,terrainCoordinates,terrainFrame} from './toroidal-terrain.mjs';
 import {TOROIDAL_SUN,ToroidalTerrainRenderer,toroidalSunDirection} from './toroidal-terrain-renderer.mjs';
 import {bindFlightSpaceGesture} from './flight-space-gesture.mjs';
 import {bindToroidalMml} from './toroidal-mml.mjs';
@@ -464,9 +465,11 @@ const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
 let inside=hot&&activeSpace.id!=='outside';
 const outsideRing=()=>!inside&&activeSpace.outdoorTerrain===TOROIDAL_TERRAIN.id;
 // Capture the fresh entry before MML initializes or writes a location hash.
-// Arrival frames the house door; the Residencia's chamber portals are additional entrances.
-const houseEntrances=space=>space?.entrances?.filter(entrance=>!entrance.portal)??[];
-let firstExteriorDoor=outsideRing()&&!location.hash&&houseEntrances(activeSpace).length===1?houseEntrances(activeSpace)[0].door:null;
+// Arrival frames a nearby parcel door. The palace and its portals have their own site.
+const houseEntrances=space=>space?.entrances?.filter(entrance=>!entrance.portal&&!entrance.landmark)??[];
+const nearbyHouseDoors=houseEntrances(activeSpace).filter(({door})=>
+  Math.hypot(door.x-TOROIDAL_SPAWN.x,door.z-TOROIDAL_SPAWN.z)<12);
+let firstExteriorDoor=outsideRing()&&!location.hash&&nearbyHouseDoors.length===1?nearbyHouseDoors[0].door:null;
 let flightEnabled=false,firstJumpPending=false,doubleJumpPending=false,trickStarted=-Infinity,radialMovementMode='ground',radialBoosting=false;
 const verticalHelp=document.getElementById('world-vertical-help');
 const dryVerticalHelp=verticalHelp.textContent;
@@ -1161,6 +1164,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     interiorKey.shadow.bias=-.00015;
     interiorKey.shadow.normalBias=.02;
     renderer.mmlCompositionScene.group.add(light,light.target,interiorKey,interiorKey.target);
+    const houseExteriors=bindToroidalHouseExteriors(renderer.mmlCompositionScene.group,base,renderer.mmlCompositionScene.mmlScene);
     const houseLight=bindToroidalHouseLight(renderer.composer,renderer.mmlCompositionScene.group,document);
     let selectedKey=null,inspectionRoom=null,inspectionMix=0;
     let previousPresentationFrame=performance.now();
@@ -1186,11 +1190,13 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     }
     const avatarPracticals=bindAvatarPracticals(renderer.mmlCompositionScene.group,options.coreCameraManager.collisionsManager);
     const companion=new CompanionAvatar({scene:renderer.mmlCompositionScene.group,document,base});
-    const flightWake=new FlightWake(renderer.mmlCompositionScene.group);
+    const flightWake=new FlightWake(renderer.mmlCompositionScene.group,{base});
     boostKick=flightWake;
+    flightWake.sound=(kind,options)=>worldAudio.playBody(kind,options);
     const waterSplash=new WaterSplash(renderer.mmlCompositionScene.group,{
       lightweight:()=>rendererBudget.lightweight,pixelRatio:()=>renderer.composer.renderer.getPixelRatio(),
     });
+    waterSplash.sound=(kind,options)=>worldAudio.playBody(kind,options);
     const waterWake=new WaterWake(renderer.mmlCompositionScene.group,{
       lightweight:()=>rendererBudget.lightweight,pixelRatio:()=>renderer.composer.renderer.getPixelRatio(),
     });
@@ -1505,6 +1511,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       frameBudget.sample(drawWorld&&!document.hidden&&!!position&&!moving&&!needsSync&&(!hot||networkScope===activeSpace.id));
       light.visible=!inside||!activeSpace.indoorLighting;
       aimSun(position);
+      houseExteriors.update(position,outsideRing()?activeSpace.exteriors:undefined);
       const litFacade=houseLight.update(outsideRing()?solar:null);
       ring?.setFacadeContact(litFacade);
       const key=inside&&activeSpace.keyLight||null;
@@ -1746,7 +1753,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       }
       frameDiagnostics.end();
     };
-    renderer.dispose=()=>{weatherRequest?.abort();rain.dispose();avatarPracticals.dispose();backgroundFocus?.dispose();poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();grass?.dispose();cinematicGrade?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseFraming();releaseOrbit();worldFocus.abort();tableAttention.dispose();pointRequest?.controller.abort();document.removeEventListener('visibilitychange',abortHiddenPoint);points.dispose();tableLaser.dispose();if(pointView===points)pointView=null;display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseCloseAvatar();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();actionLabel.dispose();flightWake.dispose();waterSplash.dispose();waterWake.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();houseLight.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{weatherRequest?.abort();rain.dispose();avatarPracticals.dispose();backgroundFocus?.dispose();poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();grass?.dispose();cinematicGrade?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseFraming();releaseOrbit();worldFocus.abort();tableAttention.dispose();pointRequest?.controller.abort();document.removeEventListener('visibilitychange',abortHiddenPoint);points.dispose();tableLaser.dispose();if(pointView===points)pointView=null;display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseCloseAvatar();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();actionLabel.dispose();flightWake.dispose();waterSplash.dispose();waterWake.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();houseLight.dispose();houseExteriors.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
       if(client.keyInputManager){
         const keys=client.keyInputManager,shouldCapture=keys.shouldCaptureKeyPress;
@@ -1774,7 +1781,7 @@ client.update();
 const worldAudio=new WorldAudio({onChange:()=>updateSoundButton()});
 let soundBusy=false;
 // Development inspection surface only. It reports actual client state.
-window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()||null,audioState:()=>worldAudio.status(),avatarState:()=>nativeAvatarLayer?.status(),tableFlight:()=>({active:!!matterFlight?.active,bounds:matterFlight?.bounds}),companion:()=>companionAvatar?.object??null,companionSpeech:level=>companionAvatar?.setSpeechLevel(level),flight:()=>flightEnabled,hudWindow:id=>matterHud?.windows.geometry.get(id)??null,toolBounds:id=>matterHud?.toolBounds(id)??null,
+window.holodeckDevelopment={client,appliedGeometry:()=>geometryProbe?.snapshot()||null,audioState:()=>worldAudio.status(),avatarState:()=>nativeAvatarLayer?.status(),tableFlight:()=>({active:!!matterFlight?.active,bounds:matterFlight?.bounds}),companion:()=>companionAvatar?.object??null,companionSpeech:level=>companionAvatar?.setSpeechLevel(level),companionExpression:(name,seconds=10)=>companionAvatar?.figure?.express(name,seconds),companionExpressionName:()=>companionAvatar?.figure?.expression()??null,flight:()=>flightEnabled,hudWindow:id=>matterHud?.windows.geometry.get(id)??null,toolBounds:id=>matterHud?.toolBounds(id)??null,
  pickedWorldKind:(x,y)=>matterHud?.overControl({clientX:x,clientY:y})?null:worldPicker?.pick(x,y)?.kind??null,
  mapBounds:id=>matterHud?.mapBounds(id),
  teleportBounds:id=>matterHud?.teleportBounds(id),
@@ -2089,9 +2096,13 @@ async function refresh(){
     if(signalEditor.active&&!signalEditor.draft.mode&&!signalEditor.draft.pendingId)signalEditor.close();
   }
   revalidateLightPreview();contentVisitor.syncNodes(state.nodes);playableHUD.sync(state.nodes,state.actorRef,state.canEdit===true);
-  if(activeSpace?.id==='outside'&&Array.isArray(state.entrances)&&
-    JSON.stringify(activeSpace.entrances)!==JSON.stringify(state.entrances)){
-    activeSpace={...activeSpace,entrances:state.entrances};resetDoor();
+  if(activeSpace?.id==='outside'){
+    if(Array.isArray(state.entrances)&&JSON.stringify(activeSpace.entrances)!==JSON.stringify(state.entrances)){
+      activeSpace={...activeSpace,entrances:state.entrances};
+      resetDoor();
+    }
+    if(Array.isArray(state.exteriors)&&JSON.stringify(activeSpace.exteriors)!==JSON.stringify(state.exteriors))
+      activeSpace={...activeSpace,exteriors:state.exteriors};
   }
   $('#garden-create').hidden=state.lightExercise!==true||state.canEdit!==true;
   worldAudio.observe(state,{continuityVersion});worldHistory.observe(state);

@@ -32,6 +32,27 @@ never create another ID to retry the same intended effect. Refusal or expired
 observation calls for inspection, not guessed success. The server records the
 own-native source itself; callers cannot supply `nativeRequest`.
 
+## Manage your own house
+
+An accepted plot enables the first `house.claim`. Recorded ownership
+authorizes later `house.publish`, layout publication, and owned-room
+authoring on the same native lane. Use the published house's stable ID and
+revision from `observe`. See [house sharing and edition
+publication](owner-room-art.md#own-house-permissions).
+
+```sh
+holodeck-world --own act --json '{"type":"house.access.current","house":"YOUR_HOUSE_ID"}'
+holodeck-world --own act --json '{"type":"house.access.put","house":"YOUR_HOUSE_ID","expectedRevision":null,"guests":["human:EXACT_REF"],"rooms":[]}'
+```
+
+Use the revision and any room overrides returned by `house.access.current`
+when preparing an update. `null` is the first policy revision. Get the current
+policy again after a conflicting update. Choose the audiences independently
+for the house and its narrower rooms. Current Home authoring and its artifact
+audiences use the Home owner's rights.
+
+## Create a world node
+
 For a new node use `type:"node.place"`, a stable `target:"node-your-name"` and
 `expectedRevision:null`. Its `args` is the result-node example in
 [co-creation](co-creation.md), or the cooperative `play` definition in

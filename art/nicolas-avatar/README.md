@@ -71,3 +71,20 @@ use for the existing human and Navegante. Verify crouch, walk, run, hover,
 boost, swim, landing, speech and independent-view decoding on Normal and
 Livianos. Compare the live companion's reported position skips against its
 isolated gait separately in [#21](https://github.com/AlterMundi/holodeck/issues/21).
+
+## v30: closer to the production sheet
+
+`sheet_refine.py` edits the v27 source against Nicolás's "Vistas de
+producción" sheet, then the v29 chain runs unchanged:
+
+```sh
+blender -b v27-source.blend --python art/nicolas-avatar/sheet_refine.py -- v30-source.blend
+blender -b v30-source.blend --python art/nicolas-avatar/hero_rig.py -- explorer-hero.blend --hand-l-roll 60 --twist
+blender -b explorer-hero.blend --python art/nicolas-avatar/hero_check.py -- check v27-rest.json
+```
+
+Real hands (a palm and five jointed fingers on the stock finger bones, in a
+fingerless glove), warmer skin, smaller honey-hazel eyes under smiling lids,
+silver brows, hair and beard, a short full beard and a brighter compass.
+hero_check now measures the fist on the sleeve and the new hands together.
+37k triangles, 5 skinned draws, 2.2 MB; check-rig passes.

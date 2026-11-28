@@ -78,8 +78,9 @@ once to receive announcements.
 
 ## Holodeck package and history size
 
-The Holodeck builder and its selected Home gateway and executor accept archives
-through 40 MiB. Other Home services retain their ordinary 32 MiB archive limit.
+The current Holodeck builder, Home gateway and executor accept archives
+through 40 MiB. The operator can raise the Holodeck allocation in all three
+places when a qualified release needs more room. Other Home services retain their ordinary 32 MiB archive limit.
 The host still verifies the exact package manifest, checksum, predecessor and
 unchanged file limits. The state filesystem has its own separate allocation.
 Keep at most three retained code archives in the ordinary rotation under
