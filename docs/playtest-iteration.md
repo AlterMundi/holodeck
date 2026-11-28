@@ -231,7 +231,7 @@ buffer measured 250.0 versus 266.7 ms frame p95 and 142.8 versus 159.2 ms
 software timer-query p95. Both lightweight medians were 133.3 ms.
 There is no measured performance gain. Use an actual hardware adapter
 and a matched run before
-promoting this material correction. ITACA exposes SwiftShader and no DRM
+promoting this material correction. the primary host exposes SwiftShader and no DRM
 graphics device. The comparison therefore records the browser renderer,
 WebGL identity, device and render pixel ratios, drawing-buffer area and
 draw/triangle counts, and checks whether GPU timer samples are disjoint.
@@ -1328,7 +1328,7 @@ issues. The implementation and regressions cover those corrections.
 Exact package `2e4121b8de01` passed 334 tests with two skips, plus desktop
 and emulated-touch Chromium map open/close with the actual terrain and
 house entry. A standalone Node check across 50 warm chart rebuilds measured
-3.69 ms median and 6.22 ms p95 on ITACA; these numbers exclude canvas
+3.69 ms median and 6.22 ms p95 on the primary host; these numbers exclude canvas
 composition and rendering. The package is staged. Physical GPU and live
 selection remain open.
 

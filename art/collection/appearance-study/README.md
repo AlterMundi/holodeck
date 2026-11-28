@@ -136,7 +136,7 @@ the sorted index buffer. The full-room masked fit, retained separately,
 produced 630,215 points. It excludes the held-out camera and remains
 an analytic point fit, with no learned radiance or view-dependent color.
 
-On Cuevanico in lightweight mode, the paired packaged room runs at 1020 ×
+On the Raspberry Pi client in lightweight mode, the paired packaged room runs at 1020 ×
 680 measured the following moving intervals. All three ran with the real
 Pi renderer and scoped loopback tunnel, with fixture identities and room
 data.
@@ -227,7 +227,7 @@ graphics caps the drawing buffer at 260,000 pixels with antialiasing
 disabled. Chromium under the scoped artifact sandbox rendered all three
 views, preserved the camera across mode changes, moved using keyboard
 and emulated touch, and rotated the archive platform in the hybrid.
-The later [Cuevanico run](#physical-splat-comparison) covers physical
+The later [Raspberry Pi run](#physical-splat-comparison) covers physical
 Raspberry Pi load time and frame pacing.
 
 ## Orbital art direction and floor A/B
@@ -361,7 +361,7 @@ SPZ and drew all eight held-out views. At the wide view of the worktable,
 panel seams, hard edges and glazing reflections are visibly softer than
 the reference. The observed browser path was a software-rendered loopback
 preview. The same SPZ was then loaded by hardware-accelerated Chromium on
-Cuevanico (Broadcom V3D). Fetch and decode took 1.73 s through the fixture
+The Raspberry Pi client (Broadcom V3D). Fetch and decode took 1.73 s through the fixture
 tunnel. In an isolated 960×640 canvas, a camera move between two held-out
 poses measured 100 ms median and 116.7 ms p95 over 90 post-warmup frame
 intervals. This preview exercised camera motion only. The fit is retained
@@ -486,7 +486,7 @@ prepared an exact part reference and verified edition revocation and
 table clear. The part source was retained Home geometry; identities and
 decisions were fixtures.
 
-On Cuevanico, the packed room fetched its art once. The browser then
+On the Raspberry Pi client, the packed room fetched its art once. The browser then
 applied amber and restored orbital without fetching again or remounting
 the room. The operator clicked the foyer door and the old scoped art
 request returned 404 after exit. Attempting the E hotkey immediately
@@ -553,7 +553,7 @@ maps. The exact packed build kept independent desktop and emulated-touch
 looks on the same worktable revision, including separate rotation, exact
 part context, edition revocation and clearing the table. An injected map
 failure kept the previous look, and the retry succeeded. The GLB and both
-maps returned 404 after leaving. Cuevanico with amber active took 10.14 s
+maps returned 404 after leaving. the Raspberry Pi client with amber active took 10.14 s
 to enter cold through the qualification tunnel and walked the route at
 33.3 ms median and 33.4 ms p95 (435 moving intervals). The archive turned
 and all 24 sampled corner camera positions cleared the room.
@@ -590,7 +590,7 @@ The matched-height Pi captures show less mottling in the floor. The
 current browser ceiling, glazing and illumination response still need
 comparison with the detailed Blender reference.
 
-On Cuevanico the refined packed candidate reached the visible default
+On the Raspberry Pi client the refined packed candidate reached the visible default
 room 9.84 s after cold entry through the qualification tunnel. The
 optional layered look applied in 2.27 s and transferred 646,870 PNG
 bytes. With the look enabled, 393 moving intervals measured 33.3 ms
@@ -647,7 +647,7 @@ mask to 27 texels. Restoring it recovered the same turned mask. The
 second emulated-touch browser retained its separate look and local
 shadow. Clearing the worktable removed its projected silhouette.
 
-On Cuevanico two retained archive representatives produced different
+On the Raspberry Pi client two retained archive representatives produced different
 visible masks when switching editions and completing the half-turn
 (5,018 versus 2,925 occupied texels). The real pad and the second model
 reached the same half-turn. With the archive models enabled, 374 moving
@@ -698,7 +698,7 @@ the sampled pendant reflection and its parallax. It leaves secondary
 floor reflections and glazing as separate visual differences.
 
 The packed candidate keeps the 51,931-byte authored deck texture
-alongside the two scoped diffuse layers. Cuevanico applied them in
+alongside the two scoped diffuse layers. the Raspberry Pi client applied them in
 1.45 s through the qualification tunnel. Cold entry took 9.66 s.
 With lightweight graphics and the finish active, 374 moving intervals
 measured 33.3 ms median and 50.0 ms p95. Both archived representatives
@@ -728,7 +728,7 @@ reflection crops, mean absolute RGB error to Blender fell from 53.7 to
 45.8 levels in the center and from 56.4 to 46.3 laterally. Glazing
 color and reflection softness still differ from the offline render.
 
-On Cuevanico the aligned package showed the retained archive model
+On the Raspberry Pi client the aligned package showed the retained archive model
 through the glass after the edition switch and half-turn. The walk
 measured 33.3 ms median and 50.0 ms p95 over 371 moving intervals.
 Cold entry took 9.76 s and selecting the layered look took 2.58 s through
@@ -754,7 +754,7 @@ Measured mean display luma in the matched floor crops (0–255):
 | Lateral, archive canopy | 71.5 | 120.6 | 122.1 |
 
 The center pendant crop stayed at 160.4. On the exact compacted
-Node 24 package, Cuevanico reached the room in 9.42 s cold and selected
+Node 24 package, the Raspberry Pi client reached the room in 9.42 s cold and selected
 the layered look in 2.64 s through the qualification tunnel. The moving
 route measured 33.3 ms median and 50.0 ms p95 over 343 intervals. The
 archive turn, 24 corner clearances, foyer return and asset refusal
@@ -1046,7 +1046,7 @@ p95 difference between packages.
 
 ### Physical splat comparison
 
-The existing artifact viewer ran on Cuevanico with headless Chromium 154,
+The existing artifact viewer ran on the Raspberry Pi client with headless Chromium 154,
 Broadcom V3D, a 1020 × 680 viewport, the lightweight setting and the
 sandboxed iframe reproduced on loopback. A held forward key moved the camera
 with each tested appearance, and the screenshots confirmed that the view

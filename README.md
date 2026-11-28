@@ -30,6 +30,16 @@ npm run build
 npm start
 ```
 
+Before publishing to the default branch, run the pinned Skills audience check
+with your owner-managed terms list. The public CI uses masked output and
+supplies its terms through the repository secret. Fork pull requests check
+structured identifiers without access to that secret.
+
+```sh
+tools/audience-check.sh --tree HEAD --mask --require-terms
+git config --local core.hooksPath .githooks
+```
+
 Open http://127.0.0.1:18940 in two independent browser tabs. This development
 entrance is anonymous and loopback-only; production uses the existing Home
 identity and service audience, with no alternate login.
