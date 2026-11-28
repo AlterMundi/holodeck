@@ -133,6 +133,53 @@ test('the authenticated questbook credits only its original Room action', {skip:
   const model = offPage.result[2].updateDataModel.value;
   assert.equal(model.title,create.title);
   assert.equal(model.next,'00000000-0000-4000-8000-000000000020');
+
+  // Race an authenticated player action and a native daimon action on the
+  // same card and revision. Recover the winner through its original actor.
+  const humanClaim = {operation:randomUUID(),card:create.card,event:{
+    surfaceId:'questbook-'+project,name:'claim',context:{card:create.card,revision:1},
+  }};
+  const daimonClaim = {operation:randomUUID(),card:create.card,expected_revision:1,
+    action:{type:'claim'}};
+  const readHumanReceipt = async operation => {
+    const response = await fetch(base+'api/questbook/receipt?operation='+operation,{headers});
+    assert.equal(response.status,200);
+    return (await response.json()).result;
+  };
+  // Use an independent browser session for this action so the later
+  // workshop journey keeps its own bounded action window.
+  const claimPage = await fetch(base,{headers:{Cookie:cookie}});
+  assert.equal(claimPage.status,200);
+  const claimHeaders = {...headers,Cookie:cookie+'; '+claimPage.headers.get('set-cookie').split(';')[0]};
+  await claimPage.text();
+  const [humanAction,daimonAction] = await Promise.all([
+    fetch(base+'api/questbook/action',{method:'POST',headers:claimHeaders,
+      body:JSON.stringify(humanClaim)}).then(reply=>reply.json()),
+    native({type:'apply',command:daimonClaim}),
+  ]);
+  const both = [humanAction.result,daimonAction.result];
+  assert.deepEqual(both.map(result=>result.status).sort(),['applied','conflict']);
+  const winner = both.find(result=>result.status==='applied').event;
+  const conflict = both.find(result=>result.status==='conflict');
+  assert.equal(conflict.reason,'stale_revision');
+  const humanWon = humanAction.result.status==='applied';
+  assert.equal(winner.card.assignee.subject,humanWon?human:daimon);
+  assert.equal(winner.card.revision,2);
+  assert.deepEqual(await readHumanReceipt(humanClaim.operation),humanWon?winner:null);
+  const daimonReceipt = await native({type:'receipt',operation:daimonClaim.operation});
+  assert.deepEqual(daimonReceipt.result,humanWon?null:winner);
+  assert.equal(await readHumanReceipt(daimonClaim.operation),null);
+  assert.equal((await native({type:'receipt',operation:humanClaim.operation})).result,null);
+  assert.deepEqual((await native({type:'read',card:create.card})).result,winner.card);
+  const updated = await fetch(base+'api/questbook?selected='+create.card,{headers})
+    .then(reply=>reply.json());
+  const updatedModel = updated.result[2].updateDataModel.value;
+  assert.equal(updatedModel.revision,2);
+  assert.equal(updatedModel.claimDisabled,true);
+  const claimHistory = tool({type:'history',card:create.card,after:0}).result;
+  assert.equal(claimHistory.length,2);
+  assert.deepEqual(claimHistory[1],winner);
+
   const action = {operation:randomUUID(),card,event:{surfaceId:'questbook-'+project,name:'claim',
     context:{card,revision:2}}};
   assert.equal((await view()).progress,'0/1');
@@ -164,7 +211,7 @@ test('the authenticated questbook credits only its original Room action', {skip:
   assert.equal((await view()).doneDisabled,false);
   runtime.room.reset();
   const retried = await (await post('objective',report)).json();
-  assert.equal(retried.result.status,'retained');
+  assert.equal(retried.result?.status,'retained',JSON.stringify(retried));
   assert.deepEqual(retried.result.event,confirmed.result.event);
   assert.equal(runtime.room.entities.bridge.revision,0);
 

@@ -70,8 +70,11 @@ DAIMON_CARDS_BIN=/path/to/daimon-cards node --test test/questbook-room-http.test
 ```
 
 The fixture uses the real Room, HTTP middleware, project audience adapter
-and Rust writer with synthetic Home identity. To exercise the mounted browser
-journey, build the client and set `HOLODECK_PLAYWRIGHT` to the installed
+and Rust writer with synthetic Home identity. It submits a player's A2UI
+claim and a daimon's native claim against the same revision. Only one
+assignment is recorded. Both readers see the accepted revision, and the
+winning operation is recoverable only by its original actor. To exercise the
+mounted browser journey, build the client and set `HOLODECK_PLAYWRIGHT` to the installed
 Playwright Core module. The loopback browser test accepts a quest through the
 rendered HUD, actuates the bridge and verifies the same outcome in a second
 narrow browser after a typed writer operation. Live selection and native daimon
