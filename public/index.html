@@ -239,6 +239,9 @@ body:has(#conversation-panel:not([hidden])) #topics-open,body:has(#content-visit
 #questbook-dialog header,#questbook-dialog nav{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 #questbook-dialog h2{margin:0;font:clamp(22px,5vw,30px) Georgia,serif}
 #questbook-status:empty{display:none}
+#questbook-title-form:not([hidden]){display:grid;gap:8px;margin:12px 0}
+#questbook-title-form input{box-sizing:border-box;width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#10272c;color:var(--ink);font:inherit}
+
 #questbook-stage canvas{display:block;width:100%;height:min(410px,59dvh);touch-action:none}
 #questbook-stage canvas[hidden]{display:none}
 #questbook-stage .questbook-accessible{position:static!important;width:auto!important;height:auto!important;overflow:visible!important;clip-path:none!important;pointer-events:auto!important;padding:10px 0}
@@ -345,6 +348,11 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
   <header><h2 id="questbook-title">Diario de misiones</h2><form method="dialog"><button type="submit" autofocus>Volver al mundo</button></form></header>
   <p id="questbook-status" role="status"></p>
   <div id="questbook-stage"><canvas aria-hidden="true" hidden></canvas></div>
+  <form id="questbook-title-form" hidden>
+    <label for="questbook-title-draft">Título de la misión</label>
+    <input id="questbook-title-draft" name="title" type="text" maxlength="240" required>
+    <div class="row"><button type="submit">Guardar título</button><button id="questbook-title-cancel" type="button">Cancelar</button></div>
+  </form>
   <nav aria-label="Páginas de misiones"><button id="questbook-back" type="button" hidden>Anterior</button><button id="questbook-next" type="button" hidden>Siguiente</button></nav>
 </dialog>
 <dialog id="activity-dialog" aria-labelledby="activity-title"><header><div><small>Historia compartida</small><h2 id="activity-title">Actividad del mundo</h2></div><button id="activity-close" type="button">Volver al mundo</button></header><div class="activity-toolbar"><button id="activity-refresh" type="button">Ver recientes</button><span id="activity-updates" hidden>Hay cambios nuevos</span><span id="activity-count"></span></div><p id="activity-status" role="status"></p><p id="activity-gap" hidden></p><div class="activity-body"><div class="activity-index"><ol id="activity-list" aria-label="Cambios registrados"></ol><nav aria-label="Recorrer la actividad"><button id="activity-newer" type="button" disabled>Más recientes</button><button id="activity-older" type="button" disabled>Más antiguos</button></nav></div><section class="activity-inspection" aria-label="Detalle del cambio"><div id="activity-detail"><p>Elegí un cambio para verlo.</p></div><div class="activity-actions"><button id="activity-point" type="button" hidden>Señalar cómo está ahora</button><button id="activity-discuss" class="primary" type="button" hidden>Conversar sobre este cambio</button></div></section></div></dialog>

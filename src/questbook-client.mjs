@@ -11,6 +11,23 @@ export class Questbook {
     this.canvas = this.stage.querySelector('canvas');
     this.back = document.querySelector('#questbook-back');
     this.next = document.querySelector('#questbook-next');
+    this.titleForm = document.querySelector('#questbook-title-form');
+    this.titleInput = document.querySelector('#questbook-title-draft');
+    this.titleSave = this.titleForm.querySelector('button[type="submit"]');
+    this.titleForm.onsubmit = event => {
+      event.preventDefault();
+      if (!this.titleEditor || this.titleEditor.card !== this.data?.id || !this.data.canEditTitle) return;
+      const title = this.titleInput.value.trim();
+      if (!title || new TextEncoder().encode(title).length > 240) {
+        this.status.textContent = 'Escribí un título breve para la misión.';
+        return;
+      }
+      void this.dispatch({surfaceId:this.surface,name:'edit_title',context:{
+        card:this.data.id,revision:this.data.revision,title,
+      }});
+    };
+    this.titleCancel = document.querySelector('#questbook-title-cancel');
+    this.titleCancel.onclick = () => this.closeTitleEdit();
     this.pages = [null];
     this.reading = 0;
     this.mountRevision = 0;
@@ -21,6 +38,7 @@ export class Questbook {
       ++this.reading;
       ++this.mountRevision;
       this.unmount();
+      this.closeTitleEdit();
       if (this.scope) this.data = null;
       this.scope = null;
     });
@@ -120,6 +138,22 @@ export class Questbook {
     this.canvas.hidden = true;
   }
 
+  openTitleEdit() {
+    if (!this.data?.canEditTitle) return;
+    if (this.titleEditor?.card !== this.data.id) {
+      this.titleEditor = {card:this.data.id};
+      this.titleInput.value = this.data.title;
+    }
+    this.titleForm.hidden = false;
+    this.titleInput.focus();
+  }
+
+  closeTitleEdit() {
+    this.titleEditor = null;
+    this.titleInput.value = '';
+    this.titleForm.hidden = true;
+  }
+
   async read(selected, notice = '') {
     const reading = ++this.reading;
     const query = new URLSearchParams(this.scope ?? {});
@@ -134,6 +168,7 @@ export class Questbook {
       if (!result) {
         this.unmount();
         this.data = null;
+        this.closeTitleEdit();
         this.next.hidden = true;
         this.status.textContent = cursor ? 'Llegaste al final del diario.' : 'Todavía no hay misiones.';
         return;
@@ -144,6 +179,9 @@ export class Questbook {
       const messages = this.surface === surfaceId ? [components,model] : [create,components,model];
       this.surface = surfaceId;
       this.data = value;
+      if (this.titleEditor && (this.titleEditor.card !== value.id || !value.canEditTitle)) {
+        this.closeTitleEdit();
+      }
       await this.hud.receiveBatch(messages);
       if (reading !== this.reading || !this.dialog.open) return;
       this.next.hidden = !value.next;
@@ -153,6 +191,7 @@ export class Questbook {
       if (reading !== this.reading || !this.dialog.open) return;
       this.unmount();
       this.data = null;
+      this.closeTitleEdit();
       this.next.hidden = true;
       this.back.hidden = this.pages.length === 1;
       this.status.textContent = error.httpStatus === 403
@@ -167,21 +206,54 @@ export class Questbook {
       if (this.data.quests.some(entry => entry.id === event.context?.card)) await this.read(event.context.card);
       return;
     }
-    if (!['claim','done'].includes(event.name) || event.context?.card !== this.data.id
+    if (!this.data || !['claim','done','edit_title'].includes(event.name) || event.context?.card !== this.data.id
       || event.context.revision !== this.data.revision) return;
+    const editingTitle = event.name === 'edit_title';
+    if (editingTitle && event.context.title === undefined) {
+      this.openTitleEdit();
+      return;
+    }
+    const {card,revision,title} = event.context;
+    const editor = this.titleEditor;
+    if (editingTitle && (editor?.card !== card || !this.data.canEditTitle)) return;
     this.saving = true;
-    const {card} = event.context;
+    this.titleSave.disabled = true;
+    if (editingTitle) {
+      this.titleInput.disabled = true;
+      this.titleCancel.disabled = true;
+    }
+    let operation;
+    if (editingTitle) {
+      const prior = editor.pending;
+      if (prior?.revision === revision && prior.title === title) {
+        operation = prior.operation;
+      } else {
+        operation = crypto.randomUUID();
+        editor.pending = {operation,revision,title};
+      }
+    } else {
+      operation = crypto.randomUUID();
+    }
     const mountRevision = this.mountRevision;
     this.status.textContent = 'Guardando…';
     let notice = '';
     try {
-      const {result} = await this.api('questbook/action',{operation:crypto.randomUUID(),card,event,...this.scope});
-      if (result.status === 'conflict') notice = 'La misión cambió. Ya podés ver cómo quedó.';
+      const {result} = await this.api('questbook/action',{operation,card,event,...this.scope});
+      if (result.status === 'conflict') {
+        if (editingTitle && this.titleEditor === editor) editor.pending = null;
+        notice = editingTitle ? 'La misión cambió. Tu borrador sigue disponible.'
+          : 'La misión cambió. Ya podés ver cómo quedó.';
+      } else if (editingTitle && this.titleEditor === editor) {
+        this.closeTitleEdit();
+      }
     } catch {
       notice = 'No pude confirmar el cambio. Revisá el estado de la misión.';
     } finally {
       if (this.dialog.open && this.mountRevision === mountRevision) await this.read(card,notice);
       this.saving = false;
+      this.titleSave.disabled = false;
+      this.titleInput.disabled = false;
+      this.titleCancel.disabled = false;
     }
   }
 

@@ -93,12 +93,19 @@ export function createQuestbook(room, {project, binary, store, authorize}) {
       const caller = await access(actor, true, request);
       if (!caller) return {ok:false, code:'access'};
       if (!uuid(operation) || !uuid(card) || event?.surfaceId !== 'questbook-'+project
-        || event?.context?.card !== card || !['claim','done'].includes(event?.name)
+        || event?.context?.card !== card || !['claim','done','edit_title'].includes(event?.name)
         || !Number.isSafeInteger(event.context.revision) || event.context.revision < 1) {
         return {ok:false, code:'invalid'};
       }
+      const {title, revision} = event.context;
+      if (event.name === 'edit_title') {
+        if (typeof title !== 'string' || !title.trim() || Buffer.byteLength(title) > 240
+          || /[\u0000-\u001f\u007f]/.test(title)) return {ok:false, code:'invalid'};
+      } else if (title !== undefined) {
+        return {ok:false, code:'invalid'};
+      }
       return execute(caller, true, {type:'apply_surface', operation, mounted_card:card,
-        event:{surfaceId:event.surfaceId, name:event.name, context:{card, revision:event.context.revision}}});
+        event:{surfaceId:event.surfaceId, name:event.name, context:{card, revision, title}}});
     },
 
     async confirmObjective(actor, {operation, card, revision, objective, originalCommand}, request) {

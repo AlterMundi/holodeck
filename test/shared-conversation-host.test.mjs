@@ -230,17 +230,43 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
   assert.equal((await (await changed).json()).result.status,'applied');
   await journal.getByText('En curso',{exact:true}).waitFor({state:'attached'});
   assert.equal(cardTool({type:'read',card}).result.status,'in_progress');
+  await journal.getByRole('button',{name:'Editar título'}).focus();
+  await page.keyboard.press('Space');
+  const draft=journal.getByLabel('Título de la misión');
+  const humanTitle='Revisar primero la segunda escena';
+  const otherTitle='Ordenar las láminas';
+  await draft.fill(humanTitle);
+  const nativeEdit=cardTool({type:'apply',command:{operation:randomUUID(),card,expected_revision:2,
+    action:{type:'edit_title',title:otherTitle}}});
+  assert.equal(nativeEdit.result.status,'applied');
+  assert.deepEqual(nativeEdit.result.event.card.revised_by,{kind:'daimon',subject:COMPAII_BEING});
+  const stale=page.waitForResponse(response=>response.url().endsWith('/api/questbook/action'));
+  await journal.getByRole('button',{name:'Guardar título'}).tap();
+  assert.equal((await (await stale).json()).result.status,'conflict');
+  await journal.getByText('La misión cambió. Tu borrador sigue disponible.').waitFor();
+  await journal.getByText(otherTitle,{exact:true}).last().waitFor({state:'attached'});
+  assert.equal(await draft.inputValue(),humanTitle);
+  const edited=page.waitForResponse(response=>response.url().endsWith('/api/questbook/action'));
+  await journal.getByRole('button',{name:'Guardar título'}).tap();
+  const written=(await (await edited).json()).result;
+  assert.equal(written.status,'applied');
+  await draft.waitFor({state:'hidden'});
+  await journal.getByText(humanTitle,{exact:true}).last().waitFor({state:'attached'});
+  const shared=cardTool({type:'read',card}).result;
+  assert.equal(shared.title,humanTitle);
+  assert.equal(shared.revision,4);
+  assert.deepEqual(shared.revised_by,{kind:'human',subject:actorRef});
   const linkedRepositories=repositories;
   repositories=repositories.slice(1);
   assert.equal(await request('questbook',selectors),404);
   const denied=await page.evaluate(async ({selectors,card,operation})=>{
     const response=await fetch('api/questbook/action',{method:'POST',headers:{'content-type':'application/json'},
       body:JSON.stringify({...selectors,operation,card,event:{surfaceId:'questbook-'+selectors.project,
-        name:'done',context:{card,revision:2}}})});
+        name:'edit_title',context:{card,revision:4,title:'Escritura sin vínculo'}}})});
     return response.status;
   },{selectors,card,operation:randomUUID()});
   assert.equal(denied,404);
-  assert.equal(cardTool({type:'read',card}).result.status,'in_progress');
+  assert.equal(cardTool({type:'read',card}).result.title,humanTitle);
   repositories=linkedRepositories;
   await journal.getByRole('button',{name:'Volver al mundo',exact:true}).tap();
   await openTable();
@@ -321,7 +347,8 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  await dialog.getByRole('button',{name}).tap();
  await dialog.getByText('Ese topic ya no está disponible.').waitFor();
  assert.deepEqual(readbacks,[null,room.room,null,room.room]);
- assert.deepEqual(posted,questbook?['/api/topic-space','/api/questbook/action','/api/questbook/action','/api/space']:
+ assert.deepEqual(posted,questbook?['/api/topic-space',
+   '/api/questbook/action','/api/questbook/action','/api/questbook/action','/api/questbook/action','/api/space']:
    ['/api/topic-space','/api/space']);
  assert.deepEqual(modes,[room.room,null,room.room,null]);
  assert.deepEqual(errors,[]);
