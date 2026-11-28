@@ -3,13 +3,14 @@ import {createHash} from 'node:crypto';
 import {mkdtemp,rm,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
+import {brotliCompressSync} from 'node:zlib';
 import {pathToFileURL} from 'node:url';
 import {test} from 'node:test';
 import {loadOwnerRoomArt,ownerRoomCache} from '../src/owner-room-art.mjs';
 import {arrivalDoor} from '../src/space-travel.mjs';
 
 const sha=content=>createHash('sha256').update(content).digest('hex');
-const glb=Buffer.from('glTF fixture content bounded to this test');
+const glb=Buffer.from('glTF'+' fixture content bounded to this test'.repeat(12));
 const model={file:'atlas.glb',sha256:sha(glb),bytes:glb.length};
 const manifest={
   schema:'holodeck.linterna.hefesto-slice/v2',
@@ -79,4 +80,9 @@ test('the packaged reader loads only exact staged bytes without fetching Home',a
   assert.equal((await loadOwnerRoomArt([selection],rooms,read)).get('atlas').models.size,1);
   await writeFile(asset,Buffer.alloc(glb.length));
   await assert.rejects(loadOwnerRoomArt([selection],rooms,read),/selected revision/);
+  await rm(asset);
+  await writeFile(asset+'.br',brotliCompressSync(glb));
+  assert.equal((await loadOwnerRoomArt([selection],rooms,read)).get('atlas').models.size,1);
+  await writeFile(asset+'.br',brotliCompressSync(Buffer.alloc(glb.length+1)));
+  await assert.rejects(loadOwnerRoomArt([selection],rooms,read),/exceeds its selected size|larger than/);
 });

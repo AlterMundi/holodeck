@@ -62,3 +62,18 @@ Printing. The live layout exposes Research Gallery and a direct
 foyer–Claymon door. The manifest lacks the current `atelierWidgets` caddy
 binding. Activation still needs an owner-published compatible layout and
 the approved Atelier workspace binding described above.
+
+The receiver can store the exact owner edition losslessly in its archive.
+The build compresses staged files only when smaller. On load, decoded output
+is bounded and checked against the owner's original digest. A pack with the
+currently readable seven models and manifest measured 41,031,680 bytes
+under the 40 MiB receiver cap. This qualifies the packaging route separately
+from the newer edition and its activation.
+
+The ordinary owner layout operation can append reciprocal links but keeps
+existing door indices. Moving the Claymon passage needs the owner's exact
+revised graph and a scoped migration of the matching existing revision.
+Room access for the shared visit and grants for editing the selected Atelier
+workspace are independent. Register the receiver's dedicated public key with
+the Atelier operator and verify the private transport as the Holodeck service
+user before selecting the workbench.

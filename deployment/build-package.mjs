@@ -51,7 +51,9 @@ if(ownerCache){
     if(total>12*1024*1024)throw Error('Owner room edition exceeds the archive budget');
     const data=await readFile(join(ownerCache,name));
     if(data.length!==info.size||digest(data)!==match[1])throw Error('Owner room edition does not match the staged bytes');
-    await writeFile(join(target,name),data);
+    const compressed=brotliCompressSync(data,{params:{[zlib.BROTLI_PARAM_QUALITY]:7}});
+    if(compressed.length<data.length)await writeFile(join(target,name+'.br'),compressed);
+    else await writeFile(join(target,name),data);
   }
 }
 // Preserve the qualified bytes and their existing URLs with one disk representation.

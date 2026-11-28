@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
 import {constants} from 'node:fs';
 import {open} from 'node:fs/promises';
+import {brotliDecompressSync} from 'node:zlib';
 
 const sha=value=>createHash('sha256').update(value).digest('hex');
 const digest=/^[a-f0-9]{64}$/;
@@ -27,14 +28,22 @@ async function readExact(url,expected,maxBytes,request){
 export function ownerRoomCache(directory){
   return async(url,_options,{expected,maxBytes})=>{
     const extension=url.pathname.endsWith('.json')?'json':'glb';
-    const file=await open(new URL(`${expected}.${extension}`,directory),constants.O_RDONLY|constants.O_NOFOLLOW|constants.O_NONBLOCK);
+    const name=`${expected}.${extension}`;
+    const openAsset=suffix=>open(new URL(name+suffix,directory),constants.O_RDONLY|constants.O_NOFOLLOW|constants.O_NONBLOCK);
+    let file,compressed=false;
+    try{file=await openAsset('');}
+    catch(error){
+      if(error.code!=='ENOENT')throw error;
+      file=await openAsset('.br');
+      compressed=true;
+    }
     try{
       const info=await file.stat();
       if(!info.isFile()||info.size>maxBytes)throw Error('Invalid staged owner room asset');
       const data=Buffer.alloc(info.size);
       const {bytesRead}=await file.read(data,0,info.size,0);
       if(bytesRead!==info.size)throw Error('Incomplete staged owner room asset');
-      return new Response(data);
+      return new Response(compressed?brotliDecompressSync(data,{maxOutputLength:maxBytes}):data);
     }finally{await file.close();}
   };
 }
