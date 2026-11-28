@@ -341,6 +341,7 @@ test('the exterior A2UI journal preserves a shared mission across browser views'
   assert.equal(shared.objectives[0].receipt,null);
   assert.equal(typed(3,{type:'complete'}).result.reason,'objectives_pending');
 
+  await page.close();
   const mobile = await browser.newPage({viewport:{width:390,height:700},isMobile:true,hasTouch:true});
   await mobile.goto(base);
   await mobile.locator('#questbook-open').tap();
