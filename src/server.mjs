@@ -450,7 +450,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     return interiorDocument(room,passages,exhibit,art&&{...art,src,gallerySigns},passageAsset,houseDoor);
   }
   function interiorScopeKey(actor,selected){
-    return JSON.stringify([spaces.passages(actor,selected).map(link=>link.slot),
+    return JSON.stringify([spaces.passages(actor,selected).map(link=>[link.slot,link.to,link.kind,link.title]),
       !selected.entry&&!spaces.canReachEntrance(actor,selected.id),exhibits.forRoom(selected.id)?.revision??0,
       designs.forRoom(selected.id)?.revision??0,gardenEditors.grant(actor,selected.id)?.revision??0]);
   }
@@ -695,9 +695,20 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     });
     return exhibits.put(actor,preview?{...input,type:'exhibit.put'}:input,room.nodes,{preview,authorizeReview,canWrite});
   }
+  function previewLayout(actor,input){
+    const candidate=layoutAuthority(actor).preview(actor,input);
+    if(!candidate)return null;
+    for(const definition of candidate.rooms){
+      const art=ownerArtFor(spaces.rooms.get(definition.id));
+      if(art&&(art.doors.size!==definition.links.length||
+          definition.links.some(link=>link.kind!=='door'||!art.doors.has(link.to))))return null;
+    }
+    return candidate;
+  }
   function publishLayout(actor,input){
     if(room.commitUncertain||spaces.fenced||!layoutStore)return null;
     const authority=layoutAuthority(actor);
+    if(!authority.result(actor,input.id)&&!previewLayout(actor,input))return null;
     try{
       const layout=authority.publish(actor,input,rooms=>{
         spaces.clearRestoredGuestPositions(rooms,actor.id);
@@ -756,7 +767,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     putExhibit,exhibitResult:(actor,id)=>exhibits.result(actor,id),
     currentLayout:actor=>layoutAuthority(actor).current(actor),
     draftLayout:(actor,input)=>room.commitUncertain||spaces.fenced||!layoutStore?null:layoutAuthority(actor).draft(actor,input),
-    previewLayout:(actor,input)=>layoutAuthority(actor).preview(actor,input),
+    previewLayout,
     publishLayout,layoutResult:(actor,id)=>layoutAuthority(actor).result(actor,id),roomDesign,indoorGarden,atelierWorkshop:atelierAuthority,
     reviewCharacter:(actor,type,input)=>{
       const result=reviewCharacter(actor,type,input);

@@ -70,9 +70,11 @@ currently readable seven models and manifest measured 41,031,680 bytes
 under the 40 MiB receiver cap. This qualifies the packaging route separately
 from the newer edition and its activation.
 
-The ordinary owner layout operation can append reciprocal links but keeps
-existing door indices. Moving the Claymon passage needs the owner's exact
-revised graph and a scoped migration of the matching existing revision.
+The owning daimon can use `layout.revise` to move the Claymon passage while
+preserving existing room identities. This needs the owner's exact revised
+graph and its current revision. Select `guests: ["*"]` in each room the
+owner wants to open to admitted Holodeck visitors. Private rooms can retain
+their explicit guest list.
 Room access for the shared visit and grants for editing the selected Atelier
 workspace are independent. Register the receiver's dedicated public key with
 the Atelier operator and verify the private transport as the Holodeck service

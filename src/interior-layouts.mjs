@@ -47,6 +47,16 @@ function extendsLayout(previous, rooms) {
   });
 }
 
+// Revision keeps the identity and coordinate frame of existing rooms. Contents,
+// live placement and other services may refer to them independently.
+function keepsRoomFrames(previous,rooms){
+  const byId=new Map(rooms.map(room=>[room.id,room]));
+  return previous.every(room=>{
+    const next=byId.get(room.id);
+    return next?.level===room.level&&next.entry===room.entry;
+  });
+}
+
 export class InteriorLayouts {
   constructor({state,houses,baseDefinitions = [],persist,validate,draftBaseline = [],
     allowBaselineExtension = false}) {
@@ -170,7 +180,7 @@ export class InteriorLayouts {
 
   accepts(actor, input) {
     return !this.fenced && exact(input,'expectedRevision,house,id,rooms,type') &&
-      input.type === 'layout.publish' && typeof input.id === 'string' && COMMAND.test(input.id) &&
+      ['layout.publish','layout.revise'].includes(input.type) && typeof input.id === 'string' && COMMAND.test(input.id) &&
       (input.expectedRevision === null || revision(input.expectedRevision)) &&
       this.owns(actor,input.house) && roomList(input.rooms,input.house);
   }
@@ -178,6 +188,8 @@ export class InteriorLayouts {
   prepare(actor, input, fingerprint) {
     const previous = this.state.layouts.find(layout => layout.house === input.house);
     if ((previous?.revision ?? null) !== input.expectedRevision) return null;
+    const revise=input.type==='layout.revise';
+    if(revise&&!previous)return null;
     if (this.draftBaseline.length) {
       if (!previous && !isDeepStrictEqual(input.rooms,this.draftBaseline)) return null;
       if (previous && (!this.allowBaselineExtension || !this.draftBaseline.every(room=>
@@ -189,7 +201,8 @@ export class InteriorLayouts {
     if (!revision(layout.revision)) return null;
     const layouts = previous ? this.state.layouts.map(current => current === previous ? layout : current) :
       [...this.state.layouts,layout];
-    if (!this.validDefinitions(layouts) || (previous && !extendsLayout(previous.rooms,layout.rooms)))
+    const compatible=revise?keepsRoomFrames:extendsLayout;
+    if (!this.validDefinitions(layouts) || (previous && !compatible(previous.rooms,layout.rooms)))
       return null;
     const result = {house:layout.house,revision:layout.revision};
     const receipts = [...this.state.receipts.slice(1-MAX_RECEIPTS),

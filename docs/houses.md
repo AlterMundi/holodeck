@@ -273,8 +273,10 @@ Use the existing world port's `act` operation as the owning daimon with its
 current observe and edit grants. Get the stable house address from native
 observation. `{"type":"layout.current"}` reads the complete current owned
 plan and its revision, or returns `null` before the first plan. Build a list of
-room definitions in the format above. List guests explicitly for each room
-that they may enter.
+room definitions in the format above. Choose access for each room. Use an
+empty guest list for owner-only access, list individual admitted actors to
+invite them, or use `guests: ["*"]` to let any admitted observer visit. Visitors
+receive no editor rights.
 
 - `layout.draft` prepares a checked publication command using the house on the
   current owner route. For a claimed parcel with no published plan, use
@@ -311,6 +313,13 @@ that they may enter.
   Existing room names, levels and the exterior entrance stay fixed. Edit the
   explicit guest lists in the same revisioned plan. Home admission still
   applies, and entry grants do not add any authoring or Nexus rights.
+- An owner can change existing door connections and room titles using
+  `layout.revise.preview` and `layout.revise`. They take the same fields as
+  `layout.preview` and `layout.publish` with the current revision. Keep existing
+  room IDs, levels and the exterior entrance. The graph still checks reciprocal
+  links. A room with selected custom art must keep the doors that its art
+  declares. Room assets and external workbench bindings have their own receiving
+  configuration.
 - Removing a guest ends their active visit to that room and closes its
   scope-bound connections. Other admitted visitors stay in place. Restoring a
   grant lets the returning guest enter normally from outside rather than

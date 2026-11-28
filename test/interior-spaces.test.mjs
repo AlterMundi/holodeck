@@ -573,6 +573,31 @@ test('own-native layout publication adds a live guest route and survives process
     assert.equal(exit.status,200);
     assert.equal((await exit.json()).id,'outside');
     assert.equal((await request(visitor,gardenPath)).status,404);
+
+    const returning=await signIn('guest');
+    const rerouted=restored.map(item=>{
+      if(item.id==='foyer')return {...item,guests:['*'],links:item.links.filter(link=>link.to!=='gallery')};
+      if(item.id==='gallery')return {...item,links:[...item.links.filter(link=>link.to!=='foyer'),{kind:'portal',to:tower}]};
+      if(item.id===tower)return {...item,guests:['*'],links:[...item.links,{kind:'portal',to:'gallery'}]};
+      return item;
+    });
+    const revision={...publication,type:'layout.revise',id:'reroute-layout-01',expectedRevision:4,rooms:rerouted};
+    assert.equal((await act({...revision,type:'layout.publish'})).ok,false);
+    assert.equal((await act(revision,foreignPath)).ok,false);
+    assert.deepEqual((await act({...revision,type:'layout.revise.preview'})).result,
+      {house:house.id,revision:5,rooms:rerouted});
+    assert.equal((await request(returning,'space',{from:'outside',to:'foyer',live:1})).status,200);
+    const oldScene=await get(returning,'space?live=1');
+    assert.deepEqual((await act(revision)).result,{house:house.id,revision:5});
+    assert.deepEqual((await act(revision)).result,{house:house.id,revision:5});
+    const newScene=await get(returning,'space?live=1');
+    assert.equal(newScene.id,'foyer');
+    assert.notEqual(newScene.scene.revision,oldScene.scene.revision);
+    assert.deepEqual(newScene.exits.map(exit=>exit.to),[tower]);
+    assert.equal((await request(returning,'space',{from:'foyer',to:'gallery',live:1})).status,409);
+    assert.equal((await request(returning,'space',{from:'foyer',to:tower,live:1})).status,200);
+    assert.equal((await request(returning,'space',{from:tower,to:'gallery',live:1})).status,200);
+    assert.equal((await get(outsider,'space')).id,'gallery');
   }finally{
     await stop();
     rmSync(stateDir,{recursive:true,force:true});

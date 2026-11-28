@@ -19,6 +19,7 @@ const ROOM_MARKER = Object.freeze({id:'room-marker',kind:'cylinder',
 const exact = (value, keys) => value && typeof value === 'object' &&
   !Array.isArray(value) && Object.keys(value).sort().join(',') === keys;
 const allowedActor = value => typeof value === 'string' && ACTOR.test(value);
+const listedGuest=(room,id)=>room.guests[0]==='*'||room.guests.includes(id);
 const label = value => typeof value === 'string' && value.trim().length > 0 &&
   value.length <= 60 && !/[\u0000-\u001f\u007f]/.test(value);
 
@@ -38,7 +39,7 @@ export class InteriorSpaces {
           typeof d.id !== 'string' || d.id === OUTSIDE || !SPACE.test(d.id) || this.rooms.has(d.id) ||
           typeof d.house !== 'string' || !HOUSE.test(d.house) || !label(d.title) ||
           !Number.isSafeInteger(d.level) || Math.abs(d.level)>1000 || typeof d.entry !== 'boolean' ||
-          !Array.isArray(d.guests) || d.guests.length > 16 || !d.guests.every(allowedActor) ||
+          !Array.isArray(d.guests) || d.guests.length > 16 || !(d.guests.length===1&&d.guests[0]==='*'||d.guests.every(allowedActor)) ||
           new Set(d.guests).size !== d.guests.length ||
           !Array.isArray(d.links) || d.links.length > 6 ||
           !d.links.every(link=>exact(link,'kind,to') && typeof link.to === 'string' &&
@@ -87,7 +88,7 @@ export class InteriorSpaces {
     const house=this.houses.directory().find(h=>h.id===room.house);
     if (!house) return false;
     if (house.owner===actor.id && actor.kind==='daimon') return true;
-    if (!room.guests.includes(actor.id)) return false;
+    if (!listedGuest(room,actor.id)||room.guests[0]==='*'&&!actor.rights?.includes('observe')) return false;
     return this.guestAccess ? this.guestAccess(actor,room.id)===true : true;
   }
 
@@ -177,7 +178,7 @@ export class InteriorSpaces {
     const rooms=new Map(definitions.map(room=>[room.id,room]));
     const positions=this.positions.filter(({actor,space})=>{
       const previous=this.rooms.get(space),next=rooms.get(space);
-      return actor===owner||!previous||!next?.guests.includes(actor)||previous.guests.includes(actor);
+      return actor===owner||!previous||!next||!listedGuest(next,actor)||listedGuest(previous,actor);
     });
     // These entries are already denied under the current layout. Discard them
     // before restoring a grant, so a lost layout save cannot evict an admitted guest.

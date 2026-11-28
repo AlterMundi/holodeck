@@ -165,10 +165,11 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
           if(!own||!actor.rights.includes('edit'))throw Error('Layout drafting requires an own-native route');
           result=draftLayout?.(actor,request.args);
           if(!result)throw Error('Layout draft unavailable');
-        }else if(request.operation==='act'&&['layout.preview','layout.publish'].includes(request.args.type)){
+        }else if(request.operation==='act'&&['layout.preview','layout.publish','layout.revise.preview','layout.revise'].includes(request.args.type)){
           if(!own||!actor.rights.includes('edit'))throw Error('Layout authoring requires an own-native route');
-          result=request.args.type==='layout.preview'?
-            previewLayout?.(actor,{...request.args,type:'layout.publish'}):
+          const {type}=request.args;
+          const preview=type==='layout.preview'||type==='layout.revise.preview';
+          result=preview?previewLayout?.(actor,{...request.args,type:type==='layout.preview'?'layout.publish':'layout.revise'}):
             publishLayout?.(actor,request.args);
           if(!result)throw Error('Layout unavailable');
         }else if(request.operation==='act'&&['design.current','design.preview','design.put','design.result'].includes(request.args.type)){
