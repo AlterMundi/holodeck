@@ -3,6 +3,7 @@
 // files; no inverse DCT is needed for an icon colour grid. Returns linear RGB
 // in a GRID x GRID array, or null for unsupported files.
 const ZIG=64;
+const maxPixels=4096**2;
 
 function buildHuffman(lengths,values){
   const codes=new Map();let code=0,k=0;
@@ -21,7 +22,10 @@ export function jpegGrid(bytes,GRID=32){
     const marker=bytes[at+1];at+=2;
     if(marker===0xd8||(marker>=0xd0&&marker<=0xd7)||marker===0x01)continue;
     if(marker===0xd9)break;
-    const length=bytes.readUInt16BE(at),seg=bytes.subarray(at+2,at+length);
+    if(at+2>bytes.length)return null;
+    const length=bytes.readUInt16BE(at);
+    if(length<2||at+length>bytes.length)return null;
+    const seg=bytes.subarray(at+2,at+length);
     if(marker===0xdb){
       for(let p=0;p<seg.length;){const pq=seg[p]>>4,tq=seg[p]&15;quant[tq]=pq?seg.readUInt16BE(p+1):seg[p+1];p+=1+(pq?128:64);}
     }else if(marker===0xc4){
@@ -32,7 +36,12 @@ export function jpegGrid(bytes,GRID=32){
     }else if(marker===0xc0||marker===0xc1||marker===0xc2){
       progressive=marker===0xc2;
       const height=seg.readUInt16BE(1),width=seg.readUInt16BE(3),count=seg[5],components=[];
-      for(let i=0;i<count;i++)components.push({id:seg[6+i*3],h:seg[7+i*3]>>4,v:seg[7+i*3]&15,q:seg[8+i*3]});
+      if(!width||!height||width*height>maxPixels||![1,3].includes(count)||seg.length<6+3*count)return null;
+      for(let i=0;i<count;i++){
+        const h=seg[7+i*3]>>4,v=seg[7+i*3]&15;
+        if(h<1||h>4||v<1||v>4)return null;
+        components.push({id:seg[6+i*3],h,v,q:seg[8+i*3]});
+      }
       frame={width,height,components};
       frame.hmax=Math.max(...components.map(c=>c.h));frame.vmax=Math.max(...components.map(c=>c.v));
       frame.mcux=Math.ceil(width/(8*frame.hmax));frame.mcuy=Math.ceil(height/(8*frame.vmax));
@@ -69,7 +78,7 @@ export function jpegGrid(bytes,GRID=32){
       const block=(c,bx,by)=>{
         const s=decode(dc[c.td]);const diff=s?receive(s):0;
         const value=pred.get(c)+diff;pred.set(c,value);
-        if(by<c.bh&&bx<c.bw)c.dc[by*c.bw+bx]=(value<<al)*(quant[c.q]?.[0]??1);
+        if(by<c.bh&&bx<c.bw)c.dc[by*c.bw+bx]=(value<<al)*(quant[c.q]??1);
         if(progressive)return;
         for(let k=1;k<ZIG;){const rs=decode(ac[c.ta]);const r=rs>>4,s2=rs&15;if(!s2){if(r===15){k+=16;continue;}break;}k+=r;receive(s2);k++;}
       };

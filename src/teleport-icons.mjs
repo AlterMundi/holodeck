@@ -290,7 +290,7 @@ export async function sceneIcon(bytes,{cutaway=false,crop=null,triangles=TRIANGL
   let geometry=collectTriangles(scene,{skip:object=>/collider|collision|hitbox/i.test(object.name)});
   if(crop)geometry=cropAround(geometry,crop);
   if(cutaway)geometry=withoutCeiling(geometry);
-  if(geometry.positions.length<9*20)return null;
+  if(crop&&geometry.positions.length<9*20)return null;
   const mesh=clusterTriangles(geometry,{triangles});
   return mesh&&fitIcon(vivid(mesh));
 }
