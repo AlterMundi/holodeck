@@ -5,7 +5,9 @@ const capacity=384;
 // longer-lived trail, so a flyer can be followed across the sky.
 const BOOST={spacing:.75,life:.65,strength:1,lift:.66};
 const CRUISE={spacing:.5,life:1.25,strength:.42,lift:.5};
-const life=Math.max(BOOST.life,CRUISE.life);
+// The burst where a boost begins: a ring that flies outward and fades.
+const BURST={count:40,speed:7.5,life:.55,strength:1.35};
+const life=Math.max(BOOST.life,CRUISE.life,BURST.life);
 const tones=[0x71e5ff,0xffa471,0xbba2ff,0x66f0bd,0xf7de7a,0xff8ec0];
 
 // Only continuous, explicitly airborne motion emits. Peer updates can
@@ -32,10 +34,12 @@ export class FlightWake{
     this.born=attribute(1);
     this.born.array.fill(-10);
     this.kind=attribute(2);
+    this.drift=attribute(3);
     geometry.setAttribute('position',this.position);
     geometry.setAttribute('tint',this.tint);
     geometry.setAttribute('born',this.born);
     geometry.setAttribute('kind',this.kind);
+    geometry.setAttribute('drift',this.drift);
     const material=new ShaderMaterial({
       transparent:true,depthWrite:false,blending:AdditiveBlending,
       uniforms:{clock:{value:0}},
@@ -43,12 +47,14 @@ export class FlightWake{
         attribute vec3 tint;
         attribute float born;
         attribute vec2 kind; // x: strength, y: life in seconds
+        attribute vec3 drift; // metres per second, slowing as it fades
         uniform float clock;
         varying vec3 shade;
         varying float strength;
         void main(){
           float age=clamp((clock-born)/max(kind.y,.01),0.0,1.0);
-          vec4 eye=modelViewMatrix*vec4(position,1.0);
+          float seconds=max(0.,clock-born);
+          vec4 eye=modelViewMatrix*vec4(position+drift*seconds*(1.-.5*age),1.0);
           shade=tint;
           strength=(1.0-age)*(1.0-age)*smoothstep(.45,1.35,-eye.z)*.64*kind.x;
           gl_Position=projectionMatrix*eye;
@@ -101,13 +107,37 @@ export class FlightWake{
         this.tint.setXYZ(i,track.color.r,track.color.g,track.color.b);
         this.born.setX(i,time);
         this.kind.setXY(i,style.strength,style.life);
+        this.drift.setXYZ(i,0,0,0);
         this.index=(i+1)%capacity;
         this.lastEmission=time;
-        this.position.needsUpdate=this.tint.needsUpdate=this.born.needsUpdate=this.kind.needsUpdate=true;
+        this.position.needsUpdate=this.tint.needsUpdate=this.born.needsUpdate=this.kind.needsUpdate=this.drift.needsUpdate=true;
       }
     }
     track.carry=distance>0?(track.carry+distance)%style.spacing:0;
     track.last.copy(position);
+  }
+
+  // A ring of light around the body, perpendicular to where it breaks away.
+  burst(id,position,direction){
+    const time=(performance.now()-this.start)/1000;
+    const axis=this.particle.copy(direction);
+    if(axis.lengthSq()<1e-6)return;
+    axis.normalize();
+    const a=Math.abs(axis.y)<.9?new Vector3(0,1,0):new Vector3(1,0,0);
+    const u=new Vector3().crossVectors(axis,a).normalize(),v=new Vector3().crossVectors(axis,u);
+    const key=Number(id),color=new Color(Number.isFinite(key)?tones[(Math.imul(key,0x9e3779b1)>>>0)%tones.length]:0x6eeed8);
+    for(let k=0;k<BURST.count;k++){
+      const angle=k/BURST.count*Math.PI*2,c=Math.cos(angle),s=Math.sin(angle);
+      const i=this.index;
+      this.position.setXYZ(i,position.x+(u.x*c+v.x*s)*.35,position.y+(u.y*c+v.y*s)*.35+.9,position.z+(u.z*c+v.z*s)*.35);
+      this.drift.setXYZ(i,(u.x*c+v.x*s)*BURST.speed-axis.x*2,(u.y*c+v.y*s)*BURST.speed-axis.y*2,(u.z*c+v.z*s)*BURST.speed-axis.z*2);
+      this.tint.setXYZ(i,.6+.4*color.r,.6+.4*color.g,.6+.4*color.b);
+      this.born.setX(i,time);
+      this.kind.setXY(i,BURST.strength,BURST.life);
+      this.index=(i+1)%capacity;
+    }
+    this.lastEmission=time;
+    this.position.needsUpdate=this.tint.needsUpdate=this.born.needsUpdate=this.kind.needsUpdate=this.drift.needsUpdate=true;
   }
 
   update(enabled){

@@ -25,7 +25,47 @@ const sweep=[
 const boostGather=pose([.33,-.73,.60],[.08,-.18,.98],[.16,-.84,.52],[.06,-.87,-.48],[.01,-.78,.62],[.12,-.09,.09],[-.28,.08,-.05]);
 const boostLead=pose([.16,.89,.43],[.09,.98,.18],[.07,-.99,-.09],[.04,-.98,-.18],[.02,-.99,.10],[-.15,-.10,-.09],[-.54,.08,.05]);
 const boostTrail=pose([.35,-.61,-.70],[.20,-.48,-.85],[.12,-.96,-.21],[.06,-.99,-.12],[.02,-.99,.12]);
-const boostBrake=pose([.68,-.68,-.16],[.52,-.80,.32],[.12,-.91,.38],[.08,-.94,-.32],[.02,-.75,.65],[.09,.02,.02],[-.34,-.02,-.02]);
+// Air brake: chest up, arms thrown wide and forward, legs swinging ahead.
+const boostBrake=pose([.86,-.22,.46],[.72,.12,.68],[.12,-.78,.61],[.08,-.97,-.22],[.02,-.40,.92],[-.14,.02,.02],[-.20,-.02,-.02]);
+// Flight styles, for the left side. Each style names the left and right
+// arm; the rig mirrors the right across X. A cruising body holds them more
+// loosely than a boost.
+const fistAhead=pose([.10,.96,.26],[.04,.99,.12],[.07,-.99,-.09],[.04,-.98,-.18],[.02,-.99,.10]);
+const fistsTogether=pose([.03,.96,.28],[-.10,.99,.08],[.06,-.99,-.08],[.04,-.98,-.16],[.02,-.99,.10]);
+const armAlong=pose([.18,-.97,-.16],[.10,-.99,-.08],[.07,-.99,-.09],[.04,-.98,-.18],[.02,-.99,.10]);
+const wing=pose([.97,.18,.16],[.96,.26,.08],[.10,-.99,-.04],[.05,-.99,-.10],[.02,-.99,.10]);
+// Standing in the air or treading water, a hero still has things to do.
+// Each rest style shapes the limbs over the floating loop.
+const onHip=pose([.62,-.72,-.30],[-.55,-.42,.30],[.10,-.99,.02],[.06,-.99,-.08],[0,-.85,.52]);
+const levitate=pose([.55,-.82,.12],[.60,-.68,.40],[.08,-.99,.04],[.05,-.99,-.06],[0,-.90,.44]);
+const kneeUp=pose([.30,-.94,.10],[.20,-.90,.38],[.10,-.68,.72],[.05,-.96,-.28],[0,-.70,.71]);
+const straightDown=pose([.30,-.94,.10],[.20,-.90,.38],[.06,-.99,-.04],[.04,-.99,-.08],[0,-.96,.28]);
+const scullWide=pose([.86,-.44,.26],[.80,.08,.59],[.07,-.99,.10],[.05,-.97,-.24],[0,-.70,.71]);
+const scullCalm=pose([.40,-.78,.48],[.30,-.40,.86],[.12,-.90,.42],[.08,-.92,-.38],[0,-.60,.80]);
+export const HOVER_STYLES=Object.freeze({
+  'fists-on-hips':{left:onHip,right:onHip},
+  levitate:{left:levitate,right:levitate},
+  'knee-up':{left:kneeUp,right:straightDown},
+  'knee-up-right':{left:straightDown,right:kneeUp},
+  drift:null,
+});
+export const TREAD_STYLES=Object.freeze({'scull-wide':{left:scullWide,right:scullWide},'scull-calm':{left:scullCalm,right:scullCalm},tread:null});
+export const FLIGHT_STYLES=Object.freeze({
+  'superman-left':{left:fistAhead,right:armAlong},
+  'superman-right':{left:armAlong,right:fistAhead},
+  'fists-together':{left:fistsTogether,right:fistsTogether},
+  wings:{left:wing,right:wing},
+  rocket:{left:armAlong,right:armAlong},
+});
+// Launch: drop low with one fist back, then drive it straight at the sky.
+const launchFist=pose([.06,.98,.16],[.03,.99,.08],[.06,-.99,-.06],[.04,-.99,-.10],[0,-.98,.20],[-.10,0,0],[-.36,0,0]);
+const launchTight=pose([.20,-.96,.18],[.10,-.80,.58],[.06,-.99,-.06],[.04,-.99,-.10],[0,-.98,.20],[-.10,0,0],[-.36,0,0]);
+const coilBrace=pose([.34,-.70,.62],[.14,-.92,.36],[.13,-.84,.53],[.10,-.79,-.61],[0,-.12,.99],[.40,0,0],[-.30,0,0]);
+// Trick bodies: a tight ball, a stretched layout with arms out, and a
+// spin with both arms locked overhead and the legs together, like a blade.
+const trickTuck=pose([.30,-.10,.95],[-.20,-.85,.48],[.10,.35,.93],[.06,-.80,-.60],[0,-.40,.92],[.40,0,0],[.20,0,0]);
+const trickLayout=pose([.98,.10,.12],[.97,.20,.05],[.06,-.99,-.08],[.04,-.99,-.10],[0,-.97,.25],[-.10,0,0],[-.22,0,0]);
+const trickTwist=pose([.06,.98,.12],[-.06,.99,.06],[.02,-.99,-.04],[.02,-.99,-.06],[0,-.98,.20],[0,0,0],[-.10,0,0]);
 const coil=pose([.30,-.86,-.42],[.18,-.95,-.24],[.13,-.84,.53],[.10,-.79,-.61],[0,-.12,.99],[.34,0,0],[-.22,0,0]);
 const spring=pose([.28,-.94,-.18],[.16,-.98,-.12],[.07,-.99,-.08],[.04,-.99,-.12],[0,-.95,.31],[-.16,0,0],[-.26,0,0]);
 const tuck=pose([.54,-.76,.36],[.24,-.60,.76],[.13,-.72,.68],[.08,-.78,-.62],[.02,-.50,.86],[.14,0,0],[-.12,0,0]);
@@ -39,15 +79,14 @@ const tread=[
   pose([.64,-.76,.12],[.60,-.68,.42],[.18,-.94,.28],[-.08,-.99,.06],[.02,-.62,.78],[.07,-.05,-.03],[-.05,.04,.02]),
   pose([.46,-.86,.22],[.16,-.62,.77],[.14,-.90,.40],[.04,-.82,-.57],[.02,-.72,.69],[.09,-.02,.02],[-.07,.01,-.01]),
 ];
-// Reach and hold, catch, press, gather under the chest, then kick and shoot.
-const long=pose([.17,.86,.48],[.07,.93,.36],[.07,-.99,-.08],[.04,-.99,-.10],[0,-.97,.24],[-.05,0,0],[-.50,0,0]);
+// Swimming is a torpedo: arms locked ahead, fists together, the whole body
+// driving a dolphin kick from the chest down to pointed feet.
+const torpedo=(thigh,calf,foot,chest)=>pose([.05,.96,.27],[-.08,.99,.10],thigh,calf,foot,[chest,0,0],[-.52,0,0]);
 const stroke=[
-  [0,long],[.62,long],
-  [.92,pose([.68,.55,.48],[.62,.42,.66],[.08,-.99,-.04],[.04,-.98,-.18],[0,-.95,.31],[-.09,0,0],[-.56,0,0])],
-  [1.18,pose([.78,-.20,.58],[.34,-.46,.82],[.10,-.98,.16],[.06,-.93,-.36],[0,-.88,.47],[-.14,0,0],[-.66,0,0])],
-  [1.44,pose([.32,-.74,.58],[-.05,.30,.95],[.30,-.70,.64],[.20,-.42,-.88],[.26,-.30,.60],[-.05,0,0],[-.50,0,0])],
-  [1.68,pose([.14,.34,.93],[.03,.74,.67],[.36,-.86,.35],[.30,-.86,-.40],[.24,-.60,.76],[.02,0,0],[-.40,0,0])],
-  [1.90,pose([.16,.82,.54],[.07,.92,.38],[.12,-.99,.02],[.08,-.99,-.08],[0,-.92,.38],[-.03,0,0],[-.50,0,0])],
+  [0,torpedo([.05,-.98,.20],[.03,-.99,-.02],[0,-.93,.36],.05)],
+  [.22,torpedo([.05,-.99,-.10],[.03,-.85,-.52],[0,-.75,.66],-.06)],
+  [.40,torpedo([.05,-.94,-.33],[.03,-.97,-.24],[0,-.98,.20],-.02)],
+  [.62,torpedo([.05,-.99,.05],[.03,-.99,.10],[0,-.96,.28],.06)],
 ];
 const wade=[
   pose([.82,-.52,.22],[.60,-.10,.79],[.1,-1,0],[.05,-1,0],[0,-.1,1],[.08,.06,0],[-.05,-.04,0]),
@@ -58,11 +97,15 @@ const even=(poses,seconds)=>poses.map((value,index)=>[index*seconds/poses.length
 const clips={
   hover:{keys:even(drift,3.8),loop:3.8,alternate:true},
   glide:{keys:even(sweep,2.2),loop:2.2,alternate:true},
-  lift:{keys:[[0,rest],[.07,coil],[.12,coil],[.24,spring],[.34,spring],[.52,tuck],[.72,drift[0]]]},
+  lift:{keys:[[0,rest],[.07,coil],[.14,coil],[.24,launchFist],[.42,launchFist],[.58,tuck],[.72,drift[0]]],
+    right:[[0,rest],[.07,coilBrace],[.14,coilBrace],[.24,launchTight],[.42,launchTight],[.58,tuck],[.72,drift[0]]]},
+  trickTuck:{keys:[[0,trickTuck],[1,trickTuck]]},
+  trickLayout:{keys:[[0,trickLayout],[1,trickLayout]]},
+  trickTwist:{keys:[[0,trickTwist],[1,trickTwist]]},
   descend:{keys:[[0,drift[1]],[.20,flare],[.42,flare],[.80,reachDown]]},
   land:{keys:[[0,reachDown],[.10,brake],[.18,brake],[.46,rest]]},
   tread:{keys:even(tread,1.8),loop:1.8,alternate:true},
-  stroke:{keys:stroke,loop:2.15},
+  stroke:{keys:stroke,loop:.84},
   wade:{keys:even(wade,1.3),loop:1.3,alternate:true},
 };
 
@@ -147,7 +190,7 @@ export function bindHumanoidFlightRig(mesh){
   const sides=[new Array(21),new Array(21)],mixed=new Array(21);
   const at=(name,time,side)=>time+(clips[name].alternate&&side?clips[name].loop/2:0);
   function sample(name,time){
-    for(const [side,out] of sides.entries())keyed(clips[name].keys,at(name,time,side),out,clips[name].loop);
+    for(const [side,out] of sides.entries())keyed(side&&clips[name].right||clips[name].keys,at(name,time,side),out,clips[name].loop);
   }
   function blend(name,time,amount){
     if(amount<=0)return;
@@ -194,26 +237,42 @@ export function bindHumanoidFlightRig(mesh){
       for(const limb of limbs.flat())limb.aim.set(0,0,0);
     },
     // water is {up, point} in world space while hands must stay submerged.
-    apply(character,{mode,time,forward=0,weight,lowerWeight=weight,torsoWeight=weight,step,bank=0,boost=0,boostRelease=0,
+    apply(character,{mode,time,forward=0,weight,lowerWeight=weight,torsoWeight=weight,step,bank=0,boost=0,boostRelease=0,style=null,climb=0,rest=null,restAmount=0,
       stroke:strokeWeight=0,strokeTime=time,water=null}){
       if(weight<=0&&lowerWeight<=0)return;
       const name=mode==='swim'?'tread':clips[mode]?mode:'hover';
       sample(name,time);
       if(name==='hover'){
         blend('glide',time,forward);
+        // Cruising holds the chosen style loosely; boost commits to it.
+        if(style&&forward>0)for(const [side,out] of sides.entries()){
+          const arms=side?style.right:style.left;
+          for(let i=0;i<15;i++)out[i]+=(arms[i]-out[i])*forward*(i<6?.7:.35)*(1-boost);
+        }
         if(boost>0){
           const gather=smooth(boost/.30),extend=smooth((boost-.30)/.70);
           for(const [side,out] of sides.entries()){
-            const target=side===0?boostLead:boostTrail;
+            const target=style?(side?style.right:style.left):side===0?boostLead:boostTrail;
             for(let i=0;i<out.length;i++){
               out[i]+=(boostGather[i]-out[i])*gather;
-              out[i]+=(target[i]-out[i])*extend;
+              // A style sets the limbs; the chest and head keep the boost's line.
+              out[i]+=((style&&i>=15?boostLead:target)[i]-out[i])*extend;
               out[i]+=(boostBrake[i]-out[i])*boostRelease*.72;
             }
           }
         }
       }
+      // Rest styles shape the floating or treading loop, which keeps breathing.
+      if(rest&&restAmount>0&&(name==='hover'||name==='tread'))for(const [side,out] of sides.entries()){
+        const target=side?rest.right:rest.left,amount=restAmount*(name==='tread'?.65:.85);
+        for(let i=0;i<15;i++)out[i]+=(target[i]-out[i])*amount;
+      }
       if(name==='tread')blend('stroke',strokeTime,strokeWeight);
+      // Rising straight up, one fist leads toward the sky.
+      if(climb>0&&name==='hover')for(const [side,out] of sides.entries()){
+        const target=side?launchTight:launchFist;
+        for(let i=0;i<15;i++)out[i]+=(target[i]-out[i])*climb;
+      }
       for(const item of body){
         const amount=item.group==='lower'?lowerWeight:item.group==='arm'?weight:torsoWeight;
         if(amount>0)applyTransform(item,item.restLocal,amount);

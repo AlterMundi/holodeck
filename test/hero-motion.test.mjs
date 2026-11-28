@@ -100,3 +100,46 @@ test('the explorer idles through its repertoire with both feet planted',async()=
   assert.ok(left>.05&&right>.05,note); // weight onto each leg
   assert.ok(reach>1.7,note);         // a stretch overhead
 });
+
+test('every double jump is a full heroic trick, twice as high, none repeated in a row',async()=>{
+  const {HEROIC_ROUTE}=await import('../tools/avatar-motion/heroics.mjs');
+  const {TRICKS}=await import('../src/flight-avatar-animation.mjs');
+  const route=HEROIC_ROUTE.filter(([name])=>/^(still|hop|trick|land)/.test(name));
+  const spins=new Map(),lift=new Map();let start=null,base=null;
+  await runSequence({file:explorer,route,pilot:true,onFrame({name,phase,root,motion}){
+    if(name.startsWith('hop')&&phase<.02){start=root.quaternion.clone();base=motion.height;}
+    if(!name.startsWith('trick'))return;
+    spins.set(name,Math.max(spins.get(name)??0,root.quaternion.angleTo(start)));
+    lift.set(name,Math.max(lift.get(name)??0,motion.height-base));
+  }});
+  assert.ok(TRICKS.length>=5);
+  for(const [name,spin] of spins)assert.ok(spin>2.4,`${name} spin ${spin}`);
+  for(const [name,height] of lift)assert.ok(height>1.6,`${name} height ${height}`);
+});
+
+test('each boost breaks away with a burst and a fresh flight style',async()=>{
+  const {HEROIC_ROUTE}=await import('../tools/avatar-motion/heroics.mjs');
+  const route=HEROIC_ROUTE.filter(([name])=>/^(still|launch|cruise|boost|brake)/.test(name));
+  const hands=new Map();
+  const result=await runSequence({file:explorer,route,pilot:true,onFrame({name,phase,mesh,root}){
+    if(!name.startsWith('boost')||phase<1.2||hands.has(name))return;
+    const inverse=root.quaternion.clone().invert();
+    const at=bone=>mesh.getObjectByName(bone).getWorldPosition(new Vector3()).sub(root.position).applyQuaternion(inverse);
+    hands.set(name,[at('hand_l'),at('hand_r')].map(hand=>hand.toArray().map(v=>+v.toFixed(1)).join()).join('|'));
+  }});
+  assert.equal(result.bursts,5);
+  assert.ok(new Set(hands.values()).size>=4,[...hands.values()].join(' / '));
+});
+
+test('a chosen crouch is a low stealth stance with a raised guard',async()=>{
+  const heights={};
+  await runSequence({file:explorer,route:[['stand',1.5,{}],['crouch',1.6,{crouch:true}]],pilot:true,onFrame({name,phase,mesh,root}){
+    if(phase<1.2)return;
+    const inverse=root.quaternion.clone().invert();
+    const at=bone=>mesh.getObjectByName(bone).getWorldPosition(new Vector3()).sub(root.position).applyQuaternion(inverse).y;
+    heights[name]={pelvis:at('pelvis'),hand:Math.max(at('hand_l'),at('hand_r')),chest:at('spine_05')};
+  }});
+  const {stand,crouch}=heights;
+  assert.ok(stand.pelvis-crouch.pelvis>.2,JSON.stringify(heights));
+  assert.ok(crouch.hand>crouch.chest-.05,JSON.stringify(heights));
+});
