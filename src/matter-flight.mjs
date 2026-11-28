@@ -176,7 +176,7 @@ export class MatterHologram{
   restoreMesh(mesh,{source,materials,shadow}){
     if(mesh.material===materials)mesh.material=source;
     mesh.castShadow=shadow;
-    for(const material of Array.isArray(materials)?materials:[materials])material.dispose();
+    for(const material of Array.isArray(materials)?materials:[materials])if(!material.userData?.keepInHologram)material.dispose();
   }
 
   sync(){
@@ -189,6 +189,8 @@ export class MatterHologram{
       if(previous)this.restoreMesh(mesh,previous);
       const source=mesh.material,shadow=mesh.castShadow;
       const translucent=material=>{
+        // Self-lit screens (Navegante's visor) already read as light.
+        if(material.userData?.keepInHologram)return material;
         const clone=new MeshStandardMaterial().copy(material);
         clone.transparent=true;
         clone.opacity*=.55;
