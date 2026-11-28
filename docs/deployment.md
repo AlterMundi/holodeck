@@ -581,6 +581,18 @@ use at most8records and8KiB each for their current/atomic-stage file; the existi
 its separate small bound; original source attachments stay with the existing
 bounded native attachment writer rather than being copied into app history.
 
+The optional `privatePersonalAvatar` receiver selection pins a paired Home
+release by `resource` and exact `version`. It resolves
+`assets/explorer-hero-proposal.glb` inside a paired Human publication. Verify
+the exact served bytes before selection. The personal default then uses the
+existing authenticated appearance route. The paired visitor receives the
+private Home edition and other signed-in participants loading that same
+character description receive the bundled Explorer. The Character Studio
+continues to use the shareable study rig. No portrait or model bytes live in
+the source repository, runtime archive or world state filesystem. Unselect
+the edition in the receiver configuration and apply the ordinary release
+operation to return the paired default to the bundled model.
+
 Explicit human avatar choices use the existing authenticated API and MML
 character-description projection. They live in a separate 8 KiB per-file
 checkpoint under `human-avatar-choices`, with the same atomic current,

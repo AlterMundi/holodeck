@@ -111,6 +111,47 @@ test('appearance writes require the authenticated actor and survive a runtime re
   assert.deepEqual(await (await read(await login('second'))).json(),{choice:null});
 });
 
+test('only the current paired world session receives the exact private Home avatar link',async t=>{
+  const stateDir=mkdtempSync(join(tmpdir(),'holodeck-private-avatar-'));
+  const resource='a'.repeat(32),version='b'.repeat(64);
+  let ownerHasAccess=true;
+  const runtime=await createHolodeck({production:true,basePath:'/holodeck/',stateDir,
+    releaseControllerRef:'owner',privatePersonalAvatar:{resource,version},publicOrigin:'https://world.test',
+    identityResolver:async req=>{
+      const id=/fixture=(owner|peer)/.exec(req.headers.cookie??'')?.[1];
+      return id?{id,kind:'human',rights:id==='owner'&&!ownerHasAccess?[]:['observe']}:null;
+    }});
+  const server=runtime.app.listen(0,'127.0.0.1');
+  await once(server,'listening');
+  t.after(async()=>{
+    runtime.close();server.closeAllConnections();
+    await new Promise(resolve=>server.close(resolve));
+    rmSync(stateDir,{recursive:true,force:true});
+  });
+  const base=`http://127.0.0.1:${server.address().port}/holodeck/`;
+  const login=async id=>{
+    const fixture='fixture='+id;
+    const response=await fetch(base,{headers:{Cookie:fixture}});
+    return fixture+'; '+response.headers.get('set-cookie').split(';')[0];
+  };
+  const asset=cookie=>fetch(base+'api/appearance/personal-model.glb',{
+    redirect:'manual',headers:cookie?{Cookie:cookie}:{}});
+  const owner=await login('owner'),peer=await login('peer');
+  const personal=await asset(owner);
+  assert.equal(personal.status,302);
+  assert.equal(personal.headers.get('location'),`/works/${resource}/${version}/assets/explorer-hero-proposal.glb`);
+  assert.equal(personal.headers.get('cache-control'),'private, no-store');
+  assert.match(personal.headers.get('vary'),/\bCookie\b/);
+  const foreign=await asset(peer);
+  assert.equal(foreign.status,302);
+  assert.equal(foreign.headers.get('location'),'/holodeck/assets/'+personalAvatarFile);
+  assert.doesNotMatch(await foreign.text(),new RegExp(resource));
+  assert.equal((await asset()).status,401);
+  assert.equal((await asset(owner.replace('fixture=owner','fixture=peer'))).status,401);
+  ownerHasAccess=false;
+  assert.equal((await asset(owner)).status,403);
+});
+
 const rigs=['avatar-1-bodyA-skin01','avatar-2-bodyB-skin03','avatar-3-bodyA-skin05','avatar-4-bodyB-skin07'];
 function readGlb(file){
   assert.equal(file.subarray(0,4).toString(),'glTF');
@@ -203,7 +244,7 @@ test('each human skin exposes a neutral sparse mouth pose with bounded deformati
   }
 });
 
-test('the Character Studio opens the same personal Explorer file the world uses',async()=>{
+test('the Character Studio keeps the shareable Explorer rig',async()=>{
   const {rigs}=await import('../src/character-studio-rigs.mjs');
   const {personalAvatarFile}=await import('../src/human-avatars.mjs');
   assert.equal(rigs.explorer.file,'assets/'+personalAvatarFile);

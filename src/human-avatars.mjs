@@ -12,6 +12,17 @@ const profiles=Object.freeze([...rigs.map(rig=>rig+'.glb'),...outfits]);
 export const personalAvatarFile='avatar/explorer-hero-v30.glb';
 export const personalAvatarSha256='fdc62b339ae95dee8697239ca35c10f674ce2ab6ddd8d9c78648c75d6df40dbe';
 export const avatarModelFiles=Object.freeze([...profiles,personalAvatarFile]);
+// Immutable Home version selected by the receiving operator. The asset is
+// distributed under its own paired audience, outside the runtime package.
+export function personalAvatarEdition(selection,hasPairedIdentity){
+  if(selection===null||selection===undefined)return null;
+  if(!hasPairedIdentity||typeof selection!=='object'||Object.keys(selection).length!==2||
+     typeof selection.resource!=='string'||!/^[a-f0-9]{32}$/.test(selection.resource)||
+     typeof selection.version!=='string'||!/^[a-f0-9]{64}$/.test(selection.version))
+    throw Error('Select an exact paired Home avatar edition');
+  return `/works/${selection.resource}/${selection.version}/assets/explorer-hero-proposal.glb`;
+}
+
 const preferenceLimit=64;
 const preferenceSchema='holodeck.avatar-choices/v1';
 const validSlot=slot=>Number.isInteger(slot)&&slot>=0&&slot<profiles.length;
