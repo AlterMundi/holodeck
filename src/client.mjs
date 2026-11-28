@@ -207,7 +207,7 @@ const sceneCache=hot?new RoomSceneCache(activeSpace.actorRef):null;
 let inside=hot&&activeSpace.id!=='outside';
 let updateDoor=()=>{},remoteScene=null,roomModel=null,networkScope=null,arrival=null;
 let moving=false,requestingMove=false,needsSync=false,resyncing=false,moveDeadline=null,passageNotice=null;
-let roomTopic,worktableTopic;
+let roomTopic,worktableTopic,directTopic,changingTopicMode;
 let prefetched=new Set(),prefetchRequest=null,pendingRoomArt=null;
 const setMoving=value=>{
   if(moving!==value){
@@ -309,6 +309,11 @@ function applySpace(next,anchor){
   document.body.classList.toggle('has-situated-conversation',inside&&next.sharedConversation===true);
   $('#hud h1').textContent=inside?next.title:'Plaza de llegada';
   $('#people').textContent=inside?(next.level===0?'Planta baja':next.level<0?`Subsuelo ${-next.level}`:`Piso ${next.level}`):'Un lugar para crear juntos';
+  if(changed&&directTopic!==undefined){
+    directTopic=null;
+    $('#shared-conversation').inert=true;
+    if(!changingTopicMode)void setTopicMode(null);
+  }
   if(changed){roomTopic=undefined;worktableTopic=undefined;contentVisitor.changeRoom(inside,next.id);worldIndication.selected=null;worldIndication.removeOutline();state=null;}
   else if(inside)contentVisitor.confirmRoom();
   if(anchor||leavingTopic){
@@ -358,10 +363,14 @@ function resetDoor(){
   $('#house-door').hidden=true;$('#house-door').disabled=false;
   if(!activeSpace)return;
   updateDoor=showSpaceLinks(activeSpace,{
-    canLeave:()=>{
+    canLeave:async()=>{
       if(moving)return false;
       if(signalEditor?.active){say('Guardá o cerrá el diseño antes de cambiar de lugar.');return false;}
-      if(inside)return contentVisitor.allowLeaveRoom();
+      if(inside){
+        if(!await contentVisitor.allowLeaveRoom())return false;
+        if(activeSpace.topic&&directTopic!==undefined&&!await setTopicMode(null))return false;
+        return true;
+      }
       if((contentVisitor.frame&&!contentVisitor.parked)||nativeTurn||pending||preview||signalEditor.active||$('#message').value.trim()){
         say('Tenés una visita, un borrador o un envío abierto. Retomalo antes de cambiar de lugar.');
         return false;
@@ -744,7 +753,13 @@ function updateNativeAvailability(){
   $('#topics-open').hidden=!shared&&!activeSpace?.topic;
   $('#talk').disabled=inside&&!shared;
   $('#conversation-panel').classList.toggle('shared-conversation',shared);
-  $('#conversation-panel h2').textContent=activeSpace?.topic?'Nuestra conversación general':'Desde acá';
+  $('#conversation-panel').classList.toggle('topic-conversation',!!activeSpace?.topic||directTopic!==undefined);
+  $('#conversation-panel h2').textContent=directTopic===null?'Destinatario por confirmar':
+    directTopic?activeSpace.title:activeSpace?.topic?'Nuestra conversación general':'Desde acá';
+  const mode=$('#topic-conversation-mode');
+  mode.hidden=!shared||(!activeSpace?.topic&&directTopic===undefined);
+  mode.disabled=!!changingTopicMode;
+  mode.textContent=directTopic===undefined?'Hablar directo al topic':'Volver a la conversación general';
   $('#conversation-form').hidden=shared;$('#conversation-log').hidden=shared;
   $('#shared-conversation').hidden=!shared;
   const historyLabel=inside?null:worldHistory?.conversationLabel();$('#history-reference-clear').hidden=!historyLabel;
@@ -1011,13 +1026,50 @@ $('#undo').onclick=async()=>{
 function conversationHost(){
   if(!sharedConversation)sharedConversation=new SharedConversationHost({window,document,container:$('#shared-conversation'),api,
     capture:captureInteractionContext,currentActor:()=>activeSpace?.actorRef??state?.actorRef,
+    onTopicModeReset:()=>{
+      directTopic=undefined;
+      if(!changingTopicMode)$('#shared-conversation').inert=false;
+      $('#topic-mode-status').hidden=true;
+      updateNativeAvailability();
+    },
     onStatus:({phase,busy})=>{$('#companion-status').textContent=phases[phase]||(busy?'La conversación está procesando tu intervención.':'Tu intervención quedó en la conversación.');},onError:say});
   return sharedConversation;
 }
+async function setTopicMode(room){
+  if(changingTopicMode)return false;
+  changingTopicMode=true;
+  const frame=$('#shared-conversation'),status=$('#topic-mode-status');
+  status.hidden=true;
+  frame.inert=true;updateNativeAvailability();
+  let notice,restoreGeneral=false;
+  try{
+    await conversationHost().selectTopicMode(room);
+    if(room&&activeSpace.topic!==room){
+      directTopic=null;restoreGeneral=true;
+      return false;
+    }
+    directTopic=room??undefined;
+    return true;
+  }catch(error){
+    if(error.reset)directTopic=undefined;
+    else if(!error.refused)directTopic=null;
+    notice=error.message;
+    return false;
+  }finally{
+    changingTopicMode=false;
+    frame.inert=directTopic===null;
+    updateNativeAvailability();
+    if(notice){status.textContent=notice;status.hidden=false;}
+    if(restoreGeneral)void setTopicMode(null);
+  }
+}
+$('#topic-conversation-mode').onclick=()=>void setTopicMode(directTopic===undefined?activeSpace.topic:null);
 mountTopicExplorer(document,query=>conversationHost().readTopicRooms(query),async topic=>{
   if(!hot||moving||requestingMove||signalEditor?.active||
      contentVisitor.frame&&!contentVisitor.parked||!inside&&(nativeTurn||pending||preview||$('#message').value.trim()))
     throw Error('Retomá el trabajo abierto antes de cambiar de lugar.');
+  if(activeSpace.topic&&directTopic!==undefined&&!await setTopicMode(null))
+    throw Error('Confirmá primero el regreso a nuestra conversación general.');
   const from=activeSpace;
   requestingMove=true;setMoving(true);
   prefetchRequest?.abort();prefetchRequest=null;

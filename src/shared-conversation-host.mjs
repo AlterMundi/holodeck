@@ -5,8 +5,8 @@ const topicKey=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
 const SCHEMA='conversation.surface/v1';
 const bounded=value=>{try{return JSON.stringify(value).length<=8192;}catch{return false;}};
 export class SharedConversationHost{
-  constructor({window,document,container,api,capture,currentActor,onStatus=()=>{},onError=()=>{}}){
-    Object.assign(this,{window,document,container,api,capture,currentActor,onStatus,onError});
+  constructor({window,document,container,api,capture,currentActor,onStatus=()=>{},onError=()=>{},onTopicModeReset=()=>{}}){
+    Object.assign(this,{window,document,container,api,capture,currentActor,onStatus,onError,onTopicModeReset});
     this.records=new Map();this.topicReady=[];this.visit=window.crypto.randomUUID();this.receive=this.receive.bind(this);
     window.addEventListener('message',this.receive);
   }
@@ -43,14 +43,26 @@ export class SharedConversationHost{
     const d=event.data;
     if(d.type==='ready'){
       // A reload establishes a fresh channel; old async replies stay on the old channel.
-      if(this.channel!==d.channel)this.finishTopicRead(Error('La conexión cambió.'));
+      if(this.channel!==d.channel){
+        this.finishTopicRead(Error('La conexión cambió.'));
+        this.finishTopicMode(Object.assign(Error('La conversación volvió al modo general.'),{reset:true}));
+        if(this.channel)this.onTopicModeReset();
+      }
       this.channel=d.channel;this.supportsTopics=d.features?.topicRooms===true;
-      this.send(d,'connect',this.supportsTopics?{features:{topicRooms:true}}:{});
+      this.supportsDirect=d.features?.topicDirect===true;
+      const features={...(this.supportsTopics?{topicRooms:true}:{}),...(this.supportsDirect?{topicDirect:true}:{})};
+      this.send(d,'connect',Object.keys(features).length?{features}:{});
       for(const ready of this.topicReady.splice(0))ready();
       return;
     }
     if(d.channel!==this.channel)return;
-    if(d.type==='topic-rooms-readback')this.receiveTopicRead(d);
+    if(d.type==='topic-direct-readback'){
+      if(this.topicMode?.request!==d.request)return;
+      if(d.unavailable===true)this.finishTopicMode(Object.assign(Error('No pude cambiar el destinatario.'),{refused:true}));
+      else if(d.room===this.topicMode.room)this.finishTopicMode(null);
+      else this.finishTopicMode(Error('No pude confirmar el destinatario.'));
+    }
+    else if(d.type==='topic-rooms-readback')this.receiveTopicRead(d);
     else if(d.type==='prepare')this.prepare(d).catch(()=>{});
     else if(d.type==='status'&&this.records.has(d.id)&&typeof d.phase==='string'&&d.phase.length<=64&&typeof d.busy==='boolean'){
       this.onStatus({phase:d.phase,busy:d.busy});
@@ -61,6 +73,25 @@ export class SharedConversationHost{
       this.api(`conversation-contexts/${d.id}/discard`,{binding:d.binding,reason:d.reason})
         .then(value=>{if(value.released)this.records.delete(d.id);}).catch(()=>{});
     }
+  }
+  selectTopicMode(room){
+    if(this.closed||!this.supportsDirect||!this.channel||this.topicMode||
+      this.currentActor()!==this.selected?.actorRef||room!==null&&!topicKey(room))
+      return Promise.reject(Object.assign(Error('El modo directo todavía no está disponible.'),{refused:true}));
+    const request=this.window.crypto.randomUUID();
+    return new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>this.finishTopicMode(Error('No pude confirmar el destinatario.')),8000);
+      this.topicMode={request,room,resolve,reject,timer};
+      this.send({channel:this.channel},'topic-direct-select',{request,room});
+    });
+  }
+  finishTopicMode(error){
+    const selection=this.topicMode;
+    if(!selection)return;
+    this.topicMode=undefined;
+    clearTimeout(selection.timer);
+    if(error)selection.reject(error);
+    else selection.resolve();
   }
   async readTopicRooms({room,after}={}){
     if(room!==undefined&&!topicKey(room)||after!==undefined&&!topicKey(after)||
@@ -137,5 +168,5 @@ export class SharedConversationHost{
       if(!record.discarded&&this.channel===d.channel)this.send(d,'error',{request:d.request,id:d.id,message:'No pude conservar el contexto de este lugar. Tu borrador sigue en la conversación.'});
     }
   }
-  dispose(){this.closed=true;this.finishTopicRead(Error('La conversación se cerró.'));for(const ready of this.topicReady.splice(0))ready();this.window.removeEventListener('message',this.receive);this.frame?.remove();}
+  dispose(){this.closed=true;this.finishTopicMode(Error('La conversación se cerró.'));this.finishTopicRead(Error('La conversación se cerró.'));for(const ready of this.topicReady.splice(0))ready();this.window.removeEventListener('message',this.receive);this.frame?.remove();}
 }

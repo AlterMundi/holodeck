@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {SharedConversationHost} from '../src/shared-conversation-host.mjs';
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
-function fixture(){
+function fixture(onTopicModeReset){
  const sent=[],calls=[],frames=[],statuses=[];let actor='human:fixture',position=1,unblock;
  const binding='b'.repeat(64),file={file_id:randomUUID(),sha256:'c'.repeat(64),name:'holodeck-situation.json',mime:'application/json',size:2000};
  const window={location:{origin:'https://world.test'},crypto:{randomUUID},addEventListener(){},removeEventListener(){}};
  const document={createElement:()=>({contentWindow:{postMessage:(d,o)=>sent.push({d,o})},remove(){this.removed=true;}})};
- const host=new SharedConversationHost({window,document,container:{append:f=>frames.push(f)},currentActor:()=>actor,
+ const host=new SharedConversationHost({window,document,container:{append:f=>frames.push(f)},currentActor:()=>actor,onTopicModeReset,
   api:async(path,body)=>{calls.push({path,body});if(path==='conversation-surface')return {schema:'holodeck.conversation-surface/v1',actorRef:actor,binding,url:'https://conversation.test/interaction/'};
    if(path==='conversation-contexts')return {id:body.id,binding,files:[file],work_admitted:false};return {released:false};},
   capture:async()=>{const view={local:{position:{x:position}}};await new Promise(resolve=>unblock=resolve);return view;},onStatus:value=>statuses.push(value)});
@@ -58,6 +58,20 @@ test('the room catalogue accepts only its correlated, same-actor response',async
  f.host.dispose();
 });
 
+test('a fresh authenticated Conversation document resets direct selection',async()=>{
+ let resets=0;
+ const f=fixture(()=>resets++);await f.host.mount();
+ const ready=f.envelope('ready',{features:{topicDirect:true}});f.receive(ready);
+ const selection=f.host.selectTopicMode('a'.repeat(64));
+ const request=f.sent.at(-1).d;
+ f.receive(f.envelope('ready',{features:{topicDirect:true}}));
+ await assert.rejects(selection,{reset:true});
+ f.receive({...request,type:'topic-direct-readback'});
+ assert.equal(resets,1);
+ assert.equal(f.host.topicMode,undefined);
+ f.host.dispose();
+});
+
 const browserModule=process.env.HOLODECK_PLAYWRIGHT;
 const childSource=process.env.HOLODECK_CONVERSATION_SURFACE;
 test('a house-free Holodeck visitor reads and revalidates a topic through the Conversation frame',
@@ -83,7 +97,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
   args:['--no-sandbox','--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader']});
  t.after(()=>browser.close());
  const page=await browser.newPage({viewport:{width:390,height:700},isMobile:true,hasTouch:true});
- const readbacks=[],errors=[],name='Proyecto de las islas';
+ const readbacks=[],errors=[],modes=[],name='Proyecto de las islas';
  const room={room:'7'.repeat(64),title:name,general:false,direct_available:true};
  let visible=true;const posted=[];
  const protocol=await readFile(childSource,'utf8');
@@ -91,6 +105,10 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  page.on('request',request=>{if(request.method()==='POST')posted.push(new URL(request.url()).pathname);});
  await page.route(url=>url.origin===origin,async route=>{
   const address=new URL(route.request().url());
+  if(address.pathname==='/api/fixture-mode'){
+   const selected=address.searchParams.get('room');modes.push(selected);
+   return route.fulfill({json:{room:selected}});
+  }
   if(address.pathname==='/interaction/'){
    const parent=address.searchParams.get('surface_parent'),visit=address.searchParams.get('surface_visit');
    const start=`document.documentElement.dataset.surfaceParent=${JSON.stringify(parent)};
@@ -99,6 +117,11 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
       const target=new URL('/api/interaction/sessions',location.origin);
       target.searchParams.set('projection','holodeck');if(room)target.searchParams.set('room',room);
       const response=await fetch(target);if(!response.ok)throw Error('unavailable');return response.json();
+    },selectTopic:async (room,current)=>{
+      const target=new URL('/api/fixture-mode',location.origin);
+      if(room)target.searchParams.set('room',room);
+      const response=await fetch(target);
+      return current()?response.json():null;
     }});surface.identity(${JSON.stringify(actorRef)});surface.bind(${JSON.stringify(binding)});`;
    return route.fulfill({contentType:'text/html',body:`<!doctype html><html><script>${protocol}\n${start}</script></html>`});
   }
@@ -123,6 +146,9 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  assert.equal(runtime.spaces.current({id:actorRef}),entered.id);
  await page.getByRole('button',{name:'Conversar',exact:true}).tap();
  await page.getByRole('heading',{name:'Nuestra conversación general',exact:true}).waitFor();
+ await page.getByRole('button',{name:'Hablar directo al topic',exact:true}).tap();
+ await page.locator('#conversation-panel').getByRole('heading',{name,exact:true}).waitFor();
+ assert.deepEqual(modes,[room.room]);
  await page.locator('#conversation-close').tap();
  await page.locator('#space-travel summary').tap();
  await page.locator('#space-travel').getByRole('button',{name:'Volver al lugar anterior',exact:true}).tap();
@@ -136,6 +162,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  await dialog.getByText('Ese topic ya no está disponible.').waitFor();
  assert.deepEqual(readbacks,[null,room.room,null,room.room]);
  assert.deepEqual(posted,['/api/topic-space','/api/space']);
+ assert.deepEqual(modes,[room.room,null]);
  assert.deepEqual(errors,[]);
 });
 

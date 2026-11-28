@@ -404,3 +404,19 @@ available horizontal space within the display safe area. The regular
 side panel and the phone portrait rules continue to follow their respective
 layout constraints. The selected-worker browser fixture checked the full
 reply and its close control at four viewport sizes.
+
+## Direct conversation in a topic room
+
+A generated topic room opens general Conversation by default. The visitor can
+choose to talk directly to the current topic or return to general Conversation
+without leaving. The frame resolves the current authorized Session Workspace
+destination. Holodeck shows the confirmed audience and restores the general
+audience on departure or when a fresh Conversation document connects.
+The visitor's drafts and sends stay in Conversation.
+
+A mobile Chromium fixture exercises entry, direct selection, return on exit
+and refusal after room discovery is revoked through the real frame protocol.
+The selector in that browser fixture is controlled. The Session Workspace
+fixture separately tests the actual destination selector and exact reference.
+Native admission and the corresponding return for a direct original still need
+live acceptance.
