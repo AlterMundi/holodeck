@@ -435,5 +435,8 @@ without leaving the room. The active room and current source access are
 checked on each page. If the catalogue changes while paging, the table
 returns to the refreshed first page. Closing the table or leaving the room
 discards its browser view. A backend without the project reader reports the
-table unavailable. The table is a read-only view. Project entry and editing
-surfaces remain part of the topic-room roadmap.
+table unavailable. Opening a project from the table rechecks its selected
+repository link and shows only the project's currently visible repositories,
+including those outside the visible table page. Returning to the table
+reads its catalogue again. The view is read-only. Spatial project doors
+and editing surfaces remain part of the topic-room roadmap.

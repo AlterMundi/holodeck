@@ -230,6 +230,8 @@ body:has(#space-travel:not([open])+#door-guidance:not([hidden])) #visit-controls
 #topic-projects-list ul{list-style:none;margin:0;padding:10px;display:grid;gap:8px;background:#22434a;border-radius:10px}
 #topic-projects-list li{display:grid;gap:2px;overflow-wrap:anywhere}
 #topic-projects-list code{font-size:.72rem;color:var(--muted)}
+#topic-projects-return{margin-bottom:12px}
+#topic-projects-list section button{width:100%;text-align:left;overflow-wrap:anywhere}
 #topic-projects-dialog nav:has(button:not([hidden])){margin-top:12px}
 body:has(#conversation-panel:not([hidden])) #topics-open,body:has(#content-visit:not([hidden]):not(.is-walking)) #topics-open{display:none}
 #questbook-dialog{width:min(500px,calc(100vw - 24px));max-height:calc(100dvh - 24px);box-sizing:border-box;padding:16px;border:1px solid var(--line);border-radius:18px;background:#173339;color:var(--ink);overflow:auto}
@@ -332,6 +334,7 @@ body:has(#conversation-panel:not([hidden])) #appearance-open,body:has(#content-v
 <dialog id="topic-projects-dialog" aria-labelledby="topic-projects-title">
   <header><h2 id="topic-projects-title">Mesa de proyectos</h2><form method="dialog"><button type="submit" autofocus>Cerrar</button></form></header>
   <p id="topic-projects-status" role="status"></p>
+  <button id="topic-projects-return" type="button" hidden>Volver a la mesa</button>
   <div id="topic-projects-list"></div>
   <nav class="row" aria-label="Páginas de proyectos">
     <button id="topic-projects-back" type="button" hidden>Anterior</button>

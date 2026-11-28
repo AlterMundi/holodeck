@@ -1136,11 +1136,14 @@ const topicProjectsDialog=$('#topic-projects-dialog');
 const topicProjectsList=$('#topic-projects-list');
 const topicProjectsStatus=$('#topic-projects-status');
 const topicProjectsBack=$('#topic-projects-back'),topicProjectsNext=$('#topic-projects-next');
-let topicProjectsRead,topicProjectsPage=[],topicProjectsCursor;
+const topicProjectsTitle=$('#topic-projects-title'),topicProjectsReturn=$('#topic-projects-return');
+let topicProjectsRead,topicProjectsPage=[],topicProjectsCursor,topicProject,topicCataloguePage;
 topicProjectsDialog.addEventListener('close',()=>{
   if(topicProjectsDialog.open)return;
   topicProjectsRead?.abort();
   topicProjectsList.replaceChildren();
+  topicProject=undefined;
+  topicCataloguePage=undefined;
 });
 async function readTopicProjects(pages){
   const room=activeSpace.topic;
@@ -1151,13 +1154,16 @@ async function readTopicProjects(pages){
   topicProjectsPage=pages;
   topicProjectsList.replaceChildren();
   topicProjectsBack.hidden=topicProjectsNext.hidden=true;
-  topicProjectsStatus.textContent='Buscando los proyectos de esta sala…';
+  const project=topicProject;
+  topicProjectsTitle.textContent=project?'Proyecto vinculado':'Mesa de proyectos';
+  topicProjectsReturn.hidden=!project;
+  topicProjectsStatus.textContent=project?'Abriendo el proyecto…':'Buscando los proyectos de esta sala…';
   const current=()=>!request.signal.aborted&&topicProjectsDialog.open&&activeSpace.topic===room;
   const cursor=pages.at(-1);
   try{
-    const query=new URLSearchParams({room,...(cursor?{cursor}:{})});
+    const query=new URLSearchParams({room,...(cursor?{cursor}:{}),...project});
     const result=await api('topic-projects?'+query,undefined,{signal:request.signal});
-    if(!current()||result.room!==room)return;
+    if(!current()||result.room!==room||result.project!==project?.project)return;
     topicProjectsPage=result.restarted?[null]:pages;
     topicProjectsCursor=result.next;
     topicProjectsBack.hidden=topicProjectsPage.length<2;
@@ -1177,23 +1183,43 @@ async function readTopicProjects(pages){
         row.append(name,commit);
         list.append(row);
       }
-      topicProjectsList.append(list);
+      if(project){
+        topicProjectsList.append(list);
+        continue;
+      }
+      const first=repositories[0];
+      const section=document.createElement('section'),open=document.createElement('button');
+      open.type='button';
+      open.textContent='Abrir proyecto de '+first.label;
+      open.onclick=()=>{
+        topicCataloguePage=topicProjectsPage;
+        topicProject={project:first.project,repository:first.repository};
+        void readTopicProjects([null]);
+        topicProjectsReturn.focus();
+      };
+      section.append(list,open);
+      topicProjectsList.append(section);
     }
-    const status=projects.size?'Vínculos del topic':topicProjectsPage.length>1||topicProjectsCursor
+    const status=projects.size?(project?'Repositorios del proyecto':'Vínculos del topic'):topicProjectsPage.length>1||topicProjectsCursor
       ?'No hay vínculos visibles en esta página.':'Todavía no hay proyectos visibles en esta sala.';
     topicProjectsStatus.textContent=result.restarted?'Los vínculos cambiaron. Volvimos a la primera página. '+status:status;
   }catch{
     if(!current())return;
-    topicProjectsStatus.textContent='No pude consultar los proyectos de esta sala.';
+    topicProjectsStatus.textContent=project?'El proyecto no está disponible desde esta sala.':'No pude consultar los proyectos de esta sala.';
     topicProjectsBack.hidden=pages.length<2;
   }
 }
 $('#topic-projects-open').onclick=()=>{
   if(!activeSpace.topic||topicProjectsDialog.open)return;
+  topicProject=undefined;
   topicProjectsPage=[null];
   topicProjectsCursor=null;
   topicProjectsDialog.showModal();
   void readTopicProjects(topicProjectsPage);
+};
+topicProjectsReturn.onclick=()=>{
+  topicProject=undefined;
+  void readTopicProjects(topicCataloguePage);
 };
 topicProjectsBack.onclick=()=>void readTopicProjects(topicProjectsPage.slice(0,-1));
 topicProjectsNext.onclick=()=>void readTopicProjects([...topicProjectsPage,topicProjectsCursor]);

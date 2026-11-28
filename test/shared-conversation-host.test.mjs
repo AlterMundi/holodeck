@@ -83,14 +83,18 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  const actorRef='human:room-visitor',origin='https://conversation.test',binding='a'.repeat(64);
  let repositories=[],projectRevision=1;
  const nativeFactory=async()=>({availability:async()=>({available:true}),contexts:{},
-   async topicRoom(actor,topic,includeProjects,cursor){
+   async topicRoom(actor,topic,includeProjects,cursor,selection){
     assert.equal(actor.ref,actorRef);
     if(!visible||topic!==room.room)throw Object.assign(Error('Unavailable'),{code:'topic-room-unavailable'});
+    const scoped=selection?repositories.filter(row=>row.project===selection.project):repositories;
+    if(selection&&!scoped.some(row=>row.repository===selection.repository))
+      throw Object.assign(Error('Unavailable'),{code:'topic-room-unavailable'});
     const restarted=!!cursor&&cursor!==projectRevision+'.3';
     const older=cursor&&!restarted;
     return {schema:'holodeck.topic-room/v1',actorRef,room:topic,title:room.title,general:false,
-      ...(includeProjects?{projects:{repositories:older?repositories.slice(8):repositories.slice(0,8),
-        next:!older&&repositories.length>8?projectRevision+'.3':null,restarted}}:{})};
+      ...(includeProjects?{projects:{repositories:older?scoped.slice(8):scoped.slice(0,8),
+        next:!older&&scoped.length>8?projectRevision+'.3':null,restarted,
+        ...(selection?{project:selection.project}:{})}}:{})};
    },
    conversationSurface:async()=>({schema:'holodeck.conversation-surface/v1',actorRef,binding,
     beingRef:COMPAII_BEING,homeRef:'home:'+'c'.repeat(32),url:origin+'/interaction/'})});
@@ -176,6 +180,21 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  await table.getByText('Cuento',{exact:true}).waitFor();
  assert.equal(await table.getByRole('list',{name:'Repositorios de un proyecto'}).count(),2);
  await table.getByText('3'.repeat(40),{exact:true}).waitFor();
+ const detail=page.getByRole('dialog',{name:'Proyecto vinculado'});
+ const openStory=()=>table.getByRole('button',{name:'Abrir proyecto de Cuento',exact:true}).tap();
+ await openStory();
+ await detail.getByText('Ilustraciones',{exact:true}).waitFor();
+ assert.equal(await detail.getByText('Juego',{exact:true}).count(),0);
+ await detail.getByRole('button',{name:'Volver a la mesa',exact:true}).tap();
+ await table.getByText('Cuento',{exact:true}).waitFor();
+ const allRepositories=repositories;
+ repositories=repositories.filter(row=>row.label!=='Cuento');
+ await openStory();
+ await detail.getByText('El proyecto no está disponible desde esta sala.').waitFor();
+ assert.equal(await detail.getByText('Ilustraciones',{exact:true}).count(),0);
+ repositories=allRepositories;
+ await detail.getByRole('button',{name:'Volver a la mesa',exact:true}).tap();
+ await table.getByText('Cuento',{exact:true}).waitFor();
  await closeTable();
  repositories=repositories.filter(row=>row.label!=='Juego');
  repositories[0].commit='4'.repeat(40);

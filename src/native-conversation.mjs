@@ -108,8 +108,8 @@ export function createUnixNativeTransport(socketPath){
   }
   return {inspect:actorRef=>call('inspect',{actorRef}),
     surface:actorRef=>call('surface',{actorRef}),
-    topicRoom:(actorRef,room,includeProjects,cursor)=>call('topic-room',{actorRef,room,
-      ...(includeProjects?{projects:true}:{}),...(cursor?{cursor}:{})}),
+    topicRoom:(actorRef,room,includeProjects,cursor,selection)=>call('topic-room',{actorRef,room,
+      ...(includeProjects?{projects:true}:{}),...(cursor?{cursor}:{}),...(selection?{selection}:{})}),
     prepareContext:payload=>call('prepare-context',payload),
     submit:payload=>call('submit',payload),status:payload=>call('status',payload),lookup:payload=>call('lookup',payload)};
 }
@@ -344,6 +344,6 @@ export async function nativeFactory({room,stateDir,receiving,allowInteriorSource
   const contexts=await createConversationContexts({room,stateDir:join(stateDir,'conversation-context'),transport,allowInteriorSource});
   return {...legacy,contexts,
     conversationSurface:actor=>transport.surface(actor.ref),
-    topicRoom:(actor,room,includeProjects,cursor)=>transport.topicRoom(actor.ref,room,includeProjects,cursor),
+    topicRoom:(actor,room,includeProjects,cursor,selection)=>transport.topicRoom(actor.ref,room,includeProjects,cursor,selection),
     authorizeWorldRequest:(id,being)=>contexts.hasWorldRequest(id)?contexts.authorizeWorldRequest(id,being):legacy.authorizeWorldRequest(id,being)};
 }

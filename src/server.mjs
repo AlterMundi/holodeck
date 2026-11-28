@@ -976,13 +976,13 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       res.status(error.status).json({code:error.code,message:error.message,...(error.code==='stale-run'?{run:room.run}:{})});}
   });
   app.get(route('api/content-visits'),(req,res)=>res.json({nodes:selectedContentNodes,visits:[...visitsForActor(selectedContentVisits,req.actor),...nodeVisits(room.nodes,req.actor)]}));
-  async function topicSelection(req,res,topic,from,includeProjects=false,cursor){
+  async function topicSelection(req,res,topic,from,includeProjects=false,cursor,project){
     if(!native?.topicRoom||typeof topic!=='string'||!/^[a-f0-9]{64}$/.test(topic)){
       res.sendStatus(404);return null;
     }
     if(room.commitUncertain||spaces.fenced){res.sendStatus(503);return null;}
     let selection;
-    try{selection=await native.topicRoom(req.actor,topic,includeProjects,cursor);}
+    try{selection=await native.topicRoom(req.actor,topic,includeProjects,cursor,project);}
     catch(error){res.sendStatus(error?.code==='topic-room-unavailable'||error?.code==='identity'?404:503);return null;}
     const actor=await currentActor(req,req.holodeckSession);
     if(!actor||!inScope(actor,from)){res.sendStatus(404);return null;}
@@ -1002,14 +1002,23 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const cursor=req.query.cursor;
     const pageKey=/^[0-9]{1,19}\.[0-9]{1,19}$/;
     if(cursor!==undefined&&(typeof cursor!=='string'||!pageKey.test(cursor)))return res.sendStatus(400);
-    const selected=await topicSelection(req,res,visit.topic,visit.room.id,true,cursor);
+    const id=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
+    const {project,repository}=req.query;
+    let selection;
+    if(project!==undefined||repository!==undefined){
+      if(typeof project!=='string'||!id.test(project)||typeof repository!=='string'||!id.test(repository))
+        return res.sendStatus(400);
+      selection={project,repository};
+    }
+    const selected=await topicSelection(req,res,visit.topic,visit.room.id,true,cursor,selection);
     if(!selected)return;
     const {projects}=selected;
-    if(!projects||!Array.isArray(projects.repositories)||projects.repositories.length>8)
+    if(!projects||!Array.isArray(projects.repositories)||projects.repositories.length>8||
+      (projects.project??null)!==(selection?.project??null))
       return res.sendStatus(503);
-    const id=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
     const hash=/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/;
     if(projects.repositories.some(row=>!row||typeof row.project!=='string'||!id.test(row.project)||
+      (selection&&row.project!==project)||
       typeof row.repository!=='string'||!id.test(row.repository)||typeof row.commit!=='string'||!hash.test(row.commit)||
       typeof row.label!=='string'||!row.label.trim()||Array.from(row.label).length>80||/[\u0000-\u001f\u007f]/.test(row.label)))
       return res.sendStatus(503);
@@ -1017,7 +1026,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
     const {next=null,restarted=false}=projects;
     if((next!==null&&(typeof next!=='string'||!pageKey.test(next)))||typeof restarted!=='boolean')
       return res.sendStatus(503);
-    res.json({room:visit.topic,repositories,next,restarted});
+    res.json({room:visit.topic,repositories,next,restarted,...(selection?{project}:{})});
   }));
 
   app.get(route('api/topic-space'),asyncRoute(async(req,res)=>{

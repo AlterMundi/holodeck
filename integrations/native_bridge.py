@@ -144,13 +144,14 @@ class NativeBridge:
                 'beingRef':frozen['beingRef'],'homeRef':frozen['homeRef'],
                 'binding':frozen['binding'],'url':self.home_origin+self.home_entry}
 
-    def topic_room(self,actor,room,include_projects=False,project_cursor=None):
+    def topic_room(self,actor,room,include_projects=False,project_cursor=None,project_selection=None):
         first=self.pair(actor)
         if not self.home_workspace or not isinstance(room,str) or re.fullmatch('[a-f0-9]{64}',room) is None:
             raise BridgeError('topic-room-unavailable','The current Home workspace grant is unavailable')
         if include_projects:
             current=self.provider.topic_rooms(room,include_projects=True,**(
-                {'project_cursor':project_cursor} if project_cursor is not None else {}))
+                {'project_cursor':project_cursor} if project_cursor is not None else {}),**(
+                {'project_selection':project_selection} if project_selection is not None else {}))
         else:
             current=self.provider.topic_rooms(room)
         rows=current.get('rooms')
@@ -465,12 +466,18 @@ class NativeBridge:
         if request.get('operation')=='topic-room':
             include_projects=request.get('projects',False)
             cursor=request.get('cursor')
+            selection=request.get('selection')
             keys={'operation','actorRef','room'}
-            if (set(request)-{'projects','cursor'}!=keys or type(include_projects) is not bool or
+            if (set(request)-{'projects','cursor','selection'}!=keys or type(include_projects) is not bool or
                 ('cursor' in request and (not include_projects or not isinstance(cursor,str) or
                  re.fullmatch(r'[0-9]{1,19}\.[0-9]{1,19}',cursor) is None))):
                 raise BridgeError('topic-room-unavailable','Select an exact topic room and page')
-            return self.topic_room(request['actorRef'],request['room'],include_projects,cursor)
+            if 'selection' in request and (not include_projects or not isinstance(selection,dict)
+                or set(selection)!={'project','repository'} or any(not isinstance(value,str) or
+                re.fullmatch(r'[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}',value) is None
+                for value in selection.values())):
+                raise BridgeError('topic-room-unavailable','Select a linked project and repository')
+            return self.topic_room(request['actorRef'],request['room'],include_projects,cursor,selection)
         if request.get('operation')=='questbook-access':
             if (set(request)!={'operation','beingRef','project','write'}
                 or not isinstance(request['beingRef'],str)
