@@ -18,6 +18,18 @@ actual browser transfer, memory, render cost, doors and collisions before
 setting durable import budgets. The legacy room importer limits listed
 below describe the currently deployed format during that transition.
 
+### Selected exterior on the common terrain
+
+The receiving `ownerExteriors` selection binds an accepted house ID to
+an exact owner-published exterior manifest and its SHA-256. Stage the
+manifest and its three exact GLBs at `STATE_DIR/owner-exteriors` using their
+SHA-256 filenames and the existing authorized Home reader. The far model,
+near model and collision remain outside the engine archive. The district
+supplies the ground plane and parcel transform. The manifest supplies the
+arrival point, which the exterior door, teleporter and room return share.
+The existing foyer audience determines who can load the exterior. Each
+model request rechecks current access.
+
 ## Publish a walkable edition
 
 The owner publishes one Home edition with the cells, artwork and passages

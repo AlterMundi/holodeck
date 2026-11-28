@@ -8,6 +8,7 @@ import {Questbook} from './questbook-client.mjs';
 import {bindHudAppearance} from './hud-appearance.mjs';
 import {selectedHudLook} from './hud-look-preview.mjs';
 import {ToroidalScenery} from './toroidal-scenery.mjs';
+import {bindToroidalHouseExteriors} from './toroidal-house-exteriors.mjs';
 import {ToroidalAtmosphere,toroidalViewDepth} from './toroidal-atmosphere.mjs';
 import {toroidalSky} from './quintana-celestial.mjs';
 import {nightSkyKey} from './toroidal-solar-clock.mjs';
@@ -1138,6 +1139,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     interiorKey.shadow.bias=-.00015;
     interiorKey.shadow.normalBias=.02;
     renderer.mmlCompositionScene.group.add(light,light.target,interiorKey,interiorKey.target);
+    const houseExteriors=bindToroidalHouseExteriors(renderer.mmlCompositionScene.group,base,renderer.mmlCompositionScene.mmlScene);
     const houseLight=bindToroidalHouseLight(renderer.composer,renderer.mmlCompositionScene.group,document);
     let selectedKey=null,inspectionRoom=null,inspectionMix=0;
     let previousPresentationFrame=performance.now();
@@ -1479,6 +1481,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       frameBudget.sample(drawWorld&&!document.hidden&&!!position&&!moving&&!needsSync&&(!hot||networkScope===activeSpace.id));
       light.visible=!inside||!activeSpace.indoorLighting;
       aimSun(position);
+      houseExteriors.update(position,outsideRing()?activeSpace.exteriors:undefined);
       const litFacade=houseLight.update(outsideRing()?solar:null);
       ring?.setFacadeContact(litFacade);
       const key=inside&&activeSpace.keyLight||null;
@@ -1720,7 +1723,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       }
       frameDiagnostics.end();
     };
-    renderer.dispose=()=>{weatherRequest?.abort();rain.dispose();avatarPracticals.dispose();backgroundFocus?.dispose();poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();grass?.dispose();cinematicGrade?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseFraming();releaseOrbit();worldFocus.abort();tableAttention.dispose();pointRequest?.controller.abort();document.removeEventListener('visibilitychange',abortHiddenPoint);points.dispose();tableLaser.dispose();if(pointView===points)pointView=null;display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseCloseAvatar();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();actionLabel.dispose();flightWake.dispose();waterSplash.dispose();waterWake.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();houseLight.dispose();interiorKey.dispose();dispose();};
+    renderer.dispose=()=>{weatherRequest?.abort();rain.dispose();avatarPracticals.dispose();backgroundFocus?.dispose();poses.dispose();releaseRadialMovement?.();releaseHeadroom?.();ring?.dispose();cave?.dispose();scenery?.dispose();grass?.dispose();cinematicGrade?.dispose();atmosphere?.dispose();frameBudget.dispose();releaseFraming();releaseOrbit();worldFocus.abort();tableAttention.dispose();pointRequest?.controller.abort();document.removeEventListener('visibilitychange',abortHiddenPoint);points.dispose();tableLaser.dispose();if(pointView===points)pointView=null;display.dispose();if(conversationDisplay===display)conversationDisplay=null;matterHud.dispose();releaseCloseAvatar();releaseHologram();releaseFlightAnimation();releaseTableFlight?.();releaseSearchKeys?.();if(matterFlight===tableFlight)matterFlight=null;removeScene();sceneCache?.clear();worldPicker.dispose();worldIndication.dispose();actionLabel.dispose();flightWake.dispose();waterSplash.dispose();waterWake.dispose();companion.dispose();if(companionAvatar===companion)companionAvatar=null;nativeAvatarLayer.dispose();geometryProbe.dispose();sky.dispose();houseLight.dispose();houseExteriors.dispose();interiorKey.dispose();dispose();};
     queueMicrotask(()=>{
       if(client.keyInputManager){
         const keys=client.keyInputManager,shouldCapture=keys.shouldCaptureKeyPress;
@@ -2049,9 +2052,13 @@ async function refresh(){
     if(signalEditor.active&&!signalEditor.draft.mode&&!signalEditor.draft.pendingId)signalEditor.close();
   }
   revalidateLightPreview();contentVisitor.syncNodes(state.nodes);playableHUD.sync(state.nodes,state.actorRef,state.canEdit===true);
-  if(activeSpace?.id==='outside'&&Array.isArray(state.entrances)&&
-    JSON.stringify(activeSpace.entrances)!==JSON.stringify(state.entrances)){
-    activeSpace={...activeSpace,entrances:state.entrances};resetDoor();
+  if(activeSpace?.id==='outside'){
+    if(Array.isArray(state.entrances)&&JSON.stringify(activeSpace.entrances)!==JSON.stringify(state.entrances)){
+      activeSpace={...activeSpace,entrances:state.entrances};
+      resetDoor();
+    }
+    if(Array.isArray(state.exteriors)&&JSON.stringify(activeSpace.exteriors)!==JSON.stringify(state.exteriors))
+      activeSpace={...activeSpace,exteriors:state.exteriors};
   }
   $('#garden-create').hidden=state.lightExercise!==true||state.canEdit!==true;
   worldAudio.observe(state,{continuityVersion});worldHistory.observe(state);

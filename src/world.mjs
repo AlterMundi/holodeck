@@ -223,7 +223,7 @@ function workshopExterior(room,{prefix,sourceAttribute,includeVisits,includeCues
   return out;
 }
 
-export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=true,houseVisual,gardenVisual,sceneryAsset='island-scenery.glb',sceneryRevision,commonsVisual,coastalRidges,deferDressing=false,valleyHouse,toroidalHouse}={}){
+export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=true,houseVisual,gardenVisual,sceneryAsset='island-scenery.glb',sceneryRevision,commonsVisual,coastalRidges,deferDressing=false,valleyHouse,toroidalHouse,authoredExteriors}={}){
   if(!assetFile(sceneryAsset))throw Error('Select a packaged scenery asset');
   const prefix=basePath.endsWith('/')?basePath:basePath+'/';
   const sourceAttribute=deferDressing?'data-deferred-src':'src';
@@ -232,7 +232,7 @@ export function worldDocument(room,{basePath='/',includeVisits=true,includeCues=
   if(manifest.length>16384)throw Error('Geometry manifest exceeds bound');
   let out=`<m-group id="workshop" data-run="${attribute(room.run)}" data-edition="${attribute(room.edition)}" data-semantic-sequence="${room.sequence}" data-layout-version="${layout}" data-geometry-state="${attribute(manifest)}">`;
   if(toroidalHouse){
-    const houses=(room.houses?.directory()??[]).filter(house=>house.id!==toroidalHouse);
+    const houses=(room.houses?.directory()??[]).filter(house=>house.id!==toroidalHouse&&!authoredExteriors?.has(house.id));
     out+=`<m-group id="ring-house" x="${TOROIDAL_TERRAIN.majorRadius}" y="${TOROIDAL_PARCEL_Y}">`+
       // The torus is already paved at the group origin. The legacy .1 m
       // art offset is for the older physical ground cubes.
