@@ -101,7 +101,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       medium:null,loopTime:0,strokeTime:1.40,wadeWeight:0,phase:0,
       gaitPhase:null,gaitBackward:false,flightBackward:false,travelRight:0,travelForward:1,unsupported:0,fall:0,landingAge:Infinity,absorbAge:Infinity,absorb:0,brakeAge:Infinity,brake:0,lastSpeed:0});
     for(const follower of [entry.turn,entry.pitch,entry.bank,entry.lift,entry.sink,
-      entry.thrust,entry.lean,entry.sway,entry.lead,entry.aim,entry.hips,entry.headFirst,entry.backing,entry.outstretched,entry.restAmount])follower.reset();
+      entry.thrust,entry.lean,entry.sway,entry.lead,entry.aim,entry.hips,entry.headFirst,entry.ahead,entry.sideLean,entry.outstretched,entry.restAmount])follower.reset();
     entry.heading.set(0,0,0);
     entry.airRig?.reset();
   }
@@ -167,7 +167,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
           unpitched:new Quaternion(),applied:new Quaternion(),heading:new Vector3(),shift:new Vector3(),
           turn:new Follower(8.5),pitch:new Follower(7.5),bank:new Follower(10),lift:new Follower(9),sink:new Follower(4.5),
           thrust:new Follower(9),lean:new Follower(10),sway:new Follower(9),lead:new Follower(12),aim:new Follower(16),
-          hips:new Follower(11),headFirst:new Follower(7),backing:new Follower(6),outstretched:new Follower(6),restAmount:new Follower(3.5),directional:bindHumanoidDirectionalGait(mesh),
+          hips:new Follower(11),headFirst:new Follower(5),ahead:new Follower(5),sideLean:new Follower(5),outstretched:new Follower(5),restAmount:new Follower(3.5),directional:bindHumanoidDirectionalGait(mesh),
           limbs:limbNames.map(name=>mesh.getObjectByName(name))};
         resetMotion(entry);
         actors.set(id,entry);
@@ -337,17 +337,18 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       entry.hoverWeight+=(Number(Boolean(active))*(1-target)-entry.hoverWeight)*fade;
       entry.lowWeight+=(Number(Boolean(low))-entry.lowWeight)*fade;
       const w=entry.weight;
-      // In flight and water the body goes head first along its travel; when
-      // drifting backwards it leans back and lets the feet lead instead.
+      // In flight and water the body keeps facing the view, like the camera
+      // it rides with. Going ahead it lies out along the travel; sideways it
+      // stays upright and leans into the side; backing away it stands and
+      // leans back. Only a small turn of the body follows a diagonal, so
+      // the keys never swing the whole body around. A turn's own drift is
+      // left to the bank.
       const cruising=(mode==='hover'||mode==='swim')&&!atTable&&glanceMotion;
-      // An established backward lean must release at a pure strafe.
-      const flightTravel=gaitDirection(heading,entry.flightBackward,1.74);
-      if(!cruising)entry.flightBackward=false;
-      else if(entry.planarSpeed>.5)entry.flightBackward=flightTravel.backward;
-      const headFirstTarget=cruising?(entry.flightBackward?flightTravel.hips*.5:heading)*w:0;
-      const headFirst=glanceMotion?entry.headFirst.update(headFirstTarget,step):entry.headFirst.reset().value;
-      const backLean=entry.flightBackward?-.62:1;
-      const backing=glanceMotion?entry.backing.update(Number(cruising&&entry.flightBackward)*w,step):entry.backing.reset().value;
+      const along=Math.cos(heading),across=Math.sin(heading);
+      const ahead=glanceMotion?entry.ahead.update(cruising?along:1,step):entry.ahead.reset(1).value;
+      const headFirst=glanceMotion?entry.headFirst.update(cruising?clamp(heading,-.42,.42)*clamp(along)*w:0,step):entry.headFirst.reset().value;
+      const sideLean=glanceMotion?entry.sideLean.update(cruising?across*w*(.42+.18*smooth(boost))*clamp(1-Math.abs(turnRate)/1.2):0,step):entry.sideLean.reset().value;
+      const backLean=ahead>=0?ahead:ahead*.55;
       const airWeight=entry.airRig&&active?(mode==='land'?1-smooth(entry.airTime/landSeconds):1):0;
       entry.airWeight+=(airWeight-entry.airWeight)*ease(step,mode==='lift'?20:active?9:13);
       const lowerTarget=mode==='land'||!active?0:airWeight;
@@ -435,7 +436,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       // hovering and climbing in place it stands tall, fist to the sky.
       const aerobatic=isLocal&&floating&&Number.isFinite(loopPitch);
       const pilot=isLocal&&explicitFlight&&aerobatic;
-      const outstretched=glanceMotion?entry.outstretched.update(aerobatic&&mode==='hover'?clamp((entry.planarSpeed-.6)/2.4):0,step):
+      const outstretched=glanceMotion?entry.outstretched.update(aerobatic&&mode==='hover'?clamp((entry.planarSpeed-.6)/2.4)*clamp(ahead):0,step):
         entry.outstretched.reset(aerobatic&&mode==='hover'?1:0).value;
       // Snap into the trick body, spin, then open out before the ground.
       const trickProgress=trick?trickAge/TRICK_SECONDS:0;
@@ -445,8 +446,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       // The camera's pitch steers only the forward part of the travel.
       // Backing away, the pilot stands up and leans back instead of lying out.
       const piloted=aerobatic?Math.PI/2-loopPitch*Math.cos(headFirst):pitchValue;
-      const laidOut=piloted+(pitchValue-piloted)*(aerobatic?backing:0);
-      pitch.setFromAxisAngle(pitchAxis,pitchValue+(laidOut-pitchValue)*outstretched+flip);
+      pitch.setFromAxisAngle(pitchAxis,pitchValue+(piloted-pitchValue)*outstretched+flip);
       entry.rotation=character.quaternion;
       entry.unpitched.copy(entry.rotation);
       if(airYaw&&!pilot)entry.rotation.multiply(yaw.setFromAxisAngle(yawAxis,airYaw));
@@ -455,7 +455,8 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
         character.getWorldQuaternion(bodyFacing);
         right.copy(pitchAxis).applyQuaternion(bodyFacing);
       }
-      tilt.copy(pitch);
+      // Lean into a sideways travel about the body's own forward axis.
+      tilt.setFromAxisAngle(rollAxis,-sideLean).multiply(pitch);
       if(bankValue)tilt.multiply(roll.setFromAxisAngle(pilot?yawAxis:rollAxis,bankValue));
       if(trick&&entry.trick.roll)tilt.multiply(roll.setFromAxisAngle(rollAxis,2*Math.PI*entry.trick.roll*spin));
       if(trick&&entry.trick.twist)tilt.multiply(roll.setFromAxisAngle(yawAxis,2*Math.PI*entry.trick.twist*spin));

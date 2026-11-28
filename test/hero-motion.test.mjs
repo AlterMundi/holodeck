@@ -59,28 +59,29 @@ test('the planted foot moves against the travel in every direction',async()=>{
   assert.ok(diagonal.z>.5&&Math.sign(diagonal.x)===-Math.sign(right.x),JSON.stringify(sums));
 });
 
-test('a pilot flies head first along a sideways boost and leans back when backing away',async()=>{
-  const route=[['launch',1.2,{flight:true,vertical:1}],['side',2,{flight:true,right:1,sprint:true}],['back',2.2,{flight:true,forward:-1}],['strafe-after-back',2.8,{flight:true,right:-1,sprint:true}]];
-  let lastPosition=null,alignment=0,strafeAfterBack=0,backTilt=-1;
+test('a pilot keeps facing the view: lies out ahead, leans into a strafe, stands to back away',async()=>{
+  const route=[['launch',1.2,{flight:true,vertical:1}],['ahead',2,{flight:true,forward:1,sprint:true}],
+    ['side',2,{flight:true,right:1,sprint:true}],['back',2.2,{flight:true,forward:-1}],
+    ['strafe-after-back',2.8,{flight:true,right:-1,sprint:true}]];
+  const seen={};let lastPosition=null;
   await runSequence({file:explorer,route,pilot:true,onFrame({name,phase,root}){
     const position=root.position.clone();
-    if((name==='side'||name==='strafe-after-back')&&phase>1.6&&lastPosition){
+    if(phase>1.6&&lastPosition&&name!=='launch'){
       const travel=position.clone().sub(lastPosition).normalize();
-      // Lying out, the body's long axis (its local up) runs along the travel.
-      const length=new Vector3(0,1,0).applyQuaternion(root.quaternion);
-      if(name==='side')alignment=Math.max(alignment,length.dot(travel));
-      else strafeAfterBack=Math.max(strafeAfterBack,length.dot(travel));
-    }
-    if(name==='back'&&phase>2){
       const upright=new Vector3(0,1,0).applyQuaternion(toroidalRotation(root.position,0));
-      backTilt=new Vector3(0,1,0).applyQuaternion(root.quaternion).dot(upright);
+      const body=new Vector3(0,1,0).applyQuaternion(root.quaternion);
+      const facing=new Vector3(0,0,1).applyQuaternion(root.quaternion);
+      seen[name]={upright:body.dot(upright),lean:body.dot(travel),facing:facing.dot(travel)};
     }
     lastPosition=position;
   }});
-  assert.ok(alignment>.8,`alignment ${alignment}`);
-  assert.ok(strafeAfterBack>.8,`strafe after backing ${strafeAfterBack}`);
-  // Backing away the pilot stands up instead of lying out.
-  assert.ok(backTilt>.75,`upright ${backTilt}`);
+  const note=JSON.stringify(seen);
+  assert.ok(seen.ahead.lean>.8,note);                       // lying out along the travel
+  assert.ok(seen.side.upright>.6&&seen.side.lean>.2,note);   // upright, leaning into the strafe
+  assert.ok(Math.abs(seen.side.facing)<.45,note);            // still facing the view, not turned sideways
+  assert.ok(seen.back.upright>.75,note);                     // standing up to back away
+  // The backward lean releases into the strafe lean.
+  assert.ok(seen['strafe-after-back'].upright>.6&&seen['strafe-after-back'].lean>.2,note);
 });
 
 test('the explorer idles through its repertoire with both feet planted',async()=>{
@@ -144,4 +145,10 @@ test('a chosen crouch is a low stealth stance with a raised guard',async()=>{
   const {stand,crouch}=heights;
   assert.ok(stand.pelvis-crouch.pelvis>.2,JSON.stringify(heights));
   assert.ok(crouch.hand>crouch.chest-.05,JSON.stringify(heights));
+});
+
+test('mashing flight keys leans and settles the body instead of whipping it around',async()=>{
+  const {keyMash}=await import('../tools/avatar-motion/key-mash.mjs');
+  const {worst,mean}=await keyMash({flight:true});
+  assert.ok(worst<5&&mean<2,JSON.stringify({worst,mean}));
 });
