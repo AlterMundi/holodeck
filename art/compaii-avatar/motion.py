@@ -379,14 +379,15 @@ def author(rig):
         bone.location = (0, 0, 0)
 
 
-def export(rig, path):
+def export(rig, path, image_format=None):
     tracks = rig.animation_data.nla_tracks
     for track in tracks:
         track.mute = False
     bpy.ops.export_scene.gltf(filepath=str(path), export_format="GLB", use_selection=True,
         export_animation_mode="NLA_TRACKS", export_animations=True, export_materials="EXPORT",
         export_texcoords=True, export_meshopt_compression_enable=True,
-        export_meshopt_extension="EXT_meshopt_compression", export_optimize_animation_keep_anim_armature=False)
+        export_meshopt_extension="EXT_meshopt_compression", export_optimize_animation_keep_anim_armature=False,
+        **({"export_image_format": image_format, "export_image_quality": 86} if image_format else {}))
     for track in tracks:
         track.mute = True
 

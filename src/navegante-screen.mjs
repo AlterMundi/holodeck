@@ -1,4 +1,4 @@
-import {AdditiveBlending,Color,MeshBasicMaterial,Vector3,Vector4} from 'three';
+import {AdditiveBlending,Color,MeshBasicMaterial,Vector2,Vector3,Vector4} from 'three';
 
 // Navegante's visor is an LED screen. Every expression and the speaking
 // mouth are drawn on it as lit pixels: eyes, brows and mouth, each with its
@@ -74,12 +74,13 @@ uniform vec4 sMouth2;  // wave, speech open, speech wide, speech round
 uniform vec4 sFx0;     // sparkle, tear, scan, zz
 uniform vec4 sFx1;     // dots, flicker, time, blink
 uniform float sTalk;
+uniform vec2 sShape;  // visor aspect, eye height scale
 varying vec2 vScreen;
 float hash(vec2 p){return fract(sin(dot(p,vec2(41.3,289.1)))*43758.5453);}
 float band(float d,float w){return smoothstep(w,w*.45,abs(d));}
 float eyeLit(vec2 c,float side){
   float asym=1.+sEye1.y*side*-1.;
-  float w=sEye0.x*asym,h=sEye0.y*asym;
+  float w=sEye0.x*asym,h=sEye0.y*asym*sShape.y;
   vec2 q=c-vec2(side*.52+sEye1.z*.16,.16+sEye1.w*.14);
   float x=q.x/w;
   float closed=clamp(sEye0.z+sFx1.w,0.,1.);
@@ -123,7 +124,7 @@ float zGlyph(vec2 q,float s){
 }
 vec4 screen(){
   // glTF flips V; the screen is authored with +y up.
-  vec2 p=vec2(vScreen.x*2.-1.,1.-vScreen.y*2.)*vec2(1.485,1.);
+  vec2 p=vec2(vScreen.x*2.-1.,1.-vScreen.y*2.)*vec2(sShape.x,1.);
   float t=sFx1.z;
   float density=17.;
   vec2 cell=(floor(p*density)+.5)/density;
@@ -171,7 +172,15 @@ export function installNaveganteScreen(mesh){
   if(!material||!/^Visor LED screen/.test(material.name))return null;
   const uniforms={sCol:{value:new Vector4()},sEye0:{value:new Vector4()},sEye1:{value:new Vector4()},
     sBrow:{value:new Vector4()},sMouth:{value:new Vector4()},sMouth2:{value:new Vector4()},
-    sFx0:{value:new Vector4()},sFx1:{value:new Vector4()},sTalk:{value:0}};
+    sFx0:{value:new Vector4()},sFx1:{value:new Vector4()},sTalk:{value:0},sShape:{value:new Vector2(1.485,1)}};
+  // The visor's own proportion; a "slits" screen (the bronze navigator) rests
+  // with narrow blue eyes.
+  mesh.geometry.computeBoundingBox();
+  const size=mesh.geometry.boundingBox.getSize(new Vector3());
+  const wide=size.x,other=[size.y,size.z].sort((a,b)=>b-a)[0];
+  if(wide>0&&other>0)uniforms.sShape.value.x=wide/other;
+  const slits=/slits/.test(material.name);
+  if(slits)uniforms.sShape.value.y=.38;
   const screen=new MeshBasicMaterial({name:material.name,transparent:true,depthWrite:false,blending:AdditiveBlending,toneMapped:false});
   screen.onBeforeCompile=shader=>{
     Object.assign(shader.uniforms,uniforms);
@@ -187,15 +196,16 @@ export function installNaveganteScreen(mesh){
   mesh.material=screen;
   mesh.renderOrder=2;
   material.dispose();
-  return new NaveganteScreen(uniforms,screen);
+  return new NaveganteScreen(uniforms,screen,{calm:slits?0x3d7bff:null});
 }
 
 const lerp=(a,b,t)=>a+(b-a)*t;
 export class NaveganteScreen{
-  constructor(uniforms,material){
+  constructor(uniforms,material,{calm=null}={}){
     Object.assign(this,{uniforms,material});
     this.name='calm';
-    this.current=flatten(EXPRESSIONS.calm);
+    this.calmColour=calm;
+    this.current=this.expression('calm');
     this.target=this.current.slice();
     this.speech=new SpeechArticulator();
     this.clock=0;this.blink=0;this.nextBlink=2.4;
@@ -203,7 +213,11 @@ export class NaveganteScreen{
   }
   set(name){
     if(!EXPRESSIONS[name]||name===this.name)return;
-    this.name=name;this.target=flatten(EXPRESSIONS[name]);
+    this.name=name;this.target=this.expression(name);
+  }
+  expression(name){
+    const e=EXPRESSIONS[name];
+    return flatten(name==='calm'&&this.calmColour!=null?{...e,colour:this.calmColour}:e);
   }
   update(seconds,{speech=0,motion=true}={}){
     const step=Math.min(.1,Math.max(0,seconds));
