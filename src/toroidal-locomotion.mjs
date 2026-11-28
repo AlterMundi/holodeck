@@ -9,6 +9,8 @@ const MAX_FRAME = 9 * STEP;
 const GRAVITY = 19.6;
 const FLIGHT_CEILING = 70;
 const JUMP_SPEED = 5.8;
+// A heroic second jump: about twice the height of the first.
+const DOUBLE_JUMP_SPEED=8.4;
 const WALK_SPEED = 5;
 const RUN_SPEED = 8;
 const FLIGHT_BOOST_SPEED=25;
@@ -160,7 +162,7 @@ export class ToroidalLocomotion {
       this.doubleJumpQueued=false;
       if(this.airJumpReady&&!this.grounded&&immersion<.2){
         this.airJumpReady=false;
-        this.radialSpeed=5.6;
+        this.radialSpeed=DOUBLE_JUMP_SPEED;
         this.doubleJumpCount++;
       }
     }

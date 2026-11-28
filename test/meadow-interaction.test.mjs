@@ -47,6 +47,7 @@ test('walking leaves footprints that spring back, and a jump leaves none',()=>{
     const start=point(.004,.27);
     grass.update(start,false,1,1/60);
     assert.equal(live(grass).length,1,'only the explorer, standing');
+    grass.seconds+=100; // An old visit clock cannot widen each new footprint.
     const step=point(.004+1.2/(2*Math.PI*1000),.27);
     // Walk a few metres: footprints appear behind.
     for(let i=1;i<=30;i++){
@@ -56,6 +57,7 @@ test('walking leaves footprints that spring back, and a jump leaves none',()=>{
     const walked=live(grass).length;
     assert.ok(walked>2,`footprints: ${walked}`);
     assert.ok(grass.uniforms.grassPushBounds.value.w>0);
+    assert.ok(grass.uniforms.grassPushBounds.value.w<8,'bounds follow footprint height, not its timestamp');
     // Standing still, footprints fade out within the spring-back time.
     const here=grass.walkers.get('self').now;
     for(let i=0;i<120;i++)grass.update({x:here[0],y:here[1],z:here[2]},false,1,1/30);
@@ -73,7 +75,7 @@ test('walking leaves footprints that spring back, and a jump leaves none',()=>{
   }finally{grass.dispose();}
 });
 
-test('ordinary flight leaves a softer, longer trail than boost',()=>{
+test('ordinary flight leaves a ribbon; boost adds sparks and breaks away with a shockwave',()=>{
   const origin=new Vector3(),end=new Vector3();
   assert.equal(cruiseWakeDistance(origin,end.set(.15,0,0),.03),.15,'5 m/s');
   assert.equal(cruiseWakeDistance(origin,end.set(.05,0,0),.03),0,'hovering');
@@ -84,27 +86,66 @@ test('ordinary flight leaves a softer, longer trail than boost',()=>{
     const at=new Vector3();
     wake.observe(1,at.set(0,0,0),up,true,.03);
     for(let i=1;i<=20;i++)wake.observe(1,at.set(i*.15,0,0),up,true,.03);
-    assert.ok(wake.index>=4,`cruise particles: ${wake.index}`);
-    const cruise=wake.kind.getX(0);
-    const cruiseLife=wake.kind.getY(0);
-    const first=wake.index;
+    // Cruise: a ribbon with a growing path, no sparks.
+    const ribbon=wake.ribbons.slots.get(1);
+    assert.ok(ribbon,'cruise ribbon');
+    assert.equal(wake.index,0,'no cruise sparks');
+    assert.ok(ribbon.points.filter(point=>point.born>-1e3).length>=6);
+    assert.ok(Math.abs(ribbon.points[0].strength-.6)<1e-9);
+    const last=ribbon.points[0].p.clone();
+    wake.observe(1,at.set(3.04,0,0),up,false,.03);
+    assert.deepEqual(ribbon.points[0].p,last,'a fading ribbon stays in place');
+    wake.observe(1,at.set(120,0,0),up,true,.03);
+    assert.equal(wake.ribbons.slots.has(1),false,'an abrupt relocation drops the old trail');
+    wake.observe(1,at.set(120.15,0,0),up,true,.03);
+    assert.ok(wake.ribbons.slots.get(1).points.every(point=>point.p.x>=120),'the next segment starts at the new position');
+    // Boost: sparks and a full-strength ribbon.
     wake.observe(2,at.set(0,5,0),up,true,.03);
     wake.observe(2,at.set(.75,5,0),up,true,.03);
-    assert.ok(wake.index>first);
-    assert.ok(cruise<wake.kind.getX(first),'boost is brighter');
-    assert.ok(cruiseLife>wake.kind.getY(first),'cruise lasts longer');
-    // A boost sample can carry more than one cruise spacing. The first
-    // cruise particle must still be inside the segment just flown.
-    wake.observe(4,at.set(0,8,0),up,true,.03);
-    wake.observe(4,at.set(.65,8,0),up,true,.03);
-    const beforeCruise=wake.index;
-    wake.observe(4,at.set(.8,8,0),up,true,.015);
-    for(let index=beforeCruise;index<wake.index;index++)
-      assert.ok(wake.position.getX(index)>=.65);
-    // Walking (not flying) leaves nothing.
-    const before=wake.index;
+    assert.ok(wake.index>0,'boost sparks');
+    assert.equal(wake.ribbons.slots.get(2).points[0].strength,1);
+    // A boost breaking away fires a shockwave.
+    wake.burst(2,at,new Vector3(1,0,0),up);
+    assert.equal(wake.shockwaves.mesh.visible,true);
+    // Walking (not flying) starts no ribbon.
     wake.observe(3,at.set(0,9,0),up,false,.03);
     wake.observe(3,at.set(.15,9,0),up,false,.03);
-    assert.equal(wake.index,before);
+    assert.equal(wake.ribbons.slots.has(3),false);
+    wake.update(false);
+    assert.equal(wake.ribbons.slots.size,0);
+  }finally{wake.dispose();}
+  assert.equal(scene.children.length,0);
+});
+
+test('a boost breakaway throws smoke and kicks only the local, non-VR screen',async()=>{
+  const {CameraKick}=await import('../src/hero-effects.mjs');
+  const scene=new Group(),up=new Vector3(0,1,0),side=new Vector3(1,0,0);
+  const wake=new FlightWake(scene);
+  try{
+    wake.burst(7,new Vector3(),new Vector3(0,0,1),up,false);
+    assert.equal(wake.smoke.mesh.visible,true);
+    assert.equal(wake.shake(up,side,true).length(),0,'a peer boost does not shake my view');
+    wake.burst(7,new Vector3(),new Vector3(0,0,1),up,true);
+    const kick=new CameraKick();kick.fire(0);
+    assert.ok(kick.sample(.05,up,side).length()>0);
+    assert.equal(kick.sample(.05,up,side,{allowed:false}).length(),0,'VR or reduced motion');
+    assert.equal(kick.sample(.5,up,side).length(),0,'brief');
+    assert.ok(kick.sample(.05,up,side).length()<.07,'gentle');
+  }finally{wake.dispose();}
+  assert.equal(scene.children.length,0);
+});
+
+test('flying low washes the surface: dust over land, rings over water, nothing up high',async()=>{
+  const {WaterSplash}=await import('../src/water-splash.mjs');
+  const splash=new WaterSplash(new Group());
+  splash.skim(new Vector3(),new Vector3(0,1,0),.8);
+  assert.equal(splash.ripples.mesh.visible,true,'a ring under a skimming flyer');
+  splash.dispose();
+  const scene=new Group(),up=new Vector3(0,1,0);
+  const wake=new FlightWake(scene);
+  try{
+    wake.dust(new Vector3(),up,new Vector3(0,0,1),1,[.3,.5,.2]);
+    assert.equal(wake.smoke.mesh.visible,true);
+    assert.ok(wake.smoke.next>=3,'puffs to both sides and grass bits');
   }finally{wake.dispose();}
 });

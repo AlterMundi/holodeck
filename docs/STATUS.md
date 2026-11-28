@@ -1,5 +1,85 @@
 # Current MVP work
 
+## Flight ribbons, shockwaves and water ripples · 2026-11-28
+
+Protected release `3073d6c8068c` selects runtime source `1553b42`. It
+integrates Char Design's `dd69f08` with a ribbon reset at abrupt position
+changes. The previous release, `3df546386f92`, is the rollback. All 96
+installed files matched the package and the protected client matched over
+HTTPS. Node passed 586 tests with four skips.
+
+RTX 2060 browser checks observed cruise ribbons, repeat boost shockwaves,
+ribbons through vertical turns and rapid directional changes, a clean trail
+restart after a relocation, and water ripples on entry and exit. A second
+networked client observed a ribbon and shockwave at the flying peer.
+
+On the Pi 5 in normal graphics at a 528 × 330 draw buffer, three 2.5-second
+windows per arm gave median cruise FPS of 13.51 before and 14.42 after, and
+median boost FPS of 14.81 before and 14.90 after. Median frame p95 remained
+about 83 ms in both cases. This covers a single flight route over the meadow.
+
+## Pilot loops and free look · 2026-11-28
+
+Protected release `3df546386f92` selects `7c8c53e`. The previous release,
+`2a4b5b7339a0`, is the rollback. Installation and protected bundle readback
+matched all 96 files in the selected archive. Node tests passed 586 with four
+skips.
+
+On the RTX 2060, sustained right-button input completed four vertical loops
+in both directions with and without boost. The flight pose kept its alignment
+past both poles. Rapid directional changes peaked at 3.75 rad/s. Left-button
+drag changed framing while walking, swimming, and flying with under 0.0001 rad
+of body-heading change. Right-button drag moved the camera and body together.
+
+Chromium's emulated touch screen verified framing without moving the body, then
+using the A2UI joystick to walk in the new direction. The physical Redmi
+connected to the isolated fixture and received a position, but its entry screen
+stayed open, leaving physical touch acceptance outstanding.
+
+## Stable flight and character poses · 2026-11-28
+
+Protected release `2a4b5b7339a0` selects `78aadf4`. It integrates Char Design's
+`e314c8a` and retains the serving Questbook pilot in `b19c7b66ac3b` as the
+rollback. Exact archive, installation and protected bundle readback passed.
+
+RTX 2060: rapid W/A/S/D and diagonal changes peaked at approximately
+4.4 rad/s in flight and 4.7 rad/s under boost. The browser drove six double
+jumps, stealth walking, stationary hover, water rest and forward and lateral
+swimming. A second networked browser received ground and boosted flight
+poses. The double-jump choreography is chosen on the pilot's client, so
+peers receive the underlying jump without the exact trick.
+
+On a Pi 5 at the same daytime meadow pose and 528 × 330 draw buffer, normal
+graphics measured 11.51 FPS before and 11.68 FPS with the new footprint
+bounds. Frame p95 was 100 ms in both arms. Footprint bounds use height
+rather than the footprint's age. The browser repeated the avatar checks
+after composing the serving Questbook changes. Both Questbook HTTP and
+browser fixtures passed separately with the configured DaimonCards binary.
+
+
+## Explorer motion and responsive meadow · 2026-11-28
+
+Protected release `6fd9cd26732d` selects `66dad9e`, integrating Char Design's
+`cd2b78f` and the qualified meadow. Exact archive and protected HTTPS bundle
+readback passed. Rollback remains `952e5c7121b1`.
+
+A browser on the RTX 2060 exercised 20 ground and flight segments with A, D,
+S and diagonals, including Shift. A 42 s idle run measured at most 4.3 mm of
+foot displacement. A second client with its own fixture identity loaded the
+same rig and observed its ground and airborne movement. A later device pass
+confirmed head-first lateral flight when transitioning out of reverse, with
+and without boost. The exact final package also rendered reactive grass,
+distant clumps and ordinary-flight particles while moving.
+
+The grass renderer applies the reactive shader only on tiles that intersect
+the active pressure volume. In the settled Pi 5 normal-mode comparison at a
+528 × 330 drawing buffer, the base produced 11.76 FPS and the tile-scoped
+build produced 11.43 FPS. Median p95 was 100 ms in both runs. The later
+flight-only transition correction does not affect that stationary scene.
+The final RTX meadow arm used a larger adaptive draw buffer; use it for
+visual qualification only. Node tests: 579 passed, two skipped.
+
+
 ## Reactive meadow and ordinary flight wake · 2026-11-28
 
 Char Design's `c3140b5` is integrated in candidate `4e223ee`, archive

@@ -948,6 +948,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const worldInteractionCanvas=renderer.composer.renderer.domElement;
     const frameDiagnostics=new FrameDiagnostics(renderer.composer.renderer,base);
     const releaseOrbit=bindWorldOrbitInput(options.coreCameraManager,worldInteractionCanvas,()=>mouseSensitivity,()=>Boolean(matterHud?.teleport.group),{
+      overControl:event=>matterHud?.overControl(event),
       tableOrbit:()=>tableFlight.active&&tableInputAllowed()&&!needsSync,
       active:()=>Boolean(tableFlight.inspectParts),
       available:pointer=>Boolean(tableFlight.inspectParts&&tableInputAllowed()&&!needsSync&&
@@ -959,10 +960,13 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       pan:(x,y)=>tableFlight.translateInspection(client.getCharacterManager().localController,x,y),
     },()=>outsideRing()&&!flightEnabled&&(radialMovementMode==='swim'||radialMovementMode==='surface')&&
       !entering&&!moving&&!tableFlight.active&&!matterHud?.teleport.group&&!document.hidden,
-      ()=>outsideRing()&&flightEnabled&&!entering&&!moving&&!tableFlight.active&&!matterHud?.teleport.group&&!document.hidden);
+      ()=>outsideRing()&&flightEnabled&&!entering&&!moving&&!tableFlight.active&&!matterHud?.teleport.group&&!document.hidden,outsideRing);
+    // The boost kick is screen-only: never in VR, never with reduced motion.
+    let boostKick=null;
     const releaseFraming=bindAvatarFraming(options.coreCameraManager,worldInteractionCanvas,
       ()=>client.getCharacterManager().localController?.config.quaternion,
-      ()=>!entering&&!moving&&!tableFlight.active&&!matterHud?.teleport.group&&!document.hidden);
+      ()=>!entering&&!moving&&!tableFlight.active&&!matterHud?.teleport.group&&!document.hidden,
+      (up,side)=>boostKick?.shake(up,side,!renderer.composer.renderer.xr?.isPresenting&&!companion.motion.matches));
     const aiming=()=>releaseOrbit.aiming()&&!entering&&!moving&&!tableFlight.active&&!document.hidden;
     const mapPanel=document.querySelector('#space-travel');
     const minimap=bindToroidalMinimap(mapPanel);
@@ -1183,6 +1187,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const avatarPracticals=bindAvatarPracticals(renderer.mmlCompositionScene.group,options.coreCameraManager.collisionsManager);
     const companion=new CompanionAvatar({scene:renderer.mmlCompositionScene.group,document,base});
     const flightWake=new FlightWake(renderer.mmlCompositionScene.group);
+    boostKick=flightWake;
     const waterSplash=new WaterSplash(renderer.mmlCompositionScene.group,{
       lightweight:()=>rendererBudget.lightweight,pixelRatio:()=>renderer.composer.renderer.getPixelRatio(),
     });
@@ -1363,7 +1368,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       outdoor:outsideRing(),flying:flightEnabled,boosting:localFlightBoost(),grounded:client.getCharacterManager().localController?.characterOnGround,table:tableFlight.active,tabletopPlayers:tabletopPlayers(),
       peerPoses:poses.peers,peerGaze:points.gazes,gaze:tableGaze,wake:!entering&&!moving&&drawWorld?flightWake:null,trample:!entering&&!moving&&drawWorld?grass:null,glanceMotion:!companion.motion.matches&&!document.hidden,
       trickAge:(performance.now()-trickStarted)/1000,
-      aimPitch:aiming()?Math.PI/2-options.coreCameraManager.phi:null,loopPitch:flightEnabled?options.coreCameraManager.phi-Math.PI/2:releaseOrbit.pitch(),
+      aimPitch:aiming()?Math.PI/2-options.coreCameraManager.phi:null,loopPitch:flightEnabled?releaseOrbit.steerPhi()-Math.PI/2:releaseOrbit.pitch(),
       splash:!entering&&!moving&&drawWorld&&!document.hidden?waterSplash:null,
       waterWake:!entering&&!moving&&drawWorld&&!document.hidden?waterWake:null,
       microphoneLevel:sharedConversation&&!moving&&!entering&&sharedSurface()?sharedConversation.microphoneLevel():null,
@@ -1755,7 +1760,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         ()=>flightEnabled,firstExteriorDoor,(mode,boost=false)=>{radialMovementMode=mode;radialBoosting=boost;},aiming,releaseOrbit.pitch,
         ()=>{const requested=doubleJumpPending;doubleJumpPending=false;return requested;},
         ()=>{trickStarted=performance.now();},
-        ()=>{const requested=firstJumpPending;firstJumpPending=false;return requested;});
+        ()=>{const requested=firstJumpPending;firstJumpPending=false;return requested;},releaseOrbit);
       firstExteriorDoor=null;
       releaseTableFlight=bindMatterFlight(client.getCharacterManager(),options.coreCameraManager,tableFlight,tableInputAllowed,()=>matterHud.leave());
       options.onInitialized();

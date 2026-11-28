@@ -44,11 +44,11 @@ const FAR_DENSITY=.32;          // clumps per square metre on open meadow
 const FAR_COLUMNS=Math.round(TAU*T.majorRadius/FAR_TILE);
 const FAR_ROWS=Math.round(TAU*T.tubeRadius/FAR_TILE);
 // Walkers part the grass and leave a short path that springs back.
-const LIVE_PUSHERS=3;          // explorer, companion and the nearest peer
-const TRAIL_PUSHERS=12;        // footprints left behind, shared
+const LIVE_PUSHERS=2;          // explorer and the nearest other body
+const TRAIL_PUSHERS=6;         // footprints left behind, shared
 const PUSHERS=LIVE_PUSHERS+TRAIL_PUSHERS;
-const FOOTSTEP=.6;             // metres between footprints
-const TRAMPLE_SECONDS=1.8;     // a footprint has sprung back after this
+const FOOTSTEP=.85;            // metres between footprints
+const TRAMPLE_SECONDS=1.4;     // a footprint has sprung back after this
 const TRAMPLE_REACH=3.4;       // metres above the grass a body still parts it
 
 const overlookStart=overlookCoordinates(-4.1,-8);
@@ -231,7 +231,7 @@ function grassMaterial(uniforms,{far=false,reactive=false}={}){
             // the tuft away and presses it down, then lets it spring back with
             // a small overshoot. One test per tuft skips all of it when nobody
             // is near.
-            if(grassPushBounds.w>0.&&distance(root,grassPushBounds.xyz)<grassPushBounds.w){
+            if(bend>.05&&grassPushBounds.w>0.&&distance(root,grassPushBounds.xyz)<grassPushBounds.w){
               vec3 axis=(modelMatrix*instanceMatrix*vec4(0.,1.,0.,0.)).xyz;
               float tall=length(axis);
               vec3 up=axis/max(tall,1e-4);
@@ -551,6 +551,11 @@ export class ToroidalGrass {
     walker.seen=this.seconds;
   }
 
+  heightAbove(point){
+    const {u,v,height}=terrainCoordinates(point);
+    return height-terrainElevation(u,v);
+  }
+
   updateTrample(position){
     const push=this.uniforms.grassPush.value,bounds=this.uniforms.grassPushBounds.value;
     for(const [id,walker] of this.walkers)if(this.seconds-walker.seen>.5)this.walkers.delete(id);
@@ -565,17 +570,21 @@ export class ToroidalGrass {
       const source=i<LIVE_PUSHERS?live[i]:this.footprints[i-LIVE_PUSHERS];
       const born=i<LIVE_PUSHERS?(source?this.seconds:-1e4):source[3];
       if(!source||this.seconds-born>TRAMPLE_SECONDS){push[i].set(0,0,0,-1e4);continue;}
-      push[i].set(source[0],source[1],source[2],born);
-      samples.push(source);
+      const [x,y,z]=source;
+      const above=this.heightAbove(source);
+      if(above>TRAMPLE_REACH){push[i].set(0,0,0,-1e4);continue;}
+      push[i].set(x,y,z,born);
+      samples.push([x,y,z,above]);
       centre[0]+=source[0];centre[1]+=source[1];centre[2]+=source[2];
       active++;
     }
     if(!active){bounds.set(0,0,0,0);return;}
     centre[0]/=active;centre[1]/=active;centre[2]/=active;
     let radius=0;
-    for(const p of samples)radius=Math.max(radius,Math.hypot(p[0]-centre[0],p[1]-centre[1],p[2]-centre[2]));
-    // Beyond a body's widest hollow, no tuft can be reached.
-    bounds.set(centre[0],centre[1],centre[2],radius+.8+TRAMPLE_REACH*.55+TRAMPLE_REACH);
+    // Beyond each body's own hollow (wider when it flies low), no tuft moves.
+    for(const p of samples)radius=Math.max(radius,
+      Math.hypot(p[0]-centre[0],p[1]-centre[1],p[2]-centre[2])+.8+Math.max(0,p[3])*1.55+.4);
+    bounds.set(centre[0],centre[1],centre[2],radius);
   }
 
   selectTileMaterial(mesh) {

@@ -7,10 +7,10 @@ export function verticalWheelDistance(event,pageHeight){
   return -(event.deltaY||event.deltaX)*units*.0024;
 }
 
-export function bindAvatarFraming(camera,canvas,characterRotation,available=()=>true){
+export function bindAvatarFraming(camera,canvas,characterRotation,available=()=>true,shake=null){
   const abort=new AbortController();
   const setTarget=camera.setTarget;
-  const aim=new Vector3(),up=new Vector3();
+  const aim=new Vector3(),up=new Vector3(),side=new Vector3();
   let requested=0,offset=0;
   canvas.addEventListener('wheel',event=>{
     if(camera.isFlyCameraOn()||!available())return;
@@ -24,9 +24,14 @@ export function bindAvatarFraming(camera,canvas,characterRotation,available=()=>
     const rotation=characterRotation();
     if(!rotation||camera.isFlyCameraOn()||!available())return setTarget.call(this,target);
     offset+=(requested-offset)*.17;
-    if(Math.abs(offset)<.0001)return setTarget.call(this,target);
     up.set(0,1,0).applyQuaternion(rotation);
-    return setTarget.call(this,aim.copy(target).addScaledVector(up,offset));
+    side.set(1,0,0).applyQuaternion(rotation);
+    const kick=shake?.(up,side);
+    const kicked=kick&&kick.lengthSq()>1e-10;
+    if(Math.abs(offset)<.0001&&!kicked)return setTarget.call(this,target);
+    aim.copy(target).addScaledVector(up,offset);
+    if(kicked)aim.add(kick);
+    return setTarget.call(this,aim);
   };
   return ()=>{
     abort.abort();

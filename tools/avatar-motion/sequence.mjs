@@ -78,11 +78,13 @@ export async function runSequence({file='avatar-1-bodyA-skin01.glb',fps=60,reduc
     actor.animationWeights={0:weights.idle,1:weights.jog,2:weights.run};
     actor.animationTimes={...host};
   }};
-  let clockTime=0;
+  let clockTime=0,trickAt=-Infinity,jumps=0;
+  const wakeProbe={bursts:0,observe(){},burst(){this.bursts++;}};
   // A pilot is the local explorer: the camera's pitch steers its flight.
   const release=bindFlightAvatarAnimation(manager,()=>({outdoor:true,flying:Boolean(input.flight),grounded:motion.grounded,
     crouch:Boolean(input.crouch&&motion.grounded),peerPoses,glanceMotion:!reduced,
-    boosting:pilot&&Boolean(input.flight&&input.sprint),loopPitch:pilot&&input.flight?(input.pitch??0):null}),{clock:()=>clockTime});
+    boosting:pilot&&Boolean(input.flight&&input.sprint),loopPitch:pilot&&input.flight?(input.pitch??0):null,
+    trickAge:pilot?(clockTime-trickAt)/1000:Infinity,wake:pilot?wakeProbe:null}),{clock:()=>clockTime});
   let time=0;
   const cost={human:0,companion:0,frames:0};
   for(const [name,seconds,controls,until,place] of route){
@@ -92,6 +94,7 @@ export async function runSequence({file='avatar-1-bodyA-skin01.glb',fps=60,reduc
       const dt=1/fps;
       input=controls;
       motion.update(dt,{...controls,crouch:Boolean(controls.crouch)});
+      if(motion.doubleJumpCount!==jumps){jumps=motion.doubleJumpCount;trickAt=clockTime;}
       const pose=motion.pose();
       actor.position.set(pose.position.x,pose.position.y,pose.position.z);
       if(controls.flight)peerPoses.set(1,'fly');
@@ -113,7 +116,7 @@ export async function runSequence({file='avatar-1-bodyA-skin01.glb',fps=60,reduc
     }
   }
   release();
-  return {time,cost:{human:cost.human/cost.frames,companion:cost.companion/cost.frames}};
+  return {time,bursts:wakeProbe.bursts,cost:{human:cost.human/cost.frames,companion:cost.companion/cost.frames}};
 }
 
 // Skinning transforms in a local frame with its origin at the player's feet.

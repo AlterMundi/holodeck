@@ -32,7 +32,7 @@ export function steerToroidalFlight(direction,polarAngle,atSurface=false,loopPit
 // The MML host still owns input, network cadence, interpolation, avatar
 // animation and the orbit camera. Only the selected exterior uses a radial
 // surface and reconstructs the world-space orientation from tangent yaw.
-export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firstDoor=null, onMovementMode=()=>{}, aiming=()=>false,loopPitch=()=>null,wantsDoubleJump=()=>false,onDoubleJump=()=>{},wantsFirstJump=()=>false) {
+export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firstDoor=null, onMovementMode=()=>{}, aiming=()=>false,loopPitch=()=>null,wantsDoubleJump=()=>false,onDoubleJump=()=>{},wantsFirstJump=()=>false,look=null) {
   const updateCharacters = manager.update;
   const updateCamera = camera.update;
   const adjustCamera = camera.adjustCameraPosition;
@@ -83,6 +83,8 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
     }
     lastLocal = controller;
     const moving = Number.isFinite(control?.direction);
+    // The body steers by the view minus any free look of the camera alone.
+    const view=look?.look(moving,seconds)??{theta:camera.theta,phi:camera.phi};
     const flying=flight();
     const wet=motion.atSwimSurface();
     const freeVertical=flying||motion.swimming||wet;
@@ -91,10 +93,10 @@ export function bindToroidalMml(manager, camera, enabled, flight=()=>false, firs
     const touchVertical=touch?.vertical??Number(Boolean(touch?.jump));
     const manual=ascend||descend?Number(ascend)-Number(descend):touchVertical;
     const steer=freeVertical&&!ascend&&!descend&&!manual&&!camera.isFlyCameraOn()?
-      steerToroidalFlight(control?.direction,camera.phi,!flying&&!motion.swimming&&wet,flying?camera.phi-Math.PI/2:loopPitch()):
+      steerToroidalFlight(control?.direction,view.phi,!flying&&!motion.swimming&&wet,flying?view.phi-Math.PI/2:loopPitch()):
       {direction:control?.direction,forward:Number(moving),climb:0};
-    const travelYaw=moving?Math.PI/2-camera.theta+steer.direction:motion.yaw;
-    const yaw=presentedYaw({moving,flying,aiming:aiming(),cameraYaw:3*Math.PI/2-camera.theta,travelYaw,restingYaw:motion.yaw});
+    const travelYaw=moving?Math.PI/2-view.theta+steer.direction:motion.yaw;
+    const yaw=presentedYaw({moving,flying,aiming:aiming(),cameraYaw:3*Math.PI/2-view.theta,travelYaw,restingYaw:motion.yaw});
     const firstJump=wantsFirstJump();
     const jump=!flying&&!motion.swimming&&Boolean(firstJump||control?.jump||touch?.jump||(wet&&manual>0));
     const sprint=freeVertical?keyInputManager.getRun()||touch?.isSprinting:control?.isSprinting;

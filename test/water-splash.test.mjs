@@ -40,8 +40,10 @@ test('splash geometry is pooled and Livianos reduce the droplet count',()=>{
     effect.observe(1,body,.05,0,true,true);
     time+=50;
     effect.observe(1,{...body,feet:-9.32},.05,0,true,true);
-    assert.equal(scene.children.length,1);
+    // Droplets and foam, plus the rings spreading on the surface.
+    assert.equal(scene.children.length,2);
     assert.equal(effect.mesh.visible,true);
+    assert.equal(effect.ripples.mesh.visible,true);
     const emitted=effect.cursor;
     time+=800;
     effect.update(true);

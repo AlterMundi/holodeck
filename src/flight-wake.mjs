@@ -1,11 +1,15 @@
 import {AdditiveBlending,BufferAttribute,BufferGeometry,Color,DynamicDrawUsage,Points,ShaderMaterial,Vector3} from 'three';
+import {CameraKick,RibbonTrails,Shockwaves,SmokePuffs} from './hero-effects.mjs';
+import {terrainColor} from './toroidal-terrain.mjs';
 
 const capacity=384;
 // Boosted flight leaves the bright, short wake; ordinary flight a thinner,
 // longer-lived trail, so a flyer can be followed across the sky.
 const BOOST={spacing:.75,life:.65,strength:1,lift:.66};
 const CRUISE={spacing:.5,life:1.25,strength:.42,lift:.5};
-const life=Math.max(BOOST.life,CRUISE.life);
+// The burst where a boost begins: a ring that flies outward and fades.
+const BURST={count:40,speed:7.5,life:.55,strength:1.35};
+const life=Math.max(BOOST.life,CRUISE.life,BURST.life);
 const tones=[0x71e5ff,0xffa471,0xbba2ff,0x66f0bd,0xf7de7a,0xff8ec0];
 
 // Only continuous, explicitly airborne motion emits. Peer updates can
@@ -32,10 +36,12 @@ export class FlightWake{
     this.born=attribute(1);
     this.born.array.fill(-10);
     this.kind=attribute(2);
+    this.drift=attribute(3);
     geometry.setAttribute('position',this.position);
     geometry.setAttribute('tint',this.tint);
     geometry.setAttribute('born',this.born);
     geometry.setAttribute('kind',this.kind);
+    geometry.setAttribute('drift',this.drift);
     const material=new ShaderMaterial({
       transparent:true,depthWrite:false,blending:AdditiveBlending,
       uniforms:{clock:{value:0}},
@@ -43,12 +49,18 @@ export class FlightWake{
         attribute vec3 tint;
         attribute float born;
         attribute vec2 kind; // x: strength, y: life in seconds
+        attribute vec3 drift; // metres per second, slowing as it fades
         uniform float clock;
         varying vec3 shade;
         varying float strength;
+        varying float spin;
+        varying float twinkle;
         void main(){
+          spin=born*37.1+(clock-born)*(fract(born*13.7)-.5)*14.;
+          twinkle=.65+.35*sin((clock-born)*40.+born*91.);
           float age=clamp((clock-born)/max(kind.y,.01),0.0,1.0);
-          vec4 eye=modelViewMatrix*vec4(position,1.0);
+          float seconds=max(0.,clock-born);
+          vec4 eye=modelViewMatrix*vec4(position+drift*seconds*(1.-.5*age),1.0);
           shade=tint;
           strength=(1.0-age)*(1.0-age)*smoothstep(.45,1.35,-eye.z)*.64*kind.x;
           gl_Position=projectionMatrix*eye;
@@ -57,11 +69,18 @@ export class FlightWake{
       fragmentShader:`
         varying vec3 shade;
         varying float strength;
+        varying float spin;
+        varying float twinkle;
         void main(){
-          float r=length(gl_PointCoord-.5)*2.0;
+          vec2 p=(gl_PointCoord-.5)*2.0;
+          p=mat2(cos(spin),-sin(spin),sin(spin),cos(spin))*p;
+          float r=length(p);
+          // A hot core, a soft halo and four twinkling rays.
+          float core=1.0-smoothstep(.03,.30,r);
           float halo=max(0.0,1.0-r);
-          float core=1.0-smoothstep(.03,.40,r);
-          gl_FragColor=vec4(shade,strength*(halo*halo*.50+core*.60));
+          float rays=(exp(-abs(p.x)*14.)+exp(-abs(p.y)*14.))*max(0.,1.-r)*twinkle;
+          vec3 colour=mix(shade,vec3(1.),core*.8);
+          gl_FragColor=vec4(colour,strength*(halo*halo*.35+core*.7+rays*.55));
           #include <colorspace_fragment>
         }`,
     });
@@ -75,6 +94,13 @@ export class FlightWake{
     this.lastEmission=-10;
     this.tracks=new Map();
     this.particle=new Vector3();
+    // Flyers leave glowing ribbons; boosts keep their sparks on top and
+    // break away with a shockwave.
+    this.ribbons=new RibbonTrails(scene);
+    this.shockwaves=new Shockwaves(scene);
+    this.smoke=new SmokePuffs(scene);
+    this.kick=new CameraKick();
+    this.ribbonPoint=new Vector3();
     scene.add(this.mesh);
   }
 
@@ -88,11 +114,18 @@ export class FlightWake{
       track={last:new Vector3().copy(position),color,seen:time,carry:0};
       this.tracks.set(id,track);
     }
+    // A respawn or corrected peer position must never bridge an old ribbon
+    // to the new location. Keep the same speed ceiling as the spark emitter.
+    if(track.last.distanceTo(position)>Math.max(.4,Math.min(Math.max(seconds,0),.13)*39))
+      this.ribbons.release(id);
     const boost=flying?boostWakeDistance(track.last,position,seconds):0;
     const cruise=flying&&!boost?cruiseWakeDistance(track.last,position,seconds):0;
     const distance=boost||cruise,style=boost?BOOST:CRUISE;
     track.seen=time;
-    if(distance>0){
+    this.ribbonPoint.copy(position).addScaledVector(up,style.lift);
+    this.ribbons.follow(id,this.ribbonPoint,time,boost?1:cruise?.6:0,track.color);
+    // Cruise is drawn by the ribbon alone; boost adds sparks.
+    if(boost>0){
       const carry=track.carry%style.spacing;
       for(let offset=style.spacing-carry;offset<=distance;offset+=style.spacing){
         const i=this.index;
@@ -102,17 +135,58 @@ export class FlightWake{
         this.tint.setXYZ(i,track.color.r,track.color.g,track.color.b);
         this.born.setX(i,time);
         this.kind.setXY(i,style.strength,style.life);
+        this.drift.setXYZ(i,0,0,0);
         this.index=(i+1)%capacity;
         this.lastEmission=time;
-        this.position.needsUpdate=this.tint.needsUpdate=this.born.needsUpdate=this.kind.needsUpdate=true;
+        this.position.needsUpdate=this.tint.needsUpdate=this.born.needsUpdate=this.kind.needsUpdate=this.drift.needsUpdate=true;
       }
     }
     track.carry=distance>0?(track.carry+distance)%style.spacing:0;
     track.last.copy(position);
   }
 
+  // A ring of light around the body, perpendicular to where it breaks away.
+  burst(id,position,direction,up=null,local=false){
+    const time=(performance.now()-this.start)/1000;
+    const axis=this.particle.copy(direction);
+    if(axis.lengthSq()<1e-6)return;
+    axis.normalize();
+    const lift=up?new Vector3().copy(up).multiplyScalar(.9):new Vector3(0,.9,0);
+    const key0=Number(id);
+    const hue=new Color(Number.isFinite(key0)?tones[(Math.imul(key0,0x9e3779b1)>>>0)%tones.length]:0x6eeed8);
+    const origin=new Vector3().copy(position).add(lift);
+    this.shockwaves.fire(origin,axis,time,hue);
+    // Smoke thrown back and out from where the body tore away.
+    const su=new Vector3(),sv=new Vector3(),helper=Math.abs(axis.y)<.9?new Vector3(0,1,0):new Vector3(1,0,0);
+    su.crossVectors(axis,helper).normalize();sv.crossVectors(axis,su);
+    for(let k=0;k<8;k++){
+      const a=k/8*Math.PI*2+key0;
+      const throwOut=new Vector3().copy(su).multiplyScalar(Math.cos(a)*4.5).addScaledVector(sv,Math.sin(a)*4.5).addScaledVector(axis,-3.5);
+      this.smoke.puff(origin,throwOut,time,.55+.2*((k*7)%3)/2,hue,(k*.618+time)%1);
+    }
+    if(local)this.kick.fire(time);
+    const a=Math.abs(axis.y)<.9?new Vector3(0,1,0):new Vector3(1,0,0);
+    const u=new Vector3().crossVectors(axis,a).normalize(),v=new Vector3().crossVectors(axis,u);
+    const key=Number(id),color=new Color(Number.isFinite(key)?tones[(Math.imul(key,0x9e3779b1)>>>0)%tones.length]:0x6eeed8);
+    for(let k=0;k<BURST.count;k++){
+      const angle=k/BURST.count*Math.PI*2,c=Math.cos(angle),s=Math.sin(angle);
+      const i=this.index;
+      this.position.setXYZ(i,position.x+lift.x+(u.x*c+v.x*s)*.35,position.y+lift.y+(u.y*c+v.y*s)*.35,position.z+lift.z+(u.z*c+v.z*s)*.35);
+      this.drift.setXYZ(i,(u.x*c+v.x*s)*BURST.speed-axis.x*2,(u.y*c+v.y*s)*BURST.speed-axis.y*2,(u.z*c+v.z*s)*BURST.speed-axis.z*2);
+      this.tint.setXYZ(i,.6+.4*color.r,.6+.4*color.g,.6+.4*color.b);
+      this.born.setX(i,time);
+      this.kind.setXY(i,BURST.strength,BURST.life);
+      this.index=(i+1)%capacity;
+    }
+    this.lastEmission=time;
+    this.position.needsUpdate=this.tint.needsUpdate=this.born.needsUpdate=this.kind.needsUpdate=this.drift.needsUpdate=true;
+  }
+
   update(enabled){
     const time=(performance.now()-this.start)/1000;
+    this.ribbons.update(time,enabled);
+    this.shockwaves.update(time,enabled);
+    this.smoke.update(time,enabled);
     this.mesh.material.uniforms.clock.value=time;
     for(const [id,track] of this.tracks)if(time-track.seen>.4)this.tracks.delete(id);
     this.mesh.visible=enabled&&time-this.lastEmission<life;
@@ -124,7 +198,37 @@ export class FlightWake{
     }
   }
 
+  // Dust kicked up from the ground under a low flyer: puffs in the ground's
+  // own colour, thrown out to the sides and back, with a few grass-green bits.
+  dust(point,up,direction,strength,ground){
+    const [r,g,b]=Array.isArray(ground)?ground:terrainColor(ground.u,ground.v,ground.ground,0);
+    const time=(performance.now()-this.start)/1000;
+    const side=this.particle.crossVectors(up,direction);
+    if(side.lengthSq()<1e-6)side.set(1,0,0);
+    side.normalize();
+    this.dustColour??=new Color();
+    for(const sign of [-1,1]){
+      const out=new Vector3().copy(side).multiplyScalar(sign*(2.2+2.5*strength))
+        .addScaledVector(direction,-1.5).addScaledVector(up,.9+.8*strength);
+      const grassy=g>r*1.08&&g>b*1.2;
+      this.dustColour.setRGB(r*1.15+.08,g*1.1+.06,b*1.05+.05);
+      this.smoke.puff(new Vector3().copy(point).addScaledVector(up,.15),out,time,.35+.35*strength,this.dustColour,(time*7.3+sign)%1);
+      if(grassy&&strength>.5){
+        this.dustColour.setRGB(r*.8,g*1.25,b*.6);
+        this.smoke.puff(new Vector3().copy(point).addScaledVector(up,.1),out.multiplyScalar(1.3),time,.16,this.dustColour,(time*3.1+sign*.5)%1);
+      }
+    }
+  }
+
+  // Screen-only offset for the camera target after a local boost.
+  shake(up,right,allowed){
+    return this.kick.sample((performance.now()-this.start)/1000,up,right,{allowed});
+  }
+
   dispose(){
+    this.ribbons.dispose();
+    this.shockwaves.dispose();
+    this.smoke.dispose();
     this.mesh.removeFromParent();
     this.mesh.geometry.dispose();
     this.mesh.material.dispose();
