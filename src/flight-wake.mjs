@@ -101,6 +101,8 @@ export class FlightWake{
     this.shockwaves=new Shockwaves(scene);
     this.smoke=new SmokePuffs(scene,{base});
     this.kick=new CameraKick();
+    // Optional (kind,{strength}) sink for the explorer's own body sounds.
+    this.sound=null;
     this.ribbonPoint=new Vector3();
     scene.add(this.mesh);
   }
@@ -165,7 +167,7 @@ export class FlightWake{
       const throwOut=new Vector3().copy(su).multiplyScalar(Math.cos(a)*4.5).addScaledVector(sv,Math.sin(a)*4.5).addScaledVector(axis,-3.5);
       this.smoke.puff(origin,throwOut,time,.55+.2*((k*7)%3)/2,hue,(k*.618+time)%1,{up:up??null,height:up?.9:100});
     }
-    if(local)this.kick.fire(time);
+    if(local){this.kick.fire(time);this.sound?.('boost',{strength:1});}
     const a=Math.abs(axis.y)<.9?new Vector3(0,1,0):new Vector3(1,0,0);
     const u=new Vector3().crossVectors(axis,a).normalize(),v=new Vector3().crossVectors(axis,u);
     const key=Number(id),color=new Color(Number.isFinite(key)?tones[(Math.imul(key,0x9e3779b1)>>>0)%tones.length]:0x6eeed8);
@@ -226,9 +228,10 @@ export class FlightWake{
   // A step on dry ground: a low puff of the ground's colour pushed back and
   // to the sides, settling quickly. Grass throws a few green bits; stone only
   // a faint pale breath. Strength is the pace from walk (~.3) to sprint (1).
-  footfall(point,up,direction,strength,sample,splash=null,colour=null){
+  footfall(point,up,direction,strength,sample,{splash=null,colour=null,local=false}={}){
     const surface=typeof sample==='string'?sample:footSurface(sample);
     if(!surface)return;
+    if(local)this.sound?.('step-'+surface,{strength});
     if(surface==='water'){
       splash?.skim?.(point.addScaledVector(up,sample.waterLevel-sample.feet),up,.15+.35*strength);
       return;

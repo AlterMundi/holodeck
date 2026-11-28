@@ -51,9 +51,9 @@ test('dust puffs settle and fade at the ground; boost smoke stays lit',()=>{
 test('footfalls emit at most two puffs and only on grass add green bits',()=>{
   const scene=new Scene(),wake=new FlightWake(scene);
   const before=wake.smoke.next;
-  wake.footfall(new Vector3(),new Vector3(0,1,0),new Vector3(0,0,1),1,'grass',null,[.3,.5,.2]);
+  wake.footfall(new Vector3(),new Vector3(0,1,0),new Vector3(0,0,1),1,'grass',{colour:[.3,.5,.2]});
   assert.equal(wake.smoke.next-before,2);
-  wake.footfall(new Vector3(),new Vector3(0,1,0),new Vector3(0,0,1),1,'stone',null,[.7,.7,.7]);
+  wake.footfall(new Vector3(),new Vector3(0,1,0),new Vector3(0,0,1),1,'stone',{colour:[.7,.7,.7]});
   assert.equal(wake.smoke.next-before,3);
   wake.dispose();
 });

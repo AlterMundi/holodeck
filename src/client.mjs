@@ -1165,9 +1165,11 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const companion=new CompanionAvatar({scene:renderer.mmlCompositionScene.group,document,base});
     const flightWake=new FlightWake(renderer.mmlCompositionScene.group,{base});
     boostKick=flightWake;
+    flightWake.sound=(kind,options)=>worldAudio.playBody(kind,options);
     const waterSplash=new WaterSplash(renderer.mmlCompositionScene.group,{
       lightweight:()=>rendererBudget.lightweight,pixelRatio:()=>renderer.composer.renderer.getPixelRatio(),
     });
+    waterSplash.sound=(kind,options)=>worldAudio.playBody(kind,options);
     const waterWake=new WaterWake(renderer.mmlCompositionScene.group,{
       lightweight:()=>rendererBudget.lightweight,pixelRatio:()=>renderer.composer.renderer.getPixelRatio(),
     });

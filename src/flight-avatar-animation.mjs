@@ -242,7 +242,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const sample=outdoor&&!atTable?exteriorSample(position):null;
       entry.medium=sample?avatarMedium(HUMAN_BODY,sample,{supported:grounded===true,previous:entry.medium}):null;
       if(sample){
-        splash?.observe(id,sample,elapsed,continuous?travel/Math.max(elapsed,.001):0,continuous,glanceMotion);
+        splash?.observe(id,sample,elapsed,continuous?travel/Math.max(elapsed,.001):0,continuous,glanceMotion,isLocal);
         waterWake?.observe(id,position,up,sample,{flying:explicitFlight,seconds:elapsed,continuous,emit:glanceMotion});
       }
       const wet=entry.medium==='surface'||entry.medium==='submerged';
@@ -278,7 +278,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
         const planted=entry.footfalls.sample(position,up,1,step);
         if(speed>.8)for(const foot of planted)
           wake?.footfall?.(washPoint.copy(foot),up,washDirection.copy(displacement).normalize(),
-            clamp((speed-1)/7.5,.25,1),sample,splash);
+            clamp((speed-1)/7.5,.25,1),sample,{splash,local:isLocal});
       }else entry.footfalls?.reset();
       // Uneven terrain under the feet is solved after every other layer.
       entry.plant=footPlacement&&sample&&grounded===true&&!explicitFlight&&!wet&&continuous&&!atTable&&glanceMotion&&

@@ -2,6 +2,18 @@ import {MAX_WORLD_ELEMENTS} from './world-limits.mjs';
 // Authored opt-in workshop sound. Owns one WebAudio context and no device input,
 // voice, network, media file or model activity. Never replays snapshot history.
 const GAP_MS=5000,COOLDOWN_SECONDS=.35,MAX_CUE_NODES=4;
+// Body sounds for the explorer's own actions, shaped from the ambient bed's
+// noise buffer: no files. Each kind has its own spacing; a small node cap
+// keeps a sprint or a splash-heavy swim from piling up.
+const MAX_EFFECT_NODES=12;
+export const BODY_SOUNDS=Object.freeze({
+  'step-grass':{gap:.1,filter:'bandpass',from:2600,to:1400,q:.8,length:.09,level:.05},
+  'step-dirt':{gap:.1,filter:'bandpass',from:900,to:420,q:1.1,length:.08,level:.07},
+  'step-stone':{gap:.1,filter:'highpass',from:2400,to:1800,q:.7,length:.045,level:.05,tone:190},
+  'step-water':{gap:.12,filter:'bandpass',from:700,to:1500,q:2.2,length:.16,level:.07},
+  boost:{gap:.6,filter:'bandpass',from:300,to:2600,q:.9,length:.7,level:.16,tone:62},
+  splash:{gap:.25,filter:'lowpass',from:2400,to:500,q:.6,length:.45,level:.14},
+});
 function snapshot(state){
   if(!state||typeof state.run!=='string'||typeof state.edition!=='string'||!Number.isSafeInteger(state.sequence)||state.sequence<0)return null;
   const entries=Object.entries(state.entities||{});if(entries.length>MAX_WORLD_ELEMENTS)return null;
@@ -27,9 +39,10 @@ export class WorldAudio{
   breakContinuity(){this.baseline=null;this.lastObservation=-Infinity;this.continuityVersion++;}
   node(value){this.nodes.add(value);return value;}
   stopCues(){for(const cue of [...this.cues]){try{cue.osc.stop();}catch{}cue.osc.disconnect();cue.gain.disconnect();cue.panner?.disconnect();this.nodes.delete(cue.panner);this.nodes.delete(cue.osc);this.nodes.delete(cue.gain);this.cues.delete(cue);}}
+  stopEffects(){for(const effect of [...(this.effects??[])]){for(const node of effect.nodes){if(typeof node.stop==='function')try{node.stop();}catch{}try{node.disconnect();}catch{}this.nodes.delete(node);}this.effects.delete(effect);}}
   mute(){
     if(this.master&&this.context){try{this.master.gain.cancelScheduledValues(this.context.currentTime);this.master.gain.setValueAtTime(0,this.context.currentTime);}catch{}}
-    this.stopCues();
+    this.stopCues();this.stopEffects();
   }
   clearGraph(){
     this.mute();
@@ -118,6 +131,39 @@ export class WorldAudio{
       osc.start(at);osc.stop(end+.02);
     });
     this.cueCount++;return true;
+  }
+  // strength 0..1 scales level and brightness.
+  playBody(kind,{strength=1}={}){
+    const sound=BODY_SOUNDS[kind],source=this.sources[0];
+    if(!sound||!source?.buffer||!this.status().active)return false;
+    this.lastBody??={};
+    const now=this.context.currentTime;
+    if(now-(this.lastBody[kind]??-Infinity)<sound.gap)return false;
+    this.effects??=new Set();
+    const needed=sound.tone?4:3;
+    if(this.effects.size*3+needed>MAX_EFFECT_NODES)return false;
+    this.lastBody[kind]=now;
+    const level=sound.level*(.45+.55*Math.max(0,Math.min(1,strength)));
+    const context=this.context,end=now+sound.length;
+    const noise=this.node(context.createBufferSource());noise.buffer=source.buffer;
+    const filter=this.node(context.createBiquadFilter()),gain=this.node(context.createGain());
+    filter.type=sound.filter;filter.Q.value=sound.q;
+    filter.frequency.setValueAtTime(sound.from*(.8+.4*strength),now);filter.frequency.exponentialRampToValueAtTime(sound.to,end);
+    gain.gain.setValueAtTime(.0001,now);gain.gain.linearRampToValueAtTime(level,now+Math.min(.012,sound.length*.2));
+    gain.gain.exponentialRampToValueAtTime(.0001,end);
+    noise.connect(filter);filter.connect(gain);gain.connect(this.master);
+    const nodes=[noise,filter,gain];
+    if(sound.tone){
+      const osc=this.node(context.createOscillator()),body=this.node(context.createGain());
+      osc.type='sine';osc.frequency.setValueAtTime(sound.tone*1.6,now);osc.frequency.exponentialRampToValueAtTime(sound.tone,now+sound.length*.6);
+      body.gain.setValueAtTime(.0001,now);body.gain.linearRampToValueAtTime(level*.9,now+.015);body.gain.exponentialRampToValueAtTime(.0001,now+sound.length*.6);
+      osc.connect(body);body.connect(this.master);osc.start(now);osc.stop(end+.02);nodes.push(osc,body);
+    }
+    const effect={nodes};this.effects.add(effect);
+    noise.onended=()=>{for(const node of nodes){try{node.disconnect();}catch{}this.nodes.delete(node);}this.effects.delete(effect);};
+    // Start at a random place in the shared noise so steps do not repeat.
+    noise.start(now,(Math.imul(this.cueCount+Object.keys(this.lastBody).length,2654435761)>>>0)%1000/1000*1.5,sound.length+.02);
+    return true;
   }
   async dispose(){
     if(this.disposed)return this.status();
