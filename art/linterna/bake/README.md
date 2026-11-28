@@ -66,3 +66,33 @@ lightmap and runtime lights are combined.
 The manifest records environment, source hash, exact lighting and camera,
 exposure, elapsed times and a digest of each generated file. Maps, GLBs and
 renders are generated deliverables kept outside source control.
+
+## Split room assets
+
+Use `bake_room_parts.py` for a static room assembled from separate GLBs that
+already share one metric world frame. The scene geometry supplies the
+exterior bounce. The recipe preserves the material UV set and uses xatlas
+to allocate a second UV set over all parts. It verifies the triangle-order
+mapping, checks the atlas for overlaps at the selected pixel centers and
+exports the individual models with `TEXCOORD_1`. Blender may split vertices
+at the new seams. Recheck decoded bounds, triangle counts and receiver sizes
+on those exported bytes. The bake target and preview join made by Cycles
+are transient and stay out of the exported parts.
+
+Provide the unpacked `xatlas` module for the Blender Python ABI. The tested
+Linux x86-64 wheel is `xatlas==0.0.11` for CPython 3.11, SHA-256
+`c044ee009a427898b26c0929646bfb0e0356f6762be40a140f4af41a33026208`.
+
+```sh
+blender -b --factory-startup --python-exit-code 1 \
+  -P art/linterna/bake/bake_room_parts.py -- \
+  output-directory room-a.glb room-b.glb room-c.glb \
+  --atlas-module /path/to/unpacked-wheel --resolution 2048 --samples 16 --threads 3
+```
+
+The recipe writes the raw atlas, display-encoded maps, scoped UV exports,
+one reference render and a manifest. The renderer must bind the same map
+and its recorded gain to the baked static materials. Exporting a second
+UV does not select a Holodeck edition or bind the map in a receiving
+client. For production, repack any over-budget part and qualify the map,
+material selection and retained geometry on the exact receiving client.

@@ -413,7 +413,7 @@ def foliage(scene):
     mesh.materials.append(mat)
 
 
-def setup_scene(args):
+def setup_scene(args, *, exterior_ground=True):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     scene = bpy.context.scene
     scene.unit_settings.system = "METRIC"
@@ -455,6 +455,8 @@ def setup_scene(args):
     world.node_tree.links.new(sky.outputs["Color"], bg.inputs["Color"])
     if not args.no_foliage:
         foliage(scene)
+    if not exterior_ground:
+        return scene, direction
     # A single exterior diffuse surface supplies the bounce the open sash sees.
     ground = bpy.data.meshes.new("Exterior earth")
     ground.from_pydata([blender_xyz((x, -0.2, z)) for x, z in
