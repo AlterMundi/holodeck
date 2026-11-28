@@ -7,6 +7,7 @@
 <style>
 :root{color-scheme:dark;--ink:#f4e8d2;--muted:#d9c9ad;--line:#647477;--surface:#111c24;--bronze:#bf9664}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{margin:0;height:100dvh;overflow:hidden;background:#101925;color:var(--ink);font:16px/1.42 system-ui,sans-serif}
 button{font:inherit;color:var(--ink);background:#25343b;border:1px solid #718083;border-radius:5px;padding:6px 12px;min-height:42px;cursor:pointer;white-space:nowrap}
 button:hover,button[aria-pressed="true"]{background:#d4b78d;color:#182329;border-color:#f2d6a8}
@@ -52,6 +53,7 @@ dialog::backdrop{background:rgba(3,8,14,.82)}
 <div class="dock">
 <nav class="panel" aria-label="Recorrido">
 <div class="routes"><button data-pose="approach">Pórtico</button><button data-pose="entry">Entrada</button><button data-pose="ocular">Ocular</button><button data-pose="gallery">Galería</button></div>
+<div class="routes"><button id="context-toggle">Ver desde el jardín</button><button id="context-walk" hidden>Caminar a Nix</button></div>
 <p class="help">WASD para caminar · Arrastrá para mirar</p>
 </nav>
 <div class="panel actions"><button id="open-eye">Ver cuadro completo</button><button id="open-gallery">Inspeccionar foto</button></div>

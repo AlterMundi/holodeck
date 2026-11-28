@@ -45,7 +45,7 @@ function textMaterial(lines, dimensions, {color = '#f2e2bd', background = '#2430
   return new T.MeshBasicMaterial({map, toneMapped: false});
 }
 
-export function makeNix() {
+export function makeNix({approachLength=6.2}={}) {
   const model = new T.Group();
   model.name = 'Casa Linterna / Templo de Nix';
   model.userData = {units: 'metres', up: '+Y', review: 'design-only'};
@@ -106,6 +106,13 @@ export function makeNix() {
     box('Limewash side wall', [.28, 3.68, 12], [x, 1.84, 0], plaster);
     box('Sage skirting', [.07, .26, 11.45], [Math.sign(x) * 5.70, .13, 0], patina);
     box('Continuous timber cornice', [.17, .18, 11.5], [Math.sign(x) * 5.65, 3.39, 0], walnut);
+    const outerX = Math.sign(x) * 6.06;
+    box('Outer limestone foot course', [.11,.28,12], [outerX,.14,0], stone);
+    box('Outer sage fascia', [.105,.19,12], [outerX,3.50,0], patina);
+    for (const bay of [-4.48,-1.49,1.49,4.48]) {
+      box('Outer engaged pilaster', [.09,2.96,.24], [outerX,1.76,bay], stone);
+      box('Outer walnut pilaster cap', [.11,.16,.37], [outerX,3.30,bay], walnut);
+    }
     for (const z of [-5.10, -3.50, 3.95, 5.10]) {
       box('Engaged walnut pier', [.101, 3.28, .18], [Math.sign(x) * 5.70, 1.66, z], walnut);
       box('Pier shoe', [.19, .21, .29], [Math.sign(x) * 5.63, .12, z], stone);
@@ -120,7 +127,7 @@ export function makeNix() {
   }
   box('Dressed stone lintel', [2.78, .24, .55], [0, 2.72, 5.88], stone);
   box('Level door seam', [2.2, .024, .48], [0, .009, 5.96], brass);
-  box('Entry step-free approach', [3.4, .08, 6.2], [0, -.04, 9.14], stone);
+  box('Entry step-free approach', [3.4, .08, approachLength], [0, -.04, 6.04 + approachLength/2], stone);
   for (const x of [-2.28, 2.28]) {
     box('Portico plinth', [.54, .22, .57], [x, .11, 6.55], stone);
     tube('Portico cedar column', .15, 2.73, [x, 1.57, 6.55], walnut, model, 0);

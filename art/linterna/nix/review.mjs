@@ -2,17 +2,23 @@ import * as T from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { makeNix } from './model.mjs';
+import { makeGarden } from './garden.mjs';
 import { plan, walkable } from './plan.mjs';
 
 const media = __WANDA_FIXTURE__;
+const args = new URLSearchParams(location.search);
+const gardenMode = args.has('jardin');
 const q = (selector) => document.querySelector(selector);
 const status = q('#status'), dialog = q('#inspection');
 const frame = q('#frame-image'), scroller = q('#frame-window');
-const rig = makeNix();
+const rig = makeNix(gardenMode ? {approachLength:1.9} : {});
+const context = gardenMode ? makeGarden(rig) : null;
 const scene = new T.Scene();
 scene.background = new T.Color('#172536');
 scene.fog = new T.FogExp2('#26384b', .021);
-scene.add(rig.model);
+scene.add(context?.garden || rig.model);
+const roomPoint = (xyz) => context ? context.world(xyz) : xyz;
+const allowed = (x,z) => context ? context.usable([x,z]) : walkable(x,z);
 const renderer = new T.WebGLRenderer({antialias:true, preserveDrawingBuffer:true});
 renderer.setPixelRatio(Math.min(2, devicePixelRatio));
 renderer.outputColorSpace = T.SRGBColorSpace;
@@ -26,26 +32,30 @@ q('#view').append(renderer.domElement);
 
 const ground = new T.Mesh(new T.PlaneGeometry(160,160), new T.MeshStandardMaterial({color:'#454c47', roughness: .97}));
 ground.rotation.x = -Math.PI / 2;
-ground.position.y = -.028
+ground.position.y = context ? -.19 : -.028
 ground.receiveShadow = true;
 scene.add(ground);
 scene.add(new T.HemisphereLight('#adc2e4','#766565', 1.19));
 const moon = new T.DirectionalLight('#94b7ec', 1.15);
-moon.position.set(-3.8, 10.5, 2.2);
+moon.position.set(...(context ? [-21.3, 14.5,12.8] : [-3.8, 10.5, 2.2]));
+if (context) moon.target.position.set(-16,0,7);
 moon.castShadow = true;
 moon.shadow.mapSize.set(2048, 2048);
-Object.assign(moon.shadow.camera, {left:-10,right:10,top:10,bottom:-10,near:.1,far:29});
+const shadowArea = context ? 17 : 10;
+Object.assign(moon.shadow.camera, {left:-shadowArea,right:shadowArea,top:shadowArea,
+  bottom:-shadowArea,near:.1,far:38});
 moon.shadow.normalBias = .026;
 rig.model.traverse(obj => {
   if (!obj.isMesh || obj.material.isMeshBasicMaterial) return;
   obj.castShadow = true;
   obj.receiveShadow = true;
 });
-scene.add(moon);
+scene.add(moon,moon.target);
 const fill = new T.PointLight('#bad0fa', 21, 14, 2);
-fill.position.set(0,3.85,-1.36);
+fill.position.set(...roomPoint([0,3.85,-1.36]));
 scene.add(fill);
-for (const s of rig.lanterns) {
+const lights = rig.lanterns.map(s=>({...s,at:roomPoint(s.at)}));
+for (const s of [...lights,...(context?.lanterns || [])]) {
   const light = new T.PointLight(s.color, s.intensity, s.range, 2);
   light.position.set(...s.at);
   scene.add(light);
@@ -66,16 +76,20 @@ const camera = new T.PerspectiveCamera(51, 1, .04, 77);
 camera.rotation.order = 'YXZ';
 let eyeHeight = plan.avatar.eyes[1], view = 'entry', dirty = true;
 function pose(key, height = eyeHeight) {
-  const item = plan.poses[key];
-  camera.position.set(item.eye[0], height, item.eye[2]);
-  camera.lookAt(new T.Vector3(...item.target));
+  const outdoor = context?.poses[key];
+  const item = outdoor || plan.poses[key];
+  const transform = outdoor ? xyz=>xyz : roomPoint;
+  camera.position.set(...transform([item.eye[0],height,item.eye[2]]));
+  camera.lookAt(new T.Vector3(...transform(item.target)));
   view = key;
   document.body.dataset.view = key;
+  camera.fov = Math.max(camera.aspect < .82 ? 67 : 51, outdoor?.fov || 0);
+  camera.updateProjectionMatrix();
   dirty = true;
 }
 function resize() {
   camera.aspect = innerWidth / innerHeight;
-  camera.fov = camera.aspect < .82 ? 67 : 51;
+  camera.fov = Math.max(camera.aspect < .82 ? 67 : 51, context?.poses[view]?.fov || 0);
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
   dirty = true;
@@ -211,16 +225,62 @@ canvas.addEventListener('pointerup', event => {
 });
 canvas.addEventListener('pointercancel',() => {drag=undefined;});
 
-const args = new URLSearchParams(location.search);
 if (args.has('art')) document.body.classList.add('art');
-pose(args.get('view') in plan.poses ? args.get('view') : 'entry');
+const initial = args.get('view');
+pose(initial && (initial in plan.poses || initial in (context?.poses || {})) ? initial : context ? 'columnata' : 'entry');
+const contextToggle = q('#context-toggle');
+const contextWalk = q('#context-walk');
+contextToggle.textContent = context ? 'Volver al visor de sala' : 'Ver desde el jardín';
+contextToggle.onclick = () => {
+  const destination = new URL(location.href);
+  destination.search = context ? '' : '?jardin';
+  location.href=destination.href;
+};
+let journey = null, atNix = false;
+if (context) {
+  const approach = q('[data-pose=approach]');
+  approach.textContent = 'Pórtico de Nix';
+  contextWalk.hidden=false;
+  contextWalk.onclick=()=> {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      pose(atNix ? 'columnata' : 'entry');
+      atNix=!atNix;
+      contextWalk.textContent=atNix ? 'Volver a la columnata' : 'Caminar a Nix';
+      return;
+    }
+    journey={started:performance.now(),back:atNix};
+    document.body.dataset.journey='walking';
+  };
+}
 setPhase('capture');
 let last = performance.now();
 function animate(now) {
   requestAnimationFrame(animate);
   const dt = Math.min(.2, (now-last)/1000);
   last = now;
+  if (journey && !dialog.open) {
+    const {started,back}=journey;
+    const time=Math.min(1,(now-started)/(context.walkCurve.getLength()*370));
+    const u=back ? 1-time : time;
+    const ahead=T.MathUtils.clamp(u+(back?-.042:.042),0,1);
+    const at=context.walkCurve.getPointAt(u);
+    const toward=context.walkCurve.getPointAt(ahead);
+    camera.position.set(at.x,eyeHeight,at.z);
+    if(time<1) camera.lookAt(toward.x,eyeHeight-.07,toward.z);
+    else {
+      atNix=!back;
+      pose(atNix?'entry':'columnata');
+      journey=null;
+      contextWalk.textContent=atNix?'Volver a la columnata':'Caminar a Nix';
+      document.body.dataset.journey=atNix?'nix':'columnata';
+    }
+    dirty=true;
+  }
   if (keys.size && !dialog.open) {
+    if (journey) {
+      journey=null;
+      document.body.dataset.journey='manual';
+    }
     dirty = true;
     camera.getWorldDirection(floorDirection);
     floorDirection.y=0; floorDirection.normalize();
@@ -232,8 +292,8 @@ function animate(now) {
     const dx = (floorDirection.x*f-floorDirection.z*s)*step;
     const dz = (floorDirection.z*f+floorDirection.x*s)*step;
     for (let i=0;i<slices;i++) {
-      if (walkable(at.x+dx,at.z)) at.x+=dx;
-      if (walkable(at.x,at.z+dz)) at.z+=dz;
+      if (allowed(at.x+dx,at.z)) at.x+=dx;
+      if (allowed(at.x,at.z+dz)) at.z+=dz;
     }
   }
   if (dirty) {
@@ -264,12 +324,18 @@ function survey() {
     for (const [poseName,target] of [['entry','eyepiece'],['ocular','eyepiece'],['photo','capture'],
                                     ['gallery','preview-02'],['gallery','preview-03']]) {
       const p=plan.poses[poseName];
-      const origin = new T.Vector3(p.eye[0],height,p.eye[2]);
+      const origin = new T.Vector3(...roomPoint([p.eye[0],height,p.eye[2]]));
       const targetMesh = rig.hitboxes[target];
-      const center=targetMesh.getWorldPosition(new T.Vector3());
-      const line=new T.Raycaster(origin,center.clone().sub(origin).normalize(),0,origin.distanceTo(center)+.025);
-      if (line.intersectObject(rig.model,true)[0]?.object!==targetMesh) throw Error(`Occluded ${poseName} ${height}`);
-      sightlines.push({pose:poseName,target,eyeHeight:height,distanceM:origin.distanceTo(center)});
+      // Near-center points avoid testing only the tessellation seam of a plane.
+      const samples = [[.031,.018],[-.022,.011],[.012,-.037]];
+      for (const [u,v] of samples) {
+        const point=targetMesh.localToWorld(new T.Vector3(u,v,0));
+        const line=new T.Raycaster(origin,point.clone().sub(origin).normalize(),0,origin.distanceTo(point)+.025);
+        const hit=line.intersectObject(rig.model,true)[0]?.object;
+        if (hit!==targetMesh) throw Error(`Occluded ${poseName} / ${target} at ${height} m: ${hit?.name || "no hit"}`);
+      }
+      sightlines.push({pose:poseName,target,eyeHeight:height,samples:samples.length,
+        distanceM:origin.distanceTo(targetMesh.getWorldPosition(new T.Vector3()))});
     }
   }
   return {sampled,minimumWalkDiameter:1.12,sightlines,anchors:Object.keys(rig.markers)};
@@ -300,7 +366,7 @@ async function exportModel() {
 }
 
 window.nixReview = {
-  pose, setPhase, inspect, survey, exportModel,
+  pose, setPhase, inspect, survey, exportModel, gardenSurvey:()=>context?.survey(),
   height: value => {eyeHeight=value; pose(view);},
   state: () => ({phase,displayed,activeAsset,state:document.body.dataset.state,eye:camera.position.toArray()}),
 };

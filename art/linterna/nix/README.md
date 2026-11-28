@@ -70,3 +70,32 @@ the fixture archive legible. **Modo en vivo · Demo** plays the scripted
 admission, reciprocal links, runtime projections, and A2UI belong to the
 existing Holodeck receiver. Pi, optics, exposure and physical motion belong
 to WandaTelescope. The design review opens no node connection.
+
+## Garden context review
+
+The offline viewer's **Ver desde el jardín** option adds the same Nix room to
+the authored Casa Linterna reference precinct, using its original hall,
+pavilions, planting and obstacles. The proposed west path starts at the
+columnata, reaches a directional plinth, turns around the western flank and
+continues through the existing Nix art threshold. Its reciprocal visit uses
+the same surveyed centerline. This is a placement proposal in the design
+coordinate system. Actual room admission and placement use the receiving
+owner's selected site and scene.
+
+The additive proposal in garden.mjs places the Nix model at
+(-17.50, 0, 10.60) with a +90° Y rotation. The room-local entry at
+(0, 0, 5.88) becomes (-11.62, 0, 10.60) in that scene. The stone walk
+is 1.42 m wide. The survey tests a clear 1.12 m envelope every 5 cm
+over about 25.15 m and checks the route against the retained obstacles,
+plant bounds and Nix's local shell. It also checks the new room against
+retained structure and greenery, and checks the wayfinding plinth from the
+columnata and the aperture from the west walk at both eye heights.
+The contextual viewer repeats the ocular and gallery sightlines with the
+room transformed to that placement.
+
+The browser checks include the guided walk to the interior, opening the same
+exact WANDA consultable original there, and returning to the columnata.
+The standalone review still supports the same room-local movement and all
+three fixture states. Garden materials are the precinct's reference colors
+under the review lighting. The room-local GLB remains the handoff for the
+existing Holodeck art receiver.

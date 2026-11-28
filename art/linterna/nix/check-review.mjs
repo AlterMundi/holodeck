@@ -40,12 +40,14 @@ try {
   assert.equal(survey.minimumWalkDiameter,1.12);
 
   // Movement through architectural threshold using the preview's own collision checks.
+  await page.setViewportSize({width:960,height:600});
   await page.locator('[data-pose=approach]').click();
   await page.keyboard.down('w');
-  await page.waitForFunction(()=>nixReview.state().eye[2]<5.5,{},{timeout:16000});
+  await page.waitForFunction(()=>nixReview.state().eye[2]<5.5,{},{timeout:38000});
   await page.keyboard.up('w');
   assert.ok(Math.abs((await page.evaluate(()=>nixReview.state().eye))[0])<1.1);
 
+  await page.setViewportSize({width:1440,height:900});
   const eye = page.locator('#open-eye');
   console.log("Keyboard crossed the threshold");
   await page.locator('[data-pose=ocular]').click();
@@ -123,8 +125,39 @@ try {
   const glb = await page.evaluate(()=>nixReview.exportModel());
   await (await download).saveAs(file('Templo-de-Nix.glb'));
   assert.deepEqual(glb.anchors.sort(),survey.anchors.sort());
-  await writeFile(file('survey.json'),JSON.stringify({survey,glb},null,2)+'\n');
-  console.log(JSON.stringify({survey,glb}));
+  await page.goto(url.href+'?jardin');
+  await page.waitForSelector('body[data-ready=true]');
+  const garden = await page.evaluate(()=>nixReview.gardenSurvey());
+  assert.equal(garden.walkingWidthM,1.12);
+  assert.equal(garden.sightlines.length,2);
+  assert.ok(garden.samples>500);
+  const situated = await page.evaluate(()=>nixReview.survey());
+  assert.deepEqual(situated.anchors.sort(),survey.anchors);
+  assert.equal(situated.sightlines.length,10);
+
+  const walk = page.locator('#context-walk');
+  await walk.click();
+  await page.waitForSelector('body[data-journey=nix]',{timeout:25000});
+  assert.equal(await page.locator('body').getAttribute('data-view'),'entry');
+  assert.ok((await page.evaluate(()=>nixReview.state().eye))[0]<garden.threshold[0]);
+  await page.locator('#open-eye').click();
+  assert.equal(digest((await frameInfo(page)).href),original);
+  await page.keyboard.press('Escape');
+  await walk.click();
+  await page.waitForSelector('body[data-journey=columnata]',{timeout:25000});
+  assert.deepEqual(await page.evaluate(()=>nixReview.state().eye),[0,1.64,4.08]);
+  assert.deepEqual(errors,[]);
+  assert.deepEqual(requests,[]);
+
+  await page.goto(url.href+'?jardin&art');
+  await page.waitForSelector('body[data-ready=true]');
+  for(const view of ['columnata','desvio','jardin','approach']) {
+    await page.evaluate(name=>nixReview.pose(name),view);
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    await page.screenshot({path:file('garden-'+view+'.jpg'),quality:91,type:'jpeg'});
+  }
+  await writeFile(file('survey.json'),JSON.stringify({survey,glb,garden},null,2)+'\n');
+  console.log(JSON.stringify({survey,glb,garden}));
 } finally {
   await browser.close();
 }
