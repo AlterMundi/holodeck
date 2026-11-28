@@ -86,6 +86,44 @@ function doorway(side){
   return {door:{x,y,z,yaw:(side.yaw+180)%360},landing:{x,y,z,yaw:side.yaw}};
 }
 
+function worktable(table,cell){
+  const {id,anchor,turntable,interactionRadius}=table;
+  if(typeof id!=='string'||!/^[a-z0-9][a-z0-9-]{0,87}$/.test(id)||
+     !tuple(anchor,3,-100,100)||!tuple(turntable,3,-100,100)||
+     !validNumber(interactionRadius,.5,4)||!validNumber(table.rotationY,-360,360)||
+     !cell.floor.some(floor=>anchor[0]>=floor.x[0]&&anchor[0]<=floor.x[1]&&
+       anchor[2]>=floor.z[0]&&anchor[2]<=floor.z[1]&&anchor[1]>=floor.top)||
+     anchor[0]!==turntable[0]||anchor[2]!==turntable[2]||turntable[1]<=anchor[1])
+    throw Error('Invalid owner room worktable');
+  return {id,position:{x:anchor[0],y:anchor[1],z:anchor[2]},interactionRadius};
+}
+
+function worktableWidgets(contract,cell,table,passages){
+  const {frame,door,landing,roomMarker,turntable,widgets}=contract;
+  const same=(a,b)=>Array.isArray(a)&&a.length===b.length&&a.every((value,index)=>value===b[index]);
+  const floor=cell.floor.find(item=>item.top===frame?.floor&&
+    item.x[1]-item.x[0]===frame.size&&item.z[1]-item.z[0]===frame.size);
+  if(contract.schema!=='casa-linterna.atelier-widgets/v1'||contract.site!=='DaimonAtelier'||
+     frame?.units!=='m'||frame.up!=='+Y'||!validNumber(frame.height,2,8)||!floor||!table||
+     !same(roomMarker,table.anchor)||!same(turntable,table.turntable)||!tuple(door,2,-100,100)||
+     !passages.some(({sides})=>sides.some(side=>side.cell===contract.room&&
+       side.surfaceY===frame.floor&&same(landing,side.stand)&&
+       side.threshold?.[0]===door[0]&&Math.abs(side.threshold[1]-door[1])<=.25))||
+     !Array.isArray(widgets)||!widgets.length||widgets.length>24||
+     new Set(widgets.map(widget=>widget?.id)).size!==widgets.length)
+    throw Error('Invalid Atelier widget room contract');
+  return widgets.map(widget=>{
+    const {id,object,anchor,reach,a2uiComponent}=widget??{};
+    if(typeof id!=='string'||!/^atelier\.[a-z][a-z-]{0,40}$/.test(id)||
+       typeof object!=='string'||!object.trim()||object.length>100||a2uiComponent!==null||
+       !validNumber(reach,.5,4)||!tuple(anchor,3,-100,100)||
+       !validNumber(anchor[0],...floor.x)||!validNumber(anchor[2],...floor.z)||
+       !validNumber(anchor[1],floor.top,floor.top+frame.height))throw Error('Invalid Atelier art widget');
+    const [x,y,z]=anchor;
+    return {id,title:object,position:{x,y,z},reach,action:id==='atelier.tools'?'open-workbench':null};
+  });
+}
+
 export async function loadOwnerRoomArt(selections,rooms,request=fetch){
   if(!Array.isArray(selections)||selections.length>4)throw Error('Select bounded owner room art');
   const result=new Map();
@@ -102,6 +140,9 @@ export async function loadOwnerRoomArt(selections,rooms,request=fetch){
       if(!room||result.has(id)||!Array.isArray(cell?.models)||!cell.models.length||cell.models.length>6)
         throw Error('Owner room binding is unavailable');
       const colliders=geometry(cell);
+      const table=manifest.table?.cell===cellId?worktable(manifest.table,cell):null;
+      const widgets=manifest.atelierWidgets?.room===cellId?
+        worktableWidgets(manifest.atelierWidgets,cell,table&&manifest.table,manifest.passages):null;
       const doors=new Map();
       let exterior=null;
       for(const {sides} of manifest.passages){
@@ -131,7 +172,7 @@ export async function loadOwnerRoomArt(selections,rooms,request=fetch){
         const bytes=await readOwnerModel(from,asset,request);
         models.set(asset.sha256+'.glb',{bytes});
       }
-      result.set(id,{house:room.house,models,colliders,exterior,doors,revision:selection.sha256});
+      result.set(id,{house:room.house,models,colliders,exterior,doors,table,widgets,revision:selection.sha256});
     }
   }
   return result;
