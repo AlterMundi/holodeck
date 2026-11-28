@@ -2,12 +2,14 @@ import {Box3,Group,Matrix4,Mesh,MeshBasicMaterial,SphereGeometry,Vector3} from '
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {teleportModelId} from './teleport-hud.mjs';
-import {faceViewer,showNodes,stationMotion,stationParts,TELEPORT_STATION_ASSET,
+import {faceViewer,showNodes,softenStationLinks,stationMotion,stationParts,TELEPORT_STATION_ASSET,
   TELEPORT_MINIATURES_ASSET,TELEPORT_MINIATURE_KINDS,TELEPORT_CLIPS} from './teleport-station-asset.mjs';
 
 const assetUrl=(base,path)=>new URL('assets/'+path,base);
-function releaseScenes(...scenes){
-  const resources=new Set();
+const localKey=new Vector3(-.56,1,.68).normalize();
+
+function releaseScenes(scenes,replaced=[]){
+  const resources=new Set(replaced);
   for(const scene of scenes)scene?.traverse(object=>{
     if(object.geometry)resources.add(object.geometry);
     for(const material of [object.material].flat().filter(Boolean)){
@@ -28,12 +30,44 @@ export class TeleportModels {
     this.center=new Vector3();
     this.eye=new Vector3();
     this.offset=new Vector3();
+    this.keyDirection={value:localKey.clone()};
+    this.litMaterials=new WeakSet();
+  }
+
+  lightModels(root){
+    root.traverse(object=>{
+      for(const material of [object.material].flat()){
+        if(!material?.isMeshStandardMaterial||this.litMaterials.has(material))continue;
+        this.litMaterials.add(material);
+        // The local key participates in PBR shading without lighting other world
+        // meshes or changing the shared renderer's light and shadow budget.
+        const before=material.onBeforeCompile;
+        material.onBeforeCompile=(shader,renderer)=>{
+          before.call(material,shader,renderer);
+          shader.uniforms.teleportStationKey=this.keyDirection;
+          shader.fragmentShader=shader.fragmentShader
+            .replace('#include <common>','#include <common>\nuniform vec3 teleportStationKey;')
+            .replace('#include <lights_fragment_end>',`
+              IncidentLight stationKey;
+              stationKey.color = vec3(0.78, 0.74, 0.66);
+              stationKey.direction = normalize(mat3(viewMatrix) * teleportStationKey);
+              stationKey.visible = true;
+              RE_Direct(stationKey, geometryPosition, geometryNormal, geometryViewDir,
+                geometryClearcoatNormal, material, reflectedLight);
+              irradiance = max(irradiance, vec3(0.98));
+              #include <lights_fragment_end>
+            `);
+        };
+        material.customProgramCacheKey=()=> 'holodeck-teleport-station-fill';
+        material.needsUpdate=true;
+      }
+    });
   }
 
   clearFigure(state){
     state.loadingIcon?.abort();
     state.loadingIcon=null;
-    if(state.generated)releaseScenes(state.generated);
+    if(state.generated)releaseScenes([state.generated]);
     state.generated=null;
     state.figure?.removeFromParent();
     state.figure=null;
@@ -61,13 +95,14 @@ export class TeleportModels {
       .then(response=>{if(!response.ok)throw Error('Icon unavailable');return response.arrayBuffer();})
       .then(bytes=>new GLTFLoader().parseAsync(bytes,''))
       .then(({scene})=>{
-        if(signal.aborted||state.figure!==figure){releaseScenes(scene);return;}
+        if(signal.aborted||state.figure!==figure){releaseScenes([scene]);return;}
         scene.traverse(object=>{
           if(!object.isMesh)return;
           object.material.vertexColors=true;
           object.material.flatShading=true;
           object.material.needsUpdate=true;
         });
+        this.lightModels(scene);
         state.generated=scene;
         figure.clear();
         figure.add(scene);
@@ -98,13 +133,16 @@ export class TeleportModels {
       const parts=stationParts(station.scene);
       const figures=new Map(TELEPORT_MINIATURE_KINDS.map(kind=>[kind,miniatures.scene.getObjectByName('tp_mini_'+kind)]));
       if([...figures.values()].some(figure=>!figure))throw Error('Teleport miniatures unavailable');
+      this.replacedLinkMaterials=softenStationLinks(parts);
+      this.lightModels(station.scene);
+      this.lightModels(miniatures.scene);
       Object.assign(this,{parts,figures,source:miniatures.scene});
       this.instrument.add(station.scene);
       this.motion=stationMotion(station.scene,station.animations,{reduced:this.reduced});
       this.travelDuration=station.animations.find(clip=>clip.name===TELEPORT_CLIPS.travel)?.duration??0;
       return true;
     }catch{
-      releaseScenes(station?.scene,miniatures?.scene);
+      releaseScenes([station?.scene,miniatures?.scene],this.replacedLinkMaterials);
       return false;
     }
   }
@@ -174,6 +212,7 @@ export class TeleportModels {
     }
     this.motion.update(dt);
     this.surface.updateWorldMatrix(true,true);
+    this.keyDirection.value.copy(localKey).transformDirection(this.instrument.matrixWorld);
     faceViewer(this.parts,camera.getWorldPosition(this.eye),1-Math.exp(-12*Math.max(dt,1/60)));
     this.surface.updateWorldMatrix(true,true);
     this.inverse.copy(this.surface.matrixWorld).invert();
@@ -204,6 +243,6 @@ export class TeleportModels {
     this.disposed=true;
     this.detach();
     this.motion?.dispose();
-    releaseScenes(this.instrument,this.source);
+    releaseScenes([this.instrument,this.source],this.replacedLinkMaterials);
   }
 }
