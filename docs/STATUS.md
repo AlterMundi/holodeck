@@ -2,6 +2,21 @@
 
 
 
+
+## November 28 — Teleport instrument finishing pass
+
+Protected release `81d17d4c1878` selects Holodeck source `9700057`.
+The A2UI teleport instrument now has a turned case, brass bezel, tinted
+glass, inset iris, illuminated rail and detailed destination miniatures.
+Its nameplate tracks the selected destination. The previous package is
+retained for rollback.
+
+The exact package was exercised in Chromium in daylight, at night and in
+a narrow touch viewport. The desktop flow covered favorites, changing
+categories, paging, selecting the Matter worktable, and traveling there
+and back. All 92 installed files and the protected bundle matched.
+
+
 ## November 28 — A portable 3D teleport instrument
 
 Protected release `d4486bf3fc03` selects Holodeck source `0c45e81` and
