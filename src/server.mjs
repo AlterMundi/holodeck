@@ -60,7 +60,7 @@ import {atelierProjectionHandler} from './atelier-projection.mjs';
 import {WorldDocument} from './world-document.mjs';
 import {SessionBindings,SESSION_MS,sessionKey} from './session-bindings.mjs';
 import {installedPackageBytes,installedRelease,releaseStatus} from './release-status.mjs';
-import {HumanAvatarProfiles,humanWardrobeAssets,personalAvatarFile,personalAvatarEdition} from './human-avatars.mjs';
+import {HumanAvatarProfiles,humanWardrobeAssets,personalAvatarFile,personalAvatarRoute,personalAvatarEdition} from './human-avatars.mjs';
 
 const cookieToken=req=>req.headers.cookie?.match(/(?:^|; )holodeck_session=([a-f0-9]{40})(?:;|$)/)?.[1];
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
@@ -126,9 +126,8 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   catch{avatars=new HumanAvatarProfiles(null,null,avatarChoices,saveAvatarChoices,releaseControllerRef);console.error('Holodeck avatar assignments could not be restored');}
   avatars.retain(sessions.values());
   const privateExplorer=personalAvatarEdition(privatePersonalAvatar,releaseControllerRef&&identityResolver);
-  const privateExplorerRoute='api/appearance/personal-model.glb';
   const avatarProfile=actor=>({meshFileUrl:route(privateExplorer&&avatars.usesPersonalAvatar(actor)
-    ?privateExplorerRoute:'assets/'+avatars.model(actor))});
+    ?personalAvatarRoute:'assets/'+avatars.model(actor))});
   const wardrobeAssets=humanWardrobeAssets();
   const sessionFor=token=>sessions.get(sessionKey(token));
   const localBoot=randomBytes(4).toString('hex');
@@ -1064,7 +1063,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
       session[budget].push(now);
     }
     const spaceRoute=['/space','/space/destinations','/space/jump','/space/character-pose-review','/space/character-presentation','/space/content-visits','/space/collection','/space/collection/archive','/space/collection/events','/space/avatar-pose','/space/collection/tabletop-presence','/space/collection/pointing','/space/matter-look','/space/scene','/space/garden','/space/garden-editor'].includes(req.path)||req.path.startsWith('/space/art/')||req.path.startsWith('/space/exteriors/')||req.path.startsWith('/space/destinations/icon/')||req.path.startsWith('/space/collection-model/')||
-      req.path.startsWith('/space/atelier/')||req.path==='/release-dnd'||req.path==='/appearance'||req.path==='/appearance/personal-model.glb'||req.path==='/conversation-surface'||req.path==='/topic-space'||req.path==='/topic-projects'||
+      req.path.startsWith('/space/atelier/')||req.path==='/release-dnd'||req.path==='/appearance'||req.path===personalAvatarRoute.slice(3)||req.path==='/conversation-surface'||req.path==='/topic-space'||req.path==='/topic-projects'||
       (questbookHost&&/^\/questbook(?:\/(?:action|objective|create|receipt))?$/.test(req.path))||/^\/conversation-contexts(?:\/[a-f0-9-]{36}(?:\/(?:release|retry|discard))?)?$/.test(req.path);
     if(spaceRoute&&!actor.rights?.includes('observe'))
       return res.status(403).json({message:'Tu acceso a este lugar cambió.'});
@@ -1131,7 +1130,7 @@ export async function createHolodeck({basePath='/',production=false,identityReso
   app.use(route('api/space/atelier/'),asyncRoute(atelierProjectionHandler({
     authority:atelierAuthority,scope:atelierSpace,authorize:currentActor,
   })));
-  if(privateExplorer)app.get(route(privateExplorerRoute),(req,res)=>{
+  if(privateExplorer)app.get(route(personalAvatarRoute),(req,res)=>{
     // The same MML description reaches peers. Only the owner's freshly
     // authorized request can follow the exact private Home edition.
     const model=avatars.usesPersonalAvatar(req.actor)?privateExplorer:route('assets/'+personalAvatarFile);

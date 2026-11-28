@@ -587,7 +587,8 @@ release by `resource` and exact `version`. It resolves
 the exact served bytes before selection. The personal default then uses the
 existing authenticated appearance route. The paired visitor receives the
 private Home edition and other signed-in participants loading that same
-character description receive the bundled Explorer. The Character Studio
+character description receive the bundled Explorer. Both use the existing
+direct loader that preserves authored idle and landing clips. The Character Studio
 continues to use the shareable study rig. No portrait or model bytes live in
 the source repository, runtime archive or world state filesystem. Unselect
 the edition in the receiver configuration and apply the ordinary release

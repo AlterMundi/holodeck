@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { readFile,writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { avatarModelFiles, personalAvatarFile } from '../src/human-avatars.mjs';
+import { avatarModelFiles, personalAvatarFile, personalAvatarRoute } from '../src/human-avatars.mjs';
 import {ensureMmlServerAuthContext} from './mml-server-auth-context.mjs';
 ensureMmlServerAuthContext({check:true});
 const lock=JSON.parse(await readFile(new URL('../package-lock.json',import.meta.url),'utf8'));
@@ -158,7 +158,7 @@ const avatarRendering={
         maxTextureSize,
         abortController
       );
-      return await this.loadFromBuffer(processedBuffer, fileUrl);`,`      if (new URL(fileUrl, document.baseURI).href === new URL(holodeckPersonalAvatar, document.baseURI).href) {
+      return await this.loadFromBuffer(processedBuffer, fileUrl);`,`      if (holodeckPersonalAvatars.some(path => new URL(path, document.baseURI).href === new URL(fileUrl, document.baseURI).href)) {
         const direct = await this.modelLoader.load(fileUrl, undefined, abortController);
         if (abortController?.signal.aborted) return null;
         direct.group.animations = direct.animations.filter(clip => clip.name === "hero_idle" || clip.name === "hero_landing");
@@ -187,7 +187,7 @@ const avatarRendering={
       const graphicsModule=fileURLToPath(new URL('../src/render-pixel-budget.mjs',import.meta.url));
       const prelude=`import { playerNameplate } from ${JSON.stringify(nameplateModule)};
 import { usesLightGraphics } from ${JSON.stringify(graphicsModule)};
-const holodeckPersonalAvatar = ${JSON.stringify('assets/'+personalAvatarFile)};
+const holodeckPersonalAvatars = ${JSON.stringify(['assets/'+personalAvatarFile,personalAvatarRoute])};
 const holodeckAvatarFiles = new Set(${JSON.stringify(avatarModelFiles)});
 function fallbackAvatarModel(fileUrl) {
   if (fileUrl === lowPolyLoDModelURL) return true;

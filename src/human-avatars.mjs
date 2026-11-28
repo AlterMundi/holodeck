@@ -10,6 +10,7 @@ const rigs=[
 const outfits=rigs.map((_,index)=>`avatar-wardrobe-v1-${index+1}.glb`);
 const profiles=Object.freeze([...rigs.map(rig=>rig+'.glb'),...outfits]);
 export const personalAvatarFile='avatar/explorer-hero-v30.glb';
+export const personalAvatarRoute='api/appearance/personal-model.glb';
 export const personalAvatarSha256='fdc62b339ae95dee8697239ca35c10f674ce2ab6ddd8d9c78648c75d6df40dbe';
 export const avatarModelFiles=Object.freeze([...profiles,personalAvatarFile]);
 // Immutable Home version selected by the receiving operator. The asset is
