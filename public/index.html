@@ -100,7 +100,7 @@ body:has(#beacon-panel[open]) #beacon-station{display:none}
 #beacon-panel[data-beacon-hud] .beacon-panel-stage{pointer-events:auto}
 body:has(#beacon-panel[data-beacon-hud]) canvas[data-hud-render-layer]{z-index:31!important}
 
-.world-interaction-canvas{touch-action:none}
+.world-interaction-canvas{touch-action:none}.world-interaction-canvas:focus{outline:none}
 .touch-controls[data-native-locomotion],.touch-controls[data-touch-paused]{display:none!important}
 body[data-touch-moving] :is(#hud,#companion-status,#world-tools){display:none!important}
 body[data-compact-matter] #hud{display:none!important}
