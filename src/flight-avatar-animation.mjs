@@ -197,11 +197,11 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       entry.last.copy(position);
       up.set(0,1,0).applyQuaternion(character.quaternion);
       const vertical=displacement.dot(up);
-      const continuous=displacement.lengthSq()<(atTable?1:5)**2&&elapsed<=.35;
-      // A pilot steering with the camera flies like a plane: its travel is
-      // read in the pitched flight frame, so climbing, going vertical and
-      // coming over the top of a loop all stay "ahead".
+      // A local pilot travels in the pitched flight frame even at a pole.
       const piloting=isLocal&&explicitFlight&&outdoor&&!atTable&&Number.isFinite(loopPitch);
+      // Local physics caps its catch-up steps. A delayed render with only a
+      // small advance is still the same maneuver, not a new airborne pose.
+      const continuous=displacement.lengthSq()<(atTable?1:5)**2&&(piloting||elapsed<=.35);
       const travel3=displacement.length();
       displacement.addScaledVector(up,-vertical);
       const travel=displacement.length();
@@ -229,7 +229,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const moved=travel<(atTable?.65:3);
       const speed=moved&&continuous?Math.min(atTable?9:18,travel/Math.max(elapsed*factor,.001)):0;
       // Full flight speed, vertical included, for a pilot's posture.
-      entry.flightSpeed+=((continuous&&piloting?Math.min(30,travel3/Math.max(elapsed,.001)):0)-entry.flightSpeed)*ease(step,8);
+      entry.flightSpeed+=((continuous&&piloting?Math.min(30,travel3/Math.max(Math.min(elapsed,.1),.001)):0)-entry.flightSpeed)*ease(step,8);
       const fade=ease(step,8);
       if(!continuous)resetMotion(entry);
 
