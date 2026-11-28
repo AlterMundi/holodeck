@@ -165,3 +165,25 @@ test('mashing flight keys leans and settles the body instead of whipping it arou
   const {worst,mean}=await keyMash({flight:true});
   assert.ok(worst<5&&mean<2,JSON.stringify({worst,mean}));
 });
+
+test('a camera-steered vertical loop flies like a plane, body along the travel all the way round',async()=>{
+  // Pitch the camera through a full loop while holding forward.
+  const steps=24,route=[['launch',1.2,{flight:true,vertical:1}],['level',1,{flight:true,forward:1,pitch:0}]];
+  for(let i=1;i<=steps;i++)route.push([`loop-${i}`,.12,{flight:true,forward:1,pitch:i/steps*2*Math.PI}]);
+  let previous=null,worst=1;const samples=[];
+  // The sampler's locomotion does not steer by pitch; drive the climb from it.
+  for(const leg of route)if(leg[0].startsWith('loop')){const p=leg[2].pitch;leg[2]={...leg[2],forward:Math.cos(p),vertical:Math.sin(p)};}
+  await runSequence({file:explorer,route,pilot:true,onFrame({name,phase,root}){
+    const position=root.position.clone();
+    if(name.startsWith('loop')&&phase>.06&&previous){
+      const travel=position.clone().sub(previous);
+      if(travel.length()>.02){
+        const along=new Vector3(0,1,0).applyQuaternion(root.quaternion).dot(travel.normalize());
+        samples.push(along);worst=Math.min(worst,along);
+      }
+    }
+    previous=position;
+  }});
+  assert.ok(samples.length>10,`samples ${samples.length}`);
+  assert.ok(worst>.6,`worst alignment ${worst} of ${samples.map(v=>v.toFixed(2)).join(' ')}`);
+});

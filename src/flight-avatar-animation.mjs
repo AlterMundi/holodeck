@@ -198,13 +198,29 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       up.set(0,1,0).applyQuaternion(character.quaternion);
       const vertical=displacement.dot(up);
       const continuous=displacement.lengthSq()<(atTable?1:5)**2&&elapsed<=.35;
+      // A pilot steering with the camera flies like a plane: its travel is
+      // read in the pitched flight frame, so climbing, going vertical and
+      // coming over the top of a loop all stay "ahead".
+      const piloting=isLocal&&explicitFlight&&outdoor&&!atTable&&Number.isFinite(loopPitch);
+      const travel3=displacement.length();
       displacement.addScaledVector(up,-vertical);
       const travel=displacement.length();
       // Where the body travels relative to where it faces, smoothed so a
       // single uneven packet does not swing the legs.
-      if(continuous&&travel>(atTable?.002:.004)){
-        const along=displacement.dot(facing.copy(rollAxis).applyQuaternion(character.quaternion))/travel;
-        const across=displacement.dot(right.copy(pitchAxis).applyQuaternion(character.quaternion))/travel;
+      if(continuous&&(piloting?travel3:travel)>(atTable?.002:.004)){
+        facing.copy(rollAxis).applyQuaternion(character.quaternion);
+        right.copy(pitchAxis).applyQuaternion(character.quaternion);
+        let along,across;
+        if(piloting){
+          // Flight direction: the facing pitched by the camera toward up.
+          const c=Math.cos(loopPitch),s=Math.sin(loopPitch);
+          const ahead3=(displacement.dot(facing)*c+vertical*s)/travel3;
+          across=displacement.dot(right)/travel3;
+          along=ahead3;
+        }else{
+          along=displacement.dot(facing)/travel;
+          across=displacement.dot(right)/travel;
+        }
         const follow=ease(step,9);
         entry.travelRight+=(across-entry.travelRight)*follow;
         entry.travelForward+=(along-entry.travelForward)*follow;
@@ -212,6 +228,8 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const heading=travelAngle(entry.travelRight,entry.travelForward);
       const moved=travel<(atTable?.65:3);
       const speed=moved&&continuous?Math.min(atTable?9:18,travel/Math.max(elapsed*factor,.001)):0;
+      // Full flight speed, vertical included, for a pilot's posture.
+      entry.flightSpeed=(entry.flightSpeed??0)+((continuous&&piloting?Math.min(30,travel3/Math.max(elapsed,.001)):0)-(entry.flightSpeed??0))*ease(step,8);
       const fade=ease(step,8);
       if(!continuous)resetMotion(entry);
 
@@ -332,7 +350,9 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       const turnRate=glanceMotion?entry.turn.velocity:0;
 
       const low=!active&&(isLocal?crouch:peerPose==='crouch'&&grounded);
-      const target=mode==='hover'||mode==='swim'?clamp((entry.planarSpeed-.14)/1.8):0;
+      // A pilot going vertical is still cruising, not hovering.
+      const cruiseSpeed=piloting?Math.max(entry.planarSpeed,entry.flightSpeed??0):entry.planarSpeed;
+      const target=mode==='hover'||mode==='swim'?clamp((cruiseSpeed-.14)/1.8):0;
       entry.weight+=(target-entry.weight)*ease(step,6);
       entry.hoverWeight+=(Number(Boolean(active))*(1-target)-entry.hoverWeight)*fade;
       entry.lowWeight+=(Number(Boolean(low))-entry.lowWeight)*fade;
@@ -436,7 +456,7 @@ export function bindFlightAvatarAnimation(manager,context,{clock}={}){
       // hovering and climbing in place it stands tall, fist to the sky.
       const aerobatic=isLocal&&floating&&Number.isFinite(loopPitch);
       const pilot=isLocal&&explicitFlight&&aerobatic;
-      const outstretched=glanceMotion?entry.outstretched.update(aerobatic&&mode==='hover'?clamp((entry.planarSpeed-.6)/2.4)*clamp(ahead):0,step):
+      const outstretched=glanceMotion?entry.outstretched.update(aerobatic&&mode==='hover'?clamp((Math.max(entry.planarSpeed,entry.flightSpeed??0)-.6)/2.4)*clamp(ahead):0,step):
         entry.outstretched.reset(aerobatic&&mode==='hover'?1:0).value;
       // Snap into the trick body, spin, then open out before the ground.
       const trickProgress=trick?trickAge/TRICK_SECONDS:0;
