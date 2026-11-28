@@ -1,5 +1,23 @@
 # Current MVP work
 
+## Larger illustrated Sun and Moon · 2026-11-28
+
+Protected release `51aac6529989` serves source `65fe1f5` with
+`316394be6e59` as immediate rollback. All 99 installed files matched.
+The visible Sun and Moon use 6.4× and 6.6× their physical angular radii,
+with dawn color bands, a marbled lunar surface and fine orbital arcs.
+The direction, phase, horizon, cloud occlusion and physical eclipse
+calculation follow the established Quintana sky. Chromium compared the
+same dawn and lunar views before and after, measured apparent diameters
+from 6 to 40 and 5 to 37 pixels, and checked the total eclipse silhouette.
+The Node suite passed 619 tests with six skips.
+
+Canonical Conversation now serves `b8707510`. A stalled or refused world
+context does not prevent recording. If context is unavailable, the exact
+original remains ready for a person to send without it. Chromium verified
+recording and review with an injected refusal. Canonical tests also
+verified one explicit send using the same original after a timeout.
+
 ## Toolbar Mic and companion boots · 2026-11-28
 
 Protected release `316394be6e59` serves `22cbd29`, with `59ce25c1115c`
@@ -4590,8 +4608,8 @@ and a scripted native worker.
 
 ## Selected receiving release
 
-The current protected release is `316394be6e59` at `22cbd29` with
-`59ce25c1115c` retained for rollback. See the latest entry at the top of
+The current protected release is `51aac6529989` at `65fe1f5` with
+`316394be6e59` retained for rollback. See the latest entry at the top of
 this record for the current receiver checks. Earlier releases follow.
 
 The protected playtest now selects package `601108cb255e` at source
