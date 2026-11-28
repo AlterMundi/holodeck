@@ -27,6 +27,31 @@ test('conflicting change rejects; uncertain retry returns exact original outcome
   assert.equal(room.entities.bridge.revision,1);
   assert.throws(() => room.command(human,{ ...a, args: { raised:false } }), /different contents/);
 });
+test('a quest reads the original room outcome without repeating its command', () => {
+  let checkpoint;
+  const room = new Room({ persist: state => { checkpoint = state; } });
+  const raised = { place: 'island-workshop', event: { type: 'bridge_state', raised: true } };
+  const proposal = command(room, human);
+  assert.equal(room.objectiveReceipt(human, proposal.id, raised), null);
+  const result = room.command(human, proposal);
+  const proof = room.objectiveReceipt(human, proposal.id, raised);
+  assert.equal(proof.sequence, result.event);
+  assert.equal(proof.command, proposal.id);
+  assert.equal(proof.actor, human.id);
+  assert.equal(room.objectiveReceipt(other, proposal.id, raised), null);
+  assert.equal(room.objectiveReceipt(human, proposal.id, {
+    ...raised, event: { type: 'bridge_state', raised: false },
+  }), null);
+  const restored = new Room({ state: checkpoint });
+  assert.deepEqual(restored.objectiveReceipt(human, proposal.id, raised), proof);
+  assert.equal(restored.entities.bridge.revision, 1);
+  const rejected = command(restored, human, { expectedRevision: 0 });
+  assert.equal(restored.command(human, rejected).status, 'rejected');
+  assert.equal(restored.objectiveReceipt(human, rejected.id, raised), null);
+  restored.reset();
+  assert.equal(restored.objectiveReceipt(human, proposal.id, raised), null);
+});
+
 test('rights and speaker-owned observations cannot be supplied in the command', () => {
   const room = new Room(); const a = command(room,human);
   assert.equal(room.command(other,a).status,'rejected');

@@ -17,6 +17,38 @@ native/world Unix sockets. `authoritySocket` selects the existing central native
 permission bridge; `contentVisits` selects at most eight protected report or artifact entrances.
 It carries route metadata and private content references, not credentials.
 
+### Questbook pilot
+
+The optional `questbook` selection names one project UUID, the absolute
+`binary` path of the owner-side DaimonCards writer, and the existing project
+`viewEndpoint` and `editEndpoint` audience routes at the configured loopback
+Home receiver. The receiver stores card state in `STATE_DIR/questbook.sqlite`.
+Select audiences explicitly for the project; general Holodeck access alone
+does not grant card access. The owner seeds the project before opening its
+questbook. Lead users to the journal from the selected A2UI host.
+
+The authenticated `GET api/questbook?selected=CARD` projects the selected
+entry. `POST api/questbook/action` handles acceptance or completion with the
+observed card revision and the original operation ID.
+`POST api/questbook/objective` takes `operation`, `card`, `revision`,
+`objective` and `originalCommand`. It reads the current actor's existing
+Room outcome and linked event. It never calls the Room command again. The
+bridge-state pilot can confirm a matching transition from the workshop.
+A missing, rejected, mismatched or retired Room receipt leaves the objective
+pending. Once credited, the card retains that exact evidence and its
+idempotent receipt across Room resets.
+
+Run the protected HTTP fixture against the exact candidate writer:
+
+```sh
+DAIMON_CARDS_BIN=/path/to/daimon-cards node --test test/questbook-room-http.test.mjs
+```
+
+The fixture uses the real Room, HTTP middleware, project audience adapter
+and Rust writer with synthetic Home identity. Live selection and the native
+daimon's existing signed access remain separate.
+
+
 The optional `artProfile: "compaii-atelier-v1"` selects the packaged
 Blender commons, parcel walk, garden, facade, foyer, gallery, listening tower
 and Beacon chamber. It binds to the
