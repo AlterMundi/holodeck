@@ -4,6 +4,7 @@ import {AvatarPosePresence,signAvatarPresence} from './avatar-pose-presence.mjs'
 import {WorktableLaser} from './worktable-laser.mjs';
 import {tabletopPointBroadcast,tabletopPointProofMessage} from './tabletop-pointing.mjs';
 import {TabletopPointView} from './tabletop-point-view.mjs';
+import {Questbook} from './questbook-client.mjs';
 import {bindHudAppearance} from './hud-appearance.mjs';
 import {selectedHudLook} from './hud-look-preview.mjs';
 import {ToroidalScenery} from './toroidal-scenery.mjs';
@@ -142,7 +143,7 @@ document.querySelector('#appearance-form').onsubmit=event=>{
   if(!appearanceSave.disabled)void readAppearance({choice:appearanceChoice.value===''?null:Number(appearanceChoice.value)});
 };
 window.addEventListener('keydown',event=>{
-  if(appearanceDialog.open&&!appearanceDialog.hasAttribute('data-native-settings'))event.stopImmediatePropagation();
+  if(document.querySelector('#questbook-dialog').open||appearanceDialog.open&&!appearanceDialog.hasAttribute('data-native-settings'))event.stopImmediatePropagation();
 },true);
 const physicalMoves=new Map([['KeyW','w'],['KeyA','a'],['KeyS','s'],['KeyD','d']]);
 const physicalControls=new Map([['AltLeft','alt'],['AltRight','alt'],['ShiftLeft','shift'],['ShiftRight','shift'],['Space',' ']]);
@@ -1816,6 +1817,7 @@ function say(text,options){
   else if(!$('#creator').hidden){$('#preview-hint').textContent=text;worldNotice.clear();}
   else worldNotice.show(text,options);
 }
+const questbook=new Questbook(document,api);
 async function api(path,body,{signal}={}){
   const response=await fetch(url(`api/${path}`),{method:body===undefined?'GET':'POST',credentials:'same-origin',
     headers:body===undefined?{}:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),signal});
@@ -2050,6 +2052,7 @@ async function refresh(){
   const bridge=outsideRing()?null:state.entities.bridge;
   if(!bridge&&activeSpace?.title)$('#hud h1').textContent=activeSpace.title;
   $('#bridge').hidden=!bridge;
+  $('#questbook-open').hidden=state.questbook!==true;
   $('#plant').hidden=state.lightExercise!==true||!bridge;
   $('#undo').hidden=!bridge;
   if(bridge)$('#bridge').textContent=bridge.raised?(compact?'Separar':'Separar islas'):(compact?'Unir islas':'Conectar islas');
@@ -2074,6 +2077,7 @@ function settleCommand(result){
     say(undo?'Tu cambio quedó deshecho.':'El cambio ya forma parte del mundo.',{transient:true});
   }else if(result.reason==='The light-planting exercise has ended')say('El ejercicio de luces terminó.');
   else say('Ese lugar cambió. Mirá cómo quedó antes de intentarlo de nuevo.');
+  if(result.status==='completed'&&pending.type==='bridge.set')void questbook.bridgeCompleted(pending);
   const id=pending.id;
   pending=null;pendingMetadata=null;sessionStorage.removeItem(pendingKey);clearRecovery('command');
   if(preview?.submission===id){

@@ -82,7 +82,7 @@ function situatedInterior({request,verified,actor,room,conversationPlace,indoorG
 
 // The receiving operator owns the directory/socket filesystem capability.
 // Native identity and current room rights are independently rechecked per request.
-export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,approachSpace,conversationPlace,readRenderedView,putExhibit,exhibitResult,currentLayout,draftLayout,previewLayout,publishLayout,layoutResult,roomDesign,indoorGarden,reviewCharacter,atelierWorkshop=null}){
+export async function createWorldPort({socketPath,room,native,resolveRights,expectedBeingRef=null,resolveOwnNativeRights=null,describeSpace,moveSpace,approachSpace,conversationPlace,readRenderedView,putExhibit,exhibitResult,currentLayout,draftLayout,previewLayout,publishLayout,layoutResult,roomDesign,indoorGarden,reviewCharacter,atelierWorkshop=null,questbook=null}){
   if(!socketPath?.startsWith('/')||!native?.authorizeWorldRequest||typeof resolveRights!=='function')
     throw Error('Select the installed native world port and authority resolver');
   let active=0;
@@ -101,8 +101,9 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
         const request=JSON.parse(bytes.subarray(0,end));
         const own=request?.ownNative===true;
         if(!request||Object.keys(request).sort().join(',')!==(own?'args,operation,ownNative':'args,interactionId,operation')
-          ||!['observe','activity','project','act','result'].includes(request.operation)
+          ||!['observe','activity','project','act','result','questbook'].includes(request.operation)
           ||!request.args||typeof request.args!=='object'||Array.isArray(request.args))throw Error('Invalid world operation');
+        if(request.operation==='questbook'&&(!own||!questbook))throw Error('Use the existing own-native project lane');
         let verified,rights;
         if(own){
           // The private receiving lane selects identity; current Home authority
@@ -135,7 +136,11 @@ export async function createWorldPort({socketPath,room,native,resolveRights,expe
         const space=verified.capturedSpace?null:describeSpace?.(actor);
         let result;
         const savedExhibit=own&&request.operation==='result'?exhibitResult?.(actor,request.args.id):null;
-        if(request.operation==='act'&&atelierActions.has(request.args.type)){
+        if(request.operation==='questbook'){
+          const outcome=await questbook.native(actor,request.args);
+          if(!outcome.ok){socket.end(JSON.stringify(outcome)+'\n');return;}
+          result=outcome.result;
+        }else if(request.operation==='act'&&atelierActions.has(request.args.type)){
           const {type,...args}=request.args;
           if(!own||!atelierWorkshop||space?.id!==atelierWorkshop.description.room)throw Error('Atelier requires its admitted own-native room');
           const operation=atelierActions.get(type);

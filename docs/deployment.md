@@ -86,6 +86,25 @@ Keep at most three retained code archives in the ordinary rotation under
 120 MiB, including the selected package and its exact rollback. Use the
 existing Home retire-version writer only for a superseded archive.
 
+## Paired Questbook canary
+
+The existing exterior entry can expose one private project's journal. Use
+the owning release and native bridge selectors together. The Holodeck
+`questbook` entry supplies `project`, the installed DaimonCards `binary`
+and `paired: true`. The bridge's `questbook_access` entry supplies the
+same `project` and `paired: true`. The browser and daimon use their
+existing Home and own-native identities. Every operation rechecks the
+current pairing, and the initialized card store belongs under the
+Holodeck service's existing `STATE_DIR`.
+
+This receiving composition leaves room-specific project catalogs to the
+separate topic-room integration. The currently selected toroidal terrain
+hides the traditional workshop bridge. Use a mission the selected
+terrain actually exposes for real participant acceptance. The traditional
+workshop fixture can still test credit from an exact bridge action.
+Keep the current receiver, archive digest, compatible predecessor and
+existing room, transport and appearance selections in the operator record.
+
 ## Receiving contracts
 
 The existing Home publisher accepts the closed `dm.home-service-package/v1`
