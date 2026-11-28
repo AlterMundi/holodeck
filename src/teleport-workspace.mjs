@@ -71,21 +71,31 @@ export class TeleportWorkspace {
   clearInput(){this.keys.clear();this.lastFrame=null;}
 
   reset(){
-    this.localEye.set(0,1.52,this.initialDistance);
     this.pitchOffset=0;
     this.lastFrame=null;
-    // Aim from the existing world position. Back off slightly on tall displays.
-    const target=this.localEye.clone();
-    target.z=Math.max(this.initialDistance,Math.min(4.4,2.65/(this.aspect??1)));
-    this.tryPosition(target);
+    const aspect=this.aspect??1;
+    if(aspect<.85){
+      // Frame the table from beside the explorer on narrow screens. Backing
+      // straight up would place the avatar between the camera and the board.
+      this.localEye.set(0,1.52,Math.min(1.65,this.initialDistance));
+      const radius=Math.max(this.initialDistance,Math.min(4.4,1.94/aspect));
+      const target=new Vector3(Math.sin(.70)*radius,1.72,Math.cos(.70)*radius);
+      this.tryPosition(target);
+      if(this.localEye.x===0){target.x*=-1;this.tryPosition(target);}
+    }else{
+      this.localEye.set(0,1.52,this.initialDistance);
+      this.tryPosition(new Vector3(0,1.52,Math.max(this.initialDistance,2.65/aspect)));
+    }
     this.updateCamera();
   }
 
   resize(aspect){
     if(this.aspect===aspect)return;
+    const firstLayout=this.aspect===undefined;
     this.aspect=aspect;
     this.camera.aspect=aspect;
     this.camera.updateProjectionMatrix();
+    if(firstLayout&&this.group)this.reset();
   }
 
   tryPosition(next){
