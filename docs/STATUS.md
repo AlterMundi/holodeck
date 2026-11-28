@@ -3,6 +3,20 @@
 
 
 
+
+## November 28 — Navigable teleport workstation
+
+Protected release `67a853c5d09a` selects Holodeck source `901bc1d`.
+The teleport instrument opens in a private perspective workspace and offers
+the camera-mounted view through A2UI. The preference is local to the browser.
+Drag or A/D orbits, wheel or W/S changes the viewing distance, and the view
+controls include zoom, front view and exit. Esc returns to the world.
+
+The exact package was checked in Chromium with mouse, keyboard and emulated
+touch. Mode switching and navigation left the world avatar in place. The
+instrument completed a trip to the Matter worktable and back. The 92 installed
+files and the served protected bundle match the distributed package.
+
 ## November 28 — Teleport instrument finishing pass
 
 Protected release `81d17d4c1878` selects Holodeck source `9700057`.
