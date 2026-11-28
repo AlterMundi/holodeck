@@ -190,10 +190,10 @@ const portraitWork=[
 const movement=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE']);
 
 export class MatterWorktableHud{
-  constructor({document,webgl,table,collection,toggleSound,onActive,canEnter=()=>true,onError,readTools,activateTool,navigation,presentMovement,history,visitor,creatorContext,beaconControls,onBeaconOpen,teleport,worktableNavigation,fixedNavigation,frameDiagnostics}){
+  constructor({document,webgl,table,collection,workspace,toggleSound,onActive,canEnter=()=>true,onError,readTools,activateTool,navigation,presentMovement,history,visitor,creatorContext,beaconControls,onBeaconOpen,teleport,worktableNavigation,fixedNavigation,frameDiagnostics}){
     this.worktableNavigation=worktableNavigation;
     this.fixedNavigation=fixedNavigation;
-    Object.assign(this,{document,webgl,table,onActive,canEnter,readTools,activateTool,presentMovement,movementGroups:new Map(),scope:0,toolScope:0,mode:null,blocked:false});
+    Object.assign(this,{document,webgl,table,workspace,onActive,canEnter,readTools,activateTool,presentMovement,movementGroups:new Map(),scope:0,toolScope:0,mode:null,blocked:false});
     this.canvas=webgl.domElement;
     const releaseHudOverrides=()=>{
       this.passage?.fallback(true);
@@ -542,6 +542,9 @@ export class MatterWorktableHud{
   }
 
   get active(){return this.mode==='work';}
+  get tablePresented(){return this.active&&(!this.workspace||this.workspace.visible('table'));}
+  get mapPresented(){return Boolean(this.map.group&&this.map.presented!==false);}
+
 
   ownsAccessibleInput(target){return this.hud.ownsAccessibleInput(target);}
 
@@ -923,7 +926,7 @@ export class MatterWorktableHud{
   syncSettingsInput(){
     const scope=this.teleport.group?teleportHudId:this.beacon.viewerGroup?beaconViewerId:this.activity.owner()?.native?activityHudId:this.visit.indexActive?exhibitionHudId:
       this.visit.viewerGroup?visitHudId:this.settings.group?settingsId:null;
-    const mapTakesFocus=Boolean(this.teleport.group||this.map.group&&this.map.compact);
+    const mapTakesFocus=Boolean(this.teleport.group||this.mapPresented&&(this.workspace?.compact()||this.map.compact));
     for(const group of [this.toolGroup]){
       if(group&&group.visible===mapTakesFocus){
         group.visible=!mapTakesFocus;
@@ -1032,7 +1035,7 @@ export class MatterWorktableHud{
   }
 
   key(event){
-    const scope=this.hud.currentFocus()?.surfaceId??(this.map.group?worldMapId:this.active?surfaceId:null);
+    const scope=this.hud.currentFocus()?.surfaceId??(this.mapPresented?worldMapId:this.tablePresented?surfaceId:null);
     if(this.windows.key(scope,event))return true;
     if(this.toolOverflowOpen&&event.key==='Escape'&&!event.defaultPrevented&&!this.modalScope&&
       !this.document.pointerLockElement&&this.document.getElementById('conversation-panel').hidden&&
@@ -1042,21 +1045,22 @@ export class MatterWorktableHud{
       this.focusTool('more');
       return true;
     }
-    if(event.key==='Escape'&&!event.defaultPrevented&&(this.map.group||this.active)){
-      const menuSurface=this.map.group?worldMapId:surfaceId;
+    if(event.key==='Escape'&&!event.defaultPrevented&&(this.mapPresented||this.tablePresented)){
+      const menuSurface=this.mapPresented&&(!this.tablePresented||scope===worldMapId||this.workspace?.foreground()==='map')?worldMapId:surfaceId;
       if(event.repeat||this.hud.dismissChoice(menuSurface)){
         this.layer.invalidate();
         return true;
       }
     }
-    if(this.map.group&&event.key==='Escape'&&!event.defaultPrevented){this.map.close();return true;}
-    if(this.worktableNavigation.escape(this.fixedNavigation,event,()=>this.leave()))return true;
+    if(this.mapPresented&&event.key==='Escape'&&!event.defaultPrevented&&
+      (!this.tablePresented||scope===worldMapId||this.workspace?.foreground()==='map')){this.map.close();return true;}
+    if(this.tablePresented&&this.worktableNavigation.escape(this.fixedNavigation,event,()=>this.leave()))return true;
     if(this.creation.isFocused()&&event.key==='Escape'&&!event.defaultPrevented&&this.creation.cancel())return true;
     if(this.ownsAccessibleInput(event.target)){
       return event.repeat&&(event.key==='Enter'||event.key===' ')&&this.hud.currentFocus()?.surfaceId===doorPromptId;
     }
     const modifier=event.altKey||event.metaKey||event.ctrlKey;
-    if(!this.active){
+    if(!this.tablePresented){
       return this.mode==='enter'&&!modifier&&event.key==='Tab'&&!event.shiftKey&&
         (event.target===this.document.body||event.target===this.canvas)&&this.focusTool('open');
     }
@@ -1187,24 +1191,28 @@ export class MatterWorktableHud{
       this.hud.setChoicePresentation(surfaceId,short?'overlay':'inline');
       this.hud.setChoicePageSize(surfaceId,short?(height<300?1:2):undefined);
     }
-    const conversationSpan=this.group&&this.active&&this.table===this.collectionTable?
-      this.conversationDockSpan():null;
-    if(this.group&&this.active&&this.table===this.collectionTable){
-      const conversation=this.document.getElementById('conversation-panel');
-      const yieldToConversation=this.workPortrait&&!conversation.hidden&&!conversationSpan;
-      if(this.group.visible===yieldToConversation){
-        this.group.visible=!yieldToConversation;
-        if(yieldToConversation)this.hud.dismissChoice(surfaceId);
-        this.workLayoutDirty=true;
-        this.layer.invalidate();
-      }
+    const chat=this.document.getElementById('conversation-panel');
+    const splitMap=this.mapPresented&&(this.tablePresented||!chat.hidden)&&!this.workspace?.compact();
+    const chatRect=chat.hidden?null:chat.getBoundingClientRect();
+    const canvasLeft=this.canvas.getBoundingClientRect().left;
+    const before=chatRect?chatRect.left-canvasLeft:width-right;
+    const after=chatRect?chatRect.right-canvasLeft:left;
+    const sharedSpace=before-left>=width-right-after?{start:left,end:before}:{start:after,end:width-right};
+    const mapWidth=splitMap?Math.min(284,(sharedSpace.end-sharedSpace.start)*.40):0;
+    const conversationSpan=this.group&&this.tablePresented&&chatRect&&!this.workspace?.compact()
+      ?{start:sharedSpace.start+mapWidth,end:sharedSpace.end}:null;
+    if(this.group&&this.group.visible!==this.tablePresented){
+      this.group.visible=this.tablePresented;
+      if(!this.tablePresented)this.hud.dismissChoice(surfaceId);
+      this.workLayoutDirty=true;
+      this.layer.invalidate();
     }
     if(conversationSpan){
       const bounds=this.hud.getSurfaceBounds(surfaceId);
       if(bounds){
         const workTop=Math.max(top+58,height<520?54:95);
-        const scale=Math.min(170,(conversationSpan.end-conversationSpan.start-28)/(bounds.right-bounds.left),
-          (height-workTop-bottom-74)/(bounds.top-bounds.bottom));
+        const scale=Math.max(1,Math.min(170,(conversationSpan.end-conversationSpan.start-28)/(bounds.right-bounds.left),
+          (height-workTop-bottom-74)/(bounds.top-bounds.bottom)));
         const insets={left:conversationSpan.start,right:width-conversationSpan.end,top,bottom};
         this.place(this.group,'workPlacement',{...viewport,insets},
           conversationSpan.end-14-bounds.right*scale,workTop+bounds.top*scale,scale);
@@ -1365,7 +1373,11 @@ export class MatterWorktableHud{
     }
     if(this.map.group){
       if(this.mapPlacement?.group!==this.map.group||this.mapPlacement?.layout!==this.map.layout)this.hud.update();
-      if(this.map.compact){
+      if(splitMap){
+        const scale=Math.max(1,Math.min(220,(mapWidth-16)/1.28,(height-top-bottom-106)/1.82));
+        this.place(this.map.group,'mapPlacement',{...viewport,insets:{left:sharedSpace.start,right:width-sharedSpace.start-mapWidth,top,bottom}},
+          sharedSpace.start+mapWidth/2,Math.max(top+26,74),scale);
+      }else if(this.map.compact){
         const view={...viewport,insets:{left,right,top,bottom},
           ...(!this.map.landscape?{placementVariant:'portrait'}:{})};
         const bounds=this.hud.getSurfaceBounds(worldMapId);

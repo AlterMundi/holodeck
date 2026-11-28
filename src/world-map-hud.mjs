@@ -82,7 +82,7 @@ export class WorldMapHud{
     delete this.panel.dataset.nativeMap;
   }
 
-  update(visible,rasterUpdated,layout=null){
+  update(visible,rasterUpdated,layout=null,presented=true){
     if(rasterUpdated&&this.texture){
       this.texture.needsUpdate=true;
       this.invalidate();
@@ -91,6 +91,12 @@ export class WorldMapHud{
       if(this.group)this.reset();
       return;
     }
+    this.presented=presented;
+    if(this.group&&this.group.visible!==presented){
+      this.group.visible=presented;
+      this.invalidate();
+    }
+    if(!presented)return;
     const {scope,busy,canExit,map}=this.mapState();
     if(this.mapScope!==scope){this.reset();this.mapScope=scope;}
     if(!this.group)this.message('createSurface',{catalogId:spatialHudCatalog.id});
@@ -180,7 +186,7 @@ export class WorldMapHud{
   }
 
   activate({name,context}){
-    if(!this.group||!this.panel.open||this.panel.hidden||context?.scope!==this.scope)return;
+    if(!this.group||this.presented===false||!this.panel.open||this.panel.hidden||context?.scope!==this.scope)return;
     const state=this.mapState();
     if(state.scope!==this.mapScope)return;
     const destinations=state.map?.destinations??[];

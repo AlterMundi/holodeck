@@ -1,3 +1,4 @@
+import {WorkspacePanels} from './workspace-panels.mjs';
 import {FrameDiagnostics} from './frame-diagnostics.mjs';
 import {WorldViewCapture} from './world-view-capture.mjs';
 import {AvatarPosePresence,signAvatarPresence} from './avatar-pose-presence.mjs';
@@ -472,6 +473,9 @@ const verticalHelp=document.getElementById('world-vertical-help');
 const dryVerticalHelp=verticalHelp.textContent;
 let fitConversationWindow=()=>{};
 const conversationFirst=matchMedia('(max-width:740px), (max-width:1180px) and (max-height:540px)');
+const compactWorkspace=matchMedia('(max-width:1199px), (max-height:559px)');
+const workspace=new WorkspacePanels(()=>compactWorkspace.matches);
+let fitConversationWorkspace=()=>{};
 let conversationCharacterPose=null;
 const spaceGesture=bindFlightSpaceGesture({
   allowed:event=>!event.altKey&&!event.ctrlKey&&!event.metaKey&&outsideRing()&&!entering&&!moving&&
@@ -1080,7 +1084,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         onOpen:()=>{releaseOrbit.release();releaseBeaconInput(client);touchControls.pause(true);},
         onClose:()=>{touchControls.pause(false);if(!matterHud?.focusTool('teleport'))matterHud?.canvas.focus();},
       },
-      readTools,history:()=>worldHistory,visitor:()=>contentVisitor,activateTool:id=>{
+      workspace,readTools,history:()=>worldHistory,visitor:()=>contentVisitor,activateTool:id=>{
         if(id==='teleport'){toggleTeleport();return;}
         if(id==='endVisit'){if(visitAllowed())void contentVisitor?.endVisit();return;}
         if(id!=='activity'&&id!=='visit'){tools[id]?.click();return;}
@@ -1112,6 +1116,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         });
       },
       onActive:active=>{
+        workspace.set('table',active);
+        syncWorkspace();
         document.body.classList.toggle('is-operating-matter',active);
         if(!active){
           pointRequest?.controller.abort();
@@ -1328,8 +1334,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const tableAttention=bindTabletopAttention({document,canvas:worldCanvas,
       pick:(x,y)=>worldPicker.worktableHit(x,y),
       current:({id,mesh})=>table.available&&mesh.visible&&table.model?.parts.get(id)===mesh,
-      allowed:()=>matterHud.active&&tableFlight.active&&!moving&&!entering&&!needsSync&&
-        !document.hidden&&!mapPanel.open&&!document.querySelector('dialog[open]')&&
+      allowed:()=>matterHud.tablePresented&&tableFlight.active&&!moving&&!entering&&!needsSync&&
+        !document.hidden&&!(compactWorkspace.matches&&workspace.visible('map'))&&!document.querySelector('dialog[open]')&&
         !contentVisitor?.isOpeningOverWorld()&&!options.coreCameraManager.activePointers.size&&
         !matterHud.capturedPointers.size,
       overWorld:pointer=>!matterHud.overControl(pointer)&&
@@ -1353,7 +1359,8 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
     const releaseHologram=bindMatterHologram(renderer.characterManager,tableFlight,tabletopPlayers);
     const releaseCloseAvatar=bindCloseAvatar(renderer.characterManager,options.coreCameraManager,()=>!tableFlight.active);
     let matterComposerHadFocus=false;
-    const tableInputAllowed=()=>!moving&&!entering&&!document.hidden&&document.hasFocus()&&!mapPanel.open&&
+    const tableInputAllowed=()=>!moving&&!entering&&!document.hidden&&document.hasFocus()&&workspace.visible('table')&&
+      !(compactWorkspace.matches&&workspace.visible('map'))&&
       !document.querySelector('#conversation-panel').contains(document.activeElement)&&
       !document.querySelector('dialog[open]')&&!signalEditor?.active;
     // On the ring the sun keeps one direction in the traveler's radial frame,
@@ -1634,8 +1641,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         releaseOrbit.release();
       }
       matterComposerHadFocus=matterComposerFocused;
-      const conversationDisplacesTable=!conversation.hidden&&!(collectionRoom&&tableFlight.inspectParts);
-      matterHud.update((!collectionRoom&&!characterRoom)||needsSync||conversationDisplacesTable||
+      matterHud.update((!collectionRoom&&!characterRoom)||needsSync||
         opaqueVisit||toolModal||settingsOpen,!entering&&!moving&&drawWorld&&!opaqueVisit&&!toolModal,quietTouch&&!settingsOpen);
       characterTable.render(tableNow);
       garden.update(inside&&!moving&&activeSpace.playableInterior?activeSpace.id:null);gardenMarkers();
@@ -1648,37 +1654,37 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       }
       if(!conversation.hidden)fitConversationWindow();
       const worldToolsVisible=!entering&&!moving&&!needsSync&&drawWorld&&!opaqueVisit&&!toolModal&&!settingsOpen;
-      const navigationVisible=worldToolsVisible&&conversation.hidden&&!quietTouch;
+      const navigationVisible=worldToolsVisible&&!quietTouch;
       const terrainPosition=outsideRing()?position:null;
       const peekTerrain=Boolean(terrainPosition&&compactTouch&&navigationVisible&&!mapPanel.open&&
         !matterHud.active&&!updateDoor.bearing?.());
       const paintedRaster=minimap(terrainPosition,yaw,activeSpace.entrances,peekTerrain);
       const shortMapHeight=matterHud.map.layout==='portrait-short'?448:430;
       const compactMap=compactTouch==='portrait'&&matterHud.canvas.clientHeight<shortMapHeight?'portrait-short':compactTouch;
-      matterHud.map.update(navigationVisible,paintedRaster,compactMap);
+      matterHud.map.update(navigationVisible,paintedRaster,compactMap,workspace.visible('map'));
       matterHud.map.updatePeek(peekTerrain);
       const touchAvailable=worldToolsVisible&&(conversation.hidden||!compactTouch&&!!conversation.dataset.travelLane)&&
-        !mapPanel.open&&!signalEditor.active&&!document.hidden&&document.hasFocus();
+        !workspace.visible('map')&&!signalEditor.active&&!document.hidden&&document.hasFocus();
       const movementLane=conversation.hidden?'':conversation.dataset.travelLane??'';
       const touchLocomotion=touchAvailable&&(!tableFlight.active||tableInputAllowed());
       matterHud.syncMovement(touchLocomotion&&Boolean(matterHud.toolGroup)&&navigator.maxTouchPoints>0,
         movementLane,tableFlight.active||mode!=='ground');
       touchControls.pause(!touchLocomotion||!conversation.hidden&&!matterHud.movementPresented);
-      matterHud.updateBearing(navigationVisible&&!matterHud.active);
+      matterHud.updateBearing(navigationVisible&&conversation.hidden&&!matterHud.active);
       beaconControls.update(inside&&!moving&&!needsSync&&remoteScene?activeSpace.objects:null,position);
       const passageAvailable=worldToolsVisible&&!quietTouch&&!matterHud.map.compact&&(conversation.hidden||concurrentRoomDoors())&&
         !matterHud.active&&Boolean(matterHud.toolGroup)&&!signalEditor.active;
       const compactDoor=Boolean(matterHud.toolLayout?.compact);
       let label=null,anchoredDoor=false;
-      if(inside&&passageAvailable&&!matterHud.coarsePointer.matches){
+      if(inside&&(passageAvailable||worldToolsVisible&&matterHud.nearbyTableAvailable)&&!matterHud.coarsePointer.matches){
         // Keep the same precedence as E. The label never runs an action.
         const door=updateDoor.doorOffer?.();
         const bench=characterRoom?characterTable.anchor:collectionShelves.worktable.anchor;
-        if(door?.anchor&&!door.busy){
+        if(passageAvailable&&door?.anchor&&!door.busy){
           label={anchor:door.anchor,label:door.title,key:'E'};
           anchoredDoor=true;
         }
-        else if(!door&&bench&&matterHud.nearbyTableAvailable&&
+        else if((!door||!passageAvailable)&&bench&&matterHud.nearbyTableAvailable&&
             !options.coreCameraManager.isFlyCameraOn()&&client.getCharacterManager().localController){
           const anchor=characterRoom?bench:{...bench,y:bench.y+.78};
           label={anchor,label:'Usar mesa',key:'E'};
@@ -1687,7 +1693,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       const actionPlacement=actionLabel.update(label,options.coreCameraManager.getCameraState(),matterHud.canvas.clientHeight,
         {light:document.body.dataset.hudTheme==='light',feet:position,card:!anchoredDoor});
       matterHud.door.update(passageAvailable,compactDoor,anchoredDoor?actionPlacement:null);
-      matterHud.collection.update(navigationVisible&&!matterHud.active&&!mapPanel.open&&!signalEditor.active);
+      matterHud.collection.update(navigationVisible&&conversation.hidden&&!matterHud.active&&!mapPanel.open&&!signalEditor.active);
       const {left:statusLeft,right:statusRight}=matterHud.toolInsets();
       const compactConversation=!conversation.hidden&&conversationFirst.matches;
       conversation.toggleAttribute('data-compact-priority',compactConversation);
@@ -2358,9 +2364,19 @@ function ensureSharedConversation(){
     onStatus:({phase,busy})=>{$('#companion-status').textContent=phases[phase]||(busy?'La conversación está procesando tu intervención.':'Tu intervención quedó en la conversación.');},onError:say});
   return sharedConversation;
 }
+function syncWorkspace(){
+  const panel=document.getElementById('conversation-panel');
+  const visible=workspace.visible('conversation');
+  document.getElementById('space-travel').toggleAttribute('data-workspace-suspended',workspace.opened('map')&&!workspace.visible('map'));
+  document.body.toggleAttribute('data-compact-workspace',compactWorkspace.matches);
+  if(panel.hidden===!visible)return;
+  if(!visible&&panel.contains(document.activeElement))document.activeElement.blur();
+  panel.hidden=!visible;
+  fitConversationWorkspace();
+}
 function openConversation(open){
   const panel=$('#conversation-panel'),talk=$('#talk');
-  const wasHidden=panel.hidden;
+  const wasHidden=panel.hidden, wasOpen=workspace.opened('conversation');
   const focused=document.activeElement;
   const restoreFocus=!open&&panel.contains(focused);
   // Character Studio captures its selected pose before the panel takes focus.
@@ -2372,18 +2388,18 @@ function openConversation(open){
     if(target.width&&target.height)conversationDisplay?.minimize(target);
   }
   if(restoreFocus)focused.blur();
-  panel.hidden=!open;
+  workspace.set('conversation',open);
+  syncWorkspace();
   if(wasHidden===open)resetFlightTap();
   talk.setAttribute('aria-expanded',String(open));
   if(open){
-    $('#space-travel').open=false;
     updateNativeAvailability();
     fitConversationWindow(true);
     if(wasHidden)conversationDisplay?.restore(matterHud?.toolBounds('talk'));
   }
-  if(open&&sharedSurface()){
+  if(open&&sharedSurface()&&!wasOpen){
     ensureSharedConversation().mount().catch(()=>say('No pude abrir tu conversación. Volvé a tocar Conversar para intentarlo.'));
-  }else if(open&&!flightEnabled)$('#message').focus();
+  }else if(open&&!sharedSurface()&&!flightEnabled)$('#message').focus();
   let didFocusWorld=false;
   if(flightEnabled&&(open&&wasHidden||restoreFocus)){
     const canvas=client.getRenderer()?.composer.renderer.domElement;
@@ -2395,15 +2411,27 @@ function openConversation(open){
 fitConversationWindow=bindHudPanelWindow($('#conversation-panel'),{
   resize:$('#conversation-resize'),
   canMove:event=>sharedSurface()||!$('#conversation-panel').hasAttribute('data-hud-chrome')||!!event.target.closest?.('#conversation-move'),
-  readInsets:()=>matterHud?.conversationTravelInsets()??{},
+  readInsets:()=>{
+    const insets=matterHud?.conversationTravelInsets()??{};
+    return compactWorkspace.matches?{...insets,bottom:Math.max(110,insets.bottom??0)}:insets;
+  },
 });
-$('#talk').onclick=()=>openConversation($('#conversation-panel').hidden);
+fitConversationWorkspace=()=>fitConversationWindow(true);
+compactWorkspace.addEventListener('change',syncWorkspace);
+$('#talk').onclick=()=>openConversation(!workspace.visible('conversation'));
 const mapPanel=$('#space-travel'),mapTool=$('#map-tool');
 mapTool.onclick=()=>{
-  if(!$('#conversation-panel').hidden)openConversation(false);
-  if(!mapPanel.hidden)mapPanel.open=!mapPanel.open;
+  if(mapPanel.hidden)return;
+  const open=!workspace.visible('map');
+  workspace.set('map',open);
+  mapPanel.open=open;
+  syncWorkspace();
 };
-mapPanel.addEventListener('toggle',()=>mapTool.setAttribute('aria-expanded',String(mapPanel.open)));
+mapPanel.addEventListener('toggle',()=>{
+  if(mapPanel.open!==workspace.opened('map'))workspace.set('map',mapPanel.open);
+  mapTool.setAttribute('aria-expanded',String(mapPanel.open));
+  syncWorkspace();
+});
 
 async function captureConversationView(){
   const actor=activeSpace?.actorRef??state?.actorRef,room=activeSpace?.id,run=state?.run;
@@ -2516,7 +2544,8 @@ $('#conversation-form').onsubmit=async event=>{
 };
 // Close Conversation before world controls or focused HUD widgets consume Escape.
 window.addEventListener('keydown',event=>{
-  if(event.key!=='Escape'||event.isComposing||$('#conversation-panel').hidden)return;
+  if(event.key!=='Escape'||event.isComposing||!workspace.visible('conversation')||
+    workspace.foreground()!=='conversation'&&!$('#conversation-panel').contains(document.activeElement))return;
   event.preventDefault();
   event.stopImmediatePropagation();
   if(!event.repeat)openConversation(false);
