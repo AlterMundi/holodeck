@@ -30,6 +30,25 @@ draw calls from 249 to 215, with p95 callback interval increasing from
 100 to 199.9 ms. On the Pi both poses stayed at 33.4 ms p95. Lightweight
 bypasses the cinematic and additional vegetation paths.
 
+## November 28 — Source-colored teleport icons and tabletop interaction
+
+Protected release `6d0115a025cd` selects source `9bc955a`, including Char
+Design's `6f9ff07` and `4d5616f`. Plaza and the Character table have
+semantic icons. Matter and other authored tables derive a crop from their
+room artwork with their function emblem. Their key follows the artwork
+revision, table position, and semantic descriptor. Topic and project icon
+support is ready for those destinations when they join the teleport catalog.
+
+Chromium on the Legion RTX 2060 showed the authored Plaza miniature giving
+way to its icon and the Matter table's 376-triangle crop. The same drag
+traced identical camera displacement with either mouse button in the
+Teleport workspace, and a physical node click produced the companion's
+laser. The fixed Matter table also passed both-button orbit and A2UI
+animation selection with the laser. The Redmi fixture did not finish
+entering the world in the earlier semantic icon trial. All 560 active
+tests passed with two skips. The protected client and all 96 installed
+files matched the package. Rollback is `68f7929a6147`.
+
 ## November 28 — Teleport icons derived from destinations
 
 Protected release `59bd64df3466` selects source `d8c644a`, based on Char
