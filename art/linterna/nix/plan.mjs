@@ -18,6 +18,7 @@ export const plan = {
   poses: {
     approach: {eye: [2.0, 1.64, 12.0], target: [0, 2.05, 5.48]},
     entry: {eye: [0, 1.64, 5.10], target: [.13, 1.72, -.84]},
+    dome: {eye: [.12, 1.64, 2.05], target: [0, 4.68, -1.28]},
     ocular: {eye: [-1.70, 1.64, 1.27], target: [-1.70, 1.49, -.31]},
     controls: {eye: [.04, 1.64, 1.27], target: [.04, 1.08, -.45]},
     gallery: {eye: [.44, 1.64, .14], target: [5.69, 1.73, .07]},

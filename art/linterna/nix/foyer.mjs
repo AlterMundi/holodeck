@@ -3,6 +3,7 @@ import * as T from 'three';
 import { addPavilionColumns, addPavilionRoof } from '../precinct/model.mjs';
 import { pavilionDoor } from '../precinct/plan.mjs';
 import { gardenPlan } from './garden-plan.mjs';
+import { domePlan, makeDome } from './dome.mjs';
 
 const { width, roof } = gardenPlan.nix;
 const rear = -4.29;
@@ -127,6 +128,8 @@ export function makeFoyer() {
   for(let x=-half+.58;x<half-.20;x+=.96)
     box('Coffer rib',[.115,.13,depth-.13],[x,3.025,wallZ],cedar);
   addPavilionRoof(group,width,roof);
+  const dome=makeDome(domePlan.gardenCenter);
+  group.add(dome);
 
   const frontLights=[];
   for(const side of [-1,1]){
@@ -195,7 +198,7 @@ export function makeFoyer() {
     marker.userData={anchorId:id,...data};
     group.add(marker);
   }
-  return {group,figure,obstacles,doorFace,doorHits:group.children.filter(obj=>
+  return {group,figure,obstacles,dome,doorFace,doorHits:group.children.filter(obj=>
     ['WANDA door leaf','WANDA door recessed slate panel','WANDA door pull'].includes(obj.name)),
     frontLights};
 }

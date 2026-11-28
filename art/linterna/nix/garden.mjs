@@ -5,6 +5,7 @@ import { pavilionDoor, place } from '../precinct/plan.mjs';
 import { foyerPlan, makeFoyer, textPanel } from './foyer.mjs';
 import { gardenPlan } from './garden-plan.mjs';
 import { plan } from './plan.mjs';
+import { domePlan } from './dome.mjs';
 
 const walkRadius=.56;
 const foyerArrival=[0,0,2.45];
@@ -83,6 +84,7 @@ export function makeGarden() {
   garden.add(base);
   const names={athena:'ATENEA',hephaestus:'HEFESTO',apollo:'APOLO'};
   const lights=foyer.frontLights.map(light=>({...light,at:world(light.at)}));
+  lights.push({at:world([3.8,8.8,8.1]),color:'#c2d4f4',intensity:38,range:17});
   for (const pavilion of gardenPlan.temples) {
     if (pavilion===nix) continue;
     const label=textPanel(names[pavilion.id],1.50,.229);
@@ -100,7 +102,8 @@ export function makeGarden() {
   const from=(eye,target,options={})=>({eye:world(eye),target:world(target),...options});
   const poses={
     columnata:{eye:[0,1.64,4.08],target:[0,1.76,-17.3],fov:67},
-    approach:from([.41,1.64,10.42],[0,2.31,4.16],{fov:57}),
+    approach:from([.36,1.64,11.28],[0,4.17,3.0],{fov:59}),
+    'cupula-lateral':from([7.1,1.64,10.78],[0,3.95,.8],{fov:53}),
     semicirculo:{eye:[0,28.5,4.8],target:[0,.28,-15.1],elevated:true,fov:61},
     vestibulo:from([.05,1.64,2.37],[-.43,1.56,-3.08],{fov:59}),
     'puerta-wanda':from([doorX,1.64,rear+1.58],[doorX,1.48,rear+.055],{fov:62}),
@@ -172,10 +175,27 @@ export function makeGarden() {
         targets.push({name,eyeM:height});
       }
     }
+    const domeSightlines=[];
+    for(const [view,{eye}] of Object.entries({columnata:poses.columnata,approach:poses.approach,
+      'cupula-lateral':poses['cupula-lateral']})){
+      for(const height of plan.avatar.eyes){
+        const observer=new T.Vector3(eye[0],height,eye[2]);
+        let visible=0;
+        for(const x of [-1.37,-.90,.90,1.37]){
+          const [cx,,cz]=domePlan.gardenCenter;
+          const target=new T.Vector3(...world([cx+x,domePlan.crown-.78,cz+.93]));
+          const ray=new T.Raycaster(observer,target.clone().sub(observer).normalize(),0,observer.distanceTo(target)+1.6);
+          const hit=ray.intersectObject(garden,true)[0]?.object;
+          if(hit?.parent===foyer.dome) visible++;
+        }
+        if(visible<2)throw Error(`Dome obscured from ${view} at ${height} m (${visible} visible)`);
+        domeSightlines.push({view,height,visible,samples:4});
+      }
+    }
     return {center:gardenPlan.center,temples,spacings,counts,walkingWidthM:2*walkRadius,
       lengthM:gardenWalk.getLength(),separateDoor:true,gardenThreshold:threshold,
       wandaThreshold:world(foyerPlan.anchors['nix.foyer.wanda-door'].at),
-      roofGapProjectionM:gaps,targets};
+      roofGapProjectionM:gaps,targets,domeSightlines};
   }
   return {garden,foyer,poses,usable,survey,gardenWalk,innerWalk,lanterns:lights};
 }

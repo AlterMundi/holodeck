@@ -1,5 +1,6 @@
 import * as T from 'three';
 import { plan } from './plan.mjs';
+import { domePlan, makeDome } from './dome.mjs';
 
 function surface(color, roughness = .74, metalness = 0) {
   return new T.MeshStandardMaterial({color, roughness, metalness});
@@ -150,12 +151,13 @@ export function makeNix({approachLength=6.2}={}) {
   plaque('Return text', ['VOLVER AL JARDÍN'], [1.55, .24], [0, 0, 0], innerSign, {size: 57});
 
   // A low square coffer surrounds an open octagonal lantern. Its opening is architecture.
+  const domeZ = domePlan.roomCenter[2];
   const ceiling = new T.Shape();
   ceiling.moveTo(-6, -6); ceiling.lineTo(6, -6); ceiling.lineTo(6, 6); ceiling.lineTo(-6, 6); ceiling.closePath();
   const opening = new T.Path();
   for (let i = 0; i <= 8; i++) {
     const a = i * Math.PI / 4;
-    opening[i ? 'lineTo' : 'moveTo'](2.85 * Math.cos(a), 1.19 + 2.85 * Math.sin(a));
+    opening[i ? 'lineTo' : 'moveTo'](2.85 * Math.cos(a), -domeZ + 2.85 * Math.sin(a));
   }
   ceiling.holes.push(opening);
   const coffer = add('Coffered cedar ceiling', new T.ExtrudeGeometry(ceiling, {depth: .19, bevelEnabled: false}),
@@ -172,18 +174,19 @@ export function makeNix({approachLength=6.2}={}) {
   }
   const roofFinish = surface('#4b555a');
   roofFinish.side = T.DoubleSide;
-  octagonPanel(2.85, 3.61, 1.52, 4.90, -1.19, roofFinish);
-  octagonPanel(2.90, 3.62, 2.85, 3.53, -1.19, brass);
+  octagonPanel(2.85, 3.61, 1.52, 4.90, domeZ, roofFinish);
+  octagonPanel(2.90, 3.62, 2.85, 3.53, domeZ, brass);
   for (let i = 0; i < 8; i++) {
     const angle = i * Math.PI / 4;
-    const from = new T.Vector3(2.89 * Math.cos(angle), 3.57, -1.19 - 2.89 * Math.sin(angle));
-    const to = new T.Vector3(1.5 * Math.cos(angle), 4.90, -1.19 - 1.5 * Math.sin(angle));
+    const from = new T.Vector3(2.89 * Math.cos(angle), 3.57, domeZ - 2.89 * Math.sin(angle));
+    const to = new T.Vector3(1.5 * Math.cos(angle), 4.90, domeZ - 1.5 * Math.sin(angle));
     const beam = box('Lantern radial cedar rib', [.12, from.distanceTo(to), .12],
       from.clone().lerp(to, .5).toArray(), walnut);
     beam.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), to.sub(from).normalize());
   }
-  const rim = ring('Open night aperture / bronze rim', 1.51, .065, [0, 4.91, -1.19], brass);
+  const rim = ring('Open night aperture / bronze rim', 1.51, .065, [0, 4.91, domeZ], brass);
   rim.rotation.x = -Math.PI / 2;
+  model.add(makeDome(domePlan.roomCenter));
 
   // Brass floor witness line and a low side bench clear of the circulation routes.
   for (const x of [-.85, .85])

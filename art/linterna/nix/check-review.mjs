@@ -38,6 +38,7 @@ try {
   assert.equal(survey.anchors.length,9);
   assert.equal(survey.sightlines.length,10);
   assert.equal(survey.minimumWalkDiameter,1.12);
+  assert.deepEqual(survey.aperture,[true,false,false]);
 
   // Movement through architectural threshold using the preview's own collision checks.
   await page.setViewportSize({width:960,height:600});
@@ -109,7 +110,7 @@ try {
 
   await page.goto(url.href+'?art');
   await page.waitForSelector('body[data-ready=true]');
-  for(const view of ['approach','entry','ocular','gallery','photo']) {
+  for(const view of ['approach','entry','ocular','gallery','photo','dome']) {
     await page.evaluate(name=>nixReview.pose(name),view);
     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     await page.screenshot({path:file(view+'.jpg'),quality:91,type:'jpeg'});
@@ -138,6 +139,8 @@ try {
   assert.equal(garden.temples[1].facadeWidthM,Math.max(...garden.temples.map(temple=>temple.facadeWidthM)));
   assert.equal(Object.keys(garden.roofGapProjectionM).length,6);
   assert.ok(Math.min(...Object.values(garden.roofGapProjectionM))>=.10);
+  assert.equal(garden.domeSightlines.length,6);
+  assert.ok(garden.domeSightlines.every(line=>line.visible>=2));
   const walk = page.locator('#context-walk');
   const wanda = page.locator('#wanda-door');
   assert.equal(await wanda.isVisible(),false);
@@ -152,6 +155,7 @@ try {
   const foyerDownload=page.waitForEvent('download');
   const foyer=await page.evaluate(()=>nixReview.exportFoyer());
   await (await foyerDownload).saveAs(file('Vestibulo-de-Nix.glb'));
+  assert.equal(glb.dome.parts,foyer.dome.parts);
   assert.deepEqual(foyer.anchors.sort(),['nix.foyer.entry','nix.foyer.return','nix.foyer.statue','nix.foyer.wanda-door']);
   await wanda.click();
   await page.waitForSelector('body[data-journey=entry]',{timeout:18000});
@@ -176,7 +180,7 @@ try {
 
   await page.goto(url.href+'?jardin&art');
   await page.waitForSelector('body[data-ready=true]');
-  for(const view of ['columnata','semicirculo','approach','vestibulo','puerta-wanda']) {
+  for(const view of ['columnata','semicirculo','approach','cupula-lateral','vestibulo','puerta-wanda']) {
     await page.evaluate(name=>nixReview.pose(name),view);
     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     await page.screenshot({path:file('garden-'+view+'.jpg'),quality:92,type:'jpeg'});

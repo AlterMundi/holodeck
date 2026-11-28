@@ -3,8 +3,8 @@
 The approved WANDA room and a separate temple vestibule on Casa Linterna’s semicircle. The eye station stands to the
 left of the approach, with the east gallery opposite it. The floor is
 12 × 12 m, the walls are 3.68 m high, and the south threshold is
-2.20 × 2.60 m. The threshold looks back toward the temple vestibule. A timber aperture
-opens to a decorative night sky. Limewash, walnut, brass, sage trim and amber
+2.20 × 2.60 m. The threshold looks back toward the temple vestibule. A timber aperture opens to the copper observatory dome
+above the room. Limewash, walnut, brass, sage trim and amber
 light carry forward the Casa Linterna selection at
 a2f245e4a5d58349b28a3b0dd65fc53b9271daec.
 
@@ -92,7 +92,18 @@ in its own scene. The same thresholds serve the return path. The source
 survey checks the four equal entrance spacings, all six pairs of temple
 footprints, a 1.12 m clear approach to each temple, and sightlines to the
 statue and WANDA door from 1.20 and 1.64 m eye heights.
-The app room uses the same geometry and WANDA data.
+The app room retains its floor plan, stations and WANDA data.
+
+### Observatory dome
+
+The 5.44 m copper canopy rises behind the Nix pediment. Bronze rails frame the
+open meridian slit on both views. The same source assembly sits at the center of
+the garden roof and over the octagonal aperture in the separate WANDA room.
+The two placement coordinates are in `domePlan`. Both GLB exports include the
+assembly. From inside, the center of the slit clears a sightline to the
+decorative night sky. From outside, the colonnade, approach and lateral walks
+show the dome at eye heights of 1.20 m and 1.64 m. The slit is fixed in the art
+review and does not represent a controllable physical instrument.
 
 | Vestibule marker | Purpose |
 | --- | --- |

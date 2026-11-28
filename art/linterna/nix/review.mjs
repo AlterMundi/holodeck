@@ -4,6 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { makeNix } from './model.mjs';
 import { makeGarden } from './garden.mjs';
 import { plan, walkable } from './plan.mjs';
+import { domePlan } from './dome.mjs';
 
 const media = __WANDA_FIXTURE__;
 const args = new URLSearchParams(location.search);
@@ -392,7 +393,21 @@ function survey() {
         distanceM:origin.distanceTo(targetMesh.getWorldPosition(new T.Vector3()))});
     }
   }
-  return {sampled,minimumWalkDiameter:1.12,sightlines,anchors:Object.keys(rig.markers)};
+  const aperture=[0,.72,-.72].map(x => {
+    const origin=new T.Vector3(x,2.44,domePlan.roomCenter[2]);
+    const skyward=new T.Raycaster(origin,new T.Vector3(0,1,0));
+    return !skyward.intersectObject(rig.model,true).length;
+  });
+  if (!aperture[0] || aperture[1] || aperture[2]) throw Error('The observation slit must clear the center ray only');
+  return {sampled,minimumWalkDiameter:1.12,sightlines,aperture,anchors:Object.keys(rig.markers)};
+}
+
+function domeExport(root, center) {
+  let dome;
+  root.traverse(node=>{if(node.userData.feature==='wanda-observatory-dome')dome=node;});
+  if(!dome || !dome.children.length || dome.position.distanceTo(new T.Vector3(...center))>.001)
+    throw Error('Roundtrip lost the WANDA dome or shifted its center');
+  return {center:dome.position.toArray(),parts:dome.children.length};
 }
 
 async function exportModel() {
@@ -416,7 +431,7 @@ async function exportModel() {
   a.href=URL.createObjectURL(new Blob([bytes],{type:'model/gltf-binary'}));
   a.download='Templo-de-Nix.glb'; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href),1000);
-  return {bytes:bytes.byteLength,anchors:[...anchors]};
+  return {bytes:bytes.byteLength,anchors:[...anchors],dome:domeExport(reopened,domePlan.roomCenter)};
 }
 
 async function exportFoyer() {
@@ -430,7 +445,7 @@ async function exportFoyer() {
   a.href=URL.createObjectURL(new Blob([bytes],{type:'model/gltf-binary'}));
   a.download='Vestibulo-de-Nix.glb'; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-  return {bytes:bytes.byteLength,anchors};
+  return {bytes:bytes.byteLength,anchors,dome:domeExport(reopened,domePlan.gardenCenter)};
 }
 
 window.nixReview = {
