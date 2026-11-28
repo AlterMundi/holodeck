@@ -509,12 +509,22 @@ function gardenPaths(group) {
   path(group,[gardenArc.at(-1),place(pavilions[2],0,pavilionDoor-.23)],1.85);
 }
 
-function gardenPlanting(group) {
+function gardenPlanting(group, acceptPlant) {
+  function plant(build, x, z, size, index) {
+    if (!acceptPlant) {
+      build(group,x,z,size,index);
+      return;
+    }
+    const candidate=new T.Group();
+    build(candidate,x,z,size,index);
+    if (acceptPlant(new T.Box3().setFromObject(candidate), {x,z,size})) group.add(candidate);
+  }
+
   for (let i=0;i<21;i++) {
     const angle=.08+i*.151, radius=18.4+(i%4)*.62;
     const x=Math.cos(angle)*radius,z=-Math.sin(angle)*radius-3.72;
-    if (plantingClear(x,z,1.45)) shrubs(group,x,z,.66+(i%5)*.12,i);
-    if (i%2===0 && plantingClear(x*1.18,z-1.05,2.06)) tree(group,x*1.18,z-1.05,1.40+(i%4)*.24,i);
+    if (plantingClear(x,z,1.45)) plant(shrubs,x,z,.66+(i%5)*.12,i);
+    if (i%2===0 && plantingClear(x*1.18,z-1.05,2.06)) plant(tree,x*1.18,z-1.05,1.40+(i%4)*.24,i);
   }
   for (const side of [-1,1]) {
     for (const [x,z] of [[2.35,-1.4],[3.42,-4.1],[1.72,-5.8],[1.88,-8.2],[1.69,-12.1]]) {
@@ -529,26 +539,26 @@ function gardenPlanting(group) {
     const edges=[[4.42,-1.75,.50],[4.15,-3.35,.67],[5.62,-4.8,.60],[6.5,-10.17,.79],
       [4.94,-11.75,.55],[3.81,-13.05,.75],[9.81,-5.57,.51],[10.77,-5.8,.69]];
     edges.forEach(([x,z,size],i)=>{
-      if (plantingClear(side*x,z,size*1.46)) shrubs(group,side*x,z,size,i);
+      if (plantingClear(side*x,z,size*1.46)) plant(shrubs,side*x,z,size,i);
     });
     for (let i=0;i<10;i++) {
       const x=side*(i%2===0 ? 5.8+i*.54 : 6.98+i*.5);
       const z=-1-i*.53;
-      shrubs(group,x,z,.26+i%4*.16,i);
+      plant(shrubs,x,z,.26+i%4*.16,i);
     }
     for (let i=0;i<8;i++) {
       const x=side*(15+i%3*2.4),z=2.9-i*4.88;
-      if (plantingClear(x,z,2.12)) tree(group,x,z,1.38+i%3*.39,i);
+      if (plantingClear(x,z,2.12)) plant(tree,x,z,1.38+i%3*.39,i);
     }
   }
   for (let i=0;i<34;i++) {
     const x=Math.sin(i*2.12)*(21+i%4),z=-29-Math.sin(i)*4;
-    if (plantingClear(x,z,2.25)) tree(group,x,z,1.26+(i%4)*.3,i+7);
+    if (plantingClear(x,z,2.25)) plant(tree,x,z,1.26+(i%4)*.3,i+7);
   }
 }
 
-function loggias(group, obstacles) {
-  for (const x of [-7.1,7.1]) {
+function loggias(group, obstacles, {omitWestLoggia=false}={}) {
+  for (const x of omitWestLoggia ? [7.1] : [-7.1,7.1]) {
     const loggia=new T.Group();
     loggia.position.set(x,0,-19.9);
     loggia.rotation.y=x<0?.36:-.36;
@@ -622,16 +632,16 @@ function smallTemple(parent,out) {
   }
 }
 
-export function makeScene(stage) {
+export function makeScene(stage, options) {
   const group=new T.Group(), obstacles=[];
   group.name=stage==='approach' ? 'Linterna approach' : 'Linterna precinct';
   if (stage==='approach') porch(group,obstacles);
   else {
     gardenPaths(group);
-    gardenPlanting(group);
+    gardenPlanting(group,options?.acceptPlant);
     mainTemple(group,obstacles);
     pavilions.forEach(pavilion=>temple(group,obstacles,pavilion));
-    loggias(group,obstacles);
+    loggias(group,obstacles,options);
   }
   group.updateMatrixWorld(true);
   return {group,obstacles};

@@ -1,134 +1,187 @@
 import * as T from 'three';
 import { makeScene, floorClearance } from '../precinct/model.mjs';
 import { batchModel } from '../precinct/batch.mjs';
-import { plan, walkable } from './plan.mjs';
+import { gardenArc, pavilions } from '../precinct/plan.mjs';
+import { foyerPlan, makeFoyer, textPanel } from './foyer.mjs';
+import { plan } from './plan.mjs';
 
 export const gardenPlan = {
-  basis: 'Casa Linterna authored precinct, metres, +Y up',
-  origin: [-17.50, 0, 10.60],
-  yaw: Math.PI / 2,
-  pathWidth: 1.42,
-  walk: [[0,4.08],[0,.50],[-2.8,.18],[-5.75,.68],[-8.7,1.05],[-9.30,3.85],
-    [-9.50,7.70],[-9.55,10.60],[-10.58,10.60],[-11.62,10.60],[-12.40,10.60]],
-  sign: [-2.97,1.02,-.93],
+  basis:'Casa Linterna authored precinct, metres, +Y up',
+  slot:'west garden shelter between Athena and Hephaestus',
+  origin:[-8.45,0,-20.65],
+  yaw:.29,
+  pathWidth:1.42,
+  gardenJoin:[...gardenArc[4]],
+  links:[
+    ['garden','nix.foyer.entry'],
+    ['nix.foyer.wanda-door','nix.entry'],
+    ['nix.return','nix.foyer.wanda-door'],
+    ['nix.foyer.return','garden'],
+  ],
 };
-const foliage = new Set(['leaf','brightLeaf','olive','bark']);
 
-function curve(points) {
-  return new T.CatmullRomCurve3(points.map(([x,z])=>new T.Vector3(x,0,z)));
-}
+const walkRadius=.56;
+const foyerArrival=[0,0,1.70];
+const foliage=new Set(['leaf','brightLeaf','olive','bark']);
+const color=(value)=>new T.MeshStandardMaterial({color:value,roughness:.87});
+const curve=points=>new T.CatmullRomCurve3(points.map(([x,z])=>new T.Vector3(x,0,z)));
 
 function wayfinding(at) {
-  const post = new T.Group();
+  const post=new T.Group();
   post.position.set(...at);
-  const standard = (color) => new T.MeshStandardMaterial({color,roughness:.87});
-  const base = new T.Mesh(new T.BoxGeometry(.37,.85,.29),standard('#aa9d85'));
-  base.position.y=-.59;
-  post.add(base);
-  const panel = new T.Mesh(new T.BoxGeometry(1.13,.31,.12),standard('#4b372a'));
-  post.add(panel);
-  const c = document.createElement('canvas');
-  c.width=512; c.height=152;
-  const ctx=c.getContext('2d');
-  ctx.fillStyle='#223035'; ctx.fillRect(0,0,512,152);
-  ctx.textBaseline='middle'; ctx.textAlign='center'; ctx.fillStyle='#fff2d7';
-  ctx.font='bold 67px Georgia'; ctx.fillText('←  NIX',256,76);
-  const map=new T.CanvasTexture(c);
-  map.colorSpace=T.SRGBColorSpace;
-  const plate=new T.Mesh(new T.PlaneGeometry(1.05,.23),new T.MeshBasicMaterial({map,toneMapped:false}));
-  plate.position.z=.062;
-  post.add(plate);
+  const base=new T.Mesh(new T.BoxGeometry(.32,.70,.28),color('#ac9c80'));
+  base.position.y=-.49;
+  const frame=new T.Mesh(new T.BoxGeometry(.92,.29,.09),color('#634936'));
+  const plate=textPanel('← NIX',.85,.215);
+  plate.position.z=.047;
+  post.add(base,frame,plate);
   return {post,plate};
 }
 
-export function makeGarden(rig) {
-  const {group,obstacles}=makeScene('precinct');
-  const clear=floorClearance(obstacles);
-  const flora=[];
-  group.traverse(o=>{
-    if (!o.isMesh || !foliage.has(o.material.name)) return;
-    const bounds=new T.Box3().setFromObject(o);
-    if(bounds.max.y>.16) flora.push(bounds);
-  });
-  const garden=batchModel(group);
-  garden.name='Casa Linterna reference garden with Nix study';
-  const base = new T.Group();
-  base.position.set(...gardenPlan.origin);
-  base.rotation.y=gardenPlan.yaw;
-  base.add(rig.model);
-  garden.add(base);
-  garden.updateMatrixWorld(true);
-
-  const world = (xyz) => base.localToWorld(new T.Vector3(...xyz)).toArray();
-  const room = (xyz) => base.worldToLocal(new T.Vector3(...xyz)).toArray();
-  const threshold = world(plan.anchors['nix.entry'].at);
-  const {post,plate}=wayfinding(gardenPlan.sign);
-  garden.add(post);
-  const walkCurve=curve(gardenPlan.walk);
-  const paved=curve(gardenPlan.walk.slice(1,9));
-  const stone=new T.BoxGeometry(1,.035,1);
-  const colors=['#9d8d74','#a29179','#a89c86'].map(color=>new T.MeshStandardMaterial({color,roughness:.98}));
-  const stepCount=Math.ceil(paved.getLength()/.47);
+function branchPaving(group,path) {
+  const stone=new T.BoxGeometry(1,.033,1);
+  const finishes=['#a09075','#a5957c','#b8aa91'].map(color);
+  const stepCount=Math.ceil(path.getLength()/.40);
   for(let i=0;i<stepCount;i++){
     const u=(i+.5)/stepCount;
-    const p=paved.getPointAt(u), dir=paved.getTangentAt(u);
-    const mesh=new T.Mesh(stone,colors[(i*5+i%4)%colors.length]);
-    mesh.position.set(p.x,-.001,p.z);
-    mesh.scale.set(gardenPlan.pathWidth,1,paved.getLength()/stepCount-.016);
+    const p=path.getPointAt(u), dir=path.getTangentAt(u);
+    const mesh=new T.Mesh(stone,finishes[(i*5+i%4)%finishes.length]);
+    mesh.position.set(p.x,-.002,p.z);
+    mesh.scale.set(gardenPlan.pathWidth,1,path.getLength()/stepCount-.018);
     mesh.rotation.y=Math.atan2(dir.x,dir.z);
     mesh.receiveShadow=true;
-    garden.add(mesh);
+    group.add(mesh);
   }
+}
 
-  const marker = new T.Vector3(-2.97,1.08,.05);
-  const leftLight = {at:marker.toArray(), intensity:11, color:'#ffcb8a', range:3.2};
-  const turnLight = {at:[-8.7,1.6,7.0], intensity:20, color:'#dcaa74', range:6.5};
-  const localDoor = world([0,1.42,5.97]);
-  const poses = {
-    columnata: {eye:[0,1.64,4.08],target:[-2.3,1.31,-2.8]},
-    desvio: {eye:[-8.62,1.64,1.34],target:[-9.41,1.48,8.32]},
-    jardin: {eye:[-9.43,1.64,7.55],target:localDoor},
-    approach: {eye:[-7.93,1.64,10.27],target:world([0,2.0,5.97]),fov:62},
+
+function footprintGap(first, second) {
+  const corners = ({origin,yaw,halfWidth,back,front})=>[
+    [-halfWidth,back],[halfWidth,back],[halfWidth,front],[-halfWidth,front],
+  ].map(([x,z])=>[origin[0]+x*Math.cos(yaw)+z*Math.sin(yaw),
+    origin[1]-x*Math.sin(yaw)+z*Math.cos(yaw)]);
+  const limits=[corners(first),corners(second)];
+  const axes=[first.yaw,second.yaw].flatMap(angle=>[
+    [Math.cos(angle),-Math.sin(angle)],[Math.sin(angle),Math.cos(angle)],
+  ]);
+  return Math.max(...axes.map(([x,z])=>{
+    const [a,b]=limits.map(c=>c.map(([u,v])=>x*u+z*v));
+    return Math.max(Math.min(...b)-Math.max(...a), Math.min(...a)-Math.max(...b));
+  }));
+}
+
+export function makeGarden() {
+  const foyer=makeFoyer();
+  const base=new T.Group();
+  base.position.set(...gardenPlan.origin);
+  base.rotation.y=gardenPlan.yaw;
+  base.add(foyer.group);
+  base.updateMatrixWorld(true);
+  const world=xyz=>base.localToWorld(new T.Vector3(...xyz)).toArray();
+  const local=xyz=>base.worldToLocal(new T.Vector3(...xyz)).toArray();
+  const xz=([x,,z])=>[x,z];
+  const threshold=world(foyerPlan.anchors['nix.foyer.entry'].at);
+  const arrivals=[world(foyerArrival), world([.60,0,.12]), world([foyerPlan.doorX,0,-1.64])];
+  const routePoints=[[0,4.08],[0,.55],[0,-7.30],[0,-12.85],[-.26,-16.18],
+    [-2.74,-16.39],[-4.35,-15.76],xz(world([0,0,3.87])),xz(threshold),xz(arrivals[0])];
+  const gardenWalk=curve(routePoints);
+  const innerWalk=curve(arrivals.map(xz));
+  const steps=gardenWalk.getSpacedPoints(Math.ceil(gardenWalk.getLength()/.10));
+  const footprint=new T.Box3().setFromObject(foyer.group);
+  const plantingMoves=[];
+  const {group,obstacles}=makeScene('precinct',{
+    omitWestLoggia:true,
+    acceptPlant(bounds, plant) {
+      const fits=!footprint.intersectsBox(bounds) && !steps.some(({x,z})=>
+        x+walkRadius>bounds.min.x && x-walkRadius<bounds.max.x &&
+        z+walkRadius>bounds.min.z && z-walkRadius<bounds.max.z && bounds.min.y<1.8);
+      if(!fits) plantingMoves.push([plant.x,plant.z]);
+      return fits;
+    },
+  });
+  const clear=floorClearance(obstacles);
+  const retainedPlants=[];
+  group.traverse(obj=>{
+    if(obj.isMesh && foliage.has(obj.material.name)){
+      const box=new T.Box3().setFromObject(obj);
+      if(box.max.y>.17) retainedPlants.push(box);
+    }
+  });
+  const garden=batchModel(group);
+  garden.name='Casa Linterna semicircle with proposed Nix temple';
+  garden.add(base);
+  const {post,plate}=wayfinding([.95,.83,-14.78]);
+  garden.add(post);
+  branchPaving(garden,curve(routePoints.slice(5,9)));
+  garden.updateMatrixWorld(true);
+
+  const lights=foyer.frontLights.map(light=>({...light,at:world(light.at)}));
+  lights.push({at:[.96,1.1,-13.62],color:'#f6c789',intensity:4.5,range:2.7});
+  const from=(eye,target,options={})=>({eye:world(eye),target:world(target),...options});
+  const poses={
+    columnata:{eye:[0,1.64,4.08],target:[-3.1,1.76,-17.7],fov:55},
+    approach:from([.46,1.64,7.64],[0,2.06,2.49],{fov:58}),
+    semicirculo:{eye:[-.2,22,3.65],target:[0,0,-13.4],elevated:true,fov:62},
+    vestibulo:from([.01,1.64,1.86],[-.12,1.55,-2.32],{fov:58}),
+    'puerta-wanda':from([.58,1.64,-.96],[.69,1.46,-2.49],{fov:62}),
   };
-  const usable=([x,z],radius=plan.avatar.radius)=>{
+
+  function usable([x,z],radius=plan.avatar.radius) {
     if(x < -25.5+radius || x > 25.5-radius || z < -33+radius || z > 21-radius) return false;
-    if(!clear([x,z],radius)) return false;
-    if(flora.some(({min,max})=>min.y<1.8 && x+radius>min.x && x-radius<max.x &&
-      z+radius>min.z && z-radius<max.z)) return false;
-    if(Math.abs(x-post.position.x)<.185+radius && Math.abs(z-post.position.z)<.145+radius) return false;
-    const [localX,,localZ]=room([x,0,z]);
-    const nearShell=Math.abs(localX)<6+radius && localZ> -6-radius && localZ<6.92;
-    return !nearShell || walkable(localX,localZ,radius);
-  };
+    if(!clear([x,z],radius))return false;
+    if(retainedPlants.some(({min,max})=>min.y<1.8 && x+radius>min.x && x-radius<max.x &&
+      z+radius>min.z && z-radius<max.z))return false;
+    if(Math.abs(x-post.position.x)<.16+radius && Math.abs(z-post.position.z)<.14+radius)return false;
+    const [xLocal,,zLocal]=local([x,0,z]);
+    const half=foyerPlan.width/2-.14;
+    if(zLocal < foyerPlan.rear-radius || zLocal > foyerPlan.front+radius+.23 || Math.abs(xLocal)>half+radius)
+      return true;
+    if(zLocal > foyerPlan.front-radius-.1) return Math.abs(xLocal)+radius<foyerPlan.entrances.garden/2;
+    if(Math.abs(xLocal)+radius>half || zLocal<foyerPlan.rear+radius+.11)return false;
+    const [sx,,sz]=foyerPlan.statue;
+    return Math.abs(xLocal-sx)>=.465+radius || Math.abs(zLocal-sz)>=.41+radius;
+  }
 
   function survey() {
-    garden.updateMatrixWorld(true);
-    const building = new T.Box3().setFromObject(rig.model);
-    const structuralBounds = obstacles.map(obstacle=>{
-      return obstacle.isMesh ? new T.Box3().setFromObject(obstacle) :
-        new T.Box3(new T.Vector3(-.5,-.5,-.5),new T.Vector3(.5,.5,.5)).applyMatrix4(obstacle.matrixWorld);
-    });
-    if ([...flora,...structuralBounds].some(box=>building.intersectsBox(box)))
-      throw Error('Nix footprint overlaps retained precinct art');
-    const samples=Math.ceil(walkCurve.getLength()/.05);
-    for(let i=0;i<=samples;i++){
-      const {x,z}=walkCurve.getPointAt(i/samples);
-      if(!usable([x,z],.56)) throw Error(`Garden route blocked at ${i}: ${x.toFixed(2)}, ${z.toFixed(2)}`);
+    const [minX,maxX]=[-2.46,2.46];
+    for(let x=minX;x<=maxX;x+=.10){
+      for(let z=-2.62;z<=3.24;z+=.10){
+        if(!clear(xz(world([x,0,z])),.13))throw Error('Nix overlaps a retained structure');
+      }
     }
-    const sightlines=[];
-    for (const height of plan.avatar.eyes) {
-      const signOrigin=new T.Vector3(0,height,4.08);
-      const point=plate.getWorldPosition(new T.Vector3());
-      const rayToSign=new T.Raycaster(signOrigin,point.clone().sub(signOrigin).normalize(),0,signOrigin.distanceTo(point)+.01);
-      if (rayToSign.intersectObject(garden,true)[0]?.object!==plate) throw Error('Columnata wayfinding is occluded');
-      const reveal = new T.Vector3(-9.43,height,7.55);
-      const opening = new T.Vector3(...world([0,height,5.78]));
-      const rayToDoor=new T.Raycaster(reveal,opening.clone().sub(reveal).normalize(),0,reveal.distanceTo(opening));
-      if(rayToDoor.intersectObject(garden,true).length) throw Error('Garden entry is occluded');
-      sightlines.push({eyeM:height, signs:['Nix wayfinding from the columns','Nix clear opening from the west path']});
+    const gaps=Object.fromEntries(pavilions.map(pavilion=>[
+      pavilion.id, footprintGap({origin:xz(gardenPlan.origin),yaw:gardenPlan.yaw,halfWidth:2.46,back:-2.61,front:3.34},
+        {origin:pavilion.origin,yaw:pavilion.turn,halfWidth:pavilion.width/2+.62,back:-5.02,front:5.02}),
+    ]));
+    if(Object.values(gaps).some(gap=>gap<.10))throw Error('Roof footprints need visible separation');
+    const counts={};
+    for(const [name,walk] of Object.entries({gardenWalk,innerWalk})){
+      const samples=Math.ceil(walk.getLength()/.05);
+      for(let i=0;i<=samples;i++){
+        const {x,z}=walk.getPointAt(i/samples);
+        if(!usable([x,z],walkRadius))throw Error(`Blocked ${name} at ${x.toFixed(3)}, ${z.toFixed(3)}`);
+      }
+      counts[name]=samples+1;
     }
-    return {samples:samples+1,walkingWidthM:1.12,lengthM:walkCurve.getLength(),threshold,sightlines,
-      baseArt:'art/linterna/precinct/model.mjs', preservedPavilions:['athena','hephaestus','apollo']};
+    const targets=[];
+    for(const height of plan.avatar.eyes){
+      const from=new T.Vector3(...world([.12,height,1.80]));
+      for(const [name,point] of [
+        ['statue',new T.Vector3(...world([-1.14,1.903,-.81]))],
+        ['WANDA door',new T.Vector3(...world([.77,1.40,-2.428]))],
+      ]){
+        const line=new T.Raycaster(from,point.clone().sub(from).normalize(),0,from.distanceTo(point)+.19);
+        const hit=line.intersectObject(foyer.group,true)[0]?.object;
+        if(name==='statue' ? hit?.parent!==foyer.figure : !foyer.doorHits.includes(hit))
+          throw Error(`Occluded ${name} from vestibule at ${height} m: ${hit?.name}`);
+        targets.push({name,eyeM:height});
+      }
+    }
+    const entryDistance=threshold.map(v=>+v.toFixed(3));
+    return {slot:gardenPlan.slot,counts,walkingWidthM:1.12,lengthM:gardenWalk.getLength(),
+      separateDoor:true,gardenThreshold:entryDistance,
+      wandaThreshold:world(foyerPlan.anchors['nix.foyer.wanda-door'].at).map(v=>+v.toFixed(3)),
+      adjustmentPlantGroups:plantingMoves,roofGapProjectionM:gaps,targets,preservedPavilions:['athena','hephaestus','apollo']};
   }
-  return {garden,world,room,poses,usable,survey,walkCurve,threshold,lanterns:[leftLight,turnLight]};
+  return {garden,foyer,world,poses,usable,survey,gardenWalk,innerWalk,threshold,plate,lanterns:lights};
 }

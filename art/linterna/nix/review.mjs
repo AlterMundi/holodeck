@@ -11,14 +11,15 @@ const gardenMode = args.has('jardin');
 const q = (selector) => document.querySelector(selector);
 const status = q('#status'), dialog = q('#inspection');
 const frame = q('#frame-image'), scroller = q('#frame-window');
-const rig = makeNix(gardenMode ? {approachLength:1.9} : {});
-const context = gardenMode ? makeGarden(rig) : null;
+const rig = makeNix();
+const context = gardenMode ? makeGarden() : null;
+let stage = context ? 'garden' : 'site';
 const scene = new T.Scene();
 scene.background = new T.Color('#172536');
 scene.fog = new T.FogExp2('#26384b', .021);
-scene.add(context?.garden || rig.model);
-const roomPoint = (xyz) => context ? context.world(xyz) : xyz;
-const allowed = (x,z) => context ? context.usable([x,z]) : walkable(x,z);
+scene.add(rig.model);
+if (context) scene.add(context.garden);
+const allowed = (x,z) => stage==='site' ? walkable(x,z) : context.usable([x,z]);
 const renderer = new T.WebGLRenderer({antialias:true, preserveDrawingBuffer:true});
 renderer.setPixelRatio(Math.min(2, devicePixelRatio));
 renderer.outputColorSpace = T.SRGBColorSpace;
@@ -37,13 +38,10 @@ ground.receiveShadow = true;
 scene.add(ground);
 scene.add(new T.HemisphereLight('#adc2e4','#766565', 1.19));
 const moon = new T.DirectionalLight('#94b7ec', 1.15);
-moon.position.set(...(context ? [-21.3, 14.5,12.8] : [-3.8, 10.5, 2.2]));
-if (context) moon.target.position.set(-16,0,7);
+moon.position.set(-3.8, 10.5, 2.2);
 moon.castShadow = true;
 moon.shadow.mapSize.set(2048, 2048);
-const shadowArea = context ? 17 : 10;
-Object.assign(moon.shadow.camera, {left:-shadowArea,right:shadowArea,top:shadowArea,
-  bottom:-shadowArea,near:.1,far:38});
+Object.assign(moon.shadow.camera,{left:-10,right:10,top:10,bottom:-10,near:.1,far:38});
 moon.shadow.normalBias = .026;
 rig.model.traverse(obj => {
   if (!obj.isMesh || obj.material.isMeshBasicMaterial) return;
@@ -51,14 +49,17 @@ rig.model.traverse(obj => {
   obj.receiveShadow = true;
 });
 scene.add(moon,moon.target);
-const fill = new T.PointLight('#bad0fa', 21, 14, 2);
-fill.position.set(...roomPoint([0,3.85,-1.36]));
-scene.add(fill);
-const lights = rig.lanterns.map(s=>({...s,at:roomPoint(s.at)}));
-for (const s of [...lights,...(context?.lanterns || [])]) {
-  const light = new T.PointLight(s.color, s.intensity, s.range, 2);
-  light.position.set(...s.at);
-  scene.add(light);
+const siteLights=new T.Group(), gardenLights=new T.Group();
+scene.add(siteLights,gardenLights);
+const fill=new T.PointLight('#bad0fa',21,14,2);
+fill.position.set(0,3.85,-1.36);
+siteLights.add(fill);
+for(const [group,descriptors] of [[siteLights,rig.lanterns],[gardenLights,context?.lanterns || []]]){
+  for(const s of descriptors){
+    const light=new T.PointLight(s.color,s.intensity,s.range,2);
+    light.position.set(...s.at);
+    group.add(light);
+  }
 }
 // This sparse backdrop is exterior architecture lighting decor only.
 const decoration = [];
@@ -75,12 +76,43 @@ scene.add(new T.Points(celestial,new T.PointsMaterial({color:'#bdcbd6',size:.15,
 const camera = new T.PerspectiveCamera(51, 1, .04, 77);
 camera.rotation.order = 'YXZ';
 let eyeHeight = plan.avatar.eyes[1], view = 'entry', dirty = true;
+const contextToggle=q('#context-toggle'), contextWalk=q('#context-walk');
+const wandaDoor=q('#wanda-door'), returnFoyer=q('#return-foyer');
+function showStage(next) {
+  const site=next==='site';
+  if (!context) return;
+  const changed=stage!==next;
+  stage=next;
+  document.body.dataset.stage=next;
+  rig.model.visible=site;
+  context.garden.visible=!site;
+  siteLights.visible=site;
+  gardenLights.visible=!site;
+  ground.position.y=site?-.028:-.19;
+  for(const panel of document.querySelectorAll('[data-site-only]'))panel.hidden=!site;
+  for(const button of document.querySelectorAll('[data-pose]')){
+    const gardenButton=button.dataset.pose==='approach';
+    button.hidden=gardenButton?next!=='garden':!site;
+  }
+  contextWalk.hidden=site;
+  contextWalk.textContent=next==='foyer'?'Volver al jardín':'Ir al vestíbulo';
+  wandaDoor.hidden=next!=='foyer';
+  returnFoyer.hidden=!site;
+  if(changed || !site){
+    moon.position.set(...(site ? [-3.8,10.5,2.2] : [-14,15,-13]));
+    moon.target.position.set(...(site ? [0,0,0] : [-3,0,-14]));
+    const span=site?10:26;
+    Object.assign(moon.shadow.camera,{left:-span,right:span,top:span,bottom:-span});
+    moon.shadow.camera.updateProjectionMatrix();
+    renderer.shadowMap.needsUpdate=true;
+  }
+}
 function pose(key, height = eyeHeight) {
   const outdoor = context?.poses[key];
   const item = outdoor || plan.poses[key];
-  const transform = outdoor ? xyz=>xyz : roomPoint;
-  camera.position.set(...transform([item.eye[0],height,item.eye[2]]));
-  camera.lookAt(new T.Vector3(...transform(item.target)));
+  showStage(outdoor ? (['vestibulo','puerta-wanda'].includes(key)?'foyer':'garden') : 'site');
+  camera.position.set(item.eye[0],outdoor?.elevated?item.eye[1]:height,item.eye[2]);
+  camera.lookAt(new T.Vector3(...item.target));
   view = key;
   document.body.dataset.view = key;
   camera.fov = Math.max(camera.aspect < .82 ? 67 : 51, outdoor?.fov || 0);
@@ -219,6 +251,11 @@ canvas.addEventListener('pointerup', event => {
   camera.updateMatrixWorld();
   rays.setFromCamera(new T.Vector2(event.clientX/innerWidth*2-1,1-event.clientY/innerHeight*2),camera);
   rays.far = 3.2;
+  if(stage!=='site'){
+    const hit=rays.intersectObject(context.garden,true)[0]?.object;
+    if(stage==='foyer'&&context.foyer.doorHits.includes(hit))enterWanda();
+    return;
+  }
   const hit = rays.intersectObject(rig.model,true)[0]?.object;
   const match = Object.entries(rig.hitboxes).find(([,mesh]) => mesh === hit)?.[0];
   if (match) inspect(match === 'eyepiece' ? displayed : match);
@@ -227,30 +264,48 @@ canvas.addEventListener('pointercancel',() => {drag=undefined;});
 
 if (args.has('art')) document.body.classList.add('art');
 const initial = args.get('view');
-pose(initial && (initial in plan.poses || initial in (context?.poses || {})) ? initial : context ? 'columnata' : 'entry');
-const contextToggle = q('#context-toggle');
-const contextWalk = q('#context-walk');
-contextToggle.textContent = context ? 'Volver al visor de sala' : 'Ver desde el jardín';
+const startingPose=initial && (initial in plan.poses || initial in (context?.poses || {})) ? initial : 'entry';
+pose(context&&!args.has('art') ? 'columnata' : startingPose);
+contextToggle.textContent = context ? 'Ver solo la sala' : 'Ver desde el jardín';
 contextToggle.onclick = () => {
   const destination = new URL(location.href);
   destination.search = context ? '' : '?jardin';
   location.href=destination.href;
 };
-let journey = null, atNix = false;
-if (context) {
-  const approach = q('[data-pose=approach]');
-  approach.textContent = 'Pórtico de Nix';
-  contextWalk.hidden=false;
-  contextWalk.onclick=()=> {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      pose(atNix ? 'columnata' : 'entry');
-      atNix=!atNix;
-      contextWalk.textContent=atNix ? 'Volver a la columnata' : 'Caminar a Nix';
-      return;
-    }
-    journey={started:performance.now(),back:atNix};
-    document.body.dataset.journey='walking';
+let journey=null;
+function arrive(destination) {
+  journey=null;
+  pose(destination);
+  document.body.dataset.journey=destination;
+  if(destination==='vestibulo')wandaDoor.focus();
+  else if(destination==='entry')returnFoyer.focus();
+  else if(destination==='puerta-wanda')contextWalk.focus();
+}
+function follow(path, back, destination, next) {
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){
+    arrive(destination);
+    next?.();
+    return;
+  }
+  journey={path,started:performance.now(),back,destination,next};
+  document.body.dataset.journey='walking';
+}
+function enterWanda(){
+  if(journey||stage!=='foyer')return;
+  if(view==='puerta-wanda')arrive('entry');
+  else follow(context.innerWalk,false,'entry');
+}
+if(context){
+  q('[data-pose=approach]').textContent='Pórtico de Nix';
+  contextWalk.onclick=()=>{
+    if(journey)return;
+    const back=stage==='foyer';
+    if(back&&view==='puerta-wanda'){
+      follow(context.innerWalk,true,'vestibulo',()=>follow(context.gardenWalk,true,'columnata'));
+    }else follow(context.gardenWalk,back,back?'columnata':'vestibulo');
   };
+  wandaDoor.onclick=enterWanda;
+  returnFoyer.onclick=()=>arrive('puerta-wanda');
 }
 setPhase('capture');
 let last = performance.now();
@@ -259,20 +314,17 @@ function animate(now) {
   const dt = Math.min(.2, (now-last)/1000);
   last = now;
   if (journey && !dialog.open) {
-    const {started,back}=journey;
-    const time=Math.min(1,(now-started)/(context.walkCurve.getLength()*370));
+    const {path,started,back,destination,next}=journey;
+    const time=Math.min(1,(now-started)/(path.getLength()*355));
     const u=back ? 1-time : time;
     const ahead=T.MathUtils.clamp(u+(back?-.042:.042),0,1);
-    const at=context.walkCurve.getPointAt(u);
-    const toward=context.walkCurve.getPointAt(ahead);
+    const at=path.getPointAt(u);
+    const toward=path.getPointAt(ahead);
     camera.position.set(at.x,eyeHeight,at.z);
     if(time<1) camera.lookAt(toward.x,eyeHeight-.07,toward.z);
     else {
-      atNix=!back;
-      pose(atNix?'entry':'columnata');
-      journey=null;
-      contextWalk.textContent=atNix?'Volver a la columnata':'Caminar a Nix';
-      document.body.dataset.journey=atNix?'nix':'columnata';
+      arrive(destination);
+      next?.();
     }
     dirty=true;
   }
@@ -324,7 +376,7 @@ function survey() {
     for (const [poseName,target] of [['entry','eyepiece'],['ocular','eyepiece'],['photo','capture'],
                                     ['gallery','preview-02'],['gallery','preview-03']]) {
       const p=plan.poses[poseName];
-      const origin = new T.Vector3(...roomPoint([p.eye[0],height,p.eye[2]]));
+      const origin = new T.Vector3(p.eye[0],height,p.eye[2]);
       const targetMesh = rig.hitboxes[target];
       // Near-center points avoid testing only the tessellation seam of a plane.
       const samples = [[.031,.018],[-.022,.011],[.012,-.037]];
@@ -365,8 +417,22 @@ async function exportModel() {
   return {bytes:bytes.byteLength,anchors:[...anchors]};
 }
 
+async function exportFoyer() {
+  const model=context.foyer.group.clone();
+  model.position.set(0,0,0);
+  const bytes=await new GLTFExporter().parseAsync(model,{binary:true});
+  const {scene:reopened}=await new GLTFLoader().parseAsync(bytes,'');
+  const anchors=[];
+  reopened.traverse(node=>{if(node.userData?.anchorId)anchors.push(node.userData.anchorId);});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([bytes],{type:'model/gltf-binary'}));
+  a.download='Vestibulo-de-Nix.glb'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  return {bytes:bytes.byteLength,anchors};
+}
+
 window.nixReview = {
-  pose, setPhase, inspect, survey, exportModel, gardenSurvey:()=>context?.survey(),
+  pose, setPhase, inspect, survey, exportModel, exportFoyer, gardenSurvey:()=>context?.survey(),
   height: value => {eyeHeight=value; pose(view);},
   state: () => ({phase,displayed,activeAsset,state:document.body.dataset.state,eye:camera.position.toArray()}),
 };

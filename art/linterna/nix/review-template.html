@@ -42,7 +42,7 @@ dialog::backdrop{background:rgba(3,8,14,.82)}
 <main id="view" aria-label="Observatorio de Nix, recorrido 3D"></main>
 <header>
 <div class="title"><h1>Templo de Nix</h1><p>Casa Linterna · Prueba de sala</p></div>
-<div class="panel">
+<div class="panel" data-site-only>
 <p id="status" aria-live="polite"></p>
 <div class="state" aria-label="Estados de prueba">
 <button data-state="capture" aria-pressed="true">Captura fijada</button>
@@ -53,10 +53,10 @@ dialog::backdrop{background:rgba(3,8,14,.82)}
 <div class="dock">
 <nav class="panel" aria-label="Recorrido">
 <div class="routes"><button data-pose="approach">Pórtico</button><button data-pose="entry">Entrada</button><button data-pose="ocular">Ocular</button><button data-pose="gallery">Galería</button></div>
-<div class="routes"><button id="context-toggle">Ver desde el jardín</button><button id="context-walk" hidden>Caminar a Nix</button></div>
+<div class="routes"><button id="context-toggle">Ver desde el jardín</button><button id="context-walk" hidden>Ir al vestíbulo</button><button id="wanda-door" hidden>Entrar a WANDA</button><button id="return-foyer" hidden>Volver al vestíbulo</button></div>
 <p class="help">WASD para caminar · Arrastrá para mirar</p>
 </nav>
-<div class="panel actions"><button id="open-eye">Ver cuadro completo</button><button id="open-gallery">Inspeccionar foto</button></div>
+<div class="panel actions" data-site-only><button id="open-eye">Ver cuadro completo</button><button id="open-gallery">Inspeccionar foto</button></div>
 </div>
 <dialog id="inspection" aria-labelledby="inspection-title">
 <div class="dialog-top"><h2 id="inspection-title"></h2><div class="options">

@@ -17,3 +17,18 @@ The [precinct study](precinct/README.md) adds the small classical entrance,
 the Templo del Mundo, and the connected internal garden and deity pavilions.
 The [finished Claymon room study](workshop/README.md) develops the materials
 and daylight of the workshop while reusing its original furniture layout.
+
+## App temple layout
+
+The standard for Casa Linterna's app temples is **garden → temple vestibule
+→ named app door → app room**. The vestibule introduces the deity with their
+statue and provides a distinct place to orient before opening an app. Each app
+has its own door. A temple with a single app still has its vestibule, statue
+and separate app door. The reciprocal path goes back through the vestibule.
+A modal or a station inside an app room belongs to that room.
+
+The temples in Casa Linterna's inner garden form a semicircle. Treat future
+temples as peer pavilions on that arc and survey them against the retained
+temples. The Nix design demonstrates the one-app case with the WANDA observatory.
+Its temple, vestibule and room-local app anchors are documented in
+[nix/README.md](nix/README.md).

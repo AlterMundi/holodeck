@@ -129,35 +129,53 @@ try {
   await page.waitForSelector('body[data-ready=true]');
   const garden = await page.evaluate(()=>nixReview.gardenSurvey());
   assert.equal(garden.walkingWidthM,1.12);
-  assert.equal(garden.sightlines.length,2);
-  assert.ok(garden.samples>500);
-  const situated = await page.evaluate(()=>nixReview.survey());
-  assert.deepEqual(situated.anchors.sort(),survey.anchors);
-  assert.equal(situated.sightlines.length,10);
-
+  assert.equal(garden.targets.length,4);
+  assert.ok(garden.counts.gardenWalk>500 && garden.counts.innerWalk>60);
+  assert.ok(garden.separateDoor);
+  assert.ok(Math.min(...Object.values(garden.roofGapProjectionM))>=.10);
   const walk = page.locator('#context-walk');
+  const wanda = page.locator('#wanda-door');
+  assert.equal(await wanda.isVisible(),false);
+  assert.equal(await page.locator('#open-eye').isVisible(),false);
   await walk.click();
-  await page.waitForSelector('body[data-journey=nix]',{timeout:25000});
-  assert.equal(await page.locator('body').getAttribute('data-view'),'entry');
-  assert.ok((await page.evaluate(()=>nixReview.state().eye))[0]<garden.threshold[0]);
+  await page.waitForSelector('body[data-journey=vestibulo]',{timeout:35000});
+  assert.equal(await page.locator('body').getAttribute('data-stage'),'foyer');
+  assert.equal(await wanda.isVisible(),true);
+  assert.equal(await page.locator('#open-eye').isVisible(),false);
+  const foyerDownload=page.waitForEvent('download');
+  const foyer=await page.evaluate(()=>nixReview.exportFoyer());
+  await (await foyerDownload).saveAs(file('Vestibulo-de-Nix.glb'));
+  assert.deepEqual(foyer.anchors.sort(),['nix.foyer.entry','nix.foyer.return','nix.foyer.statue','nix.foyer.wanda-door']);
+  await wanda.click();
+  await page.waitForSelector('body[data-journey=entry]',{timeout:18000});
+  assert.equal(await page.locator('body').getAttribute('data-stage'),'site');
+  assert.deepEqual(await page.evaluate(()=>nixReview.state().eye),[0,1.64,5.1]);
   await page.locator('#open-eye').click();
   assert.equal(digest((await frameInfo(page)).href),original);
   await page.keyboard.press('Escape');
+  await page.locator('#return-foyer').click();
+  await page.waitForSelector('body[data-journey=puerta-wanda]');
+  assert.equal(await page.locator('body').getAttribute('data-stage'),'foyer');
+  assert.equal(await page.locator('#open-eye').isVisible(),false);
+  // The model's own door is a second path to the site, alongside the keyboard button.
+  await page.locator('canvas').click({position:{x:720,y:450}});
+  await page.waitForSelector('body[data-journey=entry]',{timeout:10000});
+  await page.locator('#return-foyer').click();
   await walk.click();
-  await page.waitForSelector('body[data-journey=columnata]',{timeout:25000});
+  await page.waitForSelector('body[data-journey=columnata]',{timeout:35000});
   assert.deepEqual(await page.evaluate(()=>nixReview.state().eye),[0,1.64,4.08]);
   assert.deepEqual(errors,[]);
   assert.deepEqual(requests,[]);
 
   await page.goto(url.href+'?jardin&art');
   await page.waitForSelector('body[data-ready=true]');
-  for(const view of ['columnata','desvio','jardin','approach']) {
+  for(const view of ['columnata','semicirculo','approach','vestibulo','puerta-wanda']) {
     await page.evaluate(name=>nixReview.pose(name),view);
     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-    await page.screenshot({path:file('garden-'+view+'.jpg'),quality:91,type:'jpeg'});
+    await page.screenshot({path:file('garden-'+view+'.jpg'),quality:92,type:'jpeg'});
   }
-  await writeFile(file('survey.json'),JSON.stringify({survey,glb,garden},null,2)+'\n');
-  console.log(JSON.stringify({survey,glb,garden}));
+  await writeFile(file('survey.json'),JSON.stringify({survey,glb,garden,foyer},null,2)+'\n');
+  console.log(JSON.stringify({survey,glb,garden,foyer}));
 } finally {
   await browser.close();
 }

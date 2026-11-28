@@ -32,6 +32,14 @@ contracts when implemented. The receiving lane is the source of identity.
 Browser edits, a claimed owner field and engine operator access cannot stand
 in for that lane.
 
+## App temples
+
+For the app temples we build, use a garden entrance, a temple vestibule with
+the deity's statue, and a distinct named doorway for each app room. A temple
+grouping a single app uses the same layout. Returning from the app room goes
+through its vestibule. [Casa Linterna](../art/linterna/README.md#app-temple-layout)
+documents the semicircle layout and the Nix example.
+
 ## Persistence and recovery
 
 The same service writes a separate houses checkpoint. It is capped at 64 KiB

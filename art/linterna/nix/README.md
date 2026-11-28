@@ -1,9 +1,9 @@
 # Templo de Nix · room design review
 
-An additive, room-local Casa Linterna study. The eye station stands to the
+The approved WANDA room and a separate temple vestibule on Casa Linterna’s semicircle. The eye station stands to the
 left of the approach, with the east gallery opposite it. The floor is
 12 × 12 m, the walls are 3.68 m high, and the south threshold is
-2.20 × 2.60 m. The threshold looks back toward the garden. A timber aperture
+2.20 × 2.60 m. The threshold looks back toward the temple vestibule. A timber aperture
 opens to a decorative night sky. Limewash, walnut, brass, sage trim and amber
 light carry forward the Casa Linterna selection at
 a2f245e4a5d58349b28a3b0dd65fc53b9271daec.
@@ -71,31 +71,36 @@ admission, reciprocal links, runtime projections, and A2UI belong to the
 existing Holodeck receiver. Pi, optics, exposure and physical motion belong
 to WandaTelescope. The design review opens no node connection.
 
-## Garden context review
+## Temple and garden review
 
-The offline viewer's **Ver desde el jardín** option adds the same Nix room to
-the authored Casa Linterna reference precinct, using its original hall,
-pavilions, planting and obstacles. The proposed west path starts at the
-columnata, reaches a directional plinth, turns around the western flank and
-continues through the existing Nix art threshold. Its reciprocal visit uses
-the same surveyed centerline. This is a placement proposal in the design
-coordinate system. Actual room admission and placement use the receiving
-owner's selected site and scene.
+The viewer's **Ver desde el jardín** option uses the existing Casa Linterna
+precinct and places Nix between Atenea and Hefesto. A small pavilion occupies
+the western expansion shelter's slot on the semicircle. The existing temple
+origins and the eastern shelter stay in place. Only plant groups that conflict
+with the vestibule footprint or surveyed path are suppressed in this review.
+The local origin of the vestibule is placed at (-8.45, 0, -20.65), with a
++0.29 radian Y rotation.
 
-The additive proposal in garden.mjs places the Nix model at
-(-17.50, 0, 10.60) with a +90° Y rotation. The room-local entry at
-(0, 0, 5.88) becomes (-11.62, 0, 10.60) in that scene. The stone walk
-is 1.42 m wide. The survey tests a clear 1.12 m envelope every 5 cm
-over about 25.15 m and checks the route against the retained obstacles,
-plant bounds and Nix's local shell. It also checks the new room against
-retained structure and greenery, and checks the wayfinding plinth from the
-columnata and the aperture from the west walk at both eye heights.
-The contextual viewer repeats the ocular and gallery sightlines with the
-room transformed to that placement.
+The garden door opens into a 4.76 × 5.14 m vestibule. A statue of Nix in a
+midnight mantle stands on the left. The separately labelled **WANDA ·
+OBSERVATORIO** door stands on the right and opens the approved room in its own
+scene. The same thresholds serve the return path. The source survey keeps
+the route at a 1.12 m clear envelope, checks the proposed addition against
+the retained structure, and checks the statue and WANDA door from 1.20 and
+1.64 m eye heights. The app room uses the same geometry and WANDA data.
 
-The browser checks include the guided walk to the interior, opening the same
-exact WANDA consultable original there, and returning to the columnata.
-The standalone review still supports the same room-local movement and all
-three fixture states. Garden materials are the precinct's reference colors
-under the review lighting. The room-local GLB remains the handoff for the
-existing Holodeck art receiver.
+| Vestibule marker | Purpose |
+| --- | --- |
+| nix.foyer.entry | Garden to vestibule |
+| nix.foyer.return | Vestibule to garden |
+| nix.foyer.statue | Statue of Nix on the vestibule's left side |
+| nix.foyer.wanda-door | Vestibule to nix.entry; nix.return lands back at this door |
+
+The viewer lets the observer take the garden walk into the vestibule, inspect
+the statue, use the labelled door or the keyboard-accessible equivalent,
+inspect the original WANDA image, and return through both spaces in order.
+The exported vestibule GLB uses its own local origin. The approved app room
+GLB is an independent asset. Spatial relationships in this review are
+design instructions for the existing Holodeck owner, whose scene graph,
+admission, A2UI and media authority remain independent. The review makes
+no physical WANDA connection.
