@@ -1,5 +1,16 @@
 # Current MVP work
 
+## Teleport controls above the station · 2026-11-28
+
+Protected release `ecd4a7d815da` selects `ab3dcbf` with
+`e0d082583e22` as rollback. The physical station's A2UI panel docks above
+the controls. A packaged Chromium test measured 264 px between the panel
+controls and the physical travel button at 960 × 600, 219 px after orbiting,
+and 373 px at 390 × 844. The same fixture still resolved all five Casa
+Linterna rooms, served the owner model only to the admitted actor, and
+returned to the foyer. Node passed 589 tests with four skips. Protected
+HTTPS and all 96 installed runtime files matched the selected package.
+
 ## Casa Linterna's current visual edition · 2026-11-28
 
 Protected release `e0d082583e22` selects runtime source `2ee4a53`; the
