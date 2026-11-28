@@ -1,9 +1,30 @@
 # Owner-hosted room editions
 
-This is the current walkable-room import contract. The target
-[shared publication contract](architecture.md#home-and-holodeck-publication)
-creates the other A2UI view automatically. Placing a walkable room and
-changing its doors use the spatial contract below.
+## Publish a walkable edition
+
+The owner publishes one Home edition with the cells, artwork and passages
+for the visit. Readers enter through the existing house foyer. Once selected,
+Holodeck builds the tour directly from the edition and exposes it as a
+destination in the house. The owner can set `guests` on each cell. Use an
+explicit guest list or an empty list for a private cell. An omitted list,
+or `["*"]`, uses the current foyer audience. A cell never grants access
+beyond that audience and the existing room-access authority. An interactive
+workbench reuses its separate workspace permissions.
+
+The receiver resolves the immutable publication from Home, verifies its
+manifest and GLBs, and stages the files in `STATE_DIR/owner-room-tours`.
+Select `receiving.ownerRoomTours` with the existing `house`, immutable
+`manifest` URL and its `sha256`. The manifest determines cell identities,
+titles, reciprocal doors, and the return to the foyer. No live layout write
+or second room map is needed. Existing rooms keep their current shell,
+guest lists and state. The receiver keeps only the selected edition and
+its required rollback files. The older receiver ignores this selection.
+
+The [shared publication contract](architecture.md#home-and-holodeck-publication)
+also requires automatic A2UI publication in both directions. The walkable
+tour uses a receiving selection while that publication discovery is pending.
+
+## Legacy art bindings to existing rooms
 
 East 1 uses Holodeck's ordinary room crossing, avatar, presence, and return.
 The room scene comes from a pinned edition on the owner's Home. An operator
@@ -41,7 +62,7 @@ reader credentials nor visitor cookies for the Home origin. An edition
 update follows the same staging contract. Verify both visitors and the full
 return in the receiving world.
 
-## One handoff for a shared-world edition
+## Legacy handoff parameters
 
 Publishing to Home ends at Home. The following contract applies when the
 owner asks Holodeck to use the edition as a walkable scene inside the shared

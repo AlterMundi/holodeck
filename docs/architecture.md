@@ -148,9 +148,16 @@ A spatial placement can add room geometry, doors or a live workbench to a
 publication. This is an additional authored change. The ordinary A2UI view
 must appear without waiting for a room layout or workbench binding.
 
+The owner selects content and audience at the publication, house, or cell
+that owns them. A walkable publication supplies its spatial contract once.
+Holodeck derives navigation and A2UI destinations from those facts. The
+receiver owns staging and connection details. It reads the same guest
+decisions on both surfaces and applies more restrictive cell or tool access
+where the owner has selected it.
+
 The automatic projection in both directions is a target contract. The
-[current walkable-room import](owner-room-art.md) uses a pinned edition and
-the published room layout explicitly.
+[walkable edition projection](owner-room-art.md) derives its graph from a
+pinned Home edition under the existing house's visitor authority.
 
 ## Transport authentication context
 
