@@ -7,8 +7,8 @@
 
 ## November 28 — Char Design teleport station
 
-Protected release \`c06b39f3e7e6\` selects source \`39d9af1\` and Char Design's
-station and miniatures from \`b495cdf\`. The child nodes unfold from the station,
+Protected release `c06b39f3e7e6` selects source `39d9af1` and Char Design's
+station and miniatures from `b495cdf`. The child nodes unfold from the station,
 and the floating parent returns one level. Viajar follows the camera on the
 physical rail and confirms travel after the light-column animation. The
 portrait starting camera frames the station beside the avatar.
@@ -18,7 +18,7 @@ round trip to Materia. The exact final archive completed the round trip with
 touch on the physical Redmi in Livianos. All 542 active tests passed, with
 two skips. Receiving readback matched 94 installed files and both authored
 GLBs returned their exact bytes through the protected route. Rollback is
-\`fc1805677c21\`. The final 37.62 MiB archive fit the existing 40 MiB limit.
+`fc1805677c21`. The final 37.62 MiB archive fit the existing 40 MiB limit.
 The teleport GLBs account for 1.05 MiB, while the Atelier rooms account for
 9.69 MiB of the packed runtime.
 
