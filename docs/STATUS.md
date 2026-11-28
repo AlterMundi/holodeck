@@ -1,5 +1,25 @@
 # Current MVP work
 
+## Owner layout revisions and stable fireflies · 2026-11-28
+
+Protected release `952e5c7121b1` selects `f7126a0` and retains
+`9dc023504c57` for rollback. It publishes the Char Design grass and firefly
+draft and the owner's native revision path for titles, reciprocal passages
+and visitor access. The real HTTP/native fixture accessed the revised path,
+recovered the same receipt and refused the same write from a foreign actor.
+Live readback matched the installed archive and protected browser bundle.
+
+In a fixed nighttime meadow pose on the RTX 2060, three 2.5 s windows had
+medians of 23.75 FPS for the candidate and 16.80 FPS for the previous package.
+The prior run included a 1.47 s outlier. Both adaptive buffers were 429×271.
+The candidate rendered 88 fixed swarm points. This is a single pose; phone
+and broad frame-rate acceptance were outside this check.
+
+Casa Linterna's latest Home edition and Atelier binding are still pending.
+The release does not change the selected East 1 layout or install a Home
+edition. See [owner-hosted room editions](owner-room-art.md).
+
+
 
 ## November 28 — Opt-in performance HUD
 
