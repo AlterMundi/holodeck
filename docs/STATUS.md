@@ -5,6 +5,31 @@
 
 
 
+## November 28 — Char Design effects optimization candidate
+
+Char Design's `cc0e009` was integrated as `510b4e4` on
+`candidate/char-design-visual-2-7060`. The source passes the suite and the
+combined package preserves both generated icons and the visual passes.
+The release condition was a repeatable frame-rate improvement. The
+protected selection remains `59bd64df3466`.
+
+Physical Chromium comparisons used the `883664e167e6` baseline, the same
+Residence GLB and world time, and matched cameras and drawing buffers. Each
+pose sampled seven seconds of animation callbacks.
+
+| Adapter and drawing buffer | Hall FPS | Meadow FPS |
+| --- | ---: | ---: |
+| RTX 2060, 1020 × 629, automatic | 8.9 → 9.9 | 19.2 → 9.5 |
+| RTX 2060, 660 × 407, automatic | 17.4 → 57.7 | 18.3 → 56.3 |
+| Pi 5 V3D, 363 × 244, lightweight | 31.6 → 30.5 | 36.9 → 36.6 |
+
+The RTX samples varied substantially by run. During the last arm the GPU
+reported 88–89 °C and P8 at approximately 345 MHz. The capture provides no
+stable FPS gain across the two comparisons. The larger meadow run reduced
+draw calls from 249 to 215, with p95 callback interval increasing from
+100 to 199.9 ms. On the Pi both poses stayed at 33.4 ms p95. Lightweight
+bypasses the cinematic and additional vegetation paths.
+
 ## November 28 — Teleport icons derived from destinations
 
 Protected release `59bd64df3466` selects source `d8c644a`, based on Char
