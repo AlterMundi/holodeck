@@ -9,6 +9,7 @@ import { DirectionalLight, SpotLight } from 'three';
 import { WORKSHOP, workshopColour } from './workshop.mjs';
 import { saveIntent, loadIntent, archiveIntent, sameActor, nativeRetryRoute } from './client-intents.mjs';
 import { NativeAvatarLayer } from './native-avatar.mjs';
+import { avatarForActor } from './avatar-registry.mjs';
 import {PublicWorldPicker,WorldIndication} from './world-indication.mjs';
 import { ContentVisitor } from './content-visitor.mjs';
 import { GalleryModels } from './gallery-models.mjs';
@@ -754,6 +755,9 @@ function updateNativeAvailability(){
   $('#talk').disabled=inside&&!shared;
   $('#conversation-panel').classList.toggle('shared-conversation',shared);
   $('#conversation-panel').classList.toggle('topic-conversation',!!activeSpace?.topic||directTopic!==undefined);
+  const audience=$('#conversation-audience'),companion=$('#conversation-companion');
+  audience.dataset.recipient=changingTopicMode||directTopic===null?'unconfirmed':directTopic?'topic':'general';
+  companion.hidden=!shared||!activeSpace?.topic;
   $('#conversation-panel h2').textContent=directTopic===null?'Destinatario por confirmar':
     directTopic?activeSpace.title:activeSpace?.topic?'Nuestra conversación general':'Desde acá';
   const mode=$('#topic-conversation-mode');
@@ -1095,11 +1099,32 @@ mountTopicExplorer(document,query=>conversationHost().readTopicRooms(query),asyn
     throw error;
   }
 });
+async function paintGeneralCompanion(host){
+  const portrait=$('#conversation-companion');
+  if(portrait.hidden||portrait.closest('#conversation-panel').hidden||!nativeAvatarLayer)return;
+  const ref=avatarForActor({kind:'daimon',id:host.selected?.beingRef});
+  if(!ref||portrait.dataset.appearance===ref)return;
+  try{
+    const {design,prepare}=await nativeAvatarLayer.source(ref);
+    if(sharedConversation!==host||portrait.hidden||portrait.closest('#conversation-panel').hidden||portrait.dataset.appearance===ref)return;
+    // The ASCII renderer needs its normal glyph grid before reducing the portrait.
+    const source=document.createElement('canvas');
+    source.className='portrait-render-source';
+    portrait.append(source);
+    try{
+      prepare(source,design);
+      const thumbnail=portrait.querySelector('canvas');
+      thumbnail.getContext('2d').drawImage(source,0,0,thumbnail.width,thumbnail.height);
+      portrait.dataset.appearance=ref;
+    }finally{source.remove();}
+  }catch{/* The companion light remains available without the portrait. */}
+}
 function openConversation(open){
   const panel=$('#conversation-panel');panel.hidden=!open;$('#talk').setAttribute('aria-expanded',String(open));
   if(open)updateNativeAvailability();
   if(open&&sharedSurface()){
-    conversationHost().mount().catch(()=>say('No pude abrir tu conversación. Volvé a tocar Conversar para intentarlo.'));
+    const host=conversationHost();
+    host.mount().then(()=>paintGeneralCompanion(host)).catch(()=>say('No pude abrir tu conversación. Volvé a tocar Conversar para intentarlo.'));
   }else if(open)$('#message').focus();
   else if(panel.contains(document.activeElement)){document.activeElement.blur();window.focus();}
 }

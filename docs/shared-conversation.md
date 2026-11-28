@@ -412,7 +412,12 @@ choose to talk directly to the current topic or return to general Conversation
 without leaving. The frame resolves the current authorized Session Workspace
 destination. Holodeck shows the confirmed audience and restores the general
 audience on departure or when a fresh Conversation document connects.
-The visitor's drafts and sends stay in Conversation.
+The general companion portrait steps aside after the frame confirms direct
+mode. The topic name remains visible as the recipient. A return to general
+Conversation restores the portrait in the same room. The avatar uses the
+paired being's registered artwork, with a companion light as its fallback.
+Reduced-motion settings remove the transition. This indicator is local to
+the visitor, and the visitor's drafts and sends stay in Conversation.
 
 A mobile Chromium fixture exercises entry, direct selection, return on exit
 and refusal after room discovery is revoked through the real frame protocol.

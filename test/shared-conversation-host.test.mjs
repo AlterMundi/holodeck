@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {SharedConversationHost} from '../src/shared-conversation-host.mjs';
+import {COMPAII_BEING} from '../src/avatar-registry.mjs';
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 function fixture(onTopicModeReset){
  const sent=[],calls=[],frames=[],statuses=[];let actor='human:fixture',position=1,unblock;
@@ -87,7 +88,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
     return {schema:'holodeck.topic-room/v1',actorRef,room:topic,title:room.title,general:false};
    },
    conversationSurface:async()=>({schema:'holodeck.conversation-surface/v1',actorRef,binding,
-    beingRef:'dm:being:v1:'+'b'.repeat(43),homeRef:'home:'+'c'.repeat(32),url:origin+'/interaction/'})});
+    beingRef:COMPAII_BEING,homeRef:'home:'+'c'.repeat(32),url:origin+'/interaction/'})});
  const runtime=await createHolodeck({conversationOrigins:[origin],nativeFactory,
   nativeRoomAuthority:async()=>['observe'],
   identityResolver:async()=>({id:actorRef,ref:actorRef,kind:'human',rights:['observe','edit','project'],name:'Visitor'})});
@@ -149,6 +150,24 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  await page.getByRole('button',{name:'Hablar directo al topic',exact:true}).tap();
  await page.locator('#conversation-panel').getByRole('heading',{name,exact:true}).waitFor();
  assert.deepEqual(modes,[room.room]);
+ const audience=page.locator('#conversation-audience'),portrait=page.locator('#conversation-companion');
+ await portrait.and(page.locator('[data-appearance]')).waitFor();
+ assert.equal(await audience.getAttribute('data-recipient'),'topic');
+ await page.waitForFunction(()=>getComputedStyle(document.querySelector('#conversation-companion')).opacity==='0.45');
+ const drawing=await portrait.locator('canvas').evaluate(canvas=>({
+  width:canvas.width,height:canvas.height,bounds:canvas.getBoundingClientRect().toJSON(),
+  pixels:canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data.some((value,index)=>index%4===3&&value)
+ }));
+ assert.ok(drawing.pixels,JSON.stringify(drawing));
+ await page.getByRole('button',{name:'Volver a la conversación general',exact:true}).tap();
+ await page.getByRole('heading',{name:'Nuestra conversación general',exact:true}).waitFor();
+ assert.equal(await audience.getAttribute('data-recipient'),'general');
+ await page.waitForFunction(()=>getComputedStyle(document.querySelector('#conversation-companion')).opacity==='1');
+ assert.equal(runtime.spaces.current({id:actorRef}),entered.id);
+ await page.emulateMedia({reducedMotion:'reduce'});
+ assert.equal(await portrait.evaluate(element=>getComputedStyle(element).transitionDuration),'0s');
+ await page.getByRole('button',{name:'Hablar directo al topic',exact:true}).tap();
+ await page.locator('#conversation-panel').getByRole('heading',{name,exact:true}).waitFor();
  await page.locator('#conversation-close').tap();
  await page.locator('#space-travel summary').tap();
  await page.locator('#space-travel').getByRole('button',{name:'Volver al lugar anterior',exact:true}).tap();
@@ -162,7 +181,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  await dialog.getByText('Ese topic ya no está disponible.').waitFor();
  assert.deepEqual(readbacks,[null,room.room,null,room.room]);
  assert.deepEqual(posted,['/api/topic-space','/api/space']);
- assert.deepEqual(modes,[room.room,null]);
+ assert.deepEqual(modes,[room.room,null,room.room,null]);
  assert.deepEqual(errors,[]);
 });
 
