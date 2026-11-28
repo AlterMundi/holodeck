@@ -9,6 +9,8 @@ shared world edit right. The owner controls the house guest policy and
 narrower room audiences through the existing own-native lane. Current
 installations keep recorded ownership and legacy guest policies until
 the owner saves a new policy.
+Use a release that reads the house-access checkpoint for recovery once a
+policy has been written. The previous code predates that checkpoint.
 
 A real Unix and HTTP fixture qualified claim, repeat publication, owned
 layout and design access, foreign author denial, guest entry and
