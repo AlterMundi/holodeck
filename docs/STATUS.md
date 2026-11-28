@@ -1,5 +1,26 @@
 # Current MVP work
 
+## Stable flight and character poses · 2026-11-28
+
+Protected release `2a4b5b7339a0` selects `78aadf4`. It integrates Char Design's
+`e314c8a` and retains the serving Questbook pilot in `b19c7b66ac3b` as the
+rollback. Exact archive, installation and protected bundle readback passed.
+
+RTX 2060: rapid W/A/S/D and diagonal changes peaked at approximately
+4.4 rad/s in flight and 4.7 rad/s under boost. The browser drove six double
+jumps, stealth walking, stationary hover, water rest and forward and lateral
+swimming. A second networked browser received ground and boosted flight
+poses. The double-jump choreography is chosen on the pilot's client, so
+peers receive the underlying jump without the exact trick.
+
+On a Pi 5 at the same daytime meadow pose and 528 × 330 draw buffer, normal
+graphics measured 11.51 FPS before and 11.68 FPS with the new footprint
+bounds. Frame p95 was 100 ms in both arms. Footprint bounds use height
+rather than the footprint's age. The browser repeated the avatar checks
+after composing the serving Questbook changes. Both Questbook HTTP and
+browser fixtures passed separately with the configured DaimonCards binary.
+
+
 ## Explorer motion and responsive meadow · 2026-11-28
 
 Protected release `6fd9cd26732d` selects `66dad9e`, integrating Char Design's
