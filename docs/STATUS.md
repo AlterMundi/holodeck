@@ -1,5 +1,22 @@
 # Current MVP work
 
+## Navegante LED visor · 2026-11-28
+
+Protected release `71a5a2d10651` selects `625fc1b`, including Char
+Design's `9c1b261`, with `30d0fbe71857` available for rollback. The
+release adds the LED expressions, level-driven mouth shapes, revised
+idle poses and a self-lit visor material shared with the tabletop
+hologram. All 97 installed files matched the package. Authenticated
+HTTPS served the exact new GLB, SHA-256 prefix `c36dbff08607`, and the
+client containing its shader. Node passed 601 tests with four skips.
+
+Chromium on RTX 2060 and Pi 5 rendered joy and sadness and showed
+multiple mouth shapes under a synthetic playback envelope. Each
+device ran three two-second windows per edition at the same pose and
+drawing-buffer size. RTX 2060 at 660 × 407 measured a median 29.02 FPS
+before and 26.78 after, with overlapping ranges. Pi 5 at 363 × 244
+measured 20.66 before and 21.15 after. These are short visor-scene checks.
+
 ## N-3X Navegante correction · 2026-11-28
 
 Protected release `30d0fbe71857` selects `a9b6f41` with
