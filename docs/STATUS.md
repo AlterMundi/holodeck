@@ -1,5 +1,19 @@
 # Current MVP work
 
+## Conversation, minimap and worktables · 2026-11-28
+
+Protected release `b10cc0d03f3c` serves `c22d94b` with the topic-room
+release `cf6ad0088bff` as immediate rollback. A wide viewport presents all
+three open surfaces together. A compact viewport presents the latest open
+surface and restores the previous surface on close. Conversation stays
+mounted while covered, and the dock remains reachable below it.
+
+Packed Chromium exercised the actual dock controls at 1440 × 900 and
+400 × 760, including wide-to-compact resizing, compact map and table entry
+from chat, last-opened-first restoration, and the same iframe and draft.
+All 99 installed files matched the selected release. Node passed 616 tests
+with six skips, and the packed authenticated Questbook regression passed.
+
 ## Topic rooms and project releases · 2026-11-28
 
 Protected release `cf6ad0088bff` serves the
