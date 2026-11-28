@@ -451,8 +451,12 @@ Gateway's current work observation. The status shows observed work or
 queue activity, retained human questions and the presence of a canonical
 result. A stale native observation does not say that the daimon is
 working. The catalogue, other rooms and older owners receive no new
-details. The table reads no transcript and starts no turn. Opening or
-answering an exact retained item stays with Conversation's existing writer.
+details. The table reads no details. The table reads no transcript and starts no turn. **Ver resultado
+del topic** opens the current result through the paired Conversation frame.
+Only the selected room and a correlation reference cross into the frame.
+Conversation reads the retained result and opens it without changing the
+recipient or composing a reply. Leaving the room or closing the panel
+cancels the read. Answering a question still uses Conversation's own controls.
 
 The project view offers the questbook when the project is the one selected
 by the receiving card writer and the visitor has its read grant. Its pages

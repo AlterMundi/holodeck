@@ -166,7 +166,14 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
       if(room)target.searchParams.set('room',room);
       const response=await fetch(target);
       return current()?response.json():null;
-    }});surface.identity(${JSON.stringify(actorRef)});surface.bind(${JSON.stringify(binding)});`;
+    },openResult:async (room,current)=>{
+      if(room!==${JSON.stringify(room.room)}||!current())return false;
+      const result=document.createElement('dialog');
+      result.id='fixture-result';
+      result.textContent='Resultado privado del topic';
+      document.body.append(result);result.showModal();return true;
+    },closeResult:()=>document.querySelector('#fixture-result')?.remove()
+    });surface.identity(${JSON.stringify(actorRef)});surface.bind(${JSON.stringify(binding)});`;
    return route.fulfill({contentType:'text/html',body:`<!doctype html><html><script>${protocol}\n${start}</script></html>`});
   }
   assert.equal(address.pathname,'/api/interaction/sessions');
@@ -230,7 +237,14 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  await doors.nth(1).waitFor({state:'attached'});
  assert.equal(await doors.count(),2);
  assert.equal(await doors.first().locator('m-label').getAttribute('content'),'Cuento');
- await closeTable();
+ await table.getByRole('button',{name:'Ver resultado del topic'}).tap();
+ const resultDialog=page.frameLocator('#shared-conversation iframe').getByRole('dialog');
+ await resultDialog.getByText('Resultado privado del topic').waitFor();
+ assert.doesNotMatch(await page.locator('body').innerText(),/Resultado privado del topic/);
+ assert.equal(await page.locator('#conversation-audience').getAttribute('data-recipient'),'general');
+ assert.deepEqual(modes,[]);
+ await page.locator('#conversation-close').tap();
+ await resultDialog.waitFor({state:'detached'});
  const point=await page.evaluate(()=>{
    const door=document.querySelector('#topic-project-door-0 > m-cube:nth-child(2)').getContainer();
    const camera=holodeckDevelopment.client.getCameraManager().getCameraState();

@@ -321,6 +321,7 @@ function applySpace(next,anchor){
     if(!changingTopicMode)void setTopicMode(null);
   }
   if(changed){
+    sharedConversation?.closeTopicResult();
     if($('#topic-projects-dialog').open)$('#topic-projects-dialog').close();
     questbook.closeTopic();
   }
@@ -1134,6 +1135,7 @@ async function paintGeneralCompanion(host){
   }catch{/* The companion light remains available without the portrait. */}
 }
 function openConversation(open){
+  if(!open)sharedConversation?.closeTopicResult();
   const panel=$('#conversation-panel');panel.hidden=!open;$('#talk').setAttribute('aria-expanded',String(open));
   if(open)updateNativeAvailability();
   if(open&&sharedSurface()){
@@ -1221,6 +1223,20 @@ async function readTopicProjects(pages){
     const status=projects.size?(project?'Repositorios del proyecto':'Vínculos del topic'):topicProjectsPage.length>1||topicProjectsCursor
       ?'No hay vínculos visibles en esta página.':'Todavía no hay proyectos visibles en esta sala.';
     const work=result.work;
+    if(work?.result&&sharedSurface()){
+      const latest=document.createElement('button');
+      latest.type='button';
+      latest.textContent='Ver resultado del topic';
+      latest.onclick=()=>{
+        topicProjectsDialog.close();
+        openConversation(true);
+        const openedInRoom=()=>activeSpace.topic===room&&!$('#conversation-panel').hidden;
+        void conversationHost().openTopicResult(room,openedInRoom).catch(error=>{
+          if(openedInRoom())say(error.message);
+        });
+      };
+      topicProjectsList.append(latest);
+    }
     const cues=[
       work?.execution==='working'?'El daimon estaba trabajando al abrir la mesa.':null,
       work?.execution==='queued'?'Había trabajo en espera al abrir la mesa.':null,
