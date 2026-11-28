@@ -368,3 +368,40 @@ test('flight look consumes only the pointer displacement without snapping back o
   }
   release();
 });
+
+test('a left drag orbits the camera alone and a right drag steers body and camera together',()=>{
+  const document=new EventTarget(),canvas=new EventTarget();
+  Object.assign(document,{defaultView:new EventTarget(),body:{style:{}},exitPointerLock(){this.pointerLockElement=null;}});
+  Object.assign(canvas,{ownerDocument:document,clientWidth:600,clientHeight:400,requestPointerLock(){document.pointerLockElement=this;}});
+  const camera={isFlyCameraOn:()=>false,activePointers:new Map(),theta:0,phi:1.4,targetTheta:0,targetPhi:1.4,minPolarAngle:.15,maxPolarAngle:3};
+  const release=bindWorldOrbitInput(camera,canvas,()=>.5);
+  const emit=(target,type,fields)=>{
+    const event=new Event(type,{cancelable:true});
+    Object.assign(event,{pointerType:'mouse',pointerId:1,...fields});
+    target.dispatchEvent(event);
+  };
+  const orbit=(dTheta,dPhi)=>{camera.targetTheta+=dTheta;camera.theta=camera.targetTheta;camera.targetPhi+=dPhi;camera.phi=camera.targetPhi;};
+  release.look(false,1/60);
+  // Left drag: the camera turns, the steering angles stay put.
+  emit(canvas,'pointerdown',{button:0});
+  orbit(1.2,.3);
+  let view=release.look(true,1/60);
+  assert.ok(Math.abs(view.theta)<1e-9&&Math.abs(view.phi-1.4)<1e-9,JSON.stringify(view));
+  emit(document,'pointerup',{button:0});
+  // Released and still: the framed view stays for a photo.
+  view=release.look(false,1/60);
+  assert.ok(Math.abs(camera.targetTheta-1.2)<1e-9&&Math.abs(view.theta)<1e-9);
+  // Moving again, the camera swings back behind the body.
+  for(let i=0;i<120;i++){view=release.look(true,1/60);camera.theta=camera.targetTheta;camera.phi=camera.targetPhi;}
+  assert.ok(Math.abs(camera.targetTheta)<.01&&Math.abs(view.theta)<.01,JSON.stringify({camera,view}));
+  // Right drag: steering follows the camera immediately.
+  emit(canvas,'pointerdown',{button:0});
+  orbit(.8,0);
+  release.look(false,1/60);
+  emit(document,'pointerup',{button:0});
+  emit(canvas,'pointerdown',{button:2});
+  view=release.look(false,1/60);
+  assert.ok(Math.abs(view.theta-camera.theta)<1e-9);
+  emit(document,'pointerup',{button:2});
+  release();
+});

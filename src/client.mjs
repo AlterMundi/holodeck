@@ -1333,7 +1333,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       outdoor:outsideRing(),flying:flightEnabled,boosting:localFlightBoost(),grounded:client.getCharacterManager().localController?.characterOnGround,table:tableFlight.active,tabletopPlayers:tabletopPlayers(),
       peerPoses:poses.peers,peerGaze:points.gazes,gaze:tableGaze,wake:!entering&&!moving&&drawWorld?flightWake:null,trample:!entering&&!moving&&drawWorld?grass:null,glanceMotion:!companion.motion.matches&&!document.hidden,
       trickAge:(performance.now()-trickStarted)/1000,
-      aimPitch:aiming()?Math.PI/2-options.coreCameraManager.phi:null,loopPitch:flightEnabled?options.coreCameraManager.phi-Math.PI/2:releaseOrbit.pitch(),
+      aimPitch:aiming()?Math.PI/2-options.coreCameraManager.phi:null,loopPitch:flightEnabled?releaseOrbit.steerPhi()-Math.PI/2:releaseOrbit.pitch(),
       splash:!entering&&!moving&&drawWorld&&!document.hidden?waterSplash:null,
       waterWake:!entering&&!moving&&drawWorld&&!document.hidden?waterWake:null,
       microphoneLevel:sharedConversation&&!moving&&!entering&&sharedSurface()?sharedConversation.microphoneLevel():null,
@@ -1725,7 +1725,7 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
         ()=>flightEnabled,firstExteriorDoor,(mode,boost=false)=>{radialMovementMode=mode;radialBoosting=boost;},aiming,releaseOrbit.pitch,
         ()=>{const requested=doubleJumpPending;doubleJumpPending=false;return requested;},
         ()=>{trickStarted=performance.now();},
-        ()=>{const requested=firstJumpPending;firstJumpPending=false;return requested;});
+        ()=>{const requested=firstJumpPending;firstJumpPending=false;return requested;},releaseOrbit);
       firstExteriorDoor=null;
       releaseTableFlight=bindMatterFlight(client.getCharacterManager(),options.coreCameraManager,tableFlight,tableInputAllowed,()=>matterHud.leave());
       options.onInitialized();
