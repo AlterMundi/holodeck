@@ -5,6 +5,21 @@
 
 
 
+## November 28 — Shared spatial worktable navigation
+
+Protected release `83516a8b198c` selects source `dfb9683`, with
+`c06b39f3e7e6` available for rollback. Materia, the Character Studio
+worktable and the spatial teleport instrument use one worktable navigation
+owner for entering, leaving, height input and tabletop avatar scale.
+The personal teleport mount projects both avatars on the board while
+preserving their ordinary world presence for other clients.
+
+Chromium exercised Shift + wheel and Escape on the exact package in
+Materia and in the spatial teleporter. The teleport render placed both
+avatars at tabletop scale and restored their transforms on exit. The full
+suite passed 546 tests, with two skips. The protected readback matched
+94 installed files and the published client bundle.
+
 ## November 28 — Char Design teleport station
 
 Protected release `c06b39f3e7e6` selects source `39d9af1` and Char Design's
