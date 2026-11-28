@@ -167,6 +167,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
   throw Error(JSON.stringify({diagnostics,errors}),{cause:error});
  });
  await closeTable();
+ assert.equal(await page.locator('#topic-project-doors').count(),0);
  const projectA=randomUUID(),projectB=randomUUID();
  repositories=[
   {project:projectA,repository:randomUUID(),label:'Cuento',commit:'1'.repeat(40),locator:'/must-not-leak'},
@@ -180,7 +181,26 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  await table.getByText('Cuento',{exact:true}).waitFor();
  assert.equal(await table.getByRole('list',{name:'Repositorios de un proyecto'}).count(),2);
  await table.getByText('3'.repeat(40),{exact:true}).waitFor();
+ const doors=page.locator('#topic-project-doors > m-group');
+ await doors.nth(1).waitFor({state:'attached'});
+ assert.equal(await doors.count(),2);
+ assert.equal(await doors.first().locator('m-label').getAttribute('content'),'Cuento');
+ await closeTable();
+ const point=await page.evaluate(()=>{
+   const door=document.querySelector('#topic-project-door-0 > m-cube:nth-child(2)').getContainer();
+   const camera=holodeckDevelopment.client.getCameraManager().getCameraState();
+   const p=door.getWorldPosition(door.position.clone()).sub(camera.position);
+   p.applyQuaternion(door.quaternion.clone().set(camera.rotation.x,camera.rotation.y,camera.rotation.z,camera.rotation.w).invert());
+   const scale=Math.tan(camera.fov*Math.PI/360)*-p.z;
+   return {x:innerWidth*(1+p.x/(scale*camera.aspect))/2,y:innerHeight*(1-p.y/scale)/2,depth:p.z};
+ });
+ assert.ok(point.depth<0&&point.x>0&&point.x<390&&point.y>0&&point.y<700,JSON.stringify(point));
+ await page.touchscreen.tap(point.x,point.y);
  const detail=page.getByRole('dialog',{name:'Proyecto vinculado'});
+ await detail.getByText('Ilustraciones',{exact:true}).waitFor();
+ assert.equal(await detail.getByText('Juego',{exact:true}).count(),0);
+ await detail.getByRole('button',{name:'Volver a la mesa',exact:true}).tap();
+ await table.getByText('Cuento',{exact:true}).waitFor();
  const openStory=()=>table.getByRole('button',{name:'Abrir proyecto de Cuento',exact:true}).tap();
  await openStory();
  await detail.getByText('Ilustraciones',{exact:true}).waitFor();
@@ -249,6 +269,7 @@ test('a house-free Holodeck visitor reads and revalidates a topic through the Co
  await page.waitForFunction(()=>!document.body.classList.contains('inside-house')&&
    !document.body.classList.contains('room-transition'));
  assert.equal(runtime.spaces.current({id:actorRef}),'outside');
+ assert.equal(await page.locator('#topic-project-doors').count(),0);
  await page.getByRole('button',{name:'Topics',exact:true}).tap();
  await dialog.getByRole('button',{name}).waitFor();
  visible=false;

@@ -24,6 +24,7 @@ import { OutdoorSky } from './outdoor-sky.mjs';
 import { SignalGardenEditor } from './signal-garden-editor.mjs';
 import { AppliedGeometryProbe } from './applied-geometry.mjs';
 import {mountTopicExplorer} from './topic-explorer.mjs';
+import {TopicProjectDoors} from './topic-project-doors.mjs';
 import { SharedConversationHost } from './shared-conversation-host.mjs';
 import { WorldAudio } from './world-audio.mjs';
 import {WorldHistory} from './world-history.mjs';
@@ -209,6 +210,8 @@ let inside=hot&&activeSpace.id!=='outside';
 let updateDoor=()=>{},remoteScene=null,roomModel=null,networkScope=null,arrival=null;
 let moving=false,requestingMove=false,needsSync=false,resyncing=false,moveDeadline=null,passageNotice=null;
 let roomTopic,worktableTopic,directTopic,changingTopicMode;
+const topicDoors=new TopicProjectDoors(document,(room,signal)=>
+  api('topic-projects?'+new URLSearchParams({room}),undefined,{signal}));
 let prefetched=new Set(),prefetchRequest=null,pendingRoomArt=null;
 const setMoving=value=>{
   if(moving!==value){
@@ -226,6 +229,7 @@ const setMoving=value=>{
 };
 const removeScene=()=>{
   if(signalEditor?.draft?.mode)signalEditor.dismiss();
+  topicDoors.clear();
   pendingRoomArt=null;projectedGarden=null;beaconControls.clear();galleryModels?.clear();collectionShelves?.clear();remoteScene?.remove();remoteScene=roomModel=null;
 };
 function mountScene(){
@@ -242,6 +246,7 @@ function mountScene(){
   remoteScene=wrapper.remoteDocument;
   remoteScene.append(stored.template.content.cloneNode(true));
   renderer.mmlTargetElement.append(remoteScene);
+  topicDoors.mount(remoteScene,activeSpace.topic);
   roomModel=remoteScene.querySelector('m-model#room-art[src]');
   const source=roomModel?.getAttribute('src');
   const prefix=url('api/space/art/').pathname;
@@ -470,8 +475,12 @@ const client=new HolodeckExperienceClient(Networked3dWebExperienceClient.createF
       gallery:()=>inside?(moving||!remoteScene?new Map():contentVisitor.galleryTargets(galleryModels,remoteScene,
         client.getLocalCharacterState()?.position)):null,
       collection:()=>inside&&!moving&&remoteScene&&activeSpace.collectionShelves?collectionShelves.pickTargets():null,
+      projectDoors:()=>inside&&!moving&&activeSpace.topic&&!document.querySelector('dialog[open]')?topicDoors.targets():null,
       onPick:record=>{
-        if(record.kind==='collection-shelf')collectionShelves.placeOnTable(record.item,record.edition);
+        if(record.kind==='topic-project-door'){
+          if(!moving&&record.room===activeSpace.topic&&!document.querySelector('dialog[open]'))openTopicProject(record);
+        }
+        else if(record.kind==='collection-shelf')collectionShelves.placeOnTable(record.item,record.edition);
         else if(record.kind==='worktable-part')collectionShelves.worktable.selectPart(record);
         else if(record.kind==='gallery')contentVisitor.openGallery(record.entry).catch(()=>say('No pude abrir esta edición.'));
         else if(record.kind==='content')contentVisitor?.openNode(record.node).catch(()=>say('No pude abrir este contenido. Conservé la visita anterior.'));
@@ -1165,6 +1174,7 @@ async function readTopicProjects(pages){
     const result=await api('topic-projects?'+query,undefined,{signal:request.signal});
     if(!current()||result.room!==room||result.project!==project?.project)return;
     topicProjectsPage=result.restarted?[null]:pages;
+    if(!project&&topicProjectsPage.length===1)topicDoors.project(room,result.repositories);
     topicProjectsCursor=result.next;
     topicProjectsBack.hidden=topicProjectsPage.length<2;
     topicProjectsNext.hidden=!topicProjectsCursor;
@@ -1191,12 +1201,7 @@ async function readTopicProjects(pages){
       const section=document.createElement('section'),open=document.createElement('button');
       open.type='button';
       open.textContent='Abrir proyecto de '+first.label;
-      open.onclick=()=>{
-        topicCataloguePage=topicProjectsPage;
-        topicProject={project:first.project,repository:first.repository};
-        void readTopicProjects([null]);
-        topicProjectsReturn.focus();
-      };
+      open.onclick=()=>openTopicProject(first);
       section.append(list,open);
       topicProjectsList.append(section);
     }
@@ -1206,8 +1211,16 @@ async function readTopicProjects(pages){
   }catch{
     if(!current())return;
     topicProjectsStatus.textContent=project?'El proyecto no está disponible desde esta sala.':'No pude consultar los proyectos de esta sala.';
+    if(project)topicDoors.mount(remoteScene,room);
     topicProjectsBack.hidden=pages.length<2;
   }
+}
+function openTopicProject({project,repository}){
+  topicCataloguePage=topicProjectsDialog.open?topicProjectsPage:[null];
+  if(!topicProjectsDialog.open)topicProjectsDialog.showModal();
+  topicProject={project,repository};
+  void readTopicProjects([null]);
+  topicProjectsReturn.focus();
 }
 $('#topic-projects-open').onclick=()=>{
   if(!activeSpace.topic||topicProjectsDialog.open)return;

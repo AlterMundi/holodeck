@@ -438,5 +438,10 @@ discards its browser view. A backend without the project reader reports the
 table unavailable. Opening a project from the table rechecks its selected
 repository link and shows only the project's currently visible repositories,
 including those outside the visible table page. Returning to the table
-reads its catalogue again. The view is read-only. Spatial project doors
-and editing surfaces remain part of the topic-room roadmap.
+reads its catalogue again. The view is read-only. The room draws one
+door per project represented on the first catalogue page, on entry and
+on a fresh first-page table read. A door opens the same project view and
+rechecks the selected link. The scene owns the displayed doors and
+discards them on departure. Additional projects remain accessible through
+the paged table. Separate project interiors and editing surfaces remain
+part of the topic-room roadmap.

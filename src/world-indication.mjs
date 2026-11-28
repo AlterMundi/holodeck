@@ -7,17 +7,31 @@ export function selectionLabel(id,state){
   ?`${node.play?'el juego':'el contenido'} «${node.title}»`:entityLabel(id);
 }
 export class PublicWorldPicker{
- constructor({document,canvas,scene,cameraState,proof,onPick,onUnavailable=()=>{},gallery=()=>null,collection=()=>null}){
-  Object.assign(this,{document,canvas,scene,cameraState,proof,onPick,onUnavailable,gallery,collection});this.ray=new Raycaster();this.camera=new PerspectiveCamera();this.gesture=null;
-  this.down=e=>{this.gesture=e.isPrimary!==false&&e.button===0?{id:e.pointerId,x:e.clientX,y:e.clientY,time:performance.now()}:null;};
+ constructor({document,canvas,scene,cameraState,proof,onPick,onUnavailable=()=>{},gallery=()=>null,collection=()=>null,projectDoors=()=>null}){
+  Object.assign(this,{document,canvas,scene,cameraState,proof,onPick,onUnavailable,gallery,collection,projectDoors});this.ray=new Raycaster();this.camera=new PerspectiveCamera();this.gesture=null;
+  this.down=e=>{
+   this.pendingDoor=null;
+   this.gesture=e.isPrimary!==false&&e.button===0?{id:e.pointerId,x:e.clientX,y:e.clientY,time:performance.now()}:null;
+  };
   this.move=e=>{if(this.gesture&&Math.hypot(e.clientX-this.gesture.x,e.clientY-this.gesture.y)>6)this.gesture=null;};
-  this.cancel=()=>{this.gesture=null;};
+  this.cancel=()=>{this.gesture=this.pendingDoor=null;};
   this.up=e=>{
    const g=this.gesture;this.gesture=null;
    if(!g||g.id!==e.pointerId||performance.now()-g.time>800||Math.hypot(e.clientX-g.x,e.clientY-g.y)>6)return;
-   const picked=this.pick(e.clientX,e.clientY);if(picked)this.onPick(picked);
+   const picked=this.pick(e.clientX,e.clientY);
+   // Opening a modal during pointerup lets the generated click hit its controls.
+   if(picked?.kind==='topic-project-door')this.pendingDoor={record:picked,...g};
+   else if(picked)this.onPick(picked);
   };
-  for(const[type,listener]of [['pointerdown',this.down],['pointermove',this.move],['pointerup',this.up],['pointercancel',this.cancel]])canvas.addEventListener(type,listener);
+  this.click=e=>{
+   const door=this.pendingDoor;
+   this.pendingDoor=null;
+   if(door&&performance.now()-door.time<800&&Math.hypot(e.clientX-door.x,e.clientY-door.y)<=6)
+    this.onPick(door.record);
+  };
+  this.listeners=[['pointerdown',this.down],['pointermove',this.move],['pointerup',this.up],
+   ['pointercancel',this.cancel],['click',this.click]];
+  for(const [type,listener] of this.listeners)canvas.addEventListener(type,listener);
  }
  hit(x,y,skip=()=>false){
   const state=this.cameraState(),rect=this.canvas.getBoundingClientRect();if(!state||!rect.width||!rect.height)return null;
@@ -30,12 +44,12 @@ export class PublicWorldPicker{
       !material.clippingPlanes?.some(plane=>plane.distanceToPoint(hit.point)<0)))??null;
  }
  pick(x,y){
-  const gallery=this.gallery(),collection=this.collection();
-  if(gallery||collection){
-   if(!gallery?.size&&!collection?.size)return null;
+  const gallery=this.gallery(),collection=this.collection(),doors=this.projectDoors();
+  if(gallery||collection||doors){
+   if(!gallery?.size&&!collection?.size&&!doors?.size)return null;
    const hit=this.hit(x,y);
    for(let object=hit?.object;object;object=object.parent){
-    const target=collection?.get(object);
+    const target=doors?.get(object)??collection?.get(object);
     if(target)return target;
     const entry=gallery?.get(object);
     if(entry)return {kind:'gallery',entry};
@@ -61,7 +75,7 @@ export class PublicWorldPicker{
   for(let object=hit.object;object;object=object.parent){const owner=owners.get(object);if(owner)return {...owner,run:proof.run,edition:proof.edition};}
   return null; // Visible scenery/private preview occludes objects behind it.
  }
- dispose(){for(const[type,listener]of [['pointerdown',this.down],['pointermove',this.move],['pointerup',this.up],['pointercancel',this.cancel]])this.canvas.removeEventListener(type,listener);this.cancel();}
+ dispose(){for(const [type,listener] of this.listeners)this.canvas.removeEventListener(type,listener);this.cancel();}
 }
 export class WorldIndication{
  constructor({document,scene,getState,set,clear,edit,visit}){
