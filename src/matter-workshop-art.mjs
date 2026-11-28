@@ -88,7 +88,7 @@ export function readMatterWorkshopArt(profile='matter-workshop-v1'){
     archive:position(anchors['archive-model']),
     shelves:Array.from({length:6},(_,index)=>position(anchors['shelf-'+index])),
     fixtures:[
-      {id:'worktable',title:'Mesa de trabajo',revision:1,position:position(worktable),kind:'fixture'},
-      {id:'archive-turntable',title:'Vitrina de archivo',revision:1,position:position(anchors['archive-model']),kind:'fixture'},
+      {id:'worktable',widget:'matter-worktable',iconRole:'viewer',title:'Mesa de trabajo',revision:1,position:position(worktable),kind:'fixture'},
+      {id:'archive-turntable',iconRole:'archive',title:'Vitrina de archivo',revision:1,position:position(anchors['archive-model']),kind:'fixture'},
     ]};
 }
